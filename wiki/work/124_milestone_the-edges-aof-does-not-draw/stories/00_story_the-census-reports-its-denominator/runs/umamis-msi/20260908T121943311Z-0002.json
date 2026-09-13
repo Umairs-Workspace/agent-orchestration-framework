@@ -1,0 +1,44 @@
+{
+  "runId": "20260908T121943311Z-0002",
+  "itemRef": "124/00",
+  "state": "failed",
+  "attempt": 2,
+  "outcome": "failed",
+  "sessionId": "9fa814b9-5e95-4a21-8a6d-d8f38cfb50cb",
+  "brief": {
+    "loop": {
+      "loopRunId": "6e6aa998-3fa1-4bbb-b843-29aa95d6e129",
+      "scope": "124",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-07T23:32:31.685Z",
+      "id": "loop:autonomous-cascade"
+    }
+  },
+  "createdAt": "2026-09-08T12:19:43.311Z",
+  "updatedAt": "2026-09-08T12:49:48.655Z",
+  "failureReason": "timeout",
+  "heartbeatAt": "2026-09-08T12:38:19.923Z",
+  "retryOf": "20260908T115939448Z-0001",
+  "reclaimedAt": null,
+  "node": "umamis-msi",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 468,
+      "output": 164453,
+      "cacheRead": 32049467,
+      "cacheCreate": 803412
+    },
+    "costUsd": 15.095834100000001,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 234,
+    "toolCalls": 138,
+    "exitReason": "error"
+  }
+}

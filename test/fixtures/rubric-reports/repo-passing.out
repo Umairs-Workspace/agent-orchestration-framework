@@ -1,0 +1,9 @@
+# captured from: node test/integration/cli.mjs dsl
+ok - AOF DSL rendering: Apply the project config to Codex only
+ok - AOF DSL rendering: Apply file-backed .aof assets
+ok - AOF DSL rendering: Apply expanded DSL primitives
+ok - AOF DSL rendering: Preview expanded DSL primitives before applying
+ok - AOF DSL rendering: Apply runtime override for a file-backed asset
+ok - AOF DSL rendering: Reject runtime override identity changes
+ok - AOF DSL rendering: Render natural-language rule guidance per runtime
+ok - AOF DSL rendering: Merge multiple Codex rules into one AGENTS file

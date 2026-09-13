@@ -1,0 +1,73 @@
+// work:insert-uat — place a new uat acceptance session at a target position P in
+// the TOP-LEVEL number space (ARCHITECTURE ADR-002/ADR-005). A thin wrapper over
+// insert-shared.mjs's runInsertTopLevel, mirroring commands/validate.mjs's
+// thin-over-engine shape. The ONE difference from insert-milestone: `--depends`
+// authors the new session's `depends:` frontmatter as the operator gave it (current
+// numbers), which comes out POST-shift because the engine's `rewriteReferences`
+// reaches the backlog leaf before the move (ADR-006 depends-framing rule, now with
+// no arithmetic in the alias — 127/02 task 03).
+import { INSERT_FLAGS } from "./insert-shared.mjs";
+// milestone 127 / ADR-003 §4 — THE IMPORT MOVED, AND THAT IS THE WHOLE DIFF HERE. This verb is now a
+// thin alias of scaffold-into-backlog + `promote --at P`, and `runInsertTopLevel` moved WITH the
+// mint to `promote.mjs` (the other import direction would be a cycle). Its signature, its envelope
+// and every refusal code this face shipped are unchanged; `INSERT_FLAGS` still comes from the
+// mechanics module.
+import { runInsertTopLevel } from "./promote.mjs";
+
+export const insertUatCommand = {
+  id: "work:insert-uat",
+  input: {
+    type: "object",
+    properties: {
+      slug: { type: "string" },
+      at: { type: ["number", "string"] },
+      yes: { type: "boolean" },
+      depends: { type: "string" },
+      today: { type: "string" },
+    },
+    required: ["slug", "at"],
+    additionalProperties: false,
+  },
+
+  async run(input, ctx) {
+    return await runInsertTopLevel(ctx, {
+      type: "uat",
+      slug: input.slug,
+      at: input.at,
+      yes: Boolean(input.yes),
+      today: input.today,
+      dependsInput: input.depends,
+    });
+  },
+
+  cli: {
+    // m42 wave (d) leg d1 (wave 2) — routed through the registry-derived table +
+    // the ONE generic face; the cli.mjs workInsertCli branch is deleted.
+    route: ["work", "insert-uat"],
+    spec: {
+      usage: "aof work insert-uat <slug> --at <P> [--depends 0,2] [--yes] [--json]",
+      flags: {
+        ...INSERT_FLAGS,
+        depends: { type: "string", description: "comma-separated driver positions the gate waits on" },
+      },
+    },
+
+    // `aof work insert-uat <slug> --at <P> [--depends a,b] [--yes|--force] [--json]`.
+    argv: (positionals, options) => ({
+      slug: positionals[0],
+      at: options.at,
+      yes: Boolean(options.yes || options.force),
+      depends: options.depends,
+    }),
+
+    render(result) {
+      const depends = Array.isArray(result.created.depends) ? result.created.depends.join(", ") : "";
+      return `Inserted uat "${result.created.slug}" at ${result.created.ref}${depends ? ` (depends: [${depends}])` : ""} (shifted ${result.shifted} item(s)).`;
+    },
+
+    // ADR-004's { shifted, at, space } plus ADR-006's created identity echo,
+    // INCLUDING created.depends — the black-box channel the depends-framing
+    // scenarios read (find/validate never surface depends).
+    json: (result) => result,
+  },
+};

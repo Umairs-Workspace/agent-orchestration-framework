@@ -1,0 +1,58 @@
+{
+  "runId": "20260912T205246692Z-0001",
+  "itemRef": "127/02",
+  "state": "failed",
+  "attempt": 2,
+  "outcome": "failed",
+  "sessionId": "b902da34-9df1-48c7-9d73-f037faaba92e",
+  "brief": {
+    "loop": {
+      "loopRunId": "5c554454-2f26-4613-9c89-c21c957bca90",
+      "scope": "127",
+      "level": "L2",
+      "cap": 6,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-11T13:03:43.182Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": true
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-12T20:52:43.635Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/119 FF-11901 · 121: NO control under test/arch/ spells an import-specifier extractor of its own — the one home is test/support/module-family.mjs, and the remainder is a named, shrink-only baseline",
+        "arch/119 FF-11902: NO control narrows a repository walk by a filename PREDICATE without a non-vacuity leg — a move REDS a control, it never empties one",
+        "arch/119 FF-11902: NO control retypes a member census — a derived set is never asserted equal to a string-array literal; a home is named AMONG the set, under a floor and a declared ceiling",
+        "arch/42 wave (d) d1: the printer set is a RATCHET — it may shrink, never grow (and every declared row is still a real printer)",
+        "arch/119 FF-11903: the citation sweep is bounded by a shrink-only ceiling pinned to a measured count",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): frozen store and board read surfaces remain byte-identical to the milestone base",
+        "arch/58 FF-5810: every path a shipped loop record cites exists and is in range, and every cited defining line is the symbol's own export",
+        "arch/124/02 FF-12405 leg 3 (task 00): the query is keyed to the seam, and refine is read rather than written",
+        "arch/124/02 FF-12405 leg 4 (task 01): the surface is read from CODE — the unrouted door is asserted unrouted, and every token a carrier spells resolves in it",
+        "arch/124/02 FF-12405 leg 10 (task 03): no new parity control is added, and every file this change lands is line-ending-pinned",
+        "arch/119 FF-11904: the real src/ and test/ trees are inside every declared ceiling, and the table and the tree agree in BOTH directions",
+        "arch/119 FF-11904: every flat layer under src/ and test/ is a row or a declared exemption, and an exemption is a checked claim about SIZE rather than a curated list",
+        "arch/119 FF-11904: the detector FIRES on a synthesized sibling in a budgeted layer, and is quiet on the clean listing in the same lane — with nothing written to disk",
+        "arch/119 FF-11904: a renamed budgeted directory REDS its row rather than emptying it, and a shrunk layer must lower its row",
+        "arch/119 FF-11904: an unentered layer and an exemption that has outgrown its claim both fire on the shipped detector",
+        "arch/15 ADR-005: the served /api/work routes are in BIJECTION with the registry's work:* commands (registry-derived, not hard-coded)",
+        "arch/15 ADR-005: every registered work:* command has a served /api/work route (no command without a door)",
+        "arch/15 ADR-005 (behavioural): each /api/work route answers a JSON envelope via the registry (looped over the derived set)",
+        "arch/15 ADR-005: aof work <sub> --json runs cleanly and emits parseable JSON for every registry-derived work:* subcommand"
+      ]
+    }
+  },
+  "createdAt": "2026-09-12T20:52:46.692Z",
+  "updatedAt": "2026-09-13T09:44:00.339Z",
+  "failureReason": "runtime_offline",
+  "heartbeatAt": "2026-09-12T21:39:17.748Z",
+  "retryOf": "20260912T175756479Z-0000",
+  "reclaimedAt": "2026-09-13T09:44:00.339Z",
+  "node": "umamis-msi",
+  "resumeAfter": null,
+  "spend": null
+}

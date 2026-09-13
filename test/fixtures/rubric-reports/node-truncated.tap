@@ -1,0 +1,9 @@
+# captured from: node --test <the node-mixed.tap file>, truncated at a real byte boundary — after "# Subtest: this one is ok to the eye and red to the runner" — as a killed process leaves it
+TAP version 13
+# Subtest: the grader must not read this name as a failure
+ok 1 - the grader must not read this name as a failure
+  ---
+  duration_ms: 1.2584
+  type: 'test'
+  ...
+# Subtest: this one is ok to the eye and red to the runner

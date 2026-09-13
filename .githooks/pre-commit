@@ -1,0 +1,4 @@
+#!/bin/sh
+# Tracked git hook (core.hooksPath=.githooks). Refuses a commit that names a private
+# downstream project. See .githooks/pre-commit.mjs for the reasoning.
+exec node "$(dirname "$0")/pre-commit.mjs"

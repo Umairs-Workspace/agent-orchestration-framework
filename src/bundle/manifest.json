@@ -1,0 +1,1017 @@
+{
+  "bundleVersion": "0.1.0",
+  "runtimes": [
+    "claude",
+    "codex"
+  ],
+  "entries": [
+    {
+      "path": ".aof/frozen-set.jsonc",
+      "runtime": "claude",
+      "resource": {
+        "id": "frozen-set-declaration",
+        "kind": "asset"
+      },
+      "hash": "sha256:3ee6cfaf0d47e70f4f1fcf8d6d182c0fef77cd3581b45a35102704b9a5a87bfd"
+    },
+    {
+      "path": ".aof/loops/autonomous-cascade-watcher.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "watcher-autonomous-cascade",
+        "kind": "asset"
+      },
+      "hash": "sha256:f8587c64b80e3ea132e1220ee1e6a98bb1e779416154bb4c995aed0f7c736aad"
+    },
+    {
+      "path": ".aof/loops/autonomous-cascade.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "loop-autonomous-cascade",
+        "kind": "asset"
+      },
+      "hash": "sha256:e0610101d11c5efd7cfbb13177e7cbe50f6f2c464406fa1da6da344cecca831f"
+    },
+    {
+      "path": ".aof/loops/build-to-green-watcher.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "watcher-build-to-green",
+        "kind": "asset"
+      },
+      "hash": "sha256:414ca321ad8328853750b5ecaa103b9883269160d7176a6532cdb27dd6d0e4bf"
+    },
+    {
+      "path": ".aof/loops/build-to-green.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "loop-build-to-green",
+        "kind": "asset"
+      },
+      "hash": "sha256:2592c9219b0f85735e14c76fac8718ab4acc5538537592e866347634e8a7d9ca"
+    },
+    {
+      "path": ".aof/loops/instrument-audit.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "auditor-instrument-audit",
+        "kind": "asset"
+      },
+      "hash": "sha256:0d2247aff702df5def9aeb8162470f5117d4523db477a9b92241706b697a7616"
+    },
+    {
+      "path": ".aof/loops/mesh-assignment-reclaim.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "loop-mesh-assignment-reclaim",
+        "kind": "asset"
+      },
+      "hash": "sha256:366588c43624d0f4f6c3f834adb0ef9c8e30a67f008c3603b990fa3bdfe9b367"
+    },
+    {
+      "path": ".aof/loops/operator.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "actor-operator",
+        "kind": "asset"
+      },
+      "hash": "sha256:9676899c9c3d385b9616f2fe129bb047a0e21cfadddcd7333e81934d9b259810"
+    },
+    {
+      "path": ".aof/loops/product-owner.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "actor-product-owner",
+        "kind": "asset"
+      },
+      "hash": "sha256:a316ba7ecd1f3a36ecc2cbe9af5445b1b17fbd417f8be7d633152435f2468feb"
+    },
+    {
+      "path": ".aof/loops/retrospective-memory-ingest.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "loop-retrospective-memory-ingest",
+        "kind": "asset"
+      },
+      "hash": "sha256:00201de952d9090c95b6c31e3a8fd9ad07d5edcaddea88c142e062c3a2fdffdb"
+    },
+    {
+      "path": ".aof/loops/review-fix-rereview-watcher.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "watcher-review-fix-rereview",
+        "kind": "asset"
+      },
+      "hash": "sha256:b0c644879458ae8640d1fb614813c57bbaa799d12e4e0f32059775f2b8186199"
+    },
+    {
+      "path": ".aof/loops/review-fix-rereview.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "loop-review-fix-rereview",
+        "kind": "asset"
+      },
+      "hash": "sha256:77fb4ea910dd28eae2c6e51ba073d05d46f13c29bad1d945fe9b1b93ad7d7cc6"
+    },
+    {
+      "path": ".aof/loops/rubric-process-exit.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "anchor-rubric-process-exit",
+        "kind": "asset"
+      },
+      "hash": "sha256:946689bb4caefda03eaa31e6cbc3a9e181994701d366e52162061ad43f81cdd3"
+    },
+    {
+      "path": ".aof/loops/run-lifecycle-policy.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "anchor-run-lifecycle-policy",
+        "kind": "asset"
+      },
+      "hash": "sha256:d5ea351dcfe0bd4881e4d259c340277be2e3b1fc9b259856e6bcf13c77e6bef4"
+    },
+    {
+      "path": ".aof/loops/run-liveness.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "anchor-run-liveness",
+        "kind": "asset"
+      },
+      "hash": "sha256:8d0a75f720cbd5358d7b42580e14b934e6d91dc5e5f3e72ea3d2c21153952694"
+    },
+    {
+      "path": ".aof/loops/run-resilience.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "loop-run-resilience",
+        "kind": "asset"
+      },
+      "hash": "sha256:33a984c686cf5bf80645775ebef6d18fb07fa64e025c5d64fc67334c5b04cffe"
+    },
+    {
+      "path": ".aof/loops/speed-thoroughness-autonomy.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "arbiter-speed-thoroughness-autonomy",
+        "kind": "asset"
+      },
+      "hash": "sha256:6df02f00d46b15ff35a816e7969a9fea4b4b377b92baa8c85e3b65b9a1c9921f"
+    },
+    {
+      "path": ".aof/loops/verify-triage-accept.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "loop-verify-triage-accept",
+        "kind": "asset"
+      },
+      "hash": "sha256:063ecccdc0a87a6a0d3beb984b1efae3c93529d81558a88a2bb206723d288850"
+    },
+    {
+      "path": ".aof/templates/work/chore/CHORE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "chore",
+        "kind": "template"
+      },
+      "hash": "sha256:470e75c00c7de4e854436bc9923679ad3f1b58014ee2b26cdbafe60c245265e0"
+    },
+    {
+      "path": ".aof/templates/work/milestone/ARCHITECTURE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:fcf43ba9872408e47a9337d695e7633591de8168c5b9c0594920a6d396020f6a"
+    },
+    {
+      "path": ".aof/templates/work/milestone/COMPLIANCE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:81de7f819485c25039975065e2cbc9743cc8d3b801d29f851752e458bb4751e3"
+    },
+    {
+      "path": ".aof/templates/work/milestone/DESIGN.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:96f1b330e231cdb2c1677c72a9863b94856c9eb03ff42a23cfd01045f8bdb770"
+    },
+    {
+      "path": ".aof/templates/work/milestone/RESEARCH.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:a76f56e561d6a52c14bd5f603c0826e4ecb69b937aae134ae08ed3432621b80a"
+    },
+    {
+      "path": ".aof/templates/work/milestone/SECURITY.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:98c5c2913643886c873a21bd1543f46595d7227638b2d1b261b2f34b6e747a14"
+    },
+    {
+      "path": ".aof/templates/work/milestone/SPEC.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:2a0086803f79b5f773bf59b808f7eca7b194295c9c00e7f53f3334add4100fa1"
+    },
+    {
+      "path": ".aof/templates/work/milestone/STATE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:22aac55bccd5a8c78991bc5ad4b9c994c4bad304dffff214dca4fdc731051e15"
+    },
+    {
+      "path": ".aof/templates/work/milestone/UAT.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:526436fec432d377720696577b9f10597db1bfa7c79471be0b0c085698870d49"
+    },
+    {
+      "path": ".aof/templates/work/milestone/VERIFICATION.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:e780b12993499f33796f2e3088b3f3a918e6af209216818b9c3595378f39493a"
+    },
+    {
+      "path": ".aof/templates/work/shared/OUTCOME.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "shared",
+        "kind": "template"
+      },
+      "hash": "sha256:c481d5feb73856afed1d935d87911ca0afba15f12ac672314ed5f9029ddea8f4"
+    },
+    {
+      "path": ".aof/templates/work/spike/SPIKE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "spike",
+        "kind": "template"
+      },
+      "hash": "sha256:2ad536da4be2e5243771a559f77dc4ea9bf935614363bc848901754da6a83e4c"
+    },
+    {
+      "path": ".aof/templates/work/story/PLAN.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "story",
+        "kind": "template"
+      },
+      "hash": "sha256:36f8ca8d398798e82e34254e66acc656a150ccdacb2f89f2e5e4e9fcbd942f2f"
+    },
+    {
+      "path": ".aof/templates/work/story/STORY.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "story",
+        "kind": "template"
+      },
+      "hash": "sha256:88259488946dbe8b344fc0d413a4c0041b2a12a259bf5b2c810d2e00f5767a6b"
+    },
+    {
+      "path": ".aof/templates/work/task/example.feature",
+      "runtime": "claude",
+      "resource": {
+        "id": "task",
+        "kind": "template"
+      },
+      "hash": "sha256:63197d589bbc44030907c486a652b4516273163ae618a080e07eab49e3300be8"
+    },
+    {
+      "path": ".aof/templates/work/uat/SESSION.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "uat",
+        "kind": "template"
+      },
+      "hash": "sha256:4024dc7219259a6c9ccedd57a2d906594d33706726e64a1a06a172b5c870c3d7"
+    },
+    {
+      "path": ".aof/templates/work/uat/STATE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "uat",
+        "kind": "template"
+      },
+      "hash": "sha256:a5f4217a4efbfaa97039fe1dbff14a98e8b9a84f21ca5c1a817f03960259e468"
+    },
+    {
+      "path": ".aof/triggers.jsonc",
+      "runtime": "claude",
+      "resource": {
+        "id": "trigger-declaration",
+        "kind": "asset"
+      },
+      "hash": "sha256:04bd25061f76c3f329aa33efe783222a09757dcc82b5223f54389cf24c9ca5f7"
+    },
+    {
+      "path": ".claude/agents/aof-architect.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-architect",
+        "kind": "agent"
+      },
+      "hash": "sha256:d87421efb308c65b7d158f69ccff63a59fde3397ba90c6b22277ab4a262fde2d"
+    },
+    {
+      "path": ".claude/agents/aof-compliance.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-compliance",
+        "kind": "agent"
+      },
+      "hash": "sha256:20737b8c7a04c1508b607b6af358696254eea0e999019561222425152cf0d845"
+    },
+    {
+      "path": ".claude/agents/aof-designer.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-designer",
+        "kind": "agent"
+      },
+      "hash": "sha256:ff7c285eadefee49b8551b8d1811a438cd6bd69ee42345555dd18ba5551359b2"
+    },
+    {
+      "path": ".claude/agents/aof-developer.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-developer",
+        "kind": "agent"
+      },
+      "hash": "sha256:c8ca2b621a92e1620b2f94a44b1c4472326d6cf27849920dee8685132e76ca43"
+    },
+    {
+      "path": ".claude/agents/aof-product-owner.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-product-owner",
+        "kind": "agent"
+      },
+      "hash": "sha256:de3dd6ff14082056ad73b1cd83768754d3ff1a1dff0579d0617f199ec70b985f"
+    },
+    {
+      "path": ".claude/agents/aof-qa.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-qa",
+        "kind": "agent"
+      },
+      "hash": "sha256:070f1957d8125da007676be78f75790a1515454602e5d1de0eeb7466c1b0beba"
+    },
+    {
+      "path": ".claude/agents/aof-researcher.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-researcher",
+        "kind": "agent"
+      },
+      "hash": "sha256:641709966324c28a77a3068bf6eca5925491c66011b0461f2be9ccfff530d166"
+    },
+    {
+      "path": ".claude/agents/aof-security.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-security",
+        "kind": "agent"
+      },
+      "hash": "sha256:83f200cb66d451ffb8cc8fad6b013fa39333e9eba95c57b49464ae592c9d1309"
+    },
+    {
+      "path": ".claude/commands/aof/add-chore.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "add-chore",
+        "kind": "command"
+      },
+      "hash": "sha256:a45aa5c5e420fee422fdfa10eb8eeef34ecd309a6ca2c4e691cd4224326c286c"
+    },
+    {
+      "path": ".claude/commands/aof/add-milestone.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "add-milestone",
+        "kind": "command"
+      },
+      "hash": "sha256:8cb96dbbc9c1b663f537cf1b7c859c66aad12d85802fe9f4f6585af120a48cc7"
+    },
+    {
+      "path": ".claude/commands/aof/add-spike.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "add-spike",
+        "kind": "command"
+      },
+      "hash": "sha256:bc9532f7647ff86b6b430d8324b772ea0fb695d6104088e0c8710b2dd16f03d8"
+    },
+    {
+      "path": ".claude/commands/aof/add-story.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "add-story",
+        "kind": "command"
+      },
+      "hash": "sha256:52d0c2ac131ffbac4b104902ee6add9e850e6647e8c218aa58430184785f3a03"
+    },
+    {
+      "path": ".claude/commands/aof/add-task.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "add-task",
+        "kind": "command"
+      },
+      "hash": "sha256:ec0657153ee5161423bc1cd4d994d978a06a0c9c4da58772c236005791f0135c"
+    },
+    {
+      "path": ".claude/commands/aof/add-uat.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "add-uat",
+        "kind": "command"
+      },
+      "hash": "sha256:f01a13f8805ec699baf35edf34bb291fce64b8ab9b46d761cbf82082c2b0c609"
+    },
+    {
+      "path": ".claude/commands/aof/assimilate-code.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "assimilate-code",
+        "kind": "command"
+      },
+      "hash": "sha256:3bc4e9e677415c853d808564346f5143a6228107ab341edb31940b011e8fe015"
+    },
+    {
+      "path": ".claude/commands/aof/autonomous.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "autonomous",
+        "kind": "command"
+      },
+      "hash": "sha256:084d7c1a31f675d1bc0571a6bdbac61f151cfeb01ecc049ec0f5e4d555a93865"
+    },
+    {
+      "path": ".claude/commands/aof/code-review.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "code-review",
+        "kind": "command"
+      },
+      "hash": "sha256:21b5acf134229ccd5eb30a01427d03a56e0e276e8b0f7df733be218fd381de30"
+    },
+    {
+      "path": ".claude/commands/aof/continue.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "continue",
+        "kind": "command"
+      },
+      "hash": "sha256:e68e426d5330e17098f701eb541ed61cbeb8f647b979f46cb530b45953149a86"
+    },
+    {
+      "path": ".claude/commands/aof/delegate.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "delegate",
+        "kind": "command"
+      },
+      "hash": "sha256:a1a31256fcca8d71bdadc4a561308a943b3f5de56256fb42e91b8dd5c317312d"
+    },
+    {
+      "path": ".claude/commands/aof/feedback.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "feedback",
+        "kind": "command"
+      },
+      "hash": "sha256:58d5e7471461467c78b8c3bcef7512685d404dc0e83418d462f0e237f74daf44"
+    },
+    {
+      "path": ".claude/commands/aof/init.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "init",
+        "kind": "command"
+      },
+      "hash": "sha256:ed82833e4169152843c7861adf191bca905657ad3b52139e978c1ef604bfdbef"
+    },
+    {
+      "path": ".claude/commands/aof/insert-chore.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "insert-chore",
+        "kind": "command"
+      },
+      "hash": "sha256:61a4bcd27a7187af0371501924a88d13dd1d70730fcf76326252adf4eb0efc72"
+    },
+    {
+      "path": ".claude/commands/aof/insert-milestone.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "insert-milestone",
+        "kind": "command"
+      },
+      "hash": "sha256:9996b963893b63591b80f4b0c80e7f78d19c3913d2f7661aaa896b60ffce32fc"
+    },
+    {
+      "path": ".claude/commands/aof/insert-story.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "insert-story",
+        "kind": "command"
+      },
+      "hash": "sha256:1168061f6b7c3de840dbfe7a783e85d52960be881e820272c93d850a9d335f64"
+    },
+    {
+      "path": ".claude/commands/aof/insert-uat.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "insert-uat",
+        "kind": "command"
+      },
+      "hash": "sha256:07691aed2fc5bed616f3e58698bf58ea0d9edf80afff3e3d513a1f71480a745e"
+    },
+    {
+      "path": ".claude/commands/aof/migrate.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "migrate",
+        "kind": "command"
+      },
+      "hash": "sha256:65e0a99b4d47e8b502548d660d3cea844ba3811f38d42c81a25e25ede49d0911"
+    },
+    {
+      "path": ".claude/commands/aof/observe.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "observe",
+        "kind": "command"
+      },
+      "hash": "sha256:bf461881e4e4eedb46dc609da20a4f218945f6580f88152396a2a7e06fb668fb"
+    },
+    {
+      "path": ".claude/commands/aof/pay-debt.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "pay-debt",
+        "kind": "command"
+      },
+      "hash": "sha256:387c6c626943dc95eb65a4c698ef0f02f79fe15c7bfee5c9616609da768bc00b"
+    },
+    {
+      "path": ".claude/commands/aof/promote.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "promote",
+        "kind": "command"
+      },
+      "hash": "sha256:59057d3caca31a80ad0b501b3049b18cb5aa0a208908f255a64758985d18173e"
+    },
+    {
+      "path": ".claude/commands/aof/recent.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "recent",
+        "kind": "command"
+      },
+      "hash": "sha256:96748c077508b6bdb7cf4c81d338ba8f9b96fb10ddb186996d4a6c4774f1cdcf"
+    },
+    {
+      "path": ".claude/commands/aof/refine.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "refine",
+        "kind": "command"
+      },
+      "hash": "sha256:9b5fabc957cda3ba5b68be97cc2e2012e0c1274a6732e24f3213c1ea9f91d8ac"
+    },
+    {
+      "path": ".claude/commands/aof/retrospective.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "retrospective",
+        "kind": "command"
+      },
+      "hash": "sha256:01a16c8f70095df65765415dba63a4c0409598e35c64df9d11a04b52414167e0"
+    },
+    {
+      "path": ".claude/commands/aof/shatter.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "shatter",
+        "kind": "command"
+      },
+      "hash": "sha256:88d6e22efecdfc1a8ccfef83744027bf7ee97429fcc18f6fe57c212ace6cf932"
+    },
+    {
+      "path": ".claude/commands/aof/validate.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "validate",
+        "kind": "command"
+      },
+      "hash": "sha256:d5e7e0c0a857a0bfd7a123ec1ca44b107c4bd8e5435b7c3247e1df2273a97296"
+    },
+    {
+      "path": ".claude/commands/aof/verify.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "verify",
+        "kind": "command"
+      },
+      "hash": "sha256:f44c1b8cc33eb870cbabd90d46194fd77c67f6fc5b55c7a6dd292c07f95a4472"
+    },
+    {
+      "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs",
+      "runtime": "claude",
+      "resource": {
+        "id": "artifact-sync-enqueue",
+        "kind": "asset"
+      },
+      "hash": "sha256:b48b8f0163b8e026fee7ec7d39c236defe0a25eea5c7d1065eb6ba0978978739"
+    },
+    {
+      "path": ".claude/hooks/aof/run-heartbeat-enqueue.mjs",
+      "runtime": "claude",
+      "resource": {
+        "id": "run-heartbeat-enqueue",
+        "kind": "asset"
+      },
+      "hash": "sha256:fb5707878d29d382becd95d760c08996e04b0a20f5a49285b95bf2ff3c5496c0"
+    },
+    {
+      "path": ".claude/skills/codex-computer-use/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "codex-computer-use",
+        "kind": "skill"
+      },
+      "hash": "sha256:63817f896bf18dc3827b51905c02d5001dd07dfe89441778e622116be31bcc8e"
+    },
+    {
+      "path": ".claude/skills/codex-implementation/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "codex-implementation",
+        "kind": "skill"
+      },
+      "hash": "sha256:806198ef5b5582efb47c7035358691e361bc8e4107ff6c46a98da6703ff5479b"
+    },
+    {
+      "path": ".claude/skills/codex-review/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "codex-review",
+        "kind": "skill"
+      },
+      "hash": "sha256:550842936dbd385b1e84f93096ae329092a38f64b96095f5fe48292bd2220a8f"
+    },
+    {
+      "path": ".codex/agents/aof-architect.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-architect",
+        "kind": "agent"
+      },
+      "hash": "sha256:a595791058ba99ab56a8a0495cbcdf2241d54e4845adfe31e7085ebb23619ec6"
+    },
+    {
+      "path": ".codex/agents/aof-compliance.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-compliance",
+        "kind": "agent"
+      },
+      "hash": "sha256:56e841b2d2083fb294b2a33f3019875319378ce318f7a75f49df50f72cbacc09"
+    },
+    {
+      "path": ".codex/agents/aof-designer.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-designer",
+        "kind": "agent"
+      },
+      "hash": "sha256:df1dad2870682eda23168157e1d0201754ebea7c8e739713c5555d9879414c32"
+    },
+    {
+      "path": ".codex/agents/aof-developer.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-developer",
+        "kind": "agent"
+      },
+      "hash": "sha256:7a542dfa68cb37189507f3411ddfd551cf6cec6cb36d2de7536d668b1f8da20c"
+    },
+    {
+      "path": ".codex/agents/aof-product-owner.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-product-owner",
+        "kind": "agent"
+      },
+      "hash": "sha256:6184e3100eab17e22f14fdd277fd1c72b7ff579af3cf7e2dbfbbe69c8f7a6a9c"
+    },
+    {
+      "path": ".codex/agents/aof-qa.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-qa",
+        "kind": "agent"
+      },
+      "hash": "sha256:59e3f684f169246a9d71024d877a6fa04c67176163bf48753e1a419658bc5aef"
+    },
+    {
+      "path": ".codex/agents/aof-researcher.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-researcher",
+        "kind": "agent"
+      },
+      "hash": "sha256:341ef551c6b4fdf18ffc0f90b26bacbee0413734f6e21206522539af3bb14f03"
+    },
+    {
+      "path": ".codex/agents/aof-security.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-security",
+        "kind": "agent"
+      },
+      "hash": "sha256:026480f9b8d032fec55057fe3d7f582c409a34ec7531b19402d5e81c966cd035"
+    },
+    {
+      "path": ".codex/hooks.json",
+      "runtime": "codex",
+      "resource": {
+        "id": "codex-hooks",
+        "kind": "hooks"
+      },
+      "hash": "sha256:2991b2daf96855404dc2a96720361d52d03c202d74d78e8de50668de990507b6"
+    },
+    {
+      "path": ".codex/skills/aof-add-chore/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-chore",
+        "kind": "skill"
+      },
+      "hash": "sha256:ad27f76d275b49f80d8ffdaa3d6232646df0653dd930c516c4d61596fe495d3d"
+    },
+    {
+      "path": ".codex/skills/aof-add-milestone/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-milestone",
+        "kind": "skill"
+      },
+      "hash": "sha256:31264083eeb306548d255d2fb7c4c647a904536076f84784b47b89fbf185418a"
+    },
+    {
+      "path": ".codex/skills/aof-add-spike/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-spike",
+        "kind": "skill"
+      },
+      "hash": "sha256:3db54f7cc9fdde612771d0e011174aebfa4de616c8335cc2f114a502426b3bb5"
+    },
+    {
+      "path": ".codex/skills/aof-add-story/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-story",
+        "kind": "skill"
+      },
+      "hash": "sha256:b18ec1ba2b24d48a62b76833cf9f9d4d3b4d5bf126aa24aa995b650fa97e34e2"
+    },
+    {
+      "path": ".codex/skills/aof-add-task/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-task",
+        "kind": "skill"
+      },
+      "hash": "sha256:00fe8fa6679c01ddc3aaed51989f6597757400c34d43bfe368a0972dbc9a8c3d"
+    },
+    {
+      "path": ".codex/skills/aof-add-uat/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-uat",
+        "kind": "skill"
+      },
+      "hash": "sha256:ffdae5e0f3dee3d33ca9eda3a854543a2b41c73dcefdc229b82558557281f879"
+    },
+    {
+      "path": ".codex/skills/aof-assimilate-code/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-assimilate-code",
+        "kind": "skill"
+      },
+      "hash": "sha256:11bc156ae1f8f1a91d95d6a12b8fc33dc9641233f8f9a8243d83eb91c28e4ffe"
+    },
+    {
+      "path": ".codex/skills/aof-autonomous/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-autonomous",
+        "kind": "skill"
+      },
+      "hash": "sha256:c3cafb32900d3f3e7334960eb44bc7b3ea5d686e3bf311ff4a044e9eaf493e6c"
+    },
+    {
+      "path": ".codex/skills/aof-code-review/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-code-review",
+        "kind": "skill"
+      },
+      "hash": "sha256:0cafa0d263f01544bd6afc2eafd437e7cfdc511e1a085eaac62c3f71c4f035f8"
+    },
+    {
+      "path": ".codex/skills/aof-continue/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-continue",
+        "kind": "skill"
+      },
+      "hash": "sha256:b1a9bfa21f832e7116b92fc249776bef2848ebcbf4edb272faffbaf88de199f5"
+    },
+    {
+      "path": ".codex/skills/aof-delegate/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-delegate",
+        "kind": "skill"
+      },
+      "hash": "sha256:a52c74aebb797f5bf6ca269631769c48640b25685a01197cd234d6780aa5e535"
+    },
+    {
+      "path": ".codex/skills/aof-feedback/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-feedback",
+        "kind": "skill"
+      },
+      "hash": "sha256:0fc220c32a530f8aada2c631b085ab89e57bd0a5a41c698190039fd260cb0fc2"
+    },
+    {
+      "path": ".codex/skills/aof-init/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-init",
+        "kind": "skill"
+      },
+      "hash": "sha256:55650468d5ab0cae1faa16c6854db060bba73fd957c07f4721d09c40e89adf8c"
+    },
+    {
+      "path": ".codex/skills/aof-insert-chore/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-chore",
+        "kind": "skill"
+      },
+      "hash": "sha256:74bff7158baa717c9b97e854c7259a59ff73052b7af66f2d28839c6536eed3ac"
+    },
+    {
+      "path": ".codex/skills/aof-insert-milestone/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-milestone",
+        "kind": "skill"
+      },
+      "hash": "sha256:f864a219bb00d0734198503e221dac18172f8cf50747d608ac67eda74270cdcc"
+    },
+    {
+      "path": ".codex/skills/aof-insert-story/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-story",
+        "kind": "skill"
+      },
+      "hash": "sha256:393727076d0977bed3886bae92990cb305a0c1fe83330d141e709d827702d231"
+    },
+    {
+      "path": ".codex/skills/aof-insert-uat/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-uat",
+        "kind": "skill"
+      },
+      "hash": "sha256:dfd9bdc5469e3fcefe48f529a1d5708342c481fc62f0c92a19b633a0a789b521"
+    },
+    {
+      "path": ".codex/skills/aof-migrate/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-migrate",
+        "kind": "skill"
+      },
+      "hash": "sha256:4d61fe1d0593966910e6f8d3682d96fe495e68a0afbb63299ffdcf135b57ab10"
+    },
+    {
+      "path": ".codex/skills/aof-observe/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-observe",
+        "kind": "skill"
+      },
+      "hash": "sha256:fd3319697fe8991023098cb51ca45b84f9ddf19b9071878f4cab00cc05278311"
+    },
+    {
+      "path": ".codex/skills/aof-pay-debt/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-pay-debt",
+        "kind": "skill"
+      },
+      "hash": "sha256:0ed9695b63ba0fc9fec257421ec14c01c71f80a24b46e296a78d4f4ed5573e27"
+    },
+    {
+      "path": ".codex/skills/aof-promote/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-promote",
+        "kind": "skill"
+      },
+      "hash": "sha256:caae31da3e4ea8a38f8a72b252cc83f71e7c6acfee19438eb167515712dbd1ce"
+    },
+    {
+      "path": ".codex/skills/aof-recent/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-recent",
+        "kind": "skill"
+      },
+      "hash": "sha256:0bfe12d1e672e5f6a5c0ac8f8869e24c34bfbed73b0919c064c8e4f305653d3a"
+    },
+    {
+      "path": ".codex/skills/aof-refine/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-refine",
+        "kind": "skill"
+      },
+      "hash": "sha256:1971944ebe9e229fc9359e154a9b4a93521cddd1d6dd0f55aba9b962331ed5ef"
+    },
+    {
+      "path": ".codex/skills/aof-retrospective/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-retrospective",
+        "kind": "skill"
+      },
+      "hash": "sha256:07df35ae73e127ef3a9128d79c1aa668f506a299d0159217fa3d279892dd7f31"
+    },
+    {
+      "path": ".codex/skills/aof-shatter/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-shatter",
+        "kind": "skill"
+      },
+      "hash": "sha256:fb498b4e096f451c23494590b23f87c7859ed90fc4da0a1532a73b8818c7ae25"
+    },
+    {
+      "path": ".codex/skills/aof-validate/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-validate",
+        "kind": "skill"
+      },
+      "hash": "sha256:7fd60fade37c26940b5f540fd65dc3daa7d2a444eecb6c2f6c5a786147f76d0d"
+    },
+    {
+      "path": ".codex/skills/aof-verify/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-verify",
+        "kind": "skill"
+      },
+      "hash": "sha256:7d38aa799afe8c05046dc4f1c53ada0206f4bc5cf1dff18fa4326439d9f527ab"
+    }
+  ]
+}

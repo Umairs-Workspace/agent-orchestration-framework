@@ -1,0 +1,61 @@
+---
+aof-generated: true
+description: Capture a spike — a top-level de-risk driver scaffolded on the project's intake as spike_slug/SPIKE.md. Groups no stories, carries no .feature; its deliverable is a recorded finding. Numbered by aof work promote, resolved later by aof:verify.
+aof-invocation: /aof:add-spike
+aof-runtime: claude
+---
+
+<objective>
+Frame a **spike**: a self-contained `spike_<slug>/SPIKE.md` folder, born un-numbered on the project's
+intake and given its number by one verb, `aof work promote`. A spike is a top-level DRIVER
+(the `uat` shape, ADR-001) — it delivers no new behaviour and groups no stories; it exists to resolve
+one unknown *before* a dependent milestone can be committed. It gates the stream: downstream work that
+`depends:` on it waits until it is `done`. Don't confuse it with `aof:refine`'s in-milestone researcher
+(a question scoped inside one milestone) — a spike is worth its own roadmap slot.
+</objective>
+
+<config>
+Read `.aof/aof.config.json` → `work.dir`, `work.agents`, `work.intake`. An ABSENT `work.intake` reads
+as `"stream"`; only the exact string `"backlog"` selects the backlog. Resolve refs with
+`aof work find` / `aof work next --json` — never hand-glob `**/*.md`.
+</config>
+
+<process>
+For: "$ARGUMENTS"
+1. **The folder — the backlog, under either setting.** Slug = kebab (e.g. `de-risk-mesh-routing`). An
+   optional group comes from the arguments (`in <group/path>`) and is a PATH and nothing more. The
+   folder is `<work.dir>/backlog/[<group>/]spike_<slug>/`: that is where a new spike is written
+   whichever way `work.intake` is set. Do NOT work out a stream number — deciding one is
+   `aof work promote`'s job (41/ADR-002).
+2. **Scope (`depends:`).** A spike is usually a *dependency*, not a dependent — leave `depends: []`
+   unless the spike itself needs a prior milestone/spike/chore resolved first. If given explicitly
+   (`depends NN,NN`), write those entries AS GIVEN — they are a planning note until promotion, which
+   is where they are VALIDATED (a numeric ref must resolve; an entry naming another backlog slug is
+   refused, so promote that one first or drop the entry).
+3. **Scaffold** (template: `.aof/templates/work/spike/SPIKE.md`): frontmatter (`type: spike`, a bare
+   `number:` with NO value, `slug`, `title`, `status: not-started`, `owner`, `created`/`updated`:
+   today, `depends: [...]`, `timebox`: the given box or a sensible default); the heading is
+   `# <Title>` with no number prefix; `## Question` (the unknown, framed as a real question);
+   `## Timebox` (the box + stop condition); `## Investigation` (empty — filled as the spike runs);
+   `## Finding` (empty — the deliverable); `## Outcome / Next` (empty — what it unblocks).
+4. **Then the intake decides whether it stays there.** Under `work.intake: "backlog"` it STAYS:
+   `aof:promote <slug>` is what later schedules it, and the only way to name a position. Under
+   `"stream"` (or an absent key) run `aof work promote <slug> --json` immediately and report the
+   minted ref — appended at the tail, as `add-spike` has always landed it.
+5. Ask only the framing questions you can't infer (the question itself, the timebox).
+6. **Frame ONLY** — no investigation started, no finding recorded (that's the spike running, then
+   `aof:verify`). No `tasks/`, no `.feature` — a spike carries no behavioural contract.
+</process>
+
+<progress_tracking>
+The spike starts at `status: not-started` in `SPIKE.md` frontmatter. Running it (the investigation,
+recording `## Finding`) and flipping it to `done` — which unblocks anything that `depends:` on it — is
+`aof:verify <NN>`: confirms `## Finding` is filled and the unknown is resolved. No scenario run, no
+"tests green" — the investigation code is throwaway.
+</progress_tracking>
+
+<output>
+Report the path + the question this spike answers, and — when `depends` was given — that the entries
+are validated at promotion. Under `"backlog"`: next is `aof:promote <slug>`. Under `"stream"`: report
+the minted ref. Then run the investigation, record the finding, and `aof:verify <NN>`.
+</output>

@@ -1,0 +1,78 @@
+{
+  "runId": "20260908T151813477Z-0007",
+  "itemRef": "124/00",
+  "state": "done",
+  "attempt": 3,
+  "outcome": "done",
+  "sessionId": "3fbe79ea-c74b-4b14-80b0-e546e1742562",
+  "brief": {
+    "loop": {
+      "loopRunId": "6e6aa998-3fa1-4bbb-b843-29aa95d6e129",
+      "scope": "124",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-07T23:32:31.685Z",
+      "id": "loop:autonomous-cascade"
+    },
+    "grade": {
+      "ref": "124/00",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "C:\\Source\\umami\\aof",
+        "exit": 1,
+        "durationMs": 247772
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 1844,
+        "failed": 11,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/119 FF-11903: the citation sweep is bounded by a shrink-only ceiling pinned to a measured count",
+          "message": "  error: \"66 distinct src/ citations under wiki/work/** resolve neither at HEAD nor through a recorded rename, against a ceiling of 65. The ceiling may FALL and may never RISE: repair the citation, or land the module it names.\\n  - src/_otlp-receiver-probe.mjs (cited in 1 document(s), e.g. wiki/work/68_milestone_loop-telemetry/VERIFICATION.md)\\n  - src/a-b.mjs (cited in 1 document(s), e.g. wiki/work/52_milestone_loop-registry-and-graph/stories/02_story_work-loops-command-family/tasks/02_loops-graph-mermaid.feature)\\n  - src/a.b.mjs (cited in 1 document(s), e.g. wiki/work/52_milestone_loop-registry-and-graph/stories/02_story_work-loops-command-family/tasks/02_loops-graph-mermaid.feature)\\n  - src/a.mjs (cited in 2 document(s), e.g. wiki/work/124_milestone_the-edges-aof-does-not-draw/stories/00_story_the-census-reports-its-denominator/tasks/02_the-lane-names-each-unwitnessed-edge.feature)\\n  - src/a/b/seam.mjs (cited in 1 document(s), e.g. wiki/work/77_milestone_harness-audit/stories/02_story_the-seam-liveness/tasks/00_a-seam-with-no-production-caller-is-named.feature)\\n  - src/adapters/graphify.mjs (cited in 1 document(s), e.g. wiki/work/09_milestone_graphify-command-core/ARCHITECTURE.md)\\n  - src/app/shell-bus.mjs (cited in 1 document(s), e.g. wiki/work/50_milestone_session-launcher/observability/agents.json)\\n  - src/app/shell-layout.mjs (cited in 1 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/b.mjs (cited in 2 document(s), e.g. wiki/work/124_milestone_the-edges-aof-does-not-draw/stories/00_story_the-census-reports-its-denominator/tasks/02_the-lane-names-each-unwitnessed-edge.feature)\\n  - src/board/freshness.mjs (cited in 1 document(s), e.g. wiki/work/47_milestone_fleet-repo-filter/observability/agents.json)\\n  - src/bounded-spawn.mjs (cited in 1 document(s), e.g. wiki/work/TECH_DEBT.md)\\n  - src/bundle/hooks/guard-test-isolation.mjs (cited in 2 document(s), e.g. wiki/work/55_milestone_anchors-and-frozen-set/VERIFICATION.md)\\n  - src/commands-old.mjs (cited in 3 document(s), e.g. wiki/work/124_milestone_the-edges-aof-does-not-draw/ARCHITECTURE.md)\\n  - src/commands/loops-init.mjs (cited in 5 document(s), e.g. wiki/work/78_milestone_loop-execution-record/ARCHITECTURE.md)\\n  - src/commands/loops-record.mjs (cited in 2 document(s), e.g. wiki/work/78_milestone_loop-execution-record/ARCHITECTURE.md)\\n  - src/commands/mesh-issue.mjs (cited in 3 document(s), e.g. wiki/work/27_milestone_work-issuance-routing/ARCHITECTURE.md)\\n  - src/commands/mesh-sync.mjs (cited in 2 document(s), e.g. wiki/work/22_milestone_mesh-foundation/ARCHITECTURE.md)\\n  - src/commands/planted-consumer.mjs (cited in 1 document(s), e.g. wiki/work/61_milestone_disciplined-acceptor/VERIFICATION.md)\\n  - src/commands/rogue.mjs (cited in 1 document(s), e.g. wiki/work/70_milestone_warm-start/VERIFICATION.md)\\n  - src/commands/work-list.mjs (cited in 1 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/does-not-exist.mjs (cited in 3 document(s), e.g. wiki/work/52_milestone_loop-registry-and-graph/stories/00_story_loop-model-and-loader/tasks/03_pointer-endpoint-syntax.feature)\\n  - src/fleet-face.mjs (cited in 1 document(s), e.g. wiki/work/50_milestone_session-launcher/ARCHITECTURE.md)\\n  - src/fleet/assign-affordance.mjs (cited in 2 document(s), e.g. wiki/work/47_milestone_fleet-repo-filter/observability/agents.json)\\n  - src/fleet/runs.mjs (cited in 7 document(s), e.g. wiki/work/47_milestone_fleet-repo-filter/observability/agents.json)\\n  - src/fleet/scope.mjs (cited in 7 document(s), e.g. wiki/work/119_milestone_the-tree-gets-an-interior/stories/00_story_rule-the-guards-that-forbid-the-fix/tasks/02_a-cited-path-resolves.feature)\\n  - src/fleet/terminal-mount.mjs (cited in 1 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/gsd-sdk-adapter.mjs (cited in 1 document(s), e.g. wiki/work/.gsd-archive/RETROSPECTIVE.md)\\n  - src/home/feed-axis.mjs (cited in 3 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/home/grid.mjs (cited in 1 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/home/layout.mjs (cited in 4 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/home/page-state.mjs (cited in 2 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/home/session-mount.mjs (cited in 2 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/home/socket-cap.mjs (cited in 4 document(s), e.g. wiki/work/49_milestone_terminals-home/observability/agents.json)\\n  - src/loop-ready.mjs (cited in 1 document(s), e.g. wiki/work/53_milestone_loop-artifact/stories/05_story_the-fitness-functions/tasks/03_drives-that-prove-two-readings-agree.feature)\\n  - src/loop-store.mjs (cited in 1 document(s), e.g. wiki/work/53_milestone_loop-artifact/ARCHITECTURE.md)\\n  - src/loop/loop-store.mjs (cited in 1 document(s), e.g. wiki/work/53_milestone_loop-artifact/stories/05_story_the-fitness-functions/tasks/03_drives-that-prove-two-readings-agree.feature)\\n  - src/mesh-credential.mjs (cited in 1 document(s), e.g. wiki/work/24_milestone_group-enrollment/stories/02_story_trust-boundary-enforcement/STORY.md)\\n  - src/mesh-crypto.mjs (cited in 2 document(s), e.g. wiki/work/24_milestone_group-enrollment/RETROSPECTIVE.md)\\n  - src/mesh-issuance.mjs (cited in 14 document(s), e.g. wiki/work/27_milestone_work-issuance-routing/ARCHITECTURE.md)\\n  - src/mesh-lease-tie.mjs (cited in 2 document(s), e.g. wiki/work/27_milestone_work-issuance-routing/ARCHITECTURE.md)\\n  - src/mesh-lease.mjs (cited in 26 document(s), e.g. wiki/work/26_milestone_distributed-runs-leasing/ARCHITECTURE.md)\\n  - src/mesh-presence-cache.mjs (cited in 11 document(s), e.g. wiki/work/23_milestone_control-node-relay/ARCHITECTURE.md)\\n  - src/mesh-presence-subscriber.mjs (cited in 13 document(s), e.g. wiki/work/23_milestone_control-node-relay/ARCHITECTURE.md)\\n  - src/mesh-session-store.mjs (cited in 1 document(s), e.g. wiki/work/72_milestone_inner-loop/ARCHITECTURE.md)\\n  - src/mesh-sync.mjs (cited in 23 document(s), e.g. wiki/work/22_milestone_mesh-foundation/ARCHITECTURE.md)\\n  - src/next.mjs (cited in 1 document(s), e.g. wiki/work/43_milestone_mesh-artifact-authority/RESEARCH.md)\\n  - src/path-resolve.mjs (cited in 1 document(s), e.g. wiki/work/TECH_DEBT.md)\\n  - src/planted-delete-probe.mjs (cited in 1 document(s), e.g. wiki/work/72_milestone_inner-loop/VERIFICATION.md)\\n  - src/planted-ratchet-probe.mjs (cited in 1 document(s), e.g. wiki/work/72_milestone_inner-loop/VER … (cut to fit)",
+          "scenario": null
+        },
+        {
+          "truncation": "1 of 11 failing case(s) shown; 10 dropped to fit the payload ceiling; 1 message(s) cut to fit. The whole record is on the graded run and in `aof work grade <ref> --json`."
+        }
+      ],
+      "gradedAt": "2026-09-08T13:28:29.379Z",
+      "provenance": {
+        "node": "umamis-msi",
+        "run": "20260908T130835933Z-0004",
+        "commit": "b088825c29eedc9be12c27c237a03a76afaf9880",
+        "at": "2026-09-08T13:28:29.379Z"
+      }
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20260908T124949125Z-0003",
+      "summary": null,
+      "continuation": true
+    }
+  },
+  "createdAt": "2026-09-08T15:18:13.477Z",
+  "updatedAt": "2026-09-08T15:37:34.408Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": "20260908T140241564Z-0006",
+  "reclaimedAt": null,
+  "node": "umamis-msi",
+  "resumeAfter": null,
+  "spend": null
+}

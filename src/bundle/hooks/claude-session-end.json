@@ -1,0 +1,6 @@
+{
+  "event": "SessionEnd",
+  "matcher": "",
+  "type": "command",
+  "command": "aof session end"
+}

@@ -1,0 +1,118 @@
+# story 125 — the Pages publishing workflow: the ONE path from a push to the published site.
+#
+# TWO JOBS, AND THE ORDER IS THE POINT. `gate` runs story 79's drift control — the check that the
+# committed loop document matches a fresh render of the loop registry — through the project's own
+# test command, exactly as the suite runs it. `deploy` stages the site, builds it with Jekyll and
+# publishes it, and it declares the gate in its `needs`, so a registry edit that was not
+# regenerated can never reach the site: the published graph page cannot outlive the registry it
+# describes. The gate is the DELIVERED check, run — not a `git diff` re-implemented in YAML, which
+# would be a second decider free to disagree with the first.
+#
+# THE GATE ANSWERS ON A PULL REQUEST; THE DEPLOY DOES NOT. Drift caught after merge is drift that
+# already shipped, so the gate runs on `pull_request` as well as on a push to the default branch,
+# while the deploy is skipped for a pull request and runs only for a push to `main` or a manual
+# dispatch OF `main` — a dispatch from any other branch would otherwise publish that branch at the
+# canonical address, so the deploy's condition pins the ref as well as the event. That split is
+# what makes the gate preventive rather than a report.
+#
+# THE PUBLISHING TOKEN IS SCOPED TO THE JOB THAT PUBLISHES. The workflow's top-level permissions
+# grant read access and nothing else; `pages: write` and `id-token: write` are granted on the
+# deploy job alone, and the gate job is granted `contents: read` and nothing more.
+#
+# NOTHING GENERATED IS COMMITTED. `scripts/site/build-site.mjs` stages the committed `docs/` shell
+# plus the pages it projects (the graph document, the two planning PRDs) into `dist-site/` — git-
+# ignored — and Jekyll builds from THAT directory, so the site sources the one committed artefact
+# and never copies it. The stage step needs no `npm ci`: the builder's static import closure holds
+# node built-ins only (11 modules, zero bare specifiers, measured 2026-09-12), and that premise is
+# held by the "static import closure" row of test/bundle/site-build.test.mjs rather than by this
+# sentence.
+#
+# The repository's Pages source must be set to "GitHub Actions" by the repository owner before
+# the deploy job can publish anywhere — that is the @uat scenario of tasks/00, and it gates nothing
+# in this file.
+name: pages
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Read-only at the top. The one job that publishes escalates for itself, below.
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # The gate: story 79's control, selected through the runner's own `--only` path. Isolated by
+  # AOF_GLOBAL_HOME so the run writes no fixture into a real `~/.aof` — the same discipline every
+  # local run of this suite is held to.
+  # ---------------------------------------------------------------------------
+  gate:
+    name: gate (the committed loop document is current)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Run story 79's drift control through the project's own test command
+        run: AOF_GLOBAL_HOME="$(mktemp -d)" node scripts/test.mjs --only test/arch/loop/acd-loop-document-current.test.mjs
+
+  # ---------------------------------------------------------------------------
+  # The deploy: stage -> Jekyll over the STAGED directory -> upload -> publish. Unreachable
+  # unless the gate succeeded, skipped entirely for a pull request, and never run for a ref other
+  # than main (a workflow_dispatch can be started from any branch).
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: build and deploy the site
+    needs: [gate]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # Two pushes in quick succession queue rather than race: a newer run waits for the in-flight
+    # deploy to finish instead of cancelling it half-way through publishing.
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Stage the site (the docs/ shell plus the projected pages) into dist-site/
+        run: node scripts/site/build-site.mjs --out dist-site
+
+      - uses: actions/configure-pages@v5
+
+      - name: Build with Jekyll, from the staged directory
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./dist-site
+          destination: ./_site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

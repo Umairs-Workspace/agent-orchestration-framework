@@ -1,0 +1,639 @@
+// test/session/agent-session-driver-transcript.test.mjs — milestone 53 / story 00, task 03
+// (03_the-transcript-watches.feature; ADR-001 §1 and §3, RESEARCH §Q1 and §Q8).
+//
+// The half of the driver that has no PTY in it at all, and the half a local loop most
+// needs to behave identically after the move. Both watches are PRODUCER-FED with zero
+// model cooperation: Claude Code itself writes
+// `<claudeProjectsDir({cwd, env})>/<session_id>.jsonl`, so the FIRST NEW `*.jsonl`
+// basename after a pre-spawn snapshot NAMES the session, and the last settled assistant
+// record in that file carries the outcome. Neither is a marker anyone had to be
+// instructed to print — the F-38.05 lesson that a consumer with no producer reads green
+// forever.
+//
+// THE HERMETIC SEAM IS `CLAUDE_CONFIG_DIR`. `claudeProjectsDir` reads it before it falls
+// back to the home directory (src/work/observe.mjs), so a `mkdtemp` root plus a
+// synthetic `cwd` gives every scenario below a real directory, real `.jsonl` files and
+// real mtimes with no `~/.claude` anywhere near it — the idiom
+// test/mesh/worker/mesh-worker-completion-detection.test.mjs already uses. `pollMs`, `idleMs`,
+// `declaredIdleMs`, `maxWaitMs`, `now` and `sinceOffset` are all injectable, so no
+// scenario wall-waits a production window and none of them is asserted by reading a
+// constant back. Mtimes are set EXPLICITLY through `utimes` rather than trusted to the
+// filesystem's own resolution, which on this tree's platform is coarse enough to make a
+// "did the tree move?" assertion flaky for the wrong reason.
+//
+// THE TWO WINDOWS ARE THE POINT, and conflating them is the defect the whole design
+// exists against. `end_turn` means the MODEL finished speaking, not that the WORK
+// finished — a premature `done` destroys work and reports success, a late `done` only
+// costs time. So a DECLARED outcome confirms after the short window, an UNDECLARED
+// `end_turn` must out-wait the long one, and a LIVE pending question out-waits the long
+// one too, because it is answerable at the terminal and parking it fast kills the
+// session the operator is about to type into.
+import assert from "node:assert/strict";
+import { mkdtemp, mkdir, writeFile, rm, utimes, stat } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import {
+  defaultWatchTranscriptSessionId,
+  defaultWatchTranscriptCompletion,
+  driveInteractiveClaudeSession,
+  HUMAN_INPUT_TOOL_NAMES,
+  NEEDS_INPUT_SENTINEL,
+  DIRECTIVE_COMPLETE_SENTINEL,
+} from "../../src/agent-session-driver.mjs";
+import { claudeProjectsDir } from "../../src/work/observe.mjs";
+import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
+
+// withTranscriptTree(fn) — a mkdtemp root carrying BOTH the hermetic CLAUDE_CONFIG_DIR
+// and this scenario's AOF_GLOBAL_HOME, torn down in a finally. `cwd` is synthetic: it is
+// only ever slugified into a directory name, never touched on disk.
+async function withTranscriptTree(fn) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-transcript-"));
+  const previousGlobalHome = process.env.AOF_GLOBAL_HOME;
+  process.env.AOF_GLOBAL_HOME = path.join(root, "global-home");
+  try {
+    const env = { CLAUDE_CONFIG_DIR: path.join(root, "claude-cfg") };
+    const cwd = path.join(root, "worktree");
+    const dir = claudeProjectsDir({ cwd, env });
+    return await fn({ root, env, cwd, dir });
+  } finally {
+    if (previousGlobalHome === undefined) delete process.env.AOF_GLOBAL_HOME;
+    else process.env.AOF_GLOBAL_HOME = previousGlobalHome;
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+const assistant = (stop, text) => ({ type: "assistant", message: { role: "assistant", stop_reason: stop, content: [{ type: "text", text }] } });
+const assistantStringContent = (stop, text) => ({ type: "assistant", message: { role: "assistant", stop_reason: stop, content: text } });
+const toolUse = (name) => ({ type: "assistant", message: { role: "assistant", stop_reason: "tool_use", content: [{ type: "text", text: "working" }, { type: "tool_use", name, input: {} }] } });
+const userRecord = () => ({ type: "user", message: { role: "user", content: [{ type: "tool_result", content: "answered" }] } });
+const jsonl = (records) => `${records.map((r) => JSON.stringify(r)).join("\n")}\n`;
+
+// A virtual clock for the two windows. `pollMs` stays a real (tiny) timer so the watch
+// keeps ticking; `now` is what decides whether a quiet stretch has been long enough, and
+// it moves only when a scenario says so.
+function virtualClock() {
+  let value = 1_000_000;
+  return { now: () => value, advance: (ms) => { value += ms; } };
+}
+
+// A settled-or-not probe. `null` means "still watching after `ms`", which is a real
+// assertion here: a watch that settled early on the wrong window is the premature-done
+// defect, and a watch that never settles is the parked-forever one.
+async function settledWithin(promise, ms) {
+  const pending = Symbol("pending");
+  const result = await Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(pending), ms))]);
+  return result === pending ? { settled: false } : { settled: true, value: result };
+}
+
+// THE CEILING ON EVERY TERMINAL `await watch` IN THIS SUITE, and the reason it exists.
+//
+// Each scenario below drives a watch to the point where it MUST settle, then awaited it
+// bare. When the watch settles that is free; when it does not, a bare await never
+// returns — and because these watches poll (`pollMs: 10`), the process sits spinning at
+// full tilt on one core with no output, no child process and no progress. A full-suite
+// run stalled exactly that way for 148 minutes inside this file and was killed rather
+// than diagnosed, because a hang reports nothing a failure would have named.
+//
+// 30s against a suite whose slowest scenario here is ~340ms: generous enough that a
+// loaded machine never trips it, tight enough that the suite always terminates. A
+// timeout is a FAILED assertion naming the watch, never a silent park.
+const WATCH_CEILING_MS = 30_000;
+
+async function settledOrFail(promise, what = "the watch") {
+  const outcome = await settledWithin(promise, WATCH_CEILING_MS);
+  assert.ok(outcome.settled, `${what} did not settle within ${WATCH_CEILING_MS}ms — it would have hung the run`);
+  return outcome.value;
+}
+
+// Bump a path's mtime to an explicitly-chosen instant — see the header on why this is
+// not left to the filesystem's own resolution.
+let mtimeCursor = Date.UTC(2026, 7, 16, 9, 0, 0);
+async function bumpMtime(file) {
+  mtimeCursor += 60_000;
+  const when = new Date(mtimeCursor);
+  await utimes(file, when, when);
+}
+
+export const agentSessionDriverTranscriptTests = [
+  // ── the session-id watch ──────────────────────────────────────────────────────────
+  {
+    name: "53/00 task03 — the session id is the first NEW transcript basename to appear after the snapshot, never a pre-existing one",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, "sess-old.jsonl"), "{}\n", "utf8");
+      const watch = defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 5000 });
+      // The snapshot is the FIRST COMPLETED TICK, not the call — so the new file has to
+      // land after that tick, not merely after this line.
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await writeFile(path.join(dir, "sess-new.jsonl"), "{}\n", "utf8");
+      assert.equal(await settledOrFail(watch), "sess-new", "the new file's basename, without its extension");
+    }),
+  },
+  {
+    name: "53/00 task03 — the snapshot is the first completed tick: with several pre-existing .jsonl files and nothing new ever written, no pre-existing basename is ever resolved",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      for (const name of ["a.jsonl", "b.jsonl", "c.jsonl"]) await writeFile(path.join(dir, name), "{}\n", "utf8");
+      assert.equal(await defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 60 }), null, "null at the deadline — never one of the three already there");
+    }),
+  },
+  {
+    name: "53/00 task03 — an absent projects directory is an empty snapshot, never a throw: the directory is created later and its one .jsonl is resolved",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      const watch = defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 5000 });
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, "sess-late.jsonl"), "{}\n", "utf8");
+      assert.equal(await settledOrFail(watch), "sess-late", "the basename that appeared after the empty snapshot");
+    }),
+  },
+  {
+    name: "53/00 task03 — a non-.jsonl file is never a session id, and a subsequent real .jsonl still is",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const decoys = defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 250 });
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      await writeFile(path.join(dir, "notes.txt"), "x", "utf8");
+      await writeFile(path.join(dir, "sess-half.jsonl.tmp"), "x", "utf8");
+      assert.equal(await decoys, null, "neither the .txt nor the .jsonl.tmp is resolved");
+
+      const real = defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 5000 });
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await writeFile(path.join(dir, "sess-real.jsonl"), "{}\n", "utf8");
+      assert.equal(await real, "sess-real", "a subsequent real .jsonl is");
+    }),
+  },
+  {
+    name: "53/00 task03 — an abort resolves null promptly, without waiting out the deadline; and an already-aborted signal short-circuits before any filesystem call",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const controller = new AbortController();
+      const started = Date.now();
+      const watch = defaultWatchTranscriptSessionId({ cwd, env, signal: controller.signal, maxWaitMs: 60_000 });
+      controller.abort();
+      assert.equal(await settledOrFail(watch), null, "the watch resolves null on abort");
+      assert.ok(Date.now() - started < 5000, "and it resolves without reaching its maxWaitMs");
+
+      const already = new AbortController();
+      already.abort();
+      assert.equal(await defaultWatchTranscriptSessionId({ cwd, env, signal: already.signal, maxWaitMs: 60_000 }), null, "an already-aborted signal short-circuits");
+    }),
+  },
+  {
+    name: "53/00 task03 — the deadline degrades to a null session id rather than an unbounded loop, and the driver that consumes it reports sessionId: null rather than crashing",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      assert.equal(await defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 30 }), null, "null at the deadline");
+
+      // The consumer's own degrade, over the REAL watch: the driver is handed the
+      // production seam with a tiny maxWaitMs and no transcript is ever written.
+      const { spawn } = createFakePtySpawn({ onWrite: ({ emitExit }) => emitExit(0) });
+      const result = await driveInteractiveClaudeSession(
+        { itemRef: "53/00", worktreeCwd: cwd, task: "demo", command: "/aof:verify 53/00" },
+        {
+          ptySpawn: spawn,
+          which: createFakeWhich(["claude"]),
+          env,
+          commandDelayMs: 0,
+          watchTranscriptSessionId: (args) => defaultWatchTranscriptSessionId({ ...args, maxWaitMs: 30 }),
+        },
+      );
+      assert.deepEqual(result, { outcome: "done", sessionId: null }, "the driver reports sessionId: null, never a crash");
+    }),
+  },
+  {
+    name: "53/00 task03 — readdir failing on a tick is null at the deadline, never a throw (the projects path is a FILE, so every readdir rejects)",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(path.dirname(dir), { recursive: true });
+      await writeFile(dir, "not a directory", "utf8");
+      assert.equal(await defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 60 }), null, "every tick's fs fault degrades to `nothing new this tick`");
+    }),
+  },
+
+  // ── the completion watch: the last-record mapping ─────────────────────────────────
+  {
+    name: "53/00 task03 — the completion watch refuses a missing session id without touching the disk (absent, empty, and not-a-string)",
+    run: async () => withTranscriptTree(async ({ env, cwd }) => {
+      for (const sessionId of [undefined, "", null, 42, {}]) {
+        assert.equal(await defaultWatchTranscriptCompletion({ cwd, env, sessionId }), null, `sessionId ${JSON.stringify(sessionId)} resolves null immediately`);
+      }
+      assert.equal(await defaultWatchTranscriptCompletion(), null, "and so does a call with no argument at all");
+    }),
+  },
+  {
+    name: "53/00 task03 — THE LAST-RECORD MAPPING: fourteen rows from the transcript's own final assistant record, decided over a real tree",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      // `idleMs: 0`/`declaredIdleMs: 0` in this lane: the WINDOW rule has its own lanes
+      // below; here the MAPPING is what is under test, so the window is collapsed
+      // rather than waited out.
+      const settle = (sessionId, extra = {}) => defaultWatchTranscriptCompletion({ cwd, env, sessionId, pollMs: 10, idleMs: 0, declaredIdleMs: 0, ...extra });
+      const write = async (sid, records) => {
+        const file = path.join(dir, `${sid}.jsonl`);
+        await writeFile(file, records == null ? "" : jsonl(records), "utf8");
+        await bumpMtime(file);
+        return file;
+      };
+
+      const rows = [
+        { label: "end_turn, ordinary text", records: [assistant("end_turn", "All done.")], expect: { outcome: "done", declared: false } },
+        { label: "end_turn carrying AOF_DIRECTIVE_COMPLETE on its line", records: [assistant("end_turn", `Everything is recorded.\n${DIRECTIVE_COMPLETE_SENTINEL}`)], expect: { outcome: "done", declared: true } },
+        { label: "end_turn carrying NEEDS_INPUT on its line", records: [assistant("end_turn", `I hit a blocking decision.\n${NEEDS_INPUT_SENTINEL}`)], expect: { outcome: "needs-input", declared: true } },
+        { label: "end_turn carrying BOTH sentinels — the human wins", records: [assistant("end_turn", `${DIRECTIVE_COMPLETE_SENTINEL}\n${NEEDS_INPUT_SENTINEL}`)], expect: { outcome: "needs-input", declared: true } },
+        { label: "end_turn with string content rather than blocks", records: [assistantStringContent("end_turn", `done here\n${DIRECTIVE_COMPLETE_SENTINEL}`)], expect: { outcome: "done", declared: true } },
+        { label: "tool_use, unanswered AskUserQuestion", records: [toolUse("AskUserQuestion")], expect: { outcome: "needs-input", declared: true, pending: true } },
+        { label: "tool_use, AskUserQuestion with a user record behind it", records: [toolUse("AskUserQuestion"), userRecord()], expect: null },
+        { label: "tool_use, Bash", records: [toolUse("Bash")], expect: null },
+        { label: "tool_use, Edit", records: [toolUse("Edit")], expect: null },
+        { label: "tool_use, Task", records: [toolUse("Task")], expect: null },
+        { label: "stop_reason null", records: [assistant(null, "thinking")], expect: null },
+        { label: "max_tokens", records: [assistant("max_tokens", "truncated")], expect: null },
+        { label: "no assistant record at all", records: [{ type: "system" }, userRecord()], expect: null },
+        { label: "file present but every line unparseable", records: null, unparseable: true, expect: null },
+      ];
+
+      for (const [index, row] of rows.entries()) {
+        const sid = `row-${index}`;
+        if (row.unparseable) {
+          const file = path.join(dir, `${sid}.jsonl`);
+          await writeFile(file, "{not json\nalso not json\n", "utf8");
+          await bumpMtime(file);
+        } else {
+          await write(sid, row.records);
+        }
+        if (row.expect === null) {
+          // "still working" never settles at all, so the assertion is that nothing
+          // settles inside a generous window — not that null was returned.
+          const probe = await settledWithin(settle(sid, { signal: AbortSignal.timeout(120) }), 400);
+          assert.equal(probe.settled, true, `${row.label}: the aborted watch resolved`);
+          assert.equal(probe.value, null, `${row.label}: nothing settled — an ABORT is what ended the watch, not an outcome`);
+        } else {
+          assert.deepEqual(await settle(sid), row.expect, row.label);
+        }
+      }
+
+      // "file absent" — the fifteenth row, and the one with no file to write.
+      const absent = await settledWithin(settle("never-written", { signal: AbortSignal.timeout(120) }), 400);
+      assert.equal(absent.value, null, "file absent: nothing settles, and nothing throws");
+    }),
+  },
+  {
+    name: "53/00 task03 — an absent, empty or half-written transcript is `nothing settled yet` and never a throw, and a later complete record still settles normally",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const file = path.join(dir, "half.jsonl");
+      const settle = (extra = {}) => defaultWatchTranscriptCompletion({ cwd, env, sessionId: "half", pollMs: 10, idleMs: 0, declaredIdleMs: 0, ...extra });
+
+      await writeFile(file, "", "utf8");
+      await bumpMtime(file);
+      assert.equal((await settledWithin(settle({ signal: AbortSignal.timeout(120) }), 400)).value, null, "a zero-length transcript settles nothing");
+
+      await writeFile(file, `${JSON.stringify(assistant("end_turn", "ok")).slice(0, 40)}`, "utf8");
+      await bumpMtime(file);
+      assert.equal((await settledWithin(settle({ signal: AbortSignal.timeout(120) }), 400)).value, null, "a truncated JSON line settles nothing and raises nothing");
+
+      await writeFile(file, jsonl([assistant("end_turn", "ok")]), "utf8");
+      await bumpMtime(file);
+      assert.deepEqual(await settle(), { outcome: "done", declared: false }, "and a later complete record still settles normally");
+    }),
+  },
+  {
+    name: "53/00 task03 — HUMAN_INPUT_TOOL_NAMES is the closed set that decides `waiting on a person`: an ordinary pending tool is genuinely still working and fires no pending report",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      assert.deepEqual(HUMAN_INPUT_TOOL_NAMES, ["AskUserQuestion"], "the closed set is exactly one tool name");
+      await mkdir(dir, { recursive: true });
+      for (const tool of ["Bash", "Edit", "Task"]) {
+        const file = path.join(dir, `${tool}.jsonl`);
+        await writeFile(file, jsonl([toolUse(tool)]), "utf8");
+        await bumpMtime(file);
+        const reports = [];
+        const probe = await settledWithin(
+          defaultWatchTranscriptCompletion({
+            cwd, env, sessionId: tool, pollMs: 10, idleMs: 0, declaredIdleMs: 0,
+            signal: AbortSignal.timeout(120),
+            onPendingInput: () => reports.push("pending"),
+            onPendingInputCleared: () => reports.push("cleared"),
+          }),
+          400,
+        );
+        assert.equal(probe.value, null, `a pending ${tool} call settles nothing`);
+        assert.deepEqual(reports, [], `and fires no pending report for ${tool}`);
+      }
+    }),
+  },
+
+  // ── the completion watch: the two windows ─────────────────────────────────────────
+  {
+    name: "53/00 task03 — a declared outcome confirms after the SHORT window and an undeclared end_turn out-waits the LONG one",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const declaredFile = path.join(dir, "declared.jsonl");
+      const undeclaredFile = path.join(dir, "undeclared.jsonl");
+      await writeFile(declaredFile, jsonl([assistant("end_turn", `finished\n${DIRECTIVE_COMPLETE_SENTINEL}`)]), "utf8");
+      await writeFile(undeclaredFile, jsonl([assistant("end_turn", "finished, but never said so")]), "utf8");
+      await bumpMtime(declaredFile);
+      await bumpMtime(undeclaredFile);
+
+      const clock = virtualClock();
+      const opts = { cwd, env, pollMs: 10, declaredIdleMs: 1_000, idleMs: 500_000, now: clock.now };
+      const declared = defaultWatchTranscriptCompletion({ ...opts, sessionId: "declared" });
+      const undeclared = defaultWatchTranscriptCompletion({ ...opts, sessionId: "undeclared" });
+
+      // Let both take their first tick (which is what starts the quiet stretch), then
+      // move the clock past the SHORT window only.
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      clock.advance(2_000);
+
+      assert.deepEqual(await declared, { outcome: "done", declared: true }, "the declared outcome settles on the short window");
+      const stillWaiting = await settledWithin(undeclared, 120);
+      assert.equal(stillWaiting.settled, false, "the undeclared end_turn, quiet for the same stretch, has NOT settled — a premature done destroys work and reports success");
+
+      clock.advance(600_000);
+      assert.deepEqual(await undeclared, { outcome: "done", declared: false }, "it settles only once the long window has passed");
+    }),
+  },
+  {
+    name: "53/00 task03 — any movement anywhere in the session tree restarts the quiet stretch, so the outcome does not settle on the original clock",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      const sessionId = "tree";
+      await mkdir(path.join(dir, sessionId, "subagents"), { recursive: true });
+      const parent = path.join(dir, `${sessionId}.jsonl`);
+      const child = path.join(dir, sessionId, "subagents", "agent-1.jsonl");
+      await writeFile(parent, jsonl([assistant("end_turn", `settled\n${DIRECTIVE_COMPLETE_SENTINEL}`)]), "utf8");
+      await writeFile(child, "{}\n", "utf8");
+      await bumpMtime(parent);
+      await bumpMtime(child);
+
+      const clock = virtualClock();
+      const watch = defaultWatchTranscriptCompletion({ cwd, env, sessionId, pollMs: 10, declaredIdleMs: 1_000, idleMs: 500_000, now: clock.now });
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      // A file under <projectsDir>/<sessionId>/ is written BEFORE the window elapses.
+      await bumpMtime(child);
+      clock.advance(2_000);
+      const afterMovement = await settledWithin(watch, 200);
+      assert.equal(afterMovement.settled, false, "the quiet stretch restarted — the outcome does not settle on the original clock");
+
+      clock.advance(2_000);
+      assert.deepEqual(await settledOrFail(watch), { outcome: "done", declared: true }, "and it settles once the tree has genuinely been quiet for the window");
+    }),
+  },
+  {
+    name: "53/00 task03 — a parent that finished over a still-writing subagent is never quiet: it settles only after the WHOLE tree stops moving",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      const sessionId = "parked-parent";
+      await mkdir(path.join(dir, sessionId), { recursive: true });
+      const parent = path.join(dir, `${sessionId}.jsonl`);
+      const child = path.join(dir, sessionId, "subagent.jsonl");
+      await writeFile(parent, jsonl([assistant("end_turn", "the parent turn ended")]), "utf8");
+      await writeFile(child, "{}\n", "utf8");
+      await bumpMtime(parent);
+      await bumpMtime(child);
+
+      const clock = virtualClock();
+      const watch = defaultWatchTranscriptCompletion({ cwd, env, sessionId, pollMs: 10, declaredIdleMs: 1_000, idleMs: 5_000, now: clock.now });
+
+      // The subagent keeps writing, and the clock keeps moving past the window. Neither
+      // on its own is enough: the outcome must not settle while the TREE moves.
+      let stillWriting = true;
+      const writer = (async () => {
+        while (stillWriting) {
+          await bumpMtime(child);
+          clock.advance(2_000);
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+      })();
+      const duringWrites = await settledWithin(watch, 300);
+      assert.equal(duringWrites.settled, false, "it does not settle while the subagent keeps writing");
+      stillWriting = false;
+      await writer;
+
+      clock.advance(10_000);
+      assert.deepEqual(await settledOrFail(watch), { outcome: "done", declared: false }, "and settles only after the whole tree is quiet for the required window");
+    }),
+  },
+  {
+    name: "69/05 task00 — a live AskUserQuestion is reported and parks at once without waiting for either idle window",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const file = path.join(dir, "live-question.jsonl");
+      await writeFile(file, jsonl([toolUse("AskUserQuestion")]), "utf8");
+      await bumpMtime(file);
+
+      const reports = [];
+      const clock = virtualClock();
+      const watch = defaultWatchTranscriptCompletion({
+        cwd, env, sessionId: "live-question", pollMs: 10, declaredIdleMs: 1_000, idleMs: 500_000, now: clock.now,
+        onPendingInput: () => reports.push("pending"),
+        onPendingInputCleared: () => reports.push("cleared"),
+      });
+      assert.deepEqual(await settledOrFail(watch), { outcome: "needs-input", declared: true, pending: true }, "the visible block parks immediately");
+      assert.deepEqual(reports, ["pending"], "onPendingInput fires exactly once before the park");
+      assert.equal(clock.now(), 1_000_000, "neither idle window had to advance");
+    }),
+  },
+  {
+    name: "69/05 task00 — a question already answered in the transcript is not parked as pending",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const file = path.join(dir, "answered.jsonl");
+      await writeFile(file, jsonl([toolUse("AskUserQuestion"), userRecord()]), "utf8");
+      await bumpMtime(file);
+
+      const reports = [];
+      const controller = new AbortController();
+      const clock = virtualClock();
+      const watch = defaultWatchTranscriptCompletion({
+        cwd, env, sessionId: "answered", pollMs: 10, declaredIdleMs: 1_000, idleMs: 500_000, now: clock.now,
+        signal: controller.signal,
+        onPendingInput: () => reports.push("pending"),
+        onPendingInputCleared: () => reports.push("cleared"),
+      });
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      assert.deepEqual(reports, [], "history already carrying the answer never reports a pending block");
+
+      clock.advance(600_000);
+      const stillLive = await settledWithin(watch, 150);
+      assert.equal(stillLive.settled, false, "and the outcome reads as still working — an answered question is a live session, not a parked one");
+      controller.abort();
+      assert.equal(await settledOrFail(watch), null, "an abort is what ends the watch, not an outcome");
+    }),
+  },
+  {
+    name: "69/05 task00 — a pending-report fault never prevents the immediate park",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const file = path.join(dir, "faulty-hooks.jsonl");
+      await writeFile(file, jsonl([toolUse("AskUserQuestion")]), "utf8");
+      await bumpMtime(file);
+
+      const clock = virtualClock();
+      const watch = defaultWatchTranscriptCompletion({
+        cwd, env, sessionId: "faulty-hooks", pollMs: 10, declaredIdleMs: 1_000, idleMs: 5_000, now: clock.now,
+        onPendingInput: () => { throw new Error("a synchronous report fault"); },
+        onPendingInputCleared: async () => { throw new Error("a rejected report"); },
+      });
+      assert.deepEqual(await settledOrFail(watch), { outcome: "needs-input", declared: true, pending: true }, "the watch still parks on its own rule, and the hook fault does not escape");
+    }),
+  },
+
+  // ── the resume baseline ───────────────────────────────────────────────────────────
+  {
+    name: "53/00 task03 — sinceOffset is the resume baseline: the pre-baseline outcome is not returned, and a record written after it is",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const file = path.join(dir, "resumed.jsonl");
+      const parked = jsonl([assistant("end_turn", `parked here\n${NEEDS_INPUT_SENTINEL}`)]);
+      await writeFile(file, parked, "utf8");
+      await bumpMtime(file);
+      const sinceOffset = (await stat(file)).size;
+
+      const settle = (extra = {}) => defaultWatchTranscriptCompletion({ cwd, env, sessionId: "resumed", pollMs: 10, idleMs: 0, declaredIdleMs: 0, sinceOffset, ...extra });
+
+      // Without a post-baseline record the pre-resume verdict must NOT be returned —
+      // reading it as the verdict killed the fresh PTY ~12s after every resume.
+      assert.equal((await settledWithin(settle({ signal: AbortSignal.timeout(120) }), 400)).value, null, "the pre-baseline outcome is not returned");
+
+      await writeFile(file, `${parked}${jsonl([assistant("end_turn", `and now genuinely finished\n${DIRECTIVE_COMPLETE_SENTINEL}`)])}`, "utf8");
+      await bumpMtime(file);
+      assert.deepEqual(await settle(), { outcome: "done", declared: true }, "a record written after the baseline is");
+    }),
+  },
+  {
+    name: "53/00 task03 — a baseline that lands exactly on a record boundary keeps the next record, and one that cut mid-record drops its partial first line",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const head = jsonl([assistant("end_turn", "pre-resume history")]);
+      const tail = jsonl([assistant("end_turn", `after the baseline\n${DIRECTIVE_COMPLETE_SENTINEL}`)]);
+
+      // ON the boundary: the byte before the offset is the newline that ends the head.
+      const onBoundary = path.join(dir, "on-boundary.jsonl");
+      await writeFile(onBoundary, `${head}${tail}`, "utf8");
+      await bumpMtime(onBoundary);
+      assert.deepEqual(
+        await defaultWatchTranscriptCompletion({ cwd, env, sessionId: "on-boundary", pollMs: 10, idleMs: 0, declaredIdleMs: 0, sinceOffset: Buffer.byteLength(head, "utf8") }),
+        { outcome: "done", declared: true },
+        "the first post-baseline record is NOT dropped",
+      );
+
+      // MID-record: the offset lands inside the tail's only line, so that partial line
+      // is dropped and nothing is left to settle.
+      const midLine = path.join(dir, "mid-line.jsonl");
+      await writeFile(midLine, `${head}${tail}`, "utf8");
+      await bumpMtime(midLine);
+      const midOffset = Buffer.byteLength(head, "utf8") + 20;
+      const probe = await settledWithin(
+        defaultWatchTranscriptCompletion({ cwd, env, sessionId: "mid-line", pollMs: 10, idleMs: 0, declaredIdleMs: 0, sinceOffset: midOffset, signal: AbortSignal.timeout(120) }),
+        400,
+      );
+      assert.equal(probe.value, null, "a baseline that cut mid-record does drop its partial first line");
+    }),
+  },
+  {
+    name: "70/04 a byte completion offset survives multibyte pre-resume history and observes the fresh declared outcome",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      const file = path.join(dir, "multibyte-resume.jsonl");
+      const head = jsonl([assistant("end_turn", "pre-resume café 🌍 漢字 history")]);
+      const tail = jsonl([assistant("end_turn", `fresh completion\n${DIRECTIVE_COMPLETE_SENTINEL}`)]);
+      await writeFile(file, head, "utf8");
+      const sinceOffset = (await stat(file)).size;
+      assert.ok(sinceOffset > head.length, "the regression requires UTF-8 byte and JavaScript character offsets to differ");
+
+      const watch = defaultWatchTranscriptCompletion({
+        cwd,
+        env,
+        sessionId: "multibyte-resume",
+        pollMs: 10,
+        idleMs: 0,
+        declaredIdleMs: 0,
+        sinceOffset,
+        signal: AbortSignal.timeout(500),
+      });
+      await writeFile(file, `${head}${tail}`, "utf8");
+      await bumpMtime(file);
+      assert.deepEqual(await settledOrFail(watch), { outcome: "done", declared: true });
+    }),
+  },
+
+  // ── the session-id watch's boundary table ─────────────────────────────────────────
+  {
+    name: "53/00 task03 — THE SESSION-ID WATCH'S BOUNDARY: every way it can end is a basename or null, never a throw and never an unbounded wait",
+    run: async () => withTranscriptTree(async ({ root, env, cwd, dir }) => {
+      const outcomes = [];
+      const record = async (condition, promise) => {
+        try {
+          outcomes.push({ condition, resolved: await promise });
+        } catch (error) {
+          outcomes.push({ condition, threw: String(error?.message ?? error) });
+        }
+      };
+
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, "pre.jsonl"), "{}\n", "utf8");
+      await record("only pre-existing .jsonl files exist", defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 40 }));
+
+      const appearing = defaultWatchTranscriptSessionId({ cwd, env, maxWaitMs: 5000 });
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await writeFile(path.join(dir, "fresh.jsonl"), "{}\n", "utf8");
+      await record("a new .jsonl appears after the snapshot", appearing);
+
+      await record("a .txt appears", (async () => {
+        await writeFile(path.join(dir, "note.txt"), "x", "utf8");
+        return defaultWatchTranscriptSessionId({ cwd: path.join(root, "another"), env, maxWaitMs: 40 });
+      })());
+
+      const midAbort = new AbortController();
+      const aborting = defaultWatchTranscriptSessionId({ cwd, env, signal: midAbort.signal, maxWaitMs: 60_000 });
+      setTimeout(() => midAbort.abort(), 20);
+      await record("the signal aborts mid-watch", aborting);
+
+      const preAborted = new AbortController();
+      preAborted.abort();
+      await record("the signal was already aborted", defaultWatchTranscriptSessionId({ cwd, env, signal: preAborted.signal, maxWaitMs: 60_000 }));
+
+      await record("the projects directory never exists", defaultWatchTranscriptSessionId({ cwd: path.join(root, "no-such-worktree"), env, maxWaitMs: 40 }));
+
+      const brokenCwd = path.join(root, "broken");
+      const brokenDir = claudeProjectsDir({ cwd: brokenCwd, env });
+      await mkdir(path.dirname(brokenDir), { recursive: true });
+      await writeFile(brokenDir, "not a directory", "utf8");
+      await record("readdir fails on a tick", defaultWatchTranscriptSessionId({ cwd: brokenCwd, env, maxWaitMs: 40 }));
+
+      assert.equal(outcomes.length, 7, "every boundary row was exercised");
+      assert.deepEqual(outcomes.filter((o) => "threw" in o), [], "no row throws");
+      assert.deepEqual(
+        outcomes.map((o) => [o.condition, o.resolved]),
+        [
+          ["only pre-existing .jsonl files exist", null],
+          ["a new .jsonl appears after the snapshot", "fresh"],
+          ["a .txt appears", null],
+          ["the signal aborts mid-watch", null],
+          ["the signal was already aborted", null],
+          ["the projects directory never exists", null],
+          ["readdir fails on a tick", null],
+        ],
+        "a basename or null — the whole contract",
+      );
+    }),
+  },
+  {
+    name: "70/04 resumed default watcher path monitors the known existing transcript instead of waiting for a new basename",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, "known-session.jsonl"), "{}\n", "utf8");
+      const fake = createFakePtySpawn({ onWrite: ({ emitExit }) => emitExit(0) });
+      const result = await driveInteractiveClaudeSession(
+        { itemRef: "70/04", worktreeCwd: cwd, task: "fix", command: "/aof:continue 70/04" },
+        {
+          ptySpawn: fake.spawn,
+          which: createFakeWhich(["claude"]),
+          env,
+          resumeSessionId: "known-session",
+          commandDelayMs: 0,
+        },
+      );
+      assert.equal(result.sessionId, "known-session", "the known id survives without a new transcript basename");
+      assert.deepEqual(fake.spawnCalls[0].args.slice(-2), ["--resume", "known-session"]);
+    }),
+  },
+];

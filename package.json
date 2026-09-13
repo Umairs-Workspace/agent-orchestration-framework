@@ -1,0 +1,44 @@
+{
+  "name": "aof",
+  "version": "0.1.0",
+  "description": "Portable agent orchestration framework for installing skills, commands, agents, and framework packs across coding assistants.",
+  "type": "module",
+  "bin": {
+    "aof": "./bin/aof.mjs"
+  },
+  "workspaces": [
+    "ui"
+  ],
+  "scripts": {
+    "test": "node ./scripts/test.mjs",
+    "test:unit": "node ./scripts/test-unit.mjs",
+    "test:integration": "node ./test/integration/cli.mjs",
+    "test:smoke:cli": "node ./test/integration/cli-child-process.test.mjs",
+    "test:all": "node ./scripts/test.mjs",
+    "security:supply-chain": "node ./scripts/supply-chain-audit.mjs",
+    "ui:dev": "npm --workspace @aof/ui run dev",
+    "ui:build": "node ./scripts/ui-build.mjs",
+    "check": "node ./scripts/check.mjs"
+  },
+  "keywords": [
+    "codex",
+    "claude",
+    "cli",
+    "agents",
+    "skills"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.4.2",
+    "node-pty": "1.1.0",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "esbuild": "0.28.1",
+    "postject": "1.0.0-alpha.6"
+  }
+}

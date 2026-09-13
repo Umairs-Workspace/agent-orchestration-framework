@@ -1,0 +1,587 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aof.local/schemas/aof.schema.json",
+  "title": "AOF Config",
+  "type": "object",
+  "required": ["name", "resources"],
+  "properties": {
+    "name": { "type": "string" },
+    "resources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resource" }
+    },
+    "workflows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/workflow" }
+    },
+    "globalRefs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/globalRef" }
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "namespace", "source"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+          "namespace": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+          "source": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/$defs/packageSource" }
+            ]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+                {
+                  "type": "object",
+                  "required": ["id"],
+                  "properties": {
+                    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+                    "namespace": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" }
+                  },
+                  "additionalProperties": true
+                }
+              ]
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/resource" }
+          },
+          "runtimes": {
+            "type": "array",
+            "items": { "enum": ["claude", "codex", "opencode"] }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "mcpServers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mcpServer" }
+    },
+    "hooks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/hook" }
+    },
+    "projectDocs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/projectDoc" }
+    },
+    "settings": { "$ref": "#/$defs/settings" },
+    "work": { "$ref": "#/$defs/work" },
+    "memory": { "$ref": "#/$defs/memory" },
+    "items": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "runtimes": {
+      "type": "array",
+      "items": { "enum": ["claude", "codex", "opencode"] }
+    }
+  },
+  "$defs": {
+    "globalRef": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["skill", "agent", "rule", "workflow"] },
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" }
+      },
+      "additionalProperties": true
+    },
+    "argument": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+        "description": { "type": "string" },
+        "required": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "workflow": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "runtimes": {
+          "type": "array",
+          "items": { "enum": ["claude", "codex", "opencode"] }
+        },
+        "body": { "type": "string" },
+        "path": { "type": "string" },
+        "argumentHint": { "type": "string" },
+        "arguments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/argument" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "resource": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["skill", "command", "agent", "rule"] },
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "runtimes": {
+          "type": "array",
+          "items": { "enum": ["claude", "codex", "opencode"] }
+        },
+        "body": { "type": "string" },
+        "prompt": { "type": "string" },
+        "instructions": { "type": "string" },
+        "path": { "type": "string" },
+        "model": { "type": "string" },
+        "tools": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "workflow": { "type": "string" },
+        "argumentHint": { "type": "string" },
+        "arguments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/argument" }
+        },
+        "argumentOverrides": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string" },
+              "required": { "type": "boolean" },
+              "hint": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "overrides": {
+          "type": "object",
+          "properties": {
+            "claude": { "$ref": "#/$defs/runtimeOverride" },
+            "codex": { "$ref": "#/$defs/runtimeOverride" },
+            "opencode": { "$ref": "#/$defs/runtimeOverride" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "packageSource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "npm" },
+            "package": { "type": "string" },
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "tag": { "type": "string" },
+            "range": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        {
+          "type": "object",
+          "required": ["type", "url"],
+          "properties": {
+            "type": { "const": "git" },
+            "url": { "type": "string" },
+            "ref": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        {
+          "type": "object",
+          "required": ["type", "path"],
+          "properties": {
+            "type": { "const": "file" },
+            "path": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "runtimeOverride": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "description": { "type": "string" },
+            "body": { "type": "string" },
+            "prompt": { "type": "string" },
+            "instructions": { "type": "string" },
+            "model": { "type": "string" },
+            "tools": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "paths": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "mcpServer": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+        "transport": { "enum": ["stdio", "http", "sse"] },
+        "command": { "type": "string" },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "url": { "type": "string" },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "runtimes": {
+          "type": "array",
+          "items": { "enum": ["claude", "codex", "opencode"] }
+        },
+        "claude": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "codex": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "hook": {
+      "type": "object",
+      "required": ["id", "event"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+        "event": { "enum": ["PreToolUse", "PostToolUse", "Notification", "Stop", "SubagentStop", "UserPromptSubmit", "SessionStart", "SessionEnd", "PreCompact"] },
+        "matcher": { "type": "string" },
+        "type": { "enum": ["command"] },
+        "command": { "type": "string" },
+        "runtimes": {
+          "type": "array",
+          "items": { "enum": ["claude", "codex", "opencode"] }
+        },
+        "claude": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "codex": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "projectDoc": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+        "path": { "type": "string" },
+        "body": { "type": "string" },
+        "targets": {
+          "type": "array",
+          "items": { "enum": ["AGENTS.md", "CLAUDE.md"] }
+        },
+        "runtimes": {
+          "type": "array",
+          "items": { "enum": ["claude", "codex", "opencode"] }
+        },
+        "claude": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "codex": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "model": { "type": "string" },
+        "trust": { "enum": ["read-only", "workspace", "full"] },
+        "autoCompact": { "type": "boolean" },
+        "claude": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "codex": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "work": {
+      "type": "object",
+      "description": "Configuration for the ACD (Acceptance-Criteria Development) work stream: the flat, chronological stream of milestone / story / task / uat items.",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "Path, relative to the repo root, to the flat work-item stream (NN_type_slug folders)."
+        },
+        "agents": {
+          "type": "object",
+          "description": "How ACD role agents are orchestrated.",
+          "properties": {
+            "mode": {
+              "enum": ["orchestrated", "solo"],
+              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline."
+            },
+            "productOwner": {
+              "enum": ["inline", "agent"],
+              "description": "inline = the main session authors SPEC/story/acceptance; agent = delegate authoring to the aof-product-owner sub-agent."
+            },
+            "delegation": {
+              "enum": ["off", "on"],
+              "description": "The Codex delegation toggle (default \"off\" when absent). off = Claude does everything itself and the codex-* skills render with disable-model-invocation:true (Claude Code won't auto-trigger them); on = the codex-* skills render auto-invocable so the ACD agents may hand bulk/mechanical work to the configured delegation model (work.agents.delegationModel, default gpt-5.6-sol) via the Codex CLI when it is available. The init/update render honours this flag (applyDelegationToResources); flipping it re-renders the skills. Set with `aof work delegation on|off`."
+            },
+            "delegationModel": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "description": "The Codex delegation model id the codex-* skills and ACD agents target (default \"gpt-5.6-sol\" when absent). A moving variable — set it to a future Codex model (e.g. \"gpt-5.7-codex-max\") without editing any bundle asset. The init/update render bakes this value into the rendered codex-* skills and agents ({{delegationModel}} substitution), independent of the on/off toggle. Any non-empty, non-whitespace string is accepted so new models work without a schema change. Set with `aof work delegation-model <id>` or `aof work delegation on --gpt-model <id>`."
+            },
+            "models": {
+              "type": "object",
+              "description": "Per-role model override map: an ACD role id (one of the 8 frozen roles, e.g. aof-architect) -> a model string (a moving family alias like \"opus\"/\"sonnet\", or a pinned id). Wins over the bundle's shipped default in the rendered agent file under orchestrated mode; inert (surfaced, not enforced) under mode \"solo\". Authoritative validation is `aof project validate` (no Ajv runs at validate time, so this schema is advisory): keys are checked against the live 8-role set derived from the bundle descriptor, and values must be non-empty and non-whitespace.",
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "tags": {
+          "type": "object",
+          "description": "Project-specific tag vocabulary (the closed set the validator enforces). Universal tags (@executable, @manual, @bug, @wip, @milestone-NN, @uat-<id>) are owned by the framework, not configured here.",
+          "properties": {
+            "layers": { "type": "array", "items": { "type": "string" } },
+            "refinements": { "type": "array", "items": { "type": "string" } },
+            "domains": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "ui": {
+          "type": "object",
+          "description": "UI / design-review settings. ACD does NOT boot the app — the project runs it; ACD only points at it.",
+          "properties": {
+            "baseUrl": { "type": "string", "description": "Base URL of the running app the design-conformance review renders surfaces against (e.g. https://localhost:1234); each DESIGN.md surface's Route is appended. Overridable per run with `aof:verify --url`." },
+            "renderer": { "type": "string", "description": "OPTIONAL path to the Chromium-family binary the design-conformance render drives (milestone 71, ADR-005). Absent ≡ discover the highest revision in the platform's ms-playwright cache; declared ≡ use this path. Resolvable means EXISTS AND IS EXECUTABLE — a declared path that is not there is the renderability precondition's finding, named with the path that failed, never a render-time crash." },
+            "a11y": {
+              "type": "object",
+              "description": "OPTIONAL a11y lane config (milestone 07, ADR-004). Records the conformance LEVEL only; the lane opts IN via work.tags.domains containing the bare string \"a11y\" — NOT \"@a11y\"; it is deliberately the lone unprefixed domain token, so do not \"normalise\" it to an @-prefix or the opt-in silently breaks (no schema change to enable). Absent ≡ default/off. Closed (additionalProperties:false), peer to work.ui.baseUrl.",
+              "properties": {
+                "level": { "enum": ["A", "AA", "AAA"], "description": "WCAG conformance level; default AA when the lane is on. Enum-only (the work.headroom.mode precedent — no separate type:string)." }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "headroom": {
+          "type": "object",
+          "description": "OPTIONAL headroom plugin config (milestone 06). Absent ≡ off — the work-board terminal launch is byte-for-byte unchanged when this block is absent or { enabled: false }. Closed (additionalProperties:false), peer to work.ui.",
+          "properties": {
+            "enabled": { "type": "boolean", "description": "The master switch. An absent block OR enabled:false leaves the terminal launch unchanged (raw passthrough)." },
+            "mode": { "enum": ["wrap"], "description": "wrap ONLY in v0; proxy is rejected at the schema (ADR-002 — a different runtime topology, not yet shipped). An enabled block with no mode defaults to wrap at runtime." },
+            "providers": { "type": "array", "items": { "enum": ["claude", "codex"] }, "description": "OPTIONAL subset of routable providers to front; absent ⇒ both [\"claude\",\"codex\"]. gemini is never a valid member (ADR-003 — not OpenAI-compatible, never routable)." }
+          },
+          "additionalProperties": false
+        },
+        "doctor": {
+          "type": "object",
+          "description": "OPTIONAL work-doctor health-lane config (milestone 15, ADR-003). Tunes the deterministic `work:doctor` cross-item checks. Absent ≡ defaults. Closed (additionalProperties:false), peer to work.headroom.",
+          "properties": {
+            "staleWindowDays": { "type": "integer", "minimum": 1, "description": "The freshness window in days: an in-progress item whose `updated` date is older than `now` by more than this is a `stale-updated` finding (milestone 15 story 02). Injected into the engine as a duration so freshness findings are deterministic in CI. Absent ⇒ 30 days." },
+            "budgets": {
+              "type": "object",
+              "description": "OPTIONAL per-artifact line budgets for the work-doctor doc-bloat check (milestone 16). Each is the max line count before a `doc-over-budget` warn finding fires for that artifact kind. Absent keys ⇒ documented defaults (spec 300, architecture 700, story 150). Closed (additionalProperties:false).",
+              "properties": {
+                "spec": { "type": "integer", "minimum": 1, "description": "Max lines for a milestone SPEC.md before doc-over-budget. Absent ⇒ 300." },
+                "architecture": { "type": "integer", "minimum": 1, "description": "Max lines for a milestone ARCHITECTURE.md before doc-over-budget. Absent ⇒ 700 (ADR logs legitimately grow)." },
+                "story": { "type": "integer", "minimum": 1, "description": "Max lines for a story STORY.md before doc-over-budget. Absent ⇒ 150." }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "roadmap": {
+          "type": "object",
+          "description": "OPTIONAL structured milestone-index ROADMAP (milestone 15, ADR-004). When present and machine-parseable, the work-doctor `roadmap-folder-mismatch` cross-reference activates and diffs the indexed milestones against the on-disk folders. Absent ≡ honest no-op (a prose/backlog ROADMAP is NOT a structured index and never triggers the check). Closed (additionalProperties:false), peer to work.doctor.",
+          "properties": {
+            "index": {
+              "type": "array",
+              "description": "The structured milestone index: one entry per milestone the ROADMAP declares.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": { "type": "string", "description": "The milestone driver number (e.g. \"07\")." },
+                  "slug": { "type": "string", "description": "OPTIONAL milestone slug." }
+                },
+                "additionalProperties": true
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "integrations": {
+          "type": "object",
+          "description": "OPTIONAL external-integration config (milestone 17). Absent ≡ off — every aof work command behaves exactly as before; a present `notion` block opts the project into Notion work-board sync. Closed (additionalProperties:false), peer to work.doctor.",
+          "properties": {
+            "notion": {
+              "type": "object",
+              "description": "OPTIONAL Notion work-board sync config (milestone 17, ADR-004; promoted to a multi-board registry in milestone 18, ADR-002). PRESENT ⇒ all binding lives here; ABSENT ⇒ `notion:sync-work` is an honest no-op. The token is NEVER committed here — only `tokenEnv`, the env-var NAME (RESEARCH §A2). The block is CLOSED (additionalProperties:false), so an unknown field (e.g. a `token`/`databaseId` field) is rejected. A `oneOf` of two MUTUALLY-EXCLUSIVE arms enforces the real shape: the FLAT m17 back-compat block (a top-level `dataSourceId` + connection fields, the implicit default board) OR the m18 `boards` registry (`{ default, boards }`). You cannot have both a top-level `dataSourceId` and a `boards` key. The `properties` below enumerate EVERY key either arm may carry (so the closed outer block admits both flat-arm and registry-arm keys); the AUTHORITATIVE per-arm validation (each arm's required fields, per-arm closedness, mutual exclusion) is the `oneOf`. The cross-check that `default` names a real board is NOT expressible in plain JSON-Schema — it lives in the resolver (src/integrations/routing.mjs), which fails with `unknown-default-board`.",
+              "properties": {
+                "dataSourceId": { "type": "string", "description": "(Flat-arm key — authoritative shape in `oneOf[0]`.) The Notion data_source_id the milestone + its story sub-tasks live in." },
+                "tokenEnv": { "type": "string", "default": "NOTION_API_TOKEN", "description": "(Flat-arm key — authoritative shape in `oneOf[0]`.) The NAME of the env var the integration token is read from at run time. The token itself is NEVER stored in config — this is the env-var reference only." },
+                "statusProperty": { "type": "string", "description": "(Flat-arm key — authoritative shape in `oneOf[0]`.) The board's status/select property name the aof status maps onto." },
+                "statusType": { "type": "string", "enum": ["status", "select"], "default": "status", "description": "(Flat-arm key — authoritative shape in `oneOf[0]`.) The Notion TYPE of `statusProperty` — `status` (default) or `select` — so the egress writes the right property body shape." },
+                "statusMap": { "type": "object", "description": "(Flat-arm key — authoritative shape in `oneOf[0]`.) The closed four-status map." },
+                "titleProperty": { "type": "string", "default": "Name", "description": "(Flat-arm key — authoritative shape in `oneOf[0]`.) The NAME of the data-source's title property the milestone/story title is written to (Notion's default is \"Name\"; a board may name it e.g. \"Objective\")." },
+                "relationProperty": { "type": "string", "description": "(Flat-arm key — authoritative shape in `oneOf[0]`.) The board's self-relation property name." },
+                "parents": { "type": "object", "description": "(Flat-arm key — authoritative shape in `oneOf[0]`.) The optional milestone→parent map.", "additionalProperties": { "type": "string" } },
+                "default": { "type": "string", "description": "(Registry-arm key — authoritative shape in `oneOf[1]`.) The STRING key naming the default board." },
+                "boards": { "type": "object", "description": "(Registry-arm key — authoritative shape in `oneOf[1]`.) The per-board registry." },
+                "autoSync": { "type": "boolean", "default": false, "description": "(Both arms — a sync POLICY, not board routing; m42 wave (d) d4 port 4.) true ⇒ a run completion in this workspace performs the Notion status sync in place (the completion's own effects drain reaches the integration:notion locus). false/absent ⇒ the completion only RECORDS the owed sync in the effects journal, and `aof work integrations notion sync-work` pays it when the operator runs it. Either way the debt is durable and deduped by the sidecar's lastStatus/lastContentHash." }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The FLAT milestone-17 back-compat arm: a single board's connection at the top level (the implicit default board, ADR-002). Closed (additionalProperties:false), so an unknown field (e.g. a `token`/`databaseId` field) is rejected. m17 configs validate byte-for-byte against this arm.",
+                  "properties": {
+                    "dataSourceId": { "type": "string", "description": "The Notion data_source_id the milestone + its story sub-tasks live in (RESEARCH §A7 — NOT a bare database_id; the 2025-09-03 API routes query/create through the data source)." },
+                    "tokenEnv": { "type": "string", "default": "NOTION_API_TOKEN", "description": "The NAME of the env var the integration token is read from at run time (RESEARCH §A2). The token itself is NEVER stored in config — this is the env-var reference only." },
+                    "statusProperty": { "type": "string", "description": "The board's status/select property name the aof status maps onto." },
+                    "statusType": { "type": "string", "enum": ["status", "select"], "default": "status", "description": "The Notion TYPE of `statusProperty` — `status` (default) or `select` — so the egress writes the right property body (`{ status: { name } }` vs `{ select: { name } }`). aof never reads it from Notion (one-way), so it is configured here." },
+                    "titleProperty": { "type": "string", "default": "Name", "description": "The NAME of the data-source's title property the milestone/story title is written to. Notion's default title property is \"Name\"; a board may name it anything (e.g. \"Objective\"). Optional — defaults to \"Name\"." },
+                    "statusMap": {
+                      "type": "object",
+                      "description": "MANDATORY map (RESEARCH §A4): each of the four aof statuses → an EXISTING board option NAME. All four entries are required — `in-review` has no Notion default, so the operator MUST supply it. Closed (additionalProperties:false).",
+                      "properties": {
+                        "not-started": { "type": "string", "description": "The board option name for the aof `not-started` status." },
+                        "in-progress": { "type": "string", "description": "The board option name for the aof `in-progress` status." },
+                        "in-review": { "type": "string", "description": "The board option name for the aof `in-review` status (no Notion default — must be supplied)." },
+                        "done": { "type": "string", "description": "The board option name for the aof `done` status." }
+                      },
+                      "required": ["not-started", "in-progress", "in-review", "done"],
+                      "additionalProperties": false
+                    },
+                    "relationProperty": { "type": "string", "description": "The board's self-relation property name a story sub-task is linked to its milestone page through (RESEARCH §A3)." },
+                    "parents": {
+                      "type": "object",
+                      "description": "OPTIONAL milestone→parent map (milestone 18, ADR-001). Each entry maps a human-readable parent KEY (the value of a descriptor's `notion.parent`) to an EXISTING Notion parent page id aof binds by id (never creates — 17/ADR-003). The key is authored intent; the page id is the operator-supplied binding (ADR-006 — no name resolution).",
+                      "additionalProperties": { "type": "string" }
+                    },
+                    "autoSync": { "type": "boolean", "default": false, "description": "OPTIONAL sync policy (m42 wave (d) d4 port 4): true ⇒ run completions sync their milestone's status to Notion in place; false/absent ⇒ completions record the owed sync for `sync-work` to pay." }
+                  },
+                  "required": ["dataSourceId", "statusProperty", "statusMap", "relationProperty"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "description": "The m18 `boards` REGISTRY arm: a closed per-board map with a designated default (ADR-002). Multiple boards are addressable by key so two milestones can route to different boards. Closed (additionalProperties:false); there is NO top-level `parents` peer to `boards` in this arm (`parents` is per board).",
+                  "properties": {
+                    "default": { "type": "string", "description": "REQUIRED when `boards` is present: a STRING key naming the default board (NOT a board literally keyed `default`). Must name a key present in `boards` — an Ajv-level cross-check is not expressible in plain JSON-Schema, so the runtime resolver treats an unknown `default` as the `unknown-default-board` config error; the schema only requires `default` to be a string." },
+                    "boards": {
+                      "type": "object",
+                      "description": "The per-board registry: each entry keyed by a board key carries that board's m17 connection fields. Closed per entry. At least one board.",
+                      "minProperties": 1,
+                      "additionalProperties": {
+                        "type": "object",
+                        "description": "A single board's connection (the m17 shape, per board). Closed (additionalProperties:false).",
+                        "properties": {
+                          "dataSourceId": { "type": "string", "description": "The Notion data_source_id this board's milestone + story sub-tasks live in." },
+                          "tokenEnv": { "type": "string", "default": "NOTION_API_TOKEN", "description": "The NAME of the env var this board's integration token is read from (the token itself is never stored)." },
+                          "statusProperty": { "type": "string", "description": "This board's status/select property name." },
+                          "statusType": { "type": "string", "enum": ["status", "select"], "default": "status", "description": "The Notion TYPE of this board's `statusProperty` — `status` (default) or `select`." },
+                          "titleProperty": { "type": "string", "default": "Name", "description": "This board's title property name (Notion default \"Name\"; e.g. \"Objective\"). Optional." },
+                          "statusMap": {
+                            "type": "object",
+                            "description": "MANDATORY map: each of the four aof statuses → an EXISTING board option NAME. Closed (additionalProperties:false).",
+                            "properties": {
+                              "not-started": { "type": "string", "description": "The board option name for the aof `not-started` status." },
+                              "in-progress": { "type": "string", "description": "The board option name for the aof `in-progress` status." },
+                              "in-review": { "type": "string", "description": "The board option name for the aof `in-review` status." },
+                              "done": { "type": "string", "description": "The board option name for the aof `done` status." }
+                            },
+                            "required": ["not-started", "in-progress", "in-review", "done"],
+                            "additionalProperties": false
+                          },
+                          "relationProperty": { "type": "string", "description": "This board's self-relation property name a story sub-task nests through." },
+                          "parents": {
+                            "type": "object",
+                            "description": "OPTIONAL per-board parent map (milestone 18, ADR-001): a closed `{ <key>: <page-id> }` map binding a parent KEY to an EXISTING Notion page id, scoped to THIS board (a relation cannot cross databases).",
+                            "additionalProperties": { "type": "string" }
+                          }
+                        },
+                        "required": ["dataSourceId", "statusProperty", "statusMap", "relationProperty"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "autoSync": { "type": "boolean", "default": false, "description": "OPTIONAL sync policy (m42 wave (d) d4 port 4), workspace-wide across every board in the registry: true ⇒ run completions sync in place; false/absent ⇒ completions record the owed sync for `sync-work` to pay." }
+                  },
+                  "required": ["default", "boards"],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "memory": {
+      "type": "object",
+      "description": "Work-memory backend selection (milestone 05). OPTIONAL — an absent `memory` key is equivalent to { \"backend\": \"none\" } (the graceful no-op). `backend` is an enum of the registered backend names.",
+      "properties": {
+        "backend": {
+          "enum": ["local", "none", "graphify"],
+          "description": "The memory backend that answers the `aof work memory` verbs. `local` = the cheap derived-index backend; `none` = a no-op so ACD runs unchanged when memory is absent; `graphify` = the graph-grounded backend (records from the 05 parsers, re-ranked by a work-stream graph built via invoke('graph:build'))."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

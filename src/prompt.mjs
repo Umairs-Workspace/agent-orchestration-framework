@@ -1,0 +1,229 @@
+import { checkbox, confirm, input, select } from "@inquirer/prompts";
+
+const PROJECT_RESOURCE_KINDS = ["skill", "command", "agent", "rule"];
+const GLOBAL_RESOURCE_KINDS = ["skill", "agent", "rule"];
+const RESOURCE_KIND_HELP = {
+  skill: "Reusable guidance or workflow instructions, for example code-review or api-research.",
+  command: "A named command/prompt you can run from the assistant, for example prime or release-notes.",
+  agent: "A specialist assistant role with focused behavior, for example code-reviewer or research-agent.",
+  rule: "Project or team guidance that should be included as assistant instructions, for example team-standards."
+};
+const RESOURCE_ID_EXAMPLES = {
+  skill: "code-review",
+  command: "prime",
+  agent: "code-reviewer",
+  rule: "team-standards"
+};
+
+export async function selectItems(items) {
+  if (items.length === 0) return [];
+
+  if (process.env.AOF_TEST_SELECTION_INPUT !== undefined) {
+    printChoices(items);
+    console.log("Install which items? Enter numbers, ids, 'all', or press Enter for preselected items: ");
+    return resolveSelection(items, process.env.AOF_TEST_SELECTION_INPUT);
+  }
+
+  assertInteractiveTerminal("select project items");
+  const selectedIds = await checkbox({
+    message: "Select project items",
+    instructions: "Use arrows to move, space to toggle, enter to confirm.",
+    choices: items.map((item) => ({
+      name: `${item.id} (${item.kind}) - ${item.description ?? ""}`,
+      value: item.id,
+      checked: Boolean(item.defaultEnabled)
+    }))
+  });
+  return selectedIds.map((id) => items.find((item) => item.id === id)).filter(Boolean);
+}
+
+export async function selectRuntimes() {
+  if (process.env.AOF_TEST_RUNTIMES_INPUT !== undefined) {
+    return resolveRuntimeSelection(process.env.AOF_TEST_RUNTIMES_INPUT);
+  }
+
+  assertInteractiveTerminal("select coding assistants");
+  return checkbox({
+    message: "Select coding assistants",
+    instructions: "Use arrows to move, space to toggle, enter to confirm.",
+    choices: [
+      { name: "Claude Code", value: "claude", checked: true },
+      { name: "Codex", value: "codex", checked: true },
+      { name: "OpenCode", value: "opencode", checked: false }
+    ],
+    validate(selected) {
+      return selected.length > 0 || "Select at least one coding assistant.";
+    }
+  });
+}
+
+export async function confirmAction(question, defaultValue = false) {
+  if (process.env.AOF_TEST_CONFIRM_INPUT !== undefined) {
+    return resolveConfirmation(nextTestConfirmation(), defaultValue);
+  }
+
+  assertInteractiveTerminal("confirm action");
+  return confirm({ message: question, default: defaultValue });
+}
+
+export async function promptResourceInput(options = {}) {
+  if (process.env.AOF_TEST_RESOURCE_INPUT !== undefined) {
+    return parseResourceInput(process.env.AOF_TEST_RESOURCE_INPUT, options);
+  }
+
+  assertInteractiveTerminal("create a resource interactively");
+  const allowedKinds = options.global ? GLOBAL_RESOURCE_KINDS : PROJECT_RESOURCE_KINDS;
+  const kind = options.kind ?? (await select({
+    message: options.global ? "What kind of reusable global asset do you want to create?" : "What kind of project asset do you want to create?",
+    choices: allowedKinds.map((value) => ({ name: `${value} - ${RESOURCE_KIND_HELP[value]}`, value }))
+  }));
+  if (!allowedKinds.includes(kind)) {
+    throw new Error(`Invalid ${options.global ? "global " : ""}resource kind "${kind}". Expected ${allowedKinds.join(", ")}.`);
+  }
+
+  console.log(`Asset id: a stable short name used in config and filenames, for example "${RESOURCE_ID_EXAMPLES[kind]}".`);
+  console.log("Use letters, numbers, dots, underscores, or hyphens. Spaces are not allowed.");
+  const id = options.id ?? (await input({
+    message: `Asset id (${RESOURCE_ID_EXAMPLES[kind]})`,
+    validate(value) {
+      return validateResourceId(value);
+    }
+  }));
+  const description = await input({
+    message: "Short description shown in lists (optional)",
+    default: options.description ?? ""
+  });
+  const runtimes = options.runtimes ?? (await selectRuntimes());
+  const body = options.skipBody
+    ? ""
+    : await input({
+      message: bodyPromptForKind(kind),
+      default: options.body ?? ""
+    });
+
+  return {
+    kind,
+    id: id.trim(),
+    description: description.trim(),
+    runtimes,
+    body
+  };
+}
+
+export function resolveConfirmation(answer, defaultValue = false) {
+  const trimmed = answer.trim().toLowerCase();
+  if (trimmed === "") return defaultValue;
+  if (["y", "yes", "true", "1"].includes(trimmed)) return true;
+  if (["n", "no", "false", "0"].includes(trimmed)) return false;
+  throw new Error(`Unsupported confirmation "${answer}". Expected yes or no.`);
+}
+
+export function resolveRuntimeSelection(answer) {
+  const trimmed = answer.trim().toLowerCase();
+  if (trimmed === "" || trimmed === "all") return ["claude", "codex"];
+  const runtimes = trimmed.split(",").map((runtime) => runtime.trim()).filter(Boolean);
+  for (const runtime of runtimes) {
+    if (!["claude", "codex", "opencode"].includes(runtime)) {
+      throw new Error(`Unsupported runtime "${runtime}". Expected claude, codex, opencode, or all.`);
+    }
+  }
+  return [...new Set(runtimes)];
+}
+
+export function resolveSelection(items, answer) {
+  const trimmed = answer.trim();
+  if (trimmed === "") return items.filter((item) => item.defaultEnabled);
+  if (trimmed.toLowerCase() === "all") return items;
+
+  const tokens = trimmed.split(",").map((token) => token.trim()).filter(Boolean);
+  const selected = [];
+  for (const token of tokens) {
+    const byIndex = Number.parseInt(token, 10);
+    const item = Number.isInteger(byIndex) && String(byIndex) === token
+      ? items[byIndex - 1]
+      : items.find((candidate) => candidate.id === token);
+
+    if (!item) {
+      throw new Error(`Unknown selection "${token}". Use listed numbers or ids.`);
+    }
+
+    if (!selected.some((candidate) => candidate.id === item.id)) {
+      selected.push(item);
+    }
+  }
+
+  return selected;
+}
+
+function printChoices(items) {
+  for (const [index, item] of items.entries()) {
+    const marker = item.defaultEnabled ? "*" : " ";
+    console.log(`${index + 1}. [${marker}] ${item.id} (${item.kind}) - ${item.description}`);
+  }
+}
+
+export function parseResourceInput(value, options = {}) {
+  const parsed = JSON.parse(value);
+  const allowedKinds = options.global ? GLOBAL_RESOURCE_KINDS : PROJECT_RESOURCE_KINDS;
+  const kind = parsed.kind ?? options.kind;
+  if (!allowedKinds.includes(kind)) {
+    throw new Error(`Invalid ${options.global ? "global " : ""}resource kind "${kind}". Expected ${allowedKinds.join(", ")}.`);
+  }
+  const id = parsed.id ?? options.id;
+  if (typeof id !== "string" || id.trim() === "") {
+    throw new Error("Asset id is required.");
+  }
+  const idValidation = validateResourceId(id);
+  if (idValidation !== true) {
+    throw new Error(idValidation);
+  }
+  return {
+    kind,
+    id: id.trim(),
+    description: typeof parsed.description === "string" ? parsed.description : "",
+    runtimes: parseResourceRuntimes(parsed.runtimes),
+    body: options.skipBody ? "" : typeof parsed.body === "string" ? parsed.body : ""
+  };
+}
+
+function validateResourceId(value) {
+  const id = value.trim();
+  if (id === "") return "Asset id is required. Use a short stable name such as code-review.";
+  if (!/^[a-z0-9][a-z0-9-_.]*$/i.test(id)) {
+    return "Use letters, numbers, dots, underscores, or hyphens, starting with a letter or number. Example: code-review.";
+  }
+  return true;
+}
+
+function bodyPromptForKind(kind) {
+  const prompts = {
+    skill: "Starter skill instructions (optional; press Enter to create a template and edit it later)",
+    command: "Starter command prompt (optional; press Enter to create a template and edit it later)",
+    agent: "Starter agent instructions (optional; press Enter to create a template and edit it later)",
+    rule: "Starter rule text (optional; press Enter to create a template and edit it later)"
+  };
+  return prompts[kind] ?? "Starter content (optional; press Enter to create a template and edit it later)";
+}
+
+function parseResourceRuntimes(value) {
+  const runtimes = Array.isArray(value) ? value : resolveRuntimeSelection(value ?? "all");
+  for (const runtime of runtimes) {
+    if (!["claude", "codex", "opencode"].includes(runtime)) {
+      throw new Error(`Unsupported runtime "${runtime}". Expected claude, codex, opencode, or all.`);
+    }
+  }
+  return [...new Set(runtimes)];
+}
+
+function assertInteractiveTerminal(action) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    throw new Error(`Cannot ${action} in a non-interactive terminal. Pass explicit CLI flags for automation.`);
+  }
+}
+
+function nextTestConfirmation() {
+  const values = process.env.AOF_TEST_CONFIRM_INPUT.split(",");
+  const value = values.shift() ?? "";
+  process.env.AOF_TEST_CONFIRM_INPUT = values.join(",");
+  return value;
+}

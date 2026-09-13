@@ -1,0 +1,74 @@
+// aof-generated: bundle — reviewable frozen-set declaration
+{
+  "version": 1,
+  "members": [
+    {
+      "id": "locked-contract",
+      "protects": "the locked contract from implementation-time mutation",
+      "enforcementPoint": "agent tool scope",
+      "aofManaged": "locked-contract",
+      "rule": {
+        "agents": {
+          "aof-architect": ["Read", "Grep", "Glob", "Bash", "Write", "Edit"],
+          "aof-developer": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"]
+        }
+      }
+    },
+    {
+      "id": "litmus",
+      "protects": "the executable acceptance litmus from unreviewed weakening",
+      "enforcementPoint": "agent tool scope",
+      "aofManaged": "litmus",
+      "rule": {
+        "agents": {
+          "aof-qa": ["Read", "Grep", "Glob", "Bash", "Write", "Edit"],
+          "aof-researcher": ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Write"],
+          "aof-security": ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Write", "Edit"],
+          "aof-designer": ["Read", "Grep", "Glob", "Write", "Edit", "WebSearch", "WebFetch"]
+        }
+      }
+    },
+    {
+      "id": "tag-vocabulary",
+      "protects": "the work stream's closed tag vocabulary",
+      "enforcementPoint": "agent tool scope",
+      "aofManaged": "tag-vocabulary",
+      "rule": {
+        "agents": {
+          "aof-product-owner": ["Read", "Grep", "Glob", "Write", "Edit", "AskUserQuestion"],
+          "aof-compliance": ["Read", "Grep", "Glob", "WebSearch", "WebFetch", "Write"]
+        }
+      }
+    },
+    {
+      "id": "gate-order",
+      "protects": "the continue, validate, doctor, grade and verify gate order",
+      "enforcementPoint": "the worker launch envelope",
+      "aofManaged": "gate-order",
+      "rule": { "program": "aof", "args": ["work", "loop"] }
+    },
+    {
+      "id": "anchors",
+      "protects": "the installed anchor declarations from direct agent edits",
+      "enforcementPoint": "permission denials",
+      "aofManaged": "anchors",
+      "rule": {
+        "deny": ["Edit(.aof/loops/**)", "Write(.aof/loops/**)"]
+      }
+    },
+    {
+      "id": "acceptor-criterion",
+      "protects": "the acceptor's criterion record and its evidence ledger from direct agent edits",
+      "enforcementPoint": "permission denials",
+      "aofManaged": "acceptor-criterion",
+      "rule": {
+        "deny": [
+          "Edit(.aof/acceptor-criterion.jsonc)",
+          "Write(.aof/acceptor-criterion.jsonc)",
+          "Edit(.aof/acceptor-ledger.jsonl)",
+          "Write(.aof/acceptor-ledger.jsonl)"
+        ]
+      }
+    }
+  ]
+}

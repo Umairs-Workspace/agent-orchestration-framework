@@ -1,0 +1,42 @@
+// aof-generated: bundle — reviewable trigger declaration (63/ADR-002)
+{
+  "version": 1,
+  "members": [
+    {
+      "id": "nightly-open-work-sweep",
+      "protects": "an open driver from stalling unattended between operator sessions",
+      "source": "cron",
+      "scope": "63",
+      "level": "L1",
+      "cadence": "periodic:1d",
+      "wakes": "loop:autonomous-cascade"
+    },
+    {
+      "id": "mesh-assignment-wake",
+      "protects": "a dispatched assignment from waiting on a human to type its next phase",
+      "source": "mesh-assignment",
+      "scope": "63",
+      "level": "L1",
+      "cadence": "event:per-phase",
+      "wakes": "loop:build-to-green"
+    },
+    {
+      "id": "ci-signal-wake",
+      "protects": "a red pipeline from sitting unread until someone happens to look",
+      "source": "ci-signal",
+      "scope": "63",
+      "level": "L1",
+      "cadence": "event:per-phase",
+      "wakes": "loop:review-fix-rereview"
+    },
+    {
+      "id": "feedback-finding-wake",
+      "protects": "an inbound finding from waiting for the next session to notice it exists",
+      "source": "feedback-finding",
+      "scope": "63",
+      "level": "L1",
+      "cadence": "event:per-item",
+      "wakes": "loop:verify-triage-accept"
+    }
+  ]
+}

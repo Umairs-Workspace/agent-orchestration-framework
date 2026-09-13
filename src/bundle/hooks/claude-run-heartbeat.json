@@ -1,0 +1,9 @@
+{
+  "event": "PostToolUse",
+  "matcher": ".*",
+  "type": "command",
+  "command": "node",
+  "claude": {
+    "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/aof/run-heartbeat-enqueue.mjs"]
+  }
+}

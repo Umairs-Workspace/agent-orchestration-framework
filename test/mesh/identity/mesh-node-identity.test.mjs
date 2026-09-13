@@ -1,0 +1,263 @@
+// Traceability wiring for milestone 22 / story 01 — the node-identity mechanic.
+//
+// Covers EVERY @executable scenario in tasks/00_node-identity-descriptor.feature,
+// exercising src/node-identity.mjs IN-PROCESS with INJECTED hostname / salt / config
+// (the white-box Build-notes requirement — no real-machine coupling), plus a real temp
+// sidecar file for the persist+reuse scenarios. One test object per @executable scenario
+// (Scenario-Outline rows folded into one entry iterating the rows), each name tracing
+// to feature + scenario. node:assert/strict.
+//
+//   00_node-identity-descriptor.feature — id derivation is deterministic + stable
+//     (sanitized hostname, persisted on first derive, reused thereafter; a collision
+//     appends a stable per-install hash; an empty stem falls back to node-<install-
+//     hash>; an operator-set id wins verbatim); the descriptor carries the complete
+//     frozen 7-key schema, correctly typed, rebuildable (reads, never writes); array
+//     fields empty to [] at the boundaries.
+//
+// milestone 33 / story 00 (ADR-004, F-3203) RE-POINTED deriveNodeId's persist target
+// from the committed config.mesh.nodeId to the git-ignored PER-INSTALL SIDECAR
+// (.aof/mesh/identity.json) — this file's persist+reuse/operator-override scenarios
+// are updated to assert against a fixture sidecar (via the injected sidecarPath arg),
+// never a committed config file, matching the re-point.
+import assert from "node:assert/strict";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import {
+  deriveNodeId,
+  assembleDescriptor,
+  sanitizeHostname,
+  installHash,
+} from "../../../src/node-identity.mjs";
+
+const ID_RE = /^[a-z0-9-]+$/;
+
+async function tempConfig(initial = { name: "fixture" }) {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "aof-nodeid-"));
+  const configPath = path.join(dir, "aof.config.json");
+  await mkdir(path.dirname(configPath), { recursive: true });
+  await writeFile(configPath, `${JSON.stringify(initial, null, 2)}\n`, "utf8");
+  return { dir, configPath };
+}
+
+// A fixture sidecar PATH (not yet created — persistNodeId creates it on first write),
+// under a temp dir this test owns. Mirrors tempConfig's shape for the sidecar target.
+async function tempSidecarPath() {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "aof-nodeid-sidecar-"));
+  return { dir, sidecarPath: path.join(dir, "mesh", "identity.json") };
+}
+
+export const meshNodeIdentityTests = [
+  // ══ Scenario Outline: the node id is the sanitized, lowercased hostname ══════
+  {
+    name: "mesh-node-identity/00 the node id is the sanitized, lowercased hostname with illegal runs collapsed to one '-'",
+    async run() {
+      const rows = [
+        ["build-server", "build-server"],
+        ["Umami-Desktop", "umami-desktop"],
+        ["Umami Desktop", "umami-desktop"],
+        ["umami.desktop", "umami-desktop"],
+        ["umami_desktop", "umami-desktop"],
+        ["umami@desktop!", "umami-desktop"],
+        ["umami--__--desktop", "umami-desktop"],
+        ["-leading-trailing-", "leading-trailing"],
+        ["node01", "node01"],
+      ];
+      for (const [hostname, expected] of rows) {
+        // Derive (no configPath → in-memory, no persist); injected hostname/salt.
+        const id = await deriveNodeId({ config: {}, hostname, salt: "salt-x" });
+        assert.equal(id, expected, `"${hostname}" → "${expected}"`);
+        // Deterministic — deriving again yields the same id.
+        const again = await deriveNodeId({ config: {}, hostname, salt: "salt-x" });
+        assert.equal(again, id, `"${hostname}" deterministic`);
+        // [a-z0-9-]-only, no leading/trailing "-".
+        assert.match(id, ID_RE, `"${id}" is [a-z0-9-]-only`);
+        assert.ok(!id.startsWith("-") && !id.endsWith("-"), `"${id}" has no edge "-"`);
+      }
+    },
+  },
+
+  // ══ Scenario Outline: a hostname that sanitizes to empty → node-<install-hash> ═
+  {
+    name: "mesh-node-identity/00 a hostname that sanitizes to empty falls back to a deterministic node-<install-hash> id",
+    async run() {
+      for (const hostname of ["***", ""]) {
+        assert.equal(sanitizeHostname(hostname), "", `"${hostname}" sanitizes to empty`);
+        const salt = "install-salt-7";
+        const id = await deriveNodeId({ config: {}, hostname, salt });
+        // Non-empty, matches node-<install-hash> reusing the SAME per-install hash.
+        assert.equal(id, `node-${installHash(salt)}`, `"${hostname}" → node-<install-hash>`);
+        assert.ok(id.length > 0, "id is non-empty");
+        assert.match(id, ID_RE, `"${id}" is [a-z0-9-]-only`);
+        // Deterministic + stable across re-derivation on this install (same salt).
+        const again = await deriveNodeId({ config: {}, hostname, salt });
+        assert.equal(again, id, "empty-stem fallback is deterministic + stable");
+      }
+    },
+  },
+
+  // ══ Scenario: first derivation persists the id; later derivations reuse it ════
+  {
+    name: "mesh-node-identity/00 the first derivation persists the id to the sidecar and later derivations reuse it",
+    async run() {
+      const { dir, sidecarPath } = await tempSidecarPath();
+      try {
+        // First derive (sidecarPath supplied → persists { nodeId, salt } to the sidecar,
+        // NEVER a committed config — milestone 33 / ADR-004's re-point).
+        const id1 = await deriveNodeId({ config: {}, hostname: "Umami-Desktop", salt: "s", sidecarPath });
+        assert.equal(id1, "umami-desktop");
+        // The sidecar's nodeId is now pinned.
+        const afterFirst = JSON.parse(await readFile(sidecarPath, "utf8"));
+        assert.equal(afterFirst.nodeId, "umami-desktop", "nodeId persisted to the sidecar");
+        // The host later changes; deriving again reads the PINNED id (the rename is
+        // ignored once an id is pinned) — simulated here by feeding the sidecar's value
+        // back in as the (hydrated) config, mirroring loadWorkspace's overlay.
+        const id2 = await deriveNodeId({ config: { mesh: afterFirst }, hostname: "Umami-Laptop", salt: "s", sidecarPath });
+        assert.equal(id2, "umami-desktop", "the persisted id, not the new hostname");
+        const afterRename = JSON.parse(await readFile(sidecarPath, "utf8"));
+        assert.equal(afterRename.nodeId, "umami-desktop", "the rename did not rewrite the pinned id");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+
+  // ══ Scenario: an operator-set mesh.nodeId overrides + is never rewritten ══════
+  {
+    name: "mesh-node-identity/00 an operator-set mesh.nodeId overrides the derived default and is never rewritten",
+    async run() {
+      const { dir, sidecarPath } = await tempSidecarPath();
+      try {
+        // The operator-pinned id is simulated as already-hydrated config (a sidecar
+        // written directly with pinned:true, never through deriveNodeId's own persist).
+        const config = { mesh: { nodeId: "build-server" } };
+        const id = await deriveNodeId({ config, hostname: "Umami-Desktop", salt: "s", sidecarPath });
+        assert.equal(id, "build-server", "operator-set id wins verbatim");
+        // A pinned id short-circuits BEFORE any persist — the sidecar is never created.
+        await assert.rejects(readFile(sidecarPath, "utf8"), "the sidecar was never written for a pinned id");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+
+  // ══ Scenario: a hostname collision is disambiguated by a stable per-install hash ═
+  {
+    name: "mesh-node-identity/00 a hostname collision is disambiguated by a stable per-install hash suffix",
+    async run() {
+      // Two installs, same host "laptop", distinct salts. The second derives against a
+      // takenIds set containing the first install's stem.
+      const idA = await deriveNodeId({ config: {}, hostname: "laptop", salt: "salt-A", takenIds: ["laptop"] });
+      const idB = await deriveNodeId({ config: {}, hostname: "laptop", salt: "salt-B", takenIds: ["laptop"] });
+      assert.notEqual(idA, idB, "the two ids differ");
+      // Each keeps the sanitized hostname stem before the suffix.
+      assert.ok(idA.startsWith("laptop-"), `"${idA}" keeps the "laptop" stem`);
+      assert.ok(idB.startsWith("laptop-"), `"${idB}" keeps the "laptop" stem`);
+      assert.equal(idA, `laptop-${installHash("salt-A")}`, "suffix is the per-install hash");
+      assert.equal(idB, `laptop-${installHash("salt-B")}`, "suffix is the per-install hash");
+      // Stable across re-derivation on its own install.
+      assert.equal(await deriveNodeId({ config: {}, hostname: "laptop", salt: "salt-A", takenIds: ["laptop"] }), idA, "idA stable");
+      assert.equal(await deriveNodeId({ config: {}, hostname: "laptop", salt: "salt-B", takenIds: ["laptop"] }), idB, "idB stable");
+      assert.match(idA, ID_RE, `"${idA}" is [a-z0-9-]-only`);
+      assert.match(idB, ID_RE, `"${idB}" is [a-z0-9-]-only`);
+    },
+  },
+
+  // ══ Scenario: the capability descriptor carries the complete frozen schema ════
+  //
+  // REPAIRED 2026-08-29 (milestone 59 / story 01, ADR-003 §3 — the re-arming). `skills` left
+  // the descriptor by OPERATOR DIRECTIVE in milestone 34 / story 02, and `src/node-identity.mjs`
+  // states the reason in terms: the aof bundle's resource ids were being advertised as node
+  // "skills", which says nothing about the node because every node ships the same bundle. The
+  // frozen schema is SIX keys, not seven.
+  //
+  // The two lanes below asserted the seventh for a month and nobody heard, because the removal
+  // and the de-arming were the SAME COMMIT — `15e0a92` (2026-07-26) dropped `skills` from
+  // `assembleDescriptor` and dropped this suite's spread from `scripts/test.mjs` in one change.
+  // A suite that goes dark in the commit that breaks it is the exact failure this milestone
+  // exists to make impossible, and it is why the repair is here rather than a baseline entry:
+  // the scenario is still true, the schema it names simply has one fewer key.
+  {
+    name: "mesh-node-identity/00 the capability descriptor carries the complete frozen schema",
+    async run() {
+      const descriptor = assembleDescriptor({
+        nodeId: "umami-desktop",
+        hostname: "Umami-Desktop",
+        platform: "linux",
+        runtimes: ["claude", "codex"],
+        aofVersion: "0.1.0",
+      });
+      assert.equal(typeof descriptor.nodeId, "string");
+      assert.ok(descriptor.nodeId.length > 0, "nodeId is a non-empty string");
+      assert.equal(descriptor.host, "Umami-Desktop", "host is the raw host name");
+      assert.ok(["win32", "darwin", "linux"].includes(descriptor.os), "os is the platform");
+      assert.deepEqual(descriptor.runtimes, ["claude", "codex"], "runtimes from config");
+      assert.ok(!("skills" in descriptor), "no `skills` key — m34/02's operator directive removed it, and a descriptor that grew it back would be advertising the bundle rather than the node");
+      assert.equal(descriptor.aofVersion, "0.1.0", "aofVersion is the install's version");
+      // publishedAt is an ISO-8601 UTC trailing-Z instant (a toISOString form).
+      assert.match(descriptor.publishedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, "publishedAt is trailing-Z ISO");
+      assert.equal(new Date(descriptor.publishedAt).toISOString(), descriptor.publishedAt, "publishedAt round-trips toISOString");
+      // No field outside the frozen schema's known + additive keys (exactly the 7).
+      assert.deepEqual(
+        Object.keys(descriptor),
+        ["nodeId", "host", "os", "runtimes", "aofVersion", "publishedAt"],
+        "exactly the frozen 6 keys, in order (m34/02 removed `skills`)"
+      );
+    },
+  },
+
+  // ══ Scenario Outline: the descriptor's capability arrays at the boundaries ════
+  {
+    name: "mesh-node-identity/00 the descriptor's capability arrays reflect config faithfully at the boundaries",
+    async run() {
+      // REPAIRED 2026-08-29 (59/01): the outline's `skills` column went with the key in
+      // m34/02. The boundary the scenario is about — an array field echoes config faithfully,
+      // and empty/absent assembles as [] rather than absent — is unchanged and still driven
+      // over three rows, on the array the descriptor still carries.
+      const rows = [
+        { runtimes: ["claude", "codex"] },
+        { runtimes: ["claude"] },
+        { runtimes: [] },
+      ];
+      for (const { runtimes } of rows) {
+        const d = assembleDescriptor({
+          nodeId: "n", hostname: "h", platform: "linux", runtimes, aofVersion: "0.1.0",
+        });
+        assert.deepEqual(d.runtimes, runtimes, `runtimes echo ${JSON.stringify(runtimes)}`);
+        assert.ok(Array.isArray(d.runtimes), "the array is present, not absent");
+        assert.ok(!("skills" in d), "and no `skills` array came back — m34/02 removed the key, so a row that fed one gets nothing back");
+      }
+      // Empty/absent arrays assemble as [] (not absent, not crash).
+      const minimal = assembleDescriptor({ nodeId: "n", hostname: "h", platform: "linux", aofVersion: "0.1.0" });
+      assert.deepEqual(minimal.runtimes, [], "absent runtimes → []");
+    },
+  },
+
+  // ══ Scenario: the descriptor is a rebuildable projection that reads, never writes ═
+  {
+    name: "mesh-node-identity/00 the descriptor is a rebuildable projection that reads config without mutating it",
+    async run() {
+      const { dir, configPath } = await tempConfig({ name: "fixture", mesh: { nodeId: "umami-desktop", salt: "s" } });
+      try {
+        const before = await readFile(configPath, "utf8");
+        const args = { nodeId: "umami-desktop", hostname: "Umami-Desktop", platform: "linux", runtimes: ["claude"], aofVersion: "0.1.0" };
+        const d1 = assembleDescriptor(args);
+        // A real, monotonic-or-equal publishedAt between the two assemblies.
+        await new Promise((resolve) => setTimeout(resolve, 2));
+        const d2 = assembleDescriptor(args);
+        // Equivalent in every field except publishedAt. REPAIRED 2026-08-29 (59/01): the list
+        // named `skills`, a key neither descriptor has carried since m34/02 — so that row
+        // compared `undefined` with `undefined` and would have passed over any change to it.
+        for (const key of ["nodeId", "host", "os", "runtimes", "aofVersion"]) {
+          assert.deepEqual(d1[key], d2[key], `field "${key}" stable across re-assembly`);
+        }
+        assert.ok(Date.parse(d2.publishedAt) >= Date.parse(d1.publishedAt), "publishedAt at or after the previous assembly");
+        // assembly reads config but NEVER writes it — the file is byte-unchanged.
+        const after = await readFile(configPath, "utf8");
+        assert.equal(after, before, "mesh.* config byte-unchanged across both assemblies");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+];

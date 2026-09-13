@@ -1,0 +1,6 @@
+{
+  "event": "SessionStart",
+  "matcher": "",
+  "type": "command",
+  "command": "aof session start"
+}

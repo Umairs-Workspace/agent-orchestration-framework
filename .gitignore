@@ -1,0 +1,76 @@
+node_modules/
+coverage/
+ui/dist/
+graphify-out/
+.tmp-npm-cache/
+.aof-test/
+.aof/aof.memory.index.json
+*.sqlite
+*.sqlite-journal
+.DS_Store
+*.log
+.tmp
+
+# milestone 28 / story 00 — the SEA build recipe's local output (esbuild bundle,
+# sidecar assets, sea-config.json, blob, and the built binary). A generated
+# artifact, never committed; Story 01's CI matrix produces the signed release
+# artifacts separately.
+dist-sea/
+
+# story 125 — the staged site `scripts/site/build-site.mjs` assembles for the Pages
+# workflow: the committed docs/ shell plus the pages it projects from their committed
+# sources (the loop graph document, the planning PRDs). Rebuilt on every deploy, never
+# committed — a committed copy of the graph page is the drift the site exists to remove. The
+# `.dist-site-*` sibling is the builder's atomic-swap staging; a hard kill mid-swap strands one.
+dist-site/
+.dist-site-*/
+
+# Runtime: live agent-terminal session registry (operational, not committed)
+.aof/terminal-sessions.json
+
+# NOTE: the mesh record stream (.aof/mesh/) is ignored in .aof/.gitignore, alongside
+# the other .aof/ runtime/derived state — not here.
+
+# milestone 36 / story 00 — the Rust Cargo build output for the Mesh Desktop App
+# (app/desktop/). Cargo.lock IS committed (an application workspace, not a published
+# library) — only the compiled target/ artifact directory is generated/ignored.
+app/desktop/target/
+
+# milestone 36 / stories 01-02 — the Tauri shell (crates/app/) is EXCLUDED from the
+# app/desktop/ Cargo workspace (its own independent build), so it gets its own
+# target/ output dir; and crates/app/gen/ is Tauri's own build-script-generated
+# schema/capability output (regenerated every build, never hand-edited).
+app/desktop/crates/app/target/
+app/desktop/crates/app/gen/
+
+MicrosoftEdgeWebview2Setup.exe 
+
+# aof mesh runtime: per-run git worktrees the worker daemon checks out to execute
+# assigned items — a full embedded checkout of this repo, never a record to commit.
+# (m43's bundle .gitignore stopped blanket-ignoring .aof/mesh/ because on a real node
+# the mesh dir IS the tracked bus; the worktrees under it are still runtime state.)
+.aof/mesh/worktrees/
+# milestone 50 / story 03 — the SESSION lane's own worktree root, a deliberate SIBLING of
+# the assignment lane's above (TECH_DEBT item 47): the assignment startup-reclaim scan
+# enumerates `worktrees/` and trusts every directory name it finds there as an
+# assignmentId, so a launched operator shell's tree must never materialize inside it.
+.aof/mesh/session-worktrees/
+# story 65 / task 02 — the LOCAL DISPATCH lane's own worktree root, the third sibling
+# (never a child of either of the two above, for the same TECH_DEBT 47 reason). One tree
+# per concurrently-dispatched story, so two independent story builds can never share a
+# working tree — measured necessity, not hardening: in vista-app-web 352 two stories the
+# architect had partitioned as independent both edited one file, ×9 and ×8.
+.aof/mesh/dispatch-worktrees/
+
+# The private downstream project names this repo must not disclose. The LIST is the sensitive
+# part, so it never lands in a commit; .githooks/pre-commit and acd-no-internal-project-names
+# both SKIP without it (guard-if-present).
+.aof/private-terms.json
+
+# story 83 / F-83-F — `aof work observe --write` derives a per-item snapshot from Claude Code
+# session transcripts into `<item>/observability/`. The report's own header calls it "a diagnostic,
+# not a work record — safe to delete or .gitignore", and no snapshot has ever been committed. The
+# finding it closes was a hygiene one discharged by MOVING files into a folder named `_to_delete`,
+# which reads as progress to a human and as nothing at all to git: the mechanism is the rule, not
+# the intention.
+wiki/work/**/observability/

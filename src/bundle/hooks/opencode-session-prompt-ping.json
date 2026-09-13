@@ -1,0 +1,6 @@
+{
+  "event": "UserPromptSubmit",
+  "matcher": "",
+  "type": "command",
+  "command": "aof session ping --assistant opencode"
+}

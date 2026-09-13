@@ -1,0 +1,62 @@
+aof — Agent Orchestration Framework
+Copyright (c) the aof authors. Licensed under the MIT License.
+
+This product includes software adapted from third-party projects.
+
+================================================================================
+Third-party attributions
+================================================================================
+
+vibeyard (https://github.com/elirantutia/vibeyard)
+--------------------------------------------------------------------------------
+The agent terminal (milestone 03, story 02) adapts code from vibeyard, which is
+licensed under the MIT License. The adapted pieces are the recipe — NOT the
+package: the node-pty spawn-options block and the onData/onExit/write/resize/kill
+lifecycle (win32-guarded), the CliProvider interface
+(resolveBinaryPath / validatePrerequisites / buildArgs / buildEnv → pty.spawn),
+and the xterm terminal-pane wiring pattern. vibeyard's Electron IPC carrier was
+replaced with a WebSocket (`ws@8`) at /ws/terminal (ADR-003).
+
+Files in this repository that carry the corresponding per-file vibeyard MIT
+attribution notice:
+  - src/terminal-ws.mjs
+  - src/terminal-providers.mjs
+  - ui/src/terminal/TerminalControl.tsx
+  - ui/src/terminal/state-ramp.mjs
+  - ui/src/terminal/geometry.mjs
+  - ui/src/terminal/provider-picker.mjs
+
+Milestone 46 unified the browser terminal: the board dock and the fleet card peek
+became one control, and the four browser-side files that carried this notice were
+replaced by the four above. The attribution TRAVELS WITH THE DERIVATION, so what
+moved is recorded rather than dropped:
+  - the xterm terminal-pane wiring (new Terminal / FitAddon / WebLinksAddon /
+    open / fit / onData -> carrier / dispose) from ui/src/board/TerminalDock.tsx
+    and ui/src/fleet/terminal-view/FleetTerminalView.tsx, which reached it
+    through the dock, is now ui/src/terminal/TerminalControl.tsx;
+  - the connection-state ramp from ui/src/board/terminal/dock-state.mjs is now
+    ui/src/terminal/state-ramp.mjs;
+  - the fit -> resize signal from ui/src/board/terminal/resize.mjs is now part of
+    ui/src/terminal/geometry.mjs;
+  - the provider picker moved unchanged to ui/src/terminal/provider-picker.mjs.
+test/arch/acd-vibeyard-attribution.test.mjs parses THIS LIST and asserts it is
+exactly the set of files carrying the per-file notice, so the two cannot drift.
+
+MIT License (vibeyard)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

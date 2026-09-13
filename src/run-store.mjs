@@ -1,0 +1,1128 @@
+// src/run-store.mjs — the run-record store, the state-machine validator, the
+// runs/ path seam, and (milestone 20) the RESILIENCE spine: failure
+// classification + attempt ceiling, the retry-lineage mint, the heartbeat +
+// restart-time orphan-reclaim scan, the dedup guard + collision-safe mint, and the
+// atomic persist. The SPINE the run commands and the autonomous skill all couple
+// through (milestone 19 story 00; extended by milestone 20 story 00).
+//
+// A RUN is a first-class, durably-recorded entity distinct from the durable work
+// ITEM (the PRD "Issue != Task" mechanic). Each run is its OWN JSON file, named by
+// its runId, under the item's runs/ directory (ARCHITECTURE 19/ADR-002; the
+// node-partitioned shape is 26/ADR-001 — the m22-frozen convention made real):
+//
+//   wiki/work/NN_type_slug/runs/<run-id>.json                       — a milestone's runs (flat / single-node)
+//   wiki/work/NN…/stories/SS_story_…/runs/<run-id>.json             — a story's runs (its OWN folder)
+//   wiki/work/NN…/runs/<node>/<run-id>.json                         — a node-partitioned run (26/ADR-001)
+//
+// The runs/ log is DERIVED (19/ADR-002): rebuildable (the dir is wholly
+// regenerable), prunable (delete a file ⇒ prune a run), and — as of milestone 26 —
+// node-PARTITIONED: 19's promised <node>/ segment landed as the additive
+// runNodeRecordPath builder, the record's one additive `node` key decides placement
+// (record → path, never path → record on write), and every reader sees the UNION of
+// flat entries + one level of node subdirs. The node id arrives as DATA (a mint
+// option / record key) — this store reads no config and imports no mesh module. Item
+// frontmatter status stays the single source of truth — this store NEVER writes a
+// record doc; every write joins runsDir(item) (the write-scope guard). That guard
+// is why this module references ZERO record-doc filename (SPEC.md/STORY.md/STATE.md/
+// SESSION.md): record-doc resolution lives in work.mjs, never here. The status
+// rollback a reclaim triggers is the work.mjs writer the COMMAND layer calls over
+// reclaimStaleRuns's return value — never written from inside this store (20/ADR-005).
+import path from "node:path";
+import { mkdir, readFile, readdir, unlink } from "node:fs/promises";
+import { existsSync } from "node:fs";
+// 20/ADR-007 — every run-record write routes through the atomic temp+rename seam
+// (closing 19/R2a). run-store finally couples to fs.mjs like its 15 peers; the lone
+// non-consumer the graph flagged.
+import { writeText } from "./fs.mjs";
+// m42 item 3 — every former silent catch reports a coded degrade event.
+import { reportDegrade } from "./degrade.mjs";
+import { assertStampedClaim, compileProvenance } from "./claim-provenance.mjs";
+
+// ----------------------------------------------------------- error helper ----
+
+// Run-store errors carry `.code` (and a `.status` for the future board face),
+// matching the command error contract (src/command-error.mjs) so a face maps
+// them uniformly. The state-machine illegal case throws code "illegal-transition";
+// the milestone-20 mint/retry guards throw "duplicate-run" / "not-retryable" /
+// "attempts-exhausted" / "no-retryable-run".
+function runError(message, code, status = 400) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  return error;
+}
+
+// ----------------------------------------------------- the spend envelope ----
+//
+// The run record's SIXTEENTH key (68/ADR-001): ONE additive envelope `spend`,
+// appended last, defaulting `null`. `null` means *not measured* — never zero, and
+// distinguishable from a genuinely free run (`costUsd: 0`). When present it is
+// exactly this envelope and nothing else.
+//
+//   spend: {
+//     model, effort,
+//     tokens: { input, output, cacheRead, cacheCreate },
+//     costUsd, costSource, priceTable,
+//     turns, toolCalls, exitReason
+//   }
+//
+// `phase` is deliberately NOT a key — it rides `brief.loop.phase` (68/ADR-002, one
+// authority). `attempt` is already key 4 of the delivered fifteen; it is not
+// re-declared. `exitReason` is the closed typed vocabulary of 68/ADR-008, recorded
+// at settle from what already happened — nothing in this milestone branches on it.
+export const SPEND_ENVELOPE_KEYS = Object.freeze([
+  "model", "effort", "tokens", "costUsd", "costSource", "priceTable", "turns", "toolCalls", "exitReason",
+]);
+
+// The four token buckets of 68/ADR-003 — MUTUALLY EXCLUSIVE (a true total, no term
+// counted twice), enforced IN THE WRITER. `input + output + cacheRead + cacheCreate`
+// is the run's total; a consumer that needs the vendor-inclusive input figure
+// derives it on the way out as `input + cacheRead + cacheCreate` (lossless in that
+// direction, and never the reverse). The writer refuses an overlapping / negative /
+// non-integer / partial bucket set — a malformed envelope is REFUSED, never silently
+// normalised, never partially written.
+export const TOKEN_BUCKET_KEYS = Object.freeze(["input", "output", "cacheRead", "cacheCreate"]);
+
+// 68/ADR-004 — cost is stamped ONCE at settle, and `costSource` says where it came
+// from: `reported` (an authoritative USD figure the runtime emitted) or `priced`
+// (aof multiplied the ingested buckets by a price table). `priceTable` carries the
+// table's version, required when `priced`, `null` when `reported`. No read path
+// recomputes cost.
+export const COST_SOURCES = Object.freeze(["reported", "priced"]);
+
+// 68/ADR-004's price-table version (story 68/02's answer to "the price table has no
+// home yet"). The table lives HERE — in the writer — so that the ONLY module that
+// knows the four bucket names (this one, FF-6803) is also the only module that ever
+// prices them (FF-6804: "no module outside the writer recomputes costUsd"). It is
+// deliberately SMALL and static: a wrong table produces a WRONG but LABELLED costUsd
+// (costSource `priced` + its version), correctable forward and never silently
+// restated backward (ADR-004).
+export const PRICE_TABLE_VERSION = "price-table-2026-08-v1";
+
+// The vendor's per-turn usage keys → the envelope's mutually-exclusive buckets
+// (ADR-003). A STRAIGHT COPY with no arithmetic: each vendor key maps to exactly one
+// bucket and no bucket is derived by adding or subtracting another. Claude Code's own
+// `input_tokens` EXCLUDES both cache classes, so the four are already disjoint — this
+// rename is the whole ingest, and it lives HERE so no producer re-derives the bucket
+// convention (FF-6803's "the writer is the only enforcement home").
+const VENDOR_USAGE_TO_BUCKET = Object.freeze({
+  input_tokens: "input",
+  output_tokens: "output",
+  cache_read_input_tokens: "cacheRead",
+  cache_creation_input_tokens: "cacheCreate",
+});
+
+// Per-1,000,000-token USD by bucket — the price table ADR-004 prices the ingested
+// buckets with. Only the writer reads it, and only at settle.
+const PRICE_TABLE = Object.freeze({
+  input: 3.0,
+  output: 15.0,
+  cacheRead: 0.3,
+  cacheCreate: 3.75,
+});
+
+// mapVendorTokensToBuckets(vendorTokens) — the straight-copy rename (ADR-003). The
+// producer passes the session's own reported per-turn vendor counts; this maps each
+// to its bucket, summing each vendor key independently. Returns the four
+// mutually-exclusive buckets with NO arithmetic between them.
+export function mapVendorTokensToBuckets(vendorTokens) {
+  const buckets = {};
+  for (const [vendorKey, bucketKey] of Object.entries(VENDOR_USAGE_TO_BUCKET)) {
+    const value = vendorTokens?.[vendorKey];
+    buckets[bucketKey] = Number.isFinite(value) && value > 0 ? value : 0;
+  }
+  return buckets;
+}
+
+// priceVendorTokens(vendorTokens) → USD — the priced-cost branch of ADR-004 (aof
+// multiplied the ingested buckets by the price table). Computed ONLY here, in the
+// writer, at settle: no read path ever recomputes a cost (FF-6804).
+export function priceVendorTokens(vendorTokens) {
+  const buckets = mapVendorTokensToBuckets(vendorTokens);
+  return Object.keys(PRICE_TABLE).reduce((sum, key) => {
+    return sum + (buckets[key] / 1_000_000) * PRICE_TABLE[key];
+  }, 0);
+}
+
+// 68/ADR-008 — the closed typed exit vocabulary, fixed HERE so milestone 69 has a
+// stable thing to enforce against. Several members (max_turns / timeout / stall /
+// budget_exceeded) are unreachable until 69 lands; that is expected and not a defect.
+export const EXIT_REASONS = Object.freeze([
+  "final_output", "max_turns", "timeout", "stall", "budget_exceeded", "abort", "error",
+]);
+
+function nonNegativeInteger(value, what) {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+// Validate a spend envelope BEFORE any write (68/ADR-001/003/004/008). A malformed
+// envelope throws a TYPED runError and persists NOTHING — "a convention that lives
+// in a comment is the state that produced the double-count", so the enforcement
+// lives in the writer, never in a caller. `spend` may be `null` (not measured).
+function validateSpend(spend) {
+  if (spend == null) return;
+  if (typeof spend !== "object" || Array.isArray(spend)) {
+    throw runError("spend must be an object envelope or null", "spend-invalid", 400);
+  }
+  // The envelope is a CLOSED set — no `phase` (rides brief.loop.phase), no
+  // re-declared `attempt`, no future telemetry fact smuggled in as a flat key.
+  for (const key of Object.keys(spend)) {
+    if (!SPEND_ENVELOPE_KEYS.includes(key)) {
+      throw runError(`spend carries a key outside its declared envelope: "${key}"`, "spend-invalid-key", 400);
+    }
+  }
+  for (const key of SPEND_ENVELOPE_KEYS) {
+    if (!(key in spend)) {
+      throw runError(`spend is missing its declared key: "${key}"`, "spend-invalid-key", 400);
+    }
+  }
+  if (typeof spend.model !== "string" || spend.model.length === 0) {
+    throw runError("spend.model must be a non-empty string", "spend-invalid-key", 400);
+  }
+  if (typeof spend.effort !== "string" || spend.effort.length === 0) {
+    throw runError("spend.effort must be a non-empty string", "spend-invalid-key", 400);
+  }
+
+  // ---- the four mutually-exclusive token buckets (68/ADR-003) ----
+  const tokens = spend.tokens;
+  if (typeof tokens !== "object" || tokens === null || Array.isArray(tokens)) {
+    throw runError("spend.tokens must be an object of the four mutually-exclusive buckets", "token-buckets-invalid", 400);
+  }
+  for (const key of Object.keys(tokens)) {
+    if (!TOKEN_BUCKET_KEYS.includes(key)) {
+      throw runError(`the four buckets are the closed set — a fifth token key "${key}" is refused`, "token-buckets-closed-set", 400);
+    }
+  }
+  for (const key of TOKEN_BUCKET_KEYS) {
+    if (!(key in tokens)) {
+      throw runError(`all four buckets are required — absence is not zero (missing "${key}")`, "token-buckets-partial", 400);
+    }
+    if (!nonNegativeInteger(tokens[key], key)) {
+      throw runError(`a token count is a non-negative integer (bucket "${key}" was ${JSON.stringify(tokens[key])})`, "token-buckets-invalid", 400);
+    }
+  }
+
+  // ---- cost stamped once (68/ADR-004) ----
+  const { costUsd, costSource, priceTable } = spend;
+  if (typeof costUsd !== "number" || !Number.isFinite(costUsd) || costUsd < 0) {
+    throw runError("a cost is non-negative (costUsd)", "cost-invalid", 400);
+  }
+  if (!COST_SOURCES.includes(costSource)) {
+    throw runError(`costSource must be one of the closed two-member set: ${COST_SOURCES.join(" | ")}`, "cost-source-closed", 400);
+  }
+  if (costSource === "priced" && priceTable == null) {
+    throw runError("a priced number without its table is not comparable — priceTable is required", "cost-priced-no-table", 400);
+  }
+  if (costSource === "reported" && priceTable != null) {
+    throw runError("nothing priced it — priceTable must be null when costSource is reported", "cost-reported-with-table", 400);
+  }
+  if (!nonNegativeInteger(spend.turns, "turns") || !nonNegativeInteger(spend.toolCalls, "toolCalls")) {
+    throw runError("turns and toolCalls are non-negative integers", "spend-invalid-key", 400);
+  }
+
+  // ---- the closed exit vocabulary (68/ADR-008) ----
+  if (!EXIT_REASONS.includes(spend.exitReason)) {
+    throw runError(`exitReason must be one of the declared vocabulary: ${EXIT_REASONS.join(" | ")}`, "exit-reason-closed", 400);
+  }
+}
+
+// --------------------------------------------------------- the path seam ----
+
+// THE single run-path seam (19/ADR-002). runs/ sits inside the item's own folder
+// (item.dir — the story's own folder for a NN/SS ref, the milestone's for NN), so
+// a story's runs live under the story, never pooled at the milestone.
+export function runsDir(item) {
+  return path.join(item.dir, "runs");
+}
+
+// The ONE run-file LEAF form — the runId stem is assembled in exactly one place so
+// the flat and node-partitioned builders can never diverge on the filename
+// (19/ADR-002's single-seam discipline; acd-run-partition-ready pins one stem site).
+function runFileLeaf(runId) {
+  return runId + ".json";
+}
+
+// The FLAT run-file path builder (19/ADR-002) — the single-node legacy shape,
+// unchanged: a run minted with no node id still lands here, byte-identical to today.
+export function runRecordPath(item, runId) {
+  return path.join(runsDir(item), runFileLeaf(runId));
+}
+
+// The NODE-PARTITIONED run-file path builder (26/ADR-001 — the m22-frozen convention
+// made real): EXACTLY runRecordPath with one <node>/ segment inserted before the
+// run-id leaf — join(runsDir(item), node, runId + ".json"), byte-identical to the
+// shape mesh-store.mjs froze in milestone 22. The builder's AUTHORITY lives HERE
+// (mesh-store.mjs RE-EXPORTS it — mesh-store imports run-store, so the reverse home
+// would be an import cycle). A PURE builder: it writes nothing by itself; the
+// persist derives placement FROM the record's `node` key (record → path, one
+// direction — never path → record on write).
+export function runNodeRecordPath(item, node, runId) {
+  return path.join(runsDir(item), node, runFileLeaf(runId));
+}
+
+// ----------------------------------------------------- the state machine ----
+
+// The CLOSED transition table (19/ADR-001), legal edges ONLY. queued is the legal,
+// persisted-representable pre-running state (its outbound edges are validated). It
+// gains its GUARD — not yet a producer — in this milestone's dedup (20/ADR-006):
+// no verb mints a queued run, but the dedup check READS state ∈ {queued, running}.
+// Everything not listed — every self-loop, every move out of a terminal state
+// (done/failed/cancelled are TERMINAL) — is illegal.
+const LEGAL_TRANSITIONS = new Set([
+  "queued>running",
+  "queued>cancelled",
+  "running>done",
+  "running>failed",
+  "running>cancelled",
+]);
+
+// A PURE function over a (from, to) pair — the one authority both the store and
+// the run commands share, so a bad transition can never slip through a face.
+export function isLegalTransition(from, to) {
+  return LEGAL_TRANSITIONS.has(`${from}>${to}`);
+}
+
+// IS THIS ATTEMPT STILL IN FLIGHT? (126/02, ADR-004 §4). The `isLegalTransition` sibling, and it
+// exists for the same reason: this store owns the run-state vocabulary, and a caller that has to
+// ask the question otherwise has to SPELL a state name — which is a second home for a vocabulary
+// with one. The declaration predicate is that caller, and it is forbidden to name a state at all.
+// A `queued` record is NOT running: it has been minted and has not begun.
+export function isRunning(record) {
+  return record?.state === "running";
+}
+
+// ------------------------------------------- failure classification (20) ----
+
+// The CLOSED retryable/non-retryable classification (20/ADR-002), the
+// isLegalTransition sibling (the 06/ADR-003 single-pure-resolver precedent):
+//   runtime_offline / timeout  → retryable     (infra: host down / no verdict in time)
+//   session_limit              → retryable     (infra: the PLATFORM stopped us, with a
+//                                               stated reset — see the parking gate below)
+//   agent_error                → non-retryable  (the agent ran and produced a bad output)
+//   anything else, or null     → non-retryable  (FAIL CLOSED — an unknown reason never auto-retries)
+// PURE: reads no clock/fs/config. A face never improvises which failures retry.
+//
+// `session_limit` was added after the vista-app 348 post-mortem, where three API
+// session limits cost 6h18m of dead run because the vocabulary had no word for them:
+// every kill was recorded as `runtime_offline` — retryable, but carrying no reset
+// time, so nothing could tell "retry now" from "retry at 1:10am". The reason is
+// distinct precisely so the record can carry `resumeAfter` and the retry can WAIT.
+const RETRYABLE_REASONS = new Set(["runtime_offline", "timeout", "session_limit"]);
+
+export function isRetryable(failureReason) {
+  return RETRYABLE_REASONS.has(failureReason);
+}
+
+// shouldRetry ANDs the classification with the attempt ceiling (20/ADR-002): true
+// IFF the reason is retryable AND the record is still below the ceiling. PURE over
+// (record, maxAttempts) — the resolved ceiling is passed in; the store never reads
+// config (08/ADR-002 basis-neutral). Fails closed at attempt >= maxAttempts.
+//
+// DELIBERATELY time-blind, and it stays that way: this answers "is this class of
+// failure resumable at all", not "may it resume yet". The clock gate is
+// retryReadiness below, which takes `nowMs` as data. Keeping them apart is what
+// lets the reclaim path (run-start) go on calling this with two arguments.
+export function shouldRetry(record, maxAttempts) {
+  return isRetryable(record.failureReason) && record.attempt < maxAttempts;
+}
+
+// ------------------------------------------------- the parking gate (348) ----
+
+// Default park when a session limit arrives with no readable reset time. An hour is
+// the shortest window that is nearly always past the reset; the caller may override.
+export const DEFAULT_PARK_MINUTES = 60;
+
+// The zone offset (ms) in force AT a given instant for an IANA zone. Intl is the
+// only correct source for this — a fixed offset is wrong across a DST boundary, and
+// "resets 1:10am" lands on exactly that boundary twice a year.
+function zoneOffsetMs(instantMs, timeZone) {
+  // Align to the second FIRST. Intl formats to second precision, so differencing
+  // against an unaligned instant folds that instant's milliseconds into the
+  // "offset" — which then leaks into every park time as random sub-second noise.
+  const aligned = Math.floor(instantMs / 1000) * 1000;
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = {};
+  for (const part of dtf.formatToParts(new Date(aligned))) {
+    if (part.type !== "literal") parts[part.type] = part.value;
+  }
+  const asUTC = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour) % 24,
+    Number(parts.minute),
+    Number(parts.second),
+  );
+  return asUTC - aligned;
+}
+
+// The next instant at which the wall clock in `timeZone` reads hour:minute. Resolves
+// the offset AT the candidate (not at `now`), then rolls to tomorrow when the time
+// has already passed today — "resets 1:10am" seen at 21:05 means tomorrow, and
+// getting that wrong would resume four hours early into a still-limited window.
+function nextLocalInstant(nowMs, timeZone, hour, minute) {
+  const offsetNow = zoneOffsetMs(nowMs, timeZone);
+  const local = new Date(nowMs + offsetNow);
+  const year = local.getUTCFullYear();
+  const month = local.getUTCMonth();
+  const day = local.getUTCDate();
+  const resolve = (dayOffset) => {
+    const naive = Date.UTC(year, month, day + dayOffset, hour, minute, 0);
+    // One correction pass: re-resolve using the offset in force at the candidate.
+    return naive - zoneOffsetMs(naive - offsetNow, timeZone);
+  };
+  const today = resolve(0);
+  return today > nowMs ? today : resolve(1);
+}
+
+// Turn whatever the platform said into an absolute UTC-Z instant. Accepts:
+//   - a full ISO timestamp        → used as-is (the machine-friendly form)
+//   - "8:10pm (Europe/London)"    → the next 20:10 in that zone (what Claude Code prints)
+//   - "8:10pm" / "20:10"          → the next such time in `timeZone` (default UTC)
+//   - anything unreadable / absent → now + fallbackMinutes, flagged as a fallback
+// PURE over its inputs (`now` is injected). Never throws — an unreadable reset must
+// park conservatively, never crash the failure path that is already handling a crash.
+export function parseResumeAfter(value, { now = new Date().toISOString(), timeZone = "UTC", fallbackMinutes = DEFAULT_PARK_MINUTES } = {}) {
+  const nowMs = Date.parse(now);
+  const base = Number.isNaN(nowMs) ? Date.now() : nowMs;
+  const fallback = () => ({
+    resumeAfter: new Date(base + fallbackMinutes * 60 * 1000).toISOString(),
+    source: "fallback",
+    note: `no readable reset time — parked ${fallbackMinutes} min`,
+  });
+  if (value == null || String(value).trim() === "") return fallback();
+  const text = String(value).trim();
+
+  // The ISO form first — an explicit instant always wins over text parsing.
+  if (/^\d{4}-\d{2}-\d{2}[T ]/.test(text)) {
+    const parsed = Date.parse(text);
+    if (!Number.isNaN(parsed)) return { resumeAfter: new Date(parsed).toISOString(), source: "iso", note: null };
+  }
+
+  // "8:10pm (Europe/London)" / "20:10 (UTC)" / "8:10 pm" / "1:10am"
+  const clock = /(\d{1,2})[:.](\d{2})\s*([ap]\.?m\.?)?/i.exec(text);
+  if (!clock) return fallback();
+  let hour = Number(clock[1]);
+  const minute = Number(clock[2]);
+  const meridiem = clock[3] ? clock[3].toLowerCase().replace(/\./g, "") : null;
+  if (meridiem === "pm" && hour < 12) hour += 12;
+  if (meridiem === "am" && hour === 12) hour = 0;
+  if (!(hour >= 0 && hour <= 23) || !(minute >= 0 && minute <= 59)) return fallback();
+
+  const zoneMatch = /\(([A-Za-z_]+\/[A-Za-z_+-]+|UTC|GMT)\)/.exec(text);
+  const zone = zoneMatch ? (zoneMatch[1] === "GMT" ? "UTC" : zoneMatch[1]) : timeZone;
+  try {
+    return { resumeAfter: new Date(nextLocalInstant(base, zone, hour, minute)).toISOString(), source: "clock", note: `next ${clock[0]} in ${zone}` };
+  } catch {
+    // An unknown zone name — park conservatively rather than guessing a zone.
+    return fallback();
+  }
+}
+
+// May this failed run resume YET? The clock half of the retry decision, split out so
+// shouldRetry stays time-blind. PURE over (record, maxAttempts, nowMs) — the ceiling
+// and the clock are both passed in (08/ADR-002 basis-neutral).
+//
+// States: `ready` (retry now) · `parked` (retryable, but resumeAfter is in the
+// future — `readyAt` says when) · `not-retryable` · `attempts-exhausted`.
+export function retryReadiness(record, maxAttempts, nowMs) {
+  if (!record) return { ready: false, state: "no-run", readyAt: null };
+  if (!isRetryable(record.failureReason)) return { ready: false, state: "not-retryable", readyAt: null };
+  if (record.attempt >= maxAttempts) return { ready: false, state: "attempts-exhausted", readyAt: null };
+  const readyAtMs = record.resumeAfter ? Date.parse(record.resumeAfter) : NaN;
+  if (!Number.isNaN(readyAtMs) && readyAtMs > nowMs) {
+    return { ready: false, state: "parked", readyAt: new Date(readyAtMs).toISOString() };
+  }
+  return { ready: true, state: "ready", readyAt: record.resumeAfter ?? null };
+}
+
+// ---------------------------------------------------- run-record helpers ----
+
+// The frozen runId form (19/ADR-003): "<createdAt-compact>-<seq>" where compact is
+// the createdAt with colon/dot/dash punctuation stripped (YYYYMMDDTHHMMSSsssZ) and
+// seq is the count of pre-existing runs/ files, zero-padded to 4 digits. So the
+// first run of an item gets 0000, two runs at the same instant get 0000 then 0001,
+// and a wipe resets the count → the next run is 0000 again. ids sort chronologically
+// AND are unique. The compactStamp UTC-Z toISOString() assumption is PRESERVED
+// across every new persist path (20/ADR-007) — never inject a non-UTC clock.
+function compactStamp(createdAt) {
+  return createdAt.replace(/[-:.]/g, "");
+}
+
+function mintRunId(createdAt, seq) {
+  return `${compactStamp(createdAt)}-${String(seq).padStart(4, "0")}`;
+}
+
+// How many run files already live under runs/ — the positional seq SEED, counted
+// over the UNION of flat entries + one level of node subdirs (26/ADR-001: the seq
+// seed counts the union, so two nodes minting at the same instant get distinct ids
+// even before their trees converge). Absence tolerant (no runs/ dir ⇒ 0; an
+// unreadable subdir counts 0), the same ENOENT→[] discipline work.mjs:readDirSafe
+// uses. The mint path's write-if-absent retry (mintRun) makes the seq
+// collision-safe under concurrency (closing 19/R2b) — this count is only the seed.
+async function countRunFiles(item) {
+  let entries = [];
+  try {
+    entries = await readdir(runsDir(item), { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  let count = 0;
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      try {
+        const nested = await readdir(path.join(runsDir(item), entry.name));
+        count += nested.filter((name) => name.endsWith(".json")).length;
+      } catch (error) {
+        // An unreadable node subdir counts as empty (absence is benign).
+      reportDegrade("run-store", error); }
+      continue;
+    }
+    if (entry.name.endsWith(".json")) count += 1;
+  }
+  return count;
+}
+
+// Persist a record AS-IS through the ATOMIC temp+rename seam (20/ADR-007): pretty
+// JSON, every write under runs/ (the write seam). PLACEMENT DERIVES FROM THE RECORD
+// (26/ADR-001.3): record.node set ⇒ the node-partitioned runNodeRecordPath; null ⇒
+// the flat legacy runRecordPath — ONE direction (record → path), on EVERY write, so
+// completion / heartbeat / reclaim persist a node-partitioned run back AT its node
+// path, never relocated. A kill mid-write leaves the PRIOR file intact (the rename
+// is atomic), never a torn record. The mkdir stays belt-and-braces (writeText also
+// mkdir's its dirname, covering the <node>/ subdir) and is the store's only fs
+// write-verb call, joining the runs/ seam (the write-scope guard).
+async function persist(item, record) {
+  await mkdir(runsDir(item), { recursive: true });
+  await writeText(
+    record.node ? runNodeRecordPath(item, record.node, record.runId) : runRecordPath(item, record.runId),
+    JSON.stringify(record, null, 2)
+  );
+}
+
+// Build the frozen run-record object literal — EXACTLY these FOURTEEN keys, in this
+// order (26/ADR-001 SUPERSEDES 20/ADR-001's thirteen-key freeze, by the same
+// discipline that freeze used to supersede 19/ADR-003's nine): the prior thirteen —
+// the original nine (runId, itemRef, state, attempt, outcome, sessionId, brief,
+// createdAt, updatedAt) plus the four resilience keys (failureReason, heartbeatAt,
+// retryOf, reclaimedAt) — UNCHANGED in name/order/meaning, then the ONE additive
+// partition-provenance key `node` (string | null, defaulting null): a run read in
+// isolation knows its owner without path archaeology. attempt + retryOf carry the
+// retry lineage (20/ADR-003); a fresh start is attempt 1, retryOf null. The brief is
+// persisted OPAQUE/verbatim (never reshaped).
+//
+// The FIFTEEN-key record (348 auto-resume) SUPERSEDES the fourteen by that same
+// additive discipline: `resumeAfter` (UTC-Z string | null, defaulting null) appended
+// LAST — the instant a `session_limit` failure becomes resumable. A fourteen-key
+// record reads forward with resumeAfter: null (absence benign), which is exactly a
+// failure with no stated reset: retryable immediately, as it is today.
+//
+// The SIXTEENTH key (68/ADR-001) SUPERSEDES the fifteen by that same additive
+// discipline: `spend` (the validated envelope | null, defaulting null) appended LAST
+// — a run that ends before anything is ingested, a run on a runtime that reports
+// nothing, and a fifteen-key record read forward are all the SAME state: not
+// measured, never zero.
+function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1, retryOf = null, node = null }) {
+  return {
+    runId,
+    itemRef,
+    state: "running",
+    attempt,
+    outcome: null,
+    sessionId: sessionId ?? null,
+    brief: brief ?? {},
+    createdAt,
+    updatedAt: createdAt,
+    failureReason: null,
+    heartbeatAt: null,
+    retryOf: retryOf ?? null,
+    reclaimedAt: null,
+    node: node ?? null,
+    resumeAfter: null,
+    spend: null,
+  };
+}
+
+// Normalise a record read off disk to the frozen fourteen keys, in order — a
+// milestone-19 nine-key record and a milestone-20 thirteen-key record read
+// forward-compatibly, each missing resilience key — and the missing `node` — as
+// null (26/ADR-001 + 20/ADR-001 + 19/ADR-002 "absence is benign": every generation
+// of record is the SAME record through this one normalization, never a distinct
+// shape). The original keys are preserved verbatim.
+function normalizeRecord(raw) {
+  return {
+    runId: raw.runId,
+    itemRef: raw.itemRef,
+    state: raw.state,
+    attempt: raw.attempt,
+    outcome: raw.outcome ?? null,
+    sessionId: raw.sessionId ?? null,
+    brief: raw.brief ?? {},
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    failureReason: raw.failureReason ?? null,
+    heartbeatAt: raw.heartbeatAt ?? null,
+    retryOf: raw.retryOf ?? null,
+    reclaimedAt: raw.reclaimedAt ?? null,
+    node: raw.node ?? null,
+    resumeAfter: raw.resumeAfter ?? null,
+    spend: raw.spend ?? null,
+  };
+}
+
+// ------------------------------------------------------------- the store ----
+
+// The shared mint path for startRun + retryRun (20/ADR-006/007): the DEDUP guard
+// ("no duplicate non-terminal run per item" — giving 19's reserved queued state its
+// guard), the COLLISION-SAFE write-if-absent mint (closing 19/R2b — a runId
+// collision bumps seq and retries rather than the second mint silently overwriting
+// the first), and the ATOMIC persist (20/ADR-007). attempt/retryOf carry the retry
+// lineage (20/ADR-003); a fresh start passes the defaults (attempt 1, retryOf null).
+async function mintRun(item, { sessionId = null, brief = {}, now, attempt = 1, retryOf = null, node = null } = {}) {
+  // New durable claims must already carry the stamp produced at their command edge.
+  // Validate before reading the store, so refusal cannot infer or write anything.
+  if (brief?.grade != null) assertStampedClaim(brief.grade);
+  // Dedup: an item must never have two NON-TERMINAL (queued|running) runs in flight —
+  // and readRuns is the UNION read (26/ADR-001.4), so a peer NODE's non-terminal run
+  // blocks a mint exactly like a local one: two nodes' records can never hide a
+  // duplicate from each other. A second mint while one exists is rejected
+  // duplicate-run, minting nothing — the anti-loop BACKSTOP the skill leans on, and
+  // the producer guard for 19's queued.
+  const existing = await readRuns(item);
+  if (existing.some((run) => run.state === "queued" || run.state === "running")) {
+    throw runError("a non-terminal run already exists for this item", "duplicate-run", 409);
+  }
+
+  const createdAt = now ?? new Date().toISOString();
+  // Collision-safe mint: seed seq from the UNION file count, and probe the UNION for
+  // the minted runId (26/ADR-001.4 — runId uniqueness is per-ITEM across ALL node
+  // subdirs): if the id exists ANYWHERE in the union (an interleaved mint — possibly
+  // a peer node's — won the race), bump seq and retry so two mints at the identical
+  // instant get DISTINCT ids — never a silent overwrite, even across partitions.
+  let seq = await countRunFiles(item);
+  for (;;) {
+    const runId = mintRunId(createdAt, seq);
+    if (await findRunPath(item, runId)) {
+      seq += 1;
+      continue;
+    }
+    const record = buildRecord({ runId, itemRef: item.ref, sessionId, brief, createdAt, attempt, retryOf, node });
+    await persist(item, record);
+    return record;
+  }
+}
+
+// Create + persist ONE FRESH run, ALREADY in `running` (19/ADR-001: work:run-start
+// creates-and-begins). attempt 1, retryOf null, sessionId as supplied (or null) —
+// it never carries a prior session (the contrast 20/ADR-003 turns on). Subject to
+// the dedup guard + collision-safe mint. The optional `node` (26/ADR-001) is
+// INJECTED DATA — the COMMAND layer passes config.mesh.nodeId when mesh is
+// configured (story 02's pass-through); the store never reads config, and the
+// no-node mint stays the flat single-node behaviour, byte-identical to today.
+export async function startRun(item, { sessionId = null, brief = {}, now, node = null } = {}) {
+  return mintRun(item, { sessionId, brief, now, node });
+}
+
+// Read an item's runs — the UNION of flat entries + ONE level of node subdirs
+// (26/ADR-001.4: one item, one run history, whatever partition each record lives
+// in) — NORMALISED to the frozen fourteen keys and ordered ASCENDING by runId (the
+// lexically-sortable id ⇒ creation order, regardless of directory walk order).
+// Absence-tolerant: no runs/ dir OR an empty dir ⇒ [], never an ENOENT throw
+// (19/ADR-002). The torn-file tolerance is PER ENTRY and spans partitions: a
+// torn/unparseable file (a non-atomic write interrupted mid-flight, an external
+// edit) — flat OR inside a node subdir — is SKIPPED rather than blinding the rest
+// of the union. The runs/ log is derived + rebuildable, so a corrupt record
+// degrades to one MISSING run — the same "absence is benign" discipline as the
+// absent-dir read.
+export async function readRuns(item) {
+  let entries = [];
+  try {
+    entries = await readdir(runsDir(item), { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const records = [];
+  const readInto = async (filePath) => {
+    try {
+      records.push(normalizeRecord(JSON.parse(await readFile(filePath, "utf8"))));
+    } catch (error) {
+      // Torn-file tolerance: skip the one bad entry, keep the rest of the union.
+      reportDegrade("run-store", error); }
+  };
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      // One level of node subdirs — each <sub>/<run-id>.json resolved through THE
+      // builder (runNodeRecordPath), the same normalization + torn-skip as flat.
+      let nested = [];
+      try {
+        nested = await readdir(path.join(runsDir(item), entry.name));
+      } catch {
+        continue;
+      }
+      for (const name of nested) {
+        if (!name.endsWith(".json")) continue;
+        await readInto(runNodeRecordPath(item, entry.name, name.slice(0, -".json".length)));
+      }
+      continue;
+    }
+    if (!entry.name.endsWith(".json")) continue;
+    await readInto(path.join(runsDir(item), entry.name));
+  }
+  records.sort((a, b) => (a.runId < b.runId ? -1 : a.runId > b.runId ? 1 : 0));
+  return records;
+}
+
+// Resolve a runId to its on-disk path across the UNION (26/ADR-001.4): the flat
+// legacy path first, else ONE level of node subdirs. ENOENT-tolerant (an absent
+// runs/ dir resolves null); returns null when the id lives nowhere in the union.
+// Consumers: readRun (so applyTransition/heartbeat/completeRun target a run in ANY
+// partition) and the mint's write-if-absent probe (union-spanning id uniqueness).
+async function findRunPath(item, runId) {
+  const flat = runRecordPath(item, runId);
+  if (existsSync(flat)) return flat;
+  let entries = [];
+  try {
+    entries = await readdir(runsDir(item), { withFileTypes: true });
+  } catch {
+    return null;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const nested = runNodeRecordPath(item, entry.name, runId);
+    if (existsSync(nested)) return nested;
+  }
+  return null;
+}
+
+// Read one run record by runId (the runId is the filename stem), resolved across
+// the union, normalised forward. An id found nowhere still reads (and throws) at
+// the flat path — the pre-partition ENOENT semantics, preserved.
+async function readRun(item, runId) {
+  const target = (await findRunPath(item, runId)) ?? runRecordPath(item, runId);
+  const body = await readFile(target, "utf8");
+  return normalizeRecord(JSON.parse(body));
+}
+
+// Append one anchor reading to an existing run. The registry declares anchors;
+// readings ride the run's opaque brief, so no store or directory is introduced.
+// Provenance validation happens before any store read or write.
+export async function recordAnchorReading(item, { runId, anchor, value, provenance } = {}) {
+  if (typeof runId !== "string" || runId.length === 0) {
+    throw runError("an anchor reading needs the run it belongs to", "anchor-reading-run-required", 400);
+  }
+  if (typeof anchor !== "string" || anchor.length === 0) {
+    throw runError("an anchor reading needs an anchor id", "anchor-reading-anchor-required", 400);
+  }
+  if (value === undefined) {
+    throw runError("an anchor reading needs the observed value", "anchor-reading-value-required", 400);
+  }
+  const stamp = compileProvenance(provenance);
+  if (stamp.run !== runId) {
+    throw runError("an anchor reading's provenance run must name the run record it rides", "anchor-reading-run-mismatch", 400);
+  }
+
+  const record = await readRun(item, runId);
+  const prior = record.brief?.anchorReadings;
+  if (prior != null && !Array.isArray(prior)) {
+    throw runError("brief.anchorReadings must be an array", "anchor-readings-invalid", 409);
+  }
+  const reading = Object.freeze({ anchor, value, provenance: stamp });
+  const updated = {
+    ...record,
+    // A reading has its own stamped instant. Preserve the run lifecycle timestamps so
+    // appending evidence cannot masquerade as a run-state transition.
+    brief: {
+      ...(record.brief ?? {}),
+      anchorReadings: [...(prior ?? []), reading],
+    },
+  };
+  await persist(item, updated);
+  return reading;
+}
+
+// Apply a transition with VALIDATE-BEFORE-WRITE ordering ("an illegal transition
+// writes nothing"): read → compute (from,to) → validate → (legal) write / (illegal)
+// throw illegal-transition. An illegal transition leaves the on-disk file
+// BYTE-IDENTICAL. On a →failed transition, an optional failureReason is recorded
+// verbatim (20/ADR-001 the producer's store half; the closed-set safety stays with
+// the classifier failing closed, ADR-002, NOT a store rejection); reclaimedAt is set
+// when the reclaim scan supplies it. The other resilience keys are PRESERVED unless
+// the transition sets them. `now` is the injected UTC-Z clock (20/ADR-007).
+export async function applyTransition(item, runId, toState, { now, failureReason = null, reclaimedAt = null, resumeAfter = null } = {}) {
+  const record = await readRun(item, runId);
+  const from = record.state;
+  if (!isLegalTransition(from, toState)) {
+    throw runError(`illegal transition ${from} -> ${toState}`, "illegal-transition", 409);
+  }
+  // Legal: terminal target equals its state (outcome == state on terminal,
+  // 19/ADR-003), bump updatedAt, preserve runId/createdAt/everything else.
+  const updated = {
+    ...record,
+    state: toState,
+    outcome: toState,
+    updatedAt: now ?? new Date().toISOString(),
+  };
+  if (toState === "failed") {
+    updated.failureReason = failureReason ?? record.failureReason ?? null;
+    // The park stamp rides the SAME →failed edge that records the reason, so a
+    // record can never carry a session_limit without the reset that goes with it.
+    if (resumeAfter) updated.resumeAfter = resumeAfter;
+  }
+  if (reclaimedAt) {
+    updated.reclaimedAt = reclaimedAt;
+  }
+  await persist(item, updated);
+  return updated;
+}
+
+// The terminal transition running→outcome on the target run. Target resolution: a
+// supplied runId wins; otherwise the item's single in-flight `running` run (0 →
+// no-running-run, >1 → ambiguous-run). On --outcome failed an optional failureReason
+// is written onto the record (20/ADR-001 producer store half); a clean done/cancelled
+// records null. applyTransition naturally rejects a non-legal target (the outcome-set
+// validation done|failed|cancelled is the COMMAND's job).
+//
+// 68/02 (spend-ingest-at-settle) — this is the PRODUCTION SETTLE SEAM (the story's
+// one real gap closed here): once a run has settled, its spend is stamped from the
+// session's own transcript through the producer (src/run-spend-ingest.mjs) and the
+// writer's settleRunFromVendor/settleRun. This is ADDITIVE and never blocks or
+// changes the settle (ADR-003/004/008):
+//   - it needs a `projectsDir` (where the session's transcript tree lives) plus a
+//     readable transcript and a recorded sessionId; when any of those is absent, or
+//     the ingest fails, the record's spend stays null (not measured — never a
+//     fabricated zero) and the settle's state/outcome/lineage are untouched;
+//   - a run that already has spend is never re-stamped (the producer's own
+//     already-settled guard);
+//   - the producer is imported LAZILY to keep this writer's static dependency graph
+//     clean (the producer itself imports this module's readRuns/settleRun, so a
+//     static import here would be a cycle — a dynamic import at settle resolves it);
+//   - a failure to ingest is reported (reportDegrade) rather than swallowed silently.
+export async function completeRun(item, { runId, outcome, failureReason = null, resumeAfter = null, now, projectsDir } = {}) {
+  let targetRunId = runId;
+  if (!targetRunId) {
+    const running = (await readRuns(item)).filter((run) => run.state === "running");
+    if (running.length === 0) {
+      throw runError("no running run to complete for this item", "no-running-run", 409);
+    }
+    if (running.length > 1) {
+      throw runError("more than one running run — runId is required", "ambiguous-run", 409);
+    }
+    targetRunId = running[0].runId;
+  }
+  const settled = await applyTransition(item, targetRunId, outcome, { failureReason, resumeAfter, now });
+  if (typeof projectsDir === "string" && projectsDir.length > 0) {
+    try {
+      const { settleSpendFromTranscript } = await import("./run-spend-ingest.mjs");
+      const { stamped, reason } = await settleSpendFromTranscript(item, {
+        runId: settled.runId,
+        projectsDir,
+        now: now ?? new Date().toISOString(),
+      });
+      // An already-settled run is the success-of-idempotence case, not a failure.
+      if (!stamped && reason && reason !== "already-settled") {
+        reportDegrade("run-store", new Error(`spend not stamped at settle: ${reason}`));
+      }
+    } catch (error) {
+      reportDegrade("run-store", error);
+    }
+  }
+  return settled;
+}
+
+// Settle a run's SPEND envelope (68/ADR-001/003/004/008). This is where cost, tokens
+// and exit are STAMPED — once, at settle, from what already happened — and it is the
+// ONLY write path that accepts a spend. The envelope is validated IN THE WRITER
+// (68/ADR-003: a convention that lives in a comment is the state that produced the
+// double-count): a malformed spend throws a typed runError and persists NOTHING, so
+// the record's `spend` is left exactly as it was and no partially-written envelope is
+// ever on disk. Cost is never recomputed on read (68/ADR-004). Target resolution
+// matches completeRun: a supplied runId wins, else the item's single in-flight
+// `running` run. State/outcome are UNCHANGED by settling — recording how a run ended
+// decides nothing about it (68/ADR-008).
+export async function settleRun(item, { runId, spend = null, now } = {}) {
+  validateSpend(spend);
+  let targetRunId = runId;
+  if (!targetRunId) {
+    const running = (await readRuns(item)).filter((run) => run.state === "running");
+    if (running.length === 0) {
+      throw runError("no running run to settle for this item", "no-running-run", 409);
+    }
+    if (running.length > 1) {
+      throw runError("more than one running run — runId is required", "ambiguous-run", 409);
+    }
+    targetRunId = running[0].runId;
+  }
+  const record = await readRun(item, targetRunId);
+  const updated = {
+    ...record,
+    updatedAt: now ?? new Date().toISOString(),
+    spend: spend ?? record.spend ?? null,
+  };
+  await persist(item, updated);
+  return updated;
+}
+
+// Record the session id a spawned run is running AS, onto the run record (68/ADR-005
+// §1, story 68/01 — the attribution join key the record has always modelled, finally
+// written). The DRIVER emits the id mid-run (`onSessionIdCaptured`); its CALLERS
+// persist it — this is the caller's write seam, additive to the assignment path that
+// already receives the id.
+//
+// Idempotent and non-churning: writing a BYTE-IDENTICAL id is a no-op that rewrites
+// nothing (the id is written once), and the write touches ONLY `sessionId` — the
+// run's state, outcome, attempt, retry lineage, timestamps and spend are left
+// exactly as they are. A non-string/empty id is recorded as null (a run whose
+// session never reports an id stays honest). Target resolution matches completeRun /
+// settleRun: a supplied runId wins, else the item's single in-flight `running` run.
+export async function recordSessionId(item, { runId, sessionId = null, now } = {}) {
+  if (typeof sessionId !== "string" || sessionId.length === 0) sessionId = null;
+  let targetRunId = runId;
+  if (!targetRunId) {
+    const running = (await readRuns(item)).filter((run) => run.state === "running");
+    if (running.length === 0) {
+      throw runError("no running run to record a session id for this item", "no-running-run", 409);
+    }
+    if (running.length > 1) {
+      throw runError("more than one running run — runId is required", "ambiguous-run", 409);
+    }
+    targetRunId = running[0].runId;
+  }
+  const record = await readRun(item, targetRunId);
+  // Byte-identical id → no rewrite: the id is written once and not churned.
+  if (record.sessionId === sessionId) return record;
+  const updated = {
+    ...record,
+    sessionId,
+  };
+  await persist(item, updated);
+  return updated;
+}
+
+// settleRunFromVendor(item, opts) — stamp a run's spend from the session's OWN
+// per-turn vendor usage counts (story 68/02's producer path). The producer reads the
+// transcript and hands over the raw facts; THIS writer maps them to the four
+// mutually-exclusive buckets (ADR-003, a straight copy with no arithmetic), prices
+// them at settle (ADR-004's `priced` branch — the ONLY place cost is ever computed),
+// and stamps once via settleRun. Because the whole envelope is built HERE, the
+// bucket convention and the cost computation have exactly one home (FF-6803/FF-6804),
+// and the producer never re-derives either.
+//
+//   opts — { runId, vendorTokens, model, effort, turns, toolCalls, exitReason, now }
+//   `exitReason` is the closed-vocabulary reason the run ended (ADR-008); it is
+//   recorded, never branched on. The transcript carries no cost, so every run stamped
+//   through this path is `costSource: "priced"` with `priceTable` = PRICE_TABLE_VERSION
+//   (ADR-004).
+export async function settleRunFromVendor(item, { runId, vendorTokens, model, effort, turns, toolCalls, exitReason, now } = {}) {
+  const tokens = mapVendorTokensToBuckets(vendorTokens);
+  const spend = {
+    model,
+    effort,
+    tokens,
+    costUsd: priceVendorTokens(vendorTokens),
+    costSource: "priced",
+    priceTable: PRICE_TABLE_VERSION,
+    turns,
+    toolCalls,
+    exitReason,
+  };
+  return settleRun(item, { runId, spend, now });
+}
+
+// Resume a retryable failed run's lineage (20/ADR-003): resolve the prior run (a
+// supplied runId, else the item's most-recent terminal `failed` run), consult the
+// classification + ceiling, and on a YES mint a NEW run that CARRIES the prior
+// sessionId forward with attempt = prior.attempt + 1 and retryOf = prior.runId
+// (reusing the dedup + collision-safe + atomic mint path). A non-retryable prior →
+// not-retryable; a ceiling-exhausted prior → attempts-exhausted; no failed run at
+// all → no-retryable-run. Each rejection mints NO run and leaves the prior
+// byte-unchanged. maxAttempts is the resolved ceiling passed in (the store reads no
+// config); a fresh start (startRun) stays untouched — it never carries a prior session.
+// The optional `node` (26/ADR-001, the startRun idiom) is INJECTED DATA the COMMAND
+// layer passes when mesh is configured, so the lineage mint lands under the RETRIER's
+// node partition; the store still reads no config, and the no-node retry stays flat.
+// The optional `sessionId` OVERRIDE (26/ADR-006.4 — the same additive pattern): when
+// ABSENT (undefined) the retry carries the prior sessionId unchanged (today's
+// same-node resume semantics, byte-identical); when PASSED (a string or null) it
+// REPLACES the carry — the fleet-reclaim winner mints the reclaimed lineage under its
+// OWN session (or none), never the dead peer's (resume semantics do not cross hosts).
+export async function retryRun(item, { runId, maxAttempts = Infinity, brief, now, node = null, sessionId, force = false } = {}) {
+  const runs = await readRuns(item);
+  let prior;
+  if (runId) {
+    prior = runs.find((run) => run.runId === runId) ?? null;
+  } else {
+    prior = [...runs].reverse().find((run) => run.state === "failed") ?? null;
+  }
+  if (!prior) {
+    throw runError("no retryable failed run for this item", "no-retryable-run", 409);
+  }
+  // The two distinct gates (kept separate so the codes stay distinct): a
+  // non-retryable reason (agent_error / unknown / null) vs a retryable reason already
+  // at/over the ceiling. The classifier (ADR-002) is the single authority.
+  if (!isRetryable(prior.failureReason)) {
+    throw runError(`run ${prior.runId} failed with a non-retryable reason`, "not-retryable", 409);
+  }
+  if (prior.attempt >= maxAttempts) {
+    throw runError(`run ${prior.runId} has exhausted its ${maxAttempts} attempt(s)`, "attempts-exhausted", 409);
+  }
+  // The PARK gate (348). A prior that failed on a stated reset (session_limit) is
+  // retryable but not YET: resuming into a still-limited window would burn an
+  // attempt on a kill that is certain to repeat, and three attempts spent that way
+  // exhaust the ceiling without a single line of work. Refuse coded, carrying the
+  // instant it becomes ready, and mint nothing. `force` is the operator override
+  // (the reset was wrong, or the limit lifted early).
+  if (!force) {
+    const readiness = retryReadiness(prior, maxAttempts, Date.parse(now ?? new Date().toISOString()));
+    if (readiness.state === "parked") {
+      const error = runError(`run ${prior.runId} is parked until ${readiness.readyAt} (${prior.failureReason})`, "retry-parked", 409);
+      error.readyAt = readiness.readyAt;
+      throw error;
+    }
+  }
+  // Resume: a NEW run carrying the prior sessionId (unless the caller overrides —
+  // the cross-host reclaim never inherits a dead peer's session), attempt + 1,
+  // retryOf linking the lineage. The dedup guard in mintRun still applies (a
+  // self-retry while this item's own run is in flight is refused duplicate-run —
+  // the anti-loop backstop).
+  return mintRun(item, {
+    sessionId: sessionId !== undefined ? sessionId : prior.sessionId,
+    brief: brief ?? prior.brief ?? {},
+    now,
+    attempt: prior.attempt + 1,
+    retryOf: prior.runId,
+    node,
+  });
+}
+
+// ------------------------------------------ liveness + orphan reclaim (20) ----
+
+// Stamp a running run's liveness (20/ADR-004): bump heartbeatAt (and updatedAt) to
+// the supplied UTC-Z `now` WITHOUT changing state (a no-state-change persist — state
+// stays running, outcome stays null). The stamp lives ON the record, not a sidecar.
+export async function heartbeat(item, runId, { now } = {}) {
+  const record = await readRun(item, runId);
+  const stamp = now ?? new Date().toISOString();
+  const updated = { ...record, heartbeatAt: stamp, updatedAt: stamp };
+  await persist(item, updated);
+  return updated;
+}
+
+// A running run is STALE when now - heartbeatAt exceeds the threshold; a run that
+// NEVER beat (heartbeatAt null) falls back to now - updatedAt (20/ADR-004). Pure over
+// the passed-in values — the store reads no clock/config. Strict `>` so a run exactly
+// AT the threshold is still live.
+//
+// EXPORTED (milestone 23 / story 00, ADR-002): the node-staleness predicate in
+// src/mesh/presence.mjs REUSES this exact shape rather than re-deriving it, so the
+// run layer (m20) and the node layer (m23) PROVABLY share ONE staleness definition
+// (the genuine 23 → 20 seam — never a parallel heartbeat, the SPEC §Dependencies
+// constraint). The presence record carries a heartbeatAt but no updatedAt, so its
+// caller passes a presence-shaped { heartbeatAt } object (the `?? updatedAt` fallback
+// is inert there — presence always has a heartbeatAt when staleness is computed).
+export function isStale(run, nowMs, stalenessThreshold) {
+  const liveness = run.heartbeatAt ?? run.updatedAt;
+  const age = nowMs - Date.parse(liveness);
+  return age > stalenessThreshold;
+}
+
+// The restart-time orphan-reclaim scan (20/ADR-004). It WALKS RUN RECORDS BY PATH —
+// it takes the LIST of items to scan as an ARGUMENT and iterates each item's runs/
+// (no single-node / single-directory assumption baked in), so milestone 26's fleet
+// scan passes a wider item set with NO rewrite (the 26 → 20 seam). For each STALE
+// `running` run it force-fails via the legal running → failed edge (applyTransition),
+// setting failureReason = runtime_offline (a crashed host is infra, so the reclaimed
+// run stays RETRYABLE per ADR-002) and reclaimedAt = now (distinguishing a reclaimed
+// failure from an operator-reported one). Every non-stale, queued, and terminal run
+// is left BYTE-UNCHANGED (19/R4). Returns the list of reclaimed { item, run } entries
+// so the COMMAND layer can call the work.mjs status-rollback writer over them
+// (ADR-005 — the scan ORCHESTRATES, work.mjs WRITES; the store never writes frontmatter).
+export async function reclaimStaleRuns(items, { now, stalenessThreshold = Infinity } = {}) {
+  const nowIso = now ?? new Date().toISOString();
+  const reclaimed = [];
+  for (const item of items) {
+    for (const run of await staleRunningRuns([item], { now: nowIso, stalenessThreshold })) {
+      reclaimed.push({ item, run: await reclaimRun(item, run.runId, { now: nowIso }) });
+    }
+  }
+  return reclaimed;
+}
+
+// staleRunningRuns(items, …) — the scan's PURE half (m42 wave (d) leg d4, port 2):
+// which runs a reclaim WOULD force-fail, deciding nothing else and writing nothing.
+// Split out so the transition seam can select candidates and settle each through the
+// ledger without re-deriving the staleness rule, and so `reclaimStaleRuns` above is
+// visibly scan-then-write rather than one interleaved loop.
+export async function staleRunningRuns(items, { now, stalenessThreshold = Infinity } = {}) {
+  const nowMs = Date.parse(now ?? new Date().toISOString());
+  const candidates = [];
+  for (const item of items) {
+    for (const run of await readRuns(item)) {
+      if (run.state !== "running") continue;
+      if (!isStale(run, nowMs, stalenessThreshold)) continue;
+      candidates.push({ ...run, item });
+    }
+  }
+  return candidates;
+}
+
+// reclaimRun(item, runId, …) — THE ONE reclaim edge (m42 wave (d) leg d4, port 2).
+// "How a run is reclaimed" — the legal running → failed transition with
+// failureReason `runtime_offline` (a crashed host is infra, so the run stays
+// RETRYABLE per ADR-002) and reclaimedAt stamped (distinguishing a reclaimed failure
+// from an operator-reported one) — was written out twice: here in the restart scan
+// and again inline in mesh-assignment-reclaim.mjs's control tick, whose comment
+// claimed to be "reusing the EXACT applyTransition edge" while in fact being a second
+// copy of it. One home now, and the transition seam is the door both reclaim halves
+// reach it through.
+export async function reclaimRun(item, runId, { now } = {}) {
+  const nowIso = now ?? new Date().toISOString();
+  return await applyTransition(item, runId, "failed", {
+    now: nowIso,
+    failureReason: "runtime_offline",
+    reclaimedAt: nowIso,
+  });
+}
+
+// rewriteRunItemRef(item, { from, to }) — follow an insert/reindex renumber with the
+// run records' own `itemRef` (m42 wave (d) leg d4, port 3). The records live INSIDE
+// the item's folder, so they travel with the rename — but the ref stamped in each
+// one is left saying what the item used to be called, and every reader that joins on
+// it (the board's run drill-down, the streamed projection, the reclaim scan) then
+// disagrees with the stream.
+//
+// Called with the item at its NEW ref and the ref it used to have, which is what
+// makes this safely re-runnable at-least-once: a record already carrying `to` does
+// not match `from`, so a redelivery rewrites nothing. Every write stays inside
+// runs/ through the store's own persist path (the write-scope guard); a record whose
+// itemRef is something else entirely is left byte-unchanged.
+export async function rewriteRunItemRef(item, { from, to } = {}) {
+  if (!from || !to || from === to) return { rewritten: 0 };
+  let rewritten = 0;
+  for (const record of await readRuns(item)) {
+    if (record.itemRef !== from) continue;
+    await persist(item, { ...record, itemRef: to });
+    rewritten += 1;
+  }
+  return { rewritten };
+}
+
+// Prune ONE run by deleting its file — file-by-file, not an aggregate rewrite (the
+// partition-ready payoff). A missing file is a clean no-op (swallow ENOENT): absence
+// is benign, the same discipline as the absent-runs/ read (19/ADR-002).
+export async function pruneRun(item, runId) {
+  try {
+    await unlink(runRecordPath(item, runId));
+  } catch (error) {
+    if (error && error.code === "ENOENT") return;
+    throw error;
+  }
+}

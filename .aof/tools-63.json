@@ -1,0 +1,591 @@
+{
+  "projectsDir": "C:\\Users\\Umami\\.claude\\projects",
+  "match": "aof",
+  "window": {
+    "from": "2026-08-31T23:00:00.000Z",
+    "to": "2026-09-03T22:59:59.999Z"
+  },
+  "spanMs": 149683226,
+  "pairedCalls": 5223,
+  "unpaired": 0,
+  "totalToolMs": 42564645,
+  "byClass": {
+    "aof": {
+      "calls": 2310,
+      "ms": 17167097,
+      "meanMs": 7432,
+      "maxMs": 601599,
+      "samples": [
+        {
+          "ms": 36264,
+          "cmd": "S=\"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/0cdcd6c3-ec0a-46da-8887-633e433fb280/scratchpad\" && mkdi"
+        },
+        {
+          "ms": 68858,
+          "cmd": "aof graph build . 2>&1 | tail -30"
+        },
+        {
+          "ms": 92705,
+          "cmd": "aof graph build . --json 2>&1 | tail -30"
+        },
+        {
+          "ms": 35264,
+          "cmd": "AOF_GLOBAL_HOME=\"$(mktemp -d)\" aof work memory ingest 2>&1 | tail -8"
+        },
+        {
+          "ms": 115321,
+          "cmd": "cd \"C:/Source/umami/aof\" && aof graph build . 2>&1 | tail -20"
+        }
+      ]
+    },
+    "test": {
+      "calls": 1243,
+      "ms": 11687345,
+      "meanMs": 9403,
+      "maxMs": 603161,
+      "samples": [
+        {
+          "ms": 45392,
+          "cmd": "S=\"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/0cdcd6c3-ec0a-46da-8887-633e433fb280/scratchpad\" && mkdi"
+        },
+        {
+          "ms": 34420,
+          "cmd": "cd \"C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-04\" && B=\"file:///C:/Source/umami/aof/.aof/mesh/dispatc"
+        },
+        {
+          "ms": 44656,
+          "cmd": "cd \"C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-04\" && B=\"file:///C:/Source/umami/aof/.aof/mesh/dispatc"
+        },
+        {
+          "ms": 162412,
+          "cmd": "cd \"C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-01\" && SPECS=$(node -e \"\nconst fs=require('fs');\nconst "
+        },
+        {
+          "ms": 31795,
+          "cmd": "cd \"C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-01\" && AOF_GLOBAL_HOME=$(mktemp -d) NODE_PATH=C:/Source"
+        }
+      ]
+    },
+    "tool:Agent": {
+      "calls": 40,
+      "ms": 6468533,
+      "meanMs": 161713,
+      "maxMs": 1366352,
+      "samples": [
+        {
+          "ms": 1203953,
+          "cmd": "Agent"
+        },
+        {
+          "ms": 1366352,
+          "cmd": "Agent"
+        },
+        {
+          "ms": 1196133,
+          "cmd": "Agent"
+        },
+        {
+          "ms": 431234,
+          "cmd": "Agent"
+        },
+        {
+          "ms": 556410,
+          "cmd": "Agent"
+        }
+      ]
+    },
+    "tool:AskUserQuestion": {
+      "calls": 2,
+      "ms": 3991366,
+      "meanMs": 1995683,
+      "maxMs": 3667027,
+      "samples": [
+        {
+          "ms": 324339,
+          "cmd": "AskUserQuestion"
+        },
+        {
+          "ms": 3667027,
+          "cmd": "AskUserQuestion"
+        }
+      ]
+    },
+    "search-read": {
+      "calls": 725,
+      "ms": 1284000,
+      "meanMs": 1771,
+      "maxMs": 302309,
+      "samples": [
+        {
+          "ms": 35731,
+          "cmd": "grep -rn \"worker launch envelope\" --include=*.mjs --include=*.md --include=*.jsonc --include=*.feature . | grep -v node_"
+        },
+        {
+          "ms": 36197,
+          "cmd": "ls test/arch/ | head -40; echo \"=== grep gate names ===\"; grep -rln \"acd-graphify-backend-selection\\|acd-memory-backend-"
+        },
+        {
+          "ms": 97163,
+          "cmd": "node src/cli.mjs graph build . 2>&1 | grep -v Warning | tail -30"
+        },
+        {
+          "ms": 302309,
+          "cmd": "export AOF_GLOBAL_HOME=$(mktemp -d) && node ./scripts/check.mjs 2>&1 | tail -25"
+        }
+      ]
+    },
+    "tool:PowerShell": {
+      "calls": 48,
+      "ms": 1046592,
+      "meanMs": 21804,
+      "maxMs": 123968,
+      "samples": [
+        {
+          "ms": 62761,
+          "cmd": "wsl.exe -d Ubuntu-22.04 -- bash /mnt/c/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/ca8b1e06-c596-4adb-a987"
+        },
+        {
+          "ms": 67830,
+          "cmd": "wsl.exe -d Ubuntu-22.04 -- bash -lc \"claude -p 'Reply with exactly: MESH_AUTH_OK' 2>&1 | tail -3; echo exit=$?\""
+        },
+        {
+          "ms": 58656,
+          "cmd": "wsl.exe -d Ubuntu-22.04 -- bash /mnt/c/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/ca8b1e06-c596-4adb-a987"
+        },
+        {
+          "ms": 50995,
+          "cmd": "wsl.exe -d Ubuntu-22.04 -- bash /mnt/c/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/ca8b1e06-c596-4adb-a987"
+        },
+        {
+          "ms": 53729,
+          "cmd": "wsl.exe -d Ubuntu-22.04 -- bash /mnt/c/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/ca8b1e06-c596-4adb-a987"
+        }
+      ]
+    },
+    "tool:Edit": {
+      "calls": 367,
+      "ms": 389755,
+      "meanMs": 1062,
+      "maxMs": 1481,
+      "samples": []
+    },
+    "tool:Write": {
+      "calls": 204,
+      "ms": 220791,
+      "meanMs": 1082,
+      "maxMs": 2182,
+      "samples": []
+    },
+    "git": {
+      "calls": 66,
+      "ms": 128502,
+      "meanMs": 1947,
+      "maxMs": 28149,
+      "samples": []
+    },
+    "other": {
+      "calls": 26,
+      "ms": 71287,
+      "meanMs": 2742,
+      "maxMs": 16347,
+      "samples": []
+    },
+    "build": {
+      "calls": 5,
+      "ms": 35533,
+      "meanMs": 7107,
+      "maxMs": 22027,
+      "samples": []
+    },
+    "tool:SendMessage": {
+      "calls": 16,
+      "ms": 32280,
+      "meanMs": 2018,
+      "maxMs": 4189,
+      "samples": []
+    },
+    "tool:Read": {
+      "calls": 139,
+      "ms": 25639,
+      "meanMs": 184,
+      "maxMs": 2100,
+      "samples": []
+    },
+    "typecheck-lint": {
+      "calls": 1,
+      "ms": 6737,
+      "meanMs": 6737,
+      "maxMs": 6737,
+      "samples": []
+    },
+    "tool:Glob": {
+      "calls": 5,
+      "ms": 4309,
+      "meanMs": 862,
+      "maxMs": 1360,
+      "samples": []
+    },
+    "tool:Grep": {
+      "calls": 11,
+      "ms": 3171,
+      "meanMs": 288,
+      "maxMs": 824,
+      "samples": []
+    },
+    "tool:ToolSearch": {
+      "calls": 9,
+      "ms": 879,
+      "meanMs": 98,
+      "maxMs": 181,
+      "samples": []
+    },
+    "tool:Skill": {
+      "calls": 3,
+      "ms": 459,
+      "meanMs": 153,
+      "maxMs": 173,
+      "samples": []
+    },
+    "tool:TaskStop": {
+      "calls": 3,
+      "ms": 370,
+      "meanMs": 123,
+      "maxMs": 135,
+      "samples": []
+    }
+  },
+  "testCommands": {
+    "cd \"C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-03\" && export AOF_GLOBAL_HOME=$(mktemp -d) &&": {
+      "calls": 32,
+      "ms": 1646553,
+      "meanMs": 51455,
+      "maxMs": 452957
+    },
+    "Q=\"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/c422ce06-135b-4328-b07d-1e36dc3efc98/scratchpa": {
+      "calls": 6,
+      "ms": 1164990,
+      "meanMs": 194165,
+      "maxMs": 601668
+    },
+    "SP=\"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/c422ce06-135b-4328-b07d-1e36dc3efc98/scratchp": {
+      "calls": 7,
+      "ms": 737807,
+      "meanMs": 105401,
+      "maxMs": 603161
+    },
+    "cd c:/Source/umami/aof && export AOF_GLOBAL_HOME=$(mktemp -d) && node \"C:/Users/Umami/AppData/Local/Temp/claud": {
+      "calls": 10,
+      "ms": 674457,
+      "meanMs": 67446,
+      "maxMs": 170258
+    },
+    "SP=\"/c/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/e5f3ed59-d0e8-4429-975f-e5e8f991d36f/scratchp": {
+      "calls": 20,
+      "ms": 672921,
+      "meanMs": 33646,
+      "maxMs": 601433
+    },
+    "cd /c/Source/umami/aof SP=\"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/db1453ee-d461-43fd-ab9": {
+      "calls": 9,
+      "ms": 652029,
+      "meanMs": 72448,
+      "maxMs": 301801
+    },
+    "cat > \"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/dd29f4f0-245d-48ef-b295-94ddb2a91762/scrat": {
+      "calls": 3,
+      "ms": 640705,
+      "meanMs": 213568,
+      "maxMs": 602117
+    },
+    "cd c:/Source/umami/aof && cat > \"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/c7a5de27-822d-48": {
+      "calls": 2,
+      "ms": 604546,
+      "meanMs": 302273,
+      "maxMs": 602386
+    },
+    "cd \"C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-01\" && AOF_GLOBAL_HOME=$(mktemp -d) NODE_PATH": {
+      "calls": 8,
+      "ms": 394103,
+      "meanMs": 49263,
+      "maxMs": 325144
+    },
+    "cd \"C:\\Source\\umami\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-63-00\" && python - <<'PYEOF' import io, os, re, ": {
+      "calls": 1,
+      "ms": 385692,
+      "meanMs": 385692,
+      "maxMs": 385692
+    },
+    "cd C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-05 && SP=\"C:/Users/Umami/AppData/Local/Temp/cl": {
+      "calls": 24,
+      "ms": 307544,
+      "meanMs": 12814,
+      "maxMs": 56646
+    },
+    "S=\"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/c7a5de27-822d-489c-a1ff-ae6e1beb8914/scratchpa": {
+      "calls": 11,
+      "ms": 221487,
+      "meanMs": 20135,
+      "maxMs": 122383
+    },
+    "cd \"C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-01\" && SPECS=$(node -e \" const fs=require('fs": {
+      "calls": 1,
+      "ms": 162412,
+      "meanMs": 162412,
+      "maxMs": 162412
+    },
+    "cat > \"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/c422ce06-135b-4328-b07d-1e36dc3efc98/scrat": {
+      "calls": 12,
+      "ms": 134336,
+      "meanMs": 11195,
+      "maxMs": 45594
+    },
+    "cd \"C:\\Source\\umami\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-63-00\" && python - <<'PYEOF' import io, os, re o": {
+      "calls": 1,
+      "ms": 133954,
+      "meanMs": 133954,
+      "maxMs": 133954
+    },
+    "AOF_GLOBAL_HOME=$(mktemp -d) node \"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/c964f12e-9d27-": {
+      "calls": 13,
+      "ms": 124581,
+      "meanMs": 9583,
+      "maxMs": 31871
+    },
+    "cd \"C:\\Source\\umami\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-63-00\" && grep -n \"^export const\" test/arch/acd-": {
+      "calls": 1,
+      "ms": 123036,
+      "meanMs": 123036,
+      "maxMs": 123036
+    },
+    "cd \"C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-04\" && B=\"file:///C:/Source/umami/aof/.aof/me": {
+      "calls": 5,
+      "ms": 105010,
+      "meanMs": 21002,
+      "maxMs": 44656
+    },
+    "echo \"=== settings.json hooks ===\"; sed -n '1,80p' .claude/settings.json; echo; echo \"=== test.mjs head ===\"; ": {
+      "calls": 1,
+      "ms": 96372,
+      "meanMs": 96372,
+      "maxMs": 96372
+    },
+    "export AOF_GLOBAL_HOME=$(mktemp -d) && export NODE_PATH=\"C:/Source/umami/aof/node_modules\" && cd \"C:/Source/um": {
+      "calls": 9,
+      "ms": 95158,
+      "meanMs": 10573,
+      "maxMs": 39539
+    },
+    "cd \"C:\\Source\\umami\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-63-00\" && AOF_GLOBAL_HOME=$(mktemp -d) NODE_PATH": {
+      "calls": 14,
+      "ms": 86756,
+      "meanMs": 6197,
+      "maxMs": 27166
+    },
+    "cat > \"/c/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/ca8b1e06-c596-4adb-a987-26a7667533b7/scrat": {
+      "calls": 9,
+      "ms": 71388,
+      "meanMs": 7932,
+      "maxMs": 39323
+    },
+    "S=\"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/0cdcd6c3-ec0a-46da-8887-633e433fb280/scratchpa": {
+      "calls": 3,
+      "ms": 65883,
+      "meanMs": 21961,
+      "maxMs": 45392
+    },
+    "cd C:/Source/umami/aof/.aof/mesh/dispatch-worktrees/dispatch-63-05 && export NODE_PATH=C:/Source/umami/aof/nod": {
+      "calls": 1,
+      "ms": 56840,
+      "meanMs": 56840,
+      "maxMs": 56840
+    },
+    "QA=\"C:/Users/Umami/AppData/Local/Temp/claude/c--Source-umami-aof/c422ce06-135b-4328-b07d-1e36dc3efc98/scratchp": {
+      "calls": 5,
+      "ms": 53966,
+      "meanMs": 10793,
+      "maxMs": 28456
+    }
+  },
+  "heaviestRuns": [
+    {
+      "kind": "agent",
+      "label": "aof-developer · Build story 63/03",
+      "wallMs": 29027427,
+      "toolMs": 2191379,
+      "testMs": 1826059,
+      "calls": 238,
+      "testCalls": 89
+    },
+    {
+      "kind": "orchestrator",
+      "label": "c7a5de27",
+      "wallMs": 6624814,
+      "toolMs": 1958260,
+      "testMs": 1605623,
+      "calls": 192,
+      "testCalls": 65
+    },
+    {
+      "kind": "agent",
+      "label": "aof-qa · Behavioural review of 63/02",
+      "wallMs": 2364099,
+      "toolMs": 1499693,
+      "testMs": 1203559,
+      "calls": 71,
+      "testCalls": 27
+    },
+    {
+      "kind": "agent",
+      "label": "aof-developer · Build story 63/00",
+      "wallMs": 5144469,
+      "toolMs": 2032822,
+      "testMs": 820502,
+      "calls": 162,
+      "testCalls": 58
+    },
+    {
+      "kind": "orchestrator",
+      "label": "dd29f4f0",
+      "wallMs": 9611386,
+      "toolMs": 3386822,
+      "testMs": 717353,
+      "calls": 215,
+      "testCalls": 49
+    },
+    {
+      "kind": "orchestrator",
+      "label": "db1453ee",
+      "wallMs": 2255955,
+      "toolMs": 1405999,
+      "testMs": 714106,
+      "calls": 79,
+      "testCalls": 42
+    },
+    {
+      "kind": "orchestrator",
+      "label": "e5f3ed59",
+      "wallMs": 6331052,
+      "toolMs": 3053230,
+      "testMs": 708747,
+      "calls": 204,
+      "testCalls": 48
+    },
+    {
+      "kind": "agent",
+      "label": "aof-qa · Behavioural review of 63/03",
+      "wallMs": 26546503,
+      "toolMs": 1394996,
+      "testMs": 677523,
+      "calls": 105,
+      "testCalls": 22
+    },
+    {
+      "kind": "agent",
+      "label": "aof-developer · Build story 63/01",
+      "wallMs": 4212216,
+      "toolMs": 903111,
+      "testMs": 632214,
+      "calls": 102,
+      "testCalls": 39
+    },
+    {
+      "kind": "agent",
+      "label": "aof-developer · Build story 63/05",
+      "wallMs": 14646313,
+      "toolMs": 1059699,
+      "testMs": 451184,
+      "calls": 160,
+      "testCalls": 43
+    },
+    {
+      "kind": "orchestrator",
+      "label": "c964f12e",
+      "wallMs": 2240057,
+      "toolMs": 488426,
+      "testMs": 270882,
+      "calls": 160,
+      "testCalls": 43
+    },
+    {
+      "kind": "agent",
+      "label": "aof-developer · Build story 63/04",
+      "wallMs": 4470735,
+      "toolMs": 318488,
+      "testMs": 224818,
+      "calls": 94,
+      "testCalls": 52
+    },
+    {
+      "kind": "agent",
+      "label": "aof-developer · Build story 63/02",
+      "wallMs": 5131086,
+      "toolMs": 946101,
+      "testMs": 170580,
+      "calls": 122,
+      "testCalls": 29
+    },
+    {
+      "kind": "orchestrator",
+      "label": "ca8b1e06",
+      "wallMs": 30855201,
+      "toolMs": 6071615,
+      "testMs": 126709,
+      "calls": 325,
+      "testCalls": 40
+    },
+    {
+      "kind": "agent",
+      "label": "aof-architect · Structural review of 63/03",
+      "wallMs": 22732293,
+      "toolMs": 596456,
+      "testMs": 124364,
+      "calls": 103,
+      "testCalls": 17
+    },
+    {
+      "kind": "agent",
+      "label": "aof-qa · Behavioural review of 63/05",
+      "wallMs": 10548328,
+      "toolMs": 948471,
+      "testMs": 114957,
+      "calls": 84,
+      "testCalls": 26
+    },
+    {
+      "kind": "orchestrator",
+      "label": "0cdcd6c3",
+      "wallMs": 873540,
+      "toolMs": 273126,
+      "testMs": 109454,
+      "calls": 54,
+      "testCalls": 16
+    },
+    {
+      "kind": "orchestrator",
+      "label": "ed82591e",
+      "wallMs": 10018825,
+      "toolMs": 4276688,
+      "testMs": 107856,
+      "calls": 147,
+      "testCalls": 6
+    },
+    {
+      "kind": "agent",
+      "label": "aof-architect · Structural review of 63/02",
+      "wallMs": 1404436,
+      "toolMs": 476971,
+      "testMs": 95748,
+      "calls": 83,
+      "testCalls": 23
+    },
+    {
+      "kind": "orchestrator",
+      "label": "ed853fc4",
+      "wallMs": 2266899,
+      "toolMs": 688387,
+      "testMs": 82672,
+      "calls": 176,
+      "testCalls": 39
+    }
+  ]
+}

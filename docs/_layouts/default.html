@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!--
+  docs/_layouts/default.html — the ONE layout (story 125).
+
+  Two mechanisms live here, and both exist because Jekyll on Pages does not do what a reader of the
+  repository's Markdown is used to.
+
+  MERMAID DOES NOT RENDER ITSELF ON PAGES. GitHub renders a ```mermaid fence in repository Markdown;
+  Jekyll does not. Kramdown emits that fence as <pre><code class="language-mermaid"> (rouge has no
+  mermaid lexer, so the plain shape is what arrives), and Mermaid looks for elements carrying the
+  class `mermaid`. The script below PROMOTES each such node into <pre class="mermaid"> holding the
+  fence's text, and only then runs Mermaid over the page. The include is pinned to an EXACT version
+  from the CDN — never `@latest` or a floating major — so the published diagram cannot change under
+  a release nobody chose.
+
+  PROVENANCE IS RENDERED, NOT ONLY CARRIED. A staged page's front matter names its source, its kind
+  and (for a generated page) the command that regenerates its source; the banner below shows the
+  reader what they are looking at. An authored page's relative links were written for the tree, so
+  they are resolved against that same provenance path into the repository's blob URLs.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+  <style>
+    body { max-width: 64rem; margin: 2rem auto; padding: 0 1.25rem; font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1f2328; }
+    a { color: #0969da; }
+    header.site { display: flex; gap: 1rem; align-items: baseline; border-bottom: 1px solid #d0d7de; padding-bottom: .75rem; margin-bottom: 1.5rem; }
+    header.site .home { font-weight: 600; text-decoration: none; color: inherit; }
+    header.site .tagline { color: #59636e; font-size: .9rem; }
+    aside.provenance { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: .6rem .9rem; font-size: .9rem; margin-bottom: 1.5rem; }
+    aside.provenance code { background: #eaeef2; padding: .05rem .3rem; border-radius: 3px; }
+    pre { background: #f6f8fa; padding: .8rem 1rem; overflow: auto; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; }
+    pre.mermaid { background: transparent; padding: 0; text-align: center; }
+    table { border-collapse: collapse; margin: 1rem 0; }
+    th, td { border: 1px solid #d0d7de; padding: .3rem .6rem; text-align: left; }
+    blockquote { border-left: 4px solid #d0d7de; margin: 0; padding: 0 1rem; color: #59636e; }
+  </style>
+</head>
+<body>
+  <header class="site">
+    <a class="home" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+    <span class="tagline">{{ site.description }}</span>
+  </header>
+
+  {% if page.source %}
+  <aside class="provenance">
+    {% if page.kind == "generated" %}
+      <strong>Generated.</strong> Projected at build time from <code>{{ page.source }}</code>, which is
+      itself rendered from the loop registry. Regenerate the source with <code>{{ page.regenerate }}</code>;
+      a stale document fails the deploy.
+    {% else %}
+      <strong>Authored.</strong> Published as written from <code>{{ page.source }}</code>. No command
+      regenerates it.
+    {% endif %}
+  </aside>
+  {% endif %}
+
+  <main>
+    {{ content }}
+  </main>
+
+  {% if page.source and page.kind == "authored" %}
+  <script>
+    // Resolve the page's RELATIVE links against its source path in the repository. `../../src/x.mjs`
+    // from `wiki/planning/PRD.md` is `src/x.mjs`, which is served from the repository, not the site.
+    (function () {
+      var source = {{ page.source | jsonify }};
+      var blob = "https://github.com/{{ site.repository }}/blob/main/";
+      var base = source.split("/").slice(0, -1);
+      var links = document.querySelectorAll("main a[href]");
+      for (var i = 0; i < links.length; i += 1) {
+        var href = links[i].getAttribute("href");
+        if (!/^\.\.?\//.test(href)) continue;
+        var parts = base.slice();
+        var segments = href.split("#")[0].split("/");
+        for (var j = 0; j < segments.length; j += 1) {
+          if (segments[j] === "..") parts.pop();
+          else if (segments[j] !== "." && segments[j] !== "") parts.push(segments[j]);
+        }
+        var hash = href.indexOf("#") >= 0 ? href.slice(href.indexOf("#")) : "";
+        links[i].setAttribute("href", blob + parts.join("/") + hash);
+      }
+    })();
+  </script>
+  {% endif %}
+
+  <script type="module">
+    // PROMOTE FIRST. Kramdown emits a ```mermaid fence as <pre><code class="language-mermaid">;
+    // Mermaid looks for `.mermaid`. Each fenced node becomes <pre class="mermaid"> holding the
+    // fence's text, and the original block is replaced — so no block of Mermaid source is shown as
+    // text beside the diagram.
+    const fences = document.querySelectorAll("code.language-mermaid");
+    for (const code of fences) {
+      const block = code.closest("div.language-mermaid") ?? code.closest("pre") ?? code;
+      const promoted = document.createElement("pre");
+      promoted.className = "mermaid";
+      promoted.textContent = code.textContent;
+      block.replaceWith(promoted);
+    }
+
+    // THEN LOAD AND RUN — only on a page that has something to draw, so the landing page and the
+    // PRDs never fetch the library for nothing. Pinned EXACTLY: a floating tag (`@latest`, `@11`)
+    // would let the diagram change under a release nobody in this repository chose.
+    if (fences.length > 0) {
+      const { default: mermaid } = await import("https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs");
+      mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
+      await mermaid.run({ querySelector: "pre.mermaid" });
+    }
+  </script>
+</body>
+</html>

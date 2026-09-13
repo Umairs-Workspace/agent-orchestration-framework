@@ -1,0 +1,111 @@
+{
+  "$schema": "https://aof.local/schemas/aof.schema.json",
+  "name": "aof",
+  "work": {
+    "dir": "./wiki/work",
+    "agents": {
+      "mode": "orchestrated",
+      "productOwner": "inline"
+    },
+    "codeReview": {
+      "autoComplete": false
+    },
+    "rubric": {
+      "command": [
+        "node",
+        "scripts/test-rubric.mjs"
+      ],
+      "report": {
+        "format": "tap",
+        "floor": 500
+      }
+    },
+    "plan": {
+      "enabled": true
+    },
+    "test": {
+      "command": "node",
+      "args": [
+        "scripts/test.mjs"
+      ],
+      "selectArgs": [
+        "--only",
+        "{file}"
+      ],
+      "roots": [
+        "test"
+      ],
+      "deadlineMs": 2700000,
+      "report": {
+        "format": "tap"
+      }
+    },
+    "worktree": {
+      "prepare": {
+        "command": "node",
+        "args": [
+          "scripts/prepare-worktree.mjs"
+        ],
+        "deadlineMs": 900000
+      }
+    },
+    "autonomous": {
+      "maxAttempts": 3
+    },
+    "tags": {
+      "layers": [
+        "@cli",
+        "@ui",
+        "@docs"
+      ],
+      "refinements": [
+        "@work",
+        "@planning",
+        "@assets",
+        "@adapter"
+      ],
+      "domains": [
+        "@work-stream",
+        "@validate",
+        "@scaffold",
+        "@planning",
+        "@board",
+        "@distribution",
+        "@round-trip",
+        "@memory",
+        "@design"
+      ]
+    },
+    "observability": {
+      "cacheRatioTarget": 13
+    },
+    "doctor": {
+      "budgets": {
+        "architecture": 1400
+      }
+    },
+    "loop": {
+      "startToCloseMs": 14400000,
+      "scheduleToCloseMs": 43200000
+    }
+  },
+  "memory": {
+    "backend": "graphify"
+  },
+  "resources": [],
+  "packages": [],
+  "runtimes": [
+    "claude",
+    "codex",
+    "opencode"
+  ],
+  "mesh": {
+    "workspaceId": "9db1fd84f5895e38",
+    "repo": {
+      "cloneUrl": "https://github.com/UmairB/agent-orchestration-framework.git",
+      "published": true,
+      "publishedAt": "2026-08-31T17:47:25.361Z",
+      "workspaceId": "9db1fd84f5895e38"
+    }
+  }
+}

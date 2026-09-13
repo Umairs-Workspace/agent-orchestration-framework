@@ -1,0 +1,3 @@
+# captured from: node <driver> — the shipped runFeatureFiles (test/integration/support/feature-runner.mjs) over a 3-scenario feature whose middle step throws; STDOUT ONLY (see FAILING_DRIVER in this file)
+ok - A rubric run: a case the runner could satisfy
+ok - A rubric run: a second case the runner could satisfy

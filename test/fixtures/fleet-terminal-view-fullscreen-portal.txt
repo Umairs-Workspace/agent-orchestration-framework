@@ -1,0 +1,34 @@
+      {open && expanded
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-50 flex flex-col bg-[#0b0f14] text-zinc-200"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Read-only terminal view for ${header.label}`}
+            >
+              <header className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-[#1e2a44] bg-[#0f1629] px-4 py-2">
+                {identity}
+                <button
+                  type="button"
+                  onClick={() => setExpanded(false)}
+                  title="Collapse terminal"
+                  aria-label="Collapse terminal"
+                  className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[11px] text-zinc-400 transition hover:bg-[#1e2a44] hover:text-zinc-100"
+                >
+                  <Minimize2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </header>
+              <div className="relative min-h-0 flex-1 bg-[#0b0f14]">
+                <div
+                  ref={overlayViewportRef}
+                  className={`absolute inset-0 overflow-hidden p-3 ${descriptor.live || overprintable ? "" : "opacity-60"}`}
+                />
+                {descriptor.live || overprintable ? null : (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 border-t border-[#1e2a44] bg-[#0f1629] px-4 py-1.5">
+                    <p className={`mono text-xs ${tone.text}`}>{descriptor.reason ?? descriptor.text}</p>
+                  </div>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
