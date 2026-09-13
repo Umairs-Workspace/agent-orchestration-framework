@@ -9,8 +9,8 @@
 #
 # Built by `actions/jekyll-build-pages` (the github-pages gem: Jekyll 3, kramdown with GFM input,
 # rouge). Nothing here needs a plugin.
-title: "aof – what it delivers"
-description: "What aof delivers, projected from its own accepted records rather than described from memory."
+title: "aof"
+description: "Agent-Centric Delivery – a local CLI and agent team that refine, build, review and verify work from Markdown records in the repository."
 
 # The project site's home. `baseurl` is the repository name, which is where GitHub Pages serves a
 # project site; the README links exactly this address.

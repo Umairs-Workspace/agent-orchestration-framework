@@ -9,21 +9,20 @@ permalink: /
   staged permalink is linked from here.
 -->
 
-# aof – what it delivers
+# aof
 
-`aof work` runs as a set of declared **control loops** – build-to-green, review → fix → re-review,
-verify → triage → accept, the autonomous cascade – each a record in the loop registry with its
-reference, measurement, actuator, cadence and ceiling. These pages document what that machinery
-delivers. Nothing here is retyped: every page is projected from a committed record at build time,
-and a stale record fails the deploy.
+`aof` is a local CLI for agent-driven delivery. Its heart is `aof work`: an opinionated workflow –
+**ACD, Agent-Centric Delivery** – where a milestone is broken into independent stories and tasks with
+`.feature` acceptance criteria, and a bundled team of subagents plus `/aof:*` slash commands refine,
+build, review and verify each one. Everything is Markdown and JSON in the repository.
 
 ## Pages
 
-- [Delivered]({{ '/delivered/' | relative_url }}) – what aof provides today, one section per accepted
-  item, each capability stated as product state from that item's own outcome record. **Generated**
-  from every `OUTCOME.md` by the site build.
-- [The loop graph]({{ '/loops/' | relative_url }}) – every declared node and edge as a diagram, with
-  the health census. **Generated** from the committed loop document (`aof work loops document --write`).
+- [ACD – Agent-Centric Delivery]({{ '/acd/' | relative_url }}) – the delivery model: items, the
+  `.feature` contract, the lifecycle, the team, the gates.
+- [The loop graph]({{ '/loops/' | relative_url }}) – the control loops that drive delivery, every
+  declared node and edge as a diagram with the health census. **Generated** from the committed loop
+  document (`aof work loops document --write`).
 
 ## The commands
 
@@ -38,3 +37,8 @@ aof work loops document --write  # render the graph document the page above is p
 
 The source of everything here is the repository:
 [Umairs-Workspace/agent-orchestration-framework](https://github.com/Umairs-Workspace/agent-orchestration-framework).
+
+---
+
+[Delivered]({{ '/delivered/' | relative_url }}) – the accepted items' outcome records, concatenated.
+**Generated** by the site build.

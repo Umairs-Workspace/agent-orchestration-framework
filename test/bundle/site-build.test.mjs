@@ -495,7 +495,7 @@ export const siteBuildTests = [
     name: "site-build/00 the site's shell is committed and its content is not: docs/ holds the config, the layout and the landing page, no build-produced page, and the staging directory is git-ignored",
     run: async () => {
       const files = await listFiles(path.join(repoRoot, SHELL_DIR));
-      assert.deepEqual(files, ["_config.yml", "_layouts/default.html", "index.md"], "docs/ holds exactly the site's configuration, its layout and its landing page");
+      assert.deepEqual(files, ["_config.yml", "_layouts/default.html", "acd.md", "index.md"], "docs/ holds exactly the site's configuration, its layout, the ACD page and the landing page");
 
       // No file in the shell is a staged page (the builder's provenance envelope) or carries a
       // manifest source's bytes.
