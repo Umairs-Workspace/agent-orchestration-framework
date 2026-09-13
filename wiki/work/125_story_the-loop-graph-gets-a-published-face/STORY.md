@@ -3,7 +3,7 @@ type: story
 number: 125
 slug: the-loop-graph-gets-a-published-face
 title: "The loop graph gets a published face"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-07
 updated: 2026-09-13

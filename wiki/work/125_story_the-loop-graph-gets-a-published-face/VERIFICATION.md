@@ -66,35 +66,54 @@ Run 2026-09-13 at the gate. Each row names the procedure and the observation.
 ## Findings
 
 Ids are allocated here by the single writer of this record, at the moment of landing them.
-**No blocker finding is open.** One finding is recorded; it is environmental, not a defect in
-the delivered code, and it is what holds the accept.
+**No blocker finding is open.** One finding was recorded at the first gate; it was environmental,
+not a defect in the delivered code, and it is **discharged** at the second.
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
-| F-125-A | **The live site cannot be reached, so neither `@uat` can be performed at this gate.** `gh api /pages` → 404 (the repository's Pages source has not been set to GitHub Actions), and `pages.yml` has never run on `main` because it is not on `main` — the story's diff is uncommitted on this branch. Consequence already in the tree: `README.md` now names `https://umairs-workspace.github.io/agent-orchestration-framework/` as where the loop machinery is documented, and that URL 404s today — a claim about system state that is only true once the owner acts, which is the exact class of defect tasks/02 exists to name | environment (precondition) | Important | **non-blocker, and not a defect to fix in code**: the workflow, the build and the README are what make the claim TRUE once the two owner actions land; nothing in `src/`, `scripts/` or `docs/` can substitute for them. Discharged by the two sign-offs below, which is why the accept is held rather than taken | the repository owner — merge the branch to `main`; set *Settings → Pages → Source* to **GitHub Actions**; let the `pages` workflow run once | **open** |
+| F-125-A | **The live site could not be reached at the first gate, so neither `@uat` could be performed.** `gh api /pages` → 404 (no Pages source set), and `pages.yml` had never run on `main` because it was not on `main` — the story's diff was uncommitted on a branch. Consequence already in the tree: `README.md` named a Pages URL that 404ed — a claim about system state only true once the owner acted, the exact class of defect tasks/02 exists to name | environment (precondition) | Important | **non-blocker, not a code defect**: the workflow, the build and the README are what make the claim TRUE once the owner acts; nothing in `src/`, `scripts/` or `docs/` could substitute. Held the accept rather than taking it | the repository owner — put the tree on `main`, set the Pages source to **GitHub Actions**, let `pages` run once | **discharged 2026-09-13** — the tree became the root of the public `Umairs-Workspace/agent-orchestration-framework`; Pages enabled with `build_type: workflow`; run `34782343251` deployed; both procedures signed below |
 
 ## User sign-off
 
-Both procedures are **PENDING**. Preconditions measured unmet on 2026-09-13 (F-125-A). Perform
-them after the branch is on `main` and the Pages source is set, then re-run `aof:verify 125` to
-record the result here and accept.
+Both procedures were **pending** at the first gate (2026-09-13, morning — F-125-A). The same day
+the tree became the public repository's root, the Pages source was set to GitHub Actions, and the
+push's `pages` run (`34782343251`) went green in both jobs — `gate` (story 79's control through
+`npm ci` + the project's test command on a clean Linux clone) and `build and deploy the site`.
+Agent-run evidence was put in front of the operator before the sign-off: all four pages fetched
+**HTTP 200**; the landing page's `href`s are exactly `/`, `/loops/`, `/prd-acd-loop-engineering/`,
+`/prd-graph-engineering/` and the repository; `/loops/` carries the kramdown `language-mermaid`
+fence, the pinned `mermaid@11.4.1` include and the census `<table>`; a headless-Chromium render
+at 1280px (`--virtual-time-budget=8000`) shows the graph drawn, no Mermaid source as text, and
+the census as a table. The operator signed both in the session.
 
 | scenario | procedure (the human) | result | signed |
 |---|---|---|---|
-| tasks/00 *the site is live and reachable* | (1) Confirm the `pages` workflow's deploy job ran green on `main` (Actions → pages). (2) Open `https://umairs-workspace.github.io/agent-orchestration-framework/`. (3) Follow each of the three links on the landing page — *The loop graph*, *PRD — ACD as a loop-engineered model*, *PRD — Graph engineering* — and confirm none 404s and no other page was published that the landing page does not link | pending | — |
-| tasks/01 *the graph renders as a diagram on the published page* | (1) Open `/loops/` on the published site. (2) Confirm the loop graph is drawn as a diagram, and that no block of Mermaid source (`graph`/`flowchart` text, `-->` edges) is shown as fenced text anywhere on the page. (3) Confirm the health census above the diagram renders as a table | pending | — |
+| tasks/00 *the site is live and reachable* | (1) Confirm the `pages` workflow's deploy job ran green on `main`. (2) Open `https://umairs-workspace.github.io/agent-orchestration-framework/`. (3) Follow each of the three links on the landing page and confirm none 404s and no other page was published that the landing page does not link | **pass** — deploy green; `/` 200; `/loops/`, `/prd-acd-loop-engineering/`, `/prd-graph-engineering/` each 200; the build staged exactly those three pages | operator, 2026-09-13 |
+| tasks/01 *the graph renders as a diagram on the published page* | (1) Open `/loops/`. (2) Confirm the loop graph is drawn as a diagram and no block of Mermaid source is shown as text. (3) Confirm the health census above it reads as a table | **pass** — diagram drawn (17 records, 23 edges, labelled); no fenced source visible; census table rendered above the graph | operator, 2026-09-13 |
 
 ## Accept decision
 
-**HELD IN-REVIEW, 2026-09-13 — not accepted at this gate, by the operator's decision.** The
-`@executable` lane is green in full (64/64), story 79's control passes unedited with the builder
-outside its walk, the build is a clean projection whose three permalinks are the landing page's
-three links, validate is PASS and doctor reports no unresolved control. What is missing is the
-one thing no test can assert and the story's own plan said so: the repository's Pages source
-switched to GitHub Actions by the owner, and one deploy from `main`. Both `@uat` scenarios rest on
-it, and both were measured unmet at the source before this record was written.
+**ACCEPTED, 2026-09-13, on the second gate of the same day.** `aof work status 125 done` was run
+and stamped the acceptance.
 
-**What closes it.** Merge, set the source, let the workflow run, perform the two procedures
-above, and re-run `aof:verify 125`: that run records the sign-offs, discharges F-125-A, runs the
-retrospective and authors `OUTCOME.md` at the same juncture as the accept — one close, not two.
-`status` stays `in-review`; nothing was hand-edited.
+**The first gate held.** The `@executable` lane was green in full (64/64), story 79's control
+passed unedited with the builder outside its walk, the build was a clean projection whose three
+permalinks were the landing page's three links, validate PASS, doctor with no unresolved control —
+and the accept was still held, because the one thing no test can assert (the story's own plan
+said so) was measured absent at the source: no Pages source, no deploy from `main`.
+
+**The second gate closed it by making the claim true, not by re-describing it.** The working
+tree became the single root commit of the public repository, `pages.yml` ran on the push, the
+gate job passed on a clean CI clone (the deploy is gated on the delivered control, run — tasks/01's
+central claim, now witnessed outside this machine), Pages was enabled with the Actions source, the
+deploy job published, and the operator signed both `@uat` procedures against the live site with
+the fetches and the render in front of them. F-125-A is discharged by that, not by a note.
+
+**What was re-pointed at the close, and why it is not drift.** The Pages URL in `README.md`, the
+site's Jekyll `url`/`repository` and the landing page's repository link moved from the personal
+account to the organisation the public repository lives under. Task 02's control still resolves
+every command the README spells; the URL is the one thing on that page no control checks, and it
+was checked the only way it can be — by fetching it.
+
+**The close created nothing.** One finding, environmental, discharged by the owner's two actions.
+No chore, no folder in the stream.
