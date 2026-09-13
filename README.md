@@ -161,7 +161,7 @@ aof work trigger [trigger] [--signal JSON]   # resolve a declared trigger (`.aof
 aof work acceptor [--commit <key>]     # the disciplined acceptor's report; `--commit` moves exactly one eligible proposal (milestone 61)
 ```
 
-The loop graph, the health census and the two planning PRDs behind the design are published at **<https://umairb.github.io/agent-orchestration-framework/>**. The graph page there is projected from `wiki/work/loops.md` at build time — never copied — and the deploy is gated on the same drift check the suite runs, so a stale document cannot reach the site.
+The loop graph, the health census and the two planning PRDs behind the design are published at **<https://umairs-workspace.github.io/agent-orchestration-framework/>**. The graph page there is projected from `wiki/work/loops.md` at build time — never copied — and the deploy is gated on the same drift check the suite runs, so a stale document cannot reach the site.
 
 ### Memory & recall (milestones 05 · 10 · 14)
 

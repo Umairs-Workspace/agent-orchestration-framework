@@ -14,12 +14,12 @@ description: "The control loops that drive aof's own delivery, projected from th
 
 # The project site's home. `baseurl` is the repository name, which is where GitHub Pages serves a
 # project site; the README links exactly this address.
-url: "https://umairb.github.io"
+url: "https://umairs-workspace.github.io"
 baseurl: "/agent-orchestration-framework"
 # The repository the pages are projected from. The layout resolves an authored page's RELATIVE
 # links (a PRD's `../../src/x.mjs`) against its provenance path into this repository's blob URLs,
 # so a link the author wrote for the tree still lands somewhere on the site.
-repository: "UmairB/agent-orchestration-framework"
+repository: "Umairs-Workspace/agent-orchestration-framework"
 
 markdown: kramdown
 kramdown:
