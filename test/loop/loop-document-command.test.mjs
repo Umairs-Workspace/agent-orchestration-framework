@@ -71,7 +71,7 @@ export const loopDocumentCommandTests = [
         await loopDocumentCommand.run({ write: true }, ctx);
         assert.equal(
           (await readFile(path.join(repo.root, "docs", "stream", "loops.md"), "utf8")).split("\n")[0],
-          "<!-- aof-generated: `aof work loops document --write` — do not edit by hand -->",
+          "<!-- aof-generated: `aof work loops document --write` – do not edit by hand -->",
           "the document lands at the root of THAT directory"
         );
         await assert.rejects(stat(path.join(repo.root, "wiki", "work", "loops.md")), "and no file is written at the default location");

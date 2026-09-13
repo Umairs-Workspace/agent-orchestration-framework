@@ -9,23 +9,21 @@ permalink: /
   staged permalink is linked from here.
 -->
 
-# The loop machinery
+# aof – what it delivers
 
 `aof work` runs as a set of declared **control loops** – build-to-green, review → fix → re-review,
 verify → triage → accept, the autonomous cascade – each a record in the loop registry with its
-reference, measurement, actuator, cadence and ceiling. These pages are where that machinery is
-documented. The graph is not retyped here: it is projected from the committed document the CLI
-renders from the registry, and a stale document fails the deploy.
+reference, measurement, actuator, cadence and ceiling. These pages document what that machinery
+delivers. Nothing here is retyped: every page is projected from a committed record at build time,
+and a stale record fails the deploy.
 
 ## Pages
 
+- [Delivered]({{ '/delivered/' | relative_url }}) – what aof provides today, one section per accepted
+  item, each capability stated as product state from that item's own outcome record. **Generated**
+  from every `OUTCOME.md` by the site build.
 - [The loop graph]({{ '/loops/' | relative_url }}) – every declared node and edge as a diagram, with
   the health census. **Generated** from the committed loop document (`aof work loops document --write`).
-- [ACD as a loop-engineered model]({{ '/prd-acd-loop-engineering/' | relative_url }}) – the planning
-  document for the loop-engineering arc: the CLI-owned loop shell, verification as a feedback loop,
-  the self-improvement loop and event-driven triggers. **Authored.**
-- [Graph engineering]({{ '/prd-graph-engineering/' | relative_url }}) – the planning document for aof
-  as an anchored graph of loops: the registry, its checks, the acceptor and the arbiter. **Authored.**
 
 ## The commands
 

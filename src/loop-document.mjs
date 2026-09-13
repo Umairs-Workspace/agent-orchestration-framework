@@ -92,7 +92,7 @@ function recordBlocks(records) {
   if (records.length === 0) return ["No records are declared.", ""];
   const lines = [];
   for (const record of records) {
-    lines.push(`### \`${record.id ?? "(no id)"}\` — ${record.title ?? "(no title)"}`, "");
+    lines.push(`### \`${record.id ?? "(no id)"}\` – ${record.title ?? "(no title)"}`, "");
     lines.push(`- kind: ${record.kind ?? "(none)"}`);
     for (const [key, value] of Object.entries(record.fields ?? {})) lines.push(`- ${key}: ${fieldText(value)}`);
     lines.push("");
@@ -114,7 +114,7 @@ function recordBlocks(records) {
 // at all and the trap cannot be sprung.
 export function composeLoopDocument({ present, source, nodeCount, edgeCount, graph, summary, records = [] }) {
   const lines = [
-    `<!-- aof-generated: \`${REGENERATE_COMMAND}\` — do not edit by hand -->`,
+    `<!-- aof-generated: \`${REGENERATE_COMMAND}\` – do not edit by hand -->`,
     "",
     "# The loop graph",
     "",
@@ -138,7 +138,7 @@ export function composeLoopDocument({ present, source, nodeCount, edgeCount, gra
   if (table.length > 0) lines.push(...table, "");
 
   if (!present) {
-    lines.push("No check ran — there is no registry to check.", "");
+    lines.push("No check ran – there is no registry to check.", "");
   } else if (summary.error === 0 && summary.warn === 0) {
     lines.push("No check raised a finding.", "");
   }

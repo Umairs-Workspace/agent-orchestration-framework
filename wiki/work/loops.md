@@ -1,4 +1,4 @@
-<!-- aof-generated: `aof work loops document --write` — do not edit by hand -->
+<!-- aof-generated: `aof work loops document --write` – do not edit by hand -->
 
 # The loop graph
 
@@ -74,41 +74,41 @@ flowchart LR
 
 ## The records
 
-### `actor:operator` — Human operator
+### `actor:operator` – Human operator
 
 - kind: actor
 - ground: exogenous
 
-### `actor:product-owner` — Product owner
+### `actor:product-owner` – Product owner
 
 - kind: actor
 
-### `anchor:rubric-process-exit` — Rubric process exit
+### `anchor:rubric-process-exit` – Rubric process exit
 
 - kind: anchor
 - ground: process-exit
 - observes: module:src/commands/grade.mjs#reportObservation
 
-### `anchor:run-lifecycle-policy` — Run lifecycle policy
+### `anchor:run-lifecycle-policy` – Run lifecycle policy
 
 - kind: anchor
 - ground: frozen-rule
 - observes: module:src/run-store.mjs#isLegalTransition
 
-### `anchor:run-liveness` — Run liveness observation
+### `anchor:run-liveness` – Run liveness observation
 
 - kind: anchor
 - ground: live-soak
 - observes: module:src/run-store.mjs#isStale
 
-### `arbiter:speed-thoroughness-autonomy` — Speed versus thoroughness versus autonomy
+### `arbiter:speed-thoroughness-autonomy` – Speed versus thoroughness versus autonomy
 
 - kind: arbiter
 - resolves: how much of the same agent's effort each loop may spend
 - priority: loop:verify-triage-accept, loop:review-fix-rereview, loop:build-to-green, loop:autonomous-cascade
 - dwell: cycles:2
 
-### `auditor:instrument-audit` — The instruments are audited by something none of them supervises
+### `auditor:instrument-audit` – The instruments are audited by something none of them supervises
 
 - kind: auditor
 - audits: module:scripts/test.mjs#tests, module:src/work-audit/census.mjs#runCensus, module:src/work-audit/evidence.mjs#runEvidence, module:src/work-audit/spawn.mjs#runBounded, module:src/work/doctor-controls.mjs#fitnessDeclarations, module:src/work/loops-checks.mjs#buildGroundednessReport, command:work:loops-validate, watcher:autonomous-cascade-watcher, watcher:build-to-green-watcher, watcher:review-fix-rereview-watcher, anchor:rubric-process-exit, anchor:run-lifecycle-policy, anchor:run-liveness
@@ -116,7 +116,7 @@ flowchart LR
 - cadence: event:per-milestone
 - escalation: actor:operator
 
-### `loop:autonomous-cascade` — Advance a work range to done
+### `loop:autonomous-cascade` – Advance a work range to done
 
 - kind: loop
 - controlled: items reaching done over a work range
@@ -129,7 +129,7 @@ flowchart LR
 - optimizing: true
 - layer: management
 
-### `loop:build-to-green` — Build executable work to green
+### `loop:build-to-green` – Build executable work to green
 
 - kind: loop
 - controlled: executable scenarios and fitness functions green
@@ -142,7 +142,7 @@ flowchart LR
 - optimizing: true
 - layer: operational
 
-### `loop:mesh-assignment-reclaim` — Reclaim assignments only after dual staleness
+### `loop:mesh-assignment-reclaim` – Reclaim assignments only after dual staleness
 
 - kind: loop
 - controlled: module:src/mesh/assignment-reclaim.mjs#reclaimStaleAssignments
@@ -155,7 +155,7 @@ flowchart LR
 - optimizing: false
 - layer: operational
 
-### `loop:retrospective-memory-ingest` — Capture milestone lessons into memory
+### `loop:retrospective-memory-ingest` – Capture milestone lessons into memory
 
 - kind: loop
 - controlled: milestone lessons made recallable
@@ -168,7 +168,7 @@ flowchart LR
 - optimizing: false
 - layer: governance
 
-### `loop:review-fix-rereview` — Review, fix, and re-review
+### `loop:review-fix-rereview` – Review, fix, and re-review
 
 - kind: loop
 - controlled: open review findings
@@ -181,7 +181,7 @@ flowchart LR
 - optimizing: true
 - layer: operational
 
-### `loop:run-resilience` — Keep runs within their lifecycle policy
+### `loop:run-resilience` – Keep runs within their lifecycle policy
 
 - kind: loop
 - controlled: module:src/run-store.mjs#readRuns
@@ -194,7 +194,7 @@ flowchart LR
 - optimizing: false
 - layer: operational
 
-### `loop:verify-triage-accept` — Verify, triage, and accept an item
+### `loop:verify-triage-accept` – Verify, triage, and accept an item
 
 - kind: loop
 - controlled: findings triaged and item accepted
@@ -207,21 +207,21 @@ flowchart LR
 - optimizing: false
 - layer: management
 
-### `watcher:autonomous-cascade-watcher` — Autonomous cascade watched against intervention rate
+### `watcher:autonomous-cascade-watcher` – Autonomous cascade watched against intervention rate
 
 - kind: watcher
 - counter: how often a run needed a retry or a hand
 - determinism: counter
 - measurement: command:work:counters
 
-### `watcher:build-to-green-watcher` — Build-to-green watched against contract shrinking
+### `watcher:build-to-green-watcher` – Build-to-green watched against contract shrinking
 
 - kind: watcher
 - counter: whether the acceptance criteria got smaller
 - determinism: counter
 - measurement: command:work:ratchet
 
-### `watcher:review-fix-rereview-watcher` — Review-fix-rereview watched against finding escape
+### `watcher:review-fix-rereview-watcher` – Review-fix-rereview watched against finding escape
 
 - kind: watcher
 - counter: findings raised after the item was accepted

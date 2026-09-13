@@ -40,7 +40,9 @@ import { loadWorkspace } from "../../src/work.mjs";
 import { loopDocumentCommand } from "../../src/commands/loop-document.mjs";
 import { loopDocumentPath, REGENERATE_COMMAND } from "../../src/loop-document.mjs";
 import {
+  BUILD_COMMAND,
   DEFAULT_OUT,
+  DELIVERED_SOURCE,
   MANIFEST,
   RAW_CLOSE,
   RAW_OPEN,
@@ -48,6 +50,8 @@ import {
   SiteBuildError,
   buildSite,
   carriesProvenanceEnvelope,
+  collectDelivered,
+  houseStyle,
   resolveManifest,
 } from "../../scripts/site/build-site.mjs";
 
@@ -246,12 +250,23 @@ async function makeSiteFixture({ omit = null } = {}) {
   await cp(path.join(repoRoot, SHELL_DIR), path.join(root, SHELL_DIR), { recursive: true });
   const manifest = resolveManifest(repoRoot, await loadWorkspace(repoRoot));
   for (const entry of manifest) {
+    if (!entry.absolute) continue; // a composed page has no file to copy — it is composed from the fixture's own records
     if (entry.source === omit) continue;
     const target = path.join(root, ...entry.source.split("/"));
     await mkdir(path.dirname(target), { recursive: true });
     await cp(entry.absolute, target);
   }
   return { root, manifest };
+}
+
+// Write one item's identity record and outcome into a fixture work dir. `record` is the identity
+// doc's filename (SPEC/STORY/CHORE.md) and `status` its frontmatter status; `delivered` is the
+// body of the outcome's `## Delivered` section.
+async function writeOutcomeFixture(root, relativeDir, { record, status, title, delivered, extra = "" }) {
+  const dir = path.join(root, "wiki", "work", ...relativeDir.split("/"));
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, record), `---\ntype: ${record === "SPEC.md" ? "milestone" : record === "CHORE.md" ? "chore" : "story"}\nstatus: ${status}\n---\n# ${title}\n`, "utf8");
+  await writeFile(path.join(dir, "OUTCOME.md"), `# ${title} — Outcome\n\n<!-- a comment the page must not carry -->\n\n## Delivered\n\n${delivered}\n\n## Assumptions\n\n- **stays in the record** — not published\n${extra}`, "utf8");
 }
 
 async function withSiteFixture(options, fn) {
@@ -485,11 +500,14 @@ export const siteBuildTests = [
       // No file in the shell is a staged page (the builder's provenance envelope) or carries a
       // manifest source's bytes.
       const manifest = resolveManifest(repoRoot, await loadWorkspace(repoRoot));
-      const sources = await Promise.all(manifest.map((entry) => readFile(entry.absolute, "utf8")));
+      // A composed page has no source file — its bytes exist only in the staging — so it is checked
+      // by page name alone below.
+      const sources = await Promise.all(manifest.map((entry) => (entry.absolute ? readFile(entry.absolute, "utf8") : "")));
       for (const file of files) {
         const text = await readFile(path.join(repoRoot, SHELL_DIR, file), "utf8");
         assert.ok(!carriesProvenanceEnvelope(text), `${file} is not a page the build produced`);
         for (const [index, source] of sources.entries()) {
+          if (!source) continue;
           assert.ok(!text.includes(source.trim()), `${file} does not carry the bytes of ${manifest[index].source}`);
         }
         assert.ok(!manifest.some((entry) => entry.page === file), `${file} is not a manifest page name`);
@@ -600,7 +618,7 @@ export const siteBuildTests = [
 
   // ══════ 01_the-graph-page-is-projected-not-copied.feature: Scenario Outline "every published page states where it came from and how it is kept true" ══════
   {
-    name: "site-build/01 every published page states where it came from and how it is kept true — outline: the loop document as `generated` naming its regeneration command, each PRD as `authored` naming none",
+    name: "site-build/01 every published page states where it came from and how it is kept true — outline: the loop document as `generated` naming `aof work loops document --write`, the Delivered page as `generated` naming the site build and its OUTCOME.md glob as source",
     run: async () => {
       await withTempDir("aof-site-out-", async (out) => {
         const result = await buildSite({ root: repoRoot, out });
@@ -608,8 +626,7 @@ export const siteBuildTests = [
         const documentSource = path.relative(repoRoot, loopDocumentPath(workspace)).split(path.sep).join("/");
         const rows = [
           { source: documentSource, kind: "generated", regenerate: REGENERATE_COMMAND },
-          { source: "wiki/planning/PRD-acd-loop-engineering.md", kind: "authored", regenerate: undefined },
-          { source: "wiki/planning/PRD-graph-engineering.md", kind: "authored", regenerate: undefined },
+          { source: DELIVERED_SOURCE, kind: "generated", regenerate: BUILD_COMMAND },
         ];
         assert.equal(result.pages.length, rows.length, "the build stages exactly the outline's pages");
         for (const row of rows) {
@@ -635,13 +652,20 @@ export const siteBuildTests = [
     run: async () => {
       assert.equal(RAW_OPEN, "{% raw %}\n", "the guard opens the body with `{% raw %}`");
       assert.equal(RAW_CLOSE, "\n{% endraw %}\n", "and closes it with `{% endraw %}`");
-      await withTempDir("aof-site-out-", async (out) => {
-        const result = await buildSite({ root: repoRoot, out });
+      // The shipped manifest carries no authored page (the site documents what is delivered, and
+      // both of its pages are generated), so the capability is exercised through the manifest
+      // parameter over a fixture whose body holds exactly what Liquid would otherwise eat.
+      assert.equal(MANIFEST.filter((entry) => entry.kind === "authored").length, 0, "the shipped manifest stages no authored page");
+      await withSiteFixture({}, async ({ root }) => {
+        const source = "# A fixture — authored\n\nA hexagon {{ node }} and a tag {% if x %} — kept as written.\n";
+        await mkdir(path.join(root, "wiki", "planning"), { recursive: true });
+        await writeFile(path.join(root, "wiki", "planning", "fixture.md"), source, "utf8");
+        const out = path.join(root, DEFAULT_OUT);
+        const result = await buildSite({ root, out, manifest: [{ kind: "authored", source: "wiki/planning/fixture.md", permalink: "/fixture/" }] });
         const authored = result.pages.filter((page) => page.kind === "authored");
-        assert.ok(authored.length >= 2, "both planning PRDs are staged as authored pages");
+        assert.equal(authored.length, 1, "the fixture manifest's one authored page is staged");
         for (const page of authored) {
           const staged = await readFile(path.join(out, page.page), "utf8");
-          const source = await readFile(path.join(repoRoot, ...page.source.split("/")), "utf8");
           const { frontMatter, body } = partsOfStagedPage(staged);
           assert.equal(body, source, `${page.page}'s body is byte-identical to ${page.source}`);
           assert.equal(staged, `${frontMatter}${RAW_OPEN}${source}${RAW_CLOSE}`, "and the page is exactly front matter + guard + source + guard — nothing else was added");
@@ -652,11 +676,51 @@ export const siteBuildTests = [
     },
   },
 
+  // ══════ the Delivered page (the site documents what is delivered — added at the re-scope, 2026-09-13) ══════
+  {
+    name: "site-build/delivered the page is composed from every ACCEPTED item's outcome and nothing else: done items in, other statuses and un-numbered folders out, newest first with a milestone before its stories, only the `## Delivered` section, comments stripped, en dashes, a literal `{% endraw %}` spaced so it cannot close the guard, and a TOC of items",
+    run: async () => {
+      await withSiteFixture({}, async ({ root }) => {
+        await writeOutcomeFixture(root, "50_milestone_alpha", { record: "SPEC.md", status: "done", title: "50 · Alpha", delivered: "### One thing\nThe system is X — measured.\n\n### Another\nThe guard is `{% raw %}…{% endraw %}`." });
+        await writeOutcomeFixture(root, "50_milestone_alpha/stories/01_story_beta", { record: "STORY.md", status: "done", title: "50/01 · Beta", delivered: "### A story capability\nIt IS." });
+        await writeOutcomeFixture(root, "51_story_gamma", { record: "STORY.md", status: "in-review", title: "51 · Gamma", delivered: "### Not yet\nNot accepted." });
+        await writeOutcomeFixture(root, "52_chore_delta", { record: "CHORE.md", status: "done", title: "52 · Delta", delivered: "### The chore's state\nPinned." });
+        await writeOutcomeFixture(root, "backlog/epsilon_story", { record: "STORY.md", status: "done", title: "Epsilon", delivered: "### Unnumbered\nNever." });
+        const items = await collectDelivered(root, await loadWorkspace(root));
+        assert.deepEqual(items.map((item) => item.label), ["52", "50", "50/01"], "done, numbered items only — newest first, the milestone before its story");
+        assert.deepEqual(items.map((item) => item.title), ["Delta", "Alpha", "Beta"], "titles come from the outcome's H1 with the ref and the ' — Outcome' suffix removed");
+        const out = path.join(root, DEFAULT_OUT);
+        const result = await buildSite({ root, out });
+        const page = result.pages.find((entry) => entry.permalink === "/delivered/");
+        assert.ok(page, "the Delivered page is staged");
+        const { frontMatter, body } = partsOfStagedPage(await readFile(path.join(out, page.page), "utf8"));
+        assert.equal(frontMatterValue(frontMatter, "kind"), "generated");
+        assert.equal(frontMatterValue(frontMatter, "regenerate"), BUILD_COMMAND);
+        assert.equal(frontMatterValue(frontMatter, "source"), DELIVERED_SOURCE);
+        assert.equal(frontMatterValue(frontMatter, "title"), "Delivered");
+        assert.match(body, /^\* TOC\n\{:toc\}$/m, "the page opens with kramdown's TOC macro");
+        assert.deepEqual([...body.matchAll(/^## (.+)$/gm)].map((match) => match[1]), ["52 · Delta", "50 · Alpha", "50/01 · Beta"], "one H2 per accepted item, in order");
+        assert.equal((body.match(/^### /gm) ?? []).length, 4, "every capability of every accepted item, and none of the excluded ones");
+        assert.ok(!body.includes("Not accepted") && !body.includes("Never."), "the in-review item and the un-numbered folder are absent");
+        assert.ok(!body.includes("stays in the record") && !body.includes("a comment the page must not carry"), "assumptions and comments do not travel");
+        assert.ok(!body.includes("—"), "no em dash survives on the composed page");
+        assert.ok(body.includes("The system is X – measured."), "an em dash in a record reads as an en dash on the page");
+        assert.ok(body.includes("{ % endraw % }"), "a literal closer is spaced out");
+        assert.ok(!/\{%-?\s*endraw\s*-?%\}/.test(body), "so nothing in the body can close the Liquid guard");
+        assert.ok(body.includes("3 items, 4 capabilities"), "the intro counts what it lists");
+      });
+      // And over THIS repository: everything listed is an accepted item, and the list is not empty.
+      const real = await collectDelivered(repoRoot, await loadWorkspace(repoRoot));
+      assert.ok(real.length >= 100, `the repository's accepted items carry outcomes (${real.length})`);
+      assert.equal(houseStyle("a — b {% endraw %}"), "a – b { % endraw % }", "the house style is the one transformation, applied once");
+    },
+  },
+
   // ══════ 01: "a staged source that is not there fails the build" ══════
   {
     name: "site-build/01 a staged source that is not there fails the build: non-zero exit naming the missing path, no page staged for it, and no partially staged site left behind",
     run: async () => {
-      const missing = "wiki/planning/PRD-graph-engineering.md";
+      const missing = path.relative(repoRoot, loopDocumentPath(await loadWorkspace(repoRoot))).split(path.sep).join("/");
       await withSiteFixture({ omit: missing }, async ({ root }) => {
         const out = path.join(root, DEFAULT_OUT);
         await assert.rejects(

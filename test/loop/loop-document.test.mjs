@@ -209,7 +209,7 @@ export const loopDocumentTests = [
           compose: () => composeFor([], { present: false, source: ".aof/loops", ran: false }),
           stated: (text) => {
             assert.match(text, /^No loop registry is declared\. The registry was looked for at `\.aof\/loops`\.$/m, "that no registry is declared, and where it was looked for");
-            assert.match(text, /^No check ran — there is no registry to check\.$/m, "and that the checks did not run rather than that they passed");
+            assert.match(text, /^No check ran – there is no registry to check\.$/m, "and that the checks did not run rather than that they passed");
           },
         },
       ];

@@ -55,10 +55,16 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 export const SHELL_DIR = "docs";
 export const DEFAULT_OUT = "dist-site";
 
-// THE MANIFEST — what travels the publishing path. The generated entry's source is DERIVED (a
-// function of the workspace) rather than spelled; the authored entries are the two planning PRDs
-// the story publishes as-is. A page is staged under its source's own basename — never a second
-// spelling of it here — and `permalink` is the URL the landing page links.
+// THE MANIFEST — what travels the publishing path. Two generated pages and no authored one: the
+// site documents what aof DELIVERS, and both pages are projections of committed records — the
+// loop document (rendered by the CLI from the registry, held current by story 79's drift check)
+// and the Delivered catalogue (composed at build time from every accepted item's OUTCOME.md, the
+// record that states product state). The generated entry's source is DERIVED (a function of the
+// workspace) rather than spelled; a composed entry carries `compose` instead of a file, and names
+// its inputs as a glob. A page is staged under its own basename, and `permalink` is the URL the
+// landing page links.
+export const BUILD_COMMAND = "node scripts/site/build-site.mjs";
+export const DELIVERED_SOURCE = "wiki/work/**/OUTCOME.md";
 export const MANIFEST = Object.freeze([
   Object.freeze({
     kind: "generated",
@@ -67,14 +73,12 @@ export const MANIFEST = Object.freeze([
     permalink: "/loops/",
   }),
   Object.freeze({
-    kind: "authored",
-    source: "wiki/planning/PRD-acd-loop-engineering.md",
-    permalink: "/prd-acd-loop-engineering/",
-  }),
-  Object.freeze({
-    kind: "authored",
-    source: "wiki/planning/PRD-graph-engineering.md",
-    permalink: "/prd-graph-engineering/",
+    kind: "generated",
+    compose: (root, workspace) => composeDelivered(root, workspace),
+    source: DELIVERED_SOURCE,
+    page: "delivered.md",
+    regenerate: BUILD_COMMAND,
+    permalink: "/delivered/",
   }),
 ]);
 
@@ -124,6 +128,119 @@ export function frontMatterFor({ kind, source, regenerate, permalink }, body, fa
   return lines.join("\n");
 }
 
+
+// ─── The Delivered page ───────────────────────────────────────────────────────────────────────
+//
+// Composed from every ACCEPTED item's OUTCOME.md — the record each accept authors to state what
+// the system now IS (39/ADR-004, widened at story 80 to stories and chores). Only the
+// `## Delivered` section travels: capabilities as product state, newest item first, a milestone
+// before its own stories. Assumptions and gaps stay in the records. An item is accepted when its
+// identity record (SPEC/STORY/CHORE/AOF.md) reads `status: done`; an outcome on any other status
+// is not published, whatever folder it sits in.
+//
+// House style for the composed page: en dashes. The records are written with em dashes and are
+// left as they are; this page is composed, so it may set its own typography. A literal
+// `{% endraw %}` inside a record (125's outcome names the guard) is spaced out, because it would
+// otherwise close this page's Liquid guard early.
+const RECORD_DOCS = ["SPEC.md", "STORY.md", "CHORE.md", "AOF.md"];
+
+async function walkForOutcomes(dir, found) {
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return found;
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      await walkForOutcomes(path.join(dir, entry.name), found);
+    } else if (entry.name === "OUTCOME.md") {
+      found.push(path.join(dir, entry.name));
+    }
+  }
+  return found;
+}
+
+async function statusOfItem(dir) {
+  for (const name of RECORD_DOCS) {
+    let text;
+    try {
+      text = await readFile(path.join(dir, name), "utf8");
+    } catch {
+      continue;
+    }
+    const match = /^status:\s*(\S+)/m.exec(text);
+    return match ? match[1] : null;
+  }
+  return null;
+}
+
+// The item's ref from its folder path under the work dir: NN_… → NN, NN_…/stories/SS_… → NN/SS.
+function refOf(relativeDir) {
+  const segments = relativeDir.split("/");
+  const top = segments.find((segment) => /^\d+_/.test(segment));
+  if (!top) return null;
+  const number = Number.parseInt(top, 10);
+  const storyAt = segments.indexOf("stories");
+  const story = storyAt >= 0 && /^\d+_/.test(segments[storyAt + 1] ?? "") ? Number.parseInt(segments[storyAt + 1], 10) : null;
+  return { number, story, label: story === null ? String(number) : number + "/" + String(story).padStart(2, "0") };
+}
+
+function deliveredSectionOf(text) {
+  const start = /^## Delivered\s*$/m.exec(text);
+  if (!start) return null;
+  const rest = text.slice(start.index + start[0].length);
+  const next = /^## /m.exec(rest);
+  return (next ? rest.slice(0, next.index) : rest).replace(/<!--[\s\S]*?-->/g, "").trim();
+}
+
+function titleOfOutcome(text, fallback) {
+  const heading = /^#\s+(.+?)\s*$/m.exec(text);
+  if (!heading) return fallback;
+  return heading[1].replace(/^\d+(?:\/\d+)?\s*·\s*/, "").replace(/\s*[—–-]\s*Outcome\s*$/, "");
+}
+
+export function houseStyle(text) {
+  return text.replace(/—/g, "–").replace(/\{%(-?\s*endraw\s*-?)%\}/g, "{ %$1% }");
+}
+
+export async function collectDelivered(root, workspace) {
+  const workDir = workspace?.workDir ?? path.join(root, "wiki", "work");
+  const outcomes = await walkForOutcomes(workDir, []);
+  const items = [];
+  for (const file of outcomes) {
+    const dir = path.dirname(file);
+    const ref = refOf(posix(path.relative(workDir, dir)));
+    if (!ref) continue;
+    if ((await statusOfItem(dir)) !== "done") continue;
+    const text = await readFile(file, "utf8");
+    const delivered = deliveredSectionOf(text);
+    if (!delivered) continue;
+    items.push({ ...ref, title: titleOfOutcome(text, ref.label), delivered, source: posix(path.relative(root, file)) });
+  }
+  items.sort((a, b) => b.number - a.number || (a.story === null ? -1 : b.story === null ? 1 : a.story - b.story));
+  return items;
+}
+
+export async function composeDelivered(root, workspace) {
+  const items = await collectDelivered(root, workspace);
+  const capabilities = items.reduce((count, item) => count + (item.delivered.match(/^### /gm) ?? []).length, 0);
+  const plural = (n, one, many) => (n === 1 ? one : many);
+  const lines = [
+    "# Delivered",
+    "",
+    "What aof provides today, stated per accepted item from that item's own outcome record – " + items.length + " " + plural(items.length, "item", "items") + ", " + capabilities + " " + plural(capabilities, "capability", "capabilities") + ". Newest first; a milestone precedes its stories. Each line is product state, not intent.",
+    "",
+    "* TOC",
+    "{:toc}",
+    "",
+  ];
+  if (items.length === 0) lines.push("No accepted item carries an outcome record yet.", "");
+  for (const item of items) lines.push("## " + item.label + " · " + item.title, "", item.delivered, "");
+  return houseStyle(lines.join("\n"));
+}
+
 // A staged page: the envelope (front matter, then the guard) around the source's bytes.
 export function stagePage(entry, body) {
   // A body that closes the guard itself would publish as a truncated page with Liquid loose over
@@ -138,8 +255,9 @@ export function stagePage(entry, body) {
 // authored entries' relative to the root. `source` in the result is the PROJECT-RELATIVE,
 // forward-slashed display path the staged page names — never the absolute one, which would put the
 // checkout location into the staged bytes; `absolute` is kept beside it for the read.
-export function resolveManifest(root, workspace) {
-  return MANIFEST.map((entry) => {
+export function resolveManifest(root, workspace, manifest = MANIFEST) {
+  return manifest.map((entry) => {
+    if (entry.compose) return { ...entry, absolute: null };
     const absolute = typeof entry.source === "function" ? entry.source(workspace) : path.resolve(root, entry.source);
     return { ...entry, absolute, source: posix(path.relative(root, absolute)), page: path.basename(absolute) };
   });
@@ -217,7 +335,7 @@ async function assertReplaceableTarget(outDir, shell) {
 //
 //   { root, out }   root: the repository (defaults to this one); out: the staging directory,
 //                   relative to root or absolute (defaults to `dist-site`).
-export async function buildSite({ root = repoRoot, out = DEFAULT_OUT } = {}) {
+export async function buildSite({ root = repoRoot, out = DEFAULT_OUT, manifest: declared = MANIFEST } = {}) {
   const rootDir = path.resolve(root);
   const outDir = path.resolve(rootDir, out);
   refuseTarget(rootDir, outDir);
@@ -228,14 +346,14 @@ export async function buildSite({ root = repoRoot, out = DEFAULT_OUT } = {}) {
   }
 
   const workspace = await loadWorkspace(rootDir);
-  const manifest = resolveManifest(rootDir, workspace);
+  const manifest = resolveManifest(rootDir, workspace, declared);
 
   // Every source is read BEFORE anything is written, so a missing one fails with nothing staged.
   const pages = [];
   for (const entry of manifest) {
     let body;
     try {
-      body = await readFile(entry.absolute, "utf8");
+      body = entry.compose ? await entry.compose(rootDir, workspace) : await readFile(entry.absolute, "utf8");
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
       throw new SiteBuildError(`Cannot stage ${entry.page}: its source ${entry.source} does not exist.`, { code: "site-source-missing", path: entry.absolute });

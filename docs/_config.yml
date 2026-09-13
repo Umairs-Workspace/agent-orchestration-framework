@@ -9,8 +9,8 @@
 #
 # Built by `actions/jekyll-build-pages` (the github-pages gem: Jekyll 3, kramdown with GFM input,
 # rouge). Nothing here needs a plugin.
-title: "aof – the loop machinery"
-description: "The control loops that drive aof's own delivery, projected from the loop registry rather than described from memory."
+title: "aof – what it delivers"
+description: "What aof delivers, projected from its own accepted records rather than described from memory."
 
 # The project site's home. `baseurl` is the repository name, which is where GitHub Pages serves a
 # project site; the README links exactly this address.
@@ -29,6 +29,8 @@ kramdown:
   # before Mermaid runs. Nothing to configure here; recorded so nobody adds a highlighter option
   # that changes the shape the layout selects.
   syntax_highlighter: rouge
+  # The Delivered page opens with a `{:toc}`; one entry per item (H2), never per capability.
+  toc_levels: [2]
 
 defaults:
   - scope:
