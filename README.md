@@ -4,6 +4,8 @@ AOF is a local CLI for **agent-driven delivery**. Its heart is **`aof work`**: a
 
 Everything is local Markdown + JSON — no service, no database.
 
+**Docs:** <https://umairs-workspace.github.io/agent-orchestration-framework/> — [ACD, the delivery model](https://umairs-workspace.github.io/agent-orchestration-framework/acd/) and [the loop graph](https://umairs-workspace.github.io/agent-orchestration-framework/loops/).
+
 ## Install
 
 A signed, self-contained `aof` binary — **no Node.js, no toolchain**. One line, per-user (no sudo/admin), installs to `$HOME/.aof/bin`:
@@ -161,7 +163,7 @@ aof work trigger [trigger] [--signal JSON]   # resolve a declared trigger (`.aof
 aof work acceptor [--commit <key>]     # the disciplined acceptor's report; `--commit` moves exactly one eligible proposal (milestone 61)
 ```
 
-The loop graph, the health census and the two planning PRDs behind the design are published at **<https://umairs-workspace.github.io/agent-orchestration-framework/>**. The graph page there is projected from `wiki/work/loops.md` at build time — never copied — and the deploy is gated on the same drift check the suite runs, so a stale document cannot reach the site.
+The loop graph and its health census are published at **<https://umairs-workspace.github.io/agent-orchestration-framework/loops/>**, projected from `wiki/work/loops.md` at build time — never copied — with the deploy gated on the same drift check the suite runs, so a stale document cannot reach the site.
 
 ### Memory & recall (milestones 05 · 10 · 14)
 
