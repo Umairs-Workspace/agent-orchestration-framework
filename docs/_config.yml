@@ -9,7 +9,7 @@
 #
 # Built by `actions/jekyll-build-pages` (the github-pages gem: Jekyll 3, kramdown with GFM input,
 # rouge). Nothing here needs a plugin.
-title: "aof — the loop machinery"
+title: "aof – the loop machinery"
 description: "The control loops that drive aof's own delivery, projected from the loop registry rather than described from memory."
 
 # The project site's home. `baseurl` is the repository name, which is where GitHub Pages serves a
