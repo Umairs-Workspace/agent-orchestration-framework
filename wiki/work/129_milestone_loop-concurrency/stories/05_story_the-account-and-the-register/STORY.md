@@ -5,10 +5,10 @@ slug: the-account-and-the-register
 title: "The account and the register — the seven controls land and go red on contact, the never-discards sweep reaches the lane verbs, and the autonomous prompt names the key"
 parent: 129
 depends: [4]
-status: not-started
+status: done
 owner: product-owner
 created: 2026-09-12
-updated: 2026-09-12
+updated: 2026-09-14
 adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-007, ADR-008]
 reads:
   - wiki/work/129_milestone_loop-concurrency/SPEC.md
@@ -87,10 +87,10 @@ row raised by exactly four from its value at HEAD when the story lands (54 at `2
 
 ## Tasks
 
-- [ ] `tasks/00_the-four-controls-land.feature` — the four files exist at their declared paths, are registered in `test/arch/loop/index.mjs`, export `archTests`, and are non-vacuous (each finds its subject); the row rises by exactly four
-- [ ] `tasks/01_each-control-goes-red-on-contact.feature` — the register's named probe for FF-12901 … FF-12907 makes exactly the named legs red with the recorded message, and the subject restores byte-identical
-- [ ] `tasks/02_never-discards-reaches-the-lane.feature` — the extended sweep covers the three new modules, the armed `--abort` leg fires for `dispatch.mjs`, the sanctioned forms stay sanctioned
-- [ ] `tasks/03_the-prompt-names-the-key.feature` — `autonomous.md` names `work.loop.concurrency` and its two values beside the home; the three renders, the manifest and the lock agree; FF-7101 stays green
+- [x] `tasks/00_the-four-controls-land.feature` — the four files exist at their declared paths, are registered in `test/arch/loop/index.mjs`, export `archTests`, and are non-vacuous (each finds its subject); the row rises by exactly four
+- [x] `tasks/01_each-control-goes-red-on-contact.feature` — the register's named probe for FF-12901 … FF-12907 makes exactly the named legs red with the recorded message, and the subject restores byte-identical
+- [x] `tasks/02_never-discards-reaches-the-lane.feature` — the extended sweep covers the three new modules, the armed `--abort` leg fires for `dispatch.mjs`, the sanctioned forms stay sanctioned
+- [x] `tasks/03_the-prompt-names-the-key.feature` — `autonomous.md` names `work.loop.concurrency` and its two values beside the home; the three renders, the manifest and the lock agree; FF-7101 stays green
 
 ## Notes
 

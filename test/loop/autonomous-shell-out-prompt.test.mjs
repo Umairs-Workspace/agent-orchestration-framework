@@ -399,7 +399,7 @@ export const autonomousShellOutPromptTests = [
       assert.match(text, /after the shell reports a milestone accepted, run `aof:code-review <NN>`/);
       assert.match(text, /A halt never ships an unaccepted milestone/);
       const configKeys = [...text.matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
-      assert.deepEqual([...new Set(configKeys)].sort(), ["work.agents", "work.agents.mode", "work.codeReview.autoComplete"]);
+      assert.deepEqual([...new Set(configKeys)].sort(), ["work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.loop.concurrency"]);
     },
   },
   {

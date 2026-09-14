@@ -27,7 +27,7 @@
 // The conflict refusal is routinely reachable at dispatch altitude and is driven there.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm, unlink, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm, unlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { meshWorktreePath, listWorktrees, advanceBranchToBase, addDispatchWorktree } from "../../src/mesh/worktree.mjs";
@@ -47,16 +47,11 @@ import {
   CONTESTED_PATH,
   DOOMED_PATH,
 } from "../support/gate-propagation-fixture.mjs";
+import { writeRel, mergeHeadAbsent, conflictMarkers as conflictMarkersAnywhere } from "../support/dispatch-lane-fixture.mjs";
 
 const NOW = "2026-08-04T09:00:00.000Z";
 const DIRTY = "assignment-gate-propagation-dirty-worktree";
 const CONFLICT = "assignment-gate-propagation-conflict";
-
-// mergeHeadAbsent(cwd) — `git rev-parse -q --verify MERGE_HEAD` exits non-zero: the repo is
-// NOT left in a MERGING state.
-function mergeHeadAbsent(cwd) {
-  return git(cwd, ["rev-parse", "-q", "--verify", "MERGE_HEAD"]).status !== 0;
-}
 
 // unmergedEntries(cwd) — the `U*` / `*U` / `AA` / `DD` porcelain lines a half-applied merge
 // would leave behind.
@@ -64,26 +59,6 @@ function unmergedEntries(cwd) {
   return git(cwd, ["status", "--porcelain"]).stdout
     .split(/\r?\n/)
     .filter((line) => /^(U.|.U|AA|DD)/.test(line));
-}
-
-// conflictMarkersAnywhere(dir) — a real recursive scan of the worktree's files (never a
-// single named path): `<<<<<<<`, `=======`, `>>>>>>>` must exist NOWHERE after the abort.
-async function conflictMarkersAnywhere(dir) {
-  const hits = [];
-  const walk = async (current) => {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      if (entry.name === ".git" || entry.name === ".aof" || entry.name === "node_modules") continue;
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) {
-        await walk(full);
-        continue;
-      }
-      const body = await readFile(full, "utf8").catch(() => "");
-      if (/^<{7}/m.test(body) || /^={7}$/m.test(body) || /^>{7}/m.test(body)) hits.push(full);
-    }
-  };
-  await walk(dir);
-  return hits;
 }
 
 // plantDirt(worktreePath, mode) — the dispatch-altitude hook: the uncommitted work appears
@@ -108,12 +83,6 @@ function plantDirt(worktreePath, mode, box) {
 // which modifies `src/x.mjs` and adds `src/new.mjs`. Every Then is read back from git.
 
 const BAD_OPTION = "gate-propagation-bad-option";
-
-async function writeRel(root, rel, body) {
-  const target = path.join(root, ...rel.split("/"));
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, body, "utf8");
-}
 
 // `b1Adds` — extra paths B1 adds beyond `src/new.mjs` (the I1 row needs B1 to add a file in a
 // directory the worktree holds wholly untracked).
@@ -213,7 +182,7 @@ export const gatePropagationRefusalsTests = [
       assert.equal(after.untracked, box.before.untracked, "the untracked file is still present with identical bytes");
       assert.ok(String(after.untracked ?? "").length > 0, "…and it is genuinely still there, not merely equal-and-absent");
 
-      assert.equal(mergeHeadAbsent(worktreePath), true, "git rev-parse -q --verify MERGE_HEAD exits non-zero — no merge was ever begun");
+      assert.equal(await mergeHeadAbsent(worktreePath), true, "git rev-parse -q --verify MERGE_HEAD exits non-zero — no merge was ever begun");
       assert.notEqual(git(fx.root, ["cat-file", "-e", `${shape.branch}:${GATE_EDITED_PATH}`]).status, 0, "git cat-file -e <branch>:<the-gate-edited-path> exits non-zero — the gate edit did NOT arrive");
 
       // (d) the SEAM's own altitude — the guard called directly against a dirty worktree,
@@ -245,7 +214,7 @@ export const gatePropagationRefusalsTests = [
       assert.equal(failed?.code, CONFLICT, "the assignment settles `failed` with code assignment-gate-propagation-conflict");
       assert.equal(revParse(fx.root, shape.branch), shape.tipBefore, "git rev-parse <branch> equals the hash captured before the dispatch");
       assert.notEqual(git(fx.root, ["rev-parse", "--verify", `${shape.branch}^2`]).status, 0, "git rev-parse --verify <branch>^2 exits non-zero — no merge commit was created");
-      assert.equal(mergeHeadAbsent(worktreePath), true, "git rev-parse -q --verify MERGE_HEAD exits non-zero — the repo is NOT left in a MERGING state");
+      assert.equal(await mergeHeadAbsent(worktreePath), true, "git rev-parse -q --verify MERGE_HEAD exits non-zero — the repo is NOT left in a MERGING state");
       assert.deepEqual(unmergedEntries(worktreePath), [], "git status --porcelain carries no unmerged entry (no UU, AA, DD, AU or UA line)");
       assert.deepEqual(await conflictMarkersAnywhere(worktreePath), [], "no conflict-marker text exists in ANY file in the worktree");
       // "identical to their content at W1" is compared against the BLOB, with line endings
@@ -299,7 +268,7 @@ export const gatePropagationRefusalsTests = [
           assert.equal(revParse(fx.root, shape.branch), shape.tipBefore, `${label} git rev-parse <branch> equals the hash captured before the dispatch`);
           assert.equal(isAncestor(fx.root, shape.W1, shape.branch), true, `${label} W1 is still reachable — every worker commit survives`);
           assert.equal(isAncestor(fx.root, shape.W2, shape.branch), true, `${label} …and W2`);
-          assert.equal(mergeHeadAbsent(worktreePath), true, `${label} MERGE_HEAD is absent — nothing is left half-applied`);
+          assert.equal(await mergeHeadAbsent(worktreePath), true, `${label} MERGE_HEAD is absent — nothing is left half-applied`);
           assert.deepEqual(spawns, [], `${label} the runtime is never spawned — no agent begins a phase on this state`);
           assert.equal(existsSync(worktreePath), true, `${label} the worktree is RETAINED for inspection`);
           const entries = await listWorktrees(fx.root);
@@ -441,7 +410,7 @@ export const gatePropagationRefusalsTests = [
       );
       assert.equal(revParse(worktree, "HEAD"), b0, "git rev-parse HEAD in the worktree is B0");
       assert.equal(porcelainOf(worktree), before, "git status --porcelain is byte-identical to its output before the call");
-      assert.equal(mergeHeadAbsent(worktree), true, "git rev-parse -q --verify MERGE_HEAD exits non-zero");
+      assert.equal(await mergeHeadAbsent(worktree), true, "git rev-parse -q --verify MERGE_HEAD exits non-zero");
     }),
   })),
   {
@@ -498,7 +467,7 @@ export const gatePropagationRefusalsTests = [
         "the answer is the conflict refusal",
       );
       assert.equal(revParse(worktree, "HEAD"), l1, "git rev-parse HEAD in the worktree is L1");
-      assert.equal(mergeHeadAbsent(worktree), true, "git rev-parse -q --verify MERGE_HEAD exits non-zero");
+      assert.equal(await mergeHeadAbsent(worktree), true, "git rev-parse -q --verify MERGE_HEAD exits non-zero");
       assert.deepEqual(porcelainLinesOf(worktree), after, `git status --porcelain is exactly ${JSON.stringify(after)}`);
       assert.deepEqual(await conflictMarkersAnywhere(worktree), [], "no file under the worktree contains a conflict marker");
     }),
@@ -520,7 +489,7 @@ export const gatePropagationRefusalsTests = [
       );
       assert.equal(revParse(worktree, "HEAD"), b0, "HEAD is still B0");
       assert.equal(porcelainOf(worktree), before, "the tree is untouched");
-      assert.equal(mergeHeadAbsent(worktree), true, "no merge was begun");
+      assert.equal(await mergeHeadAbsent(worktree), true, "no merge was begun");
     }, { b1Adds: ["src2/new.mjs"] }),
   },
   {

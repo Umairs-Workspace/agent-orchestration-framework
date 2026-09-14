@@ -32,7 +32,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
-import { stripComments } from "../../support/source-slice.mjs";
+import { stripComments, classifySites } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -71,51 +71,14 @@ export const ALLOWED_UNCLASSIFIED = Object.freeze([
 // every other `…Number(` identifier out. Unary `+x.number` is not admitted here — no src site
 // spells it, and a grammar that guessed at operators would name division expressions.
 const SITE_RE = /(?:parseInt|(?<![\w$.])Number)\([^()]*\.number[^()]*\)/g;
-// A top-level declaration: a `function` (optionally exported/async) or a `const NAME =` at column 0.
-const TOP_LEVEL_RE = /^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:export\s+)?(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=/;
+// The guard forms a parse site may sit behind (a live-row filter, a `.number` null check, a story type check).
 const GUARD_RE = /\bisLiveStreamRow\s*\(|\.filter\(isLiveStreamRow\)|\.number\s*(?:!==?|===?)\s*null|\btype\s*(?:===|!==)\s*"story"/;
 
-// Line-align a stripped-source line back onto the original file: the stripper keeps code bytes
-// in order and drops whole-comment lines, so a monotonic forward search over trimmed lines
-// recovers the original line number for a finding.
-function originalLineOf(strippedLines, originalLines, strippedIndex) {
-  let cursor = 0;
-  for (let index = 0; index <= strippedIndex; index += 1) {
-    const needle = strippedLines[index].trim();
-    if (needle === "") continue;
-    while (cursor < originalLines.length && !originalLines[cursor].trim().startsWith(needle)) cursor += 1;
-    if (index === strippedIndex) return cursor + 1;
-    cursor += 1;
-  }
-  return strippedIndex + 1;
-}
-
-// Every `.number` parse site in one file, classified.
+// Every `.number` parse site in one file, classified — the enclosing-function rule is
+// `classifySites` (test/support/source-slice.mjs), the generic 129/05 lifted from this file's
+// own copy; the top-level declaration pattern is its default.
 export function classifyNumberSites(source) {
-  const stripped = stripComments(source);
-  const strippedLines = stripped.split("\n");
-  const originalLines = source.split("\n");
-  const sites = [];
-  // Top-level declarations by stripped line index.
-  const declarations = [];
-  strippedLines.forEach((line, index) => {
-    const match = line.match(TOP_LEVEL_RE);
-    if (match) declarations.push({ line: index, name: match[1] ?? match[2] });
-  });
-  strippedLines.forEach((line, index) => {
-    for (const match of line.matchAll(SITE_RE)) {
-      const owner = [...declarations].reverse().find((declaration) => declaration.line <= index) ?? null;
-      const from = owner ? owner.line : 0;
-      const window = strippedLines.slice(from, index).join("\n") + "\n" + line.slice(0, match.index);
-      sites.push({
-        line: originalLineOf(strippedLines, originalLines, index),
-        text: match[0],
-        fn: owner?.name ?? "(module scope)",
-        guarded: GUARD_RE.test(window),
-      });
-    }
-  });
-  return sites;
+  return classifySites(source, { siteRe: SITE_RE, guardRe: GUARD_RE });
 }
 
 export async function sweepNumberSites() {

@@ -17,8 +17,8 @@ doc: state
 - [x] `02_story_the-drive-is-a-child` — done (built + reviewed 2026-09-13 under the cascade; accepted 2026-09-13 by `aof:verify 129/02` — `VERIFICATION.md` `129/02`, `F-13`–`F-27`; `F-15`/`F-16` routed to 04, `F-17`/`F-23` to 05, `F-24`/`F-25` face + runner items)
 - [x] `03_story_the-lane-commits-and-merges-home` — done (built + reviewed 2026-09-13 under the cascade; three lenses + one delta round, 1 Blocker → 0; accepted 2026-09-13 by `aof:verify 129/03` — `VERIFICATION.md` `129/03`, `F-28`–`F-47`; `F-39`/`F-44` routed to 04, `F-47` an `aof test` item, `F-09` corrected)
 - [x] `04_story_the-wave-tick` — done (built + reviewed 2026-09-14, solo, resumed run `20260914T123830334Z-0001`; three lenses, one round, 0 Blockers; accepted 2026-09-14 by `aof:verify 129/04` — `VERIFICATION.md` `129/04`, `F-48`–`F-50`; `F-07`/`F-08`/`F-16`/`F-18`/`F-44` closed, `F-15` re-routed to 06, `F-39` to 05, `F-08`'s operational rule LIFTED, 03's composed-verbs gap discharged)
-- [ ] `05_story_the-account-and-the-register` — not started (after 04)
-- [ ] `06_story_the-second-live-run` — not started (after 05; `@manual`)
+- [x] `05_story_the-account-and-the-register` — done (built + reviewed 2026-09-14, solo, run `20260914T183538595Z-0000`; three lenses inline, 0 Blockers; accepted 2026-09-14 by `aof:verify 129/05` — `VERIFICATION.md` `129/05`, `F-51`–`F-54`; the seven register rows green with every probe re-observed; `F-17`/`F-23`/`F-39` closed, `F-51` fixed, `F-53` an operator item)
+- [ ] `06_story_the-second-live-run` — in-review (built 2026-09-14: the key set, the probe answers; the `@manual` live run is the operator's, preconditions measured at the 05 accept and NOT yet met — see the feedback entry)
 
 ## Notes & decisions in flight
 
@@ -77,6 +77,30 @@ doc: state
 
 <!-- Raw, attributed entries; triaged into VERIFICATION.md / RETROSPECTIVE.md at aof:verify. -->
 
+- **129/05 accepted (product-owner, 2026-09-14, `aof:verify 129/05` run directly).** Story lane
+  92 / 0 under an isolated home (332 / 0 on the combined run after the accept's edits, every
+  registered case reported); story-attributable 21 / 0. **Every register probe re-performed by
+  this session** against the shipped bytes (nine probes over `wave.mjs`, `child-drive.mjs`,
+  `loop-bounds.mjs`, `dispatch.mjs`; nine reds on the named leg; every subject restored
+  byte-identical) — the build's table agreed on every leg and message, and the register in
+  VERIFICATION.md now carries the seven rows green; the six `*(pending — 129/05)*` markers dropped
+  from ARCHITECTURE.md's register; `aof work doctor 129` reports no `control-unresolved` at any
+  severity for the first time in this milestone. Read at the source: `test/arch/loop` 58 + index =
+  59 at ceiling 59; `aof work update --dry-run` 0 / 150; the manifest regen a no-op against the
+  lock's 19:00 stamp. **Two folds taken here** rather than routed a third time (`F-39`: the three
+  lane suites' helpers onto `dispatch-lane-fixture.mjs`, +42/−70, 211 / 0; `F-51`: `classifyNumberSites`
+  onto `classifySites`, +5/−42 — the "untracked" premise had lapsed at the public-repo move).
+  `F-17` closed at the source, `F-23` by ruling, `F-52` by ruling, `F-54` (the two blind legs) to
+  the retro, `F-53` (a `scripts/red-probe.mjs`) to the operator. Story `RETROSPECTIVE.md` (R1–R3: a
+  guard and a rule share a subject; a twice-routed fold is taken by the accept that meets it; a
+  procedure performed twice from a scratchpad is a script) and `OUTCOME.md` (re-shaped: the probe
+  table is the register's, the first-contact history is the retro's, Gaps carry Status/Discharge).
+  **06's preconditions measured at this accept, NOT met:** 05's work is uncommitted on `127-129`
+  (the accept's edits included); the deployed payload must be re-read after the commit + deploy;
+  127's through-review wave is `[03, 04]` with nothing held, so the target is the standing test-bed
+  or a milestone the operator names. **The operator has asked that the milestone NOT be signed
+  off until they sign off the configuration surface** (how concurrency is configured, its defaults)
+  — held as a `@uat`-shaped stop at the milestone door.
 - **129/04 accepted (product-owner, 2026-09-14, `aof:verify 129/04` run directly — the story's
   second attempt was solo, so no cascade verify phase carried it).** Story lane 187 / 1 under an
   isolated home (188 registered = 188 reported; 194 / 1 and 195 = 195 after the accept's edits), the
@@ -429,6 +453,45 @@ doc: state
   child-process model moves the whole bracket into a per-lane child regardless. 03's run
   `20260913T032426340Z-0000` is left `running` for `--resume`'s reclaim (`runtime_offline`), not
   hand-settled.
+
+- **129/05 built and reviewed (developer + all three lenses inline — `--solo`, 2026-09-14).** The
+  four controls, the never-discards extension and the prompt paragraph landed; every register probe
+  performed by a scratchpad script against the shipped bytes with sha256 restore (OUTCOME.md's
+  table). Focused build evidence 246 / 8 over the story's suites plus the class-level `test/arch`
+  controls, the gates it moves and the wave/driver suites; the eight reds are the inherited set at
+  HEAD (`FF-11903` ×3, `FF-11901`/`FF-11902` ×4 naming other stories' files, `FF-5307`'s `ui/`
+  digest) and none names a file of this story. `aof test --scope impacted --story 129/05` is the
+  forbidden full suite here (four new paths widen it), so the focused set is the run.
+  TWO CONTROLS WERE BLIND AT FIRST CONTACT and were amended (OUTCOME.md): FF-12903's structural leg
+  answered the register's probe with a bare `NOT FOUND` (the non-vacuity guard ahead of the rule),
+  its fixture leg judged the wave's END state before its spawn-time observations, and FF-12907's
+  pass-through count was module-wide — the wave run's own pass-through hid the lane mint's removal.
+  Retro: a non-vacuity guard and a rule share a subject; when the probe REPLACES the subject the
+  finding must carry both, and a fixture leg judges what it observed before what it ended on.
+  REVIEW FINDINGS, routed at the close (no Blocker; nothing created):
+  - *recorded* (Important) — `classifySites` was LIFTED into `test/support/source-slice.mjs` but
+    `acd-number-null-safe.test.mjs` (outside this story's `files:`) keeps its private
+    `classifyNumberSites`/`originalLineOf`; fold it, with 127/01's copy, onto the generic when 127
+    lands (the story notes already scope that fold). A two-line edit each; not taken here because
+    the file is outside the declared write set.
+  - *recorded* (Nit) — FF-12907's `loop: {` construction check is module-wide over a three-module
+    family; precise enough today, worth scoping to the mint if the family grows.
+  - *story (operator)* — the red-probe runner (edit → run under a fresh home → restore → sha256)
+    lived in the session scratchpad; a reusable `scripts/red-probe.mjs` that performs a register
+    row's probe and restores the bytes would let `aof:verify` re-observe a probe after the bytes
+    move (68's R8). New acceptance criteria — handed back as a story shape, not created.
+
+- **129/06 built and reviewed (developer + lenses inline — `--solo`, 2026-09-14).** The one
+  code-shaped deliverable is in: `.aof/aof.config.json` carries `work.loop.concurrency:
+  "refine_first"` beside the two loop bounds, `work.agents.mode` untouched; `loopConcurrencyFromConfig`
+  resolves it and `aof work loop 129 --json` (the read-only probe) answers `act: gate 129/05` — the
+  status routing of ADR-001 §4, launched nothing. The story's task is `@manual` and the operator's:
+  the live run is performed at `aof:verify`, and its readings land here then. PRECONDITIONS NOT YET
+  MET, read at the source: the deployed payload is `2321dce8+dirty.20260912T202852` (pre-129 —
+  deploy after 129/05 is committed, `aof --version` read); 129/05's work is uncommitted on
+  `127-129`; and 127's through-review wave is now `[03, 04]` with nothing held (02 is `in-review`),
+  so the "two-member wave with a held third" the feature names is the standing test-bed's, not
+  127's — the operator picks the target.
 
 ## Verification
 

@@ -245,6 +245,94 @@ doc: verification
 - **No `@manual`, no `@uat`, no UI** — the seven features are `@executable` alone; no agent-run
   procedure, no design conformance, no human sign-off applies.
 
+### `129/05` — the account and the register
+
+- **`node scripts/test.mjs --only` over the story's seven declared suites, the nine standing
+  controls its `reads:` names and the six suites this accept's two folds touch** (the four new
+  controls, `acd-gate-propagation-never-discards`, `acd-source-directory-budget`,
+  `autonomous-shell-out-prompt`; `acd-prompt-bounds-name-their-home` (FF-7101),
+  `acd-loop-suite-registration`, `acd-loop-finding-envelope`, `acd-audit-never-imports-project-code`,
+  `acd-number-null-safe`, `acd-loop-cap-single-home`, `acd-loop-probe-contract`,
+  `acd-loop-module-import-boundary`, `acd-test-suite-registration`;
+  `gate-propagation-refusals-leave-branch`, `mesh-worker-commit-diff`, `work-dispatch-lanes`,
+  `slots-before-work`, `lane-is-local-slot`, `drive-command-phase-drivers`) under an isolated
+  `AOF_GLOBAL_HOME` — **92 / 0 on the story lane alone, 332 / 0 on the combined run after this
+  accept's edits**, every registered case reported. **Story-attributable: 21 cases** named
+  `arch/129/05 FF-129…` — FF-12901 three, FF-12902/FF-12906 six, FF-12903/FF-12907 five, FF-12905
+  three, FF-12904 four — every one green. Task 00's nine scenarios are held by the controls' own
+  structural legs plus the registration census and the budget row (below); task 01's six by the
+  register re-observed here (`## Fitness functions`); task 02's six by the four FF-12904 cases;
+  task 03's eight by `autonomous-shell-out-prompt` (the `survivors` key set, now four), FF-7101
+  and the render/manifest reads below. `verifies → tasks/00`–`03`.
+- **The red probes, re-observed at this accept — never taken from the build's table.** Every
+  probe the register names was performed again by this session against the shipped bytes
+  (scratchpad `red-probe.mjs`: edit → `--only` the control under a fresh home → restore →
+  sha256 compared): nine probes over `wave.mjs`, `child-drive.mjs`, `loop-bounds.mjs` and
+  `dispatch.mjs`, nine reds on exactly the named leg, every subject restored byte-identical
+  (`git status` unchanged). The first message line of each is the register's `red probe` cell.
+  FF-12901 leg 1's probe reds `61/FF-6111` beside it (`a value-shaped resolver cannot name a
+  key its config-shaped sibling does not`) — recorded as collateral, per task 01's scenario.
+  `verifies → tasks/01 "the observed messages are handed to the verification register"`.
+- **Read at the source.** `test/arch/loop/` holds 58 controls + `index.mjs` = 59 against the
+  budget row's ceiling 59 (55 → 59, the `why` naming the four files); the four are one import
+  and one spread each under a `129/05` block in `index.mjs`; `aof work update --dry-run` → 0
+  `Would update` / 150 `Would keep` (the three renders are byte-identical to the source);
+  `scripts/generate-bundle-manifest.mjs` re-run is a no-op (the manifest's
+  `.claude/commands/aof/autonomous.md` hash `9a9efb6d…` equals the file's sha256 and the lock's
+  entry stamped `2026-09-14T19:00:10Z`); `BRANCH_PATH_MODULES` is the six;
+  `classifySites` / `topLevelArguments` live in `test/support/source-slice.mjs`.
+  `verifies → tasks/00 "the row rises by exactly four"`, `tasks/03 "the three renders…"`,
+  `"the manifest and the lock agree"`.
+- **Two folds taken at this accept, both test-only, blast radius measured.** `F-39`:
+  `writeRel`, `mergeHeadAbsent`, `conflictMarkers` moved onto
+  `test/support/dispatch-lane-fixture.mjs` (+32) and their three spellings removed from
+  `gate-propagation-refusals-leave-branch` (−47, its sync `mergeHeadAbsent` now awaited at six
+  sites), `mesh-worker-commit-diff` (−8) and `work-dispatch-lanes` (−25) — 211 / 0 over those
+  three, the fixture's two other importers and the never-discards control. The review's
+  *recorded* Important: `acd-number-null-safe`'s `classifyNumberSites` / `originalLineOf` /
+  `TOP_LEVEL_RE` (42 lines) folded onto `classifySites` (5 lines; the file is committed at the
+  public root and 127/01 is done, so the "untracked" premise had lapsed) — 13 / 0.
+- **`aof work validate 129/05` → PASS.** `aof work loops validate` → advisory warns only, no
+  error. `aof work doctor 129/05` → no `control-unresolved` at either severity; `aof work doctor
+  129` → no `control-unresolved` and no `register-duplicate-id` at the milestone — the seven
+  `pending` warnings of the four prior accepts are gone, every declared control resolves.
+- **No `@manual`, no `@uat`, no UI** — the four features are `@executable` alone.
+
+### `129/06` — the second live run (HELD `in-review`, 2026-09-14)
+
+The story's one task is `@manual` and names the operator as its performer: one real `aof work loop
+<NN>` in the foreground, spawning real Claude sessions in lanes, plus a forced-conflict drill. It is
+not started by this accept. ADR-008 §7's preconditions were measured at the source at the `129/05`
+accept and are NOT yet met; the procedure below is pending, and the readings land in `STATE.md`
+(and the target milestone's) when the operator performs it.
+
+- **Preconditions, read at the source (2026-09-14, after the `129/05` accept).**
+  | precondition | reading | met |
+  |---|---|---|
+  | the primary on a branch | `127-129` at `0924258` | yes |
+  | HEAD contains every sibling's work a lane must build on | 31 dirty paths — 05's whole delivery, this accept's edits, 127/02's in-flight work; nothing of 129/05 is committed | **no** — commit first |
+  | the tree deployed, `aof --version` showing the payload | `~/.aof/bin/aof.exe --version` → `payload 2321dce8+dirty.20260912T202852` (pre-129, the 2026-09-12 build); `aof` on PATH → `source 0924258+dirty` (the npm link) | **no** — `node scripts/install-local.mjs --skip-ui` after the commit |
+  | `work.loop.concurrency: "refine_first"`, `work.agents.mode` untouched | `.aof/aof.config.json` → `concurrency: "refine_first"`, `agents.mode: "orchestrated"` | yes |
+  | `loop-diag` on | on by default (`AOF_LOOP_DIAG` unset; `loopDiagEnabled` is false only for `0`/`false`/`off`) | yes |
+  | a target whose ready set is a two-member wave with a held third | 127: plain `work:next` → wave `[02, 04]`, held `[03]`, but the loop asks `--through-review` and 02 is `in-review` → `[03, 04]`, nothing held. Test-bed (`aof-test-repo`, `main`): wave `[00/00]`, held five. Neither is the shape as it stands — the operator picks (or accepts 127/02 first, which makes 127 `[03, 04]` disjoint with nothing held) | **operator's call** |
+  | the read-only probe | `aof work loop 129 --json` → `act: gate 129/06`, launched nothing | yes |
+- **Pending procedure (the feature's six scenarios, in order).** (1) commit 05 + this accept on
+  `127-129`; deploy; re-read `aof --version`. (2) `aof work loop <NN>` in the foreground; read
+  `Wave 1 — dispatching <A>, <B> (bound 3); held: <C>.` and `git worktree list` (two lanes on
+  `aof/mesh/<A>`, `aof/mesh/<B>`). (3) while in flight: each lane's story `runs/` (one `running`
+  record, `brief.lane.worktree` = the lane, `brief.loop.loopRunId` = the loop's), `.heartbeats.ndjson`
+  growing, the primary's story `runs/` empty; `aof mesh status --json --declarations` → one row.
+  (4) after `<A>` merges: `<C>`'s lane base = the primary's HEAD; `readRuns` on the primary's `<A>`
+  returns the lane's `runId`; each lane's grade excludes the base's inherited reds. (5) hand-edit +
+  commit in the primary a file `<B>` changed; the halt `lane-merge-conflict` naming lane, branch,
+  base, tip; no `MERGE_HEAD`, clean status, `<B>`'s worktree + branch intact; merge by hand;
+  `aof work loop <NN> --resume` reconciles and continues. (6) `aof work dispatch --list` clean; the
+  `loop-diag` log's named exit line. `F-15` is measured here (a startup-window cancel).
+- **What this hold means for the door.** `129/06` stays `in-review`; no `RETROSPECTIVE.md` and no
+  `OUTCOME.md` are authored until the accepting run. The milestone door additionally waits on the
+  operator's sign-off of the configuration surface (`STATE.md`, 2026-09-14) and on
+  `aof work regression-gate 129`.
+
 ## Fitness functions
 
 <!-- THE RED-PROBE REGISTER. Each row CITES a declaration in ARCHITECTURE.md's register; the id
@@ -253,20 +341,23 @@ doc: verification
 
 | id | enforced by | result | red probe |
 |---|---|---|---|
-| FF-12901 | `test/arch/loop/acd-loop-concurrency-single-home.test.mjs` | pending (129/05) | — |
-| FF-12902 | `test/arch/loop/acd-loop-family-boundary.test.mjs` | pending (129/05) | — |
-| FF-12906 | `test/arch/loop/acd-loop-family-boundary.test.mjs` | pending (129/05) | — |
-| FF-12903 | `test/arch/loop/acd-lane-records-and-the-declaration.test.mjs` | pending (129/05) | — |
-| FF-12907 | `test/arch/loop/acd-lane-records-and-the-declaration.test.mjs` | pending (129/05) | — |
-| FF-12905 | `test/arch/loop/acd-lane-grade-is-lane-scoped.test.mjs` | pending (129/05) | — |
-| FF-12904 | `test/arch/grade/acd-gate-propagation-never-discards.test.mjs` | pending (129/05, extension) | — |
+| FF-12901 | `test/arch/loop/acd-loop-concurrency-single-home.test.mjs` | green (3 / 3, 2026-09-14) | Leg 1: `"work.loop.lanes": resolveLanes` added to `LOOP_BOUND_VALUE_RESOLVERS` (`src/loop-bounds.mjs`) → `LOOP_BOUND_VALUE_RESOLVERS carries exactly the eight FF-6901 keys plus work.loop.concurrency — a key outside the nine: work.loop.lanes (a second concurrency number is the twin 129/ADR-006 refuses)`; collateral `61/FF-6111` red (`a value-shaped resolver cannot name a key its config-shaped sibling does not`). Leg 2: `"refine_first"` spelled in a branch of `src/loop/wave.mjs` → `src/loop/wave.mjs spells the mode literal "refine_first" — the mode has one home (src/loop-bounds.mjs) and one branch (src/work/loop.mjs's decideLoopPhase); a third spelling is a second home (129/ADR-001 §1)`. Restored byte-identical. |
+| FF-12902 | `test/arch/loop/acd-loop-family-boundary.test.mjs` | green (3 / 3 + self-check) | Import leg: `driveInteractiveClaudeSession` imported into `wave.mjs` → `src/loop/wave.mjs imports ../agent-session-driver.mjs (→ src/agent-session-driver.mjs) — the loop family never loads the session driver; a lane's drive is a child process through src/loop/child-drive.mjs (129/ADR-005 §5)`. Shell leg: `shell: true` in `child-drive.mjs`'s `runBounded(` options → `src/loop/child-drive.mjs passes a \`shell:\` option — the seam takes an argument vector and no shell reads it (129/ADR-005 §1: no shell, ever)`. Restored byte-identical. |
+| FF-12906 | `test/arch/loop/acd-loop-family-boundary.test.mjs` | green (2 / 2 + self-check) | `partitionReadySetByDeclaredFiles` imported from `../ready-wave.mjs` into `wave.mjs` → `src/loop/wave.mjs imports ../ready-wave.mjs (→ src/ready-wave.mjs) — the wave is read off work:next's answer and never recomputed (129/ADR-001 §3, 71/ADR-006)`. Restored byte-identical. |
+| FF-12903 | `test/arch/loop/acd-lane-records-and-the-declaration.test.mjs` | green (2 / 2 + self-check) | `openLane`'s `resolveRefInWorktree(primaryRoot, primaryWorkDir, lanePath, ref)` replaced by `resolveItemExact(ctx, ref)` (`wave.mjs`) → `src/loop/wave.mjs: resolveItemExact( in openLane is outside mintWaveRun — the primary's resolver serves the wave run's mint and nothing else on the build path`. Restored byte-identical. |
+| FF-12907 | `test/arch/loop/acd-lane-records-and-the-declaration.test.mjs` | green (2 / 2 + self-check) | `scope: ref` added to the lane's `declarationFor({ …resolved, loopRunId, … })` (`wave.mjs`) → structural leg `src/loop/wave.mjs: declarationFor( carries \`scope:\` — a lane run overriding brief.loop.scope would be a declaration of its own, and the supervisor would relaunch it as a second loop (129/ADR-007 §1)`; fixture leg `07/01: brief.loop.scope is "07/01" — the lane run's scope is the loop's ("07"), never the story ref`. Restored byte-identical. |
+| FF-12905 | `test/arch/loop/acd-lane-grade-is-lane-scoped.test.mjs` | green (2 / 2 + self-check) | `runLane`'s `settleStoryCycle(phaseRun, bookkeeping, laneCtx, …)` handed `ctx` (`wave.mjs`) → structural leg `src/loop/wave.mjs: runLane calls settleStoryCycle( with \`ctx\` as its ctx — every grade, gate and ladder of a lane receives the lane's workspace (laneCtx), never the loop's ctx (129/ADR-003 §2)`; fixture leg `07/01 (run …): work:grade was asked with projectRoot C:\…\aof-lane-… — the primary's root; a lane's grade is taken in the lane (129/ADR-003 §2)`. Restored byte-identical. |
+| FF-12904 | `test/arch/grade/acd-gate-propagation-never-discards.test.mjs` (extension) | green (4 / 4 + the four shipped cases) | `await run(["reset", "--hard", "HEAD"])` added inside `mergeDispatchLaneHome` (`src/work/dispatch.mjs`) → `the branch advance must never rebase/force/reset (ADR-008; 129/ADR-002 over the merge-home path) — offenders: ["src/work/dispatch.mjs — reset --hard: reset --hard HEAD"]`; the FF-12904 self-check reds beside it (`["reset", "--hard", base] in src/work/dispatch.mjs is the one offender`). Restored byte-identical. |
 
-Story 01 lands no control: every row above is 129/05's, and 01's structural claims are held in the
-interim by the standing controls it extended (`FF-5304`'s fifteen-member literal, `FF-6306`,
-`FF-12404` leg 5, `FF-6111`'s two-way key equality). No probe row is owed by this accept.
-Stories 02–04 land no control either; 04's one structural fix is to a STANDING control outside this
-register (`69/FF-6907`, re-pointed at `F-48` with its self-check and real-bytes probe recorded there),
-so no probe row is owed by that accept.
+Every row above was landed by 129/05 and re-observed red by the `129/05` accept (evidence above);
+the build's own observations (`m129/05/OUTCOME.md`) agree on every leg and message. Story 01 lands
+no control: its structural claims are held by the standing controls it extended (`FF-5304`'s
+fifteen-member literal, `FF-6306`, `FF-12404` leg 5, `FF-6111`'s two-way key equality). Stories
+02–04 land no control either; 04's one structural fix is to a STANDING control outside this
+register (`69/FF-6907`, re-pointed at `F-48` with its self-check and real-bytes probe recorded
+there). Task 00's non-vacuity plants (each `NOT FOUND` naming the file) and the plants the register
+does not describe (a `"refine_first"` inside a `//` comment; `worktree remove --force` and
+`reset -q -- .aof` in `dispatch.mjs`, both green) are the build's, recorded in `m129/05/OUTCOME.md`.
 
 ## Findings
 
@@ -291,13 +382,13 @@ this accept; ids allocated here, at the moment of landing.
 | F-14 | `drive.mjs` armed stdin OUTSIDE the driver call's `try…finally` (a throw between resume and pause would have held the child open until the parent's deadline kill), and `DEFAULT_GRACE_MS` 10 s left under 3 s of margin over the measured 7.08–7.15 s stdin-end → exit stop path (the driver's bracket plus node-pty's 5 s console-list fallback). | defect | medium | fixed at the review close: arm and release are one bracket; the grace is 20 s with QA's measurement in the comment. | `129/02` | closed |
 | F-15 | Task 01's ARMING ORDER ignores an `end` seen before `onPtyLive`, so a parent cancel landing in the child's startup window (fix read → brief → trust write → ConPTY spawn, 150 ms–1.2 s measured, longer under the load 129 creates) is DROPPED: the session spawns anyway and the parent's grace SIGKILLs the child without the driver's bracket. The `setImmediate` yield after `resume()` is a latency guarantee for the already-ended case, not a structural one (a NUL / `stdio: "ignore"` stdin plus an instant fake PTY read as a cancel 8/8 without it). | design-gap (interim) | medium | non-blocker: the row "was ended before the command started → done" is a delivered contract and changing the gate here would red it. PROPOSED for 04's contract (one finding from craft #3 = QA F1 = the architect's contract question): arm only when stdin is a PIPE; on a pipe any `end` is the cancel — pre-live through the driver's own pre-spawn `signal.aborted` refusal (`processStarted: false`), live through the bracket; a TTY/file/NUL stdin is never armed; the yield goes. 04 owns the parent side, 06's live run measures it. The `drive.mjs` comment that over-claimed the yield was corrected at this accept to state the limit and cite this row. **Re-routed at the `129/04` accept:** the arming order is `src/commands/drive.mjs`'s (the child side) and 04's write set never reached it; the parent passes a pipe and cancels through it as proposed. `129/06`'s live run measures whether a startup-window cancel is dropped; a `drive.mjs` change is a future item if it is. | `129/06`; `src/commands/drive.mjs` (future item) | open |
 | F-16 | A lane drive with no `deadlineMs` inherits `runBounded`'s `DEFAULT_DEADLINE_MS` (60 s) — every real lane would be `timeout`. | design-gap (interim) | medium | non-blocker: `spawnLaneDrive` has no production caller yet. 04 derives the child's deadline from `startToCloseMs + startupGraceMs` (ADR-005 §4) and passes it. **Closed at the `129/04` accept:** `deadlineMs: bounds.startToCloseMs + bounds.startupGraceMs` on every lane spawn (`src/loop/wave.mjs`); the task 02 row "the child is spawned in the lane with the lent id, the parent deadline and the isolated home" holds it. | `129/04` | closed |
-| F-17 | FF-12902 as declared: its `node:child_process` leg must scope to `src/loop/**` (`src/commands/loop.mjs` imports `execFile` for git, pre-existing) and its argv leg must take the packaged branch through `setSeaSentinelForTest`, per ADR-005 §1's amendment. | contract-wording | low | non-blocker; routed to the control's landing. | `129/05` | open |
+| F-17 | FF-12902 as declared: its `node:child_process` leg must scope to `src/loop/**` (`src/commands/loop.mjs` imports `execFile` for git, pre-existing) and its argv leg must take the packaged branch through `setSeaSentinelForTest`, per ADR-005 §1's amendment. | contract-wording | low | non-blocker; routed to the control's landing. **Closed at the `129/05` accept:** read at the source — FF-12902's spawn leg is scoped to `src/loop/` alone (`src/commands/loop.mjs`'s `execFile` for git is outside it) and its argv leg takes both branches, Node's `src/cli.mjs` first element and the SEA's bare verb through `setSeaSentinelForTest`. | `129/05` | closed |
 | F-18 | `test/loop/` is at its ceiling (72/72) and now parks three subjects (tasks 00, 01, 03) in `drive-command-phase-drivers.test.mjs` (506 → 1,540 lines). | codebase-health | low | non-blocker; 04/05's wave/cycle suites need a stated row raise in the budget table, not more parking. **Closed at the `129/04` accept:** `test/loop` 72 → 74 with the reason written into the row (two LADDER suites, split by subject), and `test/support/loop` born as a stated exemption row rather than a fourth parking. 05's controls land under `test/arch/loop/`, whose row is its own. | `129/04` | closed |
 | F-19 | `work:grade` flagged one case beyond the run's baseline: FF-11902 "a floor is a floor" — the driver-door census gained its 49th suite (`drive-command-phase-drivers` imports `driveInteractiveClaudeSession` through the sink for task 01's driver-level rows) and the no-headroom probe's floors are retyped at four sites across two control files. | test-shape | low | closed at the cascade's warm fix: `suites` 48 → 49, `preExisting` 54 → 55 in `acd-control-derives-its-census` and `agent-session-driver-door`; both added to `files:`; grade `pass` on the re-run. Retro: the floor should be DERIVED (or the no-headroom leg dropped), not retyped twice — the door's own doctrine says a story adding a sink importer "should not have to edit a control it has never read". | `129/02` | closed |
 | F-20 | `spawn.mjs`: a deadline expiring INSIDE an abort's grace sent the one kill, but the message said "did not exit within its Nms grace, so it was killed" — blaming the grace for the deadline's kill (three lenses, one finding). | craft | low | closed at this accept: `killedBy` names the bound that sent the kill; measured with real children (see the evidence). The lane re-ran identically (136 / 9; story 40 / 0). | `129/02` | closed |
 | F-21 | Nits closed by ruling: the `end` listener is never removed (task 01 row 2 pins exactly one listener; a one-shot process); a caller-supplied `agentSessionDriverOptions.signal` is replaced under `--run` (a test-only seam, unreachable from the CLI; 04 passes none); `{ ...process.env, ...env }` loses a caller key differing only in case on Windows (`AOF_GLOBAL_HOME` unaffected); the already-aborted-at-entry case asserts `sessionId: null` where task 01's literal omits it (the driver's sibling pre-spawn refusals carry it; the code is right, the literal is loose); "touches no run record" reaches `aborted` via the pre-aborted path, never a live abort. | craft / test-shape | low | closed by ruling; recorded so the next reader does not re-raise them. | `129/02` | closed |
 | F-22 | A `kill()` fault other than ESRCH/EINVAL emits `error` on the child and `runBounded` settles `not-started` for a child that RAN — pre-existing on the deadline path; the abort adds a second kill site. | edge-case | low | non-blocker; pre-existing seam behaviour outside this story's contract. Carried to TECH_DEBT item 85's re-home story (whose trigger — a third caller — this story met; status line appended there). | TECH_DEBT 85 | open |
-| F-23 | Task 03's "src/loop is a declared exemption" is a structural claim the unit suite re-asserts by importing the arch control — the scenario asks for it, so the case stays. | contract-wording | low | non-blocker; the `.feature` is delivered. Drop the re-assertion when 05 lands FF-12902; same species as `F-11`. | `129/05` | open |
+| F-23 | Task 03's "src/loop is a declared exemption" is a structural claim the unit suite re-asserts by importing the arch control — the scenario asks for it, so the case stays. | contract-wording | low | non-blocker; the `.feature` is delivered. Drop the re-assertion when 05 lands FF-12902; same species as `F-11`. **Closed by ruling at the `129/05` accept:** 02's delivered scenario names the case, so the case stays (`drive-command-phase-drivers` `129/02 task03 src/loop is a declared exemption`); the structural claim is now ALSO FF-12902's and the budget row's, and a delivered contract is not edited to drop a duplicate assertion — the `F-11` species, recorded. | `129/05` | closed |
 | F-24 | `aof work drive continue <ref> --run --json` binds `--json` as `--run`'s VALUE (`parseSpecArgv`, face-general, pre-existing): with no `--json` left and a lent id `"--json"`, the command starts a REAL session in the primary checkout, heartbeating a record that does not exist. MEASURED at this accept, by mistake: the probe ran ~2 min before it was killed (session `9348716c`, read-only — no Write/Edit, no file changed; the ten `runId: "--json"` heartbeat rows it wrote to the story's `.heartbeats.ndjson` were removed by hand). | defect | medium | non-blocker for this story — `spawnLaneDrive` always supplies a value and the face is `src/spine/face.mjs`'s. A string flag whose value starts with `--` should be `missing-flag-value`, the code `--run` alone already gets. Routed as a face item. Operational rule for verifiers: a real drive is probed with `--dry-run` or not at all. | `src/spine/face.mjs` (future item) | open |
 | F-25 | `scripts/test.mjs --only` exits 0 with NO summary line when a suite drains the event loop mid-await — a false-green shape met twice in this build. | defect | medium | non-blocker; the runner should treat an unsettled selection as a failure, never a silent exit 0. Routed as a runner item. | `scripts/test.mjs` (future item) | open |
 | F-26 | The declared `reads:` missed eight documents the build needed (`agent-session-driver-door`, `mesh-worker-terminal-fixture`, `run-store`, `run-session-capture`, `run-spend-ingest`, `degrade`, `claude-trust`, `acd-phase-brief-bounded-in-writer`) and `files:` missed `loop-fix-transport-shape.test.mjs`, whose input-schema pin had to change. | contract-wording | low | closed at the build (both declarations extended). Retro: a story that widens a closed schema owes every pin of that schema in `files:`. | `129/02` | closed |
@@ -313,7 +404,7 @@ this accept; ids allocated here, at the moment of landing.
 | F-36 | Task 00's ruling (1) said "the `.aof` reset still runs" under `paths`; in the live primary that reset unstaged an operator's staged `.aof/aof.config.json` OUTSIDE the scope. | contract-wording | low | ratified: the reset runs only when the scope can reach `.aof` (`scopeReachesAofHome`) — ADR-002 §2 "nothing else", ADR-008 §7(d); amendment (c), the `.feature` untouched. | `129/03` | closed |
 | F-37 | The suites hold rows no feature states: the untracked-directory collapse, a staged out-of-scope entry across the own-writes commit, a linked-worktree primary, a dirty reused lane under `advanceTo`. | test-shape | low | recorded — delivered behaviour beyond the contract, each held by a named `fix round 1` row; amendment (f). | `129/03` | closed |
 | F-38 | `resolveDispatchLane` accepted any string as `advanceTo`: a ref such as `HEAD` resolves against the LANE and answers `already-current` silently — the stale base the option exists to prevent. | edge-case | low | closed at this accept: `OBJECT_NAME` (`/^[0-9a-f]{7,64}$/i`) guards it, a thrown `dispatch-lane-advance-not-a-sha` before any door opens; five rows (`HEAD`, `main`, `refs/heads/main`, `B1`, a non-hex string) assert the code, the message, no exec invocation and no materialised lane. | `129/03` | closed |
-| F-39 | `withMoveFixture` / `withDirtyPolicyFixture` re-scaffold `withDispatchRepo`, and `writeRel`/`writeUnder`, `mergeHeadAbsent`, `conflictMarkers` are spelled 2–3× across the three suites — `test/support/dispatch-lane-fixture.mjs` was outside `files:`. | test-shape | low | non-blocker; routed to 04, whose write set holds `test/support/` — fold the helpers onto `dispatch-lane-fixture.mjs` when its own fixtures land there. **Re-routed at the `129/04` accept:** 04's fixture was born under `test/support/loop/` (`test/support` is at ceiling), so its write set never reached `dispatch-lane-fixture.mjs` and the three copies stand (`work-dispatch-lanes.test.mjs` still spells them). The fold belongs with the next touch of 03's suites — 05's never-discards extension over `dispatch.mjs` is the nearest. | `129/05` | open |
+| F-39 | `withMoveFixture` / `withDirtyPolicyFixture` re-scaffold `withDispatchRepo`, and `writeRel`/`writeUnder`, `mergeHeadAbsent`, `conflictMarkers` are spelled 2–3× across the three suites — `test/support/dispatch-lane-fixture.mjs` was outside `files:`. | test-shape | low | non-blocker; routed to 04, whose write set holds `test/support/` — fold the helpers onto `dispatch-lane-fixture.mjs` when its own fixtures land there. **Re-routed at the `129/04` accept:** 04's fixture was born under `test/support/loop/` (`test/support` is at ceiling), so its write set never reached `dispatch-lane-fixture.mjs` and the three copies stand (`work-dispatch-lanes.test.mjs` still spells them). The fold belongs with the next touch of 03's suites — 05's never-discards extension over `dispatch.mjs` is the nearest. **Fixed at the `129/05` accept:** `writeRel`, `mergeHeadAbsent` and `conflictMarkers` are exported from `test/support/dispatch-lane-fixture.mjs` and the three spellings are gone (`gate-propagation-refusals-leave-branch` −47 with its sync `mergeHeadAbsent` awaited at six sites, `mesh-worker-commit-diff` −8, `work-dispatch-lanes` −25); 211 / 0 over the three suites, the fixture's two other importers and the never-discards control. | `129/05` | closed |
 | F-40 | The traversal row asserted `existsSync(worktree/../../etc) === false`, which cannot fail. | test-shape | low | closed at this accept: the row PLANTS a milestone-shaped directory exactly where a joined path would land and asserts the null answer over four traversal shapes — a join-built resolver would now find it. | `129/03` | closed |
 | F-41 | The three unknown-policy rows built a real repository to exercise a recording double that receives no invocation. | test-shape | low | closed at this accept: a bare temp directory and a placeholder sha are the fixture; the assertions are unchanged. | `129/03` | closed |
 | F-42 | A `.`-shaped `paths` scope's `.aof` reset still unstages a staged `.aof` edit. | edge-case | low | closed by ruling: the loop never passes `.` (it passes `wiki/work/<milestone dir>`), and a scope that reaches `.aof` is by definition the `-A` door's behaviour — `scopeReachesAofHome` says so in its own comment. | `129/03` | closed |
@@ -325,6 +416,10 @@ this accept; ids allocated here, at the moment of landing.
 | F-48 | `src/loop/wave.mjs` redded `69/FF-6907` and `FF-6911` whole-tree (`acd-slot-before-admission`): its `openLane` calls `resolveDispatchLane(` — a second production caller outside `src/commands/dispatch.mjs`. The invariant's INTENT holds by construction (the opener runs only when `dispatch.mjs` invokes `ctx.runDispatchLane` inside `withAdmissionLock → dispatchReadySet`, after the pool admits the member; the door's default opener carries neither `advanceTo` nor reclaim-first, so the wave HAD to supply one); the control's textual leg — "exactly one `resolveDispatchLane(` call, in the door" — was what went red. Neither the build nor the review close saw it: the control is a text scan over `src/**` that imports nothing, so "every suite importing the changed modules" cannot select it, and the solo build ran no `work:grade` tier. | defect | medium | fixed at this accept — re-pointed, never weakened: a non-door file may call `resolveDispatchLane(` only when every such call sits in the body of a function DECLARATION the file binds as `runDispatchLane` (the property's own extent, cut by the language, never a window), the file asks `work:dispatch` through `invokeRegistered`, and the file is declared in `SUPPLIED_DISPATCH_OPENERS` with its reason — each leg its own named finding; the door count is the door's alone. A self-check row fails each leg on its own; over the REAL bytes the empty map answers "supplies a dispatch opener without a declared reason" and a planted call outside `openLane` answers "opens a local dispatch lane outside the bounded production door". The control joined `files:`. The fifth shell-text control this story red — the four in the Notes were found by the lane, this one only by the tier. | `129/04` | closed |
 | F-49 | `mergeDispatchLaneHome`'s THROWN shapes — `commit-failed`, `gate-propagation-failed`, `gate-propagation-base-unresolved` (`m129/03/F-44`'s consumer note) — were not caught in `mergeLane` or the reconcile: a throw propagated out of `runWaveBuild` and the command, a loop death (recorded by `loop-diag`, the wave run left `running` for the next `--resume`'s reclaim, the lane kept committed for the reconcile) rather than the named halt the note asked for. Outside task 02's ten delivered rows, which cover the RETURNED `refused` / `conflict` shapes only. | defect | medium | fixed at this accept: `mergeHome` — one wrapper both call sites go through — reads a throw as the `refused` shape (`reason` = the thrown code, `merge-home-error` when it has none, the message on `error`), so `mergeHalt` names the one stop `lane-merge-refused` / `dispatch:merge-home:refused` for both; the lane stays committed and kept. One row added to task 02's outline (a locked primary index → `reason=gate-propagation-failed`, halted, the wave run settled `failed`, no `MERGE_HEAD`); red probe: the bare verb restored at the lane close fails the row with the escaped `Error: git merge --ff-only … index.lock`. | `129/04` | closed |
 | F-50 | The story's accepting run carried no recorded grade: attempt 2 (`20260914T123830334Z-0001`) was driven SOLO, outside the cascade's `work:grade` step, so the run holds `brief.gradeBaseline` (11 failures, measured 2026-09-13T11:03 in the pre-move tree `C:\Source\umami\aof`) and no `brief.grade`; the review close's "1671 pass" was a `--only` lane that by construction cannot select a text-scan control. The accept had to run the tier by hand and attribute eight beyond-baseline reds one by one at the source (six to the public-repo move's empty rename map and 130's committed PLAN.md, two to this story → `F-48`). | process | low | closed at this accept by the hand-run and the attribution above; recorded for the retrospective: a story-scoped lane proves the scenarios, the TIER proves the tree, and a solo build that skips the tier defers the whole-tree reds to the accept — where a stale baseline makes every one of them a question. | retrospective | closed |
+| F-51 | `classifySites` was lifted into `test/support/source-slice.mjs` but `acd-number-null-safe.test.mjs` kept its private `classifyNumberSites` / `originalLineOf` / `TOP_LEVEL_RE` (42 lines) — outside 05's `files:`; the "127/01's copy is untracked" premise had lapsed (the file is committed at the public root, 127/01 is done). | test-shape | low | fixed at the `129/05` accept: `classifyNumberSites` is a five-line call onto the generic with the default declaration pattern; 13 / 0 over the sweep, the family control and the registration census. | `129/05` | closed |
+| F-52 | FF-12907's `loop: {` construction check is module-wide over the three-module family; the pass-through count was already scoped to lane-brief functions at the build. | test-shape | low | non-blocker, closed by ruling: the fixture leg and the scoped pass-through count both catch the shape a lane mint could take; the module-wide construction leg is a belt over a family that ships three modules, and is scoped when a fourth lands. | `129/05` | closed |
+| F-53 | The red-probe runner (edit → run under a fresh home → restore → sha256) lived in the build session's scratchpad and again in this accept's; nothing shipped lets `aof:verify` re-observe a register row's probe after the bytes move (68's R8). | process-gap | low | non-blocker: new acceptance criteria — a `scripts/red-probe.mjs` that performs a register row's named probe and restores the bytes is a story shape for the operator, not created here. | operator (future item) | open |
+| F-54 | Two controls were blind at first contact: FF-12903's structural leg answered the register's probe with a bare `NOT FOUND` (the non-vacuity guard fired ahead of the ownership rule when the call was REPLACED, not removed) and its fixture leg judged the wave's END state before its spawn-time observations; FF-12907's pass-through count was module-wide, so the wave run's own pass-through hid the lane mint's removal. | test-shape | medium | fixed at the build (both findings now name both facts; observations judged before end state; count scoped to lane-brief functions); carried to the retrospective as the lesson — a guard and a rule share a subject, and a fixture leg judges what it observed before what it ended on. | retrospective | closed |
 
 ## Accept decision
 
@@ -411,3 +506,26 @@ on disk; the count is nonetheless 148 vs 47, because the public-repo move droppe
 record the resolver read through (the same cause as `FF-6607b`'s three reds), and that is the
 architect's beside `lanes.mjs`. The milestone stays open: `129/05`–`129/06` are unaccepted, all
 seven declared controls are `pending` for 05, and `aof work regression-gate 129` has not run.
+
+
+**`129/05` ACCEPTED** — 2026-09-14. The story's lane is green (92 / 0 across its seven declared
+suites and the nine standing controls its `reads:` names; 332 / 0 on the combined run after this
+accept's two folds, every registered case reported), every one of its 29 scenarios and every
+Examples row of the four features has a named passing case or is held by the register below, all
+seven declared controls were re-observed RED by this session on exactly the leg the register names
+(nine probes, nine reds, every subject restored byte-identical) and are now `green` in the register,
+the row raise, the renders, the manifest and the lock were read at the source, `aof work validate
+129/05` reports PASS, `aof work loops validate` reports no error, `aof work doctor 129/05` and
+`aof work doctor 129` report no `control-unresolved` at either severity — the milestone's seven
+`pending` warnings are gone — and no blocker finding against this story is open: `F-17` closed at
+the source (the `node:child_process` leg is scoped to `src/loop/`, the argv leg takes both branches
+through `setSeaSentinelForTest`); `F-23` closed by ruling (02's delivered scenario names the case,
+so it stays; the claim is now also FF-12902's); `F-39` and `F-51` fixed here as test-only folds
+with the blast radius measured (four files, +42/−70; one file, +5/−42); `F-52` closed by ruling;
+`F-54` carried to the retrospective; `F-53` routed to the operator as a future item.
+
+The milestone stays open: `129/06` is unaccepted (its one `@manual` task is the live run, whose
+preconditions were measured at this accept and are not yet met — 05's work uncommitted, the deployed
+payload pre-129), the configuration surface is held for the operator's own sign-off, and
+`aof work regression-gate 129` has not run. `F-09` stands at the door (the architect's, beside
+`lanes.mjs`), `F-15` at 06's live run.

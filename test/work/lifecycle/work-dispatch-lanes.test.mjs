@@ -15,7 +15,7 @@
 // asserting the fixture's opinion of git rather than git's behaviour.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { readFile, writeFile, mkdir, stat, readdir, unlink } from "node:fs/promises";
+import { readFile, writeFile, mkdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -42,7 +42,7 @@ import {
   meshItemBranchName,
   listWorktrees,
 } from "../../../src/mesh/worktree.mjs";
-import { withDispatchRepo, git, dirtyPaths } from "../../support/dispatch-lane-fixture.mjs";
+import { withDispatchRepo, git, dirtyPaths, writeRel, mergeHeadAbsent, conflictMarkers } from "../../support/dispatch-lane-fixture.mjs";
 import { dispatchCommand } from "../../../src/commands/dispatch.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -62,14 +62,8 @@ const SHARED = "src/sandbox/provisionSandboxAgent.ts";
 const MILESTONE_DIR = "wiki/work/127_m";
 const STATE_BASE = "---\ndoc: state\n---\n\n## Notes\n\n- base note\n";
 
-async function writeRel(root, rel, body) {
-  const target = path.join(root, ...rel.split("/"));
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, body, "utf8");
-}
 const rev = async (cwd, ref) => (await git(["rev-parse", ref], cwd)).stdout.trim();
 const porcelain = async (cwd) => (await git(["status", "--porcelain"], cwd)).stdout.split(/\r?\n/).filter((line) => line.length > 0);
-const mergeHeadAbsent = async (cwd) => (await git(["rev-parse", "-q", "--verify", "MERGE_HEAD"], cwd)).status !== 0;
 const shownNames = async (cwd, ref) => (await git(["show", "--name-only", "--format=", ref], cwd)).stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).sort();
 
 // commitIn(cwd, rel, body|null, message) — one commit on whatever branch `cwd` is checked out on;
@@ -80,21 +74,6 @@ async function commitIn(cwd, rel, body, message) {
   await git(["add", "-A", "--", rel], cwd);
   await git(["-c", "user.email=fixture@aof.test", "-c", "user.name=aof fixture", "commit", "-q", "-m", message], cwd);
   return rev(cwd, "HEAD");
-}
-
-async function conflictMarkers(dir) {
-  const hits = [];
-  const walk = async (current) => {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      if (entry.name === ".git" || entry.name === ".aof" || entry.name === "node_modules") continue;
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) { await walk(full); continue; }
-      const body = await readFile(full, "utf8").catch(() => "");
-      if (/^<{7}/mu.test(body) || /^={7}$/mu.test(body) || /^>{7}/mu.test(body)) hits.push(full);
-    }
-  };
-  await walk(dir);
-  return hits;
 }
 
 async function withMergeHomeRepo(body, { laneCommit = true } = {}) {

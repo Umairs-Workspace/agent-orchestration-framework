@@ -123,7 +123,7 @@ Six stories; 01/02/03 share no subject file and form the first wave at the dispa
 - [x] `02_story_the-drive-is-a-child` — `aof work drive` takes a lent run and a fix file, stdin is its cancel channel, `runBounded` aborts, and `src/loop/child-drive.mjs` spawns it shell-lessly and reads one document
 - [x] `03_story_the-lane-commits-and-merges-home` — `commitWorktreeChanges` moves to its git home, `advanceBranchToBase` gains `dirtyPolicy`, dispatch composes commit / merge-home / base, STATE.md merges by union
 - [x] `04_story_the-wave-tick` — the BUILD phase fans the wave into lanes: mint in the lane, child drive, settle, grade and gate in the lane, commit, merge, cleanup; the wave run carries the liveness; resume reconciles; the ladder is a subtraction from the shell
-- [ ] `05_story_the-account-and-the-register` — the seven controls land under `test/arch/loop/` and go red on contact, the never-discards sweep reaches the lane verbs, the autonomous prompt names the key
+- [x] `05_story_the-account-and-the-register` — the seven controls land under `test/arch/loop/` and go red on contact, the never-discards sweep reaches the lane verbs, the autonomous prompt names the key
 - [ ] `06_story_the-second-live-run` — `refine_first` switched on here and one real `aof work loop` driven over a two-member wave with a held third, every SPEC outcome read at the source (`@manual`)
 
 ## Dependencies

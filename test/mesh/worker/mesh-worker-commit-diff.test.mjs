@@ -23,7 +23,7 @@ import { resolveRefInWorktree as resolveRefInWorktreeFromHome } from "../../../s
 import { markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";
 import { withMeshWorkerPushFixture } from "../../support/mesh-worker-push-fixture.mjs";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
-import { git } from "../../support/dispatch-lane-fixture.mjs";
+import { git, writeRel as writeUnder } from "../../support/dispatch-lane-fixture.mjs";
 import { stripComments, matchedParenSpan } from "../../support/source-slice.mjs";
 
 const NODE_ID = "worker-a";
@@ -92,12 +92,6 @@ function scriptedExec(script = {}) {
 
 function frontmatter(fields) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n`;
-}
-
-async function writeUnder(root, rel, body) {
-  const target = path.join(root, ...rel.split("/"));
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, body, "utf8");
 }
 
 // withMoveFixture(body) — a repo at T0 holding a tracked `src/a.mjs`, `README.md`, a plain

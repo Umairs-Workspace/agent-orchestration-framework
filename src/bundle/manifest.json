@@ -471,7 +471,7 @@
         "id": "autonomous",
         "kind": "command"
       },
-      "hash": "sha256:084d7c1a31f675d1bc0571a6bdbac61f151cfeb01ecc049ec0f5e4d555a93865"
+      "hash": "sha256:9a9efb6dcab2fd65c88c3707f572fdfe3eab44abfa25b38bea4cb4f6721dc00d"
     },
     {
       "path": ".claude/commands/aof/code-review.md",
@@ -840,7 +840,7 @@
         "id": "aof-autonomous",
         "kind": "skill"
       },
-      "hash": "sha256:c3cafb32900d3f3e7334960eb44bc7b3ea5d686e3bf311ff4a044e9eaf493e6c"
+      "hash": "sha256:c9ca28b31ae4aeea86342a8fae1620ae34b1ac8f07dcb92b966ccea211999306"
     },
     {
       "path": ".codex/skills/aof-code-review/SKILL.md",

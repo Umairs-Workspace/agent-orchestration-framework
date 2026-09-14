@@ -114,6 +114,18 @@ import { archTests as acdDeclarationPredicateIsComposedTests } from "./acd-decla
 // control whose predicate it shares, because 124/02's FF-12405 leg 10 freezes `test/arch/bundle/`
 // at its 23 parity controls — a ceiling that may only fall.
 import { archTests as acdSiteIsProjectedNotCopiedTests } from "./acd-site-is-projected-not-copied.test.mjs";
+// milestone 129 / story 05 — the seven controls of the loop-concurrency register, in four files
+// (ARCHITECTURE.md § Fitness functions; each owes a red probe in VERIFICATION.md). Every one names
+// which of this row's three subjects it is: the LADDER — the wave tick is the ladder run in lanes.
+// FF-12901 the mode's one home and the absence of a concurrency number; FF-12902 + FF-12906 the
+// family boundary (a lane drive is a child process; the wave is read, never recomputed);
+// FF-12903 + FF-12907 the lane's record and the one declaration; FF-12905 the lane-scoped grade.
+// FF-12904 is an EXTENSION of `test/arch/grade/acd-gate-propagation-never-discards`, registered
+// there.
+import { archTests as acdLoopConcurrencySingleHomeTests } from "./acd-loop-concurrency-single-home.test.mjs";
+import { archTests as acdLoopFamilyBoundaryTests } from "./acd-loop-family-boundary.test.mjs";
+import { archTests as acdLaneRecordsAndTheDeclarationTests } from "./acd-lane-records-and-the-declaration.test.mjs";
+import { archTests as acdLaneGradeIsLaneScopedTests } from "./acd-lane-grade-is-lane-scoped.test.mjs";
 
 export const tests = [
   // milestone 52 / story 04 — the nine loop-registry fitness functions
@@ -182,4 +194,9 @@ export const tests = [
   ...acdDeclarationPredicateIsComposedTests,
   // story 125 / task 01 — the published site's placement control (see the import note).
   ...acdSiteIsProjectedNotCopiedTests,
+  // milestone 129 / story 05 — FF-12901, FF-12902/FF-12906, FF-12903/FF-12907, FF-12905 (see the import note).
+  ...acdLoopConcurrencySingleHomeTests,
+  ...acdLoopFamilyBoundaryTests,
+  ...acdLaneRecordsAndTheDeclarationTests,
+  ...acdLaneGradeIsLaneScopedTests,
 ];
