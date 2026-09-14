@@ -193,11 +193,17 @@ export const archTests = [
         },
       };
       assert.equal(gradeStopCode(decoy), "report-unreadable", "the code decides; the prose beside it is not read");
-      const source = stripComments(await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8"));
-      assert.doesNotMatch(source, /message\s*\.\s*(?:includes|match|indexOf|search|startsWith|endsWith)\s*\(/u, "stop attribution must not match rendered prose");
-      assert.doesNotMatch(source, /\.\s*test\s*\(\s*[A-Za-z_$][\w$]*\.message\b/u, "…nor test a pattern against one");
-      assert.match(source, /GRADE_CODES/u, "the vocabulary is imported as data rather than restated");
-      assert.doesNotMatch(source, /"(?:runner-timeout|report-vacuous|report-unreadable|report-missing|runner-spawn-failed)"/u, "no indeterminate code is restated as a literal in the shell");
+      // 129/04 (ADR-008 §3) — the grade helpers moved with the ladder into `src/loop/cycle.mjs`,
+      // so the vocabulary is imported THERE as data, and the rule holds over the FAMILY: no member
+      // matches rendered prose or restates an indeterminate code as a literal.
+      const family = await Promise.all(["src/commands/loop.mjs", "src/loop/cycle.mjs", "src/loop/wave.mjs"].map(async (rel) => stripComments(await readFile(path.join(root, rel), "utf8"))));
+      for (const source of family) {
+        assert.doesNotMatch(source, /message\s*\.\s*(?:includes|match|indexOf|search|startsWith|endsWith)\s*\(/u, "stop attribution must not match rendered prose");
+        assert.doesNotMatch(source, /\.\s*test\s*\(\s*[A-Za-z_$][\w$]*\.message\b/u, "…nor test a pattern against one");
+        assert.doesNotMatch(source, /"(?:runner-timeout|report-vacuous|report-unreadable|report-missing|runner-spawn-failed)"/u, "no indeterminate code is restated as a literal anywhere in the family");
+      }
+      assert.match(family[1], /GRADE_CODES/u, "the vocabulary is imported as data rather than restated — by the ladder, its one consumer");
+      assert.doesNotMatch(family[0], /GRADE_CODES/u, "…and the shell no longer imports it: the grade's readers left with the ladder");
 
       // AND `LoopState`'s TEN TOP-LEVEL KEYS ARE UNCHANGED, over a real loop that halted on
       // exactly this stop — the document, not the module.

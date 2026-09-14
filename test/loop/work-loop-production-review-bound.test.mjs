@@ -17,6 +17,19 @@ import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { completingDriver, loopFixture } from "./loop-command-probe.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+// THE SIX BOUNDS THE SHELL RESOLVES THROUGH loop-bounds, asserted as MEMBERSHIP of its one import
+// from that module rather than as the literal spelling of the import statement (129/04: the shell
+// also imports the concurrency MODE and the two child-deadline bounds from the same home, and a pin
+// on the exact six-name statement would red on the seventh name without protecting anything more).
+const LOOP_BOUND_IMPORTS = Object.freeze(["MAX_REVIEW_ROUNDS", "buildNoProgressRoundsFromConfig", "heartbeatFromConfig", "progressMaxResetsFromConfig", "reviewRoundsFromConfig", "scheduleToCloseFromConfig"]);
+function assertLoopBoundsImport(source) {
+  const statement = /import \{([^}]+)\} from "\.\.\/loop-bounds\.mjs"/u.exec(source);
+  assert.ok(statement, "the shell imports its bounds from ../loop-bounds.mjs");
+  const names = statement[1].split(",").map((name) => name.replace(/\/\/[^\n]*/gu, "").trim()).filter(Boolean);
+  for (const name of LOOP_BOUND_IMPORTS) assert.ok(names.includes(name), `${name} is resolved through loop-bounds`);
+  assert.equal((source.match(/from "\.\.\/loop-bounds\.mjs"/gu) ?? []).length, 1, "one import statement from the bounds home");
+}
 const plainFinding = (problem = "the locked contract is still red") => ({ path: "tasks/00.feature", problem });
 const claimedFinding = (blockerClass, problem = "the blocker remains") => ({
   ...plainFinding(problem),
@@ -143,7 +156,7 @@ export const workLoopProductionReviewBoundTests = [
     async run() {
       const source = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
       const body = source.slice(source.indexOf("export async function runLoopBody"), source.indexOf("export function renderLoopState"));
-      assert.match(source, /import \{\s*MAX_REVIEW_ROUNDS,\s*buildNoProgressRoundsFromConfig,\s*heartbeatFromConfig,\s*progressMaxResetsFromConfig,\s*reviewRoundsFromConfig,\s*scheduleToCloseFromConfig,\s*\} from "\.\.\/loop-bounds\.mjs"/u);
+      assertLoopBoundsImport(source);
       assert.equal((body.match(/reviewRoundsFromConfig\(/gu) ?? []).length, 1);
       assert.doesNotMatch(body, /reviewCap\s*=\s*1\b|DEFAULT_REVIEW_ROUNDS/u);
     },
@@ -152,7 +165,7 @@ export const workLoopProductionReviewBoundTests = [
     name: "69/00 blocker fix the production command resolves heartbeat staleness only through loop-bounds",
     async run() {
       const source = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
-      assert.match(source, /import \{\s*MAX_REVIEW_ROUNDS,\s*buildNoProgressRoundsFromConfig,\s*heartbeatFromConfig,\s*progressMaxResetsFromConfig,\s*reviewRoundsFromConfig,\s*scheduleToCloseFromConfig,\s*\} from "\.\.\/loop-bounds\.mjs"/u);
+      assertLoopBoundsImport(source);
       assert.equal((source.match(/heartbeatFromConfig\(/gu) ?? []).length, 2);
       assert.doesNotMatch(source, /heartbeatStaleMs|DEFAULT_HEARTBEAT_STALE_MS/u);
     },

@@ -5,10 +5,10 @@ slug: the-wave-tick
 title: "The wave tick — the BUILD phase fans the wave into lanes: mint in the lane, child drive, settle, grade and gate in the lane, commit, merge home, cleanup; the ladder is a subtraction from the shell"
 parent: 129
 depends: [1, 2, 3]
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-12
-updated: 2026-09-13
+updated: 2026-09-14
 adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-007, ADR-008]
 reads:
   - wiki/work/129_milestone_loop-concurrency/SPEC.md
@@ -58,6 +58,7 @@ files:
   - src/commands/loop.mjs
   - src/loop/wave.mjs
   - src/loop/cycle.mjs
+  - src/loop-bounds.mjs
   - test/loop/loop-command-sequencing.test.mjs
   - test/loop/loop-command-resume.test.mjs
   - test/loop/loop-command-wave.test.mjs
@@ -71,6 +72,9 @@ files:
   - test/arch/loop/acd-clock-counts-attempts.test.mjs
   - test/arch/loop/acd-loop-probe-contract.test.mjs
   - test/arch/mesh/acd-heartbeat-by-consumption.test.mjs
+  - test/loop/loop-fix-transport-shape.test.mjs
+  - test/loop/work-loop-production-review-bound.test.mjs
+  - test/arch/assignment/acd-slot-before-admission.test.mjs
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -101,13 +105,13 @@ fresh `gate` act, committing its own writes at the end of REFINE; `readGradeBase
 
 ## Tasks
 
-- [ ] `tasks/00_the-ladder-is-extracted.feature` — `settleStoryCycle` in `cycle.mjs`; `sequential` byte-identical (the standing loop suites green unchanged); the shell measured smaller
-- [ ] `tasks/01_the-shell-walks-through-review-and-honours-a-gate.feature` — BUILD asks `work:next` with `throughReview`; a fresh `gate` act runs validate + doctor + the recorded grade → `verify` or a `continue` re-drive; REFINE ends with the loop's own writes committed
-- [ ] `tasks/02_a-lane-runs-its-story.feature` — open at HEAD → resolve in the lane → mint there (same `brief.loop`, `brief.lane`) → child → settle in the lane → grade / validate / doctor / sampler in the lane workspace → commit → merge → cleanup; the primary's story docs untouched until the merge; the `driven` row names the lane and the merge
-- [ ] `tasks/03_the-baseline-is-per-base-commit.feature` — one baseline per wave, measured in the first lane, keyed by sha, read back by `{ baseCommit }`; each lane's delta is its own; VERIFY reads the recorded grade and never re-grades
-- [ ] `tasks/04_the-wave-run-carries-the-liveness.feature` — a milestone run with `brief.wave` minted before dispatch, heartbeated and consumed on the interval, settled `done` / `failed`; `decideSupervisedDeclarations` lists one row
-- [ ] `tasks/05_held-members-dispatch-after-the-merge.feature` — re-ask after every merge; a held member admitted only once the colliding lane merged; refused members re-asked as lanes close; foreign `at-capacity` halts `lane-open-failed`
-- [ ] `tasks/06_interrupt-deadline-and-reconcile.feature` — first signal drains and halts `operator-interrupt`, second aborts and settles `cancelled`; the parent deadline settles `timeout`; `--resume` reconciles stale / unmerged / merged / dirty lanes before walking
+- [x] `tasks/00_the-ladder-is-extracted.feature` — `settleStoryCycle` in `cycle.mjs`; `sequential` byte-identical (the standing loop suites green unchanged); the shell measured smaller
+- [x] `tasks/01_the-shell-walks-through-review-and-honours-a-gate.feature` — BUILD asks `work:next` with `throughReview`; a fresh `gate` act runs validate + doctor + the recorded grade → `verify` or a `continue` re-drive; REFINE ends with the loop's own writes committed
+- [x] `tasks/02_a-lane-runs-its-story.feature` — open at HEAD → resolve in the lane → mint there (same `brief.loop`, `brief.lane`) → child → settle in the lane → grade / validate / doctor / sampler in the lane workspace → commit → merge → cleanup; the primary's story docs untouched until the merge; the `driven` row names the lane and the merge
+- [x] `tasks/03_the-baseline-is-per-base-commit.feature` — one baseline per wave, measured in the first lane, keyed by sha, read back by `{ baseCommit }`; each lane's delta is its own; VERIFY reads the recorded grade and never re-grades
+- [x] `tasks/04_the-wave-run-carries-the-liveness.feature` — a milestone run with `brief.wave` minted before dispatch, heartbeated and consumed on the interval, settled `done` / `failed`; `decideSupervisedDeclarations` lists one row
+- [x] `tasks/05_held-members-dispatch-after-the-merge.feature` — re-ask after every merge; a held member admitted only once the colliding lane merged; refused members re-asked as lanes close; foreign `at-capacity` halts `lane-open-failed`
+- [x] `tasks/06_interrupt-deadline-and-reconcile.feature` — first signal drains and halts `operator-interrupt`, second aborts and settles `cancelled`; the parent deadline settles `timeout`; `--resume` reconciles stale / unmerged / merged / dirty lanes before walking
 
 ## Notes
 

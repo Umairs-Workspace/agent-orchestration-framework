@@ -1,9 +1,9 @@
 {
-  "runId": "20260913T110303238Z-0000",
+  "runId": "20260914T123830334Z-0001",
   "itemRef": "129/04",
-  "state": "failed",
-  "attempt": 1,
-  "outcome": "failed",
+  "state": "done",
+  "attempt": 2,
+  "outcome": "done",
   "sessionId": "5d48a79e-7a14-4ab0-939a-2a145038ce6f",
   "brief": {
     "loop": {
@@ -35,12 +35,12 @@
       ]
     }
   },
-  "createdAt": "2026-09-13T11:03:03.238Z",
-  "updatedAt": "2026-09-14T12:38:30.260Z",
-  "failureReason": "runtime_offline",
-  "heartbeatAt": "2026-09-13T11:30:24.011Z",
-  "retryOf": null,
-  "reclaimedAt": "2026-09-14T12:38:30.260Z",
+  "createdAt": "2026-09-14T12:38:30.334Z",
+  "updatedAt": "2026-09-14T15:04:59.837Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": "20260913T110303238Z-0000",
+  "reclaimedAt": null,
   "node": "umamis-msi",
   "resumeAfter": null,
   "spend": null

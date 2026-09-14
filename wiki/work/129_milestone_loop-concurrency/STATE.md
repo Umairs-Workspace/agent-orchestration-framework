@@ -16,7 +16,7 @@ doc: state
 - [x] `01_story_the-mode-and-the-engine-decide` — done (built + reviewed 2026-09-13; accepted 2026-09-13 by `aof:verify 129/01` — `VERIFICATION.md` `129/01`, `F-01`–`F-12`; `F-07`/`F-08` routed to 04, `F-09` waits on the milestone door)
 - [x] `02_story_the-drive-is-a-child` — done (built + reviewed 2026-09-13 under the cascade; accepted 2026-09-13 by `aof:verify 129/02` — `VERIFICATION.md` `129/02`, `F-13`–`F-27`; `F-15`/`F-16` routed to 04, `F-17`/`F-23` to 05, `F-24`/`F-25` face + runner items)
 - [x] `03_story_the-lane-commits-and-merges-home` — done (built + reviewed 2026-09-13 under the cascade; three lenses + one delta round, 1 Blocker → 0; accepted 2026-09-13 by `aof:verify 129/03` — `VERIFICATION.md` `129/03`, `F-28`–`F-47`; `F-39`/`F-44` routed to 04, `F-47` an `aof test` item, `F-09` corrected)
-- [ ] `04_story_the-wave-tick` — not started (after 01, 02, 03)
+- [x] `04_story_the-wave-tick` — done (built + reviewed 2026-09-14, solo, resumed run `20260914T123830334Z-0001`; three lenses, one round, 0 Blockers; accepted 2026-09-14 by `aof:verify 129/04` — `VERIFICATION.md` `129/04`, `F-48`–`F-50`; `F-07`/`F-08`/`F-16`/`F-18`/`F-44` closed, `F-15` re-routed to 06, `F-39` to 05, `F-08`'s operational rule LIFTED, 03's composed-verbs gap discharged)
 - [ ] `05_story_the-account-and-the-register` — not started (after 04)
 - [ ] `06_story_the-second-live-run` — not started (after 05; `@manual`)
 
@@ -76,6 +76,93 @@ doc: state
 ## Feedback (for retro)
 
 <!-- Raw, attributed entries; triaged into VERIFICATION.md / RETROSPECTIVE.md at aof:verify. -->
+
+- **129/04 accepted (product-owner, 2026-09-14, `aof:verify 129/04` run directly — the story's
+  second attempt was solo, so no cascade verify phase carried it).** Story lane 187 / 1 under an
+  isolated home (188 registered = 188 reported; 194 / 1 and 195 = 195 after the accept's edits), the
+  one red `FF-5307`'s `ui/` digest with `ui/` untouched on this checkout; story-attributable 51 / 0
+  — one named case per scenario and Examples row of all 81, every one over the real-repo lane
+  fixture, the nine folded headlines read in the assertions. NO recorded grade on the run (solo build
+  — `F-50`): the tier (`scripts/test-rubric.mjs`) run by hand, 1943 / 14 over 1957, eight beyond
+  the stale 2026-09-13 baseline and every one attributed AT THE SOURCE — six to HEAD (7 commits, 0
+  rename records since the public-repo move → `FF-11903` ×2 + `FF-6607b` ×3; 130's committed
+  `PLAN.md` → `FF-9603`), two to this story: **`69/FF-6907` / `FF-6911` red whole-tree on
+  `wave.mjs`'s `resolveDispatchLane(` (`F-48`)** — the invariant holds by construction (the opener
+  runs inside `work:dispatch`'s admission lock and pool through the `ctx.runDispatchLane` seam), the
+  control's textual leg re-pointed with a declared-supplier table, a self-check row per leg and a
+  real-bytes probe; the control added to `files:`. **`F-49`:** `mergeDispatchLaneHome`'s THROWN
+  codes (03's `F-44` note) escaped `mergeLane` as a loop death — `mergeHome` now reads them as the
+  refusal, one row + red probe. 1946 / 12 after; the twelve are the inherited set exactly.
+  `FF-11903`'s ceiling measures 148 vs 47 (the rename-map loss; `wave.mjs` / `cycle.mjs` cleared,
+  `lanes.mjs` remains — `F-09` addendum). Read at the source: shell 2,311 → 1,686; `cycle.mjs` 963,
+  `wave.mjs` 910; the child deadline `startToCloseMs + startupGraceMs` (`F-16`); `offerFrom` /
+  `unrefinedStories` (`F-07`, `F-08` — the "no loop over an `in-review` story" rule is LIFTED);
+  `test/loop` 72 → 74 + the `test/support/loop` row (`F-18`). `validate` PASS, `loops validate`
+  0 error, `doctor` no `control-unresolved` at story scope. `F-15` re-routed to 06 (the child's
+  arming order is `drive.mjs`'s); `F-39` to 05 (04's fixture was born under `test/support/loop/`).
+  `m129/03`'s "caller of the three composed verbs" gap discharged. Story `RETROSPECTIVE.md` (R1–R3:
+  the tier beside the lane, a routed note is a row, a bound seam is a door) and `OUTCOME.md` written.
+  The five contract deltas of the build entry stand ratified at the review close, no `.feature` edited.
+- **129/04 review close (2026-09-14, solo — architect / QA / craft lenses played inline, one round,
+  0 Blockers).** Gate ladder clean before and after the fix round (`validate` `[]`, `doctor` 0
+  errors); story-scoped run — the whole `test/loop` index plus every suite importing the changed
+  modules, as `--only` under an isolated home (the story's `files:` widen `--scope impacted` to
+  `all`, which binds `:4182` here) — 1671 pass; every red inherited at HEAD: `loops-ledger/05 leg 9`
+  (the public root's 7-commit history holds 0 renames), FF-5307's `ui/` digest (the fleet lane's
+  re-pin), and `81/01 the record itself is unchanged` (`stubRubric` answers its BASELINE first since
+  2026-09-12, so a direct `work:grade` invoke reads 0 failures — the fixture change, committed as-is).
+  **Fixed at the close (architect, Important):** `wave.mjs` re-spelled `transitionOptionsFor`
+  (now `cycle.mjs`'s export with `lockWorkspace`), and spelled the merge-halt shape and the
+  cleanup act twice (lane close vs reconcile) — one `mergeHalt` / `cleanupLane` each. **Fixed
+  (craft):** unused imports, stale doc comments. **Recorded (Important):** the family net is +1243
+  against ADR-008 §3's +750–900 — the wave carries reconcile, signals, the interval and an epoch
+  per admission; the estimate, not the code, was short. **Recorded (Nits):** the shell's
+  `freshGate` re-spells a slice of the ladder's routing (decideReviewGate → pendingFixes) — the
+  ruling keeps the gate ladder in the shell, so it stays; `mergeDispatchLaneHome` (03's) labels
+  the own-writes commit with the merge's message; `NO_PRINT` is spelled in three modules; task
+  02's COMMIT row ("clean tree → already-current") is driven as the child-committed shape (a
+  lane that produced nothing is re-dispatched until the cycle cap, bounded — worth a 06 scenario).
+  **Amendments for the PO (the five contract deltas in the build entry):** ratified at this beat,
+  no `.feature` edited. Nothing routed to a story.
+- **129/04 build (developer, solo, 2026-09-14; resumed run `20260914T123830334Z-0001`, attempt 2
+  after the 2026-09-13 run died before writing anything).** Shell measured **2311 → 1686 lines**
+  (`src/commands/loop.mjs`, −625); the family gained `cycle.mjs` (963) and `wave.mjs` (905) — a net
+  of +1243 against ADR-008 §3's estimate of +750–900, for the review to weigh (the wave carries the
+  reconcile, the signals and the interval; both modules carry their reasoning as prose). Five contract problems met, each built
+  to the shipped semantics and the scenario line left for the PO (no `.feature` edited):
+  (1) task 02 "the first lane merged has `merge.outcome` `fast-forwarded`" and task 04
+  "`brief.wave.baseCommit` equals … each lane's `brief.lane.baseCommit`" cannot both hold: the wave
+  run's record is a primary-tree write, so the lanes are cut AFTER the own-writes commit that carries
+  it (ADR-002 §2), which makes the first merge a fast-forward and the lanes' base one commit later
+  than the HEAD the brief names. Built: mint → commit own writes → cut; the test pins the
+  parent/child relation. (2) task 02 "two run records, `brief.loop.cycle` 1 and 2": a first failing
+  grade re-drives from the PROGRESS rung as a continuation at the SAME cycle (the shipped ladder,
+  127 STATE's "a progress-continuation re-drive does not advance the cycle"); the records read 1
+  and 1 and the second carries the first's grade. (3) task 03 "the narration says `Gate work:grade
+  07/01 — fail (case-failed) … (2 inherited …)`": a progress-rung re-drive never reaches the gate
+  rung's line — the shipped shell's shape; the inherited count is narrated on the grade that reaches
+  the gate. (4) task 01's RULING "brief.grade on the story's latest run when a successor carries one"
+  was read literally: a grade on the latest continue run ITSELF is the one that caused it, so the
+  fresh gate counts a recorded grade only on a SUCCESSOR run and otherwise reads the ATTEMPT run's
+  ledger (`brief.progress.attemptRunId` — a continuation samples into its lineage's first run, so
+  the latest continue's own ledger is empty). (5) task 04 "brief.wave.members ["07/03","07/05"]"
+  after a member is admitted mid-epoch: an epoch is settled and a new one minted at every admission
+  as well as after every merge, so every epoch's brief names exactly the lanes it carried.
+  **Declared write set incomplete:** `src/loop-bounds.mjs` (the `REFINE_FIRST_CONCURRENCY` binding
+  the shell compares against — one spelling, in the home) and
+  `test/loop/loop-fix-transport-shape.test.mjs` (a fifth shell-text control, scanning the four
+  `pendingFixes.set` sites, now split shell/ladder) and `test/loop/work-loop-production-review-bound.test.mjs`
+  (a sixth: it pinned the shell's `loop-bounds` import as a six-name literal; re-pointed to
+  membership) — all three added to `files:`. **Seams added, both
+  ctx-level:** `ctx.invokeRegistered` (the family's one injectable invoke seam — honoured by the
+  shell too, so the gate ladder is scriptable per lane) and `ctx.waveTimers` / `ctx.signalSource` /
+  `ctx.now` (the interval, the signals, the clock). **Design choices to review:** a child that
+  answers `aborted` under no signal halts `operator-interrupt` / `driver:aborted` rather than being
+  re-dispatched; a wave whose members are all live in a lane another process still heartbeats
+  halts `lane-open-failed` / `run-store:duplicate-run` naming them (the open's own refusal, never a
+  poll); the fresh gate's fix names the latest continue run as `buildRun` — or the gate itself
+  when a story reached `in-review` with no run — because the driver applies a fix only under a
+  named build. **Inherited red:** FF-5307's `ui/` digest (the fleet lane's re-pin), untouched here.
 
 - **129/01 accepted (product-owner, 2026-09-13, `aof:verify 129/01` under the cascade's verify
   phase).** The story's lane is 385 pass / 0 fail under an isolated home (397 / 0 on the re-run after

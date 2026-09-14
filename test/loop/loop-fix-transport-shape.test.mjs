@@ -36,6 +36,10 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const strip = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 const loopSource = async () => strip(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+// 129/04 (ADR-008 §3) — the sites that prepare a re-drive are split between the shell (the resume
+// path's two and the fresh gate's) and the ladder (`src/loop/cycle.mjs`: the gate re-drive, the
+// progress reset and the progress continue). The four causes are asserted over BOTH.
+const familySource = async () => [await loopSource(), strip(await readFile(path.join(repoRoot, "src", "loop", "cycle.mjs"), "utf8"))].join("\n");
 
 const INVALID_FEATURE = "Feature: Invalid\n  Scenario: missing lane\n    Given a fixture\n";
 const seedInvalid = (fx) => writeFileSync(path.join(fx.storyDir, "tasks", "00_ready.feature"), INVALID_FEATURE);
@@ -96,7 +100,7 @@ export const loopFixTransportShapeTests = [
 
       // AND EVERY SITE THAT PREPARES A PENDING FIX GOES THROUGH IT, so the bag the driver
       // receives can only ever be that shape — `pendingFixes.get` is its one source.
-      const code = await loopSource();
+      const code = await familySource();
       const sites = [...code.matchAll(/pendingFixes\.set\(/g)].length;
       const throughConstructor = [...code.matchAll(/pendingFixes\.set\([^,]+,\s*fixTransport\(/g)].length;
       assert.ok(sites > 0, "guard: the shell really does prepare pending fixes");
@@ -187,7 +191,7 @@ export const loopFixTransportShapeTests = [
   {
     name: "81/03 [outline] every site that prepares a re-drive prepares the same transport (4 causes)",
     run: async () => {
-      const code = await loopSource();
+      const code = await familySource();
 
       // THE FOUR CAUSES, AS THE SHELL'S OWN CALL SITES. Each is one `pendingFixes.set`, and
       // the property under test is that they are INDISTINGUISHABLE in the shape they produce

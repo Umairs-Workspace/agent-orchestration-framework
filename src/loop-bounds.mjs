@@ -125,6 +125,11 @@ export function progressMaxResetsFromConfig(workspace) {
 // the tuner already refuses a non-numeric step as `NOT_AN_ORDINAL_KNOB`.
 export const LOOP_CONCURRENCY_MODES = Object.freeze(["sequential", "refine_first"]);
 export const DEFAULT_LOOP_CONCURRENCY = LOOP_CONCURRENCY_MODES[0];
+// 129/04 — the shell branches on the mode it resolved here, and it compares against THIS
+// binding rather than a second spelling of the word: the array above is the vocabulary's one
+// home, and a caller that spelled `"refine_first"` beside it would be the second literal
+// 129/ADR-001 admits for the engine's branch alone.
+export const REFINE_FIRST_CONCURRENCY = LOOP_CONCURRENCY_MODES[1];
 
 export const resolveLoopConcurrency = (value) => (
   LOOP_CONCURRENCY_MODES.includes(value) ? value : DEFAULT_LOOP_CONCURRENCY

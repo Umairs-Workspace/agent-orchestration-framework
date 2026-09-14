@@ -47,4 +47,37 @@ export const archTests = [
       );
     },
   },
+  {
+    // 129/04 (ADR-007 §2; RULING 2026-09-13) — THE ONE RATIFIED DEPARTURE, admitted BY NAME.
+    // FF-6903's subject is a SESSION, whose tool use is its liveness: the hook appends on every
+    // tool call and the consumer is the one heartbeat writer. The WAVE RUN has no session — the
+    // loop process is the actor while its lanes' children work in their own trees — so its honest
+    // liveness is an interval in the loop process: every `heartbeatMs / 3` it appends the HOOK'S
+    // EXACT BYTES to the milestone's queue and calls the ONE consumer. Exactly one timer, in
+    // exactly one module, feeding the existing writer through the existing queue — no second
+    // threshold, no second consumer, no `heartbeat()` written directly.
+    name: "arch/129/04 FF-6903 (extended): the wave run's interval is the one admitted timer — one setInterval in wave.mjs, appending the hook's bytes and consuming through the one writer",
+    run: async () => {
+      const wave = await readFile(path.join(root, "src/loop/wave.mjs"), "utf8");
+      const stripped = wave.replace(/\/\/[^\n]*/gu, "");
+      const timers = [...stripped.matchAll(/\bsetInterval\(/gu)];
+      // Two spellings of ONE timer: the default seam (`timers.setInterval` resolving to the
+      // platform's) and the one call that arms the wave run's heartbeat. No third.
+      assert.equal(timers.length, 2, "one default seam plus one arming call, no third setInterval");
+      assert.match(stripped, /heartbeatHandle = timers\.setInterval\(\(\) => beatWaveRun\(\)/u, "the one armed interval beats the wave run");
+      assert.match(stripped, /Math\.floor\(bounds\.heartbeatMs \/ 3\)/u, "…on heartbeatMs / 3, the threshold handed in from the one bound home");
+      assert.doesNotMatch(stripped, /heartbeatFromConfig|work\.loop\.heartbeatMs|\bheartbeat\(/u, "no second threshold, and never the store's heartbeat() directly");
+      assert.match(stripped, /\.heartbeats\.ndjson/u, "the hook's queue");
+      assert.match(stripped, /\$\{JSON\.stringify\(\{ runId, at \}\)\}\\n/u, "…the hook's exact bytes");
+      assert.match(stripped, /consumeHeartbeatQueue\(waveRun\.item\)/u, "…consumed through the one consumer");
+      assert.doesNotMatch(stripped, /setTimeout\(/u, "no self-ping by timeout either");
+      // The hook and the consumer are untouched by the extension.
+      const [hook, consumer] = await Promise.all([
+        readFile(path.join(root, "src/bundle/hooks/run-heartbeat-enqueue.mjs"), "utf8"),
+        readFile(path.join(root, "src/run-heartbeat-consumption.mjs"), "utf8"),
+      ]);
+      assert.doesNotMatch(hook, /setInterval|setTimeout/u);
+      assert.match(consumer, /consumeHeartbeatQueue\(item\)[\s\S]*heartbeat\(item, runId, \{ now: at \}\)/u);
+    },
+  },
 ];

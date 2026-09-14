@@ -220,13 +220,13 @@ export const archTests = [
       const cyclic = [mk("C", "B"), mk("B", "C")];
       assert.deepEqual(retryLineage({ runs: cyclic, record: cyclic[0] }).map((r) => r.runId), ["B", "C"]);
 
-      const shell = await source(SHELL);
-      assert.doesNotMatch(
-        shell,
-        /\.retryOf/u,
-        "src/commands/loop.mjs declares no `retryOf` traversal of its own: the one walk is the engine's, and this module calls it",
-      );
-      assert.match(shell, /retryLineage\(/u, "…and it calls it");
+      // 129/04 (ADR-008 §3) — the summer's callers moved with the ladder into `src/loop/cycle.mjs`
+      // (`budgetElapsedMs`, the one budget home); the shell and the wave reach the walk through it.
+      // No member of the family traverses `retryOf` itself.
+      for (const rel of [SHELL, "src/loop/cycle.mjs", "src/loop/wave.mjs"]) {
+        assert.doesNotMatch(await source(rel), /\.retryOf/u, `${rel} declares no \`retryOf\` traversal of its own: the one walk is the engine's`);
+      }
+      assert.match(await source("src/loop/cycle.mjs"), /retryLineage\(/u, "…and the ladder's budget home calls it");
     },
   },
   {
@@ -353,7 +353,12 @@ export const archTests = [
   {
     name: "arch/126/00 FF-12601 leg 8: both shell budget sites obtain elapsed from the summer, hand it the store's `isStale` and a threshold from the ONE bound home, and pass no instants",
     run: async () => {
-      const shell = await source(SHELL);
+      // 129/04 — THREE budget sites now, over the family: the shell's resume-lineage site, the
+      // ladder's in-process retry site (`src/loop/cycle.mjs`, moved with the retry ladder) and the
+      // wave's lane-resume site (`src/loop/wave.mjs`). Every one obtains its elapsed from the ONE
+      // budget home (`budgetElapsedMs`, in the ladder module) and the summer is called exactly once.
+      const shell = [await source(SHELL), await source("src/loop/cycle.mjs"), await source("src/loop/wave.mjs")].join("\n");
+      const shellOnly = await source(SHELL);
       // The call's arguments are cut by MATCHING PARENS, not by a regex looking for the next
       // `})` — the elapsed argument is itself a call with a bag, so a non-greedy pattern would
       // stop inside it and assert over half the arguments. `47/F-47-04-ARCH-2`'s lesson applied
@@ -368,7 +373,7 @@ export const archTests = [
         return found;
       };
       const calls = callArgs("decideScheduleToClose(");
-      assert.equal(calls.length, 2, "exactly two deadline sites");
+      assert.equal(calls.length, 3, "exactly three deadline sites across the family");
       // The DECIDER's own keys, read at depth 0 — the elapsed argument is itself a call whose bag
       // legitimately carries a `now`, and a flat text sweep would see it and read the decider as
       // still taking instants.
@@ -408,15 +413,16 @@ export const archTests = [
       // …and it traces to the ONE bound home, resolved ONCE per invocation and shared with the
       // reclaim sweep. That sharing is load-bearing rather than tidy: a run the sweep calls stale
       // and the clock calls alive is exactly the disagreement that reproduces the bill.
-      assert.match(shell, /const stalenessMs = heartbeatFromConfig\(ctx\.workspace\);/u);
-      assert.match(shell, /stalenessThreshold: stalenessMs,/u, "the reclaim sweep reads the same value");
+      assert.match(shellOnly, /const stalenessMs = heartbeatFromConfig\(ctx\.workspace\);/u);
+      assert.match(shellOnly, /stalenessThreshold: stalenessMs,/u, "the reclaim sweep reads the same value");
       assert.equal(
-        (shell.match(/heartbeatFromConfig\(/gu) ?? []).length,
+        (shellOnly.match(/heartbeatFromConfig\(/gu) ?? []).length,
         2,
         "69/FF-6901: this module resolves the threshold only through loop-bounds, and adding a "
         + "consumer added no resolution",
       );
-      assert.doesNotMatch(shell, /work\.loop\.heartbeatMs/u, "the shell names no config key of its own");
+      assert.doesNotMatch(shell, /work\.loop\.heartbeatMs/u, "no member of the family names the config key");
+      assert.doesNotMatch(shell.replace(shellOnly, ""), /heartbeatFromConfig\(/u, "the ladder and the wave resolve nothing: the threshold is handed to them");
       for (const args of calls) {
         assert.match(args, /stalenessMs/u, "each budget site passes the threshold — a site that omitted it would silently get the render's reading");
       }

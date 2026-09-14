@@ -33,7 +33,7 @@ Both are defined in the lane's home and `resolveRefInWorktree` is re-exported fr
 ## Gaps
 
 ### A caller of the three composed verbs
-- **Status:** open
+- **Status:** discharged (2026-09-14, at `129/04`'s accept — `src/loop/wave.mjs` calls all three, passes `advanceTo` on every open, and maps the returned refusals and the thrown codes alike to `lane-merge-refused` / `lane-merge-conflict` / `lane-open-failed`; `m129/04/F-49`)
 - **Discharge condition:** `129/04`'s wave tick calls `commitDispatchLane` after each lane's drive settles, `mergeDispatchLaneHome` serially in lane-completion order, `resolveDispatchLane` with `advanceTo: <primary HEAD>` on every open, and maps a THROWN `commit-failed` / `gate-propagation-failed` / `gate-propagation-base-unresolved` / `dispatch-lane-advance-not-a-sha` to a halt beside the returned `lane-merge-refused` / `lane-merge-conflict` / `lane-open-failed`.
 No `src/` path calls `dispatchLaneBase`, `commitDispatchLane` or `mergeDispatchLaneHome`, and no `src/` path passes `advanceTo`; the loop's REFINE-end commit through `commitWorktreeChanges({ paths })` has no caller either.
 

@@ -6,7 +6,7 @@ title: "Loop concurrency — aof work loop drives write-disjoint story waves in 
 status: in-progress
 owner: product-owner
 created: 2026-09-12
-updated: 2026-09-13
+updated: 2026-09-14
 depends: []
 schema: 1
 aofVersion: 0.1.0
@@ -122,7 +122,7 @@ Six stories; 01/02/03 share no subject file and form the first wave at the dispa
 - [x] `01_story_the-mode-and-the-engine-decide` — `work.loop.concurrency` resolves once as a mode; the engine routes on status, names the three phases of `refine_first`, decides a wave purely, and carries the three lane stop ids
 - [x] `02_story_the-drive-is-a-child` — `aof work drive` takes a lent run and a fix file, stdin is its cancel channel, `runBounded` aborts, and `src/loop/child-drive.mjs` spawns it shell-lessly and reads one document
 - [x] `03_story_the-lane-commits-and-merges-home` — `commitWorktreeChanges` moves to its git home, `advanceBranchToBase` gains `dirtyPolicy`, dispatch composes commit / merge-home / base, STATE.md merges by union
-- [ ] `04_story_the-wave-tick` — the BUILD phase fans the wave into lanes: mint in the lane, child drive, settle, grade and gate in the lane, commit, merge, cleanup; the wave run carries the liveness; resume reconciles; the ladder is a subtraction from the shell
+- [x] `04_story_the-wave-tick` — the BUILD phase fans the wave into lanes: mint in the lane, child drive, settle, grade and gate in the lane, commit, merge, cleanup; the wave run carries the liveness; resume reconciles; the ladder is a subtraction from the shell
 - [ ] `05_story_the-account-and-the-register` — the seven controls land under `test/arch/loop/` and go red on contact, the never-discards sweep reaches the lane verbs, the autonomous prompt names the key
 - [ ] `06_story_the-second-live-run` — `refine_first` switched on here and one real `aof work loop` driven over a two-member wave with a held third, every SPEC outcome read at the source (`@manual`)
 
