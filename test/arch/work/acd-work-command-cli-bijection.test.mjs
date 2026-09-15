@@ -325,6 +325,11 @@ function argsFor(sub) {
     // document is a clean probe), and deliberately so: a promote that SUCCEEDED would MINT a
     // number into the fixture the other probes read.
     case "promote": return ["work", "promote", "bijection-probe", "--json"];
+    // milestone 127 / story 03 — work:archive, the verbatim MOVE (127/ADR-004 §1). `999` names no
+    // item in the fixture, so the verb refuses `archive-not-found` as ONE parseable
+    // `{ ok:false, error, code }` document at exit 1 — the same shape as `promote` above, and
+    // deliberately so: an archive that SUCCEEDED would MOVE a folder the other probes read.
+    case "archive": return ["work", "archive", "999", "--json"];
     // milestone 40 / story 02 — work:upgrade. --dry-run so the probe never
     // mutates the fixture's "03"/"03/01" refs the other subcommand probes
     // above depend on (it only REPORTS what would change).
@@ -420,9 +425,12 @@ export const archTests = [
           // shape on purpose: the fixture holds no `backlog/`, so it refuses
           // `promote-not-found` as one coded document at exit 1 — a promote that
           // succeeded would MINT a number into the fixture the other probes read.
+          // `archive` (127/03) likewise: `999` names nothing, so it refuses
+          // `archive-not-found` as one coded document at exit 1 — an archive that
+          // succeeded would MOVE a folder the other probes read.
           // Both 0 and 1 are clean runs for those; every other op exits 0. None
           // may crash (>1 or a null status from a thrown error).
-          const acceptable = ["validate", "doctor", "update", "ratchet", "regression-gate", "debt", "promote"].includes(sub) ? [0, 1] : [0];
+          const acceptable = ["validate", "doctor", "update", "ratchet", "regression-gate", "debt", "promote", "archive"].includes(sub) ? [0, 1] : [0];
           assert.ok(
             acceptable.includes(result.status),
             `aof ${argsFor(sub).join(" ")} exits ${acceptable.join("/")} (got ${result.status}; stderr: ${result.stderr})`

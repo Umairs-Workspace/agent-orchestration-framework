@@ -5,7 +5,7 @@ slug: archive-is-a-move
 title: "Archive is a move — an accepted item goes under archive/ name verbatim, and nothing a citation depends on is rewritten"
 parent: 127
 depends: [1]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-09-11
 updated: 2026-09-15
@@ -65,6 +65,13 @@ files:
   - test/arch/work/acd-work-command-route-coverage.test.mjs
   - test/arch/testing/acd-source-directory-budget.test.mjs
   - test/command/command-core-contract.test.mjs
+  - test/work/stream/work-backlog-archive-enumerate.test.mjs
+  - test/arch/grade/acd-harness-ruling-ledgered.test.mjs
+  - test/grade/harness-ruling-seam.test.mjs
+  - test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs
+  - test/arch/work/acd-number-null-safe.test.mjs
+  - test/arch/work/acd-next-walkers-exclude-archived.test.mjs
+  - wiki/work/127_milestone_backlog-and-archive/ARCHITECTURE.md
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -104,11 +111,11 @@ What lands:
 
 ## Tasks
 
-- [ ] 00 `archive-moves-a-done-driver-verbatim` — the verb, its refusals, the rename, the envelope, the ledgers
-- [ ] 01 `only-the-links-that-cross-the-line-are-rewritten` — the rewriter's one invariant and its three shapes
-- [ ] 02 `done-archives-every-done-driver-behind-one-gate` — `--done`: selection, the list, the gate, one run
-- [ ] 03 `the-fleet-follows-and-the-one-path-reader-survives` — `stream.archived` through the seam, the publish, the two path-readers
-- [ ] 04 `the-prompts-drive-the-verb-and-never-archive-on-their-own` — `/aof:archive`, the one `verify.md` line, parity widened
+- [x] 00 `archive-moves-a-done-driver-verbatim` — the verb, its refusals, the rename, the envelope, the ledgers
+- [x] 01 `only-the-links-that-cross-the-line-are-rewritten` — the rewriter's one invariant and its three shapes
+- [x] 02 `done-archives-every-done-driver-behind-one-gate` — `--done`: selection, the list, the gate, one run
+- [x] 03 `the-fleet-follows-and-the-one-path-reader-survives` — `stream.archived` through the seam, the publish, the two path-readers
+- [x] 04 `the-prompts-drive-the-verb-and-never-archive-on-their-own` — `/aof:archive`, the one `verify.md` line, parity widened
 - [ ] 05 `the-control-goes-red-on-contact` — FF-12705 lands, its probes, the four budget rows
 
 ## Notes

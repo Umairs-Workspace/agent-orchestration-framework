@@ -128,6 +128,51 @@ doc: state
 
 <!-- Contract problems and blockers met while building, raised by the lane that met them. -->
 
+- **127/03 build (developer, 2026-09-15, solo, run `…0005`) — task 03's path-reader census is wrong by
+  measurement, and the surplus is 05's.** The refine counted TWO runtime readers of a live item path
+  outside `wiki/`; both are rewritten to `findWork` and green. Re-measured at build (the same grep,
+  every non-comment match naming a folder that EXISTS read): ten more test files read a REAL item
+  folder at run time — `test/loop/work-loops-{checks,commands,coverage-ledger,record,registry-census,value}.test.mjs`
+  (52/00-05, 58/00, 59/00 feature ledgers), `test/memory/anchor-taxonomy.test.mjs` (59/00),
+  `test/work/record/work-story-depends.test.mjs` (00/01, also through `git show HEAD:<path>`),
+  `test/loop/drive-command-phase-drivers.test.mjs` and `test/work/lifecycle/work-dispatch-lanes.test.mjs`
+  (129's ARCHITECTURE.md, live today). None is in 03's `files:`; every one goes red when 05's `--done`
+  moves 52/58/59/00. The census test names them as an explicit ledger so a NEW reader fails it, and
+  the "no third path-reader is left" scenario is amended rather than met: **05's contract must add
+  "retire every reader the 03 census names, by ref, before `--done`"** (an amendment — no item created).
+- **127/03 review (QA lens, 2026-09-15) — measured on a scratch copy of THIS repository: `--done --yes`
+  archives 125 drivers in 2.3 s, rewrites 1,710 links in 161 files, and the root reads 127, 129, 130,
+  32, 42 + `archive/`; `doctor` is byte-identical before and after (1,340 findings, no delta), `find 52`
+  answers `archive/52_…` with `archived: true`, `next` proposes nothing archived. `validate` is NOT
+  identical: +323 findings, every one `story reads path "wiki/work/NN_…/…" does not exist` — a
+  `reads:` entry is a PATH CITATION of an item doc, it crosses the archive line, and 03's rewriter
+  never touches frontmatter (task 01, by contract).** The same class as the path-readers, in the
+  record docs themselves. Two remedies, both 05's contract to choose at its refine (an amendment —
+  no item created): validate's reads/files-exists check resolves a `wiki/work/<NN_…>` path through
+  the enumerator by ref (the resolving-reader rule, 127/ADR-002 §3, extended to path citations), or
+  05 rewrites the 323 `reads:` lines surgically as promote stamps `number:`. The first keeps ADR-004
+  §2's "never a frontmatter write" and is the smaller cut. Until one lands, the SPEC's outsider check
+  ("`validate` still answering") does not hold on the real stream.
+- **127/03 build — task 01's convergence scenario contradicts its own Examples row.** The zeta row
+  asks that an already-archived file linking into a folder being archived get "the same syntactic
+  insert, not a re-normalised `../12_…`" (`../../archive/12_…`); the convergence scenario asks the
+  identical shape (12's `[iota](../../13_…)` when 13 is archived after it) to come out as the
+  normalised `../13_…`. One rule cannot produce both. Built to the rule the contract declares as the
+  invariant — syntactic and minimal, every link resolves to the same path — so the two orders converge
+  in RESOLUTION (asserted) and not in bytes (`../../archive/13_…` vs `../13_…`). For 05 this is moot
+  (`--done` moves the set together, rule (iii)); it matters only for incremental archives later.
+- **127/03 build — three smaller contract deltas.** (1) Task 04 asks the shipped `src/bundle/manifest.json`
+  to carry all THREE renders; the manifest generator emits claude + codex only (the promote precedent
+  is the same two) — the lock carries all three, asserted as such. (2) Task 00's driver-type Outline
+  says "record doc byte-identical"; 12's and 13's fixture docs carry a crossing link the same story's
+  task 01 rewrites — asserted as frontmatter byte-identical and only link lines differing. (3) Task 00's
+  `git status --porcelain` rename claim needs `-M25%` on the fixture (a dozen-line doc, half of it
+  links, falls under git's default 50% similarity); asserted through `git diff --cached -M25%`.
+- **127/03 build — declared write set incomplete (STORY.md `files:`):** `test/work/stream/work-backlog-archive-enumerate.test.mjs`
+  gained one `export` (the `writeItem` task 00 says the archive fixture extends through) and
+  `wiki/work/127_milestone_backlog-and-archive/ARCHITECTURE.md` (the FF-12705 register row — the
+  pending marker cleared by landing the file, both subjects named, as task 05 requires). Both added.
+
 - **127/01 accepted (product-owner, 2026-09-12, `aof:verify 127/01` by hand).** The story's lane is
   430 pass / 0 fail under an isolated home; FF-12701 / FF-12702 / FF-12706 each observed red under
   the probe the register names (task 05's `@manual`, run inline, subjects restored byte-identical);

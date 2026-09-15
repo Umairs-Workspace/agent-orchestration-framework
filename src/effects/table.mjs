@@ -28,7 +28,7 @@
 //   control-store       — the authoritative mesh SQLite (d3 wires its reactors)
 //   local               — this node's own projection/logs
 //   integration:<name>  — an external system + credentials (d4 wires Notion)
-import { loadWorkspace, rollbackItemStatus, setItemStatus, listItems, typeHasRecordDoc } from "../work.mjs";
+import { loadWorkspace, rollbackItemStatus, setItemStatus, listItems, typeHasRecordDoc, isLiveStreamRow } from "../work.mjs";
 import { publishGlobalWorkSnapshot } from "../global-work-publisher.mjs";
 import { openGlobalWorkProjectionStore, remapWorkspaceProjectionRefs, remapWorkspaceFactRefs, workspaceIdFor } from "../global-work-store.mjs";
 import { setItemBranch } from "../mesh/assignment-directive.mjs";
@@ -161,7 +161,7 @@ async function publishItemProjection(event, ctx = {}) {
   const workspace = await loadWorkspace(workspaceRoot);
   const publish = await publishGlobalWorkSnapshot(workspace, {
     ...(ctx.publisherOptions ?? {}),
-    operatorRefs: operatorRefsFor(event.payload),
+    operatorRefs: await operatorRefsWithArchivedStories(workspace, event.payload),
   });
   if (publish.warning) throw projectionPropagationError(publish.warning);
   if (publish.skipped) return { published: false, skipped: true, code: publish.code };
@@ -191,6 +191,30 @@ function operatorRefsFor(payload = {}) {
     for (const end of [entry?.from, entry?.to]) {
       if (typeof end === "string" && end.length > 0) refs.push(end);
     }
+  }
+  // milestone 127 / ADR-004 §4 — an ARCHIVE names the drivers it moved. Their refs did not
+  // change, but their `source_path` did, and a row another node authored would otherwise keep
+  // answering the old folder forever (the disk-derived tick steps over rows it did not author).
+  const { archived: moved = [] } = payload ?? {};
+  for (const entry of Array.isArray(moved) ? moved : []) {
+    if (typeof entry?.ref === "string" && entry.ref.length > 0) refs.push(entry.ref);
+  }
+  return refs;
+}
+
+// operatorRefsWithArchivedStories(workspace, payload) — the archive's reach is the moved FOLDER,
+// which holds the driver's stories too: their refs did not change either, and their rows carry
+// the same stale `source_path`. The payload names the drivers (its own evidence); the stories
+// are the rows the enumerator now finds under the archived driver — a story whose row is no
+// longer live (127/ADR-002 §1: the one predicate, so `.archived` is read in `src/work.mjs` and
+// nowhere else) — read from the same disk the publish below re-derives its snapshot from.
+async function operatorRefsWithArchivedStories(workspace, payload = {}) {
+  const refs = operatorRefsFor(payload);
+  const { archived: moved = [] } = payload ?? {};
+  if (!Array.isArray(moved) || moved.length === 0) return refs;
+  const numbers = new Set(moved.map((entry) => entry?.ref).filter((ref) => typeof ref === "string" && ref.length > 0));
+  for (const item of await listItems(workspace.workDir)) {
+    if (item.parent != null && !isLiveStreamRow(item) && numbers.has(item.parent)) refs.push(item.ref);
   }
   return refs;
 }
@@ -621,6 +645,18 @@ export const EFFECTS = Object.freeze({
       apply: remapControlFactRefs,
       applies: meshFactsApply,
     }),
+    Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+  ]),
+  // milestone 127 / ADR-004 §3-§4 — the ARCHIVE cascade, raised by
+  // effects/stream-transitions.mjs's transitionStreamArchived. An archive is the reindex
+  // cascade with LESS in it: no ref changes, so nothing is remapped — the run records, the
+  // Notion sidecar, the assignment rows and the item branches all key on refs that still
+  // mean what they meant. The ONE consequence is the publish: the snapshot re-derives every
+  // row from disk (three roots, 127/01), so the moved driver and its stories are upserted at
+  // the SAME refs with their NEW `source_path`, and the operator's reach is exactly those
+  // refs (operatorRefsFor + the stories under them) — the fleet cache follows the move on the
+  // tick after it rather than whenever a later publish happened to run.
+  "stream.archived": Object.freeze([
     Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
   ]),
   // m42 wave (d) leg d3 — every assignment state change flows through

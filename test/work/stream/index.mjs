@@ -94,6 +94,13 @@ import { workBacklogArchiveEnumerateTests } from "./work-backlog-archive-enumera
 // work-insert-top-level-places exports (spread above, beside the delivered insert assertions they
 // must keep green); the textual halves (FF-12703/12704) live in test/arch/work.
 import { workPromoteMintsTheNumberTests } from "./work-promote-mints-the-number.test.mjs";
+// milestone 127 / story 03 — archive is a move: the verbatim MOVE driven over the three-root fixture
+// extended with the archive fixture (tasks 00-04 — the verb and its coded refusals, the rename, the
+// crossing-link rewrite and its one invariant, `--done` behind its confirm gate, the `stream.archived`
+// cascade through the seam with the fleet cache following, the two path-readers resolving by ref,
+// and the `/aof:archive` wrapper beside the one `verify.md` line). The textual half (FF-12705) lives
+// in test/arch/work.
+import { workArchiveIsAMoveTests } from "./work-archive-is-a-move.test.mjs";
 
 export const tests = [
   // milestone 41 / story 01 — reindex-engine task traceability
@@ -144,4 +151,6 @@ export const tests = [
   ...workBacklogArchiveEnumerateTests,
   // milestone 127 / story 02 — promote mints the number (tasks 00-02 + task 04's promote refusal)
   ...workPromoteMintsTheNumberTests,
+  // milestone 127 / story 03 — archive is a move (tasks 00-04)
+  ...workArchiveIsAMoveTests,
 ];

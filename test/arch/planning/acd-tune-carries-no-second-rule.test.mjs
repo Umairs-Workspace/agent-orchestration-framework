@@ -1,10 +1,13 @@
 // FF-6201 — tune reaches the acceptor through the deferred registry and carries no ruling rule.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
+import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { RULING_REFUSAL_ORDER } from "../../../src/commands/acceptor.mjs";
+import { findWork } from "../../../src/work.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const facePath = fileURLToPath(new URL("../../../src/commands/tune.mjs", import.meta.url));
@@ -18,7 +21,14 @@ const family = [
   "src/work-tune/distance.mjs",
 ];
 const familyText = family.map((file) => readFileSync(`${root}/${file}`, "utf8")).join("\n");
-const story = readFileSync(`${root}/wiki/work/62_milestone_self-improvement-loop/stories/04_story_the-tuners-face/STORY.md`, "utf8");
+// milestone 127 / ADR-004 §3 — the story this control reads is resolved BY REF at run time, never
+// by a literal path: its milestone (62, done) is archived by `aof work archive`, and a reader that
+// spelled the folder would go red on the move. `findWork` answers wherever the folder sits.
+const storyText = async () => {
+  const [row] = await findWork(`${root}wiki/work`, "62/04");
+  assert.ok(row?.dir, "story 62/04 resolves through findWork (live or archived)");
+  return readFile(path.join(row.dir, "STORY.md"), "utf8");
+};
 
 export const archTests = [
   {
@@ -57,7 +67,8 @@ export const archTests = [
   },
   {
     name: "architecture: FF-6201 story 62/04 writes no acceptor-owned module",
-    run: () => {
+    run: async () => {
+      const story = await storyText();
       const files = story.match(/^files:\s*\[([^\]]*)\]/mu)?.[1] ?? "";
       assert.doesNotMatch(files, /src\/commands\/acceptor\.mjs|src\/work-acceptor\//u);
     },

@@ -148,6 +148,8 @@ import { insertStoryCommand } from "./commands/insert-story.mjs";
 import { insertChoreCommand } from "./commands/insert-chore.mjs";
 // work:promote — milestone 127 / ADR-003 — see ./commands/promote.mjs's header.
 import { promoteCommand } from "./commands/promote.mjs";
+// work:archive — milestone 127 / ADR-004 — see ./commands/archive.mjs's header.
+import { archiveCommand } from "./commands/archive.mjs";
 import { promoteGapToChoreCommand } from "./commands/promote-gap-to-chore.mjs";
 // work:promote-finding — see ./commands/promote-finding-to-chore.mjs's header.
 import { promoteFindingToChoreCommand } from "./commands/promote-finding-to-chore.mjs";
@@ -265,6 +267,7 @@ const COMMANDS = [
   insertStoryCommand,
   insertChoreCommand,
   promoteCommand,
+  archiveCommand,
   promoteGapToChoreCommand,
   promoteFindingToChoreCommand,
   upgradeCommand,
