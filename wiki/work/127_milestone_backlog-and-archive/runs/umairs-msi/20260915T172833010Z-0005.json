@@ -1,9 +1,9 @@
 {
-  "runId": "20260915T160008215Z-0004",
+  "runId": "20260915T172833010Z-0005",
   "itemRef": "127",
-  "state": "done",
+  "state": "running",
   "attempt": 1,
-  "outcome": "done",
+  "outcome": null,
   "sessionId": null,
   "brief": {
     "loop": {
@@ -19,16 +19,16 @@
     },
     "wave": {
       "members": [
-        "127/03"
+        "127/04"
       ],
-      "baseCommit": "1736b8142e758de2ec344783a1683dd8c267da80",
+      "baseCommit": "a79b464292dc5810eb6061ea60386eef653a5f68",
       "bound": 3
     }
   },
-  "createdAt": "2026-09-15T16:00:08.215Z",
-  "updatedAt": "2026-09-15T17:28:32.578Z",
+  "createdAt": "2026-09-15T17:28:33.010Z",
+  "updatedAt": "2026-09-15T17:28:33.010Z",
   "failureReason": null,
-  "heartbeatAt": "2026-09-15T17:25:25.758Z",
+  "heartbeatAt": null,
   "retryOf": null,
   "reclaimedAt": null,
   "node": "umairs-msi",
