@@ -1468,4 +1468,88 @@ export const loopCommandWaveTests = [
       assert.ok(LOOP_STOPS.includes("lane-open-failed"));
     },
   },
+  // ── 129/07 task 01 — the loop passes its own lane bound, when set ────────────
+  //
+  // `…/07_story_the-loop-settings-are-self-contained/tasks/01_the-lane-bound-narrows.feature` —
+  // the loop-side rows. The dispatch-side rows are in `test/work/lifecycle/work-dispatch-lanes`.
+  ...[
+    [undefined, null, 3],
+    [1, 1, 1],
+    [5, 5, 3],
+    [0, null, 3],
+  ].map(([configured, passed, narrated]) => ({
+    name: `129/07 task01 the loop passes its key as the bound only when it is set [work.loop.dispatch.concurrency ${configured === undefined ? "unset" : configured} → ask ${passed == null ? "carries no bound" : `bound: ${passed}`}, narrated ${narrated}]`,
+    run: async () => {
+      await withLaneRepo(async (fx) => {
+        const registry = scriptedRegistry();
+        const { state, report } = await runWave(fx, { child: fakeLaneChild(fx), rubric: stubRubric(emits(passingTap())), registry });
+        assert.equal(state.state, "done", report.lines.join("\n"));
+        const list = registry.of("work:dispatch").filter((call) => call.input.list === true);
+        const refs = registry.of("work:dispatch").filter((call) => Array.isArray(call.input.refs));
+        assert.ok(list.length > 0 && refs.length > 0, "the wave asked --list and { refs }");
+        for (const call of [...list, ...refs]) {
+          if (passed == null) assert.equal(Object.hasOwn(call.input, "bound"), false, `${JSON.stringify(call.input)} carries no bound — unset is byte-identical`);
+          else assert.equal(call.input.bound, passed, `${JSON.stringify(call.input)} carries bound ${passed}`);
+        }
+        const line = report.lines.find((text) => text.startsWith("Wave 1 — dispatching"));
+        assert.ok(line != null, "the wave narrated");
+        assert.match(line, new RegExp(`\\(bound ${narrated}\\)`, "u"), `the narrated bound is the effective one: ${line}`);
+        const waveRuns = (await laneRunsOf(fx, "07")).filter((run) => run.brief?.wave != null);
+        assert.ok(waveRuns.length > 0, "a wave run was minted");
+        for (const run of waveRuns) assert.equal(run.brief.wave.bound, narrated, "the wave run's brief carries the effective bound");
+      }, { stories: ["01", "03"], config: configured === undefined ? {} : { loop: { dispatch: { concurrency: configured } } } });
+    },
+  })),
+  {
+    name: "129/07 task01 a narrowed loop runs one lane at a time over a two-member wave, and an unset key runs both at once",
+    run: async () => {
+      // The first child HOLDS until the second has started (or a bounded wait elapses): each lane's
+      // prelude (mint, baseline) is serialised and outlasts a short dwell on this machine, so a
+      // fixed dwell cannot tell "never overlap" from "the second was late" — a held first child can.
+      const measure = async (config) => {
+        let inFlight = 0;
+        let peak = 0;
+        let outcome = null;
+        await withLaneRepo(async (fx) => {
+          const secondStarted = deferred();
+          const settle = async (hold) => {
+            inFlight += 1;
+            peak = Math.max(peak, inFlight);
+            if (hold) await Promise.race([secondStarted.promise, new Promise((resolve) => setTimeout(resolve, 1500))]);
+            else { secondStarted.resolve(); await new Promise((resolve) => setTimeout(resolve, 20)); }
+            inFlight -= 1;
+            return undefined;
+          };
+          const child = fakeLaneChild(fx, { answers: { "07/01": () => settle(true), "07/03": () => settle(false) } });
+          const { state, report } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), registry: scriptedRegistry() });
+          outcome = { state: state.state, calls: child.calls.length, status01: await statusOf(path.join(fx.storyDir("07/01"), "STORY.md")), status03: await statusOf(path.join(fx.storyDir("07/03"), "STORY.md")), lines: report.lines, lanes: await git(["worktree", "list", "--porcelain"], fx.root) };
+        }, { stories: ["01", "03"], config });
+        return { ...outcome, peak };
+      };
+      const narrowed = await measure({ loop: { dispatch: { concurrency: 1 } } });
+      assert.equal(narrowed.state, "done", narrowed.lines.join("\n"));
+      assert.equal(narrowed.calls, 2, "both members were driven");
+      assert.equal(narrowed.peak, 1, "under a lane bound of 1 the two drives never overlap");
+      assert.equal(narrowed.status01, "done", "the loop ran through VERIFY: the story is accepted");
+      assert.equal(narrowed.status03, "done");
+      assert.doesNotMatch(narrowed.lanes.stdout, /dispatch-07-0[13]/u, "both lanes cleaned up");
+      const wide = await measure({});
+      assert.equal(wide.state, "done", wide.lines.join("\n"));
+      assert.equal(wide.peak, 2, "…and with the key unset both lanes run at once under the pool's 3");
+    },
+  },
+  {
+    name: "129/07 task01 the family spells neither key and holds no literal; the shell reads the lane bound once through the home",
+    run: async () => {
+      for (const rel of ["src/loop/wave.mjs", "src/loop/cycle.mjs", "src/loop/child-drive.mjs", "src/commands/loop.mjs"]) {
+        const code = (await readFile(new URL(`../../${rel}`, import.meta.url), "utf8")).replace(/\/\/[^\n]*/gu, "");
+        assert.doesNotMatch(code, /work\.loop\.dispatch|work\.dispatch|dispatch\??\.concurrency/u, `${rel} spells neither key`);
+      }
+      const shell = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      assert.equal((shell.match(/\bloopDispatchConcurrencyFromConfig\(/gu) ?? []).length, 1, "the shell calls the home's resolver exactly once");
+      assert.match(shell, /import \{[^}]*\bloopDispatchConcurrencyFromConfig\b[^}]*\} from "\.\.\/loop-bounds\.mjs"/u, "…imported from the bounds home");
+      const wave = await readFile(new URL("../../src/loop/wave.mjs", import.meta.url), "utf8");
+      assert.doesNotMatch(wave, /loop-bounds\.mjs/u, "the wave module imports nothing from the home; the number arrives on `bounds`");
+    },
+  },
 ];

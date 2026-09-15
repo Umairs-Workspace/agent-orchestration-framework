@@ -298,6 +298,62 @@ doc: verification
   `pending` warnings of the four prior accepts are gone, every declared control resolves.
 - **No `@manual`, no `@uat`, no UI** — the four features are `@executable` alone.
 
+### `129/07` — the loop's settings are self-contained
+
+- **Scoped from the operator's finding at this door** (`F-55`, 2026-09-14/15): the configuration
+  surface was not self-contained and refine/continue could not run in different role modes. The
+  shape was agreed on 2026-09-15 and built solo in one session, three lenses inline; 06's live run
+  now depends on it so the run exercises the final surface.
+- **`node scripts/test.mjs --only` over the story's nine declared suites and the thirty-two
+  standing controls and loop suites the change touches** (`loop-bounds`, `acd-loop-cap-single-home`,
+  `acd-loop-concurrency-single-home`, `acd-prompt-bounds-name-their-home`, `autonomous-shell-out-prompt`,
+  `drive-command-phase-drivers`, `work-dispatch-lanes`, `loop-command-wave`,
+  `acd-dispatch-bound-single-home`; the 05 controls, `acd-gate-propagation-never-discards`,
+  `acd-loop-probe-contract`, `acd-loop-suite-registration`, `acd-test-suite-registration`,
+  `acd-audit-never-imports-project-code`, `acd-slot-before-admission`, `slots-before-work`,
+  `lane-is-local-slot`, `work-loops-resolved-ceilings`, `work-loops-home-and-delivery`,
+  `loop-record-command`, `acd-trial-metric-declared`, `acd-no-uncapped-framework-loop`,
+  `acd-loop-timescale-comparability`, `acd-assignment-resolves-to-a-loop-call`,
+  `acd-progress-ledger-consumed`, `grade-waits-without-blocking`, `loop-command-sequencing` /
+  `-resume` / `-reconcile` / `-stops` / `-gate` / `-narration` / `-probe`,
+  `acd-loop-state-rides-the-run-record`, `acd-loop-narrates-in-flight`, `command-core-contract`,
+  `acd-generated-stamp`, `acd-source-directory-budget`, `acd-number-null-safe`) under an isolated
+  `AOF_GLOBAL_HOME` — **675 / 1**, every registered case reported; the one red is `FF-5307`'s `ui/`
+  digest, inherited (`git status -- ui/` empty). **Story-attributable: 73 cases** named `129/07
+  task0N` — task 00: 12 + 15 + 11 + 1 + 9 + 1 rows (the twelve keys, the value resolvers, the config
+  resolvers, `loopAgentModeFromConfig`, the range probe, the deadline policy / no-twin read) plus the
+  three controls' own legs and self-checks; task 01: 11 narrowing rows, admission under the narrowed
+  bound, the schema, 4 loop rows (the ask carries `bound` only when set; narrated and recorded
+  effective bound), the serial wave (peak 1 under a lane bound of 1, peak 2 unset), the family
+  sweep, the ADR-006 read; task 02: 9 drive rows each also read off a REAL `aof work drive <phase>
+  03/01 --dry-run --json` child, the two-phase independence, the launched directive, the two
+  prompts' `--orchestrated` + key + fallback across all three renders, the autonomous paragraph's
+  keys / no cardinal / eight-key set, the ADR-001 read. `verifies → tasks/00`–`02`.
+- **The re-pointed standing controls, red-probed at this accept** (scratchpad `red-probe-07.mjs`,
+  edit → `--only` → restore → sha256; every subject restored byte-identical): FF-12901 leg 2, a
+  `loopConfig(ws)?.dispatch?.concurrency` read planted in `src/loop/wave.mjs` → `src/loop/wave.mjs
+  reads \`work.loop.dispatch.concurrency\` — src/loop-bounds.mjs is the loop key's only reader (129/07;
+  69/ADR-001)`; FF-12901 leg 1, `"work.loop.lanes"` added to the value map → `a key outside the
+  twelve: work.loop.lanes`; FF-6901 + 65's control, `workspace?.config?.work?.dispatch?.concurrency`
+  planted in the home → `the leaf still annexes neither the cap nor dispatch concurrency` and
+  `src/loop-bounds.mjs reads the configured key \`work.dispatch.concurrency\` directly` (FF-6111
+  red beside them, collateral); FF-7101, `work.loop.agents.refine.mode` respelled `…refine.wrong` in
+  `refine.md` → `names \`work.loop.agents.refine.wrong\`, which LOOP_BOUND_VALUE_RESOLVERS does not
+  carry` — the dotted key reported WHOLE. `verifies → tasks/00 "FF-6901 … FF-12901 … FF-7101"`.
+- **Read at the source.** `LOOP_BOUND_CONFIG_KEYS.length` 12 with indices 9–11 the three;
+  `aof work update --dry-run` → 0 `Would update` after the nine renders; the manifest regenerated
+  through `scripts/generate-bundle-manifest.mjs`; `aof work drive continue 129/06 --dry-run --json`
+  on THIS repo (no `work.loop.agents` key) → `/aof:continue 129/06` — unset is byte-identical.
+  `src/loop/wave.mjs` imports nothing from the bounds home; `src/commands/loop.mjs` calls
+  `loopDispatchConcurrencyFromConfig(` once.
+- **`aof work validate 129/07` → PASS.** `aof work loops validate` → 0 errors. `aof work doctor
+  129/07` and `aof work doctor 129` → no `control-unresolved`, no `register-duplicate-id`.
+- **Contract delta, ratified at the review close (no `.feature` edited):** task 00 named three
+  standing controls; a fourth, 65's `acd-dispatch-bound-single-home` (whose detector FF-6907
+  reuses), scans the same substring and was re-pointed the same way with a self-check; its file
+  joined `files:` (`F-56`).
+- **No `@manual`, no `@uat`, no UI** — the three features are `@executable` alone.
+
 ### `129/06` — the second live run (HELD `in-review`, 2026-09-14)
 
 The story's one task is `@manual` and names the operator as its performer: one real `aof work loop
@@ -332,6 +388,9 @@ accept and are NOT yet met; the procedure below is pending, and the readings lan
   `OUTCOME.md` are authored until the accepting run. The milestone door additionally waits on the
   operator's sign-off of the configuration surface (`STATE.md`, 2026-09-14) and on
   `aof work regression-gate 129`.
+  **2026-09-15:** 06's `depends:` is now `[7]` — the live run runs over the surface `129/07`
+  delivered (the loop's own lane bound and per-phase modes), and every precondition above is
+  re-measured at its accept; the deployed payload is still the 2026-09-12 build.
 
 ## Fitness functions
 
@@ -341,7 +400,7 @@ accept and are NOT yet met; the procedure below is pending, and the readings lan
 
 | id | enforced by | result | red probe |
 |---|---|---|---|
-| FF-12901 | `test/arch/loop/acd-loop-concurrency-single-home.test.mjs` | green (3 / 3, 2026-09-14) | Leg 1: `"work.loop.lanes": resolveLanes` added to `LOOP_BOUND_VALUE_RESOLVERS` (`src/loop-bounds.mjs`) → `LOOP_BOUND_VALUE_RESOLVERS carries exactly the eight FF-6901 keys plus work.loop.concurrency — a key outside the nine: work.loop.lanes (a second concurrency number is the twin 129/ADR-006 refuses)`; collateral `61/FF-6111` red (`a value-shaped resolver cannot name a key its config-shaped sibling does not`). Leg 2: `"refine_first"` spelled in a branch of `src/loop/wave.mjs` → `src/loop/wave.mjs spells the mode literal "refine_first" — the mode has one home (src/loop-bounds.mjs) and one branch (src/work/loop.mjs's decideLoopPhase); a third spelling is a second home (129/ADR-001 §1)`. Restored byte-identical. |
+| FF-12901 | `test/arch/loop/acd-loop-concurrency-single-home.test.mjs` | green (3 / 3, 2026-09-14) | Leg 1: `"work.loop.lanes": resolveLanes` added to `LOOP_BOUND_VALUE_RESOLVERS` (`src/loop-bounds.mjs`) → `LOOP_BOUND_VALUE_RESOLVERS carries exactly the eight FF-6901 keys plus work.loop.concurrency — a key outside the nine: work.loop.lanes (a second concurrency number is the twin 129/ADR-006 refuses)`; collateral `61/FF-6111` red (`a value-shaped resolver cannot name a key its config-shaped sibling does not`). Leg 2: `"refine_first"` spelled in a branch of `src/loop/wave.mjs` → `src/loop/wave.mjs spells the mode literal "refine_first" — the mode has one home (src/loop-bounds.mjs) and one branch (src/work/loop.mjs's decideLoopPhase); a third spelling is a second home (129/ADR-001 §1)`. Restored byte-identical. **Re-observed at the `129/07` accept** after the control's amendment (twelve keys; the loop key's one reader): leg 1, `"work.loop.lanes"` added → `a key outside the twelve: work.loop.lanes`; leg 2, a `loopConfig(ws)?.dispatch?.concurrency` read planted in `wave.mjs` → `src/loop/wave.mjs reads \`work.loop.dispatch.concurrency\` — src/loop-bounds.mjs is the loop key's only reader (129/07; 69/ADR-001)`. Restored byte-identical. |
 | FF-12902 | `test/arch/loop/acd-loop-family-boundary.test.mjs` | green (3 / 3 + self-check) | Import leg: `driveInteractiveClaudeSession` imported into `wave.mjs` → `src/loop/wave.mjs imports ../agent-session-driver.mjs (→ src/agent-session-driver.mjs) — the loop family never loads the session driver; a lane's drive is a child process through src/loop/child-drive.mjs (129/ADR-005 §5)`. Shell leg: `shell: true` in `child-drive.mjs`'s `runBounded(` options → `src/loop/child-drive.mjs passes a \`shell:\` option — the seam takes an argument vector and no shell reads it (129/ADR-005 §1: no shell, ever)`. Restored byte-identical. |
 | FF-12906 | `test/arch/loop/acd-loop-family-boundary.test.mjs` | green (2 / 2 + self-check) | `partitionReadySetByDeclaredFiles` imported from `../ready-wave.mjs` into `wave.mjs` → `src/loop/wave.mjs imports ../ready-wave.mjs (→ src/ready-wave.mjs) — the wave is read off work:next's answer and never recomputed (129/ADR-001 §3, 71/ADR-006)`. Restored byte-identical. |
 | FF-12903 | `test/arch/loop/acd-lane-records-and-the-declaration.test.mjs` | green (2 / 2 + self-check) | `openLane`'s `resolveRefInWorktree(primaryRoot, primaryWorkDir, lanePath, ref)` replaced by `resolveItemExact(ctx, ref)` (`wave.mjs`) → `src/loop/wave.mjs: resolveItemExact( in openLane is outside mintWaveRun — the primary's resolver serves the wave run's mint and nothing else on the build path`. Restored byte-identical. |
@@ -420,6 +479,9 @@ this accept; ids allocated here, at the moment of landing.
 | F-52 | FF-12907's `loop: {` construction check is module-wide over the three-module family; the pass-through count was already scoped to lane-brief functions at the build. | test-shape | low | non-blocker, closed by ruling: the fixture leg and the scoped pass-through count both catch the shape a lane mint could take; the module-wide construction leg is a belt over a family that ships three modules, and is scoped when a fourth lands. | `129/05` | closed |
 | F-53 | The red-probe runner (edit → run under a fresh home → restore → sha256) lived in the build session's scratchpad and again in this accept's; nothing shipped lets `aof:verify` re-observe a register row's probe after the bytes move (68's R8). | process-gap | low | non-blocker: new acceptance criteria — a `scripts/red-probe.mjs` that performs a register row's named probe and restores the bytes is a story shape for the operator, not created here. | operator (future item) | open |
 | F-54 | Two controls were blind at first contact: FF-12903's structural leg answered the register's probe with a bare `NOT FOUND` (the non-vacuity guard fired ahead of the ownership rule when the call was REPLACED, not removed) and its fixture leg judged the wave's END state before its spawn-time observations; FF-12907's pass-through count was module-wide, so the wave run's own pass-through hid the lane mint's removal. | test-shape | medium | fixed at the build (both findings now name both facts; observations judged before end state; count scoped to lane-brief functions); carried to the retrospective as the lesson — a guard and a rule share a subject, and a fixture leg judges what it observed before what it ended on. | retrospective | closed |
+| F-55 | The configuration surface delivered by 01–05 was not self-contained: the loop honoured `work.loop.concurrency` alone, its lane bound was the workspace's `work.dispatch.concurrency` with no loop-scoped value, and the role mode of every driven phase was the single `work.agents.mode` — refine and continue could not run in different modes, and a solo workspace could not run an orchestrated loop phase. Raised by the operator at this door (2026-09-14: "the settings need to be self-contained … refine and continue independent … fall back to the workspace settings when undefined"). | design-gap | blocker (for the milestone door) | fixed as story `129/07` (scoped 2026-09-15, shape agreed by the operator): `work.loop.dispatch.concurrency` and `work.loop.agents.{refine,continue}.mode` join the bounds home, each `null` when unset and falling back to its workspace twin at the consumer; the lane bound narrows the pool's through `work:dispatch { bound }`; the phase drive composes `--solo` / `--orchestrated`; ADR-001 §5 and ADR-006 amended. 06's live run re-pointed to depend on 07. The silent fallback on a mis-spelled value (ADR-001 §1's design) is named as a separate decision in `m129/07/OUTCOME.md` `## Gaps`, not taken. | `129/07` | closed |
+| F-56 | Task 00's contract named three standing controls that scan the `dispatch.concurrency` substring (FF-6901, FF-12901 leg 2, FF-7101); the lane found a fourth — 65's `acd-dispatch-bound-single-home`, whose `boundSiteOffenders` FF-6907 reuses — naming the bounds home a second site of the pool key. | contract-gap | low | fixed in item at the build: the control erases the loop key's own two forms (`loopConfig(…)?.dispatch?.concurrency`, `loop.dispatch.concurrency`) before asking the pool pattern, with a self-check that plants both; the file joined `files:`; ratified at the review close as the build delta, no `.feature` edited. Retro R1. | `129/07` | closed |
+| F-57 | The first "unset key runs both lanes at once" leg gave each fake child a 40 ms dwell and measured a peak of 1 — each lane's prelude is serialised and outlasts the dwell here, so the ruler measured the fixture's latency, not the product's concurrency. | test-shape | low | fixed in item at the build: the first child holds until the second has started (bounded 1.5 s); the narrowed leg keeps its plain dwell because admission itself forbids the overlap. Retro R2. | `129/07` | closed |
 
 ## Accept decision
 
@@ -529,3 +591,24 @@ preconditions were measured at this accept and are not yet met — 05's work unc
 payload pre-129), the configuration surface is held for the operator's own sign-off, and
 `aof work regression-gate 129` has not run. `F-09` stands at the door (the architect's, beside
 `lanes.mjs`), `F-15` at 06's live run.
+
+
+**`129/07` ACCEPTED** — 2026-09-15. The story's lane is green where it is the story's (73 pass /
+0 fail across its 29 scenarios and every Examples row, one named case each — several read off a
+real `aof work drive … --dry-run --json` child — in 675 / 1 over the nine declared suites and the
+thirty-two standing controls and loop suites the change touches; the one red is `FF-5307`'s `ui/`
+digest, inherited and untouched), the four re-pointed controls were each observed RED by this
+session on the leg the story named and restored byte-identical, the twelve keys, the renders, the
+manifest, the lock and the unset-key drive on this repo were read at the source, `aof work validate
+129/07` reports PASS, `aof work loops validate` reports no error, `aof work doctor 129/07` and
+`aof work doctor 129` report no `control-unresolved` at either severity, and no blocker finding
+against this story is open: `F-55` (the operator's finding this story exists for) closed by the
+delivery, `F-56` and `F-57` fixed in item at the build and carried to the story retrospective.
+The contract delta (a fourth standing control) is ratified at this accept with no `.feature`
+edited.
+
+The milestone stays open: `129/06` is unaccepted — its `@manual` live run now runs over THIS
+surface (its `depends:` is `[7]`), and its preconditions are re-measured at that accept — and
+`aof work regression-gate 129` has not run. The configuration surface the operator held the door
+on is delivered here; whether it passes their sign-off is the operator's word, recorded in
+`STATE.md` when given.

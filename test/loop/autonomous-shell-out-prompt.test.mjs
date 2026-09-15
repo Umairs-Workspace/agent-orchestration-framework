@@ -379,7 +379,7 @@ export const autonomousShellOutPromptTests = [
     },
   },
   {
-    name: "autonomous-shell-out/survivors: range, solo, ship and max-attempts keep their admitted effects while prompt-owned config narrows to two keys",
+    name: "autonomous-shell-out/survivors: range, solo, ship and max-attempts keep their admitted effects while prompt-owned config names the loop surface and its twins",
     run: () => {
       const { member } = bundleFacts();
       assert.equal(
@@ -399,7 +399,7 @@ export const autonomousShellOutPromptTests = [
       assert.match(text, /after the shell reports a milestone accepted, run `aof:code-review <NN>`/);
       assert.match(text, /A halt never ships an unaccepted milestone/);
       const configKeys = [...text.matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
-      assert.deepEqual([...new Set(configKeys)].sort(), ["work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.loop.concurrency"]);
+      assert.deepEqual([...new Set(configKeys)].sort(), ["work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.dispatch.concurrency", "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency"], "129/07: the loop's three keys and their two workspace twins join the mode");
     },
   },
   {
@@ -536,6 +536,60 @@ export const autonomousShellOutPromptTests = [
       for (const test of autonomousShellOutPromptTests) {
         assert.ok(registered.has(test.name), `registered: ${test.name}`);
       }
+    },
+  },
+  // ── 129/07 task 02 — the prompts carry the surface ───────────────────────────
+  //
+  // `…/07_story_the-loop-settings-are-self-contained/tasks/02_the-drive-carries-the-phase-mode.feature`
+  // — the prompt-side rows (the drive's rows are in `drive-command-phase-drivers`).
+  ...["refine", "continue"].map((prompt) => ({
+    name: `129/07 task02 ${prompt}.md parses --orchestrated as --solo's twin and names its loop key with the fallback`,
+    run: () => {
+      const bundle = loadBundle();
+      const member = bundle.resources.find((entry) => entry.id === prompt);
+      assert.ok(member, `${prompt} is a bundle member`);
+      assert.match(member.argumentHint, /--solo \| --orchestrated/u, "the argument hint names both, as one choice");
+      const text = flattened(member.body);
+      // continue.md carries two <config> blocks; the execution-mode paragraph is read off the whole body.
+      const config = text;
+      assert.match(config, /`--orchestrated` OVERRIDES a solo config to orchestrated for this run/u);
+      assert.match(config, /The two together are contradictory: STOP before any role runs/u);
+      assert.match(config, new RegExp(`work\\.loop\\.agents\\.${prompt}\\.mode`, "u"), "the loop key the drive composes the flag from is named");
+      assert.match(config, /composes nothing when it is unset, so a loop-driven \w+ falls back to `work\.agents\.mode`/u, "…with its fallback");
+      assert.match(config, /src\/loop-bounds\.mjs/u, "…and its home");
+      for (const runtime of ["claude", "codex", "opencode"]) {
+        const rendered = renderBundleOutputs(bundle, { runtimes: [runtime] }).find((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
+        assert.ok(rendered, `${prompt} renders for ${runtime}`);
+        const onDisk = readFileSync(path.join(repoRoot, rendered.path), "utf8");
+        assert.ok(onDisk.includes("--orchestrated"), `${rendered.path} on disk carries --orchestrated`);
+        assert.ok(onDisk.includes(`work.loop.agents.${prompt}.mode`), `${rendered.path} on disk names the key`);
+      }
+    },
+  })),
+  {
+    name: "129/07 task02 the autonomous prompt names the three keys and their fallbacks beside the mode, states no cardinal for them, and its key set is the eight",
+    run: async () => {
+      const { member } = bundleFacts();
+      const text = flattened(member.body);
+      const paragraphs = String(member.body).replace(/<!--[^]*?-->/g, " ").split(/\n\s*\n/u).map((p) => p.replace(/\s+/g, " ").trim());
+      const paragraph = paragraphs.filter((p) => p.includes("work.loop.concurrency"));
+      assert.equal(paragraph.length, 1, "exactly one paragraph names the mode");
+      for (const key of ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode", "work.dispatch.concurrency", "work.agents.mode"]) {
+        assert.ok(paragraph[0].includes(key), `the paragraph names ${key}`);
+      }
+      assert.match(paragraph[0], /falls back to its workspace twin/u);
+      const { sentences, statedValues, unitOf } = await import("../arch/command/acd-prompt-bounds-name-their-home.test.mjs");
+      for (const sentence of sentences(paragraph[0])) {
+        for (const key of ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode"]) {
+          if (sentence.includes(key)) assert.deepEqual(statedValues(sentence, unitOf(key)), [], `no cardinal is stated for ${key}: ${sentence}`);
+        }
+      }
+      assert.equal((text.match(/aof work loop/g) ?? []).length, 2, "the family count is unchanged");
+      const configKeys = [...text.matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
+      assert.deepEqual([...new Set(configKeys)].sort(), [
+        "work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.dispatch.concurrency",
+        "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency",
+      ]);
     },
   },
 ];

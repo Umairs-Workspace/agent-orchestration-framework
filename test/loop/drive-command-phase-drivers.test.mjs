@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readdir, rm, utimes, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
@@ -8,6 +8,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import {
   composeFixInput,
+  phaseCommand,
+  PHASE_MODE_FLAGS,
   continueDriverCommand,
   refineDriverCommand,
   verifyDriverCommand,
@@ -19,6 +21,7 @@ import { spawnLaneDrive } from "../../src/loop/child-drive.mjs";
 import { setSeaSentinelForTest } from "../../src/asset-base.mjs";
 import { DEFAULT_DEADLINE_MS } from "../../src/work-audit/spawn.mjs";
 import { parseSpecArgv } from "../../src/spine/face.mjs";
+import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 import { transitionRunStart } from "../../src/effects/run-transitions.mjs";
 import { fixTransport } from "../../src/commands/loop.mjs";
 import { SOURCE_DIRECTORY_EXEMPTIONS, FLAT_LAYER_THRESHOLD } from "../arch/testing/acd-source-directory-budget.test.mjs";
@@ -1535,6 +1538,92 @@ export const driveCommandPhaseDriverTests = [
         );
         assert.equal(double.calls.length, 0, `${key}: the spawn double was never called`);
       }
+    },
+  },
+  // ── 129/07 task 02 — the drive carries the phase mode ────────────────────────
+  //
+  // `…/07_story_the-loop-settings-are-self-contained/tasks/02_the-drive-carries-the-phase-mode.feature`.
+  // The flag is composed from `work.loop.agents.<phase>.mode` through the bounds home; unset is
+  // byte-identical to HEAD (no flag), so the prompt's own `work.agents.mode` read is the fallback.
+  ...[
+    ["refine", {}, "/aof:refine 03/01"],
+    ["refine", { loop: { agents: { refine: { mode: "solo" } } } }, "/aof:refine 03/01 --solo"],
+    ["refine", { loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
+    ["refine", { loop: { agents: { continue: { mode: "solo" } } } }, "/aof:refine 03/01"],
+    ["continue", { loop: { agents: { continue: { mode: "solo" } } } }, "/aof:continue 03/01 --solo"],
+    ["continue", { loop: { agents: { refine: { mode: "solo" } } } }, "/aof:continue 03/01"],
+    ["continue", { loop: { agents: { continue: { mode: "Solo" } } } }, "/aof:continue 03/01"],
+    ["continue", { agents: { mode: "solo" } }, "/aof:continue 03/01"],
+    ["verify", { loop: { agents: { continue: { mode: "solo" } } } }, "/aof:verify 03/01"],
+  ].map(([phase, work, command]) => ({
+    name: `129/07 task02 the phase drive composes the flag from the loop key, and nothing when unset [${phase}, ${JSON.stringify(work)} → ${command}]`,
+    async run() {
+      const fx = await fixture();
+      try {
+        const driver = scriptedDriver();
+        const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, ...work } } };
+        const byPhase = { refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand };
+        const result = await byPhase[phase].run({ ref: "03/01", dryRun: true }, { workspace, agentSessionDriverOptions: driver.options });
+        assert.deepEqual(result, { ref: "03/01", phase, command });
+        assert.equal(driver.spawnCalls.length, 0);
+        // …and off a REAL child process, the config on disk: the CLI composes the same command.
+        await mkdir(path.dirname(fx.workspace.configPath), { recursive: true });
+        await writeFile(fx.workspace.configPath, `${JSON.stringify({ name: "drive-fixture", work: workspace.config.work }, null, 2)}\n`, "utf8");
+        const child = spawnSyncHardened(process.execPath, [ENTRY, "work", "drive", phase, "03/01", "--dry-run", "--json"], { cwd: fx.projectRoot, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME ?? await mkdtemp(path.join(tmpdir(), "aof-drive-home-")) } });
+        assert.equal(child.status, 0, `the child exited 0: ${child.stderr}`);
+        assert.equal(JSON.parse(child.stdout).command, command, "the real CLI composes the same command");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "129/07 task02 the two phases are independent — refine solo, continue orchestrated, under a solo workspace",
+    async run() {
+      const fx = await fixture();
+      try {
+        const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, agents: { mode: "solo" }, loop: { agents: { refine: { mode: "solo" }, continue: { mode: "orchestrated" } } } } } };
+        const refine = await refineDriverCommand.run({ ref: "03/01", dryRun: true }, { workspace });
+        const cont = await continueDriverCommand.run({ ref: "03/01", dryRun: true }, { workspace });
+        assert.equal(refine.command, "/aof:refine 03/01 --solo");
+        assert.equal(cont.command, "/aof:continue 03/01 --orchestrated");
+        assert.equal(phaseCommand("continue", "03/01", "orchestrated"), "/aof:continue 03/01 --orchestrated");
+        assert.equal(phaseCommand("continue", "03/01", null), "/aof:continue 03/01");
+        assert.equal(phaseCommand("continue", "03/01", "inline"), "/aof:continue 03/01", "a non-member composes no flag");
+        assert.deepEqual(PHASE_MODE_FLAGS, { solo: "--solo", orchestrated: "--orchestrated" });
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "129/07 task02 the composed command is what the driver is launched with",
+    async run() {
+      const fx = await fixture();
+      try {
+        const driver = scriptedDriver("done", undefined, "sess-1");
+        const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, loop: { agents: { continue: { mode: "solo" } } } } } };
+        await continueDriverCommand.run({ ref: "03/01" }, { workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() });
+        assert.equal(driver.spawnCalls.length, 1);
+        assert.ok(driver.typed[0].startsWith("/aof:continue 03/01 --solo"), `the typed directive carries the flag: ${driver.typed[0].slice(0, 60)}`);
+        const item = await resolveItemExact({ workspace: fx.workspace }, "03/01");
+        const runs = await readRuns(item);
+        assert.equal(runs.length, 1);
+        assert.equal(runs[0].brief.phase ?? runs[0].brief?.loop?.phase ?? "continue", "continue");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "129/07 task02 ADR-001 §5 records the amendment — the two phase keys, --orchestrated and the fallback to work.agents.mode, dated 2026-09-15",
+    async run() {
+      const adr = await readFile(new URL("../../wiki/work/129_milestone_loop-concurrency/ARCHITECTURE.md", import.meta.url), "utf8");
+      const start = adr.indexOf("## ADR-001");
+      const end = adr.indexOf("## ADR-002");
+      const body = adr.slice(start, end);
+      assert.ok(body.includes("AMENDED 2026-09-15 (129/07"), "a dated amendment");
+      for (const needle of ["work.loop.agents.refine.mode", "work.loop.agents.continue.mode", "--orchestrated", "read of `work.agents.mode` is the fallback"]) assert.ok(body.includes(needle), `the amendment names ${needle}`);
     },
   },
 ];

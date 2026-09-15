@@ -138,12 +138,16 @@ export function statedValues(sentence, unit) {
   return stated;
 }
 
+// A named key, read WHOLE — a dotted key (129/07: `work.loop.agents.refine.mode`) is one key,
+// never its first two segments (`work.loop.agents`), which no map carries.
+const KEY_RE = /work\.loop\.[A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z][A-Za-z0-9]*)*/gu;
+
 // ── the checker (pure over a supplied asset set, so mutations can be planted) ─
 export function boundStatementProblems(assets) {
   const problems = [];
   for (const { rel, text } of assets) {
     for (const sentence of sentences(text)) {
-      const named = [...new Set(sentence.match(/work\.loop\.[A-Za-z][A-Za-z0-9]*/gu) ?? [])];
+      const named = [...new Set(sentence.match(KEY_RE) ?? [])];
       if (named.length === 0) continue;
 
       // (a) — resolution, read from the leaf's own map.
@@ -232,6 +236,16 @@ export const archTests = [
         problems.some((problem) => problem.includes("work.loop.reviewRoundz") && problem.includes("LOOP_BOUND_VALUE_RESOLVERS")),
         `a renamed key is reported naming the asset and the unknown key\n${problems.join("\n")}`,
       );
+      // 129/07 — a DOTTED key is read whole: the real prompt's `work.loop.agents.refine.mode` resolves
+      // (never reported as `work.loop.agents`), and a wrong last segment is reported whole.
+      assert.ok(assets.some((asset) => asset.rel === "commands/refine.md" && asset.text.includes("work.loop.agents.refine.mode")), "commands/refine.md: NOT FOUND — the prompt does not name work.loop.agents.refine.mode");
+      const dotted = planted(assets, "commands/refine.md", (text) => text.replaceAll("work.loop.agents.refine.mode", "work.loop.agents.refine.wrong"));
+      const dottedProblems = boundStatementProblems(dotted);
+      assert.ok(
+        dottedProblems.some((problem) => problem.includes("names `work.loop.agents.refine.wrong`")),
+        `a dotted key is reported WHOLE\n${dottedProblems.join("\n")}`,
+      );
+      assert.ok(!dottedProblems.some((problem) => problem.includes("names `work.loop.agents`")), "…never truncated to its second segment");
     },
   },
   {

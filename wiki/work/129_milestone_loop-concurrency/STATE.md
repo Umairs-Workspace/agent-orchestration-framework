@@ -18,10 +18,25 @@ doc: state
 - [x] `03_story_the-lane-commits-and-merges-home` — done (built + reviewed 2026-09-13 under the cascade; three lenses + one delta round, 1 Blocker → 0; accepted 2026-09-13 by `aof:verify 129/03` — `VERIFICATION.md` `129/03`, `F-28`–`F-47`; `F-39`/`F-44` routed to 04, `F-47` an `aof test` item, `F-09` corrected)
 - [x] `04_story_the-wave-tick` — done (built + reviewed 2026-09-14, solo, resumed run `20260914T123830334Z-0001`; three lenses, one round, 0 Blockers; accepted 2026-09-14 by `aof:verify 129/04` — `VERIFICATION.md` `129/04`, `F-48`–`F-50`; `F-07`/`F-08`/`F-16`/`F-18`/`F-44` closed, `F-15` re-routed to 06, `F-39` to 05, `F-08`'s operational rule LIFTED, 03's composed-verbs gap discharged)
 - [x] `05_story_the-account-and-the-register` — done (built + reviewed 2026-09-14, solo, run `20260914T183538595Z-0000`; three lenses inline, 0 Blockers; accepted 2026-09-14 by `aof:verify 129/05` — `VERIFICATION.md` `129/05`, `F-51`–`F-54`; the seven register rows green with every probe re-observed; `F-17`/`F-23`/`F-39` closed, `F-51` fixed, `F-53` an operator item)
-- [ ] `06_story_the-second-live-run` — in-review (built 2026-09-14: the key set, the probe answers; the `@manual` live run is the operator's, preconditions measured at the 05 accept and NOT yet met — see the feedback entry)
+- [x] `07_story_the-loop-settings-are-self-contained` — done (scoped 2026-09-15 from the operator's sign-off finding `F-55`; built + reviewed solo, three lenses inline, 0 Blockers; accepted 2026-09-15 by `aof:verify` — `VERIFICATION.md` `129/07`, `F-55`–`F-57`; four standing controls re-pointed and red-probed)
+- [ ] `06_story_the-second-live-run` — in-review (built 2026-09-14: the key set, the probe answers; `depends: [7]` since 2026-09-15 so the `@manual` live run exercises the final surface; preconditions re-measured at its accept — see the feedback entries)
 
 ## Notes & decisions in flight
 
+- **The configuration surface, decided with the operator (2026-09-15).** At the 05 accept the
+  operator held the milestone door: "don't sign off this milestone until I sign off the
+  configuration surface (how to configure concurrency, defaults, etc)", and then named the shape —
+  the loop's settings SELF-CONTAINED under `work.loop`: `dispatch: {}` mirroring `work.dispatch`,
+  `agents: { refine: { mode }, continue: { mode } }` with refine and continue INDEPENDENT, and
+  each falling back to the workspace's `work.dispatch` / `work.agents` when undefined. The plan
+  (three keys in the bounds home answering `null` when unset; a lane bound that can only NARROW
+  the pool's through `work:dispatch { bound }`; the phase drive composing `--solo` /
+  `--orchestrated`, the latter joining `refine.md` / `continue.md` as `--solo`'s twin; a new
+  story `129/07` with 06 re-pointed to depend on it) was approved by the operator ("Looks good")
+  and is the ADR-001 §5 / ADR-006 amendments. Two things were flagged and left as separate
+  decisions, not taken: a warning on a mis-spelled value (the silent fallback is ADR-001 §1's
+  design) and operator-facing documentation of `work.loop.*` / `work.dispatch.*` (README, `docs/`
+  and the schema have none; the agent-facing prose in `autonomous.md` and the ADRs is all there is).
 - **PO ratification of ADR-001 §5 (refine, 2026-09-12).** The SPEC proposed that under
   `refine_first` execution follows `work.agents.mode` — `orchestrated` driving the milestone-level
   `/aof:continue <NN>` and `solo` driving a lane per member. The architect departed: the loop ALWAYS
@@ -77,6 +92,28 @@ doc: state
 
 <!-- Raw, attributed entries; triaged into VERIFICATION.md / RETROSPECTIVE.md at aof:verify. -->
 
+- **129/07 scoped, built, reviewed and accepted (product-owner + developer + three lenses inline,
+  solo, 2026-09-15).** Scoped from `F-55` after the operator named the shape (§ Notes). Built in
+  one pass: `src/loop-bounds.mjs` +66 (three keys, resolvers, `loopAgentModeFromConfig`),
+  `narrowDispatchBound` in `src/work/dispatch.mjs` + the `bound` input on `work:dispatch`, the shell's
+  `laneBound` → the wave's `laneBoundAsk` on both asks, `phaseCommand(phase, ref, mode)` in the
+  drive, `--orchestrated` in the two prompts, the autonomous paragraph, nine renders + manifest +
+  lock, ADR-001 §5 / ADR-006 amended. Lane **675 / 1** under an isolated home (the red is FF-5307's
+  `ui/` digest, inherited); **73 story-named cases**, nine of them also read off a real `aof work
+  drive … --dry-run --json` child. Four standing controls re-pointed with a self-check each and
+  **every one red-probed at the accept** (FF-12901 both legs, FF-6901, 65's
+  `acd-dispatch-bound-single-home`, FF-7101 — bytes restored). Read at the source: twelve keys;
+  `aof work update --dry-run` 0 / 150; `aof work drive continue 129/06 --dry-run` on this repo →
+  `/aof:continue 129/06` (unset is byte-identical). REVIEW (inline): 0 Blockers; *recorded* (Important)
+  — the contract named three scanning controls and the lane found a fourth (`F-56`, fixed, the file
+  joined `files:`, ratified as the build delta); *fixed* (QA) — the first concurrency leg measured
+  the fixture's prelude latency, not the product (`F-57`, the held-first-child pattern); *nit* —
+  `wave.mjs` re-validates `bounds.laneBound` at the seam (a guard on an injected bag, kept). The
+  operator's two open decisions (a warning on a mis-spelled value; operator-facing docs) are in
+  § Notes and `m129/07/OUTCOME.md` `## Gaps`. Story `RETROSPECTIVE.md` (R1: grep `test/arch/**` for
+  the shorter name before adding a key that contains it; R2: hold the first party until the second
+  starts) and `OUTCOME.md` written. 06 stays `in-review` with `depends: [7]`; the deployed payload is
+  still `2321dce8+dirty.20260912` — deploy after this commit, then the operator's live run.
 - **129/05 accepted (product-owner, 2026-09-14, `aof:verify 129/05` run directly).** Story lane
   92 / 0 under an isolated home (332 / 0 on the combined run after the accept's edits, every
   registered case reported); story-attributable 21 / 0. **Every register probe re-performed by

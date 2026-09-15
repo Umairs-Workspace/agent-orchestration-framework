@@ -12,9 +12,9 @@ author a story's task `.feature` files via Three Amigos.
 
 <config>
 Read `.aof/aof.config.json` → `work.dir`, `work.agents`, `work.tags`. Parse `$ARGUMENTS` into the item
-**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag and an optional **`--solo`**
-flag. Resolve the ref by running `aof work find "<ref>" --json` (folder-name lookup — never glob
-`**/*.md`).
+**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag and an optional **`--solo`** or
+**`--orchestrated`** flag. Resolve the ref by running `aof work find "<ref>" --json` (folder-name
+lookup — never glob `**/*.md`).
 
 **Step 0 — a BACKLOG ref is promoted first, here, before anything else.** When that `aof work find`
 answers a row with `number: null`, the item is in the backlog: it has no number yet, and everything
@@ -30,8 +30,13 @@ belongs where the operator is and is never dispatched to a worker.)
 **Execution mode.** Resolve from `work.agents.mode`: `"solo"` → play every role inline in this
 session; any other value → orchestrated (spawn the role agents). **`--solo` OVERRIDES an
 orchestrated config to solo for this run** — the same effect as `work.agents.mode: "solo"`, without
-editing config. It changes only WHO does the work, never WHAT is produced: the same documents, the
-same contracts, the same gates.
+editing config — and **`--orchestrated` OVERRIDES a solo config to orchestrated for this run**, its
+twin in the other direction. The two together are contradictory: STOP before any role runs and
+report it. The loop composes one of the two when `work.loop.agents.refine.mode` is set in
+`.aof/aof.config.json` (its home is `src/loop-bounds.mjs`), and composes nothing when it is unset,
+so a loop-driven refine falls back to `work.agents.mode` exactly as a hand-run one does. Either flag
+changes only WHO does the work, never WHAT is produced: the same documents, the same contracts, the
+same gates.
 
 Use it when the orchestration is costing more than it buys — a well-trodden change where the
 main session already holds the context a fresh sub-agent would have to rediscover. A spawned agent

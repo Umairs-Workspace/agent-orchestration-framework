@@ -25,7 +25,7 @@ import { reportDegrade } from "../degrade.mjs";
 // same doors the sibling caller (`src/mesh/worker-execution.mjs`) has always used.
 import { recordSessionId } from "../run-store.mjs";
 import { readConsumedHeartbeatAt } from "../run-heartbeat-consumption.mjs";
-import { loopBoundsFromConfig } from "../loop-bounds.mjs";
+import { loopBoundsFromConfig, loopAgentModeFromConfig } from "../loop-bounds.mjs";
 import { transitionRunStart, transitionRunComplete } from "../effects/run-transitions.mjs";
 import { buildRunAttribution } from "../otel-attribution.mjs";
 import { captureSessionIdOnRecord } from "../run-session-capture.mjs";
@@ -92,8 +92,16 @@ export function composeFixInput(command, { findings = [], changeUnderReview = ""
   return `${command}\n\n## REVIEW FINDINGS\n${findingText}${changeText.length > 0 ? `\n\n## CHANGE UNDER REVIEW\n${changeText}` : ""}`;
 }
 
-function phaseCommand(phase, ref) {
-  return `/aof:${phase} ${ref}`;
+// 129/07 (ADR-001 §5, amended) — the phase's role mode, composed from the loop's OWN key
+// `work.loop.agents.<phase>.mode` through the bounds home: `solo` → `--solo`, `orchestrated` →
+// `--orchestrated` (the twin the prompts gained in the same story), and `null` (unset, or a
+// phase that resolves no mode — `verify`) → no flag, byte-identical to HEAD, so the prompt's own
+// read of `work.agents.mode` is the fallback. The drive never reads the workspace twin.
+export const PHASE_MODE_FLAGS = Object.freeze({ solo: "--solo", orchestrated: "--orchestrated" });
+
+export function phaseCommand(phase, ref, mode = null) {
+  const flag = Object.prototype.hasOwnProperty.call(PHASE_MODE_FLAGS, mode) ? ` ${PHASE_MODE_FLAGS[mode]}` : "";
+  return `/aof:${phase} ${ref}${flag}`;
 }
 
 // 129/02 (ADR-005 §2-§3; ruling 2026-09-13) — `--fix <file>` is the fix transport ACROSS THE
@@ -200,7 +208,7 @@ export function createPhaseDriverCommand(phase) {
       }
       requireLocalCheckout(item, ref);
 
-      const command = phaseCommand(phase, item.ref);
+      const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase));
       if (input.dryRun === true) {
         return { ref: item.ref, phase, command };
       }

@@ -31,7 +31,13 @@ The shell also honours `work.loop.concurrency`, a mode whose one home is `src/lo
 `sequential` (the default, and what an unset key means) drives one act per tick in the primary
 checkout, while `refine_first` refines every story in the range first, then builds the ready
 waves in worktree lanes, then runs the verify phase. It is read from `.aof/aof.config.json` and
-is never passed as a flag; this prompt forwards nothing for it.
+is never passed as a flag; this prompt forwards nothing for it. Beside the mode, in the same home,
+sit the loop's own `work.loop.dispatch.concurrency` (the bound on the lanes the loop runs together,
+narrowing the workspace's `work.dispatch.concurrency` and never exceeding it) and
+`work.loop.agents.refine.mode` / `work.loop.agents.continue.mode` (the role mode of each driven
+phase, `solo` or `orchestrated`, composed onto the phase command by the shell's drive); each
+falls back to its workspace twin — `work.dispatch.concurrency`, `work.agents.mode` — when unset,
+so a repository that sets none of them runs exactly as before.
 </config>
 
 <process>

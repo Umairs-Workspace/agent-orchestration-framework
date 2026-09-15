@@ -88,6 +88,17 @@ export function dispatchConcurrencyFromConfig(workspace) {
   return resolveDispatchConcurrency(workspace?.config?.work?.dispatch?.concurrency);
 }
 
+// narrowDispatchBound(pool, requested) — 129/07 (129/ADR-006, amended). A caller may ask for
+// FEWER lanes than the pool allows and never more: a positive-integer request narrows the
+// effective bound to min(requested, pool); anything else (absent, 0, a float, a string, a value
+// above the pool's) leaves the pool's bound in effect. The pool bound stays the ONE number for
+// the machine; this is how the loop's own `work.loop.dispatch.concurrency` reaches admission
+// without a second resolution site for the pool's key.
+export function narrowDispatchBound(pool, requested) {
+  if (typeof requested !== "number" || !Number.isInteger(requested) || requested <= 0) return pool;
+  return Math.min(requested, pool);
+}
+
 // ───────────────────────────────────────────────────── the injected exec seam ────
 //
 // BORROWED from `src/mesh/worktree.mjs` (129/03 fix round, I4b): `resolveExec(options)` answers

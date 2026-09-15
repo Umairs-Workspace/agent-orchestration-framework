@@ -228,6 +228,7 @@ export async function runWaveBuild(shell) {
   // and not whichever lane's git answered first. The children then run concurrently.
   let preludeTurn = Promise.resolve();
   let lastBound = null;
+  const laneBoundAsk = Number.isSafeInteger(bounds?.laneBound) && bounds.laneBound > 0 ? { bound: bounds.laneBound } : {};
   let heartbeatHandle = null;
   let halted = null; // { act, details }
   const drained = [];
@@ -733,8 +734,11 @@ export async function runWaveBuild(shell) {
     }
 
     // THE WAVE RUN IS MINTED BEFORE THE FIRST DISPATCH (ADR-007 §2). The bound on its brief is
-    // dispatch's own answer — read off `--list` when no dispatch has answered yet this loop.
-    if (lastBound == null) readBound(await invokeRegistered("work:dispatch", { list: true }, ctx));
+    // dispatch's own answer — read off `--list` when no dispatch has answered yet this loop. The
+    // loop's own lane bound (129/07, `bounds.laneBound`) rides both asks when it is a number:
+    // dispatch narrows the pool's bound by it and answers the EFFECTIVE bound, so what the loop
+    // narrates and records is what admission ran under; unset, nothing is passed.
+    if (lastBound == null) readBound(await invokeRegistered("work:dispatch", { list: true, ...laneBoundAsk }, ctx));
     if (waveRun != null) await settleWaveRun("done");
     {
       const minted = await mintWaveRun([...lanes.keys(), ...wave.dispatch], lastBound);
@@ -750,7 +754,7 @@ export async function runWaveBuild(shell) {
     };
     let dispatched;
     try {
-      dispatched = await invokeRegistered("work:dispatch", { refs: wave.dispatch }, dispatchCtx);
+      dispatched = await invokeRegistered("work:dispatch", { refs: wave.dispatch, ...laneBoundAsk }, dispatchCtx);
     } catch (error) {
       const producer = error?.code === "duplicate-run" ? "run-store:duplicate-run" : `work:dispatch:${error?.code ?? "dispatch-lane-open-error"}`;
       return { halt: { act: haltDecision("lane-open-failed", wave.dispatch[0], producer), details: { error: String(error?.message ?? error) } } };

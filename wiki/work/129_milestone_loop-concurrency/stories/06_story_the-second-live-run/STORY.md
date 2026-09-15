@@ -4,11 +4,11 @@ number: 06
 slug: the-second-live-run
 title: "The second live run — refine_first switched on in this repo and aof work loop driven over a real two-member wave with a held third, read at the source"
 parent: 129
-depends: [5]
-status: not-started
+depends: [7]
+status: in-review
 owner: product-owner
 created: 2026-09-12
-updated: 2026-09-12
+updated: 2026-09-15
 adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-007, ADR-008]
 reads:
   - wiki/work/129_milestone_loop-concurrency/SPEC.md

@@ -158,6 +158,19 @@ The SPEC also proposes that under `refine_first` the execution path follows `wor
    story session to solo. 71/ADR-006's asymmetry ("never adds a fan-out against a solo setting") is
    about AGENT fan-out inside a session and is preserved there; the lane is process isolation the
    operator opted into with a different key.
+   **AMENDED 2026-09-15 (129/07, the operator's sign-off of the configuration surface)** — the
+   loop's settings are SELF-CONTAINED under `work.loop`, and the role mode of each driven phase is
+   the loop's own decision: `work.loop.agents.refine.mode` and `work.loop.agents.continue.mode`
+   (`solo` | `orchestrated`, resolved in the bounds home beside the mode, `null` when unset) are
+   what the DRIVE composes onto the phase command — `--solo` or `--orchestrated`, the latter the
+   twin `refine.md` / `continue.md` gained for the other direction — and the two phases are
+   independent of each other and of the workspace default. When a phase's key is UNSET the drive
+   composes no flag and the prompt's own read of `work.agents.mode` is the fallback, byte for byte
+   as before; `verify` resolves no mode. The drive never reads `work.agents.mode` itself (69/ADR-001:
+   the bounds home declares `work.loop.*` keys and nothing else, so the twin is read by the consumer
+   that already reads it). 71/ADR-006's asymmetry is unchanged for the SESSION's own derivation; an
+   explicit per-phase `orchestrated` under a solo workspace is the operator's configured decision
+   for the loop, not a derivation adding a fan-out.
 6. **Interleaved is considered and deferred**, as an additive third value. The wave partition is
    meaningful only over refined stories (`declaredWriteSet` is null for an unauthored `files:`, so
    the first unrefined member runs alone and the rest are held — `ready-wave.mjs:34-44`), which
@@ -187,7 +200,8 @@ walk ending at "every story in-review", an `in-review` story never re-driven —
 ### Invariant
 
 `work.loop.concurrency` resolves in exactly one src module and is a mode, not a number; the loop
-family reads `wave`/`heldSet` only off the `work:next` answer.
+family reads `wave`/`heldSet` only off the `work:next` answer. *(129/07)* `work.loop.agents.<phase>.mode`
+resolves in that same module and reaches a session only as the flag the drive composes.
 
 ---
 
@@ -476,7 +490,7 @@ and an argv, and never imports the session driver.
 
 ---
 
-## ADR-006 — The bound is `work.dispatch.concurrency`, asked through `work:dispatch`'s admission; there is no second number and no `work.loop.*` twin
+## ADR-006 — The bound is `work.dispatch.concurrency`, asked through `work:dispatch`'s admission; there is no second admission, and the loop's own `work.loop.dispatch.concurrency` (129/07) can only narrow it
 
 ### Context
 
@@ -496,6 +510,18 @@ deadlines and caps by FF-6901, which also asserts the bounds home annexes no dis
    the remedy is `aof work dispatch --list`. The loop never polls foreign state.
 3. **`decideWave` is pure** (`src/work/loop.mjs`): `{ wave, heldSet, live, setAside }` →
    `{ dispatch: [refs], hold: [refs] }`; the bound is not an input because admission is dispatch's.
+4. **AMENDED 2026-09-15 (129/07, the operator's sign-off of the configuration surface) — the loop
+   has a bound of its own, and it can only NARROW.** `work.loop.dispatch.concurrency` joins the
+   bounds home (`src/loop-bounds.mjs`, beside the mode; a positive integer verbatim, `null` when
+   unset), the shell resolves it once and hands it to the wave on `bounds.laneBound`, and the wave
+   passes it as `bound` on its `--list` read and its `{ refs }` ask. `work:dispatch` resolves the
+   effective bound as `min(bound, pool)` through `narrowDispatchBound` beside the pool's one
+   resolution site, and every face of its answer carries the EFFECTIVE bound, which is what the loop
+   narrates and records on the wave run. The pool's `work.dispatch.concurrency` stays the one number
+   for the machine and stays read by `src/work/dispatch.mjs` alone; a caller can ask for fewer lanes,
+   never more. Unset, nothing is passed and admission is the pool's, byte for byte as before. §1's
+   "never holds a number of its own" is amended to "never reads the pool's key and never spells its
+   own": the family takes the number from the home's resolver and holds no literal.
 
 ### Alternatives considered
 
@@ -503,16 +529,26 @@ deadlines and caps by FF-6901, which also asserts the bounds home annexes no dis
   rejected: `work:dispatch` already composes admission, lock and materialisation, and a second
   caller of the parts is a second admission.
 - A `work.loop.lanes` number — rejected: FF-6901's own text forbids the home annexing it.
+  *(129/07)* The loop's own `work.loop.dispatch.concurrency` is NOT that twin: it is a `work.loop.*`
+  key the home exists to hold, and it narrows the pool's bound rather than standing beside it as a
+  second admission — FF-6901's annexation leg now tells the home's read of its own key apart from a
+  read of the pool's (`loopConfig(workspace)?.dispatch?.concurrency` vs `work?.dispatch?.concurrency`).
+- Making `work:dispatch`'s pool resolver read `work.loop.dispatch.concurrency` too — rejected at
+  129/07: the loop's number would then govern every dispatcher on the machine, which is the pool's
+  key wearing a loop key's name.
 
 ### Consequences
 
-Zero new config. The `at-capacity` refusal is the only path to a wait, and the loop waits only on
-its own children. FF-12901's second leg holds it.
+Zero new config at 129/05; one loop-scoped key at 129/07, inert when unset. The `at-capacity`
+refusal is the only path to a wait, and the loop waits only on its own children. FF-12901's second
+leg holds it: the pool key has one reader, the loop key has one reader, and the family reads neither.
 
 ### Invariant
 
-`src/loop/**` and `src/commands/loop.mjs` contain no read of `dispatch.concurrency` and no numeric
-concurrency literal; the bound reaches the loop only inside a `work:dispatch` answer.
+`src/loop/**` and `src/commands/loop.mjs` contain no read of `work.dispatch.concurrency`, spell no
+`work.loop.dispatch.concurrency`, and hold no numeric concurrency literal; the loop's own bound
+reaches the family only as the home's resolved number, and the EFFECTIVE bound reaches it only
+inside a `work:dispatch` answer.
 
 ---
 

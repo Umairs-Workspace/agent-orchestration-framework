@@ -27,6 +27,7 @@ import {
   overlappingFiles,
   laneChanges,
   dispatchConcurrencyFromConfig,
+  narrowDispatchBound,
   resolveDispatchConcurrency,
   DEFAULT_DISPATCH_CONCURRENCY,
   dispatchLaneBase,
@@ -1096,6 +1097,87 @@ export const workDispatchLaneTests = [
         assert.ok(attrs.length > 0, `${line} names an attribute`);
         for (const attr of attrs) assert.match(attr, /^-?text$|^eol=/u, `${line}: "${attr}" is a text/eol attribute, as before this story`);
       }
+    },
+  },
+  // ── 129/07 task 01 — the lane bound narrows ──────────────────────────────────
+  //
+  // `wiki/work/129_milestone_loop-concurrency/stories/07_story_the-loop-settings-are-self-contained/
+  //   tasks/01_the-lane-bound-narrows.feature` — the dispatch-side rows. The loop-side rows (the
+  // key passed when set, the serial wave) are in `test/loop/loop-command-wave.test.mjs`.
+  ...[
+    [3, {}, 3],
+    [3, { bound: 2 }, 2],
+    [3, { bound: 1 }, 1],
+    [3, { bound: 3 }, 3],
+    [3, { bound: 5 }, 3],
+    [3, { bound: 0 }, 3],
+    [3, { bound: 2.5 }, 3],
+    [3, { bound: "2" }, 3],
+    [undefined, { bound: 2 }, 2],
+    [undefined, {}, 3],
+    [2, { bound: 3 }, 2],
+  ].map(([pool, ask, effective]) => ({
+    name: `129/07 task01 the effective bound is the pool's narrowed by a caller's positive integer [pool ${pool ?? "unset"}, ${JSON.stringify(ask)} → ${effective}]`,
+    run: () => withDispatchRepo(async ({ root }) => {
+      const workspace = { projectRoot: root, config: { work: pool === undefined ? {} : { dispatch: { concurrency: pool } } } };
+      const answer = await dispatchCommand.run({ list: true, ...ask }, { workspace });
+      assert.equal(answer.action, "list");
+      assert.equal(answer.bound, effective, "the answer's bound is the effective one");
+      assert.equal(narrowDispatchBound(pool === undefined ? 3 : pool, ask.bound), effective, "…and the pure narrowing agrees");
+    }),
+  })),
+  {
+    name: "129/07 task01 admission runs under the narrowed bound and every face answers it",
+    run: () => withDispatchRepo(async ({ root }) => {
+      const workspace = { projectRoot: root, config: { work: { dispatch: { concurrency: 3 } } } };
+      let inFlight = 0;
+      let peak = 0;
+      const ctx = {
+        workspace,
+        runDispatchLane: async (member) => {
+          inFlight += 1;
+          peak = Math.max(peak, inFlight);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          inFlight -= 1;
+          return { ref: member.ref, outcome: "opened", worktree: `lane-${member.ref}`, created: true, reused: false };
+        },
+      };
+      const answer = await dispatchCommand.run({ refs: ["53/00", "53/01", "53/02"], bound: 2 }, ctx);
+      assert.equal(answer.bound, 2, "the answer's bound is the narrowed one");
+      const outcomes = answer.dispatched.map((entry) => entry.value?.outcome ?? entry.outcome ?? "opened");
+      assert.deepEqual(outcomes, ["opened", "opened", "refused"], "two admitted, one refused");
+      assert.equal(answer.dispatched[2].value.reason, "at-capacity");
+      assert.ok(answer.peak <= 2, `materialised peak ${answer.peak} is at most 2`);
+      assert.ok(peak <= 2, `observed peak ${peak} is at most 2`);
+      assert.equal((await dispatchCommand.run({ list: true, bound: 2 }, ctx)).bound, 2);
+      assert.equal((await dispatchCommand.run({ list: true }, ctx)).bound, 3, "…and without the narrowing the pool's bound is answered");
+      assert.equal((await dispatchCommand.run({ cleanup: true, ref: "53/00", bound: 2 }, ctx)).bound, 2, "cleanup answers the narrowed bound too");
+    }, { stories: ["00", "01", "02"] }),
+  },
+  {
+    name: "129/07 task01 the input schema declares bound as a number, additionalProperties stays false, and the narrowing ignores a non-integer",
+    run: () => {
+      assert.deepEqual(dispatchCommand.input.properties.bound, { type: "number" });
+      assert.equal(dispatchCommand.input.additionalProperties, false);
+      assert.equal(narrowDispatchBound(3, 2.5), 3);
+      assert.equal(narrowDispatchBound(3, "2"), 3);
+      assert.equal(narrowDispatchBound(3, Number.NaN), 3);
+      assert.equal(narrowDispatchBound(3, -1), 3);
+      assert.equal(narrowDispatchBound(3, 2), 2);
+    },
+  },
+  {
+    name: "129/07 task01 ADR-006 records the amendment — a dated 2026-09-15 narrowing, read in the bounds home, handed to work:dispatch as bound; the invariant still says the family reads neither key",
+    run: async () => {
+      const adr = await readFile(new URL("../../../wiki/work/129_milestone_loop-concurrency/ARCHITECTURE.md", import.meta.url), "utf8");
+      const start = adr.indexOf("## ADR-006");
+      const end = adr.indexOf("## ADR-007");
+      assert.ok(start >= 0 && end > start, "ADR-006 is present");
+      const body = adr.slice(start, end);
+      assert.ok(body.includes("AMENDED 2026-09-15 (129/07"), "a dated amendment");
+      for (const needle of ["work.loop.dispatch.concurrency", "min(bound, pool)", "src/loop-bounds.mjs", "narrowDispatchBound", "`bound`"]) assert.ok(body.includes(needle), `the amendment names ${needle}`);
+      const invariant = body.slice(body.indexOf("### Invariant"));
+      assert.ok(invariant.includes("contain no read of `work.dispatch.concurrency`, spell no") && invariant.includes("`work.loop.dispatch.concurrency`"), "the invariant still holds the family to neither key");
     },
   },
 ];

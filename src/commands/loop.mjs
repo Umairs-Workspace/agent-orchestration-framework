@@ -49,6 +49,7 @@ import {
   REFINE_FIRST_CONCURRENCY,
   heartbeatFromConfig,
   loopConcurrencyFromConfig,
+  loopDispatchConcurrencyFromConfig,
   progressMaxResetsFromConfig,
   reviewRoundsFromConfig,
   scheduleToCloseFromConfig,
@@ -1175,6 +1176,10 @@ export async function runLoopBody(input, suppliedCtx = {}) {
     scheduleToCloseMs,
     startToCloseMs: startToCloseFromConfig(ctx.workspace),
     startupGraceMs: startupGraceFromConfig(ctx.workspace),
+    // 129/07 — the loop's OWN lane bound (`work.loop.dispatch.concurrency`), resolved once in the
+    // bounds home and handed to the wave, which passes it to `work:dispatch` as a narrowing of
+    // the pool's bound; `null` (unset) passes nothing, and admission is the pool's as at HEAD.
+    laneBound: loopDispatchConcurrencyFromConfig(ctx.workspace),
   };
   const laneMemory = { laneRetries: new Map(), liveElsewhere: new Set(), laneRuns: [] };
   const scopeRefs = (await localScopeItems(resolved.scope, ctx)).items.map((item) => item.ref);

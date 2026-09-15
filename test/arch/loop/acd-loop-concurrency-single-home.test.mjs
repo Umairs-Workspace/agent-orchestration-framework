@@ -6,24 +6,31 @@
 // LEG 1 — THE MAPS. `work.loop.concurrency` is a key of BOTH resolver maps in
 // `src/loop-bounds.mjs`, mapping to the leaf's own `resolveLoopConcurrency` /
 // `loopConcurrencyFromConfig` by identity, and the key SET of each map is pinned: the eight
-// FF-6901 numeric keys plus this one, and nothing else. A tenth key — a `work.loop.lanes`, a
-// second number for "lanes at once" — is the twin ADR-006 refuses (the bound on concurrent lanes
-// is `work:dispatch`'s own), and the pin is what makes that refusal a red build. `rangeProbe`
-// admits exactly the two modes and `stepProbe` refuses a notch on a string.
+// FF-6901 numeric keys, this one, and (129/07) the loop's own three — `work.loop.dispatch.concurrency`,
+// `work.loop.agents.refine.mode`, `work.loop.agents.continue.mode` — and nothing else. A
+// thirteenth key — a `work.loop.lanes`, a second number for "lanes at once" beside the one the
+// loop already owns — is the twin ADR-006 refuses (the bound on concurrent lanes is
+// `work:dispatch`'s own, NARROWED by the loop's key, never a second admission), and the pin is
+// what makes that refusal a red build. `rangeProbe` admits exactly the two modes and
+// `stepProbe` refuses a notch on a string.
 //
 // LEG 2 — THE SWEEP. Over a comment-stripped read of `src/**`: the literals `"refine_first"` /
 // `"sequential"` live in exactly two modules — the bounds home and the engine (`src/work/loop.mjs`,
 // whose `decideLoopPhase` branches on the mode it is HANDED, ADR-001 §4) — so a third spelling
 // (a `"refine_first"` in `src/loop/wave.mjs`) is a second home wearing a branch's shape; the
-// dispatch bound `dispatch.concurrency` is read by `src/work/dispatch.mjs` and by nothing else;
-// and the loop family (`src/loop/**`, `src/commands/loop.mjs`) reads no dispatch bound and names
-// no `work.loop.<x>` key the maps do not carry. NON-VACUOUS: the sweep must FIND the engine's
-// branch and the one dispatch read before it asserts anything about them — an emptied sweep is a
-// red naming the file it could not find, never a silent green.
+// pool bound `work.dispatch.concurrency` is read by `src/work/dispatch.mjs` and by nothing else;
+// the loop's OWN `work.loop.dispatch.concurrency` (129/07) is read by the bounds home — as
+// `loopConfig(workspace)?.dispatch?.concurrency` — and by nothing else, so the two readers are
+// told apart by the object the read hangs off, never by the key's last two segments; and the
+// loop family (`src/loop/**`, `src/commands/loop.mjs`) reads no dispatch bound of either kind
+// and names no `work.loop.<x>` key the maps do not carry. NON-VACUOUS: the sweep must FIND the
+// engine's branch and both single reads before it asserts anything about them — an emptied sweep
+// is a red naming the file it could not find, never a silent green.
 //
 // Red probes (VERIFICATION.md's register): add `"work.loop.lanes": resolveLanes` to the value map
 // (leg 1, and FF-6111's two-way equality goes red beside it as collateral); spell `"refine_first"`
-// in a branch of `src/loop/wave.mjs` (leg 2).
+// in a branch of `src/loop/wave.mjs` (leg 2); 129/07: read `loopConfig(ws)?.dispatch?.concurrency`
+// from `src/loop/wave.mjs` (leg 2 names the loop key's second reader).
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -49,13 +56,29 @@ export const NUMERIC_LOOP_KEYS = Object.freeze([
   "work.loop.buildNoProgressRounds",
   "work.loop.progressMaxResets",
 ]);
-export const PINNED_LOOP_KEYS = Object.freeze([...NUMERIC_LOOP_KEYS, KEY].sort());
+// THE THREE OF 129/07 — the loop's own lane bound and per-phase modes, each answering null when
+// unset (inherit the workspace twin); pinned here for the same reason the eight are.
+export const SELF_CONTAINED_LOOP_KEYS = Object.freeze([
+  "work.loop.dispatch.concurrency",
+  "work.loop.agents.refine.mode",
+  "work.loop.agents.continue.mode",
+]);
+export const PINNED_LOOP_KEYS = Object.freeze([...NUMERIC_LOOP_KEYS, KEY, ...SELF_CONTAINED_LOOP_KEYS].sort());
 
 // The two modules that may spell a mode literal, by path (ADR-001 §1 and §4).
 export const MODE_LITERAL_HOMES = Object.freeze([BOUNDS_HOME, ENGINE]);
 const MODE_LITERAL_RE = /["'](?:refine_first|sequential)["']/gu;
+// Any `dispatch.concurrency` read; the LOOP's own is the one hanging off `loopConfig(…)` (the
+// bounds home's accessor for `work.loop`), the POOL's is every other. A key string
+// `"work.loop.dispatch.concurrency"` matches the any-read form too, which is what keeps the family
+// from spelling it: it reads the number through the home's resolver.
 const DISPATCH_BOUND_READ_RE = /\bdispatch\??\.concurrency\b/gu;
-const WORK_LOOP_KEY_RE = /\bwork\.loop\.([A-Za-z][A-Za-z0-9]*)/gu;
+// The POOL read alone: any read that is not the loop key's own spelling (`…loop.dispatch.concurrency`,
+// the map entries in the home) and not the home's `loopConfig(…)` read, which is subtracted.
+const POOL_DISPATCH_BOUND_READ_RE = /(?<!loop\.)\bdispatch\??\.concurrency\b/gu;
+const LOOP_DISPATCH_BOUND_READ_RE = /\bloopConfig\([^)]*\)\??\.dispatch\??\.concurrency\b/gu;
+// A dotted key is read WHOLE (`work.loop.agents.refine.mode`, never `work.loop.agents`).
+const WORK_LOOP_KEY_RE = /\bwork\.loop\.([A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z][A-Za-z0-9]*)*)/gu;
 
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
@@ -97,13 +120,19 @@ export function sweepModeLiterals(units) {
 export function sweepDispatchBoundReads(units) {
   const problems = [];
   let found = 0;
+  let loopFound = 0;
   for (const { rel, code } of units) {
-    const reads = [...code.matchAll(DISPATCH_BOUND_READ_RE)].length;
-    if (reads === 0) continue;
-    if (rel === DISPATCH_HOME) found = reads;
-    else problems.push(`${rel} reads \`dispatch.concurrency\` — ${DISPATCH_HOME} is the bound's only reader (129/ADR-006), and the loop family asks the bound through work:dispatch's admission`);
+    const loopReads = [...code.matchAll(LOOP_DISPATCH_BOUND_READ_RE)].length;
+    const poolReads = [...code.matchAll(POOL_DISPATCH_BOUND_READ_RE)].length - loopReads;
+    if (loopReads > 0) {
+      if (rel === BOUNDS_HOME) loopFound = loopReads;
+      else problems.push(`${rel} reads \`work.loop.dispatch.concurrency\` — ${BOUNDS_HOME} is the loop key's only reader (129/07; 69/ADR-001), and the family takes the number from its resolver`);
+    }
+    if (poolReads === 0) continue;
+    if (rel === DISPATCH_HOME) found = poolReads;
+    else problems.push(`${rel} reads \`dispatch.concurrency\` — ${DISPATCH_HOME} is the pool bound's only reader (129/ADR-006), and the loop family asks the bound through work:dispatch's admission`);
   }
-  return { problems, found };
+  return { problems, found, loopFound };
 }
 
 // The loop family names no `work.loop.<x>` key outside the pinned set — a key whose resolver
@@ -115,7 +144,7 @@ export function sweepFamilyKeys(units) {
     if (!(rel.startsWith("src/loop/") || rel === "src/commands/loop.mjs")) continue;
     for (const match of code.matchAll(WORK_LOOP_KEY_RE)) {
       const key = match[0];
-      if (!pinned.has(key)) problems.push(`${rel} names \`${key}\`, which neither resolver map carries — the family reads its bounds through src/loop-bounds.mjs's nine keys and holds no number of its own`);
+      if (!pinned.has(key)) problems.push(`${rel} names \`${key}\`, which neither resolver map carries — the family reads its bounds through src/loop-bounds.mjs's twelve keys and holds no number of its own`);
     }
     if ([...code.matchAll(DISPATCH_BOUND_READ_RE)].length > 0) {
       problems.push(`${rel} reads \`dispatch.concurrency\` — the family never reads the dispatch bound (129/ADR-006)`);
@@ -134,7 +163,7 @@ async function srcUnits() {
 
 export const archTests = [
   {
-    name: "arch/129/05 FF-12901: leg 1 (the maps) — work.loop.concurrency resolves in src/loop-bounds.mjs as a mode, both maps carry exactly the nine keys, and the range probe admits the two modes and nothing else",
+    name: "arch/129/05 FF-12901: leg 1 (the maps) — work.loop.concurrency resolves in src/loop-bounds.mjs as a mode, both maps carry exactly the twelve keys, and the range probe admits the two modes and nothing else",
     run: async () => {
       // Lazily — the harness's entry-key sweep (FF-5311) imports every arch file, and a leaf
       // imported at module scope is a leaf whose absence takes the whole index down.
@@ -144,8 +173,8 @@ export const archTests = [
       assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS[KEY], loopBounds.resolveLoopConcurrency, `LOOP_BOUND_VALUE_RESOLVERS["${KEY}"] is resolveLoopConcurrency by identity`);
       assert.equal(loopBounds.LOOP_BOUND_CONFIG_RESOLVERS[KEY], loopBounds.loopConcurrencyFromConfig, `LOOP_BOUND_CONFIG_RESOLVERS["${KEY}"] is loopConcurrencyFromConfig by identity`);
 
-      // THE PIN. Both key sets equal the eight FF-6901 keys plus this one — a tenth key is named
-      // by the map it appeared in.
+      // THE PIN. Both key sets equal the eight FF-6901 keys, this one and 129/07's three — a
+      // thirteenth key is named by the map it appeared in.
       for (const [mapName, map] of [["LOOP_BOUND_VALUE_RESOLVERS", loopBounds.LOOP_BOUND_VALUE_RESOLVERS], ["LOOP_BOUND_CONFIG_RESOLVERS", loopBounds.LOOP_BOUND_CONFIG_RESOLVERS]]) {
         const keys = Object.keys(map).sort();
         const extra = keys.filter((key) => !PINNED_LOOP_KEYS.includes(key));
@@ -153,7 +182,7 @@ export const archTests = [
         assert.deepEqual(
           keys,
           [...PINNED_LOOP_KEYS],
-          `${mapName} carries exactly the eight FF-6901 keys plus ${KEY}${extra.length > 0 ? ` — a key outside the nine: ${extra.join(", ")} (a second concurrency number is the twin 129/ADR-006 refuses)` : ""}${missing.length > 0 ? ` — missing: ${missing.join(", ")}` : ""}`,
+          `${mapName} carries exactly the eight FF-6901 keys plus ${KEY} plus the three of 129/07${extra.length > 0 ? ` — a key outside the twelve: ${extra.join(", ")} (a second concurrency number is the twin 129/ADR-006 refuses)` : ""}${missing.length > 0 ? ` — missing: ${missing.join(", ")}` : ""}`,
         );
       }
 
@@ -179,10 +208,28 @@ export const archTests = [
       assert.equal(loopBounds.stepProbe(KEY, "sequential", 1).admissible, false, "a one-notch step on a mode is refused");
       assert.deepEqual([...loopBounds.LOOP_CONCURRENCY_MODES], ["sequential", "refine_first"], "the vocabulary is the two modes, in order");
       assert.equal(loopBounds.resolveLoopConcurrency(undefined), "sequential", "unset is sequential");
+
+      // 129/07 — the three self-contained keys map to the leaf's own resolvers by identity, sit
+      // AFTER the mode in the declared order, and answer null when unset (inherit the twin).
+      assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(9), [...SELF_CONTAINED_LOOP_KEYS], "the three are appended after the mode, in order");
+      assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(9), [...SELF_CONTAINED_LOOP_KEYS], "…in both maps");
+      assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS["work.loop.dispatch.concurrency"], loopBounds.resolveLoopDispatchConcurrency, "the lane bound's value resolver by identity");
+      assert.equal(loopBounds.LOOP_BOUND_CONFIG_RESOLVERS["work.loop.dispatch.concurrency"], loopBounds.loopDispatchConcurrencyFromConfig, "…and its config resolver");
+      assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS["work.loop.agents.refine.mode"], loopBounds.resolveLoopAgentMode, "the refine mode's value resolver by identity");
+      assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS["work.loop.agents.continue.mode"], loopBounds.resolveLoopAgentMode, "the continue mode's value resolver by identity");
+      assert.equal(loopBounds.LOOP_BOUND_CONFIG_RESOLVERS["work.loop.agents.refine.mode"], loopBounds.loopAgentRefineModeFromConfig, "…and the refine config resolver");
+      assert.equal(loopBounds.LOOP_BOUND_CONFIG_RESOLVERS["work.loop.agents.continue.mode"], loopBounds.loopAgentContinueModeFromConfig, "…and the continue config resolver");
+      for (const key of SELF_CONTAINED_LOOP_KEYS) {
+        assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS[key](undefined), null, `${key}: unset answers null — inherit the workspace twin, never a number or a mode of its own`);
+      }
+      assert.equal(loopBounds.rangeProbe("work.loop.dispatch.concurrency", 2).admissible, true, "a positive integer lane bound is admissible");
+      assert.equal(loopBounds.rangeProbe("work.loop.dispatch.concurrency", 0).admissible, false, "zero is not");
+      assert.equal(loopBounds.rangeProbe("work.loop.agents.refine.mode", "solo").admissible, true, "solo is admissible");
+      assert.equal(loopBounds.rangeProbe("work.loop.agents.continue.mode", "inline").admissible, false, "inline is not a mode");
     },
   },
   {
-    name: "arch/129/05 FF-12901: leg 2 (the sweep) — the mode literals live in the bounds home and the engine's branch only, dispatch.concurrency is read by src/work/dispatch.mjs alone, and the loop family holds no bound of its own",
+    name: "arch/129/05 FF-12901: leg 2 (the sweep) — the mode literals live in the bounds home and the engine's branch only, work.dispatch.concurrency is read by src/work/dispatch.mjs alone and work.loop.dispatch.concurrency by src/loop-bounds.mjs alone, and the loop family holds no bound of its own",
     run: async () => {
       const units = await srcUnits();
       assert.ok(units.length > 100, `src/** was actually read: ${units.length} modules`);
@@ -197,7 +244,9 @@ export const archTests = [
       const reads = sweepDispatchBoundReads(units);
       assert.ok(reads.found > 0, `${DISPATCH_HOME}: NOT FOUND — the one dispatch.concurrency read is absent; the sweep is reading the wrong tree`);
       assert.equal(reads.found, 1, `${DISPATCH_HOME} reads dispatch.concurrency exactly once (${reads.found} found)`);
-      assert.deepEqual(reads.problems, [], `dispatch.concurrency has one reader:\n${reads.problems.join("\n")}`);
+      assert.ok(reads.loopFound > 0, `${BOUNDS_HOME}: NOT FOUND — the one work.loop.dispatch.concurrency read is absent; the sweep is reading the wrong tree`);
+      assert.equal(reads.loopFound, 1, `${BOUNDS_HOME} reads work.loop.dispatch.concurrency exactly once (${reads.loopFound} found)`);
+      assert.deepEqual(reads.problems, [], `each dispatch bound has one reader:\n${reads.problems.join("\n")}`);
 
       const family = sweepFamilyKeys(units);
       assert.ok(units.some((unit) => unit.rel.startsWith("src/loop/")) && units.some((unit) => unit.rel === "src/commands/loop.mjs"), "the family was read");
@@ -229,10 +278,23 @@ export const archTests = [
       assert.equal(noRead.found, 0, "with the read removed the sweep finds nothing");
       const secondReader = sweepDispatchBoundReads(planted("src/loop/wave.mjs", (code) => `${code}\nexport const plant = (w) => w.config.work.dispatch.concurrency;\n`));
       assert.ok(secondReader.problems.some((problem) => problem.includes("src/loop/wave.mjs")), "a second reader is named");
+      // 129/07 — the loop's own key read outside the home is named as the LOOP key's second
+      // reader; the home's own read is the one found; a spelled key string in the family is a read.
+      const loopReader = sweepDispatchBoundReads(planted("src/loop/wave.mjs", (code) => `${code}\nexport const plant = (ws) => loopConfig(ws)?.dispatch?.concurrency;\n`));
+      assert.ok(loopReader.problems.some((problem) => problem.includes("src/loop/wave.mjs") && problem.includes("work.loop.dispatch.concurrency")), `a loop-key read outside the home is named:\n${loopReader.problems.join("\n")}`);
+      assert.equal(loopReader.loopFound, 1, "…and the home's own read is still the one found");
+      const noLoopRead = sweepDispatchBoundReads(planted(BOUNDS_HOME, (code) => code.replace(LOOP_DISPATCH_BOUND_READ_RE, "loopConfig(workspace)?.dispatch?.lanes")));
+      assert.equal(noLoopRead.loopFound, 0, "with the home's read removed the sweep finds no loop read");
+      const spelled = sweepFamilyKeys(planted("src/loop/wave.mjs", (code) => `${code}\nexport const plant = "work.loop.dispatch.concurrency";\n`));
+      assert.ok(spelled.some((problem) => problem.includes("src/loop/wave.mjs") && problem.includes("dispatch.concurrency")), "the family spelling the loop key is a read, and is named");
+      const dotted = sweepFamilyKeys(planted("src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.agents.refine.wrong";\n`));
+      assert.ok(dotted.some((problem) => problem.includes("work.loop.agents.refine.wrong")), `a dotted key is read whole and named whole:\n${dotted.join("\n")}`);
+      const dottedOk = sweepFamilyKeys(planted("src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.agents.refine.mode";\n`));
+      assert.deepEqual(dottedOk.filter((problem) => problem.includes("agents.refine.mode")), [], "a pinned dotted key spelled whole is admitted");
 
       // A tenth key named by the family.
       const tenth = sweepFamilyKeys(planted("src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.lanes";\n`));
-      assert.ok(tenth.some((problem) => problem.includes("work.loop.lanes") && problem.includes("src/commands/loop.mjs")), "a key outside the nine, named by the family, is reported");
+      assert.ok(tenth.some((problem) => problem.includes("work.loop.lanes") && problem.includes("src/commands/loop.mjs")), "a key outside the twelve, named by the family, is reported");
     },
   },
 ];
