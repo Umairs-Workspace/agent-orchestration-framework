@@ -26,7 +26,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
-import { stripComments, functionBody } from "../../support/source-slice.mjs";
+import { stripComments, functionBody, blankStringLiterals } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { findWork, listStream, nextWork } from "../../../src/work.mjs";
 import { withThreeRoots } from "../../work/stream/work-backlog-archive-enumerate.test.mjs";
@@ -91,7 +91,11 @@ export const archTests = [
       for (const file of await readSrcFiles(repoRoot)) {
         const rel = `src/${file.rel}`;
         if (rel === "src/work.mjs") continue;
-        const stripped = stripComments(await readFile(file.path, "utf8"));
+        // A member READ, never a string: the stream's own event name `stream.archived`
+        // (127/ADR-004, story 03) is a literal the seam and the ledger spell, not a read of a
+        // row's flag — so string literals are blanked before the token is looked for, exactly
+        // as comments are.
+        const stripped = blankStringLiterals(stripComments(await readFile(file.path, "utf8")));
         if (new RegExp(ARCHIVED_MEMBER_RE.source).test(stripped)) outside.push(rel);
       }
       assert.deepEqual(outside, [], "no src module other than src/work.mjs reads `.archived`");

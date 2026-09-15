@@ -53,6 +53,11 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   // and the archived-collision set (`archivedCollisions`) over rows, and `numbersWritten`
   // filters through `isLiveStreamRow`. All four sites are guarded; none is allow-listed.
   "src/commands/promote.mjs",
+  // 127/03 — the twelfth and thirteenth: the archive face (`selectDoneDrivers`) and the archive
+  // engine (`liveDrivers`) each order the root's drivers by number for `--done`, and each site sits
+  // behind `.filter(isLiveStreamRow)` over the same rows. Guarded; none is allow-listed.
+  "src/commands/archive.mjs",
+  "src/work/archive.mjs",
 ]);
 
 // The sites the rule cannot classify, each with the reason it is admitted. Keyed by file +

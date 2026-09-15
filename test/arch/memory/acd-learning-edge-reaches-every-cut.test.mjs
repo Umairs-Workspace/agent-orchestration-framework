@@ -108,6 +108,9 @@ const EXCLUDED = Object.freeze({
   "add-story.md": "adds one story to an existing milestone",
   "add-task.md": "adds one task feature",
   "add-uat.md": "creates one uat session",
+  // 127/03 task 04 — the one wrapper over `work:archive`: moves ONE done driver's folder under
+  // `archive/`, name verbatim; spawns no agent, carries no memory call, partitions nothing.
+  "archive.md": "archives one done driver's folder under archive/; no partition",
   "assimilate-code.md": "governs code already written; its memory call is `ingest`",
   "autonomous.md": "sequences existing items through the loop shell; cuts nothing",
   "code-review.md": "ships and reviews a branch",

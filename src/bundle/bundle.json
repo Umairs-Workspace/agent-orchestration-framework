@@ -64,6 +64,7 @@
     { "id": "observe", "kind": "command", "file": "commands/observe.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "pay-debt", "kind": "command", "file": "commands/pay-debt.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "promote", "kind": "command", "file": "commands/promote.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
+    { "id": "archive", "kind": "command", "file": "commands/archive.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "recent", "kind": "command", "file": "commands/recent.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "refine", "kind": "command", "file": "commands/refine.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "retrospective", "kind": "command", "file": "commands/retrospective.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },

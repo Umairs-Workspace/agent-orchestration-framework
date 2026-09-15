@@ -43,6 +43,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
+import { findWork } from "../../../src/work.mjs";
 // The sibling control's detector, REUSED rather than re-derived — seven of this row's eight plant
 // shapes are exactly the ones it already refuses over the audit family. What is extended locally
 // is the eighth: `OTHER_SPAWN_APIS` omits bare `exec`, and editing that constant is a write
@@ -277,15 +278,22 @@ export const archTests = [
       // THE SUBJECT IS `src/`. These three files all carry the key text and none of them is a
       // source module — asserted from both ends, so the exclusion is measured rather than assumed.
       const modules = await sourceModules();
+      // milestone 127 / ADR-004 §3 — the contract this leg reads is resolved BY REF at run time,
+      // never by a literal path: its milestone (72, done) is archived by `aof work archive`, and a
+      // reader that spelled the folder would go red on the move. `findWork` answers wherever the
+      // folder sits, and the relative path below is derived from that answer.
+      const [story] = await findWork(path.join(repoRoot, "wiki", "work"), "72/00");
+      assert.ok(story?.dir, "story 72/00 resolves through findWork (live or archived)");
+      const contractPath = path.join(story.dir, "tasks", "00_the-runner-is-declared-or-there-is-no-run.feature");
       const outside = [
         ".aof/aof.config.json",
         "test/work/work-toolchain-declaration.test.mjs",
-        "wiki/work/72_milestone_inner-loop/stories/00_story_the-declared-toolchain/tasks/00_the-runner-is-declared-or-there-is-no-run.feature",
+        path.relative(repoRoot, contractPath).split(path.sep).join("/"),
       ];
       for (const rel of outside) {
         assert.equal(modules.some((module) => module.rel === rel), false, `${rel} is not censused as a source module`);
       }
-      const contract = await readFile(path.join(repoRoot, ...outside[2].split("/")), "utf8");
+      const contract = await readFile(contractPath, "utf8");
       assert.ok(keyPattern("work.test.command").test(contract), "…and the contract does carry the key, so the exclusion is doing work");
       const suite = await readFile(path.join(repoRoot, "test", "work", "work-toolchain-declaration.test.mjs"), "utf8");
       assert.ok(keyPattern("work.test.command").test(suite), "…as does the behavioural suite");

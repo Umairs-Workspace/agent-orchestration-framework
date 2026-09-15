@@ -79,6 +79,13 @@ const WORK_IDS = [
   // the insert family (the mint belongs where the operator's stream is, ADR-003 §7); its `/aof:`
   // wrapper is task 04's and is held to parity by acd-work-insert-command-bundle-parity.
   "work:promote",
+  // milestone 127 / story 03 (127/ADR-004 §1) — work:archive, the verbatim MOVE: a done top-level
+  // driver's folder goes under `archive/` name verbatim, no number touched, reached through the
+  // stream seam (`transitionStreamArchived`). CLI-only, same BOARD_DEFERRED carve-out as `promote`
+  // (a mechanical act over the operator's own tree; a served route would let the board host move
+  // folders in a checkout it does not own); its `/aof:archive` wrapper is task 04's and is held to
+  // parity by acd-work-insert-command-bundle-parity.
+  "work:archive",
   "work:upgrade",
   // work:continue (TECH_DEBT item 0 "one door per act") — the SINGLE continue door
   // (CLI, board POST, fleet all route through it; the where-to-run decision lives

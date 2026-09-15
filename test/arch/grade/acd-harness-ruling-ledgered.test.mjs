@@ -73,6 +73,11 @@ const THE_EIGHT = Object.freeze({
   "feedback.recorded": ["publish-projection"],
   "item-status.changed": ["publish-projection", "notion-status-sync"],
   "stream.reindexed": ["remap-run-refs", "remap-notion-map", "remap-projection", "remap-control-facts", "publish-projection"],
+  // milestone 127 / ADR-004 (story 03) — the ARCHIVE cascade, declared beside the reindex cascade
+  // it is the lesser twin of: no ref changes, so its one consequence is the publish. Taught to
+  // this census consciously, as every name after the eight must be: "no tenth" is a claim about
+  // 61's harness name, never a freeze on the stream's own vocabulary.
+  "stream.archived": ["publish-projection"],
   "assignment.reported": ["settle-assignment"],
   "terminal.resume-refused": ["restore-parked-resume"],
   "assignment.settled": ["record-item-branch"],
