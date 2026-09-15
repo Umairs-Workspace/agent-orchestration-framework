@@ -24,6 +24,10 @@ import {
 } from "./runs.mjs";
 import { StatusRing, StatusChip } from "./status";
 import { StaleBadge, ProvenanceLabel } from "./StaleBadge";
+// 127/04 — the archived mark in the header cluster (a DRIVER's context only), and the H2's
+// slug fallback from the board's ONE humaniser (the backlog row shares it).
+import { ArchivedPill, carriesArchivedMark } from "./ArchivedPill";
+import { humanizeSlug } from "./model";
 import type { Freshness, FreshnessRecord } from "./freshness.mjs";
 import { ProvenanceLine } from "./ProvenanceLine";
 import { ActionsStrip } from "./ActionsStrip";
@@ -205,6 +209,7 @@ export function DetailPanel({
               badge is `text-[11px]`. */}
           <span className="ml-auto flex items-center gap-1.5">
             <StaleBadge freshness={freshness} form="full" />
+            {carriesArchivedMark(item) ? <ArchivedPill /> : null}
             <StatusChip status={item.status} />
           </span>
         </div>
@@ -974,17 +979,6 @@ function shortSession(sessionId: string | null): string {
   if (!sessionId) return "sess·—";
   const head = sessionId.replace(/^sess(ion)?[-_]?/i, "").slice(0, 4);
   return head ? `sess·${head}…` : "sess·—";
-}
-
-// A title-cased reading of a slug, for the H2 fallback when an item has no
-// explicit title — "work-board-ui" → "Work Board Ui". Keeps the H2 readable
-// without re-printing the raw slug twice (the meta line is then suppressed).
-function humanizeSlug(slug: string): string {
-  return slug
-    .split(/[-_]+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }
 
 // Strip the YAML frontmatter block and HTML comments so the rendered doc reads as

@@ -30,11 +30,26 @@ export type Derived = {
   // existing driver placement uat already uses (BoardLanes' `all`-focus lane
   // bucket), never a new lane/column.
   otherDrivers: WorkItem[];
+  // milestone 127 / ADR-006 §3 — the BACKLOG rows (`number === null`, the wire's own fact),
+  // in wire order. Partitioned out BEFORE any card, gate bar or lane is derived: a backlog
+  // milestone reaching the card sweep below would be painted as a card with its slug in the
+  // ref slot and a `not-started` ring asserting a lifecycle it has not entered. The overview
+  // shows them as quiet grouped rows (DESIGN §Surface 1); nothing else on the board sees them.
+  backlog: WorkItem[];
+  // `byRef` deliberately EXCLUDES backlog rows: `Board.tsx`'s hash deep-link resolves `#<ref>`
+  // through it and would otherwise open a board for a backlog milestone. The board is
+  // read-only on the backlog (DESIGN documented default 1), so `#search-the-fleet` lands on the
+  // overview and opens nothing.
   byRef: Map<string, WorkItem>;
   // Stream-wide summary counts (overview chips).
   doneMilestones: number;
   activeMilestones: number;
   blockedGates: number;
+  // The RENDERED milestones that carry `archived: true` — only ever non-zero while the list
+  // was fetched with the include-archived parameter, since the default list cannot hold one.
+  // `doneMilestones` counts them too (an archived card's own chip reads `✓ done`); this is the
+  // subset, stated by its own chip so the two never contradict each other (DESIGN §Surface 2).
+  archivedMilestones: number;
 };
 
 // A milestone's "number" key as referenced by a child's `parent` field. In the
@@ -56,16 +71,25 @@ function sameMilestone(parent: string | null, milestoneRef: string): boolean {
   return Number.isFinite(a) && Number.isFinite(b) && a === b;
 }
 
-export function deriveBoard(items: WorkItem[]): Derived {
-  const byRef = new Map<string, WorkItem>();
-  for (const item of items) byRef.set(item.ref, item);
+// A backlog row, by the ONE fact the wire carries for it (127/ADR-006 §1): `number: null`.
+// The key is PRESENT only on a backlog row — a live row and an archived row never carry it —
+// so `=== null` is the whole test, and the ref's shape is never consulted.
+const isBacklogRow = (item: WorkItem): boolean => item.number === null;
 
-  const milestoneItems = items.filter((i) => i.type === "milestone" && i.parent == null);
-  const uat = items.filter((i) => i.type === "uat");
-  const otherDrivers = items.filter((i) => i.type === "spike" || i.type === "chore");
+export function deriveBoard(items: WorkItem[]): Derived {
+  // THE PARTITION, FIRST (127/ADR-006 §3): every derivation below runs over the remainder.
+  const backlog = items.filter(isBacklogRow);
+  const stream = items.filter((i) => !isBacklogRow(i));
+
+  const byRef = new Map<string, WorkItem>();
+  for (const item of stream) byRef.set(item.ref, item);
+
+  const milestoneItems = stream.filter((i) => i.type === "milestone" && i.parent == null);
+  const uat = stream.filter((i) => i.type === "uat");
+  const otherDrivers = stream.filter((i) => i.type === "spike" || i.type === "chore");
 
   const milestones: Milestone[] = milestoneItems.map((item) => {
-    const stories = items.filter((s) => s.type === "story" && sameMilestone(s.parent, milestoneKey(item)));
+    const stories = stream.filter((s) => s.type === "story" && sameMilestone(s.parent, milestoneKey(item)));
     const tally = (status: WorkStatus) => stories.filter((s) => s.status === status).length;
     const total = stories.length;
     const done = tally("done");
@@ -89,16 +113,19 @@ export function deriveBoard(items: WorkItem[]): Derived {
   const doneMilestones = milestones.filter((m) => m.item.status === "done").length;
   const activeMilestones = milestones.filter((m) => m.item.status === "in-progress").length;
   const blockedGates = uat.filter((u) => u.status === "blocked").length;
+  const archivedMilestones = milestones.filter((m) => m.item.archived === true).length;
 
   return {
     items,
     milestones,
     uat,
     otherDrivers,
+    backlog,
     byRef,
     doneMilestones,
     activeMilestones,
     blockedGates,
+    archivedMilestones,
   };
 }
 
@@ -126,3 +153,15 @@ export function findMilestone(derived: Derived, ref: string): Milestone | null {
 }
 
 export const titleOf = (item: WorkItem): string => item.title ?? item.slug;
+
+// A title-cased reading of a slug, for a heading's fallback when an item has no explicit
+// title — "work-board-ui" → "Work Board Ui". ONE spelling for the board (127/04 moved it
+// here from the detail panel, which keeps using it): the backlog row's title falls back to
+// the same reading, so the two surfaces can never humanise a slug two ways.
+export function humanizeSlug(slug: string): string {
+  return slug
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}

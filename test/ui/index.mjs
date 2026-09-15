@@ -301,6 +301,9 @@ import { boardProvenanceAttributionTests } from "./board-provenance-attribution.
 import { boardResyncDoorTests } from "./board-resync-door.test.mjs";
 import { boardResyncOutcomesTests } from "./board-resync-outcomes.test.mjs";
 import { boardFreshnessLegendTests } from "./board-freshness-legend.test.mjs";
+// milestone 127 / story 04 — the board shows the backlog as rows (task 03), hides the archive
+// behind one toggle with one mark (task 04), and the fleet partitions the backlog out (task 05).
+import { boardBacklogAndArchiveTests } from "./board-backlog-and-archive.test.mjs";
 import { boardStalenessA11yTests } from "./board-staleness-a11y.test.mjs";
 // milestone 50 / story 04, lane C — THE OPERATOR-FACING AFFORDANCE (ADR-008 decision 10;
 // DESIGN §The picker's shape / §The state machine / §The failure map). Both suites drive the
@@ -401,6 +404,8 @@ export const tests = [
   ...boardResyncDoorTests,
   ...boardResyncOutcomesTests,
   ...boardFreshnessLegendTests,
+  // milestone 127 / story 04 — the backlog region, the archive toggle + mark, the fleet partition
+  ...boardBacklogAndArchiveTests,
   ...boardStalenessA11yTests,
   // milestone 50 / story 04 lane C — the new-session picker (task 01) and the
   // operator-visible state machine (task 02), both over the pure launcher module

@@ -167,6 +167,15 @@ export type GlobalWorkItem = {
   // copy of something another machine said.
   reportedBy?: string | null;
   syncedAt?: string | null;
+  // milestone 127 / ADR-006 — the three roots, as the ONE row mapper (`mapItemRow`) states
+  // them, the same three optional keys the board's `WorkItem` carries: a BACKLOG row is
+  // `number: null` + `backlog` (its group path, `""` at the top; its ref is its slug), an
+  // ARCHIVED row is `archived: true`. All three are ABSENT on a live row. The fleet's milestone
+  // list partitions the backlog out on `number === null` (`scope.mjs`) and leaves an archived
+  // row to its status filter; nothing here reads a ref's shape.
+  number?: null;
+  backlog?: string;
+  archived?: true;
 };
 
 // A global registry node descriptor (src/global-node-registry.mjs) — the "node

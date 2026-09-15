@@ -137,10 +137,13 @@ export const meshAssignmentRecordTests = [
         // v8 (m43 / ADR-004 + ADR-006, owned by story 43/02): the additive
         // work_items.node_id + work_items.updated_at provenance columns — same
         // rationale, and the migration itself has its own fixture below.
-        assert.equal(GLOBAL_WORK_SCHEMA_VERSION, 8);
-        assert.equal(v3.schemaVersion, 8);
+        // v9 (m127 / ADR-006 §1, owned by 127/04): the additive work_items.backlog +
+        // work_items.archived location columns — same rationale, same re-arm; the migration
+        // has its own fixture in global-work-store.test.mjs.
+        assert.equal(GLOBAL_WORK_SCHEMA_VERSION, 9);
+        assert.equal(v3.schemaVersion, 9);
         const version = v3.db.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get();
-        assert.equal(version.value, 8);
+        assert.equal(version.value, 9);
 
         const tables = v3.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all().map((r) => r.name);
         assert.ok(tables.includes("global_assignments"), "global_assignments table exists");

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { workApi } from "./api";
-import type { WorkItem } from "./api";
+import type { WorkItem, WorkListEnvelope } from "./api";
 import { deriveBoard, milestoneOfGate } from "./model";
 import { primaryAction } from "./action.mjs";
 import { freshness, isCachePublished, readCacheNodeId, readStalenessWindow } from "./freshness.mjs";
 import type { Freshness, FreshnessRecord } from "./freshness.mjs";
 import { FreshnessLegend } from "./StaleBadge";
+// milestone 127 — the archived mark, painted by the legend's new row (DESIGN §"The archived
+// mark": a vocabulary not in the legend is one the operator must guess).
+import { ArchivedPill } from "./ArchivedPill";
 import { Overview } from "./Overview";
 import { BoardLanes } from "./BoardLanes";
 import { DetailPanel } from "./DetailPanel";
@@ -97,6 +100,29 @@ export function Board() {
   const [serverGone, setServerGone] = useState(false);
   const silentFailures = useRef(0);
 
+  // milestone 127 / ADR-006 §2 — THE `Show archived` TOGGLE (DESIGN §Surface 2). Hidden is a
+  // property of the FETCH, not a filter the board applies: with the toggle OFF the list is
+  // requested WITHOUT the include-archived parameter and so cannot hold an `archived: true` row
+  // at all. `showArchived` is the COMMITTED state — it flips only once the refetch with the
+  // parameter has landed, so `aria-pressed` never reads ON over a list that lacks the rows (a
+  // lie by shape). Session state only, default OFF on every mount: not `localStorage`, not the
+  // URL, not the hash (documented default 3 — a sticky ON would re-fill the overview with every
+  // done milestone on every load, the exact state this milestone ends). The ref mirrors the
+  // committed state so `load` — whose identity every poll effect hangs off — reads it without
+  // re-arming those effects, and every later list request (⟳ sync, the executing-item re-poll,
+  // the post-action refresh) carries the committed state rather than silently flipping back.
+  const [showArchived, setShowArchived] = useState(false);
+  const showArchivedRef = useRef(false);
+  const [archiveBusy, setArchiveBusy] = useState(false);
+
+  // ONE application point for a list envelope, shared by the ordinary load and the toggle's
+  // own refetch, so the two can never land a response two different ways.
+  const applyEnvelope = useCallback((envelope: WorkListEnvelope) => {
+    setItems(envelope.items);
+    setStalenessWindow(readStalenessWindow(envelope));
+    setThisNode(readCacheNodeId(envelope));
+  }, []);
+
   const load = useCallback(async ({ silent = false } = {}) => {
     // A SILENT refresh (the top-bar ⟳ sync) updates the stream IN PLACE — it must
     // NOT flip to the full-screen loading/error branch, because that unmounts the
@@ -107,10 +133,7 @@ export function Board() {
       setError(null);
     }
     try {
-      const envelope = await workApi.list();
-      setItems(envelope.items);
-      setStalenessWindow(readStalenessWindow(envelope));
-      setThisNode(readCacheNodeId(envelope));
+      applyEnvelope(await workApi.list({ includeArchived: showArchivedRef.current }));
       silentFailures.current = 0;
       setServerGone(false);
     } catch (e) {
@@ -123,11 +146,37 @@ export function Board() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [applyEnvelope]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // The toggle's own refetch, IN PLACE (the silent path: never `setLoading`, so the loading
+  // branch never mounts and the dock is never unmounted). ONE list request with the parameter
+  // flipped; while it is in flight the button is disabled + busy and the rendered list is the
+  // PREVIOUS response's. On success the state commits and the rows land; on failure it does NOT
+  // commit — the button reads its prior `aria-pressed` — and the existing dispatch toast reports
+  // the refusal (documented default 7). The toast, not a page-level error: the list the operator
+  // is looking at is still a good list, only the scope change was refused.
+  const [dispatch, setDispatch] = useState<{ ref: string; message: string; error: boolean } | null>(null);
+  const toggleArchived = useCallback(async () => {
+    const next = !showArchivedRef.current;
+    setArchiveBusy(true);
+    try {
+      applyEnvelope(await workApi.list({ includeArchived: next }));
+      showArchivedRef.current = next;
+      setShowArchived(next);
+    } catch (error) {
+      setDispatch({
+        ref: "Show archived",
+        message: `could not refetch the list: ${error instanceof Error ? error.message : String(error)}`,
+        error: true,
+      });
+    } finally {
+      setArchiveBusy(false);
+    }
+  }, [applyEnvelope]);
 
   // THE COSMETIC TICK, AT THE ITEM-SURFACE LEVEL (DESIGN §"The threshold
   // crossing"; 43/ADR-010 R4.4 — load-bearing, not a detail). Cache freshness is
@@ -290,9 +339,12 @@ export function Board() {
     return () => clearInterval(poll);
   }, [resyncWatching, load]);
 
+  // Resolved through `byRef` rather than the raw list (127/04): `byRef` excludes backlog rows,
+  // so a backlog slug in the hash selects nothing and the detail panel never opens on an item
+  // the board is read-only on (DESIGN documented default 1).
   const selectedItem = useMemo(
-    () => items.find((item) => item.ref === selectedRef) ?? null,
-    [items, selectedRef]
+    () => (selectedRef ? derived.byRef.get(selectedRef) ?? null : null),
+    [derived, selectedRef]
   );
 
   // The state-aware primary action for the selected item. `hasBreakdown` is true
@@ -358,8 +410,8 @@ export function Board() {
   // when nothing ever has. `local` opens the dock exactly as before; `remote` opens NO
   // local session — it dispatched to a worker, so the board just refreshes and the row
   // reports "running on <node>". Clicking Continue on a milestone a worker owns can no
-  // longer start a rival run against this machine's checkout.
-  const [dispatch, setDispatch] = useState<{ ref: string; message: string; error: boolean } | null>(null);
+  // longer start a rival run against this machine's checkout. (`dispatch` — the toast's
+  // state — is declared beside the archive toggle above, which reports through it too.)
   const continueWork = useCallback(
     async (ref: string, phase: "continue" | "refine" | "verify" = "continue") => {
       select(ref);
@@ -497,7 +549,31 @@ export function Board() {
           tile; and the wordmark loses its route word, because the nav names the route and a
           second word would say it twice). What survives is what is the BOARD's: its status
           legend and its ⟳ sync, contributed to the shell's right-anchored surface slot. */}
-      <SurfaceSlot deps={[stalenessWindow, load]} className="flex items-center justify-end gap-4 px-4 py-2 text-xs text-muted-foreground">
+      <SurfaceSlot deps={[stalenessWindow, load, showArchived, archiveBusy, toggleArchived]} className="flex items-center justify-end gap-4 px-4 py-2 text-xs text-muted-foreground">
+        {/* milestone 127 — THE ONE TOGGLE (DESIGN §Surface 2), left of the legend. It lives here
+            and not in the overview header because it is a FETCH-SCOPE control — it changes what
+            the list request asks for, the thing ⟳ sync re-runs — and it must be visible in BOTH
+            views: an archived milestone's lane board can only exist while the toggle is ON, and
+            the board must say why the row is there. Constant label, NO count (while OFF the
+            archived count is not on the wire and is never guessed). `aria-pressed` reflects the
+            COMMITTED state; in flight = `disabled` + `aria-busy`. The ON tint is the board's own
+            Resync at-rest tint, never a teal fill (the headline action's); the same padding both
+            ways, so flipping it moves nothing in the bar. `min-h-6` keeps the hit target ≥ 24px. */}
+        <button
+          type="button"
+          onClick={() => void toggleArchived()}
+          disabled={archiveBusy}
+          aria-busy={archiveBusy ? "true" : undefined}
+          aria-pressed={showArchived ? "true" : "false"}
+          aria-label="Show archived items"
+          className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium transition min-h-6 ${
+            showArchived
+              ? "border-primary/40 bg-primary/10 text-primary"
+              : "border-border bg-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Show archived
+        </button>
         <StatusLegend windowSeconds={stalenessWindow} />
         <button
           type="button"
@@ -533,6 +609,7 @@ export function Board() {
             derived={derived}
             gateWaiting={gateWaiting}
             freshnessOf={freshnessOf}
+            showArchived={showArchived}
             onOpenMilestone={openMilestone}
             onOpenGate={openGate}
           />
@@ -658,6 +735,13 @@ function StatusLegend({ windowSeconds }: { windowSeconds: number | null }) {
           ))}
           <span className="my-1.5 block border-t border-border" />
           <FreshnessLegend windowSeconds={windowSeconds} />
+          {/* milestone 127 — the archived mark, ONE row after the Freshness block, painting the
+              REAL pill (the m35 precedent: real chips, never drawings). Same rule as the block
+              above it: a vocabulary not in the legend is one the operator must guess. */}
+          <span className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+            <ArchivedPill />
+            <span>— done and moved to archive/; shown only with &quot;Show archived&quot;</span>
+          </span>
         </div>
       ) : null}
     </span>

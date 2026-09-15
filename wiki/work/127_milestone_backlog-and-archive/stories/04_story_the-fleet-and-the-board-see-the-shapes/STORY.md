@@ -5,7 +5,7 @@ slug: the-fleet-and-the-board-see-the-shapes
 title: "The fleet and the board see the shapes — a remote node answers for a backlog or archived item, and the board shows the backlog and hides the archive"
 parent: 127
 depends: [1]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-09-11
 updated: 2026-09-15
@@ -43,6 +43,7 @@ reads:
   - test/work/stream/work-backlog-archive-enumerate.test.mjs
 files:
   - src/global-work-store.mjs
+  - src/work/item-row.mjs
   - src/work/read.mjs
   - src/board-ui.mjs
   - ui/src/board/api.ts
@@ -56,6 +57,8 @@ files:
   - ui/src/fleet/api.ts
   - test/store/global-work-store.test.mjs
   - test/store/cache-read-seam.test.mjs
+  - test/store/staleness-schema-v8-provenance.test.mjs
+  - test/mesh/assignment/mesh-assignment-record.test.mjs
   - test/support/cache-read-fixture.mjs
   - test/support/board-face-fixture.mjs
   - test/ui/board-api.test.mjs
@@ -102,12 +105,12 @@ What lands:
 
 ## Tasks
 
-- [ ] 00 `the-cache-row-carries-the-two-shapes` — schema v9, the projection, the bind, the frame doors, `mapItemRow`
-- [ ] 01 `a-remote-node-answers-for-a-backlog-or-archived-item` — `cacheOnlyItem`, the overlay rule, every cache-first reader, the CLI
-- [ ] 02 `the-list-route-takes-include-archived` — the one parameter, the `WorkItem` type, the fixture's two new members
-- [ ] 03 `the-overview-shows-the-backlog-as-rows` — `deriveBoard` partitions first; §Surface 1's checklist off the real tree
-- [ ] 04 `one-toggle-reveals-the-archive-with-one-mark` — the toggle, the refetch in place, the pill in every context, the chip, the legend
-- [ ] 05 `the-fleet-partitions-the-backlog-out` — `milestoneListItems` drops `number: null`; archived follows the status filter
+- [x] 00 `the-cache-row-carries-the-two-shapes` — schema v9, the projection, the bind, the frame doors, `mapItemRow`
+- [x] 01 `a-remote-node-answers-for-a-backlog-or-archived-item` — `cacheOnlyItem`, the overlay rule, every cache-first reader, the CLI
+- [x] 02 `the-list-route-takes-include-archived` — the one parameter, the `WorkItem` type, the fixture's two new members
+- [x] 03 `the-overview-shows-the-backlog-as-rows` — `deriveBoard` partitions first; §Surface 1's checklist off the real tree
+- [x] 04 `one-toggle-reveals-the-archive-with-one-mark` — the toggle, the refetch in place, the pill in every context, the chip, the legend
+- [x] 05 `the-fleet-partitions-the-backlog-out` — `milestoneListItems` drops `number: null`; archived follows the status filter
 - [ ] 06 `a-person-judges-the-two-surfaces` — `@uat`: CONFORMS / GAPS / INCONCLUSIVE per checklist row
 
 ## Notes

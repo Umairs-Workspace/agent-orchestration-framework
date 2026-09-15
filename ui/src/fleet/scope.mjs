@@ -395,8 +395,21 @@ export function emptyStateCopy(narrowings) {
 // (milestones, stories, tasks). The fleet UI's top-level global list is a
 // milestone list, so it projects that complete payload down to milestone rows at
 // render time instead of asking the store to forget lower-level items.
+//
+// milestone 127 / ADR-006 §1 (story 04) — THE BACKLOG IS PARTITIONED OUT, before the list is
+// derived. The payload now carries a backlog milestone as `{ type: "milestone", number: null,
+// backlog: <group> }` — an un-numbered idea whose ref is its slug; fed to this list it would be
+// painted as a milestone row with its slug in the ref slot AND handed an `AssignAffordance`,
+// offering to dispatch an item that cannot be scheduled because it has no number and gates
+// nothing. The rule is the wire's own fact, `number === null` — the key is PRESENT only on a
+// backlog row (an absent key is a numbered row), and the ref's shape is never consulted.
+// An ARCHIVED milestone is NOT partitioned here: it is a `done` row to the status filter the
+// fleet already has (`workStatusAdmits` below — `open` hides it, `all` and `done` show it),
+// unmarked. DESIGN designs no fleet surface, so this file adds nothing visible; a mark on the
+// fleet is a later design's, with a checklist, not this story's guess (a documented default).
+// The filter DROPS rows and rewrites none: every surviving row is byte-identical.
 export function milestoneListItems(items) {
-  return (items ?? []).filter((item) => item?.type === "milestone");
+  return (items ?? []).filter((item) => item?.type === "milestone" && item?.number !== null);
 }
 
 function sameMilestoneParent(parent, milestoneRef) {
