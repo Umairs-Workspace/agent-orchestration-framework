@@ -6,7 +6,7 @@ title: "Backlog and archive — the work tree holds what is live"
 status: in-progress
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-12
+updated: 2026-09-15
 depends: []
 schema: 1
 aofVersion: 0.1.0
