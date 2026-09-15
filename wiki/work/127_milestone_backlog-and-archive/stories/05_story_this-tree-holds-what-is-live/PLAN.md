@@ -4,25 +4,35 @@ Advisory, the builder's own. The task features are the contract; this is the sha
 
 ## The mechanism
 
-This story runs the milestone against itself. It sets the intake key in this repository's config,
-runs the archive verb with `--done` over the real stream, and records the outsider's check as a
-behavioural test over the real tree plus the command transcripts. The diff is almost entirely
-renames; the reviewer reads it as such. The ledger entries the milestone discharged (the regex
-copies, the scanners) are deleted, not annotated.
+This story runs the milestone against itself, in three moves. First the one config line, then
+the add → promote round trip proved on a SHAPE COPY of the real stream — every `.md` and
+`.feature` under the work dir copied to a scratch project (2 MB; no `runs/`), so `next`,
+`validate`, `promote` and the board face run over the stream's actual `depends:` edges and
+numbering without a single write to the operator's checkout. Second, the archive verb with
+`--done`, once, for real: read `git status` before, list the candidates behind the gate, move,
+stage EXACTLY the envelope's paths so git pairs the renames, fix the four `wiki/memory.md` links
+by hand, run `memory ingest`. Third, the outsider's check as a suite over the real tree that
+names real refs (`52`, `32`, the live three) and pins one measured number — the resolving-link
+count taken immediately before the move.
 
-Do this LAST and on a clean checkout: other lanes edit this tree mid-session, so gate on the item
-ref, check `git status` before and after the move, and never `git add -A`.
+Measure before you move: the link scan (03/01's rule) over `wiki/work/**/*.md`, the `aof work
+debt` findings set, `git status --porcelain`, `aof work next 32`. Every "same as before"
+assertion in task 02 rests on a number you took first.
+
+Do this LAST and on a clean checkout, on the milestone branch: other lanes edit this tree
+mid-session, so gate on the item ref, check `git status` before and after the move, never
+`git add -A`, and never run the move from a dispatch worktree whose `cd` persisted.
 
 ## The verification step
 
-The SPEC's last paragraph, executed: add an item and find it under `backlog/` with no number;
-promote it and find it at the root with the next number, with `find`, `validate`, `next` and the
-board agreeing; `aof work find 52`, `read 52`, `memory ingest`, `depends` resolution and
-`validate` answer for the archived milestone while `next`, `loop` and the default listings do
-not; `ls wiki/work` is a short list of live items. `aof work validate` and `aof work doctor` are
-green over the whole tree after the move.
+Task 02's suite green as `node scripts/test.mjs --only test/work/stream/work-this-tree-holds-what-is-live.test.mjs`
+under an isolated global home, plus the two path-reader controls and 03's own suite as focused
+runs. `aof work validate` `[]` and `aof work doctor` with no `error` from the repository root
+over the moved tree. `ls wiki/work` read by eye: three live milestones, one blocked uat, the
+imported `42_structural-overhaul`, three root files, `archive/`, `backlog/`.
 
 ## Out of scope
 
-Any code change — this story writes no `src/` file; if the move surfaces a defect, it is fixed in
-the story that owns the file, not here.
+Any code change — this story writes no `src/` file; if the move surfaces a defect, it is fixed
+in the story that owns the file, not here. Archiving `127` itself (after its accept, by the
+operator). Anything about `42_structural-overhaul` (not an item; a migration is its own item).

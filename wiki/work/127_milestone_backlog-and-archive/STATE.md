@@ -76,6 +76,53 @@ doc: state
   archived item holds a number in the shift range (a live row would land on it — ADR-003 has no
   such rule yet); FF-12703's `appendPosition` caller family must include
   `src/commands/migrate-folder.mjs` (its `nextFreeSlot` retires onto the mint in 01).
+- **Stories 04 and 05 refined 2026-09-15 (solo — PO, QA and developer played inline; no agent
+  spawned). Six facts corrected on contact with the source, each ratified in the contract it
+  lands in.** (04) The cache-first seam's `cacheOnlyItem` (`src/work/read.mjs`) derives `number`
+  FROM THE REF, so a remote node rebuilt a backlog slug as `number: "gamma"` (live!) and never
+  rebuilt `archived` — the module joins 04's write set (04/01). The store has no column for
+  either fact: schema v8 → v9 adds `backlog TEXT` + `archived INTEGER` by the v8 in-place ALTER
+  idiom, and `archived` is mapped at the bind because SQLite refuses a boolean (04/00). The
+  FLEET's milestone list would paint a backlog row AND offer `AssignAffordance` on it — a
+  dispatch minted for an item with no number — so `ui/src/fleet/{scope.mjs,api.ts}` join the
+  write set with a PARTITION ONLY (04/05). **Default decision:** the fleet paints no archived
+  mark and no backlog region (DESIGN.md designs no fleet surface; a mark there is a later
+  design's with a checklist); an archived milestone falls under the fleet's existing status
+  filter (`open` hides it). Archived cards render in the WIRE's order — after the live milestones
+  (ADR-002 §5) — DESIGN §Surface 2's "where its number puts it" assumed an interleaving the wire
+  does not have (04/04). `test/ui` is at its ceiling (56): the one new suite raises the row.
+  (05) The stream holds 125 `done` drivers, not 123; `TECH_DEBT.md` holds NO entry for the
+  `ITEM_RE` homes or the scanners (the SPEC described code debt, not a ledger entry — nothing to
+  delete, 05/01); 03/01's "nothing outside `wiki/work` links into an item folder (measured 0)" is
+  off by FOUR — `wiki/memory.md:15,130,137,147` link into `05_milestone_work-memory`, fixed by
+  hand in 05 (`wiki/memory.md` joins its `files:`), the verb's scope unchanged; there is no
+  `aof work read` or `recent` verb (the SPEC's "read 52" is `doc 52 SPEC`; `recent` is a prompt
+  over `work:list`); the add → promote round trip runs on a SHAPE COPY of the real stream (every
+  `.md`/`.feature`, 2 MB) because a test never writes the real tree, and the link invariant over
+  the real tree is a RATCHET pinned to the count measured immediately before the move (05/02).
+  `42_structural-overhaul` (an imported folder no `ITEM_RE` matches) stays at the root, invisible.
+- **Story 03 refined 2026-09-15 (orchestrated: PO inline, QA + developer spawned) — four
+  ADR-004 facts sharpened in its contracts, ratified in that beat.** (1) ADR-004 §2's "a link from
+  inside the moved folder to a root sibling gains `../`" is one case of the measured rule: 2,192
+  relative inline links under `wiki/work`, 96 cross items, but 1,868 LEAVE their item folder for
+  `src/`, `ui/`, `test/`, `planning/`, `ROADMAP.md` (1,190 resolving) — so EVERY link crossing the
+  line is rewritten and the invariant is "every relative link resolves to the same path after the
+  move as before" (03/01). (2) The engine (`archiveItems` + `rewriteCrossingLinks`) is
+  `src/work/archive.mjs`, `reindex.mjs`'s twin — the seam imports its fact-writer and a command
+  cannot be one without a cycle; ADR-004 §1's `src/commands/archive.mjs` stays the verb, and
+  FF-12705 sweeps both files (03/03, 03/05). `src/work` 41→42, `src/commands` 68→69 stated.
+  (3) There are TWO runtime path-readers, not one: `acd-declared-program-single-speller.test.mjs:283`
+  reads 72/00's task feature; both resolve through `findWork` (03/03). (4) FF-12705's transitive
+  leg walks import specifiers over source, not the gitignored graph, and treats the seam edge
+  `stream-transitions.mjs → reindex.mjs` as the one sanctioned crossing (03/05). Memory recall
+  surfaced m22/R5 (pin line endings) — honoured: the rewriter preserves each file's own EOL/BOM.
+  **Default decisions:** `--done` is gated on ANY count (no threshold; `archive-confirm-required`
+  with `candidates` in `detail`), `<NN>` never gated; a `done` milestone is checked on its own
+  status only, stories move with it; renames first then one rewrite pass; the rewriter is
+  syntactic (fenced code blocks included) and never consults target existence. **Open for 05:**
+  the retired `.mjs` suites under `35_…/reference/` keep a relative `import` that breaks after
+  the move — accepted by ADR-004 §3 (in no runner); `.aof/aof.lock.json` and `manifest.json`
+  are declared writes because `aof work update` renders the wrapper (parity control).
 
 ## Feedback (for retro)
 

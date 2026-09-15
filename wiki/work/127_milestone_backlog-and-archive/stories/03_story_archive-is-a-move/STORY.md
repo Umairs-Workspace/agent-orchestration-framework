@@ -8,7 +8,7 @@ depends: [1]
 status: not-started
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-11
+updated: 2026-09-15
 adrs: [ADR-004]
 reads:
   - wiki/work/127_milestone_backlog-and-archive/SPEC.md
@@ -22,24 +22,49 @@ reads:
   - src/command-core.mjs
   - src/work/memory.mjs
   - src/bundle/commands/verify.md
+  - src/bundle/commands/promote.md
+  - src/commands/promote.mjs
+  - src/work/reindex.mjs
+  - src/item-lock.mjs
+  - src/effects/journal.mjs
+  - src/global-work-store.mjs
+  - src/spine/face.mjs
   - test/arch/planning/acd-tune-carries-no-second-rule.test.mjs
+  - test/arch/command/acd-declared-program-single-speller.test.mjs
+  - test/arch/command/acd-effects-ledger.test.mjs
+  - test/arch/store/acd-stream-reindex-cascade.test.mjs
+  - test/work/stream/work-backlog-archive-enumerate.test.mjs
+  - test/work/stream/work-promote-mints-the-number.test.mjs
+  - test/support/item-lock-fixture.mjs
 files:
   - src/commands/archive.mjs
+  - src/work/archive.mjs
   - src/effects/stream-transitions.mjs
   - src/effects/table.mjs
   - src/command-core.mjs
   - src/cli.mjs
+  - src/bundle/bundle.json
   - src/bundle/commands/archive.md
   - src/bundle/commands/verify.md
+  - src/bundle/manifest.json
+  - .aof/aof.lock.json
+  - .claude/commands/aof/archive.md
+  - .codex/skills/aof-archive/SKILL.md
+  - .opencode/commands/aof/archive.md
+  - .claude/commands/aof/verify.md
+  - .codex/skills/aof-verify/SKILL.md
+  - .opencode/commands/aof/verify.md
   - test/arch/planning/acd-tune-carries-no-second-rule.test.mjs
+  - test/arch/command/acd-declared-program-single-speller.test.mjs
   - test/work/stream/work-archive-is-a-move.test.mjs
   - test/work/stream/index.mjs
   - test/arch/work/acd-archive-never-renumbers.test.mjs
   - test/arch/work/index.mjs
-  - .claude/commands/aof/verify.md
-  - .codex/skills/aof-verify/SKILL.md
-  - .opencode/commands/aof/verify.md
-  - src/bundle/manifest.json
+  - test/arch/work/acd-work-insert-command-bundle-parity.test.mjs
+  - test/arch/work/acd-work-command-cli-bijection.test.mjs
+  - test/arch/work/acd-work-command-route-coverage.test.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
+  - test/command/command-core-contract.test.mjs
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -79,7 +104,12 @@ What lands:
 
 ## Tasks
 
-- to be authored at the story's own refine (`aof:refine 127/03`)
+- [ ] 00 `archive-moves-a-done-driver-verbatim` — the verb, its refusals, the rename, the envelope, the ledgers
+- [ ] 01 `only-the-links-that-cross-the-line-are-rewritten` — the rewriter's one invariant and its three shapes
+- [ ] 02 `done-archives-every-done-driver-behind-one-gate` — `--done`: selection, the list, the gate, one run
+- [ ] 03 `the-fleet-follows-and-the-one-path-reader-survives` — `stream.archived` through the seam, the publish, the two path-readers
+- [ ] 04 `the-prompts-drive-the-verb-and-never-archive-on-their-own` — `/aof:archive`, the one `verify.md` line, parity widened
+- [ ] 05 `the-control-goes-red-on-contact` — FF-12705 lands, its probes, the four budget rows
 
 ## Notes
 
@@ -88,3 +118,10 @@ What lands:
   this story adds the move, not the visibility.
 - `--done` over this repository's 123 done items is story 05's act, not this one's; this story
   proves the verb on a fixture stream.
+- Ratified at refine (2026-09-15), in the contracts: ADR-004 §2's "a link to a root sibling gains
+  `../`" is one case of the measured rule — 1,868 links leave their item folder for `src/`, `ui/`,
+  `planning/`, so EVERY link crossing the line is rewritten and every link resolves to what it did
+  before (task 01); the engine is `src/work/archive.mjs`, `reindex.mjs`'s twin, because the seam
+  imports its fact-writer and a command cannot be one without a cycle (task 03); there are TWO
+  runtime path-readers, not one — `acd-declared-program-single-speller` reads 72/00 (task 03);
+  FF-12705's transitive leg walks import specifiers, not the gitignored graph (task 05).

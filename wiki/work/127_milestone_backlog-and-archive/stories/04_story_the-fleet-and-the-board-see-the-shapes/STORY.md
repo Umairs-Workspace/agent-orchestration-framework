@@ -8,7 +8,7 @@ depends: [1]
 status: not-started
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-11
+updated: 2026-09-15
 adrs: [ADR-006]
 reads:
   - wiki/work/127_milestone_backlog-and-archive/SPEC.md
@@ -17,27 +17,51 @@ reads:
   - wiki/work/127_milestone_backlog-and-archive/ARCHITECTURE.md#ADR-006
   - wiki/work/127_milestone_backlog-and-archive/DESIGN.md
   - src/work.mjs
-  - src/global-work-store.mjs
-  - src/global-work-publisher.mjs
-  - src/board-ui.mjs
+  - src/cache-read.mjs
   - src/cache-provenance.mjs
-  - ui/src/board/api.ts
-  - ui/src/board/model.ts
-  - ui/src/board/Overview.tsx
-  - ui/src/board/Board.tsx
+  - src/control-stream-server.mjs
+  - src/global-work-publisher.mjs
+  - src/global-mesh-query.mjs
+  - src/commands/list.mjs
+  - ui/src/board/status.tsx
+  - ui/src/board/StaleBadge.tsx
+  - ui/src/board/ProvenanceLine.tsx
+  - ui/src/board/action.mjs
+  - ui/src/board/freshness.mjs
+  - ui/src/fleet/Fleet.tsx
   - ui/src/index.css
+  - test/support/board-app-harness.mjs
+  - test/support/react-app-harness.mjs
+  - test/support/cache-read-fixture.mjs
+  - test/support/fleet-app-harness.mjs
+  - test/store/cache-authority-own-disk-read.test.mjs
+  - test/store/cache-read-boundary-holds.test.mjs
+  - test/store/staleness-schema-v8-provenance.test.mjs
+  - test/ui/board-face-contract.test.mjs
+  - test/ui/board-freshness-legend.test.mjs
+  - test/ui/fleet-scope.test.mjs
+  - test/work/stream/work-backlog-archive-enumerate.test.mjs
 files:
   - src/global-work-store.mjs
+  - src/work/read.mjs
   - src/board-ui.mjs
   - ui/src/board/api.ts
   - ui/src/board/model.ts
   - ui/src/board/Overview.tsx
   - ui/src/board/Board.tsx
+  - ui/src/board/BoardLanes.tsx
+  - ui/src/board/DetailPanel.tsx
+  - ui/src/board/ArchivedPill.tsx
+  - ui/src/fleet/scope.mjs
+  - ui/src/fleet/api.ts
   - test/store/global-work-store.test.mjs
-  - test/store/index.mjs
+  - test/store/cache-read-seam.test.mjs
+  - test/support/cache-read-fixture.mjs
+  - test/support/board-face-fixture.mjs
   - test/ui/board-api.test.mjs
   - test/ui/board-backlog-and-archive.test.mjs
   - test/ui/index.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -61,20 +85,30 @@ with its slug in the ref slot, and an archived one is absent until asked for.
 
 What lands:
 
-- `mapItemRow` and the `view.items` merge in `src/global-work-store.mjs` carry the two new row
-  shapes unchanged from `listItems`, so `findWork` over a cached view resolves a backlog slug and an
-  archived number exactly as the owning node does.
-- `/api/work` list in `src/board-ui.mjs` takes an include-archived parameter, default excluded
-  (the board cannot know how many archived items exist with the toggle off — DESIGN.md §"What the
-  surfaces receive").
-- `deriveBoard` (`ui/src/board/model.ts`) partitions backlog rows out BEFORE card derivation; the
-  overview (`Overview.tsx`) gains the Backlog section and the archived toggle + mark exactly as
-  DESIGN.md's binding checklists specify — no mock was elicited, so the checklists are the
-  conformance source of truth.
+- The cache row carries the two shapes at every hop — the disk projection, schema v9's two
+  columns, the frame doors, the read-back, the fleet payload — widened ONLY on backlog and
+  archived rows, so every frozen-shape pin over live rows holds (task 00).
+- The cache-first seam rebuilds a cache-only backlog or archived row in the enumerator's shape,
+  so a remote node's `find`, `list`, `list --all` and `next` answer as the owning node does; a
+  checkout that still holds the folder keeps its own location (task 01).
+- `/api/work/list?includeArchived=1` threads `work:list`'s own `all`; the face filters nothing
+  (task 02).
+- The overview partitions backlog rows out first and paints them as DESIGN §Surface 1's rows
+  (task 03); one toggle flips the request and one pill marks the revealed rows wherever the
+  milestone's identity is painted, with the chip and the legend row (task 04).
+- The fleet's milestone list partitions the backlog out — no assignment on an un-numbered item
+  — and leaves archived rows to its existing status filter, unmarked (task 05).
+- A person judges both surfaces against the binding checklists (task 06, `@uat`).
 
 ## Tasks
 
-- to be authored at the story's own refine (`aof:refine 127/04`)
+- [ ] 00 `the-cache-row-carries-the-two-shapes` — schema v9, the projection, the bind, the frame doors, `mapItemRow`
+- [ ] 01 `a-remote-node-answers-for-a-backlog-or-archived-item` — `cacheOnlyItem`, the overlay rule, every cache-first reader, the CLI
+- [ ] 02 `the-list-route-takes-include-archived` — the one parameter, the `WorkItem` type, the fixture's two new members
+- [ ] 03 `the-overview-shows-the-backlog-as-rows` — `deriveBoard` partitions first; §Surface 1's checklist off the real tree
+- [ ] 04 `one-toggle-reveals-the-archive-with-one-mark` — the toggle, the refetch in place, the pill in every context, the chip, the legend
+- [ ] 05 `the-fleet-partitions-the-backlog-out` — `milestoneListItems` drops `number: null`; archived follows the status filter
+- [ ] 06 `a-person-judges-the-two-surfaces` — `@uat`: CONFORMS / GAPS / INCONCLUSIVE per checklist row
 
 ## Notes
 
@@ -82,3 +116,13 @@ What lands:
   enough to build and judge this story).
 - Visual intent is DESIGN.md's and is not restated here; the design-conformance review judges the
   built surfaces against its checklists at verify.
+- Ratified at refine (2026-09-15), in the contracts: the seam's `cacheOnlyItem` derives `number`
+  from the ref, so `src/work/read.mjs` joins the write set (task 01); the store needs two columns
+  — schema v9 — and `archived` is mapped at the bind because a boolean throws (task 00); the
+  fleet's milestone list would paint a backlog row and OFFER TO ASSIGN it, so `ui/src/fleet/`
+  joins the write set with a partition and no mark (task 05, a documented default in STATE.md);
+  archived cards render in the WIRE's order, after the live milestones — DESIGN §Surface 2's
+  "where its number puts it" assumed an interleaving ADR-002 §5 does not have (task 04);
+  `test/ui` is at its ceiling (56), so the budget row raises with this story's suite stated.
+- Build lane: this story declares no `.md`, so `aof test --scope impacted --story 127/04` may
+  stay narrow; if it widens, run the un-widened selection as `--scope file` (STATE, 01's note).

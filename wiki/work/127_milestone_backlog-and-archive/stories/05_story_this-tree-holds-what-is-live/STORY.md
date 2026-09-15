@@ -8,24 +8,36 @@ depends: [1, 2, 3, 4]
 status: not-started
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-11
+updated: 2026-09-15
 adrs: [ADR-002, ADR-004, ADR-005]
 reads:
   - wiki/work/127_milestone_backlog-and-archive/SPEC.md
   - wiki/work/127_milestone_backlog-and-archive/ARCHITECTURE.md#ADR-002
+  - wiki/work/127_milestone_backlog-and-archive/ARCHITECTURE.md#ADR-003
   - wiki/work/127_milestone_backlog-and-archive/ARCHITECTURE.md#ADR-004
   - wiki/work/127_milestone_backlog-and-archive/ARCHITECTURE.md#ADR-005
+  - wiki/work/127_milestone_backlog-and-archive/stories/03_story_archive-is-a-move/tasks/01_only-the-links-that-cross-the-line-are-rewritten.feature
   - src/commands/archive.mjs
+  - src/work/archive.mjs
   - src/commands/promote.mjs
   - src/work.mjs
   - src/board-ui.mjs
-  - .aof/aof.config.json
-  - wiki/work/TECH_DEBT.md
+  - src/work/init.mjs
+  - ui/src/board/model.ts
+  - test/support/cli-spawn.mjs
+  - test/support/board-face-fixture.mjs
+  - test/store/cache-authority-own-disk-read.test.mjs
+  - test/work/stream/work-archive-is-a-move.test.mjs
+  - test/arch/planning/acd-tune-carries-no-second-rule.test.mjs
+  - test/arch/command/acd-declared-program-single-speller.test.mjs
+  - wiki/planning/PRD-command-spine-effects-ledger.md
 files:
   - .aof/aof.config.json
+  - wiki/memory.md
   - wiki/work/TECH_DEBT.md
   - test/work/stream/work-this-tree-holds-what-is-live.test.mjs
   - test/work/stream/index.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -44,32 +56,47 @@ I want **`.aof/aof.config.json` to set `work.intake: "backlog"`, `aof work archi
 every accepted driver under `wiki/work/archive/`, and the SPEC's outsider check to pass on the
 real stream rather than a fixture**,
 so that **the root of `wiki/work` is a short list of live items** and the milestone is proven on
-the tree it was framed against — 3,102 citations by number still resolve, the 81 done → done prose
-links still open, and `next` / `loop` / the default listings never propose an archived item.
+the tree it was framed against — 3,102 citations by number still resolve, the prose links that
+cross the line still open, and `next` / `loop` / the default listings never propose an archived
+item.
 
 What lands:
 
-- `work.intake: "backlog"` in this repository's config (the one config write in the milestone).
-- `aof work archive --done` run over the stream: every `done` driver moves, name verbatim; the
-  live items stay; `git status` shows renames, not rewrites, apart from the crossing prose links
-  ADR-004 names.
-- The outsider check, as a behavioural test over the real tree and as recorded evidence: add an
-  item and find it under `backlog/` with no number; promote it and find it at the root with the
-  next number, with `find`, `validate`, `next` and the board agreeing; `aof work find 52`,
-  `read 52`, `memory ingest`, `depends` resolution and `validate` answer for the archived
-  milestone while `next`, `loop` and the default listings do not.
-- The `TECH_DEBT.md` entries this milestone discharges (the three `ITEM_RE` homes, the seven
-  scanners) are deleted from the ledger, not annotated.
+- `work.intake: "backlog"` in this repository's config — one added line — and the add → promote
+  half of the outsider check proved on a byte-faithful SHAPE COPY of the real stream (every
+  record doc and feature, no `runs/`), never by writing the real tree (task 00).
+- `aof work archive --done` run over the stream for real, once: every `done` driver moves, name
+  verbatim; the live items stay; the staged diff is renames plus the crossing prose links; the
+  four links outside `wiki/work` are fixed by hand; `memory ingest` regenerates the index (task
+  01, `@manual`, recorded as evidence).
+- The outsider check as a suite over the REAL tree: the root holds only live items, `find 52` /
+  `doc 52` / `doctor 52` / `validate` answer for the archived milestone, `next` and the default
+  listings never propose one, `next 32` is still `ready` through eleven archived dependencies, the
+  board face agrees, no relative link resolves worse than before, the two path-readers stay
+  green (task 02).
 
 ## Tasks
 
-- to be authored at the story's own refine (`aof:refine 127/05`)
+- [ ] 00 `the-repository-sets-intake-to-backlog` — the one config line; add → promote on the shape copy; find, validate, next and the board agree
+- [ ] 01 `every-done-driver-moves-under-archive` — `@manual`: the confirm gate, the move, the staged renames, `wiki/memory.md`, `memory ingest`, the ledger
+- [ ] 02 `the-outsider-check-passes-on-the-real-stream` — `@executable` over the real tree: readers answer, walkers exclude, the link ratchet, the path-readers
 
 ## Notes
 
 - The folder moves are this story's diff and are large by construction; the reviewer reads them
-  as renames. The story writes no `src/` file — `files:` is the config, the ledger and its own
-  suite.
+  as renames. The story writes no `src/` file — `files:` is the config, two docs and its own
+  suite plus the budget row it raises (`test/work/stream` 34 → 35).
 - `depends: [1, 2, 3, 4]` — this is the last story, and the only one that touches the live stream.
+  Do it LAST, on a clean checkout, on the milestone branch, never `git add -A`.
 - Archiving is NOT part of the `aof:verify 127` ceremony; the ceremony accepts, the operator
-  archives, and this story is where that order is exercised once for real.
+  archives, and this story is where that order is exercised once for real. `127` itself stays at
+  the root until the operator archives it after its own accept.
+- Ratified at refine (2026-09-15), in the contracts: the stream holds 125 `done` drivers, not the
+  SPEC's 123 (two accepts since framing) — the contract names refs, never counts, except the link
+  ratchet (task 02); `TECH_DEBT.md` records NO entry for the three `ITEM_RE` homes or the seven
+  scanners, so there is nothing to delete — the SPEC described a debt the code carried, not one
+  the ledger held (task 01); 03/01's "nothing outside `wiki/work` links into an item folder" is
+  off by four — `wiki/memory.md` links into `05_milestone_work-memory`, fixed by hand here, so
+  `wiki/memory.md` joins `files:` (task 01); there is no `aof work read` or `aof work recent` verb —
+  the SPEC's "read 52" is `doc 52 SPEC`, and `recent` is a prompt over `work:list` (task 02);
+  `42_structural-overhaul` is not an item and stays at the root (tasks 00–02).

@@ -1,0 +1,45 @@
+{
+  "runId": "20260915T120745167Z-0003",
+  "itemRef": "127/03",
+  "state": "failed",
+  "attempt": 4,
+  "outcome": "failed",
+  "sessionId": "5a05001b-91b2-4817-8a5b-cba8e23679f2",
+  "brief": {
+    "loop": {
+      "loopRunId": "5c554454-2f26-4613-9c89-c21c957bca90",
+      "scope": "127",
+      "level": "L2",
+      "cap": 6,
+      "phase": "refine",
+      "cycle": 1,
+      "startedAt": "2026-09-11T13:03:43.182Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": true
+    }
+  },
+  "createdAt": "2026-09-15T12:07:45.167Z",
+  "updatedAt": "2026-09-15T12:27:46.743Z",
+  "failureReason": "timeout",
+  "heartbeatAt": null,
+  "retryOf": "20260915T114743357Z-0002",
+  "reclaimedAt": null,
+  "node": "umamis-msi",
+  "resumeAfter": null,
+  "spend": {
+    "model": "<synthetic>",
+    "effort": "unknown",
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheCreate": 0
+    },
+    "costUsd": 0,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 1,
+    "toolCalls": 0,
+    "exitReason": "error"
+  }
+}
