@@ -58,7 +58,19 @@ export async function handleWorkApi(request, response, options = {}) {
       // node's own local frontmatter. Opt-in per call: the CLI's own `work:list` is
       // untouched. The overlay degrades to the local rows on any fault, so this cannot
       // fail the board.
-      const rows = await invoke("work:list", { mesh: true }, ctx);
+      //
+      // milestone 127 / ADR-006 §2 — `includeArchived`, the route's ONE new parameter, threads
+      // `work:list`'s own `all` flag (the archive split is `listStream`'s, 127/ADR-002 §2). It
+      // is a boolean flag read once: present as `1` or `true` it is ON, and any other value —
+      // absent, `0`, empty, `yes` — is the absent state, because the board only ever sends `1`
+      // or nothing and a face that refused `includeArchived=yes` would be inventing a
+      // validation the command does not have. The face reads no row's flag and filters no
+      // row: hidden-by-default is a property of the FETCH, decided by the command, never a
+      // second predicate here. A route parameter is a FACE concern (43/ADR-010 R4.1), so
+      // `aof work list --json` and `work:list`'s result stay byte-identical.
+      const includeArchived = params.get("includeArchived");
+      const all = includeArchived === "1" || includeArchived === "true";
+      const rows = await invoke("work:list", { mesh: true, ...(all ? { all: true } : {}) }, ctx);
       // m43 / story 04 — THE ENVELOPE. `{ items, stalenessSeconds, nodeId }`: the rows carry
       // the per-row FACTS (`reportedBy`, `syncedAt`), and the two things that are ONE fact
       // for the WHOLE response are stated once beside them.

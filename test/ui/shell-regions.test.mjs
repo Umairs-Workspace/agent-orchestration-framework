@@ -326,7 +326,10 @@ export const shellRegionsTests = [
       // accessible name carries its current value, which reads `All repos` on an unfiltered
       // mount — never blank, never a bare glyph.
       assert.deepEqual(fleetSlot, ["Scope", "Filter by repo (All repos)", "Show work by status", "Legend", "Refresh the fleet view"], "the fleet contributes the scope control, the repo filter, the freshness legend and the refresh button");
-      assert.deepEqual(boardSlot, ["Status legend", "Sync work stream"], "the board contributes the status legend and the sync button");
+      // 127/04 — the board's slot gained ONE control, the `Show archived` toggle, LEFT of the legend
+      // (127/DESIGN §Surface 2: a fetch-scope control that must be visible in both views, so it
+      // lives in the bar the shell owns rather than in the overview header).
+      assert.deepEqual(boardSlot, ["Show archived items", "Status legend", "Sync work stream"], "the board contributes the archive toggle, the status legend and the sync button");
 
       const rows = [
         { name: "the landing", routeId: "landing", slot: [] },

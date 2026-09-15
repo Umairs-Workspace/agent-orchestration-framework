@@ -15,7 +15,13 @@
 //
 // The `.archived` member token appears in `src/**` only in `src/work.mjs`, and there only inside
 // the bodies of `isLiveStreamRow`, `listItems`, `listStream` and `findWork` — so a status-based
-// or location-based exclusion cannot grow in a second module without failing here.
+// or location-based exclusion cannot grow in a second module without failing here — PLUS the two
+// STORE-BOUNDARY CARRIERS 127/04 landed (ADR-006 §1: the cache row carries the flag "exactly as
+// `listItems` emits them"): `src/work/item-row.mjs` screens it at the bind (`true → 1`) and
+// widens a stored row back to `archived: true`; `src/work/read.mjs` rebuilds a cache-only row in
+// the enumerator's shape. A carrier is not a filter: each is allow-listed BY PATH and asserted to
+// hold no `.filter(…archived)`, no status stand-in and no `isLiveStreamRow` call of its own, so
+// the exclusion this leg guards against still cannot grow outside the one predicate.
 //
 // Red probes (task 05): `.filter((row) => !row.archived)` on `findWork`'s match set fails the
 // textual leg naming `findWork` AND the fixture leg (`findWork("05")` empty); dropping the
@@ -43,6 +49,12 @@ const ARCHIVED_MEMBER_RE = /(?<!\.)\.archived\b/g;
 const ARCHIVED_FILTER_RE = /\.filter\((?:[^()]|\([^()]*\))*archived|status\s*===\s*"done"/;
 
 const bodyOf = (code, name) => functionBody(code, `function ${name}(`) ?? functionBody(code, `async function ${name}(`);
+// The store-boundary carriers (127/04, ADR-006 §1) — each reads the flag to carry it, never to
+// exclude on it. Named by path with the reason, exactly as FF-12701 names its keepers.
+const CARRIERS = Object.freeze({
+  "src/work/item-row.mjs": "the work_items row's screen, bind mapping (true → 1) and stored-row widening — the store boundary in both directions",
+  "src/work/read.mjs": "cacheOnlyItem rebuilds a cache-only row in the enumerator's shape, archived: true included",
+});
 
 // The disk readers `rel` imports from src/work.mjs. Reads the import CLAUSE of a `work.mjs`
 // import — the specifier is matched, never captured, so this is not a second specifier
@@ -85,9 +97,10 @@ export const archTests = [
     },
   },
   {
-    name: "arch/FF-12706 (acd-next-walkers-exclude-archived): the `.archived` token appears in src/** only in src/work.mjs, inside isLiveStreamRow, listItems, listStream and findWork",
+    name: "arch/FF-12706 (acd-next-walkers-exclude-archived): the `.archived` token appears in src/** only in src/work.mjs — inside isLiveStreamRow, listItems, listStream and findWork — and in the two allow-listed store-boundary carriers, which filter on nothing",
     run: async () => {
       const outside = [];
+      const carriersSeen = [];
       for (const file of await readSrcFiles(repoRoot)) {
         const rel = `src/${file.rel}`;
         if (rel === "src/work.mjs") continue;
@@ -96,9 +109,17 @@ export const archTests = [
         // row's flag — so string literals are blanked before the token is looked for, exactly
         // as comments are.
         const stripped = blankStringLiterals(stripComments(await readFile(file.path, "utf8")));
-        if (new RegExp(ARCHIVED_MEMBER_RE.source).test(stripped)) outside.push(rel);
+        if (!new RegExp(ARCHIVED_MEMBER_RE.source).test(stripped)) continue;
+        if (CARRIERS[rel] == null) {
+          outside.push(rel);
+          continue;
+        }
+        carriersSeen.push(rel);
+        assert.ok(!ARCHIVED_FILTER_RE.test(stripped), `${rel} carries the flag and filters on neither \`archived\` nor a status standing in for it (${CARRIERS[rel]})`);
+        assert.ok(!/\bisLiveStreamRow\b/.test(stripped), `${rel} applies no live-row filter of its own — the scheduling question has one home`);
       }
-      assert.deepEqual(outside, [], "no src module other than src/work.mjs reads `.archived`");
+      assert.deepEqual(outside, [], "no src module other than src/work.mjs and the two named carriers reads `.archived`");
+      assert.deepEqual(carriersSeen.sort(), Object.keys(CARRIERS).sort(), "non-vacuous: both allow-listed carriers really read the flag (an allow-list entry nothing needs is a permission nobody asked for)");
       const work = stripComments(await readFile(WORK, "utf8"));
       const allowed = ["isLiveStreamRow", "listItems", "listStream", "findWork"].map((name) => bodyOf(work, name)).filter(Boolean);
       assert.equal(allowed.length, 4, "the four bodies are found");

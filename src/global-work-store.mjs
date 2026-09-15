@@ -3,8 +3,11 @@ import { importSqliteRuntime } from "./sqlite-runtime.mjs";
 import path from "node:path";
 import { globalMeshPaths } from "./workspace.mjs";
 import { listItems, parseFrontmatter, recordDoc } from "./work.mjs";
+// 127/04 (ADR-006 §1) — the row screen, the archived flag's bind mapping and the two-shape
+// widening, from the one leaf that spells the cache row's shape (see the re-export below).
+import { itemRowFault, archivedColumn, itemLocationKeys, rowLocationKeys, wireLocationKeys } from "./work/item-row.mjs";
 
-export const GLOBAL_WORK_SCHEMA_VERSION = 8;
+export const GLOBAL_WORK_SCHEMA_VERSION = 9;
 
 // m43 / ADR-007 — the artifact set MOVED to the pure leaf `work-artifacts.mjs` and
 // widened to a two-kind manifest (8 exact filenames + `tasks/` × `.feature`).
@@ -216,6 +219,8 @@ function migrateSchema(db, existingVersion) {
         source_path TEXT NOT NULL,
         node_id TEXT,
         updated_at TEXT,
+        backlog TEXT,
+        archived INTEGER,
         PRIMARY KEY (workspace_id, ref)
       );
       CREATE INDEX IF NOT EXISTS idx_work_items_workspace ON work_items(workspace_id);
@@ -399,6 +404,16 @@ function migrateSchema(db, existingVersion) {
     if (!workItemColumns.some((column) => column.name === "updated_at")) {
       db.exec("ALTER TABLE work_items ADD COLUMN updated_at TEXT");
     }
+    // schema v9 (m127 / ADR-006 §1, story 04): the two LOCATION columns — `backlog` (a backlog
+    // row's group path, `""` at the top) and `archived` (`1`, else NULL). The SAME in-place,
+    // PRAGMA-checked ALTER as v8: the table is never dropped or wiped, and every pre-existing row
+    // reads both as NULL — a live row, which is what every row was before the archive existed.
+    if (!workItemColumns.some((column) => column.name === "backlog")) {
+      db.exec("ALTER TABLE work_items ADD COLUMN backlog TEXT");
+    }
+    if (!workItemColumns.some((column) => column.name === "archived")) {
+      db.exec("ALTER TABLE work_items ADD COLUMN archived INTEGER");
+    }
 
     if (existingVersion != null && existingVersion < GLOBAL_WORK_SCHEMA_VERSION) {
       db.prepare(`
@@ -498,44 +513,12 @@ export function remapWorkspaceFactRefs(store, workspaceId, remap = [], options =
 //
 // A row that cannot be stored is SKIPPED AND COUNTED rather than thrown — one bad row
 // must never take the frame's other rows, or the workspace's already-cached rows, with
-// it. The screen lives with the writer, the only place that knows what a storable row is.
-//
-// IT COVERS EVERY VALUE THE STATEMENT BINDS, not only the NOT NULL ones (ADR-012/B5).
-// Screening the four required columns was measured insufficient: the upsert binds eight
-// row-derived values and `status`/`title`/`parent` reached it unchecked. A frame carrying
-// `title: ["alpha","beta"]` threw out of the whole batch and landed ZERO rows; the same
-// shape reaches the DISK path from ordinary operator input (`parseFrontmatter` parses an
-// inline list) and froze every other item in the workspace on every tick until a human
-// edited that one doc. That is P0.3's own sentence, so AC5's "retired" was false until
-// this screen existed.
-// Exported so the coverage ratchet reads the ONE definition rather than re-spelling it —
-// a second copy of the list would let the ratchet pass while the real screen was wrong.
-export const REQUIRED_ITEM_FIELDS = ["ref", "type", "slug", "sourcePath"];
-export const OPTIONAL_ITEM_FIELDS = ["status", "title", "parent"];
-
-// What SQLite binds: null/undefined, a string, a number/bigint. An array, a plain object
-// and a BOOLEAN all throw — measured, not assumed. Numbers stay admitted: a `title: 2026`
-// has always stored 2026, and rejecting it would be a behaviour change in a fix's clothes.
-function isBindableValue(value) {
-  return value == null || typeof value === "string" || typeof value === "number" || typeof value === "bigint";
-}
-
-// itemRowFault(row) → null when storable, else { reason, column } — so a count is always
-// explainable by the column that caused it.
-export function itemRowFault(row) {
-  if (row == null || typeof row !== "object" || Array.isArray(row)) return { reason: "incomplete-row", column: null };
-  for (const field of REQUIRED_ITEM_FIELDS) {
-    if (typeof row[field] !== "string" || row[field].length === 0) return { reason: "incomplete-row", column: field };
-  }
-  for (const field of OPTIONAL_ITEM_FIELDS) {
-    if (!isBindableValue(row[field])) return { reason: "unstorable-value", column: field };
-  }
-  return null;
-}
-
-export function isCompleteItemRow(row) {
-  return itemRowFault(row) == null;
-}
+// it. The SCREEN — what a storable row is, covering EVERY value the statement binds
+// (ADR-012/B5) — lives in the pure leaf `./work/item-row.mjs` since 127/04, beside the two
+// location shapes it now screens and the widening that reads them back; its history is in
+// that file's header. Re-exported here so every importer, and the coverage ratchet, keeps
+// reading the ONE definition from where it always did (the `WORK_ITEM_DOC_FILES` precedent).
+export { REQUIRED_ITEM_FIELDS, OPTIONAL_ITEM_FIELDS, itemRowFault, isCompleteItemRow } from "./work/item-row.mjs";
 
 // The two AUTHORITIES a writer can have — ADR-011/A1's ruling in one word, "whose slice
 // is being written" (narrowed by ADR-012/B1: the lock gate runs FIRST for every writer,
@@ -633,8 +616,8 @@ export function upsertWorkItems(store, workspaceId, rows = [], options = {}) {
   try {
     const readRow = db.prepare("SELECT node_id, updated_at FROM work_items WHERE workspace_id = ? AND ref = ?");
     const upsert = db.prepare(`
-      INSERT INTO work_items (workspace_id, ref, type, slug, status, title, parent, source_path, node_id, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO work_items (workspace_id, ref, type, slug, status, title, parent, source_path, node_id, updated_at, backlog, archived)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(workspace_id, ref) DO UPDATE SET
         type = excluded.type,
         slug = excluded.slug,
@@ -643,7 +626,9 @@ export function upsertWorkItems(store, workspaceId, rows = [], options = {}) {
         parent = excluded.parent,
         source_path = excluded.source_path,
         node_id = excluded.node_id,
-        updated_at = excluded.updated_at
+        updated_at = excluded.updated_at,
+        backlog = excluded.backlog,
+        archived = excluded.archived
     `);
 
     for (const row of Array.isArray(rows) ? rows : []) {
@@ -728,6 +713,13 @@ export function upsertWorkItems(store, workspaceId, rows = [], options = {}) {
         row.sourcePath,
         reporter,
         at,
+        // 127/04 — the two location columns, screened above like every other bound value:
+        // `backlog` rides `OPTIONAL_ITEM_FIELDS`, `archived` is mapped `true → 1` (else NULL)
+        // because SQLite refuses the boolean the row carries. Both are in the DO UPDATE SET, so
+        // a re-report that drops the flag CLEARS it — a folder moved back out of the archive
+        // reads live again on its next publish.
+        row.backlog ?? null,
+        archivedColumn(row),
       );
       upserted += 1;
     }
@@ -1012,6 +1004,9 @@ export async function readWorkspaceProjectionItems(workspace) {
         title: meta.title ?? null,
         parent: item.parent,
         sourcePath,
+        // 127/04 — widened ONLY on a backlog or archived row (ADR-006 §1): a live row keeps its
+        // seven keys byte-for-byte.
+        ...itemLocationKeys(item),
       });
     } catch (error) {
       errors.push({
@@ -1041,6 +1036,7 @@ export function readWorkspaceItems(store, workspaceId) {
     title: row.title,
     parent: row.parent,
     sourcePath: row.source_path,
+    ...rowLocationKeys(row),
   }));
 }
 
@@ -1251,6 +1247,9 @@ function mapItemRow(row) {
     title: row.title,
     parent: row.parent,
     sourcePath: row.source_path,
+    // 127/04 — the fleet's row carries the two shapes exactly as `listItems` emits them (ADR-006
+    // §1): `number: null` + `backlog` on a backlog row, `archived: true` on an archived one.
+    ...wireLocationKeys(row),
     ...toWireProvenance(row),
   };
 }

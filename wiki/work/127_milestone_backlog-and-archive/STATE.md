@@ -362,6 +362,77 @@ doc: state
   `ref` (creation order)" is no longer creation order once a ref may be a slug. **Discarded:** the
   fixture-external `TECH_DEBT.md` assertion — task 00's last scenario mandates it.
 - **127/02 review close (orchestrator, 2026-09-13, `aof:continue 127/02`, attempt 3 of the driven run).** Built to green in this checkout after two `runtime_offline` deaths: story-declared set + delivered insert suites 344 pass / 0 fail under an isolated home; `validate` PASS; `doctor` 0 errors (the three stream-wide warns only); `aof work update --dry-run` nothing to re-render. Review: three lanes (architect, QA, craft) round one → ONE deduplicated Blocker (task 03's `@executable` scenarios had no witnessing suite — the promote suite's header pointed at `work-insert-top-level-places.test.mjs`, unchanged) → fixed as `workInsertAliasTests` (41 cases, second binding of that file) → QA delta round two CLEARED (0 Blockers; 3 mutations, 2 killed, 1 survivor closed at this close by one more case: the transient leaf is removed on a post-scaffold refusal when `backlog/` pre-existed — the mutation dropping the `catch`-side `rm` now reds exactly that case). **Fixed at the close:** FF-12703 leg (c)'s `number:` non-vacuity anchor re-pointed from `promotion.mjs` (which writes none) to `promote.mjs`'s `stampNumber`; 124/02's FF-12405 leg 3 replaced its `refine.md`-byte-identical-to-HEAD assertion (a commit-timing tripwire — red for every uncommitted legitimate edit, trivially green after any commit) with the durable property over the working file (two invocations, `--area` and `--item`) — all three lenses called the leg defective; stale comments in `insert-shared.mjs`, `promotion.mjs`, `insert-uat.mjs`; `insert-backlog-exists` message forward-slashed; `DEFAULT_WORK_INTAKE` un-exported. **Recorded (Nits, for the register):** `prefixFirstHeading` (`promote.mjs:~174`) takes a `# ` inside a fenced block / HTML comment ahead of the real H1, and the STATE.md courtesy scans its frontmatter too; `asList`/`sameNum`/`slash` are the 4th/3rd/~9th private mirrors — export from `work.mjs` (127/01's `isLiveStreamRow` precedent) and re-point; promote suite's `withFixture` spreads `rest.work` over `work.dir` (resolves only via the `./wiki/work` default) and its pre-`try` config write / `plantRow` leak the temp root on throw; `promote.mjs:~356` post-rename stamp has no null guard (unreachable today); a post-seam `rename` failure (Windows EPERM/EBUSY) leaves a shifted stream with an empty slot — the delivered insert path's own exposure, no undo; `stripBundleMarker`'s BOM branch is witnessed nowhere. **Task 06 measurement for VERIFICATION:** `insert-shared.mjs` 628 lines now; 638 = the contract's baseline (working tree incl. 127/01's hunk); 622 = git HEAD; code lines 337→318, comment lines 223→257 — state the baseline. **Contract wording (PO, no `.feature` edit):** task 00 line 96 "`aof work next delta` answered nothing actionable" — a free-text scope falls through to the whole stream by design (`inRange`, story 86 / TECH_DEBT 49), so the witness asserts "the backlog row is nowhere in the answer"; task 03 scenario 1 "neither tree holds a `backlog/`" — the by-hand half leaves an EMPTY root (promote never removes a root it did not create); task 03 insert-story scenario's `--at 1 --under 10` shifts nothing, so its "no remap names a top-level ref" clause is over zero events (`--at 0` would bite). **Story-shaped, handed to the operator:** the `src/commands/work/` fold is now owed by two budget rows (128's and 127/02's `src/commands` 67→68) with no ledger entry or item naming it — blast radius ~40 modules' dependents. **Architect follow-ups at accept:** register row FF-12703 names three `appendPosition` callers and `insert-*.mjs` — the landed control asserts four incl. `migrate-folder.mjs`; ADR-002 §2 / ADR-003 §2 say `appendPosition` reduces over live rows — code and 127/01's amendment read live AND archived (superseding ADR); "insert-story is not an alias" reading of ADR-003 §4 likewise; the `phase-backlog-ref` door tests `number === null`, which a cache-first row omits until story 04. **Declared `reads:` incomplete (developer):** `test/support/{work-insert-fixture,read-src-files,source-slice,module-family}.mjs`, `src/effects/journal.mjs`, `.aof/templates/work/{uat,chore}/*.md`. — Raised by: orchestrator
+- **127/04 build + review close (developer/orchestrator, 2026-09-15, solo, driven run `…0001`) —
+  six `@executable` tasks green in this lane; review round one → 0 Blockers across four lenses;
+  design conformance INCONCLUSIVE (no base URL); seven findings recorded, three fixed at the
+  close.** THE BUILD: `global-work-store.test.mjs` 17 (8 new: the projection, the round-trip incl.
+  the un-archive clearing the column, four frame-door rows, a hand-written v8 file migrating in
+  place, the fleet payload), `cache-read-seam.test.mjs` 29 (19 new; the remote-node fixture is the
+  OWNING node's real projection streamed through the real snapshot door as `aof-wsl` — every
+  reader, five CLI verbs as child processes, the overlay rule, the seam's own guarantees),
+  `board-api.test.mjs` 32 (12 new over the REAL face, `tsc -b` included),
+  `board-backlog-and-archive.test.mjs` 21 (tasks 03–05 off the REAL `<Board/>` / `<Fleet/>`);
+  focused runs: `test/ui` 949/949, `test/store` (minus the `:4182` suite) + 127's stream suites
+  683 ok, arch (store/work/testing/ui/mesh/command) 713 ok; `validate` PASS; `doctor` the three
+  standing stream-wide warns only. **Ratified in this beat:** (1) `src/work/item-row.mjs` — the
+  store sits at its 1,280-line ratchet (43/ADR-012/B4, whose escape hatch is "the next block in
+  its own module"), so the row SCREEN moved there with the two location shapes it now screens
+  (`backlog` rides `OPTIONAL_ITEM_FIELDS`; `archived` has its own predicate and is mapped `true → 1`
+  at the bind — B5's regex would read a bare `row.archived` bind as unscreened); the store
+  re-exports it (the `artifacts.mjs` precedent); `src/work` 42→43 with its why; FF-12706's
+  src-wide `.archived` sweep allow-lists the two store-boundary CARRIERS by path (each asserted to
+  filter on nothing and to call no `isLiveStreamRow`), which the register row already admits and
+  ADR-006 §1 requires; (2) the FLEET row (`mapItemRow`) carries `number: null` beside `backlog`
+  (`wireLocationKeys`) — task 05's premise and ADR-006 §1's "exactly as `listItems` emits them" —
+  while the STORE row (`readWorkspaceItems`, task 00 scenario 2) carries no `number`, as task 00
+  words it; the seam derives it from `backlog`'s presence; (3) the version pins in
+  `staleness-schema-v8-provenance` and `mesh-assignment-record` re-armed onto v9 (added to
+  `files:`) — task 00's "cases are green UNCHANGED" was false for the literal-8 pins and the
+  "exactly two columns were added" count (v9 appends two more to a v7 file); every prior bump
+  re-armed the same pins; (4) `test/ui` 56→57 for this story's suite; `ui/src/board` 21→22 for
+  `ArchivedPill.tsx` (DESIGN names the file and its home — a sibling of `StaleBadge.tsx`; the fleet
+  paints no pill, so it is not the shared part that row meters); `ui/src/board/DetailPanel.tsx`
+  1000→994 (`humanizeSlug` moved to `model.ts`, where the backlog row shares it; the pill joined
+  the header cluster) — 49/04's exact-count row re-aimed the way its Fleet.tsx row already was;
+  45/03's surface-slot pin gained `Show archived items` LEFT of the legend (DESIGN §Surface 2).
+  **Fixed at the close:** 127/03's `work-archive-is-a-move` pins the shared `src/work` budget row
+  at 42 — moved to 43 with a note (one ledger table, two stories; the next raiser moves it again);
+  a craft nit (an inline `import()` in the new suite). **Contract wording (PO, no `.feature`
+  edit):** tasks 00/01/02 spell `status: null` for a backlog row — a backlog record doc scaffolded
+  from the template carries `status: not-started`, which is what 127/01's fixture and this story's
+  write, so the witnesses assert `not-started` (the shape claims are untouched); task 05's Examples
+  row `done | 12 | (empty)` — the fleet's DELIVERED `workStatusSummaryTail` (which the task itself
+  requires unchanged) names the in-progress 43 hidden under `done` as ` · 1 hidden, done only`,
+  asserted as delivered; task 04's prose "lane card: pill LEFT of the stale badge" contradicts its
+  binding checklist (`[stale][archived][chip]`) and its own last scenario (`[◌ stale …][▤ archived]`)
+  — built to the checklist; DESIGN §Surface 2's VIEW 2 paragraph carries the same contradiction
+  ("pill left of the stale badge" vs "takes the meta line's right end beside the stale badge") for
+  the designer to settle at verify. **Design conformance:** INCONCLUSIVE — `work.ui.baseUrl` is
+  unset and no `--url` was given (a renderer resolves: the ms-playwright Chromium cache), so no
+  render was attempted, no designer judgement exists, and task 06 (`@uat`) stays the human's at
+  `aof:verify` — supply the board's ephemeral origin at capture time (DESIGN §Conformance).
+  **Inherited reds, not this story's:** FF-11903 ×3 and FF-6607b ×3 are red at the main checkout's
+  HEAD too — the repository holds 19 commits and ZERO git rename records since the public-repo
+  move (the "OPEN" list there), so every rename-resolution control reads an empty map; 127/03's
+  `work/archive-is-a-move: 04 the wrapper is declared…` is red in every checkout because
+  `.aof/aof.lock.json` (tracked, last written by 129/07) carries none of the three `archive`
+  renders — 03's lane commit did not carry its `aof work update` — for 03's reviewer or verify.
+  **Harness facts for the next UI story:** the milestone switcher reads bare `document` and
+  positions its listbox off `getBoundingClientRect`, so opening it headlessly needs `hostNodes:
+  true, terminalEnvironment: true` and a rect stamped on the wrapper's `hostNode`; `visibleTextOf`
+  splits JSX text nodes ("1 stor y", "2 milestone s") — read raw with `textOf`; the face fixture
+  gained `backlog` / `archived` stream members and two doors (`reportedRow`: one row re-reported
+  through the real upsert as a delta would be; `unpublish`: never cache-published). **Declared
+  `reads:` incomplete:** `test/support/{mini-react,fleet-filter-readers,mesh-ui-assign-fixture,terminal-dom,cli-spawn,item-lock-fixture,cache-authority-fixture}.mjs`,
+  `src/mesh/ui-serve.mjs`, `src/global-node-registry.mjs`, `test/arch/work/acd-work-items-single-writer.test.mjs`
+  (the 1,280 ratchet + B5 — the reason for the leaf), `test/arch/work/acd-next-walkers-exclude-archived.test.mjs`,
+  `test/arch/testing/{acd-ui-surface-file-budget,acd-ui-directory-budget}.test.mjs`,
+  `test/ui/{terminals-home-route,shell-regions}.test.mjs`, `test/mesh/assignment/mesh-assignment-record.test.mjs`,
+  `test/work/stream/work-archive-is-a-move.test.mjs`. **Process (retro):** `aof test --scope
+  impacted --story 127/04` launched the widened FULL suite in this lane the instant it ran (three
+  new paths; there is no dry run); the shell was stopped but the runner outlived it 41 minutes,
+  so every focused run waited — the verified runs were `scripts/test.mjs --only` sets, never the
+  widened one. — Raised by: developer/orchestrator (solo)
 
 
 ## Verification

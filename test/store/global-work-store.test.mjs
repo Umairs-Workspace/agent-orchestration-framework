@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -11,7 +11,20 @@ import {
   upsertWorkItemContent,
   readWorkItemDoc,
   readWorkItemRuns,
+  // 127/04 task 00 — the hops the two shapes ride: the disk projection, the publish, the
+  // read-back and the schema constant the v9 migration moves.
+  readWorkspaceProjectionItems,
+  publishWorkspaceSnapshot,
+  readWorkspaceItems,
+  GLOBAL_WORK_SCHEMA_VERSION,
 } from "../../src/global-work-store.mjs";
+// …the frame doors a worker's rows arrive through, the fleet payload, the raw runtime (to
+// write a v8 file by hand), and 127/01's three-root fixture — the ONE stream every hop is
+// measured over, imported from where its owning story left it (the 127/02 and 127/03 idiom).
+import { applySnapshotFrame, applyDeltaFrame } from "../../src/control-stream-server.mjs";
+import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
+import { importSqliteRuntime } from "../../src/sqlite-runtime.mjs";
+import { withThreeRoots } from "../work/stream/work-backlog-archive-enumerate.test.mjs";
 // m43 / ADR-012/B4 — the WORKER-side content read moved into its own module when 43/03
 // widened it to the artifact manifest (the store module's line ceiling's own escape
 // hatch). Same function, same shapes; imported from where it now lives.
@@ -66,6 +79,34 @@ async function withTemp(fn) {
   }
 }
 
+// ── 127/04 task 00 helpers ─────────────────────────────────────────────────────
+// The frozen store-row shape a LIVE row keeps byte-for-byte across every hop.
+const SEVEN_KEYS = ["ref", "type", "slug", "status", "title", "parent", "sourcePath"];
+const forward = (value) => value.replaceAll("\\", "/");
+// The three-root fixture as a workspace the publish path can read: the fixture's own
+// `.aof/aof.config.json` points at `wiki/work`, exactly as `loadWorkspace` would resolve it.
+const threeRootWorkspace = (root, work) => ({ config: { name: "fixture", work: { dir: "./wiki/work" } }, projectRoot: root, workDir: work });
+const FRAME_WS = "ws-frame-doors";
+const V8_WS = "ws-v8-file";
+// The ADR-010 registration gate a row frame is checked against (`resolveKnownWorkspaceRoot`):
+// the descriptor a real `mesh:join` has already written by the time a worker can report.
+function registerFrameWorkspace(store, workspaceId) {
+  store.db.prepare(`
+    INSERT OR REPLACE INTO global_workspace_descriptors
+      (workspace_id, project_root, work_dir, name, mesh_enabled, control_node, member_node_ids_json, published_at, descriptor_path)
+    VALUES (?, ?, ?, ?, 1, ?, '[]', '2026-09-15T08:00:00.000Z', ?)
+  `).run(workspaceId, "/remote", "/remote/wiki/work", workspaceId, "aof-control", "/remote/descriptor.json");
+}
+// The fleet's row projection over a workspace, through the store's own query.
+async function withStoreItems(env, workspaceId) {
+  const store = await openGlobalWorkProjectionStore({ env });
+  try {
+    return queryGlobalWorkProjection(store, { workspaceId }).items;
+  } finally {
+    store.close();
+  }
+}
+
 export const globalWorkStoreTests = [
   {
     name: "global-work-store/00 global mesh paths derive from AOF_GLOBAL_HOME",
@@ -104,7 +145,10 @@ export const globalWorkStoreTests = [
         // PRAGMA-checked ALTER, and the same pinned-version re-arm. The columns
         // themselves are asserted below, because this bump is the one that decides
         // whether a row can be attributed and retracted at all.
-        assert.equal(store.schemaVersion, 8);
+        // v8 -> v9 (m127 / ADR-006 §1, owned by 127/04): the work_items LOCATION columns
+        // backlog + archived — the same in-place, PRAGMA-checked ALTER, and the same
+        // pinned-version re-arm. The migration has its own fixture in the 127-04-00 cases.
+        assert.equal(store.schemaVersion, 9);
         const tables = store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all().map((r) => r.name);
         assert.ok(tables.includes("aof_schema"));
         assert.ok(tables.includes("workspaces"));
@@ -129,7 +173,7 @@ export const globalWorkStoreTests = [
       try {
         const versions = reopened.db.prepare("SELECT value FROM aof_schema WHERE key = 'version'").all();
         assert.equal(versions.length, 1);
-        assert.equal(versions[0].value, 8);
+        assert.equal(versions[0].value, 9);
       } finally {
         reopened.close();
       }
@@ -319,5 +363,239 @@ export const globalWorkStoreTests = [
       assert.equal(content.runs[0].ref, "34/00");
       assert.deepEqual(content.errors, [], "absent doc files are absent-not-error");
     }),
+  },
+  // ============================================================================
+  // milestone 127 / story 04 / task 00 —
+  //   tasks/00_the-cache-row-carries-the-two-shapes.feature (@executable)
+  //
+  // The cache row carries `number: null` + `backlog` and `archived: true` EXACTLY as
+  // `listItems` emits them — from the disk projection through the store (schema v9's two
+  // columns) and the frame doors to the fleet payload — widened ONLY on a backlog or archived
+  // row, so every frozen-shape pin over a live row holds. Driven over 127/01's three-root
+  // fixture and this build's real store; nothing about the row shapes is stood in for.
+  // ============================================================================
+  {
+    name: "global-work-store/127-04-00 the disk projection widens exactly the backlog and archived rows — a live row keeps its seven keys, a backlog row gains `backlog`, an archived row gains `archived: true`, and nothing gains `number`",
+    run: async () => withThreeRoots({}, async ({ root, work }) => {
+      const projected = await readWorkspaceProjectionItems(threeRootWorkspace(root, work));
+      assert.equal(projected.authoritative, true, "the stream was readable");
+      assert.deepEqual(projected.errors, [], "…and every record doc parsed");
+      const byRef = new Map(projected.rows.map((row) => [row.ref, row]));
+
+      for (const ref of ["10", "10/00", "11"]) {
+        assert.deepEqual(Object.keys(byRef.get(ref)), SEVEN_KEYS, `live row ${ref} carries exactly the seven keys — no backlog, no archived, no number`);
+      }
+      // The fixture writes every record doc `status: not-started` (its `writeItem` default, 127/01),
+      // which is the value the projection reads; the feature spelled `status: null` for the same row.
+      assert.deepEqual(byRef.get("gamma"), {
+        ref: "gamma", type: "chore", slug: "gamma", status: "not-started", title: "Gamma", parent: null,
+        sourcePath: `${forward(work)}/backlog/chore_gamma/CHORE.md`,
+        backlog: "",
+      }, "the top-of-backlog row carries `backlog: \"\"` — the empty group is a VALUE, never dropped");
+      assert.equal(byRef.get("delta").backlog, "ideas", "a grouped row carries its group path");
+      assert.equal(byRef.get("epsilon").backlog, "ideas/later", "…forward-slashed, no leading or trailing slash");
+      for (const ref of ["gamma", "delta", "epsilon"]) {
+        assert.ok(!("number" in byRef.get(ref)), `${ref}: no \`number\` key rides the store row — \`backlog\`'s presence is the one fact number-null derives from`);
+        assert.ok(!("archived" in byRef.get(ref)), `${ref}: a backlog row is not archived`);
+      }
+      for (const ref of ["05", "05/00", "06"]) {
+        assert.equal(byRef.get(ref).archived, true, `archived row ${ref} carries \`archived: true\``);
+        assert.ok(!("backlog" in byRef.get(ref)), `${ref}: an archived row carries no \`backlog\``);
+      }
+      assert.equal(byRef.get("05/00").parent, "05", "an archived story keeps its parent");
+    }),
+  },
+  {
+    name: "global-work-store/127-04-00 the store round-trips both shapes through publish and read — a live row is byte-identical, the two columns hold (\"\", NULL) / (NULL, 1) / (NULL, NULL), and a folder moved back out of the archive reads live again",
+    run: async () => withThreeRoots({}, async ({ root, work }) => withTemp(async (home) => {
+      const workspace = threeRootWorkspace(root, work);
+      const store = await openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
+      try {
+        const projected = await readWorkspaceProjectionItems(workspace);
+        const published = await publishWorkspaceSnapshot(store, workspace, { nodeId: "aof-control", now: "2026-09-15T09:00:00.000Z" });
+        assert.equal(published.upserted, projected.rows.length, "every projected row landed");
+
+        const read = new Map(readWorkspaceItems(store, published.workspaceId).map((row) => [row.ref, row]));
+        for (const row of projected.rows) {
+          assert.deepEqual(read.get(row.ref), row, `${row.ref} reads back deep-equal to the row the projection emitted`);
+        }
+        assert.deepEqual(Object.keys(read.get("10")), SEVEN_KEYS, "a live row reads back with the seven keys and nothing else");
+        assert.equal(read.get("gamma").backlog, "");
+        assert.equal(read.get("epsilon").backlog, "ideas/later");
+        assert.equal(read.get("05").archived, true);
+
+        const columns = (ref) => {
+          const row = store.db.prepare("SELECT backlog, archived FROM work_items WHERE workspace_id = ? AND ref = ?").get(published.workspaceId, ref);
+          return [row.backlog, row.archived];
+        };
+        assert.deepEqual(columns("gamma"), ["", null], "the top of the backlog is stored as \"\", never coerced to NULL");
+        assert.deepEqual(columns("epsilon"), ["ideas/later", null]);
+        assert.deepEqual(columns("05"), [null, 1], "archived is stored as 1");
+        assert.deepEqual(columns("10"), [null, null], "a live row stores NULL in both — never 0, absent is absent");
+
+        // The folder moves back to the stream root and the node republishes: the DO UPDATE
+        // SET clears the flag, so the row reads live again with NO `archived` key.
+        await rename(path.join(work, "archive", "06_chore_eta"), path.join(work, "06_chore_eta"));
+        await publishWorkspaceSnapshot(store, workspace, { nodeId: "aof-control", now: "2026-09-15T09:01:00.000Z" });
+        const eta = readWorkspaceItems(store, published.workspaceId).find((row) => row.ref === "06");
+        assert.ok(!("archived" in eta), "06 reads back with NO archived key — the re-report cleared the column");
+        assert.deepEqual(columns("06"), [null, null], "…to NULL, not 0");
+        assert.deepEqual(Object.keys(eta), SEVEN_KEYS);
+      } finally {
+        store.close();
+      }
+    })),
+  },
+  ...[
+    {
+      door: "applySnapshotFrame",
+      row: { ref: "gamma", type: "chore", slug: "gamma", sourcePath: "/remote/wiki/work/backlog/chore_gamma/CHORE.md", backlog: "" },
+      upserted: 1,
+      skipped: [],
+      holds: (rows) => {
+        assert.equal(rows.get("gamma")?.backlog, "", "holds gamma with backlog \"\"");
+        assert.ok(!("archived" in rows.get("gamma")), "…and no archived key");
+      },
+    },
+    {
+      door: "applyDeltaFrame",
+      row: { ref: "05", type: "milestone", slug: "zeta", status: "done", sourcePath: "/remote/wiki/work/archive/05_milestone_zeta/SPEC.md", archived: true },
+      upserted: 1,
+      skipped: [],
+      holds: (rows) => {
+        assert.equal(rows.get("05")?.archived, true, "holds 05 with archived: true");
+        assert.equal(rows.get("05")?.status, "done", "…and status done");
+      },
+    },
+    {
+      door: "applyDeltaFrame",
+      row: { ref: "05", type: "milestone", slug: "zeta", sourcePath: "/remote/wiki/work/archive/05_milestone_zeta/SPEC.md", archived: "yes" },
+      upserted: 0,
+      skipped: [{ ref: "05", reason: "unstorable-value", column: "archived" }],
+      holds: (rows) => assert.equal(rows.has("05"), false, "holds no row for 05 — a wrong-typed flag is skipped, naming its column"),
+    },
+    {
+      door: "applyDeltaFrame",
+      row: { ref: "gamma", type: "chore", slug: "gamma", sourcePath: "/remote/wiki/work/backlog/chore_gamma/CHORE.md", backlog: ["ideas"] },
+      upserted: 0,
+      skipped: [{ ref: "gamma", reason: "unstorable-value", column: "backlog" }],
+      holds: (rows) => assert.equal(rows.has("gamma"), false, "holds no row for gamma — an array group is skipped, naming its column"),
+    },
+  ].map(({ door, row, upserted, skipped, holds }) => ({
+    name: `global-work-store/127-04-00 a worker's frame through ${door} — ${JSON.stringify(row).slice(0, 60)}… → upserted ${upserted}, skipped ${skipped.length === 0 ? "none" : `${skipped[0].reason} on ${skipped[0].column}`}`,
+    run: async () => withTemp(async (home) => {
+      const store = await openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
+      try {
+        registerFrameWorkspace(store, FRAME_WS);
+        const apply = door === "applySnapshotFrame" ? applySnapshotFrame : applyDeltaFrame;
+        const result = await apply(store, { kind: door === "applySnapshotFrame" ? "snapshot" : "delta", nodeId: "aof-wsl", workspaceId: FRAME_WS, items: [row], at: "2026-09-15T09:00:00.000Z" }, { nodeId: "aof-wsl" });
+        assert.equal(result.published, true, "the door accepted the frame");
+        assert.equal(result.upserted, upserted, "upserted count");
+        assert.deepEqual(
+          result.skippedRows.map(({ ref, reason, column }) => ({ ref, reason, column })),
+          skipped.map(({ ref, reason, column }) => ({ ref, reason, column })),
+          "the skip names the ref, the reason and the column",
+        );
+        holds(new Map(readWorkspaceItems(store, FRAME_WS).map((stored) => [stored.ref, stored])));
+      } finally {
+        store.close();
+      }
+    }),
+  })),
+  {
+    name: "global-work-store/127-04-00 a v8 store migrates in place to v9 — backlog (TEXT) and archived (INTEGER) are added by ALTER, its rows survive as live rows with the seven keys, the marker is recorded once, and a v10 store is still refused",
+    run: async () => withTemp(async (home) => {
+      const paths = globalMeshPaths({ env: { AOF_GLOBAL_HOME: home } });
+      const { DatabaseSync } = await importSqliteRuntime();
+      await mkdir(paths.workRoot, { recursive: true });
+      // v8's work_items DDL by hand — ten columns, no backlog, no archived — stamped version 8.
+      const v8 = new DatabaseSync(paths.databasePath);
+      v8.exec(`
+        CREATE TABLE aof_schema (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+        INSERT INTO aof_schema (key, value) VALUES ('version', 8);
+        CREATE TABLE work_items (
+          workspace_id TEXT NOT NULL, ref TEXT NOT NULL, type TEXT NOT NULL, slug TEXT NOT NULL,
+          status TEXT, title TEXT, parent TEXT, source_path TEXT NOT NULL, node_id TEXT, updated_at TEXT,
+          PRIMARY KEY (workspace_id, ref)
+        );
+      `);
+      const insert = v8.prepare("INSERT INTO work_items (workspace_id, ref, type, slug, status, title, parent, source_path, node_id, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      insert.run(V8_WS, "43", "milestone", "alpha", "in-progress", "Alpha", null, "/repo/wiki/work/43/SPEC.md", "aof-control", "2026-08-01T09:00:00.000Z");
+      insert.run(V8_WS, "43/00", "story", "alpha-one", "done", "Alpha one", "43", "/repo/wiki/work/43/stories/00/STORY.md", "aof-control", "2026-08-01T09:00:00.000Z");
+      insert.run(V8_WS, "44", "uat", "accept", "blocked", "Accept", null, "/repo/wiki/work/44/SESSION.md", null, null);
+      v8.close();
+
+      const columnsOf = (store) => store.db.prepare("PRAGMA table_info(work_items)").all().map((column) => [column.name, column.type]);
+      const markers = (store) => store.db.prepare("SELECT key, value FROM projection_metadata WHERE workspace_id = '_global' AND key LIKE 'migration:%' ORDER BY key").all().map((row) => [row.key, String(row.value)]);
+      const version = (store) => Number(store.db.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get().value);
+
+      const first = await openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
+      let afterFirst;
+      try {
+        const columns = columnsOf(first);
+        assert.deepEqual(columns.find(([name]) => name === "backlog"), ["backlog", "TEXT"], "backlog TEXT was added");
+        assert.deepEqual(columns.find(([name]) => name === "archived"), ["archived", "INTEGER"], "archived INTEGER was added");
+        assert.equal(version(first), 9, "the version moved to 9");
+        assert.deepEqual(markers(first), [["migration:9", "8"]], "projection_metadata holds ('_global', 'migration:9', '8')");
+        const rows = readWorkspaceItems(first, V8_WS);
+        assert.equal(rows.length, 3, "the three rows survived — an ALTER in place, never a rebuild");
+        for (const row of rows) assert.deepEqual(Object.keys(row), SEVEN_KEYS, `${row.ref}: exactly the seven keys — neither new key appears on a row the migration touched`);
+        afterFirst = { columns, markers: markers(first), rows };
+      } finally {
+        first.close();
+      }
+      assert.equal(GLOBAL_WORK_SCHEMA_VERSION, 9, "GLOBAL_WORK_SCHEMA_VERSION is 9");
+
+      const second = await openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
+      try {
+        assert.deepEqual(columnsOf(second), afterFirst.columns, "a second open adds no column");
+        assert.deepEqual(markers(second), afterFirst.markers, "…and no second marker (idempotent)");
+        assert.deepEqual(readWorkspaceItems(second, V8_WS), afterFirst.rows, "…and changes no row");
+        second.db.prepare("UPDATE aof_schema SET value = 10 WHERE key = 'version'").run();
+      } finally {
+        second.close();
+      }
+      await assert.rejects(
+        openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } }),
+        (error) => error.code === "global-store-schema-unsupported" && error.schemaVersion === 10,
+        "a database stamped version = 10 is refused with the existing newer-schema error",
+      );
+      const stamped = new DatabaseSync(paths.databasePath);
+      try {
+        assert.equal(Number(stamped.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get().value), 10, "…and its version row is untouched: never silently downgraded or re-migrated");
+        assert.deepEqual(stamped.prepare("PRAGMA table_info(work_items)").all().map((column) => [column.name, column.type]), afterFirst.columns, "…nor its columns");
+      } finally {
+        stamped.close();
+      }
+    }),
+  },
+  {
+    name: "global-work-store/127-04-00 the fleet payload carries the shapes on exactly the rows that have them — gamma says `backlog: \"\"`, 05 says `archived: true`, and a live row carries exactly its pre-existing keys",
+    run: async () => withThreeRoots({}, async ({ root, work }) => withTemp(async (home) => {
+      const workspace = threeRootWorkspace(root, work);
+      const env = { AOF_GLOBAL_HOME: home };
+      const store = await openGlobalWorkProjectionStore({ env });
+      let workspaceId;
+      try {
+        ({ workspaceId } = await publishWorkspaceSnapshot(store, workspace, { nodeId: "aof-control", now: "2026-09-15T09:00:00.000Z" }));
+      } finally {
+        store.close();
+      }
+      const LIVE_KEYS = ["workspaceId", "ref", "type", "slug", "status", "title", "parent", "sourcePath", "reportedBy", "syncedAt"];
+      for (const [label, items] of [
+        ["queryGlobalWorkProjection", await withStoreItems(env, workspaceId)],
+        ["queryGlobalMeshStatus", (await queryGlobalMeshStatus({ env, scope: "global" })).items],
+      ]) {
+        const byRef = new Map(items.filter((item) => item.workspaceId === workspaceId).map((item) => [item.ref, item]));
+        assert.equal(byRef.get("gamma")?.backlog, "", `${label}: gamma carries backlog ""`);
+        assert.equal(byRef.get("gamma")?.number, null, `${label}: …and number: null — the fleet row carries the shapes exactly as listItems emits them (ADR-006 §1)`);
+        assert.deepEqual(Object.keys(byRef.get("gamma")).sort(), [...LIVE_KEYS, "number", "backlog"].sort(), `${label}: …beside the existing keys and nothing else`);
+        assert.equal(byRef.get("05")?.archived, true, `${label}: 05 carries archived: true`);
+        assert.deepEqual(Object.keys(byRef.get("05")).sort(), [...LIVE_KEYS, "archived"].sort(), `${label}: …beside the existing keys and nothing else`);
+        for (const ref of ["10", "10/00", "11"]) {
+          assert.deepEqual(Object.keys(byRef.get(ref)).sort(), [...LIVE_KEYS].sort(), `${label}: live row ${ref} carries exactly the pre-existing keys — no backlog, archived or number`);
+        }
+      }
+    })),
   },
 ];

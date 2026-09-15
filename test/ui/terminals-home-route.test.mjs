@@ -510,7 +510,10 @@ export const terminalsHomeRouteTests = [
         // card PEEK still does not move, which is what this row was really about.
         ["ui/src/fleet/Fleet.tsx", 1550, 1560, "R-2's `title` on the work line; the card peek does not move. 1544 -> 1550 on 2026-09-11: the work-status narrowing and the click-to-narrow workspace cards, paid for by moving ScopeControl and WorkspacesSummary into RepoPicker.tsx"],
         ["ui/src/terminal/TerminalControl.tsx", 840, 840, "story 05's wiring, inside its ceiling with zero headroom"],
-        ["ui/src/board/DetailPanel.tsx", 1000, 1000, "untouched, and it has ZERO headroom"],
+        // 1000 -> 994 on 2026-09-15 by 127/04: `humanizeSlug` moved to `model.ts` (the backlog row
+        // shares it) and the archived pill joined the header cluster — net −6, so the ZERO
+        // headroom this row was really about is now six lines. The re-aim is the Fleet.tsx row's idiom.
+        ["ui/src/board/DetailPanel.tsx", 994, 1000, "127/04's move out and pill in; six lines of headroom now"],
         ["ui/src/config/App.tsx", 1298, 1300, "untouched"],
       ];
       for (const [file, expected, ceiling, why] of untouched) {

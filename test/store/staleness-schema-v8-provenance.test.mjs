@@ -140,7 +140,9 @@ export const stalenessSchemaProvenanceTests = [
 
       const store = await open(home);
       try {
-        assert.equal(Number(version(store)), 8, "reading the store back reports schema version 8");
+        // v8 -> v9 (127/04): the pin re-arms onto the constant, as every bump before it did. The
+        // COLUMNS this suite is about are unchanged and asserted by name below.
+        assert.equal(Number(version(store)), GLOBAL_WORK_SCHEMA_VERSION, "reading the store back reports the current schema version");
         assert.equal(store.schemaVersion, GLOBAL_WORK_SCHEMA_VERSION);
 
         const columns = columnsOf(store, "work_items");
@@ -236,7 +238,7 @@ export const stalenessSchemaProvenanceTests = [
 
         const second = await open(home);
         try {
-          assert.equal(Number(version(second)), 8, "both opens complete without error and the store reports v8");
+          assert.equal(Number(version(second)), GLOBAL_WORK_SCHEMA_VERSION, "both opens complete without error and the store reports the current version");
           assert.deepEqual(columnNames(second, "work_items"), names, "the column list is unchanged by the second open");
           assert.equal(createSql(second, "work_items"), sql, "…and no ALTER was needed: the definition is byte-unchanged");
           assert.equal(names.filter((name) => name === "node_id").length, 1, "exactly one node_id column");
@@ -259,7 +261,7 @@ export const stalenessSchemaProvenanceTests = [
         first.close();
         const second = await open(home);
         try {
-          assert.equal(Number(version(second)), 8, "reading the store back reports schema version 8");
+          assert.equal(Number(version(second)), GLOBAL_WORK_SCHEMA_VERSION, "reading the store back reports the current schema version");
           assert.deepEqual(columnNames(second, "work_items"), afterFirst.columns, "the second open adds nothing");
           assert.equal(createSql(second, "work_items"), afterFirst.sql, "…and needs no ALTER: the table definition is byte-unchanged");
           assert.deepEqual(itemRows(second, WS), afterFirst.rows, "the second open changed no row in work_items");
@@ -274,14 +276,13 @@ export const stalenessSchemaProvenanceTests = [
             "…nor in work_item_runs",
           );
 
-          // "exactly two columns were added to work_items" — the v7 shape had eight, the
-          // migrated file has ten, and they are exactly the two provenance names.
-          assert.equal(afterFirst.columns.length - v7Columns.length, 2, "exactly two columns were added to work_items");
-          assert.deepEqual(
-            afterFirst.columns.filter((name) => !v7Columns.includes(name)),
-            ["node_id", "updated_at"],
-            "…and they are exactly node_id and updated_at",
-          );
+          // "exactly two columns were added to work_items" — the v7 shape had eight, and v8 added
+          // exactly the two provenance names. Since 127/04 a v7 file opened by this build ALSO
+          // takes v9's two location columns (backlog, archived) in the same open, appended after
+          // v8's pair; v8's own claim is that its pair is there, first, and nothing else of its own.
+          const added = afterFirst.columns.filter((name) => !v7Columns.includes(name));
+          assert.deepEqual(added.slice(0, 2), ["node_id", "updated_at"], "v8 added exactly node_id and updated_at, in that order");
+          assert.deepEqual(added.slice(2), ["backlog", "archived"], "…and every later column is a LATER schema's (v9: the two location columns), never a third provenance column");
           // …and by an in-place ALTER rather than a rebuild. Row survival is the whole
           // discriminator: a drop-and-recreate ends with an identical column list and an
           // EMPTY table, which is invisible to a "the column exists" assertion.
@@ -304,7 +305,7 @@ export const stalenessSchemaProvenanceTests = [
         for (const pass of ["already migrated", "re-open of a migrated file"]) {
           const store = await open(home);
           try {
-            assert.equal(Number(version(store)), 8, `${pass}: reading the store back reports schema version 8`);
+            assert.equal(Number(version(store)), GLOBAL_WORK_SCHEMA_VERSION, `${pass}: reading the store back reports the current schema version`);
             assert.deepEqual(columnNames(store, "work_items"), baseline.columns, `${pass}: no column was added`);
             assert.equal(createSql(store, "work_items"), baseline.sql, `${pass}: no ALTER was needed`);
             assert.deepEqual(itemRows(store, WS), baseline.rows, `${pass}: no row in work_items changed`);
@@ -382,8 +383,8 @@ export const stalenessSchemaProvenanceTests = [
           .all();
         assert.deepEqual(
           markers.map((row) => row.key),
-          ["migration:8"],
-          "the 7 → 8 upgrade is recorded once — the second open adds no second marker",
+          [`migration:${GLOBAL_WORK_SCHEMA_VERSION}`],
+          "the upgrade from 7 is recorded once, under the version the file was brought TO — the second open adds no second marker",
         );
         assert.equal(String(markers[0].value), "7", "…naming the version it came from");
 

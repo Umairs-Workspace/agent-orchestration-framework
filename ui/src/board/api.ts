@@ -48,6 +48,15 @@ export type WorkItem = {
   // a missing `syncedAt` is never rendered as `stale`.
   reportedBy?: string | null;
   syncedAt?: string | null;
+  // milestone 127 / ADR-006 (the three roots, as the wire states them). A BACKLOG row —
+  // an un-numbered driver under `<work.dir>/backlog/` — carries `number: null` and `backlog`,
+  // its group path relative to the backlog root (`""` at the top); its `ref` is its slug. An
+  // ARCHIVED row — an accepted item moved under `archive/`, number and ref untouched — carries
+  // `archived: true`. All three are ABSENT on a live row, so a component reads a fact the
+  // wire carries rather than one it guesses from `ref`'s shape (`number` is never parsed).
+  number?: null;
+  backlog?: string;
+  archived?: true;
 };
 
 export type WorkStatus = "not-started" | "in-progress" | "in-review" | "blocked" | "done";
@@ -224,8 +233,13 @@ export type FleetOriginResponse = {
 };
 
 export const workApi = {
-  list(): Promise<WorkListEnvelope> {
-    return getJson<WorkListEnvelope>("/api/work/list");
+  // milestone 127 / ADR-006 §2 — archived rows are hidden by default and revealed by ONE
+  // parameter that flips the request. Hidden is a property of the FETCH, never a filter the
+  // board applies: OFF requests the list with no query string at all (a testable absence), ON
+  // requests `?includeArchived=1` — the one spelling the face reads, and the board is its only
+  // sender.
+  list({ includeArchived = false }: { includeArchived?: boolean } = {}): Promise<WorkListEnvelope> {
+    return getJson<WorkListEnvelope>(includeArchived ? "/api/work/list?includeArchived=1" : "/api/work/list");
   },
   // The route lives on `serveSetupUi`'s own router beside `/api/config` and `/api/capabilities`
   // (ADR-004's amendment), NOT on the work-API face: the origin is not a command-core operation

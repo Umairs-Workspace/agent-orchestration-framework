@@ -15,9 +15,34 @@
 import assert from "node:assert/strict";
 import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.mjs";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { serveSetupUi } from "../../src/setup-ui.mjs";
+// 127/04 task 02 — the include-archived parameter, driven over the REAL board face on a
+// three-root stream (the m43 fixture, which learned the two roots for this story), the REAL
+// <Board/> for the client's URL composition, and the CLI as a child process for the frozen face.
+import { withBoardFace, DEFAULT_STREAM } from "../support/board-face-fixture.mjs";
+import { withBoardApp, findAll } from "../support/board-app-harness.mjs";
+import { spawnCliSync } from "../support/cli-spawn.mjs";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+
+// The task's stream: the default milestone 43 (four stories) and gate 44, plus a backlog
+// (a root milestone and a grouped chore) and an archive (a milestone with one story, and a uat).
+const THREE_ROOT_STREAM = {
+  ...DEFAULT_STREAM,
+  backlog: [
+    { type: "milestone", slug: "search-the-fleet", title: "Search the fleet", group: "" },
+    { type: "chore", slug: "prune-logs", group: "ops/later" },
+  ],
+  archived: [
+    { type: "milestone", number: "12", slug: "theta", title: "Theta", status: "done", stories: [{ number: "00", slug: "theta-one", title: "Theta one", status: "done" }] },
+    { type: "uat", number: "13", slug: "accept-theta", title: "Accept theta", status: "done" },
+  ],
+};
 
 // --- fixture builders --------------------------------------------------------
 
@@ -774,6 +799,146 @@ export const boardApiTests = [
       } finally {
         await rm(repo, { recursive: true, force: true });
       }
+    },
+  },
+  // ============================================================================
+  // milestone 127 / story 04 / task 02 —
+  //   tasks/02_the-list-route-takes-include-archived.feature (@executable)
+  //
+  // `/api/work/list` takes `includeArchived`, default excluded, and threads it to `work:list`'s
+  // own `all` flag — the face filters nothing and enumerates nothing. Driven over the REAL board
+  // face (`withBoardFace`) against a three-root stream on disk.
+  // ============================================================================
+  {
+    name: "board-api/127-04-02 the default list excludes archived rows and carries the backlog; `?includeArchived=1` appends the archive after the live and backlog rows — the envelope keeps its three keys in both states",
+    async run() {
+      await withBoardFace(async (face) => {
+        const { status, body: envelope } = await getJson(face.url, "/api/work/list");
+        assert.equal(status, 200);
+        assert.deepEqual(Object.keys(envelope).sort(), ["items", "nodeId", "stalenessSeconds"], "the envelope's keys are exactly items, stalenessSeconds, nodeId");
+        assert.deepEqual(
+          envelope.items.map((row) => row.ref),
+          ["43", "43/03", "43/04", "43/05", "43/06", "44", "search-the-fleet", "prune-logs"],
+          "the live rows, then the backlog in group-then-slug order — and NO archived row",
+        );
+        const backlogMilestone = envelope.items.find((row) => row.ref === "search-the-fleet");
+        const { dir, answeredFrom, ...rest } = backlogMilestone;
+        // The fixture scaffolds a backlog record doc from the template's own `status:
+        // not-started` line (the feature spelled `status: null`; the shape claim is unchanged).
+        assert.deepEqual(rest, { ref: "search-the-fleet", type: "milestone", slug: "search-the-fleet", status: "not-started", title: "Search the fleet", parent: null, number: null, backlog: "" });
+        assert.match(dir, /\/backlog\/milestone_search-the-fleet$/, "its dir is under backlog/");
+        assert.equal(answeredFrom, "disk", "…plus the answering-side stamp");
+        assert.equal(envelope.items.find((row) => row.ref === "prune-logs").backlog, "ops/later");
+        for (const row of envelope.items.filter((candidate) => !["search-the-fleet", "prune-logs"].includes(candidate.ref))) {
+          assertFrozenShape(row, ["ref", "type", "slug", "status", "title", "parent", "dir"], `live row ${row.ref}`);
+        }
+
+        const included = await getJson(face.url, "/api/work/list?includeArchived=1");
+        assert.equal(included.status, 200);
+        assert.deepEqual(Object.keys(included.body).sort(), ["items", "nodeId", "stalenessSeconds"], "the envelope's keys are still exactly the three");
+        assert.deepEqual(
+          included.body.items.map((row) => row.ref),
+          ["43", "43/03", "43/04", "43/05", "43/06", "44", "search-the-fleet", "prune-logs", "12", "12/00", "13"],
+          "the same eight rows followed by the archive",
+        );
+        for (const ref of ["12", "12/00", "13"]) {
+          const row = included.body.items.find((candidate) => candidate.ref === ref);
+          assert.equal(row.archived, true, `${ref}: archived: true`);
+          assert.equal(row.status, "done", `${ref}: status done`);
+        }
+        assert.equal(included.body.items.find((row) => row.ref === "12/00").parent, "12");
+      }, { stream: THREE_ROOT_STREAM });
+    },
+  },
+  ...[
+    ["", false],
+    ["?includeArchived=1", true],
+    ["?includeArchived=true", true],
+    ["?includeArchived=0", false],
+    ["?includeArchived=", false],
+    ["?includeArchived=yes", false],
+    ["?all=1", false],
+  ].map(([query, included]) => ({
+    name: `board-api/127-04-02 the parameter is a boolean flag read once — GET /api/work/list${query} ${included ? "holds 12, 12/00 and 13" : "holds no archived row"}`,
+    async run() {
+      await withBoardFace(async (face) => {
+        const { status, body } = await getJson(face.url, `/api/work/list${query}`);
+        assert.equal(status, 200);
+        const archived = body.items.filter((row) => row.archived === true).map((row) => row.ref);
+        assert.deepEqual(archived, included ? ["12", "12/00", "13"] : [], `${query || "(no query)"}: ${included ? "the archive is included" : "any other value is the absent state"}`);
+      }, { stream: THREE_ROOT_STREAM });
+    },
+  })),
+  {
+    name: "board-api/127-04-02 the face threads the flag and adds no predicate of its own — the module invokes work:list with mesh + all, reads no row's flag, filters nothing, imports no enumerator, spells `intake` nowhere; and `aof work list --json` is untouched by the route's parameter",
+    async run() {
+      const stripped = (await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8"))
+        .replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+      assert.match(stripped, /invoke\("work:list", \{ mesh: true, \.\.\.\(all \? \{ all: true \} : \{\}\) \}, ctx\)/, "the list route invokes work:list with mesh: true and, under the parameter, all: true");
+      assert.doesNotMatch(stripped, /\.archived\b/, "the module reads no row's `archived`");
+      assert.doesNotMatch(stripped, /\.filter\(/, "…and filters no rows");
+      assert.doesNotMatch(stripped, /\blistItems\b|\blistStream\b/, "…and imports no enumerator");
+      const imports = [...stripped.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]).filter((spec) => spec.startsWith("."));
+      assert.deepEqual(imports.filter((spec) => spec !== "./cache-provenance.mjs"), ["./command-core.mjs"], "its only operation-bearing import is ./command-core.mjs (the window resolver is a pure config read)");
+      assert.equal((stripped.match(/intake/g) ?? []).length, 0, "the face contains the token `intake` zero times (FF-12704)");
+
+      const listSource = await readFile(path.join(repoRoot, "src", "commands", "list.mjs"), "utf8");
+      assert.ok(!listSource.includes("includeArchived"), "no `includeArchived` is spelled anywhere in src/commands/list.mjs");
+
+      await withBoardFace(async (face) => {
+        const result = spawnCliSync(process.execPath, [cliPath, "work", "list", "--json"], {
+          cwd: face.root,
+          encoding: "utf8",
+          env: { ...process.env, AOF_GLOBAL_HOME: face.home, NODE_NO_WARNINGS: "1" },
+        });
+        assert.equal(result.status, 0, `work list --json exits 0 (stderr: ${result.stderr})`);
+        const rows = JSON.parse(result.stdout);
+        assert.deepEqual(rows.map((row) => row.ref), ["43", "43/03", "43/04", "43/05", "43/06", "44", "search-the-fleet", "prune-logs"], "the frozen array: the default listing, no archive, no route parameter");
+        for (const row of rows.filter((candidate) => candidate.number !== null)) {
+          assert.deepEqual(Object.keys(row), ["ref", "type", "slug", "status", "title", "parent", "dir"], `${row.ref}: the frozen seven keys, nothing else`);
+        }
+      }, { stream: THREE_ROOT_STREAM });
+    },
+  },
+  {
+    name: "board-api/127-04-02 the UI client composes the URL from a boolean — OFF is /api/work/list with no query string, ON is ?includeArchived=1 — and WorkItem declares the three optional keys; the build's own type pass is clean",
+    async run() {
+      // The client, driven through the REAL <Board/> against the REAL face: the mount's first
+      // request is `workApi.list({ includeArchived: false })` (the toggle's committed default),
+      // the toggle's click is `workApi.list({ includeArchived: true })`, and the sync after it
+      // is the committed state again. The recorded URLs are the app's own traffic.
+      await withBoardFace(async (face) => {
+        await withBoardApp({ url: face.url }, async (app) => {
+          const urls = () => app.requestsMatching("/api/work/list").map((entry) => new URL(entry.url).pathname + new URL(entry.url).search);
+          assert.deepEqual(urls(), ["/api/work/list"], "the off state carries no query string at all");
+          const toggle = findAll(app.tree(), (node) => node.type === "button" && node.props?.["aria-label"] === "Show archived items")[0];
+          assert.ok(toggle, "the Show archived toggle is on the page");
+          await toggle.props.onClick();
+          await app.flush();
+          assert.deepEqual(urls(), ["/api/work/list", "/api/work/list?includeArchived=1"], "ON composes ?includeArchived=1");
+          await toggle.props.onClick();
+          await app.flush();
+          assert.deepEqual(urls().at(-1), "/api/work/list", "…and OFF again is the bare route");
+        });
+      }, { stream: THREE_ROOT_STREAM });
+
+      const apiSource = await readFile(path.join(repoRoot, "ui", "src", "board", "api.ts"), "utf8");
+      const workItem = apiSource.slice(apiSource.indexOf("export type WorkItem = {"), apiSource.indexOf("export type WorkStatus"));
+      for (const key of ["number?: null;", "backlog?: string;", "archived?: true;"]) {
+        assert.ok(workItem.includes(key), `WorkItem declares ${key}`);
+      }
+      for (const key of ["ref: string;", "slug: string;", "status: WorkStatus | null;", "title: string | null;", "parent: string | null;", "dir: string;", "reportedBy?: string | null;", "syncedAt?: string | null;"]) {
+        assert.ok(workItem.includes(key), `…beside the frozen key ${key}`);
+      }
+      assert.match(apiSource, /includeArchived \? "\/api\/work\/list\?includeArchived=1" : "\/api\/work\/list"/, "the client composes the URL from the boolean");
+
+      // `tsc -b` in ui/ — the build's own type pass (scripts/ui-build.mjs runs exactly this).
+      const tsc = spawnSync(process.execPath, [path.join(repoRoot, "node_modules", "typescript", "bin", "tsc"), "-b"], {
+        cwd: path.join(repoRoot, "ui"),
+        encoding: "utf8",
+        env: { ...process.env, NODE_NO_WARNINGS: "1" },
+      });
+      assert.equal(tsc.status, 0, `tsc -b in ui/ is clean:\n${tsc.stdout}${tsc.stderr}`);
     },
   },
 ];

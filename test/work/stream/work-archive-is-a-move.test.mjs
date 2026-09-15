@@ -590,7 +590,10 @@ export const workArchiveIsAMoveTests = [
       assert.match(routes, /\r?\n\s*"archive",\r?\n/, "BOARD_DEFERRED names archive");
       assert.match(routes, /milestone 127 \/ story 03[\s\S]{0,900}\n\s*"archive",/, "…with its reason");
       const budget = await read("test/arch/testing/acd-source-directory-budget.test.mjs");
-      for (const [directory, ceiling, file] of [["src/commands", 69, "archive.mjs"], ["src/work", 42, "archive.mjs"], ["test/work/stream", 34, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
+      // `src/work` reads 43 since 127/04 landed `item-row.mjs` on the same row (the ledger is ONE
+      // table; the sibling that raises it next moves this literal with it). 03's own claim — the
+      // row names 127/03 and `archive.mjs` — is unchanged.
+      for (const [directory, ceiling, file] of [["src/commands", 69, "archive.mjs"], ["src/work", 43, "archive.mjs"], ["test/work/stream", 34, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
         const start = budget.indexOf(`directory: "${directory}",`);
         const block = budget.slice(start, budget.indexOf("}),", start));
         assert.match(block, new RegExp(`ceiling: ${ceiling},`), `${directory} reads ${ceiling}`);
