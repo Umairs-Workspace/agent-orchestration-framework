@@ -276,6 +276,17 @@ function containsNeedsInputSentinel(buffer) {
   return false;
 }
 
+// 129/06 F-58 — THE PROVIDER-WAIT LINE. The two spellings `claude` prints when the account's
+// usage limit is reached and it waits for the reset (measured 2026-09-15 on loop 127, five
+// sessions): `Usage limit reached · continuing automatically at 1:40pm` on the status line and
+// `You've hit your session limit · resets 1:40pm (Europe/London)` as the turn's text. Read off
+// the tail of the output buffer with the terminal's escapes stripped — the TUI colours the
+// status line, and a chunk boundary can fall inside the phrase. Exported for the row that pins
+// the two spellings against the session's own words.
+export const PROVIDER_WAIT_RE = /Usage limit reached[^\n\r]{0,80}|hit your (?:session|usage) limit[^\n\r]{0,80}/u;
+const PROVIDER_WAIT_WINDOW = 4096;
+const ANSI_ESCAPE_RE = /\[[0-9;?]*[ -/]*[@-~]/gu;
+
 // TASK COMPLETION, DETECTED FROM THE TRANSCRIPT (VERIFICATION F-38.06h, live soak
 // 2026-07-25). An interactive `claude` session NEVER exits after finishing a slash
 // command — it returns to its idle prompt and stays alive — so `term.onExit` (the
@@ -1097,6 +1108,16 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     let livenessTimer = null;
     let startToCloseTimer = null;
     let heartbeatTimer = null;
+    // 129/06 F-58 — THE PROVIDER WAIT. Measured 2026-09-15 (loop 127, four attempts): `claude`
+    // prints `Usage limit reached · continuing automatically at 1:40pm` (and `You've hit your
+    // session limit · resets 1:40pm`) and then waits, alive, for the reset — no transcript
+    // progress, so the heartbeat deadline read it as a hung session and killed it after 15
+    // minutes, five times, an hour of blind retries against a limit no retry can lift. The
+    // instant that line was last seen; while no heartbeat is NEWER than it, the session is
+    // waiting on the provider by the tool's own word and the heartbeat rule is suspended —
+    // `startToCloseMs` (the attempt's wall clock) still bounds the wait, as it bounds everything.
+    let providerWaitSeenAtMs = null;
+    let providerWaitReported = false;
     // 129/02 — the caller's abort listener (below), removed at the single settle point.
     let abortListener = null;
 
@@ -1284,6 +1305,17 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       } catch (error) {
         // a bridge fault must never crash/backpressure the driven session itself.
       reportDegrade("mesh-worker-execution", error); }
+      // 129/06 F-58 — the provider-wait line, read off the OUTPUT (the tail of the buffer with
+      // the terminal's escapes stripped, since the TUI colours it and a chunk boundary can fall
+      // inside the phrase). Reported once as a breadcrumb so the loop's diagnostics name it.
+      const providerWait = PROVIDER_WAIT_RE.exec(buffer.slice(-PROVIDER_WAIT_WINDOW).replace(ANSI_ESCAPE_RE, ""));
+      if (providerWait != null) {
+        providerWaitSeenAtMs = Date.now();
+        if (!providerWaitReported) {
+          providerWaitReported = true;
+          stopBreadcrumb("provider-wait", { detail: providerWait[0].trim().slice(0, 120) });
+        }
+      }
       // task 02 — the NEEDS_INPUT sentinel yields the THIRD outcome BEFORE any exit
       // is ever observed: a "turn end" is not a process exit, so this driver must
       // detect it from the OUTPUT stream, never wait on onExit for it. Once detected,
@@ -1332,6 +1364,13 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
           }
           if (settled) return;
           const heartbeatAtMs = typeof heartbeatAt === "string" ? Date.parse(heartbeatAt) : NaN;
+          // 129/06 F-58 — waiting on the provider is not silence: while the last provider-wait
+          // line is newer than every heartbeat, re-ask a window later and kill nothing. The
+          // first heartbeat after the line (the session resumed) restores the ordinary rule.
+          if (providerWaitSeenAtMs != null && !(Number.isFinite(heartbeatAtMs) && heartbeatAtMs > providerWaitSeenAtMs)) {
+            scheduleHeartbeatCheck(Date.now() + deadlinePolicy.heartbeatMs);
+            return;
+          }
           const silenceStartedAt = Number.isFinite(heartbeatAtMs)
             ? Math.max(graceEndsAt, heartbeatAtMs)
             : graceEndsAt;
@@ -1363,7 +1402,13 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
         try {
           process.kill(term.pid, 0);
         } catch {
-          finish({ outcome: "failed", failureReason: "agent_died" });
+          // 129/06 F-59 — a stop THIS driver requested (`done`, a deadline, a cancel) kills the
+          // tree, and the probe can see the dead pid before `term.onExit` delivers; settling
+          // `agent_died` there records a COMPLETED session as a death (measured 2026-09-15:
+          // `stop-requested done` → `exit-confirmed failed`, 55 ms apart, and the loop halted
+          // `run-not-retryable` on a refine that had finished). The requested outcome is the
+          // truth the probe honours; a death nobody asked for is still `agent_died`.
+          finish(requestedStopOutcome ?? { outcome: "failed", failureReason: "agent_died" });
         }
       }, livenessIntervalMs);
       // NOT unref'd: an unref'd probe lets the process exit before its first tick

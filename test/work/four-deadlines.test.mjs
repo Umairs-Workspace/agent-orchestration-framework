@@ -5,7 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { driveInteractiveClaudeSession } from "../../src/agent-session-driver.mjs";
+import { driveInteractiveClaudeSession, PROVIDER_WAIT_RE } from "../../src/agent-session-driver.mjs";
 import { runLoopBody } from "../../src/commands/loop.mjs";
 import { runControlDispatchReclaimTick } from "../../src/mesh/assignment-reclaim.mjs";
 import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
@@ -221,5 +221,82 @@ export const fourDeadlinesTests = [
       assert.equal(warnings[0].level, "warn");
       assert.equal(readAssignment(store, "late-pickup").state, "assigned", "escalation preserves the undispatched row");
     }),
+  },
+  // ── 129/06 task 01 — F-58: a provider wait is not silence ──────────────────────
+  //
+  // `…/06_story_the-second-live-run/tasks/01_the-driver-honours-its-own-stop-and-a-provider-wait.feature`
+  // (the F-59 rows are in `test/mesh/worker/mesh-worker-liveness.test.mjs`, beside the probe).
+  ...[
+    ["Usage limit reached · continuing automatically at 1:40pm", "Usage limit reached"],
+    [`${String.fromCharCode(27)}[33mUsage limit reached · continuing automatically at 1:40pm${String.fromCharCode(27)}[0m`, "Usage limit reached"],
+    ["You've hit your session limit · resets 1:40pm (Europe/London)", "hit your session limit"],
+    ["Refine of 127/03 · Archive is a move is complete.", null],
+    ["NEEDS_INPUT", null],
+  ].map(([output, startsWith]) => ({
+    name: `129/06 task01 the provider-wait line is read off the output in both spellings, escapes stripped [${output.replace(/[ -]/gu, "·").slice(0, 44)}… → ${startsWith == null ? "no match" : `matches at \`${startsWith}\``}]`,
+    run: () => {
+      const stripped = output.replace(/\[[0-9;?]*[ -/]*[@-~]/gu, "");
+      const match = PROVIDER_WAIT_RE.exec(stripped);
+      if (startsWith == null) assert.equal(match, null, "does not match");
+      else assert.ok(match != null && match[0].startsWith(startsWith), `matches starting at ${startsWith}: ${JSON.stringify(match?.[0])}`);
+    },
+  })),
+  {
+    name: "129/06 task01 a provider wait suspends the heartbeat deadline until the session resumes, and is reported once",
+    run: async () => {
+      let emitData;
+      let emitExit;
+      let heartbeatReads = 0;
+      let heartbeatValue = null;
+      const breadcrumbs = [];
+      const fake = createFakePtySpawn({ onWrite: (event) => { emitData = event.emitData; emitExit = event.emitExit; } });
+      const pending = driveInteractiveClaudeSession(BRIEF, driverOptions(fake, {
+        deadlinePolicy: { startToCloseMs: 500, heartbeatMs: 30, startupGraceMs: 5 },
+        readHeartbeatAt: async () => { heartbeatReads += 1; return heartbeatValue; },
+        onSessionStop: (event) => breadcrumbs.push(event),
+      }));
+      await wait(10);
+      emitData("Usage limit reached · continuing automatically at 1:40pm\n");
+      emitData("Usage limit reached · continuing automatically at 1:40pm\n");
+      await wait(150);
+      assert.equal(fake.ptys[0].killed, false, "waiting on the provider is not silence: nothing was killed");
+      assert.ok(heartbeatReads >= 3, `the heartbeat check kept re-asking (${heartbeatReads} reads)`);
+      const waits = breadcrumbs.filter((event) => event.phase === "provider-wait");
+      assert.equal(waits.length, 1, "reported exactly once");
+      assert.ok(waits[0].detail.startsWith("Usage limit reached"), `the breadcrumb carries the line: ${waits[0].detail}`);
+      // the session resumes: a heartbeat NEWER than the line restores the ordinary rule.
+      heartbeatValue = new Date().toISOString();
+      await wait(80);
+      assert.equal(fake.ptys[0].killed, true, "silence after the resumed progress is silence again");
+      const result = await pending;
+      assert.equal(result.outcome, "failed");
+      assert.equal(result.failureReason, "timeout");
+      assert.equal(typeof emitExit, "function");
+    },
+  },
+  {
+    name: "129/06 task01 start-to-close still bounds a provider wait",
+    run: async () => {
+      let emitData;
+      let heartbeatReads = 0;
+      const breadcrumbs = [];
+      const startedAt = Date.now();
+      const fake = createFakePtySpawn({ onWrite: (event) => { emitData = event.emitData; } });
+      const pending = driveInteractiveClaudeSession(BRIEF, driverOptions(fake, {
+        deadlinePolicy: { startToCloseMs: 120, heartbeatMs: 30, startupGraceMs: 5 },
+        readHeartbeatAt: async () => { heartbeatReads += 1; return null; },
+        onSessionStop: (event) => breadcrumbs.push(event),
+      }));
+      await wait(10);
+      emitData("You've hit your session limit · resets 1:40pm (Europe/London)\n");
+      const result = await pending;
+      assert.equal(result.outcome, "failed");
+      assert.equal(result.failureReason, "timeout", "the attempt's wall clock still bounds the wait");
+      assert.ok(Date.now() - startedAt >= 110, `the kill came from start-to-close (${Date.now() - startedAt} ms), not from a 35 ms heartbeat window`);
+      assert.ok(heartbeatReads >= 2, `the heartbeat rule re-asked rather than killing (${heartbeatReads} reads)`);
+      const stop = breadcrumbs.find((event) => event.phase === "stop-requested");
+      assert.ok(stop != null && stop.failureReason === "timeout");
+      assert.equal(breadcrumbs.filter((event) => event.phase === "provider-wait").length, 1);
+    },
   },
 ];

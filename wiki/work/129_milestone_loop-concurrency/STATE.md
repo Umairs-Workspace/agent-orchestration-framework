@@ -92,6 +92,32 @@ doc: state
 
 <!-- Raw, attributed entries; triaged into VERIFICATION.md / RETROSPECTIVE.md at aof:verify. -->
 
+- **129/06 live run, attempt 1 (operator, 2026-09-15 10:47–12:43Z, `aof work loop 127 --resume`
+  on the deployed payload `7827f9d+dirty.20260915T110622`; config committed `b5f6cd5`:
+  `refine_first`, refine `orchestrated`, continue `solo`).** READ AT THE SOURCE. The loop:
+  `loop-diag.127.2026-09-15T10-47-32-544Z.log` — gate on 127/01 clean, `Reconciling 0 live
+  lane(s)`, `Driving 127/03 — refine, cycle 1 of 6, L2`; one declaration row (`aof mesh status
+  --declarations`: `loop 127`, cap 6). **The phase mode reached the session:** run
+  `20260915T104735767Z-0000`, `brief.loop.phase: refine`, transcript `7fe3b9fa` directive
+  `/aof:refine 127/03 --orchestrated` — 07's composition, live. **What went wrong, two layers:**
+  (1) the account's usage limit — attempt 1's QA and developer agents died on a 429 ("resets 13:40
+  London"), the session played the roles inline and authored the WHOLE contract (`PLAN.md`,
+  `STORY.md`, six `.feature`s on disk), then hit the limit itself at 11:12:40 and sat; the
+  heartbeat killed it at 11:27:40 (`timeout`); attempts 2–4 hit the limit in 5 s each and were
+  killed after 20 min (grace + heartbeat) — 60 min blind (`F-58`); (2) attempt 5 waited out the
+  reset, verified the contract at the source, ran `run-complete done`, and the driver logged
+  `stop-requested done` → `tree-terminated` → `exit-confirmed failed` 55 ms later: the liveness
+  probe saw the killed pid before `onExit` and settled `agent_died` over the requested `done`
+  (`F-59`); `agent_died` is not retried → `127 — halted on run-not-retryable at 127/03` at attempt
+  5 of 6, `beforeExit code=0` — a named exit line, and the loop survived its own kill five times
+  (the 2026-09-12 hardening held). Also: the `--json` probe answers the sequential act (`F-60`).
+  **Fixed in item at this build (task 01, `@bug @finding-F-58 @finding-F-59`, both red-probed):**
+  the probe settles `requestedStopOutcome ?? agent_died`; a provider-wait line (both spellings,
+  escapes stripped) suspends the heartbeat rule until the next heartbeat, `startToCloseMs` still
+  bounding, reported once as `provider-wait`. Driver lane 207 / 0 (14 suites). 127/03's five
+  `failed` records stand as the run's evidence; `work:next` reads no run record, so 03 is ready
+  for the BUILD wave. Redeployed; the operator resumes. Not yet measured: the wave, the lanes'
+  records/grades, the held member, the conflict drill, `--resume` over a live lane, `F-15`.
 - **129/07 scoped, built, reviewed and accepted (product-owner + developer + three lenses inline,
   solo, 2026-09-15).** Scoped from `F-55` after the operator named the shape (§ Notes). Built in
   one pass: `src/loop-bounds.mjs` +66 (three keys, resolvers, `loopAgentModeFromConfig`),
