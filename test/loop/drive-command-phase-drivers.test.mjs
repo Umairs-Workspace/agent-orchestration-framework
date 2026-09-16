@@ -246,6 +246,9 @@ function laneChildDouble({ stdout = "", stderr = "", exit = { code: 0 }, throws 
 }
 
 const LANE = "C:/lanes/dispatch-127-02";
+// The lane child's spawn option keys: the four of 129/02, plus `detached` on win32 (129/06 F-63 —
+// the child holds its own console so a console-scoped kill inside it never reaches the loop).
+const LANE_CHILD_OPTION_KEYS = Object.freeze(process.platform === "win32" ? ["cwd", "detached", "env", "stdio", "windowsHide"] : ["cwd", "env", "stdio", "windowsHide"]);
 const ENTRY = fileURLToPath(new URL("../../src/cli.mjs", import.meta.url));
 const DOC = Object.freeze({
   ref: "127/02",
@@ -1306,7 +1309,8 @@ export const driveCommandPhaseDriverTests = [
         assert.equal(call.options.cwd, LANE, `${phase}: cwd is the lane`);
         assert.deepEqual(call.options.stdio, ["pipe", "pipe", "pipe"], `${phase}: stdin piped`);
         assert.equal("shell" in call.options, false, `${phase}: no shell`);
-        assert.deepEqual(Object.keys(call.options).sort(), ["cwd", "env", "stdio", "windowsHide"], `${phase}: the option key set`);
+        // 129/06 F-63 — on win32 the lane child holds its own console (`detached`), one added key.
+        assert.deepEqual(Object.keys(call.options).sort(), LANE_CHILD_OPTION_KEYS, `${phase}: the option key set`);
       }
     },
   },
@@ -1341,7 +1345,7 @@ export const driveCommandPhaseDriverTests = [
           assert.equal(call.args.some((arg) => arg.endsWith("cli.mjs")), false, `${phase} (SEA): nothing ending in cli.mjs`);
           assert.equal(call.options.cwd, LANE, `${phase} (SEA): cwd is the lane`);
           assert.deepEqual(call.options.stdio, ["pipe", "pipe", "pipe"], `${phase} (SEA): stdin piped`);
-          assert.deepEqual(Object.keys(call.options).sort(), ["cwd", "env", "stdio", "windowsHide"], `${phase} (SEA): the option key set`);
+          assert.deepEqual(Object.keys(call.options).sort(), LANE_CHILD_OPTION_KEYS, `${phase} (SEA): the option key set`);
         }
       } finally {
         setSeaSentinelForTest(undefined);
@@ -1629,6 +1633,17 @@ export const driveCommandPhaseDriverTests = [
       const body = adr.slice(start, end);
       assert.ok(body.includes("AMENDED 2026-09-15 (129/07"), "a dated amendment");
       for (const needle of ["work.loop.agents.refine.mode", "work.loop.agents.continue.mode", "--orchestrated", "read of `work.agents.mode` is the fallback"]) assert.ok(body.includes(needle), `the amendment names ${needle}`);
+    },
+  },
+  {
+    name: "129/06 task02 the lane child is spawned with its own console on win32 (ownConsole → detached), the stdio pipes untouched",
+    async run() {
+      const { double } = await lane({ script: { stdout: JSON.stringify(DOC) } });
+      const options = double.calls[0].options;
+      if (process.platform === "win32") assert.equal(options.detached, true, "the lane child holds its own console — a console-scoped kill inside it cannot reach the loop (F-63)");
+      else assert.equal("detached" in options, false, "off win32 nothing is added");
+      assert.deepEqual(options.stdio, ["pipe", "pipe", "pipe"], "document, stderr and the cancel channel are pipes as before");
+      assert.equal(options.windowsHide, true);
     },
   },
 ];

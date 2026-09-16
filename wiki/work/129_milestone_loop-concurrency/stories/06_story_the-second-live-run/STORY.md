@@ -28,6 +28,10 @@ files:
   - src/agent-session-driver.mjs
   - test/mesh/worker/mesh-worker-liveness.test.mjs
   - test/work/four-deadlines.test.mjs
+  - src/work-audit/spawn.mjs
+  - src/loop/child-drive.mjs
+  - test/audit/audit-spawn-bounded.test.mjs
+  - test/loop/drive-command-phase-drivers.test.mjs
   - .aof/aof.config.json
   - wiki/work/129_milestone_loop-concurrency/STATE.md
   - wiki/work/127_milestone_backlog-and-archive/STATE.md
@@ -62,6 +66,7 @@ intact, then `--resume` after the hand merge; `aof work dispatch --list` clean a
 
 - [ ] `tasks/00_the-live-run-read-at-the-source.feature` — `@manual`: the preconditions met, the key set, the loop driven over a real wave, each SPEC outcome claim read at the source and recorded in this milestone's STATE.md with the observed values; the conflict drill; the loop-diag log's exit line
 - [x] `tasks/01_the-driver-honours-its-own-stop-and-a-provider-wait.feature` — `@bug @finding-F-58 @finding-F-59` (added at the first live run, 2026-09-15): the liveness probe settles the stop the driver requested, never `agent_died` over it; a provider-wait line suspends the heartbeat deadline until the session resumes, `startToCloseMs` still bounding it
+- [x] `tasks/02_the-lane-child-owns-its-console.feature` — `@bug @finding-F-63` (added after loop death #5, 2026-09-16): `runBounded` gains `ownConsole`, the lane child is spawned with its own console on win32, so node-pty's console-list kill inside a lane never reaches the loop
 
 ## Notes
 

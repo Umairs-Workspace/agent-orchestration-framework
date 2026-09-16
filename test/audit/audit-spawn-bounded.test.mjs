@@ -638,4 +638,33 @@ export const auditSpawnBoundedTests = [
       }
     },
   },
+  // ── 129/06 task 02 — F-63: the child's own console ───────────────────────────
+  //
+  // `…/06_story_the-second-live-run/tasks/02_the-lane-child-owns-its-console.feature`. A
+  // console-scoped kill inside a child that shares the caller's console can take the caller
+  // down (loop death #5, 2026-09-15 19:35Z). `ownConsole: true` spawns the child detached on
+  // win32 — its own hidden console — and is a no-op elsewhere; callers passing nothing are
+  // byte-identical (the row above still holds: exactly the four keys).
+  {
+    name: "129/06 task02 ownConsole: true spawns the child detached on win32 and adds no key elsewhere; absent, the option bag is the four keys",
+    run: async () => {
+      for (const [extra, label] of [[{}, "absent"], [{ ownConsole: false }, "false"]]) {
+        const double = spawnDouble({ exit: { code: 0 } });
+        await runBounded({ command: process.execPath, args: ["-e", "0"], ...extra, spawnChild: double.spawnChild });
+        assert.deepEqual(Object.keys(double.calls[0].options).sort(), ["cwd", "env", "stdio", "windowsHide"], `ownConsole ${label}: the four keys, no detached`);
+      }
+      const double = spawnDouble({ exit: { code: 0 } });
+      const result = await runBounded({ command: process.execPath, args: ["-e", "0"], ownConsole: true, stdin: "pipe", spawnChild: double.spawnChild });
+      const options = double.calls[0].options;
+      if (process.platform === "win32") {
+        assert.equal(options.detached, true, "win32: the child holds its own console");
+        assert.deepEqual(Object.keys(options).sort(), ["cwd", "detached", "env", "stdio", "windowsHide"], "…one added key, nothing else");
+      } else {
+        assert.deepEqual(Object.keys(options).sort(), ["cwd", "env", "stdio", "windowsHide"], "off win32 the option is a no-op");
+      }
+      assert.deepEqual(options.stdio, ["pipe", "pipe", "pipe"], "the stdio pipes — document, stderr, the cancel channel — are untouched");
+      assert.equal(options.windowsHide, true, "the console is hidden");
+      assert.equal(result.outcome, "exited");
+    },
+  },
 ];

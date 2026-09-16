@@ -121,6 +121,10 @@ export async function spawnLaneDrive({
     cwd: lane,
     env: { ...process.env, ...(env ?? {}) },
     stdin: "pipe",
+    // 129/06 F-63 — the lane child holds its OWN console: the session it drives is killed with a
+    // console-scoped kill (node-pty's ConPTY console-list agent) and that kill must never reach
+    // the loop's console (loop death #5, 2026-09-15). A no-op off win32.
+    ownConsole: true,
     ...(deadlineMs == null ? {} : { deadlineMs }),
     ...(signal == null ? {} : { signal }),
     ...(graceMs == null ? {} : { graceMs }),
