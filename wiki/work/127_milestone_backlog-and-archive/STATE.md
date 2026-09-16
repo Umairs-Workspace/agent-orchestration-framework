@@ -128,6 +128,19 @@ doc: state
 
 <!-- Contract problems and blockers met while building, raised by the lane that met them. -->
 
+- **127/02 fix round (solo, 2026-09-16, run `…0003`) — the one red the grade recorded was FF-11902's
+  tree-walk-equality detector over the story's OWN control:** `acd-one-mint.test.mjs` leg (d) asserted
+  `importers.length === 2` over a set it walked out of `src/` — a stored fact about the tree, exactly
+  what 119/ADR-003 §2 forbids. Fixed by dropping the equality: the floor (≥ 1) and the per-member
+  property (each importer is one of the two named) already bound the count. No production code changed.
+  **Blocker met at the gate, not the story's:** `aof work doctor 127/02` answers 27 `duplicate-driver-number`
+  errors because the 127/05 archive merge left git-IGNORED artefacts (`observability/` snapshots,
+  10's `spike/graphify-out`) behind at the live root — `git mv` carries tracked files only, and the
+  enumerator admits any `NN_type_slug` folder, record doc or not. Every gate walked on this checkout
+  after that merge is red the same way; the remedy is moving the 27 leftover folders under
+  `wiki/work/archive/<same name>/` (zero collisions measured). A hazard of the archive verb worth an
+  amendment: an archive that merges home should sweep the ignored remainder, or doctor should not
+  read a doc-less folder as a numbered item.
 - **127/03 build (developer, 2026-09-15, solo, run `…0005`) — task 03's path-reader census is wrong by
   measurement, and the surplus is 05's.** The refine counted TWO runtime readers of a live item path
   outside `wiki/`; both are rewritten to `findWork` and green. Re-measured at build (the same grep,

@@ -1428,7 +1428,7 @@ Both answers are recorded as given, and acted on:
   discriminating `online:true`/`online:false` table, the consumer chain (`mesh status --json` → `poll.rs` →
   `current_work()`), and what wave (b) owes it (one home for the presence shape + the armed fitness pinning
   *every additive presence key survives the fabric-liveness merge*) are written into
-  [42's STATE.md](../../42_milestone_structural-overhaul/STATE.md) `## Notes & decisions in flight`, with F24
+  [42's STATE.md](../../archive/42_milestone_structural-overhaul/STATE.md) `## Notes & decisions in flight`, with F24
   (the node-descriptor workspace mis-attribution, debt item 4's live bite) and F26 (the leaked publish temp
   files, wave (a)'s no-silence territory) alongside it.
 - **The `@manual` / `@uat` live gates are accepted on the operator's attestation**, dated `2026-07-26`.

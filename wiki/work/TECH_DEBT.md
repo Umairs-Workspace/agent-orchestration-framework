@@ -32,7 +32,7 @@ may never rise.
 
 **Item 0 is the umbrella.** Items 1–6 are its symptoms, not six unrelated bugs.
 
-> **Promoted 2026-07-26:** items 0–7 → [`42_milestone_structural-overhaul`](42_milestone_structural-overhaul/SPEC.md).
+> **Promoted 2026-07-26:** items 0–7 → [`42_milestone_structural-overhaul`](archive/42_milestone_structural-overhaul/SPEC.md).
 > The milestone is the payment plan.
 
 ---

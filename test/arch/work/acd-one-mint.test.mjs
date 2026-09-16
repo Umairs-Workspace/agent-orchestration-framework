@@ -243,9 +243,11 @@ export const archTests = [
       // THE CLAIM IS A CEILING; THE NON-VACUITY IS A FLOOR. A legitimate future removal (one of the
       // two stops importing the engine) must stay green — "or a strict subset" — so the floor is
       // "the resolver found an importer at all". Zero would mean the specifier resolution is broken,
-      // which is the one way this leg could pass while saying nothing.
+      // which is the one way this leg could pass while saying nothing. The ceiling is the PROPERTY,
+      // asserted over every member below — each importer is one of the two named — and never an
+      // exact count: "today it finds the two" is a fact about the tree, and FF-11902 forbids a
+      // control from storing one.
       assert.ok(importers.length >= 1, "non-vacuity: the specifier sweep resolved at least one importer of the engine");
-      assert.equal(importers.length, 2, `today the engine has exactly its two importers — found ${importers.length}: ${importers.join(", ")}`);
       for (const importer of importers) {
         assert.ok(
           ENGINE_IMPORTERS.includes(importer),

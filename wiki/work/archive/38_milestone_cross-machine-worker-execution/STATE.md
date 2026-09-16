@@ -89,7 +89,7 @@ remain in git history.
 ## Carried forward
 
 - **→ milestone 42** (routed at the close, measurements carried across in
-  [42's STATE.md](../../42_milestone_structural-overhaul/STATE.md)): **F23** the presence record is rebuilt
+  [42's STATE.md](../../archive/42_milestone_structural-overhaul/STATE.md)): **F23** the presence record is rebuilt
   field-by-field at three seams and only two know its shape — the desktop cannot render a remote node's
   session (wave (b)); **F24** a node descriptor's `workspaces[]` is the publisher's workspace stamped on
   the whole roster (debt item 4); **F26** the publish leaks its temp file (wave (a)).

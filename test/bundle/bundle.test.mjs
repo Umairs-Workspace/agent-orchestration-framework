@@ -48,6 +48,7 @@ const COMMAND_IDS = [
   "add-story",
   "add-task",
   "add-uat",
+  "archive",
   "assimilate-code",
   "autonomous",
   "code-review",
@@ -112,7 +113,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 27 commands, 7 templates, 3 skills, 11 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 28 commands, 7 templates, 3 skills, 11 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -122,7 +123,7 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 27, "27 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — assimilate-code, delegate, observe, init and pay-debt)");
+      assert.equal(byKind("command"), 28, "28 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init and pay-debt)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 7, "milestone/story/task/uat/spike/chore templates + the type-agnostic `shared` (OUTCOME.md)");
       assert.equal(byKind("hook"), 11, "11 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat");
@@ -214,7 +215,7 @@ export const bundleTests = [
       assert.deepEqual(
         members.filter((m) => m.kind === "command").map((m) => m.id).sort(),
         [...COMMAND_IDS].sort(),
-        "27 commands declared"
+        "28 commands declared"
       );
       assert.deepEqual(
         members.filter((m) => m.kind === "hook").map((m) => m.id).sort(),
@@ -237,7 +238,7 @@ export const bundleTests = [
     name: "bundle/descriptor: every resource member (agent + command) names one or more target runtimes",
     run: async () => {
       const resourceMembers = descriptorMembers().filter((m) => m.kind === "agent" || m.kind === "command");
-      assert.equal(resourceMembers.length, 35, "35 resource members (8 agents + 27 commands)");
+      assert.equal(resourceMembers.length, 36, "36 resource members (8 agents + 28 commands)");
       for (const member of resourceMembers) {
         assert.ok(Array.isArray(member.runtimes) && member.runtimes.length >= 1, `${member.id} declares >=1 runtime`);
       }
@@ -305,7 +306,7 @@ export const bundleTests = [
     run: async () => {
       const bundle = loadBundle();
       const outputs = renderBundleOutputs(bundle, { runtimes: ["claude"] });
-      // Claude supports all agents (8) + all commands (27) + the 3 codex delegation skills + all template files.
+      // Claude supports all agents (8) + all commands (28) + the 3 codex delegation skills + all template files.
       const resourceOutputs = outputs.filter((o) => o.resource.kind === "agent" || o.resource.kind === "command");
       assert.equal(resourceOutputs.length, AGENT_IDS.length + COMMAND_IDS.length, "one output per claude resource member");
       for (const output of outputs) {

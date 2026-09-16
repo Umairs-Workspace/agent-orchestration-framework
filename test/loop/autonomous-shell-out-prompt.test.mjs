@@ -53,7 +53,11 @@ const commandIdsBeforeStory = [
   // pre-existing member set this leg calls COMPLETE grew by one. Recorded here the same way
   // `pay-debt` had to be, and for the same reason the residue pins above were retired: a literal
   // census only tells the truth if the diff that moves the tree moves it too.
-  "observe", "pay-debt", "promote", "recent", "refine", "retrospective", "shatter", "validate", "verify",
+  // `archive` ADDED AT 127/03, in the descriptor's own order (after `promote`), at the milestone door:
+  // `src/bundle/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
+  // and it landed outside the story's declared write set — the same species as `promote`, repaired
+  // at `aof:verify 127`.
+  "observe", "pay-debt", "promote", "archive", "recent", "refine", "retrospective", "shatter", "validate", "verify",
 ];
 const delegatedCommandRows = [
   ["c01", "/aof:autonomous 03", "aof work loop 03 --level L2"],
