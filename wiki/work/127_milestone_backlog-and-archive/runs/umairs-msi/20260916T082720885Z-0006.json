@@ -26,9 +26,9 @@
     }
   },
   "createdAt": "2026-09-16T08:27:20.885Z",
-  "updatedAt": "2026-09-16T08:27:20.885Z",
+  "updatedAt": "2026-09-16T10:47:38.918Z",
   "failureReason": null,
-  "heartbeatAt": null,
+  "heartbeatAt": "2026-09-16T10:47:38.918Z",
   "retryOf": null,
   "reclaimedAt": null,
   "node": "umairs-msi",
