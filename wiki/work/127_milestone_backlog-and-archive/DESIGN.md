@@ -11,7 +11,7 @@ doc: design
 
 ## Intent
 
-The board's overview (VIEW 1, [03/DESIGN.md](../03_milestone_work-board-ui/DESIGN.md) §VIEW 1) answers
+The board's overview (VIEW 1, [03/DESIGN.md](../archive/03_milestone_work-board-ui/DESIGN.md) §VIEW 1) answers
 "where does the whole project stand?". This milestone changes what the answer is *made of*: the root of
 `<work.dir>` now holds only what is live, un-numbered ideas sit in `backlog/`, and accepted work moves to
 `archive/`. The board makes **exactly two additions** and nothing else on it changes:
@@ -30,7 +30,7 @@ system** — every token below is already in [ui/src/index.css:3-25](../../../ui
 ## Conformance source of truth
 
 > **NO MOCK WAS ELICITED** — no `mocks/` directory exists for milestone 127 and no human was available to
-> supply one. Per **07/ADR-003** ([07/ARCHITECTURE.md:163](../07_milestone_design-conformance/ARCHITECTURE.md#L163))
+> supply one. Per **07/ADR-003** ([07/ARCHITECTURE.md:163](../archive/07_milestone_design-conformance/ARCHITECTURE.md#L163))
 > the **binding checklist under each surface below is the mandatory conformance source of truth** the
 > design-conformance review judges the built surface against. A mock produced later lands under this
 > milestone's `mocks/` (committed, locally readable) and becomes the visual source of truth, with these

@@ -12,7 +12,7 @@ doc: design
 ## Intent
 
 A loop that is running somewhere already has a line that says so — the fleet node card's current-work
-region ([38/DESIGN.md §Surface 1](../38_milestone_cross-machine-worker-execution/DESIGN.md), the line
+region ([38/DESIGN.md §Surface 1](../archive/38_milestone_cross-machine-worker-execution/DESIGN.md), the line
 `running N runs` / `working · <repo> (session)`), and, for a supervised loop, the desktop supervisor
 that keeps it alive. This milestone puts **one affordance on the row that already shows the loop** and
 nothing else: no panel, no page, no chip, no new ramp. The two surfaces make exactly these additions:
@@ -37,7 +37,7 @@ earns it in word and tint together. Every fleet token below is already in
 ## Conformance source of truth
 
 > **NO MOCK WAS ELICITED** — no `mocks/` directory exists for milestone 130 and no human was available to
-> supply one. Per **07/ADR-003** ([07/ARCHITECTURE.md:163](../07_milestone_design-conformance/ARCHITECTURE.md#L163))
+> supply one. Per **07/ADR-003** ([07/ARCHITECTURE.md:163](../archive/07_milestone_design-conformance/ARCHITECTURE.md#L163))
 > the **binding checklist under each surface below is the mandatory conformance source of truth** the
 > design-conformance review judges the built surface against. A mock produced later lands under this
 > milestone's `mocks/` (committed, locally readable) and becomes the visual source of truth, with these
@@ -45,7 +45,7 @@ earns it in word and tint together. Every fleet token below is already in
 
 - **Render routes.** Surface 1: `http://127.0.0.1:4181/?mode=fleet` (the fixed fleet port), judged on
   the node card of the local node with a live loop, and on a remote node's card. **1280 only** — 38
-  ruled 390/768 effectively unrenderable for this page ([38/DESIGN.md:826](../38_milestone_cross-machine-worker-execution/DESIGN.md#L826)).
+  ruled 390/768 effectively unrenderable for this page ([38/DESIGN.md:826](../archive/38_milestone_cross-machine-worker-execution/DESIGN.md#L826)).
   Surface 2: the standalone `app/desktop/ui/index.html` (the committed-mock path,
   [app.js:345-352](../../../app/desktop/ui/app.js#L345)) at the mock's 760×520 frame
   ([styles.css:49-54](../../../app/desktop/ui/styles.css#L49)), **light and dark** (`?theme=`), which
@@ -82,7 +82,7 @@ Both surfaces speak the same three words for a loop's stop, so an operator who r
 | — | the loop has halted | the line is gone | — | `stopped`, then the row is gone |
 
 - **Why words in the line, not a tint.** 38 S4/S5: colour and label travel together and the region takes
-  no new primitive ([38/DESIGN.md:220-221](../38_milestone_cross-machine-worker-execution/DESIGN.md#L220)).
+  no new primitive ([38/DESIGN.md:220-221](../archive/38_milestone_cross-machine-worker-execution/DESIGN.md#L220)).
   The loop is still doing work at rungs 1 and 2 (the drive is finishing, or the bracket is closing), so
   the line keeps `primary` — a `muted` line would say "no work", which is false. The word is the state.
 - **Why the state word sits second, right after `loop 129`.** The line truncates from its tail (below);
@@ -93,9 +93,9 @@ Both surfaces speak the same three words for a loop's stop, so an operator who r
   (alive and being stopped), not which rung the operator is on. `stopping` rides the **`running` dot**
   (`.pill-dot.running`, [styles.css:80](../../../app/desktop/ui/styles.css#L80)): the child IS alive.
   Rejected: the amber `restarting` pulse — 36 reserves amber for "a genuine fault"
-  ([36/DESIGN.md:80-81](../36_milestone_mesh-desktop-app/DESIGN.md#L80)) and a requested stop is not one;
+  ([36/DESIGN.md:80-81](../archive/36_milestone_mesh-desktop-app/DESIGN.md#L80)) and a requested stop is not one;
   and `.work-dot` (accent + pulse) — a fleet-presence class inside a local-process pill is the ramp
-  conflation 36 forbids by name ([36/DESIGN.md:241-243](../36_milestone_mesh-desktop-app/DESIGN.md#L241)).
+  conflation 36 forbids by name ([36/DESIGN.md:241-243](../archive/36_milestone_mesh-desktop-app/DESIGN.md#L241)).
 - **This is one new WORD in an existing ramp, not a new ramp.** The alternative — a pill that says
   `running` for the whole grace after the operator pressed Stop — is the lie by shape 127 refused for its
   toggle. Daemon rows never say it: their Stop is an immediate kill ([supervisor.rs:656-662](../../../app/desktop/crates/app/src/supervisor.rs#L656)).
@@ -106,7 +106,7 @@ Both surfaces speak the same three words for a loop's stop, so an operator who r
 
 ### 1 — The fleet node card's loop line and its Stop
 
-The card is the six-region anatomy 38 fixed ([38/DESIGN.md:250-257](../38_milestone_cross-machine-worker-execution/DESIGN.md#L250)):
+The card is the six-region anatomy 38 fixed ([38/DESIGN.md:250-257](../archive/38_milestone_cross-machine-worker-execution/DESIGN.md#L250)):
 identity → host → presence-age → **current-work region** → fabric line → capabilities footer, rendered
 at [Fleet.tsx:1428-1474](../../../ui/src/fleet/Fleet.tsx#L1428). The loop line lives **inside region 4**,
 in the same `<p>` map ([Fleet.tsx:1449-1460](../../../ui/src/fleet/Fleet.tsx#L1449)), same
@@ -146,7 +146,7 @@ then on this node's card the button, then the message slot:
 - **The `<p>` becomes a flex row** (`flex items-center gap-2`) holding a `min-w-0 truncate` text span (the
   line, `title` = the whole value), the `shrink-0` button, and the `min-w-0 shrink truncate` message span.
   Truncation eats the tail first — `cycle…`, then `<phase> <ref>` — never `loop <scope>` and never the state
-  word. The card floor is the measured 286px ([49/DESIGN.md:744-747](../49_milestone_terminals-home/DESIGN.md#L744)),
+  word. The card floor is the measured 286px ([49/DESIGN.md:744-747](../archive/49_milestone_terminals-home/DESIGN.md#L744)),
   and a 41-character line plus a button **will** truncate there; the `title` carries the rest.
 
 **The button — ONE per loop line, on this node's card only.** `<button type="button">` at the line's end:
@@ -214,7 +214,7 @@ then on this node's card the button, then the message slot:
 
 ### 2 — The desktop window's supervised-loop rows
 
-The window is 36's four regions ([36/DESIGN.md:99-127](../36_milestone_mesh-desktop-app/DESIGN.md#L99)):
+The window is 36's four regions ([36/DESIGN.md:99-127](../archive/36_milestone_mesh-desktop-app/DESIGN.md#L99)):
 title bar → control bar → body → footer ([index.html:22-40](../../../app/desktop/ui/index.html#L22)). The
 control bar is where **this machine's** supervised children live, so the loop rows are control-bar rows.
 
@@ -259,7 +259,7 @@ supervised loop is a local process — 36's two-ramp rule).
   ladder; the pill word does not change. No third state of the control: same class, same glyph, same
   size at both rungs — the pill word beside it is what makes the rung legible, so the row's geometry never
   moves while the child lives. **No duration in copy** — the pill never says how long the grace is
-  ([36/DESIGN.md:254-259](../36_milestone_mesh-desktop-app/DESIGN.md#L254)).
+  ([36/DESIGN.md:254-259](../archive/36_milestone_mesh-desktop-app/DESIGN.md#L254)).
 - **`stopped`, held.** After the child exits — by its own halt, or by the tree-kill fallback — the pill
   reads `stopped` on the dashed dot and the control is gone; the row **persists until the declarations
   producer drops it** (≤ one 30 s declarations tick), so an operator who looks back sees the outcome, not
@@ -297,7 +297,7 @@ supervised loop is a local process — 36's two-ramp rule).
   dashed dot, `stopped`, control absent, row persists ≤ one declarations tick. *gone* — row absent. *error*
   — footer notice `loop <scope>: <line>`, row unchanged. *body loading / error / empty* — 36's body states,
   unchanged; the loop bar is a local signal and renders truthfully above them, as the daemon bar does
-  ([36/DESIGN.md:144-147](../36_milestone_mesh-desktop-app/DESIGN.md#L144)).
+  ([36/DESIGN.md:144-147](../archive/36_milestone_mesh-desktop-app/DESIGN.md#L144)).
 - **Ramp:** the local-process ramp's three dots unchanged; four words (`stopping` added); the `running`
   dot under `stopping`; never amber for a requested stop; `.toggle.subtle` (neutral stroke, `currentColor`
   glyph), light and dark from the existing tokens. No new token, class, colour or motion.
@@ -307,7 +307,7 @@ supervised loop is a local process — 36's two-ramp rule).
 ## What does NOT change
 
 - **The board.** 53/ADR-004 froze it against a loop face — "ZERO board change"
-  ([53/ARCHITECTURE.md:427](../53_milestone_loop-artifact/ARCHITECTURE.md#L427)) — and FF-5307 pins
+  ([53/ARCHITECTURE.md:427](../archive/53_milestone_loop-artifact/ARCHITECTURE.md#L427)) — and FF-5307 pins
   `src/board-ui.mjs` and `ui/src/board/` to it; the run row gets no button because the verb and the fleet
   reach the same loop and a third door would be a third state to keep honest.
 - **The desktop node table.** No row, cell or dot changes; the local node's `current_work` cell keeps
