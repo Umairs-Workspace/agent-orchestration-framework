@@ -16,7 +16,7 @@ updated: 2026-07-27
 
 ## Objective
 
-Pay down [TECH_DEBT.md](../TECH_DEBT.md) in full — item 0 (the umbrella) and its symptoms 1–7 — by
+Pay down [TECH_DEBT.md](../../TECH_DEBT.md) in full — item 0 (the umbrella) and its symptoms 1–7 — by
 **redesigning the subsystems that produce the defects, not by patching where they surface**. The
 codebase grew by accretion: 41k lines across 147 files in which the same fact is derived in many
 places (workspace identity: 17 call sites), the same act has several doors, failure is handled by
@@ -48,7 +48,7 @@ An outsider can verify the milestone was met without reading any diff:
   effects table, locus-routed, drained locally or durably enqueued over the bridge — a crashed
   process leaves *pending* events, never lost cascades. Verified by killing a worker between a
   run's transition and its assignment settle on the live soak (wave (d); design:
-  [PRD-command-spine-effects-ledger](../../planning/PRD-command-spine-effects-ledger.md)).
+  [PRD-command-spine-effects-ledger](../../../planning/PRD-command-spine-effects-ledger.md)).
 - **The build is honest.** A running daemon can state which build it is (`aof mesh status`); the
   soak-loop deploy is restart-not-rebuild (JS payload beside the launcher, SEA reserved for release
   artefacts); stale `.bak` binaries are pruned to the last N (item 1).
@@ -77,7 +77,7 @@ In scope:
 - **Wave (c) — the honest build** (item 1): launcher/payload decoupling for the dev/soak loop,
   build id stamped and visible at runtime, `.bak` pruning; SEA kept only as the release artefact.
 - **Wave (d) — command spine & effects ledger** (item 0 one level deeper; added 2026-07-27, design:
-  [PRD-command-spine-effects-ledger](../../planning/PRD-command-spine-effects-ledger.md)): one
+  [PRD-command-spine-effects-ledger](../../../planning/PRD-command-spine-effects-ledger.md)): one
   generic CLI face over the registry (all ~84 verbs registered; the nine face copies, six flag
   vocabularies and 41 hand-decided exit-code sites collapse); mutations emit durable domain events
   from one transition seam; one effects table maps each event to its reactors, each tagged with the
@@ -120,7 +120,7 @@ independently landable rewrites; every story leaves the two-machine soak running
 
 ## Dependencies
 
-- **[TECH_DEBT.md](../TECH_DEBT.md)** — the evidence base: each debt item carries the measurements
+- **[TECH_DEBT.md](../../TECH_DEBT.md)** — the evidence base: each debt item carries the measurements
   (2026-07-26 soak) that define this milestone's before/after.
 - **`work:continue` (m27, feat/issuance-routing branch)** — the proven one-door pattern that wave
   (b) generalises to refine/verify/run.
@@ -129,7 +129,7 @@ independently landable rewrites; every story leaves the two-machine soak running
 - **`test/arch/acd-*` fitness convention** — the enforcement mechanism for the new invariants
   (no-empty-catch, one identity home, CLI↔bundle parity); requires wave (a)'s zero-failure baseline
   to gate anything.
-- **[PRD-command-spine-effects-ledger.md](../../planning/PRD-command-spine-effects-ledger.md)** —
+- **[PRD-command-spine-effects-ledger.md](../../../planning/PRD-command-spine-effects-ledger.md)** —
   wave (d)'s settled design (2026-07-27, argued to rest in-session): the command spine, transitions
   as the only event-raisers, the per-node journal + effects table with loci, the three-channel
   bridge, idempotent reactors; the ROADMAP's legs d1–d5 are its milestone cut.

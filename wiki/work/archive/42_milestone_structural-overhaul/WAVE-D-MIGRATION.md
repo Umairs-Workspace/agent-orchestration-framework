@@ -1,7 +1,7 @@
 # Wave (d) — command spine & effects ledger: the migration plan
 
 > The working ledger for legs d1–d5 ([ROADMAP](ROADMAP.md) wave (d); design record:
-> [PRD-command-spine-effects-ledger.md](../../planning/PRD-command-spine-effects-ledger.md)).
+> [PRD-command-spine-effects-ledger.md](../../../planning/PRD-command-spine-effects-ledger.md)).
 > **Infrastructure + first migrations landed 2026-07-28** — this document is the plan for the
 > REST: every remaining verb, cascade and gate, in order, with the ritual each one follows.
 
