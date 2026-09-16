@@ -1,8 +1,5 @@
 ---
 doc: digest
-type: milestone
-number: 132
-milestone: 132
 slug: gsd-era
 title: "The GSD era — how aof was built before ACD (v1 → v1.8, 2026-05-07 → 2026-06-14)"
 status: done
@@ -11,14 +8,13 @@ importedBy: aof
 source: gsd
 importedAt: 2026-09-16
 ---
-# 132 · NN · The GSD era — how aof was built before ACD — Digest
+# The GSD era — how aof was built before ACD — Digest
 
 <!-- Recovered digest, co-located with its three source documents (SUMMARY.md, MILESTONES.md,
      RETROSPECTIVE.md — the GSD-era archive kept at the ACD migration on 2026-06-14, previously
      `wiki/work/.gsd-archive/`). Each `## ` section → one `summary` record via the EXISTING parseAof.
      The full `.planning/` tree (55 phases) is recoverable at git tag `gsd-planning-archive`.
-     This item predates the stream — its number is the minting order of 2026-09-16, not a
-     chronology; the dates below are the record. -->
+     This record predates the stream and carries no number; the dates below are the record. -->
 
 ## Intent
 
