@@ -31,7 +31,7 @@ import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE_DIR = path.join(
   repoRoot,
-  "wiki", "work", "10_milestone_graphify-memory-backend",
+  "wiki", "work", "archive", "10_milestone_graphify-memory-backend",
   "stories", "01_story_graph-grounded-reranking", "tasks", "fixtures"
 );
 function loadFixture(name) {

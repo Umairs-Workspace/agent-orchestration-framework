@@ -25,7 +25,7 @@ aofVersion: 0.1.0
 
 This session accepts the **runs → mesh → console** delivery as one integrated whole — the experiential
 human acceptance the operator elected to perform holistically rather than per-milestone (see
-[27/VERIFICATION.md](../27_milestone_work-issuance-routing/VERIFICATION.md) "User sign-off"). Each
+[27/VERIFICATION.md](../archive/27_milestone_work-issuance-routing/VERIFICATION.md) "User sign-off"). Each
 milestone below is already accepted on its OWN gate; this session confirms they hold **together**.
 
 - **Accepts** (the `depends:` span):

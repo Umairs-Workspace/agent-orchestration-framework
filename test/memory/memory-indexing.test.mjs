@@ -34,7 +34,10 @@ const REAL_WORK_DIR = path.join(REPO_ROOT, "wiki", "work");
 // ---- real-corpus fixtures (the milestone-01 RETROSPECTIVE.md + ARCHITECTURE.md
 // the features are grounded in — copied verbatim into a temp stream so the tests
 // are hermetic, not dependent on the live stream's growth) -----------------------
-const M01_DIR = path.join(REAL_WORK_DIR, "01_milestone_acd-asset-bundle");
+const M01_DIR = path.join(REAL_WORK_DIR, "archive", "01_milestone_acd-asset-bundle");
+// The root a record's `source` resolves against in the REAL corpus: milestone 01 is archived
+// (127/05), so its documents sit one root down from the stream root.
+const REAL_M01_ROOT = path.dirname(M01_DIR);
 
 async function readReal(name) {
   return readFile(path.join(M01_DIR, name), "utf8");
@@ -204,7 +207,7 @@ export const memoryIndexingTests = [
       assert.ok(r2.text.includes("bundle manifest hashes"), "text covers the What");
       assert.ok(r2.text.includes("content addressing is byte-exact"), "text covers the Why");
       // source resolves to the "## R2" heading line.
-      const headingLine = await assertSourceResolves(r2, REAL_WORK_DIR);
+      const headingLine = await assertSourceResolves(r2, REAL_M01_ROOT);
       assert.match(headingLine, /^##\s+R2\b/, "source points at the ## R2 heading");
     },
   },
@@ -269,7 +272,7 @@ export const memoryIndexingTests = [
       assert.ok(adr.summary.includes("content-addressed bundle manifest"), "summary traces to the Decision text");
       assert.ok(adr.text.includes(adr.title), "text covers the title");
       assert.ok(adr.text.includes("work update"), "text covers the Context");
-      const headingLine = await assertSourceResolves(adr, REAL_WORK_DIR);
+      const headingLine = await assertSourceResolves(adr, REAL_M01_ROOT);
       assert.match(headingLine, /^##\s+ADR-002\b/, "source points at the ## ADR-002 heading");
     },
   },

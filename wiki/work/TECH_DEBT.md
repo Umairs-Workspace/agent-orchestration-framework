@@ -879,7 +879,7 @@ live servers, which wants its own chore and a deploy to verify). **Severity:** m
 omits the port silently gets another server's.
 
 Measured 2026-08-08 at `14ac6e1`, during `aof:refine 46` (recorded in
-[46/ARCHITECTURE.md §Codebase health finding 4](46_milestone_terminal-control-unification/ARCHITECTURE.md)).
+[46/ARCHITECTURE.md §Codebase health finding 4](archive/46_milestone_terminal-control-unification/ARCHITECTURE.md)).
 
 Five servers, four homes for the numbers, and they do not agree:
 
@@ -901,7 +901,7 @@ Two distinct faults, and the second is the one that will bite:
   silently gets a different server's port.
 - **`DEFAULT_MESH_UI_PORT` lives inside the fleet SERVER module.** So any other module that needs to name
   the fleet's origin either imports a server — a cycle, which is exactly why
-  [46/ADR-004](46_milestone_terminal-control-unification/ARCHITECTURE.md) resolves the standalone default
+  [46/ADR-004](archive/46_milestone_terminal-control-unification/ARCHITECTURE.md) resolves the standalone default
   in the command layer instead — or re-types the number. That is how
   `FLEET_PORT = 4181` came to sit in a browser component
   ([ui/src/board/TerminalDock.tsx:78](../../ui/src/board/TerminalDock.tsx#L78)) in the first place.
@@ -923,7 +923,7 @@ This item forecast that *"any other module that needs to name the fleet's origin
 a cycle — or re-types the number."* Milestone 46 took the sanctioned branch and it bit anyway.
 
 `src/commands/work-ui.mjs:25` imports `DEFAULT_MESH_UI_PORT` from `../mesh-ui-serve.mjs` — the fleet
-**server** — which is exactly the route [46/ADR-004](46_milestone_terminal-control-unification/ARCHITECTURE.md)
+**server** — which is exactly the route [46/ADR-004](archive/46_milestone_terminal-control-unification/ARCHITECTURE.md)
 sanctions (the command layer is the layer allowed to know both faces, m08/ADR-001). That import puts the
 command module **on a real import ring**, confirmed edge-by-edge on the codebase graph (`aof graph build .`,
 no `--backend`; **8,973 nodes / 21,370 edges, `builtAt` 2026-08-08T17:53:28.450Z**):
@@ -1181,7 +1181,7 @@ Measured 2026-08-08 at milestone 46's last structural review, same method as ite
 | `ui/src/app/shell-layout.mjs` | — | 845 | **1,006** | crossed 1,000 **unbudgeted** |
 
 **The sharp part is the prediction, not the number.**
-[46/ADR-001](46_milestone_terminal-control-unification/ARCHITECTURE.md) states as a consequence that the
+[46/ADR-001](archive/46_milestone_terminal-control-unification/ARCHITECTURE.md) states as a consequence that the
 terminal subtree comes out **net file-negative** — *"two components and six helpers (plus six `.d.mts`)
 become one component and one helper set"*, ≈14 files / ≈1,370 lines. It shipped at **31 files / ≈4,430
 lines** (including the two call-site mount modules): **~2.2× the files, ~3.2× the lines.** About 35% of
@@ -1360,7 +1360,7 @@ producing an unattractive consequence is a contract decision to be raised, never
 ## 33. The `ui/src` file-budget table is at its ceiling across the board — the ratchet is an alarm, and the whole tree is standing on it
 
 **Measured 2026-08-10 at `d71d508`, at milestone 47's refine** (architect's codebase-health pass,
-[47/ARCHITECTURE §Codebase health](47_milestone_fleet-repo-filter/ARCHITECTURE.md) finding 1). Filed here
+[47/ARCHITECTURE §Codebase health](archive/47_milestone_fleet-repo-filter/ARCHITECTURE.md) finding 1). Filed here
 rather than inside m47 because paying it down means extracting from files m47 does not touch, and a limit
 one milestone imposes on another's files fails CI for reasons unrelated to the diff that trips it — the
 ruling m43, m45 and m46 have each made in turn.
@@ -1396,7 +1396,7 @@ milestones are already queued against these files: m47 against `Fleet.tsx`, m49'
 
 It has also already produced one near-miss: m47's own refine found `Fleet.tsx` with 13 lines of headroom
 while the milestone needs to add a filter control, a chip and an empty-state branch to it. That milestone
-can pay for itself — [47/ADR-006](47_milestone_fleet-repo-filter/ARCHITECTURE.md) deletes ~250 lines of
+can pay for itself — [47/ADR-006](archive/47_milestone_fleet-repo-filter/ARCHITECTURE.md) deletes ~250 lines of
 unreachable local-shape branch — but that was luck of a kind: the dead code happened to be in the same
 file. `DetailPanel.tsx`'s next author has one line and no windfall.
 
@@ -1432,7 +1432,7 @@ paid — and it would erase the one measurement that says the tree is under pres
 ## 34. `writeText` adds ~62 unbounded characters to every atomic write — a legal filename can be unwritable, and the rule has two homes
 
 **Status:** open (raised 2026-08-11 by milestone 48's story-00 developer, measured through the real
-producer; ruled out of m48's scope by [48/ADR-011](48_milestone_fleet-session-identity/ARCHITECTURE.md)).
+producer; ruled out of m48's scope by [48/ADR-011](archive/48_milestone_fleet-session-identity/ARCHITECTURE.md)).
 **Severity:** low likelihood, silent failure mode, repo-wide reach.
 
 <!-- ADR-011's paste-ready block cites this as "item 29". That number was already taken (item 29 is the
@@ -1479,7 +1479,7 @@ arrives in this module's own envelope rather than as a stack trace.
 
 **Status:** open (raised 2026-08-11 by milestone 48's QA pass, measured on this machine; the residual is
 ACCEPTED and the failure MODE re-stated by
-[48/ADR-013 R14](48_milestone_fleet-session-identity/ARCHITECTURE.md), which supersedes ADR-010/R1's
+[48/ADR-013 R14](archive/48_milestone_fleet-session-identity/ARCHITECTURE.md), which supersedes ADR-010/R1's
 "collision" framing). **Severity:** negligible likelihood (needs caller misuse), silent, and the one
 failure mode the whole identity contract is built to exclude.
 
@@ -1619,8 +1619,8 @@ guard-if-present lane in the suite.
 ## 37. The desktop and web "current work" lines are two implementations, and their cross-surface gate compares SOURCE TEXT rather than BEHAVIOUR — so it is green over a branch on which they already disagree
 
 **Status:** open (measured by the architect at milestone 49's refine, routed by
-[49/ADR-010](49_milestone_terminals-home/ARCHITECTURE.md) and by
-[§Codebase health finding 5](49_milestone_terminals-home/ARCHITECTURE.md); **written to this ledger at
+[49/ADR-010](archive/49_milestone_terminals-home/ARCHITECTURE.md) and by
+[§Codebase health finding 5](archive/49_milestone_terminals-home/ARCHITECTURE.md); **written to this ledger at
 story 49/01's structural review, which is where the routing was found to have stopped at the ADR**).
 **Severity:** a satisfied-looking contract over two implementations that are already known to differ.
 
@@ -1671,7 +1671,7 @@ completely.
 ## 38. Two shipped, tested RENDERING PATHS have no production producer — `unavailable` and `STATE_MOUNTING` — and each was built on a prediction that the NEXT milestone would supply one
 
 **Status:** open (measured by the architect at milestone 49's refine as
-[§Codebase health findings 4 and 6](49_milestone_terminals-home/ARCHITECTURE.md), with finding 6
+[§Codebase health findings 4 and 6](archive/49_milestone_terminals-home/ARCHITECTURE.md), with finding 6
 folded in here deliberately; **written to this ledger at story 49/02's structural review, which is
 where the routing was found to have stopped inside an immutable ADR**). Re-verified in the working
 tree at that review: both mount producers pass `unavailable: null`

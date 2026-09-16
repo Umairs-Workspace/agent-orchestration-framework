@@ -394,7 +394,7 @@ doc: state
 
 - **2026-07-26 (pre-refine) — INHERITED BLOCKER from m38's close: F23, the presence record is rebuilt
   field-by-field at THREE seams and only two know its current shape.** Found and measured at
-  `aof:verify 38` (see [38's VERIFICATION.md](../38_milestone_cross-machine-worker-execution/VERIFICATION.md)
+  `aof:verify 38` (see [38's VERIFICATION.md](../archive/38_milestone_cross-machine-worker-execution/VERIFICATION.md)
   finding **F23**); routed here at the operator's direction so m38 could close, because the defect is
   exactly wave (b)'s thesis — **one home for one derivation** — not another m38 point fix.
   - **The defect.** [`fabricLivenessFor`](../../../src/commands/mesh-identity.mjs#L212-L221) (m33/ADR-002.1)

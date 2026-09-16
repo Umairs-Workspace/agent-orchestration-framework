@@ -434,6 +434,48 @@ doc: state
   so every focused run waited — the verified runs were `scripts/test.mjs --only` sets, never the
   widened one. — Raised by: developer/orchestrator (solo)
 
+- **127/05 build (developer, 2026-09-16, solo, lane `aof/mesh/127-05`) — the move is done, once, for
+  real (`ed9c00c`: 125 drivers, 2,289 renames, 1,710 links in 161 files; `VERIFICATION.md` `127/05`),
+  and six contract deltas are held as the true statement rather than the written one.**
+  (1) **`validate --json` is not `[]` on the real tree and was not before this story**: 117
+  `story reads path "…" does not exist` findings on done records whose `reads:` cite modules 119
+  moved, because the public-repo move (2026-09-13) cut the history `readRenameMap` reads renames
+  from; the same cause reddens FF-6607b ×3 and `loops-ledger/05 leg 9` at HEAD. The move itself adds
+  none once committed (the resolver follows the 2,289 renames it records — uncommitted it is +323,
+  127/03's QA number), so the suite holds a RATCHET (`VALIDATE_BEFORE`: no finding of any other
+  class, no more of that class) and asserts `validate 52` `[]` exactly. (2) **`doctor 52` carries
+  eight `control-unresolved`** for the same lost-history reason (FF-5201…5209 cite
+  `test/arch/acd-loop-*.test.mjs`, moved by 119/03); ratcheted, none an error, none under `wiki/work`.
+  (3) **`init-config` cannot leave the config byte-identical**: `writeConfig` re-serialises
+  canonically and this repository's config carries two hand-compacted lines (`b5f6cd5`); run on a
+  copy, asserted JSON-equal with `intakeWritten: false`. (4) **`find --json`'s live row has no
+  `number` key** (127/01's frozen seven; task 00 spelled `number: "<MAX+1>"`) — asserted on `ref`
+  and the absence of `backlog`; the face row adds `answeredFrom` beside the seven (m43). (5) **The
+  promote stamp also prefixes the first heading** (`# 131 · …`, 127/02's courtesy) — "every other
+  line byte-identical" holds for the frontmatter, and the body is asserted to differ by exactly that.
+  (6) **`ls wiki/work` holds no `backlog/`** after the move: git carries no empty directory; the
+  primary's untracked empty `backlog/` is the operator's. Also: "every link into `archive/` resolves"
+  was false before the move for 48 bare `src/…#L…` citations in `OUTCOME.md` files (they resolve
+  inside the item folder) — ratcheted at 48; the shape copy is 24.9 MB of `.md`/`.feature`, not the
+  refine's 2.0 MB, and copies in 3 s.
+  **Declared `files:` incomplete by 27 test files**, repaired in the record: 127/03's census named
+  ten readers of a real item folder; the move found seventeen more the census regex cannot see
+  (`path.join(…, "wiki", "work", "<NN>_…")`, rows relative to the real work dir, and two helpers
+  deriving the item from a path's LEADING segment — `itemOf` in `acd-register-declaration-form`,
+  the `[folder]` split in `work-validate-contract-parses`). Each archived item's reader now spells
+  `wiki/work/archive/<name>` (an archived folder never moves again); 129's two resolve by ref. The
+  lesson for the retro: a reader census keyed on ONE spelling of a path under-counts by half, and
+  the honest census is "run every suite that names the folder" — done here as a 91-suite focused run
+  and then a chunked run of every registered suite but the `:4182` binder.
+  **`aof work update` in a lane is discarded**: `commitWorktreeChanges` resets `.aof/` before the
+  loop's reconcile commit, which is why 127/03's `work/archive-is-a-move: 04 the wrapper is declared…`
+  is red in every checkout (`.aof/aof.lock.json` lacks the three `archive` renders). This lane
+  commits its own `.aof/aof.config.json` line by hand for the same reason; the lock is the
+  operator's to refresh in the primary (`aof work update`), not this story's write.
+  **Harness facts:** the archive's item-lock guard reads the real store — the real act ran under
+  the real home, every read in the suite under an isolated one; `promote` under an isolated home
+  with the repo's mesh-configured config mints freely (no store ⇒ no holder). — Raised by:
+  developer (solo)
 
 ## Verification
 

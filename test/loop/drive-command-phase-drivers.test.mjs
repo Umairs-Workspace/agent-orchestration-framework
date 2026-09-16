@@ -27,6 +27,7 @@ import { fixTransport } from "../../src/commands/loop.mjs";
 import { SOURCE_DIRECTORY_EXEMPTIONS, FLAT_LAYER_THRESHOLD } from "../arch/testing/acd-source-directory-budget.test.mjs";
 import { continueCommand, refineDoorCommand, verifyDoorCommand } from "../../src/commands/continue.mjs";
 import { readRuns, recordSessionId } from "../../src/run-store.mjs";
+import { findWork } from "../../src/work.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 
@@ -1618,7 +1619,11 @@ export const driveCommandPhaseDriverTests = [
   {
     name: "129/07 task02 ADR-001 §5 records the amendment — the two phase keys, --orchestrated and the fallback to work.agents.mode, dated 2026-09-15",
     async run() {
-      const adr = await readFile(new URL("../../wiki/work/129_milestone_loop-concurrency/ARCHITECTURE.md", import.meta.url), "utf8");
+      // 127/ADR-004 §3 — the milestone is reached by REF, never by a literal folder: `findWork`
+      // answers wherever the folder sits, so 129's own archive after its accept reddens nothing here.
+      const [milestone] = await findWork(path.join(fileURLToPath(new URL("../../", import.meta.url)), "wiki", "work"), "129");
+      assert.ok(milestone?.dir, "milestone 129 resolves through findWork (live or archived)");
+      const adr = await readFile(path.join(milestone.dir, "ARCHITECTURE.md"), "utf8");
       const start = adr.indexOf("## ADR-001");
       const end = adr.indexOf("## ADR-002");
       const body = adr.slice(start, end);

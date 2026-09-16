@@ -1,0 +1,78 @@
+{
+  "runId": "20260916T083526809Z-0001",
+  "itemRef": "127/05",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "36382ca5-45dd-4408-9d88-7a46f4eeea17",
+  "brief": {
+    "loop": {
+      "loopRunId": "5c554454-2f26-4613-9c89-c21c957bca90",
+      "scope": "127",
+      "level": "L2",
+      "cap": 6,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-11T13:03:43.182Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": true
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-16T08:27:38.856Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/119 FF-11901 · 121: NO control under test/arch/ spells an import-specifier extractor of its own — the one home is test/support/module-family.mjs, and the remainder is a named, shrink-only baseline",
+        "arch/119 FF-11902: NO control narrows a repository walk by a filename PREDICATE without a non-vacuity leg — a move REDS a control, it never empties one",
+        "arch/119 FF-11902: NO control retypes a tree-walk equality — the count is derived into the property it stood in for, over every member, with a floor kept",
+        "arch/119 FF-11902: NO control retypes a member census — a derived set is never asserted equal to a string-array literal; a home is named AMONG the set, under a floor and a declared ceiling",
+        "arch/119 FF-11903: one resolver answers every citation — at HEAD, or through a rename this repository recorded",
+        "arch/119 FF-11903: the map is DERIVED and is asserted to be non-empty — an empty map must not read as a pass",
+        "arch/119 FF-11903: the citation sweep is bounded by a shrink-only ceiling pinned to a measured count",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): frozen store and board read surfaces remain byte-identical to the milestone base",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
+        "arch/124/02 FF-12405 leg 9 (task 03): the manifest is a true content address, and it agrees with the lock on every path they both name",
+        "arch/96/02 FF-9603 (2) THE BAN IS A PROPERTY OF THE STREAM — every PLAN.md under wiki/work is admitted, not only the template",
+        "arch/53 FF-5301 (acd-session-driver-mesh-blind): frozen direct imports, lifecycle denylist, named admissions, and reach ceilings stay exact",
+        "arch/53 FF-5302 (acd-session-driver-single-home): the driver export set is exactly the frozen seventeen and the sink re-exports every binding by identity",
+        "arch/53 FF-7002 (acd-session-driver-single-home, extended): the driver imports the pure phase-brief leaf WITHOUT re-exporting it, the leaf is pure, and the driver's export set stays the frozen seventeen",
+        "arch/FF-6607b: LEG B is live — every control of this milestone that HAS landed is named by a runner",
+        "arch/FF-6607b: ADR-011/E — NO `done` item's register declares an UNRESOLVED control, marker or no marker (the accept-transition refusal)",
+        "arch/FF-6607b: the THREE controls this story lands resolve under both legs, here and now"
+      ],
+      "baseCommit": "ba25547e98d41bd7bd537cc23424f94f8dbd9bb0"
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-127-05",
+      "branch": "aof/mesh/127-05",
+      "baseCommit": "ba25547e98d41bd7bd537cc23424f94f8dbd9bb0"
+    }
+  },
+  "createdAt": "2026-09-16T08:35:26.809Z",
+  "updatedAt": "2026-09-16T10:43:24.209Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-09-16T10:42:08.268Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "umairs-msi",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 782,
+      "output": 359533,
+      "cacheRead": 133300107,
+      "cacheCreate": 870618
+    },
+    "costUsd": 48.6501906,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 391,
+    "toolCalls": 249,
+    "exitReason": "final_output"
+  }
+}

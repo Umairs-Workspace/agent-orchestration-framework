@@ -87,7 +87,7 @@ const ROOT = path.resolve(here, "..", "..");
 const CLI_ENTRY = path.join(ROOT, "bin", "aof.mjs");
 const SELF = path.join(here, "work-loops-commands.test.mjs");
 
-const FEATURE_DIR = "wiki/work/52_milestone_loop-registry-and-graph/stories/02_story_work-loops-command-family/tasks";
+const FEATURE_DIR = "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/02_story_work-loops-command-family/tasks";
 const F_SHOW = `${FEATURE_DIR}/00_loops-show.feature`;
 const F_VALIDATE = `${FEATURE_DIR}/01_loops-validate.feature`;
 const F_GRAPH = `${FEATURE_DIR}/02_loops-graph-mermaid.feature`;
@@ -95,7 +95,7 @@ const F_ROUTING = `${FEATURE_DIR}/03_registration-and-routing.feature`;
 // The MIGRATED-IN feature. Only one of its scenarios is claimed here; the rest are 52/05 task 02's,
 // and `test/loop/work-loops-checks.test.mjs` owns its title set in full.
 const F_CODES =
-  "wiki/work/52_milestone_loop-registry-and-graph/stories/01_story_structural-checks/tasks/05_frozen-finding-codes.feature";
+  "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/01_story_structural-checks/tasks/05_frozen-finding-codes.feature";
 const MIGRATED_IN = "the three `ran` cases, pinned at the seam";
 const CHECKS_SUITE = "./work-loops-checks.test.mjs";
 

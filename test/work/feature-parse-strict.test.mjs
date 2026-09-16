@@ -131,25 +131,25 @@ async function withOpenStory(featureText, body, config = { work: { tags: { domai
 const FREE_TEXT_ROWS = [
   {
     shape: "a `Given` in a `Background:` wrapped onto a second indented line",
-    file: "00_milestone_work-cli/stories/00_story_resolve-items/tasks/00_resolve-by-ref.feature",
+    file: "archive/00_milestone_work-cli/stories/00_story_resolve-items/tasks/00_resolve-by-ref.feature",
     line: 8,
     freeTextLines: 2,
   },
   {
     shape: "a `When` inside a scenario wrapped onto a second indented line",
-    file: "49_milestone_terminals-home/stories/01_story_repo-said-once/tasks/00_the-line-deduplicates-and-counts.feature",
+    file: "archive/49_milestone_terminals-home/stories/01_story_repo-said-once/tasks/00_the-line-deduplicates-and-counts.feature",
     line: 195,
     freeTextLines: 1,
   },
   {
     shape: "a step whose keyword carries a comma, so `And,` is never the keyword `And `",
-    file: "04_milestone_round-trip-proof/stories/02_story_loop-proof/tasks/02_roundtrip-signoff.feature",
+    file: "archive/04_milestone_round-trip-proof/stories/02_story_loop-proof/tasks/02_roundtrip-signoff.feature",
     line: 36,
     freeTextLines: 1,
   },
   {
     shape: "a narrative sentence in the Feature description beginning `And `",
-    file: "52_milestone_loop-registry-and-graph/stories/00_story_loop-model-and-loader/tasks/02_field-value-grammar.feature",
+    file: "archive/52_milestone_loop-registry-and-graph/stories/00_story_loop-model-and-loader/tasks/02_field-value-grammar.feature",
     line: 12,
     freeTextLines: 4,
   },
@@ -168,7 +168,7 @@ const FREE_TEXT_ROWS = [
   // suite again.
   {
     shape: "steps at file level under a comment block, with no `Scenario:`/`Background:`",
-    file: "27_milestone_work-issuance-routing/stories/02_story_fleet-ui-issue-affordance/tasks/02_assign-affordance.feature",
+    file: "archive/27_milestone_work-issuance-routing/stories/02_story_fleet-ui-issue-affordance/tasks/02_assign-affordance.feature",
     line: 113,
     freeTextLines: 3,
   },
@@ -638,8 +638,8 @@ export const featureParseStrictTests = [
       assert.deepEqual(parseFeature(text).structural, [], "a live aof authoring idiom, admitted though real Gherkin rejects it");
       // The 8 lines the contract measured, in two REAL files under a `done` milestone.
       for (const file of [
-        "49_milestone_terminals-home/stories/03_story_pane-declaration-and-invariant-4/tasks/00_the-fourth-host.feature",
-        "49_milestone_terminals-home/stories/03_story_pane-declaration-and-invariant-4/tasks/02_invariant-4-amended.feature",
+        "archive/49_milestone_terminals-home/stories/03_story_pane-declaration-and-invariant-4/tasks/00_the-fourth-host.feature",
+        "archive/49_milestone_terminals-home/stories/03_story_pane-declaration-and-invariant-4/tasks/02_invariant-4-amended.feature",
       ]) {
         const parsed = parseFeature(await readFile(path.join(workDir, file.replaceAll("/", path.sep)), "utf8"));
         assert.deepEqual(parsed.structural, [], `${file} carries the idiom and stays silent`);

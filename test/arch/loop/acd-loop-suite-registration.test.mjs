@@ -662,7 +662,14 @@ const ACCEPTED_CEILINGS = Object.freeze([
     // directory. The mask set is STILL five lines and only five — every one of those bytes is
     // frozen at its new value rather than exempted, which is the rule this ceiling states of
     // itself and the reason the next unattributed edit still fails.
-    residue: "c658a0d7b60ebd91338da060e45adcf4ac872e2f01ce8db843115cd990f25072",
+    //
+    // RE-STAMPED by 127/05 (2026-09-16, was c658a0d7b60e…): `aof work archive --done` moved
+    // milestone 52 under `wiki/work/archive/`, and this suite's ONE read-subject constant
+    // (`const MILESTONE = "wiki/work/…/52_milestone_loop-registry-and-graph"`) gained the
+    // `archive/` segment so its oracles keep reading the features they cite — the same class of
+    // byte 119/03 re-pinned for when the suite itself moved. The mask set is unchanged; every other
+    // byte is frozen at its value, and an archived folder never moves again.
+    residue: "1bf4beac4927417568bc0c2dc96dbc900f0410e9f532c3a36a1ecd9c098287fd",
     regions: [
       {
         id: "leg 5 exclusion-pointer roster (beyond §8's enumeration — see above)",

@@ -285,7 +285,7 @@ export const workStoryDependsTests = [
       //     because "byte-identical" is the claim and a substring check would pass a file
       //     that had been rewritten around the phrase it looked for.
       const { execFile } = await import("node:child_process");
-      const rel = "wiki/work/00_milestone_work-cli/stories/01_story_validate-stream/tasks/02_depends-graph.feature";
+      const rel = "wiki/work/archive/00_milestone_work-cli/stories/01_story_validate-stream/tasks/02_depends-graph.feature";
       const committed = await new Promise((resolve, reject) => {
         execFile("git", ["show", `HEAD:${rel}`], { cwd: repoRoot, windowsHide: true, maxBuffer: 8 * 1024 * 1024 },
           (error, stdout) => (error ? reject(error) : resolve(String(stdout))));
@@ -304,7 +304,7 @@ export const workStoryDependsTests = [
       // (b) THE NEW RULE IS RECORDED ONLY HERE — in the contract of the story that accepted
       //     it. Non-vacuous in both directions: present in 65's own feature, absent from 00's.
       const own = await readFile(path.join(
-        repoRoot, "wiki", "work", "65_story_concurrent-story-dispatch", "tasks",
+        repoRoot, "wiki", "work", "archive", "65_story_concurrent-story-dispatch", "tasks",
         "00_story-depends-becomes-data.feature",
       ), "utf8");
       assert.match(own, /THE SPLIT IS THE WHOLE DESIGN/, "story 65's contract records the split");

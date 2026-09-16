@@ -3,6 +3,7 @@
   "name": "aof",
   "work": {
     "dir": "./wiki/work",
+    "intake": "backlog",
     "agents": {
       "mode": "orchestrated",
       "productOwner": "inline"

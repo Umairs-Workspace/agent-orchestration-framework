@@ -2225,7 +2225,7 @@ export const workLoopsChecksTests = [
 // this shape; the suite's own `NAME.controlled` test keeps it internally honest.
 // ---------------------------------------------------------------------------------------------
 
-const TASKS = "wiki/work/52_milestone_loop-registry-and-graph/stories/01_story_structural-checks/tasks";
+const TASKS = "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/01_story_structural-checks/tasks";
 const F_SCC = `${TASKS}/00_scc-decomposition.feature`;
 const F_GROUND = `${TASKS}/01_groundedness-check.feature`;
 const F_INBOUND = `${TASKS}/02_unpaired-and-unowned.feature`;
