@@ -18,7 +18,7 @@
 // that is incidental to how many records happen to exist is a BOUND — a floor or a ceiling — because
 // pinning it would redden CI for authoring a record. The per-claim discipline is the `discipline` column
 // of the census table in
-// `wiki/work/52_milestone_loop-registry-and-graph/stories/05_story_behavioural-suites/tasks/04_registry-census-suite.feature`,
+// `wiki/work/archive/52_milestone_loop-registry-and-graph/stories/05_story_behavioural-suites/tasks/04_registry-census-suite.feature`,
 // and the CENSUS_LEDGER below is asserted against that table, column for column, so the discipline
 // itself is evidence rather than an intention.
 //
@@ -61,14 +61,14 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..");
 const workDir = path.join(root, ".aof");
 
-const STORY_03 = "wiki/work/52_milestone_loop-registry-and-graph/stories/03_story_the-day-one-registry/tasks";
+const STORY_03 = "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/03_story_the-day-one-registry/tasks";
 const FEATURE_ACTORS = `${STORY_03}/00_actor-nodes.feature`;
 const FEATURE_PHASE = `${STORY_03}/01_acd-phase-loops.feature`;
 const FEATURE_ENGINEERED = `${STORY_03}/02_engineered-controller-loops.feature`;
 const FEATURE_EDGES = `${STORY_03}/03_declared-edges.feature`;
 const FEATURE_CLEAN = `${STORY_03}/04_registry-loads-clean.feature`;
 const TASK_FEATURE =
-  "wiki/work/52_milestone_loop-registry-and-graph/stories/05_story_behavioural-suites/tasks/04_registry-census-suite.feature";
+  "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/05_story_behavioural-suites/tasks/04_registry-census-suite.feature";
 
 // FF-5204's two gates, by their exact exported names. Every `structural-duplicate` exclusion points at
 // one of these, and the ledger test resolves both against `test/arch/` rather than trusting this pair.

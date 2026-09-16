@@ -192,7 +192,7 @@ export const archTests = [
 
       // DELIVERED CRITERIA ARE IMMUTABLE. The supersession lives in 71's own contract, so no story of
       // this milestone may declare a write anywhere under wiki/work/07_*.
-      const stories = path.join(root, "wiki", "work", "71_milestone_loop-discipline", "stories");
+      const stories = path.join(root, "wiki", "work", "archive", "71_milestone_loop-discipline", "stories");
       const declared = readdirSync(stories).map((slug) => {
         const text = readFileSync(path.join(stories, slug, "STORY.md"), "utf8");
         return [slug, /^files:\s*\[(.*)\]\s*$/mu.exec(text)?.[1] ?? ""];

@@ -54,7 +54,7 @@ import { BEFORE, goldenRecords } from "../arch/command/acd-declared-id-single-ho
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");
-const storyDir = path.join(workDir, "66_milestone_controls-that-run", "stories", "01_story_declaration-form");
+const storyDir = path.join(workDir, "archive", "66_milestone_controls-that-run", "stories", "01_story_declaration-form");
 
 // ─────────────────────────────────────────────────────────── document builders ──
 

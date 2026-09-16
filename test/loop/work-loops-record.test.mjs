@@ -56,7 +56,7 @@ import {
   withLoopRegistry, withoutLoopRegistry,
 } from "../support/loop-registry-fixture.mjs";
 
-const FEATURE_DIR = "wiki/work/52_milestone_loop-registry-and-graph/stories/00_story_loop-model-and-loader/tasks";
+const FEATURE_DIR = "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/00_story_loop-model-and-loader/tasks";
 const RECORD_FEATURE = `${FEATURE_DIR}/01_record-loader.feature`;
 const VOCABULARY_FEATURE = `${FEATURE_DIR}/00_frozen-vocabulary.feature`;
 const FINDINGS_FEATURE = `${FEATURE_DIR}/04_schema-and-honesty-findings.feature`;
@@ -358,7 +358,7 @@ const TOTAL_ORDER_RANK_CASES = [
 // is milestone 52's ledger over milestone 52's features and is bound row-for-row by
 // `test/loop/work-loops-coverage-ledger.test.mjs`.
 //
-// Contracts: `wiki/work/58_milestone_supervising-loops/stories/00_story_the-supervision-vocabulary/
+// Contracts: `wiki/work/archive/58_milestone_supervising-loops/stories/00_story_the-supervision-vocabulary/
 // tasks/00_a-fifth-kind.feature` and `…/02_an-arbiter-cannot-act.feature`. ADR-003 §1/§2/§3/§6.
 
 const renderFields58 = (stem, fields) =>
@@ -479,7 +479,7 @@ const FOUR_KEYS_BY_KIND_58_CASES = [
 ];
 
 const REPO_ROOT_58 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const TASKS_58 = "wiki/work/58_milestone_supervising-loops/stories/00_story_the-supervision-vocabulary/tasks";
+const TASKS_58 = "wiki/work/archive/58_milestone_supervising-loops/stories/00_story_the-supervision-vocabulary/tasks";
 const FIFTH_KIND_FEATURE_58 = `${TASKS_58}/00_a-fifth-kind.feature`;
 const CANNOT_ACT_FEATURE_58 = `${TASKS_58}/02_an-arbiter-cannot-act.feature`;
 
@@ -508,7 +508,7 @@ const TRACED_58_TABLES = [
 // These cases carry their own tables and are deliberately NOT added to `coverage`, which is
 // milestone 52's ledger over milestone 52's features.
 //
-// Contracts: `wiki/work/59_milestone_audit-loops/stories/00_story_the-auditor-kind/tasks/
+// Contracts: `wiki/work/archive/59_milestone_audit-loops/stories/00_story_the-auditor-kind/tasks/
 // {00_a-sixth-kind,01_what-an-auditor-must-declare,02_an-auditor-cannot-act,
 // 03_the-report-is-an-edge-and-nothing-points-back}.feature`. ADR-001 §1/§2/§3/§4.
 
@@ -586,7 +586,7 @@ const PRE_59_LOADER_CODES = Object.freeze([
   "loop-ceiling-pointer-unresolved", "loop-field-prose-only",
 ]);
 
-const TASKS_59 = "wiki/work/59_milestone_audit-loops/stories/00_story_the-auditor-kind/tasks";
+const TASKS_59 = "wiki/work/archive/59_milestone_audit-loops/stories/00_story_the-auditor-kind/tasks";
 const MUST_DECLARE_FEATURE_59 = `${TASKS_59}/01_what-an-auditor-must-declare.feature`;
 const CANNOT_ACT_FEATURE_59 = `${TASKS_59}/02_an-auditor-cannot-act.feature`;
 

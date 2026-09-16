@@ -25,6 +25,7 @@ const FIXTURES = path.resolve(
   "..",
   "wiki",
   "work",
+  "archive",
   "02_milestone_planning-init",
   "stories",
   "01_story_shatter-consumes-prd",

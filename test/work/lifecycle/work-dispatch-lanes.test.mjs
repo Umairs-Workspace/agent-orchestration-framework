@@ -45,6 +45,7 @@ import {
 } from "../../../src/mesh/worktree.mjs";
 import { withDispatchRepo, git, dirtyPaths, writeRel, mergeHeadAbsent, conflictMarkers } from "../../support/dispatch-lane-fixture.mjs";
 import { dispatchCommand } from "../../../src/commands/dispatch.mjs";
+import { findWork } from "../../../src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHARED = "src/sandbox/provisionSandboxAgent.ts";
@@ -1169,7 +1170,11 @@ export const workDispatchLaneTests = [
   {
     name: "129/07 task01 ADR-006 records the amendment — a dated 2026-09-15 narrowing, read in the bounds home, handed to work:dispatch as bound; the invariant still says the family reads neither key",
     run: async () => {
-      const adr = await readFile(new URL("../../../wiki/work/129_milestone_loop-concurrency/ARCHITECTURE.md", import.meta.url), "utf8");
+      // 127/ADR-004 §3 — the milestone is reached by REF, never by a literal folder: `findWork`
+      // answers wherever the folder sits, so 129's own archive after its accept reddens nothing here.
+      const [milestone] = await findWork(path.join(repoRoot, "wiki", "work"), "129");
+      assert.ok(milestone?.dir, "milestone 129 resolves through findWork (live or archived)");
+      const adr = await readFile(path.join(milestone.dir, "ARCHITECTURE.md"), "utf8");
       const start = adr.indexOf("## ADR-006");
       const end = adr.indexOf("## ADR-007");
       assert.ok(start >= 0 && end > start, "ADR-006 is present");

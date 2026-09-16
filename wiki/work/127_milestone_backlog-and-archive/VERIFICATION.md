@@ -56,6 +56,96 @@ doc: verification
   milestone's `DESIGN.md` surfaces are the board's (story 04). The design-conformance step does not
   apply and no renderer precondition was evaluated.
 
+### `127/05` — this tree holds what is live (build evidence, developer, 2026-09-16)
+
+The `@manual` task 01 was run ONCE, for real, by the build lane in its dispatch worktree
+(`aof/mesh/127-05`, base `ba25547`), in the contract's order, and its post-state is task 02's
+`@executable` suite over the real tree. Every number below was read at the source.
+`verifies → tasks/01_every-done-driver-moves-under-archive.feature`
+
+- **(0) Before.** `git status --porcelain` was ` M .aof/aof.config.json` (the one intake line,
+  task 00), ` M …/05_story_…/STORY.md` (the lane's own status stamp) and the lane's two untracked
+  `runs/` entries — nothing of another lane's. The link census (03/01's syntactic scan over every
+  `.md` under `wiki/work`) at `ba25547`, 08:51Z: **3,069 relative inline links, 2,312 resolving**
+  (312 files); of the 1,156 targeting a folder about to move, 48 were already broken (bare
+  `src/work.mjs#L458`-shaped citations in `OUTCOME.md` files). `aof work debt --json`: 99
+  findings. `aof work doctor --json`: 1,344 findings, 0 errors. `aof work validate --json`: 117
+  findings, every one `story reads path "…" does not exist` (see the third delta below).
+- **(1) The confirm gate.** `aof work archive --done --json` without `--yes` → exit 1,
+  `archive-confirm-required`, **125 candidates** (67 milestones, 19 stories, 4 spikes, 35
+  chores), none of `127`, `129`, `130`, `32`, `42_structural-overhaul` absent;
+  `git status --porcelain` byte-identical to the recording. The CLI envelope carries
+  `candidates` at the top level (the in-process error's `detail.candidates`, flattened by the
+  face). The list, verbatim:
+  `00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 33 34 35 36 37 38 39 40 41 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 123 124 125 126 128`.
+- **(2) The move.** `aof work archive --done --yes --json` → exit 0 in 3.6 s. `archived`: 125
+  entries in number order, `from` at the root, `to` under `wiki/work/archive/`; `rewritten`:
+  **161 files, 1,710 links** (155 inside moved folders; 6 outside — `127/DESIGN.md` 2,
+  `130/DESIGN.md` 12, `32/SESSION.md` 1, `42_structural-overhaul/ROADMAP.md` 1 and `STATE.md` 1,
+  `TECH_DEBT.md` 11). `ls wiki/work` afterwards: `127_milestone_backlog-and-archive`,
+  `129_milestone_loop-concurrency`, `130_milestone_stop-a-running-loop`,
+  `32_uat_whole-mesh-acceptance`, `42_structural-overhaul`, `archive`, `loops.md`, `ROADMAP.md`,
+  `TECH_DEBT.md` — no `backlog/`: git carries no empty directory, so the primary's untracked
+  empty `backlog/` is the operator's and the first `aof:add-*` creates it (delta, STATE.md).
+- **(3) Staged exactly the envelope's paths** (`wiki/work/archive` + each `from` + each
+  `rewritten`, 287 pathspec entries, never `-A`): `git status --porcelain` = **2,289 `R`** (2,080
+  byte-identical, 155 `.md` with link rewrites, 54 binary mocks/renders) **+ 6 `M`**, nothing
+  else; `git diff --cached -M --numstat`: 1,562 insertions / 1,562 deletions, every changed line
+  an inline-link line, no `number:`, `status:`, `updated:` or `---` line, and every `-`/`+` pair equal
+  once the inserted `archive/` or `../` is removed. Committed as **`ed9c00c`** on the lane
+  branch, so the resolver's rename map records the move (below). The link census re-run:
+  **3,069 / 2,312 — identical**, every link resolving to the same path under the one remap,
+  0 unmatched, 0 links still targeting a root path whose folder moved.
+- **(4) The four links outside `wiki/work`.** `wiki/memory.md` lines 15, 130, 137, 147: target
+  only, `work/05_milestone_work-memory/` → `work/archive/05_milestone_work-memory/`;
+  `git diff wiki/memory.md` is exactly those four lines (CRLF kept), each target exists.
+  the contract's grep for inline links into `work/[0-9]+_` over `wiki/**/*.md` outside `wiki/work/`
+  now finds only the three `wiki/planning/PRD-command-spine-effects-ledger.md` links into
+  `42_structural-overhaul`.
+- **(5) The index.** `aof work memory ingest --json` from the lane root: **2,439 records**
+  re-indexed (graphify, 28.3 s; 2,341 at 127/01's accept on 2026-09-12 — the tree grew since).
+  `aof work memory recall "loop registry" --item 52 --json`: 5 records, every `source` under
+  `archive/52_milestone_loop-registry-and-graph/`. The index is per-checkout and gitignored:
+  the operator re-runs `memory ingest` in the primary after the merge.
+- **(6) The ledger.** `aof work debt --json` before and after: the same 99 findings, the same
+  summary (73 entries, 45 open); `wiki/work/TECH_DEBT.md`'s diff is 11 link lines. No entry for
+  the three `ITEM_RE` homes or the seven scanners exists to delete (ratified at refine).
+- **After.** `doctor --json`: 1,344 findings, 0 errors, no per-code delta. `validate --json`:
+  117 findings — the same set; with the move uncommitted it was +323 (`reads:` citations of
+  `wiki/work/<NN>_…` crossing the line, 127/03's QA measurement), and the commit clears them
+  because `readRenameMap` follows the recorded renames (`git log --diff-filter=R` reads 2,289
+  records in 0.3 s).
+- **The path-readers.** 127/03's census named ten test files reading a real item folder; the
+  move found **27** — seventeen spelled `path.join(…, "wiki", "work", "<NN>_…")` or as rows
+  relative to the real work dir, plus two helpers deriving the item from a path's leading
+  segment (`itemOf` in `acd-register-declaration-form`, the `[folder]` split in
+  `work-validate-contract-parses`). Each archived item's reader now spells
+  `wiki/work/archive/<name>` (an archived folder never moves again); 129's two readers resolve by
+  ref through `findWork`. 03's census list is retired: over the moved tree every match of
+  `grep -rnE "wiki/work/[0-9]+_" src test scripts --include=*.mjs` is a comment, a fixture plant
+  or a string, and none reads (03/03's classification, held by 03's suite and by this story's).
+- **`node scripts/test.mjs --only test/work/stream/work-this-tree-holds-what-is-live.test.mjs`**
+  under an isolated `AOF_GLOBAL_HOME`: **19 pass / 0 fail** (task 00: 7 cases; task 02: 12).
+  `verifies → tasks/00_the-repository-sets-intake-to-backlog.feature`,
+  `tasks/02_the-outsider-check-passes-on-the-real-stream.feature`.
+- **The blast radius of a 2,289-file move is the whole test tree**, so the lane ran what the
+  story-scoped selection cannot (`aof test --scope impacted --story 127/05` widens to `all`, which
+  dies on `:4182`): first the 91 suites naming an archived folder, then EVERY registered suite but
+  `global-work-propagation` in nine `scripts/test.mjs --only` chunks under one isolated home —
+  **10,435 pass / 62 not ok**. Of the 62, **38 are red by the same names at the primary's
+  pre-move HEAD** (`ba25547`, run there under isolation: FF-11902 ×3, FF-11901·121, FF-11903 ×3,
+  FF-6607b ×3, FF-5301/5302/7002, FF-5307, FF-12405, FF-9603, 119/00 ×2, bundle ×5, 70/05 ×3,
+  96/02, 53/00 ×2, 38 clone/push ×4, 81/01, autonomous-shell-out, shell/12, loops-ledger leg 9,
+  `archive-is-a-move: 04`); **19 are this worktree's, not the move's** — `ui/dist` is not fully
+  built in a dispatch lane (asset-base-seam ×10, bundle-asset-manifest ×3, advertised-paths,
+  mesh-ui ×4) — plus two `node:test`-shaped files the array runner reports as unusable; **one was
+  contention** (129/04 task02, green alone); and **four were this story's to fix and are fixed**:
+  03's pinned `test/work/stream` ceiling (34 → 35), ACCEPT-03's residue digest (the one
+  `MILESTONE` constant in `work-loops-coverage-ledger` gained `archive/`), the link ratchet's
+  whole-tree `==` (now `>=`, with the `==` on the moved files), and FF-11902's non-vacuity floor
+  on this suite's own walk. Re-run alone afterwards: all four green; FF-11902 still red on its
+  pre-existing offenders only and no longer names this story's files.
+
 ## Fitness functions
 
 <!-- One row per control declared in ARCHITECTURE.md's register. Each row is filled when the

@@ -107,7 +107,7 @@ export const archTests = [
   {
     name: "arch/FF-6607a: HOLE (a) — `02_milestone_planning-init/UAT.md`'s `## Findings` register sits outside the frozen file set, so its rows declare nothing",
     run: async () => {
-      const uat = path.join(workDir, "02_milestone_planning-init", "UAT.md");
+      const uat = path.join(workDir, "archive", "02_milestone_planning-init", "UAT.md");
       const text = await readFile(uat, "utf8");
       assert.match(text, /^##[ \t]+Findings\s*$/m, "the register really is there — the hole is real, not hypothetical");
       assert.deepEqual(registerEntries(text, "UAT.md"), [], "and it declares nothing, because ADR-001 §1's frozen file set is ARCHITECTURE.md / VERIFICATION.md / SESSION.md");
@@ -260,7 +260,7 @@ export const archTests = [
     run: async () => {
       // m22/R1's own-coverage rule, on the cheap side: the register the resolve gate
       // parses is really this milestone's, and its rows really are its own id space.
-      const text = await readFile(path.join(workDir, "66_milestone_controls-that-run", "ARCHITECTURE.md"), "utf8");
+      const text = await readFile(path.join(workDir, "archive", "66_milestone_controls-that-run", "ARCHITECTURE.md"), "utf8");
       const declared = registerDeclarations(text, "ARCHITECTURE.md").map((entry) => entry.id);
       assert.ok(declared.length > 0, "non-vacuity: the register declares its controls");
       for (const id of declared) assert.match(id, /^FF-66\d\d$/, `${id} is one of this milestone's own id space`);

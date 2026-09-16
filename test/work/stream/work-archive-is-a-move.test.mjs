@@ -28,10 +28,12 @@
 //     cannot both hold under one rule. The rule the contract declares as the invariant — every
 //     link resolves to the same path — is what is asserted for convergence, plus the syntactic
 //     bytes the rewriter actually produces.
-//   · task 03's "no third path-reader is left" was measured at build: the census below finds
-//     readers beyond the two the refine counted (the loop suites' feature ledgers, among others).
-//     They are outside this story's write set and are 05's to retire before its `--done`; the
-//     census names them explicitly so a NEW one cannot arrive unnoticed.
+//   · task 03's "no third path-reader is left" was measured at build: the census below found
+//     ten readers beyond the two the refine counted (the loop suites' feature ledgers, among
+//     others), outside this story's write set. 127/05 retired every one before its `--done`
+//     (2026-09-16: an archived item's readers spell `wiki/work/archive/<name>` — a folder that
+//     never moves again — and a live item's resolve by ref through `findWork`), so the census now
+//     holds the contract's own claim: no match reads a real item folder.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, readFile, rm, readdir, stat, rename, cp } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -320,24 +322,17 @@ async function listMjs(dir, out = []) {
   return out;
 }
 
-// KNOWN READERS the census found at build (2026-09-15) beyond the two the contract counted, each
-// reading a REAL item folder at run time and each outside this story's `files:`. They are 05's
-// to resolve by ref before its `--done` moves 52, 58, 59 and 00; a new one fails the census.
-const KNOWN_READERS_FOR_05 = new Set([
-  "test/loop/work-loops-checks.test.mjs",
-  "test/loop/work-loops-commands.test.mjs",
-  "test/loop/work-loops-coverage-ledger.test.mjs",
-  "test/loop/work-loops-record.test.mjs",
-  "test/loop/work-loops-registry-census.test.mjs",
-  "test/loop/work-loops-value.test.mjs",
-  "test/memory/anchor-taxonomy.test.mjs",
-  "test/work/record/work-story-depends.test.mjs",
-  "test/loop/drive-command-phase-drivers.test.mjs",
-  "test/work/lifecycle/work-dispatch-lanes.test.mjs",
-]);
-
+// The census (task 03). At 127/03's build (2026-09-15) it found ten readers beyond the two the
+// contract counted, each reading a REAL item folder at run time; 127/05 retired every one before
+// its `--done` (see the header), so a match naming a real folder is now a string, a pattern or a
+// fixture plant, never a read — and a NEW reader fails the census scenario below. A folder is
+// REAL when it sits at the stream root OR under `archive/` (an archived item is still an item).
 export async function censusItemPathMentions() {
-  const real = new Set(await readdir(path.join(repoRoot, "wiki", "work")));
+  const workRoot = path.join(repoRoot, "wiki", "work");
+  const real = new Set([
+    ...(await readdir(workRoot)),
+    ...(existsSync(path.join(workRoot, ARCHIVE_ROOT)) ? await readdir(path.join(workRoot, ARCHIVE_ROOT)) : []),
+  ]);
   const rows = [];
   for (const dir of ["src", "test", "scripts"]) {
     for (const file of await listMjs(path.join(repoRoot, dir))) {
@@ -350,7 +345,6 @@ export async function censusItemPathMentions() {
           let kind;
           if (comment) kind = "comment";
           else if (!exists) kind = "fixture-plant";
-          else if (KNOWN_READERS_FOR_05.has(slash(path.relative(repoRoot, file)))) kind = "reader (05 retires)";
           else kind = "string-or-pattern";
           rows.push({ file: slash(path.relative(repoRoot, file)), line: index + 1, folder, kind, text: line.trim() });
         }
@@ -593,7 +587,9 @@ export const workArchiveIsAMoveTests = [
       // `src/work` reads 43 since 127/04 landed `item-row.mjs` on the same row (the ledger is ONE
       // table; the sibling that raises it next moves this literal with it). 03's own claim — the
       // row names 127/03 and `archive.mjs` — is unchanged.
-      for (const [directory, ceiling, file] of [["src/commands", 69, "archive.mjs"], ["src/work", 43, "archive.mjs"], ["test/work/stream", 34, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
+      // `test/work/stream` reads 35 since 127/05 raised the row for its own suite (34 -> 35): the
+      // pin is what this scenario asks for, and the raise is stated in the row's own `why`.
+      for (const [directory, ceiling, file] of [["src/commands", 69, "archive.mjs"], ["src/work", 43, "archive.mjs"], ["test/work/stream", 35, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
         const start = budget.indexOf(`directory: "${directory}",`);
         const block = budget.slice(start, budget.indexOf("}),", start));
         assert.match(block, new RegExp(`ceiling: ${ceiling},`), `${directory} reads ${ceiling}`);
@@ -1031,9 +1027,12 @@ export const workArchiveIsAMoveTests = [
       try {
         const work = path.join(scratch, "wiki", "work");
         const [storyNumber] = row.ref.split("/").slice(1);
-        const storyDir = (await readdir(path.join(repoRoot, "wiki", "work", row.folder, "stories"))).find((name) => name.startsWith(`${storyNumber}_`));
-        await cp(path.join(repoRoot, "wiki", "work", row.folder, "SPEC.md"), path.join(work, "archive", row.folder, "SPEC.md"));
-        await cp(path.join(repoRoot, "wiki", "work", row.folder, "stories", storyDir), path.join(work, "archive", row.folder, "stories", storyDir), { recursive: true });
+        // The REAL folder is reached by ref too — 127/05 archived it, and this copy must not care.
+        const [real] = await findWork(path.join(repoRoot, "wiki", "work"), row.ref.split("/")[0]);
+        assert.equal(path.basename(real?.dir ?? ""), row.folder, `${row.folder} resolves in this repository (live or archived)`);
+        const storyDir = (await readdir(path.join(real.dir, "stories"))).find((name) => name.startsWith(`${storyNumber}_`));
+        await cp(path.join(real.dir, "SPEC.md"), path.join(work, "archive", row.folder, "SPEC.md"));
+        await cp(path.join(real.dir, "stories", storyDir), path.join(work, "archive", row.folder, "stories", storyDir), { recursive: true });
         const [resolved] = await findWork(work, row.ref);
         assert.ok(resolved?.archived === true, `${row.ref} resolves with archived: true`);
         assert.ok(existsSync(path.join(resolved.dir, ...row.reads.split("/"))), `the file it reads comes from the archived folder (${row.reads})`);
@@ -1047,13 +1046,13 @@ export const workArchiveIsAMoveTests = [
   })),
 
   {
-    name: "work/archive-is-a-move: 03 the census of literal item paths outside wiki/ classifies every match, and names the readers 05 must retire (flagged: the contract counted two)",
+    name: "work/archive-is-a-move: 03 the census of literal item paths outside wiki/ classifies every match, and no third path-reader is left (the ten 127/03 flagged were retired by 127/05)",
     run: async () => {
       const rows = await censusItemPathMentions();
       assert.ok(rows.length > 100, `the census read the tree (${rows.length} matches)`);
-      const readers = rows.filter((row) => row.kind === "reader (05 retires)");
-      assert.ok(readers.length > 0, "the known readers are still present (or retire this list with them)");
+      for (const row of rows) assert.ok(["comment", "fixture-plant", "string-or-pattern"].includes(row.kind), `${row.file}:${row.line} is a comment, a fixture plant or a string — never a reader (${row.kind})`);
       const unknown = rows.filter((row) => row.kind === "string-or-pattern");
+      assert.ok(unknown.length > 0, "real folders are still named as strings and patterns somewhere (non-vacuous)");
       // Every remaining real-folder mention is a string inside a probe's source, fixture data
       // (an anchor, a sourcePath, a citation), or a `git check-attr` PATTERN — none reads.
       for (const row of unknown) {

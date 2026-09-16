@@ -436,7 +436,7 @@ export const archTests = [
     name: "arch/126/00 FF-12601 leg 10: the measured lineages — the summer admits what the wall clock refuses",
     run: async () => {
       const dir = path.join(
-        root, "wiki", "work", "124_milestone_the-edges-aof-does-not-draw",
+        root, "wiki", "work", "archive", "124_milestone_the-edges-aof-does-not-draw",
         "stories", "00_story_the-census-reports-its-denominator", "runs", "umamis-msi",
       );
       const records = new Map();
@@ -494,7 +494,7 @@ export const archTests = [
     name: "arch/126/00 FF-12601 leg 11: the cost ADR-001 §6 names, measured on the lineage where nothing went down",
     run: async () => {
       const dir = path.join(
-        root, "wiki", "work", "124_milestone_the-edges-aof-does-not-draw",
+        root, "wiki", "work", "archive", "124_milestone_the-edges-aof-does-not-draw",
         "stories", "00_story_the-census-reports-its-denominator", "runs", "umamis-msi",
       );
       const runs = [];

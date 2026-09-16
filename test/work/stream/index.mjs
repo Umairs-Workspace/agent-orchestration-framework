@@ -101,6 +101,12 @@ import { workPromoteMintsTheNumberTests } from "./work-promote-mints-the-number.
 // and the `/aof:archive` wrapper beside the one `verify.md` line). The textual half (FF-12705) lives
 // in test/arch/work.
 import { workArchiveIsAMoveTests } from "./work-archive-is-a-move.test.mjs";
+// milestone 127 / story 05 — this tree holds what is live: the outsider's check over the REAL stream
+// after the one real `--done` (tasks 00 and 02 — the config line and the add → promote round trip on a
+// shape copy of the stream; the root is live items only, every resolving reader answers for the
+// archived 52, every walker excludes it, the board face agrees, the link ratchet, the two
+// path-readers). Task 01 is `@manual` — the move itself, recorded in the milestone VERIFICATION.md.
+import { workThisTreeHoldsWhatIsLiveTests } from "./work-this-tree-holds-what-is-live.test.mjs";
 
 export const tests = [
   // milestone 41 / story 01 — reindex-engine task traceability
@@ -153,4 +159,6 @@ export const tests = [
   ...workPromoteMintsTheNumberTests,
   // milestone 127 / story 03 — archive is a move (tasks 00-04)
   ...workArchiveIsAMoveTests,
+  // milestone 127 / story 05 — this tree holds what is live (tasks 00 and 02 over the real stream)
+  ...workThisTreeHoldsWhatIsLiveTests,
 ];
