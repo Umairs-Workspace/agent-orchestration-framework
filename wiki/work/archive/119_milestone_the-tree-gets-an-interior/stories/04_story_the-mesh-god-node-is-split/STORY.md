@@ -25,7 +25,7 @@ reads:
   - src/run-store.mjs
   - src/global-node-registry.mjs
   - scripts/pin-checkout-id.mjs
-  - test/arch/acd-assignment-repo-availability-loud.test.mjs
+  - test/arch/assignment/acd-assignment-repo-availability-loud.test.mjs
   - test/agent-session-driver-door.test.mjs
   - wiki/work/TECH_DEBT.md
 files:

@@ -18,7 +18,7 @@ reads:
   - src/work-audit/census.mjs
   - src/work-test-select.mjs
   - src/commands/test.mjs
-  - test/arch/acd-suite-registration-single-decider.test.mjs
+  - test/arch/testing/acd-suite-registration-single-decider.test.mjs
   - test/arch/acd-source-directory-budget.test.mjs
   - scripts/test-unit.mjs
   - wiki/work/TECH_DEBT.md

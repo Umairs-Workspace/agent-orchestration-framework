@@ -28,7 +28,7 @@ reads:
   - src/work-acceptor/ledger.mjs
   - test/frozen-set-compiled.test.mjs
   - test/framework-stops-shipping-guard.test.mjs
-  - test/bundle-asset-manifest-complete.test.mjs
+  - test/bundle/bundle-asset-manifest-complete.test.mjs
   - wiki/work/TECH_DEBT.md
 files:
   - src/cited-path-resolve.mjs
