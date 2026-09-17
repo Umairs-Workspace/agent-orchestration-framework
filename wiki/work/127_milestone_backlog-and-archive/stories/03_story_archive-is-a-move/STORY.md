@@ -5,10 +5,10 @@ slug: archive-is-a-move
 title: "Archive is a move — an accepted item goes under archive/ name verbatim, and nothing a citation depends on is rewritten"
 parent: 127
 depends: [1]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-15
+updated: 2026-09-17
 adrs: [ADR-004]
 reads:
   - wiki/work/127_milestone_backlog-and-archive/SPEC.md
@@ -116,7 +116,7 @@ What lands:
 - [x] 02 `done-archives-every-done-driver-behind-one-gate` — `--done`: selection, the list, the gate, one run
 - [x] 03 `the-fleet-follows-and-the-one-path-reader-survives` — `stream.archived` through the seam, the publish, the two path-readers
 - [x] 04 `the-prompts-drive-the-verb-and-never-archive-on-their-own` — `/aof:archive`, the one `verify.md` line, parity widened
-- [ ] 05 `the-control-goes-red-on-contact` — FF-12705 lands, its probes, the four budget rows
+- [x] 05 `the-control-goes-red-on-contact` — FF-12705 lands, its probes, the four budget rows
 
 ## Notes
 

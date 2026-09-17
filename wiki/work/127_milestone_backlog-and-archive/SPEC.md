@@ -131,8 +131,8 @@ Out of scope:
 
 ## Stories
 - [x] `01_story_one-enumerator-three-roots` — One Enumerator Three Roots.
-- [ ] `02_story_promote-mints-the-number` — Promote Mints The Number.
-- [ ] `03_story_archive-is-a-move` — Archive Is A Move.
+- [x] `02_story_promote-mints-the-number` — Promote Mints The Number.
+- [x] `03_story_archive-is-a-move` — Archive Is A Move.
 - [ ] `04_story_the-fleet-and-the-board-see-the-shapes` — The Fleet And The Board See The Shapes.
 - [ ] `05_story_this-tree-holds-what-is-live` — This Tree Holds What Is Live.
 
@@ -141,8 +141,8 @@ Out of scope:
      accepted when all its stories are. -->
 
 - [x] `stories/01_story_one-enumerator-three-roots` — `listItems` walks the stream, `backlog/` and `archive/`; `ITEM_RE` has one home; the seven second-scanners retire onto it; one live-row predicate decides which walkers filter (ADR-001, ADR-002)
-- [ ] `stories/02_story_promote-mints-the-number` — `aof work promote <slug> [--at P]` is the one mint; `insert-*` become what `promote --at` is; `work.intake` is the write-side default the `aof:add-*` prompts read (ADR-003, ADR-005) — depends on 01
-- [ ] `stories/03_story_archive-is-a-move` — `aof work archive <NN> | --done` moves an accepted driver under `archive/` name verbatim, rewriting only the crossing prose links (ADR-004) — depends on 01
+- [x] `stories/02_story_promote-mints-the-number` — `aof work promote <slug> [--at P]` is the one mint; `insert-*` become what `promote --at` is; `work.intake` is the write-side default the `aof:add-*` prompts read (ADR-003, ADR-005) — depends on 01
+- [x] `stories/03_story_archive-is-a-move` — `aof work archive <NN> | --done` moves an accepted driver under `archive/` name verbatim, rewriting only the crossing prose links (ADR-004) — depends on 01
 - [ ] `stories/04_story_the-fleet-and-the-board-see-the-shapes` — the synced view carries `number: null` / `archived`; the board shows the backlog and hides the archive behind one toggle (ADR-006, DESIGN.md) — depends on 01
 - [ ] `stories/05_story_this-tree-holds-what-is-live` — this repository sets `work.intake: "backlog"`, archives its done items, and the outsider check passes on the real stream — depends on 01–04
 

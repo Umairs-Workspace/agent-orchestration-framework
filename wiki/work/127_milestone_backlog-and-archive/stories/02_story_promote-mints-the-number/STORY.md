@@ -5,10 +5,10 @@ slug: promote-mints-the-number
 title: "Promote mints the number — one verb, one home for the next number, and insert-* become what promote --at already is"
 parent: 127
 depends: [1]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-13
+updated: 2026-09-17
 adrs: [ADR-003, ADR-005]
 reads:
   - wiki/work/127_milestone_backlog-and-archive/SPEC.md
@@ -133,8 +133,8 @@ step 0. The `promote-*-to-chore` faces are unchanged (71/ADR-003).
 - [x] `tasks/02_depends-are-validated-at-promotion.feature` — a backlog item's `depends:` is a planning note until promotion checks it: numbers resolve live or archived, a backlog slug is refused
 - [x] `tasks/03_insert-verbs-are-aliases-of-promote.feature` — `insert-milestone|chore|uat` are scaffold-into-backlog + `promote --at`; `insert-story` keeps the nested engine; `insert-shared` shrinks
 - [x] `tasks/04_intake-is-the-write-side-default.feature` — `work.intake` written only into a config init-config creates, read by promote's refusal text and nowhere on the read side; `/aof:promote` ships; a phase door refuses a backlog ref
-- [ ] `tasks/05_the-prompts-have-one-door.feature` — the `aof:add-*` prompts land on the intake and compute no number; `aof:refine` / `aof:continue` promote as step 0
-- [ ] `tasks/06_the-two-controls-go-red-on-contact.feature` — FF-12703 and FF-12704 land, go red under their probes, and `insert-shared.mjs` is measured
+- [x] `tasks/05_the-prompts-have-one-door.feature` — the `aof:add-*` prompts land on the intake and compute no number; `aof:refine` / `aof:continue` promote as step 0
+- [x] `tasks/06_the-two-controls-go-red-on-contact.feature` — FF-12703 and FF-12704 land, go red under their probes, and `insert-shared.mjs` is measured
 
 ## Notes
 

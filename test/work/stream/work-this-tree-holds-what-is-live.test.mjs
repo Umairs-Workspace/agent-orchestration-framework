@@ -577,7 +577,9 @@ export const workThisTreeHoldsWhatIsLiveTests = [
           .map((entry) => entry.name);
         const rootDirectories = rootEntries.filter((entry) => entry.isDirectory()).length;
         const subRootEntries = rootEntries.filter((entry) => entry.isDirectory() && (entry.name === ARCHIVE_ROOT || entry.name === "backlog"));
-        assert.ok(subRootEntries.length >= 2, `the two sub-roots are present (${subRootEntries.map((entry) => entry.name).join(", ")})`);
+        // archive/ is always present after the move; backlog/ is not — git carries no empty directory,
+        // so a fresh checkout (the gate worktree) has none until the first `aof:add-*` creates it.
+        assert.ok(subRootEntries.length >= 1, `archive/ is present (${subRootEntries.map((entry) => entry.name).join(", ")})`);
         // The partition is exact — every root directory is an item folder, a sub-root, or a non-item —
         // spelled as the two bounds so the narrowed set carries its own floor (FF-11902).
         const remainder = rootDirectories - rootFolders.length - subRootEntries.length;
