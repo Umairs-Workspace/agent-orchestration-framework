@@ -25,22 +25,7 @@ aofVersion: 0.1.0
 happened in the order it was numbered — 127 folders, 123 of them `done`, with the four live items
 somewhere in the middle.** The tree's shape carries no information about what is live, and every
 item is numbered the moment it is thought of, so the stream's order is the order of ideas rather than
-the order of work.
-
-Measured on 2026-09-11, at `9b64eb32`:
-
-| fact | value |
-|---|---|
-| items at the stream root | 127 — 67 milestones, 35 chores, 17 stories, 4 spikes, 1 uat |
-| of which `done` | 123 |
-| live (`in-progress` / `not-started` / `blocked`) | 4 |
-| cross-item citations by NUMBER in `wiki/work` (`m52/ADR-003`, `119/00`, `depends: [121]`) | 3,102 |
-| relative prose links between sibling items | 82 — 81 of them done → done |
-| files outside `wiki/` that READ a live item path at runtime | 1 (`test/arch/planning/acd-tune-carries-no-second-rule.test.mjs:21`) |
-| modules that enumerate the work root with their own `readdir` + `ITEM_RE` match | 8 — `listItems` in `src/work.mjs` and seven others |
-| homes of `ITEM_RE` | 3 (`src/work.mjs`, `src/work/doctor.mjs`, `src/commands/migrate-folder.mjs`) |
-| places a number is minted for a new item | 2 — the `aof:add-*` prompts ("max NN + 1", agent arithmetic) and `appendPosition` in `src/commands/insert-shared.mjs` |
-| the `insert-*` family that exists because numbering happens at add time | 4 verbs, `insert-shared.mjs` 622 lines, `reindex.mjs` 373 lines |
+the order of work. The facts this rests on are measured in `## Measured facts` below.
 
 Two things are wrong, and they are one design decision seen from both ends.
 
@@ -171,3 +156,22 @@ Out of scope:
 - The fleet item cache (`view.items`) — the synced shape must carry `number: null` / `archived`
   before a remote node can answer for either kind of item.
 - `aof work update` bundle parity — every new verb ships its `/aof:*` wrapper in the same milestone.
+
+## Measured facts
+
+<!-- Moved out of `## Objective` at this milestone's accept (2026-09-16): the objective rides every story brief whole (126/R1), and at 3,932 chars it left 127/01's architecture slice room for one of the two ADRs it declares (VERIFICATION F-10). Nothing below is changed. -->
+
+Measured on 2026-09-11, at `9b64eb32`:
+
+| fact | value |
+|---|---|
+| items at the stream root | 127 — 67 milestones, 35 chores, 17 stories, 4 spikes, 1 uat |
+| of which `done` | 123 |
+| live (`in-progress` / `not-started` / `blocked`) | 4 |
+| cross-item citations by NUMBER in `wiki/work` (`m52/ADR-003`, `119/00`, `depends: [121]`) | 3,102 |
+| relative prose links between sibling items | 82 — 81 of them done → done |
+| files outside `wiki/` that READ a live item path at runtime | 1 (`test/arch/planning/acd-tune-carries-no-second-rule.test.mjs:21`) |
+| modules that enumerate the work root with their own `readdir` + `ITEM_RE` match | 8 — `listItems` in `src/work.mjs` and seven others |
+| homes of `ITEM_RE` | 3 (`src/work.mjs`, `src/work/doctor.mjs`, `src/commands/migrate-folder.mjs`) |
+| places a number is minted for a new item | 2 — the `aof:add-*` prompts ("max NN + 1", agent arithmetic) and `appendPosition` in `src/commands/insert-shared.mjs` |
+| the `insert-*` family that exists because numbering happens at add time | 4 verbs, `insert-shared.mjs` 622 lines, `reindex.mjs` 373 lines |

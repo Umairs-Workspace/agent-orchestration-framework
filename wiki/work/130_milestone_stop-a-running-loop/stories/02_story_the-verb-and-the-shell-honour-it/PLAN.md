@@ -25,7 +25,7 @@ story 01's exports — the shell spells no path and calls no `fs`.
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`, run `node scripts/test.mjs --only test/loop/loop-command-stops.test.mjs test/loop/loop-command-probe.test.mjs test/loop/loop-command-narration.test.mjs test/loop/loop-command-resume.test.mjs test/arch/loop/acd-loop-probe-contract.test.mjs test/arch/loop/acd-loop-narrates-in-flight.test.mjs`.
+Under an isolated `AOF_GLOBAL_HOME`, run the runner's `--only` selection over the six suites this story's `files:` declares (the new stops suite, the three loop-command suites it extends, and the two loop arch controls)`.
 Then the end-to-end observation: over the loop fixture with a driver double that honours
 `options.signal`, drive one story with a fake `ctx.stopSource` whose level flips to 2 mid-drive —
 the run record on disk reads `state: "cancelled"`, `failureReason: null`; the returned `LoopState`
@@ -49,7 +49,7 @@ A wrong build shows as: a record still `running` after the halt (the settle skip
 
 ## Known traps
 
-- `src/run-store.mjs` and `src/board-ui.mjs` are byte-pinned (FF-5307); the cancel edge is used
+- The run store and the board seam are byte-pinned (FF-5307); the cancel edge is used
   through `transitionRunComplete`, never by touching the store.
 - FF-12602 (`acd-loop-narrates-in-flight`) asserts EVERY narration line is in its seam table; the
   new `Cleared stop request` line must be added to the table in the same diff or the control reds.

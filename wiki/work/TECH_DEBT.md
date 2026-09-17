@@ -3291,7 +3291,7 @@ the one place where getting it wrong means an unbounded child process.
 **The debt is the NAME, not the code.** A module under `src/work-audit/` is now on the hot path of a
 command that has nothing to do with auditing, so the directory no longer describes ownership, and the
 next reader looking for "how does aof spawn things" has no reason to look there. The fix is a re-home
-to `src/bounded-spawn.mjs` with `src/work-audit/spawn.mjs` retired — but it is NOT free, because
+to a `bounded-spawn.mjs` at the src root with `src/work-audit/spawn.mjs` retired — but it is NOT free, because
 `59/FF-5904`'s closure walk is anchored on the family and clause (B) names the module by position:
 the re-home has to move the freeze with it, in the same commit, or the audit family loses its
 single-seam guarantee silently. That is a story, not a tidy-up, which is why 72 declined to do it
@@ -3462,7 +3462,7 @@ spawning a batch file without a shell — so a resolver that does not consult `P
 produce an accurate *diagnosis*, let alone a resolution (72/ADR-001's Consequences). Each copy will
 learn that separately, in a different repo, as a support question.
 
-**Shape of the fix.** Export the `terminal-providers.mjs` implementation to `src/path-resolve.mjs`,
+**Shape of the fix.** Export the `terminal-providers.mjs` implementation to a `path-resolve.mjs` at the src root,
 migrate the other three call sites to it, and add a fitness function asserting one `PATHEXT`-aware
 resolver in `src/`. One story; the migration is mechanical and the tests already exist per call site.
 

@@ -209,8 +209,10 @@ const ADDED_SPEC = [
   'title: "Search across the fleet"',
   "status: not-started",
   "owner: product-owner",
-  "created: 2026-09-16",
-  "updated: 2026-09-16",
+  // Today's date, as `aof:add-milestone` writes it: a fixed date reds doctor's `mtime-ahead-of-updated`
+  // lane the morning after (measured 2026-09-17 at aof:verify 127).
+  `created: ${new Date().toISOString().slice(0, 10)}`,
+  `updated: ${new Date().toISOString().slice(0, 10)}`,
   "depends: []",
   "schema: 1",
   "aofVersion: 0.1.0",
@@ -561,12 +563,35 @@ export const workThisTreeHoldsWhatIsLiveTests = [
           assert.notEqual(status, "done", `${number} (${name}) at the root is not done (status: ${status})`);
         }
         assert.ok(rootFolders.some((name) => name.startsWith("32_uat_")), "the live gate 32 is at the root");
-        assert.ok(existsSync(path.join(workRoot, "42_structural-overhaul")), "42_structural-overhaul exists at the root");
+        // The scenario's claim is the PROPERTY — a root folder outside the item grammar is never
+        // enumerated as an item — and `42_structural-overhaul` was its one instance on the day the
+        // move landed. The operator then accepted the GSD-era record as an imported milestone and
+        // archived it into the grammar (`archive/42_milestone_structural-overhaul`, 4caeec4), so the
+        // instance is gone and 42 IS a row now; the property is asserted over whatever non-item
+        // folders the root holds today (none, at aof:verify 127) rather than over a folder that
+        // no longer exists (FF-11902's rule: a suite stores no fact about the tree).
+        const rootEntries = await readdir(workRoot, { withFileTypes: true });
+        assert.ok(rootEntries.length > 0, `the work root was read (${rootEntries.length} entries)`);
+        const nonItemRootFolders = rootEntries
+          .filter((entry) => entry.isDirectory() && !ITEM_RE.test(entry.name) && entry.name !== ARCHIVE_ROOT && entry.name !== "backlog")
+          .map((entry) => entry.name);
+        const rootDirectories = rootEntries.filter((entry) => entry.isDirectory()).length;
+        const subRootEntries = rootEntries.filter((entry) => entry.isDirectory() && (entry.name === ARCHIVE_ROOT || entry.name === "backlog"));
+        assert.ok(subRootEntries.length >= 2, `the two sub-roots are present (${subRootEntries.map((entry) => entry.name).join(", ")})`);
+        // The partition is exact — every root directory is an item folder, a sub-root, or a non-item —
+        // spelled as the two bounds so the narrowed set carries its own floor (FF-11902).
+        const remainder = rootDirectories - rootFolders.length - subRootEntries.length;
+        assert.ok(nonItemRootFolders.length >= remainder, `the non-item folders are at least the remainder of the partition (${nonItemRootFolders.length} >= ${remainder})`);
+        assert.ok(nonItemRootFolders.length <= remainder, `…and no more (${nonItemRootFolders.length} <= ${remainder}) — every root directory is an item (${rootFolders.length}), a sub-root (${subRootEntries.length}) or a non-item`);
 
         const archived = await readdir(path.join(workRoot, ARCHIVE_ROOT), { withFileTypes: true });
         assert.ok(archived.length > 100, `the archive holds the done drivers (${archived.length})`);
-        for (const entry of archived) {
-          assert.ok(entry.isDirectory() && ITEM_RE.test(entry.name), `${entry.name} under archive/ matches ITEM_RE`);
+        // archive/ may hold a folder outside the item grammar (the GSD-era record keeps its dot-name,
+        // `.gsd-archive`, b32929d); the enumerator ignores it as it ignores one at the root, so the
+        // claim is over the ITEM_RE entries, and a non-item entry is asserted to be no row.
+        const archivedItems = archived.filter((entry) => entry.isDirectory() && ITEM_RE.test(entry.name));
+        assert.ok(archivedItems.length > 100, `the archive holds the done drivers as items (${archivedItems.length})`);
+        for (const entry of archivedItems) {
           const [, number, type] = entry.name.match(ITEM_RE);
           assert.notEqual(type, "task", `${number}: a top-level driver`);
           const dir = path.join(workRoot, ARCHIVE_ROOT, entry.name);
@@ -581,11 +606,16 @@ export const workThisTreeHoldsWhatIsLiveTests = [
         assert.ok(all.slice(0, firstArchived).every((row) => row.archived !== true), "…after every live and backlog row");
         assert.ok(all.slice(firstArchived).every((row) => row.archived === true), "…and nothing but archived rows after the first");
         assert.deepEqual(all.filter((row) => row.archived === true && row.status !== "done").map((row) => row.ref), [], "no archived: true row whose status is not done");
-        for (const entry of archived) {
+        for (const entry of archivedItems) {
           const [, number] = entry.name.match(ITEM_RE);
           assert.ok(all.some((row) => row.ref === number && row.archived === true), `archived driver ${number} is a row of list --all`);
         }
-        assert.ok(!all.some((row) => row.ref === "42" || slash(row.dir ?? "").includes("42_structural-overhaul")), "42_structural-overhaul appears in no row — it is not an item");
+        for (const name of nonItemRootFolders) {
+          assert.ok(!all.some((row) => slash(row.dir ?? "").includes(`/${name}`)), `${name} appears in no row — a root folder outside the item grammar is not an item`);
+        }
+        for (const entry of archived.filter((item) => !archivedItems.includes(item))) {
+          assert.ok(!all.some((row) => slash(row.dir ?? "").includes(`/${entry.name}`)), `${entry.name} under archive/ is outside the item grammar and appears in no row`);
+        }
       }),
   },
 
@@ -725,7 +755,8 @@ export const workThisTreeHoldsWhatIsLiveTests = [
         assert.ok(byDefault.items.some((row) => row.parent === "127"), "…with its stories");
         const derived = deriveBoard(byDefault.items);
         assert.equal(derived.milestones.length, all.filter((row) => row.type === "milestone" && row.parent == null && isLiveRow(row)).length, "deriveBoard(items).milestones is exactly the live milestones");
-        assert.equal(derived.milestones.length, 3, "…three today (127, 129, 130)");
+        // No literal count beside the property: "three today (127, 129, 130)" was true for one day and
+        // 131's framing made it four — the live-milestone equality above is the assertion (FF-11902's rule).
         assert.equal(derived.archivedMilestones, 0);
 
         const withArchive = await faceList(repoRoot, home, { includeArchived: true });
@@ -750,12 +781,23 @@ export const workThisTreeHoldsWhatIsLiveTests = [
       assert.ok(resolving >= LINKS_BEFORE.resolving, `the resolving count is >= the count measured before the move (${resolving} >= ${LINKS_BEFORE.resolving})`);
 
       const archiveRoot = path.join(workRoot, ARCHIVE_ROOT);
-      const inMoved = links.filter((link) => link.file.startsWith(`${ARCHIVE_ROOT}/`));
+      // Over the ITEM folders under archive/: the GSD-era record (`archive/.gsd-archive`, b32929d) is
+      // outside the grammar, carries its own internal links to files that never moved with it, and
+      // is not "the files that moved".
+      const archivedItemDirs = (await readdir(archiveRoot, { withFileTypes: true })).filter((entry) => entry.isDirectory() && ITEM_RE.test(entry.name)).map((entry) => `${ARCHIVE_ROOT}/${entry.name}/`);
+      assert.ok(archivedItemDirs.length > 100, `archive/ holds the item folders (${archivedItemDirs.length})`);
+      const underArchivedItem = (file) => archivedItemDirs.some((dir) => file.startsWith(dir));
+      const inMoved = links.filter((link) => underArchivedItem(link.file));
       assert.ok(inMoved.length > 0, `the files under ${ARCHIVE_ROOT}/ carry links (non-vacuous)`);
-      assert.equal(inMoved.length, LINKS_IN_MOVED_BEFORE.total, `the files that moved hold exactly the links they held before the move — no link invented, none lost (${inMoved.length})`);
+      // "The files that moved" is read as everything under archive/, and that set GROWS with every
+      // later archive (42's, 4caeec4, brought 63 links under archive/ the same day) — so the "none
+      // invented" equality could only ever hold on the day of the move. "None lost" is the property
+      // that survives, and it is the same floor the whole-tree ratchet above already holds.
+      assert.ok(inMoved.length >= LINKS_IN_MOVED_BEFORE.total, `the files under archive/ hold at least the links the moved files held before the move — none lost (${inMoved.length} >= ${LINKS_IN_MOVED_BEFORE.total})`);
       assert.ok(inMoved.filter((link) => link.exists).length >= LINKS_IN_MOVED_BEFORE.resolving, `…and at least as many of them resolve (${inMoved.filter((link) => link.exists).length} >= ${LINKS_IN_MOVED_BEFORE.resolving})`);
       const archivedNames = new Set(await readdir(archiveRoot));
-      const intoArchive = links.filter((link) => slash(link.resolved).startsWith(`${slash(archiveRoot)}/`));
+      const underNonItemArchiveFolder = (file) => file.startsWith(`${ARCHIVE_ROOT}/`) && !underArchivedItem(file);
+      const intoArchive = links.filter((link) => slash(link.resolved).startsWith(`${slash(archiveRoot)}/`) && !underNonItemArchiveFolder(link.file));
       assert.ok(intoArchive.length > 1000, `links target the archive (${intoArchive.length})`);
       const broken = intoArchive.filter((link) => !link.exists);
       assert.ok(broken.length <= BROKEN_INTO_MOVED_BEFORE, `every link into archive/ that resolved before the move still resolves — no more than the ${BROKEN_INTO_MOVED_BEFORE} that were broken before it (${broken.length}): ${broken.slice(0, 5).map((link) => `${link.file} -> ${link.target}`).join("; ")}`);

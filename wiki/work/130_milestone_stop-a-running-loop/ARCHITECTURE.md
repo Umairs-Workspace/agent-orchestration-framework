@@ -123,7 +123,11 @@ runs in this tree again (127/02's break is closed): four entries cite the subjec
 
 ---
 
-## ADR-001 — The stop request is ONE file in the aof home, owned by `src/loop/stop-request.mjs`; its ladder is 129/04's (first drains, second cancels); its lifecycle is requested → honoured → cleared by `--resume`; and it is the producer of the ONE interrupt source the shell reads
+## ADR-001 — The stop request is one file
+
+<!-- Heading shortened at 127's accept (2026-09-16): the refine brief's architecture slice carries each declared ADR's heading, and at this milestone's heading lengths the slice was budget-truncated past the ids its stories declare (127/VERIFICATION). The original sentence is the lede below; the id and every citation are unchanged. -->
+
+**The stop request is ONE file in the aof home, owned by `src/loop/stop-request.mjs`; its ladder is 129/04's (first drains, second cancels); its lifecycle is requested → honoured → cleared by `--resume`; and it is the producer of the ONE interrupt source the shell reads**
 
 ### Context
 
@@ -226,7 +230,9 @@ single home.
 
 ---
 
-## ADR-002 — `--stop` rides the registered `run` through a verb core BELOW the command layer, `src/loop/stop.mjs`, so the CLI, the fleet route and the desktop reach ONE function; `--json` and `--dry-run` stay the probe and nothing launches
+## ADR-002 — `--stop` rides one verb core
+
+**`--stop` rides the registered `run` through a verb core BELOW the command layer, `src/loop/stop.mjs`, so the CLI, the fleet route and the desktop reach ONE function; `--json` and `--dry-run` stay the probe and nothing launches**
 
 ### Context
 
@@ -314,7 +320,9 @@ the stop's resolution exists once, in `src/loop/stop.mjs`, and `src/commands/loo
 
 ---
 
-## ADR-003 — The shell reads the source, not a flag; the interrupt path ALWAYS settles; a cancelled session settles `cancelled`; the account names the request; `--resume` clears it
+## ADR-003 — Every interrupt settles
+
+**The shell reads the source, not a flag; the interrupt path ALWAYS settles; a cancelled session settles `cancelled`; the account names the request; `--resume` clears it**
 
 ### Context
 
@@ -405,7 +413,9 @@ source.
 
 ---
 
-## ADR-004 — The desktop lists what it supervises from the map it already keeps, its Stop is the REQUEST first and the tree kill last, the ladder is a pure `core` function, and the declarations producer drops a honoured declaration so `reconcile` never restarts a stopped loop
+## ADR-004 — The desktop: request, then kill
+
+**The desktop lists what it supervises from the map it already keeps, its Stop is the REQUEST first and the tree kill last, the ladder is a pure `core` function, and the declarations producer drops a honoured declaration so `reconcile` never restarts a stopped loop**
 
 ### Context
 
@@ -507,7 +517,9 @@ its `stopped` input, and answers byte-identically when that input is absent.
 
 ---
 
-## ADR-005 — The fleet learns the loop from ONE additive presence key read by the same pass as `activeRuns` and carrying the standing request; the status body names the serving node; the Stop is a third guarded route in assign's exact shape, with item 44's helpers hoisted first; every rendered fact is a pure projection
+## ADR-005 — The fleet learns the loop
+
+**The fleet learns the loop from ONE additive presence key read by the same pass as `activeRuns` and carrying the standing request; the status body names the serving node; the Stop is a third guarded route in assign's exact shape, with item 44's helpers hoisted first; every rendered fact is a pure projection**
 
 ### Context
 
@@ -625,7 +637,9 @@ from exactly one `fetch` and renders a Stop only where `node.nodeId === status.l
 
 ---
 
-## ADR-006 — Local loops only, refused by name; no daemon, registry or store; the board is frozen and the records are the ones we have
+## ADR-006 — Local loops; board frozen
+
+**Local loops only, refused by name; no daemon, registry or store; the board is frozen and the records are the ones we have**
 
 ### Context
 

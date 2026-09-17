@@ -1129,7 +1129,11 @@ export const workArchiveIsAMoveTests = [
       }
       const dir = path.join(repoRoot, "src", "bundle", "commands");
       const matches = [];
-      for (const file of (await readdir(dir)).filter((name) => name.endsWith(".md")).sort()) {
+      // The walk is floored before it is narrowed (119/FF-11902; aof:verify 127): a prompt directory
+      // that emptied would otherwise satisfy "exactly these two" over nothing.
+      const prompts = (await readdir(dir)).filter((name) => name.endsWith(".md")).sort();
+      assert.ok(prompts.length >= 2, `src/bundle/commands was read and holds the prompts (${prompts.length})`);
+      for (const file of prompts) {
         if ((await readFile(path.join(dir, file), "utf8")).includes("aof work archive")) matches.push(file);
       }
       assert.deepEqual(matches, ["archive.md", "verify.md"]);

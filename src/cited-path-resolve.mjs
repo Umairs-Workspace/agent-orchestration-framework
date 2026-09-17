@@ -37,6 +37,19 @@
 // the `R<score>\t<from>\t<to>` name-status lines; `-M` is what makes git detect renames at all.
 export const RENAME_LOG_ARGS = Object.freeze(["log", "--diff-filter=R", "-M", "--name-status", "--format="]);
 
+// THE ONE EXCEPTION TO "DERIVED, NEVER STORED", and it is a record of history rather than a table
+// of decisions (127/VERIFICATION F-A). The repository was cut to a public root at e4c8824
+// (2026-09-13), which made every rename recorded before that commit unreachable from HEAD — and
+// with it the answer to every citation of a path 119 moved (`src/mesh-*.mjs` → `src/mesh/*.mjs`,
+// `test/acd-*.test.mjs` → `test/arch/<subject>/…`). The ledger at this path is those records,
+// DERIVED ONCE with the argv above over the archived history and in git's own line shape, so
+// `parseRenameRecords` reads it unchanged and no second parser exists. Every edge that spawns the
+// argv above appends the ledger's text AFTER git's own output: git's records are newer, and
+// `buildRenameMap` keeps the first record it sees for a `from`, so a name renamed again after the
+// cut resolves through its most recent life. Absent (a fresh project, a fixture), nothing changes.
+// This module still reads nothing — the path is a constant, and the read is the edge's.
+export const RENAME_LEDGER_PATH = Object.freeze([".aof", "rename-ledger.tsv"]);
+
 // A citation may carry a `:line` or `:from-to` locator, and the locator is dropped for resolution:
 // the question this module answers is whether the FILE is still reachable.
 //

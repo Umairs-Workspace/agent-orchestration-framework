@@ -193,7 +193,16 @@ export const archTests = [
       // ratify; the story's feasibility note that this control would be "green unchanged" conflated
       // the driver's reach (unchanged) with the sink's (this line), and the number is written down
       // rather than absorbed.
-      assert.equal(sinkGraph.seen.size, 73, "the assignment sink reach is exactly 73: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, and none reaches anything new behind it");
+      //
+      // MILESTONE 127/04 ADDS ONE: `src/work/item-row.mjs`, the cache ROW's screen at the store
+      // boundary (127/ADR-006 §1). `global-work-store.mjs` sits at its 1,280-line ratchet (43/ADR-012/B4,
+      // whose escape hatch is "the next block in its own module"), so the row screen — the two new
+      // location shapes, `backlog` and `archived`, and the `true → 1` bind mapping — moved into a leaf
+      // the store imports and re-exports from. The chain is `global-work-publisher.mjs →
+      // global-work-store.mjs → work/item-row.mjs`; the leaf imports nothing of its own, so it reaches
+      // nothing behind it, enters no DENIED_TRANSITIVE subtree and relaxes no lifecycle denylist. The
+      // DRIVER's reach is untouched (24). MEASURED with this file's own walker at aof:verify 127: 74.
+      assert.equal(sinkGraph.seen.size, 74, "the assignment sink reach is exactly 74: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, and none reaches anything new behind it");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

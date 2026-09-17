@@ -1091,7 +1091,11 @@ export const workDispatchLaneTests = [
     run: async () => {
       const lines = (await readFile(path.join(repoRoot, ".gitattributes"), "utf8")).split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0 && !line.startsWith("#"));
       const mergeLines = lines.filter((line) => line.includes("merge="));
-      assert.deepEqual(mergeLines, ["wiki/work/**/STATE.md merge=union"], "exactly one non-comment line carries merge=, and it is the union line");
+      // 119/FF-11902's admitted form (applied at aof:verify 127; 129/03's case): the union line is named
+      // AMONG the derived set and every member is asserted admitted — never the set as a literal.
+      const UNION_LINE = "wiki/work/**/STATE.md merge=union";
+      assert.ok(mergeLines.includes(UNION_LINE), "the union line is the merge attribute");
+      for (const line of mergeLines) assert.equal(line, UNION_LINE, `only the union line carries merge= — found ${line}`);
       for (const line of lines) {
         if (line === "wiki/work/**/STATE.md merge=union") continue;
         const [, ...attrs] = line.split(/\s+/u);

@@ -5,6 +5,15 @@
 
 export const DEFAULT_START_TO_CLOSE_MS = 30 * 60 * 1000;
 export const DEFAULT_HEARTBEAT_MS = 15 * 60 * 1000;
+// 129/06 F-58 — THE PROVIDER-WAIT LINE, the one condition that SUSPENDS the heartbeat deadline
+// above rather than expiring it. The two spellings `claude` prints when the account's usage limit
+// is reached and it waits for the reset (measured 2026-09-15 on loop 127, five sessions):
+// `Usage limit reached · continuing automatically at 1:40pm` on the status line and `You've hit
+// your session limit · resets 1:40pm (Europe/London)` as the turn's text. The driver reads it off
+// the tail of its output buffer with the terminal's escapes stripped. Defined HERE, not on the
+// driver's door: that door is the frozen seventeen of 53/FF-5302, and this leaf is one the driver
+// already imports (aof:verify 127 moved it; 129/06's row pins the two spellings from here).
+export const PROVIDER_WAIT_RE = /Usage limit reached[^\n\r]{0,80}|hit your (?:session|usage) limit[^\n\r]{0,80}/u;
 export const DEFAULT_SCHEDULE_TO_START_MS = 10 * 60 * 1000;
 export const DEFAULT_SCHEDULE_TO_CLOSE_MS = 2 * 60 * 60 * 1000;
 export const DEFAULT_STARTUP_GRACE_MS = 5 * 60 * 1000;

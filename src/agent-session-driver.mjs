@@ -53,7 +53,7 @@ import { resolveProvider } from "./terminal-providers.mjs";
 import { createTerminalSpawn, loadNodePty } from "./terminal-ws.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
 import { reportDegrade } from "./degrade.mjs";
-import { DEFAULT_HEARTBEAT_MS } from "./loop-bounds.mjs";
+import { DEFAULT_HEARTBEAT_MS, PROVIDER_WAIT_RE } from "./loop-bounds.mjs";
 
 // ------------------------------------------------------- the headless driver ----
 
@@ -276,14 +276,9 @@ function containsNeedsInputSentinel(buffer) {
   return false;
 }
 
-// 129/06 F-58 — THE PROVIDER-WAIT LINE. The two spellings `claude` prints when the account's
-// usage limit is reached and it waits for the reset (measured 2026-09-15 on loop 127, five
-// sessions): `Usage limit reached · continuing automatically at 1:40pm` on the status line and
-// `You've hit your session limit · resets 1:40pm (Europe/London)` as the turn's text. Read off
-// the tail of the output buffer with the terminal's escapes stripped — the TUI colours the
-// status line, and a chunk boundary can fall inside the phrase. Exported for the row that pins
-// the two spellings against the session's own words.
-export const PROVIDER_WAIT_RE = /Usage limit reached[^\n\r]{0,80}|hit your (?:session|usage) limit[^\n\r]{0,80}/u;
+// 129/06 F-58 — THE PROVIDER-WAIT LINE is read with `PROVIDER_WAIT_RE`, defined in `loop-bounds.mjs`
+// beside the heartbeat deadline it suspends (the driver's export set is the frozen seventeen of
+// 53/FF-5302, so the pattern lives in a leaf this module already imports rather than on its door).
 const PROVIDER_WAIT_WINDOW = 4096;
 const ANSI_ESCAPE_RE = /\[[0-9;?]*[ -/]*[@-~]/gu;
 

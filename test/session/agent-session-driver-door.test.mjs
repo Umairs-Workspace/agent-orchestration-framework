@@ -227,6 +227,16 @@ const NAMES_THE_NEW_MODULE = [
   // consumers and the 44+4 census split below is untouched.
   "test/arch/audit/index.mjs",
   "test/session/index.mjs",
+  // milestone 129 / story 05 (129/ADR-005, FF-12902) — the loop family's boundary control NAMES the
+  // driver because that is the leg: no family module may import `agent-session-driver.mjs` or
+  // `node-pty`, and the planted-positive case spells the forbidden import to prove the detector
+  // fires. It imports neither the driver nor the sink — a naming consumer, and the census split
+  // below is untouched. Named here at aof:verify 127 (129/06 in review; the entry is 129's to ratify).
+  "test/arch/loop/acd-loop-family-boundary.test.mjs",
+  // chore 120 — the shared comment stripper's measured note names the transcript suite (a file
+  // whose NAME carries the driver's) in a comment: a naming consumer by this leg's reading, which
+  // does not strip comments, and not a census member. Named here at aof:verify 127.
+  "test/support/source-slice.mjs",
   // milestone 124 / story 00 (124/ADR-003, FF-12403 leg 3) — the coverage table's NON-VACUITY row
   // for the real 119/04 → 119/03 edge probes a `test/` directory entry against this suite's own
   // path, because that pair is one of the four edges in this stream where equality misses a

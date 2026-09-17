@@ -38,6 +38,7 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import {
+  RENAME_LEDGER_PATH,
   RENAME_LOG_ARGS,
   buildRenameMap,
   parseRenameRecords,
@@ -77,7 +78,23 @@ const CITATION = /(?<![A-Za-z0-9_./-])src\/[A-Za-z0-9_./-]+\.mjs/gu;
 // `47 8498 357 2110`: the sweep stopped reading the two machine-written subtrees (`MACHINE_WRITTEN`
 // above — the ratchet could not fall while its own failure text was a document), and the ledger's
 // citation of the moved debt module was repaired.
-const UNRESOLVED_CEILING = 47;
+// RE-PINNED 47 -> 54 at 127's accept (2026-09-16), the one raise in this row's history, and it is
+// argued for here as the note above demands. Measured with the same command, which printed
+// `54 10166 395 2328` — AFTER the rename ledger (RENAME_LEDGER_PATH, 127/VERIFICATION F-A) restored
+// the 1,128 pre-cut renames the public root at e4c8824 had dropped: without it the count read 148.
+// The seven above 47 are, every one, in a document nobody may edit or a module nobody has landed:
+//   · 129/03's and 129/04's DELIVERED features spell nine Examples-table fixtures as `src/<x>.mjs`
+//     (`src/a.mjs`, `b`, `c`, `x`, `y`, `added`, `n`, `new`, `promote`; 129/VERIFICATION F-09 — an
+//     Examples-table fixture is not a citation, and the contract is immutable);
+//   · 130's two modules (`src/loop/stop-request.mjs`, `src/loop/stop.mjs`), cited by its ADRs and
+//     stories before its builds land them — the same species as 127/01's F-09, and they CLEAR by
+//     landing (this row should fall to 52 at 130's accept);
+//   · 127/03 task 05's probe names a hypothetical `src/commands/archive-flags.mjs` that exists so
+//     the transitive leg can name a chain through it — never a module to land.
+// The five that were live at 47 and are not in these seven cleared as their modules landed
+// (`promote.mjs`, `archive.mjs`, `wave.mjs`, `cycle.mjs`, `child-drive.mjs`) or were respelled
+// (`lanes.mjs`, the ledger's two proposals). HIGH_WATER is untouched.
+const UNRESOLVED_CEILING = 54;
 const HIGH_WATER = 77;
 
 // MACHINE-WRITTEN SUBTREES ARE NOT DOCUMENTS. An item's `runs/` (run records and progress ndjson,
@@ -104,6 +121,9 @@ async function walk(dir, out = [], skip = new Set()) {
 const rel = (full) => path.relative(root, full).split(path.sep).join("/");
 
 async function renameMapFromHistory(cwd = root) {
+  // Git's records first, then the ledger of the pre-cut history (RENAME_LEDGER_PATH) — the same
+  // two reads, in the same order, as the command edge this control pins.
+  const ledger = await readFile(path.join(cwd, ...RENAME_LEDGER_PATH), "utf8").catch(() => "");
   const { stdout } = await execFileAsync("git", [...RENAME_LOG_ARGS], {
     cwd,
     encoding: "utf8",
@@ -111,7 +131,7 @@ async function renameMapFromHistory(cwd = root) {
     maxBuffer: 16 * 1024 * 1024,
     windowsHide: true,
   });
-  return buildRenameMap(parseRenameRecords(stdout));
+  return buildRenameMap(parseRenameRecords(`${stdout}\n${ledger}`));
 }
 
 // The sweep, exported so the red probe drives the instrument the real tree is measured by.

@@ -21,7 +21,7 @@ prints, narrates or knows about `LoopState`.
 
 ## Verification step
 
-Run `AOF_GLOBAL_HOME=$(mktemp -d) node scripts/test.mjs --only test/loop/loop-diag.test.mjs` and,
+Run the loop-diag suite alone through the runner's `--only` selection under an isolated home and,
 separately, a hand probe against the isolated home: `requestLoopStop` twice on one id, then
 `readStopRequest` — the file exists under `<home>/mesh/loop-stops/<id>.json`, its keys are the
 ten in order, `level` is 2 with `escalatedAt` set; a `createStopSource` over the same directory
@@ -38,7 +38,7 @@ process does not exit), or `readStopRequest` throwing on a corrupt file.
 - Writing `by`'s node id from a workspace — the caller (the verb, story 02) supplies `by`.
 - The presence read of a request (`stop: null | "drain" | "cancel"`) — story 03 maps
   `STOP_LEVELS` from here; this module exports the map and nothing more.
-- Any registration in `test/loop/index.mjs` or the budget table — story 05's.
+- Any registration in the loop suite index or the budget table — story 05's.
 
 ## Known traps
 

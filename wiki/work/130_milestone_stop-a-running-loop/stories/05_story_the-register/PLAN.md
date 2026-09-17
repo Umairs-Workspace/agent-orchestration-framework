@@ -2,10 +2,10 @@
 
 ## Mechanism
 
-Three arch files in the harness shape every sibling under `test/arch/loop/` already has: an
+Three arch files in the harness shape every sibling in the loop arch directory already has: an
 exported `archTests` array of `{ name, run }`, registered by one import and one spread in the
 directory's `index.mjs`. Each control has the two legs the register prescribes — a STRUCTURAL leg
-read from source (resolved import specifiers through `test/support/module-family.mjs`, the one
+read from source (resolved import specifiers through the one extractor home, the one
 extractor FF-11901 allows; comment-stripped text sweeps through `read-src-files.mjs`; the
 enclosing-function textual rule `acd-number-null-safe` already applies) and a FIXTURE leg that
 drives the delivered code against the isolated home and the loop fixture (`loopFixture`,
@@ -13,15 +13,15 @@ drives the delivered code against the isolated home and the loop fixture (`loopF
 `work-loop-declarations.test.mjs`; the fleet's `mesh-ui-assign-fixture.mjs`). Non-vacuity is a
 leg of its own in each: a sweep that finds nothing reds, never passes.
 
-The budget table moves once, here: `test/arch/loop` 55 → 58 by exactly the three files, with the
+The budget table moves once, here: the loop arch row 55 → 58 by exactly the three files, with the
 row's `why` naming them and which of the three subjects (registry / record / ladder) each is, and
-the `src/loop` exemption's `why` naming `stop-request.mjs` and `stop.mjs` as members. The
+the loop family's exemption `why` naming `stop-request.mjs` and `stop.mjs` as members. The
 `VERIFICATION.md` fitness register gets one row per control after the probe is run: the mutation
 applied, the assertion that fired, the message.
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`: `node scripts/test.mjs --only test/arch/loop/acd-loop-stop-request-single-home.test.mjs test/arch/loop/acd-loop-stop-settles-the-run.test.mjs test/arch/loop/acd-loop-stop-reaches-every-face.test.mjs test/arch/testing/acd-source-directory-budget.test.mjs` — seven green.
+Under an isolated `AOF_GLOBAL_HOME`: the runner's `--only` selection over the three new controls and the directory budget — seven green.
 Then the red probes, one at a time and reverted each time: spell `"loop-stops"` in
 `src/commands/loop.mjs` → FF-13001 reds naming the file; insert `return state;` between
 `drivePhase` and `settleDriven` → FF-13002's structural leg reds; make the fake `run({ scope, stop:
@@ -31,7 +31,7 @@ node → FF-13006 reds; form the argv in the shell → FF-13007's node leg reds.
 reports no `control-unresolved` after the files land.
 
 A wrong build shows as: a control green under its own mutation (a vacuous guard), a sweep that
-finds zero modules and passes, a fourth file under `test/arch/loop/` (the row over-raised), or a
+finds zero modules and passes, a fourth file in the loop arch directory (the row over-raised), or a
 register row in `VERIFICATION.md` with no observed message.
 
 ## Out of scope
@@ -43,7 +43,7 @@ register row in `VERIFICATION.md` with no observed message.
 
 ## Known traps
 
-- `test/arch/loop/index.mjs` is also touched by 125 (uncommitted in this checkout) and by 129/05
+- The loop arch index is also touched by 125 (uncommitted in this checkout) and by 129/05
   when it lands: register by APPENDING an import + spread, never by re-ordering.
 - The budget control asserts the table and the tree agree in BOTH directions; a raise of 3 with
   only 2 files landed reds it.

@@ -262,7 +262,7 @@ doc: state
   `aof work loop` over a stream holding an `in-review` story on this tree until 04 lands.** Story
   `RETROSPECTIVE.md` (R1–R6) and `OUTCOME.md` authored; `memory ingest` re-indexed 2,358 records.
   **Left for the milestone door:** FF-11903 is red whole-tree at 58 vs a ceiling of 47 (`F-09`) —
-  129's family modules clear when 02/04 land, `src/loop/lanes.mjs` (ADR-008's REJECTED alternative)
+  129's family modules clear when 02/04 land, a `lanes.mjs` under `src/loop/` (ADR-008's REJECTED alternative)
   can never clear by landing and needs the architect to respell it, and 129/03's features carry six
   fixture paths under `src/` that its build must spell elsewhere; `src/work/loop.mjs` at 1,578 lines
   (`F-10`, story-sized) sits here for the operator to place; the supervisor `ceilingMs` hunk in the

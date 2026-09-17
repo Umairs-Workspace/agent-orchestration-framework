@@ -130,7 +130,11 @@ export const archTests = [
         // byte-identical. Re-pinned rather than dropped, per 55/VERIFICATION F-55-02-1 — an
         // unpinned file is covered by no byte-freeze at all.
         ["src/commands/run-status.mjs", "fbf7f25f6c9f32383043044a3a1448eab040ff3d6c7f47aec70655e2dc027ee3"],
-        ["src/board-ui.mjs", "d76bfdaf42032c937165d6e4d6344bd56f30e5f17b1f31f3ed53c520220b7b73"],
+        // RE-PINNED by 127/04 (ADR-006 §2, task 02): `/api/work/list` threads `includeArchived=1`
+        // through to `work:list`'s own `all` — the ONE parameter that story adds. The run/board seam
+        // is otherwise untouched: no run key, no loop-state read, the envelope's shape unchanged.
+        // Re-pinned rather than dropped, per 55/VERIFICATION F-55-02-1 (aof:verify 127).
+        ["src/board-ui.mjs", "959ebf96fc19bd207654f3f4cbf2f02b093ecf0d28d548c714ed6ffb60f07518"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiFiles = trackedFilesUnder(path.join(root, "ui")).sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
@@ -162,7 +166,17 @@ export const archTests = [
       // record key is read that was not read before, and the loop's state still rides the run
       // record with no face of its own — which is what 53/ADR-004 froze this tree to protect.
       // The pin is a proxy for that contract, not for the fleet's look; it moves with the diff.
-      assert.equal(hash.digest("hex"), "606bb29d71c0c6afbc1ed4e01ecfcf780cb69d256d8e485e1d325435797fed45", "ui/ changed despite the zero-board-change contract");
+      //
+      // RE-PINNED by 127/04 (ADR-006 §2–§4; DESIGN.md surfaces 1 and 2), measured the same way:
+      // `git diff d7806cb..b8cd0a1 -- ui/` is 9 files, 376 insertions, all under `ui/src/board/`
+      // (`ArchivedPill.tsx` new; `Board.tsx`, `BoardLanes.tsx`, `DetailPanel.tsx`, `Overview.tsx`,
+      // `api.ts`, `model.ts`) and `ui/src/fleet/{api.ts,scope.mjs}` — the backlog rows, the
+      // `Show archived` toggle threading `includeArchived` into the LIST request, the archived pill,
+      // and the fleet's backlog partition. Filtered to added lines that name a run record (`runs`,
+      // `runId`, `run.state`, `run.brief`, `heartbeat`, `retryOf`) the diff is EMPTY: the board reads
+      // the WORK LIST differently and no run-record key it did not read before, so the loop's state
+      // still rides the run record with no face of its own. Re-pinned at aof:verify 127.
+      assert.equal(hash.digest("hex"), "01669ef9749ee4cc3617a825837d09276edb1442071119ea6842b403d65d56c0", "ui/ changed despite the zero-board-change contract");
     },
   },
 ];

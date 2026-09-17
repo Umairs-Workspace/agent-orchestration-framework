@@ -8,6 +8,8 @@ imported: true
 importedBy: aof
 source: aof
 importedAt: 2026-08-01
+schema: 1
+aofVersion: 0.1.0
 ---
 # 42 · Structural overhaul — one home, one door, no silence — Digest
 

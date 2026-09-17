@@ -90,7 +90,11 @@ in-flight `insert-shared.mjs` change breaks its import); the ledger was grepped 
 
 ---
 
-## ADR-001 — `work.loop.concurrency` is a MODE with one home; `refine_first` is three phases over a `--through-review` walk; the engine routes on status; the loop owns the fan-out
+## ADR-001 — Concurrency is a MODE with one home; the loop owns the fan-out
+
+<!-- Heading shortened at 127's accept (2026-09-16): the refine brief's architecture slice carries each declared ADR's heading, and at this milestone's heading lengths the slice was budget-truncated past the ids its stories declare (127/VERIFICATION). The original sentence is the lede below; the id and every citation are unchanged. -->
+
+**`work.loop.concurrency` is a MODE with one home; `refine_first` is three phases over a `--through-review` walk; the engine routes on status; the loop owns the fan-out**
 
 ### Context
 
@@ -205,7 +209,9 @@ resolves in that same module and reaches a session only as the flag the drive co
 
 ---
 
-## ADR-002 — The LOOP merges each lane home in the primary, serially, through the mesh's one merge verb; conflict and dirt are named stops, never a half-merged tree
+## ADR-002 — The loop merges each lane home, serially, through the one merge verb
+
+**The LOOP merges each lane home in the primary, serially, through the mesh's one merge verb; conflict and dirt are named stops, never a half-merged tree**
 
 ### Context
 
@@ -283,7 +289,9 @@ No module on the merge-home path contains `rebase`, `push --force`, `reset --har
 
 ---
 
-## ADR-003 — The grade baseline is a property of the BASE COMMIT, measured once per wave in a lane; every lane's grade and gate run in the lane's own workspace
+## ADR-003 — The grade baseline belongs to the base commit; lanes grade in their own tree
+
+**The grade baseline is a property of the BASE COMMIT, measured once per wave in a lane; every lane's grade and gate run in the lane's own workspace**
 
 ### Context
 
@@ -337,7 +345,9 @@ loop's own `ctx.workspace.projectRoot`.
 
 ---
 
-## ADR-004 — The tree that commits the change owns the record: a lane's run is minted, heartbeated, settled and committed IN the lane; `driven` rows gain additive keys
+## ADR-004 — The tree that commits the change owns the record
+
+**The tree that commits the change owns the record: a lane's run is minted, heartbeated, settled and committed IN the lane; `driven` rows gain additive keys**
 
 ### Context
 
@@ -411,7 +421,9 @@ on the build path.
 
 ---
 
-## ADR-005 — A lane's drive is a CHILD `aof work drive` process: one JSON document, a lent run, stdin as the cancel channel, a parent-side deadline as belt-and-braces
+## ADR-005 — A lane's drive is a CHILD `aof work drive` process
+
+**A lane's drive is a CHILD `aof work drive` process: one JSON document, a lent run, stdin as the cancel channel, a parent-side deadline as belt-and-braces**
 
 ### Context
 
@@ -490,7 +502,9 @@ and an argv, and never imports the session driver.
 
 ---
 
-## ADR-006 — The bound is `work.dispatch.concurrency`, asked through `work:dispatch`'s admission; there is no second admission, and the loop's own `work.loop.dispatch.concurrency` (129/07) can only narrow it
+## ADR-006 — The bound is `work.dispatch.concurrency`, asked through one admission
+
+**The bound is `work.dispatch.concurrency`, asked through `work:dispatch`'s admission; there is no second admission, and the loop's own `work.loop.dispatch.concurrency` (129/07) can only narrow it**
 
 ### Context
 
@@ -552,7 +566,9 @@ inside a `work:dispatch` answer.
 
 ---
 
-## ADR-007 — The supervisor sees one declaration per scope: a wave run in the primary carries the liveness, lanes are its children, and a resume reconciles live lanes before it walks
+## ADR-007 — The supervisor sees one declaration per scope
+
+**The supervisor sees one declaration per scope: a wave run in the primary carries the liveness, lanes are its children, and a resume reconciles live lanes before it walks**
 
 ### Context
 
@@ -602,7 +618,9 @@ lane run's `brief.loop.scope` differs from its parent's.
 
 ---
 
-## ADR-008 — Where the code lives: a `src/loop/` family born EXEMPT, git-level verbs in their existing homes, and the wave tick as a SUBTRACTION from the shell
+## ADR-008 — Where the code lives: a `src/loop/` family born exempt
+
+**Where the code lives: a `src/loop/` family born EXEMPT, git-level verbs in their existing homes, and the wave tick as a SUBTRACTION from the shell**
 
 ### Context
 
@@ -664,7 +682,7 @@ run concurrently.
 
 - Everything in `src/commands/loop.mjs` — rejected: 2,311 lines and one src dependent; the file is
   the accretion this milestone must not deepen.
-- A `src/loop/lanes.mjs` for the composed git verbs — rejected: `src/work/dispatch.mjs` already
+- A `lanes.mjs` under `src/loop/` for the composed git verbs — rejected: `src/work/dispatch.mjs` already
   owns `resolveDispatchLane` / `cleanupDispatchLane` / `sweepDispatchLanes`; a sibling home for
   the same lane is the second-home species.
 - A budget row for `src/loop/` — rejected in §2 with the measurement.

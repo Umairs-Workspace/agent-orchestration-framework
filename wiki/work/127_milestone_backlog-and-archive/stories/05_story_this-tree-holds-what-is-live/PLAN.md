@@ -15,7 +15,7 @@ by hand, run `memory ingest`. Third, the outsider's check as a suite over the re
 names real refs (`52`, `32`, the live three) and pins one measured number — the resolving-link
 count taken immediately before the move.
 
-Measure before you move: the link scan (03/01's rule) over `wiki/work/**/*.md`, the `aof work
+Measure before you move: the link scan (03/01's rule) over every `.md` under the work directory, the `aof work
 debt` findings set, `git status --porcelain`, `aof work next 32`. Every "same as before"
 assertion in task 02 rests on a number you took first.
 
@@ -25,10 +25,10 @@ mid-session, so gate on the item ref, check `git status` before and after the mo
 
 ## The verification step
 
-Task 02's suite green as `node scripts/test.mjs --only test/work/stream/work-this-tree-holds-what-is-live.test.mjs`
+Task 02's suite green through the runner's `--only` selection of its one file
 under an isolated global home, plus the two path-reader controls and 03's own suite as focused
 runs. `aof work validate` `[]` and `aof work doctor` with no `error` from the repository root
-over the moved tree. `ls wiki/work` read by eye: three live milestones, one blocked uat, the
+over the moved tree. The work directory listed and read by eye: three live milestones, one blocked uat, the
 imported `42_structural-overhaul`, three root files, `archive/`, `backlog/`.
 
 ## Out of scope

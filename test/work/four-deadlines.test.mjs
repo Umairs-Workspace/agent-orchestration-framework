@@ -5,7 +5,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { driveInteractiveClaudeSession, PROVIDER_WAIT_RE } from "../../src/agent-session-driver.mjs";
+import { driveInteractiveClaudeSession } from "../../src/agent-session-driver.mjs";
+import { PROVIDER_WAIT_RE } from "../../src/loop-bounds.mjs";
 import { runLoopBody } from "../../src/commands/loop.mjs";
 import { runControlDispatchReclaimTick } from "../../src/mesh/assignment-reclaim.mjs";
 import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";

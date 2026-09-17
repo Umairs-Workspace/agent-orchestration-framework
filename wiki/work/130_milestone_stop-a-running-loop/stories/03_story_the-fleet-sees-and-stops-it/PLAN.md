@@ -26,24 +26,24 @@ already renders, with the assign affordance's in-flight hold as the click guard.
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`: `node scripts/test.mjs --only test/mesh/presence/mesh-presence-record.test.mjs test/mesh/presence/mesh-presence-aggregate-workspaces.test.mjs test/mesh/ui/mesh-ui-serve.test.mjs test/ui/fleet-scope.test.mjs test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs test/arch/mesh/acd-mesh-ui-read-only.test.mjs test/arch/mesh/acd-mesh-ui-write-isolation.test.mjs test/arch/mesh/acd-mesh-ui-no-core-import.test.mjs test/arch/session/acd-captured-producer-fixture.test.mjs test/arch/testing/acd-ui-surface-file-budget.test.mjs`.
+Under an isolated `AOF_GLOBAL_HOME`: the runner's `--only` selection over the suites this story's `files:` declares (the two presence suites, the mesh UI serve suite, the fleet scope suite, FF-5307's control, and the mesh-UI read-only / write-isolation / no-core-import / captured-producer / surface-budget controls).
 Then the end-to-end observation: stand up `serveMeshUi` over a fixture whose one workspace holds a
 `running` run with a `brief.loop`; `GET /api/mesh/status` carries `localNodeId` and a `loops[0]`
 with eleven keys and `stop: null`; a same-origin `POST /api/mesh/loop-stop {scope, workspaceId}`
 answers 200 with `request: "drain"` and a file appears under `<home>/mesh/loop-stops/`; the next
 status answers `stop: "drain"`; a cross-origin POST is 403 before any read; `npm run build` in
-`ui/` passes and `wc -l ui/src/fleet/Fleet.tsx` ≤ 1560; `git diff --stat -- ui/` lists only the six
+the UI lane passes and the fleet surface file stays ≤ 1560 lines; the UI diff lists only the six
 fleet files.
 
 A wrong build shows as: the six-key record changing its key list when no loop runs (a re-pin
 demanded by eleven suites), a `loops` entry from a remote workspace, a button on a card whose node
 is not `localNodeId`, a fetch string in `ui/` other than the one in `api.ts`, or a `git diff -- ui/`
-touching `ui/src/board/`.
+touching the board's source.
 
 ## Out of scope
 
 - The desktop's rows and the declarations producer's `stopped` set — story 04.
-- The board — 53/ADR-004 froze it; `src/board-ui.mjs` byte-identical, nothing under `ui/src/board/`.
+- The board — 53/ADR-004 froze it; the board seam byte-identical, nothing under the board's source.
 - A remote node's stop — the line renders, the button does not; ADR-006.
 - Any new `test/**` file or budget row — story 05.
 

@@ -11,13 +11,13 @@ and gates it (`archive-confirm-required` unless `--yes`), then calls the SEAM an
 declares its own three flags — `insert-shared.mjs` is off limits (FF-12705) — and imports only
 `work.mjs`, the seam and `command-error.mjs`.
 
-The SEAM (`transitionStreamArchived` beside `transitionStreamReindexed` in
-`src/effects/stream-transitions.mjs`) is lock → fact → event: `guardItemLock` over every driver
+The SEAM (`transitionStreamArchived` beside `transitionStreamReindexed` in the
+stream-transitions effects module) is lock → fact → event: `guardItemLock` over every driver
 and story ref that moves, the engine as the fact, `stream.archived` appended and drained, with the
 d2 rule for a journal that will not open. Its one reactor row in `table.mjs` is `publish-projection`
 — nothing to remap, because no ref changes.
 
-The ENGINE (`src/work/archive.mjs`, `reindex.mjs`'s twin: fs only, no effects, no reindex, no
+The ENGINE (the `archive` module of the work family, `reindex.mjs`'s twin: fs only, no effects, no reindex, no
 `number:`) renames every folder in M under `archive/` in number order, then runs ONE rewrite pass
 over every `.md` under the work dir with M known. The rewriter is syntactic: for each inline
 `](target)` with a relative target, resolve against the file's directory and classify against M —
@@ -42,5 +42,5 @@ link between them is untouched. FF-12705 green, six red probes recorded, four bu
 ## Out of scope
 
 Running `--done` over this repository (05); the board's toggle and the cache's `archived` column
-(04); any automatic archive on `done`; rewriting anything outside `wiki/work`; the retired `.mjs`
+(04); any automatic archive on `done`; rewriting anything outside the work directory; the retired `.mjs`
 suites' relative imports (they move, stay in no runner).

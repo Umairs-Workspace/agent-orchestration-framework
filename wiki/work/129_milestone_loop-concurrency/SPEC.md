@@ -36,26 +36,8 @@ the shell's run, the settle race, the silent launcher death, and the whole-tree 
 and every one of them was a form of the same fact: **the unit of concurrency is a WORKTREE, not a
 story.** Two sessions in one checkout trample each other; a story's grade taken over the shared
 checkout carries every other lane's reds (127/01 stalled six rounds on seven cases, six of them
-not its own); a run's progress sampler charges the whole tree to one run.
-
-Measured on 2026-09-12 at `2321dce8` plus the uncommitted loop fixes:
-
-| fact | value | source |
-|---|---|---|
-| 127's ready set / wave / held | `readySet: [02, 03, 04]`, `wave: [02, 04]`, `heldSet: [03]` — 03 shares `command-core.mjs`, `cli.mjs`, `test/work/stream/index.mjs` with 02 | `aof work next 127 --json` |
-| acts the loop shell drives per tick | 1 — `nextDecision` → `decideLoop` → `drivePhase` → `settleDriven`, in `for (;;)` | `src/commands/loop.mjs:1583-1840` |
-| where a driven session runs | the primary checkout — `worktreeCwd: ctx.workspace.projectRoot` | `src/commands/drive.mjs:314` |
-| the dispatch bound this repo reports | `bound: 3` (`DEFAULT_DISPATCH_CONCURRENCY`; `work.dispatch.concurrency` unset), `lanes: []` | `aof work dispatch --list --json` |
-| the lane's path and branch | `.aof/mesh/dispatch-worktrees/dispatch-<ref>` on `aof/mesh/<ref>`, create-or-continue | `src/mesh/worktree.mjs:229-291` |
-| who merges a lane back today | the `/aof:continue` orchestrator, by prose — "when a lane's work is merged back, `aof work dispatch --cleanup`"; no code path merges | `src/bundle/commands/continue.md:166` |
-| the mesh's only merge verb | `advanceBranchToBase` — ff-if-possible, real merge otherwise, dirty-tree and conflict are coded refusals, never rebase/force | `src/mesh/worktree.mjs:766-894` |
-| the grade's tree | `work:grade --run` spawns the rubric in `ctx.workspace.projectRoot`; the delta baseline (`brief.gradeBaseline`) is per story on that one tree | `src/commands/loop.mjs:1726-1748`, `1955` |
-| a graded rubric run here | ~8 min (the fitness tier, 1931 cases) | 127 STATE, 2026-09-12 |
-| `LoopState` keys / `brief.loop` keys | ten / nine, both pinned order-included; `driven` rows are the one additive place | `test/arch/loop/acd-loop-probe-contract`, `acd-loop-state-rides-the-run-record` |
-| the run id a session runs as | `AOF_RUN_ID` + `AOF_RUN_ITEM_DIR` in the PTY env; `run-start`/`run-complete` yield to it (`resolveDrivenRun`) | `src/agent-session-driver.mjs:862`, `src/commands/resolve.mjs:91-124` |
-| the supervisor's unit | one declaration per `brief.loop.scope`, relaunched as `aof work loop <scope> --resume` | `src/work/loop.mjs:1322`, `src/mesh/declarations.mjs` |
-| `src/` root / `src/commands/` headroom | 92/92, 67/67 — both at ceiling; the row already asks for a `src/loop/` family | `test/arch/testing/acd-source-directory-budget.test.mjs:102-113` |
-| loop deaths on 2026-09-12 | 3, all at the driver's kill of a finished session, in the loop's own process | `src/loop-diag.mjs` header, 127 STATE |
+not its own); a run's progress sampler charges the whole tree to one run. The facts this rests
+on are measured in `## Measured facts` below.
 
 **The outcome an outsider can verify:** with `work.loop.concurrency` set, `aof work loop 127`
 drives 02 and 04 at the same time, each in its own worktree lane, each with its own run record,
@@ -141,3 +123,26 @@ Six stories; 01/02/03 share no subject file and form the first wave at the dispa
   its never-discard fitness function `acd-gate-propagation-never-discards`.
 - **69 (done)** — the loop bounds' single home and the range probe every new `work.loop.*` key
   must join.
+
+## Measured facts
+
+<!-- Moved out of `## Objective` at 127's accept (2026-09-16): the objective rides every story brief whole (126/R1), and at 4,333 chars it left 129/04–06's architecture slices no room for the ADR ids they declare (127/VERIFICATION). Nothing below is changed. -->
+
+Measured on 2026-09-12 at `2321dce8` plus the uncommitted loop fixes:
+
+| fact | value | source |
+|---|---|---|
+| 127's ready set / wave / held | `readySet: [02, 03, 04]`, `wave: [02, 04]`, `heldSet: [03]` — 03 shares `command-core.mjs`, `cli.mjs`, `test/work/stream/index.mjs` with 02 | `aof work next 127 --json` |
+| acts the loop shell drives per tick | 1 — `nextDecision` → `decideLoop` → `drivePhase` → `settleDriven`, in `for (;;)` | `src/commands/loop.mjs:1583-1840` |
+| where a driven session runs | the primary checkout — `worktreeCwd: ctx.workspace.projectRoot` | `src/commands/drive.mjs:314` |
+| the dispatch bound this repo reports | `bound: 3` (`DEFAULT_DISPATCH_CONCURRENCY`; `work.dispatch.concurrency` unset), `lanes: []` | `aof work dispatch --list --json` |
+| the lane's path and branch | `.aof/mesh/dispatch-worktrees/dispatch-<ref>` on `aof/mesh/<ref>`, create-or-continue | `src/mesh/worktree.mjs:229-291` |
+| who merges a lane back today | the `/aof:continue` orchestrator, by prose — "when a lane's work is merged back, `aof work dispatch --cleanup`"; no code path merges | `src/bundle/commands/continue.md:166` |
+| the mesh's only merge verb | `advanceBranchToBase` — ff-if-possible, real merge otherwise, dirty-tree and conflict are coded refusals, never rebase/force | `src/mesh/worktree.mjs:766-894` |
+| the grade's tree | `work:grade --run` spawns the rubric in `ctx.workspace.projectRoot`; the delta baseline (`brief.gradeBaseline`) is per story on that one tree | `src/commands/loop.mjs:1726-1748`, `1955` |
+| a graded rubric run here | ~8 min (the fitness tier, 1931 cases) | 127 STATE, 2026-09-12 |
+| `LoopState` keys / `brief.loop` keys | ten / nine, both pinned order-included; `driven` rows are the one additive place | `test/arch/loop/acd-loop-probe-contract`, `acd-loop-state-rides-the-run-record` |
+| the run id a session runs as | `AOF_RUN_ID` + `AOF_RUN_ITEM_DIR` in the PTY env; `run-start`/`run-complete` yield to it (`resolveDrivenRun`) | `src/agent-session-driver.mjs:862`, `src/commands/resolve.mjs:91-124` |
+| the supervisor's unit | one declaration per `brief.loop.scope`, relaunched as `aof work loop <scope> --resume` | `src/work/loop.mjs:1322`, `src/mesh/declarations.mjs` |
+| `src/` root / `src/commands/` headroom | 92/92, 67/67 — both at ceiling; the row already asks for a `src/loop/` family | `test/arch/testing/acd-source-directory-budget.test.mjs:102-113` |
+| loop deaths on 2026-09-12 | 3, all at the driver's kill of a finished session, in the loop's own process | `src/loop-diag.mjs` header, 127 STATE |

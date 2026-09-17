@@ -26,20 +26,20 @@ controller and the row leaves the window after its terminal `stopped` frame.
 
 ## Verification step
 
-`node scripts/test.mjs` runs `cargo test` over `app/desktop/Cargo.toml` — run it with
-`AOF_GLOBAL_HOME=$(mktemp -d) node scripts/test.mjs --only test/loop/work-loop-declarations.test.mjs test/arch/loop/acd-declaration-predicate-is-composed.test.mjs test/arch/loop/acd-clock-counts-attempts.test.mjs test/arch/ui/acd-desktop-single-data-path.test.mjs test/arch/ui/acd-desktop-supervises-a-supplied-set.test.mjs test/arch/ui/acd-desktop-trusted-spawn.test.mjs` plus `cargo test --manifest-path app/desktop/Cargo.toml`.
+the runner runs `cargo test` over the desktop crate — run it with
+an isolated home and the runner's `--only` selection over the suites this story's `files:` declares (the declarations suite and the five loop/desktop arch controls) plus `cargo test --manifest-path app/desktop/Cargo.toml`.
 The end-to-end observation: `decideSupervisedDeclarations` over one supervised lineage whose
 latest run is `failed/timeout` answers one row; the same input with `stopped: new Set([loopRunId])`
 answers none; `supervisedDeclarations` over a fixture home holding a `honoured` request for that
 id answers no row. In cargo: `stop_step(1, None, 30000, false)` is `Request`, `(2, None, …)` is
 `Cancel`, `(2, Some(30000), …)` is `Kill`, `(2, Some(1000), …)` is `Wait`, `(_, _, _, true)` is
 `Done`; `stop_argv` of a declaration row is `["work","loop","<scope>","--stop"]` and `None` for
-`mesh-serve`. Then `node scripts/install-local.mjs --desktop` builds; the OPERATOR restarts the app
+`mesh-serve`. Then the local installer's `--desktop` path builds; the OPERATOR restarts the app
 and story 06 reads the window.
 
 A wrong build shows as: a declaration Stop calling `start_kill` (the tree orphaned), a grace
 counted from the drain press (a live drive killed), a row that never leaves after the loop
-halted, or `src/work/loop.mjs` gaining an import (`acd-clock-counts-attempts` reds).
+halted, or the pure loop engine gaining an import (`acd-clock-counts-attempts` reds).
 
 ## Out of scope
 
@@ -56,4 +56,4 @@ halted, or `src/work/loop.mjs` gaining an import (`acd-clock-counts-attempts` re
   declarations tick) or every row's label blinks to nothing every third tick.
 - The standing notice is keyed by child id and cleared by that child's next successful start; a
   declaration's stop notice must use the row's `label` (`loop <scope>`), the shape `app.js` reads.
-- `src/work/loop.mjs` imports nothing and must stay that way — `Set` is a global.
+- The pure loop engine imports nothing and must stay that way — `Set` is a global.

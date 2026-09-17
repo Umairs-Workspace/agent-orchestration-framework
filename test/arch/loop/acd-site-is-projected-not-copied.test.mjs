@@ -41,6 +41,7 @@ import { loopDocumentPath } from "../../../src/loop-document.mjs";
 import { loadWorkspace } from "../../../src/work.mjs";
 import { SHELL_DIR, buildSite, carriesProvenanceEnvelope } from "../../../scripts/site/build-site.mjs";
 import { snapshot } from "../../support/loop-document-fixture.mjs";
+import { importSpecifiers } from "../../support/module-family.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { archTests as loopDocumentCurrentTests } from "./acd-loop-document-current.test.mjs";
 
@@ -87,10 +88,19 @@ export const archTests = [
       const source = stripComments(await readFile(path.join(repoRoot, BUILDER), "utf8"));
 
       // Asserted on the IMPORT BINDINGS, as 79's own control does: a whole-file grep for the
-      // symbol would be satisfied by the string that spells it.
-      const bindings = [...source.matchAll(/^import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/gm)]
-        .filter(([, , from]) => from.endsWith("/loop-document.mjs") && !from.includes("/commands/"))
-        .flatMap(([, names]) => names.split(",").map((name) => name.trim()).filter(Boolean));
+      // symbol would be satisfied by the string that spells it. The SPECIFIER comes from the one
+      // extractor home (119/FF-11901 · 121 — no control spells its own); the clause is then read
+      // off the statement that carries that specifier, which is a claim about the builder's import
+      // clause rather than a second extractor (aof:verify 127).
+      const documentSpecifiers = importSpecifiers(source)
+        .filter((entry) => !entry.dynamic && entry.specifier.endsWith("/loop-document.mjs") && !entry.specifier.includes("/commands/"))
+        .map((entry) => entry.specifier);
+      assert.ok(documentSpecifiers.length >= 1, "the builder imports the one loop-document home");
+      const bindings = documentSpecifiers.flatMap((specifier) => {
+        const statement = source.split(";").find((text) => text.includes(`"${specifier}"`) || text.includes(`'${specifier}'`)) ?? "";
+        const clause = statement.slice(statement.indexOf("{") + 1, statement.indexOf("}"));
+        return clause.split(",").map((name) => name.trim()).filter(Boolean);
+      });
       assert.ok(bindings.includes("loopDocumentPath"), `the builder obtains the document's path from loopDocumentPath (bindings: ${bindings.join(", ")})`);
       assert.ok(!bindings.includes("composeLoopDocument"), "and imports no composer");
       assert.ok(!bindings.includes("LOOP_DOCUMENT_BASENAME"), "and does not take the basename to spell a second path with it");

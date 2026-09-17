@@ -64,7 +64,11 @@ nodes, 39,904 edges, egress none — `aof graph build .`). Cited as actual struc
 
 ---
 
-## ADR-001 — One enumerator, three roots: `listItems` walks the stream, `backlog/**` and `archive/`, and `ITEM_RE` has ONE home
+## ADR-001 — One enumerator, three roots; `ITEM_RE` has one home
+
+<!-- Heading shortened at this milestone's accept (2026-09-16): the refine brief's architecture slice carries each declared ADR's heading, and at the original lengths 127/01's slice carried one of the two ADRs it declares (VERIFICATION F-10). The original sentence is the lede below; the id and every citation are unchanged. -->
+
+**One enumerator, three roots: `listItems` walks the stream, `backlog/**` and `archive/`, and `ITEM_RE` has ONE home**
 
 ### Context
 
@@ -127,7 +131,9 @@ Every reader sees three roots for free and `.number` can now be `null` (ADR-002)
 
 ---
 
-## ADR-002 — Identity is the ref, never the location: ONE live-row predicate decides which walkers filter, and every `.number` consumer is null-safe
+## ADR-002 — Identity is the ref; one live-row predicate
+
+**Identity is the ref, never the location: ONE live-row predicate decides which walkers filter, and every `.number` consumer is null-safe**
 
 ### Context
 
@@ -169,7 +175,9 @@ failure (FF-12702), a walker that stops calling the predicate fails FF-12706.
 
 ---
 
-## ADR-003 — `promote` is the ONE mint: default appends, `--at P` opens a slot through the existing engine, the folder moves, and `insert-*` become thin aliases
+## ADR-003 — `promote` is the ONE mint; `insert-*` become thin aliases
+
+**`promote` is the ONE mint: default appends, `--at P` opens a slot through the existing engine, the folder moves, and `insert-*` become thin aliases**
 
 ### Context
 
@@ -221,7 +229,11 @@ callers, of which one (`insert-shared`) is now reached only via `promote`. FF-12
 
 ---
 
-## ADR-004 — `archive` is an explicit verbatim MOVE that touches no number and imports no reindex
+## ADR-004 — `archive` is a verbatim MOVE; no number, no reindex
+
+<!-- Heading shortened at 127's accept (2026-09-16): the refine brief's architecture slice carries each declared ADR's heading, and at this milestone's heading lengths the slice was budget-truncated past the ids its stories declare (127/VERIFICATION). The original sentence is the lede below; the id and every citation are unchanged. -->
+
+**`archive` is an explicit verbatim MOVE that touches no number and imports no reindex**
 
 ### Context
 
@@ -264,7 +276,9 @@ half; FF-12706 the visibility half.
 
 ---
 
-## ADR-005 — `work.intake` is WRITE-side only: the read side is mode-less
+## ADR-005 — `work.intake` is WRITE-side only
+
+**`work.intake` is WRITE-side only: the read side is mode-less**
 
 ### Context
 
@@ -299,7 +313,9 @@ The string `intake` appears only in scaffold / init / promote / bundle prompts. 
 
 ---
 
-## ADR-006 — The fleet cache and the board carry the shapes; the board partitions, it does not re-enumerate
+## ADR-006 — The fleet cache and the board carry the shapes; the board partitions, never filters
+
+**The fleet cache and the board carry the shapes; the board partitions, it does not re-enumerate**
 
 ### Context
 

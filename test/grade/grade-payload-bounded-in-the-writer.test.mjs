@@ -352,7 +352,12 @@ export const gradePayloadBoundedInTheWriterTests = [
       const over = GRADE_FAILURE_MAX_ENTRIES + 15;
       const fx = await gradingFixture({});
       try {
-        const spawn = stubRubric(emitsFailing(manyFailures(over), ["alpha", "beta"]));
+        // A DIRECT `work:grade` invoke makes ONE spawn — no baseline measurement precedes it (that is
+        // the loop shell's act, before a story's first continue drive, 129/ADR-003) — so the stub
+        // declares no baseline: its first answer IS the graded run. With the default baseline the
+        // graded call read the clean answer and recorded 0 failures (129 STATE "inherited at HEAD";
+        // repaired at aof:verify 127).
+        const spawn = stubRubric(emitsFailing(manyFailures(over), ["alpha", "beta"]), { baseline: null });
         const result = await invoke("work:grade", { ref: "03/01", run: true }, gradingCtx(fx, { spawn }));
 
         // THE RECORD CARRIES EVERY FAILURE THE RUNNER EMITTED.

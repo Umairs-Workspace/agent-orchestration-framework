@@ -20,8 +20,8 @@ commit, the existing toast). One pill component, painted in six contexts; one ch
 row. The fleet's milestone list gets the same partition and nothing visible.
 
 Build against the face fixture's two new stream members — this story does not need 02 or 03 to
-exist, only 01's shapes on disk. `test/store` and `test/ui` are both at their ceilings: extend the
-two existing store suites; the ONE new UI suite raises the `test/ui` row with a stated why.
+exist, only 01's shapes on disk. The store and UI suite directories are both at their ceilings: extend the
+two existing store suites; the ONE new UI suite raises the UI directory's row with a stated why.
 
 ## The verification step
 
@@ -31,7 +31,7 @@ lacks the item and the CLI agrees row for row; the API suite shows the default l
 the parameter includes; the UI suite mounts the real `<Board/>` and reads DESIGN's two checklists
 region by region — backlog section present and subordinate, no backlog milestone as a card, toggle
 off hides, toggle on marks in every context, chip even at zero, failure reverts. Run the four as
-focused suites (`node scripts/test.mjs --only …`) plus `fleet-scope`, `board-face-contract` and
+focused suites (the runner's `--only` selection) plus `fleet-scope`, `board-face-contract` and
 the three `cache-read-*` suites for the frozen-shape pins; `tsc -b` in `ui/`. The
 design-conformance review at verify judges the two surfaces at 1280 / 768 / 390.
 

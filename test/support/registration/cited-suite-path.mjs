@@ -24,10 +24,11 @@
 // reach green before its own commit — and it is a property of the design working, not a defect.
 import path from "node:path";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { RENAME_LOG_ARGS, buildRenameMap, parseRenameRecords, resolveCitedPath } from "../../../src/cited-path-resolve.mjs";
+import { RENAME_LEDGER_PATH, RENAME_LOG_ARGS, buildRenameMap, parseRenameRecords, resolveCitedPath } from "../../../src/cited-path-resolve.mjs";
 
 const execFileAsync = promisify(execFile);
 const cache = new Map();
@@ -36,6 +37,7 @@ const cache = new Map();
 export async function renameMapFromHistory(root) {
   if (cache.has(root)) return cache.get(root);
   const promise = (async () => {
+    const ledger = await readFile(path.join(root, ...RENAME_LEDGER_PATH), "utf8").catch(() => "");
     const { stdout } = await execFileAsync("git", [...RENAME_LOG_ARGS], {
       cwd: root,
       encoding: "utf8",
@@ -43,7 +45,7 @@ export async function renameMapFromHistory(root) {
       maxBuffer: 32 * 1024 * 1024,
       windowsHide: true,
     });
-    return buildRenameMap(parseRenameRecords(stdout));
+    return buildRenameMap(parseRenameRecords(`${stdout}\n${ledger}`));
   })();
   cache.set(root, promise);
   return promise;
