@@ -1,0 +1,18 @@
+{
+  "runId": "20260914T193405203Z-0000",
+  "itemRef": "129/06",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": null,
+  "brief": {},
+  "createdAt": "2026-09-14T19:34:05.203Z",
+  "updatedAt": "2026-09-14T19:35:12.967Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "umamis-msi",
+  "resumeAfter": null,
+  "spend": null
+}
