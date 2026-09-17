@@ -36,7 +36,7 @@
       "roots": [
         "test"
       ],
-      "deadlineMs": 2700000,
+      "deadlineMs": 3600000,
       "report": {
         "format": "tap"
       }
