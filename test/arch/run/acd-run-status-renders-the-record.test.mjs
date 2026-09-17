@@ -194,7 +194,10 @@ export const archTests = [
       // "present and re-pinned with a reason" rather than freezing it at a literal this story does
       // not own. The claim 126/01 makes is that IT moved the run-status pin and no other.
       assert.match(control, /\["src\/run-store\.mjs", "[0-9a-f]{64}"\]/u);
-      assert.match(control, /\["src\/board-ui\.mjs", "d76bfdaf42032c937165d6e4d6344bd56f30e5f17b1f31f3ed53c520220b7b73"\]/u);
+      // 127/04 re-pins the board seam for its one `includeArchived` parameter (127/ADR-006 §2), so this
+      // entry is read the same way as run-store's: present, re-pinned, and carrying its reason.
+      assert.match(control, /\["src\/board-ui\.mjs", "[0-9a-f]{64}"\]/u);
+      assert.match(control, /RE-PINNED by 127\/04[\s\S]{0,600}\["src\/board-ui\.mjs"/u, "the board-ui re-pin carries its reason and names the story that moved it");
       assert.equal((control.match(/\["src\/[^"]+", "[0-9a-f]{64}"\]/gu) ?? []).length, 3, "three file entries beside the ui/ tree hash");
 
       // The moved pin names this story and why the file moved, as 119/01's re-pin does.

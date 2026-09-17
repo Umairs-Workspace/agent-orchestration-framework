@@ -193,7 +193,7 @@ the detail panel, its primary action (`done` → the quiet ad-hoc **Run agent**,
 only addition is the mark wherever the milestone's identity row is painted: the **switcher button**
 (pill after the mono label, [BoardLanes.tsx:352-368](../../../ui/src/board/BoardLanes.tsx#L352)), each
 **switcher row** (`done · archived` in the trailing short-status text, [BoardLanes.tsx:389](../../../ui/src/board/BoardLanes.tsx#L389)),
-the **lane card** meta line under `all` focus (pill left of the stale badge,
+the **lane card** meta line under `all` focus (the pill in the `[stale][archived][chip]` cluster the binding checklist names — corrected at verify, F-26; the earlier "left of the stale badge" contradicted it,
 [BoardLanes.tsx:267-280](../../../ui/src/board/BoardLanes.tsx#L267)) and the **detail-panel header**
 cluster ([DetailPanel.tsx:206-209](../../../ui/src/board/DetailPanel.tsx#L206)). **Stories of an archived
 milestone carry no mark** — one pill per context, and the context is the milestone.

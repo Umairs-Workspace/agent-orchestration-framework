@@ -98,7 +98,8 @@ export const archTests = [
       assert.ok(documentSpecifiers.length >= 1, "the builder imports the one loop-document home");
       const bindings = documentSpecifiers.flatMap((specifier) => {
         const statement = source.split(";").find((text) => text.includes(`"${specifier}"`) || text.includes(`'${specifier}'`)) ?? "";
-        const clause = statement.slice(statement.indexOf("{") + 1, statement.indexOf("}"));
+        // The clause is MATCHED, not cut positionally (47/F-47-04-ARCH-2): the braces bound it.
+        const clause = /\{([^}]*)\}/u.exec(statement)?.[1] ?? "";
         return clause.split(",").map((name) => name.trim()).filter(Boolean);
       });
       assert.ok(bindings.includes("loopDocumentPath"), `the builder obtains the document's path from loopDocumentPath (bindings: ${bindings.join(", ")})`);
