@@ -3,10 +3,10 @@ type: milestone
 number: 127
 slug: backlog-and-archive
 title: "Backlog and archive — the work tree holds what is live"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-16
+updated: 2026-09-17
 depends: []
 schema: 1
 aofVersion: 0.1.0
@@ -133,8 +133,8 @@ Out of scope:
 - [x] `01_story_one-enumerator-three-roots` — One Enumerator Three Roots.
 - [x] `02_story_promote-mints-the-number` — Promote Mints The Number.
 - [x] `03_story_archive-is-a-move` — Archive Is A Move.
-- [ ] `04_story_the-fleet-and-the-board-see-the-shapes` — The Fleet And The Board See The Shapes.
-- [ ] `05_story_this-tree-holds-what-is-live` — This Tree Holds What Is Live.
+- [x] `04_story_the-fleet-and-the-board-see-the-shapes` — The Fleet And The Board See The Shapes.
+- [x] `05_story_this-tree-holds-what-is-live` — This Tree Holds What Is Live.
 
 <!-- The stories that compose this milestone. Each is its own NN_story_<slug> item with parent: NN.
      Populated at the Break-down stage (refine); "to be broken down" until then. The milestone is
@@ -143,8 +143,8 @@ Out of scope:
 - [x] `stories/01_story_one-enumerator-three-roots` — `listItems` walks the stream, `backlog/` and `archive/`; `ITEM_RE` has one home; the seven second-scanners retire onto it; one live-row predicate decides which walkers filter (ADR-001, ADR-002)
 - [x] `stories/02_story_promote-mints-the-number` — `aof work promote <slug> [--at P]` is the one mint; `insert-*` become what `promote --at` is; `work.intake` is the write-side default the `aof:add-*` prompts read (ADR-003, ADR-005) — depends on 01
 - [x] `stories/03_story_archive-is-a-move` — `aof work archive <NN> | --done` moves an accepted driver under `archive/` name verbatim, rewriting only the crossing prose links (ADR-004) — depends on 01
-- [ ] `stories/04_story_the-fleet-and-the-board-see-the-shapes` — the synced view carries `number: null` / `archived`; the board shows the backlog and hides the archive behind one toggle (ADR-006, DESIGN.md) — depends on 01
-- [ ] `stories/05_story_this-tree-holds-what-is-live` — this repository sets `work.intake: "backlog"`, archives its done items, and the outsider check passes on the real stream — depends on 01–04
+- [x] `stories/04_story_the-fleet-and-the-board-see-the-shapes` — the synced view carries `number: null` / `archived`; the board shows the backlog and hides the archive behind one toggle (ADR-006, DESIGN.md) — depends on 01
+- [x] `stories/05_story_this-tree-holds-what-is-live` — this repository sets `work.intake: "backlog"`, archives its done items, and the outsider check passes on the real stream — depends on 01–04
 
 ## Dependencies
 

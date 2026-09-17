@@ -284,6 +284,80 @@ The `@manual` task 01 was run ONCE, for real, by the build lane in its dispatch 
   `control-unresolved`.
 - **No `@uat` scenario and no UI surface.**
 
+
+## Design conformance
+
+**Renderability, evaluated first.** Base URL: no `--url` and no `work.ui.baseUrl`, and this
+workspace's own board carries no backlog row (`backlog/` is empty), so §Surface 1 cannot render on
+it at all — task 06 names the alternative: "task 02's fixture stream served by `aof work ui` over
+a scratch project". With the operator's leave (after the gate exited) the three-root fixture
+(`buildThreeRootFixture`: `10_milestone_alpha` + story, `11_chore_beta`, backlog `gamma` /
+`ideas/delta` / `ideas/later/epsilon`, archived `05_milestone_zeta` + story, `06_chore_eta`) was
+served at `http://127.0.0.1:4180/board`; the wire carried 6 rows by default and 9 with
+`includeArchived=1`. Renderer: `work.ui.renderer` undeclared, the highest-revision Chromium under
+the platform cache by GLOB — `ms-playwright/chromium-1234/chrome-win64/chrome.exe` (exists,
+executable). Both halves resolved; the render was attempted.
+
+**The render** — the resolved binary driven over its own debugging port (the toggle is client
+state with no URL form, so a plain `--screenshot` can only capture OFF): one navigation per
+breakpoint at `--window-size` 1280×900 / 768×1100 / 390×1200, the overview OFF, the toggle
+clicked, the overview ON, then Zeta's board through its own card, the switcher opened, and the
+lane board under `All milestones`. Twelve captures, kept at `renders/` (`overview-off-*`,
+`overview-on-*` at all three widths; `lanes-archived-*`, `switcher-open-*`, `lanes-all-*` at 1280
+and 768). DOM facts read beside each capture: `button[aria-pressed]` present with
+`aria-pressed="false"` at rest and `"true"` after the click, the Backlog `h2` present, the word
+`archived` absent from the page OFF and present three times ON.
+
+**The first render was of a stale bundle (`F-31`)** — `ui/dist` here and in the deployed payload
+dated 2026-09-13, two days before 04 landed — and painted `delta` as a card with its slug in the
+ref slot and no toggle: §Surface 1's forbidden shape, exactly. Rebuilt (`scripts/ui-build.mjs`),
+re-served, re-rendered; the verdicts below are over the rebuilt bundle.
+
+**Verdicts, region by region against the binding checklists (the baseline — no mock exists,
+07/ADR-003):**
+
+- **§Surface 1 — Backlog on the overview: CONFORMS** at 1280, 768 and 390. Layout in order:
+  header → grid → (no gates in the fixture) → `BACKLOG` heading in the gates idiom with the
+  subline `3 items · un-numbered, not scheduled · promote with aof work promote <slug>` (mono) →
+  the root row `gamma` with no heading → `ideas` as a flat mono path → `delta` → `ideas/later` →
+  `epsilon`. Rows: fixed-width uppercase type label (`CHORE` / `MILESTONE` / `SPIKE` aligned), mono
+  slug, title; no ring, chip, number, progress, dots, footer or button; the stale badge absent
+  (fresh). Ramp: bordered rounded rows, muted label/slug/path, foreground title, no `primary`
+  anywhere in the section. The header chips count the stream only (`0 done · 1 active`; "1
+  milestone" excludes `delta`). At 390 the label and slug never truncate; the fixture's titles are
+  too short to exercise the title truncation — that one row is INCONCLUSIVE for want of a long
+  title, not a gap.
+- **§Surface 2 — the toggle and the mark: CONFORMS** at 1280 and 390, on VIEW 2 at 1280 and
+  768, and **GAPS at 768 on the overview** (`F-32`). OFF: nothing on the page says an archive
+  exists but the `Show archived` control, a quiet bordered toggle in the top-bar slot left of
+  `◷ status legend`; no `▤` chip. ON: the toggle tinted (`primary` on the ON state only), `05
+  MILESTONE` after the live card in wire order with `▤ archived` in the row-1 cluster beside
+  `✓ done` and a calmer `bg-muted/40` surface, footer / dots / `Open board →` / `✓ accepted`
+  intact, no dashed or faded treatment; chips `✓ 1 done · ◐ 1 active · ▤ 1 archived` with the
+  archived chip last and present only ON; the header sentence counts rendered milestones (1 → 2).
+  VIEW 2 (Zeta): the switcher button `05 · Zeta ▤ archived ▾`, the switcher rows `10 Alpha — in
+  progress` / `05 Zeta — done · archived`, the lane cards under `All milestones` (`05 Zeta` and
+  `06 Eta` with `▤ archived` at the meta line's right; `11 Beta` unmarked), the detail header
+  cluster `05 milestone ▤ archived ✓ done`; the story `05/00 Zeta one` carries no mark; the primary
+  action is the quiet `Run agent`; the actions strip is unchanged. The GAP: at 768 the archived
+  card's row-1 cluster is wider than its column and `✓ done` spills past the card's edge.
+- **Accessibility:** the meaning survives greyscale — the words `archived` and `Show archived`
+  carry it (the operator read the captures desaturated); the toggle is a real `aria-pressed`
+  button; backlog rows are `<li>`, not buttons.
+
+**No `aof-designer` and no `aof-qa` session was spawned** — the operator chose an inline verify (0
+agents); the judgement above is the product owner's over the captures, and the `toHaveScreenshot`
+baseline QA would own is not created here (`F-33`).
+
+## User sign-off
+
+- **Task 06, `127/04` — the human read of the two surfaces**, 2026-09-17, by the operator over the
+  fixture board at `http://127.0.0.1:4180/board` and the captures under `renders/`, at 1280 and
+  768 top-down, 390 for the toggle and the rows, `Show archived` OFF → ON, Zeta's board, and the
+  captures in greyscale. **Verdict: CONFORMS, with `F-32` noted** — the backlog reads as waiting,
+  not in flight; the archived mark reads as put away, not broken; neither is colour-only; the 768
+  cluster overflow stays a routed design gap. `verifies → tasks/06_a-person-judges-the-two-surfaces.feature`
+
 ## Fitness functions
 
 <!-- One row per control declared in ARCHITECTURE.md's register. Each row is filled when the
@@ -340,6 +414,10 @@ and the review-close entry) and by this accept; ids allocated here, at the momen
 | F-27 | 02's tasks 00/01/02 spell `status: null` for a backlog row; a backlog record doc scaffolded from the template carries `status: not-started`, which is what 01's fixture and 02's write; 04's task 05 Examples row `done | 12 | (empty)` names the in-progress 43 hidden under `done` as the fleet's DELIVERED `workStatusSummaryTail` (` · 1 hidden, done only`); 04's task 04 prose "pill LEFT of the stale badge" vs its checklist. Recorded by the build lanes as contract-wording deltas (no `.feature` edited). | contract-wording | low | ratified — the suites assert the delivered behaviour and the shape claims are untouched. | `127/02`, `127/04` | closed |
 | F-28 | 05's task 01 Given reads "stories 01–04 accepted"; the loop's `--through-review` walk offered 05 once 02–04 were `in-review` (built and reviewed, not accepted), and the lane ran the real move then (`ed9c00c`, 2026-09-16 08:5xZ). The move itself was sound — every number below is re-verified at this accept — but the precondition the contract spelled was the accept. | contract-wording | low | ratified at this accept, in the order the contract asked for: 02, 03 and 04 are accepted here BEFORE 05. The loop lesson (an irreversible act on the real tree should gate on `done`) is `RETROSPECTIVE.md` R9. | `127/05`; `129` (readiness through review) | closed |
 | F-29 | Task 06's probe (a), as spelled — the `Math.max(…parseInt…)` line "added to `src/commands/insert-milestone.mjs`" — throws `ReferenceError: items is not defined` at module load when pasted at top level, and the runner dies before FF-12703's sweep runs (`F-02`'s species); probe (c)'s leg names the count (`found 2`) before it names the file, so the observed message differs from the scenario's "naming `insert-chore.mjs`". | contract-wording | low | ratified: (a) applied inside the verb's `run` body, which is what "added to the module" means for a line that reads a binding; (c) the leg went red on the same mutation and its first assertion is the count — recorded verbatim on the FF-12703 row. No `.feature` edited. | `127/02` | closed |
+| F-30 | Gate run 4 (`c801091`) recorded "the runner exited with no verdict and enumerated no failure": `work.test.deadlineMs` was 2,700,000 (45 min) and runs 1–3 had taken 45–46 min each (20:33→21:19, 10:47→11:32, 11:45→12:30 local); run 4 crossed the bound and the runner was killed. The bound predates the suite's growth to 10,400+ cases. | defect | medium | closed at this accept: `work.test.deadlineMs` raised to 3,600,000 (60 min) in `.aof/aof.config.json`, committed so the gate's checkout reads it; the killed run's row stays in `REGRESSION.md` as its own history (a red row and a missing one are not the same fact, 126/F-35). | product-owner | closed |
+| F-31 | The first render of 04's surfaces (fixture board, 2026-09-17 18:41) painted the backlog milestone `delta` as a CARD with its slug in the ref slot and no `Show archived` toggle — §Surface 1's forbidden shape. Not the code: `ui/dist` in this checkout AND in the deployed payload (`~/.aof/bin/ui/dist`) was built 2026-09-13, two days before 04 landed (the 2026-09-16 install ran `--skip-ui`), and `aof work ui` serves the tree's `ui/dist`. Rebuilt here (`scripts/ui-build.mjs`, 18:42) and re-rendered. | defect | medium | closed for this accept (the render below is over the rebuilt bundle); the deploy is the operator's: `node scripts/install-local.mjs` WITHOUT `--skip-ui` before the app is relaunched, or the fleet/board serve a pre-04 bundle. The gate's own worktree built `ui/dist` fresh, so no suite saw it — a served bundle is not something a test reads. | operator (deploy) | open |
+| F-32 | At 768 with the toggle ON, the archived card's row-1 cluster (`▤ archived` + `✓ done`) is wider than the card's column in the fixed 3-column grid: the `✓ done` chip spills past the card's right border (`renders/overview-on-768.png`); the live card beside it wraps its own `in-progress` chip onto two lines, which is the grid's pre-existing behaviour at 768. The pill is the addition, so the overflow is this milestone's, on a breakpoint DESIGN §Conformance names. | design-gap | medium | non-blocker for the accept (a visual overflow, not a broken affordance; every other row of both checklists CONFORMS): the designer sets the rule — the cluster wraps below the ref line at ≤ 768, or the pill drops to the footer beside `✓ accepted` — as a DESIGN.md amendment ahead of the next board story; not fixed here because the 3-column grid is declared out of this milestone's scope and the cluster's layout is its consequence. | aof-designer (`DESIGN.md` §Surface 2) → next board story | open |
+| F-33 | The design-conformance step names two sessions the operator chose not to spawn (0 agents): `aof-designer`'s read-only judgement and `aof-qa`'s Playwright harness with the `toHaveScreenshot` baseline that would lock the approved captures. The judgement was made inline over the twelve captures under `renders/` and signed off by the operator; no visual-regression baseline exists for the two surfaces. | test-gap | low | non-blocker; the captures are kept with the milestone as the reference a later QA lane can baseline from. Playwright stays off the dependency list either way. | aof-qa (next board story) | open |
 
 ## Accept decision
 
@@ -378,3 +456,57 @@ six on the committed tree and two in a scratch copy with no graph artifact, wher
 first found and admitted the seam path; every budget row it moved carries its why. `aof work validate
 127/03` reports PASS and `aof work doctor 127/03` reports no `control-unresolved`. The move over this
 repository is 127/05's act. No blocker finding is open against this story.
+
+**`127/04` ACCEPTED** — 2026-09-17. The story's lane is green (153 pass / 0 fail across its own suites
+and the three controls its build moved — 8 store, 16 seam, 7 route, 8 backlog, 8 archive and 5 fleet
+rows task-attributable; FF-5307 and FF-5301 green on the re-pins `F-14` records). Design conformance
+was RENDERED — over the three-root fixture served by `aof work ui`, the cached Chromium driven at
+1280 / 768 / 390, OFF and ON, the switcher and the lane board — and read region by region against
+the binding checklists: §Surface 1 CONFORMS at every width, §Surface 2 CONFORMS at 1280, 390 and on
+VIEW 2 with one GAP at 768 (`F-32`, routed to the designer, non-blocking); the operator's own `@uat`
+read (task 06) is CONFORMS with `F-32` noted, recorded under `## User sign-off`. The first render
+caught a stale served bundle (`F-31`, the deploy's). `aof work validate 127/04` reports PASS and
+`aof work doctor 127/04` reports no `control-unresolved`. `F-26` and `F-27` are ratified here; no
+blocker finding is open against this story.
+
+**`127/05` ACCEPTED** — 2026-09-17, after 02, 03 and 04 (`F-28`). The move ran once, for real, on
+2026-09-16 (`ed9c00c`: 125 drivers, 2,289 renames, 1,710 crossing links, `wiki/memory.md`'s four
+links by hand, the index regenerated) and its post-state is re-read at this accept: the root holds
+127, 129, 130, 131 and the 32 gate beside the three roots; `find 42` answers the archived import;
+`validate 127` is `[]`. The story's suite over the REAL tree is green (19 rows) once its four
+stored tree facts became properties (`F-15`), and the 27 path-reader suites it re-pointed are green
+(626 in the lane). `aof work validate 127/05` reports PASS and `aof work doctor 127/05` reports no
+`control-unresolved`. No blocker finding is open against this story.
+
+## Accept decision — the milestone
+
+**`127` ACCEPTED** — 2026-09-17, with all **five** stories done.
+
+**The gate.** `aof work regression-gate 127` at `f27d7d669e00b94d790cb6182d985a7ab2c8325e`, on a
+clean detached worktree at that commit (119/R4's route — this checkout carries the run records the
+private-terms guard refuses, `F-12`): **green, scope all, `satisfiesDoor: true`**. The milestone's
+`REGRESSION.md` carries five rows and all five stay: run 1 at `ea70920` red on 26 cases (`F-13`–
+`F-24`, every one repaired at its owner); run 2 at `049c7fd` red on four (`F-22`'s CRLF half, two of
+the door's own repairs re-read); run 3 at `9cea474` red on one (05's suite over a checkout with no
+`backlog/`); run 4 at `c801091` killed at the 45-minute test deadline with no verdict (`F-30`); run 5
+green under the 60-minute bound. The whole-tree run behind the green row is the runner's registered
+suite, cargo and browser lanes included. One control the gate did not measure is named rather
+than assumed: `acd-no-internal-project-names` SKIPS in a worktree (the terms file is untracked) and
+is red in this checkout over nine committed run records — the push door's, `F-12`.
+
+**All six declared controls carry a red-probe row** (three at 127/01's accept, three here — fourteen
+probes, each applied to the committed tree or a scratch copy, run alone under an isolated home, and
+the subject restored and the tree read clean), `aof work validate 127` reports PASS, `aof work
+doctor 127` reports no `control-unresolved` at either severity and 0 errors, and the ARCHITECTURE
+register carries no `pending` marker.
+
+**What the door did that no lane had.** 26 whole-tree reds were classified by owner and repaired in
+place — five this milestone's, the rest the public-root cut's, 129/06's, 130's, the docs site's
+and 42's — under two operator rulings (`F-16`: the rename ledger; `F-22`: the documents condensed
+to the packer); the deploy was found stale at the render (`F-31`); and the accept order 05's
+contract asked for was restored (`F-28`). `F-12` (the node id, before the push), `F-14`, `F-17`,
+`F-19`, `F-22` (the packer), `F-31` (the deploy), `F-32` (the 768 cluster) and `F-33` (the
+screenshot baseline) stay open, each routed. No blocker finding is open against the milestone.
+
+Next, the operator's act and never this ceremony's (127/ADR-004): `aof work archive 127` moves
+this folder under `archive/`.

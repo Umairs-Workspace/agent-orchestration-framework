@@ -5,10 +5,10 @@ slug: the-fleet-and-the-board-see-the-shapes
 title: "The fleet and the board see the shapes — a remote node answers for a backlog or archived item, and the board shows the backlog and hides the archive"
 parent: 127
 depends: [1]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-15
+updated: 2026-09-17
 adrs: [ADR-006]
 reads:
   - wiki/work/127_milestone_backlog-and-archive/SPEC.md
@@ -111,7 +111,7 @@ What lands:
 - [x] 03 `the-overview-shows-the-backlog-as-rows` — `deriveBoard` partitions first; §Surface 1's checklist off the real tree
 - [x] 04 `one-toggle-reveals-the-archive-with-one-mark` — the toggle, the refetch in place, the pill in every context, the chip, the legend
 - [x] 05 `the-fleet-partitions-the-backlog-out` — `milestoneListItems` drops `number: null`; archived follows the status filter
-- [ ] 06 `a-person-judges-the-two-surfaces` — `@uat`: CONFORMS / GAPS / INCONCLUSIVE per checklist row
+- [x] 06 `a-person-judges-the-two-surfaces` — `@uat`: CONFORMS / GAPS / INCONCLUSIVE per checklist row
 
 ## Notes
 

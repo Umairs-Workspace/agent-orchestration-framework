@@ -5,10 +5,10 @@ slug: this-tree-holds-what-is-live
 title: "This tree holds what is live — the repository sets intake to backlog, archives its done items, and the outsider's check passes on the real stream"
 parent: 127
 depends: [1, 2, 3, 4]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-11
-updated: 2026-09-16
+updated: 2026-09-17
 adrs: [ADR-002, ADR-004, ADR-005]
 reads:
   - wiki/work/127_milestone_backlog-and-archive/SPEC.md
