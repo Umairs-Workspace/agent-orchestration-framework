@@ -10,10 +10,13 @@ import { writeFile } from "node:fs/promises";
 import { runLoopBody } from "../../src/commands/loop.mjs";
 import { completeRun, readRuns, startRun } from "../../src/run-store.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
+import { DECLARATION_L1, completingDriver, fakeStopSource, loopFixture, replaceStatus, resetLoopStops, writeDeclarationRun } from "./loop-command-probe.test.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
+import { loopStopsDir, markStopHonoured, requestLoopStop } from "../../src/loop/stop-request.mjs";
 
-const IN_FLIGHT = /^(Driving|Retrying|Resumed|Reclaimed|Gate) /u;
+// 130/02 (ADR-003 §6) — `Cleared` joins the in-flight class: the resume's clear of a standing
+// stop request rides `narrate` by the same role rule, FF-12602's eleventh line.
+const IN_FLIGHT = /^(Driving|Retrying|Resumed|Reclaimed|Gate|Cleared) /u;
 const isInFlight = (line) => IN_FLIGHT.test(line);
 
 /** Drive the fixture, collecting every line the ONE injected printer receives. */
@@ -511,6 +514,39 @@ export const loopCommandNarrationTests = [
       } finally {
         await fx.cleanup();
       }
+    },
+  },
+  // ══════════════ 130/02 task 04 — the resume line rides narrate, silenced by --quiet ══════════════
+  {
+    name: "130/02 task04 — under --quiet the Cleared stop request line is silenced, and the terminal account is byte-identical to the loud run's from its first Driven row",
+    async run() {
+      const runs = [];
+      for (const quiet of [false, true]) {
+        await resetLoopStops();
+        const fx = await loopFixture();
+        try {
+          await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
+          const dir = loopStopsDir();
+          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+          await markStopHonoured(dir, "L1", { now: () => new Date("2026-09-13T11:31:00.000Z") });
+          const lines = [];
+          const driver = completingDriver(fx, { onCommand: closingCommands(fx) });
+          const state = await runLoopBody(
+            { scope: "03", resume: true, now: "2026-09-13T12:00:00.000Z", ...(quiet ? { quiet: true } : {}) },
+            { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource(), report: (line) => { lines.push(line); } },
+          );
+          assert.equal(state.state, "done");
+          runs.push(lines);
+        } finally {
+          await fx.cleanup();
+        }
+      }
+      const [loud, quiet] = runs;
+      assert.equal(loud.filter((line) => line.startsWith("Cleared stop request for L1 (honoured, level 1) — resumed.")).length, 1, "the loud run says so once");
+      assert.equal(quiet.filter((line) => line.startsWith("Cleared stop request")).length, 0, "the quiet run prints no Cleared line");
+      const from = (lines) => lines.slice(lines.findIndex((line) => line.startsWith("Driven ")));
+      assert.deepEqual(from(quiet), from(loud), "the account is byte-identical from the first Driven row");
+      assert.deepEqual(quiet, loud.filter((line) => !isInFlight(line)), "quiet removes exactly the in-flight class, the Cleared line among it");
     },
   },
 ];

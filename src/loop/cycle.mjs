@@ -542,11 +542,18 @@ export function progressReportFacts(act) {
 // settleDriven — the run's terminal write. `options.transitionOptions` names the workspace the
 // record is written under (a lane's, for a lane run); the default is the ctx's own.
 // 129/04 (ADR-004 §4): `outcome.outcome === "cancelled"` settles `cancelled` with no reason —
-// the operator's second signal on a lane child. A `sequential` driver never answers it.
+// the operator's second signal on a lane child. 130/02 (130/ADR-003 §4): the in-process driver
+// answers a caller's abort as `{ outcome: "failed", failureReason: "cancelled" }` through its
+// own stop bracket, and that settles `cancelled` too — `running>cancelled` is the edge, a clean
+// cancel records `failureReason: null` and reads `not-retryable`, and the store is untouched.
+// DEFAULT DECISION: the spend settle's `exitReason` for a cancel stays `"error"` (the existing
+// non-done word; the transcript is partial).
 export async function settleDriven(driven, ctx, { now, narrate = NO_PRINT, transitionOptions = transitionOptionsFor(ctx) } = {}) {
   const { item, record, outcome } = driven;
   if (outcome.outcome === "needs-input") return driven;
-  const terminal = outcome.outcome === "done" ? "done" : outcome.outcome === "cancelled" ? "cancelled" : "failed";
+  const terminal = outcome.outcome === "done"
+    ? "done"
+    : outcome.outcome === "cancelled" || outcome.failureReason === "cancelled" ? "cancelled" : "failed";
   const resumeAfter = terminal === "failed" && outcome.failureReason === "session_limit"
     ? parseResumeAfter(null, { now }).resumeAfter
     : null;
@@ -596,14 +603,17 @@ export async function settleDriven(driven, ctx, { now, narrate = NO_PRINT, trans
 // THE GRADE RIDES THE `driven` ROW (54/03, ADR-008 §1-2), and NOTHING ABOVE IT MOVES. The row
 // carries the grade's SUMMARY, never its failures; 81/02 — and the declared absence, on the
 // same row. 129/04 (ADR-004 §6) — a LANE row gains `lane`, `baseCommit` and `merge`, appended
-// last, and only on the lane path; a `sequential` row is byte-identical.
+// last, and only on the lane path; a `sequential` row is byte-identical. 130/02 — a drive the
+// source cancelled reads `outcome: "cancelled"`, the row 129/04 task 06 defines for lanes,
+// produced here for the in-process drive too: the record's terminal word, never the driver's
+// `failed` wearing a reason.
 export function drivenRow(entry) {
   const grade = entry.grade ?? null;
   return {
     ref: entry.item.ref,
     phase: entry.phase,
     runId: entry.record.runId,
-    outcome: entry.outcome.outcome,
+    outcome: entry.record.state === "cancelled" ? "cancelled" : entry.outcome.outcome,
     attempt: entry.record.attempt,
     cycle: entry.cycle,
     ...(grade == null ? {} : { verdict: grade.verdict, codes: grade.codes, cases: grade.cases }),
@@ -629,12 +639,23 @@ function storeStop(error, haltDecision) {
 //
 // Answers `{ phaseRun }` at a terminal outcome, or `{ phaseRun, halt: { act, details } }` when
 // the budget, the store or a `needs-input` stopped it. Every retried attempt pushes its own row.
+//
+// 130/02 (130/ADR-003 §7) — THE ORDER HOLDS AT THIS SITE TOO: settle → interrupt → needs-input →
+// retry. A `cancelled` record is never retried (it is `not-retryable` in any case, and the halt
+// for it is the caller's), and when `options.stopSource` is handed in it is polled after every
+// attempt settles — a level read there returns `{ phaseRun }` to the caller, whose own read of
+// the source halts `operator-interrupt` naming that attempt's run rather than minting another.
 export async function retryUntilTerminal(phaseRun, { drive, ref, phase, brief, item = phaseRun.item, transitionOptions }, bookkeeping, options) {
-  const { narrate = NO_PRINT, cap, scheduleToCloseMs, stalenessMs, haltDecision, node } = options;
+  const { narrate = NO_PRINT, cap, scheduleToCloseMs, stalenessMs, haltDecision, node, stopSource = null } = options;
   // The instant is a VALUE (the shell's injected `now`, or none) or a CLOCK the wave hands in so
   // each attempt of a lane is stamped at its own instant and the lineage budget sums real time.
   const clock = () => (typeof options.now === "function" ? options.now() : options.now);
-  while (phaseRun.outcome.outcome === "failed") {
+  const stopped = async () => {
+    if (stopSource == null) return false;
+    await stopSource.poll();
+    return stopSource.level() >= 1;
+  };
+  while (phaseRun.outcome.outcome === "failed" && phaseRun.record?.state !== "cancelled") {
     const now = clock();
     try {
       // The in-process site carries no instant forward: it sums the lineage over the item's
@@ -676,6 +697,7 @@ export async function retryUntilTerminal(phaseRun, { drive, ref, phase, brief, i
       retryRun = await settleDriven(retryRun, options.ctx, { now: clock(), narrate, ...(transitionOptions == null ? {} : { transitionOptions }) });
       bookkeeping.driven.push(drivenRow(retryRun));
       phaseRun = retryRun;
+      if (await stopped()) return { phaseRun };
       if (retryRun.outcome.outcome === "needs-input") {
         return { phaseRun, halt: { act: haltDecision("session-needs-input", ref, "driver:needs-input"), details: { sessionId: retryRun.outcome.sessionId } } };
       }
@@ -953,11 +975,14 @@ export async function settleStoryCycle(phaseRun, bookkeeping, ctx, options = {})
   let verified = await drivePhase({ ref, phase: "verify", cycle: verifyCycle, declaration: verifyDeclaration, brief: verifyBrief, now }, ctx);
   verified = await settleDriven(verified, ctx, { now, narrate, ...(transitionOptions == null ? {} : { transitionOptions }) });
   driven.push(drivenRow(verified));
+  // 130/02 — the settled verify rides EVERY answer from here, a halt's included, so the caller's
+  // read of the stop source (settle → interrupt → needs-input, at this site as at the others) can
+  // name the run it stands over.
   if (verified.outcome.outcome === "needs-input") {
-    return halt(haltDecision("session-needs-input", ref, "driver:needs-input"), { sessionId: verified.outcome.sessionId });
+    return { ...halt(haltDecision("session-needs-input", ref, "driver:needs-input"), { sessionId: verified.outcome.sessionId }), verified };
   }
   if (verified.outcome.outcome === "done" && hasUat(facts.tasks?.tasks ?? [])) {
-    return halt(haltDecision("uat-gate", ref, "work:tasks:counts.uat"), { uatCount: uatCount(facts.tasks?.tasks ?? []) });
+    return { ...halt(haltDecision("uat-gate", ref, "work:tasks:counts.uat"), { uatCount: uatCount(facts.tasks?.tasks ?? []) }), verified };
   }
   return { next: "verify", gradeRecord: gradedRecord, gradedSummary, verified };
 }

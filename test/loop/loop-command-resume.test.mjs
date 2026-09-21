@@ -1,11 +1,32 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { completeRun, heartbeat, isStale, retryRun, startRun, readRuns } from "../../src/run-store.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { lineageElapsedMs } from "../../src/work/loop.mjs";
-import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
+import { loopStopsDir, markStopHonoured, readStopRequest, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
+import {
+  DECLARATION_L1,
+  cancellableDriver,
+  completingDriver,
+  fakeStopSource,
+  loopFixture,
+  replaceStatus,
+  resetLoopStops,
+  runCollected,
+  writeDeclarationRun,
+} from "./loop-command-probe.test.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
+import { stripComments } from "../support/source-slice.mjs";
+
+// 130/02 — the closing commands: a verify drive moves its item to done, so a resumed walk under a
+// level-0 source reaches `done`.
+const closing = (fx) => (command) => {
+  if (command === "/aof:verify 03/01") replaceStatus(path.join(fx.storyDir, "STORY.md"), "done");
+  if (command === "/aof:verify 03") replaceStatus(path.join(fx.milestoneDir, "SPEC.md"), "done");
+};
 
 const declaration = {
   loopRunId: "loop-seeded",
@@ -421,6 +442,246 @@ export const loopCommandResumeTests = [
       } finally {
         await fx.cleanup();
       }
+    },
+  },
+
+  // ══════════════ 130/02 task 04 — the halt marks the request honoured, --resume clears it ══════════════
+  //
+  // The shell keys the request by ITS OWN loopRunId, minted fresh on a launch; the one invocation
+  // whose id a suite can know ahead is a RESUME of a seeded declaration. So these cases seed a
+  // done verify-phase run carrying declaration L1 and resume it: the resolved id is "L1", the
+  // resume's clear finds nothing standing (the request is written once the walk has begun — on a
+  // poll, at a directive, or between the tick head and the spawn), and the halt marks that file.
+  {
+    name: "130/02 task04 [outline] the halt marks what it honoured — the request file reads honoured at the fixture's instant, naming the run it cancelled (7 rows)",
+    async run() {
+      const NOW = "2026-09-13T12:00:00.000Z";
+      const rows = [
+        { level: 1, producer: "stop-request", when: "before-first-tick", cancelled: null },
+        { level: 2, producer: "stop-request", when: "before-first-tick", cancelled: null },
+        { level: 1, producer: "stop-request", when: "in-flight", cancelled: null },
+        { level: 2, producer: "stop-request", when: "in-flight", cancelled: "the drive" },
+        { level: 2, producer: "stop-request", when: "pre-spawn", cancelled: "the drive" },
+        { level: 2, producer: "stop-request", when: "retry-2", cancelled: "attempt 2" },
+        { level: 1, producer: "SIGINT", when: "before-first-tick", cancelled: null },
+      ];
+      for (const row of rows) {
+        await resetLoopStops();
+        const fx = await loopFixture();
+        try {
+          await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
+          const dir = loopStopsDir();
+          const source = fakeStopSource({ reads: { dir, loopRunId: "L1" } });
+          const request = async () => {
+            for (let rung = 0; rung < row.level; rung += 1) await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
+            source.raise(row.level, row.producer);
+          };
+          if (row.when === "before-first-tick") source.onPoll = async (n) => { if (n === 1) await request(); };
+          const script = row.when === "retry-2" ? [{ outcome: "failed", failureReason: "timeout" }, "hold"] : row.level === 2 && row.when === "in-flight" ? ["hold"] : [{ outcome: "done" }];
+          const driver = cancellableDriver(fx, { script, async onCommand(command, n) { if ((row.when === "in-flight" && n === 1) || (row.when === "retry-2" && n === 2)) await request(); } });
+          const ctx = { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: source };
+          if (row.when === "pre-spawn") ctx.readChangeBaseline = async () => { await request(); return null; };
+          const { state, last } = await runCollected({ scope: "03", resume: true, now: NOW }, ctx);
+          const label = JSON.stringify(row);
+          assert.equal(state.loopRunId, "L1", label);
+          assert.deepEqual(state.act, { act: "halt", stop: "operator-interrupt", ref: "03/01", producer: row.producer }, `${label}: ${last}`);
+          const file = JSON.parse(await readFile(stopRequestPath(dir, "L1"), "utf8"));
+          assert.equal(file.state, "honoured", label);
+          assert.equal(file.honouredAt, NOW, label);
+          assert.equal(file.level, row.level, label);
+          const runs = (await readRuns({ ref: "03/01", dir: fx.storyDir })).filter((run) => run.brief?.loop?.phase === "continue");
+          const expectedCancelled = row.cancelled == null ? null : runs.find((run) => run.state === "cancelled")?.runId ?? "MISSING";
+          assert.equal(file.cancelled, expectedCancelled, label);
+          if (row.cancelled === "attempt 2") assert.equal(runs.find((run) => run.runId === file.cancelled)?.attempt, 2, label);
+          if (row.when === "pre-spawn") assert.equal(driver.spawnCalls.length, 0, `${label}: minted, never spawned`);
+        } finally {
+          await fx.cleanup();
+        }
+      }
+    },
+  },
+  {
+    name: "130/02 task04 an already-honoured request still halts, and is re-marked idempotently",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
+        const dir = loopStopsDir();
+        const T0 = "2026-09-13T11:30:00.000Z";
+        const source = fakeStopSource({ reads: { dir, loopRunId: "L1" } });
+        source.onPoll = async (n) => {
+          if (n !== 1) return;
+          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date(T0) });
+          await markStopHonoured(dir, "L1", { now: () => new Date(T0), cancelled: null });
+          source.raise(1, "stop-request");
+        };
+        const driver = completingDriver(fx);
+        const { state } = await runCollected({ scope: "03", resume: true, now: "2026-09-13T12:00:00.000Z" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: source });
+        assert.equal(state.act.stop, "operator-interrupt");
+        assert.equal(driver.spawnCalls.length, 0, "halted before any drive");
+        const file = JSON.parse(await readFile(stopRequestPath(dir, "L1"), "utf8"));
+        assert.equal(file.state, "honoured");
+        assert.equal(file.honouredAt, T0, "the first mark stands");
+        assert.equal(file.cancelled, null);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "130/02 task04 [outline] a signal-only halt writes nothing, even when it cancelled a run (5 rows)",
+    async run() {
+      const rows = [
+        { level: 1, producer: "SIGINT", when: "before", cancelled: false },
+        { level: 1, producer: "SIGTERM", when: "before", cancelled: false },
+        { level: 2, producer: "SIGINT", when: "before", cancelled: false },
+        { level: 1, producer: "SIGINT", when: "in-flight", cancelled: false },
+        { level: 2, producer: "SIGTERM", when: "in-flight", cancelled: true },
+      ];
+      for (const row of rows) {
+        await resetLoopStops();
+        const fx = await loopFixture();
+        try {
+          const source = fakeStopSource(row.when === "before" ? { level: row.level, producer: row.producer } : {});
+          const driver = cancellableDriver(fx, { script: [row.cancelled ? "hold" : { outcome: "done" }], onCommand() { if (row.when === "in-flight") source.raise(row.level, row.producer); } });
+          const { state, last } = await runCollected({ scope: "03" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: source });
+          const label = JSON.stringify(row);
+          assert.equal(state.act.stop, "operator-interrupt", `${label}: ${last}`);
+          const runs = await readRuns({ ref: "03/01", dir: fx.storyDir });
+          const suffix = row.cancelled ? `; cancelled=${runs[0].runId}` : "";
+          assert.ok(last.endsWith(`Details: signal=${row.producer}; level=${row.level}${suffix}.`), `${label}: ${last}`);
+          assert.equal(existsSync(loopStopsDir()), false, `${label}: loop-stops holds no file and need not exist`);
+        } finally {
+          await fx.cleanup();
+        }
+      }
+    },
+  },
+  {
+    name: "130/02 task04 [outline] resume clears a standing request and says so once — then walks as a resume does (6 rows)",
+    async run() {
+      const rows = [
+        { id: "L1", level: 1, state: "honoured", lines: 1 },
+        { id: "L1", level: 2, state: "honoured", lines: 1 },
+        { id: "L1", level: 1, state: "requested", lines: 1 },
+        { id: "L1", level: 2, state: "requested", lines: 1 },
+        { id: "L1", level: null, state: "absent", lines: 0 },
+        { id: "L-old", level: 2, state: "honoured", lines: 0 },
+      ];
+      for (const row of rows) {
+        await resetLoopStops();
+        const fx = await loopFixture();
+        try {
+          await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
+          const dir = loopStopsDir();
+          if (row.state !== "absent") {
+            for (let rung = 0; rung < row.level; rung += 1) await requestLoopStop(dir, { loopRunId: row.id, scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+            if (row.state === "honoured") await markStopHonoured(dir, row.id, { now: () => new Date("2026-09-13T11:31:00.000Z") });
+          }
+          const otherBytes = row.id === "L-old" ? await readFile(stopRequestPath(dir, "L-old"), "utf8") : null;
+          const driver = completingDriver(fx, { onCommand: closing(fx) });
+          const { state, lines } = await runCollected({ scope: "03", resume: true, now: "2026-09-13T12:00:00.000Z" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource() });
+          const label = JSON.stringify(row);
+          assert.equal(await readStopRequest(dir, "L1"), null, label);
+          if (otherBytes != null) assert.equal(await readFile(stopRequestPath(dir, "L-old"), "utf8"), otherBytes, `${label}: a file for another id is byte-identical`);
+          const cleared = lines.filter((line) => /^Cleared stop request for L1 \((requested|honoured), level [12]\) — resumed\.$/u.test(line));
+          assert.equal(cleared.length, row.lines, `${label}: ${lines.join("\n")}`);
+          if (row.lines === 1) assert.equal(cleared[0], `Cleared stop request for L1 (${row.state}, level ${row.level}) — resumed.`);
+          assert.notEqual(state.act.stop, "operator-interrupt", `${label}: the old request does not stop the resumed loop`);
+          assert.equal(state.state, "done", label);
+        } finally {
+          await fx.cleanup();
+        }
+      }
+    },
+  },
+  {
+    name: "130/02 task04 a resume with nothing to resume clears nothing — the only line is Nothing to resume, and a stale file for another id is untouched",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const dir = loopStopsDir();
+        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:31:00.000Z") });
+        await markStopHonoured(dir, "L-old", { now: () => new Date("2026-09-13T11:32:00.000Z") });
+        const bytes = await readFile(stopRequestPath(dir, "L-old"), "utf8");
+        const driver = completingDriver(fx);
+        const { lines } = await runCollected({ scope: "03", resume: true }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource() });
+        assert.deepEqual(lines, ["Nothing to resume in 03 — no run carries a loop declaration."]);
+        assert.equal(await readFile(stopRequestPath(dir, "L-old"), "utf8"), bytes);
+        assert.equal(driver.spawnCalls.length, 0);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "130/02 task04 a request written after the clear halts the resumed loop at its next poll — the clear is of the standing file, not an immunity",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
+        const dir = loopStopsDir();
+        const T0 = "2026-09-13T11:30:00.000Z";
+        const NOW = "2026-09-13T12:00:00.000Z";
+        await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date(T0) });
+        await markStopHonoured(dir, "L1", { now: () => new Date(T0) });
+        const source = fakeStopSource({ reads: { dir, loopRunId: "L1" } });
+        // Poll #2 is the one after the first drive settles: a NEW request lands there.
+        source.onPoll = async (n) => {
+          if (n !== 2) return;
+          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
+          source.raise(1, "stop-request");
+        };
+        const driver = completingDriver(fx);
+        const { state, lines } = await runCollected({ scope: "03", resume: true, now: NOW }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: source });
+        const cleared = lines.indexOf("Cleared stop request for L1 (honoured, level 1) — resumed.");
+        const driving = lines.findIndex((line) => line.startsWith("Driving 03/01 — continue"));
+        assert.ok(cleared > -1 && driving > cleared, lines.join("\n"));
+        assert.equal(lines.filter((line) => line.startsWith("Cleared stop request")).length, 1, "once");
+        assert.equal(state.act.stop, "operator-interrupt");
+        assert.deepEqual(state.driven.map((row) => row.outcome), ["done"]);
+        const file = JSON.parse(await readFile(stopRequestPath(dir, "L1"), "utf8"));
+        assert.equal(file.state, "honoured");
+        assert.equal(file.honouredAt, NOW);
+        assert.ok(file.honouredAt > T0, "later than T0");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "130/02 task04 a fresh loop never inherits a stale request — a launch mints its own id and leaves another id's file untouched",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const dir = loopStopsDir();
+        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:31:00.000Z") });
+        await markStopHonoured(dir, "L-old", { now: () => new Date("2026-09-13T11:32:00.000Z") });
+        const bytes = await readFile(stopRequestPath(dir, "L-old"), "utf8");
+        const driver = completingDriver(fx, { onCommand: closing(fx) });
+        const { state } = await runCollected({ scope: "03" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource() });
+        assert.notEqual(state.loopRunId, "L-old");
+        assert.equal(state.state, "done");
+        assert.ok(state.driven.some((row) => row.ref === "03/01"), "it drives 03/01");
+        assert.equal(await readFile(stopRequestPath(dir, "L-old"), "utf8"), bytes);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "130/02 task04 the shell spells no path and calls no fs — every write goes through stop-request.mjs's exports",
+    async run() {
+      const raw = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const shell = stripComments(raw);
+      assert.doesNotMatch(shell, /loop-stops/u, "the segment literal lives in stop-request.mjs and nowhere else");
+      assert.doesNotMatch(shell, /\b(?:writeFile|mkdir|rename)\s*\(/u);
+      const imported = /import \{([^}]*)\} from "\.\.\/loop\/stop-request\.mjs";/u.exec(raw);
+      assert.ok(imported, "the shell imports the request's one home");
+      const names = imported[1].split(",").map((name) => name.trim()).filter(Boolean);
+      for (const name of ["createStopSource", "loopStopsDir", "markStopHonoured", "clearStopRequest", "readStopRequest"]) assert.ok(names.includes(name), name);
     },
   },
 ];

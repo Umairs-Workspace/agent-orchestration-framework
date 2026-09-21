@@ -54,10 +54,10 @@ export const archTests = [
       // 126/00 task03 (ADR-002 §6) adds `quiet` — the flag lands in the schema, `cli.spec.flags`
       // and `cli.argv`, or it does not exist. An expected succession of this pin, not a drift:
       // the schema is still closed, `required` is still `["scope"]`, and the gathering this
-      // control is actually about is untouched.
+      // control is actually about is untouched. 130/02 (ADR-002 §1) adds `stop` by the same rule.
       assert.deepEqual(
         Object.keys(loopCommand.input.properties),
-        ["scope", "level", "resume", "cap", "reviewClaims", "dryRun", "quiet", "supervised"],
+        ["scope", "level", "resume", "cap", "reviewClaims", "dryRun", "quiet", "supervised", "stop"],
       );
       assert.equal(loopCommand.input.additionalProperties, false);
     },
