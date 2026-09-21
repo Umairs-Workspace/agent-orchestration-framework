@@ -1,0 +1,37 @@
+{
+  "runId": "20260921T164218790Z-0001",
+  "itemRef": "130",
+  "state": "running",
+  "attempt": 1,
+  "outcome": null,
+  "sessionId": null,
+  "brief": {
+    "loop": {
+      "loopRunId": "7661348f-073d-4884-8544-a63efb9e53ac",
+      "scope": "130",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-21T16:42:18.166Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "wave": {
+      "members": [
+        "130/01"
+      ],
+      "baseCommit": "2ac60407e91ddac7611a05fe621767988c67f04d",
+      "bound": 3
+    }
+  },
+  "createdAt": "2026-09-21T16:42:18.790Z",
+  "updatedAt": "2026-09-21T16:42:18.790Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "umairs-msi",
+  "resumeAfter": null,
+  "spend": null
+}
