@@ -15,9 +15,11 @@
 //
 // READ-ONLY OVER THE FLEET (ADR-004 d3): the only `aof mesh` verbs this shell ever
 // spawns are `status` (the poll), `serve` (local supervision), and `ui` (local
-// supervision), via the core's `resolve`/`supervision` seams. No fleet-mutating verb is
-// reachable from any surface (acd-desktop-read-only-fleet). "Open web UI" launches a
-// browser at the running UI's local URL — not an `aof` spawn.
+// supervision), via the core's `resolve`/`supervision` seams; the one `work` verb is
+// `work loop` — a supplied declaration (126/ADR-006) and, since 130/ADR-004, its own
+// `--stop`. No fleet-mutating verb is reachable from any surface
+// (acd-desktop-read-only-fleet). "Open web UI" launches a browser at the running UI's
+// local URL — not an `aof` spawn.
 
 mod supervisor;
 
@@ -58,6 +60,18 @@ struct IpcNodeRow {
     work_state: &'static str,
 }
 
+/// One supervised declaration as the window lists it (130/ADR-004 §1) — EXACTLY the
+/// DESIGN's three keys: the row names itself by `label` alone (`loop <scope>`, the
+/// producer's own), and `signal` is the same local-process ramp word the daemons
+/// carry, plus the one word this milestone added to it (`stopping`). No argv, cwd,
+/// scope, level or cap: the window renders a name and a state, and stops by id.
+#[derive(Serialize)]
+struct IpcLoopRow {
+    id: String,
+    label: String,
+    signal: &'static str,
+}
+
 /// The full IPC view-model: the fleet rows + the four-state render selection (FLEET
 /// ramp) AND the local-process signals for the control bar (LOCAL ramp) — the two
 /// DESIGN ramps carried as distinct fields so the view never conflates them.
@@ -74,6 +88,10 @@ struct IpcViewModel {
     /// half of ADR-002 d2 is observable, not just captured. Cleared on a successful
     /// (re)start.
     notice: Option<String>,
+    /// The declarations this app supervises, one row per non-reserved id in the signals
+    /// map (130/ADR-004 §1) — the LOCAL ramp again, never fleet presence. Empty when
+    /// there are none, and `app.js` renders no bar for an empty list.
+    loops: Vec<IpcLoopRow>,
 }
 
 /// IPC command: the WebView's ONLY way to obtain fleet data — reads the last-polled
@@ -97,6 +115,11 @@ fn get_view_model(state: State<AppState>) -> IpcViewModel {
             .collect(),
         None => vec![],
     };
+    let loops = g
+        .loops()
+        .into_iter()
+        .map(|(id, label, signal)| IpcLoopRow { id, label, signal })
+        .collect();
     IpcViewModel {
         is_control_node: g.is_control_node,
         nodes,
@@ -105,7 +128,19 @@ fn get_view_model(state: State<AppState>) -> IpcViewModel {
         ui_state: g.ui_signal(),
         ui_url: g.ui_url.clone(),
         notice: g.notice(),
+        loops,
     }
+}
+
+/// IPC command: stop ONE supervised declaration by its id (130/ADR-004 §2) — the same
+/// `SupervisorCommand::Stop` the daemon controls send, and no new variant: the engine
+/// branches on `is_reserved_id`, so a declaration takes the ladder (the `--stop`
+/// request first, the tree kill last) while a reserved id keeps the daemons' immediate
+/// stop. An id no controller holds changes nothing. Local supervision only — the verb
+/// the ladder spawns is `work loop --stop`, on the admitted roster.
+#[tauri::command]
+fn stop_loop(state: State<AppState>, id: String) {
+    let _ = state.tx.send(SupervisorCommand::Stop(id));
 }
 
 /// IPC command: start the LOCAL Mesh server (`aof mesh serve --serve`) on THIS machine
@@ -347,6 +382,7 @@ fn main() {
             stop_mesh_server,
             start_mesh_ui,
             stop_mesh_ui,
+            stop_loop,
             open_web_ui,
             toggle_window,
             minimize_window,

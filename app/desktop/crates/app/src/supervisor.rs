@@ -11,23 +11,27 @@
 // `cargo test`-covered. This module only turns those decisions into real OS effects:
 // spawn/wait/kill, a timer, a Job Object, a channel. Fleet data still flows through
 // exactly one command — `aof mesh status --json` (ADR-004 d1-2) — and the only other
-// spawns are the {serve, ui} LOCAL supervision lifecycle (ADR-004 d3); no bare-PATH /
-// shell-string spawn exists (every `Command::new` takes the RESOLVED absolute path,
-// ADR-004 d4 / `acd-desktop-trusted-spawn`).
+// `aof` spawns are LOCAL supervision (ADR-004 d3): the {serve, ui} daemons, the
+// supplied `work loop` declarations (126/ADR-006), and — since 130/ADR-004 — a
+// declaration's own `--stop`, the request a Stop on its row makes before the tree kill
+// (`taskkill`, the one non-`aof` spawn, the ladder's last rung). No bare-PATH /
+// shell-string spawn exists (every `aof` `Command::new` takes the RESOLVED absolute
+// path, ADR-004 d4 / `acd-desktop-trusted-spawn`).
 
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use mesh_desktop_core::poll::FleetDataCommand;
 use mesh_desktop_core::render_state::{select_render_state, FetchOutcome, PriorGoodFrame, RenderState};
 use mesh_desktop_core::resolve::{form_argv_spawn, form_child_spawn, resolve_aof, ResolveEnv, ResolvedAof};
 use mesh_desktop_core::status::{parse_status, MeshStatus};
 use mesh_desktop_core::supervision::{
-    classify_exit, jittered_backoff_ms, notice_after_start, reconcile, JitterSource, LiveController,
-    StandingNotice, SupervisedChild, MESH_SERVE_ID, MESH_UI_ID,
+    classify_exit, is_reserved_id, jittered_backoff_ms, notice_after_start, reconcile, stop_argv,
+    stop_refusal_notice, stop_step, JitterSource, LiveController, StandingNotice, StopStep,
+    SupervisedChild, MESH_SERVE_ID, MESH_UI_ID, STOP_GRACE_MS,
 };
 
 use tauri::AppHandle;
@@ -86,6 +90,12 @@ pub struct SupervisorState {
     /// `ui_signal()` are accessors over this map and every existing consumer reads the
     /// value it read before.
     pub signals: BTreeMap<String, &'static str>,
+    /// The rows of the last ANSWERED declarations tick (130/ADR-004 §1) — replaced on
+    /// every answered tick and never cleared by a failed poll, so a declaration's label
+    /// survives the two-in-three ticks that carry no declarations answer. The view
+    /// model joins `signals` on id with this for the row's `label`; the reconcile is
+    /// unchanged and reads the rows it is handed, never this copy.
+    pub declared: Vec<SupervisedChild>,
     /// The ONE notice standing in the window footer, carrying the id of the child it
     /// names so a sibling's restart never clears it.
     pub standing_notice: Option<StandingNotice>,
@@ -94,6 +104,26 @@ pub struct SupervisorState {
 }
 
 impl SupervisorState {
+    /// The declarations this app supervises, as the window lists them (130/ADR-004 §1):
+    /// one `(id, label, signal)` per NON-reserved id in the signals map, in map order,
+    /// labelled by the last answered declarations tick's row of that id. A signal whose
+    /// row has already gone — the instant between a retire and the watchdog's exit —
+    /// is labelled by its id rather than dropped, so the list is exactly the map.
+    pub fn loops(&self) -> Vec<(String, String, &'static str)> {
+        self.signals
+            .iter()
+            .filter(|(id, _)| !is_reserved_id(id))
+            .map(|(id, signal)| {
+                let label = self
+                    .declared
+                    .iter()
+                    .find(|row| &row.id == id)
+                    .map(|row| row.label.clone())
+                    .unwrap_or_else(|| id.clone());
+                (id.clone(), label, *signal)
+            })
+            .collect()
+    }
     /// One child's ramp signal — "stopped" for a child that has never reported, which
     /// is what a not-yet-started child is.
     pub fn signal(&self, id: &str) -> &'static str {
@@ -124,6 +154,7 @@ impl Default for SupervisorState {
             render_state: RenderState::Loading,
             ever_populated: false,
             signals,
+            declared: Vec::new(),
             standing_notice: None,
             window_visible: true,
             ui_url: MESH_UI_URL.to_string(),
@@ -141,7 +172,8 @@ type Controllers = Arc<Mutex<HashMap<String, Arc<ChildController>>>>;
 /// Commands the IPC layer (tray menu / window buttons) sends into the running engine.
 /// Every command is LOCAL process supervision — never a fleet mutation (ADR-004 d3).
 /// Addressed BY ID rather than naming two fixed children, and each places a HOLD the
-/// reconcile reads (126/ADR-006 §5).
+/// reconcile reads (126/ADR-006 §5). `Stop` of a DECLARATION id is one press on the
+/// stop ladder (130/ADR-004 §2) — no new variant: the id says what it is.
 #[derive(Debug, Clone)]
 pub enum SupervisorCommand {
     Start(String),
@@ -149,10 +181,47 @@ pub enum SupervisorCommand {
 }
 
 /// The terminal outcome of one supervised-child wait: the child exited (carrying its
-/// status), or a Stop was requested (kill it).
+/// status), a daemon Stop was requested (kill it), or a declaration's stop ladder
+/// reached its last rung (tree-kill it — 130/ADR-004 §3).
 enum WaitResult {
     Exited(std::io::Result<std::process::ExitStatus>),
     Stop,
+    Kill,
+}
+
+/// What one `--stop` spawn came back with, handed from the task that ran the verb to
+/// the watchdog that asked for it. A landed answer says which rung asked — the request
+/// or the cancel — because only the cancel starts the grace clock.
+enum StopSpawnOutcome {
+    /// Exit 0: the request, or its escalation, is on disk.
+    Landed { cancel: bool },
+    /// A failed spawn or a non-zero exit, with the verb's captured tail.
+    Refused { tail: String },
+}
+
+/// The shell's bookkeeping for one declaration's stop ladder (130/ADR-004 §3): WHICH
+/// press has been answered with a spawn, whether that spawn is still in flight, the
+/// signal to restore if it is refused, and WHEN the cancel landed. The rung itself is
+/// `stop_step`'s; this only remembers what the shell has already applied, so a
+/// spurious wake never spawns the verb twice and two presses inside one spawn's
+/// lifetime land in press order.
+#[derive(Default)]
+struct StopLadder {
+    answered: u32,
+    in_flight: bool,
+    restore: Option<&'static str>,
+    cancel_at: Option<Instant>,
+}
+
+impl StopLadder {
+    /// Milliseconds since the cancel landed, or `None` before it has.
+    fn since_cancel_ms(&self) -> Option<u64> {
+        self.cancel_at.map(|at| at.elapsed().as_millis().min(u64::MAX as u128) as u64)
+    }
+    /// What is left of the grace — `None` before the cancel, zero at or past it.
+    fn grace_left(&self) -> Option<Duration> {
+        self.cancel_at.map(|at| Duration::from_millis(STOP_GRACE_MS).saturating_sub(at.elapsed()))
+    }
 }
 
 /// A real system `ResolveEnv` — supplies the actual `PATH` for the dev/unpackaged
@@ -190,6 +259,12 @@ struct ChildController {
     /// Set when the reconcile retires this controller so its watchdog task ends rather
     /// than parking forever on a child nobody declares any more.
     retired: AtomicBool,
+    /// Stop presses on a DECLARATION (130/ADR-004 §2-§3): the desktop counts, the verb
+    /// escalates. Never read for a reserved id, whose Stop is today's immediate kill.
+    presses: AtomicU32,
+    /// The last `--stop` spawn's answer, left here by the task that ran it for the
+    /// watchdog to settle on its next wake.
+    stop_outcome: Mutex<Option<StopSpawnOutcome>>,
     notify: Notify,
 }
 
@@ -200,8 +275,25 @@ impl ChildController {
             desired: AtomicBool::new(false),
             held: AtomicBool::new(false),
             retired: AtomicBool::new(false),
+            presses: AtomicU32::new(0),
+            stop_outcome: Mutex::new(None),
             notify: Notify::new(),
         }
+    }
+    /// One press on the stop ladder — counted, and the watchdog woken to apply the rung.
+    fn press(&self) {
+        self.presses.fetch_add(1, Ordering::SeqCst);
+        self.notify.notify_one();
+    }
+    fn presses(&self) -> u32 {
+        self.presses.load(Ordering::SeqCst)
+    }
+    fn put_stop_outcome(&self, outcome: StopSpawnOutcome) {
+        *self.stop_outcome.lock().unwrap() = Some(outcome);
+        self.notify.notify_one();
+    }
+    fn take_stop_outcome(&self) -> Option<StopSpawnOutcome> {
+        self.stop_outcome.lock().unwrap().take()
     }
     fn set_desired(&self, on: bool) {
         self.desired.store(on, Ordering::SeqCst);
@@ -385,14 +477,29 @@ async fn engine_main(
     while let Some(cmd) = rx.recv().await {
         // Start and Stop are addressed by id, and each places a HOLD — the flag the
         // reconcile reads, so a tick never drives a child the operator has spoken for.
-        let (id, on) = match cmd {
-            SupervisorCommand::Start(id) => (id, true),
-            SupervisorCommand::Stop(id) => (id, false),
-        };
-        let target = controllers.lock().unwrap().get(&id).cloned();
-        if let Some(ctl) = target {
-            ctl.hold();
-            ctl.set_desired(on);
+        // The one branch is `is_reserved_id`, the core's own predicate (130/ADR-004 §2):
+        // a reserved id keeps today's immediate stop (`desired` off, the watchdog
+        // kills); a declaration's Stop is one PRESS on the ladder the watchdog applies —
+        // the request first, the tree kill last — and `desired` is never flipped by it,
+        // because the child is to be asked before it is killed.
+        let target = |id: &str| controllers.lock().unwrap().get(id).cloned();
+        match cmd {
+            SupervisorCommand::Start(id) => {
+                if let Some(ctl) = target(&id) {
+                    ctl.hold();
+                    ctl.set_desired(true);
+                }
+            }
+            SupervisorCommand::Stop(id) => {
+                if let Some(ctl) = target(&id) {
+                    ctl.hold();
+                    if is_reserved_id(&id) {
+                        ctl.set_desired(false);
+                    } else {
+                        ctl.press();
+                    }
+                }
+            }
         }
     }
 }
@@ -493,6 +600,12 @@ async fn poll_loop(
         let is_control = {
             let mut g = shared.lock().unwrap();
             let prior = if g.ever_populated { PriorGoodFrame::Populated } else { PriorGoodFrame::None };
+            // The last ANSWERED declarations tick's rows, kept for the view model's
+            // labels (130/ADR-004 §1) — replaced only by an answer, so a failed poll and
+            // the ticks that carry no declarations flag leave every row's label standing.
+            if let Some(rows) = &supplied {
+                g.declared = rows.clone();
+            }
             match parsed {
                 Some(status) => {
                     let n = status.nodes.len() as u32;
@@ -545,8 +658,12 @@ async fn supervise_child(
     shared: SharedState,
 ) {
     let id = ctl.spec.id.clone();
+    let reserved = is_reserved_id(&id);
     let mut attempt: u32 = 0;
     let mut jitter = SystemJitter::new(seed_for(&id));
+    // A declaration's stop ladder (130/ADR-004 §3). The rung is `stop_step`'s, a pure
+    // function `cargo test` reaches; this is only what the shell has applied so far.
+    let mut ladder = StopLadder::default();
 
     loop {
         if ctl.retired() {
@@ -565,6 +682,40 @@ async fn supervise_child(
             // controller is retired, when there is nothing left to supervise.
             while !ctl.desired() && !ctl.retired() {
                 ctl.notify.notified().await;
+            }
+            continue;
+        }
+
+        // A press on a declaration whose child is NOT running — a backoff, or the gap
+        // before a relaunch (130/ADR-004 §3; DESIGN §Surface 2's rung 1 from
+        // `restarting`). The press is a `Request`, never "already exited": the verb is
+        // spawned, and only then is the bracket closed as `Done`, because there is no
+        // child to wait for — the verb marks a not-live loop's request honoured at once
+        // (ADR-002 §3f), and that mark is what keeps the next tick from relaunching it.
+        // Relaunching it HERE would be the supervisor fighting the operator.
+        if !reserved && ladder.answered < ctl.presses() {
+            let presses = ctl.presses();
+            ladder.answered = presses;
+            let step = stop_step(presses, ladder.since_cancel_ms(), STOP_GRACE_MS, false);
+            if matches!(step, StopStep::Request | StopStep::Cancel) {
+                if let Some(argv) = stop_argv(&ctl.spec) {
+                    let restore = get_signal(&shared, &id);
+                    set_signal(&shared, &id, "stopping");
+                    refresh_tray(&app, &shared);
+                    match run_stop_verb(&install_dir, &ctl, argv, matches!(step, StopStep::Cancel)).await {
+                        StopSpawnOutcome::Landed { .. } => {
+                            if let StopStep::Done = stop_step(presses, ladder.since_cancel_ms(), STOP_GRACE_MS, true) {
+                                ctl.desired.store(false, Ordering::SeqCst);
+                                set_signal(&shared, &id, "stopped");
+                            }
+                        }
+                        StopSpawnOutcome::Refused { tail } => {
+                            raise_notice(&shared, &ctl, &tail);
+                            set_signal(&shared, &id, restore);
+                        }
+                    }
+                    refresh_tray(&app, &shared);
+                }
             }
             continue;
         }
@@ -622,12 +773,69 @@ async fn supervise_child(
         // Wait for the child to exit OR a Stop to be requested. A spurious wake (e.g.
         // Start while already running) re-enters the wait rather than abandoning the
         // running child — the reader handles are consumed exactly once, after the loop.
+        //
+        // A DECLARATION's wake is a rung of the stop ladder (130/ADR-004 §3), applied
+        // here because this is the task that holds the child: a press spawns the verb
+        // (`Request`, then `Cancel`), the verb's answer settles the signal and the grace
+        // clock, and the grace's end is the tree kill. A retire while the child is alive
+        // changes nothing here — the row went because the loop is halting (its honoured
+        // mark) or its record is terminal, so its own exit is waited for, and the
+        // watchdog leaves at the top of the outer loop once it has.
         let result = loop {
+            let grace_left = ladder.grace_left();
             tokio::select! {
                 status = child.wait() => break WaitResult::Exited(status),
                 _ = ctl.notify.notified() => {
-                    if !ctl.desired() {
-                        break WaitResult::Stop;
+                    if reserved {
+                        if !ctl.desired() {
+                            break WaitResult::Stop;
+                        }
+                        continue;
+                    }
+                    // Settle a returned spawn first. A refused REQUEST is a footer
+                    // notice and the pill keeps the child's true signal; a refused
+                    // CANCEL keeps `stopping` (the drain stands) and starts no grace.
+                    // The grace counts from the cancel LANDING — the instant the level-2
+                    // request is on disk for the loop to read — so a second press inside
+                    // the first spawn's lifetime is answered after it, in press order.
+                    if let Some(outcome) = ctl.take_stop_outcome() {
+                        ladder.in_flight = false;
+                        match outcome {
+                            StopSpawnOutcome::Landed { cancel } => {
+                                if cancel && ladder.cancel_at.is_none() {
+                                    ladder.cancel_at = Some(Instant::now());
+                                }
+                            }
+                            StopSpawnOutcome::Refused { tail } => {
+                                raise_notice(&shared, &ctl, &tail);
+                                if let Some(signal) = ladder.restore.take() {
+                                    set_signal(&shared, &id, signal);
+                                }
+                            }
+                        }
+                        refresh_tray(&app, &shared);
+                    }
+                    // Then the next unanswered press — one spawn at a time.
+                    if !ladder.in_flight && ladder.answered < ctl.presses() {
+                        ladder.answered += 1;
+                        match stop_step(ladder.answered, ladder.since_cancel_ms(), STOP_GRACE_MS, false) {
+                            step @ (StopStep::Request | StopStep::Cancel) => {
+                                if let Some(argv) = stop_argv(&ctl.spec) {
+                                    ladder.in_flight = true;
+                                    ladder.restore = Some(get_signal(&shared, &id));
+                                    set_signal(&shared, &id, "stopping");
+                                    refresh_tray(&app, &shared);
+                                    spawn_stop_verb(&install_dir, &ctl, argv, matches!(step, StopStep::Cancel));
+                                }
+                            }
+                            StopStep::Kill => break WaitResult::Kill,
+                            StopStep::Wait | StopStep::Done => {}
+                        }
+                    }
+                }
+                _ = tokio::time::sleep(grace_left.unwrap_or(Duration::ZERO)), if grace_left.is_some() => {
+                    if stop_step(ctl.presses(), ladder.since_cancel_ms(), STOP_GRACE_MS, false) == StopStep::Kill {
+                        break WaitResult::Kill;
                     }
                 }
             }
@@ -647,22 +855,114 @@ async fn supervise_child(
                     &msg,
                     &mut attempt,
                 );
-                if matches!(get_signal(&shared, &id), "restarting") {
+                if !reserved && ctl.presses() > 0 {
+                    // The exit that follows a press closes the bracket: `Done`, whatever
+                    // the code (130/ADR-004 §3). A loop the operator stopped is never
+                    // classified as a crash and backed off against — the relaunch would
+                    // be `--resume`, which CLEARS the standing request (ADR-001 §4), the
+                    // supervisor fighting the operator. An exit 0 has already surfaced
+                    // its halt line — the stop id, ref and resume command — above.
+                    ctl.desired.store(false, Ordering::SeqCst);
+                    set_signal(&shared, &id, "stopped");
+                } else if matches!(get_signal(&shared, &id), "restarting") {
                     let backoff = jittered_backoff_ms(attempt, &mut jitter);
                     refresh_tray(&app, &shared);
                     sleep_or_wake(&ctl, backoff).await;
                 }
             }
             WaitResult::Stop => {
+                // The two daemons' immediate stop — theirs alone (130/ADR-004 §3 names
+                // it out of scope); a declaration never reaches this arm.
                 out_handle.abort();
                 err_handle.abort();
                 let _ = child.start_kill();
                 let _ = child.wait().await;
                 set_signal(&shared, &id, "stopped");
             }
+            WaitResult::Kill => {
+                // The ladder's last rung: the loop did not answer the cancel inside the
+                // grace, so its whole tree goes. No notice — the fallback is the designed
+                // rung, not a fault (DESIGN §Surface 2 "Error — the footer, never the bar").
+                out_handle.abort();
+                err_handle.abort();
+                if let Some(pid) = child.id() {
+                    tree_kill(pid).await;
+                }
+                let _ = child.wait().await;
+                ctl.desired.store(false, Ordering::SeqCst);
+                set_signal(&shared, &id, "stopped");
+            }
         }
         refresh_tray(&app, &shared);
     }
+}
+
+/// Spawn `aof work loop <scope> --stop` for a declaration whose child this watchdog
+/// holds — as the app spawns its other verbs (the resolved absolute `aof`, a shell-less
+/// argv, `CREATE_NO_WINDOW`) and from the row's own cwd — on a task of its own, so the
+/// wait on the child is never blocked by the verb. The answer comes back through the
+/// controller and wakes the watchdog. The argv is `stop_argv`'s, formed in core; this
+/// spells no verb.
+fn spawn_stop_verb(install_dir: &Path, ctl: &Arc<ChildController>, argv: Vec<String>, cancel: bool) {
+    let install_dir = install_dir.to_path_buf();
+    let ctl = ctl.clone();
+    tokio::spawn(async move {
+        let outcome = run_stop_verb(&install_dir, &ctl, argv, cancel).await;
+        ctl.put_stop_outcome(outcome);
+    });
+}
+
+/// Run the stop verb to its exit and classify the answer: exit 0 landed the request;
+/// anything else — a spawn failure, a refusal — is the verb's tail for the notice.
+async fn run_stop_verb(install_dir: &Path, ctl: &ChildController, argv: Vec<String>, cancel: bool) -> StopSpawnOutcome {
+    let resolved = resolve(install_dir);
+    let spawn = form_argv_spawn(&resolved, &argv, ctl.spec.cwd.clone());
+    let mut cmd = Command::new(&spawn.program);
+    cmd.args(&spawn.args);
+    if let Some(dir) = &spawn.cwd {
+        cmd.current_dir(dir);
+    }
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    match cmd.output().await {
+        Ok(out) if out.status.success() => StopSpawnOutcome::Landed { cancel },
+        Ok(out) => StopSpawnOutcome::Refused {
+            tail: format!("{}\n{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr)),
+        },
+        Err(error) => StopSpawnOutcome::Refused { tail: error.to_string() },
+    }
+}
+
+/// Raise the standing notice for a refused stop request, keyed to the child so a
+/// daemon's restart never clears it (126/ADR-006 contract-beat §3). The text is the
+/// core's (`stop_refusal_notice`): the child's label and the verb's last non-empty line.
+fn raise_notice(shared: &SharedState, ctl: &ChildController, tail: &str) {
+    shared.lock().unwrap().standing_notice = Some(StandingNotice {
+        id: ctl.spec.id.clone(),
+        text: stop_refusal_notice(&ctl.spec.label, tail),
+    });
+}
+
+/// The tree kill — the ladder's last rung (130/ADR-004 §3): `taskkill /PID <pid> /T /F`,
+/// the driver's own primitive (`agent-session-driver.mjs`), which takes the Node tree
+/// under the child with it. Never `child.start_kill()`, which signals the direct child
+/// only and orphans that tree (36/RESEARCH §2). The ONE place `taskkill` is reached.
+#[cfg(windows)]
+async fn tree_kill(pid: u32) {
+    let mut cmd = Command::new("taskkill");
+    cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let _ = cmd.output().await;
+}
+
+// A non-Windows build has no `taskkill` — the neutral seam a later macOS/Linux tray
+// fills with a process-group kill, the posture `assign_to_job` already takes. Until
+// then the direct child is signalled, and its tree is not reaped.
+#[cfg(not(windows))]
+async fn tree_kill(pid: u32) {
+    let mut cmd = Command::new("kill");
+    cmd.args(["-KILL", &pid.to_string()]);
+    let _ = cmd.output().await;
 }
 
 /// Apply the core's exit classification (36/ADR-002 d2, 126/ADR-006 §6-§7). The

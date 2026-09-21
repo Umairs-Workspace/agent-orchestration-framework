@@ -295,6 +295,85 @@ pub fn reconcile(rows: &[SupervisedChild], live: &[LiveController]) -> Plan {
     plan
 }
 
+/// The grace between the CANCEL's spawn and the tree kill (130/ADR-004 §3, DEFAULT
+/// DECISION): measured against the loop's own poll (≤ 2 s) plus the driver's stop
+/// bracket (seconds). It is counted from the cancel and never from the drain — a drain
+/// is an hour long by design, and a kill at ITS grace would take a live drive down from
+/// under the loop and re-create the leaked `running` row the stop exists to close.
+pub const STOP_GRACE_MS: u64 = 30_000;
+
+/// The rung a declaration's stop is on — what the shell applies next and nothing about
+/// how (130/ADR-004 §3). `Request` and `Cancel` both spawn the verb; the desktop
+/// counts presses only, and the VERB escalates the request it finds on disk.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StopStep {
+    /// The first press: spawn `aof work loop <scope> --stop` and report `stopping`.
+    Request,
+    /// A second press with no cancel yet: spawn the verb again; the grace starts here.
+    Cancel,
+    /// Cancelled, inside the grace: nothing to do but wait for the child or the clock.
+    Wait,
+    /// The grace has elapsed: `taskkill /PID <child> /T /F`, then wait the child.
+    Kill,
+    /// The child has exited — by its own halt or by the kill: report `stopped`.
+    Done,
+}
+
+/// The stop ladder, PURE (130/ADR-004 §3; FF-13007's cargo half). `exited` wins over
+/// everything; one press is a request; two or more with no cancel clock yet is the
+/// cancel; a cancel clock at or past the grace is the kill; anything else waits. The
+/// clock is COMPARED, never added to or subtracted from, so no input panics — a
+/// `since_cancel_ms` of `u64::MAX` against a grace of `u64::MAX` is a kill, not an
+/// overflow. The clock is read only once there are two presses: a drain press with a
+/// stale cancel clock is never a kill, because a drain is never given a grace.
+pub fn stop_step(presses: u32, since_cancel_ms: Option<u64>, grace_ms: u64, exited: bool) -> StopStep {
+    if exited {
+        return StopStep::Done;
+    }
+    match presses {
+        0 => StopStep::Wait,
+        1 => StopStep::Request,
+        _ => match since_cancel_ms {
+            None => StopStep::Cancel,
+            Some(since) if since >= grace_ms => StopStep::Kill,
+            Some(_) => StopStep::Wait,
+        },
+    }
+}
+
+/// The verb a declaration's stop spawns, formed HERE and never in the shell
+/// (130/ADR-004 §3): the row's own admitted prefix `["work", "loop", <scope>]` —
+/// `argv[0..3]`, composed at one home (`declarations.mjs` through `argvFor`) — plus
+/// `--stop`. The tail after the scope (`--level`, `--resume`) is dropped: the stop
+/// resolves the scope's loop from its run records and takes no level. `None` for a
+/// reserved id (the daemons keep their immediate kill) and for an argv shorter than
+/// three, which carries no scope to stop. The scope itself is never inspected — an
+/// empty `argv[2]` still forms the verb, and the verb's refusal is what the shell
+/// surfaces.
+pub fn stop_argv(child: &SupervisedChild) -> Option<Vec<String>> {
+    if is_reserved_id(&child.id) {
+        return None;
+    }
+    let prefix = child.argv.get(0..3)?;
+    if prefix.iter().zip(DECLARATION_ARGV_PREFIX.iter()).any(|(got, want)| got != want) {
+        return None;
+    }
+    let mut argv = prefix.to_vec();
+    argv.push("--stop".to_string());
+    Some(argv)
+}
+
+/// The footer notice for a stop request the verb refused (130/ADR-004 §3): the child's
+/// label and the verb's last non-empty line — the refusal's own sentence, which names
+/// its code — or a fixed sentence when it printed nothing at all (an unspawnable
+/// binary). Keyed to the child by the shell, so a daemon's restart never clears it.
+pub fn stop_refusal_notice(label: &str, tail: &str) -> String {
+    match last_non_empty_line(tail) {
+        Some(line) => format!("{label}: {line}"),
+        None => format!("{label}: stop request failed"),
+    }
+}
+
 /// The live id set that RESULTS from applying `plan` to `live` — a started id joins it,
 /// a stopped id leaves it, a retained id stays. This is the SET arithmetic of a tick,
 /// which the shell mirrors in its controller map; the DECISION is `reconcile` alone, and
@@ -766,6 +845,160 @@ mod tests {
             "the child the notice names starting clears it"
         );
         assert_eq!(notice_after_start(None, "loop-124-a"), None, "nothing stands over nothing");
+    }
+
+    // ── 130/04 task 00 — the stop ladder is pure and lives in core (ADR-004 §3-§4).
+
+    /// A declaration whose argv is stated literally — the test module's `declaration(id)`
+    /// carries exactly three tokens, and a longer or shorter argv is spelled in its row.
+    fn declaration_with_argv(id: &str, argv: &[&str]) -> SupervisedChild {
+        SupervisedChild {
+            id: id.to_string(),
+            label: format!("loop {id}"),
+            argv: argv.iter().map(|s| s.to_string()).collect(),
+            cwd: Some(PathBuf::from("C:/Source/umami/aof")),
+        }
+    }
+
+    /// Scenario Outline: stop_step decides the rung from presses, the cancel clock, the
+    /// grace and the exit — every row of the contract's table, stated as the table.
+    #[test]
+    fn stop_step_decides_the_rung_from_presses_the_cancel_clock_the_grace_and_the_exit() {
+        use StopStep::*;
+        let rows: [(u32, Option<u64>, u64, bool, StopStep); 22] = [
+            (0, None, 30_000, false, Wait),
+            (1, None, 30_000, false, Request),
+            (2, None, 30_000, false, Cancel),
+            (3, None, 30_000, false, Cancel),
+            (u32::MAX, None, 30_000, false, Cancel),
+            (2, Some(0), 30_000, false, Wait),
+            (2, Some(29_999), 30_000, false, Wait),
+            (2, Some(30_000), 30_000, false, Kill),
+            (5, Some(90_000), 30_000, false, Kill),
+            (2, Some(u64::MAX), 30_000, false, Kill),
+            (1, Some(90_000), 30_000, false, Request),
+            (1, Some(u64::MAX), 30_000, false, Request),
+            (0, Some(30_000), 30_000, false, Wait),
+            (2, None, 0, false, Cancel),
+            (2, Some(0), 0, false, Kill),
+            (2, Some(0), u64::MAX, false, Wait),
+            (2, Some(u64::MAX), u64::MAX, false, Kill),
+            (0, None, 30_000, true, Done),
+            (1, None, 30_000, true, Done),
+            (1, Some(90_000), 30_000, true, Done),
+            (2, Some(0), 30_000, true, Done),
+            (2, Some(30_000), 30_000, true, Done),
+        ];
+        for (presses, since, grace, exited, step) in rows {
+            assert_eq!(
+                stop_step(presses, since, grace, exited),
+                step,
+                "stop_step({presses}, {since:?}, {grace}, {exited})"
+            );
+        }
+    }
+
+    /// Scenario: the grace is a named constant, and its boundary is stated through it.
+    #[test]
+    fn the_grace_is_a_named_constant_and_its_boundary_is_stated_through_it() {
+        assert_eq!(STOP_GRACE_MS, 30_000);
+        assert_eq!(stop_step(2, Some(STOP_GRACE_MS - 1), STOP_GRACE_MS, false), StopStep::Wait, "one ms inside the grace waits");
+        assert_eq!(stop_step(2, Some(STOP_GRACE_MS), STOP_GRACE_MS, false), StopStep::Kill, "at the grace, the kill");
+        assert_eq!(
+            stop_step(1, Some(STOP_GRACE_MS), STOP_GRACE_MS, false),
+            StopStep::Request,
+            "a drain press with a stale cancel clock is never a kill"
+        );
+    }
+
+    /// Scenario Outline: stop_argv forms the verb from the row's own admitted prefix.
+    #[test]
+    fn stop_argv_forms_the_verb_from_the_rows_own_admitted_prefix() {
+        let some = |argv: &[&str]| Some(argv.iter().map(|s| s.to_string()).collect::<Vec<_>>());
+
+        assert_eq!(stop_argv(&declaration("L1")), some(&["work", "loop", "L1", "--stop"]), "exactly three, plus --stop");
+        assert_eq!(
+            stop_argv(&declaration_with_argv("L2", &["work", "loop", "129", "--level", "L2", "--resume"])),
+            some(&["work", "loop", "129", "--stop"]),
+            "the tail after the scope is dropped"
+        );
+        assert_eq!(
+            stop_argv(&declaration_with_argv("L3", &["work", "loop", ""])),
+            some(&["work", "loop", "", "--stop"]),
+            "the scope is never inspected"
+        );
+        assert_eq!(stop_argv(&SupervisedChild::mesh_serve()), None, "a reserved id");
+        assert_eq!(stop_argv(&SupervisedChild::mesh_ui()), None, "the other reserved id");
+        assert_eq!(
+            stop_argv(&declaration_with_argv(MESH_UI_ID, &["work", "loop", "129"])),
+            None,
+            "the id decides, whatever the argv"
+        );
+        assert_eq!(stop_argv(&declaration_with_argv("short", &["work", "loop"])), None, "two tokens carry no scope");
+        assert_eq!(stop_argv(&declaration_with_argv("shorter", &["work"])), None);
+        assert_eq!(stop_argv(&declaration_with_argv("empty", &[])), None);
+        assert_eq!(
+            stop_argv(&declaration_with_argv("daemonish", &["mesh", "serve", "--serve"])),
+            None,
+            "not the admitted loop prefix"
+        );
+    }
+
+    /// Scenario: the ladder is total — every combination answers one of the five
+    /// variants and none panics.
+    #[test]
+    fn the_ladder_is_total() {
+        let mut answered = 0;
+        for presses in [0, 1, 2, u32::MAX] {
+            for since in [None, Some(0), Some(u64::MAX)] {
+                for grace in [0, 30_000, u64::MAX] {
+                    for exited in [false, true] {
+                        let step = stop_step(presses, since, grace, exited);
+                        assert!(
+                            matches!(step, StopStep::Request | StopStep::Cancel | StopStep::Wait | StopStep::Kill | StopStep::Done),
+                            "({presses}, {since:?}, {grace}, {exited}) answered {step:?}"
+                        );
+                        answered += 1;
+                    }
+                }
+            }
+        }
+        assert_eq!(answered, 4 * 3 * 3 * 2, "every combination was asked");
+    }
+
+    /// Scenario: reconcile retains a held id whether or not it is desired — the hold
+    /// placed at press 1 is what keeps a tick from driving the child.
+    #[test]
+    fn reconcile_retains_a_held_id_whether_or_not_it_is_desired() {
+        let rows = vec![declaration("L1")];
+        for desired in [true, false] {
+            let plan = reconcile(&rows, &[controller("L1", desired, true)]);
+            assert_eq!(plan.retain, vec!["L1".to_string()], "retained (desired={desired})");
+            assert!(plan.start.is_empty(), "a held child that exited is never started by a tick (desired={desired})");
+            assert!(plan.stop.is_empty(), "nor stopped (desired={desired})");
+            assert_eq!(plan.ids(), vec!["L1".to_string()], "and named nowhere else");
+        }
+    }
+
+    /// Scenario: a declaration whose row has gone is stopped, hold or no hold.
+    #[test]
+    fn a_declaration_whose_row_has_gone_is_stopped_hold_or_no_hold() {
+        for held in [true, false] {
+            let plan = reconcile(&[], &[controller("L1", false, held)]);
+            assert_eq!(plan.stop, vec!["L1".to_string()], "the hold is released with the row (held={held})");
+            assert!(plan.retain.is_empty() && plan.start.is_empty());
+        }
+    }
+
+    #[test]
+    fn a_refused_stop_request_is_the_labelled_last_non_empty_line_or_a_fixed_sentence() {
+        let refusal = "stop refused: loop-stop-no-declaration";
+        for tail in [refusal.to_string(), format!("{refusal}\n"), format!("chatter\n{refusal}\n\n")] {
+            assert_eq!(stop_refusal_notice("loop 129", &tail), format!("loop 129: {refusal}"), "{tail:?}");
+        }
+        for tail in ["", "\n", "  \n\t"] {
+            assert_eq!(stop_refusal_notice("loop 129", tail), "loop 129: stop request failed", "{tail:?}");
+        }
     }
 
     // ── 36/ADR-002's delivered engine — unchanged.

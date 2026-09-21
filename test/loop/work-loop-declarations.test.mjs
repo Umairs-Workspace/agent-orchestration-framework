@@ -6,6 +6,10 @@
 // only that the decider can be lied to. The structural half is
 // `test/arch/loop/acd-declaration-predicate-is-composed.test.mjs`.
 import assert from "node:assert/strict";
+import { mkdtemp, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   buildLoopDeclaration,
@@ -13,6 +17,21 @@ import {
   readLoopDeclaration,
 } from "../../src/work/loop.mjs";
 import { isRunning, isStale, retryReadiness } from "../../src/run-store.mjs";
+import { meshStatusCommand } from "../../src/commands/mesh/identity.mjs";
+import { loadWorkspace } from "../../src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../src/mesh/store.mjs";
+import { stopLoop } from "../../src/loop/stop.mjs";
+import {
+  clearStopRequest,
+  loopStopsDir,
+  markStopHonoured,
+  requestLoopStop,
+  stopRequestPath,
+} from "../../src/loop/stop-request.mjs";
+import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { stripComments } from "../support/source-slice.mjs";
 
 const NOW = "2026-09-08T12:00:00.000Z";
 const CEILING = 7_200_000;
@@ -40,7 +59,9 @@ const run = (over = {}) => ({
   ...over,
 });
 
-function ask(runs, { ceilingMs = CEILING, now = NOW, items } = {}) {
+// `stopped` (130/04) is forwarded ONLY when the caller names it, so a case that omits it asks the
+// engine with the key genuinely absent — the default-absent claim is about an absent key.
+function ask(runs, { ceilingMs = CEILING, now = NOW, items, ...rest } = {}) {
   return decideSupervisedDeclarations({
     workspaces: [{
       workspaceId: "ws-1",
@@ -54,6 +75,7 @@ function ask(runs, { ceilingMs = CEILING, now = NOW, items } = {}) {
     isRunning,
     isStale,
     retryReadiness,
+    ...("stopped" in rest ? { stopped: rest.stopped } : {}),
   });
 }
 
@@ -68,6 +90,72 @@ const settled = (runId, retryOf, startIso, ms, over = {}) => run({
   updatedAt: new Date(Date.parse(startIso) + ms).toISOString(),
   ...over,
 });
+
+// ── The on-disk PRODUCER fixture (130/04 task 03) — the shape of `makeWorkspace` in
+// `test/mesh/identity/mesh-status-declarations.test.mjs`: one workspace holding milestone `53`
+// with one run record (a `reclaimed()` lineage — `failed / runtime_offline`, reclaimed, and so a
+// listed row), and `mesh status --declarations` run over it with `now` pinned. Mirrored rather
+// than imported: `test/loop` is at its ceiling and a suite imports no sibling suite.
+
+/** A reclaimed run — the shape the lid closing leaves behind, and a listed one. */
+const producerRecord = (over = {}) => ({
+  runId: "run-1", itemRef: "53", retryOf: null, state: "failed", attempt: 1,
+  failureReason: "runtime_offline", resumeAfter: null,
+  reclaimedAt: "2026-09-08T11:30:00.000Z",
+  createdAt: "2026-09-08T11:00:00.000Z",
+  heartbeatAt: "2026-09-08T11:20:00.000Z",
+  updatedAt: "2026-09-08T11:30:00.000Z",
+  brief: { loop: loop() },
+  ...over,
+});
+
+/** A workspace on disk holding one milestone with one run record. */
+async function makeProducerWorkspace(root, name, { record = producerRecord(), nodeId = "node-1" } = {}) {
+  const dir = path.join(root, name);
+  const itemDir = path.join(dir, "wiki", "work", "53_milestone_fixture");
+  await mkdir(path.join(itemDir, "runs"), { recursive: true });
+  await mkdir(path.join(dir, ".aof"), { recursive: true });
+  await writeFile(path.join(itemDir, "SPEC.md"), `---
+type: milestone
+number: 53
+slug: fixture
+title: Fixture
+status: in-progress
+depends: []
+created: 2026-09-08
+updated: 2026-09-08
+schema: 1
+aofVersion: 0.1.0
+---
+# Fixture
+`);
+  if (record != null) {
+    await writeFile(path.join(itemDir, "runs", `${record.runId}.json`), JSON.stringify(record, null, 2));
+  }
+  await writeFile(path.join(dir, ".aof", "aof.config.json"), JSON.stringify({
+    name, work: { dir: "wiki/work" }, mesh: { nodeId, workspaceId: `ws-${name}` },
+  }, null, 2));
+  return dir;
+}
+
+/**
+ * The fixture workspace under a temp root, `status()` = `mesh status --declarations` over it,
+ * and `stops` = the isolated home's `loopStopsDir()`. Each case removes what it wrote; the root
+ * goes with the temp dir.
+ */
+async function withProducerFixture(fn, { record } = {}) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-loop-declarations-"));
+  try {
+    const dir = await makeProducerWorkspace(root, "repo-a", record === undefined ? {} : { record });
+    const status = async () => {
+      const workspace = await loadWorkspace(dir, undefined, { env: process.env });
+      return meshStatusCommand.run({ now: NOW, declarations: true }, { workspace, globalWorkStoreOptions: { env: process.env } });
+    };
+    return await fn({ root, dir, status, stops: loopStopsDir() });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
 
 export const workLoopDeclarationsTests = [
   {
@@ -284,6 +372,242 @@ export const workLoopDeclarationsTests = [
       // No per-workspace ceiling ⇒ the engine falls back to input.ceilingMs, exactly as before.
       assert.equal(ask2(workspaceWith(null), 12 * 60 * 60 * 1000), 1, "a member with no ceiling uses the node's, unchanged");
       assert.equal(ask2(workspaceWith(null), 1), 0, "…in both directions");
+    },
+  },
+  // ── 130/04 task 03 — a honoured loop yields no row (ADR-004 §4-§5).
+  //
+  // The engine takes an ADDITIVE, default-absent `stopped: Set<loopRunId>`; the producer reads
+  // the honoured marks through story 01's module and hands the set. The engine cases add that one
+  // key to `ask`'s input and change nothing else; the producer cases drive `supervisedDeclarations`
+  // through `mesh status --declarations` over an on-disk workspace — the identity suite's fixture
+  // shape (`makeWorkspace`: milestone `53`, a `reclaimed()` record, one listed row), mirrored here
+  // because `test/loop` is at its ceiling and a suite imports no sibling suite — under the
+  // harness's isolated `AOF_GLOBAL_HOME`, whose `loopStopsDir()` holds the request. A request is
+  // written through the module's own writers, never by hand, except the corrupt-file case.
+  {
+    name: "130/04 task03 — the engine drops a stopped declaration and only a stopped one",
+    run() {
+      const failedTimeout = [run({ state: "failed", failureReason: "timeout" })];
+      const thousand = (withLr1) => new Set([...Array.from({ length: withLr1 ? 999 : 1000 }, (_, i) => `other-${i}`), ...(withLr1 ? ["lr-1"] : [])]);
+      const rows = [
+        ["absent", failedTimeout, undefined, 1],
+        ["new Set()", failedTimeout, new Set(), 1],
+        ["new Set([lr-1])", failedTimeout, new Set(["lr-1"]), 0],
+        ["new Set([lr-2])", failedTimeout, new Set(["lr-2"]), 1],
+        ["new Set([LR-1]) — matched exactly, never case-folded", failedTimeout, new Set(["LR-1"]), 1],
+        ["a Set of 1,000 ids, lr-1 among them", failedTimeout, thousand(true), 0],
+        ["a Set of 1,000 ids, lr-1 not among them", failedTimeout, thousand(false), 1],
+        ["[lr-1] (an array, ill-typed)", failedTimeout, ["lr-1"], 1],
+        ["{ has: () => true } (Set-like, not a Set)", failedTimeout, { has: () => true }, 1],
+        ["\"lr-1\" (a string)", failedTimeout, "lr-1", 1],
+        ["supervised: false — already skipped by the supervised guard", [run({ state: "failed", failureReason: "timeout", brief: { loop: loop({ supervised: false }) } })], new Set(["lr-1"]), 0],
+        ["running, fresh — DROPPED: the skip precedes the liveness branch", [run()], new Set(["lr-1"]), 0],
+        ["running, stale", [run({ heartbeatAt: "2026-09-08T11:00:00.000Z", updatedAt: "2026-09-08T11:00:00.000Z" })], new Set(["lr-1"]), 0],
+        ["failed runtime_offline, reclaimed", [run({ state: "failed", failureReason: "runtime_offline", reclaimedAt: "2026-09-08T11:59:00.000Z" })], new Set(["lr-1"]), 0],
+        ["cancelled, absent — not-retryable by the store's own verdict", [run({ state: "cancelled", heartbeatAt: null })], undefined, 0],
+        ["cancelled, new Set([lr-1])", [run({ state: "cancelled", heartbeatAt: null })], new Set(["lr-1"]), 0],
+        ["done, absent", [run({ state: "done", heartbeatAt: null })], undefined, 0],
+      ];
+      for (const [label, runs, stopped, expected] of rows) {
+        const answer = ask(runs, stopped === undefined ? {} : { stopped });
+        assert.equal(answer.rows.length, expected, `${label}: ${expected === 1 ? "one row for lr-1" : "none"}`);
+        if (expected === 1) assert.equal(answer.rows[0].loopRunId, "lr-1", `${label}: the row is lr-1's`);
+      }
+      // The ill-typed inputs dropped nothing AND threw nothing — asserted by having answered.
+      for (const stopped of [["lr-1"], { has: () => true }, "lr-1", 42, null]) {
+        assert.doesNotThrow(() => ask(failedTimeout, { stopped }), `an ill-typed stopped (${typeof stopped}) throws nothing`);
+      }
+    },
+  },
+  {
+    name: "130/04 task03 — two lineages in one workspace, one stopped",
+    run() {
+      const items = [
+        { ref: "53", runs: [run({ runId: "a", state: "failed", failureReason: "timeout" })] },
+        { ref: "60", runs: [run({ runId: "b", state: "failed", failureReason: "timeout", brief: { loop: loop({ loopRunId: "lr-2", scope: "60" }) } })] },
+      ];
+      const one = ask(null, { items, stopped: new Set(["lr-1"]) });
+      assert.equal(one.rows.length, 1, "exactly one row");
+      assert.deepEqual(one.rows[0], { workspaceId: "ws-1", projectRoot: "C:/repo", loopRunId: "lr-2", scope: "60", level: "L2", cap: 3 }, "lr-2's, carrying its six keys");
+      assert.equal(ask(null, { items, stopped: new Set(["lr-1", "lr-2"]) }).rows.length, 0, "both stopped, none");
+      assert.deepEqual(ask(null, { items }).rows.map((r) => r.loopRunId).sort(), ["lr-1", "lr-2"], "absent, both");
+    },
+  },
+  {
+    name: "130/04 task03 — absent and empty answer byte-identically, and the input's other keys are untouched",
+    run() {
+      const runs = [run({ state: "failed", failureReason: "timeout" })];
+      const expected = { workspaceId: "ws-1", projectRoot: "C:/repo", loopRunId: "lr-1", scope: "53", level: "L2", cap: 3 };
+      const answers = [ask(runs), ask(runs, { stopped: new Set() }), ask(runs, { stopped: null }), ask(runs, { stopped: undefined })];
+      for (const answer of answers) {
+        assert.deepEqual(answer, answers[0], "the four answers deep-equal one another");
+        assert.deepEqual(answer.rows, [expected], "…and the suite's existing expected row");
+        assert.deepEqual(Object.keys(answer.rows[0]), ["workspaceId", "projectRoot", "loopRunId", "scope", "level", "cap"], "exactly the six keys");
+        assert.ok(Object.isFrozen(answer.rows[0]) && Object.isFrozen(answer.rows), "frozen");
+      }
+      // The input object is not mutated — its keys, and the set it carries, are as they were.
+      const stopped = new Set(["lr-9"]);
+      const input = {
+        workspaces: [{ workspaceId: "ws-1", projectRoot: "C:/repo", items: [{ ref: "53", runs }] }],
+        maxAttempts: 3, ceilingMs: CEILING, stalenessMs: STALENESS, now: NOW, isRunning, isStale, retryReadiness, stopped,
+      };
+      const keysBefore = Object.keys(input);
+      const json = JSON.stringify({ ...input, isRunning: 1, isStale: 1, retryReadiness: 1, stopped: [...stopped] });
+      decideSupervisedDeclarations(input);
+      assert.deepEqual(Object.keys(input), keysBefore, "no key added or removed");
+      assert.equal(JSON.stringify({ ...input, isRunning: 1, isStale: 1, retryReadiness: 1, stopped: [...input.stopped] }), json, "no value changed");
+      assert.equal(input.stopped, stopped, "the set is the caller's own object, untouched");
+    },
+  },
+  {
+    name: "130/04 task03 — the engine imports nothing: no import statement, no require(, no dynamic import(",
+    async run() {
+      const here = path.dirname(fileURLToPath(import.meta.url));
+      const source = await readFile(path.join(here, "..", "..", "src", "work", "loop.mjs"), "utf8");
+      const stripped = stripComments(source);
+      assert.doesNotMatch(stripped, /(^|\n)\s*import\s/, "no import statement");
+      assert.doesNotMatch(stripped, /\brequire\s*\(/, "no require(");
+      assert.doesNotMatch(stripped, /\bimport\s*\(/, "no dynamic import(");
+      assert.match(stripped, /new Set\(\)/, "the frozen empty Set is built from the global");
+    },
+  },
+  {
+    name: "130/04 task03 — the producer reads the marks from the one module and hands the set",
+    async run() {
+      await withProducerFixture(async ({ dir, status, stops }) => {
+        const listed = { id: "lr-1", label: "loop 53", argv: ["work", "loop", "53", "--level", "L2", "--resume"], cwd: dir, scope: "53", level: "L2", cap: 3 };
+        const rowsOf = async () => (await status()).declarations.rows;
+
+        // | does not exist | one row |
+        assert.deepEqual(await rowsOf(), [listed], "no request: the row");
+
+        // | is level 1 `requested` | one row — a draining loop keeps its row |
+        await requestLoopStop(stops, { loopRunId: "lr-1", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        assert.deepEqual(await rowsOf(), [listed], "level 1 requested: a draining loop keeps its row");
+        // | is level 2 `requested` | one row |
+        await requestLoopStop(stops, { loopRunId: "lr-1", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        assert.deepEqual(await rowsOf(), [listed], "level 2 requested: still the row");
+        await clearStopRequest(stops, "lr-1");
+
+        // | is level 1 `honoured` | none |
+        await requestLoopStop(stops, { loopRunId: "lr-1", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        await markStopHonoured(stops, "lr-1");
+        assert.deepEqual(await rowsOf(), [], "level 1 honoured: no row");
+        await clearStopRequest(stops, "lr-1");
+
+        // | is level 2 `honoured` with `cancelled` set | none |
+        await requestLoopStop(stops, { loopRunId: "lr-1", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        await requestLoopStop(stops, { loopRunId: "lr-1", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        await markStopHonoured(stops, "lr-1", { cancelled: "run-1" });
+        assert.deepEqual(await rowsOf(), [], "level 2 honoured, cancelled set: no row");
+        await clearStopRequest(stops, "lr-1");
+
+        // | is a corrupt file | one row — an unreadable mark drops nothing, and one degrade event |
+        const events = [];
+        setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+        try {
+          await mkdir(stops, { recursive: true });
+          await writeFile(stopRequestPath(stops, "lr-1"), "{ not json", "utf8");
+          assert.deepEqual(await rowsOf(), [listed], "a corrupt mark drops nothing");
+          assert.equal(events.filter((e) => e.code === "loop-stop-request").length, 1, "reportDegrade(\"loop-stop-request\", …) was called once");
+        } finally {
+          setDegradeSinkForTest(undefined);
+          await unlink(stopRequestPath(stops, "lr-1"));
+        }
+
+        // | exists `honoured` for `lr-2` only | one row for `lr-1` — the mark is keyed by id |
+        await requestLoopStop(stops, { loopRunId: "lr-2", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        await markStopHonoured(stops, "lr-2");
+        assert.deepEqual(await rowsOf(), [listed], "a mark for another id drops nothing");
+        await clearStopRequest(stops, "lr-2");
+      });
+
+      // | is `honoured` but the record is `supervised: false` | none — no row either way, ok true |
+      await withProducerFixture(async ({ status, stops }) => {
+        await requestLoopStop(stops, { loopRunId: "lr-1", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        await markStopHonoured(stops, "lr-1");
+        const answer = await status();
+        assert.equal(answer.declarations.ok, true, "ok is still true");
+        assert.deepEqual(answer.declarations.rows, [], "no row either way");
+        await clearStopRequest(stops, "lr-1");
+      }, { record: producerRecord({ brief: { loop: loop({ supervised: false }) } }) });
+    },
+  },
+  {
+    name: "130/04 task03 — a member whose config cannot be read keeps the existing fallback and is still read for marks",
+    async run() {
+      await withProducerFixture(async ({ root, dir, status, stops }) => {
+        // A second workspace registered as a member of this node through the REAL write path
+        // (`publishGlobalRegistryDescriptorsToStore`, what the launcher's propagation tick calls),
+        // its config removed after registration.
+        const memberDir = await makeProducerWorkspace(root, "repo-b");
+        const env = process.env;
+        const wsA = await loadWorkspace(dir, undefined, { env });
+        const wsB = await loadWorkspace(memberDir, undefined, { env });
+        const store = await openGlobalWorkProjectionStore({ env });
+        try {
+          for (const ws of [wsA, wsB]) {
+            await publishNodeRecord(ws, "node-1", { nodeId: "node-1", host: "node-1", os: "win32", runtimes: ["codex"], aofVersion: "1.2.3", publishedAt: NOW });
+            await publishGlobalRegistryDescriptorsToStore(store, ws, { now: NOW });
+          }
+        } finally {
+          store.close();
+        }
+        await unlink(path.join(memberDir, ".aof", "aof.config.json"));
+
+        const first = await status();
+        assert.equal(first.declarations.ok, true);
+        assert.deepEqual(first.declarations.skipped, [], "an unreadable config is not a skipped member");
+        const byCwd = new Map(first.declarations.rows.map((row) => [row.cwd, row]));
+        assert.ok(byCwd.has(dir) && byCwd.has(memberDir), `both members answer a row: ${JSON.stringify([...byCwd.keys()])}`);
+        const { cwd: _a, ...intact } = byCwd.get(dir);
+        const { cwd: _b, ...unreadable } = byCwd.get(memberDir);
+        assert.deepEqual(unreadable, intact, "the member's row is exactly an intact member's, but for its own cwd — the ceiling fallback stands");
+
+        await requestLoopStop(stops, { loopRunId: "lr-1", scope: "53", workspaceId: null, by: { node: "node-1", pid: 1 } });
+        await markStopHonoured(stops, "lr-1");
+        const second = await status();
+        assert.deepEqual(second.declarations.rows, [], "the mark is read for the unreadable member all the same");
+        assert.deepEqual(second.declarations.skipped, [], "and it is still not skipped");
+        await clearStopRequest(stops, "lr-1");
+      });
+    },
+  },
+  {
+    name: "130/04 task03 — the producer spells no path: readStopRequest and loopStopsDir come from the one module",
+    async run() {
+      const here = path.dirname(fileURLToPath(import.meta.url));
+      const source = await readFile(path.join(here, "..", "..", "src", "mesh", "declarations.mjs"), "utf8");
+      const stripped = stripComments(source);
+      assert.match(stripped, /import \{[^}]*\breadStopRequest\b[^}]*\} from "\.\.\/loop\/stop-request\.mjs"/, "imports readStopRequest from the one module");
+      assert.match(stripped, /import \{[^}]*\bloopStopsDir\b[^}]*\} from "\.\.\/loop\/stop-request\.mjs"/, "imports loopStopsDir from the one module");
+      assert.doesNotMatch(stripped, /loop-stops/, "spells no path segment");
+      assert.match(stripped, /stopped:/, "hands the set to the engine");
+    },
+  },
+  {
+    name: "130/04 task03 — a dead supervised loop is stopped and stays stopped until resumed",
+    async run() {
+      await withProducerFixture(async ({ dir, status, stops }) => {
+        const before = await status();
+        assert.equal(before.declarations.rows.length, 1, "the reclaimed lineage is listed");
+
+        // Story 02's core, the call `aof work loop 53 --stop` makes: no loop runs, so the request
+        // is marked honoured at once.
+        const workspace = await loadWorkspace(dir, undefined, { env: process.env });
+        const answer = await stopLoop(workspace, { scope: "53", now: NOW });
+        assert.equal(answer.ok, true, JSON.stringify(answer));
+        assert.equal(answer.live, false, "not live");
+        assert.equal(answer.state, "honoured", "honoured at once");
+        assert.equal(answer.path, stopRequestPath(stops, "lr-1"), "in the isolated home");
+
+        assert.deepEqual((await status()).declarations.rows, [], "no row for lr-1");
+
+        // `--resume`'s clear (ADR-003 §6) — the call it makes, so no loop is launched here.
+        const cleared = await clearStopRequest(stops, "lr-1");
+        assert.equal(cleared.cleared, true);
+        assert.deepEqual((await status()).declarations, before.declarations, "the row is back, deep-equal to the first answer");
+      });
     },
   },
 ];
