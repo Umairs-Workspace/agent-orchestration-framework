@@ -5,10 +5,10 @@ slug: the-stop-request-has-one-home
 title: "The stop request has one home — a ten-key file in the aof home keyed by loopRunId, 129/04's ladder, a requested → honoured → cleared lifecycle, and the ONE interrupt source the shell reads"
 parent: 130
 depends: []
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-21
 adrs: [ADR-001]
 reads:
   - wiki/work/130_milestone_stop-a-running-loop/SPEC.md
@@ -56,9 +56,9 @@ The literal `loop-stops` and the state words are spelled here and nowhere else u
 
 ## Tasks
 
-- [ ] `tasks/00_the-request-lives-in-the-aof-home.feature` — the path, the ten-key record in frozen order, the absence-tolerant read, the degraded read of a corrupt file, and no write anywhere under a checkout
-- [ ] `tasks/01_the-ladder-is-first-drains-second-cancels.feature` — `requestLoopStop` creates at level 1, escalates once to level 2 with `escalatedAt`, is idempotent at 2, and leaves an honoured request unchanged; `markStopHonoured` and `clearStopRequest` close the lifecycle
-- [ ] `tasks/02_the-source-composes-signals-and-the-file.feature` — `createStopSource`: two process signals raise the level 1 → 2 through the source's own persistent listeners, the file's level does the same, `producer()` names whichever raised the level first, `signal` aborts once at 2, the third signal reaches node's default (the listeners are removed), the poll interval is unref'd and `stop()` clears it
+- [x] `tasks/00_the-request-lives-in-the-aof-home.feature` — the path, the ten-key record in frozen order, the absence-tolerant read, the degraded read of a corrupt file, and no write anywhere under a checkout
+- [x] `tasks/01_the-ladder-is-first-drains-second-cancels.feature` — `requestLoopStop` creates at level 1, escalates once to level 2 with `escalatedAt`, is idempotent at 2, and leaves an honoured request unchanged; `markStopHonoured` and `clearStopRequest` close the lifecycle
+- [x] `tasks/02_the-source-composes-signals-and-the-file.feature` — `createStopSource`: two process signals raise the level 1 → 2 through the source's own persistent listeners, the file's level does the same, `producer()` names whichever raised the level first, `signal` aborts once at 2, the third signal reaches node's default (the listeners are removed), the poll interval is unref'd and `stop()` clears it
 
 ## Notes
 

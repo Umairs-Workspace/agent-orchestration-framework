@@ -1,11 +1,32 @@
-// test/loop/loop-diag.test.mjs — the loop's exit-reason recorder (src/loop-diag.mjs, 2026-09-11).
+// test/loop/loop-diag.test.mjs — the loop's HOME-SIDE files: the exit-reason recorder
+// (src/loop-diag.mjs, 2026-09-11) and, since 130/01, the stop request (src/loop/stop-request.mjs).
 //
-// The module is exercised against an INJECTED process double: a real `process.on("exit")` or a
-// wrapped `process.exit` registered in the test runner would outlive the test, so nothing here
-// touches the real process, the real stderr or the real filesystem.
+// The recorder is exercised against an INJECTED process double: a real `process.on("exit")` or a
+// wrapped `process.exit` registered in the test runner would outlive the test, so nothing in that
+// half touches the real process, the real stderr or the real filesystem. The stop request's half
+// (below) drives the same process double and writes only inside the isolated aof home the runner
+// hands every test.
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { EventEmitter } from "node:events";
+import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { globalMeshPaths } from "../../src/workspace.mjs";
+import { stripComments } from "../support/source-slice.mjs";
+import {
+  STOP_LEVELS,
+  STOP_STATES,
+  clearStopRequest,
+  createStopSource,
+  loopStopsDir,
+  markStopHonoured,
+  readStopRequest,
+  requestLoopStop,
+  stopRequestPath,
+} from "../../src/loop/stop-request.mjs";
 import {
   LOOP_DIAG_ENV,
   LOOP_DIAG_KEEP,
@@ -48,7 +69,7 @@ function fakeFs() {
 const ROOT = path.join("C:", "home", "mesh", "logs");
 const at = new Date("2026-09-11T16:35:20.000Z");
 
-export const loopDiagTests = [
+const recorderTests = [
   {
     name: "loop-diag/00 the log lives beside the daemon logs in the aof home (honouring AOF_GLOBAL_HOME), never in the checkout; named by the install instant, every line timestamped",
     run() {
@@ -214,3 +235,747 @@ export const loopDiagTests = [
     },
   },
 ];
+
+// ---------------------------------------------------------------------------------------------
+// milestone 130 / story 01 — THE STOP REQUEST HAS ONE HOME (`src/loop/stop-request.mjs`, ADR-001).
+//
+// The loop's SECOND home-side file, beside the recorder's log, and its suite sits beside the
+// recorder's for that reason (test/loop is at its ceiling; story 05 owns every budget row). The
+// file half is driven against the ISOLATED aof home the runner hands every test (a fresh
+// `AOF_GLOBAL_HOME`, so `loopStopsDir()` resolves inside it and the real `~/.aof` is never
+// touched) with the degrade sink injected; the source half against the same injected process
+// double the recorder's cases use — never the real process — and an injected timer pair, so no
+// interval and no signal listener outlives the runner.
+// ---------------------------------------------------------------------------------------------
+
+const TEN_KEYS = ["loopRunId", "scope", "workspaceId", "level", "state", "requestedAt", "escalatedAt", "honouredAt", "cancelled", "by"];
+const BY = { node: "umamis-msi", pid: 4242 };
+const FIXED = () => new Date("2026-09-13T11:41:09.701Z");
+const T = (n) => new Date(Date.UTC(2026, 8, 13, 11, 41, n)).toISOString();
+
+// A clock answering the instants it is handed, in order — `T1, T2, T3, …` by default — so a
+// scenario can say "the instant of the SECOND call" and "the clock now answers T1".
+function clockOf(...instants) {
+  const queue = instants.length > 0 ? [...instants] : [1, 2, 3, 4, 5, 6, 7, 8, 9].map(T);
+  const now = () => new Date(queue.shift());
+  now.queue = queue;
+  return now;
+}
+
+// The injected degrade sink, RESET before every read: `setDegradeSinkForTest` also clears the
+// per-code throttle, which is what lets two corrupt reads in one test each carry their own event.
+function degradeEvents() {
+  const events = [];
+  setDegradeSinkForTest(() => ({ write: (event) => { events.push(event); } }));
+  return events;
+}
+
+function fakeTimers() {
+  const timers = { set: [], clear: [] };
+  timers.setInterval = (fn, ms) => {
+    const handle = { fn, ms, unrefs: 0, unref() { handle.unrefs += 1; return handle; } };
+    timers.set.push(handle);
+    return handle;
+  };
+  timers.clearInterval = (handle) => { timers.clear.push(handle); };
+  return timers;
+}
+
+async function listTree(root) {
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true, recursive: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
+  return entries.map((entry) => path.relative(root, path.join(entry.parentPath ?? entry.path, entry.name))).sort();
+}
+
+const record = (over = {}) => ({
+  loopRunId: "L1", scope: "129", workspaceId: "w1", level: 1, state: "requested",
+  requestedAt: T(1), escalatedAt: null, honouredAt: null, cancelled: null, by: BY, ...over,
+});
+const writeRaw = (dir, id, text) => mkdir(dir, { recursive: true }).then(() => writeFile(stopRequestPath(dir, id), text, "utf8"));
+const writeRecord = (dir, id, value) => writeRaw(dir, id, `${JSON.stringify(value, null, 2)}\n`);
+const readRaw = (dir, id) => readFile(stopRequestPath(dir, id), "utf8");
+const readJson = (dir, id) => readRaw(dir, id).then((text) => JSON.parse(text));
+
+// A source over a fresh process double and fresh timers; the Background of task 02.
+function sourceOver({ dir, proc = fakeProcess(), timers = fakeTimers(), ...rest } = {}) {
+  const source = createStopSource({ loopRunId: "L1", dir, process: proc, pollMs: 2000, now: FIXED, timers, ...rest });
+  return { source, proc, timers };
+}
+
+const stopRequestTests = [
+  // ---- task 00: the request lives in the aof home ------------------------------------------
+  {
+    name: "130/01 stop-request/00 the directory and the path are derived from the mesh root, and only there",
+    run() {
+      const H = path.join("C:", "tmp", "aof-home");
+      const dir = loopStopsDir({ AOF_GLOBAL_HOME: H });
+      assert.equal(dir, path.join(H, "mesh", "loop-stops"), "the sibling of logs/ and loop-fixes/, under the mesh root");
+      assert.equal(stopRequestPath(dir, "27dbcc7a-3e23-402b-96fd-b59131131c56"), path.join(dir, "27dbcc7a-3e23-402b-96fd-b59131131c56.json"));
+      const other = path.join("C:", "tmp", "another-home");
+      assert.equal(loopStopsDir({ AOF_GLOBAL_HOME: other }), path.join(other, "mesh", "loop-stops"), "a different AOF_GLOBAL_HOME answers under THAT home");
+      assert.equal(loopStopsDir({ AOF_GLOBAL_HOME: other }), path.join(globalMeshPaths({ env: { AOF_GLOBAL_HOME: other } }).meshRoot, "loop-stops"), "the resolver is globalMeshPaths, never os.homedir()");
+    },
+  },
+  {
+    name: "130/01 stop-request/00 a written request is the ten keys, in order, whole — and the temp + rename write leaves nothing behind",
+    async run() {
+      const dir = loopStopsDir();
+      await requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: FIXED });
+      const raw = await readJson(dir, "L1");
+      assert.deepEqual(Object.keys(raw), TEN_KEYS, "the ten keys, in the frozen order");
+      assert.deepEqual(raw, { loopRunId: "L1", scope: "129", workspaceId: "w1", level: 1, state: "requested", requestedAt: "2026-09-13T11:41:09.701Z", escalatedAt: null, honouredAt: null, cancelled: null, by: { node: "umamis-msi", pid: 4242 } });
+      assert.deepEqual((await readdir(dir)).filter((name) => name.startsWith(".tmp-")), [], "no .tmp-* entry remains");
+      assert.deepEqual(await readStopRequest(dir, "L1"), raw, "the read is the file's content");
+    },
+  },
+  {
+    name: "130/01 stop-request/00 the key set never shrinks — an omitted carried field (by, scope, workspaceId) is written null in its slot",
+    async run() {
+      const dir = loopStopsDir();
+      for (const [given, key] of [
+        [{ scope: "129", workspaceId: "w1" }, "by"],
+        [{ workspaceId: "w1", by: BY }, "scope"],
+        [{ scope: "129", by: BY }, "workspaceId"],
+      ]) {
+        await clearStopRequest(dir, "L2");
+        await requestLoopStop(dir, { loopRunId: "L2", now: FIXED, ...given });
+        const raw = await readJson(dir, "L2");
+        assert.deepEqual(Object.keys(raw), TEN_KEYS, `omitting ${key}: the keys are the ten, in order`);
+        assert.equal(raw[key], null, `omitting ${key}: it reads null`);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/00 the write never lands under the checkout — the process's working directory is untouched and the file is under <H>/mesh/loop-stops",
+    async run() {
+      const H = process.env.AOF_GLOBAL_HOME;
+      const dir = loopStopsDir();
+      const C = await mkdtemp(path.join(os.tmpdir(), "aof-stop-checkout-"));
+      const previousCwd = process.cwd();
+      try {
+        await writeFile(path.join(C, "README.md"), "a fixture checkout\n");
+        process.chdir(C);
+        const before = await listTree(C);
+        await requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: FIXED });
+        assert.deepEqual(await listTree(C), before, "a recursive listing of the checkout after the call deep-equals the one before it");
+        await access(path.join(H, "mesh", "loop-stops", "L1.json"));
+      } finally {
+        process.chdir(previousCwd);
+        await rm(C, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/00 the read is absence-tolerant and degrades anything that is not a record to null — one coded event carrying the path, never a throw",
+    async run() {
+      const dir = loopStopsDir();
+      const filePath = stopRequestPath(dir, "L1");
+      const ten = record();
+      const rows = [
+        ["does not exist", async () => { await mkdir(dir, { recursive: true }); await rm(filePath, { force: true }); }, null, 0],
+        ["does not exist, nor does dir itself", async () => { await rm(dir, { recursive: true, force: true }); }, null, 0],
+        ["holds the ten-key record", () => writeRecord(dir, "L1", ten), ten, 0],
+        ["holds the ten-key record plus an unknown eleventh key", () => writeRecord(dir, "L1", { ...ten, eleventh: "kept" }), { ...ten, eleventh: "kept" }, 0],
+        ["is empty (zero bytes)", () => writeRaw(dir, "L1", ""), null, 1],
+        ["holds `{ not json`", () => writeRaw(dir, "L1", "{ not json"), null, 1],
+        ["holds a JSON array", () => writeRaw(dir, "L1", "[]"), null, 1],
+        ["holds JSON null", () => writeRaw(dir, "L1", "null"), null, 1],
+        ["holds { loopRunId } with no level", () => writeRecord(dir, "L1", { loopRunId: "L1" }), null, 1],
+        ["holds the record with level 0", () => writeRecord(dir, "L1", { ...ten, level: 0 }), null, 1],
+        ["holds the record with level 3", () => writeRecord(dir, "L1", { ...ten, level: 3 }), null, 1],
+        ["holds the record with level \"2\" (a string)", () => writeRecord(dir, "L1", { ...ten, level: "2" }), null, 1],
+      ];
+      try {
+        for (const [state, arrange, answer, degrades] of rows) {
+          await arrange();
+          const events = degradeEvents();
+          const read = await readStopRequest(dir, "L1");
+          assert.deepEqual(read, answer, `the file ${state}: the answer`);
+          assert.equal(events.length, degrades, `the file ${state}: ${degrades} degrade event(s)`);
+          for (const event of events) {
+            assert.equal(event.code, "loop-stop-request", `the file ${state}: the event's code`);
+            assert.equal(event.path, filePath, `the file ${state}: the event carries the file's path`);
+          }
+        }
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/00 an id that is not one filename segment is refused by every export before the filesystem is touched, naming loopRunId",
+    async run() {
+      const H = process.env.AOF_GLOBAL_HOME;
+      const dir = loopStopsDir();
+      for (const id of [undefined, "", "../L1", "a/b", "a\\b", "a:b"]) {
+        const label = JSON.stringify(id ?? "undefined");
+        assert.throws(() => stopRequestPath(dir, id), /loopRunId/, `stopRequestPath refuses ${label}`);
+        await assert.rejects(requestLoopStop(dir, { loopRunId: id, by: BY, now: FIXED }), /loopRunId/, `requestLoopStop refuses ${label}`);
+        await assert.rejects(readStopRequest(dir, id), /loopRunId/, `readStopRequest refuses ${label}`);
+        await assert.rejects(markStopHonoured(dir, id, { now: FIXED, cancelled: null }), /loopRunId/, `markStopHonoured refuses ${label}`);
+        await assert.rejects(clearStopRequest(dir, id), /loopRunId/, `clearStopRequest refuses ${label}`);
+        const emitter = new EventEmitter();
+        assert.throws(() => createStopSource({ loopRunId: id, dir, process: emitter, pollMs: 0 }), /loopRunId/, `createStopSource refuses ${label}`);
+        assert.deepEqual(emitter.eventNames(), [], `createStopSource refusing ${label} registered no listener`);
+      }
+      await assert.rejects(access(dir), { code: "ENOENT" }, "dir still does not exist");
+      assert.deepEqual(await listTree(H), [], "nothing was written anywhere under H");
+    },
+  },
+  {
+    name: "130/01 stop-request/00 the level word map has exactly two entries and is frozen — and so is the state word map beside it (review close, 2026-09-21)",
+    run() {
+      assert.deepEqual(STOP_LEVELS, { drain: 1, cancel: 2 });
+      assert.throws(() => { STOP_LEVELS.kill = 3; }, TypeError, "assigning a third key throws");
+      assert.deepEqual(Object.keys(STOP_LEVELS), ["drain", "cancel"]);
+      // A consumer that must ask whether a request is honoured asks through this map rather than
+      // spelling the word — the invariant the sweep below holds needs a door, and this is it.
+      assert.deepEqual(STOP_STATES, { requested: "requested", honoured: "honoured" });
+      assert.throws(() => { STOP_STATES.cleared = "cleared"; }, TypeError, "a third state word cannot be added — cleared is the file's absence, never a state");
+    },
+  },
+  {
+    name: "130/01 stop-request/00 the home-side literals have one home — `loop-stops` and the state words are spelled in stop-request.mjs and in no other module under src/",
+    async run() {
+      const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+      const own = "src/loop/stop-request.mjs";
+      const modules = (await readdir(path.join(root, "src"), { withFileTypes: true, recursive: true }))
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".mjs"))
+        .map((entry) => path.relative(root, path.join(entry.parentPath ?? entry.path, entry.name)).split(path.sep).join("/"))
+        .sort();
+      assert.ok(modules.includes(own), "the module is on disk");
+      assert.ok(modules.length > 50, "the sweep is non-vacuous");
+      // A module that speaks of a stop request at all: the token set the shell, the verb and the
+      // faces would use. `"requested"` names a recovery-push and a resync state elsewhere, so the
+      // word is refused only in a module that also speaks of the stop request; FF-13001 (story 05)
+      // is the sweep proper.
+      const speaksOfStops = /stop-request|stopRequest|StopRequest|loopStop|LoopStop|STOP_LEVELS/;
+      for (const rel of modules) {
+        const code = stripComments(await readFile(path.join(root, rel), "utf8"));
+        if (rel === own) {
+          assert.ok(code.includes("loop-stops"), "the home spells the segment");
+          assert.ok(code.includes('"honoured"') && code.includes('"requested"'), "the home spells both state words");
+          assert.match(code, /import \{ globalMeshPaths \} from "\.\.\/workspace\.mjs"/, "the resolver is imported, never re-spelled");
+          assert.match(code, /import \{[^}]*\bwriteText\b[^}]*\} from "\.\.\/fs\.mjs"/, "every write goes through writeText");
+          assert.match(code, /import \{ reportDegrade \} from "\.\.\/degrade\.mjs"/, "a corrupt file reports through the one degrade emitter");
+          continue;
+        }
+        assert.ok(!code.includes("loop-stops"), `${rel} spells the loop-stops segment — the one home is ${own}`);
+        assert.ok(!/["']honoured["']/.test(code), `${rel} spells "honoured" — the state words live in ${own}`);
+        if (/["']requested["']/.test(code)) {
+          assert.ok(!speaksOfStops.test(code), `${rel} spells "requested" as a stop-request state — the state words live in ${own}`);
+        }
+      }
+    },
+  },
+
+  // ---- task 01: the ladder is 129/04's, and the lifecycle -----------------------------------
+  {
+    name: "130/01 stop-request/01 each requestLoopStop answers what it did and the file reads the ladder's state — create at 1, escalate once to 2, then unchanged; honoured is unchanged and says so",
+    async run() {
+      const dir = loopStopsDir();
+      const ask = (now) => requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now });
+      const rows = [
+        ["does not exist", async () => {}, { created: true, escalated: false, level: 1, state: "requested" }, 1, "requested", null],
+        ["is level 1 requested", async (now) => { await ask(now); }, { created: false, escalated: true, level: 2, state: "requested" }, 2, "requested", T(2)],
+        ["is level 2 requested", async (now) => { await ask(now); await ask(now); }, { created: false, escalated: false, level: 2, state: "requested" }, 2, "requested", T(2)],
+        ["is level 1 honoured", async (now) => { await ask(now); await markStopHonoured(dir, "L1", { now, cancelled: null }); }, { created: false, escalated: false, level: 1, state: "honoured" }, 1, "honoured", null],
+        ["is level 2 honoured", async (now) => { await ask(now); await ask(now); await markStopHonoured(dir, "L1", { now, cancelled: null }); }, { created: false, escalated: false, level: 2, state: "honoured" }, 2, "honoured", T(2)],
+      ];
+      for (const [before, arrange, answer, level, state, escalatedAt] of rows) {
+        await clearStopRequest(dir, "L1");
+        const now = clockOf();
+        await arrange(now);
+        const first = before === "does not exist" ? null : await readJson(dir, "L1");
+        const got = await ask(now);
+        const file = await readJson(dir, "L1");
+        assert.deepEqual(got, { ...answer, record: file }, `the request ${before}: the answer says what it did, and carries the record`);
+        assert.equal(file.level, level, `the request ${before}: level`);
+        assert.equal(file.state, state, `the request ${before}: state`);
+        assert.equal(file.escalatedAt, escalatedAt, `the request ${before}: escalatedAt`);
+        if (first) assert.equal(file.requestedAt, first.requestedAt, `the request ${before}: requestedAt is the first write's`);
+        assert.deepEqual(Object.keys(file), TEN_KEYS, `the request ${before}: still the ten keys in order`);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/01 the level never climbs past two — four calls leave level 2 with the SECOND call's escalatedAt, the third and fourth unchanged",
+    async run() {
+      const dir = loopStopsDir();
+      const now = clockOf();
+      const answers = [];
+      for (let i = 0; i < 4; i += 1) answers.push(await requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now }));
+      const file = await readJson(dir, "L1");
+      assert.equal(file.level, 2);
+      assert.equal(file.escalatedAt, T(2), "the instant of the SECOND call");
+      assert.equal(file.requestedAt, T(1));
+      for (const late of answers.slice(2)) assert.deepEqual(late, { created: false, escalated: false, level: 2, state: "requested", record: file });
+    },
+  },
+  {
+    name: "130/01 stop-request/01 an escalation by another writer keeps the creator's by and requestedAt — it rewrites level and escalatedAt only",
+    async run() {
+      const dir = loopStopsDir();
+      const now = clockOf();
+      await requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now });
+      const got = await requestLoopStop(dir, { loopRunId: "L1", scope: "130", workspaceId: "w2", by: { node: "aof-wsl", pid: 77 }, now });
+      assert.equal(got.escalated, true);
+      const file = await readJson(dir, "L1");
+      assert.deepEqual(file, record({ level: 2, escalatedAt: T(2) }), "level 2, escalatedAt T2; by, requestedAt, scope and workspaceId the creator's");
+    },
+  },
+  {
+    name: "130/01 stop-request/01 a clock that goes backwards is written as given, never compared or clamped — escalatedAt and honouredAt earlier than requestedAt",
+    async run() {
+      const dir = loopStopsDir();
+      for (const [label, call, field] of [
+        ["requestLoopStop", (now) => requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now }), "escalatedAt"],
+        ["markStopHonoured", (now) => markStopHonoured(dir, "L1", { now, cancelled: null }), "honouredAt"],
+      ]) {
+        await clearStopRequest(dir, "L1");
+        await requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: clockOf(T(3)) });
+        await call(clockOf(T(1)));
+        const file = await readJson(dir, "L1");
+        assert.equal(file[field], T(1), `${label}: ${field} is the clock's answer, earlier than requestedAt`);
+        assert.equal(file.requestedAt, T(3), `${label}: requestedAt is untouched`);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/01 markStopHonoured closes the request once and records what was cancelled; a second mark is the idempotent re-mark",
+    async run() {
+      const dir = loopStopsDir();
+      const RUN = "20260913T110303238Z-0000";
+      const ask = (now) => requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now });
+      const rows = [
+        ["is level 1 requested", async (now) => { await ask(now); }, null, 1, T(2), null],
+        ["is level 2 requested", async (now) => { await ask(now); await ask(now); }, RUN, 2, T(3), RUN],
+        ["is level 2 honoured at T5 with cancelled null", async (now) => { await ask(now); await ask(now); now.queue.unshift(T(5)); await markStopHonoured(dir, "L1", { now, cancelled: null }); }, RUN, 2, T(5), null],
+      ];
+      for (const [before, arrange, cancelled, level, honouredAt, written] of rows) {
+        await clearStopRequest(dir, "L1");
+        const now = clockOf();
+        await arrange(now);
+        const got = await markStopHonoured(dir, "L1", { now, cancelled });
+        const file = await readJson(dir, "L1");
+        assert.equal(file.state, "honoured", `the request ${before}: state`);
+        assert.equal(file.level, level, `the request ${before}: level is untouched`);
+        assert.equal(file.honouredAt, honouredAt, `the request ${before}: honouredAt`);
+        assert.equal(file.cancelled, written, `the request ${before}: cancelled`);
+        assert.deepEqual(got, file, `the request ${before}: the answer is the record`);
+        assert.deepEqual(Object.keys(file), TEN_KEYS);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/01 marking an absent request honoured is a no-op that answers null and creates no file",
+    async run() {
+      const dir = loopStopsDir();
+      assert.equal(await markStopHonoured(dir, "L9", { now: FIXED, cancelled: null }), null);
+      await assert.rejects(access(stopRequestPath(dir, "L9")), { code: "ENOENT" });
+    },
+  },
+  {
+    name: "130/01 stop-request/01 clearStopRequest deletes the file whatever its state, answers the record it deleted, and tolerates absence",
+    async run() {
+      const dir = loopStopsDir();
+      const ask = (now) => requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now });
+      for (const [state, arrange, cleared] of [
+        ["is level 1 requested", async (now) => { await ask(now); }, true],
+        ["is level 2 honoured", async (now) => { await ask(now); await ask(now); await markStopHonoured(dir, "L1", { now, cancelled: null }); }, true],
+        ["does not exist", async () => {}, false],
+      ]) {
+        await clearStopRequest(dir, "L1");
+        await arrange(clockOf());
+        const expected = cleared ? await readJson(dir, "L1") : null;
+        const got = await clearStopRequest(dir, "L1");
+        assert.deepEqual(got, { cleared, record: expected }, `the request ${state}: the answer`);
+        assert.equal(await readStopRequest(dir, "L1"), null, `the request ${state}: gone`);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/01 a corrupt file is null to every writer after one degrade, and each says what it did — request overwrites whole, mark leaves it, clear deletes it",
+    async run() {
+      const dir = loopStopsDir();
+      try {
+        // requestLoopStop: overwritten whole, level 1.
+        await writeRaw(dir, "L1", "{ not json");
+        let events = degradeEvents();
+        const asked = await requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: clockOf() });
+        let file = await readJson(dir, "L1");
+        assert.deepEqual(asked, { created: true, escalated: false, level: 1, state: "requested", record: file });
+        assert.deepEqual(file, record());
+        assert.equal(events.length, 1, "requestLoopStop: one degrade event");
+        assert.equal(events[0].code, "loop-stop-request");
+        // markStopHonoured: null, the file left as it was.
+        await writeRaw(dir, "L1", "{ not json");
+        events = degradeEvents();
+        assert.equal(await markStopHonoured(dir, "L1", { now: FIXED, cancelled: null }), null);
+        assert.equal(await readRaw(dir, "L1"), "{ not json", "markStopHonoured leaves a corrupt file");
+        assert.equal(events.length, 1, "markStopHonoured: one degrade event");
+        assert.equal(events[0].code, "loop-stop-request");
+        // clearStopRequest: gone, record null.
+        events = degradeEvents();
+        assert.deepEqual(await clearStopRequest(dir, "L1"), { cleared: true, record: null });
+        await assert.rejects(access(stopRequestPath(dir, "L1")), { code: "ENOENT" }, "clearStopRequest deletes a corrupt file");
+        assert.equal(events.length, 1, "clearStopRequest: one degrade event");
+        assert.equal(events[0].code, "loop-stop-request");
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/01 two writers racing on one id both see a whole file — last rename wins, each write whole",
+    async run() {
+      const dir = loopStopsDir();
+      const ask = () => requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: clockOf() });
+      const settled = await Promise.allSettled([ask(), ask()]);
+      assert.deepEqual(settled.map((outcome) => outcome.status), ["fulfilled", "fulfilled"], "neither call threw");
+      const file = await readJson(dir, "L1");
+      assert.deepEqual(Object.keys(file), TEN_KEYS, "one ten-key record");
+      assert.ok(file.level === 1 || file.level === 2, `level 1 or 2, got ${file.level}`);
+      assert.equal(file.state, "requested");
+    },
+  },
+  {
+    name: "130/01 stop-request/01 an escalation racing a mark on one id leaves one whole answer, never a torn file",
+    async run() {
+      const dir = loopStopsDir();
+      await requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: clockOf() });
+      const settled = await Promise.allSettled([
+        requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: clockOf() }),
+        markStopHonoured(dir, "L1", { now: clockOf(), cancelled: null }),
+      ]);
+      assert.deepEqual(settled.map((outcome) => outcome.status), ["fulfilled", "fulfilled"], "neither call threw");
+      const file = await readJson(dir, "L1");
+      assert.deepEqual(Object.keys(file), TEN_KEYS, "one ten-key record");
+      const shape = `${file.level} ${file.state}`;
+      assert.ok(["2 requested", "1 honoured", "2 honoured"].includes(shape), `one of the three whole answers, got ${shape}`);
+    },
+  },
+
+  // ---- task 02: createStopSource composes the signals and the file --------------------------
+  {
+    name: "130/01 stop-request/02 a fresh source is level 0 with no producer and an unaborted signal, and has read nothing — one SIGINT and one SIGTERM listener, nothing else",
+    async run() {
+      const dir = loopStopsDir();
+      await writeRecord(dir, "L1", record({ level: 2, escalatedAt: T(2) }));
+      const { source, proc } = sourceOver({ dir });
+      assert.equal(source.level(), 0);
+      assert.equal(source.producer(), null);
+      assert.equal(source.request(), null, "construction reads nothing");
+      assert.equal(source.signal.aborted, false);
+      assert.equal(proc.listenerCount("SIGINT"), 1);
+      assert.equal(proc.listenerCount("SIGTERM"), 1);
+      assert.equal(proc.listenerCount("SIGHUP"), 0);
+      assert.equal(proc.listenerCount("SIGBREAK"), 0);
+      assert.deepEqual(Object.keys(source).sort(), ["level", "poll", "producer", "request", "signal", "start", "stop"], "the seven members 129/04's seam names");
+      source.stop();
+    },
+  },
+  {
+    name: "130/01 stop-request/02 process signals climb the ladder — the first to 1, the second to 2 and the abort — and after the second the source is deaf",
+    run() {
+      const dir = loopStopsDir();
+      for (const [signals, level, producer, aborted, listeners] of [
+        [["SIGINT"], 1, "SIGINT", false, 1],
+        [["SIGTERM"], 1, "SIGTERM", false, 1],
+        [["SIGHUP"], 0, null, false, 1],
+        [["SIGINT", "SIGINT"], 2, "SIGINT", true, 0],
+        [["SIGTERM", "SIGTERM"], 2, "SIGTERM", true, 0],
+        [["SIGINT", "SIGTERM"], 2, "SIGTERM", true, 0],
+        [["SIGTERM", "SIGINT"], 2, "SIGINT", true, 0],
+        [["SIGINT", "SIGINT", "SIGINT"], 2, "SIGINT", true, 0],
+        [["SIGINT", "SIGINT", "SIGTERM"], 2, "SIGINT", true, 0],
+      ]) {
+        const label = signals.join(", ");
+        const { source, proc } = sourceOver({ dir });
+        for (const signal of signals) proc.emit(signal);
+        assert.equal(source.level(), level, `${label}: level`);
+        assert.equal(source.producer(), producer, `${label}: producer`);
+        assert.equal(source.signal.aborted, aborted, `${label}: aborted`);
+        assert.equal(proc.listenerCount("SIGINT"), listeners, `${label}: SIGINT listeners`);
+        assert.equal(proc.listenerCount("SIGTERM"), listeners, `${label}: SIGTERM listeners`);
+        assert.deepEqual(proc.exited, [], `${label}: proc.exit was never called`);
+        source.stop();
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/02 with the recorder installed first, the third signal is nobody's but node's — exit 128 + signo, only on the THIRD, three signal lines logged",
+    run() {
+      const dir = loopStopsDir();
+      for (const [signals, exit] of [
+        [["SIGINT", "SIGINT", "SIGINT"], 130],
+        [["SIGINT", "SIGTERM", "SIGTERM"], 143],
+        [["SIGTERM", "SIGINT", "SIGINT"], 130],
+      ]) {
+        const label = signals.join(", ");
+        const proc = fakeProcess();
+        const fs = fakeFs();
+        const handle = installLoopDiagnostics({ logDir: ROOT, argv: ["work", "loop", "130"], proc, env: {}, fs, now: () => at, aliveIntervalMs: 0 });
+        const { source } = sourceOver({ dir, proc });
+        proc.emit(signals[0]);
+        proc.emit(signals[1]);
+        assert.deepEqual(proc.exited, [], `${label}: two signals are the source's — drain, then cancel — and nobody exits`);
+        assert.equal(source.level(), 2, `${label}: the source is at 2 after the second`);
+        proc.emit(signals[2]);
+        assert.deepEqual(proc.exited, [exit], `${label}: the third reaches node's default through the recorder's last-listener repair`);
+        assert.equal(((fs.files.get(handle.logPath) ?? "").match(/ signal SIG/g) ?? []).length, 3, `${label}: three signal lines`);
+        source.stop();
+        handle.uninstall();
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/02 the file's level raises the source's level on a poll and names the request as the producer — the level, never the state",
+    async run() {
+      const dir = loopStopsDir();
+      const ten = record();
+      const rows = [
+        ["does not exist", () => rm(stopRequestPath(dir, "L1"), { force: true }), 0, null, null, false, 1],
+        ["is level 1 requested", () => writeRecord(dir, "L1", ten), 1, "stop-request", ten, false, 1],
+        ["is level 2 requested", () => writeRecord(dir, "L1", { ...ten, level: 2, escalatedAt: T(2) }), 2, "stop-request", { ...ten, level: 2, escalatedAt: T(2) }, true, 0],
+        ["is level 1 honoured", () => writeRecord(dir, "L1", { ...ten, state: "honoured", honouredAt: T(2) }), 1, "stop-request", { ...ten, state: "honoured", honouredAt: T(2) }, false, 1],
+        ["is level 2 honoured", () => writeRecord(dir, "L1", { ...ten, level: 2, state: "honoured", escalatedAt: T(2), honouredAt: T(3) }), 2, "stop-request", { ...ten, level: 2, state: "honoured", escalatedAt: T(2), honouredAt: T(3) }, true, 0],
+        ["holds `{ not json`", () => writeRaw(dir, "L1", "{ not json"), 0, null, null, false, 1],
+        ["holds { loopRunId } with no level", () => writeRecord(dir, "L1", { loopRunId: "L1" }), 0, null, null, false, 1],
+      ];
+      try {
+        for (const [file, arrange, level, producer, request, aborted, listeners] of rows) {
+          await arrange();
+          degradeEvents();
+          const { source, proc } = sourceOver({ dir });
+          await source.poll();
+          assert.equal(source.level(), level, `the file ${file}: level`);
+          assert.equal(source.producer(), producer, `the file ${file}: producer`);
+          assert.deepEqual(source.request(), request, `the file ${file}: request()`);
+          assert.equal(source.signal.aborted, aborted, `the file ${file}: aborted`);
+          assert.equal(proc.listenerCount("SIGINT"), listeners, `the file ${file}: listeners`);
+          source.stop();
+        }
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/02 the producer is whoever raised the level to its current value, and an equal raise does not rename it",
+    async run() {
+      const dir = loopStopsDir();
+      const { source, proc } = sourceOver({ dir });
+      proc.emit("SIGINT");
+      await writeRecord(dir, "L1", record());
+      await source.poll();
+      assert.equal(source.level(), 1);
+      assert.equal(source.producer(), "SIGINT", "the file's equal raise does not rename the producer");
+      await writeRecord(dir, "L1", record({ level: 2, escalatedAt: T(2) }));
+      await source.poll();
+      assert.equal(source.level(), 2);
+      assert.equal(source.producer(), "stop-request", "the file raised it to 2");
+      proc.emit("SIGINT");
+      assert.equal(source.level(), 2);
+      assert.equal(source.producer(), "stop-request", "the listeners went at 2 — a later signal is nobody's here");
+      source.stop();
+    },
+  },
+  {
+    name: "130/01 stop-request/02 the mirror — the file first, then the signals",
+    async run() {
+      const dir = loopStopsDir();
+      const { source, proc } = sourceOver({ dir });
+      await writeRecord(dir, "L1", record());
+      await source.poll();
+      proc.emit("SIGINT");
+      assert.equal(source.level(), 1);
+      assert.equal(source.producer(), "stop-request");
+      proc.emit("SIGINT");
+      assert.equal(source.level(), 2);
+      assert.equal(source.producer(), "SIGINT");
+      assert.equal(source.signal.aborted, true);
+      source.stop();
+    },
+  },
+  {
+    name: "130/01 stop-request/02 the level and the producer never fall — a file that vanishes or turns corrupt after raising them changes request() only",
+    async run() {
+      const dir = loopStopsDir();
+      try {
+        for (const [level, then, mutate, aborted] of [
+          [1, "is deleted", () => rm(stopRequestPath(dir, "L1"), { force: true }), false],
+          [2, "is deleted", () => rm(stopRequestPath(dir, "L1"), { force: true }), true],
+          [2, "is overwritten with `{ bad`", () => writeRaw(dir, "L1", "{ bad"), true],
+        ]) {
+          const label = `level ${level}, then the file ${then}`;
+          await writeRecord(dir, "L1", record(level === 2 ? { level: 2, escalatedAt: T(2) } : {}));
+          degradeEvents();
+          const { source } = sourceOver({ dir });
+          await source.poll();
+          assert.equal(source.level(), level, `${label}: raised`);
+          await mutate();
+          await source.poll();
+          assert.equal(source.level(), level, `${label}: the level never falls`);
+          assert.equal(source.producer(), "stop-request", `${label}: the producer never falls`);
+          assert.equal(source.signal.aborted, aborted, `${label}: aborted`);
+          assert.equal(source.request(), null, `${label}: request() alone follows the file`);
+          source.stop();
+        }
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/02 the signal aborts exactly once and is never re-armed — by two signals, then a file at 2, then a third signal",
+    async run() {
+      const dir = loopStopsDir();
+      const { source, proc } = sourceOver({ dir });
+      const signal = source.signal;
+      let aborts = 0;
+      signal.addEventListener("abort", () => { aborts += 1; });
+      proc.emit("SIGINT");
+      proc.emit("SIGINT");
+      assert.equal(aborts, 1);
+      assert.equal(signal.aborted, true);
+      await writeRecord(dir, "L1", record({ level: 2, escalatedAt: T(2) }));
+      await source.poll();
+      proc.emit("SIGINT");
+      assert.equal(aborts, 1, "still exactly once");
+      assert.equal(source.signal, signal, "the same object");
+      source.stop();
+    },
+  },
+  {
+    name: "130/01 stop-request/02 a process that already has signal listeners keeps them — the source removes only its own",
+    run() {
+      const dir = loopStopsDir();
+      const proc = fakeProcess();
+      let priorInt = 0;
+      let priorTerm = 0;
+      proc.on("SIGINT", () => { priorInt += 1; });
+      proc.on("SIGTERM", () => { priorTerm += 1; });
+      const { source } = sourceOver({ dir, proc });
+      assert.equal(proc.listenerCount("SIGINT"), 2);
+      proc.emit("SIGINT");
+      proc.emit("SIGINT");
+      assert.equal(priorInt, 2, "the prior listener saw both");
+      assert.equal(proc.listenerCount("SIGINT"), 1, "the source's own listener went at 2; the prior one stays");
+      assert.equal(proc.listenerCount("SIGTERM"), 1);
+      source.stop();
+      proc.emit("SIGINT");
+      assert.equal(proc.listenerCount("SIGINT"), 1, "stop removes nothing that is not the source's");
+      assert.equal(priorInt, 3);
+      assert.equal(priorTerm, 0);
+      assert.equal(source.level(), 2);
+    },
+  },
+  {
+    name: "130/01 stop-request/02 start arms one unref'd interval at pollMs; stop clears it, removes the listeners, and is terminal — a later start arms nothing and a later signal raises nothing",
+    run() {
+      const dir = loopStopsDir();
+      const { source, proc, timers } = sourceOver({ dir });
+      source.start();
+      source.start();
+      assert.equal(timers.set.length, 1, "one interval");
+      assert.equal(timers.set[0].ms, 2000, "at pollMs");
+      assert.equal(timers.set[0].unrefs, 1, "unref'd");
+      source.stop();
+      source.stop();
+      assert.deepEqual(timers.clear, [timers.set[0]], "cleared once, with that handle");
+      assert.equal(proc.listenerCount("SIGINT"), 0);
+      assert.equal(proc.listenerCount("SIGTERM"), 0);
+      source.start();
+      proc.emit("SIGINT");
+      proc.emit("SIGINT");
+      assert.equal(timers.set.length, 1, "stop is terminal — start arms nothing after it");
+      assert.equal(source.level(), 0);
+      assert.equal(source.signal.aborted, false);
+    },
+  },
+  {
+    name: "130/01 stop-request/02 stop before start removes the listeners and clears nothing",
+    run() {
+      const dir = loopStopsDir();
+      const { source, proc, timers } = sourceOver({ dir });
+      source.stop();
+      assert.deepEqual(timers.clear, [], "clearInterval was never called");
+      assert.equal(proc.listenerCount("SIGINT"), 0);
+      assert.equal(proc.listenerCount("SIGTERM"), 0);
+    },
+  },
+  {
+    name: "130/01 stop-request/02 the interval is armed only for a finite positive pollMs, and the default is 2000; poll() reads the file regardless",
+    async run() {
+      const dir = loopStopsDir();
+      await writeRecord(dir, "L1", record());
+      for (const [label, given, armed] of [
+        ["no pollMs key", {}, 2000],
+        ["pollMs: 2000", { pollMs: 2000 }, 2000],
+        ["pollMs: 250", { pollMs: 250 }, 250],
+        ["pollMs: 0", { pollMs: 0 }, null],
+        ["pollMs: -1", { pollMs: -1 }, null],
+        ["pollMs: NaN", { pollMs: NaN }, null],
+        ["pollMs: \"2000\"", { pollMs: "2000" }, null],
+      ]) {
+        const proc = fakeProcess();
+        const timers = fakeTimers();
+        const source = createStopSource({ loopRunId: "L1", dir, process: proc, timers, ...given });
+        source.start();
+        if (armed == null) assert.equal(timers.set.length, 0, `${label}: never armed`);
+        else {
+          assert.equal(timers.set.length, 1, `${label}: armed once`);
+          assert.equal(timers.set[0].ms, armed, `${label}: with ${armed}`);
+        }
+        await source.poll();
+        assert.deepEqual(source.request(), record(), `${label}: poll() still reads the file`);
+        source.stop();
+      }
+    },
+  },
+  {
+    name: "130/01 stop-request/02 the armed interval's tick is a poll — the file's level reaches the source without an explicit poll()",
+    async run() {
+      const dir = loopStopsDir();
+      await writeRecord(dir, "L1", record({ level: 2, escalatedAt: T(2) }));
+      const { source, timers } = sourceOver({ dir });
+      source.start();
+      timers.set[0].fn();
+      // The tick's read is a real fs read; wait for it, bounded.
+      for (let waited = 0; source.level() < 2 && waited < 2000; waited += 20) await new Promise((resolve) => setTimeout(resolve, 20));
+      assert.equal(source.level(), 2, "the interval's tick is a poll");
+      assert.equal(source.signal.aborted, true);
+      source.stop();
+    },
+  },
+  {
+    name: "130/01 stop-request/02 a real interval never holds a finished process open — a child that starts a source with the real process and the default pollMs exits on its own",
+    async run() {
+      const module = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "loop", "stop-request.mjs")).href;
+      const script = [
+        `import { createStopSource, loopStopsDir } from ${JSON.stringify(module)};`,
+        `const source = createStopSource({ loopRunId: "L1", dir: loopStopsDir() });`,
+        `source.start();`,
+      ].join("\n");
+      const startedAt = Date.now();
+      const outcome = await new Promise((resolve) => {
+        execFile(process.execPath, ["--input-type=module", "-e", script], { env: { ...process.env }, timeout: 3000, windowsHide: true }, (error, stdout, stderr) => {
+          resolve({ error, stdout, stderr });
+        });
+      });
+      assert.equal(outcome.error, null, `the child exited on its own within 3 seconds: ${outcome.error?.message ?? ""} ${outcome.stderr}`);
+      assert.ok(Date.now() - startedAt < 3000, "within 3 seconds");
+    },
+  },
+];
+
+// ONE export, both halves: the index spreads `loopDiagTests` and nothing else (no index edit —
+// test/loop is at its ceiling), and a selected run takes every runner-shaped array a file exports,
+// so a second exported array holding the same entries would run them twice.
+export const loopDiagTests = [...recorderTests, ...stopRequestTests];

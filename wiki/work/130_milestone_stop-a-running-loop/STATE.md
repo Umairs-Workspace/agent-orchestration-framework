@@ -14,7 +14,7 @@ doc: state
 <!-- Story-by-story, mirroring the SPEC Stories list. The source of truth for each story's status
      is its own STORY.md frontmatter; this is the at-a-glance roll-up. -->
 
-- [ ] 01 · the-stop-request-has-one-home — not-started
+- [ ] 01 · the-stop-request-has-one-home — in-review (built + reviewed 2026-09-21, solo lane)
 - [ ] 02 · the-verb-and-the-shell-honour-it — not-started (depends on 01)
 - [ ] 03 · the-fleet-sees-and-stops-it — not-started (depends on 02)
 - [ ] 04 · the-desktop-stops-what-it-supervises — not-started (depends on 01, 02)
@@ -92,6 +92,18 @@ doc: state
 - **Open (sequencing, for the operator):** 129/04 (`in-progress`, its run `running` and awaiting
   reclaim) owns `src/commands/loop.mjs` and defines the injected signal seam this milestone
   produces for. The shell story and 129/04 must not be driven in this checkout at the same time.
+
+## Feedback (for retro)
+
+<!-- Raw, attributed entries captured as noticed; distilled into RETROSPECTIVE.md at aof:verify. -->
+
+- **130/01 review close (QA lens, 2026-09-21) — contract gap, fixed at the close, no item created:**
+  ADR-001 §2's invariant forbids any module but `stop-request.mjs` spelling `"requested"`/`"honoured"`,
+  and lists `STOP_LEVELS` as the one level→word map — but named no state→word export, so story 04's
+  declarations producer ("drops a loop whose request was honoured") would have had to spell the word
+  or read `state` blind. Routed `fixed` (cheaper than a driver): an additive frozen `STOP_STATES =
+  { requested, honoured }` export, used internally and pinned in the suite. ADR-001 §2 should name
+  it when the ADRs graduate; 04's build reads `record.state === STOP_STATES.honoured`.
 
 ## Verification
 
