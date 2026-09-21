@@ -19,7 +19,13 @@
 //
 // SUPERSEDED IN PLACE AGAIN at milestone 50 / story 02 (ADR-001) — the exception is
 // now a NAMED SET OF TWO: `POST /api/mesh/session` joins it as a sibling with the same
-// admission shape. This file's job is unchanged in kind: it asserts there is no route
+// admission shape.
+//
+// SUPERSEDED IN PLACE A THIRD TIME at milestone 130 / story 03 (ADR-005 §4) — the named
+// set is THREE: `POST /api/mesh/loop-stop` joins it in assign's exact shape, after TECH_DEBT
+// item 44's hoist put the admission and the workspace resolution into two named helpers
+// every write route CALLS. The route table is SIX exact names; the enumeration is still an
+// enumeration, and a seventh still fires. This file's job is unchanged in kind: it asserts there is no route
 // outside that named set, and that every write method other than POST on either of
 // them is still a clean 405. `acd-mesh-ui-write-isolation` owns the enumeration's own
 // "and a third one fires" self-check.
@@ -107,19 +113,25 @@ export const archTests = [
       const uniqueRoutes = [...new Set(declaredApiRoutes)].sort();
       assert.deepEqual(
         uniqueRoutes,
-        ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/session", "/api/mesh/session-outcome", "/api/mesh/status"].sort(),
-        "the route table is exactly the THREE GET routes (board-url, session-outcome, status) plus the TWO named POST write routes (assign, session) — no sixth /api/mesh/* route exists (m50/ADR-008 decision 5 adds the READ route and does NOT move the write set)"
+        ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/loop-stop", "/api/mesh/session", "/api/mesh/session-outcome", "/api/mesh/status"].sort(),
+        "the route table is exactly the THREE GET routes (board-url, session-outcome, status) plus the THREE named POST write routes (assign, session, loop-stop) — no seventh /api/mesh/* route exists (130/ADR-005 §4 adds the third write route by NAME)"
       );
 
       // The two READ routes still guard themselves to GET/HEAD (a write method
       // is rejected, never dispatched to a handler) — UNCHANGED by the exception.
       const getHeadGuardCount = (source.match(/request\.method\s*!==\s*["']GET["']\s*&&\s*request\.method\s*!==\s*["']HEAD["']/g) ?? []).length;
       assert.ok(getHeadGuardCount >= 1, "mesh-ui-serve.mjs guards its GET/HEAD route(s) before any handler body runs");
-      // The ONE write route guards itself to POST only (a GET/PUT/DELETE on
-      // /api/mesh/assign is a rejection, never a dispatch to the verb).
+      // The write routes guard themselves to POST only (a GET/PUT/DELETE on any of them is
+      // a rejection, never a dispatch to the verb) — since 130/03 the guard lives ONCE, in
+      // `admitWriteRequest`, and every write branch calls it (the per-branch CALL is what
+      // acd-fleet-face-single-mutation-route asserts).
       assert.ok(
         /request\.method\s*!==\s*["']POST["']/.test(source),
-        "mesh-ui-serve.mjs guards its ONE write route to POST before dispatching to assignWork"
+        "mesh-ui-serve.mjs guards its write routes to POST before dispatching to a verb"
+      );
+      assert.ok(
+        /function\s+admitWriteRequest\s*\(/.test(source),
+        "…in the ONE hoisted admission helper, admitWriteRequest (TECH_DEBT item 44's hoist, 130/03)"
       );
 
       // No fs-write call form and no shell-out of the FACE's own — the ONE
@@ -180,7 +192,7 @@ export const archTests = [
       const plantedUnique = [...new Set(plantedRoutes)].sort();
       assert.notDeepEqual(
         plantedUnique,
-        ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/session", "/api/mesh/session-outcome", "/api/mesh/status"].sort(),
+        ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/loop-stop", "/api/mesh/session", "/api/mesh/session-outcome", "/api/mesh/status"].sort(),
         "self-check: the detector FIRES on a planted UNENUMERATED route (/api/mesh/issue) beside the sanctioned set — the broken half"
       );
       assert.ok(
@@ -198,13 +210,14 @@ export const archTests = [
           if (pathname === "/api/mesh/board-url") { sendJson(response, 200, {}); }
           if (pathname === "/api/mesh/assign") { if (request.method !== "POST") { return; } }
           if (pathname === "/api/mesh/session") { if (request.method !== "POST") { return; } }
+          if (pathname === "/api/mesh/loop-stop") { if (request.method !== "POST") { return; } }
           if (pathname === "${name}") { sendJson(response, 200, { ok: true }); }
         `);
         const oddRoutes = [...plantedOddName.matchAll(/pathname\s*===\s*["'](\/api\/mesh\/[^"']+)["']/g)].map((m) => m[1]);
         assert.ok(oddRoutes.includes(name), `self-check: the detector SEES a planted "${name}" — a name-shape capture would not`);
         assert.notDeepEqual(
           [...new Set(oddRoutes)].sort(),
-          ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/session", "/api/mesh/session-outcome", "/api/mesh/status"].sort(),
+          ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/loop-stop", "/api/mesh/session", "/api/mesh/session-outcome", "/api/mesh/status"].sort(),
           `self-check: the route table FIRES on a planted "${name}" beside the sanctioned set`
         );
       }
@@ -273,7 +286,7 @@ export const archTests = [
         // milestone 38 / story 04 (ADR-012) + m50 / story 02 (ADR-001) — the NAMED
         // write routes: a write method on either that is NOT POST is still a clean
         // 405 naming POST.
-        for (const route of ["/api/mesh/assign", "/api/mesh/session"]) {
+        for (const route of ["/api/mesh/assign", "/api/mesh/session", "/api/mesh/loop-stop"]) {
           for (const method of ["PUT", "PATCH", "DELETE", "GET"]) {
             const res = await fetch(new URL(route, url), { method });
             assert.equal(res.status, 405, `${method} ${route} is a 405`);
@@ -288,7 +301,7 @@ export const archTests = [
         // REVIEW FIX (2026-08-14): this probe covered `/api/mesh/assign` ALONE while the
         // header above already declared a NAMED SET OF TWO — so the second member of the
         // set was named in prose and never exercised. The set is now the loop's source.
-        for (const route of ["/api/mesh/assign", "/api/mesh/session"]) {
+        for (const route of ["/api/mesh/assign", "/api/mesh/session", "/api/mesh/loop-stop"]) {
           const unauthedPost = await fetch(new URL(route, url), { method: "POST" });
           assert.ok(
             unauthedPost.status >= 400 && unauthedPost.status < 500,

@@ -508,7 +508,12 @@ export const terminalsHomeRouteTests = [
         // +4 by 49/05's R-2 (the node card's work line carries its whole value in `title`, so a
         // truncation cannot silently under-count repos — m48's own defect re-created by CSS). The
         // card PEEK still does not move, which is what this row was really about.
-        ["ui/src/fleet/Fleet.tsx", 1550, 1560, "R-2's `title` on the work line; the card peek does not move. 1544 -> 1550 on 2026-09-11: the work-status narrowing and the click-to-narrow workspace cards, paid for by moving ScopeControl and WorkspacesSummary into RepoPicker.tsx"],
+        // 1550 -> 1560 on 2026-09-21 by 130/03 (ADR-005 §5): the loop line and its Stop on the node
+        // card — `nodeWorkRegion` in place of `nodeCurrentWork`, one `LoopStopRow`, the rung memory —
+        // with every rendered fact precomputed in runs.mjs/scope.mjs. AT its ceiling with ZERO
+        // headroom (the ceiling's own rule: the next region belongs in its own file, and
+        // ui/src/fleet/ is itself at 20/20 — TECH_DEBT item 33). The card peek still does not move.
+        ["ui/src/fleet/Fleet.tsx", 1560, 1560, "130/03's loop line + Stop, inside its ceiling with zero headroom; the card peek does not move"],
         ["ui/src/terminal/TerminalControl.tsx", 840, 840, "story 05's wiring, inside its ceiling with zero headroom"],
         // 1000 -> 994 on 2026-09-15 by 127/04: `humanizeSlug` moved to `model.ts` (the backlog row
         // shares it) and the archived pill joined the header cluster — net −6, so the ZERO

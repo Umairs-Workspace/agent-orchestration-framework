@@ -202,7 +202,16 @@ export const archTests = [
       // global-work-store.mjs → work/item-row.mjs`; the leaf imports nothing of its own, so it reaches
       // nothing behind it, enters no DENIED_TRANSITIVE subtree and relaxes no lifecycle denylist. The
       // DRIVER's reach is untouched (24). MEASURED with this file's own walker at aof:verify 127: 74.
-      assert.equal(sinkGraph.seen.size, 74, "the assignment sink reach is exactly 74: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, and none reaches anything new behind it");
+      //
+      // MILESTONE 130/03 ADDS ONE: `src/loop/stop-request.mjs`, the stop request's ONE home
+      // (130/ADR-001), reached because the presence read (`mesh/presence.mjs`, long in this closure)
+      // now reads each live loop's standing request through it for the additive `loops` key
+      // (130/ADR-005 §1). The leaf imports `workspace.mjs`, `fs.mjs` and `degrade.mjs` — all three
+      // already here — so it reaches nothing behind it; `work/loop.mjs` (the usability rule the read
+      // reuses) was already in the closure. No DENIED_TRANSITIVE subtree is entered and no lifecycle
+      // denylist is relaxed. The DRIVER's reach is untouched (24). MEASURED with this file's own
+      // walker at 130/03's build: 75.
+      assert.equal(sinkGraph.seen.size, 75, "the assignment sink reach is exactly 75: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, 130/03 adds the stop request's one home loop/stop-request.mjs behind the presence read, and none reaches anything new behind it");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

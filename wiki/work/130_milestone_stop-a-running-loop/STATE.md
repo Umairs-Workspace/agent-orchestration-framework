@@ -164,6 +164,44 @@ doc: state
   daemons' pill, one `.toggle.subtle` stop, no play glyph, absent at `stopped`, absent with no
   rows). The live window is verify's. (e) *nit, outside the write set* — `app/desktop/ui/README.md`
   does not yet list the `?loops=` demo param.
+- **130/03 build (2026-09-21) — two contract deviations, stated:** (1) the loop line's Stop rides
+  `runAssign` (`assign-affordance.mjs`) through two ADDITIVE options, `refusalCopy` / `timedOut`,
+  rather than a second copy of its deadline race — so `git diff -- ui/` is EIGHT fleet files, not the
+  six task 04 and ADR-005 §6 name; FF-5307's re-pin comment states eight. (2) Task 03's ruling put the
+  "held word" raise in the card; it lives in the pure modules instead — `fleetLoopLines(presence,
+  memory)` and `nodeWorkRegion(node, localNodeId, memory)` take an OPTIONAL rung memory (wire-only
+  without it) — because `Fleet.tsx` had eleven lines of headroom and the raise is headlessly testable
+  there. Both are amendment candidates for the accepting item's contract (Q1), no item created.
+- **130/03 build — item 44's hoist had a FOURTH detector requiring the copy:**
+  `acd-fleet-assign-targets-item-workspace` looked for the resolution seam INSIDE the assign branch's
+  pre-mint region. Re-aimed with the three (the seam is checked where it lives, the CALL's order still
+  in the branch). `files:` widened by it and by five pins the change legitimately moved (FF-5301's sink
+  reach 74 → 75 for `loop/stop-request.mjs`; the fed-by-route gate's projection call; the session index's
+  top-level keys; 50/04's write set; the home-route row for Fleet.tsx 1550 → 1560). Lesson for refine:
+  a story that hoists a copy should declare EVERY gate that measured the copy, not the three the ledger
+  entry happened to name.
+- **130/03 review close (architect + QA lenses, 2026-09-21) — round 1: 0 Blockers; recorded, no item
+  created:** (a) `Fleet.tsx` is at 1560/1560 with ZERO headroom, met by compacting this story's own
+  additions (one-line effect/handler, merged comments), never by trimming inherited rationale; the
+  ratchet's escape (a sibling file) is refused by `ui/src/fleet/` at 20/20 — item 18(a)'s shared layer is
+  the real remedy (item 33 stays open, as ADR-005 §5 foresaw). (b) The presence tick reads each item's
+  runs TWICE (`readActiveRuns` + `readActiveLoops`, the contract's two signatures); a shared read is
+  the fix if the 25 ms presence budget ever bites. (c) `LoopStopRow` derives its hold/message from
+  `assignAffordanceView` with picker-shaped inputs (`hasOptions: true, selected`) — one derivation
+  kept, at the cost of a shim. (d) The request file's `workspaceId` is `null` on an unpinned checkout
+  (130/02 task 01 pins it so — the verb spells `config?.mesh?.workspaceId ?? null`, TECH_DEBT item 4's
+  defect class) while the route has just resolved the id and the card carries it; a fix
+  (`resolveWorkspaceId(workspace)`) was applied and REVERTED because it contradicts 130/02's delivered
+  contract — an amendment candidate (Q1) for the PO. (e) The loop-stop route inherits the face's
+  uncapped `readJsonBody` (a 1 MiB body is lifted like a 40-byte one); a cap is face-wide, reported for
+  the register as task 02 asked. (f) Design conformance: INCONCLUSIVE — no `--url` and no
+  `work.ui.baseUrl`, so no render was attempted; the 1280 render is task 04's `@uat` lane at verify.
+- **130/03 build — the impacted run:** `aof test --scope impacted --story 130/03` widens to ALL here
+  (the dispatch worktree carries no `graphify-out/graph.json`, so every declared file is `no-graph`),
+  and the full suite binds `:4182`. Ran the 157 suites that import the changed modules through
+  `scripts/test.mjs --only` instead: 1445 ok; 3 red are `mesh-worker-clone-credential-pull` reading the
+  shell's own `GIT_ASKPASS` (0 red with it unset) — environmental, not this story's.
+
 ## Verification
 
 <!-- Pointers, not restatements. -->

@@ -138,6 +138,30 @@ export const ASSIGN_DETAIL_TIMED_OUT =
 
 const ASSIGN_MESSAGE_FALLBACK = "Assign failed";
 
+// The two timed-out strings as ONE pair, so an affordance that speaks other words for the same
+// deadline (the loop line's Stop, below) swaps the pair and not the machine.
+const ASSIGN_TIMED_OUT = Object.freeze({ message: ASSIGN_MESSAGE_TIMED_OUT, detail: ASSIGN_DETAIL_TIMED_OUT });
+
+// ── milestone 130 / story 03 (ADR-005 §5; DESIGN §Surface 1 "Refused") — THE LOOP LINE'S
+// STOP TAKES THE SAME SLOT, THE SAME CLASSES AND THE SAME SHAPING. Its refusals are the verb
+// core's coded documents (src/loop/stop.mjs), and the two whose sentence leads with a fact the
+// line already shows (the scope, the loop id) are shaped to their outcome word — the sentence
+// stays in the `title`; every other code renders the server sentence itself, assign's own rule
+// for an unmapped code. The deadline is the SAME two poll intervals (ASSIGN_TIMEOUT_MS) for the
+// same reason, and its words say the honest thing: the outcome is UNKNOWN, never negative —
+// the request may still have landed, and the line's own poll is the authority that will show
+// it (a 15 s propagation tick plus the 5 s poll; no separate acknowledgment, no re-load).
+export const LOOP_STOP_REFUSAL_COPY = Object.freeze({
+  "loop-stop-not-local": "not local",
+  "loop-stop-no-declaration": "no loop",
+});
+export const LOOP_STOP_MESSAGE_TIMED_OUT = "timed out";
+export const LOOP_STOP_DETAIL_TIMED_OUT =
+  `The stop has not answered after ${ASSIGN_TIMEOUT_MS / 1000}s (two poll intervals), so the button stopped waiting. `
+  + "It reports the call only: the request may still have landed on this node. "
+  + "The line's own poll remains the authority — if it did, the line will read stopping or cancelling by itself.";
+export const LOOP_STOP_TIMED_OUT = Object.freeze({ message: LOOP_STOP_MESSAGE_TIMED_OUT, detail: LOOP_STOP_DETAIL_TIMED_OUT });
+
 // DG-13 clause 4 — "the message may not re-state what the card already says".
 // The raw server sentence `Item "18" already has an active assignment held by
 // "umamis-mac-mini" (state "assigned")` spends its width on the ref, which
@@ -532,8 +556,10 @@ export function assignRefusalLadder(outcome, holder, budgetCh = ASSIGN_MESSAGE_B
 // The SHORT copy the row renders: outcome first, then the holder — the one fact
 // no other region reports. A code this map does not know keeps the server's own
 // sentence (which the slot truncates, with the whole of it in the `title`).
-function refusalMessage(cause, detail) {
-  const outcome = typeof cause?.code === "string" ? ASSIGN_REFUSAL_COPY[cause.code] : undefined;
+// `copy` is the code → outcome-word table for the affordance asking (assign's by default;
+// the loop line's Stop hands its own) — the shaping is one function, the words are per face.
+function refusalMessage(cause, detail, copy = ASSIGN_REFUSAL_COPY) {
+  const outcome = typeof cause?.code === "string" ? copy[cause.code] : undefined;
   if (!outcome) return detail;
   const holder = typeof cause?.holder === "string" && cause.holder.trim() ? cause.holder.trim() : null;
   return assignRefusalLadder(outcome, holder);
@@ -559,9 +585,9 @@ export function assignSucceeded() {
 // `cause` is the CODED envelope the client throws (an Error carrying the verb's
 // own `code`/`holder`), or a bare string. `error` is what the row RENDERS (short,
 // outcome-first); `detail` is the full server text the slot puts in its `title`.
-export function assignRefused(cause) {
+export function assignRefused(cause, copy = ASSIGN_REFUSAL_COPY) {
   const detail = refusalDetail(cause);
-  return { phase: ASSIGN_PHASE_REFUSED, error: refusalMessage(cause, detail), detail };
+  return { phase: ASSIGN_PHASE_REFUSED, error: refusalMessage(cause, detail, copy), detail };
 }
 
 // DG-14 clause 2 — at the deadline the row reads the EXISTING `refused`
@@ -569,8 +595,10 @@ export function assignRefused(cause) {
 // re-enabled with the selection kept, action back to `Assign →` in its `primary`
 // tint, inline `destructive` message, NO hold) is literally the same derivation.
 // No new state, no new vocabulary — only the copy differs.
-export function assignTimedOut() {
-  return { phase: ASSIGN_PHASE_REFUSED, error: ASSIGN_MESSAGE_TIMED_OUT, detail: ASSIGN_DETAIL_TIMED_OUT };
+// `timedOut` is the `{ message, detail }` pair the row renders at the deadline — assign's by
+// default; the loop line's Stop hands LOOP_STOP_TIMED_OUT. Same phase, same derivation, other words.
+export function assignTimedOut(timedOut = ASSIGN_TIMED_OUT) {
+  return { phase: ASSIGN_PHASE_REFUSED, error: timedOut.message, detail: timedOut.detail };
 }
 
 // The hold expiring. Only a `sent` acknowledgment decays — a `refused` error
@@ -672,8 +700,12 @@ export function assignAffordanceView(ctx = {}) {
 // nothing at all.
 const ASSIGN_DEADLINE = Symbol("assign-deadline");
 
+// milestone 130 / story 03 — the loop line's Stop rides this SAME orchestrator (begin → POST →
+// `sent` + hold, or `refused` with no hold, or the deadline), swapping only its words:
+// `refusalCopy` (the code → outcome table) and `timedOut` (the deadline pair). One machine,
+// two faces; a second copy of the race is how the two would come to disagree about a deadline.
 export async function runAssign(
-  { assign, onAssigned, onState, timeoutMs = ASSIGN_TIMEOUT_MS } = {},
+  { assign, onAssigned, onState, timeoutMs = ASSIGN_TIMEOUT_MS, refusalCopy = ASSIGN_REFUSAL_COPY, timedOut = ASSIGN_TIMED_OUT } = {},
   { ref, nodeId, workspaceId, phase } = {},
 ) {
   onState?.(assignBegin());
@@ -711,11 +743,11 @@ export async function runAssign(
     // is permitted (if the dispatch did land, that re-click draws the ordinary
     // `already assigned → <node>` refusal, a correct answer rather than a new
     // failure mode).
-    onState?.(assignTimedOut());
+    onState?.(assignTimedOut(timedOut));
     return { ok: false, timedOut: true };
   }
   if ("error" in outcome) {
-    onState?.(assignRefused(outcome.error));
+    onState?.(assignRefused(outcome.error, refusalCopy));
     return { ok: false, error: outcome.error };
   }
   onState?.(assignSucceeded());

@@ -119,6 +119,36 @@ function preMintRegion(block) {
   return at < 0 ? "" : block.slice(0, at);
 }
 
+// ── milestone 130 / story 03 (TECH_DEBT item 44 paid) — THE SEAM HAS ONE HOME ──────────────
+//
+// Item 44 measured that this detector was one of the four that REQUIRED the resolution block
+// to be a copy inside each route: it looked for `queryGlobalMeshStatus(`, the `workspaces`
+// lookup, the 404, the `existsSync(` probe and the 409 INSIDE the assign branch's pre-mint
+// region. The block is now ONE helper, `resolveLocalWorkspaceRow(workspaceId, response)`,
+// inside `ui-serve.mjs`, and the assign branch CALLS it. So the seam clauses are checked on
+// the region that carries the seam: the helper's body when the pre-mint region calls it, the
+// pre-mint region itself when it still resolves inline (the pre-hoist shape, which the CLEAN
+// self-check below keeps green — the rule did not move, only where its text lives). The
+// ORDER clause is unchanged: the call must sit before the mint, as the inline block did.
+const RESOLVER_HELPER = "resolveLocalWorkspaceRow";
+
+function resolverHelperBody(source) {
+  const at = source.search(new RegExp(`(?:async\\s+)?function\\s+${RESOLVER_HELPER}\\s*\\(`));
+  if (at < 0) return null;
+  const bodyStart = source.indexOf("{", source.indexOf(")", at));
+  return bodyStart < 0 ? null : sliceBalanced(source, bodyStart);
+}
+
+// seamRegion(source, pre) — where the resolution seam's text lives for this branch: the
+// helper's body when the pre-mint region calls the helper, else the pre-mint region itself.
+// A call to a helper the face never declares resolves NOTHING, and says so.
+function seamRegion(source, pre) {
+  if (!new RegExp(`\\b${RESOLVER_HELPER}\\s*\\(`).test(pre)) return { region: pre, via: null, problem: null };
+  const body = resolverHelperBody(source);
+  if (body == null) return { region: "", via: RESOLVER_HELPER, problem: `the assign branch calls ${RESOLVER_HELPER}( but the face declares no such helper — the seam it stands in for does not exist` };
+  return { region: body, via: RESOLVER_HELPER, problem: null };
+}
+
 // codedRefusalProblems(region, code, status) — the coded refusal exists in this
 // region AND carries the pinned HTTP number (the ADR-012 AMENDMENT mapping
 // table). Window-scoped: the code literal is the 4th argument of the
@@ -169,22 +199,27 @@ export function targetResolutionProblems(rawSource) {
   }
   problems.push(...codedRefusalProblems(pre, "invalid-workspace", 400, "a blank/absent workspaceId must be a coded refusal, NEVER a fallback to the server's own workspace"));
 
-  // inv.5 — resolution runs through the sanctioned query surface, and only it.
-  if (!/queryGlobalMeshStatus\s*\(/.test(pre)) {
-    problems.push("the assign branch does not resolve the workspaceId through queryGlobalMeshStatus — the sanctioned seam (ADR-012 AMENDMENT ruling 2)");
+  // inv.5 — resolution runs through the sanctioned query surface, and only it. Since 130/03
+  // the seam's text lives in ONE helper the branch calls (item 44's hoist); the clauses are
+  // checked wherever it lives, and the call's ORDER (before the mint) is what `pre` proves.
+  const seam = seamRegion(source, pre);
+  if (seam.problem) problems.push(seam.problem);
+  const where = seam.via ? `${RESOLVER_HELPER} (called by the assign branch)` : "the assign branch";
+  if (!/queryGlobalMeshStatus\s*\(/.test(seam.region)) {
+    problems.push(`${where} does not resolve the workspaceId through queryGlobalMeshStatus — the sanctioned seam (ADR-012 AMENDMENT ruling 2)`);
   }
-  if (!/workspaces[\s\S]{0,160}?(\.find\s*\(|\.filter\s*\(|\[\s*0\s*\])/.test(pre)) {
-    problems.push("the assign branch does not look the workspaceId up in status.workspaces[] — the row that carries projectRoot");
+  if (!/workspaces[\s\S]{0,160}?(\.find\s*\(|\.filter\s*\(|\[\s*0\s*\])/.test(seam.region)) {
+    problems.push(`${where} does not look the workspaceId up in status.workspaces[] — the row that carries projectRoot`);
   }
-  problems.push(...codedRefusalProblems(pre, "workspace-not-found", 404, "a workspaceId absent from the mesh projection must refuse"));
+  problems.push(...codedRefusalProblems(seam.region, "workspace-not-found", 404, "a workspaceId absent from the mesh projection must refuse"));
 
   // inv.5 — a row published by ANOTHER machine (project_root not on this disk)
   // is a LOUD coded refusal, never a fallback and never a misleading
   // `ref-not-found` from a degraded loadWorkspace.
-  if (!/\b(existsSync|statSync|lstatSync|stat|lstat|access)\s*\(/.test(pre)) {
-    problems.push("the assign branch never probes whether the resolved projectRoot exists on THIS machine (ADR-012 AMENDMENT: the reachability caveat)");
+  if (!/\b(existsSync|statSync|lstatSync|stat|lstat|access)\s*\(/.test(seam.region)) {
+    problems.push(`${where} never probes whether the resolved projectRoot exists on THIS machine (ADR-012 AMENDMENT: the reachability caveat)`);
   }
-  problems.push(...codedRefusalProblems(pre, "workspace-not-local", 409, "a resolved projectRoot that is not on this machine must name its own cause"));
+  problems.push(...codedRefusalProblems(seam.region, "workspace-not-local", 409, "a resolved projectRoot that is not on this machine must name its own cause"));
 
   // inv.6 — the mint's target is ASSERTED, with the VERB-IDENTICAL derivation.
   if (!/config\s*\??\.\s*mesh\s*\??\.\s*workspaceId/.test(pre) || !/workspaceIdForProjectRoot\s*\(/.test(pre)) {
@@ -387,6 +422,51 @@ const PLANT_NO_LOCALITY_CHECK = CLEAN.replace(
   '    if (!row.projectRoot || !existsSync(row.projectRoot)) { sendApiError(response, 409, "That workspace is not checked out on this machine.", "workspace-not-local"); return; }',
   '',
 );
+
+// ── 130/03 — THE HOISTED SHAPE (TECH_DEBT item 44 paid): the resolution seam lives ONCE, in
+// `resolveLocalWorkspaceRow`, and the assign branch CALLS it before the mint. This is what the
+// real face ships now; the detector must stay quiet on it and fire on its two broken halves.
+const CLEAN_HOISTED = [
+  'async function resolveLocalWorkspaceRow(workspaceId, response) {',
+  '  const status = await queryGlobalMeshStatus({ ...globalStoreOptions });',
+  '  const row = (status.workspaces ?? []).find((candidate) => candidate.workspaceId === workspaceId);',
+  '  if (!row) { sendApiError(response, 404, "Workspace is not in the mesh projection.", "workspace-not-found"); return null; }',
+  '  if (!row.projectRoot || !existsSync(row.projectRoot)) { sendApiError(response, 409, "That workspace is not checked out on this machine.", "workspace-not-local"); return null; }',
+  '  return { status, row };',
+  '}',
+  'if (pathname === "/api/mesh/assign") {',
+  '  if (!admitWriteRequest(request, response)) return;',
+  '  const ref = typeof body?.ref === "string" ? body.ref.trim() : "";',
+  '  const nodeId = typeof body?.nodeId === "string" ? body.nodeId.trim() : "";',
+  '  const workspaceId = typeof body?.workspaceId === "string" ? body.workspaceId.trim() : "";',
+  '  if (!ref || !nodeId) { sendApiError(response, 400, "Both ref and nodeId are required.", "invalid-body"); return; }',
+  '  if (!workspaceId) { sendApiError(response, 400, "workspaceId is required.", "invalid-workspace"); return; }',
+  '  try {',
+  '    const resolved = await resolveLocalWorkspaceRow(workspaceId, response);',
+  '    if (!resolved) return;',
+  '    const { row } = resolved;',
+  '    const assignWorkspace = await loadWorkspace(row.projectRoot, undefined, { env: globalStoreOptions?.env });',
+  '    const ownWorkspaceId = assignWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(assignWorkspace.projectRoot);',
+  '    if (ownWorkspaceId !== workspaceId) { sendApiError(response, 409, "The resolved workspace is not the requested one.", "workspace-id-mismatch"); return; }',
+  '    const result = await assignWork(assignWorkspace, ref, nodeId, { globalWorkStoreOptions: globalStoreOptions ?? {} });',
+  '    if (!result.ok) { const { ok: _ok, error: message, code, ...extra } = result; sendApiError(response, assignGateStatus(code), message, code, extra); return; }',
+  '    sendJson(response, 200, result);',
+  '  } catch (error) {',
+  '    sendApiError(response, error.status ?? 500, error.message, error.code ?? "assign-failed", { path: error.path ?? null });',
+  '  }',
+  '  return;',
+  '}',
+].join("\n");
+
+// PLANT H1 — the helper is called but lost its reachability probe: every caller walks
+// straight into loadWorkspace on a foreign row (item 44's "a copy that drifts" — inverted).
+const PLANT_HOISTED_NO_PROBE = CLEAN_HOISTED.replace(
+  '  if (!row.projectRoot || !existsSync(row.projectRoot)) { sendApiError(response, 409, "That workspace is not checked out on this machine.", "workspace-not-local"); return null; }',
+  '',
+);
+
+// PLANT H2 — the branch calls a helper the face never declares: the call resolves nothing.
+const PLANT_HOISTED_PHANTOM = CLEAN_HOISTED.split("\n").slice(7).join("\n");
 
 // The CORRECTED component shape (hand-written, never a string-replace on the
 // real file): the detector must stay quiet on it regardless of the tree's state.
@@ -593,6 +673,20 @@ export const archTests = [
         targetResolutionProblems(CLEAN),
         [],
         "the hand-written CORRECTED assign branch (required workspaceId, queryGlobalMeshStatus resolution, locality check, pre-mint identity assertion) stays quiet",
+      );
+      // 130/03 — the HOISTED shape (the one the real face ships) stays quiet too, and its two
+      // broken halves fire: a helper that lost its probe, and a call to a helper that does
+      // not exist.
+      assert.deepEqual(targetResolutionProblems(CLEAN_HOISTED), [], "the HOISTED shape — the seam in resolveLocalWorkspaceRow, called before the mint — stays quiet");
+      assert.notEqual(PLANT_HOISTED_NO_PROBE, CLEAN_HOISTED, "plant H1 actually differs from the hoisted clean shape");
+      assert.ok(
+        targetResolutionProblems(PLANT_HOISTED_NO_PROBE).some((problem) => /never probes|workspace-not-local/.test(problem)),
+        "self-check: a hoisted helper that lost its reachability probe trips — the seam is checked where it lives",
+      );
+      assert.notEqual(PLANT_HOISTED_PHANTOM, CLEAN_HOISTED, "plant H2 actually differs from the hoisted clean shape");
+      assert.ok(
+        targetResolutionProblems(PLANT_HOISTED_PHANTOM).some((problem) => /declares no such helper/.test(problem)),
+        "self-check: a call to an undeclared resolver trips — a phantom helper resolves nothing",
       );
 
       const plants = [

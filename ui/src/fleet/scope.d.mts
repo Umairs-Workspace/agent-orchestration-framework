@@ -1,6 +1,6 @@
 // Type declarations for scope.mjs (the pure fleet scope/region/state helpers).
 import type { FleetNode, FleetStatus, GlobalNode, GlobalWorkItem } from "./api";
-import type { CurrentWorkLines } from "./runs.d.mts";
+import type { CurrentWorkLines, FleetLoopLine, StopRungMemory } from "./runs.d.mts";
 
 export type Scope = "global" | "local";
 export type PageState = "loading" | "error" | "empty" | "populated";
@@ -145,6 +145,22 @@ export declare function nodePanelFacts(node: Partial<FleetNode> & Record<string,
 // global node panel (the card production actually renders) and the pre-38
 // local NodeCard project from `node.presence`.
 export declare function nodeCurrentWork(node: Partial<FleetNode> & Record<string, unknown>): CurrentWorkLines;
+
+// milestone 130 / story 03 (ADR-005 §5) — the WHOLE current-work region the production card
+// renders: the pinned lines (`idle` dropped when a loop exists), the token, and the loop
+// entries beside them, each carrying the remote tail in its `title` when the card's node is not
+// `localNodeId`. `memory` (the card's rung memory) raises each entry's word to the one held
+// locally for the same drive.
+export type NodeWorkRegion = {
+  lines: string[];
+  token: "primary" | "muted";
+  loops: FleetLoopLine[];
+};
+export declare function nodeWorkRegion(
+  node: Partial<GlobalNode> & Record<string, unknown>,
+  localNodeId: string | null | undefined,
+  memory?: StopRungMemory | null
+): NodeWorkRegion;
 
 export type DiagnosticsSummary = {
   projectedAt: string | null;
