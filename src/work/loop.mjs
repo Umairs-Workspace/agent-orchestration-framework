@@ -1447,12 +1447,20 @@ function recoverableDeclaration(loop) {
 // persists a `deadline-exhausted` halt, so a lineage whose compute budget is spent still looks
 // `ready` to the store — and a reconciler fed that row would relaunch it every tick, forever. The
 // comparison routes through `decideScheduleToClose` so `>=` is the halt in ONE home.
+// THE STOPPED SET'S DEFAULT-ABSENT VALUE (130/ADR-004 §4). `stopped` is an ADDITIVE input — the
+// `loopRunId`s whose stop request the loop has honoured, read by the producer and never here —
+// and an absent, empty or ill-typed one drops nothing, so every existing caller answers
+// byte-identically. `instanceof Set`, never duck-typed: a Set-like is not the producer's set.
+// Built from the global; this module still imports nothing.
+const EMPTY_STOPPED = Object.freeze(new Set());
+
 export function decideSupervisedDeclarations(input = {}) {
   const workspaces = Array.isArray(input.workspaces) ? input.workspaces : [];
   // `ceilingMs` is resolved PER WORKSPACE below (each declaration against its own workspace's
   // `scheduleToClose`), so it is deliberately not destructured from `input` here — `input.ceilingMs`
   // is the fallback a member with no readable config lands on.
-  const { maxAttempts, stalenessMs, now, isRunning, isStale, retryReadiness } = input;
+  const { maxAttempts, stalenessMs, now, isRunning, isStale, retryReadiness, stopped } = input;
+  const stoppedSet = stopped instanceof Set ? stopped : EMPTY_STOPPED;
   const nowMs = Date.parse(now);
   const rows = [];
 
@@ -1488,6 +1496,11 @@ export function decideSupervisedDeclarations(input = {}) {
       // what the loop is doing now.
       const declaration = readLoopDeclaration(runs);
       if (declaration == null || declaration.supervised !== true) continue;
+      // A HONOURED stop yields no row (130/ADR-004 §4-§5), whatever the latest record says — the
+      // skip PRECEDES the liveness branch, so a stopped loop is never retained on liveness either.
+      // A `requested` mark is not in this set: a draining loop keeps its row until it halts. The
+      // row is what keeps the reconcile from relaunching a stopped loop; `--resume` clears the mark.
+      if (stoppedSet.has(declaration.loopRunId)) continue;
       const latest = [...runs].sort(compareRuns).at(-1);
 
       const inFlight = typeof isRunning === "function" && isRunning(latest) === true;

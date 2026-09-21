@@ -128,6 +128,42 @@ doc: state
   if a face ever wants the lane runIds, the slot would need to admit an array — a contract
   amendment for a later item, not this one. Round 1: 0 Blockers; this Important and one nit
   (a request whose writer has no node renders `by=<pid>`) recorded here.
+- **130/04 build (2026-09-21) — `aof test --scope impacted --story 130/04` is the FULL suite on
+  this story, and it runs at once:** four of the seven declared files are outside the JS import
+  graph (three `.rs` under `app/desktop/crates/`, plus `app/desktop/ui/app.js`), each a
+  `not-in-graph` widening, so the selector widened to `all` and launched `scripts/test.mjs` with no
+  selection — the run this machine's live `:4182` daemon forbids (the memory names new paths; a
+  non-JS path widens the same way). Killed within a minute; the runner's per-test `~/.aof-test`
+  homes kept the real home clean. The build ran the write set's suites through
+  `scripts/test.mjs --only` (19 suites, 148 ok) plus `cargo test` (116) and `cargo check` of the
+  shell. Lesson for the continue prompt / the selector: a story whose `files:` names Rust or the
+  desktop UI has no impacted scope, and `--story` should say so before it widens.
+- **130/04 build — two contract readings, stated:** (1) the shell's grace counts from the cancel
+  spawn's exit 0 (the instant the level-2 request is on disk for the loop to read), which is at or
+  after the press either way and is the one clock that measures the loop's own time to honour it;
+  (2) a retire while a declaration's child is alive waits for the child's own exit rather than
+  killing it — the row goes only for a halting loop (its honoured mark) or a terminal record, and
+  the old `start_kill` on that path is what ADR-004 names as the orphaning defect.
+- **130/04 review close (solo, 2026-09-21) — round 1: 0 Blockers; recorded, no item created:**
+  (a) *architect, nit* — `supervise_child` is now ~230 lines (the ladder's wake handler inside the
+  select arm); linear and commented, and the arch controls pin the one-spawner shape it must keep,
+  so an extraction of the wake handler onto `StopLadder` is a later tidy, not this story's.
+  (b) *QA, recorded (ADR-004's own shape)* — after the TREE KILL the desktop writes nothing: the
+  request stays `requested` at level 2, the run record stays `running` (stale after the heartbeat
+  threshold), the row persists `stopped` and HELD until `--resume` clears the request — the
+  "leaked running row" ADR-004 accepts for the fallback. ADR-004 rejected the desktop touching the
+  request file, so the fix is an ADR-level question (a `honoured` mark after a kill, or the
+  verb's `--stop` re-run as `live: false`), for verify/retro to weigh, never this lane's.
+  (c) *QA, nit* — `honouredStops` reads one mark per distinct `loopRunId` in the run records,
+  supervised or not; one ENOENT read per unlisted id every 30 s. Filtering would re-derive the
+  engine's supervision rule in the producer, which is the duplication the split forbids.
+  (d) *designer, INCONCLUSIVE by the lane's rule, CONFORMS on the fixture render* — no
+  `work.ui.baseUrl` and no `--url`, so the lane attempted no render; the developer's own headless
+  render of the standalone fixture (`index.html?loops=<signal>`, chromium-1234, light and dark)
+  matches Surface 2's binding checklist region by region (second `.controlbar`, `loop 129`, the
+  daemons' pill, one `.toggle.subtle` stop, no play glyph, absent at `stopped`, absent with no
+  rows). The live window is verify's. (e) *nit, outside the write set* — `app/desktop/ui/README.md`
+  does not yet list the `?loops=` demo param.
 ## Verification
 
 <!-- Pointers, not restatements. -->
