@@ -126,6 +126,17 @@ import { archTests as acdLoopConcurrencySingleHomeTests } from "./acd-loop-concu
 import { archTests as acdLoopFamilyBoundaryTests } from "./acd-loop-family-boundary.test.mjs";
 import { archTests as acdLaneRecordsAndTheDeclarationTests } from "./acd-lane-records-and-the-declaration.test.mjs";
 import { archTests as acdLaneGradeIsLaneScopedTests } from "./acd-lane-grade-is-lane-scoped.test.mjs";
+// milestone 130 / story 05 — the seven controls of the stop register, in three files
+// (ARCHITECTURE.md § Fitness functions; each owes a red probe in VERIFICATION.md). Every one names
+// which of this row's three subjects it is. FF-13001 + FF-13003 the RECORD — the stop request is
+// one file under the aof home and the verb is a probe-shaped write through one core; FF-13002 +
+// FF-13004 the LADDER — the interrupt path always settles, and a honoured declaration yields no
+// row; FF-13005 + FF-13006 + FF-13007 (node leg) the RECORD again — the loop's presence entry
+// carried additively by the same pass, the fleet's local-only button and its one route, the
+// desktop's argv formed in core. FF-13007's cargo half rides `supervision.rs` (130/04).
+import { archTests as acdLoopStopRequestSingleHomeTests } from "./acd-loop-stop-request-single-home.test.mjs";
+import { archTests as acdLoopStopSettlesTheRunTests } from "./acd-loop-stop-settles-the-run.test.mjs";
+import { archTests as acdLoopStopReachesEveryFaceTests } from "./acd-loop-stop-reaches-every-face.test.mjs";
 
 export const tests = [
   // milestone 52 / story 04 — the nine loop-registry fitness functions
@@ -199,4 +210,8 @@ export const tests = [
   ...acdLoopFamilyBoundaryTests,
   ...acdLaneRecordsAndTheDeclarationTests,
   ...acdLaneGradeIsLaneScopedTests,
+  // milestone 130 / story 05 — FF-13001/FF-13003, FF-13002/FF-13004, FF-13005/FF-13006/FF-13007 (see the import note).
+  ...acdLoopStopRequestSingleHomeTests,
+  ...acdLoopStopSettlesTheRunTests,
+  ...acdLoopStopReachesEveryFaceTests,
 ];

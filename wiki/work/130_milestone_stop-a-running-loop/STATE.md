@@ -18,7 +18,7 @@ doc: state
 - [ ] 02 · the-verb-and-the-shell-honour-it — not-started (depends on 01)
 - [ ] 03 · the-fleet-sees-and-stops-it — not-started (depends on 02)
 - [ ] 04 · the-desktop-stops-what-it-supervises — not-started (depends on 01, 02)
-- [ ] 05 · the-register — not-started (depends on 02, 03, 04)
+- [ ] 05 · the-register — in-review (built + reviewed 2026-09-21, solo lane)
 - [ ] 06 · the-live-stop — not-started (depends on 05)
 
 ## Notes & decisions in flight
@@ -201,6 +201,54 @@ doc: state
   and the full suite binds `:4182`. Ran the 157 suites that import the changed modules through
   `scripts/test.mjs --only` instead: 1445 ok; 3 red are `mesh-worker-clone-credential-pull` reading the
   shell's own `GIT_ASKPASS` (0 red with it unset) — environmental, not this story's.
+
+- **130/05 build (2026-09-21, solo) — three contract literals were stale by sequencing, the DELTAS held:**
+  (1) the register and task 00 say the `test/arch/loop` row rises `55 -> 58`; 129/05 landed its four
+  after the register was written (2026-09-13), so the row was 59/59 and rises `59 -> 62` by exactly the
+  three files — the count is the invariant (FF-11904 asserts ceiling == count), the literal is not.
+  (2) FF-13002's "in `src/commands/loop.mjs` … exactly three drive sites": since 129/04 two of the
+  three (`drive(retried.record)`, the verify cross) live in `src/loop/cycle.mjs`, so the control sweeps
+  the family FF-12602 sweeps (shell + ladder) and the count holds as cited. (3) task 00's "APPENDED after
+  `...acdSiteIsProjectedNotCopiedTests`": the three spreads are appended after 129/05's block, which
+  already follows it; nothing above is re-ordered. Amendment candidates for the accepting item's
+  contract (Q1), no item created.
+- **130/05 build — the impacted run widens to ALL here too:** every declared path is a NEW test file, the
+  index or the budget table, so `aof test --scope impacted --story 130/05` widens each `not-in-graph`
+  path to the full suite the live `:4182` daemon forbids. Ran instead through `scripts/test.mjs --only`:
+  the three files (20 cases), the 16 standing controls the register cites plus the registration, purity
+  and stripper class controls (143 ok), and every `test/arch/{loop,testing,audit}` file (475 ok), each
+  under a fresh `AOF_GLOBAL_HOME`; cargo 116/116 for the cited half. `node --check` clean on the five
+  touched files; the repo has no separate lint/typecheck script (`npm run check` is the full suite).
+- **130/05 probes — one measurement against task 01's ruling 4:** the ruling expected
+  `acd-mesh-ui-no-core-import` to red beside FF-13003's route probe (the read re-implemented in
+  `ui-serve.mjs`); measured, it and `acd-mesh-ui-read-only` stay GREEN — the face still imports
+  `../loop/stop.mjs` for `STOP_REFUSALS`, and `../work/loop.mjs` / `../run-store.mjs` /
+  `../loop/stop-request.mjs` are all admitted by its allow-list. FF-13003's importer-set leg is therefore
+  the ONE guard against a re-implemented route; recorded in the register cell, no change asked of the
+  standing control (its subject is the command layer, not the core).
+- **130/05 build — the declared `reads:` was incomplete for a register story:** the controls' own
+  SUBJECTS were outside it — `src/loop/cycle.mjs` (two of FF-13002's three drive sites),
+  `src/mesh/launcher.mjs` + `src/commands/mesh/heartbeat.mjs` (FF-13005's two callers),
+  `app/desktop/crates/app/src/supervisor.rs`, `main.rs` and `app/desktop/ui/app.js` (FF-13007's node
+  leg) — plus the suites whose recipes the fixture legs mirror (`test/loop/loop-command-stops`,
+  `loop-command-resume`) and the class controls a new arch file must satisfy (`acd-purity-is-external`,
+  `acd-test-suite-registration`, `acd-mesh-ui-read-only`). Each was read and is reported here. Lesson
+  for refine: a register story's `reads:` should name every file a declared control SWEEPS, not only
+  the modules the ADRs discuss.
+- **130/05 review close (solo — architect, QA and craft lenses in turn, 2026-09-21) — round 1:
+  0 Blockers; recorded, no item created:** (a) *architect, nit* — the four-line `resolved(fromRel,
+  specifier)` helper now has three copies under `test/arch/loop/` (the two new files and
+  `acd-loop-family-boundary`); `module-family.mjs` exports the extractor and the family classifier but
+  no plain resolver, and that module is outside this story's `files:` — a lift is a later tidy.
+  (b) *architect, nit* — FF-13003's launch-predicate leg cuts the arrow's text at its first `?`; a
+  rewrite of `launch` using optional chaining before the ternary would red it with the predicate text
+  printed, which is a legible false red on a shape ADR-002 §1 spells exactly. (c) *QA, recorded* — the
+  standing mesh-ui controls do not red on FF-13003's route probe (measured above); the importer-set leg
+  is the one guard. (d) *QA, recorded* — the cited-control checks (FF-13006's `fleetCurrentWorkLines`
+  pin, FF-13007's cargo half) assert that the citation RESOLVES (the file exists, is registered, names
+  the function/tests) and do not re-run it, as the register's "(cited)" asks; the cargo half was run
+  once, for its probe. (e) *craft* — CRLF like the checkout, comment density like the neighbours,
+  no `console.log`, no silent catch; `node --check` clean.
 
 ## Verification
 
