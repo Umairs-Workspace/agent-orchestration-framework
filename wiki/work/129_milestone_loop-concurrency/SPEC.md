@@ -6,7 +6,7 @@ title: "Loop concurrency — aof work loop drives write-disjoint story waves in 
 status: in-progress
 owner: product-owner
 created: 2026-09-12
-updated: 2026-09-14
+updated: 2026-09-22
 depends: []
 schema: 1
 aofVersion: 0.1.0

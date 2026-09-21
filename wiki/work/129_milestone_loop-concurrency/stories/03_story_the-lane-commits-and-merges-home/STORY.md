@@ -8,7 +8,7 @@ depends: []
 status: done
 owner: product-owner
 created: 2026-09-12
-updated: 2026-09-13
+updated: 2026-09-22
 adrs: [ADR-002, ADR-008]
 reads:
   - wiki/work/129_milestone_loop-concurrency/SPEC.md

@@ -8,7 +8,7 @@ depends: [7]
 status: in-review
 owner: product-owner
 created: 2026-09-12
-updated: 2026-09-15
+updated: 2026-09-22
 adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-007, ADR-008]
 reads:
   - wiki/work/129_milestone_loop-concurrency/SPEC.md
@@ -32,6 +32,8 @@ files:
   - src/loop/child-drive.mjs
   - test/audit/audit-spawn-bounded.test.mjs
   - test/loop/drive-command-phase-drivers.test.mjs
+  - src/loop-diag.mjs
+  - test/loop/loop-diag.test.mjs
   - .aof/aof.config.json
   - wiki/work/129_milestone_loop-concurrency/STATE.md
   - wiki/work/127_milestone_backlog-and-archive/STATE.md
@@ -73,6 +75,9 @@ intact, then `--resume` after the hand merge; `aof work dispatch --list` clean a
 - Runs LAST, after the register is green: a live run over an unproven control is measurement, not
   evidence. The procedure and its readings are the evidence; the STATE.md entry cites run ids, lane
   paths, base shas and the halt's detail, never restates the scenario.
+- Attempt 3 (2026-09-21, read at the source by `aof:continue 129/06 --solo`): the loop-diag `start` line
+  gains `build=<aof --version string>` — the payload was re-stamped mid-run and the log could not say
+  which tree ran. The held third and the conflict drill stay unmeasured; see 129 STATE.md.
 - Deploy per `.claude/rules/build-deploy-restart.md` (`node scripts/install-local.mjs --skip-ui`)
   before the run, and `aof --version` read for the payload build id — the loop that runs must be
   the tree that was built.

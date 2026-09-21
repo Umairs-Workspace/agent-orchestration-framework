@@ -19,9 +19,15 @@ doc: state
 - [x] `04_story_the-wave-tick` — done (built + reviewed 2026-09-14, solo, resumed run `20260914T123830334Z-0001`; three lenses, one round, 0 Blockers; accepted 2026-09-14 by `aof:verify 129/04` — `VERIFICATION.md` `129/04`, `F-48`–`F-50`; `F-07`/`F-08`/`F-16`/`F-18`/`F-44` closed, `F-15` re-routed to 06, `F-39` to 05, `F-08`'s operational rule LIFTED, 03's composed-verbs gap discharged)
 - [x] `05_story_the-account-and-the-register` — done (built + reviewed 2026-09-14, solo, run `20260914T183538595Z-0000`; three lenses inline, 0 Blockers; accepted 2026-09-14 by `aof:verify 129/05` — `VERIFICATION.md` `129/05`, `F-51`–`F-54`; the seven register rows green with every probe re-observed; `F-17`/`F-23`/`F-39` closed, `F-51` fixed, `F-53` an operator item)
 - [x] `07_story_the-loop-settings-are-self-contained` — done (scoped 2026-09-15 from the operator's sign-off finding `F-55`; built + reviewed solo, three lenses inline, 0 Blockers; accepted 2026-09-15 by `aof:verify` — `VERIFICATION.md` `129/07`, `F-55`–`F-57`; four standing controls re-pointed and red-probed)
-- [ ] `06_story_the-second-live-run` — in-review (built 2026-09-14: the key set, the probe answers; `depends: [7]` since 2026-09-15 so the `@manual` live run exercises the final surface; preconditions re-measured at its accept — see the feedback entries)
+- [ ] `06_story_the-second-live-run` — in-review (built 2026-09-14; attempts 1–2 on 127 (2026-09-15/16) drove one-member waves, read at the 2026-09-17 door — `VERIFICATION.md` `129/06`, `F-58`–`F-64`; attempt 3 on 130 (2026-09-21) measured the two-lane wave and its serial merges, read at the 2026-09-22 door — `F-65`–`F-68`; HELD pending the operator's ruling on the unperformed conflict drill — `VERIFICATION.md` `## Accept decision`)
 
 ## Notes & decisions in flight
+
+- **06's accept is the operator's ruling (door, 2026-09-22).** Three live runs measured the SPEC's
+  headline; the forced-conflict drill's live half never ran (fixture-held, FF-12904, its `--resume`
+  half read at attempt 2). Accept on the readings with the drill an open `OUTCOME.md` gap, or hold
+  for a fourth run — `VERIFICATION.md` `## Accept decision` states both; the milestone door waits.
+  The regression gate ran at this door on a detached worktree at the door's commit (`REGRESSION.md`).
 
 - **The configuration surface, decided with the operator (2026-09-15).** At the 05 accept the
   operator held the milestone door: "don't sign off this milestone until I sign off the
@@ -92,6 +98,97 @@ doc: state
 
 <!-- Raw, attributed entries; triaged into VERIFICATION.md / RETROSPECTIVE.md at aof:verify. -->
 
+- **129/06 live run, attempt 3 (operator, 2026-09-21 16:42Z → 22:14Z, `aof work loop 130`, ONE
+  loop process pid 58920, `supervised: false`; `loop-diag.130.2026-09-21T16-42-17-910Z.log`, 615
+  lines — a `--resume` probe at 16:39Z answered "Nothing to resume" and exited 0).** READ AT THE
+  SOURCE 2026-09-21 22:50–23:10Z by `aof:continue 129/06 --solo` (run
+  `20260921T224926900Z-0001`): the log, the lane and wave records now in the primary, the commit
+  graph, `dispatch --list`, `mesh status --declarations`, `BUILD_ID.json`. **The SPEC's headline,
+  measured:** `Wave 3 — dispatching 130/03, 130/04 (bound 3).` at 19:21:49Z — two lanes cut at
+  `a49725a` (`dispatch-130-03` on `aof/mesh/130-03`, `dispatch-130-04` on `aof/mesh/130-04`, both
+  `created`), open together 19:21:50 → 20:15:04Z (04's cleanup), two sessions driving at once
+  19:29:08 → 20:03:36Z (`d0e62f96…` in 04, `70c0a51f…` in 03). Wave run `130` `-0003`
+  `brief.wave {members: [130/03, 130/04], baseCommit 46cb366, bound 3}`, heartbeat to 20:11:49Z,
+  settled `done` at 04's close and RE-MINTED at once as `-0004` `{members: [130/03], baseCommit
+  2f728fa}` (129/04's epoch ruling — a record, never a narrated line), heartbeat to 21:06:49Z.
+  Lane records: 04 `20260921T192150185Z-0000` + `-0001`; 03 `…192908505Z-0000` / `-0001` /
+  `-0002` — every one carrying `brief.lane {worktree, branch, baseCommit a49725a}` and
+  `brief.loop.loopRunId 7661348f-073d-4884-8544-a63efb9e53ac` = the wave run's; `heartbeatAt`
+  advanced through each drive (04 → 19:56:39Z, 03 → 20:30:14Z; the `.heartbeats.ndjson` queues
+  consumed, none on disk). Baseline measured ONCE at `a49725a` in lane 03 (19:21:50 → 19:29:08Z,
+  5 inherited over 1987) while 04's session already drove; both grades cite it — 04 `fail 1`
+  (item-24, its own) → `pass, 0 of 1987 (5 inherited, excluded)`; 03 `fail 2` (FF-11902, FF-5810)
+  → `fail 2` (ADR-002 manifest hash, FF-12405) → `pass, 0 of 1987` after the operator committed
+  `02f9d7c` INSIDE lane 03 (21:01Z: the re-rendered loop record + lock). Merges serial, in
+  completion order, through the one verb: 04 first — own-writes commit `8fcd0c4`, then `2f728fa` =
+  merge(`8fcd0c4`, `8088cd9`), a real `--no-ff`; then 03 over the MOVED primary — `c107b6f`, then
+  `d1e6477` = merge(`c107b6f`, `c55b2f1`), no conflict, write-disjoint by construction. Every
+  lane cleaned up (`removed, branch … removed` ×5 — F-62 did not recur). The next member cut from
+  the merged HEAD: 05's lane at `a56d7da`, parent `d1e6477` = 03's merge (dependency-held,
+  `depends: [2, 3, 4]`). `readRuns` on the primary's 130/03 and 130/04 answers the lanes' ids.
+  The loop survived FIVE lane kills — each lane's stderr shows node-pty's console-list agent
+  failing `AttachConsole failed` against the detached child (task 02's `ownConsole`, measured
+  live) — and ended in a NAMED exit: `halted on session-needs-input at 130/06 … drained=[01, 02,
+  04, 03, 05 merged]`, `beforeExit code=0`, `exit code=0`. One loop process the whole run, no
+  supervisor relaunch (F-61 did not recur; declarations `rows: []` now). **Still not measured:**
+  `held: <C>` — 130 is a `depends:` chain, the ready set never exceeded the wave (127's attempt 2
+  measured the hold, one-member); `git worktree list` / `mesh status` / the primary's empty
+  `runs/` MID-flight — not read live (FF-12903's fixture leg holds it; the records above prove
+  the overlap); the forced-conflict drill — not performed (the operator's `02f9d7c` went INTO the
+  lane, not the primary); `dispatch --list` clean at the end — the halt is at a lane, so 130/06's
+  lane is live BY DESIGN for `--resume`, not the verify-gate case the clause names. **Gaps
+  found:** loop-diag's `start` line carries no build stamp, so which tree ran (`~/.aof/bin/aof.exe`
+  payload vs the npm-linked worktree at `/c/Program Files/nodejs/aof`) is unreadable after the
+  fact — and the payload was re-stamped `d90568d+dirty.20260921T230514` at 22:05Z, MID-RUN,
+  during 130/06's lane; five arch cases (FF-5405 ×2, FF-5409, FF-12903, FF-12907) are red at
+  EVERY lane base and green in the primary — lane-environment reds the baseline excludes
+  correctly, and a lane grade can therefore never see them regress; the own-writes commit before
+  a merge carries the merge's message (`8fcd0c4` "merge 130/04 home" has one parent).
+  **Routed at 06's review close (2026-09-21, three lenses inline, one round, 0 Blockers):** the
+  build-stamp gap → `fixed` (`src/loop-diag.mjs` start line gains `build=<aof --version string>`,
+  degrading to `unknown`; `test/loop/loop-diag.test.mjs`; payload `d90568d+dirty.20260922T000441`);
+  the five lane-environment reds → `story (operator)`: diagnose why they are red in every lane and
+  green in the primary, then either run them green in a lane or have the baseline NAME an
+  environment-red apart from an inherited-red; the own-writes commit message → `recorded`.
+- **129/06 live run, attempt 2 (operator, 2026-09-15 15:59Z → 2026-09-16 13:52Z, `aof work loop
+  127 --resume`, five loop processes; payload `7827f9d+dirty.20260915T110622` then
+  `f55fa71+dirty.20260916T144743` for the last).** READ AT THE SOURCE at the `aof:verify 129`
+  door (2026-09-17): the five `loop-diag.127.*` logs, the lane and wave run records now in the
+  primary, the commit graph. **What ran:** three lanes, one per wave, serially — `Wave 1 —
+  dispatching 127/03 (bound 3); held: 127/04.` (03's refine gave it 04's files), then `Wave 2 —
+  dispatching 127/04`, then `Wave 1 — dispatching 127/05` the next morning. Each lane: open at
+  the wave commit (03 `4c2864d`, 04 `d7806cb`, 05 `ba25547`), baseline grade measured IN THE LANE
+  at its base (19 / 20 / 21 inherited over 1981–1987 cases), mint (`20260915T160802480Z-0005`,
+  `20260915T173627684Z-0001`, `20260916T083526809Z-0001`, every record carrying `brief.lane`
+  {worktree, branch, baseCommit} and `brief.loop.loopRunId = 5c554454-2f26-4613-9c89-c21c957bca90`,
+  `heartbeatAt` advancing through the drive), a child drive answering one document, `settle: done`,
+  the gate ladder in the lane (`Gate work:grade 127/03 — pass, 0 of 1987 (19 inherited, excluded
+  by the baseline)`; 05 the same at 21), lane commit (`98fbd97`, `5fc318c`), merge home
+  (`a79b464`, `5929b13`; 04 reconciled `9c272d0` → `b8cd0a1`), cleanup. One wave run per epoch
+  (`127` runs `-0004` [03] base `1736b81`, `-0005` [04] base `a79b464`, `-0006` [05] base
+  `b8cd0a1`), each heartbeating while its lane ran. **The held member was cut from the merged
+  work:** 04's lane base `d7806cb` is the wave commit whose parent is `a79b464`, 03's merge;
+  `readRuns` on the primary's 127/03 answers the lane's `-0005`. `--resume` reconciled live lanes
+  three times (dirty → committed → merged → cleanup, or "already an ancestor"). `Build phase
+  complete — every story in review.` reached; the sequential ladder then re-drove 127/02 in the
+  primary. **What went wrong, four things:** `F-61` upgraded — the supervisor's relaunch (pid
+  68264, `--level L2`) reconciled the operator's freshly opened lane out from under the
+  foreground loop (pid 79488), which halted `lane-open-failed … lane-ref-unresolved`; the
+  supervisor's loop carried the wave. `F-62` — lane 127/03's cleanup refused at every close and
+  reconcile (`.aof/aof.lock.json` re-stamped), committed "dirty" three times, on disk until a
+  sweep. `F-63` — loop death #5 at 19:35:29Z, 0.5 s after 04's `settle: done`, unbracketed;
+  named (node-pty's console-list kill agent) and fixed at task 02 (`ownConsole`, `f55fa71`).
+  **New, `F-64`** — the LAST loop (pid 99076, on the fixed payload) stopped silently at
+  2026-09-16 13:52:43Z, 30 ms after the SEQUENTIAL rung's in-process driver settled 127/02
+  `done` (`exit-confirmed` 13:52:43.454, the record `done` at .484, no `Driven` line, no exit
+  breadcrumb): the death-#4 juncture, which the lane-child fix does not reach; no relaunch
+  followed. **Not measured, and the SPEC's headline:** two lanes in flight AT ONCE — every
+  wave here had one member (127's through-review set was `[03, 04]` sharing files, then `[05]`
+  alone); the forced-conflict drill (`lane-merge-conflict`, the hand merge, `--resume` reading
+  it as merged); the primary's story `runs/` read as empty mid-flight; `dispatch --list` clean at
+  the run's own end (03's residue). `F-15` (a startup-window cancel) not exercised. 06 stays
+  `in-review`; the two unmeasured scenarios need a target whose wave has two write-disjoint
+  members — none exists today (130 is a chain; 131 unrefined; the test-bed holds five).
 - **129/06 live run, attempt 1 (operator, 2026-09-15 10:47–12:43Z, `aof work loop 127 --resume`
   on the deployed payload `7827f9d+dirty.20260915T110622`; config committed `b5f6cd5`:
   `refine_first`, refine `orchestrated`, continue `solo`).** READ AT THE SOURCE. The loop:

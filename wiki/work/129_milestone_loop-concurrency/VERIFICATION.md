@@ -391,6 +391,75 @@ accept and are NOT yet met; the procedure below is pending, and the readings lan
   **2026-09-15:** 06's `depends:` is now `[7]` — the live run runs over the surface `129/07`
   delivered (the loop's own lane bound and per-phase modes), and every precondition above is
   re-measured at its accept; the deployed payload is still the 2026-09-12 build.
+- **Attempt 2, read at the source at the milestone door (2026-09-17).** Five loop processes over
+  2026-09-15 15:59Z → 2026-09-16 13:52Z (`loop-diag.127.2026-09-15T15-59-41`, `…T16-00-01`,
+  `…T19-36-01`, `…09-16T08-26-55`, `…T13-48-10`), the lane and wave records now in the primary,
+  and the commit graph. Per scenario of `tasks/00`:
+  | scenario | clause | reading | measured |
+  |---|---|---|---|
+  | the key is set and the loop is driven | `refine_first` set, `work.agents.mode` untouched | `b5f6cd5`; `work.loop.agents.refine.mode: orchestrated`, `continue.mode: solo` | yes |
+  | | `Wave 1 — dispatching <A>, <B> (bound 3); held: <C>.` | `Wave 1 — dispatching 127/03 (bound 3); held: 127/04.` — ONE member (03's refine gave it 04's files); later `Wave 2 — dispatching 127/04`, `Wave 1 — dispatching 127/05` | one-member waves only |
+  | | `git worktree list` shows two lanes | never two in flight; one lane per wave, serially | **no** |
+  | each lane has its own record, heartbeat and grade | one `running` record per lane, `brief.lane.worktree` = the lane, `brief.loop.loopRunId` = the loop's | `20260915T160802480Z-0005` (03, base `4c2864d`), `20260915T173627684Z-0001` (04, base `d7806cb`), `20260916T083526809Z-0001` (05, base `ba25547`); every one carries `brief.lane` {worktree, branch, baseCommit} and `loopRunId 5c554454-2f26-4613-9c89-c21c957bca90` | yes |
+  | | `.heartbeats.ndjson` grows | `heartbeatAt` advanced through each drive (03: mint 16:08 → 17:15; 04: 17:36 → 19:21; 05: 08:35 → 10:42) | yes |
+  | | the primary's story `runs/` empty mid-flight | not read while in flight | not read |
+  | | grade excludes the base's inherited reds | baseline measured IN THE LANE at its base (19 / 20 / 21 inherited); `Gate work:grade 127/03 — pass, 0 of 1987 (19 inherited, excluded by the baseline)`; 05 the same at 21; the delta recorded as the last progress sample (`failingScenarios: 0`) | yes |
+  | the supervisor sees one loop | exactly one declaration row | one row — the SUPERVISOR's loop (pid 68264), after it reconciled the operator's foreground lane away (`F-61`) | yes, with a defect |
+  | | the wave run `running` with a fresh `heartbeatAt` | one wave run per epoch on `127`: `-0004` [03] base `1736b81`, `-0005` [04] base `a79b464` (heartbeat to 19:33:51Z, reclaimed `runtime_offline` next morning), `-0006` [05] base `b8cd0a1` | yes |
+  | the held member is cut from the merged work | `<C>`'s lane base = the primary's HEAD after `<A>`'s merge | 04's base `d7806cb` = the wave commit whose parent is `a79b464` = 03's merge | yes |
+  | | `readRuns` on the primary's `<A>` returns the lane's `runId` | the primary's 127/03 `runs/` holds `-0005` | yes |
+  | a forced conflict halts by name | `lane-merge-conflict`, lane intact, hand merge, `--resume` reads it as merged | not performed | **no** |
+  | the run ends clean | `dispatch --list` no live lane | 03's lane left at every close (`F-62`); clean today after a sweep (`lanes: []`, no `aof/mesh/*` branch) | no at the run's end |
+  | | the `loop-diag` log ends in a named exit line | three of five bracketed (`exit code=0`, `=0`, `=1`); two silent: 19:35:29Z (`F-63`, fixed at task 02) and 2026-09-16 13:52:43Z (`F-64`, new) | no, twice |
+  | | STATE.md carries every reading | this table and the STATE entry, landed at the door | yes |
+  `--resume` over live lanes was read three times (`Reconciling 2 live lane(s)` → dirty committed
+  `23b5caf` / `9c272d0` → merged `1ea8f48` / `b8cd0a1` → cleanup; "already an ancestor" twice) —
+  the conflict drill's `--resume` half, without the conflict. `Build phase complete — every story
+  in review.` was reached; the sequential ladder re-drove 127/02 in the primary from there.
+- **What stays unmeasured, and why it is not this door's to run.** The SPEC's headline — two lanes
+  in flight at once — and the conflict drill need a target whose through-review wave has two
+  write-disjoint members; none exists today (127 is done; 130 is a `depends:` chain, 01 alone
+  ready; 131 has no stories; the test-bed's wave is `[00/00]` with five held). A live loop over
+  such a target is hours of real sessions and, per `F-61`, competes with the desktop supervisor
+  unless the app is quit — the operator's run, not an accept's. `129/06` stays `in-review`.
+- **Attempt 3, read at the source at the milestone door (2026-09-22).** One loop process the whole
+  run (pid 58920, `aof work loop 130`, 2026-09-21 16:42:17 → 22:14:05Z, `supervised: false`, no
+  supervisor relaunch — `F-61` did not recur; `loop-diag.130.2026-09-21T16-42-17-910Z.log`, 615
+  lines), the wave and lane records now in the primary, the commit graph, `dispatch --list`,
+  `mesh status --declarations`; first read by `aof:continue 129/06 --solo` on 2026-09-21 (run
+  `20260921T224926900Z-0001`, the `STATE.md` feedback entry) and re-read here. Per scenario of
+  `tasks/00`:
+  | scenario | clause | reading | measured |
+  |---|---|---|---|
+  | the key is set and the loop is driven | `refine_first` set, `work.agents.mode` untouched | `work.loop.concurrency: "refine_first"`, `work.loop.agents.refine.mode: orchestrated`, `continue.mode: solo`, `work.agents.mode: orchestrated` (unchanged since `b5f6cd5`); `Refine phase complete — 0 stories refined.` | yes |
+  | | `Wave 1 — dispatching <A>, <B> (bound 3); held: <C>.` | `Wave 3 — dispatching 130/03, 130/04 (bound 3).` at 19:21:49Z — TWO members, the SPEC's headline; nothing held (130 is a `depends:` chain and its ready set never exceeded the wave; the hold was measured at attempt 2, one member) | two members yes; the hold not in this run |
+  | | `git worktree list` shows two lanes | not read live; the log bounds the overlap — `Lane 130/03 — open … at a49725a (branch aof/mesh/130-03, created)` 19:21:49.967Z, `Lane 130/04 — open … (branch aof/mesh/130-04, created)` 19:21:50.123Z, 04's cleanup 20:15:04Z, 03's 21:07:10Z: two lanes on disk 19:21:50 → 20:15:04Z, two sessions driving at once 19:29:08 → 20:03:36Z | yes, by record |
+  | each lane has its own record, heartbeat and grade | one `running` record per lane, `brief.lane.worktree` = the lane, `brief.loop.loopRunId` = the loop's | 04: `20260921T192150185Z-0000`, `-0001`; 03: `20260921T192908505Z-0000`, `20260921T204937997Z-0001`, `20260921T205856642Z-0002` — every one `brief.lane {worktree: <repo>\.aof\mesh\dispatch-worktrees\dispatch-130-0N, branch: aof/mesh/130-0N, baseCommit: a49725a}`, `brief.loop.loopRunId 7661348f-073d-4884-8544-a63efb9e53ac`, `scope "130"` = the wave run's | yes |
+  | | `.heartbeats.ndjson` grows | `heartbeatAt` advanced through each drive (04 → 19:56:39Z, 03 → 20:30:14Z); the queues consumed, none on disk | yes |
+  | | the primary's story `runs/` empty mid-flight | not read live; the lanes' records are in the primary's `runs/` now, and FF-12903's fixture leg holds the mid-flight half | not read |
+  | | grade excludes the base's inherited reds | baseline ONCE, in lane 03 at `a49725a` (19:21:50 → 19:29:08Z, `5 failing case(s) inherited, 1987 case(s) measured`) while 04's session already drove; `Gate work:grade 130/04 — pass, 0 of 1987 case(s) failing (5 inherited, excluded by the baseline)` 20:14:58Z after one `fail 1` cycle; 130/03 the same at 21:07:04Z after `fail 2` → `fail 2` → pass (three cycles; the operator's `02f9d7c` committed INSIDE the lane between) | yes |
+  | the supervisor sees one loop | exactly one declaration row | not read mid-flight; `rows: []` today; one loop process the whole run (pid 58920), no relaunch, no competing loop | not read live |
+  | | the wave run `running` with a fresh `heartbeatAt` | `130` `-0003` `brief.wave {members: [130/03, 130/04], baseCommit 46cb366, bound 3}`, heartbeat to 20:11:49Z, `done` 20:15:04Z (04's close); RE-MINTED at once as `-0004` `{members: [130/03], baseCommit 2f728fa}`, heartbeat to 21:06:49Z, `done` 21:07:10Z — 129/04's epoch ruling as a record | yes |
+  | the held member is cut from the merged work | `<C>`'s lane base = the primary's HEAD after `<A>`'s merge | no wave-held member this run; the dependency-held next member is: 05's lane opened at `a56d7da`, whose parent is `d1e6477` = 03's merge; and 03 itself merged over the MOVED primary — `c107b6f` then `d1e6477 = merge(c107b6f, c55b2f1)`, after 04's `2f728fa = merge(8fcd0c4, 8088cd9)` — serial, in completion order, no conflict | the cut yes; the wave-hold not in this run |
+  | | `readRuns` on the primary's `<A>` returns the lane's `runId` | the primary's 130/03 and 130/04 `runs/` hold exactly the lanes' records | yes |
+  | a forced conflict halts by name | `lane-merge-conflict`, lane intact, hand merge, `--resume` reads it as merged | not performed — the operator's one mid-run commit (`02f9d7c`) went INTO lane 03, not the primary | **no** |
+  | the run ends clean | `dispatch --list` no live lane | halted at a lane (`session-needs-input` at 130/06), so `dispatch-130-06` is live BY DESIGN for `--resume` (`dirty: true`, `quiet`); every finished lane cleaned up (`removed, branch … removed` ×5 — `F-62` did not recur) | n/a at a lane halt |
+  | | the `loop-diag` log ends in a named exit line | `130 — halted on session-needs-input at 130/06 … drained=[01, 02, 04, 03, 05 merged]` → `beforeExit code=0` → `exit code=0`; five lane kills survived (`AttachConsole failed` on each lane's stderr — task 02's `ownConsole`, live; `F-63` / `F-64` did not recur) | yes |
+  | | STATE.md carries every reading | the 2026-09-21 feedback entry and this table | yes |
+- **What stays unmeasured after three attempts, and what holds each.** (1) The forced-conflict
+  drill — never performed live. Held by `test/loop/loop-command-wave.test.mjs` over a real git
+  fixture (stop `lane-merge-conflict`, producer `dispatch:merge-home:conflict`, the detail naming
+  `lane=` / `branch=` / `base=` / `tip=`, the lane kept on disk, no `MERGE_HEAD` in the primary),
+  by FF-12904 (merge-home never discards, red-probed at 05), and by attempt 2's `--resume` reading
+  a hand-merged lane as "already an ancestor" twice — the drill's second half without its first.
+  (2) `held: <C>` in the SAME run as a two-member wave — the hold at attempt 2 (one member), the
+  two-member wave at attempt 3; never both in one run, because no target since 127's `[02, 04]`
+  has partitioned that way. (3) The three mid-flight live reads (`git worktree list`, `mesh status
+  --declarations`, the primary's empty `runs/`) — bounded by the records instead. (4)
+  `dispatch --list` clean at a verify-gate end — attempt 3 ended at a lane halt. (5) `F-15` (a
+  startup-window cancel) — not exercised in any attempt. Every one of these is the operator's live
+  run to measure, not an accept's to start; whether they hold the story is the ruling recorded
+  under `## Accept decision`.
 
 ## Fitness functions
 
@@ -488,6 +557,11 @@ this accept; ids allocated here, at the moment of landing.
 | F-61 | The desktop supervisor relaunched `loop 127` 32 s after the operator started it in the foreground (`loop-diag.127.2026-09-15T10-48-04-012Z.log`: `argv ["work","loop","127","--level","L2","--resume"]`, pid 3384) — the declaration predicate lists a live declaration whose process is not the supervisor's child, so a foreground loop and the supervisor compete for one declaration. The duplicate exited at once: `a non-terminal run already exists for this item` (the run store's duplicate-run guard), exit 1, no second session. | defect | medium | **Upgraded at the second run (2026-09-15 16:00Z):** the guard holds only once a run is minted — the second loop's `--resume` reconcile REMOVED the first loop's freshly opened lane inside its open→mint window (`Lane 127/03 — cleanup: removed`), and the first halted `lane-open-failed … lane-ref-unresolved`; the supervisor's loop then ran the wave itself. Non-blocker for the run (the work was carried by the survivor), a defect for the door: a foreground loop should be recognisable to the supervisor (its declaration row carries the loop run's liveness — the predicate could skip a declaration whose latest run is in flight from a pid it did not start), or the operator quits the desktop app for a hand-driven loop. Measured at 06's live run; a `src/mesh/declarations.mjs` / desktop `reconcile` item. | supervisor (future item) | open |
 | F-62 | A lane's cleanup is refused forever: `.aof/aof.lock.json` is rewritten (its `generatedAt`) by `aof` invocations inside the lane after the lane commit, so `dispatch-lane-uncommitted-work` refuses cleanup at every close and at every reconcile — lane 127/03 was committed "dirty" three times (`23b5caf` twice as an already-ancestor) and is still on disk; 04 and 05 cleaned up only because their sessions did not touch the lock. | defect | low | non-blocker: the lane's cleanup (or the dirty-tree read behind it) should treat a derived, generated file whose only change is its stamp as clean — or the lane commit should sweep `.aof/aof.lock.json`; `aof work dispatch --sweep` clears the residue meanwhile. `src/work/dispatch.mjs` / `src/mesh/worktree.mjs` item. | dispatch cleanup (future item) | open |
 | F-63 | **Loop death #5** (2026-09-15 19:35:29Z, `loop-diag.127.2026-09-15T16-00-01-698Z.log`): the supervisor's loop died unbracketed — no `uncaughtException`, no signal, no `exit` breadcrumb, no OS fault or power event — seconds after lane 127/04's `settle: done`, i.e. at the child's kill of the finished session. The next lane (05, 2026-09-16) named the mechanism on its stderr: `node-pty/lib/conpty_console_list_agent.js:13 … Error: AttachConsole failed` — node-pty's ConPTY `kill()` spawns a console-list agent that attaches to a console and terminates every process in its list, and a child spawned with piped stdio on win32 shares its parent's console; when the agent attached (19:35) the loop was in the list. Death #4 (2026-09-13) was the same agent from inside the loop. Lanes 03/04 survived it only because the agent was launched through `process.execPath` = `aof.exe` and printed aof's usage text instead of running (the "usage on stderr" tail both lanes showed). | defect | blocker (for the live run) | fixed at 06's build (task 02, `@bug @finding-F-63`): `runBounded` gains `ownConsole` — on win32 the child is spawned `detached`, its own hidden console, stdio pipes and pid kills untouched — and the lane child asks for it; 129/02's two key-set rows admit the one added key on win32. Two rows + the lane row; the suites 74 / 0. Not taken: the agent-through-`aof.exe` mis-spawn inside node-pty (a payload-launcher item, F-24's species) and skipping `term.kill()` after a successful tree kill. | `129/06` | closed |
+| F-64 | The last loop of attempt 2 (pid 99076, 2026-09-16 13:48Z, on the `f55fa71` payload that carries task 02's fix) stopped silently at 13:52:43Z — 30 ms after the SEQUENTIAL rung's in-process driver settled 127/02 `done` (`exit-confirmed` at .454, the run record `done` at .484, then no `Driven` line and no exit breadcrumb). The juncture is death #4's (the loop's own PTY kill of a finished session), which task 02's `ownConsole` does not reach: it detaches the LANE child, and the post-build ladder still drives the primary checkout in-process. No supervisor relaunch followed (`aof mesh status --declarations` → no row today), so a supervisor stop at that instant is not excluded; the cause is not proven. | defect | medium | non-blocker for 06 (the sequential rung is the pre-129 shell, unchanged by this milestone); the remedy is either the sequential drive as a child too (ADR-004 §1 chose the child for the lane on exactly this death) or the pty-kill skip after a successful tree kill (`F-63`'s not-taken half). A loop-shell item; measured at 06's second run. | loop shell (future item) | open |
+| F-65 | The loop-diag `start` line carried no build stamp (`start pid=58920 node=v22.22.2 argv=["work","loop","130"]`), so which tree ran — the payload under `~/.aof/bin` or the npm-linked source — was unreadable after the fact; and the payload WAS re-stamped (`d90568d+dirty.20260921T230514`) at 22:05Z, mid-run, during 130/06's lane. | defect | low | fixed at 06's review close (2026-09-21): `installLoopDiagnostics` takes a `build` reader defaulting to `aof --version`'s own string, the start line carries `build=<string>` and degrades to `unknown` when the reader throws; two assertions in `test/loop/loop-diag.test.mjs`; both files join 06's `files:`. Green at this door (1,856 / 0 over the loop family) and committed on `127-129` here. | `129/06` | closed |
+| F-66 | Five arch cases are red at EVERY lane base and green in the primary — `FF-5405` ×2 (`acd-grade-read-face-never-executes`), `FF-5409` (`acd-day-one-audit-complete`), `FF-12903` and `FF-12907` (`acd-lane-records-and-the-declaration`, this milestone's own) — the "5 failing case(s) inherited" every lane baseline of attempts 2 and 3 excluded. They are lane-ENVIRONMENT reds, not inherited ones: the baseline excludes them correctly, and a lane grade can therefore never see one of them regress. | defect | medium | non-blocker for 06 (every lane delta was honest about its own reds); routed at the review close as the operator's story: diagnose why a dispatch worktree reds them (a derived artefact or a path the fixture assumes of the primary), then either run them green in a lane or have the baseline NAME an environment-red apart from an inherited-red. | operator (future story) | open |
+| F-67 | The lane's own-writes commit carries the merge's message: `8fcd0c4` "aof(loop): merge 130/04 home" has ONE parent (`a49725a`) and is the primary's own-writes commit; the merge proper is `2f728fa = merge(8fcd0c4, 8088cd9)`; likewise `c107b6f` / `d1e6477` for 03. The graph is right; two commits per merge read as two merges. | cosmetic | low | recorded (the review close's ruling); the message is composed on `src/work/dispatch.mjs`'s merge-home path and gets its own wording when that path is next touched. | `src/work/dispatch.mjs` (future) | open |
+| F-68 | The halt rolled the TARGET MILESTONE back to `not-started`: at 22:14:05Z the wave run `130` `-0006` (`brief.wave {members: [130/06], baseCommit a71945d}`) was settled `failed / agent_error` on the `session-needs-input` halt (`src/loop/wave.mjs:282` maps every failed wave outcome to `agent_error`), and 29 ms later (`SPEC.md` mtime 22:14:05.688Z against the record's `updatedAt` .656Z) 130's `status:` read `not-started` — with five stories `in-review`. The writer is the run-failed reactor (`rollbackStatusIfFailed`, `src/effects/table.mjs`, 20/ADR-005: a FAILED run rolls its `in-progress` item back), which a wave run — minted on the MILESTONE ref (ADR-007) and settled `failed` on a halt that is a pause, not a failure — reaches for the first time. Uncommitted in this checkout; `aof work find 130` answers `not-started`. | defect | medium | non-blocker for 06 (the run's readings stand; the flip is after the last merge). A loop item: a halted wave run should settle with the halt's own outcome (`needs-input` / `halted`), never `failed` — or the wave run's mint and settle, a liveness record and not a drive, should be exempt from the status reactors. The remedy for 130 is the verb, `aof work status 130 in-progress`, and it is the operator's while 130/06's lane is live for `--resume`. | loop shell (future item); operator (130's status) | open |
 
 ## Accept decision
 
@@ -618,3 +692,31 @@ surface (its `depends:` is `[7]`), and its preconditions are re-measured at that
 `aof work regression-gate 129` has not run. The configuration surface the operator held the door
 on is delivered here; whether it passes their sign-off is the operator's word, recorded in
 `STATE.md` when given.
+
+**`129/06` HELD `in-review` — 2026-09-22, pending the operator's ruling.** What is green: the
+story's lane (1,856 pass / 0 fail over its five declared suites, every `test/loop/` and
+`test/arch/loop/` suite and FF-12904's control, every registered case reported; task 01's six
+scenarios and task 02's three each have a named passing case), all seven declared controls green in
+the register above with their red probes recorded, `aof work validate 129` PASS, `aof work loops
+validate` no error, `aof work doctor 129/06` and `aof work doctor 129` no `control-unresolved` at
+either severity and 0 errors. What is measured, over three live runs read at the source: the SPEC's
+verifiable outcome's headline — two lanes in flight at once, each with its own record, heartbeat
+and grade (attempt 3); the held member cut from the merged work (attempt 2, a one-member hold;
+attempt 3, the dependency-held member cut from 03's merge); every lane named in the account; serial
+merges through the one verb; every lane cleaned up; a named exit; one loop process the whole run.
+What is not: task 00's forced-conflict drill (its Then-clauses held by a real-git fixture and
+FF-12904, its `--resume` half read live at attempt 2, its live first half never performed), the
+hold and the two-member wave in ONE run, the three mid-flight reads, and `F-15`.
+
+No blocker finding against this story is open: `F-58` / `F-59` / `F-63` fixed at the build (tasks
+01–02), `F-65` fixed at the review close, `F-60` / `F-61` / `F-62` / `F-64` / `F-66` / `F-67` /
+`F-68` open as non-blockers routed to their owners. The one thing this door cannot settle by itself
+is whether a `@manual` scenario whose live half is unperformed after three attempts holds the
+story, so the ruling is the operator's, recorded here when given: **(a) accept** `129/06` on the
+readings above, the conflict drill recorded as an open gap in the story's `OUTCOME.md` and measured
+at the next live loop over a two-member wave; or **(b) hold** for a fourth run that performs the
+drill (a two-member target and one hand-edit in the primary mid-run). The milestone door —
+`RETROSPECTIVE.md`, `OUTCOME.md`, the STATE compaction, `memory ingest`, `aof work status 129
+done` — waits on that ruling. `aof work regression-gate 129` is run at this door regardless, on a
+clean detached worktree at this door's commit (119/R4's route), so that only the ruling stands
+between the record and the door; its row is in `REGRESSION.md`.
