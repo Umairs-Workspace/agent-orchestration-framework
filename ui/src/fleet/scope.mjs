@@ -17,7 +17,7 @@
 // global-shaped panel is what production always mounts). A thin wrapper over
 // ./runs.mjs's fleetCurrentWorkLines, kept here (not inline in the .tsx) so
 // node:test can exercise it directly, mirroring this file's own pattern.
-import { fleetCurrentWorkLines } from "./runs.mjs";
+import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance } from "./runs.mjs";
 
 // ----------------------------------------------------- scope + URL -----------
 
@@ -699,6 +699,34 @@ export function nodePanelFacts(node) {
 // exactly as nodePanelFacts does, since both carry `presence` the same way.
 export function nodeCurrentWork(node) {
   return fleetCurrentWorkLines(node?.presence ?? {});
+}
+
+// nodeWorkRegion(node, localNodeId, memory) — milestone 130 / story 03 (ADR-005 §5;
+// DESIGN §Surface 1): the WHOLE current-work region of the card that production renders —
+// `{ lines, token, loops }` — composing the pinned `fleetCurrentWorkLines` (byte-identical,
+// untouched: the Rust drift pin reads it) with the loop entries beside it:
+//   - `lines` are the pinned projection's lines, except that the single `idle` line is
+//     DROPPED when a loop exists — a loop between drives is not an idle node (DESIGN default 1;
+//     38 S1/S9's cap becomes 2 + L). `token` is `primary` whenever a loop exists, for the
+//     same reason: the loop is still doing work at every rung.
+//   - `loops` are `fleetLoopLines`' entries (ascending by scope), each composed with the
+//     REMOTE half of `loopStopAffordance`: on a card whose node is NOT the serving node the
+//     `title` tail says why there is no button — `· remote — stop from <nodeId>'s own console`
+//     (49's affordance-table rule: every absence carries its reason). The line itself is NOT
+//     gated by locality — a remote node's loop renders, buttonless; the BUTTON is the card's
+//     to compose per entry, because the rung memory it climbs is the card's own state.
+//   - `memory` (optional, the card's rung memory) raises each entry's word to the one held
+//     locally for the same drive — the composition the DESIGN calls "held locally".
+// PURE; absent presence (a never-beat node) degrades to `{}` and reads `idle`, never a throw.
+export function nodeWorkRegion(node, localNodeId, memory) {
+  const presence = node?.presence ?? {};
+  const pinned = fleetCurrentWorkLines(presence);
+  const loops = fleetLoopLines(presence, memory).map((entry) => {
+    const { remote } = loopStopAffordance({ loop: entry, node, localNodeId });
+    return remote ? { ...entry, title: `${entry.title} · remote — stop from ${node?.nodeId}'s own console` } : entry;
+  });
+  if (loops.length === 0) return { lines: pinned.lines, token: pinned.token, loops };
+  return { lines: pinned.state === "idle" ? [] : pinned.lines, token: "primary", loops };
 }
 
 // ---------------------------------------------- assign-to-node affordance -----

@@ -11,6 +11,13 @@
 // test/support/mesh-worker-exec-fixture.mjs's seedNodeWorkspaceMembership idiom,
 // extended with the descriptor row resolveNodeWorkspaces needs). One test object
 // per scenario. node:assert/strict.
+//
+// milestone 130 / story 03 / task 00 (00_presence-carries-the-loops.feature) — the launcher
+// TICK's half of "both producers carry the key": the tick's record is what this machine
+// actually publishes, so `loops` is asserted here on the REAL assembleCurrentPresenceRecord
+// path — two workspaces' loops in workspace order, no key when none runs, the cached half of
+// the union contributing none, and a workspace whose enumeration throws losing its loops
+// and nothing else.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -19,6 +26,9 @@ import { loadWorkspace } from "../../../src/work.mjs";
 import { startLauncher } from "../../../src/mesh/launcher.mjs";
 import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
 import { startSession } from "../../../src/mesh/session.mjs";
+import { upsertWorkItemContent } from "../../../src/global-work-store.mjs";
+import { listItems } from "../../../src/work.mjs";
+import { workspaceIdFromPath } from "../../../src/workspace-identity.mjs";
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-10T12:00:00.000Z";
@@ -82,7 +92,10 @@ async function seedWorkspaceRegistration(env, { workspaceId, workDir, nodeId = N
   }
 }
 
-async function seedRunningRun(workDirRoot, itemDirName, runId) {
+// `brief` (130/03) — the record's brief, `{}` as always unless a scenario hands a
+// `{ loop }` declaration in; `itemRef` follows the item dir's number so a loop entry's `ref`
+// names the item that actually holds the run.
+async function seedRunningRun(workDirRoot, itemDirName, runId, brief = {}) {
   const milestoneDir = path.join(workDirRoot, itemDirName);
   await mkdir(milestoneDir, { recursive: true });
   if (!(await pathExists(path.join(milestoneDir, "SPEC.md")))) {
@@ -91,11 +104,17 @@ async function seedRunningRun(workDirRoot, itemDirName, runId) {
   const runsDir = path.join(milestoneDir, "runs");
   await mkdir(runsDir, { recursive: true });
   const record = {
-    runId, itemRef: "99", state: "running", attempt: 1, outcome: null,
-    sessionId: null, brief: {}, createdAt: NOW, updatedAt: NOW,
+    runId, itemRef: itemDirName.split("_")[0], state: "running", attempt: 1, outcome: null,
+    sessionId: null, brief, createdAt: NOW, updatedAt: NOW,
     failureReason: null, heartbeatAt: null, retryOf: null, reclaimedAt: null,
   };
   await writeFile(path.join(runsDir, `${runId}.json`), JSON.stringify(record, null, 2), "utf8");
+}
+
+// A usable `brief.loop` for `loopRunId` over `scope` — the five keys the declaration read
+// requires plus the mint's other four.
+function loopBrief(loopRunId, scope) {
+  return { loop: { loopRunId, scope, level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: NOW, id: "loop-id", supervised: false } };
 }
 
 async function pathExists(p) {
@@ -366,6 +385,103 @@ export const meshPresenceAggregateWorkspacesTests = [
         const handle = await publishOnce(fixture.root, fixture.env);
         assert.ok(handle.record.sessions.some((s) => s.workspaceId === "ws-1"), "sessions includes the ws-1 session");
         assert.ok(!handle.record.sessions.some((s) => s.workspaceId === "ws-2"), "ws-2 contributes nothing — it is skipped, not an error");
+      } finally {
+        await rm(fixture.tmp, { recursive: true, force: true });
+      }
+    },
+  },
+  // ═══════════════════════════════════════════════════════════════════════════════════════
+  // milestone 130 / story 03 / task 00 — the launcher tick's `loops` (130/ADR-005 §2)
+  // ═══════════════════════════════════════════════════════════════════════════════════════
+
+  // A usable declaration (the declaration read's five-key rule plus the mint's other four).
+  // ══ Scenario Outline: both producers carry the key — the TICK's rows (the verb's are in
+  //    mesh-presence-record.test.mjs) ══
+  {
+    name: "presence-carries-the-loops/00 the launcher tick carries `loops` LAST with one entry per workspace loop, workspace ids in aggregation order, and no key at all when nothing runs (Examples)",
+    async run() {
+      // (a) ws-1 running under L1 and a second registered workspace ws-2 with its own running L2:
+      //     TWO entries from the tick, workspaceId ws-1 then ws-2, `loops` the LAST key.
+      {
+        const fixture = await makeFixtureRepo({ workspaceId: "ws-1" });
+        try {
+          const second = await makeSecondaryWorkspace(fixture.tmp);
+          await seedWorkspaceRegistration(fixture.env, { workspaceId: "ws-2", workDir: second.workDir });
+          await seedRunningRun(fixture.workDir, "38_milestone_demo", "run-1", loopBrief("L1", "38"));
+          await seedRunningRun(second.workDir, "99_milestone_demo", "run-2", loopBrief("L2", "99"));
+          const handle = await publishOnce(fixture.root, fixture.env);
+          const keys = Object.keys(handle.record);
+          assert.equal(keys.at(-1), "loops", `loops is the LAST key — got ${JSON.stringify(keys)}`);
+          assert.deepEqual(handle.record.loops.map((entry) => [entry.workspaceId, entry.loopRunId, entry.scope, entry.ref, entry.runId]), [["ws-1", "L1", "38", "38", "run-1"], ["ws-2", "L2", "99", "99", "run-2"]], "two entries, in aggregation order, each stamped with its own workspace");
+          assert.deepEqual([...handle.record.activeRuns].sort(), ["run-1", "run-2"], "activeRuns is untouched — the same two runs, bare ids");
+        } finally {
+          await rm(fixture.tmp, { recursive: true, force: true });
+        }
+      }
+      // (b) none running: no `loops` key at all — the six keys byte-identical to today.
+      {
+        const fixture = await makeFixtureRepo({ workspaceId: "ws-1" });
+        try {
+          const handle = await publishOnce(fixture.root, fixture.env);
+          assert.ok(!("loops" in handle.record), `no loops key when no loop runs — got ${JSON.stringify(Object.keys(handle.record))}`);
+          assert.deepEqual(Object.keys(handle.record), ["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVersion", "buildId"], "the six keys, in order");
+        } finally {
+          await rm(fixture.tmp, { recursive: true, force: true });
+        }
+      }
+    },
+  },
+
+  // ══ Scenario: the cached half of the union contributes no loop ══
+  {
+    name: "presence-carries-the-loops/00 the cached half of the union contributes no loop — a cache-known running run on a ref this machine does not hold rides activeRuns and no loop entry names it",
+    async run() {
+      const fixture = await makeFixtureRepo({ workspaceId: "ws-1" });
+      try {
+        // The cache-first enumeration answers a row with no local `dir` for a ref another node
+        // authored; the union then reads the cache's run RECORDS for it. Seeded under the id the
+        // cache read resolves for the aggregation row (the launcher's own derivation).
+        const cachedId = workspaceIdFromPath(fixture.workDir);
+        const store = await openGlobalWorkProjectionStore({ env: fixture.env });
+        try {
+          upsertWorkItemContent(store, cachedId, {
+            runs: [{ ref: "77", runId: "run-cached", record: { runId: "run-cached", itemRef: "77", state: "running", brief: loopBrief("L-remote", "77"), createdAt: NOW, updatedAt: NOW } }],
+            nodeId: "aof-wsl",
+          }, { now: NOW });
+        } finally {
+          store.close();
+        }
+        await seedRunningRun(fixture.workDir, "38_milestone_demo", "run-local", loopBrief("L1", "38"));
+        const handle = await publishOnce(fixture.root, fixture.env, {
+          listItems: async (workDir) => [...await listItems(workDir), { ref: "77" }],
+        });
+        assert.ok(handle.record.activeRuns.includes("run-cached"), `the cached run rides activeRuns — got ${JSON.stringify(handle.record.activeRuns)}`);
+        assert.ok(handle.record.activeRuns.includes("run-local"), "…beside the local one");
+        assert.deepEqual(handle.record.loops.map((entry) => entry.loopRunId), ["L1"], "the loop entries name the LOCAL loop only — a loop is local by definition");
+      } finally {
+        await rm(fixture.tmp, { recursive: true, force: true });
+      }
+    },
+  },
+
+  // ══ Scenario: a workspace whose items cannot be enumerated loses its loops, not the tick ══
+  {
+    name: "presence-carries-the-loops/00 a workspace whose items cannot be enumerated loses its loops, not the tick — the first workspace's entry rides, the second's does not, and the record is published",
+    async run() {
+      const fixture = await makeFixtureRepo({ workspaceId: "ws-1" });
+      try {
+        const second = await makeSecondaryWorkspace(fixture.tmp, { slug: "throws" });
+        await seedWorkspaceRegistration(fixture.env, { workspaceId: "ws-2", workDir: second.workDir });
+        await seedRunningRun(fixture.workDir, "38_milestone_demo", "run-1", loopBrief("L1", "38"));
+        await seedRunningRun(second.workDir, "99_milestone_demo", "run-2", loopBrief("L2", "99"));
+        const handle = await publishOnce(fixture.root, fixture.env, {
+          listItems: async (workDir) => {
+            if (workDir === second.workDir) throw new Error("simulated item-enumeration fault for ws-2");
+            return listItems(workDir);
+          },
+        });
+        assert.deepEqual(handle.record.loops.map((entry) => [entry.workspaceId, entry.loopRunId]), [["ws-1", "L1"]], "ws-2's loop is lost with its runs; ws-1's rides");
+        assert.deepEqual(handle.record.activeRuns, ["run-1"], "…and the tick completed with ws-1's run");
       } finally {
         await rm(fixture.tmp, { recursive: true, force: true });
       }

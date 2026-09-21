@@ -31,7 +31,7 @@ import {
   pageState,
   emptyStateCopy,
   nodePanelFacts,
-  nodeCurrentWork,
+  nodeWorkRegion,
   diagnosticsSummary,
   errorPathFor,
   milestoneCardModels,
@@ -55,6 +55,8 @@ import {
   DEFAULT_WORK_STATUS_FILTER,
 } from "./scope.mjs";
 import type { FleetMilestoneCard, Scope, WorkStatusFilter } from "./scope.d.mts";
+import { loopStopAffordance, rememberStopRung } from "./runs.mjs"; // 130/03 — the loop line's button + rung memory, pure
+import type { FleetLoopLine, RememberedStopRung, StopRungMemory } from "./runs.d.mts";
 // milestone 47 / story 03 (ADR-001 [Feasibility-2]; ADR-007; DESIGN §Surface 1 / §Surface 2 R0)
 // — the filter's two PRESENTATIONAL children. They export components and no narrowing
 // vocabulary, take their facts as props and import nothing from the one home, which is what
@@ -89,6 +91,7 @@ import {
   assignAckExpired,
   assignAffordanceView,
   runAssign,
+  LOOP_STOP_REFUSAL_COPY, LOOP_STOP_TIMED_OUT,
 } from "./assign-affordance.mjs";
 import type { AssignAffordanceState } from "./assign-affordance.d.mts";
 
@@ -886,7 +889,7 @@ function GlobalScopeView({
             id, and R0's component list is closed. */}
         <WorkspacesSummary workspaces={status.workspaces} header={<RegionHeader label="Workspaces" summary={countPhrase(status.workspaces.length, totals?.workspaces ?? null, "workspace")} />} repo={repo} onPick={onRepoChange} />
         <MilestonesList items={status.items} workspaces={status.workspaces} nodes={status.nodes} total={totals?.milestones ?? null} repoFiltered={repoFiltered} hidden={hiddenMilestones} workStatus={workStatus} onShowAllWork={onShowAllWork} freshnessOf={freshnessOf} onAssigned={onAssigned} />
-        <GlobalNodePanel nodes={status.nodes} total={totals?.nodes ?? null} />
+        <GlobalNodePanel nodes={status.nodes} total={totals?.nodes ?? null} localNodeId={status.localNodeId ?? null} />
         <DiagnosticsRegion status={status} skippedTotal={totals?.skippedWorkspaces ?? null} />
       </div>
     </div>
@@ -1400,7 +1403,8 @@ function asWorkStatus(status: string | null | undefined): WorkStatus | null {
 // roles/capabilities, and fabric address when known"). Uses nodePanelFacts
 // (./scope.mjs) so the SAME projection + credential guard the fitness unit tests
 // governs the rendered fields — no descriptor field is printed raw.
-function GlobalNodePanel({ nodes, total }: { nodes: GlobalNode[]; total: number | null }) {
+function GlobalNodePanel({ nodes, total, localNodeId }: { nodes: GlobalNode[]; total: number | null; localNodeId: string | null }) {
+  const [stops, setStops] = useState<StopRungMemory>(() => new Map()); // 130/03 — the rung memory, per drive
   // `carrying this repo` IS LOAD-BEARING COPY, not decoration (DESIGN §Surface 2): membership
   // is a DIFFERENT relation from ownership — ADR-004 rule 2 keeps a node iff it is a member of
   // the filtered repo — and a node count that simply shrank would read as machines having gone
@@ -1413,17 +1417,11 @@ function GlobalNodePanel({ nodes, total }: { nodes: GlobalNode[]; total: number 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3.5">
         {nodes.map((node) => {
           const facts = nodePanelFacts(node);
-          // finding F9 (aof:verify 38) — THIS is the card the web app actually
-          // renders in production (mesh-ui-serve.mjs serves BOTH scopes from
-          // queryGlobalMeshStatus, so the local-shape `NodeCard`/`NodesRegion`
-          // never mounted here — and m47/ADR-006(b) has since deleted them, which
-          // is what makes this note history rather than a caveat). F6 put
-          // `presence` on the wire; this calls nodeCurrentWork (./scope.mjs), the SAME
-          // fleetCurrentWorkLines projection NodeCard already calls — no forked
-          // collapse rule (DESIGN §Surface 1's row 3) — kept in scope.mjs (not
-          // inline) so node:test exercises the EXACT function this component
-          // renders from, with no React harness needed.
-          const currentWork = nodeCurrentWork(node);
+          // finding F9 (aof:verify 38) — THIS is the card production renders (both scopes come from
+          // queryGlobalMeshStatus; the local-shape NodeCard never mounted, m47/ADR-006(b) deleted it). F6 put
+          // `presence` on the wire; nodeWorkRegion (./scope.mjs) is the pinned fleetCurrentWorkLines projection
+          // composed with the loop lines (130/ADR-005 §5), so node:test drives the EXACT function rendered.
+          const currentWork = nodeWorkRegion(node, localNodeId, stops);
           return (
             <div key={facts.nodeId ?? node.nodeId} className="flex flex-col gap-1.5 rounded-lg border border-border bg-card px-4 py-3.5 shadow-sm">
               <div className="flex items-center gap-2">
@@ -1439,25 +1437,13 @@ function GlobalNodePanel({ nodes, total }: { nodes: GlobalNode[]; total: number 
               <span className="text-[11px] text-muted-foreground">
                 {facts.lastSeenAt ? `last seen ${relativeTime(facts.lastSeenAt)}` : "never seen"}
               </span>
-              {/* row 3 equivalent — the current-work line (DESIGN §Surface 1: a
-                  SINGLE text line, same text-[13px] slot, no new chip/dot/badge;
-                  idle=muted, running/working=primary; two repos comma-joined;
-                  the run wins when both exist — all already resolved upstream by
-                  fleetCurrentWorkLines, never re-derived here). Placed between
-                  the presence-age row and the footer-ish rows, per the DESIGN row
-                  order (identity → presence-age → current-work → footer). */}
-              {currentWork.lines.map((line, index) => (
-                <p
-                  key={`${facts.nodeId ?? node.nodeId}-current-work-${index}`}
-                  className={`text-[13px] ${currentWork.token === "primary" ? "font-semibold text-primary" : "text-muted-foreground"}`}
-                  /* R-2 (m49/05, coordinator's ruling): the WHOLE value travels in `title`, because
-                     what truncates first here is the `(session)` frame and then a repo's `×N` —
-                     which silently re-creates the under-count milestone 48 was fixed to remove. */
-                  title={line}
-                >
-                  {line}
-                </p>
-              ))}
+              {/* row 3 — the current-work region (DESIGN §Surface 1: plain text lines in the text-[13px] slot,
+                  no new chip/dot/badge; idle=muted, working=primary — resolved upstream, never re-derived here),
+                  between presence-age and the footer. R-2 (m49/05): the WHOLE value travels in `title` — the tail
+                  truncates first, and a truncated `×N` re-creates the under-count milestone 48 removed. 130/ADR-005
+                  §5: the loop lines follow, one flex-row <p> per live loop by scope, ONE Stop on this node's card. */}
+              {currentWork.lines.map((line, index) => <p key={`${facts.nodeId ?? node.nodeId}-current-work-${index}`} className={`text-[13px] ${currentWork.token === "primary" ? "font-semibold text-primary" : "text-muted-foreground"}`} title={line}>{line}</p>)}
+              {currentWork.loops.map((loop) => <LoopStopRow key={loop.key} loop={loop} node={node} localNodeId={localNodeId} remembered={stops.get(loop.loopRunId)} onRung={(rung) => setStops((memory) => rememberStopRung(memory, loop.loopRunId, rung, loop.runId))} />)}
               <AssignmentSummaryLine assignments={node.assignments} />
               {/* DESIGN GAP D2 (review fix) — the fabric-address row is now ALWAYS
                   rendered, even when unknown: an absent address used to omit this
@@ -1476,6 +1462,30 @@ function GlobalNodePanel({ nodes, total }: { nodes: GlobalNode[]; total: number 
         })}
       </div>
     </section>
+  );
+}
+
+// milestone 130 / story 03 (ADR-005 §5; DESIGN §Surface 1) — one loop line: the text span (whole value in `title`),
+// ONE button on this node's card only (`Stop` muted → `Stop now` destructive → absent; the rung is
+// `loopStopAffordance`'s, the in-flight / post-2xx hold and the refusal slot the assign affordance's own machine —
+// `runAssign` over `fleetApi.loopStop` with the loop's words) and the message span. A 2xx climbs the panel's rung
+// memory to the word the verb answered; the wire catches the line up on its own poll.
+function LoopStopRow({ loop, node, localNodeId, remembered, onRung }: { loop: FleetLoopLine; node: GlobalNode; localNodeId: string | null; remembered?: RememberedStopRung; onRung: (rung: number) => void }) {
+  const [ack, setAck] = useState<AssignAffordanceState>(assignAtRest);
+  const { button } = loopStopAffordance({ loop, node, localNodeId, remembered });
+  const view = assignAffordanceView({ phase: ack.phase, error: ack.error, detail: ack.detail, hasOptions: true, selected: loop.loopRunId });
+  useEffect(() => { if (view.holdMs == null) return; const timer = setTimeout(() => setAck(assignAckExpired), view.holdMs); return () => clearTimeout(timer); }, [view.holdMs, ack.phase]);
+  const onStop = useCallback(async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    const result = await runAssign({ assign: () => fleetApi.loopStop(loop.scope, loop.workspaceId ?? ""), onState: setAck, refusalCopy: LOOP_STOP_REFUSAL_COPY, timedOut: LOOP_STOP_TIMED_OUT }, {});
+    if (result.ok) onRung(result.record.request === "cancel" ? 3 : 2);
+  }, [loop.scope, loop.workspaceId, onRung]);
+  return (
+    <p className="flex items-center gap-2 text-[13px] font-semibold text-primary">
+      <span className="min-w-0 truncate" title={loop.title}>{loop.line}</span>
+      {button ? <button type="button" disabled={view.actionDisabled} aria-busy={ack.phase === "sending" ? "true" : undefined} aria-label={button.title} title={button.title} onClick={onStop} className={button.tone === "muted" ? "shrink-0 rounded-md border border-border bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-card disabled:cursor-not-allowed disabled:opacity-50" : "shrink-0 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive transition disabled:cursor-not-allowed disabled:opacity-50"}>{button.label}</button> : null}
+      {button && view.message ? <span className="mono min-w-0 shrink truncate text-[10.5px] text-destructive" title={view.messageTitle ?? view.message}>{view.message}</span> : null}
+    </p>
   );
 }
 

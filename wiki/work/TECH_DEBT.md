@@ -612,14 +612,15 @@ value and the shape rule it failed — the same treatment the codebase gives eve
 
 ---
 
-## 18. `ui/` has no interior structure either — one surface's folder is the shared library, and the fleet cannot say which machine it is
+## 18. `ui/` has no interior structure either — one surface's folder is the shared library
 
 **Status:** open (measured 2026-08-03 by the architect, during milestone 43 story 04's **second-pass**
 structural review — the UI half). **Severity:** medium. This is TECH_DEBT item 10 (`src/` has no
 interior structure) seen in the other half of the codebase, plus one concrete consequence that is
 already blocking a test someone wants to write.
 
-**What's wrong — two things with one cause, that `ui/` was never given a shared layer.**
+**What's wrong — two things with one cause, that `ui/` was never given a shared layer.** *(The
+second, (b), was PAID by 130/03 — kept below only as the paid half of a two-part entry.)*
 
 **(a) `ui/src/board/` is the de-facto shared UI library, and nothing declares it.** `ui/src/fleet/`
 reaches into `ui/src/board/` **seven** times — `runs.mjs` (the one relative-time formatter),
@@ -643,38 +644,22 @@ Line-count trend for the same subtree, measured from this repo's history:
 `acd-ui-surface-file-budget` (m43/ADR-015 F2) now ratchets the first two so the *files* stop growing;
 it does nothing about the missing *layer*, which is this item.
 
-**(b) The fleet payload cannot say which machine is serving it, so "this node" is unrenderable there.**
-Milestone 43/04 gave the board's `/api/work/list` envelope a `nodeId` key, and the board now reads
-`from aof-control (this node)` on rows it published itself. The fleet has no equivalent:
-`shapeGlobalStatus` (`src/global-mesh-query.mjs`) states `stalenessSeconds` but no serving-node
-identity, and `mesh-ui-serve.mjs` already resolves one internally (`controlNodeId()`, used only as the
-assign `issuer`). The fleet's `node.local` marker IS produced — by the `mesh:status` command
-(`src/commands/mesh-identity.mjs:~343`) — but its only web consumer is `NodeCard`
-(`ui/src/fleet/Fleet.tsx:1069`), which **never mounts in the web app**: the codebase records this at
-`Fleet.tsx:951-954` (m38 finding F9) — *"mesh-ui-serve.mjs serves BOTH scopes from
-queryGlobalMeshStatus, so isGlobalStatus(status) is always true and NodeCard/NodesRegion never mount
-there."* The card that does render falls back to the registry's `role` (`control`/`worker`), which
-answers a different question.
+**(b) PAID by 130/03 (130/ADR-005 §3).** The `/api/mesh/status` route stamps `localNodeId: await
+controlNodeId()` on its body beside `scope` (`src/mesh/ui-serve.mjs`, the status branch) — the board's
+own `nodeId` precedent, `null` on an unconfigured machine, the projection (`shapeGlobalStatus`) untouched
+because which machine serves a payload is the server's fact. The fleet card renders its Stop only where
+`node.nodeId === status.localNodeId` (`ui/src/fleet/runs.mjs`'s `loopStopAffordance`), which is the
+cross-surface lane this clause said could not be written.
 
 **How it bites.** (a) compounds silently: the next shared primitive lands in `board/` too, and the
-fleet's dependency on the board deepens until neither can be moved. (b) bites now and concretely —
-**a lane asserting that the fleet's "this node" tag and the board's new `(this node)` clause agree
-about the same machine cannot be written**, because the fleet has no such tag on the wire. Two
-surfaces answering "which machine is this?" differently, with no test able to compare them, is the
-disagreement class milestone 43 exists to remove. It also leaves a whole local-shape render path
-(`NodesRegion`, `NodeCard`, `BoardsRegion`, `BoardDrillIn` — several hundred lines) reachable by no
-production request, dead since m38 and never routed.
+fleet's dependency on the board deepens until neither can be moved. (The local-shape render path (b)
+named — `NodesRegion`, `NodeCard`, `BoardsRegion`, `BoardDrillIn` — was retired by m47/ADR-006(b).)
 
-**The fix.** Two independent, both small.
-- **(a)** A shared layer — `ui/src/ramps/` (the five read-only ramps: status, runs, assignment,
-  presence, freshness) or an honest `ui/src/shared/` — and move the cross-surface modules into it, so
-  `fleet → board` becomes `fleet → shared ← board`. Mechanical, but it touches every importer, which
-  is why it is here rather than inside a story.
-- **(b)** `shapeGlobalStatus` states the serving node's identity on the payload, the way
-  `/api/work/list` now does (`mesh-ui-serve.mjs` already has it memoised). Then `node.local` is
-  derivable in `ui/` for the card that actually renders, the two surfaces answer the question from one
-  source, and the cross-surface lane becomes writable. While there, decide the fate of the
-  never-mounting local-shape components: render them or retire them, but not neither.
+**The fix.** (a) only, now: a shared layer — `ui/src/ramps/` (the five read-only ramps: status, runs,
+assignment, presence, freshness) or an honest `ui/src/shared/` — and move the cross-surface modules
+into it, so `fleet → board` becomes `fleet → shared ← board`. Mechanical, but it touches every
+importer, which is why it is here rather than inside a story. ((b) is paid — the route stamp, not the
+projection, was the right home: see 130/ADR-005 §3's rejected alternative.)
 
 ---
 
@@ -1994,54 +1979,6 @@ keyboard target. One declaration in `host-model.mjs`, and the four hosts each st
 **Ratchet:** a lane that walks sequential focus order over a mounted control per host, asserting the
 set of stops equals what the host declares. The m49 harness now models the textarea, so this is
 writable today.
-
----
-
-## 44. The fleet face's write routes are a COPY, not a shape — and three fitness functions now require the duplication in place
-
-*(Raised 2026-08-14 at milestone 50/02's structural review. Recorded here rather than fixed in 50/02:
-the extraction is a four-file change — the face plus three detectors that are written to find the
-guards INSIDE each route's own branch body — and story 02's contract is one route.)*
-
-**What's wrong, measured on the working tree at 50/02.** `POST /api/mesh/session`
-([src/mesh-ui-serve.mjs:607-746](../../src/mesh-ui-serve.mjs#L607)) is 89 comment-free lines, of which
-**63 are verbatim-identical to lines in the `/api/mesh/assign` branch** above it
-([:409-570](../../src/mesh-ui-serve.mjs#L409)). Four blocks are copy-paste, in order:
-
-| block | assign | session | lines |
-|---|---|---|---|
-| method guard → 405 | :410-413 | :608-611 | 4 |
-| SECURITY T13 admission (Origin + content-type) | :423-433 | :615-625 | 11 |
-| `readJsonBody` → coded 400 | :435-441 | :627-633 | 7 |
-| `queryGlobalMeshStatus` → row → 404 → `existsSync` probe → 409 | :498-513 | :651-665 | 15 |
-| `controlNodeId()` → 409 `control-identity-unknown` | :545-554 | :681-690 | 10 |
-
-The workspace-resolution block is now its **THIRD** copy (`board-url`, `assign`, `session`); the T13
-admission block its second.
-
-**How it bites — and this is the half worth the entry.** The duplication is not merely tolerated, it is
-**load-bearing for CI**. Three detectors read the guards out of each route's *own* branch body:
-
-- [acd-fleet-face-single-mutation-route.test.mjs:115-125](../../test/arch/acd-fleet-face-single-mutation-route.test.mjs#L115) —
-  brace-cuts each write route and searches its first 200 chars for `request.method !== "POST"`;
-- [acd-fleet-board-link-resolved.test.mjs:104-107](../../test/arch/acd-fleet-board-link-resolved.test.mjs#L104) —
-  requires the `.workspaces ?? []).find(` binding and its `existsSync` probe inside each route region,
-  and pins the resolver list by name;
-- [acd-mesh-ui-read-only.test.mjs:93-105](../../test/arch/acd-mesh-ui-read-only.test.mjs#L93) — pins the
-  route table by exact name.
-
-So the first author to hoist `admitWriteRequest(request, response)` and `resolveLocalWorkspaceRow(...)`
-into one helper each makes three gates go red **for doing the right thing**, and the path of least
-resistance is to copy the blocks a fourth time. A ratchet that punishes de-duplication is pointed the
-wrong way: m47/ADR-011's gate was written to make the third route *comply*, and it did — it just did so
-by making the third route a copy.
-
-**The fix.** Hoist the two blocks to named helpers inside `mesh-ui-serve.mjs` (no new module — the face
-is one file's concern) and **re-aim the three detectors at the helper**: assert that every write-route
-branch *calls* `admitWriteRequest` before it reads a body, and that every route binding a `workspaces`
-row *calls* `resolveLocalWorkspaceRow`. That is a strictly stronger statement than "the text appears in
-this branch" — it cannot be satisfied by a copy that drifts — and it removes the incentive that keeps
-the copies alive. Do this **before** a fourth write route is added, not after.
 
 ---
 

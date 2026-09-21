@@ -6,7 +6,7 @@
 // session" rule is applied UPSTREAM, in assembleCurrentPresenceRecord
 // (src/mesh/launcher.mjs), which loops per-workspace and therefore knows the
 // attribution; `sessions[]` reaching this helper is ALREADY pre-subsumed.
-import type { PresenceRecord } from "./api";
+import type { PresenceLoop, PresenceRecord } from "./api";
 
 // The run-state ramp's two tokens this row reuses (never a fleet-local vocabulary):
 // active work = primary, quiet = muted (colour+label always travel together).
@@ -35,3 +35,58 @@ export type CurrentWorkLines = {
 export declare function fleetCurrentWorkLines(
   presence: Partial<PresenceRecord> | null | undefined
 ): CurrentWorkLines;
+
+// ── milestone 130 / story 03 (ADR-005 §5; DESIGN §Surface 1) — the loop line and its Stop ──
+
+// One rendered loop line: the DESIGN's anatomy in `line`, the whole value plus the `L<n>` /
+// `supervised` tail (and, composed by `nodeWorkRegion`, the remote reason) in `title`, and the
+// facts the button needs beside it. `stop` is the word the line shows — the wire's, raised to
+// the held one for the same drive when a memory is handed in.
+export type FleetLoopLine = {
+  key: string;
+  line: string;
+  title: string;
+  loopRunId: string;
+  scope: string;
+  workspaceId: string | null;
+  runId: string | null;
+  stop: null | "drain" | "cancel";
+};
+
+// The rung a click REQUESTS: 1 = drain (`Stop`), 2 = cancel (`Stop now`). Rung 3 — nothing
+// left to ask — renders no button.
+export type LoopStopButton = {
+  rung: 1 | 2;
+  label: "Stop" | "Stop now";
+  title: string;
+  tone: "muted" | "destructive";
+};
+
+export type LoopStopAffordance = {
+  button: LoopStopButton | null;
+  remote: boolean;
+};
+
+// The card's rung memory: per `loopRunId`, the rung reached AGAINST the drive it was reached
+// on — a memory from another drive is absent, and nothing here expires on a timer.
+export type RememberedStopRung = { rung: number; runId: string | null };
+export type StopRungMemory = Map<string, RememberedStopRung>;
+
+export declare function fleetLoopLines(
+  presence: Partial<PresenceRecord> | { loops?: unknown } | null | undefined,
+  memory?: StopRungMemory | null
+): FleetLoopLine[];
+
+export declare function loopStopAffordance(input: {
+  loop: Pick<PresenceLoop, "stop" | "scope"> & { runId?: string | null } | FleetLoopLine | null | undefined;
+  node: { nodeId?: string | null } | null | undefined;
+  localNodeId: string | null | undefined;
+  remembered?: RememberedStopRung | null;
+}): LoopStopAffordance;
+
+export declare function rememberStopRung(
+  memory: StopRungMemory | null | undefined,
+  loopRunId: string,
+  rung: number,
+  runId: string | null
+): StopRungMemory;

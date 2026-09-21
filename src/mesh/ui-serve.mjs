@@ -20,9 +20,24 @@
 // `attachTerminalWebSocket` (a `/ws/terminal` upgrade), both of which this face
 // FORBIDS (ADR-004; ADR-003 disjoint `/api/mesh` namespace). So the fleet face
 // owns its own thin server whose surface is exactly: the static bundle,
-// GET /api/mesh/status, GET /api/mesh/board-url, POST /api/mesh/assign and
-// POST /api/mesh/session (the TWO named write carve-outs, below), and a clean
-// not-found for everything else.
+// GET /api/mesh/status, GET /api/mesh/board-url, GET /api/mesh/session-outcome,
+// POST /api/mesh/assign, POST /api/mesh/session and POST /api/mesh/loop-stop (the
+// THREE named write carve-outs, below), and a clean not-found for everything else.
+//
+// milestone 130 / story 03 (ADR-005 §4) — the write surface grows from TWO named
+// routes to THREE, and it is preceded by TECH_DEBT item 44's hoist: the admission
+// block (method → 405; same-origin Origin + application/json → 403 / 400, before
+// any body is read) and the workspace-resolution block (`queryGlobalMeshStatus` →
+// row → 404; `existsSync(projectRoot)` → 409 `workspace-not-local`) were a
+// verbatim COPY across the write routes (63 identical lines measured at 50/02), and
+// three fitness functions required the copy in place. They are now
+// `admitWriteRequest(request, response)` and `resolveLocalWorkspaceRow(workspaceId,
+// response)` — two named helpers INSIDE this file (no new module; the face is one
+// file's concern), called by every route that needs them, with the detectors
+// re-aimed at the CALL. `POST /api/mesh/loop-stop` lifts exactly `{ scope,
+// workspaceId }`, resolves the local row, loads that workspace and asserts its own
+// id as assign does, and hands `stopLoop(workspace, { scope })` — the verb core —
+// the rest, answering its seven-key document verbatim or its coded refusal.
 //
 // milestone 50 / story 02 (ADR-001 + ADR-006) — the write surface grows from ONE
 // named route to TWO: POST /api/mesh/session dispatches a bare session-spawn
@@ -97,6 +112,11 @@ import { resolveCacheStalenessSeconds } from "../cache-provenance.mjs";
 // global-work-store/global-node-registry module is imported (ADR-012 inv.2/4).
 import { loadWorkspace } from "../work.mjs";
 import { assignWork } from "./assignment.mjs";
+// milestone 130 / story 03 (ADR-005 §4; ADR-002 §8) — the face's SECOND sanctioned write door:
+// `stopLoop`, the verb core BELOW the command layer that `work:loop --stop` also calls
+// (38/ADR-012's "a second CALLER of the SAME core, never a re-implementation"). The refusal
+// codes come from the same module so the route's 404/409 mapping names the core's own words.
+import { STOP_REFUSALS, stopLoop } from "../loop/stop.mjs";
 // VERIFICATION (UI phase selection, 2026-07-25) — the closed-set validator for the
 // optional `phase` on POST /api/mesh/assign (refine/continue/verify).
 import { isAssignmentPhase } from "./assignment-directive.mjs";
@@ -340,6 +360,42 @@ export async function serveMeshUi({
     return cacheStalenessMemo;
   };
 
+  // resolveLocalWorkspaceRow(workspaceId, response) — THE workspace resolution every
+  // workspace-addressed route performs (milestone 130 / story 03 — TECH_DEBT item 44's
+  // second hoist; the block was its THIRD copy across board-url, assign and session).
+  // Answers `{ status, row }` for a workspace that is in the projection AND checked out on
+  // this machine; otherwise the coded refusal has ALREADY been sent and the caller returns.
+  //
+  // The SANCTIONED seam, and only it (38/ADR-012 AMENDMENT ruling 2): `queryGlobalMeshStatus`
+  // UNNARROWED, then find the row — so the resolution domain EQUALS the render domain by
+  // construction (every card an operator can click resolves, and nothing else does), and
+  // "drill in to this card", "assign this card" and "stop this loop" resolve the SAME id to
+  // the SAME project root through the SAME row. Passing `workspaceId` into the query was
+  // provably equivalent once, but that is a property of two query IMPLEMENTATIONS, not of the
+  // seam's contract (REVIEW FIX F-A, 2026-07-24).
+  //
+  // THE REACHABILITY PROBE COMES FIRST, before anything consumes the row (47/ADR-011): the
+  // projection is MACHINE-WIDE, so a row published by ANOTHER machine carries a projectRoot
+  // this machine has never had. Without the probe `loadWorkspace` degrades to an empty
+  // config and the operator reads a refusal that names the WRONG cause (`ref-not-found`) —
+  // or, on the board-url route, a real board server bound on a path this machine never had.
+  // One fact, one code, one vocabulary: 409 `workspace-not-local`, never a second spelling.
+  // The `status` is handed back beside the row because the session route reads the node
+  // roster off the SAME payload for its connectivity answer (50/ADR-006 decision 7).
+  async function resolveLocalWorkspaceRow(workspaceId, response) {
+    const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
+    const row = (status.workspaces ?? []).find((candidate) => candidate.workspaceId === workspaceId);
+    if (!row) {
+      sendApiError(response, 404, `Workspace "${workspaceId}" is not in the mesh projection.`, "workspace-not-found");
+      return null;
+    }
+    if (!row.projectRoot || !existsSync(row.projectRoot)) {
+      sendApiError(response, 409, `Workspace "${workspaceId}" is not checked out on this machine.`, "workspace-not-local");
+      return null;
+    }
+    return { status, row };
+  }
+
   const server = http.createServer(async (request, response) => {
     let requestUrl;
     try {
@@ -369,35 +425,18 @@ export async function serveMeshUi({
       }
 
       try {
-        const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
-        const workspace = (status.workspaces ?? []).find((candidate) => candidate.workspaceId === workspaceId);
-        if (!workspace) {
-          sendApiError(response, 404, `Workspace "${workspaceId}" is not in the mesh projection.`, "workspace-not-found");
-          return;
-        }
-        // milestone 47 / story 01 (ADR-011) — THE SAME REACHABILITY CAVEAT the assign
-        // route below has carried since m38, on the same field of the same row from the
-        // same query, answering the same question in the same vocabulary. It was missed
-        // here rather than weighed and rejected, and this route degrades WORSE for the
-        // lack of it: the assign route's un-probed failure was a wrong REFUSAL (naming
-        // `ref-not-found`); this one was a wrong SUCCESS — `serveBoard` validates only
-        // that the UI bundle exists and carries `projectDir` through unresolved, so a
-        // row published by ANOTHER machine bound a real board on a path this machine has
-        // never had, and the operator landed on a page that rendered and showed an empty
-        // stream, byte-indistinguishable from a repo with no work. On a mesh that is the
-        // ORDINARY case, not an edge: the projection is machine-wide, every foreign card
-        // renders a drill-in, and none of them can ever open.
-        //
-        // It sits BEFORE `boardUrlForWorkspace` deliberately: that function LAUNCHES and
-        // MEMOISES a per-workspace server, so entering it for a row we are going to
-        // refuse would strand a bound port per un-openable card for the fleet's lifetime.
-        // The code is `workspace-not-local`/409 — the existing name for this one fact,
-        // never a second spelling of it (ADR-011 clause 2); `board-url-failed` stays what
-        // it is, the catch-all for a genuinely unexpected launch failure.
-        if (!workspace.projectRoot || !existsSync(workspace.projectRoot)) {
-          sendApiError(response, 409, `Workspace "${workspaceId}" is not checked out on this machine.`, "workspace-not-local");
-          return;
-        }
+        // milestone 47 / story 01 (ADR-011) — the resolution AND the reachability probe are
+        // the shared helper's (item 44's hoist), and the probe sits BEFORE
+        // `boardUrlForWorkspace` deliberately: that function LAUNCHES and MEMOISES a
+        // per-workspace server, so entering it for a row we are going to refuse would strand
+        // a bound port per un-openable card for the fleet's lifetime. Measured before the
+        // probe existed here: a row published by ANOTHER machine bound a real board on a path
+        // this machine has never had, and the operator landed on a page that rendered an
+        // empty stream, byte-indistinguishable from a repo with no work. `board-url-failed`
+        // stays what it is, the catch-all for a genuinely unexpected launch failure.
+        const resolved = await resolveLocalWorkspaceRow(workspaceId, response);
+        if (!resolved) return;
+        const workspace = resolved.row;
         // milestone 46 / story 02 (ADR-004) — the board a fleet launches is HANDED
         // that fleet's own bound origin, read off the live socket at launch time.
         // Not a constant, not an env var, not a module singleton: two fleets alive at
@@ -429,30 +468,10 @@ export async function serveMeshUi({
     // ADR-012 AMENDMENT therefore makes `workspaceId` a REQUIRED third field
     // and pins the resolution + assertion ORDER below (invariants 5 and 6).
     if (pathname === "/api/mesh/assign") {
-      if (request.method !== "POST") {
-        sendMethodNotAllowed(response, "POST");
-        return;
-      }
-
-      // SECURITY T13 — the same-origin + application/json admission guard,
-      // scoped to THIS write route only (the read routes stay unguarded — a
-      // safe method has no side effect to forge). A same-origin browser
-      // request's Origin ALWAYS matches this server's own `http://<host>`
-      // (the exact string a same-origin `fetch` sends); a cross-site page, an
-      // absent Origin (a bare/simple cross-site form-POST), or a non-JSON
-      // content-type are each refused BEFORE the body is even parsed — the
-      // guard runs strictly before any store read/write.
-      const expectedOrigin = `http://${request.headers.host}`;
-      const originHeader = request.headers.origin;
-      if (typeof originHeader !== "string" || originHeader !== expectedOrigin) {
-        sendApiError(response, 403, "Cross-origin write refused.", "cross-origin-refused");
-        return;
-      }
-      const contentTypeHeader = String(request.headers["content-type"] ?? "");
-      if (!/^application\/json\b/i.test(contentTypeHeader)) {
-        sendApiError(response, 400, "Content-Type must be application/json.", "invalid-content-type");
-        return;
-      }
+      // The method guard and SECURITY T13's same-origin + application/json admission —
+      // scoped to the write routes only (a safe method has no side effect to forge) — are
+      // the shared helper's, and run strictly BEFORE the body is parsed or any store is read.
+      if (!admitWriteRequest(request, response)) return;
 
       let body;
       try {
@@ -498,41 +517,13 @@ export async function serveMeshUi({
       }
 
       try {
-        // ADR-012 AMENDMENT ruling 2 — resolution runs through the SANCTIONED
-        // seam: queryGlobalMeshStatus → status.workspaces[] → projectRoot, the
-        // EXACT two-step GET /api/mesh/board-url already performs above. That
-        // makes the resolution domain EQUAL the render domain by construction
-        // (every workspace the operator can click resolves, and nothing else
-        // does), costs ZERO new imports, and keeps "drill in to this card" and
-        // "assign this card" resolving the SAME id to the SAME project root
-        // through the SAME row. A store fault rides the catch below, coded —
-        // never a fallback.
-        //
-        // REVIEW FIX F-A (architect, 2026-07-24) — the call is BYTE-IDENTICAL to
-        // the board-url precedent above: UNNARROWED, then find the row. Passing
-        // `workspaceId` into the query as well was provably equivalent today,
-        // but that is a property of two query IMPLEMENTATIONS, not of this
-        // seam's contract — and that contract has already been carved
-        // non-uniformly once (queryGlobalRegistry deliberately does not narrow
-        // the node roster, since nodes are machine-wide). The degree of freedom
-        // is removed by construction; a loopback single-user server never needed
-        // the micro-optimisation.
-        const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
-        const row = (status.workspaces ?? []).find((candidate) => candidate.workspaceId === workspaceId);
-        if (!row) {
-          sendApiError(response, 404, `Workspace "${workspaceId}" is not in the mesh projection.`, "workspace-not-found");
-          return;
-        }
-        // The reachability caveat, checked BEFORE loadWorkspace: workspace ids
-        // are path-derived, so a row published by ANOTHER machine into a synced
-        // projection carries a project_root that does not exist HERE. Without
-        // this probe loadWorkspace degrades to an empty config, findWork
-        // resolves nothing, and the operator gets "ref-not-found" — a refusal
-        // that names the WRONG cause. A refusal must name its own cause.
-        if (!row.projectRoot || !existsSync(row.projectRoot)) {
-          sendApiError(response, 409, `Workspace "${workspaceId}" is not checked out on this machine.`, "workspace-not-local");
-          return;
-        }
+        // ADR-012 AMENDMENT ruling 2 — resolution runs through the SANCTIONED seam
+        // (queryGlobalMeshStatus → status.workspaces[] → projectRoot) and its reachability
+        // probe, both the shared helper's: the resolution domain EQUALS the render domain by
+        // construction, and a store fault rides the catch below, coded — never a fallback.
+        const resolved = await resolveLocalWorkspaceRow(workspaceId, response);
+        if (!resolved) return;
+        const { row } = resolved;
         // Loaded LAZILY, only for a request that already cleared the CSRF +
         // shape + resolution guards above — mirroring the SEA/CLI's own
         // `loadWorkspace(cwd)` per-invocation load (never cached across
@@ -627,26 +618,9 @@ export async function serveMeshUi({
     // via the SAME `streamServer.dispatchDirective` seam. No new transport, no new
     // IPC, no process-topology change.
     if (pathname === "/api/mesh/session") {
-      if (request.method !== "POST") {
-        sendMethodNotAllowed(response, "POST");
-        return;
-      }
-
-      // SECURITY T13 — byte-identical to the assign route's guard above, and for the
-      // same reason: a same-origin browser fetch always sends this exact Origin, while
-      // a cross-site page, a bare form-POST with no Origin, or a non-JSON content-type
-      // is refused BEFORE the body is read and BEFORE any store is touched.
-      const expectedOrigin = `http://${request.headers.host}`;
-      const originHeader = request.headers.origin;
-      if (typeof originHeader !== "string" || originHeader !== expectedOrigin) {
-        sendApiError(response, 403, "Cross-origin write refused.", "cross-origin-refused");
-        return;
-      }
-      const contentTypeHeader = String(request.headers["content-type"] ?? "");
-      if (!/^application\/json\b/i.test(contentTypeHeader)) {
-        sendApiError(response, 400, "Content-Type must be application/json.", "invalid-content-type");
-        return;
-      }
+      // SECURITY T13 — the SAME admission the assign route performs, through the same
+      // helper: refused BEFORE the body is read and BEFORE any store is touched.
+      if (!admitWriteRequest(request, response)) return;
 
       let body;
       try {
@@ -713,24 +687,12 @@ export async function serveMeshUi({
       }
 
       try {
-        // The SANCTIONED resolution seam, byte-identical to the two routes above:
-        // UNNARROWED query, then find the row. The resolution domain equals the render
-        // domain by construction — every card an operator can click resolves here, and
-        // nothing else does.
-        const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
-        const row = (status.workspaces ?? []).find((candidate) => candidate.workspaceId === workspaceId);
-        if (!row) {
-          sendApiError(response, 404, `Workspace "${workspaceId}" is not in the mesh projection.`, "workspace-not-found");
-          return;
-        }
-        // m47/ADR-011's rule, met on the day this route was written: the projection is
-        // MACHINE-WIDE, so a row published by another machine carries a projectRoot
-        // this machine has never had. One fact, one code, one vocabulary — the same
-        // 409 `workspace-not-local` the assign and board-url routes mint.
-        if (!row.projectRoot || !existsSync(row.projectRoot)) {
-          sendApiError(response, 409, `Workspace "${workspaceId}" is not checked out on this machine.`, "workspace-not-local");
-          return;
-        }
+        // The SANCTIONED resolution seam and m47/ADR-011's reachability probe — the shared
+        // helper's, the same call the two routes above make. Every card an operator can
+        // click resolves here, and nothing else does.
+        const resolved = await resolveLocalWorkspaceRow(workspaceId, response);
+        if (!resolved) return;
+        const { status } = resolved;
         // The CONTROL's own machine identity — resolved from this daemon's launch
         // workspace (the memo at the top of serveMeshUi), never from the target
         // workspace. A control with no identity refuses BY NAME here rather than
@@ -814,6 +776,74 @@ export async function serveMeshUi({
         // the far side of the stream). Named for its ROUTE, exactly as the two siblings
         // above are (`assign-failed`, `board-url-failed`).
         sendApiError(response, error.status ?? 500, error.message, error.code ?? "session-route-failed", { path: error.path ?? null });
+      }
+      return;
+    }
+
+    // ── milestone 130 / story 03 (ADR-005 §4; ADR-002 §3-§4; ADR-006 §1) — the fleet
+    // face's THIRD named write route: POST /api/mesh/loop-stop { scope, workspaceId }.
+    //
+    // IN ASSIGN'S EXACT SHAPE, after item 44's hoist: admit (the shared helper — method,
+    // Origin, content-type, before any body is read); lift EXACTLY `{ scope, workspaceId }`
+    // off the body, both REQUIRED non-empty strings (a number is not a scope; anything else a
+    // client posts — a forged `state`, an `issuer`, a megabyte of padding — rides no further);
+    // resolve the local row (the shared helper — 404 / 409 `workspace-not-local`); load THAT
+    // workspace and assert its own id as assign does (409 `workspace-id-mismatch`); then hand
+    // `stopLoop(workspace, { scope })` the rest. The verb resolves the scope's loop from its
+    // RUN RECORDS, writes or escalates the request through story 01's one writer and answers
+    // ADR-002 §4's seven-key document, which is sent VERBATIM — a second click answers
+    // `cancel`, a third `cancel` again, never an error. Its refusals are its own coded
+    // documents, mapped to the face's numbers exactly as the command face maps them:
+    // `loop-stop-no-declaration` → 404, everything else (`loop-stop-scope`,
+    // `loop-stop-not-local`) → 409, the sentence and the code the core's, verbatim.
+    //
+    // NO `controlNodeId()` ISSUER: the verb stamps `by` from the workspace it is handed
+    // (`loadWorkspace` overlays the machine identity onto it), so an unconfigured control
+    // node still stops a local loop — `control-identity-unknown` is a dispatch refusal
+    // (a directive with no issuer cannot be routed) and this route dispatches nothing.
+    // The mutation is ONE file under `<meshRoot>/loop-stops/`, written inside the core
+    // through story 01's atomic seam; this face itself still writes nothing and shells out to
+    // nothing. `live` is reported honestly and never refused (ADR-002 §6): a loop caught
+    // between drives answers `live: false`, `state: "honoured"`, and the request still stands.
+    if (pathname === "/api/mesh/loop-stop") {
+      if (!admitWriteRequest(request, response)) return;
+
+      let body;
+      try {
+        body = await readJsonBody(request);
+      } catch {
+        sendApiError(response, 400, "Malformed JSON body.", "invalid-body");
+        return;
+      }
+      const scope = typeof body?.scope === "string" ? body.scope.trim() : "";
+      const workspaceId = typeof body?.workspaceId === "string" ? body.workspaceId.trim() : "";
+      if (!scope || !workspaceId) {
+        sendApiError(response, 400, "Both \"scope\" and \"workspaceId\" are required.", "invalid-body");
+        return;
+      }
+
+      try {
+        const resolved = await resolveLocalWorkspaceRow(workspaceId, response);
+        if (!resolved) return;
+        const { row } = resolved;
+        // The workspace the LOOP runs in — the resolved row's project root, never this
+        // daemon's own launch dir (F21's lesson) — and the own-id assertion assign performs
+        // (inv.6): the verb stamps the request's `workspaceId` from the workspace it is
+        // handed, so the value it will stamp is the value checked, not a lookalike.
+        const stopWorkspace = await loadWorkspace(row.projectRoot, undefined, { env: globalStoreOptions?.env });
+        const ownWorkspaceId = stopWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(stopWorkspace.projectRoot);
+        if (ownWorkspaceId !== workspaceId) {
+          sendApiError(response, 409, `The workspace resolved for "${workspaceId}" identifies itself as "${ownWorkspaceId}".`, "workspace-id-mismatch");
+          return;
+        }
+        const result = await stopLoop(stopWorkspace, { scope });
+        if (!result.ok) {
+          sendApiError(response, result.code === STOP_REFUSALS.noDeclaration ? 404 : 409, result.message, result.code);
+          return;
+        }
+        sendJson(response, 200, result);
+      } catch (error) {
+        sendApiError(response, error.status ?? 500, error.message, error.code ?? "loop-stop-failed", { path: error.path ?? null });
       }
       return;
     }
@@ -939,7 +969,15 @@ export async function serveMeshUi({
           // once on the payload beside the rows' own `syncedAt`/`reportedBy`.
           cacheStalenessSeconds: await cacheStalenessSeconds(),
         });
-        const body = { ...result, scope: effectiveScope };
+        // milestone 130 / story 03 (ADR-005 §3; pays TECH_DEBT item 18 (b)) — WHICH MACHINE
+        // IS SERVING THIS READ, stamped on the body beside `scope` exactly as the board stamps
+        // `nodeId` on its own envelope (board-ui.mjs): a fact about the SERVER, not the store,
+        // so the projection (`shapeGlobalStatus`) is untouched. It is the memoised machine
+        // identity the write routes already resolve, read once per server life; an
+        // unconfigured machine names `null` — the key present, never absent — and then no
+        // card on the fleet shows a Stop. It is NOT validated against the roster: locality is
+        // the server's fact and the roster is the registry's.
+        const body = { ...result, scope: effectiveScope, localNodeId: await controlNodeId() };
         if (effectiveScope === "local") body.currentWorkspace = resolvedProjectDir;
         sendJson(response, 200, body);
       } catch (error) {
@@ -1246,6 +1284,36 @@ async function closeBoardServers(boardServers) {
         })
     )
   );
+}
+
+// --- the write routes' shared guards (milestone 130 / story 03 — TECH_DEBT item 44's hoist) ---
+
+// admitWriteRequest(request, response) — THE admission every write route performs before it
+// reads a body, hoisted from the three verbatim copies item 44 measured. Answers `true` when
+// the request is admitted; otherwise the refusal has ALREADY been sent and the caller returns.
+// In order: a method other than POST is a clean 405 naming POST (the read-only-except-these-
+// routes posture, ADR-004 / 38/ADR-012 inv.1); then SECURITY T13 — a same-origin browser
+// request's Origin ALWAYS equals this server's own `http://<host>` (the exact string a
+// same-origin `fetch` sends, never a prefix: a trailing slash is refused), so a cross-site
+// page, an absent Origin (a bare cross-site form-POST) or a non-JSON content-type is refused
+// BEFORE the body is parsed and BEFORE any store is touched.
+function admitWriteRequest(request, response) {
+  if (request.method !== "POST") {
+    sendMethodNotAllowed(response, "POST");
+    return false;
+  }
+  const expectedOrigin = `http://${request.headers.host}`;
+  const originHeader = request.headers.origin;
+  if (typeof originHeader !== "string" || originHeader !== expectedOrigin) {
+    sendApiError(response, 403, "Cross-origin write refused.", "cross-origin-refused");
+    return false;
+  }
+  const contentTypeHeader = String(request.headers["content-type"] ?? "");
+  if (!/^application\/json\b/i.test(contentTypeHeader)) {
+    sendApiError(response, 400, "Content-Type must be application/json.", "invalid-content-type");
+    return false;
+  }
+  return true;
 }
 
 // --- local response helpers (mirror board-ui.mjs / setup-ui.mjs; not shared) ---

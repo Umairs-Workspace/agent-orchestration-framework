@@ -176,7 +176,23 @@ export const archTests = [
       // `runId`, `run.state`, `run.brief`, `heartbeat`, `retryOf`) the diff is EMPTY: the board reads
       // the WORK LIST differently and no run-record key it did not read before, so the loop's state
       // still rides the run record with no face of its own. Re-pinned at aof:verify 127.
-      assert.equal(hash.digest("hex"), "01669ef9749ee4cc3617a825837d09276edb1442071119ea6842b403d65d56c0", "ui/ changed despite the zero-board-change contract");
+      //
+      // RE-PINNED by 130/03 (ADR-005 §5-§6; ADR-006 §3), measured the same way: `git diff -- ui/`
+      // is EIGHT files, all under `ui/src/fleet/` — `api.ts`, `runs.mjs`, `runs.d.mts`,
+      // `scope.mjs`, `scope.d.mts`, `Fleet.tsx` (the six the ADR named) plus
+      // `assign-affordance.mjs` and `assign-affordance.d.mts` (the one orchestrator generalised
+      // by two additive options, `refusalCopy` / `timedOut`, so the loop line's Stop rides the
+      // assign affordance's machine instead of a second copy of its deadline race). It is the
+      // fleet node card's loop line and its Stop: `presence.loops[]` rendered beside the pinned
+      // current-work lines, ONE button on the serving node's card, `fleetApi.loopStop` the one
+      // fetch. NOTHING under `ui/src/board/` moved (`git diff -- ui/src/board/` is empty);
+      // `src/board-ui.mjs`'s digest above is UNCHANGED (959ebf96…), as is `src/run-store.mjs`'s;
+      // and the `ui/` diff reads NO run record at all — every `runId` it names is a field of the
+      // presence record's additive `loops[]` entry (the node's projection of its own run
+      // records, src/mesh/presence.mjs), so the loop's state still rides the run record with no
+      // face of its own and the board's frozen seam is byte-identical. `work:loop` stays
+      // BOARD_DEFERRED; no `/api/work/loop` exists.
+      assert.equal(hash.digest("hex"), "5766c6089f3d4aabc856e347e95dd218a8d7c41d137ac6b3bbfdb5fb5dcb6b45", "ui/ changed despite the zero-board-change contract");
     },
   },
 ];

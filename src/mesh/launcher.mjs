@@ -31,7 +31,7 @@ import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "./fabric
 import { readNodeRecords } from "./store.mjs";
 import { deriveNodeId, sidecarPathFor, readSidecar } from "../node-identity.mjs";
 import { packageVersionString } from "../asset-base.mjs";
-import { assemblePresenceRecord, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot } from "./presence.mjs";
+import { assemblePresenceRecord, readActiveLoops, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot } from "./presence.mjs";
 // `listItems` is STILL imported here and must stay: mesh-launcher's OTHER read (:1503) is a
 // WORKER-side read of a materialized worktree, which ADR-005 pins to disk by positive
 // assertion — a worker must never read another node's opinion of its own checkout.
@@ -416,8 +416,15 @@ function resolveAggregationWorkspaces(ws, registryResult) {
 // below, so the whole aggregation opens the projection AT MOST ONCE however many workspaces
 // it walks (m43 / ADR-016/G7). Absent (every existing caller and test double) it is `{}`,
 // which is byte-identical to the per-read open this function used to do.
+// milestone 130 / story 03 (ADR-005 §2) — the union ALSO answers `loops`: this node's live
+// loops, one entry per loopRunId per workspace, read by the SAME pass over the SAME local items
+// and stamped with that workspace's id. ONLY the local half contributes — the cached-run half
+// (`readCachedActiveRunIds`) names runs on workspaces this machine does not hold, and a loop is
+// local by definition (ADR-006). A workspace whose enumeration throws loses its loops with its
+// runs, inside the same isolation; the tick completes.
 export async function assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions = {}) {
   const activeRuns = [];
+  const loops = [];
   const workspacesWithRuns = new Set();
   for (const workspace of workspaces) {
     // PER-WORKSPACE ISOLATION (never a daemon crash): a workspace whose items can't
@@ -442,11 +449,12 @@ export async function assembleActiveRunsAndSubsumedWorkspaces(workspaces, listIt
           workspacesWithRuns.add(workspace.workspaceId);
         }
       }
+      loops.push(...await readActiveLoops(local.items, { workspaceId: workspace.workspaceId ?? null }));
     } catch (error) {
       // absence-is-benign — this workspace's runs are skipped, not fatal.
       reportDegrade("mesh-launcher", error); }
   }
-  return { activeRuns, workspacesWithRuns };
+  return { activeRuns, workspacesWithRuns, loops };
 }
 
 // emitWarning(sink, warning, options) — review fix (live soak, 2026-07-17): every
@@ -582,7 +590,7 @@ async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openSt
   const listItemsFn = typeof options?.listItems === "function"
     ? options.listItems
     : (workDir, workspace) => listItemsCacheFirst(workspace ?? { workDir, projectRoot: workDir }, cacheOptions);
-  const { activeRuns, workspacesWithRuns } = await assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions);
+  const { activeRuns, workspacesWithRuns, loops } = await assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions);
 
   // sessions is the union of this node's LIVE session records (ADR-001/002), stored
   // per-NODE (mesh-session.mjs) so ONE read covers every workspace; a read fault here
@@ -600,7 +608,10 @@ async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openSt
 
   // m42 wave (c) / item 1 — the build stamp rides the presence record (the sixth
   // additive key), so `aof mesh status` answers WHICH build a remote node runs.
-  return assemblePresenceRecord({ nodeId, heartbeatAt: resolveNow(options), activeRuns, sessions, aofVersion: packageVersionString(), buildId: buildInfoString(readBuildInfo()) });
+  // 130/ADR-005 §2 — `loops` rides the tick's record LAST and only when non-empty. This tick is
+  // the record this machine actually publishes; a heartbeat that carried the key alone would be
+  // erased by the next one.
+  return assemblePresenceRecord({ nodeId, heartbeatAt: resolveNow(options), activeRuns, sessions, aofVersion: packageVersionString(), buildId: buildInfoString(readBuildInfo()), loops });
 }
 
 function configuredRelayUrl(config) {

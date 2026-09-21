@@ -19,7 +19,35 @@
 //     - local stays usable/populated independent of a global error;
 //     - diagnostics summarise projection freshness + skipped workspace/descriptor
 //       error counts without dropping the healthy node/workspace data.
+//
+//   milestone 130 / story 03 — EXTENDED (test/ui is at its ceiling) with:
+//     03_the-line-and-the-button-are-pure.feature (@executable) — fleetLoopLines,
+//       loopStopAffordance, rememberStopRung (runs.mjs) and nodeWorkRegion (scope.mjs),
+//       driven headlessly, with fleetCurrentWorkLines / nodeCurrentWork byte-identical;
+//     04_the-card-renders-and-repins.feature (@executable lanes) — the REAL <Fleet/> mounted
+//       through the fleet app harness against a REAL serveMeshUi fixture: the loop rows, the
+//       one button on this node's card, the click through the real route, the hold, the rung
+//       memory, the refusal slot, the budgets and the FF-5307 re-pin.
 import assert from "node:assert/strict";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance, rememberStopRung } from "../../ui/src/fleet/runs.mjs";
+import { POLL_MS, ASSIGN_SENT_HOLD_MS, ASSIGN_TIMEOUT_MS } from "../../ui/src/fleet/assign-affordance.mjs";
+import { removeWorkspaceFromProjection, withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
+import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
+import { assemblePresenceRecord, publishPresenceRecord } from "../../src/mesh/presence.mjs";
+import { globalMeshPaths } from "../../src/workspace.mjs";
+import { loopStopsDir } from "../../src/loop/stop-request.mjs";
+import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../src/mesh/store.mjs";
+// FF-11902 — "no new file under ui/src/fleet/" is the directory budget's ceiling, read from its ONE
+// home rather than retyped here as a count the next story to move a file would pay for.
+import { UI_DIRECTORY_BUDGETS } from "../arch/testing/acd-ui-directory-budget.test.mjs";
 import {
   VALID_SCOPES,
   scopeLabel,
@@ -33,6 +61,8 @@ import {
   withoutCredentialFields,
   isCredentialField,
   nodePanelFacts,
+  nodeCurrentWork,
+  nodeWorkRegion,
   diagnosticsSummary,
   errorPathFor,
   milestoneListItems,
@@ -51,6 +81,150 @@ import {
   hiddenMilestoneCount,
   workStatusSummaryTail,
 } from "../../ui/src/fleet/scope.mjs";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+// ── milestone 130 / story 03 fixtures ─────────────────────────────────────────────────────
+
+// The DESIGN's pinned classes (§Surface 1's button table; the message slot).
+const STOP_MUTED = "shrink-0 rounded-md border border-border bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-card disabled:cursor-not-allowed disabled:opacity-50";
+const STOP_DESTRUCTIVE = "shrink-0 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive transition disabled:cursor-not-allowed disabled:opacity-50";
+const MESSAGE_CLASS = "mono min-w-0 shrink truncate text-[10.5px] text-destructive";
+const LOOP_ROW_CLASS = "flex items-center gap-2 text-[13px] font-semibold text-primary";
+
+// The task-03 loop entry, with overrides.
+function E1(overrides = {}) {
+  return { loopRunId: "L1", workspaceId: "w1", scope: "129", level: "L2", cap: 3, phase: "continue", cycle: 1, ref: "129/04", runId: "r1", supervised: false, stop: null, ...overrides };
+}
+
+const className = (node) => (typeof node?.props?.className === "string" ? node.props.className : "");
+
+// The node card that names `nodeId` — the rounded-lg bg-card div whose identity row carries it.
+function nodeCard(app, nodeId) {
+  return findAll(app.tree(), (node) =>
+    node.type === "div"
+    && className(node).includes("rounded-lg border border-border bg-card")
+    && findAll(node, (inner) => inner.type === "span" && className(inner).includes("font-bold") && textOf(inner) === nodeId).length > 0)[0] ?? null;
+}
+
+// The current-work region's PINNED lines: the text-[13px] <p>s that are not loop rows.
+function regionLines(card) {
+  return findAll(card, (node) => node.type === "p" && className(node).startsWith("text-[13px]"));
+}
+
+// The loop rows: the flex-row <p>s the DESIGN pins.
+function loopRows(card) {
+  return findAll(card, (node) => node.type === "p" && className(node) === LOOP_ROW_CLASS);
+}
+
+const rowText = (row) => (row.children ?? []).find((child) => child && child.type === "span" && className(child) === "min-w-0 truncate") ?? null;
+const rowButton = (row) => (row.children ?? []).find((child) => child && child.type === "button") ?? null;
+const rowMessage = (row) => (row.children ?? []).find((child) => child && child.type === "span" && className(child).includes("text-destructive")) ?? null;
+const stopButtons = (tree) => findAll(tree, (node) => node.type === "button" && ["Stop", "Stop now"].includes(textOf(node)));
+const clickEvent = () => ({ stopPropagation() {}, preventDefault() {} });
+
+async function filesBelow(dir) {
+  const out = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (entry.isDirectory() && ["node_modules", "dist"].includes(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...await filesBelow(full));
+    else if (/\.(?:mjs|js|ts|tsx|mts)$/.test(entry.name)) out.push(full);
+  }
+  return out;
+}
+
+// Stream 129 with item 129/04 under `root`'s work dir, carrying ONE run record `r1` — running,
+// a usable brief.loop under L1 over scope 129, a fresh heartbeat — the record the route's verb
+// reads. `node` / `brief` rearrange it for a refusal lane.
+async function writeLoopStream129(root, { state = "running", node = "control-a", brief } = {}) {
+  const milestoneDir = path.join(root, "wiki", "work", "129_milestone_loop");
+  const storyDir = path.join(milestoneDir, "stories", "04_story_wave");
+  await mkdir(path.join(storyDir, "runs"), { recursive: true });
+  await writeFile(path.join(milestoneDir, "SPEC.md"), "---\ntype: milestone\nnumber: 129\nslug: loop\nstatus: in-progress\ntitle: Loop\n---\n", "utf8");
+  await writeFile(path.join(storyDir, "STORY.md"), "---\ntype: story\nnumber: 04\nslug: wave\nparent: 129\nstatus: in-progress\ntitle: Wave\n---\n", "utf8");
+  const now = new Date().toISOString();
+  const record = {
+    runId: "r1", itemRef: "129/04", state, attempt: 1, outcome: state === "running" ? null : state, sessionId: null,
+    brief: brief ?? { loop: { loopRunId: "L1", scope: "129", level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: "2026-09-13T00:00:00.000Z", id: "loop-id", supervised: false } },
+    createdAt: "2026-09-13T00:00:00.000Z", updatedAt: now, failureReason: null, heartbeatAt: now, retryOf: null, reclaimedAt: null, node,
+  };
+  await writeFile(path.join(storyDir, "runs", "r1.json"), JSON.stringify(record, null, 2), "utf8");
+}
+
+// Publish a node's presence record into the fixture home's mesh root — what the REAL registry
+// read serves on the next poll. `loops: undefined` publishes no key (the omitted-when-empty rule).
+async function publishPresence(home, nodeId, { activeRuns = ["r1"], loops } = {}) {
+  const presenceWorkspace = { globalMeshRoot: globalMeshPaths({ env: { AOF_GLOBAL_HOME: home } }).meshRoot };
+  await publishPresenceRecord(presenceWorkspace, nodeId, assemblePresenceRecord({ nodeId, heartbeatAt: new Date().toISOString(), activeRuns, sessions: [], aofVersion: "0.1.0", loops }));
+}
+
+// A serving face whose repo commits NO mesh.nodeId (the unconfigured machine), with the same two
+// node records and its workspace published — the row-3 fixture of the local-only scenario.
+async function withUnconfiguredFace(fn) {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-fleet-loop-unconfigured-"));
+  const home = path.join(tmp, "home");
+  const root = path.join(tmp, "repo");
+  const distRoot = path.join(tmp, "dist");
+  let server;
+  try {
+    await mkdir(path.join(root, "wiki", "work"), { recursive: true });
+    await mkdir(path.join(root, ".aof"), { recursive: true });
+    await writeFile(path.join(root, ".aof", "aof.config.json"), `${JSON.stringify({ name: "demo", work: { dir: "./wiki/work" }, mesh: { enabled: true } }, null, 2)}\n`, "utf8");
+    await mkdir(path.join(meshUiDist(distRoot), "assets"), { recursive: true });
+    await writeFile(path.join(meshUiDist(distRoot), "index.html"), "<!doctype html><html><head><script type=\"module\" src=\"/assets/index-abc123.js\"></script></head><body><div id=\"root\"></div></body></html>\n", "utf8");
+    await writeFile(path.join(meshUiDist(distRoot), "assets", "index-abc123.js"), "export const x = 1;\n", "utf8");
+    const globalStoreOptions = { env: { AOF_GLOBAL_HOME: home } };
+    const workspace = await loadWorkspace(root, undefined, globalStoreOptions);
+    for (const nodeId of ["control-a", "umamis-mac-mini"]) {
+      await publishNodeRecord(workspace, nodeId, { nodeId, host: nodeId, os: "linux", runtimes: [], skills: [], aofVersion: "0.1.0", publishedAt: "2026-09-13T00:00:00.000Z" });
+    }
+    let workspaceId;
+    const store = await openGlobalWorkProjectionStore(globalStoreOptions);
+    try {
+      workspaceId = (await store.publishWorkspaceSnapshot(workspace, { now: "2026-09-13T00:05:00.000Z" })).workspaceId;
+      await publishGlobalRegistryDescriptorsToStore(store, workspace, { now: "2026-09-13T00:05:00.000Z" });
+    } finally {
+      store.close();
+    }
+    ({ server } = await serveMeshUi({ projectDir: root, port: 0, repoRoot: distRoot, scope: "global", globalStoreOptions }));
+    const url = `http://127.0.0.1:${server.address().port}/`;
+    return await fn({ url, root, home, workspaceId, globalStoreOptions });
+  } finally {
+    if (server) await new Promise((resolve) => server.close(resolve));
+    await rm(tmp, { recursive: true, force: true });
+  }
+}
+
+// withLoopFleet({ loops, activeRuns, unconfigured, requestFirst }, fn) — the published assign
+// fixture (nodes control-a + umamis-mac-mini; the serving node is control-a, or NONE when
+// `unconfigured`), stream 129's running run written under its work dir, both nodes' presence
+// published (`loops(E)` decides the entries; `() => undefined` publishes none), the request
+// file at level 1 when `requestFirst` (a real same-origin POST through the route), and the REAL
+// <Fleet/> mounted over it. `fn` gets `{ app, url, root, home, workspaceId, publish, E }`;
+// `publish(nodeId, { activeRuns, loops })` re-publishes a node's presence to stand in for its
+// tick. The ONE home's request files are cleared before and after.
+async function withLoopFleet({ loops, activeRuns = ["r1"], unconfigured = false, requestFirst = false } = {}, fn) {
+  await rm(loopStopsDir(), { recursive: true, force: true });
+  const body = async ({ url, root, home, workspaceId }) => {
+    const E = (overrides = {}) => E1({ workspaceId, ...overrides });
+    await writeLoopStream129(root);
+    const entries = loops ? loops(E) : [E()];
+    for (const nodeId of ["control-a", "umamis-mac-mini"]) await publishPresence(home, nodeId, { activeRuns, loops: entries });
+    if (requestFirst) {
+      const response = await fetch(new URL("/api/mesh/loop-stop", url), { method: "POST", headers: { origin: new URL(url).origin, "content-type": "application/json" }, body: JSON.stringify({ scope: "129", workspaceId }) });
+      assert.equal(response.status, 200, "the level-1 request was placed through the real route (premise)");
+    }
+    const publish = (nodeId, options) => publishPresence(home, nodeId, options);
+    return withFleetApp({ url }, (app) => fn({ app, url, root, home, workspaceId, publish, E }));
+  };
+  try {
+    if (unconfigured) return await withUnconfiguredFace(body);
+    return await withPublishedAssignFixture(body, { nodes: ["control-a", "umamis-mac-mini"] });
+  } finally {
+    await rm(loopStopsDir(), { recursive: true, force: true });
+  }
+}
 
 export const fleetScopeTests = [
   // ----------------------------------------------------- scope + URL ---------
@@ -1380,6 +1554,542 @@ export const fleetScopeTests = [
       const noStatus = withWorkStatusParam(search, "open");
       assert.equal(repoFromSearch(noStatus), "alpha", "clearing the status keeps the repo");
       assert.ok(!noStatus.includes("status"), "nothing in that search names `status`");
+    },
+  },
+  // ═══════════════════════════════════════════════════════════════════════════════════════
+  // milestone 130 / story 03 / task 03 — tasks/03_the-line-and-the-button-are-pure.feature
+  // (@executable): fleetLoopLines, loopStopAffordance and rememberStopRung in runs.mjs and
+  // nodeWorkRegion in scope.mjs — every fact the card renders, computed in modules node:test
+  // drives without React, with fleetCurrentWorkLines / nodeCurrentWork byte-identical (the
+  // Rust drift pin). 130/ADR-005 §5; DESIGN §Surface 1.
+  // ═══════════════════════════════════════════════════════════════════════════════════════
+
+  // ══ Scenario Outline: fleetLoopLines renders the anatomy from the entry's fields ══
+  {
+    name: "the-line-and-the-button-are-pure/03 fleetLoopLines renders the anatomy from the entry's fields — the state word second, phase+ref only when both stand, cycle/cap fail-closed, level and supervised in the title only (Examples)",
+    async run() {
+      const rows = [
+        { entry: E1(), line: "loop 129 · continue 129/04 · cycle 1 of 3", title: "loop 129 · continue 129/04 · cycle 1 of 3 · L2", stop: null },
+        { entry: E1({ stop: "drain" }), line: "loop 129 · stopping · continue 129/04 · cycle 1 of 3", title: "loop 129 · stopping · continue 129/04 · cycle 1 of 3 · L2", stop: "drain" },
+        { entry: E1({ stop: "cancel" }), line: "loop 129 · cancelling · continue 129/04 · cycle 1 of 3", title: "loop 129 · cancelling · continue 129/04 · cycle 1 of 3 · L2", stop: "cancel" },
+        { entry: E1({ stop: "halt" }), line: "loop 129 · continue 129/04 · cycle 1 of 3", title: "loop 129 · continue 129/04 · cycle 1 of 3 · L2", stop: null },
+        { entry: E1({ ref: null }), line: "loop 129 · cycle 1 of 3", title: "loop 129 · cycle 1 of 3 · L2", stop: null },
+        { entry: E1({ phase: null }), line: "loop 129 · cycle 1 of 3", title: "loop 129 · cycle 1 of 3 · L2", stop: null },
+        { entry: E1({ phase: "refine", ref: "129/01" }), line: "loop 129 · refine 129/01 · cycle 1 of 3", title: "loop 129 · refine 129/01 · cycle 1 of 3 · L2", stop: null },
+        { entry: E1({ phase: "verify", ref: "129" }), line: "loop 129 · verify 129 · cycle 1 of 3", title: "loop 129 · verify 129 · cycle 1 of 3 · L2", stop: null },
+        { entry: E1({ cap: null }), line: "loop 129 · continue 129/04 · cycle 1", title: "loop 129 · continue 129/04 · cycle 1 · L2", stop: null },
+        { entry: E1({ cap: 0 }), line: "loop 129 · continue 129/04 · cycle 1", title: "loop 129 · continue 129/04 · cycle 1 · L2", stop: null },
+        { entry: E1({ cycle: null }), line: "loop 129 · continue 129/04", title: "loop 129 · continue 129/04 · L2", stop: null },
+        { entry: E1({ stop: "drain", ref: null, cap: null }), line: "loop 129 · stopping · cycle 1", title: "loop 129 · stopping · cycle 1 · L2", stop: "drain" },
+        { entry: E1({ level: "L3", supervised: true }), line: "loop 129 · continue 129/04 · cycle 1 of 3", title: "loop 129 · continue 129/04 · cycle 1 of 3 · L3 · supervised", stop: null },
+      ];
+      for (const row of rows) {
+        const lines = fleetLoopLines({ activeRuns: [], sessions: [], loops: [row.entry] });
+        assert.equal(lines.length, 1, `${row.line}: one entry`);
+        const [entry] = lines;
+        assert.equal(entry.line, row.line, `line for ${JSON.stringify(row.entry)}`);
+        assert.equal(entry.title, row.title, `title for ${row.line}`);
+        assert.equal(entry.key, "loop:L1");
+        assert.equal(entry.loopRunId, "L1");
+        assert.equal(entry.scope, "129");
+        assert.equal(entry.workspaceId, "w1");
+        assert.equal(entry.stop, row.stop, `stop for ${row.line}`);
+      }
+    },
+  },
+
+  // ══ Scenario Outline: the entries are ordered and an absent key is empty ══
+  {
+    name: "the-line-and-the-button-are-pure/03 the entries are ordered by scope then loopRunId on the plain codepoint comparison, and an absent, empty or null loops key is [] — never a throw (Examples)",
+    async run() {
+      const rows = [
+        { label: "absent", loops: undefined, order: [] },
+        { label: "[]", loops: [], order: [] },
+        { label: "null", loops: null, order: [] },
+        { label: "131 then 129", loops: [E1({ scope: "131" }), E1({ scope: "129" })], order: ["129", "131"] },
+        { label: "ties by loopRunId", loops: [E1({ loopRunId: "Lb" }), E1({ loopRunId: "La" })], order: ["129", "129"], ids: ["La", "Lb"] },
+        { label: "9, 10, 01-05", loops: [E1({ scope: "9" }), E1({ scope: "10" }), E1({ scope: "01-05" })], order: ["01-05", "10", "9"] },
+      ];
+      for (const row of rows) {
+        const presence = { activeRuns: [], sessions: [] };
+        if (row.loops !== undefined) presence.loops = row.loops;
+        const lines = fleetLoopLines(presence);
+        assert.deepEqual(lines.map((entry) => entry.scope), row.order, `${row.label}: scopes in order`);
+        if (row.ids) assert.deepEqual(lines.map((entry) => entry.loopRunId), row.ids, `${row.label}: loopRunIds in order`);
+      }
+    },
+  },
+
+  // ══ Scenario Outline: the affordance is local-only and climbs the rung ladder ══
+  {
+    name: "the-line-and-the-button-are-pure/03 the affordance is local-only and climbs the rung ladder — max(wire, remembered) for the same drive, null after rung 2, a strict === on the node id, and no button at all with no localNodeId (Examples)",
+    async run() {
+      const STOP = { rung: 1, label: "Stop", title: "Stop loop 129 — the current drive finishes first", tone: "muted" };
+      const STOP_NOW = { rung: 2, label: "Stop now", title: "Stop loop 129 now — cancels the in-flight session", tone: "destructive" };
+      const rows = [
+        { wire: null, remembered: undefined, node: "umamis-msi", local: "umamis-msi", button: STOP, remote: false },
+        { wire: "drain", remembered: undefined, node: "umamis-msi", local: "umamis-msi", button: STOP_NOW, remote: false },
+        { wire: null, remembered: { rung: 1, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: STOP, remote: false },
+        { wire: null, remembered: { rung: 2, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: STOP_NOW, remote: false },
+        { wire: "drain", remembered: { rung: 1, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: STOP_NOW, remote: false },
+        { wire: "cancel", remembered: undefined, node: "umamis-msi", local: "umamis-msi", button: null, remote: false },
+        { wire: "drain", remembered: { rung: 3, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: null, remote: false },
+        { wire: null, remembered: { rung: 3, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: null, remote: false },
+        { wire: null, remembered: { rung: 3, runId: "r0" }, node: "umamis-msi", local: "umamis-msi", button: STOP, remote: false },
+        { wire: "drain", remembered: { rung: 2, runId: "r0" }, node: "umamis-msi", local: "umamis-msi", button: STOP_NOW, remote: false },
+        { wire: null, remembered: undefined, node: "umamis-mac-mini", local: "umamis-msi", button: null, remote: true },
+        { wire: null, remembered: undefined, node: "umamis-msi", local: "ghost", button: null, remote: true },
+        { wire: null, remembered: undefined, node: "umamis-msi", local: null, button: null, remote: false },
+        { wire: null, remembered: undefined, node: "umamis-msi", local: "", button: null, remote: false },
+        { wire: null, remembered: undefined, node: "Umamis-MSI", local: "umamis-msi", button: null, remote: true },
+      ];
+      for (const row of rows) {
+        const label = `wire=${row.wire} remembered=${JSON.stringify(row.remembered)} node=${row.node} local=${JSON.stringify(row.local)}`;
+        const answer = loopStopAffordance({ loop: E1({ stop: row.wire }), node: { nodeId: row.node }, localNodeId: row.local, remembered: row.remembered });
+        assert.deepEqual(answer, { button: row.button, remote: row.remote }, label);
+      }
+    },
+  },
+
+  // ══ Scenario Outline: the remote tail says why there is no button, and the local line has none ══
+  {
+    name: "the-line-and-the-button-are-pure/03 the remote tail says why there is no button — composed by nodeWorkRegion, a remote node's title ends `· remote — stop from <nodeId>'s own console` and a local one carries no `remote` (Examples)",
+    async run() {
+      const remote = nodeWorkRegion({ nodeId: "umamis-mac-mini", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, "umamis-msi");
+      assert.ok(remote.loops[0].title.endsWith("· L2 · remote — stop from umamis-mac-mini's own console"), `the remote tail — got ${remote.loops[0].title}`);
+      assert.equal(loopStopAffordance({ loop: remote.loops[0], node: { nodeId: "umamis-mac-mini" }, localNodeId: "umamis-msi" }).button, null, "…and no button");
+      const local = nodeWorkRegion({ nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, "umamis-msi");
+      assert.ok(local.loops[0].title.endsWith("· L2"), `the local title ends with the level — got ${local.loops[0].title}`);
+      assert.ok(!local.loops[0].title.includes("remote"), "…and contains no `remote`");
+    },
+  },
+
+  // ══ Scenario Outline: the rung memory never lowers for the same drive, never expires on a timer, and is replaced by a new drive ══
+  {
+    name: "the-line-and-the-button-are-pure/03 the rung memory answers a NEW Map, never lowers a rung for the same drive, never expires, and a new drive starts a new memory; every other key rides through (Examples)",
+    async run() {
+      const rows = [
+        { before: undefined, rung: 1, runId: "r1", after: { rung: 1, runId: "r1" } },
+        { before: { rung: 1, runId: "r1" }, rung: 2, runId: "r1", after: { rung: 2, runId: "r1" } },
+        { before: { rung: 1, runId: "r1" }, rung: 1, runId: "r1", after: { rung: 1, runId: "r1" } },
+        { before: { rung: 2, runId: "r1" }, rung: 1, runId: "r1", after: { rung: 2, runId: "r1" } },
+        { before: { rung: 3, runId: "r1" }, rung: 1, runId: "r1", after: { rung: 3, runId: "r1" } },
+        { before: { rung: 3, runId: "r1" }, rung: 1, runId: "r2", after: { rung: 1, runId: "r2" } },
+        { before: { rung: 2, runId: "r1" }, rung: 2, runId: "r2", after: { rung: 2, runId: "r2" } },
+        { before: { rung: 2, runId: "r1" }, rung: 3, runId: "r1", after: { rung: 3, runId: "r1" }, other: { rung: 1, runId: "x" } },
+      ];
+      for (const row of rows) {
+        const memory = new Map();
+        if (row.before) memory.set("L1", row.before);
+        if (row.other) memory.set("L2", row.other);
+        const snapshot = new Map(memory);
+        const next = rememberStopRung(memory, "L1", row.rung, row.runId);
+        const label = `before=${JSON.stringify(row.before)} rung=${row.rung} runId=${row.runId}`;
+        assert.notEqual(next, memory, `${label}: a NEW Map`);
+        assert.deepEqual(next.get("L1"), row.after, `${label}: the memory for L1`);
+        assert.deepEqual([...memory], [...snapshot], `${label}: the original Map is unchanged`);
+        if (row.other) assert.deepEqual(next.get("L2"), row.other, `${label}: L2 still holds its own memory`);
+      }
+    },
+  },
+
+  // ══ Scenario Outline: nodeWorkRegion composes the pinned lines with the loop entries ══
+  {
+    name: "the-line-and-the-button-are-pure/03 nodeWorkRegion composes the pinned lines with the loop entries — idle dropped when a loop exists, the token primary, the entries ordered, the line never gated by locality (Examples)",
+    async run() {
+      const live = { sessionId: "s1", workspaceId: "w2", repo: "aof", assistant: "claude", lastPingAt: "2026-09-13T00:00:00.000Z", workspaceHasRun: false, relaying: false };
+      const rows = [
+        { label: "nothing", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [] } }, local: "umamis-msi", lines: ["idle"], token: "muted", count: 0 },
+        { label: "no presence at all", node: { nodeId: "umamis-msi" }, local: "umamis-msi", lines: ["idle"], token: "muted", count: 0 },
+        { label: "a run, no loops", node: { nodeId: "umamis-msi", presence: { activeRuns: ["r1"] } }, local: "umamis-msi", lines: ["running 1 run"], token: "primary", count: 0 },
+        { label: "a run and a loop", node: { nodeId: "umamis-msi", presence: { activeRuns: ["r1"], loops: [E1()] } }, local: "umamis-msi", lines: ["running 1 run"], token: "primary", count: 1 },
+        { label: "a loop alone", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, local: "umamis-msi", lines: [], token: "primary", count: 1 },
+        { label: "a session and a loop", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [live], loops: [E1()] } }, local: "umamis-msi", lines: ["working · aof (session)"], token: "primary", count: 1 },
+        { label: "two loops", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [], loops: [E1(), E1({ scope: "9", loopRunId: "L2" })] } }, local: "umamis-msi", lines: [], token: "primary", count: 2, order: ["129", "9"] },
+        { label: "no localNodeId", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, local: null, lines: [], token: "primary", count: 1 },
+      ];
+      for (const row of rows) {
+        const region = nodeWorkRegion(row.node, row.local);
+        assert.deepEqual(region.lines, row.lines, `${row.label}: lines`);
+        assert.equal(region.token, row.token, `${row.label}: token`);
+        assert.equal(region.loops.length, row.count, `${row.label}: loop entries`);
+        if (row.order) assert.deepEqual(region.loops.map((entry) => entry.scope), row.order, `${row.label}: ordered`);
+      }
+    },
+  },
+
+  // ══ Scenario: the pinned projections are byte-identical ══
+  {
+    name: "the-line-and-the-button-are-pure/03 the pinned projections are byte-identical — fleetCurrentWorkLines over the captured producer fixtures answers the Rust-pinned lines, and nodeCurrentWork(node) equals fleetCurrentWorkLines(node.presence) for every fixture node, one with loops included",
+    async run() {
+      const rust = await readFile(path.join(repoRoot, "app", "desktop", "crates", "core", "src", "view_model.rs"), "utf8");
+      const fixtures = [...rust.matchAll(/const\s+([A-Z0-9_]*REAL_CAPTURED[A-Z0-9_]*)\s*:\s*&str\s*=\s*r#"([\s\S]*?)"#;/g)].map((match) => ({ name: match[1], doc: JSON.parse(match[2]) }));
+      assert.ok(fixtures.length > 0, "the captured producer fixtures were read (non-vacuous)");
+      let nodesSeen = 0;
+      for (const fixture of fixtures) {
+        for (const node of fixture.doc.nodes ?? []) {
+          nodesSeen += 1;
+          assert.deepEqual(nodeCurrentWork(node), fleetCurrentWorkLines(node.presence ?? {}), `${fixture.name}/${node.nodeId}: nodeCurrentWork is the pinned projection`);
+          if (node.local !== true) continue;
+          for (const line of fleetCurrentWorkLines(node.presence ?? {}).lines) {
+            assert.ok(rust.includes(`"${line.replace(/·/g, "\\u{b7}")}"`), `${fixture.name}: the Rust surface pins ${JSON.stringify(line)}`);
+          }
+        }
+      }
+      assert.ok(nodesSeen > 0, "at least one captured node was driven");
+      // …and a presence carrying `loops` changes NOTHING about the pinned lines: the loop
+      // entries are a sibling projection, never a line inside this one.
+      const withLoops = { nodeId: "umamis-msi", presence: { activeRuns: ["r1"], sessions: [], loops: [E1()] } };
+      assert.deepEqual(nodeCurrentWork(withLoops), fleetCurrentWorkLines(withLoops.presence), "nodeCurrentWork still equals fleetCurrentWorkLines with loops present");
+      assert.deepEqual(fleetCurrentWorkLines(withLoops.presence), fleetCurrentWorkLines({ activeRuns: ["r1"], sessions: [] }), "…and the loops key is invisible to the pinned projection");
+    },
+  },
+
+  // ══ Scenario: the projections never mutate their input ══
+  {
+    name: "the-line-and-the-button-are-pure/03 the projections never mutate their input — frozen presence and node in, none throws, inputs deep-equal after",
+    async run() {
+      const presence = Object.freeze({ activeRuns: Object.freeze(["r1"]), sessions: Object.freeze([]), loops: Object.freeze([Object.freeze(E1())]) });
+      const node = Object.freeze({ nodeId: "umamis-msi", presence });
+      const before = JSON.parse(JSON.stringify(node));
+      const memory = new Map([["L1", { rung: 2, runId: "r1" }]]);
+      assert.doesNotThrow(() => fleetLoopLines(presence));
+      assert.doesNotThrow(() => fleetLoopLines(presence, memory));
+      assert.doesNotThrow(() => loopStopAffordance({ loop: presence.loops[0], node, localNodeId: "umamis-msi", remembered: memory.get("L1") }));
+      assert.doesNotThrow(() => nodeWorkRegion(node, "umamis-msi"));
+      assert.doesNotThrow(() => nodeWorkRegion(node, "umamis-msi", memory));
+      assert.deepEqual(JSON.parse(JSON.stringify(node)), before, "the inputs are what they were");
+    },
+  },
+
+  // ══ Scenario: the type declarations name the four exports ══
+  {
+    name: "the-line-and-the-button-are-pure/03 the type declarations name the four exports — runs.d.mts declares fleetLoopLines, loopStopAffordance and rememberStopRung with their shapes; scope.d.mts declares nodeWorkRegion",
+    async run() {
+      const runs = await readFile(path.join(repoRoot, "ui", "src", "fleet", "runs.d.mts"), "utf8");
+      assert.match(runs, /export declare function fleetLoopLines\(/);
+      assert.match(runs, /export declare function loopStopAffordance\(/);
+      assert.match(runs, /export declare function rememberStopRung\(/);
+      assert.match(runs, /export type FleetLoopLine = \{[\s\S]*?key: string;[\s\S]*?line: string;[\s\S]*?title: string;[\s\S]*?loopRunId: string;[\s\S]*?scope: string;[\s\S]*?workspaceId: string \| null;[\s\S]*?stop: null \| "drain" \| "cancel";[\s\S]*?\};/, "the line entry's shape");
+      assert.match(runs, /export type LoopStopButton = \{[\s\S]*?rung: 1 \| 2;[\s\S]*?label: "Stop" \| "Stop now";[\s\S]*?title: string;[\s\S]*?tone: "muted" \| "destructive";[\s\S]*?\};/, "the button's shape");
+      assert.match(runs, /button: LoopStopButton \| null;[\s\S]*?remote: boolean;/, "the affordance's shape");
+      assert.match(runs, /export type StopRungMemory = Map<string, RememberedStopRung>;/, "the memory's shape");
+      const scope = await readFile(path.join(repoRoot, "ui", "src", "fleet", "scope.d.mts"), "utf8");
+      assert.match(scope, /export declare function nodeWorkRegion\(/);
+      assert.match(scope, /export type NodeWorkRegion = \{[\s\S]*?lines: string\[\];[\s\S]*?token: "primary" \| "muted";[\s\S]*?loops: FleetLoopLine\[\];[\s\S]*?\};/, "the region's shape");
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════════════════
+  // milestone 130 / story 03 / task 04 — tasks/04_the-card-renders-and-repins.feature: the
+  // @executable lanes. The REAL <Fleet/> mounted headlessly (fleet-app-harness over
+  // react-app-harness) against a REAL serveMeshUi over the published assign fixture — every
+  // answer PRODUCED: the card renders from presence records the test publishes into the
+  // fixture's mesh root, the route answers from run records under the fixture's work dir (the
+  // verb reads them), and in-flight / timeout states come from a hold plus the clock. The
+  // serving node is `control-a` (the fixture's committed id); the remote node is a second
+  // published node `umamis-mac-mini`. The 1280 render the designer judges is @uat and not here.
+  // ═══════════════════════════════════════════════════════════════════════════════════════
+
+  // ══ Scenario: with no loops the region is byte-identical to today ══
+  {
+    name: "the-card-renders/04 with no loops the region is byte-identical to today — one <p> per pinned line with today's class string and title, no flex-row <p>, and no Stop button anywhere",
+    async run() {
+      await withLoopFleet({ loops: () => undefined }, async ({ app }) => {
+        for (const nodeId of ["control-a", "umamis-mac-mini"]) {
+          const card = nodeCard(app, nodeId);
+          assert.ok(card, `${nodeId}: the card renders`);
+          const lines = regionLines(card);
+          assert.deepEqual(lines.map((line) => textOf(line)), ["running 1 run"], `${nodeId}: exactly one line`);
+          assert.equal(lines[0].props.className, "text-[13px] font-semibold text-primary", `${nodeId}: today's class string`);
+          assert.equal(lines[0].props.title, "running 1 run", `${nodeId}: title is the line`);
+          assert.deepEqual(loopRows(card), [], `${nodeId}: no flex-row <p>`);
+        }
+        assert.deepEqual(stopButtons(app.tree()), [], "no Stop / Stop now button anywhere on the page");
+      });
+    },
+  },
+
+  // ══ Scenario Outline: the loop line renders with a button only on this node's card ══
+  {
+    name: "the-card-renders/04 the loop line renders with a button only on this node's card — Stop with the DESIGN's muted classes and aria-label on control-a, none on umamis-mac-mini (remote tail in the title), none anywhere when localNodeId is null (Examples)",
+    async run() {
+      // Rows 1 + 2: the published fixture serves as control-a.
+      await withLoopFleet({}, async ({ app, workspaceId }) => {
+        const local = nodeCard(app, "control-a");
+        assert.deepEqual(regionLines(local).map((line) => textOf(line)), ["running 1 run"], "control-a: `running 1 run` first");
+        const [row] = loopRows(local);
+        assert.ok(row, "control-a: one flex-row <p>");
+        assert.equal(row.props.className, "flex items-center gap-2 text-[13px] font-semibold text-primary", "control-a: the DESIGN's row classes");
+        const text = rowText(row);
+        assert.equal(text.props.className, "min-w-0 truncate", "control-a: the text span truncates");
+        assert.equal(textOf(text), "loop 129 · continue 129/04 · cycle 1 of 3", "control-a: the line");
+        assert.equal(text.props.title, "loop 129 · continue 129/04 · cycle 1 of 3 · L2", "control-a: the whole value plus the level tail in title");
+        const button = rowButton(row);
+        assert.ok(button, "control-a: ONE button");
+        assert.equal(button.props.type, "button");
+        assert.equal(textOf(button), "Stop");
+        assert.equal(button.props["aria-label"], "Stop loop 129 — the current drive finishes first");
+        assert.equal(button.props.title, "Stop loop 129 — the current drive finishes first");
+        assert.equal(button.props.className, STOP_MUTED, "control-a: the DESIGN's muted classes");
+        assert.equal(rowMessage(row), null, "control-a: no message span");
+        assert.equal(loopRows(local).length, 1, "control-a: exactly one row");
+        void workspaceId;
+
+        const remote = nodeCard(app, "umamis-mac-mini");
+        const [remoteRow] = loopRows(remote);
+        assert.ok(remoteRow, "umamis-mac-mini: the line renders");
+        assert.equal(textOf(rowText(remoteRow)), "loop 129 · continue 129/04 · cycle 1 of 3");
+        assert.ok(rowText(remoteRow).props.title.endsWith("· L2 · remote — stop from umamis-mac-mini's own console"), `umamis-mac-mini: the remote tail — got ${rowText(remoteRow).props.title}`);
+        assert.equal(rowButton(remoteRow), null, "umamis-mac-mini: no button");
+        assert.equal(rowMessage(remoteRow), null, "umamis-mac-mini: no message span");
+      });
+      // Row 3: an UNCONFIGURED serving node — this file's own repo commits no mesh.nodeId, so
+      // the payload names no node and no card shows a button, control-a's included.
+      await withLoopFleet({ unconfigured: true }, async ({ app }) => {
+        const status = app.requestsMatching("/api/mesh/status").length;
+        assert.ok(status > 0, "the fleet loaded");
+        const local = nodeCard(app, "control-a");
+        const [row] = loopRows(local);
+        assert.ok(row, "control-a: the line renders");
+        assert.equal(rowText(row).props.title, "loop 129 · continue 129/04 · cycle 1 of 3 · L2", "control-a: no tail — neither local nor remote");
+        assert.equal(rowButton(row), null, "control-a: no button with localNodeId null");
+        assert.equal(rowMessage(row), null, "control-a: no message span");
+      });
+    },
+  },
+
+  // ══ Scenario: two loops on one card are two rows, each with its own button, in scope order ══
+  {
+    name: "the-card-renders/04 two loops on one card are two rows in scope order, each with its own Stop whose aria-label names its scope, and the region holds no idle line",
+    async run() {
+      await withLoopFleet({ loops: (E) => [E(), E({ scope: "131", loopRunId: "L2", ref: "131/00" })], activeRuns: [] }, async ({ app }) => {
+        const card = nodeCard(app, "control-a");
+        const rows = loopRows(card);
+        assert.deepEqual(rows.map((row) => textOf(rowText(row))), ["loop 129 · continue 129/04 · cycle 1 of 3", "loop 131 · continue 131/00 · cycle 1 of 3"], "two rows, 129 before 131");
+        assert.deepEqual(rows.map((row) => rowButton(row)?.props["aria-label"]), ["Stop loop 129 — the current drive finishes first", "Stop loop 131 — the current drive finishes first"], "each with its own Stop naming its scope");
+        assert.deepEqual(regionLines(card), [], "no pinned line at all — and never `idle` while a loop exists");
+        assert.ok(!textOf(card).includes("idle"), "the region holds no idle line");
+      });
+    },
+  },
+
+  // ══ Scenario: pressing Stop POSTs the route and climbs to rung two under the hold ══
+  {
+    name: "the-card-renders/04 pressing Stop POSTs the route once and climbs to rung two under the hold — disabled + aria-busy while held, no second request, then `stopping` + `Stop now` (destructive) disabled for exactly ASSIGN_SENT_HOLD_MS, the memory never decaying across later polls",
+    async run() {
+      await withLoopFleet({}, async ({ app, workspaceId, publish, E }) => {
+        const held = app.holdNext("/api/mesh/loop-stop");
+        const first = rowButton(loopRows(nodeCard(app, "control-a"))[0]);
+        const pending = first.props.onClick(clickEvent());
+        await app.renderOnly();
+        const sent = app.requestsMatching("/api/mesh/loop-stop");
+        assert.equal(sent.length, 1, "exactly one request was sent");
+        assert.equal(sent[0].method, "POST");
+        assert.deepEqual(sent[0].body, { scope: "129", workspaceId }, "the body is exactly { scope, workspaceId }");
+        assert.ok(held.claimed(), "…and its answer is held");
+        const inFlight = loopRows(nodeCard(app, "control-a"))[0];
+        assert.equal(rowButton(inFlight).props.disabled, true, "while held the button is disabled");
+        assert.equal(rowButton(inFlight).props["aria-busy"], "true", "…with aria-busy");
+        assert.equal(textOf(rowButton(inFlight)), "Stop", "…still reading Stop");
+        assert.equal(textOf(rowText(inFlight)), "loop 129 · continue 129/04 · cycle 1 of 3", "…and the line is unchanged");
+        // A second click while held sends nothing: the button is disabled, and even a forced
+        // click reaches an orchestration that is already in flight.
+        assert.equal(rowButton(inFlight).props.disabled, true);
+        assert.equal(app.requestsMatching("/api/mesh/loop-stop").length, 1, "no second request");
+
+        await held.answered();
+        held.release();
+        await pending;
+        await app.flush();
+        const after = loopRows(nodeCard(app, "control-a"))[0];
+        assert.equal(textOf(rowText(after)), "loop 129 · stopping · continue 129/04 · cycle 1 of 3", "on the 2xx the line reads stopping");
+        assert.equal(textOf(rowButton(after)), "Stop now", "…and the button reads Stop now");
+        assert.equal(rowButton(after).props["aria-label"], "Stop loop 129 now — cancels the in-flight session");
+        assert.equal(rowButton(after).props.className, STOP_DESTRUCTIVE, "…in the DESIGN's destructive classes");
+        assert.equal(rowButton(after).props.disabled, true, "…disabled under the hold");
+        assert.equal(rowMessage(after), null, "no message span");
+
+        await app.advance(ASSIGN_SENT_HOLD_MS - 1);
+        assert.equal(rowButton(loopRows(nodeCard(app, "control-a"))[0]).props.disabled, true, "disabled one millisecond before the hold elapses");
+        await app.advance(1);
+        assert.equal(rowButton(loopRows(nodeCard(app, "control-a"))[0]).props.disabled, false, "enabled at ASSIGN_SENT_HOLD_MS");
+        assert.equal(textOf(rowButton(loopRows(nodeCard(app, "control-a"))[0])), "Stop now", "…still Stop now");
+
+        // A later poll whose presence still says `stop: null` (the propagation gap) keeps the
+        // held word and the rung — the memory never decays on a timer.
+        await publish("control-a", { loops: [E()] });
+        await app.advance(POLL_MS);
+        const gap = loopRows(nodeCard(app, "control-a"))[0];
+        assert.equal(textOf(rowText(gap)), "loop 129 · stopping · continue 129/04 · cycle 1 of 3", "the propagation gap keeps stopping");
+        assert.equal(textOf(rowButton(gap)), "Stop now", "…and Stop now");
+        // …and once the wire carries `drain`, nothing moves.
+        await publish("control-a", { loops: [E({ stop: "drain" })] });
+        await app.advance(POLL_MS);
+        const caughtUp = loopRows(nodeCard(app, "control-a"))[0];
+        assert.equal(textOf(rowText(caughtUp)), "loop 129 · stopping · continue 129/04 · cycle 1 of 3", "the wire caught up — same line");
+        assert.equal(textOf(rowButton(caughtUp)), "Stop now", "…same button");
+        assert.equal(rowButton(caughtUp).props.disabled, false);
+      });
+    },
+  },
+
+  // ══ Scenario: pressing Stop now cancels and the button is gone ══
+  {
+    name: "the-card-renders/04 pressing Stop now cancels and the button is gone — `cancelling`, no button, no message; a later poll that no longer lists the loop removes the line and the region reads idle in the same render",
+    async run() {
+      await withLoopFleet({ loops: (E) => [E({ stop: "drain" })], requestFirst: true }, async ({ app, publish }) => {
+        const [row] = loopRows(nodeCard(app, "control-a"));
+        assert.equal(textOf(rowButton(row)), "Stop now", "the card is at rung 2 (the premise)");
+        await rowButton(row).props.onClick(clickEvent());
+        await app.flush();
+        const answered = app.requestsMatching("/api/mesh/loop-stop");
+        assert.equal(answered.length, 1, "one POST");
+        const cancelled = loopRows(nodeCard(app, "control-a"))[0];
+        assert.equal(textOf(rowText(cancelled)), "loop 129 · cancelling · continue 129/04 · cycle 1 of 3", "the line reads cancelling");
+        assert.equal(rowButton(cancelled), null, "the row holds no button");
+        assert.equal(rowMessage(cancelled), null, "…and no message span");
+        // The loop halts: the next poll's presence lists no loop and no run.
+        await publish("control-a", { activeRuns: [], loops: undefined });
+        await app.advance(POLL_MS);
+        const card = nodeCard(app, "control-a");
+        assert.deepEqual(loopRows(card), [], "the line is gone");
+        assert.deepEqual(regionLines(card).map((line) => textOf(line)), ["idle"], "…and the region reads idle in the same render");
+      });
+    },
+  },
+
+  // ══ Scenario Outline: after a cancel the card follows the drive, not the clock ══
+  {
+    name: "the-card-renders/04 after a cancel the card follows the drive, not the clock — the same runId with stop: null keeps cancelling with no button; a new runId reads as a fresh loop line with Stop (Examples)",
+    async run() {
+      const rows = [
+        { runId: "r1", line: "loop 129 · cancelling · continue 129/04 · cycle 1 of 3", button: null },
+        { runId: "r2", line: "loop 129 · continue 129/04 · cycle 1 of 3", button: "Stop" },
+      ];
+      for (const row of rows) {
+        await withLoopFleet({ loops: (E) => [E({ stop: "drain" })], requestFirst: true }, async ({ app, publish, E }) => {
+          const [before] = loopRows(nodeCard(app, "control-a"));
+          await rowButton(before).props.onClick(clickEvent());
+          await app.flush();
+          assert.equal(rowButton(loopRows(nodeCard(app, "control-a"))[0]), null, "rung 2's 2xx passed (the premise)");
+          await publish("control-a", { loops: [E({ stop: null, runId: row.runId })] });
+          await app.advance(POLL_MS);
+          const [after] = loopRows(nodeCard(app, "control-a"));
+          assert.equal(textOf(rowText(after)), row.line, `runId ${row.runId}: the line`);
+          assert.equal(rowButton(after) ? textOf(rowButton(after)) : null, row.button, `runId ${row.runId}: the button`);
+        });
+      }
+    },
+  },
+
+  // ══ Scenario Outline: a refusal renders in the message slot and the button keeps its rung ══
+  {
+    name: "the-card-renders/04 a refusal renders in the message slot and the button keeps its rung — not local / no loop / the server sentence for an unmapped code / timed out; no hold, the line unchanged, a second click sends again (Examples)",
+    async run() {
+      const rows = [
+        { label: "not local", rung: 1, arrange: async ({ root }) => writeLoopStream129(root, { node: "umamis-mac-mini" }), word: "not local", title: (title) => title.includes("umamis-mac-mini") && title.includes("control-a") },
+        { label: "no loop at rung 1", rung: 1, arrange: async ({ root }) => writeLoopStream129(root, { brief: {} }), word: "no loop", title: (title) => /no loop to stop/i.test(title) },
+        { label: "no loop at rung 2", rung: 2, arrange: async ({ root }) => writeLoopStream129(root, { brief: {} }), word: "no loop", title: (title) => /no loop to stop/i.test(title) },
+        { label: "workspace removed", rung: 1, arrange: async ({ home, workspaceId }) => removeWorkspaceFromProjection({ home }, workspaceId), word: (workspaceId) => `Workspace "${workspaceId}" is not in the mesh projection.`, title: (title, workspaceId) => title === `Workspace "${workspaceId}" is not in the mesh projection.` },
+        { label: "timed out", rung: 1, hold: true, word: "timed out", title: (title) => /10s|two poll intervals/.test(title) && /may still have landed/.test(title) && !/failed/.test(title) },
+      ];
+      for (const row of rows) {
+        const loops = row.rung === 2 ? (E) => [E({ stop: "drain" })] : undefined;
+        await withLoopFleet({ ...(loops ? { loops, requestFirst: true } : {}) }, async ({ app, root, home, workspaceId }) => {
+          const before = rowButton(loopRows(nodeCard(app, "control-a"))[0]);
+          const priorLabel = textOf(before);
+          assert.equal(priorLabel, row.rung === 2 ? "Stop now" : "Stop", `${row.label}: the rung (premise)`);
+          if (row.arrange) await row.arrange({ root, home, workspaceId });
+          if (row.hold) {
+            const held = app.holdNext("/api/mesh/loop-stop");
+            const pending = before.props.onClick(clickEvent());
+            await app.renderOnly();
+            await held.answered();
+            await app.advanceHeld(ASSIGN_TIMEOUT_MS);
+            const timedOut = loopRows(nodeCard(app, "control-a"))[0];
+            assert.equal(textOf(rowMessage(timedOut)), "timed out", `${row.label}: the message word`);
+            assert.ok(row.title(rowMessage(timedOut).props.title), `${row.label}: the title names the wait and says it may still have landed — got ${rowMessage(timedOut).props.title}`);
+            assert.equal(rowMessage(timedOut).props.className, MESSAGE_CLASS);
+            assert.equal(textOf(rowButton(timedOut)), priorLabel, `${row.label}: the button reads its prior label`);
+            assert.equal(rowButton(timedOut).props.disabled, false, `${row.label}: …and is enabled at once — no hold`);
+            held.release();
+            await pending;
+            await app.flush();
+            return;
+          }
+          await before.props.onClick(clickEvent());
+          await app.flush();
+          const refused = loopRows(nodeCard(app, "control-a"))[0];
+          const message = rowMessage(refused);
+          assert.ok(message, `${row.label}: the message span renders`);
+          const word = typeof row.word === "function" ? row.word(workspaceId) : row.word;
+          assert.equal(textOf(message), word, `${row.label}: the message word`);
+          assert.ok(row.title(message.props.title, workspaceId), `${row.label}: the title carries the server sentence — got ${message.props.title}`);
+          assert.equal(message.props.className, MESSAGE_CLASS, `${row.label}: the DESIGN's message classes`);
+          assert.equal(textOf(rowButton(refused)), priorLabel, `${row.label}: the button keeps its prior label`);
+          assert.equal(rowButton(refused).props.disabled, false, `${row.label}: …enabled at once — no hold`);
+          assert.equal(textOf(rowText(refused)), textOf(rowText(loopRows(nodeCard(app, "control-a"))[0])), `${row.label}: the line is unchanged`);
+          // A second click after the refusal sends a second request and the message follows.
+          await rowButton(refused).props.onClick(clickEvent());
+          await app.flush();
+          assert.equal(app.requestsMatching("/api/mesh/loop-stop").length, 2, `${row.label}: a second click sends a second request`);
+          assert.ok(rowMessage(loopRows(nodeCard(app, "control-a"))[0]), `${row.label}: …and the message reads the new outcome`);
+        });
+      }
+    },
+  },
+
+  // ══ Scenario: the one fetch and the budgets ══
+  {
+    name: "the-card-renders/04 the one fetch and the budgets — exactly api.ts fetches /api/mesh/loop-stop inside fleetApi.loopStop and throws the coded envelope on a non-2xx; ui/src/fleet holds exactly 20 files; Fleet.tsx is at most 1560 lines; no loops-* token anywhere under ui/",
+    async run() {
+      const uiSrc = path.join(repoRoot, "ui", "src");
+      const files = await filesBelow(uiSrc);
+      const fetching = [];
+      for (const file of files) {
+        if ((await readFile(file, "utf8")).includes('fetch("/api/mesh/loop-stop"')) fetching.push(path.relative(repoRoot, file).replaceAll("\\", "/"));
+      }
+      assert.deepEqual(fetching, ["ui/src/fleet/api.ts"], "exactly one file fetches the route");
+      const api = await readFile(path.join(uiSrc, "fleet", "api.ts"), "utf8");
+      const loopStop = /async loopStop\(scope: string, workspaceId: string\)[\s\S]*?\n  \},/.exec(api);
+      assert.ok(loopStop, "fleetApi.loopStop(scope, workspaceId) is declared");
+      assert.match(loopStop[0], /fetch\("\/api\/mesh\/loop-stop"/, "…and it is where the fetch lives");
+      assert.match(loopStop[0], /if \(!response\.ok\) throw await safeError\(response\);/, "…throwing the coded envelope on a non-2xx as assign does");
+      const fleetFiles = (await readdir(path.join(uiSrc, "fleet"), { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name);
+      const fleetBudget = UI_DIRECTORY_BUDGETS.find((row) => row.directory === "fleet");
+      assert.ok(fleetBudget, "ui/src/fleet has a directory-budget row (the ceiling's one home)");
+      for (const touched of ["api.ts", "runs.mjs", "runs.d.mts", "scope.mjs", "scope.d.mts", "Fleet.tsx"]) {
+        assert.ok(fleetFiles.includes(touched), `the walk reached the directory (non-vacuous): ${touched} is a member`);
+      }
+      assert.ok(fleetFiles.length <= fleetBudget.ceiling + fleetBudget.allowance, `no new file under ui/src/fleet/ — ${fleetFiles.length} members against the directory budget's ceiling of ${fleetBudget.ceiling} (acd-ui-directory-budget: ${fleetBudget.why.slice(0, 60)}…)`);
+      const fleet = await readFile(path.join(uiSrc, "fleet", "Fleet.tsx"), "utf8");
+      assert.ok(fleet.split(/\r?\n/).length <= 1560, `Fleet.tsx is at most 1560 lines — measured ${fleet.split(/\r?\n/).length}`);
+      const forbidden = /work[-/]loops|loops-show|loops-graph|loops-groundedness|loops-validate|work:loops-/;
+      for (const file of await filesBelow(path.join(repoRoot, "ui"))) {
+        assert.doesNotMatch(await readFile(file, "utf8"), forbidden, `${path.relative(repoRoot, file)} carries no loops-* token (FF-5202)`);
+      }
+    },
+  },
+
+  // ══ Scenario: FF-5307 is re-pinned with the measurement, or not at all ══
+  {
+    name: "the-card-renders/04 FF-5307 is re-pinned with the measurement — the ui/ hash comment names milestone 130, every fleet file git diff reports, nothing under ui/src/board/ and board-ui.mjs's unchanged digest; the store and board pins are unmoved; the control is green over the delivered tree",
+    async run() {
+      const gate = await readFile(path.join(repoRoot, "test", "arch", "loop", "acd-loop-state-rides-the-run-record.test.mjs"), "utf8");
+      const rePin = /RE-PINNED by 130\/03[\s\S]*?assert\.equal\(hash\.digest\("hex"\)/.exec(gate);
+      assert.ok(rePin, "the ui/ hash assertion carries a 130/03 re-pin comment directly above it");
+      for (const file of ["api.ts", "runs.mjs", "runs.d.mts", "scope.mjs", "scope.d.mts", "Fleet.tsx", "assign-affordance.mjs", "assign-affordance.d.mts"]) {
+        assert.ok(rePin[0].includes(file), `the re-pin names ${file}`);
+      }
+      assert.match(rePin[0], /nothing under `ui\/src\/board\/`/i, "…says nothing under ui/src/board/ moved");
+      assert.match(rePin[0], /src\/board-ui\.mjs/, "…and that src/board-ui.mjs's digest is unchanged");
+      assert.match(gate, /\["src\/run-store\.mjs", "f18e5080e3e3d9990c1495ff2ec477729ef583f1220ece318e49c62ea615293d"\]/, "the run-store pin is the digest it was before this story");
+      assert.match(gate, /\["src\/board-ui\.mjs", "959ebf96fc19bd207654f3f4cbf2f02b093ecf0d28d548c714ed6ffb60f07518"\]/, "the board-ui pin is the digest it was before this story");
+      const { archTests } = await import("../arch/loop/acd-loop-state-rides-the-run-record.test.mjs");
+      const control = archTests.find((test) => /frozen store and board read surfaces/.test(test.name));
+      assert.ok(control, "the FF-5307 digest control exists");
+      await control.run();
     },
   },
 ];
