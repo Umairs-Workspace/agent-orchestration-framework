@@ -103,11 +103,19 @@ const recorderTests = [
     run() {
       const proc = fakeProcess();
       const fs = fakeFs();
-      const handle = installLoopDiagnostics({ logDir: ROOT, argv: ["work", "loop", "127"], proc, env: {}, fs, now: () => at, aliveIntervalMs: 0 });
+      const handle = installLoopDiagnostics({ logDir: ROOT, argv: ["work", "loop", "127"], proc, env: {}, fs, now: () => at, aliveIntervalMs: 0, build: () => "payload d90568d.20260921T230514" });
       assert.ok(handle && handle.logPath.startsWith(ROOT));
       assert.deepEqual(proc.stderrOut, [], "nothing is announced until the loop prints something itself — a refused invocation's stderr stays exactly its refusal");
       const log = () => fs.files.get(handle.logPath) ?? "";
-      assert.match(log(), /start pid=4242 node=v22\.0\.0-test argv=\["work","loop","127"\]/);
+      // 129/06 (2026-09-21): the tree that ran is on the first line — the payload was re-stamped
+      // MID-run and the log could not say which tree the loop had loaded.
+      assert.match(log(), /start pid=4242 node=v22\.0\.0-test build=payload d90568d\.20260921T230514 argv=\["work","loop","127"\]/);
+      {
+        const broken = fakeProcess();
+        const brokenFs = fakeFs();
+        const h = installLoopDiagnostics({ logDir: ROOT, argv: ["work", "loop", "127"], proc: broken, env: {}, fs: brokenFs, now: () => at, aliveIntervalMs: 0, build: () => { throw new Error("no stamp"); } });
+        assert.match(brokenFs.files.get(h.logPath) ?? "", /start pid=4242 node=v22\.0\.0-test build=unknown argv=/, "a build reader that throws degrades to `unknown` and the start line is still written");
+      }
 
       proc.emit("beforeExit", 0);
       assert.match(log(), /beforeExit code=0 — the event loop drained/);

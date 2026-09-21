@@ -46,6 +46,7 @@ import { globalMeshPaths } from "./workspace.mjs";
 // a failing diagnostic write cannot re-enter the tee; it is throttled per code and never
 // throws, so it cannot fail the loop it is diagnosing either.
 import { reportDegrade } from "./degrade.mjs";
+import { buildInfoString, readBuildInfo } from "./build-info.mjs";
 
 export const LOOP_DIAG_ENV = "AOF_LOOP_DIAG";
 export const LOOP_DIAG_PREFIX = "loop-diag.";
@@ -118,6 +119,10 @@ export function installLoopDiagnostics({
   now = () => new Date(),
   fs = { appendFileSync, mkdirSync, readdirSync, unlinkSync },
   aliveIntervalMs = ALIVE_INTERVAL_MS,
+  // The tree that ran, on the first line — `aof --version`'s own string. Read at 129/06's third
+  // live run (2026-09-21): the payload was re-stamped mid-run and nothing in the log could say
+  // which tree the loop had loaded at start.
+  build = () => buildInfoString(readBuildInfo({ env })),
 } = {}) {
   if (!loopDiagEnabled(env)) return null;
   const prior = installed.get(proc);
@@ -131,7 +136,9 @@ export function installLoopDiagnostics({
   try { fs.mkdirSync(path.dirname(logPath), { recursive: true }); } catch (error) { reportDegrade("loop-diag-write", error); }
   pruneLoopDiagLogs(path.dirname(logPath), LOOP_DIAG_KEEP, fs);
 
-  write("start", `pid=${proc.pid} node=${proc.version} argv=${JSON.stringify(argv)}`);
+  let buildLine = null;
+  try { buildLine = build(); } catch (error) { reportDegrade("loop-diag-build", error); }
+  write("start", `pid=${proc.pid} node=${proc.version} build=${buildLine ?? "unknown"} argv=${JSON.stringify(argv)}`);
 
   // Every way out, named. `beforeExit` fires ONLY on a drained loop — it is the one line that
   // says "nothing was left to wait on", which is what a silently abandoned promise looks like.
