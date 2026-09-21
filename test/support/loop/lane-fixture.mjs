@@ -23,6 +23,7 @@ import path from "node:path";
 import { loadWorkspace } from "../../../src/work.mjs";
 import { resolveRefInWorktree } from "../../../src/work/dispatch.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../mesh-worker-terminal-fixture.mjs";
+import { createStopSource, loopStopsDir } from "../../../src/loop/stop-request.mjs";
 
 // git(args, cwd) — argv form only, never a shell string.
 export function git(args, cwd) {
@@ -317,7 +318,10 @@ export function laneCtx(fx, { child, registry, rubric, driver, report, timers, s
     ...(driver == null ? {} : { agentSessionDriverOptions: driver.options }),
     ...(report == null ? {} : { report }),
     ...(timers == null ? {} : { waveTimers: timers }),
-    ...(signals == null ? {} : { signalSource: signals }),
+    // 130/02 — the wave reads the shell's ONE stop source (130/ADR-001 §5-§6), so a suite raising
+    // signals hands them to a REAL source over its emitter double: `ctx.stopSource` is the seam,
+    // the file half reads the isolated aof home (absent → level 0), no interval is armed.
+    ...(signals == null ? {} : { stopSource: createStopSource({ loopRunId: "wave-under-test", dir: loopStopsDir(), process: signals, pollMs: 0 }) }),
     ...(now == null ? {} : { now }),
     ...extra,
   };

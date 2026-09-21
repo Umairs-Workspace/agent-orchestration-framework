@@ -5,10 +5,10 @@ slug: the-verb-and-the-shell-honour-it
 title: "The verb and the shell honour it — `aof work loop <scope> --stop` writes the request through one core, the shell reads the source instead of a flag, the interrupt path always settles, a cancelled session settles cancelled, and --resume clears"
 parent: 130
 depends: [1]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-21
 adrs: [ADR-001, ADR-002, ADR-003, ADR-006]
 reads:
   - wiki/work/130_milestone_stop-a-running-loop/SPEC.md
@@ -44,11 +44,15 @@ reads:
 files:
   - src/loop/stop.mjs
   - src/commands/loop.mjs
+  - src/loop/cycle.mjs
+  - src/loop/wave.mjs
   - test/loop/loop-command-stops.test.mjs
   - test/loop/loop-command-narration.test.mjs
   - test/loop/loop-command-resume.test.mjs
   - test/loop/loop-command-probe.test.mjs
+  - test/support/loop/lane-fixture.mjs
   - test/arch/loop/acd-loop-narrates-in-flight.test.mjs
+  - test/arch/loop/acd-loop-level-l3-gated.test.mjs
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -83,11 +87,11 @@ cancelled }`, `markStopHonoured` at the halt, `--resume` clearing + the one new 
 
 ## Tasks
 
-- [ ] `tasks/00_stop-is-a-flag-in-three-homes.feature` — schema, spec flag, argv and usage carry `--stop`; `launch` answers `null` for it; `--stop --resume` is refused `loop-stop-exclusive`; `run` without `stop` is the unchanged probe
-- [ ] `tasks/01_stoploop-writes-through-one-core.feature` — `stopLoop` resolves the scope's latest declaration, refuses by code when none / not local, reports `live` from the record's own liveness, writes or escalates the request (`drain` then `cancel`, idempotent after), marks a not-live loop honoured at once, answers seven keys; the command face maps refusals to 404/409 and renders one line
-- [ ] `tasks/02_the-shell-reads-the-source.feature` — `ctx.stopSource` replaces the `process.once` pair; level 1 at the tick head halts `operator-interrupt` with the producer as data and the request in `Details`; the driver options every drive receives carry `source.signal`
-- [ ] `tasks/03_the-interrupt-path-always-settles.feature` — a drive that returns after a level-1 stop settles as it ended before the halt; a drive the source cancelled settles `cancelled` with `failureReason: null`, its `driven` row reads `cancelled`, and no `running` row is left; `needs-input` stays unsettled
-- [ ] `tasks/04_the-halt-marks-and-resume-clears.feature` — the halt marks the request honoured with the cancelled runId; a signal-only halt writes nothing; `--resume` clears a standing request and narrates once; FF-12602's table gains the needle
+- [x] `tasks/00_stop-is-a-flag-in-three-homes.feature` — schema, spec flag, argv and usage carry `--stop`; `launch` answers `null` for it; `--stop --resume` is refused `loop-stop-exclusive`; `run` without `stop` is the unchanged probe
+- [x] `tasks/01_stoploop-writes-through-one-core.feature` — `stopLoop` resolves the scope's latest declaration, refuses by code when none / not local, reports `live` from the record's own liveness, writes or escalates the request (`drain` then `cancel`, idempotent after), marks a not-live loop honoured at once, answers seven keys; the command face maps refusals to 404/409 and renders one line
+- [x] `tasks/02_the-shell-reads-the-source.feature` — `ctx.stopSource` replaces the `process.once` pair; level 1 at the tick head halts `operator-interrupt` with the producer as data and the request in `Details`; the driver options every drive receives carry `source.signal`
+- [x] `tasks/03_the-interrupt-path-always-settles.feature` — a drive that returns after a level-1 stop settles as it ended before the halt; a drive the source cancelled settles `cancelled` with `failureReason: null`, its `driven` row reads `cancelled`, and no `running` row is left; `needs-input` stays unsettled
+- [x] `tasks/04_the-halt-marks-and-resume-clears.feature` — the halt marks the request honoured with the cancelled runId; a signal-only halt writes nothing; `--resume` clears a standing request and narrates once; FF-12602's table gains the needle
 
 ## Notes
 
@@ -97,5 +101,9 @@ cancelled }`, `markStopHonoured` at the halt, `--resume` clearing + the one new 
 - `src/commands/loop.mjs` is shared with 129/04 across milestones (SPEC Dependencies, ADR-001 §6):
   not driven in this checkout at the same time; whichever lands second adapts to the seam shape.
 - `src/commands/` is at 68/68 — the core is `src/loop/stop.mjs`, never a new command module.
+- Landed second, after 129/04 (ADR-001 §6): the drive/settle/row trio and the retry ladder now live
+  in `src/loop/cycle.mjs` and the wave in `src/loop/wave.mjs`, so the settle-first order, the
+  `cancelled` mapping and the wave's interim signal seam (`ctx.signalSource` → `stopSource`) are
+  edited there — `files:` widened by those two, the lane fixture and the L3-gated schema pin.
 - Pins that must hold unchanged: FF-5304 (ten keys, `haltDecision`, the stops literal — `LOOP_STOPS`
   stays twelve), FF-5307 (`src/run-store.mjs` byte-identical), `actShape`'s whitelist.

@@ -105,6 +105,29 @@ doc: state
   { requested, honoured }` export, used internally and pinned in the suite. ADR-001 §2 should name
   it when the ADRs graduate; 04's build reads `record.state === STOP_STATES.honoured`.
 
+- **130/02 build (2026-09-21) — the declared read/write set was incomplete, by sequencing, not by
+  omission:** the story was authored against the pre-129/04 shell (`:1580-1584`, `:1833`), and 129/04
+  landed first, moving `settleDriven`/`drivenRow`/`retryUntilTerminal` into `src/loop/cycle.mjs` and
+  the wave (with its interim `ctx.signalSource` seam) into `src/loop/wave.mjs`. ADR-001 §6 foresaw
+  exactly this ("whichever lands second adapts"), so the build edited both, replaced the wave's seam
+  with the shell's `stopSource`, re-pointed the lane fixture, and widened `files:` accordingly. Two
+  schema pins outside the declared set moved by exactly `stop` (FF-12602 leg 4 and the L3-gated
+  control) — the same succession `quiet` and `supervised` took. Lesson for refine: a story that
+  edits a file another in-progress story also edits should declare the OTHER story's new homes too.
+- **130/02 build — two contract readings, stated:** (1) task 02's "a spy on `createStopSource`"
+  is read as observable effect + one structural check (the real source's listener on `process`,
+  the request read from `loopStopsDir()` under the resolved id, and `pollMs: 2000` at the one
+  composition site) rather than an injected factory seam the ADR does not name. (2) The CLI's
+  human face prints a refusal's MESSAGE only, so the two messages `stop.mjs` composes name their
+  code in parentheses (`throwRefusal`'s idiom) for "stderr names `loop-stop-no-declaration`".
+- **130/02 review close (architect lens, 2026-09-21) — recorded, no item created:** the request's
+  `cancelled` slot is ONE runId (ADR-001 §2), and a wave halted at level 2 cancels one lane child
+  per lane. The shell marks a wave's request honoured with `cancelled: null` and names the
+  cancelled lanes by ref in the halt's `Details` (the wave's own `cancelled: [refs]`). Story 04
+  reads `state === STOP_STATES.honoured` and never `cancelled`, so nothing downstream is blind;
+  if a face ever wants the lane runIds, the slot would need to admit an array — a contract
+  amendment for a later item, not this one. Round 1: 0 Blockers; this Important and one nit
+  (a request whose writer has no node renders `by=<pid>`) recorded here.
 ## Verification
 
 <!-- Pointers, not restatements. -->

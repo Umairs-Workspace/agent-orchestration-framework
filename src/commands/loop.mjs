@@ -133,6 +133,19 @@ import { commitWorktreeChanges, resolveExec } from "../mesh/worktree.mjs";
 import { reconcileLanes, runWaveBuild } from "../loop/wave.mjs";
 // 2026-09-11 — the loop's exit-reason recorder; installed only at the launch seam below.
 import { installLoopDiagnostics } from "../loop-diag.mjs";
+// 130/02 (ADR-002, ADR-003) — THE STOP. `--stop` rides `run` through the ONE verb core below the
+// command layer; the shell reads the ONE interrupt source (`ctx.stopSource ?? createStopSource`)
+// instead of a `process.once` flag, and every write to the request goes through
+// `stop-request.mjs`'s exports — this module spells no path under the aof home and calls no fs.
+import { stopLoop } from "../loop/stop.mjs";
+import {
+  clearStopRequest,
+  createStopSource,
+  loopStopsDir,
+  markStopHonoured,
+  readStopRequest,
+  stopRequestPath,
+} from "../loop/stop-request.mjs";
 
 const DEFAULT_LEVEL = "L2";
 const execFileAsync = promisify(execFile);
@@ -552,6 +565,25 @@ async function probeLoop(input, ctx) {
   });
 }
 
+// 130/02 (ADR-002 §1, §5) — THE COMMAND FACE OF THE STOP. `run` dispatches here on
+// `input.stop === true` alone: `dryRun` and `quiet` are the launch predicate's concern (they
+// select `run` over the body) and never a guard on the write — there is no dry stop; `level` and
+// `cap` play no part, the verb reads run records only. `--stop` with `--resume` is refused by
+// code BEFORE any read: the two are opposite requests about one loop. The core answers a
+// document and never throws for a refusal; this face maps `ok: false` to the command-error
+// contract (stderr + non-zero on the CLI, the `{ ok: false, error, code }` envelope on a route):
+// 404 for a scope with no loop to stop, 409 otherwise.
+async function stopLoopCommand(input, ctx) {
+  if (input.resume === true) {
+    throw commandError("--stop and --resume are exclusive: a stop asks the loop to halt, a resume asks for it back. Pass one.", "loop-stop-exclusive", 400);
+  }
+  const answer = await stopLoop(ctx.workspace, { scope: input.scope, now: input.now });
+  if (answer.ok === false) {
+    throw commandError(answer.message, answer.code, answer.code === "loop-stop-no-declaration" ? 404 : 409);
+  }
+  return answer;
+}
+
 // 102/01 — THE LOOP THIS SHELL *IS*, as one exported literal with one home.
 //
 // DISCOVERED, not chosen. Three facts measured at this repository's HEAD put the shell on
@@ -877,7 +909,9 @@ function recoveredProgressStates(runs, loopRunId) {
 }
 
 export async function runLoopBody(input, suppliedCtx = {}) {
-  const ctx = suppliedCtx.workspace
+  // `let`, for exactly one reassignment below: once the stop source is composed, every drive's
+  // ctx carries its signal (130/02, ADR-003 §1), and the ctx the body drives with IS that one.
+  let ctx = suppliedCtx.workspace
     ? suppliedCtx
     : {
       ...suppliedCtx,
@@ -946,270 +980,343 @@ export async function runLoopBody(input, suppliedCtx = {}) {
   // are not in `resolved.resume.runs`, so the map is what stops a second measurement.
   const gradeBaselines = new Map();
 
-  if (input.resume === true && !resolved.resume.lastDeclaration) {
-    const { next, decision } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
-    const state = loopState({
-      ...resolved,
-      loopRunId,
-      next,
-      act: decision.act,
-      resumable: { stranded: [], lastDeclaration: null },
-    });
-    await report(`Nothing to resume in ${resolved.scope} — no run carries a loop declaration.`);
+  // 130/02 (ADR-003 §1) — ONE SOURCE, COMPOSED HERE, once `loopRunId` is resolved: the process's
+  // own SIGINT/SIGTERM and the request file under the aof home, read through one object. The
+  // `process.once` pair this shell used to register is gone — the source owns the listeners,
+  // persistent ones, and removes them itself at level 2 so a THIRD signal reaches node's default
+  // (first drains, second cancels and settles, third kills). Composed in the BODY, not the launch
+  // seam, so a foreground loop, a loop under `AOF_LOOP_DIAG=0` and a test-driven `runLoopBody`
+  // all read it; a suite injects `ctx.stopSource` (the same seven members). `pollMs` is ADR-001
+  // §5's default decision, spelled at the call as the ADR spells it. `stop()` is balanced against
+  // `start()` on EVERY exit below — done, halt, L1 and a throw — by the one `finally` that closes
+  // this body; an interval left armed after an L1 return would be a leak.
+  const stopsDir = loopStopsDir();
+  const source = ctx.stopSource ?? createStopSource({ loopRunId, dir: stopsDir, process, pollMs: 2000 });
+  // The instant the halt's mark and the resume's clear are stamped at: the invocation's injected
+  // `now` when it has one (the suites'), real time otherwise.
+  const stopClock = () => (input.now == null ? new Date() : new Date(input.now));
+  // The FACTS of the source at a halt, for the account's `Details` (through `reportLine`, never
+  // `actShape`): the producer as a VALUE, the level, the request's path and its writer. Null
+  // members are dropped by `reportFacts`, so a signal-only halt names no request and no writer.
+  const stopFacts = () => {
+    const request = source.request();
+    const by = request?.by == null ? null : [request.by.node, request.by.pid].filter((part) => part != null).join(":");
+    return {
+      signal: source.producer(),
+      level: source.level(),
+      request: request == null ? null : stopRequestPath(stopsDir, loopRunId),
+      by: by === "" ? null : by,
+    };
+  };
+  // ADR-003 §5 — THE HALT AND THE MARK. Before the halt for a request is returned the request is
+  // marked honoured, naming the run the source's abort settled `cancelled` (or `null` on a
+  // drain); only the loop knows it has halted, so only the loop marks it. The mark keys on the
+  // REQUEST, never the producer: a halt whose producer is a signal while a request also stands
+  // is still marked. A signal-only halt writes nothing — there is no request to mark.
+  const markHonoured = async (cancelled = null) => {
+    if (source.request() == null) return;
+    await markStopHonoured(stopsDir, loopRunId, { now: stopClock, cancelled });
+  };
+  // The halt itself — `operator-interrupt`, the stop id unchanged and the producer read off the
+  // source (`"SIGINT"`, `"SIGTERM"` or `"stop-request"`), never a message match. `drive` is the
+  // settled phase run the halt stands over, when there is one: a cancelled record names itself
+  // on the mark and in `Details`; a `needs-input` drive is not settled and names its session.
+  const haltOnStop = async (next, ref, drive = null) => {
+    const cancelled = drive?.record?.state === "cancelled" ? drive.record.runId : null;
+    const sessionId = drive?.outcome?.outcome === "needs-input" ? drive.outcome.sessionId ?? null : null;
+    await markHonoured(cancelled);
+    const state = loopState({ ...resolved, loopRunId, next, act: haltDecision("operator-interrupt", ref, source.producer()), resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+    await reportLine(report, state, { ...stopFacts(), cancelled, sessionId });
     return state;
-  }
+  };
+  // Every drive's ctx carries the source's `signal` beside the caller's own driver options
+  // (ADR-003 §1): the driver honours it through the same stop bracket every other stop takes,
+  // and the diag seam's `onSessionStop` survives the spread. Composed HERE, in the body, so a
+  // foreground loop, a loop under `AOF_LOOP_DIAG=0` and a test-driven `runLoopBody` all carry
+  // it — to the in-process drive, the retry ladder, the cross to verify and the wave alike.
+  ctx = { ...ctx, agentSessionDriverOptions: { ...(ctx.agentSessionDriverOptions ?? {}), signal: source.signal } };
+  const driven = [];
 
-  if (input.resume === true) {
-    let resumedProgressHalt = null;
-    const reclaimed = await transitionStaleRunsReclaimed(
-      resolved.resume.items,
-      {
-        now: input.now,
-        stalenessThreshold: stalenessMs,
-      },
-      transitionOptionsFor(ctx),
-    );
-    for (const entry of reclaimed) {
-      // A RECLAIMED WAVE RUN IS NEVER RETRIED AS THE MILESTONE'S ACT (129/04): it carried the
-      // loop's liveness for a wave (ADR-007 §2), not a drive of the milestone; the BUILD phase
-      // mints a NEW one before its first dispatch. Announced like every reclaim, retried by none.
-      if (entry.record?.brief?.wave == null) resumeRetries.set(entry.item.ref, { item: entry.item, prior: entry.record });
-      await narrate(`Reclaimed ${entry.item.ref} — run ${entry.record.runId} (${entry.record.failureReason}).`);
-    }
-    for (const item of resolved.resume.items) {
-      const itemRuns = await readRuns(item);
-      const failed = [...itemRuns].reverse().find((record) =>
-        record.state === "failed"
-        && record.brief?.wave == null
-        && record.brief?.loop?.loopRunId === resolved.resume.lastDeclaration?.loopRunId);
-      if (failed) resumeRetries.set(item.ref, { item, prior: failed });
-
-      // A completed continue plus still-current findings is enough persisted lineage
-      // to reconstruct a pending fix after interruption. The exact findings are read
-      // again from their authoritative producer; change context is omitted because
-      // the pre-build git baseline was intentionally not added to the run schema.
-      // 129/04 — a WAVE run is a `continue`-phase run of the milestone that drove nothing itself
-      // (ADR-007 §2); it is never a build to reconstruct a fix for.
-      const buildRun = [...itemRuns].reverse().find((record) =>
-        record.state === "done"
-        && record.brief?.wave == null
-        && record.brief?.loop?.loopRunId === resolved.resume.lastDeclaration?.loopRunId
-        && record.brief?.loop?.phase === "continue");
-      if (buildRun) {
-        const priorProgress = progressStates.get(item.ref) ?? { resets: 0, attemptRun: buildRun, summary: null };
-        const attemptRun = priorProgress.attemptRun ?? buildRun;
-        const samples = await readProgressSamples(item, attemptRun, {
-          ...(typeof ctx.onProgressFault === "function" ? { onFault: ctx.onProgressFault } : {}),
-        });
-        if (samples.length > 0 && samples.at(-1).failingScenarios > 0) {
-          const progressDecision = decideLoopProgress({
-            samples,
-            resets: priorProgress.resets,
-            maxStalls: progressBound,
-            maxResets: progressResetBound,
-            // The engine imports nothing (F-69-V11); the deciders ride in from here,
-            // which is the layer that already holds src/loop-progress.mjs.
-            evaluateProgressPolicy,
-            decideBuildProgress,
-          });
-          if (progressDecision.act === "halt") {
-            resumedProgressHalt = { ...progressDecision, ref: item.ref };
-            break;
-          }
-          if (progressDecision.act === "reset" || progressDecision.act === "continue") {
-            const reset = progressDecision.act === "reset";
-            progressStates.set(item.ref, {
-              resets: progressDecision.resets ?? priorProgress.resets,
-              attemptRun: reset ? null : attemptRun,
-              summary: reset ? progressDecision.summary : priorProgress.summary,
-            });
-            const currentNode = meshNodeIdOf(ctx.workspace.config);
-            pendingFixes.set(item.ref, fixTransport({
-              buildRun,
-              resumeBuildRun: reset ? null : admitResumeBuildRun(buildRun, currentNode),
-              findings: reset
-                ? [{ code: "progress-reset", summary: progressDecision.summary }]
-                : [{ code: "build-still-failing", failingCount: progressDecision.failingCount }],
-              changeBaseline: null,
-              progressContinuation: true,
-            }));
-            // 81/02 — RECONSTRUCTED, AND NO GRADE WAS TAKEN FOR IT. Nothing is added to
-            // `pendingGrades`: re-grading here would put a rung-3 spawn on a path
-            // `54/ADR-007 §1` prices as once per completed build, and carrying the
-            // pre-interruption grade forward would present evidence about the old tree as
-            // evidence about the new one.
-            reconstructedFixes.add(item.ref);
-            continue;
-          }
-        }
-        const completedRounds = reviewRounds.get(item.ref) ?? 0;
-        const gate = await invokeReviewGate(
-          item.ref,
-          completedRounds,
-          input,
-          ctx,
-          persistedGateBlockerClaims(buildRun),
-          narrate,
-        );
-        if (Array.isArray(gate?.findings) && gate.findings.length > 0) {
-          const reviewDecision = decideReviewGate({
-            completedRounds,
-            cap: reviewCap,
-            hardCap: MAX_REVIEW_ROUNDS,
-            previousBlockerCount: reviewBlockerCounts.get(item.ref),
-            findings: gate.findings,
-            ...(Object.prototype.hasOwnProperty.call(gate, "blockerClaims")
-              ? { blockerClaims: gate.blockerClaims }
-              : {}),
-          });
-          if (reviewDecision.act === "halt") {
-            const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
-            const halt = { ...reviewDecision, ref: item.ref };
-            const state = loopState({
-              ...resolved,
-              loopRunId,
-              next,
-              act: halt,
-              resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration },
-            });
-            await reportLine(report, state, {
-              round: reviewDecision.round,
-              reviewCap: reviewDecision.cap,
-              blockerClasses: reviewDecision.blockerClasses,
-              workItems: reviewDecision.workItems,
-            });
-            return state;
-          }
-          reviewRounds.set(item.ref, reviewDecision.round);
-          if (reviewDecision.blockerCount > 0) reviewBlockerCounts.set(item.ref, reviewDecision.blockerCount);
-          const currentNode = meshNodeIdOf(ctx.workspace.config);
-          pendingFixes.set(item.ref, fixTransport({
-            buildRun,
-            resumeBuildRun: admitResumeBuildRun(buildRun, currentNode),
-            findings: gate.findings,
-            changeBaseline: null,
-            blocker: reviewDecision.blocker,
-            blockers: reviewDecision.blockers,
-            blockerCount: reviewDecision.blockerCount,
-          }));
-          // 81/02 — reconstructed by the resume path, so no grade was taken for it either.
-          reconstructedFixes.add(item.ref);
-        }
-      }
-    }
-    if (resumedProgressHalt != null) {
-      const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
+  try {
+    if (input.resume === true && !resolved.resume.lastDeclaration) {
+      const { next, decision } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
       const state = loopState({
         ...resolved,
         loopRunId,
         next,
-        act: resumedProgressHalt,
-        resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration },
+        act: decision.act,
+        resumable: { stranded: [], lastDeclaration: null },
       });
-      await reportLine(report, state, progressReportFacts(resumedProgressHalt));
+      await report(`Nothing to resume in ${resolved.scope} — no run carries a loop declaration.`);
       return state;
     }
-  }
 
-  if (resolved.level === "L1") {
-    return await runL1({ ...resolved, loopRunId, startedAt }, ctx, report);
-  }
+    if (input.resume === true) {
+      // 130/02 (ADR-003 §6; ADR-001 §4) — `--resume` CLEARS A STANDING REQUEST, and says so once.
+      // A request is keyed by the loop's own id, so the only invocation that can find one is the
+      // resume of the loop it stopped — the operator asking for that loop back — and it clears
+      // whatever it finds, `requested` or `honoured`, before the walk. The stale rule holds by
+      // construction: a fresh invocation mints a fresh id and can inherit nothing. In flight by
+      // the role rule (126/ADR-002): it is not part of what the invocation returns.
+      const standing = await readStopRequest(stopsDir, loopRunId);
+      if (standing != null) {
+        await clearStopRequest(stopsDir, loopRunId);
+        await narrate(`Cleared stop request for ${loopRunId} (${standing.state}, level ${standing.level}) — resumed.`);
+      }
+      let resumedProgressHalt = null;
+      const reclaimed = await transitionStaleRunsReclaimed(
+        resolved.resume.items,
+        {
+          now: input.now,
+          stalenessThreshold: stalenessMs,
+        },
+        transitionOptionsFor(ctx),
+      );
+      for (const entry of reclaimed) {
+        // A RECLAIMED WAVE RUN IS NEVER RETRIED AS THE MILESTONE'S ACT (129/04): it carried the
+        // loop's liveness for a wave (ADR-007 §2), not a drive of the milestone; the BUILD phase
+        // mints a NEW one before its first dispatch. Announced like every reclaim, retried by none.
+        if (entry.record?.brief?.wave == null) resumeRetries.set(entry.item.ref, { item: entry.item, prior: entry.record });
+        await narrate(`Reclaimed ${entry.item.ref} — run ${entry.record.runId} (${entry.record.failureReason}).`);
+      }
+      for (const item of resolved.resume.items) {
+        const itemRuns = await readRuns(item);
+        const failed = [...itemRuns].reverse().find((record) =>
+          record.state === "failed"
+          && record.brief?.wave == null
+          && record.brief?.loop?.loopRunId === resolved.resume.lastDeclaration?.loopRunId);
+        if (failed) resumeRetries.set(item.ref, { item, prior: failed });
 
-  const driven = [];
-  // milestone 124 / story 01 (ADR-005 §5) — THE UNITS HANDED BACK TO THEIR PLAN, set aside for
-  // the remainder of THIS invocation. In-process on purpose: the bound that survives a resume is
-  // the plan counter below (rebuilt by `reconstructCycleCounts` from the run records), and this
-  // one is the walk's memory of what it has already asked a planner about. A new invocation is
-  // entitled to offer the unit again — that is the outer limit ADR-005 §6 names.
-  const setAside = new Set();
-  let lastSetAside = null;
-  let inFlightRef = null;
-  let interrupted = null;
-  const onSigint = () => { interrupted = "SIGINT"; };
-  const onSigterm = () => { interrupted = "SIGTERM"; };
-  process.once("SIGINT", onSigint);
-  process.once("SIGTERM", onSigterm);
+        // A completed continue plus still-current findings is enough persisted lineage
+        // to reconstruct a pending fix after interruption. The exact findings are read
+        // again from their authoritative producer; change context is omitted because
+        // the pre-build git baseline was intentionally not added to the run schema.
+        // 129/04 — a WAVE run is a `continue`-phase run of the milestone that drove nothing itself
+        // (ADR-007 §2); it is never a build to reconstruct a fix for.
+        const buildRun = [...itemRuns].reverse().find((record) =>
+          record.state === "done"
+          && record.brief?.wave == null
+          && record.brief?.loop?.loopRunId === resolved.resume.lastDeclaration?.loopRunId
+          && record.brief?.loop?.phase === "continue");
+        if (buildRun) {
+          const priorProgress = progressStates.get(item.ref) ?? { resets: 0, attemptRun: buildRun, summary: null };
+          const attemptRun = priorProgress.attemptRun ?? buildRun;
+          const samples = await readProgressSamples(item, attemptRun, {
+            ...(typeof ctx.onProgressFault === "function" ? { onFault: ctx.onProgressFault } : {}),
+          });
+          if (samples.length > 0 && samples.at(-1).failingScenarios > 0) {
+            const progressDecision = decideLoopProgress({
+              samples,
+              resets: priorProgress.resets,
+              maxStalls: progressBound,
+              maxResets: progressResetBound,
+              // The engine imports nothing (F-69-V11); the deciders ride in from here,
+              // which is the layer that already holds src/loop-progress.mjs.
+              evaluateProgressPolicy,
+              decideBuildProgress,
+            });
+            if (progressDecision.act === "halt") {
+              resumedProgressHalt = { ...progressDecision, ref: item.ref };
+              break;
+            }
+            if (progressDecision.act === "reset" || progressDecision.act === "continue") {
+              const reset = progressDecision.act === "reset";
+              progressStates.set(item.ref, {
+                resets: progressDecision.resets ?? priorProgress.resets,
+                attemptRun: reset ? null : attemptRun,
+                summary: reset ? progressDecision.summary : priorProgress.summary,
+              });
+              const currentNode = meshNodeIdOf(ctx.workspace.config);
+              pendingFixes.set(item.ref, fixTransport({
+                buildRun,
+                resumeBuildRun: reset ? null : admitResumeBuildRun(buildRun, currentNode),
+                findings: reset
+                  ? [{ code: "progress-reset", summary: progressDecision.summary }]
+                  : [{ code: "build-still-failing", failingCount: progressDecision.failingCount }],
+                changeBaseline: null,
+                progressContinuation: true,
+              }));
+              // 81/02 — RECONSTRUCTED, AND NO GRADE WAS TAKEN FOR IT. Nothing is added to
+              // `pendingGrades`: re-grading here would put a rung-3 spawn on a path
+              // `54/ADR-007 §1` prices as once per completed build, and carrying the
+              // pre-interruption grade forward would present evidence about the old tree as
+              // evidence about the new one.
+              reconstructedFixes.add(item.ref);
+              continue;
+            }
+          }
+          const completedRounds = reviewRounds.get(item.ref) ?? 0;
+          const gate = await invokeReviewGate(
+            item.ref,
+            completedRounds,
+            input,
+            ctx,
+            persistedGateBlockerClaims(buildRun),
+            narrate,
+          );
+          if (Array.isArray(gate?.findings) && gate.findings.length > 0) {
+            const reviewDecision = decideReviewGate({
+              completedRounds,
+              cap: reviewCap,
+              hardCap: MAX_REVIEW_ROUNDS,
+              previousBlockerCount: reviewBlockerCounts.get(item.ref),
+              findings: gate.findings,
+              ...(Object.prototype.hasOwnProperty.call(gate, "blockerClaims")
+                ? { blockerClaims: gate.blockerClaims }
+                : {}),
+            });
+            if (reviewDecision.act === "halt") {
+              const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
+              const halt = { ...reviewDecision, ref: item.ref };
+              const state = loopState({
+                ...resolved,
+                loopRunId,
+                next,
+                act: halt,
+                resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration },
+              });
+              await reportLine(report, state, {
+                round: reviewDecision.round,
+                reviewCap: reviewDecision.cap,
+                blockerClasses: reviewDecision.blockerClasses,
+                workItems: reviewDecision.workItems,
+              });
+              return state;
+            }
+            reviewRounds.set(item.ref, reviewDecision.round);
+            if (reviewDecision.blockerCount > 0) reviewBlockerCounts.set(item.ref, reviewDecision.blockerCount);
+            const currentNode = meshNodeIdOf(ctx.workspace.config);
+            pendingFixes.set(item.ref, fixTransport({
+              buildRun,
+              resumeBuildRun: admitResumeBuildRun(buildRun, currentNode),
+              findings: gate.findings,
+              changeBaseline: null,
+              blocker: reviewDecision.blocker,
+              blockers: reviewDecision.blockers,
+              blockerCount: reviewDecision.blockerCount,
+            }));
+            // 81/02 — reconstructed by the resume path, so no grade was taken for it either.
+            reconstructedFixes.add(item.ref);
+          }
+        }
+      }
+      if (resumedProgressHalt != null) {
+        const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
+        const state = loopState({
+          ...resolved,
+          loopRunId,
+          next,
+          act: resumedProgressHalt,
+          resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration },
+        });
+        await reportLine(report, state, progressReportFacts(resumedProgressHalt));
+        return state;
+      }
+    }
 
-  // 129/04 (ADR-008 §3) — THE BOOKKEEPING THE LADDER WRITES, handed to `settleStoryCycle` as
-  // one bag so the four maps it mutates are the shell's own and nothing is copied; and THE
-  // OPTIONS every ladder call shares — the rungs that STAY here (`invokeReviewGate`,
-  // `haltDecision`, `readChangeUnderReview`, `requireDecision`) reach it as parameters, never
-  // as a second spelling in `src/loop/`.
-  const bookkeeping = { pendingFixes, pendingGrades, progressStates, reviewRounds, reviewBlockerCounts, cycles, driven };
-  const ladderOptions = {
-    ctx,
-    narrate,
-    report,
-    input,
-    resolved,
-    loopRunId,
-    startedAt,
-    cap: resolved.cap,
-    scheduleToCloseMs,
-    stalenessMs,
-    node: meshNodeIdOf(ctx.workspace.config),
-    invokeReviewGate,
-    haltDecision,
-    requireDecision,
-    readChangeUnderReview,
-    bounds: { reviewCap, progressBound, progressResetBound },
-    declarationFor,
-    hasUat,
-    uatCount,
-  };
+    // The source is started after the resume handling, once, and stopped by the `finally` that
+    // closes this body. An L1 invocation drives nothing and reaches no tick head, so it reads no
+    // level: its output at level 1 is byte-identical to its output at level 0.
+    source.start();
+    if (resolved.level === "L1") {
+      return await runL1({ ...resolved, loopRunId, startedAt }, ctx, report);
+    }
 
-  // 129/04 (ADR-001 §2-§3) — THE MODE, resolved once in the bounds home, and the PHASE it
-  // drives. `sequential` (unset) is today's loop, `phase` null throughout: one act per tick in
-  // the primary. `refine_first` is three phases in order — REFINE (every unrefined story, in the
-  // primary, then the loop's own writes committed), BUILD (the wave, in lanes — `src/loop/wave.mjs`)
-  // and VERIFY (today's ladder over the in-review stories, in the primary).
-  const concurrency = loopConcurrencyFromConfig(ctx.workspace);
-  const refineFirst = concurrency === REFINE_FIRST_CONCURRENCY;
-  let phase = refineFirst ? "refine" : null;
-  let refined = 0;
-  // A plan hand-off a lane returned (124/ADR-005 §5, at the wave grain): the act the next tick
-  // performs INSTEAD of asking `work:next` — the plan's refine, in the primary.
-  let pendingAct = null;
-  const waveBounds = {
-    heartbeatMs: stalenessMs,
-    stalenessMs,
-    scheduleToCloseMs,
-    startToCloseMs: startToCloseFromConfig(ctx.workspace),
-    startupGraceMs: startupGraceFromConfig(ctx.workspace),
-    // 129/07 — the loop's OWN lane bound (`work.loop.dispatch.concurrency`), resolved once in the
-    // bounds home and handed to the wave, which passes it to `work:dispatch` as a narrowing of
-    // the pool's bound; `null` (unset) passes nothing, and admission is the pool's as at HEAD.
-    laneBound: loopDispatchConcurrencyFromConfig(ctx.workspace),
-  };
-  const laneMemory = { laneRetries: new Map(), liveElsewhere: new Set(), laneRuns: [] };
-  const scopeRefs = (await localScopeItems(resolved.scope, ctx)).items.map((item) => item.ref);
+    // milestone 124 / story 01 (ADR-005 §5) — THE UNITS HANDED BACK TO THEIR PLAN, set aside for
+    // the remainder of THIS invocation. In-process on purpose: the bound that survives a resume is
+    // the plan counter below (rebuilt by `reconstructCycleCounts` from the run records), and this
+    // one is the walk's memory of what it has already asked a planner about. A new invocation is
+    // entitled to offer the unit again — that is the outer limit ADR-005 §6 names.
+    const setAside = new Set();
+    let lastSetAside = null;
+    let inFlightRef = null;
 
-  // RECONCILE LIVE LANES BEFORE THE FIRST ASK (ADR-007 §4) — a resume under `refine_first` walks
-  // nothing until every lane under the dispatch root is classified and handled; `sequential`
-  // runs no reconciliation and touches no lane.
-  if (input.resume === true && refineFirst) {
-    const reconciled = await reconcileLanes({
+    // 129/04 (ADR-008 §3) — THE BOOKKEEPING THE LADDER WRITES, handed to `settleStoryCycle` as
+    // one bag so the four maps it mutates are the shell's own and nothing is copied; and THE
+    // OPTIONS every ladder call shares — the rungs that STAY here (`invokeReviewGate`,
+    // `haltDecision`, `readChangeUnderReview`, `requireDecision`) reach it as parameters, never
+    // as a second spelling in `src/loop/`.
+    const bookkeeping = { pendingFixes, pendingGrades, progressStates, reviewRounds, reviewBlockerCounts, cycles, driven };
+    const ladderOptions = {
       ctx,
-      scopeRefs,
+      // 130/02 (ADR-003 §7) — the retry ladder reads the source after every attempt it settles, so
+      // the order settle → interrupt → needs-input → retry holds at that drive site too.
+      stopSource: source,
       narrate,
-      now: input.now,
-      bounds: waveBounds,
-      node: ladderOptions.node,
-      resolveItem: (ref) => resolveItemExact(ctx, ref),
+      report,
+      input,
+      resolved,
+      loopRunId,
+      startedAt,
+      cap: resolved.cap,
+      scheduleToCloseMs,
+      stalenessMs,
+      node: meshNodeIdOf(ctx.workspace.config),
+      invokeReviewGate,
       haltDecision,
-    });
-    if (reconciled.halt != null) {
-      const state = loopState({ ...resolved, loopRunId, next: null, act: reconciled.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
-      await reportLine(report, state, reconciled.halt.details);
-      return state;
-    }
-    laneMemory.laneRetries = reconciled.laneRetries;
-    laneMemory.liveElsewhere = reconciled.liveElsewhere;
-    laneMemory.laneRuns = reconciled.laneRuns;
-  }
+      requireDecision,
+      readChangeUnderReview,
+      bounds: { reviewCap, progressBound, progressResetBound },
+      declarationFor,
+      hasUat,
+      uatCount,
+    };
 
-  try {
+    // 129/04 (ADR-001 §2-§3) — THE MODE, resolved once in the bounds home, and the PHASE it
+    // drives. `sequential` (unset) is today's loop, `phase` null throughout: one act per tick in
+    // the primary. `refine_first` is three phases in order — REFINE (every unrefined story, in the
+    // primary, then the loop's own writes committed), BUILD (the wave, in lanes — `src/loop/wave.mjs`)
+    // and VERIFY (today's ladder over the in-review stories, in the primary).
+    const concurrency = loopConcurrencyFromConfig(ctx.workspace);
+    const refineFirst = concurrency === REFINE_FIRST_CONCURRENCY;
+    let phase = refineFirst ? "refine" : null;
+    let refined = 0;
+    // A plan hand-off a lane returned (124/ADR-005 §5, at the wave grain): the act the next tick
+    // performs INSTEAD of asking `work:next` — the plan's refine, in the primary.
+    let pendingAct = null;
+    const waveBounds = {
+      heartbeatMs: stalenessMs,
+      stalenessMs,
+      scheduleToCloseMs,
+      startToCloseMs: startToCloseFromConfig(ctx.workspace),
+      startupGraceMs: startupGraceFromConfig(ctx.workspace),
+      // 129/07 — the loop's OWN lane bound (`work.loop.dispatch.concurrency`), resolved once in the
+      // bounds home and handed to the wave, which passes it to `work:dispatch` as a narrowing of
+      // the pool's bound; `null` (unset) passes nothing, and admission is the pool's as at HEAD.
+      laneBound: loopDispatchConcurrencyFromConfig(ctx.workspace),
+    };
+    const laneMemory = { laneRetries: new Map(), liveElsewhere: new Set(), laneRuns: [] };
+    const scopeRefs = (await localScopeItems(resolved.scope, ctx)).items.map((item) => item.ref);
+
+    // RECONCILE LIVE LANES BEFORE THE FIRST ASK (ADR-007 §4) — a resume under `refine_first` walks
+    // nothing until every lane under the dispatch root is classified and handled; `sequential`
+    // runs no reconciliation and touches no lane.
+    if (input.resume === true && refineFirst) {
+      const reconciled = await reconcileLanes({
+        ctx,
+        scopeRefs,
+        narrate,
+        now: input.now,
+        bounds: waveBounds,
+        node: ladderOptions.node,
+        resolveItem: (ref) => resolveItemExact(ctx, ref),
+        haltDecision,
+      });
+      if (reconciled.halt != null) {
+        const state = loopState({ ...resolved, loopRunId, next: null, act: reconciled.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+        await reportLine(report, state, reconciled.halt.details);
+        return state;
+      }
+      laneMemory.laneRetries = reconciled.laneRetries;
+      laneMemory.liveElsewhere = reconciled.liveElsewhere;
+      laneMemory.laneRuns = reconciled.laneRuns;
+    }
+
     for (;;) {
+      // 130/02 (ADR-003 §2) — THE TICK HEAD READS THE SOURCE: one poll of the request file per
+      // tick, beside the interval the source arms; the level is read below, once the tick knows
+      // which ref it would have driven.
+      await source.poll();
       // ---- BUILD: the wave, in lanes (ADR-001 §3, ADR-008 §1) ----
       if (phase === "build") {
         const built = await runWaveBuild({
@@ -1232,11 +1339,20 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           resolveItem: (ref) => resolveItemExact(ctx, ref),
           haltDecision,
           requireDecision,
+          // 130/02 — the wave reads the SAME source (ADR-001 §6): its first level drains the
+          // lanes, its signal aborts every child, and the request file reaches it through the
+          // wave's own polls.
+          stopSource: source,
           commitOwnWrites: () => commitOwnWrites(resolved.scope, ctx, { node: ladderOptions.node, exec: ctx.exec, message: `aof(loop): wave ${resolved.scope}` }),
         });
         if (built.outcome === "halt") {
+          // A wave halted on the operator's stop carries the source's facts beside its own
+          // (the drained and cancelled lanes) and marks the request honoured; the lanes it
+          // cancelled are named by ref in its details, so the mark carries no single run.
+          const onStop = built.act.stop === "operator-interrupt";
+          if (onStop) await markHonoured(null);
           const state = loopState({ ...resolved, loopRunId, next: null, act: built.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
-          await reportLine(report, state, built.details);
+          await reportLine(report, state, onStop ? { ...stopFacts(), ...built.details } : built.details);
           return state;
         }
         if (built.outcome === "handoff") {
@@ -1263,7 +1379,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       pendingAct = null;
       // ---- REFINE ends when the engine stops answering refine: the loop commits its own
       // writes so the lanes, cut from HEAD, see the contracts (ADR-002 §2) ----
-      if (phase === "refine" && !(decision?.act?.act === "drive" && decision.act.phase === "refine") && !interrupted) {
+      if (phase === "refine" && !(decision?.act?.act === "drive" && decision.act.phase === "refine") && source.level() < 1) {
         const committed = refined > 0 ? await commitOwnWrites(resolved.scope, ctx, { node: ladderOptions.node, exec: ctx.exec }) : { committed: false, sha: null };
         if (committed.refused != null) {
           const halt = haltDecision("lane-merge-refused", resolved.scope, `dispatch:commit-own-writes:${committed.refused.code}`);
@@ -1293,7 +1409,10 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       }
       let act = decision.act;
 
-      if (interrupted) act = haltDecision("operator-interrupt", inFlightRef ?? next?.ref ?? resolved.scope, interrupted);
+      // A level at the tick head halts BEFORE any drive (ADR-003 §2), at the ref the tick would
+      // have driven — the last driven ref when a level rose after its post-drive read, else the
+      // offer's, else the scope.
+      if (source.level() >= 1) return await haltOnStop(next, inFlightRef ?? next?.ref ?? resolved.scope);
       if (act.act === "halt" && act.ref == null) act = { ...act, ref: next?.ref ?? resolved.scope };
       if (act.act === "done" || act.act === "halt") {
         const state = loopState({
@@ -1310,9 +1429,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
             ? { waitingOn: next?.waitingOn, skipped: next?.skipped }
             : act.stop === "unmapped-item-type"
               ? { itemType: next?.type }
-              : act.stop === "operator-interrupt"
-                ? { signal: interrupted }
-                : {};
+              : {};
         await reportLine(report, state, details);
         return state;
       }
@@ -1539,14 +1656,16 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       // run and then awaits the PTY session; every fact worth reading is already in scope here.
       await narrate(`Driving ${act.ref} — ${act.phase}, cycle ${cycle} of ${resolved.cap}, ${resolved.level}.`);
       let phaseRun = await drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord, fix, gradeAbsent, changeBaseline, progressBaseCommit, now: input.now }, ctx);
-      if (interrupted) {
-        const halt = haltDecision("operator-interrupt", act.ref, interrupted);
-        const state = loopState({ ...resolved, loopRunId, next, act: halt, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
-        await reportLine(report, state, { signal: interrupted });
-        return state;
-      }
+      // 130/02 (ADR-003 §3, §7) — THE INTERRUPT PATH ALWAYS SETTLES. The order after a drive is
+      // settle → interrupt → needs-input → retry: a drive that ended on its own settles as it
+      // ended, a drive the source cancelled settles `cancelled`, and only then is the source
+      // read. The early return that stood here before the settle is what left 129/04's run
+      // `running` with the driver's observation discarded — the leaked non-terminal row the
+      // dedup guard walls the next mint on (20/ADR-006).
       phaseRun = await settleDriven(phaseRun, ctx, { now: input.now, narrate });
       driven.push(drivenRow(phaseRun));
+      await source.poll();
+      if (source.level() >= 1) return await haltOnStop(next, act.ref, phaseRun);
 
       if (phaseRun.outcome.outcome === "needs-input") {
         const halt = haltDecision("session-needs-input", act.ref, "driver:needs-input");
@@ -1568,6 +1687,9 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           await reportLine(report, state, retried.halt.details);
           return state;
         }
+        // The ladder returns to this shell on a level it read after an attempt it settled (ADR-003
+        // §7 at the retry site): the halt names that attempt's run.
+        if (source.level() >= 1) return await haltOnStop(next, act.ref, phaseRun);
       }
 
       if (phaseRun.outcome.outcome !== "done") continue;
@@ -1588,6 +1710,11 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           facts,
           gradeBaseline: gradeBaselines.get(act.ref) ?? null,
         });
+        // The cross to verify is the third drive site (ADR-003 §7): its settled run is read here
+        // against the source before the ladder's own halt, so an interrupt over a `needs-input`
+        // verify names the session, and a cancelled verify names its run.
+        await source.poll();
+        if (source.level() >= 1) return await haltOnStop(next, act.ref, settled.verified ?? null);
         if (settled.next === "halt") {
           const state = loopState({ ...resolved, loopRunId, next, act: settled.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
           await reportLine(report, state, settled.halt.details);
@@ -1596,12 +1723,16 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       }
     }
   } finally {
-    process.removeListener("SIGINT", onSigint);
-    process.removeListener("SIGTERM", onSigterm);
+    source.stop();
   }
 }
 
 export function renderLoopState(state) {
+  // 130/02 (ADR-002 §5) — the stop's one line: the document `stopLoopCommand` answered, read by
+  // the key only it carries.
+  if (typeof state?.request === "string") {
+    return `${state.scope} — stop requested (${state.request}) for loop ${state.loopRunId}, ${state.live === true ? "live" : "not live"}. ${state.path}`;
+  }
   const resume = `aof work loop ${state.scope} --resume`;
   if (state.act.act === "done") return `${state.scope} — loop done.`;
   if (state.act.act === "halt") {
@@ -1629,20 +1760,25 @@ export const loopCommand = {
       quiet: { type: "boolean" },
       // 126/02 ADR-004 §5-§6 — the supervision opt-in, in the same three homes every flag lands in.
       supervised: { type: "boolean" },
+      // 130/02 ADR-002 §1 — the stop, in the same three homes. `run` dispatches on it alone.
+      stop: { type: "boolean" },
     },
     required: ["scope"],
     additionalProperties: false,
   },
-  run: probeLoop,
+  // 130/02 (ADR-002 §2) — `run` DISPATCHES: `stop: true` is the verb, otherwise the byte-identical
+  // read-only probe (FF-5304's ten keys). Nothing else on the input selects the stop.
+  run: (input, ctx) => (input?.stop === true ? stopLoopCommand(input, ctx) : probeLoop(input, ctx)),
   cli: {
     route: ["work", "loop"],
     spec: {
-      usage: "aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--dry-run] [--quiet] [--supervised] [--json]",
+      usage: "aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--dry-run] [--quiet] [--supervised] [--json]",
       flags: {
         level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
         cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
         reviewClaims: { type: "string", description: "JSON structured blocker claims keyed by ref and completed review rounds" },
         resume: { type: "boolean", description: "settle stranded runs and resume the last declaration" },
+        stop: { type: "boolean", description: "ask the scope's running loop to stop: the first request drains, a second cancels the in-flight session; --resume clears it" },
         dryRun: { type: "boolean", description: "render the read-only probe instead of entering the loop" },
         quiet: { type: "boolean", description: "silence the in-flight progress lines; the terminal account is printed unchanged" },
         supervised: { type: "boolean", description: "declare this loop supervised, so a restarted node relaunches it; off by default" },
@@ -1654,11 +1790,15 @@ export const loopCommand = {
       ...(options.cap != null ? { cap: Number(options.cap) } : {}),
       ...(options.reviewClaims != null ? { reviewClaims: JSON.parse(options.reviewClaims) } : {}),
       ...(options.resume === true ? { resume: true } : {}),
+      ...(options.stop === true ? { stop: true } : {}),
       ...(options.dryRun === true ? { dryRun: true } : {}),
       ...(options.quiet === true ? { quiet: true } : {}),
       ...(options.supervised === true ? { supervised: true } : {}),
     }),
-    launch: (options) => options.dryRun === true
+    // 130/02 (ADR-002 §1) — a `--stop` stays on the probe side exactly as `--dry-run` does: it
+    // never enters the foreground body, never installs the diag recorder, never reaches a PTY.
+    // It prints through `render`.
+    launch: (options) => options.dryRun === true || options.stop === true
       ? null
       : (input, faceCtx) => {
         // The EXIT-REASON recorder (2026-09-11, `src/loop-diag.mjs`) — installed HERE, at the

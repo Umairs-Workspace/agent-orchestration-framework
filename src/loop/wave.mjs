@@ -22,8 +22,10 @@
 //   halt — a halt in one lane DRAINS the others (no new dispatch, every child finishes, its lane
 //          is committed and merged where it merges) and only then does the loop halt, naming the
 //          first halting lane and the drained lanes (ADR-005 §4's interrupt rule for every stop);
-//   stop — the first signal drains and halts `operator-interrupt`; the second aborts every child
-//          through its stdin, settles each lane run `cancelled`, and halts the same way;
+//   stop — the shell's ONE stop source (130/ADR-001 §5, `shell.stopSource`) is read here: its
+//          first level (a signal or a `--stop` request) drains and halts `operator-interrupt`;
+//          its signal aborts every child through its stdin, settles each lane run `cancelled`,
+//          and halts the same way — the wave registers no listener of its own;
 //   resume — `--resume` reconciles every live lane under the dispatch root BEFORE the first ask
 //          (ADR-007 §4): a stale running run is reclaimed and re-driven from its own tree, a
 //          committed unmerged tip is merged, a merged tip is cleaned up, dirt is committed first,
@@ -172,8 +174,9 @@ function heartbeatLine(runId, at) {
 // `shell` is the loop's own scope, handed in as one bag: { ctx, resolved, loopRunId, startedAt,
 // declarationFor, bookkeeping, ladderOptions, setAside, narrate, report, now, bounds, scopeRuns,
 // laneRuns, laneRetries, liveElsewhere, resolveItem, haltDecision, requireDecision,
-// commitOwnWrites }. The shell's rungs — `haltDecision`, `requireDecision`, the exact resolver,
-// the own-writes commit — are PARAMETERS here, never re-spelled (ADR-008 §3's rule for the family).
+// commitOwnWrites, stopSource }. The shell's rungs — `haltDecision`, `requireDecision`, the exact
+// resolver, the own-writes commit — are PARAMETERS here, never re-spelled (ADR-008 §3's rule for
+// the family); so is the stop source (130/02), the seam 129/04's task 06 injected as `ctx.stopSource`.
 export async function runWaveBuild(shell) {
   const {
     ctx,
@@ -191,6 +194,9 @@ export async function runWaveBuild(shell) {
     haltDecision,
     requireDecision,
     commitOwnWrites,
+    // 130/02 — the shell's source, or a silent one when a caller composes none: level 0, no
+    // producer, no request, a signal that never aborts.
+    stopSource = { level: () => 0, producer: () => null, request: () => null, signal: new AbortController().signal, poll: async () => null },
   } = shell;
   // THE MILESTONE A MEMBER BELONGS TO — the ref grammar's own answer (`NN/SS` → `NN`), resolved
   // once per parent through the shell's exact resolver and memoised: the wave run is minted on
@@ -208,7 +214,6 @@ export async function runWaveBuild(shell) {
   const spawnLaneDrive = typeof ctx.spawnLaneDrive === "function" ? ctx.spawnLaneDrive : spawnLaneDriveChild;
   const timers = ctx.waveTimers ?? { setInterval: (fn, ms) => setInterval(fn, ms), clearInterval: (handle) => clearInterval(handle) };
   const clock = () => injectedNow ?? (typeof ctx.now === "function" ? ctx.now() : new Date().toISOString());
-  const signalSource = ctx.signalSource ?? process;
   const { driven, cycles, pendingFixes, pendingGrades } = bookkeeping;
   const { cap } = resolved;
 
@@ -233,24 +238,16 @@ export async function runWaveBuild(shell) {
   let halted = null; // { act, details }
   const drained = [];
   const cancelled = [];
-  let signals = 0;
-  let firstSignal = null;
   let handoff = null;
 
-  // ---- signals (ADR-005 §4): the FIRST drains — no new dispatch, every child finishes, what
-  // merges merges; the SECOND aborts every child through its stdin (end → grace → kill) ----
-  const onSignal = (signal) => () => {
-    signals += 1;
-    if (signals === 1) {
-      firstSignal = signal;
-      return;
-    }
-    for (const lane of lanes.values()) lane.controller.abort();
-  };
-  const onSigint = onSignal("SIGINT");
-  const onSigterm = onSignal("SIGTERM");
-  signalSource.on("SIGINT", onSigint);
-  signalSource.on("SIGTERM", onSigterm);
+  // ---- the stop (ADR-005 §4, through 130/ADR-001 §5's source): the FIRST level drains — no new
+  // dispatch, every child finishes, what merges merges; the source's SIGNAL (level 2) aborts
+  // every child through its stdin (end → grace → kill). The wave polls the source at every ask
+  // and after every lane closes, so a `--stop` written from another terminal reaches it. ----
+  const stopping = () => stopSource.level() >= 1;
+  const abortLanes = () => { for (const lane of lanes.values()) lane.controller.abort(); };
+  if (stopSource.signal?.aborted === true) abortLanes();
+  else stopSource.signal?.addEventListener?.("abort", abortLanes, { once: true });
 
   // ---- the wave run in the primary (ADR-007 §2) ----
   // mintWaveRun(members, bound) — the epoch's run, minted in the primary at its HEAD and then
@@ -661,8 +658,8 @@ export async function runWaveBuild(shell) {
       // hides a live loop from the supervisor and the milestone never holds two non-terminal runs.
       // A dispatch that admits more members while this epoch runs settles it and mints the next,
       // so every epoch's brief names exactly the lanes it carried.
-      await settleWaveRun(halted != null || signals > 0 ? "failed" : "done");
-      if (lanes.size > 0 && halted == null && signals === 0) {
+      await settleWaveRun(halted != null || stopping() ? "failed" : "done");
+      if (lanes.size > 0 && halted == null && !stopping()) {
         const minted = await mintWaveRun([...lanes.keys()], lastBound);
         if (minted?.halt != null && halted == null) halted = minted.halt;
       }
@@ -681,16 +678,18 @@ export async function runWaveBuild(shell) {
       // A child that answered `aborted` was cancelled by someone: under the operator's second
       // signal the loop already halts `operator-interrupt`; an abort nobody here raised is still
       // that stop, attributed to the driver, never a lane to re-dispatch. The lane is kept.
-      if (halted == null && signals === 0) halted = { act: haltDecision("operator-interrupt", ref, "driver:aborted"), details: { cancelled: [...cancelled] } };
+      if (halted == null && !stopping()) halted = { act: haltDecision("operator-interrupt", ref, "driver:aborted"), details: { cancelled: [...cancelled] } };
     }
   }
 
   // ---- the ask + dispatch tick ----
   async function tick() {
     const answer = await invokeRegistered("work:next", { scope: resolved.scope, throughReview: true }, ctx);
-    // A signal that arrived while the ask was pending stops the tick here: nothing is dispatched
-    // after the first signal (ADR-005 §4), and the halt is reported at the next turn as today.
-    if (signals > 0) return { wait: true };
+    // A level that arrived while the ask was pending — a signal, or a request the poll here reads
+    // — stops the tick: nothing is dispatched after the first level (ADR-005 §4), and the halt
+    // is reported at the next turn as today.
+    await stopSource.poll();
+    if (stopping()) return { wait: true };
     const wait = async () => {
       // Lanes still open and nothing new to admit: the epoch a merge settled is re-minted now,
       // naming the lanes in flight, so the loop is never hidden while a lane works.
@@ -799,7 +798,7 @@ export async function runWaveBuild(shell) {
 
   try {
     for (;;) {
-      if (halted == null && handoff == null && signals === 0) {
+      if (halted == null && handoff == null && !stopping()) {
         const ticked = await tick();
         if (ticked.done) break;
         if (ticked.halt != null) { halted = ticked.halt; if (lanes.size === 0) break; }
@@ -808,12 +807,14 @@ export async function runWaveBuild(shell) {
       const closed = await Promise.race([...lanes.values()].map((lane) => lane.promise));
       lanes.delete(closed.ref);
       if (lanes.size === 0) disarmHeartbeat();
+      // The source is read again as a lane closes, so the epoch this close settles reads the
+      // level that stands now rather than the one the last ask saw.
+      await stopSource.poll();
       await closeLane(closed);
     }
   } finally {
     disarmHeartbeat();
-    signalSource.off("SIGINT", onSigint);
-    signalSource.off("SIGTERM", onSigterm);
+    stopSource.signal?.removeEventListener?.("abort", abortLanes);
   }
 
   const drainedBeside = (ref) => drained.filter((entry) => entry.ref !== ref);
@@ -822,8 +823,10 @@ export async function runWaveBuild(shell) {
     const others = drainedBeside(halted.act.ref);
     return { outcome: "halt", act: halted.act, details: { ...halted.details, ...(others.length > 0 ? { drained: others } : {}) } };
   }
-  if (firstSignal != null) {
-    const signal = firstSignal;
+  if (stopping()) {
+    // The producer is the source's — a VALUE (`"SIGINT"`, `"SIGTERM"` or `"stop-request"`), never
+    // a message match; the shell adds the request's facts beside the drained and cancelled lanes.
+    const signal = stopSource.producer();
     await settleWaveRun("failed");
     return {
       outcome: "halt",
