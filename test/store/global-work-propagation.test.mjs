@@ -213,6 +213,11 @@ export const globalWorkPropagationTests = [
           platform: "linux",
           peerPollTicker: peerTicker,
           propagationTicker,
+          // 129 gate (2026-09-22): the real control stream server bound the fleet port (4182) and
+          // crashed the whole-tree run (unhandled EADDRINUSE) on a control node whose daemon holds it;
+          // this case measures the propagation ticker, not the listener — the same fake the launcher
+          // suites inject (mesh-launcher-stream-role).
+          startControlStreamServer: async () => ({ stop() {}, updatePeers() {} }),
           globalPublisher: async () => {
             calls += 1;
             if (calls === 1) {
