@@ -297,7 +297,8 @@ export const archTests = [
       assert.equal(command.cli.launch({ dryRun: true }), null);
       assert.equal(typeof command.cli.launch({}), "function");
       // `run` dispatches on the flag alone — the probe is not edited (ADR-002 §2).
-      assert.match(shell, /run:\s*\(input,\s*ctx\)\s*=>\s*\(input\?\.stop === true \? stopLoopCommand\(input, ctx\) : probeLoop\(input, ctx\)\)/u, "run dispatches: stop: true is the verb, otherwise the byte-identical probe");
+      // 129 gate (2026-09-22): `async` admitted — command-core/00 pins every registered `run` as an AsyncFunction.
+      assert.match(shell, /run:\s*(?:async\s+)?\(input,\s*ctx\)\s*=>\s*\(input\?\.stop === true \? stopLoopCommand\(input, ctx\) : probeLoop\(input, ctx\)\)/u, "run dispatches: stop: true is the verb, otherwise the byte-identical probe");
     },
   },
   {
