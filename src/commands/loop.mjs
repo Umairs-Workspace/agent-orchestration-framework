@@ -1768,7 +1768,8 @@ export const loopCommand = {
   },
   // 130/02 (ADR-002 §2) — `run` DISPATCHES: `stop: true` is the verb, otherwise the byte-identical
   // read-only probe (FF-5304's ten keys). Nothing else on the input selects the stop.
-  run: (input, ctx) => (input?.stop === true ? stopLoopCommand(input, ctx) : probeLoop(input, ctx)),
+  // 129 gate (2026-09-22): `async`, because the command-core contract pins every `run` as an AsyncFunction.
+  run: async (input, ctx) => (input?.stop === true ? stopLoopCommand(input, ctx) : probeLoop(input, ctx)),
   cli: {
     route: ["work", "loop"],
     spec: {

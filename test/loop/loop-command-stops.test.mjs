@@ -864,7 +864,10 @@ aofVersion: 0.1.0
   {
     name: "130/02 task02 LoopState and the stop vocabulary are unchanged — the frozen literal, operator-interrupt its twelfth member, the halt act's four keys",
     async run() {
-      assert.deepEqual([...LOOP_STOPS], ["uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress", "grade-indeterminate", "session-needs-input", "run-not-retryable", "retry-parked", "unmapped-item-type", "operator-interrupt", "lane-open-failed", "lane-merge-refused", "lane-merge-conflict"]);
+      // 129 gate (2026-09-22): the frozen fifteen-member literal is pinned ONCE, by
+      // test/arch/loop/acd-loop-probe-contract (its STOPS); a loop suite that spelled it would name the
+      // grade stop, which grade/01 (test/grade/grade-unconfigured-no-op) forbids of loop/loop-command-stops.
+      assert.equal(LOOP_STOPS.length, 15, "the vocabulary is the pinned fifteen; the literal itself lives in acd-loop-probe-contract");
       assert.equal(LOOP_STOPS[11], "operator-interrupt");
       const fx = await loopFixture();
       try {
