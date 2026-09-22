@@ -41,7 +41,7 @@
   "heartbeatAt": "2026-09-21T21:47:02.251Z",
   "retryOf": null,
   "reclaimedAt": null,
-  "node": "umairs-msi",
+  "node": "umamis-msi",
   "resumeAfter": null,
   "spend": {
     "model": "claude-opus-5",

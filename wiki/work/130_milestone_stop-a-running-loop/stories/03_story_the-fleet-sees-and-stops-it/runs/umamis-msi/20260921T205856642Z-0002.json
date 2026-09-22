@@ -56,7 +56,7 @@
       ],
       "gradedAt": "2026-09-21T20:54:11.465Z",
       "provenance": {
-        "node": "umairs-msi",
+        "node": "umamis-msi",
         "run": "20260921T204937997Z-0001",
         "commit": "a49725a2575ca9df8fc5ed19965765ee8184eedd",
         "at": "2026-09-21T20:54:11.465Z"
@@ -92,7 +92,7 @@
   "heartbeatAt": null,
   "retryOf": null,
   "reclaimedAt": null,
-  "node": "umairs-msi",
+  "node": "umamis-msi",
   "resumeAfter": null,
   "spend": {
     "model": "claude-opus-5",

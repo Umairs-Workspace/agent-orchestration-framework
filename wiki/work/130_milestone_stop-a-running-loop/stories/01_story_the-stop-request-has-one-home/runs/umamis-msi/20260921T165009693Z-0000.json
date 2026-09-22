@@ -1,10 +1,10 @@
 {
-  "runId": "20260921T172423069Z-0001",
+  "runId": "20260921T165009693Z-0000",
   "itemRef": "130/01",
-  "state": "done",
-  "attempt": 2,
-  "outcome": "done",
-  "sessionId": "6eefccf6-720e-4848-b6f1-705b45428039",
+  "state": "failed",
+  "attempt": 1,
+  "outcome": "failed",
+  "sessionId": "82d8de73-68b5-4523-a8d2-c527ce3a9194",
   "brief": {
     "loop": {
       "loopRunId": "7661348f-073d-4884-8544-a63efb9e53ac",
@@ -35,28 +35,13 @@
       "baseCommit": "1aaf3c45cddcc93ab0dc85feb09f0068928d1f65"
     }
   },
-  "createdAt": "2026-09-21T17:24:23.069Z",
-  "updatedAt": "2026-09-21T17:33:13.032Z",
-  "failureReason": null,
-  "heartbeatAt": null,
-  "retryOf": "20260921T165009693Z-0000",
+  "createdAt": "2026-09-21T16:50:09.693Z",
+  "updatedAt": "2026-09-21T17:24:22.691Z",
+  "failureReason": "runtime_offline",
+  "heartbeatAt": "2026-09-21T17:15:52.719Z",
+  "retryOf": null,
   "reclaimedAt": null,
-  "node": "umairs-msi",
+  "node": "umamis-msi",
   "resumeAfter": null,
-  "spend": {
-    "model": "claude-opus-5",
-    "effort": "unknown",
-    "tokens": {
-      "input": 130,
-      "output": 44083,
-      "cacheRead": 8014991,
-      "cacheCreate": 250623
-    },
-    "costUsd": 4.00596855,
-    "costSource": "priced",
-    "priceTable": "price-table-2026-08-v1",
-    "turns": 65,
-    "toolCalls": 38,
-    "exitReason": "final_output"
-  }
+  "spend": null
 }
