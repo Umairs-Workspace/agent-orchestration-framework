@@ -27,10 +27,12 @@ doc: state
   headline; the forced-conflict drill's live half never ran (fixture-held, FF-12904, its `--resume`
   half read at attempt 2). Accept on the readings with the drill an open `OUTCOME.md` gap, or hold
   for a fourth run — `VERIFICATION.md` `## Accept decision` states both; the milestone door waits.
-  The regression gate ran three times at this door on a detached worktree (`REGRESSION.md`): two
-  whole-tree reds from 130/02 repaired at the owner (`F-69`); the newest row still red on four mesh
-  clone/push cases that are green alone and green with their lane — cause under measurement (`F-71`),
-  and `done` is refused by `regression-gate-red` until it is named and a fourth row is green.
+  The regression gate ran five times at this door on a detached worktree (`REGRESSION.md`): 130/02's
+  two whole-tree reds repaired at the owner (`F-69`); the launcher's `GIT_ASKPASS=""` (`F-71`) and the
+  :4182 binder that had killed every run before its integration and cargo lanes (`F-72`, re-homed at
+  `1f5317c`); then 127/05's tree-shape suite over the tree 127's accept left — link ratchet and backlog
+  stub repaired at their owners (`F-73`, `F-74`), and 127 itself `done` at the root (`F-75`), which only
+  `aof work archive 127` clears. `done` is refused by `regression-gate-red` until a sixth row is green.
 
 - **The configuration surface, decided with the operator (2026-09-15).** At the 05 accept the
   operator held the milestone door: "don't sign off this milestone until I sign off the
