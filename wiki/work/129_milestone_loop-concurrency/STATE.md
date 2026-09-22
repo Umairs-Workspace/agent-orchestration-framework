@@ -27,7 +27,10 @@ doc: state
   headline; the forced-conflict drill's live half never ran (fixture-held, FF-12904, its `--resume`
   half read at attempt 2). Accept on the readings with the drill an open `OUTCOME.md` gap, or hold
   for a fourth run — `VERIFICATION.md` `## Accept decision` states both; the milestone door waits.
-  The regression gate ran at this door on a detached worktree at the door's commit (`REGRESSION.md`).
+  The regression gate ran three times at this door on a detached worktree (`REGRESSION.md`): two
+  whole-tree reds from 130/02 repaired at the owner (`F-69`); the newest row still red on four mesh
+  clone/push cases that are green alone and green with their lane — cause under measurement (`F-71`),
+  and `done` is refused by `regression-gate-red` until it is named and a fourth row is green.
 
 - **The configuration surface, decided with the operator (2026-09-15).** At the 05 accept the
   operator held the milestone door: "don't sign off this milestone until I sign off the

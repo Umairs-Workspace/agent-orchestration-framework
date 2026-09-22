@@ -97,6 +97,17 @@ doc: state
 
 <!-- Raw, attributed entries captured as noticed; distilled into RETROSPECTIVE.md at aof:verify. -->
 
+- **From 129's door (2026-09-22), two observations for 130's retro.** (1) Two whole-tree reds at
+  HEAD came in with 130/02's lane commit `48ed32b`: `work:loop`'s `run` was no longer an
+  `AsyncFunction` (`command-core/00`), and `loop/loop-command-stops` spelled the frozen `LOOP_STOPS`
+  literal that `acd-loop-probe-contract` already pins — which `grade/01` forbids of that suite.
+  Repaired at the owner in `16850c7` + `6a81d14` (`async` restored; the suite asserts the length and the twelfth
+  member and cites the pin) — `m129/F-69`. (2) At the 22:14Z halt on 130/06, the wave run
+  `20260921T215324370Z-0006` settled `failed / agent_error` and the run-failed rollback reactor
+  (20/ADR-005) moved this milestone's `status:` from `in-progress` to `not-started` with five
+  stories `in-review` — uncommitted in the primary; the remedy is `aof work status 130 in-progress`
+  once 130/06's live lane is resumed or swept — `m129/F-68`.
+
 - **130/01 review close (QA lens, 2026-09-21) — contract gap, fixed at the close, no item created:**
   ADR-001 §2's invariant forbids any module but `stop-request.mjs` spelling `"requested"`/`"honoured"`,
   and lists `STOP_LEVELS` as the one level→word map — but named no state→word export, so story 04's
