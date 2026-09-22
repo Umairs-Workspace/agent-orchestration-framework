@@ -85,7 +85,11 @@ export const LINKS_IN_MOVED_BEFORE = Object.freeze({ total: 2810, resolving: 212
 // bare `src/work.mjs#L458`-shaped citations in OUTCOME.md files, resolving inside the item folder
 // where no such file ever was. "Every link into archive/ resolves" is therefore held as the same
 // ratchet: no more broken links into the archive than were broken into those folders before.
-export const BROKEN_INTO_MOVED_BEFORE = 48;
+// 2026-09-22 (129's gate, F-76): 48 → 51 when 127 itself was archived — its own three bare
+// `src/…#L…`-shaped citations moved under archive/ with it (broken before the move inside the root
+// folder, broken after inside the archived one; "into archive/" is where they now resolve). Every
+// later archive of a folder carrying such citations moves this number the same way.
+export const BROKEN_INTO_MOVED_BEFORE = 51;
 
 // The validate ratchet (see the header): the whole-tree finding set at `ba25547`, before the move,
 // was 117 findings of exactly one class. The move may not add a finding of any class.
@@ -761,7 +765,11 @@ export const workThisTreeHoldsWhatIsLiveTests = [
         const byDefault = await faceList(repoRoot, home);
         assert.deepEqual(byDefault.items.filter((row) => row.archived === true), [], "no archived: true row by default");
         for (const ref of liveRoots) assert.ok(byDefault.items.some((row) => row.ref === ref), `${ref} is on the face`);
-        assert.ok(byDefault.items.some((row) => row.parent === "127"), "…with its stories");
+        // 129's gate (2026-09-22, F-76): 127 is archived now, so the milestone with stories is read off
+        // the live roots rather than named — the claim (a live milestone's stories ride the face) is unchanged.
+        const liveWithStories = liveRoots.find((ref) => all.some((row) => row.parent === ref));
+        assert.ok(liveWithStories != null, "a live milestone with stories exists (non-vacuous)");
+        assert.ok(byDefault.items.some((row) => row.parent === liveWithStories), "…with its stories");
         const derived = deriveBoard(byDefault.items);
         assert.equal(derived.milestones.length, all.filter((row) => row.type === "milestone" && row.parent == null && isLiveRow(row)).length, "deriveBoard(items).milestones is exactly the live milestones");
         // No literal count beside the property: "three today (127, 129, 130)" was true for one day and
