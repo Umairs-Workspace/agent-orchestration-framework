@@ -75,7 +75,11 @@ const refsOf = (rows) => rows.map((row) => row.ref);
 //   · the MOVED files are the `==`: an accepted item's records are never edited, so the links in
 //     the files that moved are exactly the links those files held before, and a link the move
 //     invented or lost is the one thing that changes the number.
-export const LINKS_BEFORE = Object.freeze({ total: 3069, resolving: 2312, measuredAt: "2026-09-16", commit: "ba25547" });
+// Re-measured 2026-09-22 at f820ae9 (129's gate, F-73): 3069 → 3067. The two links were the source
+// citations inside a TECH_DEBT entry that 130/03 DISCHARGED (c55b2f1) — a shrink-only ledger deletes
+// paid entries, and the floor moves down with them. Nothing was lost by the archive move: resolving
+// ROSE 2312 → 2317, and the into-archive legs below are untouched.
+export const LINKS_BEFORE = Object.freeze({ total: 3067, resolving: 2317, measuredAt: "2026-09-22", commit: "f820ae9" });
 export const LINKS_IN_MOVED_BEFORE = Object.freeze({ total: 2810, resolving: 2121 });
 // Of the 1,156 links that targeted a folder the move would archive, 48 did not resolve BEFORE it —
 // bare `src/work.mjs#L458`-shaped citations in OUTCOME.md files, resolving inside the item folder
@@ -425,7 +429,10 @@ export const workThisTreeHoldsWhatIsLiveTests = [
         assert.ok(index >= 0, "the default listing carries the row");
         assert.equal(listed[index].number, null);
         assert.equal(listed[index].backlog, "");
-        assert.ok(listed.slice(0, index).every((entry) => entry.number === undefined && entry.archived !== true), "…after every live numbered row");
+        // 129's gate (2026-09-22, F-74): the real tree now carries a backlog row of its own, and a backlog row
+        // that sorts before the added one has number === null. The claim is that no LIVE numbered row
+        // follows the added item (the slice(index + 1) assertion); rows before it may be live or backlog.
+        assert.ok(listed.slice(0, index).every((entry) => (entry.number === undefined || entry.number === null) && entry.archived !== true), "…after every live numbered row");
         assert.ok(listed.slice(index + 1).every((entry) => entry.number === null), "…and no numbered row follows it");
 
         const envelope = await faceList(root, home);
