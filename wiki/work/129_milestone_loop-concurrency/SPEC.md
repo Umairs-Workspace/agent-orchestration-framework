@@ -3,7 +3,7 @@ type: milestone
 number: 129
 slug: loop-concurrency
 title: "Loop concurrency — aof work loop drives write-disjoint story waves in worktree lanes"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-12
 updated: 2026-09-22

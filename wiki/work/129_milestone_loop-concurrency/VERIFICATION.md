@@ -779,3 +779,43 @@ No blocker finding against this story is open: `F-58` / `F-59` / `F-63` fixed at
 01–02), `F-65` fixed at the review close; `F-60` / `F-61` / `F-62` / `F-64` / `F-66` / `F-67` /
 `F-68` open as non-blockers routed to their owners. `RETROSPECTIVE.md` and `OUTCOME.md` are authored
 in the story's own folder.
+
+**`129` ACCEPTED** — 2026-09-22, with all **seven** stories done.
+
+**The gate.** `aof work regression-gate 129` at `deea1445852293ce53fb4bb123936fa47a91ee73`, on a
+clean detached worktree at that commit (119/R4's route — this checkout carries other lanes' work
+and the gate refuses a dirty tree): **green, scope all, `satisfiesDoor: true`**, 58 minutes, the
+runner's whole registered suite with its integration, cargo and shell lanes — the first run at this
+door to reach them, because every earlier run died at the fleet-port binder (`F-72`).
+`REGRESSION.md` carries all seven rows and all seven stay: runs 1–3 red on 130/02's two reds, on
+130's own `FF-13003`, and on four mesh cases that were the launching shell's `GIT_ASKPASS=""`
+(`F-69`, `F-71`); run 4 red as "the runner exited 1 and enumerated no failure" — the binder crash,
+made visible by a clean launch environment; run 5 red on five cases of 127/05's tree-shape suite
+over the tree 127's accept had left (`F-73`, `F-74`, `F-75`); run 6 red on one timing case that
+reds one run in three (`F-77`); run 7 green. Every red was attributed to its owner and repaired
+there — none was 129's, and no repair touched `src/` behaviour except `work:loop`'s `run` becoming
+`async` again. One control the gate does not measure is named rather than assumed:
+`acd-no-internal-project-names` SKIPS in a worktree (the terms file is untracked).
+
+**All seven declared controls carry a red-probe row** (`FF-12901`–`FF-12907`, landed by `129/05`
+and re-observed red on the leg each register row names, every subject restored byte-identical;
+`129/07`'s four re-pointed standing controls the same), `aof work validate 129` reports PASS,
+`aof work loops validate` reports no error, `aof work doctor 129` reports no `control-unresolved`
+at either severity and 0 errors, and **no blocker finding is open**. The milestone's seventy-seven
+findings close as: fixed in item or at the door, ratified as contract amendments with no `.feature`
+edited, or routed to a named owner as a non-blocker — `F-61` (the supervisor versus a foreground
+loop), `F-62` (a lane's cleanup refused by the lock's own stamp), `F-64` (the sequential rung's
+death juncture), `F-66` (five arch cases red in every lane and green in the primary), `F-67` (the
+own-writes commit carrying the merge's message), `F-68` (a halted wave run settling `failed` and
+rolling its milestone back to `not-started` — 130 is currently in that state), `F-74`'s scaffold
+item and `F-75`'s rule conflict.
+
+**What the operator ruled at this door.** `129/06` accepted on three live runs' readings rather
+than held for a fourth (option (a)), with the forced-conflict drill and three other
+live-measurement gaps recorded in its `OUTCOME.md` with discharge conditions. `aof work archive 127`
+run as the operator's act, which cleared `F-75` and surfaced `F-76`.
+
+The milestone's `OUTCOME.md` and `RETROSPECTIVE.md` are authored, `STATE.md` is compacted (668 → 64
+lines; the durable decisions graduated to the ADRs, the delivered state to `OUTCOME.md`, the lessons
+to `RETROSPECTIVE.md`, the blow-by-blow to git history), and every story carries its own
+`OUTCOME.md` and `RETROSPECTIVE.md`.
