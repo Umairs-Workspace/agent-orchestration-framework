@@ -30,6 +30,7 @@
 // session the operator is about to type into.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm, utimes, stat } from "node:fs/promises";
+import { utimesSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -112,6 +113,16 @@ async function bumpMtime(file) {
   mtimeCursor += 60_000;
   const when = new Date(mtimeCursor);
   await utimes(file, when, when);
+}
+
+// The same bump, SYNCHRONOUS — for the one case that must change a file and advance the virtual
+// clock in ONE event-loop turn (129's gate, 2026-09-22, F-77): an awaited bump yields, and a 10 ms
+// poll can observe the movement at the OLD clock instant, after which advancing the clock settles
+// the watch and the case fails about one run in three, alone and unloaded.
+function bumpMtimeSync(file) {
+  mtimeCursor += 60_000;
+  const when = new Date(mtimeCursor);
+  utimesSync(file, when, when);
 }
 
 export const agentSessionDriverTranscriptTests = [
@@ -367,8 +378,9 @@ export const agentSessionDriverTranscriptTests = [
       const clock = virtualClock();
       const watch = defaultWatchTranscriptCompletion({ cwd, env, sessionId, pollMs: 10, declaredIdleMs: 1_000, idleMs: 500_000, now: clock.now });
       await new Promise((resolve) => setTimeout(resolve, 40));
-      // A file under <projectsDir>/<sessionId>/ is written BEFORE the window elapses.
-      await bumpMtime(child);
+      // A file under <projectsDir>/<sessionId>/ is written BEFORE the window elapses — and the clock
+      // advances in the SAME turn, so no poll can observe the movement at the old instant (F-77).
+      bumpMtimeSync(child);
       clock.advance(2_000);
       const afterMovement = await settledWithin(watch, 200);
       assert.equal(afterMovement.settled, false, "the quiet stretch restarted — the outcome does not settle on the original clock");
