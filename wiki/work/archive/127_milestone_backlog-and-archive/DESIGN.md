@@ -11,7 +11,7 @@ doc: design
 
 ## Intent
 
-The board's overview (VIEW 1, [03/DESIGN.md](../archive/03_milestone_work-board-ui/DESIGN.md) §VIEW 1) answers
+The board's overview (VIEW 1, [03/DESIGN.md](../../archive/03_milestone_work-board-ui/DESIGN.md) §VIEW 1) answers
 "where does the whole project stand?". This milestone changes what the answer is *made of*: the root of
 `<work.dir>` now holds only what is live, un-numbered ideas sit in `backlog/`, and accepted work moves to
 `archive/`. The board makes **exactly two additions** and nothing else on it changes:
@@ -25,33 +25,33 @@ The board's overview (VIEW 1, [03/DESIGN.md](../archive/03_milestone_work-board-
 The feeling to keep is the one 03 set — a calm workbench whose overview reads as "what is happening".
 So the backlog is present but subordinate (it gates nothing, is never "next") and the archive is absent
 until asked for. Both of 03's rails hold: **status is derived, never user-set**, and **no new design
-system** — every token below is already in [ui/src/index.css:3-25](../../../ui/src/index.css#L3).
+system** — every token below is already in [ui/src/index.css:3-25](../../../../ui/src/index.css#L3).
 
 ## Conformance source of truth
 
 > **NO MOCK WAS ELICITED** — no `mocks/` directory exists for milestone 127 and no human was available to
-> supply one. Per **07/ADR-003** ([07/ARCHITECTURE.md:163](../archive/07_milestone_design-conformance/ARCHITECTURE.md#L163))
+> supply one. Per **07/ADR-003** ([07/ARCHITECTURE.md:163](../../archive/07_milestone_design-conformance/ARCHITECTURE.md#L163))
 > the **binding checklist under each surface below is the mandatory conformance source of truth** the
 > design-conformance review judges the built surface against. A mock produced later lands under this
 > milestone's `mocks/` (committed, locally readable) and becomes the visual source of truth, with these
 > checklists as the region-by-region rubric.
 
 - **Render route:** `/?mode=board` on the board's ephemeral port (supplied at capture time, never
-  hard-coded — [Board.tsx:92-97](../../../ui/src/board/Board.tsx#L92)). Surface 1 is judged on the overview;
+  hard-coded — [Board.tsx:92-97](../../../../ui/src/board/Board.tsx#L92)). Surface 1 is judged on the overview;
   surface 2 **twice** — toggle OFF and ON — on the overview, then on an archived milestone's lane board.
 - **Breakpoints:** **1280** (primary — a desktop workbench with a fixed 382px detail column); **768**;
   **390** for the top-bar toggle and the backlog rows only (the 3-column grid is fixed at every width today,
-  [Overview.tsx:54](../../../ui/src/board/Overview.tsx#L54), and is not this milestone's to change).
+  [Overview.tsx:54](../../../../ui/src/board/Overview.tsx#L54), and is not this milestone's to change).
 
 ## What the surfaces receive
 
 | Fact | Where | Consequence |
 |---|---|---|
-| The list envelope is `{ items, stalenessSeconds, nodeId }` over the 7-field row + provenance keys | [board-ui.mjs:86-90](../../../src/board-ui.mjs#L86), [api.ts:6-66](../../../ui/src/board/api.ts#L6) | Two row fields are new: `number: null` + `backlog: <group path>` on a backlog row (its `ref` is its slug); `archived: true` on an archived row (number, ref, stories unchanged). |
+| The list envelope is `{ items, stalenessSeconds, nodeId }` over the 7-field row + provenance keys | [board-ui.mjs:86-90](../../../../src/board-ui.mjs#L86), [api.ts:6-66](../../../../ui/src/board/api.ts#L6) | Two row fields are new: `number: null` + `backlog: <group path>` on a backlog row (its `ref` is its slug); `archived: true` on an archived row (number, ref, stories unchanged). |
 | Archived rows are **excluded by default** and included only on the include-archived parameter | SPEC §Scope "Archived is not invisible" | With the toggle OFF the board **cannot know** how many archived items exist — so the toggle carries no count and the header asserts none. |
-| `deriveBoard` sweeps every `type:milestone, parent:null` row into a card, every `uat` into a gate bar, every `spike`/`chore` into `otherDrivers` | [model.ts:63-65](../../../ui/src/board/model.ts#L63) | A backlog row must be **partitioned out first** (`number === null`), or a backlog milestone would be painted as a card with its slug in the ref slot. |
-| `deriveBoard` counts `doneMilestones` / `activeMilestones` / `blockedGates` from what it was handed | [model.ts:89-91](../../../ui/src/board/model.ts#L89) | The chips count what is **rendered**; the archived subset is stated by its own chip (§Surface 2). |
-| Freshness is judged per record by the ONE ramp module, off the 1s tick | [Board.tsx:159-163](../../../ui/src/board/Board.tsx#L159) | Milestone 43's badge and provenance line apply to backlog and archived rows **unchanged**. |
+| `deriveBoard` sweeps every `type:milestone, parent:null` row into a card, every `uat` into a gate bar, every `spike`/`chore` into `otherDrivers` | [model.ts:63-65](../../../../ui/src/board/model.ts#L63) | A backlog row must be **partitioned out first** (`number === null`), or a backlog milestone would be painted as a card with its slug in the ref slot. |
+| `deriveBoard` counts `doneMilestones` / `activeMilestones` / `blockedGates` from what it was handed | [model.ts:89-91](../../../../ui/src/board/model.ts#L89) | The chips count what is **rendered**; the archived subset is stated by its own chip (§Surface 2). |
+| Freshness is judged per record by the ONE ramp module, off the 1s tick | [Board.tsx:159-163](../../../../ui/src/board/Board.tsx#L159) | Milestone 43's badge and provenance line apply to backlog and archived rows **unchanged**. |
 
 ## The archived mark — the ONE new vocabulary
 
@@ -66,11 +66,11 @@ status — the wire status stays `done`) or the stale badge (not degraded).
 
 - **Classes (pinned):** `inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground`.
 - **Why a solid muted pill, not dashed.** Dashed is the house's "degraded / not-yet / absent" primitive
-  (the `not-started` ring, [status.tsx:121](../../../ui/src/board/status.tsx#L121); the stale badge,
-  [StaleBadge.tsx:31-32](../../../ui/src/board/StaleBadge.tsx#L31)); an archived item is the opposite —
+  (the `not-started` ring, [status.tsx:121](../../../../ui/src/board/status.tsx#L121); the stale badge,
+  [StaleBadge.tsx:31-32](../../../../ui/src/board/StaleBadge.tsx#L31)); an archived item is the opposite —
   complete and deliberately shelved. Never `destructive` (blocked/failed own it), never `primary`/`accent`
   (the chip already says `✓ done` in teal; a second teal would double-count acceptance).
-- **Why `text-[11px]`.** Strictly below the `text-xs` status chip ([status.tsx:206](../../../ui/src/board/status.tsx#L206)):
+- **Why `text-[11px]`.** Strictly below the `text-xs` status chip ([status.tsx:206](../../../../ui/src/board/status.tsx#L206)):
   what the item *is* outranks where it *lives*. Same tier as the stale badge and the type chip.
 - **Why `▤` (U+25A4).** Unclaimed in the product's glyph set (`○ ◐ ◔ ! ✓ ✦ ◷ ♥ ▸ → ↻ ⟳ ✕ ◌`); a filled box
   reads as "boxed up". Decorative (`aria-hidden`); the **word `archived` carries the meaning**; if the font
@@ -79,7 +79,7 @@ status — the wire status stays `done`) or the stale badge (not degraded).
   chip**, right of any stale badge: `[◌ stale · 12m ago] [▤ archived] [✓ done]`. The chip keeps its
   right-edge anchor (43 documented-default 3), so nothing moves when the toggle reveals a row. Where
   there is no chip (the lane card) it takes the meta line's right end beside the stale badge. No motion.
-- **The legend documents it.** The board's `◷ status legend` ([Board.tsx:643-665](../../../ui/src/board/Board.tsx#L643))
+- **The legend documents it.** The board's `◷ status legend` ([Board.tsx:643-665](../../../../ui/src/board/Board.tsx#L643))
   gains one row after the Freshness block, painting the **real pill**: `▤ archived — done and moved to
   archive/; shown only with "Show archived"`. A vocabulary not in the legend is one the operator must guess.
 
@@ -92,7 +92,7 @@ status — the wire status stays `done`) or the stale badge (not degraded).
 A fourth region on the overview, **after** Acceptance gates: the overview reads top-down as *what is
 happening* (cards) → *what accepts it* (gates) → *what is waiting to be admitted* (backlog) — least
 live, last. It is a list of **rows, not cards**: the milestone card is mostly progress bar, story dots
-and footer counts ([Overview.tsx:139-174](../../../ui/src/board/Overview.tsx#L139)), a backlog item has
+and footer counts ([Overview.tsx:139-174](../../../../ui/src/board/Overview.tsx#L139)), a backlog item has
 none of those, and a two-thirds-empty card would read as a milestone in flight.
 
 **The row (anatomy, left→right).** `TYPE · slug · title · [◌ stale]`:
@@ -100,11 +100,11 @@ none of those, and a two-thirds-empty card would read as a milestone in flight.
 - **No status ring, chip or number.** The status ramp answers "where in the lifecycle"; a backlog item
   is not in it yet, and a dashed `not-started` ring would assert a stream status it does not have.
 - **Type label** — the uppercase idiom (`text-[10px] font-semibold uppercase tracking-wider
-  text-muted-foreground`, [Overview.tsx:128](../../../ui/src/board/Overview.tsx#L128)) in a **fixed-width
+  text-muted-foreground`, [Overview.tsx:128](../../../../ui/src/board/Overview.tsx#L128)) in a **fixed-width
   column sized to `milestone`** so slugs align down the list (the m38 DG-13 constant-width rule).
-- **Slug** in the mono ref slot (`mono text-sm text-muted-foreground`, [Overview.tsx:127](../../../ui/src/board/Overview.tsx#L127))
+- **Slug** in the mono ref slot (`mono text-sm text-muted-foreground`, [Overview.tsx:127](../../../../ui/src/board/Overview.tsx#L127))
   — the slug IS the ref. **Title** `min-w-0 flex-1 truncate text-sm font-medium` (the gate bar's idiom,
-  [Overview.tsx:236](../../../ui/src/board/Overview.tsx#L236)), falling back to the humanised slug.
+  [Overview.tsx:236](../../../../ui/src/board/Overview.tsx#L236)), falling back to the humanised slug.
 - **Right end (`ml-auto`)** — the stale badge, `short` form, when the cache says so (43 §1a's no-chip
   rule); else nothing. Absent, not "fresh".
 - **Non-interactive.** A `<li>`, not a `<button>`: no "Open →", no selection, no drill-in. A backlog
@@ -118,10 +118,10 @@ Root rows (`backlog: ""`) come first with no heading; groups follow in lexical p
 operator sees on disk); rows keep wire order within a group.
 
 **Section heading.** `Backlog` in the gates heading idiom (`mb-3 text-sm font-semibold uppercase
-tracking-wide text-muted-foreground`, [Overview.tsx:67](../../../ui/src/board/Overview.tsx#L67)) followed
+tracking-wide text-muted-foreground`, [Overview.tsx:67](../../../../ui/src/board/Overview.tsx#L67)) followed
 on the same line by a normal-case `text-xs` subline: `N items · un-numbered, not scheduled · promote with`
 `aof work promote <slug>` (mono). The subline is where the operator learns the door; no row repeats it.
-The count lives here and **not** in the header chips ([Overview.tsx:43-51](../../../ui/src/board/Overview.tsx#L43)),
+The count lives here and **not** in the header chips ([Overview.tsx:43-51](../../../../ui/src/board/Overview.tsx#L43)),
 which count the *stream* — "not yet admitted" is not a lifecycle bucket beside "done"/"active".
 
 #### Binding checklist (mandatory — this IS the baseline)
@@ -132,12 +132,12 @@ which count the *stream* — "not yet admitted" is not a lifecycle bucket beside
   type label · mono slug · truncating title · `ml-auto` stale badge (short form). No ring, chip, number,
   progress, dots, footer, or button.
 - **States:** *loading* / *error* / *empty stream* — the page-level branches
-  ([Board.tsx:512-528](../../../ui/src/board/Board.tsx#L512)); the section has none of its own. *Empty*
+  ([Board.tsx:512-528](../../../../ui/src/board/Board.tsx#L512)); the section has none of its own. *Empty*
   (no backlog rows on the wire) — the **section is absent**, as the gates strip is
-  ([Overview.tsx:65](../../../ui/src/board/Overview.tsx#L65)); the wire carries no "folder exists" fact,
+  ([Overview.tsx:65](../../../../ui/src/board/Overview.tsx#L65)); the wire carries no "folder exists" fact,
   so none is asserted. *Populated* — as above; root-only = no sub-headings; grouped-only = no un-headed rows.
 - **Ramp:** row `rounded-lg border border-border bg-card px-3 py-2 text-sm gap-3` (the gate bar's border
-  and radius, [Overview.tsx:222](../../../ui/src/board/Overview.tsx#L222), one step tighter — a row carries
+  and radius, [Overview.tsx:222](../../../../ui/src/board/Overview.tsx#L222), one step tighter — a row carries
   less); `space-y-2` between rows; `muted-foreground` for label/slug/path, `foreground` for the title; **no
   `primary`, `accent` or `destructive` anywhere in the section**; freshness per 43. The title truncates at
   narrow widths; type label and slug never do.
@@ -145,34 +145,34 @@ which count the *stream* — "not yet admitted" is not a lifecycle bucket beside
 ### 2 — Archived items, hidden by default (the toggle + the mark)
 
 **The toggle — ONE, in the top bar.** It lives in the board's surface slot
-([Board.tsx:500-510](../../../ui/src/board/Board.tsx#L500)), **left of `◷ status legend`**, legend and
+([Board.tsx:500-510](../../../../ui/src/board/Board.tsx#L500)), **left of `◷ status legend`**, legend and
 `⟳ sync` untouched. There and not in the overview header because it is a **fetch-scope control** — it
 changes what the list request asks for, the thing `⟳ sync` re-runs — and it must be visible in **both
 views**: an archived milestone's lane board can only exist while the toggle is ON, and the board must
 say why the row is there.
 
 - **Component:** a single `<button type="button" aria-pressed={on}>` with the **constant** label
-  `Show archived` — the fleet's `aria-pressed` toggle atom ([Fleet.tsx:775-787](../../../ui/src/fleet/Fleet.tsx#L775)),
+  `Show archived` — the fleet's `aria-pressed` toggle atom ([Fleet.tsx:775-787](../../../../ui/src/fleet/Fleet.tsx#L775)),
   singular because this is one boolean, not an exclusive pair. **No count**: while OFF the archived
   count is unknown to the board (the rows are not on the wire) and is never guessed.
 - **Ramp:** `inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium transition`;
   OFF = `border-border bg-transparent text-muted-foreground hover:text-foreground`; ON =
-  `border-primary/40 bg-primary/10 text-primary` (the board's own Resync at-rest tint, [ProvenanceLine.tsx:169](../../../ui/src/board/ProvenanceLine.tsx#L169)).
+  `border-primary/40 bg-primary/10 text-primary` (the board's own Resync at-rest tint, [ProvenanceLine.tsx:169](../../../../ui/src/board/ProvenanceLine.tsx#L169)).
   **Not** teal-filled — teal fill is the single headline action (03 default 6). Same padding both
   states, so flipping it moves nothing in the bar.
 - **States:** *off* (default, every load) · *on* · *in-flight* (`disabled` + `aria-busy="true"` while its
   own refetch runs) · *error* (the toggle **reverts** to its prior state and the existing dispatch toast
-  ([Board.tsx:593-609](../../../ui/src/board/Board.tsx#L593)) reports it — a toggle left ON over a list
+  ([Board.tsx:593-609](../../../../ui/src/board/Board.tsx#L593)) reports it — a toggle left ON over a list
   that silently lacks the rows would be a lie by shape).
 
 **The overview with the toggle ON.** Archived milestones appear **in the grid, in list order** — an
 archived `52` sits where its number puts it. The number is the identity; the mark, not the position,
 says archived. The card gains exactly two things: the **pill** in the row-1 cluster and the surface
 **`bg-muted/40` instead of `bg-card`** (the provenance box's quiet surface,
-[DetailPanel.tsx:221](../../../ui/src/board/DetailPanel.tsx#L221)). No opacity (`disabled:opacity-50`
+[DetailPanel.tsx:221](../../../../ui/src/board/DetailPanel.tsx#L221)). No opacity (`disabled:opacity-50`
 would say "cannot open", and it can), no dashed border (degraded/absent — it is neither); footer, dots
 and `Open board →` intact. An archived `uat` gate bar takes the pill in its `ml-auto` cluster
-([Overview.tsx:243-245](../../../ui/src/board/Overview.tsx#L243)).
+([Overview.tsx:243-245](../../../../ui/src/board/Overview.tsx#L243)).
 
 **The summary chips — what they count, under each toggle state.**
 
@@ -184,18 +184,18 @@ and `Open board →` intact. An archived `uat` gate bar takes the pill in its `m
 | `▤ N archived` (new; `SummaryChip` in `bg-muted text-muted-foreground`, glyph decorative) | **absent** — the count is unknown | **present even at 0** — it is the toggle's receipt that the include-archived fetch happened; `0` is a fact, absence would be a shrug |
 
 The header sentence `N milestones · derived from project state` keeps counting rendered milestones.
-VIEW 2's `N milestones · full stream` count label ([BoardLanes.tsx:63-66](../../../ui/src/board/BoardLanes.tsx#L63))
+VIEW 2's `N milestones · full stream` count label ([BoardLanes.tsx:63-66](../../../../ui/src/board/BoardLanes.tsx#L63))
 follows the same rule: it counts what is rendered.
 
 **VIEW 2 for an archived milestone — exactly a done milestone's board.** Lanes, bucketing, selection,
 the detail panel, its primary action (`done` → the quiet ad-hoc **Run agent**,
-[action.mjs:69-73](../../../ui/src/board/action.mjs#L69)) and the actions strip are **unchanged**. The
+[action.mjs:69-73](../../../../ui/src/board/action.mjs#L69)) and the actions strip are **unchanged**. The
 only addition is the mark wherever the milestone's identity row is painted: the **switcher button**
-(pill after the mono label, [BoardLanes.tsx:352-368](../../../ui/src/board/BoardLanes.tsx#L352)), each
-**switcher row** (`done · archived` in the trailing short-status text, [BoardLanes.tsx:389](../../../ui/src/board/BoardLanes.tsx#L389)),
+(pill after the mono label, [BoardLanes.tsx:352-368](../../../../ui/src/board/BoardLanes.tsx#L352)), each
+**switcher row** (`done · archived` in the trailing short-status text, [BoardLanes.tsx:389](../../../../ui/src/board/BoardLanes.tsx#L389)),
 the **lane card** meta line under `all` focus (the pill in the `[stale][archived][chip]` cluster the binding checklist names — corrected at verify, F-26; the earlier "left of the stale badge" contradicted it,
-[BoardLanes.tsx:267-280](../../../ui/src/board/BoardLanes.tsx#L267)) and the **detail-panel header**
-cluster ([DetailPanel.tsx:206-209](../../../ui/src/board/DetailPanel.tsx#L206)). **Stories of an archived
+[BoardLanes.tsx:267-280](../../../../ui/src/board/BoardLanes.tsx#L267)) and the **detail-panel header**
+cluster ([DetailPanel.tsx:206-209](../../../../ui/src/board/DetailPanel.tsx#L206)). **Stories of an archived
 milestone carry no mark** — one pill per context, and the context is the milestone.
 
 #### Binding checklist (mandatory — this IS the baseline)
@@ -210,7 +210,7 @@ milestone carry no mark** — one pill per context, and the context is the miles
   card, switcher row or detail item; no archived chip; toggle at rest. **ON:** archived rows rendered and
   marked in every context above; chip present (even `0`); toggle tinted. **In-flight:** toggle disabled
   + busy, list unchanged until the response lands in place (never the loading branch,
-  [Board.tsx:100-126](../../../ui/src/board/Board.tsx#L100), so the dock survives). **Error:** toggle
+  [Board.tsx:100-126](../../../../ui/src/board/Board.tsx#L100), so the dock survives). **Error:** toggle
   reverts; toast. **Loading / error / empty stream:** the page-level branches, unchanged; the toggle is
   still painted (a property of the surface, not the data). **Freshness:** 43's badge and provenance
   line on an archived row exactly as on any other.
@@ -226,7 +226,7 @@ milestone carry no mark** — one pill per context, and the context is the miles
 1. **Never colour-only.** The words `archived` (pill, chip) and `Show archived` (toggle) carry the meaning;
    `bg-muted/40` and `▤` are emphasis only. `muted-foreground` on `muted` / `muted/40`-over-`card` clears 4.5:1.
 2. **The toggle is a real toggle:** `aria-pressed` reflects the state; in flight = `aria-busy="true"` **and**
-   `disabled`; visible focus on `--color-ring` ([index.css:23](../../../ui/src/index.css#L23)); hit target
+   `disabled`; visible focus on `--color-ring` ([index.css:23](../../../../ui/src/index.css#L23)); hit target
    ≥ 24×24 CSS px via `min-h-6` (no change to visual weight); `aria-label="Show archived items"`.
 3. **Backlog rows are not buttons** — not in the tab order, announced as list items: "nothing to open here".
 
@@ -236,7 +236,7 @@ milestone carry no mark** — one pill per context, and the context is the miles
 
 1. **The board is read-only on the backlog: it shows, it does not promote.** The one strong reason was
    found and set aside: the detail panel's state-aware action already offers **Refine** for a
-   `not-started` item with no breakdown ([action.mjs:62-66](../../../ui/src/board/action.mjs#L62)), and
+   `not-started` item with no breakdown ([action.mjs:62-66](../../../../ui/src/board/action.mjs#L62)), and
    the SPEC makes `promote` step 0 of `aof:refine` — a *selectable* row would have its door with no new
    button. But that door is the detail panel, which this milestone does not open for backlog items.
    Rows are non-interactive; the subline names the CLI door. Reversible later with no new affordance.
