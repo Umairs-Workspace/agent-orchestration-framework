@@ -5,7 +5,7 @@ slug: the-second-live-run
 title: "The second live run — refine_first switched on in this repo and aof work loop driven over a real two-member wave with a held third, read at the source"
 parent: 129
 depends: [7]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-12
 updated: 2026-09-22

@@ -748,3 +748,34 @@ is NOT true: that the environment cannot host the run — with the binder re-hom
 verdict with the fleet daemons up — so `--gate-override` is not the escape; the sixth run, after
 the archive, is. The seven repairs at this door touch no `src/` behaviour except `work:loop`'s
 `run` becoming `async` (`F-69`).
+
+**`129/06` ACCEPTED** — 2026-09-22, on the operator's ruling (option (a) of the two this door put
+to them: accept on the readings with the unperformed conflict drill recorded as an open gap, rather
+than hold for a fourth live run). The story's lane is green (1,856 pass / 0 fail across its five
+declared suites, every `test/loop/` and `test/arch/loop/` suite and FF-12904's control, every
+registered case reported; task 01's six scenarios and task 02's three each have a named passing
+case), all seven declared controls are green in the register above with their red probes recorded,
+`aof work validate 129/06` reports PASS, `aof work loops validate` reports no error, and
+`aof work doctor 129/06` reports no `control-unresolved` at either severity.
+
+**What task 00 measured, over three live runs read at the source** (the per-scenario tables above):
+the SPEC's headline — two lanes in flight at once, each with its own record, heartbeat and grade,
+one baseline per wave measured in the first lane (attempt 3); the held member cut from the merged
+work (attempt 2's one-member hold, attempt 3's dependency-held member cut from 03's merge); serial
+merges home through the one verb with no conflict; every lane cleaned up; a named exit; one loop
+process for a 5.5-hour run with no supervisor relaunch.
+
+**What it did not, and why that is an accepted gap rather than an unknown:** the forced-conflict
+drill's live half (`OUTCOME.md` § Gaps, with its discharge condition) — held meanwhile by
+`test/loop/loop-command-wave.test.mjs` over a real git fixture (the stop id, the producer, the four
+detail keys, the kept lane, the absent `MERGE_HEAD`), by FF-12904's red-probed never-discards
+control, and by attempt 2's live `--resume` over already-merged lanes; a two-member wave and a held
+third in ONE run (both measured, in different runs — no target has partitioned both ways since 127);
+the three mid-flight live reads (bounded by the records, held structurally by FF-12903 / FF-12907);
+and `F-15` (never exercised). Each is an `OUTCOME.md` gap with a named discharge condition, to be
+measured at the next live loop over a two-member wave.
+
+No blocker finding against this story is open: `F-58` / `F-59` / `F-63` fixed at the build (tasks
+01–02), `F-65` fixed at the review close; `F-60` / `F-61` / `F-62` / `F-64` / `F-66` / `F-67` /
+`F-68` open as non-blockers routed to their owners. `RETROSPECTIVE.md` and `OUTCOME.md` are authored
+in the story's own folder.
