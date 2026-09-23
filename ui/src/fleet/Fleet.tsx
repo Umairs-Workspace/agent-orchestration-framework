@@ -1426,14 +1426,14 @@ function GlobalNodePanel({ nodes, total, localNodeId }: { nodes: GlobalNode[]; t
             <div key={facts.nodeId ?? node.nodeId} className="flex flex-col gap-1.5 rounded-lg border border-border bg-card px-4 py-3.5 shadow-sm">
               <div className="flex items-center gap-2">
                 <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${facts.freshness === "live" ? "bg-primary" : "border border-muted-foreground/50"}`} aria-hidden="true" />
-                <span className="mono truncate text-[13px] font-bold text-foreground">{facts.nodeId}</span>
+                <span className="mono truncate text-[13px] font-bold text-foreground" title={facts.nodeId ?? undefined}>{facts.name}</span>
                 {facts.role ? (
                   <span className="ml-auto shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
                     {facts.role}
                   </span>
                 ) : null}
               </div>
-              <span className="mono truncate text-[11px] text-muted-foreground">{facts.host ?? "—"}</span>
+              <span className="mono truncate text-[11px] text-muted-foreground">{facts.name !== facts.nodeId ? `${facts.nodeId} · ${facts.host ?? "—"}` : (facts.host ?? "—")}</span>
               <span className="text-[11px] text-muted-foreground">
                 {facts.lastSeenAt ? `last seen ${relativeTime(facts.lastSeenAt)}` : "never seen"}
               </span>

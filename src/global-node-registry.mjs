@@ -84,11 +84,15 @@ export async function assembleGlobalRegistrySnapshot(workspace, options = {}) {
     const peer = peersById.get(nodeId) ?? {};
     const presence = presenceById.get(nodeId) ?? null;
     const controlNode = config?.mesh?.relay?.controlNode === nodeId;
+    // The machine's own name (132/02's `hostname`), carried through so the fleet can show
+    // a person a name they recognise beside the opaque id. It lives in the aof home only.
+    const hostname = safeString(record.hostname);
     const descriptor = {
       nodeId,
       role: controlNode ? "control" : "worker",
       controlNode,
       host: safeString(record.host ?? peer.host),
+      ...(hostname ? { hostname } : {}),
       os: safeString(record.os),
       runtimes: safeStringArray(record.runtimes),
       aofVersion: safeString(record.aofVersion),

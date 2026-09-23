@@ -197,7 +197,12 @@ export const archTests = [
       // same way: `git diff -- ui/` is ONE file, `ui/src/fleet/assign-affordance.mjs`, 4 lines,
       // all COMMENTS — a fixture node name in prose, swapped for a same-length placeholder. No
       // code moved, nothing under `ui/src/board/`, no run-record key read.
-      assert.equal(hash.digest("hex"), "6568d06b65b82ef743333dec8ac14c369d5ce4a4de0cc39afbbe2cef45b02f0f", "ui/ changed despite the zero-board-change contract");
+      //
+      // RE-PINNED for the fleet node name (2026-09-23, 132 follow-up), measured the same way:
+      // `git diff -- ui/` is FOUR files under `ui/src/fleet/` — `scope.mjs` gains
+      // `nodeDisplayName` and a `name` fact, `scope.d.mts` and `api.ts` type it, and `Fleet.tsx`
+      // titles the node card with it. Nothing under `ui/src/board/` moved; no run-record key read.
+      assert.equal(hash.digest("hex"), "37905d3ab3afd231a1566a365fff65ccb4f5b8b97c0c3664d8aaa2172f002888", "ui/ changed despite the zero-board-change contract");
     },
   },
 ];

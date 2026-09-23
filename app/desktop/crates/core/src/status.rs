@@ -80,6 +80,10 @@ pub struct Presence {
 #[serde(rename_all = "camelCase")]
 pub struct Node {
     pub node_id: String,
+    /// OPTIONAL — the machine's own name (132/02), kept in the aof home. The row is titled
+    /// with it; the opaque `node_id` stays the identity. Absent on older records.
+    #[serde(default)]
+    pub hostname: Option<String>,
     /// `true` on EXACTLY this node's own entry, omitted (defaults false) elsewhere —
     /// a per-node boolean, never a top-level id string (RESEARCH §3).
     #[serde(default)]

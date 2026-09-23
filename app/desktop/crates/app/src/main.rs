@@ -52,6 +52,7 @@ struct AppState {
 #[derive(Serialize)]
 struct IpcNodeRow {
     name: String,
+    node_id: String,
     this_node: bool,
     role: &'static str,
     version: String,
@@ -105,6 +106,7 @@ fn get_view_model(state: State<AppState>) -> IpcViewModel {
             .into_iter()
             .map(|row| IpcNodeRow {
                 name: row.name.clone(),
+                node_id: row.node_id.clone(),
                 this_node: row.this_node,
                 role: row.role_badge.label(),
                 version: row.version_cell(),

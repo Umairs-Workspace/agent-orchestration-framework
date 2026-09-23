@@ -670,10 +670,19 @@ export function isCredentialField(key) {
 // capabilities, and fabric address when known". PURE projection; never mutates
 // the input, and never carries a credential-shaped field through (belt-and-braces
 // with withoutCredentialFields above).
+// nodeDisplayName(node) — the name a person reads for a node: its machine name (the record's
+// `hostname`, macOS `.local` dropped) when the record carries one, else its id. The id stays the
+// identity; this is only what the card is titled with (132 — ids are opaque, names are not).
+export function nodeDisplayName(node) {
+  const hostname = typeof node?.hostname === "string" ? node.hostname.trim().replace(/\.local$/iu, "") : "";
+  return hostname.length > 0 ? hostname : (node?.nodeId ?? null);
+}
+
 export function nodePanelFacts(node) {
   const safe = withoutCredentialFields(node ?? {});
   return {
     nodeId: safe.nodeId ?? null,
+    name: nodeDisplayName(safe),
     role: safe.role ?? (safe.local ? "this node" : null),
     host: safe.host ?? null,
     lastSeenAt: safe.lastSeenAt ?? safe.presence?.heartbeatAt ?? null,

@@ -501,6 +501,8 @@ export const fleetScopeTests = [
       };
       const facts = nodePanelFacts(node);
       assert.equal(facts.nodeId, "node-a");
+      // 132 — a record carrying the machine name is titled with it, `.local` dropped.
+      assert.equal(nodePanelFacts({ ...node, nodeId: "node-7f3a", hostname: "Desk-Host.local" }).name, "Desk-Host");
       assert.equal(facts.role, "control");
       assert.equal(facts.host, "alpha");
       assert.equal(facts.lastSeenAt, "2026-07-04T10:01:00.000Z");
@@ -524,6 +526,7 @@ export const fleetScopeTests = [
       };
       const facts = nodePanelFacts(localNode);
       assert.equal(facts.nodeId, "local-node");
+      assert.equal(facts.name, "local-node", "no hostname on the record: the id is the name");
       assert.equal(facts.role, "this node");
       assert.equal(facts.lastSeenAt, "2026-07-04T10:00:00.000Z");
       assert.equal(facts.fabricAddress, null);

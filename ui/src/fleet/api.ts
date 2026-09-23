@@ -109,6 +109,8 @@ export type PresenceLoop = {
 export type FleetNode = {
   nodeId: string;
   host?: string;
+  // The machine name (132/02), kept in the aof home; the fleet titles a node with it.
+  hostname?: string;
   os?: string;
   runtimes?: string[];
   skills?: string[];

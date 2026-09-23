@@ -131,6 +131,8 @@ export declare function isCredentialField(key: unknown): boolean;
 
 export type NodePanelFacts = {
   nodeId: string | null;
+  // The machine name when the record carries one, else the id (132).
+  name: string | null;
   role: string | null;
   host: string | null;
   lastSeenAt: string | null;
@@ -138,6 +140,8 @@ export type NodePanelFacts = {
   fabricAddress: string | null;
   freshness: "live" | "stale" | "unknown" | string;
 };
+
+export declare function nodeDisplayName(node: Partial<FleetNode> & Record<string, unknown>): string | null;
 
 export declare function nodePanelFacts(node: Partial<FleetNode> & Record<string, unknown>): NodePanelFacts;
 

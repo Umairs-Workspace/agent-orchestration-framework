@@ -131,6 +131,31 @@ async function startLauncherOnce(ws, env) {
 }
 
 export const meshWorkspaceWorkdirAbsoluteTests = [
+  // ══ 132 — the machine name on a node record survives the registry sync that rewrites it ══
+  {
+    name: "mesh-workspace-workdir-absolute/132 the registry sync keeps a node record's hostname, so the fleet can title the node with it",
+    async run() {
+      await withTemp(async (tmp) => {
+        const env = { AOF_GLOBAL_HOME: path.join(tmp, "home") };
+        const alpha = await makeRealRepo(path.join(tmp, "alpha"), { workspaceId: "ws-alpha" });
+        const ws = await loadWorkspace(alpha.root, undefined, { env });
+        const store = await openGlobalWorkProjectionStore({ env });
+        try {
+          await publishNodeRecord(ws, NODE_ID, {
+            nodeId: NODE_ID, host: "192.0.2.10", hostname: "Desk-Host", os: "win32", runtimes: [],
+            aofVersion: "1.2.3", publishedAt: NOW,
+          });
+          await publishGlobalRegistryDescriptorsToStore(store, ws, { now: NOW });
+          const { readNodeRecord } = await import("../../src/mesh/store.mjs");
+          const rewritten = await readNodeRecord(ws, NODE_ID);
+          assert.equal(rewritten.hostname, "Desk-Host", "the rewritten descriptor still carries the machine name");
+          assert.equal(rewritten.host, "192.0.2.10", "beside the dial address, not in place of it");
+        } finally {
+          store.close();
+        }
+      });
+    },
+  },
   // ══ Scenario: a published workspace descriptor stores an ABSOLUTE work dir ══
   {
     name: "mesh-workspace-workdir-absolute/10 a published workspace descriptor stores an ABSOLUTE work dir, resolved against its OWN project_root — a config.work.dir of './wiki/work' is stored resolved, not verbatim",

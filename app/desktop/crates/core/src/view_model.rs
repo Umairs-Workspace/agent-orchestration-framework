@@ -135,7 +135,10 @@ impl RoleBadge {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeRow {
     pub health_dot: HealthDot,
+    /// What the row is titled with: the machine name when the record carries one, else the id.
     pub name: String,
+    /// The node's identity, always the opaque id (shown beside the name when they differ).
+    pub node_id: String,
     pub this_node: bool,
     pub role_badge: RoleBadge,
     /// `None` — "unknown version" (rendered as "\u{2014}") — when the node carries no
@@ -231,11 +234,20 @@ pub fn role_badge(is_control_role: bool) -> RoleBadge {
     if is_control_role { RoleBadge::Control } else { RoleBadge::Worker }
 }
 
+/// The name a person reads for a node: its machine name (macOS `.local` dropped) when the
+/// record carries one, else its id (132 — ids are opaque, names are not).
+pub fn display_name(node: &Node) -> String {
+    let name = node.hostname.as_deref().map(str::trim).unwrap_or("");
+    let name = name.strip_suffix(".local").unwrap_or(name);
+    if name.is_empty() { node.node_id.clone() } else { name.to_string() }
+}
+
 /// Build the full row descriptor for one node.
 pub fn node_row(node: &Node, is_control_role: bool) -> NodeRow {
     NodeRow {
         health_dot: health_dot(node),
-        name: node.node_id.clone(),
+        name: display_name(node),
+        node_id: node.node_id.clone(),
         this_node: node.local,
         role_badge: role_badge(is_control_role),
         version: node.reported_aof_version().map(|s| s.to_string()),
@@ -1482,5 +1494,17 @@ mod tests {
         assert_eq!(ipc_current_work, "working \u{b7} aof (session)");
         assert_eq!(ipc_work_state, "working");
         assert!(this_row.current_work.is_active(), "the IPC-bound row is active, not the muted idle token");
+    }
+
+    // 132 — the row is titled with the machine name; the opaque id stays beside it.
+    #[test]
+    fn a_row_is_titled_with_the_machine_name_and_keeps_the_id() {
+        let doc = r#"{"nodes":[{"nodeId":"node-7f3a","hostname":"Desk-Host.local","stale":false},{"nodeId":"node-beef","stale":false}],"boards":[],"isControlNode":false}"#;
+        let status = parse_status(doc).unwrap();
+        let named = node_row(&status.nodes[0], false);
+        assert_eq!(named.name, "Desk-Host", "the machine name, .local dropped");
+        assert_eq!(named.node_id, "node-7f3a");
+        let unnamed = node_row(&status.nodes[1], false);
+        assert_eq!(unnamed.name, "node-beef", "no hostname on the record: the id is the name");
     }
 }
