@@ -36,7 +36,7 @@ async function mintDiskRun(fx, { ref = "00", now = "2026-09-08T10:00:00.000Z", b
   const workspace = await loadWorkspace(fx.root, undefined, { env: fx.env });
   const item = await resolveItemExact({ workspace }, ref);
   assert.ok(item?.dir != null, `${ref} resolves to a local folder in the fixture`);
-  return startRun(item, { brief, now, node: "umamis-msi" });
+  return startRun(item, { brief, now, node: "win-host-a" });
 }
 
 export const runStatusDocumentFrozenTests = [

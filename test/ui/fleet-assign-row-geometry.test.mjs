@@ -528,7 +528,7 @@ export const fleetAssignRowGeometryTests = [
   // ══ clause 4, as SUPERSEDED by DG-17 — the holder is ATOMIC ══
   //
   // The 2026-07-24 re-render judged clause 4 "CLOSED IN COPY, NOT IN PIXELS":
-  // the string was exactly `already assigned → umamis-msi` and it still rendered
+  // the string was exactly `already assigned → win-host-a` and it still rendered
   // `already assigned → uma…`. The arithmetic proved the rule unsatisfiable —
   // clause 2's picker floor + clause 1's fixed action leave ~137px of a 360.66px
   // row, while clause 4's OWN exemplar needs ~197px. The RULE changed: the
@@ -553,8 +553,8 @@ export const fleetAssignRowGeometryTests = [
             `the ladder picks the longest rung that FITS, keeping the holder whole. Got ${JSON.stringify(refused.message)}`,
           );
           // DG-21: and the rung it picked still NAMES THE OUTCOME. A rung that
-          // dropped the outcome word left the row reading `held by umamis-msi`
-          // in red beside region 5's `assigned → umamis-msi` — the same node id
+          // dropped the outcome word left the row reading `held by win-host-a`
+          // in red beside region 5's `assigned → win-host-a` — the same node id
           // twice, with only the colour distinguishing "someone else holds this"
           // from "your assign succeeded". A9/S4: colour and label always travel
           // together, never colour alone.

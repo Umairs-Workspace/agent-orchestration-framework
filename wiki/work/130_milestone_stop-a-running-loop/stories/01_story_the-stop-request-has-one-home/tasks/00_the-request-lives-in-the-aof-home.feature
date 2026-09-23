@@ -26,7 +26,7 @@ Feature: the stop request lives in the aof home, keyed by loopRunId, as a ten-ke
   Background:
     Given an isolated aof home `H` (a fresh `AOF_GLOBAL_HOME`) and a fixture checkout `C` with no `loop-stops` anywhere beneath it
     And `src/loop/stop-request.mjs` is imported with `H` in its environment and `dir` = `loopStopsDir({ AOF_GLOBAL_HOME: H })`
-    And `NOW` is `() => new Date("2026-09-13T11:41:09.701Z")` and `BY` is `{ node: "umamis-msi", pid: 4242 }`
+    And `NOW` is `() => new Date("2026-09-13T11:41:09.701Z")` and `BY` is `{ node: "win-host-a", pid: 4242 }`
     And the degrade sink is the injected test sink (`setDegradeSinkForTest`), reset before every read
 
   Scenario: the directory and the path are derived from the mesh root, and only there
@@ -39,7 +39,7 @@ Feature: the stop request lives in the aof home, keyed by loopRunId, as a ten-ke
     Given `requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: NOW })` has been called once
     When the file at `stopRequestPath(dir, "L1")` is read as JSON
     Then its keys deep-equal, in order, `["loopRunId", "scope", "workspaceId", "level", "state", "requestedAt", "escalatedAt", "honouredAt", "cancelled", "by"]`
-    And it reads `{ loopRunId: "L1", scope: "129", workspaceId: "w1", level: 1, state: "requested", requestedAt: "2026-09-13T11:41:09.701Z", escalatedAt: null, honouredAt: null, cancelled: null, by: { node: "umamis-msi", pid: 4242 } }`
+    And it reads `{ loopRunId: "L1", scope: "129", workspaceId: "w1", level: 1, state: "requested", requestedAt: "2026-09-13T11:41:09.701Z", escalatedAt: null, honouredAt: null, cancelled: null, by: { node: "win-host-a", pid: 4242 } }`
     And no `.tmp-*` entry remains in `dir` — the temp + rename write left nothing behind
     And `readStopRequest(dir, "L1")` deep-equals the file's content
 

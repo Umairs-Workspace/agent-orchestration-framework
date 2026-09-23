@@ -13,7 +13,7 @@ Feature: the status body names the serving node — localNodeId beside scope, nu
   RULINGS (QA, 2026-09-13). The suites this extends pin the serving node's id themselves:
   `mesh-ui-assign-fixture` commits `mesh.nodeId: "control-a"`, and `mesh-ui-serve.test.mjs`'s
   `makeRepo` commits none over an isolated home (no sidecar hydrates one) — so the scenarios speak
-  `control-a` and `null`, not the DESIGN's illustrative `umamis-msi`. The stamp is NOT validated
+  `control-a` and `null`, not the DESIGN's illustrative `win-host-a`. The stamp is NOT validated
   against the roster: a `localNodeId` with no matching `nodes[]` row is still stamped — locality
   is the server's fact and the roster is the registry's; the card layer resolves a mismatch to "no
   button anywhere" (task 03). The memo is read once per server life (`controlNodeId`), so a

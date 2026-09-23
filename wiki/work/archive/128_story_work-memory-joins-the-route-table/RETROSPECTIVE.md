@@ -13,7 +13,7 @@ updated: 2026-09-13
   No STATE.md and no FEEDBACK.ndjson exist for this story: it was refined solo and built in one
   main session, and nothing raised an `aof:feedback` entry against it. The inputs here are the
   review round recorded in the shipped code's own headers, and the findings register in
-  VERIFICATION.md. The one run record (`runs/umamis-msi/20260912T192629761Z-0000.json`) carries no
+  VERIFICATION.md. The one run record (`runs/node-7297/20260912T192629761Z-0000.json`) carries no
   session id, so `aof work observe` would attribute no agent rows to this ref — an absence of
   evidence, recorded as such rather than left to look like a clean run.
 -->

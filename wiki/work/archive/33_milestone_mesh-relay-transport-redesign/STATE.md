@@ -54,7 +54,7 @@ doc: state
 - **Verified `2026-07-04` by `aof:verify 33` → NOT ACCEPTED (blocker F-3302 open); stays in-review.**
   Automated + structural all green (suite 2235/0; both fitness DoDs `acd-mesh-identity-not-committed` +
   `acd-fabric-single-seam` green; relay guards retired; `aof work validate` PASS). Live-fabric lanes run on
-  the real tailnet from `umamis-msi` (probe/self-address/launcher-probe all healthy, read-only). Operator
+  the real tailnet from `win-host-a` (probe/self-address/launcher-probe all healthy, read-only). Operator
   chose to run the cross-OS e2e on real hardware now (branch committed + pushed `f3a4283`; `umamis-mac-mini`
   stood up). **Task 04 (cross-OS identity) PASSED** — the mac derives a distinct `umamis-mac-mini-local` off
   committed config (F-3203 holds on real hardware) — **but the same run surfaced BLOCKER F-3302**: the macOS
@@ -128,7 +128,7 @@ doc: state
 - **Story 00 · DoD migration ran as a live derive, not the sanctioned `migrateIdentity` (benign here).**
   The migration of aof's own committed config produced the sidecar via a fresh `deriveNodeId` (a new salt +
   a `derivedFrom` key), not a byte-verbatim `migrateIdentity` of the committed `salt`. Harmless for this
-  repo (it is not a live mesh node; `nodeId` is unchanged and `umamis-msi` carries no collision suffix, so
+  repo (it is not a live mesh node; `nodeId` is unchanged and `win-host-a` carries no collision suffix, so
   the id is salt-independent), but the report's "migrate moved it" claim was inaccurate. **Lesson:** when a
   DoD requires migrating the live repo, drive it through the sanctioned `migrateIdentity` (which preserves
   the committed salt verbatim *and* the fleet-shared siblings), not an ad-hoc identity command run.

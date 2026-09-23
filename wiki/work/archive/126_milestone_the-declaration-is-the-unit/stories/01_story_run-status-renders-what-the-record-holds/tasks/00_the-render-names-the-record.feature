@@ -52,7 +52,7 @@ Feature: The render names the record — phase, cycle against cap, level, attemp
 
     Examples: the attribution a record can and cannot supply
       | attempt | session   | node         | shown                                           |
-      | 1       | `sess-a1` | `umamis-msi` | attempt 1, session `sess-a1`, node `umamis-msi` |
+      | 1       | `sess-a1` | `win-host-a` | attempt 1, session `sess-a1`, node `win-host-a` |
       | 2       | `sess-a2` | `aof-wsl`    | attempt 2, session `sess-a2`, node `aof-wsl`    |
       | 3       | null      | `aof-wsl`    | attempt 3 and the node, and no session           |
       | 1       | `sess-c1` | null         | attempt 1 and the session, and no node           |

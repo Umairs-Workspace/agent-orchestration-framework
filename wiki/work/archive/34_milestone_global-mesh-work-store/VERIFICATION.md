@@ -32,7 +32,7 @@ render→judge gate. All five stories were `in-review` at entry.
 ### `@manual` (agent-run) — machine-wide global default vs `--local` filter — PASS
 
 Procedure (agent-run): seeded a temp `AOF_GLOBAL_HOME` with **two mesh-enabled workspaces** (`lark-guard`,
-`vista-app-web`) + **one mesh-disabled workspace** (`aof-sandbox`), a control node (`umamis-msi`) and a
+`vista-app-web`) + **one mesh-disabled workspace** (`aof-sandbox`), a control node (`win-host-a`) and a
 worker node (`umamis-mac-mini`) with tailnet fabric addresses, then booted the real serve face and probed
 the API + rendered the UI.
 
@@ -73,7 +73,7 @@ global store at **390 / 768 / 1280**; states: global populated / empty / error, 
 
 - **Story 04 / task 04 — two-machine live-stream soak (`@manual`) — DEFERRED, not agent-executable.**
   The scenario requires a real macOS worker (`umamis-mac-mini`) streaming to a real Windows control node
-  (`umamis-msi`) over a live **Tailscale** tailnet (real reconnect/heartbeat/staleness latencies). This
+  (`win-host-a`) over a live **Tailscale** tailnet (real reconnect/heartbeat/staleness latencies). This
   `aof:verify` ran on a single Windows host with no second physical node and no live tailnet peer, so the
   soak **could not be executed** by the agent. **Owner action (operator):** run the `04/tasks/04` narrative
   on the two real hosts and record the three latencies (change→visible, reconnect, time-to-stale).

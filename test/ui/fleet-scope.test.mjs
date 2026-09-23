@@ -1627,21 +1627,21 @@ export const fleetScopeTests = [
       const STOP = { rung: 1, label: "Stop", title: "Stop loop 129 — the current drive finishes first", tone: "muted" };
       const STOP_NOW = { rung: 2, label: "Stop now", title: "Stop loop 129 now — cancels the in-flight session", tone: "destructive" };
       const rows = [
-        { wire: null, remembered: undefined, node: "umamis-msi", local: "umamis-msi", button: STOP, remote: false },
-        { wire: "drain", remembered: undefined, node: "umamis-msi", local: "umamis-msi", button: STOP_NOW, remote: false },
-        { wire: null, remembered: { rung: 1, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: STOP, remote: false },
-        { wire: null, remembered: { rung: 2, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: STOP_NOW, remote: false },
-        { wire: "drain", remembered: { rung: 1, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: STOP_NOW, remote: false },
-        { wire: "cancel", remembered: undefined, node: "umamis-msi", local: "umamis-msi", button: null, remote: false },
-        { wire: "drain", remembered: { rung: 3, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: null, remote: false },
-        { wire: null, remembered: { rung: 3, runId: "r1" }, node: "umamis-msi", local: "umamis-msi", button: null, remote: false },
-        { wire: null, remembered: { rung: 3, runId: "r0" }, node: "umamis-msi", local: "umamis-msi", button: STOP, remote: false },
-        { wire: "drain", remembered: { rung: 2, runId: "r0" }, node: "umamis-msi", local: "umamis-msi", button: STOP_NOW, remote: false },
-        { wire: null, remembered: undefined, node: "umamis-mac-mini", local: "umamis-msi", button: null, remote: true },
-        { wire: null, remembered: undefined, node: "umamis-msi", local: "ghost", button: null, remote: true },
-        { wire: null, remembered: undefined, node: "umamis-msi", local: null, button: null, remote: false },
-        { wire: null, remembered: undefined, node: "umamis-msi", local: "", button: null, remote: false },
-        { wire: null, remembered: undefined, node: "Umamis-MSI", local: "umamis-msi", button: null, remote: true },
+        { wire: null, remembered: undefined, node: "win-host-a", local: "win-host-a", button: STOP, remote: false },
+        { wire: "drain", remembered: undefined, node: "win-host-a", local: "win-host-a", button: STOP_NOW, remote: false },
+        { wire: null, remembered: { rung: 1, runId: "r1" }, node: "win-host-a", local: "win-host-a", button: STOP, remote: false },
+        { wire: null, remembered: { rung: 2, runId: "r1" }, node: "win-host-a", local: "win-host-a", button: STOP_NOW, remote: false },
+        { wire: "drain", remembered: { rung: 1, runId: "r1" }, node: "win-host-a", local: "win-host-a", button: STOP_NOW, remote: false },
+        { wire: "cancel", remembered: undefined, node: "win-host-a", local: "win-host-a", button: null, remote: false },
+        { wire: "drain", remembered: { rung: 3, runId: "r1" }, node: "win-host-a", local: "win-host-a", button: null, remote: false },
+        { wire: null, remembered: { rung: 3, runId: "r1" }, node: "win-host-a", local: "win-host-a", button: null, remote: false },
+        { wire: null, remembered: { rung: 3, runId: "r0" }, node: "win-host-a", local: "win-host-a", button: STOP, remote: false },
+        { wire: "drain", remembered: { rung: 2, runId: "r0" }, node: "win-host-a", local: "win-host-a", button: STOP_NOW, remote: false },
+        { wire: null, remembered: undefined, node: "umamis-mac-mini", local: "win-host-a", button: null, remote: true },
+        { wire: null, remembered: undefined, node: "win-host-a", local: "ghost", button: null, remote: true },
+        { wire: null, remembered: undefined, node: "win-host-a", local: null, button: null, remote: false },
+        { wire: null, remembered: undefined, node: "win-host-a", local: "", button: null, remote: false },
+        { wire: null, remembered: undefined, node: "Win-Host-A", local: "win-host-a", button: null, remote: true },
       ];
       for (const row of rows) {
         const label = `wire=${row.wire} remembered=${JSON.stringify(row.remembered)} node=${row.node} local=${JSON.stringify(row.local)}`;
@@ -1655,10 +1655,10 @@ export const fleetScopeTests = [
   {
     name: "the-line-and-the-button-are-pure/03 the remote tail says why there is no button — composed by nodeWorkRegion, a remote node's title ends `· remote — stop from <nodeId>'s own console` and a local one carries no `remote` (Examples)",
     async run() {
-      const remote = nodeWorkRegion({ nodeId: "umamis-mac-mini", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, "umamis-msi");
+      const remote = nodeWorkRegion({ nodeId: "umamis-mac-mini", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, "win-host-a");
       assert.ok(remote.loops[0].title.endsWith("· L2 · remote — stop from umamis-mac-mini's own console"), `the remote tail — got ${remote.loops[0].title}`);
-      assert.equal(loopStopAffordance({ loop: remote.loops[0], node: { nodeId: "umamis-mac-mini" }, localNodeId: "umamis-msi" }).button, null, "…and no button");
-      const local = nodeWorkRegion({ nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, "umamis-msi");
+      assert.equal(loopStopAffordance({ loop: remote.loops[0], node: { nodeId: "umamis-mac-mini" }, localNodeId: "win-host-a" }).button, null, "…and no button");
+      const local = nodeWorkRegion({ nodeId: "win-host-a", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, "win-host-a");
       assert.ok(local.loops[0].title.endsWith("· L2"), `the local title ends with the level — got ${local.loops[0].title}`);
       assert.ok(!local.loops[0].title.includes("remote"), "…and contains no `remote`");
     },
@@ -1699,14 +1699,14 @@ export const fleetScopeTests = [
     async run() {
       const live = { sessionId: "s1", workspaceId: "w2", repo: "aof", assistant: "claude", lastPingAt: "2026-09-13T00:00:00.000Z", workspaceHasRun: false, relaying: false };
       const rows = [
-        { label: "nothing", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [] } }, local: "umamis-msi", lines: ["idle"], token: "muted", count: 0 },
-        { label: "no presence at all", node: { nodeId: "umamis-msi" }, local: "umamis-msi", lines: ["idle"], token: "muted", count: 0 },
-        { label: "a run, no loops", node: { nodeId: "umamis-msi", presence: { activeRuns: ["r1"] } }, local: "umamis-msi", lines: ["running 1 run"], token: "primary", count: 0 },
-        { label: "a run and a loop", node: { nodeId: "umamis-msi", presence: { activeRuns: ["r1"], loops: [E1()] } }, local: "umamis-msi", lines: ["running 1 run"], token: "primary", count: 1 },
-        { label: "a loop alone", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, local: "umamis-msi", lines: [], token: "primary", count: 1 },
-        { label: "a session and a loop", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [live], loops: [E1()] } }, local: "umamis-msi", lines: ["working · aof (session)"], token: "primary", count: 1 },
-        { label: "two loops", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [], loops: [E1(), E1({ scope: "9", loopRunId: "L2" })] } }, local: "umamis-msi", lines: [], token: "primary", count: 2, order: ["129", "9"] },
-        { label: "no localNodeId", node: { nodeId: "umamis-msi", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, local: null, lines: [], token: "primary", count: 1 },
+        { label: "nothing", node: { nodeId: "win-host-a", presence: { activeRuns: [], sessions: [] } }, local: "win-host-a", lines: ["idle"], token: "muted", count: 0 },
+        { label: "no presence at all", node: { nodeId: "win-host-a" }, local: "win-host-a", lines: ["idle"], token: "muted", count: 0 },
+        { label: "a run, no loops", node: { nodeId: "win-host-a", presence: { activeRuns: ["r1"] } }, local: "win-host-a", lines: ["running 1 run"], token: "primary", count: 0 },
+        { label: "a run and a loop", node: { nodeId: "win-host-a", presence: { activeRuns: ["r1"], loops: [E1()] } }, local: "win-host-a", lines: ["running 1 run"], token: "primary", count: 1 },
+        { label: "a loop alone", node: { nodeId: "win-host-a", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, local: "win-host-a", lines: [], token: "primary", count: 1 },
+        { label: "a session and a loop", node: { nodeId: "win-host-a", presence: { activeRuns: [], sessions: [live], loops: [E1()] } }, local: "win-host-a", lines: ["working · aof (session)"], token: "primary", count: 1 },
+        { label: "two loops", node: { nodeId: "win-host-a", presence: { activeRuns: [], sessions: [], loops: [E1(), E1({ scope: "9", loopRunId: "L2" })] } }, local: "win-host-a", lines: [], token: "primary", count: 2, order: ["129", "9"] },
+        { label: "no localNodeId", node: { nodeId: "win-host-a", presence: { activeRuns: [], sessions: [], loops: [E1()] } }, local: null, lines: [], token: "primary", count: 1 },
       ];
       for (const row of rows) {
         const region = nodeWorkRegion(row.node, row.local);
@@ -1739,7 +1739,7 @@ export const fleetScopeTests = [
       assert.ok(nodesSeen > 0, "at least one captured node was driven");
       // …and a presence carrying `loops` changes NOTHING about the pinned lines: the loop
       // entries are a sibling projection, never a line inside this one.
-      const withLoops = { nodeId: "umamis-msi", presence: { activeRuns: ["r1"], sessions: [], loops: [E1()] } };
+      const withLoops = { nodeId: "win-host-a", presence: { activeRuns: ["r1"], sessions: [], loops: [E1()] } };
       assert.deepEqual(nodeCurrentWork(withLoops), fleetCurrentWorkLines(withLoops.presence), "nodeCurrentWork still equals fleetCurrentWorkLines with loops present");
       assert.deepEqual(fleetCurrentWorkLines(withLoops.presence), fleetCurrentWorkLines({ activeRuns: ["r1"], sessions: [] }), "…and the loops key is invisible to the pinned projection");
     },
@@ -1750,14 +1750,14 @@ export const fleetScopeTests = [
     name: "the-line-and-the-button-are-pure/03 the projections never mutate their input — frozen presence and node in, none throws, inputs deep-equal after",
     async run() {
       const presence = Object.freeze({ activeRuns: Object.freeze(["r1"]), sessions: Object.freeze([]), loops: Object.freeze([Object.freeze(E1())]) });
-      const node = Object.freeze({ nodeId: "umamis-msi", presence });
+      const node = Object.freeze({ nodeId: "win-host-a", presence });
       const before = JSON.parse(JSON.stringify(node));
       const memory = new Map([["L1", { rung: 2, runId: "r1" }]]);
       assert.doesNotThrow(() => fleetLoopLines(presence));
       assert.doesNotThrow(() => fleetLoopLines(presence, memory));
-      assert.doesNotThrow(() => loopStopAffordance({ loop: presence.loops[0], node, localNodeId: "umamis-msi", remembered: memory.get("L1") }));
-      assert.doesNotThrow(() => nodeWorkRegion(node, "umamis-msi"));
-      assert.doesNotThrow(() => nodeWorkRegion(node, "umamis-msi", memory));
+      assert.doesNotThrow(() => loopStopAffordance({ loop: presence.loops[0], node, localNodeId: "win-host-a", remembered: memory.get("L1") }));
+      assert.doesNotThrow(() => nodeWorkRegion(node, "win-host-a"));
+      assert.doesNotThrow(() => nodeWorkRegion(node, "win-host-a", memory));
       assert.deepEqual(JSON.parse(JSON.stringify(node)), before, "the inputs are what they were");
     },
   },

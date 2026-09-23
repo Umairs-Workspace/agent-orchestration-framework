@@ -89,7 +89,7 @@ runs in this tree again (127/02's break is closed): four entries cite the subjec
 | claim | value | source |
 |---|---|---|
 | the shell's interrupt | `let interrupted = null` + `process.once("SIGINT"/"SIGTERM")` set it; read at the tick head and after the drive returns; the listeners are removed in `finally` | `src/commands/loop.mjs:1580-1584`, `:1607`, `:1833`, `:2219-2220` |
-| the lossy settle | the post-drive interrupt branch returns BEFORE `settleDriven`; the driver's `failed/timeout` observation is dropped; 129/04's record is `running`, node `umamis-msi`, `supervised: false`, last heartbeat `11:30:24Z` | `src/commands/loop.mjs:1833-1839`; `stories/04_story_the-wave-tick/runs/umamis-msi/20260913T110303238Z-0000.json` |
+| the lossy settle | the post-drive interrupt branch returns BEFORE `settleDriven`; the driver's `failed/timeout` observation is dropped; 129/04's record is `running`, node `win-host-a`, `supervised: false`, last heartbeat `11:30:24Z` | `src/commands/loop.mjs:1833-1839`; `stories/04_story_the-wave-tick/runs/node-7297/20260913T110303238Z-0000.json` |
 | `settleDriven`'s terminal map | `outcome === "done" ? "done" : "failed"` — `cancelled` is never produced; `drivenRow.outcome` is the driver's word | `:1178`, `:1275` |
 | the driver's cancel seam | `options.signal.aborted` before spawn → `{ failed, cancelled, processStarted: false }`; an abort while live → `stopForOutcome({ failed, cancelled })` through the full bracket; the tree kill is `taskkill /PID <pid> /T /F` | `src/agent-session-driver.mjs:944`, `:1264`, `:1245` |
 | how a signal reaches the in-process drive | `ctx.agentSessionDriverOptions` is spread as `baseOptions` into `driverOptions`; the launch seam sets that option ONLY when the diag recorder is installed (`AOF_LOOP_DIAG=0` leaves it absent) | `src/commands/drive.mjs:263`, `:289`; `src/commands/loop.mjs:2298` |
@@ -110,7 +110,7 @@ runs in this tree again (127/02's break is closed): four entries cite the subjec
 | the presence key pins | NINE suites + TWO arch controls deep-equal `Object.keys(record)` to the five/six keys | `acd-active-runs-frozen-string-array:312`, `acd-captured-producer-fixture:376,422`, `mesh-presence-record:28`, `mesh-presence-additive-sessions:26`, `mesh-presence-session-entry:343`, `mesh-presence-session-wire:280,298,311`, `mesh-fleet-presence-plumbing:191`, `mesh-fabric-liveness-cutover:194`, `control-stream-server:346` |
 | `buildId`'s discipline | emitted only when non-empty, appended last; a pre-stamp node's record is byte-identical | `src/mesh/presence.mjs:318-333` |
 | the fleet card's "this node" | `GlobalNode` has no `local` marker; `nodePanelFacts` reads `safe.local` only on the never-mounted local shape; the status route stamps `scope` and `currentWorkspace` on the body it serves; `controlNodeId()` memoises `config.mesh.nodeId` off a `loadWorkspace` | `ui/src/fleet/api.ts:180-201`; `scope.mjs:664`; `src/mesh/ui-serve.mjs:942-943`, `:310-315` |
-| where `config.mesh.nodeId` comes from here | this repo's committed config has NO `mesh.nodeId`; `loadWorkspace` HYDRATES it from the machine-wide sidecar — measured `umamis-msi`, the same value on the leaked run record | `src/work.mjs:261-267`; `node -e loadWorkspace(...)` |
+| where `config.mesh.nodeId` comes from here | this repo's committed config has NO `mesh.nodeId`; `loadWorkspace` HYDRATES it from the machine-wide sidecar — measured `win-host-a`, the same value on the leaked run record | `src/work.mjs:261-267`; `node -e loadWorkspace(...)` |
 | `fleetCurrentWorkLines` | byte-pinned against the Rust `current_work()` literals over captured producer fixtures | `test/arch/session/acd-captured-producer-fixture.test.mjs:181-192` |
 | the fleet's write surface | the route table is EXACTLY five (`assign`, `board-url`, `session`, `session-outcome`, `status`); the face imports no `commands/*` and its ONE sanctioned write door is `./assignment.mjs`'s `assignWork`, a core BELOW the command layer | `acd-mesh-ui-read-only:108-112`; `acd-mesh-ui-no-core-import:44-60` |
 | the copy the ledger already names | the session route repeats 63 lines of the assign route; three detectors find the guards INSIDE each branch and would go red on a hoist; "do this BEFORE a fourth write route is added" | `wiki/work/TECH_DEBT.md` item 44 |
@@ -270,7 +270,7 @@ layer (`assignWork`). 126/ADR-002 §6: a flag lands in all three homes or does n
        there is no loop to honour it, and the honoured mark is what stops the supervisor
        relaunching a dead one (ADR-004 §4-§5);
    (g) the answer. `workspace.config.mesh.nodeId` is the sidecar-hydrated id `loadWorkspace`
-       fills (measured `umamis-msi` here), so the locality check works on a repo whose committed
+       fills (measured `win-host-a` here), so the locality check works on a repo whose committed
        config pins no id — this one.
 4. **The document — SEVEN keys, frozen order:** `{ ok: true, loopRunId, scope, live, request,
    state, path }`. `request` ∈ {`"drain"`, `"cancel"`} is the word for the level AFTER this call

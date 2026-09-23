@@ -65,8 +65,8 @@ was run on this control node. All three roster nodes report `"sessions": []` in 
 
 ```
 umamis-mac-mini: activeRuns: ["20260727T154604663Z-0025"], sessions: []
-umamis-msi-wsl:  activeRuns: [],                            sessions: []
-umamis-msi:      activeRuns: ["20260808T170931867Z-0000"],  sessions: []   (this control node)
+win-host-a-wsl:  activeRuns: [],                            sessions: []
+win-host-a:      activeRuns: ["20260808T170931867Z-0000"],  sessions: []   (this control node)
 ```
 
 Two nodes have a **non-empty `activeRuns`** and an **empty `sessions[]`** simultaneously —

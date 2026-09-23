@@ -1,0 +1,113 @@
+{
+  "runId": "20260921T204937997Z-0001",
+  "itemRef": "130/03",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "70c0a51f-cc8a-45c6-a0a8-36b53951cbaa",
+  "brief": {
+    "loop": {
+      "loopRunId": "7661348f-073d-4884-8544-a63efb9e53ac",
+      "scope": "130",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-21T16:42:18.166Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "grade": {
+      "ref": "130/03",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-130-03",
+        "exit": 1,
+        "durationMs": 273799
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 1987,
+        "failed": 2,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/119 FF-11902: NO control retypes a tree-walk equality — the count is derived into the property it stood in for, over every member, with a floor kept",
+          "message": "  error: \"a control that asserts an exact count over a set it walked out of the repository stores a FACT about the tree, and the next story to move that family pays for it without having read this file (119/ADR-003 §2). Derive the equality into the property it stood in for over every member and keep a floor; where the number is a DECISION, spell it as the floor plus a declared ceiling carrying its reason:\\n  - test/ui/fleet-scope.test.mjs:2057 — assert.equal(fleetFiles.length, 20)\\n+ actual - expected\\n\\n+ [\\n+   'test/ui/fleet-scope.test.mjs:2057 — assert.equal(fleetFiles.length, 20)'\\n+ ]\\n- []\\n\"",
+          "scenario": null
+        },
+        {
+          "case": "arch/58 FF-5810: every path a shipped loop record cites exists and is in range, and every cited defining line is the symbol's own export",
+          "message": "  error: \"every cited defining line is the symbol's own export line\\n+ actual - expected\\n\\n+ [\\n+   'mesh-assignment-reclaim.md: `isNodeStale` cited at src/mesh/presence.mjs:453, export is at :550'\\n+ ]\\n- []\\n\"",
+          "scenario": null
+        }
+      ],
+      "gradedAt": "2026-09-21T20:45:03.898Z",
+      "provenance": {
+        "node": "node-7297",
+        "run": "20260921T192908505Z-0000",
+        "commit": "a49725a2575ca9df8fc5ed19965765ee8184eedd",
+        "at": "2026-09-21T20:45:03.898Z"
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-21T19:21:50.018Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id"
+      ],
+      "baseCommit": "a49725a2575ca9df8fc5ed19965765ee8184eedd"
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20260921T192908505Z-0000",
+      "summary": null,
+      "continuation": true
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-130-03",
+      "branch": "aof/mesh/130-03",
+      "baseCommit": "a49725a2575ca9df8fc5ed19965765ee8184eedd"
+    }
+  },
+  "createdAt": "2026-09-21T20:49:37.997Z",
+  "updatedAt": "2026-09-21T20:54:11.205Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 26,
+      "output": 11646,
+      "cacheRead": 10612615,
+      "cacheCreate": 53471
+    },
+    "costUsd": 3.55906875,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 13,
+    "toolCalls": 8,
+    "exitReason": "final_output"
+  }
+}

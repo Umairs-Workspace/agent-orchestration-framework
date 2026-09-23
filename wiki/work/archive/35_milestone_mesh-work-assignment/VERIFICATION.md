@@ -54,7 +54,7 @@ one `@uat` design-conformance gate (03/03).
 ## Live / environmental checks
 
 - **Story 02 / task 05 — two-machine assignment soak (`@manual`) — DEFERRED, not agent-executable.**
-  The scenario requires a real Windows control node (`umamis-msi`) dispatching over a live **Tailscale**
+  The scenario requires a real Windows control node (`win-host-a`) dispatching over a live **Tailscale**
   tailnet to a real macOS worker (`umamis-mac-mini`) that materializes a **real `git worktree`**, runs a
   headless runtime, and is killed mid-run for a real presence+heartbeat staleness reclaim. This
   `aof:verify` ran on one Windows host with no second physical node and no live tailnet peer, so the soak

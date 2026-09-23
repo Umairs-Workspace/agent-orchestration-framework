@@ -177,7 +177,7 @@ export const terminalHarnessDrivesAGridTests = [
           {
             key: "p2",
             host: HOST_BOARD_DOCK,
-            mount: boardDockMount({ kind: "mirror", ref: "49/08", nodeId: "umamis-msi", sessionId: "s-9" }),
+            mount: boardDockMount({ kind: "mirror", ref: "49/08", nodeId: "win-host-a", sessionId: "s-9" }),
             origins: ORIGINS,
           },
         ]),
@@ -193,7 +193,7 @@ export const terminalHarnessDrivesAGridTests = [
           assert.ok(!c.socket().url.includes("sessionId=s-2"));
           assert.ok(a.socket().url.includes("sessionId=s-1"), `index 0 answers about ITS session (${a.socket().url})`);
           assert.ok(b.socket().url.includes("sessionId=s-2"));
-          assert.ok(c.socket().url.includes("nodeId=umamis-msi"), "…and about its own node, not its neighbours'");
+          assert.ok(c.socket().url.includes("nodeId=win-host-a"), "…and about its own node, not its neighbours'");
 
           // No accessor returns a neighbour's anything.
           const distinct = (name, values) =>

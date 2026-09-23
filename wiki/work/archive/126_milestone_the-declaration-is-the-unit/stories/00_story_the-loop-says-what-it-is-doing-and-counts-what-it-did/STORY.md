@@ -16,7 +16,7 @@ reads:
   - wiki/work/69_milestone_loop-bounds/ARCHITECTURE.md#ADR-002
   - wiki/work/53_milestone_loop-artifact/ARCHITECTURE.md#ADR-005
   - wiki/work/53_milestone_loop-artifact/ARCHITECTURE.md#ADR-016
-  - wiki/work/124_milestone_the-edges-aof-does-not-draw/stories/00_story_the-census-reports-its-denominator/runs/umamis-msi/20260907T233233272Z-0000.json
+  - wiki/work/archive/124_milestone_the-edges-aof-does-not-draw/stories/00_story_the-census-reports-its-denominator/runs/node-7297/20260907T233233272Z-0000.json
   - src/run-store.mjs
   - src/loop-bounds.mjs
   - src/effects/run-transitions.mjs

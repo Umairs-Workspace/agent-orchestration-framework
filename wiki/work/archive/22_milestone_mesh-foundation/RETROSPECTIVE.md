@@ -80,7 +80,7 @@ updated: 2026-07-03
 - **Kind:** near-miss · **Area:** architecture/contract · **Stage:** verify · **Owner:** architect lane · **Raised by:** aof:verify 22
 - **What happened.** ADR-003 specifies a collision→hash-suffix rule, and `deriveNodeId` implements it via a
   `takenIds` set — but `mesh:identity.run` never passes `takenIds`, so two installs on the **same host** derive
-  the **same** id (`umamis-msi`) onto the same `nodes/<id>.json` path. The suffix mechanic is unreachable from
+  the **same** id (`win-host-a`) onto the same `nodes/<id>.json` path. The suffix mechanic is unreachable from
   the command path (a first publish precedes any sync, so there is no roster to disambiguate against).
 - **Why.** The ADR specified the resolution rule but not WHERE the collision set (`takenIds`) comes from at the
   one call site; the realistic deployment (distinct hosts) masks the gap.

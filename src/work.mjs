@@ -361,7 +361,7 @@ export async function loadWorkspace(cwd = process.cwd(), explicitConfig, { hostn
   //
   // WHY it exists: on `direct` a peer is found by resolving its advertised host, and a
   // guest can INHERIT its host machine's name (a WSL2 distro defaults to the Windows
-  // hostname — measured: both answer `Umamis-MSI`). Resolving that name from either
+  // hostname — measured: both answer `Win-Host-A`). Resolving that name from either
   // side returns the HOST, so without an explicit address the guest is unreachable and
   // its nodeId collides. `aof mesh identity --name <id> --address <ip>` breaks both.
   if (typeof sidecar.address === "string" && sidecar.address.length > 0) {

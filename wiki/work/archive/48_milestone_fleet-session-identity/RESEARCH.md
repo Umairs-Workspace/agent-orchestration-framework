@@ -173,10 +173,10 @@ deletes it, regardless of whether a DIFFERENT concurrent session is still live.
 
 **Evidence — live leaf listing (measured, real `~/.aof`, redacted nothing).**
 `C:\Users\Umami\.aof\mesh\sessions\` contains exactly ONE file right now:
-`umamis-msi~9db1fd84f5895e38~claude-code.json` (`nodeId~workspaceId~assistant`, no session-id segment),
+`win-host-a~9db1fd84f5895e38~claude-code.json` (`nodeId~workspaceId~assistant`, no session-id segment),
 content:
 ```json
-{ "nodeId": "umamis-msi", "workspaceId": "9db1fd84f5895e38", "repo": "aof", "assistant": "claude-code",
+{ "nodeId": "win-host-a", "workspaceId": "9db1fd84f5895e38", "repo": "aof", "assistant": "claude-code",
   "startedAt": "2026-08-10T12:48:36.839Z", "lastPingAt": "2026-08-10T12:48:43.076Z" }
 ```
 This is my own live researcher session's record (matches the "Session started/pinged... 9db1fd84f5895e38"
@@ -215,7 +215,7 @@ consistent with clean exits so far, not with a reaper existing.
   DOES sweep/prune other partitions (nodes/assignments) has no session-specific logic.
 
 **Evidence — live leaf count/age (measured, real `~/.aof`).** `C:\Users\Umami\.aof\mesh\sessions\` holds
-exactly 1 file, `umamis-msi~9db1fd84f5895e38~claude-code.json`, `startedAt` 2026-08-10T12:48:36Z (today,
+exactly 1 file, `win-host-a~9db1fd84f5895e38~claude-code.json`, `startedAt` 2026-08-10T12:48:36Z (today,
 this research session) — no orphaned/stale files present to measure an age spread from. This machine
 happens to have zero accumulated orphans right now; it does not prove orphans cannot accumulate (the code
 path for a crash/no-clean-exit leaving a stale file behind is real and unguarded — see §1's `SessionEnd`

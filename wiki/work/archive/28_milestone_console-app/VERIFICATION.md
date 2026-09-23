@@ -65,7 +65,7 @@ esbuild→CJS→blob→postject recipe on this runner — then ran the produced 
   the trimmed sidecar `package.json` — not a `src/` tree; proves the fuse took: it is the app entry, not a
   bare node REPL, which would print `v22.22.2`).
 - *Relay mode, same binary* — `aof mesh relay --json` → the m23 non-blocking relay probe
-  (`{nodeId:"umamis-msi", controlNode:null, …}`). **No second binary, no forked per-mode entry** (ADR-004).
+  (`{nodeId:"win-host-a", controlNode:null, …}`). **No second binary, no forked per-mode entry** (ADR-004).
 - *Live PTY over the sidecar* — node-pty resolved from the sidecar via `createRequire(<exe>)("node-pty")`
   (the **exact ADR-002 SEA path**) and a real PTY session **spawned and streamed output** (echoed marker).
 - *Missing-sidecar degrade* — with the entire `node-pty-sidecar/` + `node_modules/` moved aside, **both**

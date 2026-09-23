@@ -88,31 +88,31 @@ Feature: the line and the button are pure projections — fleetLoopLines, loopSt
 
     Examples:
       | wire       | remembered | node             | localNodeId      | button                                                                                                        | remote |
-      | `null`     | none       | `umamis-msi`     | `"umamis-msi"`   | `{ rung: 1, label: "Stop", title: "Stop loop 129 — the current drive finishes first", tone: "muted" }`         | false  |
-      | `"drain"`  | none       | `umamis-msi`     | `"umamis-msi"`   | `{ rung: 2, label: "Stop now", title: "Stop loop 129 now — cancels the in-flight session", tone: "destructive" }` | false |
-      | `null`     | 1          | `umamis-msi`     | `"umamis-msi"`   | `{ rung: 1, … }` — a memory no higher than the wire changes nothing                                            | false  |
-      | `null`     | 2          | `umamis-msi`     | `"umamis-msi"`   | `{ rung: 2, … }` — the memory wins until the wire catches up                                                   | false  |
-      | `"drain"`  | 1          | `umamis-msi`     | `"umamis-msi"`   | `{ rung: 2, … }` — the wire wins when it is higher                                                             | false  |
-      | `"cancel"` | none       | `umamis-msi`     | `"umamis-msi"`   | `null` — nothing left to ask                                                                                   | false  |
-      | `"drain"`  | 3          | `umamis-msi`     | `"umamis-msi"`   | `null`                                                                                                        | false  |
-      | `null`     | 3 (same `runId`) | `umamis-msi` | `"umamis-msi"` | `null` — the wire has not caught up under the SAME drive; the memory holds                                    | false  |
-      | `null`     | 3 (another `runId`) | `umamis-msi` | `"umamis-msi"` | `{ rung: 1, label: "Stop", … }` — a `--resume` minted a new drive; the old memory is absent                | false  |
-      | `"drain"`  | 2 (another `runId`) | `umamis-msi` | `"umamis-msi"` | `{ rung: 2, … }` — the wire's own word, the memory ignored                                                   | false  |
-      | `null`     | none       | `umamis-mac-mini`| `"umamis-msi"`   | `null`                                                                                                        | true   |
-      | `null`     | none       | `umamis-msi`     | `"ghost"`        | `null` — a `localNodeId` no card carries makes every card remote                                               | true   |
-      | `null`     | none       | `umamis-msi`     | `null`           | `null`                                                                                                        | false  |
-      | `null`     | none       | `umamis-msi`     | `""`             | `null`                                                                                                        | false  |
-      | `null`     | none       | `Umamis-MSI`     | `"umamis-msi"`   | `null` — a strict `===`, never a case fold                                                                     | true   |
+      | `null`     | none       | `win-host-a`     | `"win-host-a"`   | `{ rung: 1, label: "Stop", title: "Stop loop 129 — the current drive finishes first", tone: "muted" }`         | false  |
+      | `"drain"`  | none       | `win-host-a`     | `"win-host-a"`   | `{ rung: 2, label: "Stop now", title: "Stop loop 129 now — cancels the in-flight session", tone: "destructive" }` | false |
+      | `null`     | 1          | `win-host-a`     | `"win-host-a"`   | `{ rung: 1, … }` — a memory no higher than the wire changes nothing                                            | false  |
+      | `null`     | 2          | `win-host-a`     | `"win-host-a"`   | `{ rung: 2, … }` — the memory wins until the wire catches up                                                   | false  |
+      | `"drain"`  | 1          | `win-host-a`     | `"win-host-a"`   | `{ rung: 2, … }` — the wire wins when it is higher                                                             | false  |
+      | `"cancel"` | none       | `win-host-a`     | `"win-host-a"`   | `null` — nothing left to ask                                                                                   | false  |
+      | `"drain"`  | 3          | `win-host-a`     | `"win-host-a"`   | `null`                                                                                                        | false  |
+      | `null`     | 3 (same `runId`) | `win-host-a` | `"win-host-a"` | `null` — the wire has not caught up under the SAME drive; the memory holds                                    | false  |
+      | `null`     | 3 (another `runId`) | `win-host-a` | `"win-host-a"` | `{ rung: 1, label: "Stop", … }` — a `--resume` minted a new drive; the old memory is absent                | false  |
+      | `"drain"`  | 2 (another `runId`) | `win-host-a` | `"win-host-a"` | `{ rung: 2, … }` — the wire's own word, the memory ignored                                                   | false  |
+      | `null`     | none       | `umamis-mac-mini`| `"win-host-a"`   | `null`                                                                                                        | true   |
+      | `null`     | none       | `win-host-a`     | `"ghost"`        | `null` — a `localNodeId` no card carries makes every card remote                                               | true   |
+      | `null`     | none       | `win-host-a`     | `null`           | `null`                                                                                                        | false  |
+      | `null`     | none       | `win-host-a`     | `""`             | `null`                                                                                                        | false  |
+      | `null`     | none       | `Win-Host-A`     | `"win-host-a"`   | `null` — a strict `===`, never a case fold                                                                     | true   |
 
   Scenario Outline: the remote tail says why there is no button, and the local line has none
-    Given a loop entry `E1` on node <node> with `localNodeId` `"umamis-msi"`
+    Given a loop entry `E1` on node <node> with `localNodeId` `"win-host-a"`
     When `fleetLoopLines` and `loopStopAffordance` are composed for it
     Then the line's `title` <title>
 
     Examples:
       | node               | title                                                                       |
       | `umamis-mac-mini`  | ends `· L2 · remote — stop from umamis-mac-mini's own console`              |
-      | `umamis-msi`       | ends `· L2` and contains no `remote`                                        |
+      | `win-host-a`       | ends `· L2` and contains no `remote`                                        |
 
   Scenario Outline: the rung memory never lowers for the same drive, never expires on a timer, and is replaced by a new drive
     Given a memory `Map` holding <before> for `"L1"`
@@ -138,13 +138,13 @@ Feature: the line and the button are pure projections — fleetLoopLines, loopSt
 
     Examples:
       | presence                                                        | localNodeId    | lines                                                            | token       | count |
-      | `activeRuns: []`, `sessions: []`, no loops                      | `"umamis-msi"` | `["idle"]`                                                       | `"muted"`   | 0     |
-      | no `presence` at all (a never-beat node)                        | `"umamis-msi"` | `["idle"]`                                                       | `"muted"`   | 0     |
-      | `activeRuns: ["r1"]`, no loops                                  | `"umamis-msi"` | `["running 1 run"]`                                              | `"primary"` | 0     |
-      | `activeRuns: ["r1"]`, `loops: [E1]`                             | `"umamis-msi"` | `["running 1 run"]` — the loop entries ride `loops`, not `lines` | `"primary"` | 1     |
-      | `activeRuns: []`, `sessions: []`, `loops: [E1]`                 | `"umamis-msi"` | `[]` — `idle` is dropped when a loop exists                      | `"primary"` | 1     |
-      | `activeRuns: []`, `sessions: [one live, repo "aof"]`, `loops: [E1]` | `"umamis-msi"` | `["working · aof (session)"]`                                | `"primary"` | 1     |
-      | `activeRuns: []`, `sessions: []`, `loops: [E1, E1 with scope "9" loopRunId "L2"]` | `"umamis-msi"` | `[]`                                     | `"primary"` | 2 — ordered `"129"` then `"9"` |
+      | `activeRuns: []`, `sessions: []`, no loops                      | `"win-host-a"` | `["idle"]`                                                       | `"muted"`   | 0     |
+      | no `presence` at all (a never-beat node)                        | `"win-host-a"` | `["idle"]`                                                       | `"muted"`   | 0     |
+      | `activeRuns: ["r1"]`, no loops                                  | `"win-host-a"` | `["running 1 run"]`                                              | `"primary"` | 0     |
+      | `activeRuns: ["r1"]`, `loops: [E1]`                             | `"win-host-a"` | `["running 1 run"]` — the loop entries ride `loops`, not `lines` | `"primary"` | 1     |
+      | `activeRuns: []`, `sessions: []`, `loops: [E1]`                 | `"win-host-a"` | `[]` — `idle` is dropped when a loop exists                      | `"primary"` | 1     |
+      | `activeRuns: []`, `sessions: [one live, repo "aof"]`, `loops: [E1]` | `"win-host-a"` | `["working · aof (session)"]`                                | `"primary"` | 1     |
+      | `activeRuns: []`, `sessions: []`, `loops: [E1, E1 with scope "9" loopRunId "L2"]` | `"win-host-a"` | `[]`                                     | `"primary"` | 2 — ordered `"129"` then `"9"` |
       | `activeRuns: []`, `sessions: []`, `loops: [E1]`                 | `null`         | `[]` — the line is not gated by locality                         | `"primary"` | 1     |
 
   Scenario: the pinned projections are byte-identical

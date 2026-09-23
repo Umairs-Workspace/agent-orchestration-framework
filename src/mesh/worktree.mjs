@@ -512,7 +512,7 @@ export function resolveExec(options) {
 // meshIdentityArgs(node) — the mesh identity, spelled ONCE (129/03 fix round, I4c): the
 // `-c user.*` pair every commit this module makes on a worker's or the loop's behalf carries,
 // so a worker whose git identity is unset still commits and the fleet reads one author. The
-// node rides in the name (`aof-mesh (umamis-msi)`) so a commit names the machine that made it.
+// node rides in the name (`aof-mesh (win-host-a)`) so a commit names the machine that made it.
 export function meshIdentityArgs(node) {
   const name = `aof-mesh${typeof node === "string" && node.length > 0 ? ` (${node})` : ""}`;
   return ["-c", `user.name=${name}`, "-c", "user.email=aof-mesh@users.noreply.github.com"];

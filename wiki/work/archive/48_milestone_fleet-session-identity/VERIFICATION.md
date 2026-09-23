@@ -55,7 +55,7 @@ The deploy the gate names was run and confirmed at the source, not assumed:
 `node scripts/install-local.mjs` → `~/.aof/bin/aof.exe --version` reports
 `0.1.0 (payload 7400664+dirty.20260811T211128)`, and after the operator restarted the desktop
 supervisor both daemons came up on it. The effect was directly provable rather than inferred: **before**
-the restart the live presence record carried `sessions: []` for `umamis-msi` even though a session record
+the restart the live presence record carried `sessions: []` for `win-host-a` even though a session record
 existed on disk — the pre-m48 payload cannot read the new 4-part leaf — and **after** it carried
 ADR-005's ordered six with a real routable id.
 
@@ -105,7 +105,7 @@ did not quietly change what the desktop asserts.
   that file is empty and its last commit is `eacbd57` (m43, 2026-08-06). Already carried by `TECH_DEBT.md`
   item 27 row 1; m48 correctly did not re-baseline it.
 - **The live presence store was read directly** (`~/.aof/mesh/presence/*.json`): all three published
-  records — `umamis-msi`, `umamis-msi-wsl`, `umamis-mac-mini` — currently carry `sessions: []`. This is
+  records — `win-host-a`, `win-host-a-wsl`, `umamis-mac-mini` — currently carry `sessions: []`. This is
   the measured reason F-48-1 cannot be discharged from this session: the re-capture needs a *deployed*
   build publishing a *live* session, and neither condition holds right now.
 - **`aof work validate 48`** → `PASS — 48 is well-formed.`

@@ -87,7 +87,7 @@ live Windows app** and observed — not read from source:
 The milestone's outsider acceptance (story 03 `03_end-to-end-install-launch`) was brokered live with
 the operator, run **across two real machines**:
 
-- **Nodes:** `umamis-msi` (Windows 11, **control node**, running the desktop app) + `umamis-mac-mini`
+- **Nodes:** `win-host-a` (Windows 11, **control node**, running the desktop app) + `umamis-mac-mini`
   (macOS, **worker node**, running the mesh via CLI) — joined over the Tailscale fabric.
 - **Procedure + result (operator-confirmed):**
   1. A single `aof mesh desktop install` placed the app into `$HOME/.aof/bin` beside the m28 binary. ✓

@@ -14,7 +14,7 @@
 //
 // ============================ UN-SKIPPED (milestone 33 / story 00) ====================
 // Milestone 33's per-install-identity story migrated the committed .aof/aof.config.json
-// (which carried mesh.salt + mesh.nodeId "umamis-msi") to the git-ignored sidecar
+// (which carried mesh.salt + mesh.nodeId "win-host-a") to the git-ignored sidecar
 // .aof/mesh/identity.json via migrateIdentity(configPath, sidecarPath) — the committed
 // config's mesh block is now {} (no nodeId/salt), so the REAL assertion below is GREEN.
 // =====================================================================================
@@ -65,7 +65,7 @@ export async function assertIdentityNotCommitted() {
   }
   // Non-vacuous self-checks: the assertion FIRES on a config WITH the keys and does NOT
   // fire on a fleet-shared-only config.
-  const withIdentity = { mesh: { nodeId: "umamis-msi", salt: "abc", relay: { controlNode: "x" } } };
+  const withIdentity = { mesh: { nodeId: "win-host-a", salt: "abc", relay: { controlNode: "x" } } };
   assert.ok("nodeId" in (withIdentity.mesh ?? {}), "self-check: the reader detects mesh.nodeId when present (the RED-until-migrated state)");
   const fleetSharedOnly = { mesh: { relay: { controlNode: "x" }, fabric: "tailscale" } };
   assert.ok(!("nodeId" in (fleetSharedOnly.mesh ?? {})) && !("salt" in (fleetSharedOnly.mesh ?? {})), "self-check: a fleet-shared-only mesh block passes");

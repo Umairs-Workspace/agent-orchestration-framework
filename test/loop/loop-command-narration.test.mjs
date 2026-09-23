@@ -527,7 +527,7 @@ export const loopCommandNarrationTests = [
         try {
           await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
           const dir = loopStopsDir();
-          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
           await markStopHonoured(dir, "L1", { now: () => new Date("2026-09-13T11:31:00.000Z") });
           const lines = [];
           const driver = completingDriver(fx, { onCommand: closingCommands(fx) });

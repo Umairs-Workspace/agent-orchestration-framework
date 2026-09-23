@@ -671,13 +671,13 @@ export const workDispatchLaneTests = [
     name: "129/03 task 02 — a lane merges home by a real merge when the primary moved elsewhere",
     run: () => withMergeHomeRepo(async ({ root, milestoneDir, l1 }) => {
       const p1 = await PRIMARY["P1 touching `README.md`"](root);
-      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): merge 127/02", node: "umamis-msi" });
+      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): merge 127/02", node: "win-host-a" });
       assert.equal(answer.outcome, "merged", `the answer's outcome is merged: ${JSON.stringify(answer)}`);
       assert.equal(answer.commit, await rev(root, "main"), "…and commit equals git rev-parse main");
       assert.equal(await rev(root, "main^1"), p1, "git rev-parse main^1 is P1");
       assert.equal(await rev(root, "main^2"), l1, "git rev-parse main^2 is L1");
       const log = (await git(["log", "-1", "--format=%an <%ae>%n%s", "main"], root)).stdout.split(/\r?\n/);
-      assert.equal(log[0], "aof-mesh (umamis-msi) <aof-mesh@users.noreply.github.com>", "the merge is under the mesh identity, node named");
+      assert.equal(log[0], "aof-mesh (win-host-a) <aof-mesh@users.noreply.github.com>", "the merge is under the mesh identity, node named");
       assert.equal(log[1], "aof(loop): merge 127/02", "…with the given message");
     }),
   },
@@ -724,14 +724,14 @@ export const workDispatchLaneTests = [
     name: `129/03 task 02 — the loop's own writes are committed before the merge, scoped to the milestone dir [${row.dirt}]`,
     run: () => withMergeHomeRepo(async ({ root, milestoneDir, b0, l1 }) => {
       await row.plant(root);
-      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): 127/02 home", node: "umamis-msi" });
+      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): 127/02 home", node: "win-host-a" });
       assert.equal(answer.outcome, row.outcome, `the answer's outcome is ${row.outcome}: ${JSON.stringify(answer)}`);
       if (row.ownWrites === "none") {
         const log = (await git(["log", "--format=%H", `${b0}..main`], root)).stdout.split(/\r?\n/).filter(Boolean);
         assert.deepEqual(log, [l1], "no commit was created besides the merge (a fast-forward to L1)");
       } else {
         const shown = (await git(["show", "--name-status", "--format=%an%n%s", "main^1"], root)).stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-        assert.equal(shown[0], "aof-mesh (umamis-msi)", "main^1 is the own-writes commit under the mesh identity");
+        assert.equal(shown[0], "aof-mesh (win-host-a)", "main^1 is the own-writes commit under the mesh identity");
         assert.equal(shown[1], "aof(loop): 127/02 home", "…with the message");
         const entries = shown.slice(2).map((l) => l.split(/\s+/u));
         assert.deepEqual(entries.map((e) => e[1]).sort(), row.ownWrites, `…containing exactly ${row.ownWrites.join(", ")}`);
@@ -814,13 +814,13 @@ export const workDispatchLaneTests = [
     name: `129/03 task 02 — commitDispatchLane commits the lane and reports its tip [${row.dirt}]`,
     run: () => withMergeHomeRepo(async ({ lane, l1 }) => {
       await row.plant(lane);
-      const answer = await commitDispatchLane(lane, { message: "aof(loop): 127/02 settled", node: "umamis-msi" });
+      const answer = await commitDispatchLane(lane, { message: "aof(loop): 127/02 settled", node: "win-host-a" });
       assert.equal(answer.committed, row.committed, `committed is ${row.committed}`);
       assert.equal(answer.tip, await rev(lane, "HEAD"), "tip equals git rev-parse HEAD in the lane");
       if (row.committed) {
         assert.notEqual(answer.tip, l1, "the tip is a new sha");
         assert.equal(await rev(lane, "HEAD^"), l1, "…whose parent is L1");
-        assert.equal((await git(["log", "-1", "--format=%an", "HEAD"], lane)).stdout.trim(), "aof-mesh (umamis-msi)", "…by the mesh identity");
+        assert.equal((await git(["log", "-1", "--format=%an", "HEAD"], lane)).stdout.trim(), "aof-mesh (win-host-a)", "…by the mesh identity");
       } else {
         assert.equal(answer.tip, l1, "the tip is L1");
       }
@@ -912,7 +912,7 @@ export const workDispatchLaneTests = [
       await git(["add", "--", "README.md"], root);
       await writeRel(root, `${MILESTONE_DIR}/STATE.md`, `${STATE_BASE}- loop note\n`);
       assert.deepEqual(await porcelain(root), ["M  README.md", " M wiki/work/127_m/STATE.md"], "the fixture planted a STAGED out-of-scope edit and a dirty in-scope one");
-      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): 127/02 home", node: "umamis-msi" });
+      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): 127/02 home", node: "win-host-a" });
       assert.deepEqual(
         { outcome: answer.outcome, code: answer.code, files: answer.files, base: answer.base, tip: answer.tip },
         { outcome: "refused", code: "lane-merge-refused", files: ["README.md"], base: b0, tip: l1 },

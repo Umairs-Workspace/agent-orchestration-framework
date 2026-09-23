@@ -1,0 +1,108 @@
+{
+  "runId": "20260921T200819118Z-0001",
+  "itemRef": "130/04",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "d0e62f96-16c3-4e3b-baa3-b539eb6c7a53",
+  "brief": {
+    "loop": {
+      "loopRunId": "7661348f-073d-4884-8544-a63efb9e53ac",
+      "scope": "130",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-21T16:42:18.166Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "grade": {
+      "ref": "130/04",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-130-04",
+        "exit": 1,
+        "durationMs": 281654
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 1987,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/item-24 (acd-comment-stripper-order): every hand-rolled comment stripper removes LINE comments before block comments — a line comment containing a block opener can never blind a source-reading gate",
+          "message": "  error: \"a stripper that removes block comments FIRST can be blinded by a line comment containing a block opener — every source-reading assertion over that file then reads a truncated source, and an absence sweep passes over what it can no longer see. Remove line comments first (TECH_DEBT item 24). A DELIBERATE block-first probe belongs in TRAP_ORDER_BASELINE with its reason, never absorbed silently.\\n+ actual - expected\\n\\n+ [\\n+   'test/loop/work-loop-declarations.test.mjs: removes block comments at offset 23012, before the line-comment removal at 23045'\\n+ ]\\n- []\\n\"",
+          "scenario": null
+        }
+      ],
+      "gradedAt": "2026-09-21T20:03:37.196Z",
+      "provenance": {
+        "node": "node-7297",
+        "run": "20260921T192150185Z-0000",
+        "commit": "a49725a2575ca9df8fc5ed19965765ee8184eedd",
+        "at": "2026-09-21T20:03:37.196Z"
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-21T19:21:50.018Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id"
+      ],
+      "baseCommit": "a49725a2575ca9df8fc5ed19965765ee8184eedd"
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20260921T192150185Z-0000",
+      "summary": null,
+      "continuation": true
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-130-04",
+      "branch": "aof/mesh/130-04",
+      "baseCommit": "a49725a2575ca9df8fc5ed19965765ee8184eedd"
+    }
+  },
+  "createdAt": "2026-09-21T20:08:19.118Z",
+  "updatedAt": "2026-09-21T20:10:17.734Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 28,
+      "output": 5810,
+      "cacheRead": 6146543,
+      "cacheCreate": 22669
+    },
+    "costUsd": 2.01620565,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 14,
+    "toolCalls": 9,
+    "exitReason": "final_output"
+  }
+}

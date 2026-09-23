@@ -1,0 +1,77 @@
+{
+  "runId": "20260912T174026174Z-0010",
+  "itemRef": "127/01",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "666709ee-c9c5-429d-8f8c-5d0e61f70279",
+  "brief": {
+    "loop": {
+      "loopRunId": "5c554454-2f26-4613-9c89-c21c957bca90",
+      "scope": "127",
+      "level": "L2",
+      "cap": 6,
+      "phase": "verify",
+      "cycle": 1,
+      "startedAt": "2026-09-11T13:03:43.182Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": true
+    },
+    "grade": {
+      "ref": "127/01",
+      "verdict": "pass",
+      "codes": [],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "C:\\Source\\umami\\aof",
+        "exit": 1,
+        "durationMs": 269344
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 1931,
+        "failed": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "gradedAt": "2026-09-12T17:35:51.966Z",
+      "provenance": {
+        "node": "node-7297",
+        "run": "20260912T173407101Z-0009",
+        "commit": "2321dce83cd23b8ec998386f2b045504f80be580",
+        "at": "2026-09-12T17:35:51.966Z"
+      }
+    }
+  },
+  "createdAt": "2026-09-12T17:40:26.174Z",
+  "updatedAt": "2026-09-12T17:57:56.083Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-09-12T17:40:35.418Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 228,
+      "output": 99838,
+      "cacheRead": 16962488,
+      "cacheCreate": 313824
+    },
+    "costUsd": 7.763840399999999,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 114,
+    "toolCalls": 71,
+    "exitReason": "final_output"
+  }
+}

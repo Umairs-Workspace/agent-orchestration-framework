@@ -123,12 +123,12 @@ Feature: loadWorkspace hydrates config.mesh.nodeId/salt from the git-ignored sid
   # config.mesh gate the run-lifecycle reads: a non-empty hydrated nodeId opens the gate,
   # so an issuance/lease reader reads the sidecar id with ZERO code change.
   Scenario: a downstream config.mesh.nodeId reader sees the hydrated sidecar id (zero reader change)
-    Given the committed config carries a legacy mesh.nodeId "umamis-msi"
+    Given the committed config carries a legacy mesh.nodeId "win-host-a"
     And the sidecar holds nodeId "macbook-pro"
     When I loadWorkspace over the fixture project
     Then the returned workspace.config.mesh.nodeId is "macbook-pro"
     And the mesh-gate predicate over the returned config resolves the meshNodeId as "macbook-pro" (the per-install id)
-    And no downstream reader observes the legacy committed "umamis-msi"
+    And no downstream reader observes the legacy committed "win-host-a"
 
   # HYDRATION LANDS IN loadWorkspace, TOLERATES A MALFORMED SIDECAR (ADR-004.3; the
   # readJson-catch discipline work.mjs:44-49 already uses for the config): a corrupt /

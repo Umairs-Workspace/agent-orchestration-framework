@@ -257,7 +257,7 @@ const recorderTests = [
 // ---------------------------------------------------------------------------------------------
 
 const TEN_KEYS = ["loopRunId", "scope", "workspaceId", "level", "state", "requestedAt", "escalatedAt", "honouredAt", "cancelled", "by"];
-const BY = { node: "umamis-msi", pid: 4242 };
+const BY = { node: "win-host-a", pid: 4242 };
 const FIXED = () => new Date("2026-09-13T11:41:09.701Z");
 const T = (n) => new Date(Date.UTC(2026, 8, 13, 11, 41, n)).toISOString();
 
@@ -336,7 +336,7 @@ const stopRequestTests = [
       await requestLoopStop(dir, { loopRunId: "L1", scope: "129", workspaceId: "w1", by: BY, now: FIXED });
       const raw = await readJson(dir, "L1");
       assert.deepEqual(Object.keys(raw), TEN_KEYS, "the ten keys, in the frozen order");
-      assert.deepEqual(raw, { loopRunId: "L1", scope: "129", workspaceId: "w1", level: 1, state: "requested", requestedAt: "2026-09-13T11:41:09.701Z", escalatedAt: null, honouredAt: null, cancelled: null, by: { node: "umamis-msi", pid: 4242 } });
+      assert.deepEqual(raw, { loopRunId: "L1", scope: "129", workspaceId: "w1", level: 1, state: "requested", requestedAt: "2026-09-13T11:41:09.701Z", escalatedAt: null, honouredAt: null, cancelled: null, by: { node: "win-host-a", pid: 4242 } });
       assert.deepEqual((await readdir(dir)).filter((name) => name.startsWith(".tmp-")), [], "no .tmp-* entry remains");
       assert.deepEqual(await readStopRequest(dir, "L1"), raw, "the read is the file's content");
     },

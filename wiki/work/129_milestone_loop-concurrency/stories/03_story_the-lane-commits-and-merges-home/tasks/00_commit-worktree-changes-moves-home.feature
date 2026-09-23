@@ -35,10 +35,10 @@ Feature: commitWorktreeChanges moves to src/mesh/worktree.mjs and gains a paths 
 
   Scenario Outline: a dirty worktree is committed under the mesh identity, whatever the dirt
     Given the worktree holds <dirt>
-    When `commitWorktreeChanges(worktree, { message: "aof(loop): lane 127/02", node: "umamis-msi" })` runs
+    When `commitWorktreeChanges(worktree, { message: "aof(loop): lane 127/02", node: "win-host-a" })` runs
     Then the answer is `{ committed: true }`
     And `git rev-parse HEAD` in the worktree is a new commit whose parent is T0
-    And `git log -1 --format=%an <%ae>%n%s` reports `aof-mesh (umamis-msi) <aof-mesh@users.noreply.github.com>` then `aof(loop): lane 127/02`
+    And `git log -1 --format=%an <%ae>%n%s` reports `aof-mesh (win-host-a) <aof-mesh@users.noreply.github.com>` then `aof(loop): lane 127/02`
     And `git show --name-status --format= HEAD` lists exactly <committed as>
     And `git status --porcelain` in the worktree is empty
 

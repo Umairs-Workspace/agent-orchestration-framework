@@ -2,7 +2,7 @@
 Feature: a legacy committed mesh.nodeId is a working fallback AND work doctor warns to migrate it — the migrate moves nodeId/salt to the sidecar, strips them from committed config, is idempotent, and absence-tolerant
   In order to migrate legacy installs off committed identity without breaking them, and to turn the acd-mesh-identity-not-committed fitness green
   a committed mesh.nodeId with NO sidecar stays a working fallback (ADR-004.4) AND work doctor emits a warn "per-install identity is in committed config — migrate it to .aof/mesh/identity.json (F-3203)"; the migrate moves nodeId/salt to the sidecar and STRIPS them from the committed config (turning acd-mesh-identity-not-committed green); the migrate is idempotent (a second run is a clean no-op) and absence-tolerant (no committed identity ⇒ nothing to migrate, no warn),
-  so that the current committed .aof/aof.config.json (which still carries mesh.salt + mesh.nodeId "umamis-msi") migrates cleanly to the sidecar — the story's Definition-of-Done.
+  so that the current committed .aof/aof.config.json (which still carries mesh.salt + mesh.nodeId "win-host-a") migrates cleanly to the sidecar — the story's Definition-of-Done.
 
   # ARCHITECTURE ADR-004.4 (back-compat + migration): a committed mesh.nodeId (legacy
   # installs) stays a FALLBACK when no sidecar exists AND work doctor warns to migrate.
@@ -111,8 +111,8 @@ Feature: a legacy committed mesh.nodeId is a working fallback AND work doctor wa
 
     Examples:
       | committed-mesh                              | emitted     |
-      | { nodeId:"umamis-msi", salt:"s" }           | emitted     |
-      | { nodeId:"umamis-msi" }                     | emitted     |
+      | { nodeId:"win-host-a", salt:"s" }           | emitted     |
+      | { nodeId:"win-host-a" }                     | emitted     |
       | { salt:"s" }                                | emitted     |
       | { relay:{ controlNode:"n" }, fabric:"tailscale" } | NOT emitted |
       | {} (no mesh block)                          | NOT emitted |
@@ -132,8 +132,8 @@ Feature: a legacy committed mesh.nodeId is a working fallback AND work doctor wa
 
     Examples:
       | committed-before                    | sidecar-before                | committed-after                | sidecar-after                        | case             |
-      | { nodeId:"umamis-msi", salt:"sA" }  | absent                        | {} (identity stripped)         | { nodeId:"umamis-msi", salt:"sA" }   | migrate          |
-      | {} (no identity)                    | { nodeId:"umamis-msi", salt:"sA" } | {} (byte-unchanged)       | { nodeId:"umamis-msi", salt:"sA" } (byte-unchanged) | already-migrated |
+      | { nodeId:"win-host-a", salt:"sA" }  | absent                        | {} (identity stripped)         | { nodeId:"win-host-a", salt:"sA" }   | migrate          |
+      | {} (no identity)                    | { nodeId:"win-host-a", salt:"sA" } | {} (byte-unchanged)       | { nodeId:"win-host-a", salt:"sA" } (byte-unchanged) | already-migrated |
       | {} (no identity)                    | absent                        | {} (byte-unchanged)            | absent (nothing created)             | absent-no-op     |
 
   # THE MIGRATE PRESERVES SIBLING FLEET-SHARED KEYS (ADR-004.1; the read-merge-write
@@ -142,17 +142,17 @@ Feature: a legacy committed mesh.nodeId is a working fallback AND work doctor wa
   # fabric, enrollment) byte-equivalent — the split strips ONLY per-install identity, never
   # the fleet-shared config. This is the config-editor-whitelist hazard the story flags.
   Scenario: the migrate strips only nodeId/salt and leaves fleet-shared committed mesh keys intact
-    Given the committed config's mesh block is { nodeId:"umamis-msi", salt:"sA", relay:{ controlNode:"umamis-msi" }, fabric:"tailscale" }
+    Given the committed config's mesh block is { nodeId:"win-host-a", salt:"sA", relay:{ controlNode:"win-host-a" }, fabric:"tailscale" }
     When I run the migrate action over the fixture project
-    Then the committed config's mesh block is { relay:{ controlNode:"umamis-msi" }, fabric:"tailscale" } (fleet-shared keys survive)
+    Then the committed config's mesh block is { relay:{ controlNode:"win-host-a" }, fabric:"tailscale" } (fleet-shared keys survive)
     And the committed config carries NO mesh.nodeId and NO mesh.salt
-    And the sidecar holds exactly { nodeId:"umamis-msi", salt:"sA" }
+    And the sidecar holds exactly { nodeId:"win-host-a", salt:"sA" }
 
   # IDEMPOTENCE — A SECOND MIGRATE IS A BYTE-LEVEL NO-OP (ADR-004.4): running migrate twice
   # over the SAME repo leaves the committed config AND the sidecar byte-identical to their
   # post-first-migrate state — the migrate detects "already migrated" and rewrites nothing.
   Scenario: a second migrate over an already-migrated repo rewrites nothing (byte-level no-op)
-    Given a committed config { nodeId:"umamis-msi", salt:"sA" } and no sidecar
+    Given a committed config { nodeId:"win-host-a", salt:"sA" } and no sidecar
     And I run the migrate action once and record both files' exact bytes
     When I run the migrate action a SECOND time
     Then the committed config is byte-identical to its post-first-migrate bytes

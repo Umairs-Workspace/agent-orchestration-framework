@@ -104,7 +104,7 @@ export const terminalsHomeGridTests = [
   {
     name: "49/05 task00 — every addressable live session is ONE tile, addressed by its tuple through the frozen `mirror` row, and nothing on the payload but `sessions[]` may put a tile on the grid",
     run: async () => {
-      const tiles = homeGridRows(payload([row("aof-wsl", "s-2"), row("aof-wsl", "s-1"), row("umamis-msi", "s-9")]));
+      const tiles = homeGridRows(payload([row("aof-wsl", "s-2"), row("aof-wsl", "s-1"), row("win-host-a", "s-9")]));
       assert.equal(tiles.length, 3, "three entries, three tiles");
       for (const tile of tiles) {
         assert.equal(tile.key, keyOf(tile.nodeId, tile.sessionId), "the pane key is the CORE's own `terminalPaneKey`");
@@ -168,8 +168,8 @@ export const terminalsHomeGridTests = [
       const order = (tiles) => tiles.map((tile) => `${tile.nodeId}/${tile.repo ?? "-"}/${tile.sessionId}`);
 
       assert.deepEqual(
-        order(homeGridRows(payload([row("umamis-msi", "s-9"), row("aof-wsl", "s-2"), row("umamis-msi", "s-1")]))),
-        ["aof-wsl/demo/s-2", "umamis-msi/demo/s-1", "umamis-msi/demo/s-9"],
+        order(homeGridRows(payload([row("win-host-a", "s-9"), row("aof-wsl", "s-2"), row("win-host-a", "s-1")]))),
+        ["aof-wsl/demo/s-2", "win-host-a/demo/s-1", "win-host-a/demo/s-9"],
         "scrambled input sorts by node then session",
       );
       assert.deepEqual(
@@ -205,7 +205,7 @@ export const terminalsHomeGridTests = [
   {
     name: "49/05 task00 — the same payload twice yields deep-equal tiles with identical keys and NO memo, a work item contributes a LABEL and never a row, and a row that can name no owner renders NO PANEL",
     run: async () => {
-      const status = payload([row("aof-wsl", "s-1"), row("aof-wsl", "s-2"), row("umamis-msi", "s-3"), free("umamis-msi", "s-4"), free("aof-wsl", "s-5")]);
+      const status = payload([row("aof-wsl", "s-1"), row("aof-wsl", "s-2"), row("win-host-a", "s-3"), free("win-host-a", "s-4"), free("aof-wsl", "s-5")]);
       const one = homeGridRows(status);
       const two = homeGridRows(status);
       assert.deepEqual(one, two, "the two tile lists are deep-equal");
@@ -300,7 +300,7 @@ export const terminalsHomeGridTests = [
     name: "49/05 task01 — a grid of three subscribed tiles holds THREE sockets, one per tuple, with no cross-talk; an unaddressable row dials nothing; and the ramp moves on the socket's own events",
     run: async () => {
       await withTerminalControl(
-        home(payload([row("aof-wsl", "s-1"), row("aof-wsl", "s-2"), row("umamis-msi", "s-9")])),
+        home(payload([row("aof-wsl", "s-1"), row("aof-wsl", "s-2"), row("win-host-a", "s-9")])),
         (app) => {
           assert.equal(app.sockets().length, 3, "three subscribed tiles, three sockets");
           assert.equal(app.terminals().length, 3, "…and three xterms, one per tile");
@@ -310,7 +310,7 @@ export const terminalsHomeGridTests = [
             [
               "ws://127.0.0.1:4181/ws/terminal-view?nodeId=aof-wsl&sessionId=s-1",
               "ws://127.0.0.1:4181/ws/terminal-view?nodeId=aof-wsl&sessionId=s-2",
-              "ws://127.0.0.1:4181/ws/terminal-view?nodeId=umamis-msi&sessionId=s-9",
+              "ws://127.0.0.1:4181/ws/terminal-view?nodeId=win-host-a&sessionId=s-9",
             ],
             "each URL carries its OWN nodeId and its OWN sessionId — none is a node-only subscription",
           );
@@ -423,7 +423,7 @@ export const terminalsHomeGridTests = [
   {
     name: "49/05 task01 — unmounting one tile closes ONLY its socket and disposes ONLY its xterm, and unmounting the grid leaves zero sockets open and zero xterms undisposed",
     run: async () => {
-      await withTerminalControl(home(payload([row("aof-wsl", "s-1"), row("aof-wsl", "s-2"), row("umamis-msi", "s-9")])), (app) => {
+      await withTerminalControl(home(payload([row("aof-wsl", "s-1"), row("aof-wsl", "s-2"), row("win-host-a", "s-9")])), (app) => {
         const captured = app.panes().map((pane) => ({ socket: pane.socket(), terminal: pane.terminal() }));
         for (const { socket } of captured) socket.accept();
         app.render();
@@ -431,7 +431,7 @@ export const terminalsHomeGridTests = [
         captured[2].socket.deliver("two\r\n");
         app.render();
 
-        app.setProps({ status: payload([row("aof-wsl", "s-1"), row("umamis-msi", "s-9")]), origins: ORIGINS });
+        app.setProps({ status: payload([row("aof-wsl", "s-1"), row("win-host-a", "s-9")]), origins: ORIGINS });
         assert.equal(captured[1].socket.closed, true, "the departed tile's socket is closed…");
         assert.equal(captured[1].terminal.disposed, true, "…and its xterm disposed");
         assert.equal(captured[0].socket.closed, false, "the other two sockets are still open…");
@@ -513,7 +513,7 @@ export const terminalsHomeGridTests = [
 
       // A TUPLE THAT LEAVES THE INDEX WHILE ITS PANE HOLDS BYTES: the socket stays open, the chip
       // keeps the word the pane can OBSERVE, and the tile gains an annotation naming the ROSTER.
-      await withTerminalControl(home(payload([row("aof-wsl", "7f3a91c"), row("umamis-msi", "s-9")])), (app) => {
+      await withTerminalControl(home(payload([row("aof-wsl", "7f3a91c"), row("win-host-a", "s-9")])), (app) => {
         const socket = app.pane(0).socket();
         socket.accept();
         app.render();
@@ -521,7 +521,7 @@ export const terminalsHomeGridTests = [
         app.render();
         assert.equal(chipWord(app, app.pane(0)), "streaming");
 
-        app.setProps({ status: payload([row("umamis-msi", "s-9")]), origins: ORIGINS });
+        app.setProps({ status: payload([row("win-host-a", "s-9")]), origins: ORIGINS });
         assert.equal(app.paneCount(), 2, "the tile is NOT removed from the grid while it holds bytes");
         assert.equal(socket.closed, false, "the socket is still open — no poll closes a stream");
         assert.equal(chipWord(app, app.pane(0)), "streaming", "the chip still reads `streaming`, because that is what the pane can observe");

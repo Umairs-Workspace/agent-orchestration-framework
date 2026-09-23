@@ -30,7 +30,7 @@ Feature: stopLoop resolves the scope's loop from its run records, writes or esca
   dead is one the driver is already timing out.
 
   Background:
-    Given an isolated aof home and a loop fixture over stream `03` whose config's `mesh.nodeId` hydrates to `"umamis-msi"` and carries no `mesh.workspaceId`
+    Given an isolated aof home and a loop fixture over stream `03` whose config's `mesh.nodeId` hydrates to `"win-host-a"` and carries no `mesh.workspaceId`
     And `NOW` is an injected clock and `heartbeatMs` is the fixture's resolved `heartbeatFromConfig` (the 15-minute default)
     And a declaration `D` with `loopRunId` `"L1"` on scope `"03"` is written onto run records of the fixture as the loop shell writes them
 
@@ -38,7 +38,7 @@ Feature: stopLoop resolves the scope's loop from its run records, writes or esca
     Given the latest run carrying `D` is <run>
     When `stopLoop(workspace, { scope: "03", now: NOW })` is called once
     Then it answers `{ ok: true, loopRunId: "L1", scope: "03", live: <live>, request: "drain", state: <state>, path: <the request file> }` with keys in that order
-    And the request file reads `level` 1, `state` <state>, `by` `{ node: "umamis-msi", pid: process.pid }`, `workspaceId` `null`, `honouredAt` <honouredAt>
+    And the request file reads `level` 1, `state` <state>, `by` `{ node: "win-host-a", pid: process.pid }`, `workspaceId` `null`, `honouredAt` <honouredAt>
 
     Examples:
       | run                                                              | live  | state         | honouredAt |
@@ -76,7 +76,7 @@ Feature: stopLoop resolves the scope's loop from its run records, writes or esca
       | nothing                                                                 | `"03/01"` | `"loop-stop-scope"`           | the scope refusal's own message (a story ref is not a driver) |
       | no item at all in scope                                                 | `"04"`    | `"loop-stop-no-declaration"`  | names the scope and `aof work loop 04` as the way to start one |
       | runs in scope, none carrying a usable declaration (a bare `work:drive` run) | `"03"` | `"loop-stop-no-declaration"`  | names the scope and `aof work loop 03` as the way to start one |
-      | the latest run carrying `D` has `node` `"umamis-mac-mini"`              | `"03"`    | `"loop-stop-not-local"`       | names `umamis-mac-mini`, `umamis-msi`, and "stop it on umamis-mac-mini's own console" |
+      | the latest run carrying `D` has `node` `"umamis-mac-mini"`              | `"03"`    | `"loop-stop-not-local"`       | names `umamis-mac-mini`, `win-host-a`, and "stop it on umamis-mac-mini's own console" |
 
   Scenario Outline: locality is decided only when both sides name a node
     Given the latest run carrying `D` is `running`, fresh, and carries `node` <node>
@@ -87,9 +87,9 @@ Feature: stopLoop resolves the scope's loop from its run records, writes or esca
 
     Examples:
       | node                  | nodeId          | byNode          |
-      | `null`                | `"umamis-msi"`  | `"umamis-msi"`  |
-      | `"umamis-msi"`        | `"umamis-msi"`  | `"umamis-msi"`  |
-      | `""`                  | `"umamis-msi"`  | `"umamis-msi"`  |
+      | `null`                | `"win-host-a"`  | `"win-host-a"`  |
+      | `"win-host-a"`        | `"win-host-a"`  | `"win-host-a"`  |
+      | `""`                  | `"win-host-a"`  | `"win-host-a"`  |
       | `"umamis-mac-mini"`   | absent          | `null`          |
 
   Scenario Outline: the latest declaration in scope is the target, whatever item it sits on

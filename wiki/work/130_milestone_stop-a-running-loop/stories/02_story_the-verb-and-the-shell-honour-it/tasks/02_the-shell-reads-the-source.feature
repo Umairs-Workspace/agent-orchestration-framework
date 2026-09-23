@@ -80,8 +80,8 @@ Feature: the shell reads the source, not a flag — level 1 at the tick head hal
 
     Examples:
       | level | producer         | request                                              | details                                                        |
-      | 1     | `"stop-request"` | the ten-key record at `<path>` with `by` `{ node: "umamis-msi", pid: 4242 }` | `; request=<path>; by=umamis-msi:4242` |
-      | 2     | `"stop-request"` | the ten-key record at `<path>`, level 2, `by` `{ node: "umamis-msi", pid: 4242 }` | `; request=<path>; by=umamis-msi:4242` |
+      | 1     | `"stop-request"` | the ten-key record at `<path>` with `by` `{ node: "win-host-a", pid: 4242 }` | `; request=<path>; by=win-host-a:4242` |
+      | 2     | `"stop-request"` | the ten-key record at `<path>`, level 2, `by` `{ node: "win-host-a", pid: 4242 }` | `; request=<path>; by=win-host-a:4242` |
       | 1     | `"SIGINT"`       | `null`                                               | ``                                                             |
       | 1     | `"SIGTERM"`      | `null`                                               | ``                                                             |
       | 2     | `"SIGINT"`       | `null`                                               | ``                                                             |

@@ -14,8 +14,8 @@ Feature: the live worker→control stream over a real tailnet — the control-no
   # NO Examples table: a single narrative run over two specific real hosts.
 
   Background:
-    Given a real control node (Windows, `umamis-msi`) running the always-on stream server on `mesh serve`
-    And a real worker (macOS, `umamis-mac-mini`) on the SAME Tailscale tailnet, config.mesh.relay.controlNode = umamis-msi
+    Given a real control node (Windows, `win-host-a`) running the always-on stream server on `mesh serve`
+    And a real worker (macOS, `umamis-mac-mini`) on the SAME Tailscale tailnet, config.mesh.relay.controlNode = win-host-a
     And `aof mesh ui` open on the control node
 
   # REAL-TIME: work done on the worker appears on the control node's UI within a small, recorded latency —

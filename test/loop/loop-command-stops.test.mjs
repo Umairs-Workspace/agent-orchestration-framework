@@ -677,7 +677,7 @@ aofVersion: 0.1.0
         const fx = await loopFixture();
         try {
           const dir = loopStopsDir();
-          await requestLoopStop(dir, { loopRunId: "L-standing", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T12:00:00.000Z") });
+          await requestLoopStop(dir, { loopRunId: "L-standing", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T12:00:00.000Z") });
           const bytes = await readFile(stopRequestPath(dir, "L-standing"), "utf8");
           const source = fakeStopSource(level === 0 ? {} : { level: 1, producer: "stop-request", request: JSON.parse(bytes) });
           const driver = completingDriver(fx);
@@ -712,7 +712,7 @@ aofVersion: 0.1.0
           invokeRegistered: async (id, input, c) => {
             if (id === "work:next" && ++asks === 1) {
               sampledDuring = process.listenerCount("SIGINT");
-              await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date() });
+              await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date() });
             }
             return await invoke(id, input, c);
           },
@@ -761,10 +761,10 @@ aofVersion: 0.1.0
   {
     name: "130/02 task02 [outline] a level at the tick head halts before any drive, with the producer as data and the request in Details (5 rows)",
     async run() {
-      const record = (level) => ({ loopRunId: "x", scope: "03", workspaceId: null, level, state: "requested", requestedAt: "2026-09-13T12:00:00.000Z", escalatedAt: null, honouredAt: null, cancelled: null, by: { node: "umamis-msi", pid: 4242 } });
+      const record = (level) => ({ loopRunId: "x", scope: "03", workspaceId: null, level, state: "requested", requestedAt: "2026-09-13T12:00:00.000Z", escalatedAt: null, honouredAt: null, cancelled: null, by: { node: "win-host-a", pid: 4242 } });
       const rows = [
-        { level: 1, producer: "stop-request", request: record(1), details: "; request=<path>; by=umamis-msi:4242" },
-        { level: 2, producer: "stop-request", request: record(2), details: "; request=<path>; by=umamis-msi:4242" },
+        { level: 1, producer: "stop-request", request: record(1), details: "; request=<path>; by=win-host-a:4242" },
+        { level: 2, producer: "stop-request", request: record(2), details: "; request=<path>; by=win-host-a:4242" },
         { level: 1, producer: "SIGINT", request: null, details: "" },
         { level: 1, producer: "SIGTERM", request: null, details: "" },
         { level: 2, producer: "SIGINT", request: null, details: "" },
@@ -916,7 +916,7 @@ aofVersion: 0.1.0
   {
     name: "130/02 task03 [outline] a drive the source cancelled settles cancelled, and the halt names the run (2 rows)",
     async run() {
-      const request = { loopRunId: "x", scope: "03", workspaceId: null, level: 2, state: "requested", requestedAt: "2026-09-13T12:00:00.000Z", escalatedAt: "2026-09-13T12:00:01.000Z", honouredAt: null, cancelled: null, by: { node: "umamis-msi", pid: 4242 } };
+      const request = { loopRunId: "x", scope: "03", workspaceId: null, level: 2, state: "requested", requestedAt: "2026-09-13T12:00:00.000Z", escalatedAt: "2026-09-13T12:00:01.000Z", honouredAt: null, cancelled: null, by: { node: "win-host-a", pid: 4242 } };
       for (const row of [{ when: "live", sessionId: "sess-1", spawns: 1 }, { when: "pre-spawn", sessionId: null, spawns: 0 }]) {
         const fx = await loopFixture();
         try {
@@ -935,7 +935,7 @@ aofVersion: 0.1.0
           assert.equal(run.sessionId, row.sessionId);
           assert.ok(run.updatedAt);
           assert.deepEqual(state.driven, [{ ref: "03/01", phase: "continue", runId: run.runId, outcome: "cancelled", attempt: 1, cycle: 1 }]);
-          assert.ok(last.endsWith(`Details: signal=stop-request; level=2; request=${stopRequestPath(loopStopsDir(), state.loopRunId)}; by=umamis-msi:4242; cancelled=${run.runId}.`), last);
+          assert.ok(last.endsWith(`Details: signal=stop-request; level=2; request=${stopRequestPath(loopStopsDir(), state.loopRunId)}; by=win-host-a:4242; cancelled=${run.runId}.`), last);
           assert.equal(runs.filter((r) => r.state === "running").length, 0, "no running row is left behind");
           const item = await resolveItemExact(fx.ctx, "03/01");
           const fresh = await transitionRunStart(item, { now: new Date().toISOString() }, { workspace: fx.workspace });

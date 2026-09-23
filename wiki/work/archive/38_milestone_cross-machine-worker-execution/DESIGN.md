@@ -96,7 +96,7 @@ enumerated **its** four-row anatomy. The build and the build-time design review 
 
 S1/S7/S9 as first written bound a **per-node** model: *"the line reads exactly one of three states"*,
 *"run + session ⇒ `running N runs`, **never** the session"*, *"must not change card height."* A live,
-producer-fed render (FRAME A) falsified all three: `umamis-msi`, with a real run in the `aof` workspace
+producer-fed render (FRAME A) falsified all three: `win-host-a`, with a real run in the `aof` workspace
 and a live session in the `pilot-app-portal` workspace, renders **two stacked lines** —
 `running 1 run` above `working · pilot-app-portal (session)` — and the card grows by one line.
 
@@ -250,7 +250,7 @@ what production mounts in every scope (§Correction 1). **Component:** `GlobalNo
 **The card's real anatomy — SIX regions, in order** (this is what a reviewer ticks against):
 
 1. **Identity line** — presence **dot** + mono `nodeId` + **role badge** (`WORKER` / `CONTROL`). *Carried forward verbatim.*
-2. **Host line** — the machine host (`Umamis-MSI`, `Umamis-Mac-mini.local`). *Carried forward verbatim.*
+2. **Host line** — the machine host (`Win-Host-A`, `Umamis-Mac-mini.local`). *Carried forward verbatim.*
 3. **Presence-age line** — `last seen Nd ago` / `never seen`. *Carried forward verbatim.* (**Node liveness** — a separate ramp from current-work; the two must never merge. Its vocabulary differs from the m25 `PresenceLabel` ramp; see **DG-1** — not m38's to fix.)
 4. **CURRENT-WORK REGION — THE CHANGED REGION.** **1–2 text lines**, `text-[13px]`, same typographic slot. Renders via `nodeCurrentWork(node)` → **`fleetCurrentWorkLines(node.presence ?? {})`** (*plural — see §Correction 2*). Judged against **S1–S11** and the States table.
 5. **Fabric line** — `fabric addr: …`. *Carried forward verbatim.* (Sits one line lower when the region shows two lines — **expected**, see S9.)
@@ -576,7 +576,7 @@ remains is recorded below.
 timed-out row) and GAP-S2-3 (the frozen picker's target) closed at verdict 2. DG-15 (the overprint), DG-16 (the
 `l…` stub) and DG-17 (the truncated holder) closed at verdict 3. **DG-19, DG-20, DG-21 and DG-22 closed after
 verdict 4** — built, re-rendered and witnessed:
-- **DG-21** — every rung of the refusal ladder now names the OUTCOME (`refused · umamis-msi`), so the
+- **DG-21** — every rung of the refusal ladder now names the OUTCOME (`refused · win-host-a`), so the
   `destructive` tint is never the only thing distinguishing a refusal from region 5's `assigned → <same node>`.
 - **DG-20** — the workspace name is gated on FIT, and the **discriminating frame was finally produced**
   (`09-DG20-short-name-with-chip`): the `aof` card carries a chip **and keeps its name**, while
@@ -652,7 +652,7 @@ refusal**, 140.36 under the timeout; decay **5017 ms** ≈ 1 × POLL_MS; timeout
 | **2 · title** | **CONFORMS** | `Homedata Live Property Data` (h3), unchanged in every state. |
 | **3 · progress row + track** | **CONFORMS** | `stories done` · `2 / 4` + the track, unchanged. |
 | **4 · story dots + count** | **CONFORMS** | Four dots + `4 stories`, unchanged. |
-| **5 · footer / attention cluster** | **GAPS** | Vocabulary and placement conform (the m35 `assigned` muted pill, `→ <target>`, the `· just now` / `· 5s ago` tail), and **DG-13 c5's headline is MET — the target now renders in FULL**, including a 30-character id (04: `→ umamis-msi`; 08: `→ umamis-mac-mini-build-agent-02`). **F21 re-witnessed in pixels (04b):** two cards share `ref 18` and only the CLICKED one carries the chip. But the **yield mechanism** is broken twice: in 08 the full target **collides with `Open board →`** — the trailing `2` and the leading `O` occupy the same pixels and the chip's `· just now` tail is destroyed (**DG-15**); in 04/04b/05/06/07 the workspace name renders as a **1–3 glyph stub** (`l…` / `le…` / `let…`) instead of being dropped (**DG-16**). |
+| **5 · footer / attention cluster** | **GAPS** | Vocabulary and placement conform (the m35 `assigned` muted pill, `→ <target>`, the `· just now` / `· 5s ago` tail), and **DG-13 c5's headline is MET — the target now renders in FULL**, including a 30-character id (04: `→ win-host-a`; 08: `→ umamis-mac-mini-build-agent-02`). **F21 re-witnessed in pixels (04b):** two cards share `ref 18` and only the CLICKED one carries the chip. But the **yield mechanism** is broken twice: in 08 the full target **collides with `Open board →`** — the trailing `2` and the leading `O` occupy the same pixels and the chip's `· just now` tail is destroyed (**DG-15**); in 04/04b/05/06/07 the workspace name renders as a **1–3 glyph stub** (`l…` / `le…` / `let…`) instead of being dropped (**DG-16**). |
 | **6 · assign affordance row** | **CONFORMS on its whole state axis · GAPS on ONE message clause** | A4/A6/A7 (all eight states) + A8/A9/A10 conform in real pixels. The single divergence: the refusal message still truncates before naming the holder — `already assigned → uma…` (**DG-17**). |
 | **7 · terminal-view** | **NOT ASSESSED** | No assignment in these fixtures carries a `sessionId`, so **no panel renders** — which is the CORRECT behaviour (V12 / ADR-014 inv.4), but it means region 7 is not exercised. Not inferred either way. |
 
@@ -662,7 +662,7 @@ refusal**, 140.36 under the timeout; decay **5017 ms** ≈ 1 × POLL_MS; timeout
 | --- | --- | --- |
 | **A1** | **CONFORMS** | The row is its own `border-t` row **below** the footer, a sibling of `Open board →` and never nested in it; all five carried-forward regions render verbatim (02/06/07 pages). |
 | **A2** | **CONFORMS** | Picker `bg-muted`, mono, quiet; action = primary text on a faint primary fill with a `primary/40` border, 11px semibold — boxed but not solid, found without shouting. **Observation, NOT a gap:** the boxed action still out-weighs the bare-text `Open board →` above it. That is **DG-3's `@uat` question**, unchanged from the first pass. |
-| **A3** | **CONFORMS (the half a render can judge)** | Options are exactly `["build-box-01","umamis-mac-mini","umamis-msi"]` — precisely the three nodes the page's own NODES region lists. No invented `any`, no placeholder, no dropped node. The **OPEN** dropdown stays NOT ASSESSED (OS chrome). |
+| **A3** | **CONFORMS (the half a render can judge)** | Options are exactly `["build-box-01","umamis-mac-mini","win-host-a"]` — precisely the three nodes the page's own NODES region lists. No invented `any`, no placeholder, no dropped node. The **OPEN** dropdown stays NOT ASSESSED (OS chrome). |
 | **A4** | **CONFORMS** | Frame 01: picker disabled with the single honest placeholder `No worker nodes yet`, action disabled — **and still reserving its full 83.06px**, so DG-13 c1 holds in the disabled state too. No selectable option, no phantom target, no blank. |
 | **A5** | **NOT ASSESSED** | No one-node-roster frame in this pass. Nothing in the DG-13/DG-14 build touches the one-node path; the first pass's CONFORMS is not disturbed, but it is not re-witnessed here either. |
 | **A6** | **CONFORMS in letter** | 3-node roster; the **stale** `build-box-01` (hollow dot, `last seen 30m ago` in the NODES region) is still offered **and** is the preselected first option, in deterministic node-id order. Liveness does not filter. **DG-5 re-witnessed and still open:** the picker offers that stale node with **no cue at all**. |
@@ -679,8 +679,8 @@ refusal**, 140.36 under the timeout; decay **5017 ms** ≈ 1 × POLL_MS; timeout
 | **empty-roster** | **CONFORMS** | 01 — disabled picker, `No worker nodes yet`, disabled action at full reserved width. |
 | **one-node** | **NOT ASSESSED** | no frame in this pass. |
 | **many-nodes (live + stale)** | **CONFORMS** | 02 / 06-page / 07-page — three nodes, the stale one offered and preselected, node-id order. |
-| **assigning** | **CONFORMS** | 03 — picker frozen on `umamis-msi` + disabled, `Assigning…` + disabled, geometry unchanged. |
-| **sent** | **CONFORMS — and load-bearing** | 04 / 04b — `Sent`, `muted` (the tint **dropped**, not added to), disabled, picker frozen. **The operator chose `umamis-msi`, which is NOT the alphabetical default `build-box-01`** — so "frozen on the CHOSEN node" is witnessed, not a coincidence of ordering. No mark, no glyph, no motion. |
+| **assigning** | **CONFORMS** | 03 — picker frozen on `win-host-a` + disabled, `Assigning…` + disabled, geometry unchanged. |
+| **sent** | **CONFORMS — and load-bearing** | 04 / 04b — `Sent`, `muted` (the tint **dropped**, not added to), disabled, picker frozen. **The operator chose `win-host-a`, which is NOT the alphabetical default `build-box-01`** — so "frozen on the CHOSEN node" is witnessed, not a coincidence of ordering. No mark, no glyph, no motion. |
 | **refused** | **CONFORMS as a state** | 06 — selection kept and legible, `Assign →` re-enabled in its primary tint, inline `destructive`, no hold. *(Its message clause is DG-17.)* |
 | **timed out (no answer)** | **CONFORMS** | 07 — copy **`no answer — timed out`** verbatim at a measured **10057 ms**, the existing `refused` presentation reused with **no new vocabulary**, selection kept, action re-enabled (re-click permitted), no `Sent`, no hold. Its `title` says the request **may still have succeeded** and names region 5 as the authority — exactly DG-14 c3's discipline. **Clause 5 (a LATE 2xx) NOT ASSESSED** — the held POST was never answered. |
 | **assigned (region 5, durable)** | **CONFORMS in vocabulary, placement and TIMING · GAPS in width behaviour** | 04/05/06/07/08 — the chip lands within a round trip of the 2xx via the one silent re-load. Width behaviour: DG-15 / DG-16. |
@@ -693,7 +693,7 @@ refusal**, 140.36 under the timeout; decay **5017 ms** ≈ 1 × POLL_MS; timeout
   - **c1 (fixed action width) — CLOSED.** 83.06px in **all eight** states including disabled, and visible
     side-by-side in a single image (04b). A label swap no longer moves anything.
   - **c2 (picker floor · no bare chevron) — CLOSED on its forbidden condition.** The picker is **never** a bare
-    chevron; under **both** message states it names `umamis-msi` in full with its chevron (06/07). At its
+    chevron; under **both** message states it names `win-host-a` in full with its chevron (06/07). At its
     narrowest — **124.66px** — it renders ≈14.8ch of the select's mono glyph plus the chevron, satisfying the
     ≥14ch floor. *(Its behaviour under a message longer than these two is **NOT ASSESSED**: no frame presses the
     picker below 124.66px, so I cannot tell whether that value is the floor or merely the remainder.)*
@@ -702,7 +702,7 @@ refusal**, 140.36 under the timeout; decay **5017 ms** ≈ 1 × POLL_MS; timeout
     below its ~173px natural width. Timed-out: 140.36 + 83.06 + 121.23 + 16 = **360.65** — the message takes its
     content width and the **picker** absorbs the remainder. Both messages carry the full text in a native `title`.
   - **c4 (copy priority) — CLOSED IN COPY, NOT IN PIXELS.** The string is exactly c4's form
-    (`already assigned → umamis-msi`) and no longer spends its width restating the ref — but it still renders
+    (`already assigned → win-host-a`) and no longer spends its width restating the ref — but it still renders
     **`already assigned → uma…`**. → **DG-17**.
   - **c5 (region 5 names the target in full) — CLOSED ON ITS HEADLINE, BROKEN IN MECHANISM.** The target renders
     in FULL, including a 30-character id. But `Open board →` never yields, so the two **collide** (**DG-15**),
@@ -711,8 +711,8 @@ refusal**, 140.36 under the timeout; decay **5017 ms** ≈ 1 × POLL_MS; timeout
   at 10057 ms, the existing `refused` presentation reused verbatim, the copy `no answer — timed out` (never "not
   sent"), and a resting state that permits re-click. The hung POST no longer wedges the row; the surface's most
   confusing possible state now has a described, rendered answer.
-- **GAP-S2-3 — CLOSED.** Frame 04: the frozen picker reads `umamis-msi`, region 5's chip reads `→ umamis-msi`,
-  and the real store row reads `target_node_id: umamis-msi` — **three independent readings, one node.** Frame 08
+- **GAP-S2-3 — CLOSED.** Frame 04: the frozen picker reads `win-host-a`, region 5's chip reads `→ win-host-a`,
+  and the real store row reads `target_node_id: win-host-a` — **three independent readings, one node.** Frame 08
   repeats it on a second, longer target (`umamis-mac-mini-build-agent-02` in the picker AND the chip). In **both**
   the chosen node is not the alphabetical default, so the agreement cannot be an artefact of ordering. The target
   is **derived, not remembered**, and `Sent`'s warrant — "the target is named for free" — is honest again.
@@ -809,7 +809,7 @@ unspecified. **A10 SPLIT** — height conforms (38px in every state; sibling car
 
 **NOT-ASSESSED — do not infer a verdict for any of these.** The `<select>` in its **OPEN** state (a native
 dropdown is OS chrome, outside the page compositor, so headless Chromium cannot capture it — the option set was
-verified textually instead: `["build-box-01","umamis-mac-mini","umamis-msi"]` in node-id order, which is what A3
+verified textually instead: `["build-box-01","umamis-mac-mini","win-host-a"]` in node-id order, which is what A3
 is judged on); **390 / 768** (§Surface 2's own recorded reason); the **`Assigning…` → `Sent` transition** (two
 stills cannot witness the no-flicker clause); the m35 chip's **dot hollow-vs-filled** (below crop resolution —
 A8's dot is unjudged, owed a zoom crop); **region 7** beneath the row (no resolvable session in these fixtures);
@@ -831,7 +831,7 @@ the **full-board disclosure** question (two cards is not a board); and the **`@m
   REAL UI and confirms the chip — remains the human gate, closed at `aof:verify 38`.
 
 > **Note 2026-07-23 (a).** The renders handed for §Surface 3 DO show the affordance row (one-node roster,
-> `umamis-msi` preselected, `Assign →` at rest) on all three milestone cards, but they were produced to
+> `win-host-a` preselected, `Assign →` at rest) on all three milestone cards, but they were produced to
 > exercise the TERMINAL states, not the affordance's own state axis (no empty roster, no multi-node roster,
 > no in-flight/refused state, no freshly-minted `assigned` chip). §Surface 2's verdict therefore **stays
 > INCONCLUSIVE**: a partial incidental frame is not the render this checklist owes. One observation is
@@ -1513,7 +1513,7 @@ and it closes the honest doubt rather than carrying it silently.
 ### DG-17 — region 6: the refusal message STILL truncates before naming the holder (NEW 2026-07-24, m38 / story-04) — **the RULE is wrong against reality, not the build**
 
 - **Observed (frames `06-refused-card.png` / `-page.png`):** the copy is exactly DG-13 c4's form —
-  `already assigned → umamis-msi`, outcome first, no restatement of the ref — and the full sentence is carried in
+  `already assigned → win-host-a`, outcome first, no restatement of the ref — and the full sentence is carried in
   the element's `title`. But the slot is **136.94px** and the rendered text is **`already assigned → uma…`**. The
   **holder — the one fact no other region carries** — is still cut, which is the precise defect DG-13 was filed on.
 - **The arithmetic shows the rule cannot be satisfied.** The row is 360.66px: picker floor 124.66 (DG-13 c2)
@@ -1584,12 +1584,12 @@ and it closes the honest doubt rather than carrying it silently.
 ### DG-21 — every rung of the refusal ladder must name the OUTCOME (NEW 2026-07-24, third verdict) — **CLOSED**
 
 - **Observed:** DG-17's own middle rungs (`held by <holder>`, `→ <holder>`) carried no outcome word, so the row
-  read `held by umamis-msi` in red beside region 5's `assigned → umamis-msi` and the picker's `umamis-msi` — the
+  read `held by win-host-a` in red beside region 5's `assigned → win-host-a` and the picker's `win-host-a` — the
   same node id three times, twice adjacent, with **only the colour** separating "someone else holds this" from
   "your assign succeeded". **A9/S4's rail — colour and label always travel together, never colour alone —
   broken by the designer's own copy.**
 - **Rule (designer): the ladder drops the HOLDER, never the OUTCOME:** `<outcome> → <holder>` →
-  `refused · <holder>` → `<outcome>` alone. **CLOSED** — witnessed as `refused · umamis-msi`, whole, at 115.47px.
+  `refused · <holder>` → `<outcome>` alone. **CLOSED** — witnessed as `refused · win-host-a`, whole, at 115.47px.
 - **Accepted residual (recorded, not deferred):** the rung does not say the node is the *holder* rather than the
   *refuser*. At 22ch there is no room for outcome + role; the `title` carries the whole sentence; under either
   reading the operator's next action is identical. Judge at `@uat` on the case still unrendered — a refusal whose

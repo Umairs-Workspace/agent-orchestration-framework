@@ -171,7 +171,7 @@ async function withProductionWiringFixture(fn) {
     // review fix (live soak, 2026-07-18) — an ISOLATED AOF_GLOBAL_HOME is not
     // optional here: loadWorkspace/publishNodeRecord/startLauncher all touch
     // real global state without one, and this fixture's OWN node id
-    // ("umamis-msi" is NOT used here, but a same-machine dev running this suite
+    // ("win-host-a" is NOT used here, but a same-machine dev running this suite
     // against a REAL live control daemon must never have this fixture's fake
     // worker/control node records land in the REAL ~/.aof registry). Copied from
     // (and this same fix is owed back to) mesh-worker-clone-credential-pull.test.mjs's

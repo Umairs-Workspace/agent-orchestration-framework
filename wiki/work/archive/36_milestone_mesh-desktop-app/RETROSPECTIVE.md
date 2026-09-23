@@ -16,7 +16,7 @@ Accepted `2026-07-10` after a **full live cross-machine UAT** — not a pure-sea
 live behaviour stubbed behind `@manual`/`@uat` tags (blocker **F1**), so `cargo test` was 67/0 green
 while the SPEC objective was undelivered. F1 was re-wired into a real supervisor runtime
 (`supervisor.rs` + rewritten `main.rs`), and at this verify the runtime was **run end-to-end on real
-hardware across two machines** (Windows control `umamis-msi` running the app + macOS worker
+hardware across two machines** (Windows control `win-host-a` running the app + macOS worker
 `umamis-mac-mini` over Tailscale) and operator-accepted: one `aof mesh desktop install`, a real tray
 icon, the mesh server + `aof mesh ui` brought up and kept up across a crash (Job-Object-contained,
 backoff-restarted), the window rendering the live two-node fleet — terminal closed. Seven UAT defects

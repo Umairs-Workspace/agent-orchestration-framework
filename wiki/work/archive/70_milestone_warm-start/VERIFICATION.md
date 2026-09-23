@@ -506,7 +506,7 @@ labelled block. Checked by reading, as at every gate before it — F-03 below: n
 
 The snapshot's headline claim is that a phase was driven through the door that declares it and left
 a run record carrying a `spend` envelope. The record was opened and read directly at
-`aof-test-repo/wiki/work/01_milestone_warm-measure/stories/00_story_warm-measure/runs/umamis-msi/20260824T101918473Z-0005.json`:
+`aof-test-repo/wiki/work/01_milestone_warm-measure/stories/00_story_warm-measure/runs/node-7297/20260824T101918473Z-0005.json`:
 
 | field | value read |
 |---|---|

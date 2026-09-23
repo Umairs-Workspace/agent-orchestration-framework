@@ -241,7 +241,7 @@ The `@uat` is why this story is `in-review` and not `done` — see the gate belo
 
 Run on real machines after the milestone build was deployed to both nodes (control node
 `payload 42864d8.20260803T000925`, desktop app supervising `:4181`/`:4182`; the WSL worker
-`umamis-msi-wsl` synced to the same `src/`). No daemon was started, stopped or restarted for these
+`win-host-a-wsl` synced to the same `src/`). No daemon was started, stopped or restarted for these
 two lanes, and this repo's own `.claude/settings.json` and `.aof/aof.config.json` were provably
 untouched throughout (`git status --short` empty; the live file's sha unchanged at 1203 bytes).
 
@@ -258,7 +258,7 @@ A **real `claude -p` session** (claude 2.1.220) then performed one `Write` on ea
 | node | result |
 |---|---|
 | Windows control node | exit 0, one `TOOL_USE Write`, `is_error: false`. Queue gained exactly **one** line, 123 bytes, LF-terminated, no CR: `{"tool":"Write","path":"C:\\…\\wiki\\work\\99_milestone_lane1\\STORY.md"}` |
-| WSL worker `umamis-msi-wsl` | exit 0, `result success`, zero hook mentions in the transcript. Queue gained exactly **one** line, 84 bytes, LF, no CR: `{"tool":"Write","path":"/tmp/…/wiki/work/99_milestone_lane1/STORY.md"}` |
+| WSL worker `win-host-a-wsl` | exit 0, `result success`, zero hook mentions in the transcript. Queue gained exactly **one** line, 84 bytes, LF, no CR: `{"tool":"Write","path":"/tmp/…/wiki/work/99_milestone_lane1/STORY.md"}` |
 | Mac worker `umamis-mac-mini` | **NOT-COVERED** — measured, not assumed: the host is reachable (`ssh … hostname` exit 0, 41 ms ping) but `which -a aof node claude` resolves **none** of the three in either a non-login or a `zsh -lc` shell, so a real session is not startable without an operator at the machine — and per the rules an SSH-spawned session would lack the login keychain anyway (the documented "unauthenticated `claude`, burned runs" hazard) |
 
 Field by field the two lines are **byte-comparable**: identical key set and order (`[tool, path]`),
@@ -323,7 +323,7 @@ which every value survives); only the magnitude was wrong.
 The scenario's own words: *"it needs a real remote node running a real Claude Code agent whose own writes
 fire the hook, and an operator reading the control node WHILE the run is still live."* That is what was
 run — on the standing test-bed (`C:\Source\umami\aof-test-repo`, workspace `52294b307214c27d`), with the
-Windows control node on `payload 42864d8` and the WSL worker `umamis-msi-wsl` executing
+Windows control node on `payload 42864d8` and the WSL worker `win-host-a-wsl` executing
 `/aof:refine 00` under assignment `428fd15a-8409-47f7-bb45-4d8868ddeb7b`, run
 `20260803T001759834Z-0000`.
 
@@ -340,7 +340,7 @@ The queue was observed rising to a line and returning to zero as the daemon drai
 tick — the rename-then-read consume, in production.
 
 **The control node holds nine artifacts, every one authored by the worker.** Read from the control's
-cache mid-run, all stamped `node_id: umamis-msi-wsl`:
+cache mid-run, all stamped `node_id: win-host-a-wsl`:
 
 | ref | doc | bytes |
 |---|---|---|
@@ -370,12 +370,12 @@ $ aof work tasks 00/01 --json
                               …"Shouting a greeting" (outline, executable)… ],
                "counts": { "executable": 3, "manual": 0, "uat": 0 } } ],
   "fromWorker": true,
-  "reportedBy": "umamis-msi-wsl" }
+  "reportedBy": "win-host-a-wsl" }
 ```
 
 …while the control node's **own disk for that milestone contained only `SPEC.md` and `STATE.md`** — no
 `stories/` directory at all, and therefore no feature file anywhere on the control's filesystem. The
-envelope says so itself: `fromWorker: true, reportedBy: umamis-msi-wsl`.
+envelope says so itself: `fromWorker: true, reportedBy: win-host-a-wsl`.
 
 **This closes `commands/tasks.mjs:15` — *"the features live in the worker's worktree and are not streamed
 yet"* — observably, on two machines, with a human able to read the answer.** It is the milestone's
@@ -392,7 +392,7 @@ and this run is direct evidence of why that story is load-bearing rather than me
 
 **Accepted by the operator, 2026-08-03.** The claim put to them was the scenario's own: *an operator can
 read a live remote agent's freshly authored features on the control node, mid-run.* They were shown the
-`aof work tasks 00/01 --json` envelope above (`fromWorker: true`, `reportedBy: umamis-msi-wsl`, three
+`aof work tasks 00/01 --json` envelope above (`fromWorker: true`, `reportedBy: win-host-a-wsl`, three
 `@executable` scenarios parsed from a feature file authored minutes earlier on another machine), together
 with the fact that the control node's own disk for that milestone held only `SPEC.md` and `STATE.md`.
 Verdict: **accept.**
@@ -769,7 +769,7 @@ soak) + **`@uat`** (task 05, 3 scenarios). No UI surface, so no design-conforman
 ### `@manual` task 04 — RUN LIVE 2026-08-05; the headline claim PASSES, and the run found a REAL GAP
 
 Run on the standing test-bed against the deployed build (control `payload
-7002ffb+dirty.20260805T112416`, worker `umamis-msi-wsl` on byte-identical `src/`). The fixture was
+7002ffb+dirty.20260805T112416`, worker `win-host-a-wsl` on byte-identical `src/`). The fixture was
 built exactly as the Background specifies: `origin/aof/mesh/00` established at the worker's own commit
 `68c8d76`, the item at a gate (all prior assignments terminal), and a **substantive** control-side edit
 committed at that gate — a new `--greeting <word>` acceptance criterion carrying the unique token
@@ -950,7 +950,7 @@ edit**, which is about as direct as "the agent saw it" gets. The phase did not w
 text (which had three stories and no such flag), and nothing the previous phase produced is missing.
 
 **Scenario 2 — "which base did it run on", from the control node alone.** One
-`aof mesh logs --node umamis-msi-wsl` read returns the pair, for every outcome the advance has:
+`aof mesh logs --node win-host-a-wsl` read returns the pair, for every outcome the advance has:
 
 ```
 worker-worktree-base:    worktree on EXISTING item branch aof/mesh/00 ADOPTED from origin
@@ -1057,7 +1057,7 @@ deploying this milestone's HEAD to both nodes.
 **The build under test, verified at the source rather than assumed.** Control node
 `payload 7002ffb+dirty.20260805T112416`; **both daemons restarted onto it** — `mesh-ui` at
 `2026-08-05T12:54:52.491Z` and `mesh-serve` at `12:54:53.051Z`, each printing that build on its own
-`daemon-started` line. The WSL worker `umamis-msi-wsl` restarted at `12:55:57.765Z`; its `src/` tree is
+`daemon-started` line. The WSL worker `win-host-a-wsl` restarted at `12:55:57.765Z`; its `src/` tree is
 **byte-identical to the control's — 213 of 213 `.mjs` files, zero differing** (per-file sha256, both
 sides normalised). `claude` answers `MESH_AUTH_OK` in the daemon's own bare environment
 (`env -i PATH=/usr/local/bin:/usr/bin:/bin`), so the documented "resolvable but unauthenticated" hazard
@@ -1083,12 +1083,12 @@ Against that, on the control node:
 
 | surface | answer | names the answering side? |
 |---|---|---|
-| `work find 00 --json` | the worker's row | `answeredFrom: cache`, `reportedBy: umamis-msi-wsl` |
+| `work find 00 --json` | the worker's row | `answeredFrom: cache`, `reportedBy: win-host-a-wsl` |
 | `work list --json` | **three worker-authored stories** (`00/00`, `00/01`, `00/02`), each `dir: null` | **no — by contract, see F-06.9** |
-| `work next --json` | `00/00` ready | `answeredFrom: cache`, `reportedBy: umamis-msi-wsl` |
-| `work doc 00/00 STORY --json` | the worker's 3,670-byte STORY.md body | `fromWorker: true`, `answeredFrom: cache`, `reportedBy: umamis-msi-wsl` |
-| `work run-status 00 --json` | the worker's run row | `fromWorker: true`, `answeredFrom: cache`, `reportedBy: umamis-msi-wsl` |
-| `work tasks 00/01 --json` | the worker's parsed `00_shout-flag.feature` | `fromWorker: true`, `reportedBy: umamis-msi-wsl` |
+| `work next --json` | `00/00` ready | `answeredFrom: cache`, `reportedBy: win-host-a-wsl` |
+| `work doc 00/00 STORY --json` | the worker's 3,670-byte STORY.md body | `fromWorker: true`, `answeredFrom: cache`, `reportedBy: win-host-a-wsl` |
+| `work run-status 00 --json` | the worker's run row | `fromWorker: true`, `answeredFrom: cache`, `reportedBy: win-host-a-wsl` |
+| `work tasks 00/01 --json` | the worker's parsed `00_shout-flag.feature` | `fromWorker: true`, `reportedBy: win-host-a-wsl` |
 
 `work list` returning three stories whose `dir` is `null`, on a machine whose disk has no `stories/`
 directory at all, is the exact transition this story exists to make: at `43/03`'s live run the same
@@ -1103,7 +1103,7 @@ to change it. So the control's republish tick was proven to be *running during t
 - control-authored workspace `9db1fd84f5895e38` — `newest = 13:06:59.432Z`, sampled at `13:07:03.275Z`:
   **the tick is writing, seconds before the sample**;
 - worker-authored test-bed rows `00/00`, `00/01`, `00/02` — frozen at `2026-08-03T00:56:05.435Z`,
-  **two days old and unmoved**, still `reportedBy: umamis-msi-wsl`.
+  **two days old and unmoved**, still `reportedBy: win-host-a-wsl`.
 
 Across a 7.4-minute window (`13:04:04Z` → `13:11:27Z`) with that tick running throughout,
 `work find 00 --json`, `work list --json` and `work doc 00 SPEC --json` were **byte-identical** — three

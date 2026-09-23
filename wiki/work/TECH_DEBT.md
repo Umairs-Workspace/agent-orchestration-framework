@@ -486,7 +486,7 @@ to re-report — and is the only other story that touches this seam's read side.
 ## 14. The clone-credential provider is fleet-GLOBAL, so a GitHub-configured mesh cannot dispatch to any other repo
 
 **Measured 2026-08-03**, during the m43 live cross-machine verification, on a two-node fleet (Windows
-control `umamis-msi` + WSL worker `umamis-msi-wsl`) against a purpose-built local test repo
+control `win-host-a` + WSL worker `win-host-a-wsl`) against a purpose-built local test repo
 (`C:\Source\umami\aof-test-repo`, workspace `52294b307214c27d`, `cloneUrl`
 `file:///mnt/c/Source/umami/aof-test-repo`).
 
@@ -526,8 +526,8 @@ workspace — all three membership rows are present in its `global_node_workspac
 
 ```
 [{"node_id":"umamis-mac-mini","workspace_id":"52294b307214c27d"},
- {"node_id":"umamis-msi","workspace_id":"52294b307214c27d"},
- {"node_id":"umamis-msi-wsl","workspace_id":"52294b307214c27d"}]
+ {"node_id":"win-host-a","workspace_id":"52294b307214c27d"},
+ {"node_id":"win-host-a-wsl","workspace_id":"52294b307214c27d"}]
 ```
 
 The WORKER's own local projection store has **no row for that workspace at all** — neither the
@@ -545,7 +545,7 @@ first reading of this item ("stale until restart") and points at the real cause 
 
 **The root cause, measured.** A node's workspace membership is derived from the workspaces that node can
 **see on its own filesystem**, and is published in its own node record. The worker's
-`~/.aof/mesh/nodes/umamis-msi-wsl.json` lists exactly one workspace:
+`~/.aof/mesh/nodes/win-host-a-wsl.json` lists exactly one workspace:
 
 ```json
 "workspaces": [ { "workspaceId": "9db1fd84f5895e38", "name": "aof",
@@ -666,7 +666,7 @@ projection, was the right home: see 130/ADR-005 §3's rejected alternative.)
 ## 19. A settled run can read `running` forever — three surfaces disagree about one run's outcome
 
 **Measured 2026-08-05**, live on the standing test-bed, while running `43/06`'s `@manual` soak. For run
-`20260803T001759834Z-0000` (assignment `428fd15a`, milestone `00`, worker `umamis-msi-wsl`):
+`20260803T001759834Z-0000` (assignment `428fd15a`, milestone `00`, worker `win-host-a-wsl`):
 
 | surface | state |
 |---|---|

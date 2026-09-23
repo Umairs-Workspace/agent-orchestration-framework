@@ -20,7 +20,7 @@ Feature: the real control→worker assignment over a live tailnet — a story di
   # NO Examples table: a single narrative run over two specific real hosts.
 
   Background:
-    Given a real control node (Windows, `umamis-msi`) running the mesh control-stream server on `mesh serve`
+    Given a real control node (Windows, `win-host-a`) running the mesh control-stream server on `mesh serve`
     And a real worker (macOS, `umamis-mac-mini`) on the SAME Tailscale tailnet, admitted as a live peer with its own local work in progress
     And the worker has the target repo published (`mesh.repo.published`) for the assigned workspace
     And `aof mesh ui` open on the control node

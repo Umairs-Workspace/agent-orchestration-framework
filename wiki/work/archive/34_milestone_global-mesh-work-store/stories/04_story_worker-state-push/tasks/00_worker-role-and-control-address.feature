@@ -15,19 +15,19 @@ Feature: a node resolves its mesh role and, when a worker, the control node's fa
 
     Examples:
       | nodeId          | controlNode      | role       |
-      | umamis-mac-mini | "umamis-msi"     | worker     |
-      | umamis-msi      | "umamis-msi"     | control    |
+      | umamis-mac-mini | "win-host-a"     | worker     |
+      | win-host-a      | "win-host-a"     | control    |
       | umamis-mac-mini | (absent)         | standalone |
 
   Scenario: a worker resolves the control node's dial address from the fabric peer map
-    Given this node is a worker whose control node is "umamis-msi"
-    And the fabric peer map lists "umamis-msi" with dial address "203.0.113.180"
+    Given this node is a worker whose control node is "win-host-a"
+    And the fabric peer map lists "win-host-a" with dial address "203.0.113.180"
     When the node resolves its stream target
     Then the resolved stream target is "203.0.113.180"
 
   Scenario: a worker whose control node is absent from the fabric enters stream retry
-    Given this node is a worker whose control node is "umamis-msi"
-    And the fabric peer map does NOT list "umamis-msi"
+    Given this node is a worker whose control node is "win-host-a"
+    And the fabric peer map does NOT list "win-host-a"
     When the node resolves its stream target
     Then no stream target is resolved
     And the node reports "control node not reachable on the fabric; stream sync will retry"

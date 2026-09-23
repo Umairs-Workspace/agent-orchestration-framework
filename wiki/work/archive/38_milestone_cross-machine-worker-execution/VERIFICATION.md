@@ -191,7 +191,7 @@ first, task-04 after**; **status: in progress — awaiting the m38 build on the 
 > **Deploy prerequisite (found at verify, `2026-07-10`).** The running mesh (`aof.exe mesh serve` +
 > `mesh ui`) was the **installed pre-m38 SEA**: it has no `aof session` verb (the wired Claude Code hooks
 > fail against it) and its presence daemon publishes 4-key records with **no `sessions` key** (confirmed on
-> the live `umamis-msi` / `umamis-mac-mini` presence). The m38 code is green in the working tree but
+> the live `win-host-a` / `umamis-mac-mini` presence). The m38 code is green in the working tree but
 > uncommitted/undeployed — so the live soaks require the m38 SEA built + installed and the daemon restarted
 > first. Operator is deploying m38 (their flow); task-04 additionally needs the second worker
 > (`umamis-mac-mini`) on m38 + a real private repo + the SECURITY-approved credential. **Not a code
@@ -773,7 +773,7 @@ precondition, and soaking as-is would repeat soak-run-1's exact mistake (measuri
 
 | node | role | last heartbeat | verdict |
 | --- | --- | --- | --- |
-| `umamis-msi` (this host) | control | `2026-07-22T09:21:29Z` | **`stale: true` — daemon down**; nothing listening on :4181–4183 |
+| `win-host-a` (this host) | control | `2026-07-22T09:21:29Z` | **`stale: true` — daemon down**; nothing listening on :4181–4183 |
 | `umamis-mac-mini` | worker | `2026-07-23T13:44:39Z` (16s before the check) | alive, **but publishing a PRE-m38 build** |
 
 - **The worker is on an old build — proven, not inferred.** Its live presence record is the FOUR-key
@@ -876,7 +876,7 @@ concern. Recorded so the accept is read against the right build state.)*
 | node | role | last heartbeat | presence keys | verdict |
 | --- | --- | --- | --- | --- |
 | `umamis-mac-mini` (worker) | worker | `2026-07-23T17:48:07Z` (alive) | `nodeId, heartbeatAt, activeRuns, aofVersion` (**4 — no `sessions`**) | **on a PRE-m38 build** |
-| `umamis-msi` (control) | control | `2026-07-22T09:21:29Z` | (5-key) | **`stale: true` — daemon down** |
+| `win-host-a` (control) | control | `2026-07-22T09:21:29Z` | (5-key) | **`stale: true` — daemon down** |
 
 The current (uncommitted) build is not deployed on either machine: the worker publishes the 4-key record the
 current `assemblePresenceRecord` cannot emit (it returns `sessions: sessions ?? []` unconditionally), and the
@@ -1104,7 +1104,7 @@ orchestration rendered and handed the frames; the designer judged them and never
 - **Two of the three prior gaps CLOSED outright.** **GAP-S2-2/DG-14 — CLOSED:** a hung POST times out at a measured
   **10057 ms** (= 2 × `POLL_MS`) into the existing `refused` presentation verbatim, reading `no answer — timed out`,
   re-click permitted. **GAP-S2-3 — CLOSED:** the frozen picker, region 5's chip and the **real store row** all read
-  `umamis-msi` — three independent readings, one node, on a node that is *not* the alphabetical default. The target
+  `win-host-a` — three independent readings, one node, on a node that is *not* the alphabetical default. The target
   is derived, not remembered.
 - **GAP-S2-1/DG-13 — CLOSED as filed** (action **83.06px in all eight** states; row **360.66 × 38px** in all eight; the
   picker never a bare chevron, **124.66px** at its narrowest; the message is the element that yields, full sentence in
@@ -1170,7 +1170,7 @@ was re-judged after each build, three more times, until it converged.
 back, nothing hand-seeded):
 - A 30-character target renders **in full** (`→ umamis-mac-mini-build-agent-02`) with **nothing overprinted**, the
   tail dropped whole rather than stubbed, and the drill-in degraded to its pinned `→` with the label in `title`.
-- The refusal reads **`refused · umamis-msi`** — the holder whole, and an outcome word in **every** rung, so the
+- The refusal reads **`refused · win-host-a`** — the holder whole, and an outcome word in **every** rung, so the
   `destructive` tint is never the only thing distinguishing a refusal from region 5's `assigned → <same node>`.
 - The workspace name is **full or dropped**, decided by fit: the `aof` card keeps its name beside a chip;
   `lark-guard-portal` is dropped whole with its separator.

@@ -2,7 +2,7 @@
 # Run this on the Mac (umamis-mac-mini). Gathers the facts needed to confirm (or
 # refute) whether the control node's global_workspace_descriptors.clone_url
 # (ADR-010 Gap A extended) is visible on the worker's OWN local database, writes
-# them to one file, and sends that file to the control node (umamis-msi) over
+# them to one file, and sends that file to the control node (win-host-a) over
 # tailscale (`tailscale file cp`). Written during the milestone-38 live soak
 # (2026-07-18) after the first cross-machine-registry-sync fix failed against
 # the real worker and the operator asked for direct evidence rather than a
@@ -43,8 +43,8 @@ DB="$HOME/.aof/mesh/work/projection.sqlite"
     sqlite3 "$DB" "PRAGMA table_info(global_workspace_descriptors);"
   fi
   echo
-  echo "=== node record for the control node (umamis-msi) ==="
-  cat "$HOME/.aof/mesh/nodes/umamis-msi.json" 2>&1
+  echo "=== node record for the control node (win-host-a) ==="
+  cat "$HOME/.aof/mesh/nodes/win-host-a.json" 2>&1
   echo
   echo "=== last 40 lines of the most recent mesh-serve log (stderr) ==="
   LATEST_ERR=$(ls -t "$HOME"/.aof/mesh/logs/mesh-serve.*.log.err 2>/dev/null | head -1)
@@ -57,5 +57,5 @@ DB="$HOME/.aof/mesh/work/projection.sqlite"
 } > "$OUT" 2>&1
 
 echo "Wrote $OUT"
-tailscale file cp "$OUT" umamis-msi:
-echo "Sent to umamis-msi via tailscale file cp."
+tailscale file cp "$OUT" win-host-a:
+echo "Sent to win-host-a via tailscale file cp."

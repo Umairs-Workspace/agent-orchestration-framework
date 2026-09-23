@@ -81,7 +81,7 @@ so a record written before the key existed projects `false` rather than absent.
 
 DG-50-1 is the milestone's headline rule and no render has ever exercised it. At accept the fleet
 carried no node able to host a launched session: the only presence-`live` node was the control node,
-which is excluded by design, and both worker nodes were down (`umamis-msi-wsl` last seen
+which is excluded by design, and both worker nodes were down (`win-host-a-wsl` last seen
 2026-08-11, `umamis-mac-mini` 2026-07-27). The success path is exercised in-process by story 03's 34
 scenarios, which spawn real PTYs and write real session records; what is unobserved is the rendered
 tile, not the spawn.

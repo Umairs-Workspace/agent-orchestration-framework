@@ -473,7 +473,7 @@ export const loopCommandResumeTests = [
           const dir = loopStopsDir();
           const source = fakeStopSource({ reads: { dir, loopRunId: "L1" } });
           const request = async () => {
-            for (let rung = 0; rung < row.level; rung += 1) await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
+            for (let rung = 0; rung < row.level; rung += 1) await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
             source.raise(row.level, row.producer);
           };
           if (row.when === "before-first-tick") source.onPoll = async (n) => { if (n === 1) await request(); };
@@ -511,7 +511,7 @@ export const loopCommandResumeTests = [
         const source = fakeStopSource({ reads: { dir, loopRunId: "L1" } });
         source.onPoll = async (n) => {
           if (n !== 1) return;
-          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date(T0) });
+          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date(T0) });
           await markStopHonoured(dir, "L1", { now: () => new Date(T0), cancelled: null });
           source.raise(1, "stop-request");
         };
@@ -575,7 +575,7 @@ export const loopCommandResumeTests = [
           await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
           const dir = loopStopsDir();
           if (row.state !== "absent") {
-            for (let rung = 0; rung < row.level; rung += 1) await requestLoopStop(dir, { loopRunId: row.id, scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+            for (let rung = 0; rung < row.level; rung += 1) await requestLoopStop(dir, { loopRunId: row.id, scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
             if (row.state === "honoured") await markStopHonoured(dir, row.id, { now: () => new Date("2026-09-13T11:31:00.000Z") });
           }
           const otherBytes = row.id === "L-old" ? await readFile(stopRequestPath(dir, "L-old"), "utf8") : null;
@@ -601,8 +601,8 @@ export const loopCommandResumeTests = [
       const fx = await loopFixture();
       try {
         const dir = loopStopsDir();
-        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
-        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:31:00.000Z") });
+        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:31:00.000Z") });
         await markStopHonoured(dir, "L-old", { now: () => new Date("2026-09-13T11:32:00.000Z") });
         const bytes = await readFile(stopRequestPath(dir, "L-old"), "utf8");
         const driver = completingDriver(fx);
@@ -624,13 +624,13 @@ export const loopCommandResumeTests = [
         const dir = loopStopsDir();
         const T0 = "2026-09-13T11:30:00.000Z";
         const NOW = "2026-09-13T12:00:00.000Z";
-        await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date(T0) });
+        await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date(T0) });
         await markStopHonoured(dir, "L1", { now: () => new Date(T0) });
         const source = fakeStopSource({ reads: { dir, loopRunId: "L1" } });
         // Poll #2 is the one after the first drive settles: a NEW request lands there.
         source.onPoll = async (n) => {
           if (n !== 2) return;
-          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
+          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
           source.raise(1, "stop-request");
         };
         const driver = completingDriver(fx);
@@ -656,8 +656,8 @@ export const loopCommandResumeTests = [
       const fx = await loopFixture();
       try {
         const dir = loopStopsDir();
-        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
-        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:31:00.000Z") });
+        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+        await requestLoopStop(dir, { loopRunId: "L-old", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:31:00.000Z") });
         await markStopHonoured(dir, "L-old", { now: () => new Date("2026-09-13T11:32:00.000Z") });
         const bytes = await readFile(stopRequestPath(dir, "L-old"), "utf8");
         const driver = completingDriver(fx, { onCommand: closing(fx) });

@@ -71,7 +71,7 @@ working-tree positions and sit ~32 lines below their `b088825c` equivalents.
 | PRINTERS roster / ceiling | **12** entries, `commands/loop.mjs` already licensed as a `cli.launch` body | `sed -n '32,70p' test/arch/command/acd-console-log-confined.test.mjs` |
 | `decideScheduleToClose` call sites in the shell | **2** — `:1616` (resume lineage) and `:1676` (in-process retry) | `grep -n "decideScheduleToClose" src/commands/loop.mjs` |
 | — the `startedAt` either one passes | a **run-derived** instant: `retryLineageStartedAt(...)` at `:1615`, else `phaseRun.record.createdAt` at `:1657` | `sed -n '1611,1680p' src/commands/loop.mjs` |
-| the failing run record, 124/00 attempt 1 | `createdAt` 23:32:33.272Z · `heartbeatAt` 00:02:19.028Z · `updatedAt` = `reclaimedAt` 11:02:13.985Z · `failureReason` `runtime_offline` · `attempt` 1 · `retryOf` null | `node -e` over `…/124…/stories/00…/runs/umamis-msi/20260907T233233272Z-0000.json` |
+| the failing run record, 124/00 attempt 1 | `createdAt` 23:32:33.272Z · `heartbeatAt` 00:02:19.028Z · `updatedAt` = `reclaimedAt` 11:02:13.985Z · `failureReason` `runtime_offline` · `attempt` 1 · `retryOf` null | `node -e` over `…/124…/stories/00…/runs/node-7297/20260907T233233272Z-0000.json` |
 | — attempt duration **at its last heartbeat** | **1,785,756 ms = 29.8 min** | same record: `(heartbeatAt − createdAt)` |
 | — `updatedAt − createdAt` (the reclaim stamp) | **41,380,713 ms = 11.49 h** | same record |
 | the lineage that succeeded, same story, same day | `-0001` 20.0 min (`timeout`) → `-0002` 30.1 min (`timeout`, `retryOf` `-0001`) → `-0003` 18.2 min (`done`, `retryOf` `-0002`) | `node -e` over the three records |

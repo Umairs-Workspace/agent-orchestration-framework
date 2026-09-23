@@ -30,7 +30,7 @@ Feature: the ladder is 129/04's — the first request drains, the second cancels
   Background:
     Given an isolated aof home and `dir` = `loopStopsDir()`
     And `NOW` is an injected clock answering successive `Date`s whose ISO strings are `T1`, `T2`, `T3`, …
-    And `BY` is `{ node: "umamis-msi", pid: 4242 }` and the degrade sink is the injected test sink
+    And `BY` is `{ node: "win-host-a", pid: 4242 }` and the degrade sink is the injected test sink
 
   Scenario Outline: each call answers what it did and the file reads the ladder's state
     Given the request for `"L1"` <before>
@@ -56,7 +56,7 @@ Feature: the ladder is 129/04's — the first request drains, the second cancels
   Scenario: an escalation by another writer keeps the creator's by and requestedAt
     Given the request for `"L1"` was created by `BY` at `T1`
     When `requestLoopStop` is called for `"L1"` with `by: { node: "aof-wsl", pid: 77 }`
-    Then the file reads `level` 2, `by` `{ node: "umamis-msi", pid: 4242 }` and `requestedAt` `T1`
+    Then the file reads `level` 2, `by` `{ node: "win-host-a", pid: 4242 }` and `requestedAt` `T1`
 
   Scenario Outline: a clock that goes backwards is written as given, never compared or clamped
     Given the request for `"L1"` is level 1 `requested` with `requestedAt` `T3`

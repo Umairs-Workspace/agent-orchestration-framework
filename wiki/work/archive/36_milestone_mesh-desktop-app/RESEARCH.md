@@ -12,7 +12,7 @@ doc: research
 `src/commands/mesh-identity.mjs`, `src/mesh-role.mjs`, `src/mesh-ui-serve.mjs`, `src/mesh-fabric.mjs`,
 `bin/aof.mjs`, `scripts/build-sea.mjs`, `scripts/release/stage-release-assets.mjs`; a live run of
 `node ./src/cli.mjs mesh status --json` and `node ./src/cli.mjs mesh serve --json` against this
-machine's real mesh state (2-node fleet, control node `umamis-msi`, worker `umamis-mac-mini`); the
+machine's real mesh state (2-node fleet, control node `win-host-a`, worker `umamis-mac-mini`); the
 milestone-28 `ARCHITECTURE.md`/`RESEARCH.md` (packaging precedent) and milestone-33 `ARCHITECTURE.md`
 (the launcher/serve-verb model). Rust crate landscape from crates.io/docs.rs/lib.rs pages fetched
 2026-07-09 (dated inline — versions move fast; re-check before the architect locks the ADR if this
@@ -208,7 +208,7 @@ would be the way to surface a missing WebView2, if Tauri is chosen).
 
 ## 3. Driving the real `aof` commands — the exact contracts (measured, not assumed)
 
-Ran live against this machine's real mesh state (2 nodes: control `umamis-msi` / worker
+Ran live against this machine's real mesh state (2 nodes: control `win-host-a` / worker
 `umamis-mac-mini`):
 
 ### `aof mesh status --json` — one-shot, exit 0, prints ONE JSON document, then returns
@@ -238,7 +238,7 @@ returns (elided to shape — full run captured 2026-07-09):
       "stale": false
     },
     {
-      "nodeId": "umamis-msi",
+      "nodeId": "win-host-a",
       "role": "control",
       "controlNode": true,
       "...": "...",

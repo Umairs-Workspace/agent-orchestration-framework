@@ -86,7 +86,7 @@ doc: state
     flip (out of SPEC's steady-role scope), the `std::Mutex`-across-`await` latent footgun (not currently tripped),
     and the error-banner "retrying every 5s" copy vs the real 3s cadence (design `@uat` copy).
 - **✅ ACCEPTED `2026-07-10` via `aof:verify 36`.** Full **live cross-machine UAT** run + operator-signed:
-  Windows control node (`umamis-msi`, running the desktop app) + macOS worker (`umamis-mac-mini`, mesh via
+  Windows control node (`win-host-a`, running the desktop app) + macOS worker (`umamis-mac-mini`, mesh via
   CLI) over Tailscale — install → tray icon → mesh server + `aof mesh ui` up and kept up across a crash →
   window renders the live two-node fleet, terminal closed. All `@manual` runtime lanes **run + observed**
   (poll render, real supervision + crash→restart, Job-Object reap with no orphans, ambient hide-to-tray,

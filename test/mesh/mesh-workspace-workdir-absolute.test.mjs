@@ -157,7 +157,7 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
 
   // ══ Scenario: presence aggregation reads each workspace's OWN items, from a foreign cwd (the root fix, for real) ══
   {
-    name: "mesh-workspace-workdir-absolute/10 resolveNodeWorkspaces resolves BOTH real workspaces with ABSOLUTE, DISTINCT work dirs from a FOREIGN cwd (the exact live resolveNodeWorkspaces('umamis-msi') measurement)",
+    name: "mesh-workspace-workdir-absolute/10 resolveNodeWorkspaces resolves BOTH real workspaces with ABSOLUTE, DISTINCT work dirs from a FOREIGN cwd (the exact live resolveNodeWorkspaces('win-host-a') measurement)",
     async run() {
       await withTemp(async (tmp) => {
         const home = path.join(tmp, "home");

@@ -283,9 +283,9 @@ needs. `08/ADR-001` + the 23 precedent constrain how a serve verb registers with
 **Date:** 2026-07-04
 
 **Context.** F-3203 root cause: `config.mesh.nodeId` + `mesh.salt` live in the **committed**
-`.aof/aof.config.json` (confirmed on the current file — it still carries `salt` + `nodeId: umamis-msi`),
+`.aof/aof.config.json` (confirmed on the current file — it still carries `salt` + `nodeId: win-host-a`),
 and `deriveNodeId` honours a pinned id **verbatim** (`node-identity.mjs:74-78`). So a clone inherits the
-origin machine's identity — the observed macOS node deriving `umamis-msi`. Two machines sharing a nodeId
+origin machine's identity — the observed macOS node deriving `win-host-a`. Two machines sharing a nodeId
 both own `nodes/<id>.json` at the same path, violating the m22 one-node-per-path partition invariant
 (`acd-mesh-partition-write`). The same rationale that git-ignores `mesh/` applies to `mesh.nodeId`/`salt`:
 machine-specific state must not be committed. `22/R2`/`06/R2` (one read-merge-write helper per config

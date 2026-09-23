@@ -1,0 +1,90 @@
+{
+  "runId": "20260908T130835933Z-0004",
+  "itemRef": "124/00",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "3fbe79ea-c74b-4b14-80b0-e546e1742562",
+  "brief": {
+    "loop": {
+      "loopRunId": "6e6aa998-3fa1-4bbb-b843-29aa95d6e129",
+      "scope": "124",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-07T23:32:31.685Z",
+      "id": "loop:autonomous-cascade"
+    },
+    "grade": {
+      "ref": "124/00",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "C:\\Source\\umami\\aof",
+        "exit": 1,
+        "durationMs": 24648
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 1,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "the fitness lane resolved to zero tests",
+          "message": "",
+          "scenario": null
+        }
+      ],
+      "gradedAt": "2026-09-08T13:08:08.122Z",
+      "provenance": {
+        "node": "node-7297",
+        "run": "20260908T124949125Z-0003",
+        "commit": "b088825c29eedc9be12c27c237a03a76afaf9880",
+        "at": "2026-09-08T13:08:08.122Z"
+      }
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20260908T124949125Z-0003",
+      "summary": null,
+      "continuation": true
+    }
+  },
+  "createdAt": "2026-09-08T13:08:35.933Z",
+  "updatedAt": "2026-09-08T13:28:28.955Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 100,
+      "output": 42311,
+      "cacheRead": 7072566,
+      "cacheCreate": 368965
+    },
+    "costUsd": 4.14035355,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 50,
+    "toolCalls": 23,
+    "exitReason": "final_output"
+  }
+}

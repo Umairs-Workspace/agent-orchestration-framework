@@ -206,7 +206,7 @@ export const archTests = [
     name: "arch/130 FF-13003 (acd-loop-stop-request-single-home): fixture — run({ scope, stop: true }) is a probe-shaped write: one new file under <home>/mesh/loop-stops/, the project tree unchanged, zero spawns, the seven keys; a second call cancels; no declaration refuses by code; the probe keeps its ten keys",
     run: async () => {
       await resetLoopStops();
-      const fx = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+      const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
       try {
         await writeDeclarationRun(fx, { state: "running", at: new Date().toISOString() });
         const fake = completingDriver(fx);
@@ -250,7 +250,7 @@ export const archTests = [
 
       // NO DECLARATION — a fresh fixture with no run carrying one rejects by code, writes nothing.
       await resetLoopStops();
-      const bare = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+      const bare = await loopFixture({ mesh: { nodeId: "win-host-a" } });
       try {
         const fake = completingDriver(bare);
         const ctx = { ...bare.ctx, agentSessionDriverOptions: fake.options };

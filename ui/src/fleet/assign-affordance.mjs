@@ -199,7 +199,7 @@ function refusalDetail(cause) {
 // string; DESIGN §Surface 2, DG-17, 2026-07-24) ──────────────────────────────
 //
 // The re-render judged clause 4 CLOSED IN COPY, NOT IN PIXELS: the string was
-// exactly `already assigned → umamis-msi` and it still rendered
+// exactly `already assigned → win-host-a` and it still rendered
 // `already assigned → uma…`. The arithmetic showed the rule could not be
 // satisfied — clause 2's picker floor (14ch + chrome) plus clause 1's fixed
 // action plus the gaps leave ~137px of a 360.66px row for the message, while
@@ -214,7 +214,7 @@ function refusalDetail(cause) {
 //
 // The slot's character budget, derived from the geometry the row is actually
 // built to. Measured on the judged render: the message slot is clamped to
-// 136.94px, and `already assigned → umamis-msi` (29ch) has a natural width of
+// 136.94px, and `already assigned → win-host-a` (29ch) has a natural width of
 // ~173px in the 10.5px mono ramp — an advance of ~5.97px per character. So the
 // slot carries 136.94 / 5.97 ≈ 22.9ch. FLOORED to 22, so the ladder is
 // conservative: a rung that "just fits" arithmetically must still fit in pixels.
@@ -529,8 +529,8 @@ function region5ChipTail(assignment) {
 //
 // The first ladder's middle rungs (`held by <holder>`, `→ <holder>`) carried no
 // outcome word at all, and the re-render showed what that costs: region 6 read
-// `held by umamis-msi` while region 5 read `assigned → umamis-msi` and the
-// picker read `umamis-msi` — the same node id three times, twice adjacent, with
+// `held by win-host-a` while region 5 read `assigned → win-host-a` and the
+// picker read `win-host-a` — the same node id three times, twice adjacent, with
 // nothing but the `destructive` RED separating "someone else holds this" from
 // "your assign succeeded". That is A9/S4's rail — colour and label always travel
 // together, never colour alone — broken at a new address. The justification for

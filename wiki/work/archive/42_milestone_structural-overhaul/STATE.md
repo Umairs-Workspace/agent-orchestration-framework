@@ -499,7 +499,7 @@ to main without explicit signoff).**
    — one hard reopen from the fleet was required post-deploy.
 
 ### Deploy state (as of this entry)
-- Control (umamis-msi): `payload 1b59cee.20260727T122954` running. `9817f6b` is committed/pushed
+- Control (win-host-a): `payload 1b59cee.20260727T122954` running. `9817f6b` is committed/pushed
   but NOT deployed — it is a restart-time fix; picks up at the next natural install+restart.
 - Mac (umamis-mac-mini): `source 1b59cee+dirty` running (operator pulled + restarted). `9817f6b`
   pending its next pull + restart.

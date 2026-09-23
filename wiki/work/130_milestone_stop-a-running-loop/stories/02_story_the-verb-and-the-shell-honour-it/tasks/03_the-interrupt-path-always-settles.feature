@@ -56,7 +56,7 @@ Feature: the interrupt path always settles — a drive that returns after a stop
     Then the driver double observed `options.signal.aborted` true and resolved `{ outcome: "failed", failureReason: "cancelled", sessionId: <sessionId> }` and `spawnCalls` is <spawns>
     And the run record on disk reads `state` `"cancelled"`, `failureReason` `null`, `sessionId` <sessionId>, and `updatedAt` set
     And the answer's `driven` deep-equals `[{ ref: "03/01", phase: "continue", outcome: "cancelled", cycle: 1, attempt: 1 }]`
-    And the halt line ends `Details: signal=stop-request; level=2; request=<path>; by=umamis-msi:4242; cancelled=<that runId>.`
+    And the halt line ends `Details: signal=stop-request; level=2; request=<path>; by=win-host-a:4242; cancelled=<that runId>.`
     And `readRuns(item)` holds no `running` row, and a fresh `transitionRunStart` on the item is admitted (the dedup guard is clear)
 
     Examples:

@@ -11,7 +11,7 @@ Feature: A registered workspace's work dir is resolvable from ANY cwd, so presen
   # milestone, because it falsifies the milestone's OWN headline claim).
   #
   # MEASURED LIVE (not inferred):
-  #   resolveNodeWorkspaces("umamis-msi") from the repo cwd returns:
+  #   resolveNodeWorkspaces("win-host-a") from the repo cwd returns:
   #     8aa19edbaf8b3d92 (pilot-app-portal)  workDir: "./wiki/work"   <-- RELATIVE
   #     9db1fd84f5895e38 (aof)               workDir: "./wiki/work"   <-- RELATIVE, and IDENTICAL
   #   Each then reads `listItems("./wiki/work")` against the DAEMON's cwd, so BOTH yield the SAME 154 items (aof's).

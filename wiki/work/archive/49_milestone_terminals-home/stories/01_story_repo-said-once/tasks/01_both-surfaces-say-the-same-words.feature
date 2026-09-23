@@ -41,10 +41,10 @@
 # THE CLAIM IN RESEARCH §Q5 AND ADR-010, VERIFIED HERE BEFORE THIS FILE WAS WRITTEN — and it
 # holds, in a stronger form than either states. Running the SHIPPED extractor regex over
 # `view_model.rs` and the SHIPPED `fleetCurrentWorkLines` over each payload, 2026-08-13:
-#   LIVE_SESSION           local `umamis-msi` sessions [aof]                    → `working · aof (session)`
-#   TWO_SESSIONS           local `umamis-msi` sessions [aof, beta]              → `working · aof, beta (session)`
+#   LIVE_SESSION           local `win-host-a` sessions [aof]                    → `working · aof (session)`
+#   TWO_SESSIONS           local `win-host-a` sessions [aof, beta]              → `working · aof, beta (session)`
 #   TWO_SESSIONS_NON_ALPHA local `node-dg2`   sessions [pilot-app-portal, aof]  → `working · aof, pilot-app-portal (session)`
-#   SESSION_WITH_RUN       local `umamis-msi` sessions [aof, hasRun true], 1 run → `running 1 run`
+#   SESSION_WITH_RUN       local `win-host-a` sessions [aof, hasRun true], 1 run → `running 1 run`
 # **No repo is duplicated on ANY node of ANY of the four** — not merely on the `local: true`
 # node RESEARCH grepped, but on every node in every payload (three nodes each for three of
 # them, one for the fourth). All four gate lanes were then run under an isolated

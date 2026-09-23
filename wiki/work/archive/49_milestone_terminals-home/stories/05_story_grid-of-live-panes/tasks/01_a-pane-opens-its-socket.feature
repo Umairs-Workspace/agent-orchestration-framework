@@ -121,7 +121,7 @@ Feature: a grid pane opens a real socket — every subscribed tile constructs ex
   # N TILES, N SOCKETS, NO CROSS-TALK. The grid-level claim, and it needs the entry-parameterised
   # harness (trap (a) in the header).
   Scenario: a grid of three subscribed tiles holds three sockets, one per tuple
-    Given three rows: `(aof-wsl, s-1)`, `(aof-wsl, s-2)` and `(umamis-msi, s-9)`
+    Given three rows: `(aof-wsl, s-1)`, `(aof-wsl, s-2)` and `(win-host-a, s-9)`
     When the grid is mounted with the real control for every tile
     Then exactly three sockets were constructed
     And their URLs are exactly the three tuples' own, each carrying its own `nodeId` and its own `sessionId`

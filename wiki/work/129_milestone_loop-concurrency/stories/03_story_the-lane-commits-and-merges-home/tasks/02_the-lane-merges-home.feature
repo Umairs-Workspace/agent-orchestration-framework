@@ -45,10 +45,10 @@ Feature: dispatch.mjs composes commitDispatchLane, mergeDispatchLaneHome and dis
 
   Scenario: a lane merges home by a real merge when the primary moved elsewhere
     Given `main` gained a commit P1 touching `README.md` after B0
-    When `mergeDispatchLaneHome` runs with `message: "aof(loop): merge 127/02"` and `node: "umamis-msi"`
+    When `mergeDispatchLaneHome` runs with `message: "aof(loop): merge 127/02"` and `node: "win-host-a"`
     Then the answer's `outcome` is `"merged"` and `commit` equals `git rev-parse main`
     And `git rev-parse main^1` is P1 and `git rev-parse main^2` is L1
-    And `git log -1 --format=%an <%ae>%n%s main` reports `aof-mesh (umamis-msi) <aof-mesh@users.noreply.github.com>` then `aof(loop): merge 127/02`
+    And `git log -1 --format=%an <%ae>%n%s main` reports `aof-mesh (win-host-a) <aof-mesh@users.noreply.github.com>` then `aof(loop): merge 127/02`
 
   Scenario Outline: every answer names the lane, its base, its tip and the primary's HEAD after
     Given `main` since B0 has <primary> and the lane since B0 has <lane>
@@ -113,7 +113,7 @@ Feature: dispatch.mjs composes commitDispatchLane, mergeDispatchLaneHome and dis
 
   Scenario Outline: commitDispatchLane commits the lane and reports its tip
     Given the lane worktree holds <dirt>
-    When `commitDispatchLane(lane, { message: "aof(loop): 127/02 settled", node: "umamis-msi" })` runs
+    When `commitDispatchLane(lane, { message: "aof(loop): 127/02 settled", node: "win-host-a" })` runs
     Then the answer is `{ committed: <committed>, tip: <tip> }` where `tip` equals `git rev-parse HEAD` in the lane
     And `git status --porcelain` in the lane is empty
 

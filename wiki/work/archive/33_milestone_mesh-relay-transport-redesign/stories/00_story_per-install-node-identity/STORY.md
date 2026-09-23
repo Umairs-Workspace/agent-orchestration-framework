@@ -26,7 +26,7 @@ I want this node's identity (`nodeId` + `salt`) to derive from **THIS machine's 
 so that a clone/copy **never inherits the origin machine's identity** — two machines never share a `nodeId`
 (never clobber each other's `nodes/<id>.json` at one path), and the m22 one-node-per-path partition
 invariant (`acd-mesh-partition-write`) holds on real hardware. This is the direct fix for **UAT 32 ·
-F-3203** (the macOS node deriving `umamis-msi`, the Windows node's id, off inherited committed config).
+F-3203** (the macOS node deriving `win-host-a`, the Windows node's id, off inherited committed config).
 
 <!-- The clean-cut identity story: it re-points where identity is PERSISTED (committed config → git-ignored
      sidecar) + hydrates it back on load, so every downstream `config.mesh.nodeId` reader is unchanged.
@@ -71,7 +71,7 @@ F-3203** (the macOS node deriving `umamis-msi`, the Windows node's id, off inher
 - [x] **Fitness `acd-mesh-identity-not-committed`** (arch-test, ADR-004/ADR-006 — authored PENDING at Decide)
   — no per-install identity (`nodeId`/`salt`) appears in committed config (`.aof/aof.config.json`) or the
   config schema. **DoD of this story: un-skip it and make it GREEN** by migrating the committed
-  `.aof/aof.config.json` (which still carries `salt` + `nodeId: umamis-msi`) to the sidecar. It is RED until
+  `.aof/aof.config.json` (which still carries `salt` + `nodeId: win-host-a`) to the sidecar. It is RED until
   that migration lands — build the migration IN, do not leave the guard pending.
 
 ## Notes

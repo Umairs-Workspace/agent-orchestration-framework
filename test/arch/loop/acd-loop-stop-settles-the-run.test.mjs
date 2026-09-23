@@ -251,7 +251,7 @@ export const archTests = [
         const dir = loopStopsDir();
         const source = fakeStopSource({ reads: { dir, loopRunId: "L1" } });
         const request = async () => {
-          for (let rung = 0; rung < 2; rung += 1) await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
+          for (let rung = 0; rung < 2; rung += 1) await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
           source.raise(2, "stop-request");
         };
         const driver = cancellableDriver(fx, { script: ["hold"], async onCommand(command, n) { if (n === 1) await request(); } });
@@ -265,7 +265,7 @@ export const archTests = [
         assert.equal(cancelled[0].state, "cancelled", "the record is cancelled");
         assert.equal(cancelled[0].failureReason, null, "…with failureReason: null");
         assert.deepEqual(state.driven, [{ ref: "03/01", phase: "continue", runId: cancelled[0].runId, outcome: "cancelled", attempt: 1, cycle: 1 }], "the driven row's outcome is \"cancelled\"");
-        assert.ok(last.endsWith(`Details: signal=stop-request; level=2; request=${stopRequestPath(dir, "L1")}; by=umamis-msi:4242; cancelled=${cancelled[0].runId}.`), `Details names the request and cancelled=<runId>: ${last}`);
+        assert.ok(last.endsWith(`Details: signal=stop-request; level=2; request=${stopRequestPath(dir, "L1")}; by=win-host-a:4242; cancelled=${cancelled[0].runId}.`), `Details names the request and cancelled=<runId>: ${last}`);
         const file = JSON.parse(await readFile(stopRequestPath(dir, "L1"), "utf8"));
         assert.equal(file.state, "honoured", "the request file reads honoured");
         assert.equal(file.cancelled, cancelled[0].runId, "…naming the run it cancelled");
@@ -293,7 +293,7 @@ export const archTests = [
         const source = fakeStopSource({ reads: { dir, loopRunId: "L1" } });
         source.onPoll = async (n) => {
           if (n !== 2) return;
-          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
+          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
           source.raise(1, "stop-request");
         };
         const driver = cancellableDriver(fx, { script: [{ outcome: "done" }] });
@@ -322,7 +322,7 @@ export const archTests = [
         try {
           await writeDeclarationRun(rx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
           const dir = loopStopsDir();
-          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "umamis-msi", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
+          await requestLoopStop(dir, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:59:00.000Z") });
           if (standing === "honoured") await markStopHonoured(dir, "L1", { now: () => new Date("2026-09-13T11:59:30.000Z") });
           assert.ok(existsSync(stopRequestPath(dir, "L1")), "guard: the request stands before the resume");
           const fake = completingDriver(rx);

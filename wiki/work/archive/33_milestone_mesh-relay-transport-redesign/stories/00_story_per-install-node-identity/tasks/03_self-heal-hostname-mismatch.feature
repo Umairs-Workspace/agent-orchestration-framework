@@ -140,23 +140,23 @@ Feature: a sidecar whose nodeId was derived from a hostname that no longer match
     Examples:
       | sidecar-before                                                | current-hostname | resulting-nodeId | rewrite            | case              |
       | { nodeId:"macbook-pro", salt:"s", derivedFrom:"macbook-pro" } | macbook-pro      | macbook-pro      | left byte-unchanged| hostname-matches  |
-      | { nodeId:"umamis-msi", salt:"s", derivedFrom:"umamis-msi" }   | macbook-pro      | macbook-pro      | rewritten          | hostname-differs  |
-      | { nodeId:"umamis-msi", salt:"s", derivedFrom:"umamis-msi" }   | Umami's MacBook  | umami-s-macbook  | rewritten          | differ+sanitize   |
+      | { nodeId:"win-host-a", salt:"s", derivedFrom:"win-host-a" }   | macbook-pro      | macbook-pro      | rewritten          | hostname-differs  |
+      | { nodeId:"win-host-a", salt:"s", derivedFrom:"win-host-a" }   | Umami's MacBook  | umami-s-macbook  | rewritten          | differ+sanitize   |
       | { nodeId:"operator-choice", salt:"s", pinned:true }           | macbook-pro      | operator-choice  | left byte-unchanged| operator-pinned   |
 
   # THE COPIED-SIDECAR SYMPTOM SELF-CORRECTS (ADR-004.5, the exact F-3203 copy case): an
   # operator copies the WHOLE .aof tree (including .aof/mesh/identity.json) from the origin
-  # machine to a new host. The copied sidecar carries the origin's nodeId "umamis-msi"
+  # machine to a new host. The copied sidecar carries the origin's nodeId "win-host-a"
   # derived from the origin hostname. On the new host (a different hostname) the heal
   # re-derives, so the two machines end with DISTINCT sidecar ids — no shared nodeId, no
   # clobbered nodes/<id>.json (the m22 partition invariant holds).
   Scenario: a copied identity sidecar re-derives on a different host so the two machines never share a nodeId
-    Given a sidecar copied verbatim from the origin: { nodeId:"umamis-msi", salt:"origin-salt", derivedFrom:"umamis-msi" }
+    Given a sidecar copied verbatim from the origin: { nodeId:"win-host-a", salt:"origin-salt", derivedFrom:"win-host-a" }
     And this machine's current hostname is "macbook-pro" (a different host)
     When the identity self-heal runs
     Then the sidecar's resulting nodeId is "macbook-pro"
-    And the resulting nodeId is NOT the origin's "umamis-msi" (identity self-corrected)
-    And this machine now publishes to nodes/macbook-pro.json, never the origin's nodes/umamis-msi.json
+    And the resulting nodeId is NOT the origin's "win-host-a" (identity self-corrected)
+    And this machine now publishes to nodes/macbook-pro.json, never the origin's nodes/win-host-a.json
 
   # HEAL RE-DERIVES WITH THE SIDECAR'S OWN SALT, PRESERVING THE COLLISION SUFFIX
   # (ADR-004.5 + node-identity.mjs:90-93): the heal re-derive uses the sidecar's recorded
@@ -175,7 +175,7 @@ Feature: a sidecar whose nodeId was derived from a hostname that no longer match
   # same (now-correct) host is a keep, not a repeated rewrite — the heal is self-terminating,
   # not a rewrite-every-load. This is the idempotence guarantee for the heal path.
   Scenario: after a heal the sidecar records the new hostname so a second load is a keep (heal is self-terminating)
-    Given a sidecar { nodeId:"umamis-msi", salt:"s", derivedFrom:"umamis-msi" } and current hostname "macbook-pro"
+    Given a sidecar { nodeId:"win-host-a", salt:"s", derivedFrom:"win-host-a" } and current hostname "macbook-pro"
     When the identity self-heal runs a first time
     Then the sidecar becomes { nodeId:"macbook-pro", salt:"s", derivedFrom:"macbook-pro" }
     And a SECOND self-heal with the SAME current hostname "macbook-pro" leaves the sidecar byte-unchanged

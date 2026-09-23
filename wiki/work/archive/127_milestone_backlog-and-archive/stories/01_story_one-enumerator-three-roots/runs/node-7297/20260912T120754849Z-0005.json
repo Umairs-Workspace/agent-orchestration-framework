@@ -1,0 +1,104 @@
+{
+  "runId": "20260912T120754849Z-0005",
+  "itemRef": "127/01",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "854c89d6-6a69-4286-b474-327aaf2ea24d",
+  "brief": {
+    "loop": {
+      "loopRunId": "5c554454-2f26-4613-9c89-c21c957bca90",
+      "scope": "127",
+      "level": "L2",
+      "cap": 6,
+      "phase": "continue",
+      "cycle": 4,
+      "startedAt": "2026-09-11T13:03:43.182Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": true
+    },
+    "grade": {
+      "ref": "127/01",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "C:\\Source\\umami\\aof",
+        "exit": 1,
+        "durationMs": 496221
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 1931,
+        "failed": 11,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/m42-item-3: no NEW silent catch — every src file is at or below its shrink-only baseline, and unlisted files have none",
+          "message": "  error: \"NEW silent catch site(s) introduced — a degrade path must emit a coded event (mesh-log sink / onWarning), never say nothing:\\n  loop-diag.mjs: 6 silent catch site(s), baseline 0\\n+ actual - expected\\n\\n+ [\\n+   'loop-diag.mjs: 6 silent catch site(s), baseline 0'\\n+ ]\\n- []\\n\"",
+          "scenario": null
+        },
+        {
+          "case": "arch/55 ADR-004 (acd-frozen-set-compiled): the three census controls assert exact sets and exact counts, and each reads the set that ships after the withdrawal",
+          "message": "  error: \"Expected values to be strictly deep-equal:\\n+ actual - expected\\n\\n+ [\\n+   'the member-id census literal could not be read, so the control cannot check it'\\n+ ]\\n- []\\n\"",
+          "scenario": null
+        },
+        {
+          "case": "arch/55 ADR-004 (acd-frozen-set-compiled): red probe - every way a trace can break is named, including the empty-set vacuity the re-aim exists for",
+          "message": "  error: \"The expression evaluated to a falsy value:\\n\\n  assert.ok(censusProblems(extra, memberSource).some((problem) => problem.includes(\\\"the census literal disagrees with the declaration\\\")))\\n\"",
+          "scenario": null
+        },
+        {
+          "truncation": "3 of 11 failing case(s) shown; 8 dropped to fit the payload ceiling. The whole record is on the graded run and in `aof work grade <ref> --json`."
+        }
+      ],
+      "gradedAt": "2026-09-12T11:59:36.109Z",
+      "provenance": {
+        "node": "node-7297",
+        "run": "20260912T114830047Z-0004",
+        "commit": "2321dce83cd23b8ec998386f2b045504f80be580",
+        "at": "2026-09-12T11:59:36.109Z"
+      }
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20260912T114830047Z-0004",
+      "summary": null,
+      "continuation": true
+    }
+  },
+  "createdAt": "2026-09-12T12:07:54.849Z",
+  "updatedAt": "2026-09-12T12:17:39.413Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-09-12T12:08:09.762Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 62,
+      "output": 30701,
+      "cacheRead": 5770259,
+      "cacheCreate": 93462
+    },
+    "costUsd": 2.5422612,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 31,
+    "toolCalls": 18,
+    "exitReason": "final_output"
+  }
+}

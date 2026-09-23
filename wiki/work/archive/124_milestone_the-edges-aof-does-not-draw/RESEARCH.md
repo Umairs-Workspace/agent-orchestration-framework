@@ -239,13 +239,13 @@ wiki/work/NN…/runs/<node>/<run-id>.json           (node-partitioned, 26/ADR-00
 Not SQLite, not `.aof/` — plain git-tracked JSON beside the item (confirmed one is git-tracked and not
 gitignored: `git log --oneline -1 -- wiki/work/102…/runs/…json` returns a real commit;
 `git check-ignore -v` on the same path exits 1). A representative record
-(`wiki/work/102_story_the-declaration-names-its-loop/runs/umamis-msi/20260905T120923366Z-0001.json`):
+(`wiki/work/102_story_the-declaration-names-its-loop/runs/node-7297/20260905T120923366Z-0001.json`):
 
 ```json
 {
   "runId": "…", "itemRef": "102", "state": "done", "attempt": 1, "outcome": "done",
   "sessionId": "…", "brief": {}, "createdAt": "…", "updatedAt": "…", "failureReason": null,
-  "heartbeatAt": null, "retryOf": null, "reclaimedAt": null, "node": "umamis-msi",
+  "heartbeatAt": null, "retryOf": null, "reclaimedAt": null, "node": "win-host-a",
   "resumeAfter": null, "spend": null
 }
 ```

@@ -136,9 +136,9 @@ The milestone's own route was driven against the running fleet (operator-approve
 reproducibly:
 
 ```
-POST /api/mesh/session  {"nodeId":"umamis-msi","workspaceId":"9db1fd84f5895e38"}
-  -> HTTP 200  {"ok":true,"sessionId":"d6168b10-…","nodeId":"umamis-msi","workspaceId":"…"}
-GET  /api/mesh/session-outcome?nodeId=umamis-msi&sessionId=d6168b10-…
+POST /api/mesh/session  {"nodeId":"win-host-a","workspaceId":"9db1fd84f5895e38"}
+  -> HTTP 200  {"ok":true,"sessionId":"d6168b10-…","nodeId":"win-host-a","workspaceId":"…"}
+GET  /api/mesh/session-outcome?nodeId=win-host-a&sessionId=d6168b10-…
   -> {"ok":true,"state":"failed","code":"session-target-not-connected","at":"…T19:23:47.932Z"}
 ```
 
@@ -156,14 +156,14 @@ GET  /api/mesh/session-outcome?nodeId=umamis-msi&sessionId=d6168b10-…
   coded reason naming the machine. No spinner, no ghost grid slot, no empty tile that never fills.
 
 **Why no session started, and why that is not a defect.** The only presence-`live` node on this fleet
-is `umamis-msi`, which is the **control** node; the control node is never a connected worker, so it
+is `win-host-a`, which is the **control** node; the control node is never a connected worker, so it
 has no `directiveTargets` entry and the router synthesised the refusal. That is **deliberate and
 documented** at [session-launcher.mjs:235-237](../../../../ui/src/home/session-launcher.mjs#L235):
 *"The control node stays an option deliberately: a spawn aimed at it answers
 `session-target-not-connected`, and a stated refusal is a better answer than a picker that silently
 drops a machine the operator can see in the fleet."* The picker annotates; the route refuses.
 
-The remaining two nodes are simply **down** — measured, not assumed: `umamis-msi-wsl` last seen
+The remaining two nodes are simply **down** — measured, not assumed: `win-host-a-wsl` last seen
 **2026-08-11** (~3 days) and `umamis-mac-mini` **2026-07-27**. So this fleet currently has no node
 that can host a launched session, which is an environmental fact and not a property of the code.
 
@@ -235,7 +235,7 @@ fully met**, which is the rule this milestone most risked breaking.
 | F-50-F | inherited red | non-blocker | `test/mesh-terminal-input-path.test.mjs` "terminal-resume/worker" fails with `TypeError: completionResolve is not a function` — a TEST bug (line 471 lacks the `await waitFor(...)` guard its sibling at 519 has). Confirmed pre-existing with m50's `src/` stashed. | Defer to backlog as its own chore | **chore 64** | deferred — ledgered |
 | F-50-H | fitness gate | non-blocker | The m49/ADR-010 typed-fixture self-check held its OWN hard-coded copy of the producer's key lists, so it refused every legitimate re-capture — found only because F-50-C's re-capture tripped it. | Derive the stub from `produceProducerShape()`, the same real-producer seam the main clause uses | the gate itself | **resolved at verify** — non-vacuity re-proven, all 7 planted rows still flag |
 | F-50-I | design conformance | non-blocker | The designer read the trigger/selects/action **below** DESIGN §Accessibility req 8's ≥24 CSS px floor (23.5 / ~22.5) and logged a GAP. | Measure, don't read pixels: `getBoundingClientRect` at DPR 1 gives 26 / 25 / 24.66 at all three breakpoints. | — | **refuted at verify** — no gap; screenshot-edge reads are unsound below ~2px |
-| F-50-J | evidence gap | non-blocker | **DG-50-1 is unjudged and the success path is unproven live.** The only presence-`live` node is the control node (never a dispatch target, deliberately); `umamis-msi-wsl` has been down since 2026-08-11 and `umamis-mac-mini` since 2026-07-27, so no node on this fleet can host a launched session. | Environmental, not a code defect. Declared as the milestone's open gap in `OUTCOME.md` with a discharge condition; the success path is covered in-process by 34 `mesh-session-spawn-handler` scenarios that spawn real PTYs. | `OUTCOME.md` ## Gaps | **OPEN — declared** |
+| F-50-J | evidence gap | non-blocker | **DG-50-1 is unjudged and the success path is unproven live.** The only presence-`live` node is the control node (never a dispatch target, deliberately); `win-host-a-wsl` has been down since 2026-08-11 and `umamis-mac-mini` since 2026-07-27, so no node on this fleet can host a launched session. | Environmental, not a code defect. Declared as the milestone's open gap in `OUTCOME.md` with a discharge condition; the success path is covered in-process by 34 `mesh-session-spawn-handler` scenarios that spawn real PTYs. | `OUTCOME.md` ## Gaps | **OPEN — declared** |
 | F-50-G | record accuracy | non-blocker | STATE's Verification checklist points `@manual` sign-off at a `UAT.md` that does not exist, and this milestone has no `@manual` or `@uat` scenarios at all. | Correct the STATE checklist at verify | STATE.md | **resolved at verify** |
 
 Findings live here, never in a task folder. `TECH_DEBT` item 45 (SECURITY T2's live revocation

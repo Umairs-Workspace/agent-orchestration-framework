@@ -498,7 +498,7 @@ mod tests {
     //   (assembled + published through the real `readActiveRuns`/`readLiveSessions`/
     //   `assemblePresenceRecord`/`publishPresenceRecord` seams — mesh-presence.mjs)
     //   aof mesh status --json
-    // 2026-07-12T20:55Z, node `umamis-msi` (this machine, `local: true`): one LIVE
+    // 2026-07-12T20:55Z, node `win-host-a` (this machine, `local: true`): one LIVE
     // session on repo "aof", EMPTY `activeRuns`. Verbatim stdout, byte-for-byte.
     //
     // RE-CAPTURED 2026-08-11 (aof:verify 48, discharging the milestone's operator gate).
@@ -601,10 +601,10 @@ mod tests {
       "stale": false
     },
     {
-      "nodeId": "umamis-msi",
+      "nodeId": "win-host-a",
       "role": "control",
       "controlNode": true,
-      "host": "Umamis-MSI",
+      "host": "Win-Host-A",
       "os": "win32",
       "runtimes": [
         "claude",
@@ -625,9 +625,9 @@ mod tests {
           "projectRoot": "C:\\Source\\umami\\aof"
         }
       ],
-      "descriptorPath": "C:\\Users\\Umami\\.aof\\mesh\\nodes\\umamis-msi.json",
+      "descriptorPath": "C:\\Users\\Umami\\.aof\\mesh\\nodes\\win-host-a.json",
       "presence": {
-        "nodeId": "umamis-msi",
+        "nodeId": "win-host-a",
         "heartbeatAt": "2026-07-12T20:55:20.455Z",
         "activeRuns": [],
         "sessions": [
@@ -655,7 +655,7 @@ mod tests {
     // REAL — captured live in this repo the SAME way, with a SECOND real session
     // started on a distinct workspace/repo (`aof session start --workspace
     // beta-ws-0001 --repo beta --assistant claude-code`) before the aggregate was
-    // re-published. 2026-07-12T20:55Z, node `umamis-msi`: two LIVE sessions (repos
+    // re-published. 2026-07-12T20:55Z, node `win-host-a`: two LIVE sessions (repos
     // "aof" and "beta"), EMPTY `activeRuns`. Verbatim stdout, byte-for-byte.
     //
     // RE-CAPTURED 2026-08-11 (aof:verify 48) by the same method, and under the same
@@ -734,10 +734,10 @@ mod tests {
       "stale": false
     },
     {
-      "nodeId": "umamis-msi",
+      "nodeId": "win-host-a",
       "role": "control",
       "controlNode": true,
-      "host": "Umamis-MSI",
+      "host": "Win-Host-A",
       "os": "win32",
       "runtimes": [
         "claude",
@@ -758,9 +758,9 @@ mod tests {
           "projectRoot": "C:\\Source\\umami\\aof"
         }
       ],
-      "descriptorPath": "C:\\Users\\Umami\\.aof\\mesh\\nodes\\umamis-msi.json",
+      "descriptorPath": "C:\\Users\\Umami\\.aof\\mesh\\nodes\\win-host-a.json",
       "presence": {
-        "nodeId": "umamis-msi",
+        "nodeId": "win-host-a",
         "heartbeatAt": "2026-07-12T20:55:00.490Z",
         "activeRuns": [],
         "sessions": [
@@ -867,7 +867,7 @@ mod tests {
     // (`payload 7400664+dirty.20260811T211128`, installed by scripts/install-local.mjs and
     // serving both daemons), 2026-08-11T20:36Z, via:
     //   aof mesh status --json
-    // Node `umamis-msi` (this machine, `local: true`): ONE live claude-code session —
+    // Node `win-host-a` (this machine, `local: true`): ONE live claude-code session —
     // a REAL routable id, not a fixture value — in a workspace that ALSO has a running
     // run, so the session entry carries `workspaceHasRun: true`. Verbatim stdout,
     // byte-for-byte, with the two genuinely-remote peer nodes it came with.
@@ -924,7 +924,7 @@ mod tests {
       "stale": true
     },
     {
-      "nodeId": "umamis-msi-wsl",
+      "nodeId": "win-host-a-wsl",
       "role": "worker",
       "controlNode": false,
       "host": "172.27.155.33",
@@ -945,9 +945,9 @@ mod tests {
           "projectRoot": "C:\\Source\\umami\\aof"
         }
       ],
-      "descriptorPath": "C:\\Users\\Umami\\.aof\\mesh\\nodes\\umamis-msi-wsl.json",
+      "descriptorPath": "C:\\Users\\Umami\\.aof\\mesh\\nodes\\win-host-a-wsl.json",
       "presence": {
-        "nodeId": "umamis-msi-wsl",
+        "nodeId": "win-host-a-wsl",
         "heartbeatAt": "2026-08-11T20:36:26.320Z",
         "activeRuns": [],
         "sessions": [],
@@ -957,7 +957,7 @@ mod tests {
       "stale": false
     },
     {
-      "nodeId": "umamis-msi",
+      "nodeId": "win-host-a",
       "role": "control",
       "controlNode": true,
       "host": "192.168.1.102",
@@ -980,9 +980,9 @@ mod tests {
           "projectRoot": "C:\\Source\\umami\\aof"
         }
       ],
-      "descriptorPath": "C:\\Users\\Umami\\.aof\\mesh\\nodes\\umamis-msi.json",
+      "descriptorPath": "C:\\Users\\Umami\\.aof\\mesh\\nodes\\win-host-a.json",
       "presence": {
-        "nodeId": "umamis-msi",
+        "nodeId": "win-host-a",
         "heartbeatAt": "2026-08-11T20:36:24.658Z",
         "activeRuns": [
           "20260808T170931867Z-0000"
@@ -1193,11 +1193,11 @@ mod tests {
         let doc = r#"{
             "nodes": [
                 {
-                    "nodeId": "umamis-msi",
+                    "nodeId": "win-host-a",
                     "stale": false,
                     "local": true,
                     "presence": {
-                        "nodeId": "umamis-msi",
+                        "nodeId": "win-host-a",
                         "heartbeatAt": "2026-07-12T20:55:20.455Z",
                         "activeRuns": ["run-0001"],
                         "sessions": [
@@ -1478,7 +1478,7 @@ mod tests {
         let ipc_current_work = this_row.current_work.display();
         let ipc_work_state = this_row.current_work.state_str();
 
-        assert_eq!(this_row.name, "umamis-msi");
+        assert_eq!(this_row.name, "win-host-a");
         assert_eq!(ipc_current_work, "working \u{b7} aof (session)");
         assert_eq!(ipc_work_state, "working");
         assert!(this_row.current_work.is_active(), "the IPC-bound row is active, not the muted idle token");

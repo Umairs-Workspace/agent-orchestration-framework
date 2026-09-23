@@ -93,10 +93,10 @@ Feature: deriveNodeId persists to the git-ignored sidecar .aof/mesh/identity.jso
   # the exact re-point (persist target: committed config.mesh.nodeId → the sidecar).
   Scenario: a fresh install derives from its own hostname and persists nodeId+salt to the sidecar, committed config byte-unchanged
     Given the committed config's exact bytes on disk are recorded
-    And an injected hostname "umamis-msi"
+    And an injected hostname "win-host-a"
     When I deriveNodeId with the injected hostname, salt, and the sidecar target
-    Then the returned id is "umamis-msi"
-    And the sidecar .aof/mesh/identity.json exists and holds exactly { nodeId:"umamis-msi", salt:"fixed-salt-A" }
+    Then the returned id is "win-host-a"
+    And the sidecar .aof/mesh/identity.json exists and holds exactly { nodeId:"win-host-a", salt:"fixed-salt-A" }
     And the committed config file is byte-identical to the recorded bytes (no nodeId, no salt written there)
 
   # HOSTNAME SANITIZATION MATRIX (ADR-004.2; node-identity.mjs:38-49 driven through the
@@ -114,7 +114,7 @@ Feature: deriveNodeId persists to the git-ignored sidecar .aof/mesh/identity.jso
 
     Examples:
       | hostname            | nodeId                             |
-      | umamis-msi          | umamis-msi                         |
+      | win-host-a          | win-host-a                         |
       | MacBook-Pro.local   | macbook-pro-local                  |
       | Umami's MacBook     | umami-s-macbook                    |
       | umami--__--desktop  | umami-desktop                      |
@@ -133,7 +133,7 @@ Feature: deriveNodeId persists to the git-ignored sidecar .aof/mesh/identity.jso
     And an injected hostname "<hostname>" for this clone
     When I deriveNodeId with the injected hostname, salt "<salt>", and this clone's own sidecar target
     Then this clone's sidecar holds nodeId "<nodeId>"
-    And the id is NOT the origin machine's id "umamis-msi" (identity was not inherited)
+    And the id is NOT the origin machine's id "win-host-a" (identity was not inherited)
 
     Examples:
       | hostname        | salt          | nodeId          |

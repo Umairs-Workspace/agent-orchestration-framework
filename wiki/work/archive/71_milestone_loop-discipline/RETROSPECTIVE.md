@@ -169,7 +169,7 @@ At the close it produced something worse: seconds after `aof work status 71 done
 reported **`error: lying-parent — milestone 71 is done but child stories 71/00, 71/01 are not done`**
 and Loop-Ready fell 80% → 70%. All four `STORY.md` records read `status: done` on disk.
 `aof work find 71/00 --json` answered `not-started` with `answeredFrom: "cache"`,
-`reportedBy: "umamis-msi-wsl"`, `syncedAt` timestamped **before** those accepts.
+`reportedBy: "win-host-a-wsl"`, `syncedAt` timestamped **before** those accepts.
 **Why.** The read path prefers a remote projection over a local record that is newer, and nothing
 invalidates the projection on a local write. The write path is not confused — every `aof work status`
 validated against local state and exited 0 — so the two halves of the same store disagree, silently,

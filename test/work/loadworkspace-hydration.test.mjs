@@ -129,14 +129,14 @@ export const loadworkspaceHydrationTests = [
     name: "loadworkspace-hydration/01 a downstream config.mesh.nodeId reader sees the hydrated sidecar id (zero reader change)",
     async run() {
       const { root } = await fixtureProject({
-        committedMesh: { nodeId: "umamis-msi" },
+        committedMesh: { nodeId: "win-host-a" },
         sidecar: { nodeId: "macbook-pro", salt: "s" },
       });
       try {
         const ws = await loadWorkspace(root);
         assert.equal(ws.config.mesh.nodeId, "macbook-pro", "the returned workspace carries the sidecar id");
         assert.equal(meshNodeIdOf(ws.config), "macbook-pro", "the mesh-gate predicate resolves the per-install id");
-        assert.notEqual(meshNodeIdOf(ws.config), "umamis-msi", "no downstream reader observes the legacy committed id");
+        assert.notEqual(meshNodeIdOf(ws.config), "win-host-a", "no downstream reader observes the legacy committed id");
       } finally {
         await rm(root, { recursive: true, force: true });
       }

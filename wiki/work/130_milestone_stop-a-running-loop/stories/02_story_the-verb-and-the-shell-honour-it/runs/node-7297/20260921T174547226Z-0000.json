@@ -1,0 +1,62 @@
+{
+  "runId": "20260921T174547226Z-0000",
+  "itemRef": "130/02",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "a5e03587-4e60-40bf-9505-afc00e14e58f",
+  "brief": {
+    "loop": {
+      "loopRunId": "7661348f-073d-4884-8544-a63efb9e53ac",
+      "scope": "130",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-21T16:42:18.166Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-21T17:39:24.560Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id"
+      ],
+      "baseCommit": "d6c7248dde5d45798bb364e90773d49fdf4bb998"
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-130-02",
+      "branch": "aof/mesh/130-02",
+      "baseCommit": "d6c7248dde5d45798bb364e90773d49fdf4bb998"
+    }
+  },
+  "createdAt": "2026-09-21T17:45:47.226Z",
+  "updatedAt": "2026-09-21T19:16:23.945Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-09-21T19:06:26.189Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 614,
+      "output": 357999,
+      "cacheRead": 103369184,
+      "cacheCreate": 820266
+    },
+    "costUsd": 39.4585797,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 307,
+    "toolCalls": 193,
+    "exitReason": "final_output"
+  }
+}

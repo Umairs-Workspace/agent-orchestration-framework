@@ -55,8 +55,8 @@ export const selfHealHostnameMismatchTests = [
     async run() {
       const rows = [
         { before: { nodeId: "macbook-pro", salt: "s", derivedFrom: "macbook-pro" }, hostname: "macbook-pro", resultingNodeId: "macbook-pro", rewritten: false },
-        { before: { nodeId: "umamis-msi", salt: "s", derivedFrom: "umamis-msi" }, hostname: "macbook-pro", resultingNodeId: "macbook-pro", rewritten: true },
-        { before: { nodeId: "umamis-msi", salt: "s", derivedFrom: "umamis-msi" }, hostname: "Umami's MacBook", resultingNodeId: "umami-s-macbook", rewritten: true },
+        { before: { nodeId: "win-host-a", salt: "s", derivedFrom: "win-host-a" }, hostname: "macbook-pro", resultingNodeId: "macbook-pro", rewritten: true },
+        { before: { nodeId: "win-host-a", salt: "s", derivedFrom: "win-host-a" }, hostname: "Umami's MacBook", resultingNodeId: "umami-s-macbook", rewritten: true },
         { before: { nodeId: "operator-choice", salt: "s", pinned: true }, hostname: "macbook-pro", resultingNodeId: "operator-choice", rewritten: false },
       ];
       for (const { before, hostname, resultingNodeId, rewritten } of rows) {
@@ -83,12 +83,12 @@ export const selfHealHostnameMismatchTests = [
   {
     name: "self-heal-hostname-mismatch/03 a copied identity sidecar re-derives on a different host so the two machines never share a nodeId",
     async run() {
-      const copied = { nodeId: "umamis-msi", salt: "origin-salt", derivedFrom: "umamis-msi" };
+      const copied = { nodeId: "win-host-a", salt: "origin-salt", derivedFrom: "win-host-a" };
       const { dir, sidecarPath } = await tempSidecar(copied);
       try {
         const healed = await healIdentitySidecar({ sidecar: copied, hostname: "macbook-pro", sidecarPath });
         assert.equal(healed.nodeId, "macbook-pro");
-        assert.notEqual(healed.nodeId, "umamis-msi", "identity self-corrected — not the origin's id");
+        assert.notEqual(healed.nodeId, "win-host-a", "identity self-corrected — not the origin's id");
       } finally {
         await rm(dir, { recursive: true, force: true });
       }
@@ -121,7 +121,7 @@ export const selfHealHostnameMismatchTests = [
   {
     name: "self-heal-hostname-mismatch/03 after a heal the sidecar records the new hostname so a second load is a keep (heal is self-terminating)",
     async run() {
-      const before = { nodeId: "umamis-msi", salt: "s", derivedFrom: "umamis-msi" };
+      const before = { nodeId: "win-host-a", salt: "s", derivedFrom: "win-host-a" };
       const { dir, sidecarPath } = await tempSidecar(before);
       try {
         const firstHeal = await healIdentitySidecar({ sidecar: before, hostname: "macbook-pro", sidecarPath });

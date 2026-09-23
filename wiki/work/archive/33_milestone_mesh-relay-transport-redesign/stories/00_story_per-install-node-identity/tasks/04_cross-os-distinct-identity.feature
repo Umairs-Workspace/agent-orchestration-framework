@@ -1,6 +1,6 @@
 @manual @cli @work @distribution @bug @finding-F-3203
 Feature: two real machines (Windows + macOS) cloned from one shared remote derive DISTINCT nodeIds from their own hostnames and publish to distinct nodes/<id>.json partition paths — neither clobbers the other (the exact F-3203 scenario, confirmed on real hosts)
-  In order to confirm on real cross-OS hardware that the per-install identity split actually fixes F-3203 (the macOS node deriving umamis-msi off inherited committed config)
+  In order to confirm on real cross-OS hardware that the per-install identity split actually fixes F-3203 (the macOS node deriving win-host-a off inherited committed config)
   two machines — one Windows, one macOS — each clone the SAME shared remote and each, from its OWN hostname, derives a DISTINCT nodeId persisted to its OWN git-ignored sidecar, publishing to DISTINCT nodes/<id>.json partition paths so neither clobbers the other,
   so that the m22 one-node-per-path partition invariant (acd-mesh-partition-write) is confirmed to hold on real hardware and the UAT 32 F-3203 finding can be re-run and closed.
 
@@ -32,7 +32,7 @@ Feature: two real machines (Windows + macOS) cloned from one shared remote deriv
   #
   # PRECONDITION for a valid run: the shared remote's committed .aof/aof.config.json carries
   # NO mesh.nodeId and NO mesh.salt (i.e. the task-02 migration has already landed on the
-  # remote). If the committed config still pins "umamis-msi", BOTH clones would inherit it
+  # remote). If the committed config still pins "win-host-a", BOTH clones would inherit it
   # and this lane would REPRODUCE F-3203 rather than confirm the fix — that is the exact
   # regression signal this lane exists to catch. Record the committed config's mesh block in
   # the run notes before cloning.
@@ -44,7 +44,7 @@ Feature: two real machines (Windows + macOS) cloned from one shared remote deriv
 
   # THE F-3203 CONFIRMATION: each host clones the SAME remote, runs `aof mesh identity` to
   # derive+publish, and the two derive DISTINCT ids from their own hostnames — the macOS
-  # node NO LONGER derives the Windows node's "umamis-msi". This is the direct re-run of the
+  # node NO LONGER derives the Windows node's "win-host-a". This is the direct re-run of the
   # UAT 32 F-3203 observation.
   Scenario: the Windows node and the macOS node each derive their OWN distinct nodeId from their own hostname
     Given both machines have cloned the shared remote fresh
@@ -53,7 +53,7 @@ Feature: two real machines (Windows + macOS) cloned from one shared remote deriv
     Then the Windows node's derived nodeId equals sanitizeHostname(the Windows hostname)
     And the macOS node's derived nodeId equals sanitizeHostname(the macOS hostname)
     And the two nodeIds are DISTINCT (the macOS node did not inherit the Windows node's id)
-    And neither node's derived nodeId is "umamis-msi" unless that host is genuinely named so
+    And neither node's derived nodeId is "win-host-a" unless that host is genuinely named so
 
   # THE SIDECAR IS PER-INSTALL AND UNCOMMITTED ON BOTH: each machine's identity lands in its
   # OWN git-ignored .aof/mesh/identity.json, and the committed .aof/aof.config.json on each
@@ -78,7 +78,7 @@ Feature: two real machines (Windows + macOS) cloned from one shared remote deriv
   # THE COPIED-.aof SELF-HEAL VARIANT (ADR-004.5, the copy symptom on real hardware): if an
   # operator copies the WHOLE .aof tree (sidecar included) from Windows to macOS, the macOS
   # node's next identity resolve self-heals — re-derives from the macOS hostname — so even a
-  # whole-tree copy does not leave the two machines sharing "umamis-msi".
+  # whole-tree copy does not leave the two machines sharing "win-host-a".
   Scenario: copying the whole .aof tree (sidecar included) from Windows to macOS self-heals on the macOS host
     Given the Windows node has published and its .aof/mesh/identity.json holds the Windows id
     And I copy the ENTIRE .aof tree (including .aof/mesh/identity.json) from Windows to the macOS machine

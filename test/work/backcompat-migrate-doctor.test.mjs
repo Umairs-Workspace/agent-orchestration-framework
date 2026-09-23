@@ -55,8 +55,8 @@ export const backcompatMigrateDoctorTests = [
     name: "backcompat-migrate-doctor/02 work doctor warns mesh-identity-committed iff the committed config carries nodeId or salt",
     async run() {
       const rows = [
-        { committedMesh: { nodeId: "umamis-msi", salt: "s" }, emitted: true },
-        { committedMesh: { nodeId: "umamis-msi" }, emitted: true },
+        { committedMesh: { nodeId: "win-host-a", salt: "s" }, emitted: true },
+        { committedMesh: { nodeId: "win-host-a" }, emitted: true },
         { committedMesh: { salt: "s" }, emitted: true },
         { committedMesh: { relay: { controlNode: "n" }, fabric: "tailscale" }, emitted: false },
         { committedMesh: undefined, emitted: false },
@@ -90,17 +90,17 @@ export const backcompatMigrateDoctorTests = [
     async run() {
       const rows = [
         {
-          committedBefore: { nodeId: "umamis-msi", salt: "sA" },
+          committedBefore: { nodeId: "win-host-a", salt: "sA" },
           sidecarBefore: undefined,
           committedAfter: {},
-          sidecarAfter: { nodeId: "umamis-msi", salt: "sA" },
+          sidecarAfter: { nodeId: "win-host-a", salt: "sA" },
           case: "migrate",
         },
         {
           committedBefore: undefined,
-          sidecarBefore: { nodeId: "umamis-msi", salt: "sA" },
+          sidecarBefore: { nodeId: "win-host-a", salt: "sA" },
           committedAfter: undefined,
-          sidecarAfter: { nodeId: "umamis-msi", salt: "sA" },
+          sidecarAfter: { nodeId: "win-host-a", salt: "sA" },
           case: "already-migrated",
         },
         {
@@ -147,15 +147,15 @@ export const backcompatMigrateDoctorTests = [
     name: "backcompat-migrate-doctor/02 the migrate strips only nodeId/salt and leaves fleet-shared committed mesh keys intact",
     async run() {
       const { root, configPath, sidecarPath } = await fixtureRepo({
-        committedMesh: { nodeId: "umamis-msi", salt: "sA", relay: { controlNode: "umamis-msi" }, fabric: "tailscale" },
+        committedMesh: { nodeId: "win-host-a", salt: "sA", relay: { controlNode: "win-host-a" }, fabric: "tailscale" },
       });
       try {
         await migrateIdentity(configPath, sidecarPath);
         const configAfter = JSON.parse(await readFile(configPath, "utf8"));
-        assert.deepEqual(configAfter.mesh, { relay: { controlNode: "umamis-msi" }, fabric: "tailscale" }, "fleet-shared keys survive");
+        assert.deepEqual(configAfter.mesh, { relay: { controlNode: "win-host-a" }, fabric: "tailscale" }, "fleet-shared keys survive");
         assert.ok(!("nodeId" in configAfter.mesh) && !("salt" in configAfter.mesh));
         const sidecar = JSON.parse(await readFile(sidecarPath, "utf8"));
-        assert.deepEqual(sidecar, { nodeId: "umamis-msi", salt: "sA" }, "the sidecar holds exactly the stripped identity");
+        assert.deepEqual(sidecar, { nodeId: "win-host-a", salt: "sA" }, "the sidecar holds exactly the stripped identity");
       } finally {
         await rm(root, { recursive: true, force: true });
       }
@@ -166,7 +166,7 @@ export const backcompatMigrateDoctorTests = [
   {
     name: "backcompat-migrate-doctor/02 a second migrate over an already-migrated repo rewrites nothing (byte-level no-op)",
     async run() {
-      const { root, configPath, sidecarPath } = await fixtureRepo({ committedMesh: { nodeId: "umamis-msi", salt: "sA" } });
+      const { root, configPath, sidecarPath } = await fixtureRepo({ committedMesh: { nodeId: "win-host-a", salt: "sA" } });
       try {
         await migrateIdentity(configPath, sidecarPath);
         const configAfterFirst = await readFile(configPath, "utf8");

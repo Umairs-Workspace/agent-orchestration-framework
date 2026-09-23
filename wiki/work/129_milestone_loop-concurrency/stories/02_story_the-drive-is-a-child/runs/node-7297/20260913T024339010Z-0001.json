@@ -1,0 +1,121 @@
+{
+  "runId": "20260913T024339010Z-0001",
+  "itemRef": "129/02",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "5b31320e-8d07-46d5-a33d-e310beef4729",
+  "brief": {
+    "loop": {
+      "loopRunId": "27dbcc7a-3e23-402b-96fd-b59131131c56",
+      "scope": "129",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-12T23:26:43.240Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "grade": {
+      "ref": "129/02",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "C:\\Source\\umami\\aof",
+        "exit": 1,
+        "durationMs": 252738
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 1956,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/119 FF-11902: a floor is a floor, not a second equality wearing one — driven over the door's REAL census",
+          "message": "  error: \"suites: the floor (48) has no headroom over the live count (49), so a member deleted rather than kept green FAILS the control\\n\\ntrue !== false\\n\"",
+          "scenario": null
+        }
+      ],
+      "gradedAt": "2026-09-13T02:39:24.292Z",
+      "provenance": {
+        "node": "node-7297",
+        "run": "20260913T011146560Z-0000",
+        "commit": "2321dce83cd23b8ec998386f2b045504f80be580",
+        "at": "2026-09-13T02:39:24.292Z"
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-13T01:11:44.807Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/119 FF-11901 · 121: NO control under test/arch/ spells an import-specifier extractor of its own — the one home is test/support/module-family.mjs, and the remainder is a named, shrink-only baseline",
+        "arch/119 FF-11902: NO control narrows a repository walk by a filename PREDICATE without a non-vacuity leg — a move REDS a control, it never empties one",
+        "arch/119 FF-11902: NO control retypes a tree-walk equality — the count is derived into the property it stood in for, over every member, with a floor kept",
+        "arch/119 FF-11902: NO control retypes a member census — a derived set is never asserted equal to a string-array literal; a home is named AMONG the set, under a floor and a declared ceiling",
+        "arch/119 FF-11903: the citation sweep is bounded by a shrink-only ceiling pinned to a measured count",
+        "arch/128/01 (acd-work-memory-routed): the command module founds the work family, budgeted — src/commands/ holds no more direct-child files than its ceiling, src/commands/work/memory.mjs exports the work:memory command, and SOURCE_DIRECTORY_BUDGETS carries a src/commands/work row whose `why` names the fold as a separate item",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): frozen store and board read surfaces remain byte-identical to the milestone base",
+        "arch/58 FF-5810: every path a shipped loop record cites exists and is in range, and every cited defining line is the symbol's own export",
+        "arch/124/02 FF-12405 leg 3 (task 00): the query is keyed to the seam, and refine is read rather than written",
+        "arch/124/02 FF-12405 leg 7 (task 02): the cut-making roster is asserted in BOTH directions, and every command file is classified",
+        "arch/43 ADR-005 (acd-cache-read-surface-boundary): the STRUCTURAL readers (reindex / insert / upgrade / reactors / doctor) still read the disk that is the SUBJECT of their operation",
+        "arch/119 FF-11904: the real src/ and test/ trees are inside every declared ceiling, and the table and the tree agree in BOTH directions",
+        "arch/119 FF-11904: the ceiling EQUALS the delivered count in every row — every allowance is declared, every one is zero, and every row states what the next growth should do instead",
+        "arch/119 FF-11904: the detector FIRES on a synthesized sibling in a budgeted layer, and is quiet on the clean listing in the same lane — with nothing written to disk",
+        "arch/119 FF-11904: a renamed budgeted directory REDS its row rather than emptying it, and a shrunk layer must lower its row",
+        "arch/119 FF-11904: an unentered layer and an exemption that has outgrown its claim both fire on the shipped detector",
+        "arch/15 ADR-005: the served /api/work routes are in BIJECTION with the registry's work:* commands (registry-derived, not hard-coded)",
+        "arch/15 ADR-005: every registered work:* command has a served /api/work route (no command without a door)",
+        "arch/15 ADR-005 (behavioural): each /api/work route answers a JSON envelope via the registry (looped over the derived set)",
+        "arch/15 ADR-005: aof work <sub> --json runs cleanly and emits parseable JSON for every registry-derived work:* subcommand",
+        "arch/FF-12702 (acd-number-null-safe): the set of src files holding a `.number` parse is exactly the ten the contract names"
+      ]
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20260913T011146560Z-0000",
+      "summary": null,
+      "continuation": true
+    }
+  },
+  "createdAt": "2026-09-13T02:43:39.010Z",
+  "updatedAt": "2026-09-13T02:54:48.912Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 52,
+      "output": 22454,
+      "cacheRead": 9266370,
+      "cacheCreate": 41848
+    },
+    "costUsd": 3.2738069999999997,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 26,
+    "toolCalls": 15,
+    "exitReason": "final_output"
+  }
+}

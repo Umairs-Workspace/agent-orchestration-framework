@@ -35,12 +35,12 @@ open lanes are both `@manual` (real cross-OS hardware + a live Tailscale tailnet
   story-01 craft fix (the launcher probe minting identity, now read-only).
 - **Per-install identity is off committed config (direct inspection).** Committed `.aof/aof.config.json`
   `mesh` block is `{}` (no `nodeId`/`salt`); the git-ignored sidecar `.aof/mesh/identity.json` holds
-  `nodeId:"umamis-msi"`, a `salt`, `derivedFrom:"Umamis-MSI"` (the real hostname); `git check-ignore`
+  `nodeId:"win-host-a"`, a `salt`, `derivedFrom:"Win-Host-A"` (the real hostname); `git check-ignore`
   confirms the sidecar is ignored via `.aof/.gitignore:13 (mesh/)`. `verifies →` story 00 tasks 00–01.
 
 ## Live / environmental checks
 
-The verify host is `umamis-msi` (Windows), on a **live** Tailscale tailnet (`tailscale 1.98.4`,
+The verify host is `win-host-a` (Windows), on a **live** Tailscale tailnet (`tailscale 1.98.4`,
 `BackendState: Running`) that also carries `umamis-mac-mini` (macOS) under the same `umami@` account —
 so the Windows-side + live-fabric-parse halves of both `@manual` lanes were discharged on real hardware
 (the RESEARCH §3/§4 gaps the fixtured lanes stood in for). Driven inline against the real `tailscale`.
@@ -50,14 +50,14 @@ so the Windows-side + live-fabric-parse halves of both `@manual` lanes were disc
   Closes RESEARCH §4's "live-parse unmeasured" gap for `Running` on Windows.
 - **`selfAddress` →** `203.0.113.180` (matches `Self` in the live status). **`launcherProbe` (fabric
   declared) →** `{"fabricState":"running","healthy":true,"selfAddress":"203.0.113.180","peerCount":5,
-  "issuanceAuthority":false}`, hydrated `nodeId:"umamis-msi"` from the sidecar overlay, read-only.
+  "issuanceAuthority":false}`, hydrated `nodeId:"win-host-a"` from the sidecar overlay, read-only.
 - **Windows PATH reality (RESEARCH §3):** a bare `tailscale` resolves off PATH here
   (`C:\Program Files\Tailscale\tailscale.exe`) — the install-path fallback was not needed.
 
 **Story 00 / task 04 — cross-OS distinct identity: PASS on real hardware.** `umamis-mac-mini` ran
 `aof mesh identity` on `f3a4283` and returned its sidecar (via Taildrop): `nodeId:"umamis-mac-mini-local"`,
-its own `salt`, `derivedFrom:"Umamis-Mac-mini.local"`. **Distinct** from this box's `umamis-msi` (different
-nodeId AND salt); the mac did **not** inherit `umamis-msi` — the F-3203 fix confirmed on a live cross-OS
+its own `salt`, `derivedFrom:"Umamis-Mac-mini.local"`. **Distinct** from this box's `win-host-a` (different
+nodeId AND salt); the mac did **not** inherit `win-host-a` — the F-3203 fix confirmed on a live cross-OS
 pair (task 04 scenarios "distinct nodeId" + "own git-ignored sidecar"). BUT the same real observation
 surfaced a blocker in the story-01 fabric join — see **F-3302** below.
 
@@ -104,9 +104,9 @@ F-3301 (fleet-shared config) remains minor/deferred (now a 34 concern).
   suffix), and `sanitizeHostname` (`node-identity.mjs:101`) does NOT strip it — it maps `.` → `-`, deriving
   aof `nodeId:"umamis-mac-mini-local"`. Tailscale's HostName/DNSName for the SAME box is `umamis-mac-mini`
   (no `.local`). `resolvePeers` joins fabric peers to aof nodeIds by HostName / DNSName-leading-label
-  (`mesh-fabric.mjs:262-278`), so with the REAL roster (`umamis-msi`, `umamis-mac-mini-local`) read off the
+  (`mesh-fabric.mjs:262-278`), so with the REAL roster (`win-host-a`, `umamis-mac-mini-local`) read off the
   published node records, the macOS peer matches **neither** key and surfaces **UNJOINED** (`nodeId:null`) —
-  verified against live `tailscale status --json` from `umamis-msi`.
+  verified against live `tailscale status --json` from `win-host-a`.
   Impact: the milestone's core objective — "**see every node** + assign and run work end-to-end" over the
   fabric — is **broken for any macOS node**: from Windows the mac appears as an unidentified peer, so
   `mesh:status` can't map its fabric liveness to its aof identity and cross-node issuance can't target it by
@@ -123,11 +123,11 @@ F-3301 (fleet-shared config) remains minor/deferred (now a 34 concern).
   `mesh-fabric-seam/00` **F-3302** case derives the roster nodeId from a `.local` hostname so a revert goes
   RED (the fixture gap that hid this); a `self-heal/03` **F-3302** case locks the auto-migration; the
   codified-wrong `identity-sidecar-persist` row `["MacBook-Pro.local","macbook-pro-local"]` corrected to
-  `"macbook-pro"`. Suite **2237/0**. Live-tailnet re-check from `umamis-msi`: the pre-fix id
+  `"macbook-pro"`. Suite **2237/0**. Live-tailnet re-check from `win-host-a`: the pre-fix id
   (`umamis-mac-mini-local`) resolves UNJOINED; the post-fix id (`umamis-mac-mini`) JOINS the live peer.
   **CLOSED on live hardware `2026-07-04`.** The mac pulled the fix (`2cfed41`) and re-derived: its sidecar
   id migrated `umamis-mac-mini-local` → **`umamis-mac-mini`** (returned via Taildrop). Re-checked against
-  live `tailscale status --json` from `umamis-msi` with BOTH real migrated ids as the roster — the mac peer
+  live `tailscale status --json` from `win-host-a` with BOTH real migrated ids as the roster — the mac peer
   now **JOINS** its aof nodeId (`umamis-mac-mini`, online, `198.51.100.164`). The F-3204 "see every node"
   promise holds cross-OS on real hardware. Status: **CLOSED (fixed + verified end-to-end on live Win+mac).**
 - **F-3301 — fleet-shared committed `mesh` config was not restored (minor / non-blocker / defer).**

@@ -84,7 +84,7 @@ Feature: The assign row's GEOMETRY holds in every state — the action's width i
     And the affordance shaped that message from the verb's own CODED envelope (`{ ok:false, code, holder }`), not by re-wording the server's sentence
     And the server's sentence is not discarded: it is exactly what the slot's `title` carries
     # DG-13 clause 4, SUPERSEDED by DG-17 (DESIGN §Surface 2, from the 2026-07-24 re-render). Clause 4 was judged "closed in
-    # copy, NOT in pixels": the string was exactly `already assigned → umamis-msi` and it still rendered `already assigned →
+    # copy, NOT in pixels": the string was exactly `already assigned → win-host-a` and it still rendered `already assigned →
     # uma…`. The arithmetic proved the rule unsatisfiable — clause 2's picker floor plus clause 1's fixed action leave ~137px
     # of a 360.66px row, while clause 4's OWN exemplar needs ~197px. The RULE changed, not the build: the holder renders WHOLE
     # or is omitted, chosen by a graduated ladder. A three-glyph prefix of a node id is indistinguishable from three other

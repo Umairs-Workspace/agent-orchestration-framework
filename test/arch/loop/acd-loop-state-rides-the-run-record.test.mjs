@@ -192,7 +192,12 @@ export const archTests = [
       // records, src/mesh/presence.mjs), so the loop's state still rides the run record with no
       // face of its own and the board's frozen seam is byte-identical. `work:loop` stays
       // BOARD_DEFERRED; no `/api/work/loop` exists.
-      assert.equal(hash.digest("hex"), "5766c6089f3d4aabc856e347e95dd218a8d7c41d137ac6b3bbfdb5fb5dcb6b45", "ui/ changed despite the zero-board-change contract");
+      //
+      // RE-PINNED by the placeholder-node-name rename (2026-09-23, operator request), measured the
+      // same way: `git diff -- ui/` is ONE file, `ui/src/fleet/assign-affordance.mjs`, 4 lines,
+      // all COMMENTS — a fixture node name in prose, swapped for a same-length placeholder. No
+      // code moved, nothing under `ui/src/board/`, no run-record key read.
+      assert.equal(hash.digest("hex"), "6568d06b65b82ef743333dec8ac14c369d5ce4a4de0cc39afbbe2cef45b02f0f", "ui/ changed despite the zero-board-change contract");
     },
   },
 ];

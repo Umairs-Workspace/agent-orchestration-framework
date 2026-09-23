@@ -18,7 +18,7 @@ import { probeFabric, fabricGuidance, macOsAppStoreSplitWarning, remediationForR
 
 const STATUS_FIXTURE = {
   BackendState: "Running",
-  Self: { HostName: "umamis-msi", DNSName: "umamis-msi.tail1a2b.ts.net.", TailscaleIPs: ["198.51.100.123"], Online: true },
+  Self: { HostName: "win-host-a", DNSName: "win-host-a.tail1a2b.ts.net.", TailscaleIPs: ["198.51.100.123"], Online: true },
   Peer: {},
 };
 

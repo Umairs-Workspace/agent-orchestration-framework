@@ -411,7 +411,7 @@ export const loopCommandProbeTests = [
       let reference = null;
       for (const row of rows) {
         await resetLoopStops();
-        const fx = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+        const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
         try {
           await writeDeclarationRun(fx, { state: "running", at: new Date().toISOString() });
           const fake = completingDriver(fx);
@@ -467,7 +467,7 @@ export const loopCommandProbeTests = [
       ];
       for (const row of rows) {
         await resetLoopStops();
-        const fx = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+        const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
         try {
           assert.equal(heartbeatFromConfig(fx.workspace), heartbeatMs, "the fixture resolves the 15-minute default");
           await writeDeclarationRun(fx, { ...row.run });
@@ -478,7 +478,7 @@ export const loopCommandProbeTests = [
           const file = JSON.parse(await readFile(answer.path, "utf8"));
           assert.equal(file.level, 1);
           assert.equal(file.state, expectedState);
-          assert.deepEqual(file.by, { node: "umamis-msi", pid: process.pid });
+          assert.deepEqual(file.by, { node: "win-host-a", pid: process.pid });
           assert.equal(file.workspaceId, null);
           assert.equal(file.honouredAt, row.live ? null : NOW.toISOString());
         } finally {
@@ -497,7 +497,7 @@ export const loopCommandProbeTests = [
       ];
       for (const row of rows) {
         await resetLoopStops();
-        const fx = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+        const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
         try {
           await writeDeclarationRun(fx, { ...row.run });
           const answers = [];
@@ -529,11 +529,11 @@ export const loopCommandProbeTests = [
         { scope: "03/01", code: "loop-stop-scope" },
         { scope: "04", code: "loop-stop-no-declaration", message: /04.*aof work loop 04/u },
         { scope: "03", code: "loop-stop-no-declaration", situation: "bare-drive", message: /03.*aof work loop 03/u },
-        { scope: "03", code: "loop-stop-not-local", situation: "remote", message: /umamis-mac-mini.*umamis-msi.*stop it on umamis-mac-mini's own console/u },
+        { scope: "03", code: "loop-stop-not-local", situation: "remote", message: /umamis-mac-mini.*win-host-a.*stop it on umamis-mac-mini's own console/u },
       ];
       for (const row of rows) {
         await resetLoopStops();
-        const fx = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+        const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
         try {
           if (row.situation === "bare-drive") {
             const item = await resolveItemExact(fx.ctx, "03/01");
@@ -559,9 +559,9 @@ export const loopCommandProbeTests = [
     async run() {
       const NOW = () => new Date("2026-09-13T12:00:00.000Z");
       const rows = [
-        { node: null, nodeId: "umamis-msi", byNode: "umamis-msi" },
-        { node: "umamis-msi", nodeId: "umamis-msi", byNode: "umamis-msi" },
-        { node: "", nodeId: "umamis-msi", byNode: "umamis-msi" },
+        { node: null, nodeId: "win-host-a", byNode: "win-host-a" },
+        { node: "win-host-a", nodeId: "win-host-a", byNode: "win-host-a" },
+        { node: "", nodeId: "win-host-a", byNode: "win-host-a" },
         { node: "umamis-mac-mini", nodeId: undefined, byNode: null },
       ];
       for (const row of rows) {
@@ -600,7 +600,7 @@ export const loopCommandProbeTests = [
       ];
       for (const row of rows) {
         await resetLoopStops();
-        const fx = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+        const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
         try {
           let l2Ref = "03/01";
           if (row.where === "split") {
@@ -635,7 +635,7 @@ export const loopCommandProbeTests = [
   {
     name: "130/02 task01 a foreground loop is stoppable — supervised plays no part",
     async run() {
-      const fx = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+      const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
       try {
         await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, supervised: false }, state: "running", at: new Date().toISOString() });
         const answer = await stopLoop(fx.workspace, { scope: "03" });
@@ -652,7 +652,7 @@ export const loopCommandProbeTests = [
       const NOW = () => new Date("2026-09-13T12:00:00.000Z");
       // The two `ok: true` rows against the real core (a live loop, then its escalation on a dead
       // one); the three refusals against the real core's own coded answers.
-      const fx = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+      const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
       try {
         await writeDeclarationRun(fx, { state: "running", at: NOW().toISOString() });
         const first = await loopCommand.run({ scope: "03", stop: true, now: NOW() }, fx.ctx);
@@ -667,7 +667,7 @@ export const loopCommandProbeTests = [
       }
       for (const [scope, code, status, seed] of [["04", "loop-stop-no-declaration", 404, null], ["03", "loop-stop-not-local", 409, "remote"], ["nope", "loop-stop-scope", 409, null]]) {
         await resetLoopStops();
-        const fx2 = await loopFixture({ mesh: { nodeId: "umamis-msi" } });
+        const fx2 = await loopFixture({ mesh: { nodeId: "win-host-a" } });
         try {
           if (seed === "remote") await writeDeclarationRun(fx2, { state: "running", node: "umamis-mac-mini", at: NOW().toISOString() });
           const expected = await stopLoop(fx2.workspace, { scope, now: NOW });

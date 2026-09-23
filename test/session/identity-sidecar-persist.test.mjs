@@ -52,13 +52,13 @@ export const identitySidecarPersistTests = [
       try {
         const id = await deriveNodeId({
           config: {},
-          hostname: "umamis-msi",
+          hostname: "win-host-a",
           salt: "fixed-salt-A",
           sidecarPath,
         });
-        assert.equal(id, "umamis-msi", "the returned id is the sanitized hostname");
+        assert.equal(id, "win-host-a", "the returned id is the sanitized hostname");
         const sidecar = await readSidecar(sidecarPath);
-        assert.deepEqual(sidecar, { nodeId: "umamis-msi", salt: "fixed-salt-A", derivedFrom: "umamis-msi" }, "the sidecar holds nodeId+salt (+derivedFrom)");
+        assert.deepEqual(sidecar, { nodeId: "win-host-a", salt: "fixed-salt-A", derivedFrom: "win-host-a" }, "the sidecar holds nodeId+salt (+derivedFrom)");
         const afterBytes = await readFile(configPath, "utf8");
         assert.equal(afterBytes, initialConfigBytes, "the committed config file is byte-identical (no nodeId/salt written there)");
       } finally {
@@ -72,7 +72,7 @@ export const identitySidecarPersistTests = [
     name: "identity-sidecar-persist/00 the sidecar's persisted nodeId is the sanitized hostname (empty stem falls back to node-<installHash(salt)>)",
     async run() {
       const rows = [
-        ["umamis-msi", "umamis-msi"],
+        ["win-host-a", "win-host-a"],
         // F-3302: a macOS `os.hostname()` carries the mDNS `.local` suffix; it is STRIPPED
         // so the derived id matches Tailscale's short HostName (`umamis-mac-mini`), not
         // `umamis-mac-mini-local` (which would fail the ADR-002.2 fabric peer→nodeId join).
@@ -119,7 +119,7 @@ export const identitySidecarPersistTests = [
           const sidecar = await readSidecar(sidecarPath);
           assert.equal(sidecar.nodeId, expectedId, `clone on "${hostname}" derives "${expectedId}"`);
           assert.equal(id, expectedId);
-          assert.notEqual(sidecar.nodeId, "umamis-msi", "identity was not inherited from the origin machine");
+          assert.notEqual(sidecar.nodeId, "win-host-a", "identity was not inherited from the origin machine");
         } finally {
           await rm(root, { recursive: true, force: true });
         }

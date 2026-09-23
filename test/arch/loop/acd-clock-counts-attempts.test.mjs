@@ -437,7 +437,7 @@ export const archTests = [
     run: async () => {
       const dir = path.join(
         root, "wiki", "work", "archive", "124_milestone_the-edges-aof-does-not-draw",
-        "stories", "00_story_the-census-reports-its-denominator", "runs", "umamis-msi",
+        "stories", "00_story_the-census-reports-its-denominator", "runs", "node-7297",
       );
       const records = new Map();
       for (const entry of await readdir(dir)) {
@@ -495,7 +495,7 @@ export const archTests = [
     run: async () => {
       const dir = path.join(
         root, "wiki", "work", "archive", "124_milestone_the-edges-aof-does-not-draw",
-        "stories", "00_story_the-census-reports-its-denominator", "runs", "umamis-msi",
+        "stories", "00_story_the-census-reports-its-denominator", "runs", "node-7297",
       );
       const runs = [];
       for (const entry of await readdir(dir)) {

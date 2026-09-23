@@ -33,7 +33,7 @@ doc: verification
   observed by hand ahead of the control 129/05 lands.
 - **The lane was scoped to the story, deliberately.** The whole-tree run belongs to
   `aof work regression-gate 129` at the milestone door. The story's recorded grade
-  (`runs/umamis-msi/20260913T005139090Z-0001.json`, `brief.grade`) is `pass` over 1,956 cases with
+  (`runs/node-7297/20260913T005139090Z-0001.json`, `brief.grade`) is `pass` over 1,956 cases with
   0 failing against the 24-red baseline the cascade measured at `2321dce8` — the delta this story
   owes is clean.
 - **`aof work validate 129/01`** — `[]`, exit 0: **PASS**. `aof work validate 129` — `[]`, exit 0.
@@ -67,7 +67,7 @@ doc: verification
   mention of `src/loop`, whose exemption row is green); FF-11902 ×3 citing `test/bundle/site-build.test.mjs`
   and `test/arch/work/acd-one-mint.test.mjs`, both UNTRACKED (`??`) files of other lanes; `53/00 task01`
   naming `test/support/source-slice.mjs`, committed at HEAD `9b64eb32` (a `🌍` comment mentions the
-  driver) — red at HEAD before this story. The run record's 24-red baseline (`runs/umamis-msi/…-0000.json`)
+  driver) — red at HEAD before this story. The run record's 24-red baseline (`runs/node-7297/…-0000.json`)
   carries the same reds.
   `verifies → tasks/00_the-drive-takes-a-lent-run.feature`, `tasks/01_stdin-is-the-cancel-channel.feature`,
   `tasks/02_run-bounded-gains-abort.feature`, `tasks/03_child-drive-spawns-and-parses.feature`

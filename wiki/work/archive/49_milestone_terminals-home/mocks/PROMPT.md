@@ -137,7 +137,7 @@ The place you read words is the full-screen frame.
 
 **Sample content — use this exact data so the frames read real:**
 
-- Nodes: `umamis-msi`, `aof-wsl`, `umamis-mac-mini`.
+- Nodes: `win-host-a`, `aof-wsl`, `umamis-mac-mini`.
 - Repos: `aof`, `lark-guard`, `demo`.
 - Work item refs: `49/02`, `47/01`. Sessions: `7f3a91c`, `b21d40e`, `c9e5177`, `1a4be82`.
 - Terminal content: a plausible `claude` CLI session — a prompt line, a couple of tool lines, a short
@@ -160,7 +160,7 @@ itself does not scroll; the grid does.
 Surface 2's spec):
 
 1. `streaming`, with a work item — identity `49/02 → aof-wsl`, repo `aof`;
-2. `streaming`, free session — identity `lark-guard → umamis-msi` (no repo repeated on the status row);
+2. `streaming`, free session — identity `lark-guard → win-host-a` (no repo repeated on the status row);
 3. **`needs input`** + `streaming` — identity `47/01 → umamis-mac-mini`, repo `demo`;
 4. `waiting` — the message top-left inside the pane;
 5. **`no live output`** — a free session nothing is feeding;
@@ -192,7 +192,7 @@ One tile, drawn large enough to inspect: **394px wide** (the 1280 grid's track).
 1. **Identity row** — 12px horizontal / 6px vertical padding, left → right:
    - **`▣`** — the glyph only (the word `TERMINAL` is dropped at this width), `zinc-300`.
    - **Identity** — monospace 11px `zinc-400`, truncating with an ellipsis if it must:
-     `49/02 → aof-wsl`. (For a free session the owner is the repo: `lark-guard → umamis-msi`.)
+     `49/02 → aof-wsl`. (For a free session the owner is the repo: `lark-guard → win-host-a`.)
    - **`read-only` pill** — 10px, 600, UPPERCASE, letter-spaced, `zinc-400`, 1px `#1e2a44` border,
      transparent fill — **only on the one frame that needs it** (see the frame list).
    - **`needs input` pill** — the **same pill form**, same size, same border, same colour — only on the

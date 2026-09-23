@@ -190,7 +190,7 @@ assistant, one workspace, one node → one record", which is exactly the assumpt
   into a record whose `sessionId` is `undefined` → read as `null` → an anonymous session. It rides the wire
   correctly, renders correctly, and is never rewritten (the new writer composes a 4-part leaf), so it ages
   past the TTL within one window (default 120s) and is removed by ADR-006's reaper. **The reaper IS the
-  migration.** The live soak's one real record (`umamis-msi~9db1fd84f5895e38~claude-code.json`, RESEARCH §3)
+  migration.** The live soak's one real record (`win-host-a~9db1fd84f5895e38~claude-code.json`, RESEARCH §3)
   is gone within two minutes of the first post-deploy ping, with zero migration code and zero risk of a
   half-migrated store. Absence-is-benign expiry, the discipline this store already keeps everywhere else.
 
@@ -709,7 +709,7 @@ one-dependent module, and R3/R4 inside a zero-import leaf — none of these ruli
   provided by a stronger rule for the one segment whose value is genuinely foreign.
 - **The ordinary case is unchanged to the eye.** A UUID (the measured shape — RESEARCH §1/§2; lowercase hex
   plus `-`) encodes to ITSELF, so the live leaf stays readable:
-  `umamis-msi~9db1fd84f5895e38~claude-code~3f2b9c14-8a7e-4d61-9f03-1c5ea77b42d9.json`. That legibility is
+  `win-host-a~9db1fd84f5895e38~claude-code~3f2b9c14-8a7e-4d61-9f03-1c5ea77b42d9.json`. That legibility is
   load-bearing — RESEARCH §3's evidence is a human reading that directory listing.
 - **ADR-001's byte-identity survives, and this clause is what keeps it true.** The encoding exists ONLY
   inside `sessionLeaf`/`sessionRecordPath`. The record's `sessionId` field, the wire entry's `sessionId`

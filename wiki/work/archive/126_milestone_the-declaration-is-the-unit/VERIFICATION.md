@@ -55,7 +55,7 @@ doc: verification
 - **The live operator path, driven end to end through the real face** — the one check a green suite
   does not make, and the species of hole `ADR-003`'s amendment was written from. `aof work run-status 126/00`
   now prints
-  `20260909T003645691Z-0000  done  attempt 1  elapsed 33647267ms (9h 20m 47s)  session eedde1b3-…  node umamis-msi`
+  `20260909T003645691Z-0000  done  attempt 1  elapsed 33647267ms (9h 20m 47s)  session eedde1b3-…  node win-host-a`
   where it printed `runId` and `state` alone; the same ref through `--json` answers
   `ref, runs, answeredFrom` with a **16-key** record. The render moved, the document did not, and the
   instant reached the line from `faceCtx.now` rather than from a clock in the module.
@@ -297,7 +297,7 @@ project root from both the supervisor's launch directory and this workspace. A t
   `242813438`.
 - **`aof work run-status 01/00` on the real face** renders the whole lineage with the facts
   `126/01` moved into the render:
-  `20260910T003656552Z-0007  running  continue  2/3  L2  attempt 2  elapsed 29224ms (29s)  last beat 29224ms (29s)  session 68d62913-…  node umamis-msi`
+  `20260910T003656552Z-0007  running  continue  2/3  L2  attempt 2  elapsed 29224ms (29s)  last beat 29224ms (29s)  session 68d62913-…  node win-host-a`
 - **One measurement contradicts a control's own wording, and it is recorded rather than smoothed
   over** — `F-31`: the killed attempt lived **90.7 s** and was billed **202.4 s**, because
   `heartbeatAt` was null and the attempt therefore ended at `updatedAt`, which the reclaim had just

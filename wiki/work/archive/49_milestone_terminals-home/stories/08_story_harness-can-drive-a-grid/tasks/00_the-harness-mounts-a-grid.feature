@@ -164,7 +164,7 @@ Feature: the harness mounts N controls from a caller-supplied entry — every pa
 
   Scenario: three controls mount in one tree and the driver addresses the THIRD, not "the last one constructed"
     Given a caller-supplied entry that renders three `TerminalControl`s at the `board-dock` host, in declared order
-    And their mounts are the shipped `boardDockMount` for `(aof-wsl, s-1)`, `(aof-wsl, s-2)` and `(umamis-msi, s-9)` respectively
+    And their mounts are the shipped `boardDockMount` for `(aof-wsl, s-1)`, `(aof-wsl, s-2)` and `(win-host-a, s-9)` respectively
     When the tree is mounted
     Then exactly three sockets were constructed and exactly three xterms were constructed
     And the driver answers, FOR THE PANE AT INDEX 2 SPECIFICALLY: its own socket, its own xterm, its own pane host and its own state chip
