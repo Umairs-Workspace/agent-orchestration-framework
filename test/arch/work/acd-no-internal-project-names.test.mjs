@@ -26,6 +26,11 @@
 // lane. That means it does NOT protect a fresh CI clone; it protects the machine where a
 // leak is authored, which is the only place a leak can be prevented rather than discovered.
 //
+// NOT THE RUN-RECORD GUARD. A machine name in a run record (`runs/<node>/`, a record's `node`)
+// is held out by `test/arch/mesh/acd-run-records-name-no-machine.test.mjs` (132/03), a separate
+// control. This term list names downstream PROJECTS and never a machine: widening it would put
+// the very name it exists to keep out into the file that declares it.
+//
 // SELF-EXEMPTION, DECLARED. This file discusses the rule, so a scan that included it would
 // report itself — "self-inclusion of the guard's own file or message" is a documented
 // vacuity shape (see `wiki/planning/FINDING-acd-executable-gate.md` §1a). It is excluded by

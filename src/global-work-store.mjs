@@ -50,7 +50,7 @@ import { tableClass, refRemapTables } from "./effects/stores.mjs";
 import { executionScopeRef } from "./assignment-record.mjs";
 // m43 / ADR-004 — the publishing node's own id, for the provenance stamp. The ONE
 // derivation (node-identity.mjs), in its in-memory mode: a pinned `mesh.nodeId` wins
-// verbatim, else the sanitized hostname — never persisted from here, exactly as
+// verbatim, else the opaque node-<hash> (132) — never persisted from here, exactly as
 // mesh-launcher's own resolveNodeIdentity reads it.
 import { deriveNodeId } from "./node-identity.mjs";
 // m43 / ADR-007 — the artifact manifest's own home (a pure leaf, 0 repo imports). The
@@ -912,7 +912,7 @@ export async function publishWorkspaceSnapshot(store, workspace, options = {}) {
 
 // resolvePublishingNodeId(workspace) — WHO this node is when it publishes its own slice.
 // The ONE derivation (node-identity.mjs) in its in-memory mode — a pinned
-// `config.mesh.nodeId` wins verbatim, else the sanitized hostname — never persisted from
+// `config.mesh.nodeId` wins verbatim, else the opaque node-<hash> (132) — never persisted from
 // here, exactly as mesh-launcher's own resolveNodeIdentity reads it. It is stable across
 // publishes, which is what author retraction depends on.
 async function resolvePublishingNodeId(workspace) {

@@ -175,7 +175,8 @@ function normaliseDnsLabel(value) {
 }
 
 // The DNSName's leading label (before the first "."), the part that matches a bare
-// HostName / aof nodeId (RESEARCH §1 — "umamis-mbp.tail1a2b.ts.net." → "umamis-mbp").
+// HostName / a declared machine hostname (RESEARCH §1 — "umamis-mbp.tail1a2b.ts.net." →
+// "umamis-mbp").
 function dnsLeadingLabel(dnsName) {
   const stripped = normaliseDnsLabel(dnsName);
   const dot = stripped.indexOf(".");
@@ -363,7 +364,8 @@ export async function selfAddress(config, options = {}) {
 // resolvePeers(config, options) → [{ nodeId, dialAddress, online, host }]. Parses
 // the Peer map (ADR-002.2) and joins each peer to an aof nodeId by HostName then
 // DNSName (trailing-dot-tolerant). `options.roster` is the aof node roster to join
-// against — an array of records carrying `nodeId` (and, when known, `host`); when
+// against — an array of records carrying `nodeId` (and, when known, `hostname` and
+// `host`); when
 // absent every peer is surfaced UNJOINED (nodeId:null), never dropped, never
 // crashed on. A degraded fabric (unspawnable / unparseable / declaration refusal)
 // resolves to [] — a peer list is never partially populated from a crash.
@@ -388,17 +390,27 @@ export async function resolvePeers(config, options = {}) {
   const peerMap = parsed?.Peer;
   if (peerMap == null || typeof peerMap !== "object") return [];
 
-  // Build the join index once: every roster entry's nodeId AND (sanitised) host,
-  // each mapped to the nodeId — so a peer can match on either key.
+  // Build the join index once: every roster entry's declared machine `hostname` (132/02)
+  // and its `host`, each mapped to the nodeId — so a peer can match on either key.
+  //
+  // The nodeId itself is NOT a key. It used to be, read as if it were a machine name,
+  // which held only while ids were derived from hostnames; an opaque `node-<hash>` matches
+  // no HostName, and a pinned name like `aof-wsl` would join by accident and hide a
+  // missing `hostname`. The declared hostname is indexed whole AND by its leading label,
+  // so a macOS `Umamis-Mac-mini.local` still meets Tailscale's short `umamis-mac-mini`
+  // without sanitizing it into an identifier. A pre-132 record with no `hostname` joins
+  // on `host` alone, and on its next publish it carries the key.
   const byHost = new Map();
-  const byNodeId = new Set();
   for (const entry of roster) {
     const nodeId = typeof entry?.nodeId === "string" ? entry.nodeId : null;
     if (nodeId == null) continue;
-    byNodeId.add(nodeId);
-    byHost.set(nodeId.toLowerCase(), nodeId);
+    const machineName = normaliseDnsLabel(entry?.hostname);
+    if (machineName.length > 0) {
+      byHost.set(machineName, nodeId);
+      byHost.set(dnsLeadingLabel(machineName), nodeId);
+    }
     const host = typeof entry?.host === "string" ? entry.host : null;
-    if (host != null) byHost.set(host.toLowerCase(), nodeId);
+    if (host != null && host.length > 0) byHost.set(host.toLowerCase(), nodeId);
   }
 
   const peers = [];

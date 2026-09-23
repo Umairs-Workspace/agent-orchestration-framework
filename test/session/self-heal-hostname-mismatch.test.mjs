@@ -16,6 +16,11 @@
 //     symptom self-corrects; the heal re-derives with the sidecar's OWN salt
 //     (preserving a collision suffix); the heal is self-terminating (a second load on
 //     the now-correct host is a keep, not a repeated rewrite).
+//
+// 132 (run-records-carry-the-node-id) retired the hostname-stem derivation: a healed id
+// is now the opaque node-<installHash(salt)>, so the expected ids below are that form,
+// and a legacy stem id on its own recorded host is RECOGNISED rather than churned —
+// 132/tasks/01's heal scenarios are wired at the foot of this file.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
@@ -48,6 +53,8 @@ async function fixtureProjectWithSidecar(sidecar) {
   return { root, sidecarPath };
 }
 
+const SALT_132 = "2d4c74e4-66e3-4c7a-bd88-b199d8f81b7f";
+
 export const selfHealHostnameMismatchTests = [
   // ══ Scenario Outline: the self-heal matrix ═════════════════════════════════════
   {
@@ -55,8 +62,8 @@ export const selfHealHostnameMismatchTests = [
     async run() {
       const rows = [
         { before: { nodeId: "macbook-pro", salt: "s", derivedFrom: "macbook-pro" }, hostname: "macbook-pro", resultingNodeId: "macbook-pro", rewritten: false },
-        { before: { nodeId: "win-host-a", salt: "s", derivedFrom: "win-host-a" }, hostname: "macbook-pro", resultingNodeId: "macbook-pro", rewritten: true },
-        { before: { nodeId: "win-host-a", salt: "s", derivedFrom: "win-host-a" }, hostname: "Umami's MacBook", resultingNodeId: "umami-s-macbook", rewritten: true },
+        { before: { nodeId: "win-host-a", salt: "s", derivedFrom: "win-host-a" }, hostname: "macbook-pro", resultingNodeId: `node-${installHash("s")}`, rewritten: true },
+        { before: { nodeId: "win-host-a", salt: "s", derivedFrom: "win-host-a" }, hostname: "Umami's MacBook", resultingNodeId: `node-${installHash("s")}`, rewritten: true },
         { before: { nodeId: "operator-choice", salt: "s", pinned: true }, hostname: "macbook-pro", resultingNodeId: "operator-choice", rewritten: false },
       ];
       for (const { before, hostname, resultingNodeId, rewritten } of rows) {
@@ -87,7 +94,7 @@ export const selfHealHostnameMismatchTests = [
       const { dir, sidecarPath } = await tempSidecar(copied);
       try {
         const healed = await healIdentitySidecar({ sidecar: copied, hostname: "macbook-pro", sidecarPath });
-        assert.equal(healed.nodeId, "macbook-pro");
+        assert.equal(healed.nodeId, `node-${installHash("origin-salt")}`);
         assert.notEqual(healed.nodeId, "win-host-a", "identity self-corrected — not the origin's id");
       } finally {
         await rm(dir, { recursive: true, force: true });
@@ -107,9 +114,10 @@ export const selfHealHostnameMismatchTests = [
           sidecar: before,
           hostname: "shared-host",
           sidecarPath,
-          takenIds: ["shared-host"],
+          takenIds: [`node-${installHash("fixed-salt-A")}`],
         });
-        assert.equal(healed.nodeId, `shared-host-${installHash("fixed-salt-A")}`);
+        // 132: the collision widens the SAME salt's hash — never a fresh salt, never the hostname.
+        assert.match(healed.nodeId, new RegExp(`^node-${installHash("fixed-salt-A")}[0-9a-f]{4}$`));
         assert.equal(healed.salt, "fixed-salt-A", "no fresh salt minted");
       } finally {
         await rm(dir, { recursive: true, force: true });
@@ -125,7 +133,7 @@ export const selfHealHostnameMismatchTests = [
       const { dir, sidecarPath } = await tempSidecar(before);
       try {
         const firstHeal = await healIdentitySidecar({ sidecar: before, hostname: "macbook-pro", sidecarPath });
-        assert.deepEqual(firstHeal, { nodeId: "macbook-pro", salt: "s", derivedFrom: "macbook-pro" });
+        assert.deepEqual(firstHeal, { nodeId: `node-${installHash("s")}`, salt: "s", derivedFrom: "macbook-pro" });
         const bytesAfterFirst = await readFile(sidecarPath, "utf8");
 
         const secondHeal = await healIdentitySidecar({ sidecar: firstHeal, hostname: "macbook-pro", sidecarPath });
@@ -172,25 +180,76 @@ export const selfHealHostnameMismatchTests = [
   //    passes NO takenIds), and isDerivationOf recognises the collision-suffixed form so
   //    the regression above (a legitimate collision id) is NOT churned. ═══════════════
   {
-    name: "self-heal-hostname-mismatch/03 REGRESSION (F-3302): a stale-format .local id self-migrates to the Tailscale-matching short id, self-terminating",
+    name: "self-heal-hostname-mismatch/03 REGRESSION (F-3302): a stale-format .local id self-migrates to a current-rule id, self-terminating",
     async run() {
+      // 132: the current rule is the opaque form, so the pre-strip id now heals to it (the
+      // fabric join matches a declared hostname, so the id no longer has to match Tailscale).
+      const opaque = `node-${installHash("8263411c")}`;
       const before = { nodeId: "umamis-mac-mini-local", salt: "8263411c", derivedFrom: "Umamis-Mac-mini.local" };
       const { root, sidecarPath } = await fixtureProjectWithSidecar(before);
       try {
         const ws = await loadWorkspace(root, undefined, { hostname: "Umamis-Mac-mini.local" });
-        assert.equal(ws.config.mesh.nodeId, "umamis-mac-mini", "the stale `.local` id healed to the Tailscale-matching short id");
+        assert.equal(ws.config.mesh.nodeId, opaque, "the stale `.local` id healed to the opaque id");
         const healed = await readSidecar(sidecarPath);
-        assert.equal(healed.nodeId, "umamis-mac-mini", "the sidecar was rewritten with the short id");
+        assert.equal(healed.nodeId, opaque, "the sidecar was rewritten with the opaque id");
         assert.equal(healed.salt, "8263411c", "the sidecar's own salt is preserved (no fresh mint)");
         const bytesAfterFirst = await readFile(sidecarPath, "utf8");
 
         // Self-terminating: a second load on the same host is a KEEP (no re-churn) —
         // after the heal the id IS a valid derivation, so trigger 2 no longer fires.
         const ws2 = await loadWorkspace(root, undefined, { hostname: "Umamis-Mac-mini.local" });
-        assert.equal(ws2.config.mesh.nodeId, "umamis-mac-mini", "the id is stable on a second load");
+        assert.equal(ws2.config.mesh.nodeId, opaque, "the id is stable on a second load");
         assert.equal(await readFile(sidecarPath, "utf8"), bytesAfterFirst, "the sidecar is byte-unchanged on the second load (self-terminating)");
       } finally {
         await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
+
+  // ══ 132/tasks/01_a-legacy-id-is-never-silently-rehomed.feature ══════════════════
+  // Retiring the hostname-stem rule must not make every live node read stale-format on
+  // its next load: the legacy forms stay RECOGNISED, so the heal has no trigger.
+  {
+    name: "132/01 a legacy sidecar survives a load untouched — no silent re-identification",
+    async run() {
+      const legacy = { salt: SALT_132, nodeId: "win-host-a", derivedFrom: "Win-Host-A" };
+      const { dir, sidecarPath } = await tempSidecar(legacy);
+      try {
+        const bytesBefore = await readFile(sidecarPath, "utf8");
+        const healed = await healIdentitySidecar({ sidecar: legacy, hostname: "Win-Host-A", sidecarPath });
+        assert.equal(healed.nodeId, "win-host-a", "the legacy id is kept");
+        // deriveNodeId was not called: with a sidecarPath it would have persisted
+        // node-<HASH> and changed these bytes.
+        assert.equal(await readFile(sidecarPath, "utf8"), bytesBefore, "the persisted bytes are unchanged");
+
+        // The same holds through loadWorkspace's real call site.
+        const { root, sidecarPath: wsSidecar } = await fixtureProjectWithSidecar(legacy);
+        try {
+          const wsBytes = await readFile(wsSidecar, "utf8");
+          const ws = await loadWorkspace(root, undefined, { hostname: "Win-Host-A" });
+          assert.equal(ws.config.mesh.nodeId, "win-host-a");
+          assert.equal(await readFile(wsSidecar, "utf8"), wsBytes);
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "132/01 trigger 1 still fires — a copied .aof on a different machine still heals",
+    async run() {
+      const legacy = { salt: SALT_132, nodeId: "win-host-a", derivedFrom: "Win-Host-A" };
+      const { dir, sidecarPath } = await tempSidecar(legacy);
+      try {
+        const healed = await healIdentitySidecar({ sidecar: legacy, hostname: "umamis-mac-mini", sidecarPath });
+        assert.equal(healed.nodeId, `node-${installHash(SALT_132)}`, "the opaque form, from the sidecar's OWN salt");
+        assert.equal(healed.derivedFrom, "umamis-mac-mini");
+        assert.ok(!healed.nodeId.includes("umamis-mac-mini"), "the healed id names no machine");
+        assert.equal((await readSidecar(sidecarPath)).nodeId, healed.nodeId, "the heal was persisted");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
       }
     },
   },

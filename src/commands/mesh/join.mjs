@@ -194,6 +194,7 @@ export const meshJoinCommand = {
     const nodeRecord = assembleDescriptor({
       nodeId,
       hostname: advertisedHost,
+      machineName: os.hostname(),
       platform: process.platform,
       runtimes: Array.isArray(config.runtimes) ? config.runtimes : [],
       aofVersion: packageVersionString(),

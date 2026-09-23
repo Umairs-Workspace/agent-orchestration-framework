@@ -56,9 +56,11 @@ export const identitySidecarPersistTests = [
           salt: "fixed-salt-A",
           sidecarPath,
         });
-        assert.equal(id, "win-host-a", "the returned id is the sanitized hostname");
+        // 132: the derived id is the opaque form; the hostname is only RECORDED.
+        const opaque = `node-${installHash("fixed-salt-A")}`;
+        assert.equal(id, opaque, "the returned id is the opaque node-<installHash(salt)>");
         const sidecar = await readSidecar(sidecarPath);
-        assert.deepEqual(sidecar, { nodeId: "win-host-a", salt: "fixed-salt-A", derivedFrom: "win-host-a" }, "the sidecar holds nodeId+salt (+derivedFrom)");
+        assert.deepEqual(sidecar, { nodeId: opaque, salt: "fixed-salt-A", derivedFrom: "win-host-a" }, "the sidecar holds nodeId+salt (+derivedFrom)");
         const afterBytes = await readFile(configPath, "utf8");
         assert.equal(afterBytes, initialConfigBytes, "the committed config file is byte-identical (no nodeId/salt written there)");
       } finally {
@@ -69,21 +71,21 @@ export const identitySidecarPersistTests = [
 
   // ══ Scenario Outline: the sidecar's persisted nodeId is the sanitized hostname ═
   {
-    name: "identity-sidecar-persist/00 the sidecar's persisted nodeId is the sanitized hostname (empty stem falls back to node-<installHash(salt)>)",
+    name: "identity-sidecar-persist/00 the sidecar's persisted nodeId is node-<installHash(salt)> whatever the hostname",
     async run() {
+      // 132 retired the hostname-stem rule: every hostname — including the empty-stem
+      // ones that were the only opaque case before — persists the same opaque id.
+      const opaque = `node-${installHash("fixed-salt-A")}`;
       const rows = [
-        ["win-host-a", "win-host-a"],
-        // F-3302: a macOS `os.hostname()` carries the mDNS `.local` suffix; it is STRIPPED
-        // so the derived id matches Tailscale's short HostName (`umamis-mac-mini`), not
-        // `umamis-mac-mini-local` (which would fail the ADR-002.2 fabric peer→nodeId join).
-        ["MacBook-Pro.local", "macbook-pro"],
-        ["Umamis-Mac-mini.local", "umamis-mac-mini"],
-        ["Umami's MacBook", "umami-s-macbook"],
-        ["umami--__--desktop", "umami-desktop"],
-        ["---trim-me---", "trim-me"],
-        ["HOST_42", "host-42"],
-        ["!!!@@@###", `node-${installHash("fixed-salt-A")}`],
-        ["", `node-${installHash("fixed-salt-A")}`],
+        ["win-host-a", opaque],
+        ["MacBook-Pro.local", opaque],
+        ["Umamis-Mac-mini.local", opaque],
+        ["Umami's MacBook", opaque],
+        ["umami--__--desktop", opaque],
+        ["---trim-me---", opaque],
+        ["HOST_42", opaque],
+        ["!!!@@@###", opaque],
+        ["", opaque],
       ];
       for (const [hostname, expectedId] of rows) {
         const { root, configPath, sidecarPath, initialConfigBytes } = await freshFixture();
@@ -105,10 +107,11 @@ export const identitySidecarPersistTests = [
   {
     name: "identity-sidecar-persist/00 a clone on a different host derives its own distinct sidecar id (the inherited-id bug fixed)",
     async run() {
+      // A clone mints its own salt, so its opaque id differs from the origin's.
       const rows = [
-        ["macbook-pro", "fixed-salt-B", "macbook-pro"],
-        ["build-server", "fixed-salt-C", "build-server"],
-        ["ci-runner-07", "fixed-salt-D", "ci-runner-07"],
+        ["macbook-pro", "fixed-salt-B", `node-${installHash("fixed-salt-B")}`],
+        ["build-server", "fixed-salt-C", `node-${installHash("fixed-salt-C")}`],
+        ["ci-runner-07", "fixed-salt-D", `node-${installHash("fixed-salt-D")}`],
       ];
       for (const [hostname, salt, expectedId] of rows) {
         const { root, sidecarPath } = await freshFixture();
@@ -130,19 +133,20 @@ export const identitySidecarPersistTests = [
   // ══ Scenario: two same-host installs with distinct salts persist distinct suffixed
   //    sidecar ids ═════════════════════════════════════════════════════════════════
   {
-    name: "identity-sidecar-persist/00 two same-host installs with distinct salts persist distinct suffixed sidecar ids",
+    name: "identity-sidecar-persist/00 two same-host installs with distinct salts persist distinct sidecar ids",
     async run() {
       const { root: rootA, sidecarPath: sidecarPathA } = await freshFixture();
       const { root: rootB, sidecarPath: sidecarPathB } = await freshFixture();
       try {
+        // 132: the salt alone separates them — no collision arm is needed.
         const idA = await deriveNodeId({
-          config: {}, hostname: "shared-host", salt: "fixed-salt-A", takenIds: ["shared-host"], sidecarPath: sidecarPathA,
+          config: {}, hostname: "shared-host", salt: "fixed-salt-A", sidecarPath: sidecarPathA,
         });
         const idB = await deriveNodeId({
-          config: {}, hostname: "shared-host", salt: "fixed-salt-B", takenIds: ["shared-host"], sidecarPath: sidecarPathB,
+          config: {}, hostname: "shared-host", salt: "fixed-salt-B", sidecarPath: sidecarPathB,
         });
-        assert.equal(idA, `shared-host-${installHash("fixed-salt-A")}`);
-        assert.equal(idB, `shared-host-${installHash("fixed-salt-B")}`);
+        assert.equal(idA, `node-${installHash("fixed-salt-A")}`);
+        assert.equal(idB, `node-${installHash("fixed-salt-B")}`);
         assert.notEqual(idA, idB, "distinct salts ⇒ distinct installs");
         assert.equal((await readSidecar(sidecarPathA)).nodeId, idA);
         assert.equal((await readSidecar(sidecarPathB)).nodeId, idB);

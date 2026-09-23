@@ -8,9 +8,9 @@
 //
 //   deriveNodeId    — the documented-default id derivation (ADR-003): an operator /
 //                     previously-persisted mesh.nodeId wins verbatim; else the
-//                     sanitized hostname; an empty sanitized stem falls back to a
-//                     deterministic node-<install-hash>; a collision against another
-//                     install's id appends a stable per-install hash suffix. The
+//                     opaque node-<install-hash> (132 — never the hostname, so a run
+//                     record's node key is safe to commit); a collision against
+//                     another install's id widens that hash. The
 //                     resolved id is PERSISTED — as of ADR-004, to the git-ignored
 //                     PER-INSTALL SIDECAR `.aof/mesh/identity.json`, NEVER the
 //                     committed config — on first derivation, so it is stable across
@@ -18,7 +18,8 @@
 //                     operator-overridable (a sidecar-pinned id, set directly, wins
 //                     verbatim and is never auto-healed — node-identity.mjs:74-78).
 //
-//   assembleDescriptor — assembles the frozen SIX-key capability descriptor. It READS
+//   assembleDescriptor — assembles the SEVEN-key capability descriptor (132/02 added
+//                     `hostname`, the fabric join key). It READS
 //                     config + environment and NEVER writes (only deriveNodeId's
 //                     first-publish persist writes). Empty runtimes assemble as []
 //                     (an honest minimal install), never absent / a crash.
@@ -27,8 +28,8 @@
 //                     still advertised seven keys and an empty `skills` array until 59/01
 //                     re-armed the suite that would have contradicted it.
 //
-// White-box / INJECTABLE: hostname + salt are passed in so the sanitization matrix +
-// the collision-suffix scenarios are testable without touching the real machine (the
+// White-box / INJECTABLE: hostname + salt are passed in so the derivation + collision
+// scenarios are testable without touching the real machine (the
 // Build-notes injectability requirement). The id stays deterministic and [a-z0-9-]-only.
 //
 // Persisting the sidecar routes through the ONE sidecar read-merge-write
@@ -101,8 +102,11 @@ export async function writeSidecarPatch(sidecarPath, patch) {
 // Sanitize a raw hostname to a path-safe, human-readable stem (ADR-003): lowercase,
 // strip the macOS mDNS `.local` suffix (F-3302, below), collapse every RUN of
 // non-[a-z0-9-] characters to a SINGLE "-", trim leading / trailing "-". An all-illegal
-// hostname sanitizes to "" — the caller falls back to the install-hash form (the
-// resolved empty-stem mis-spec). digits + hyphens are preserved.
+// hostname sanitizes to "". digits + hyphens are preserved.
+//
+// Since 132 no caller turns a MACHINE's hostname into an id with this. It sanitizes an
+// OPERATOR-supplied name (`aof mesh identity --name`) and answers isDerivationOf's
+// legacy-format question.
 //
 // F-3302 (milestone 33 / story 01 verify): macOS `os.hostname()` carries the mDNS
 // `.local` suffix (`Umamis-Mac-mini.local`), but Tailscale reports the SHORT machine
@@ -127,26 +131,62 @@ export function sanitizeHostname(hostname) {
 }
 
 // A short, STABLE per-install hash, derived deterministically from the install-local
-// salt. The SAME hash serves both the empty-stem fallback (node-<hash>) and the
-// collision suffix (<stem>-<hash>), so two installs with the same host but distinct
-// salts differ, and a given install's id is stable across re-derivation. 4 hex chars
-// is ample disambiguation for a small fleet and keeps the id legible.
+// salt, so two installs on one machine differ and a given install's id is stable across
+// re-derivation. 4 hex chars is ample disambiguation for a small fleet and keeps the id
+// legible. (Before 132 the same hash also suffixed a colliding hostname stem — the
+// legacy form isDerivationOf still recognises.)
 export function installHash(salt) {
-  return crypto.createHash("sha256").update(String(salt ?? "")).digest("hex").slice(0, 4);
+  return saltDigest(salt).slice(0, 4);
 }
 
-// isDerivationOf(nodeId, hostname, salt) — is `nodeId` a VALID output of deriveNodeId
-// for this hostname+salt under the CURRENT derivation rules? True for the bare sanitized
-// stem, the collision-suffixed form (`<stem>-<installHash(salt)>`), or the empty-stem
-// fallback (`node-<installHash(salt)>`). Lets the self-heal recognise a STALE-FORMAT id
-// — one no longer producible from its own recorded derivation host, e.g. a pre-F-3302
-// `umamis-mac-mini-local` after the `.local` strip landed — and re-derive it, WITHOUT
-// churning a legitimate collision id (which IS a recognised valid form, so it answers
-// true and is left untouched). Churn-safe by construction: every real derivation output
-// answers true, so healing only ever fires on an id no current rule could have produced.
+// The SAME digest as installHash, widened to 8 hex chars — the collision arm (132/00):
+// an opaque id already claimed by another install widens rather than reaching for the
+// hostname, so the escape hatch never reintroduces the disclosure it replaced.
+function widenedInstallHash(salt) {
+  return saltDigest(salt).slice(0, 8);
+}
+
+function saltDigest(salt) {
+  return crypto.createHash("sha256").update(String(salt ?? "")).digest("hex");
+}
+
+// The SHAPE of an opaque id — `node-` + 4 or 8 hex chars — with no salt to check it
+// against. For a reader that sees ids from many installs (the run-record fitness
+// function, 132/03); isOpaqueNodeId is the per-install answer.
+export const OPAQUE_NODE_ID_SHAPE = /^node-(?:[0-9a-f]{4}|[0-9a-f]{8})$/;
+
+// isOpaqueNodeId(nodeId, salt) — is this id one of the opaque forms deriveNodeId
+// produces for THIS salt (132/01)? The narrow question "is this id safe to commit":
+// neither form carries a machine stem. PURE over its two arguments.
+export function isOpaqueNodeId(nodeId, salt) {
+  return nodeId === `node-${installHash(salt)}` || nodeId === `node-${widenedInstallHash(salt)}`;
+}
+
+// isSameHost(a, b) — do two raw hostnames name the same machine, modulo case, the macOS
+// `.local` suffix and separator runs? The self-heal's copied-.aof trigger compares the
+// current machine against the sidecar's recorded derivation host with this, so the
+// comparison lives beside the sanitizer it uses rather than in the caller (132/00 — no
+// caller outside this module and the `--name` path sanitizes a hostname).
+export function isSameHost(a, b) {
+  return sanitizeHostname(a) === sanitizeHostname(b);
+}
+
+// isDerivationOf(nodeId, hostname, salt) — could `nodeId` have been derived for this
+// hostname+salt, under the CURRENT rules or the ones before them? The self-heal's
+// stale-format trigger asks exactly that, and re-derives only an id NO rule could have
+// produced — e.g. a pre-F-3302 `umamis-mac-mini-local` after the `.local` strip landed.
+//
+// Two arms (132/01). CURRENT: the opaque forms (isOpaqueNodeId), whatever the host.
+// LEGACY: the bare sanitized stem and the collision-suffixed `<stem>-<installHash>` that
+// rule (2) produced until 132. The legacy arm is RECOGNITION, not derivation — no code
+// path produces a stem-shaped id any more — and it exists so that retiring rule (2) does
+// not make every live node read stale-format on its next load and silently re-identify
+// mid-soak, orphaning the credentials keyed by its id. Moving a node to the opaque form
+// is `aof mesh identity --reidentify`, a deliberate act.
 export function isDerivationOf(nodeId, hostname, salt) {
+  if (isOpaqueNodeId(nodeId, salt)) return true;
   const stem = sanitizeHostname(hostname);
-  if (stem.length === 0) return nodeId === `node-${installHash(salt)}`;
+  if (stem.length === 0) return false;
   return nodeId === stem || nodeId === `${stem}-${installHash(salt)}`;
 }
 
@@ -158,16 +198,20 @@ export function isDerivationOf(nodeId, hostname, salt) {
 //      (loadWorkspace's hydration) is what changes WHERE that value comes from (the
 //      sidecar overlay, not the committed file); deriveNodeId's own precedence chain
 //      is unchanged.
-//   2. Else the sanitized hostname stem.
-//   3. An empty sanitized stem → node-<install-hash> (the empty-stem fallback).
-//   4. A collision (the stem is already taken by a DIFFERENT install — supplied via
-//      takenIds) → <stem>-<install-hash>. Deterministic from salt, so it is stable.
+//   2. Else the OPAQUE form, node-<install-hash> — whatever the machine is called. Rule
+//      (2) was "the sanitized hostname stem" until 132, which made every run record's
+//      `node` a machine name; a derived id is now a function of the salt alone, and the
+//      hostname is only RECORDED (derivedFrom, below), never spelled into the id.
+//   3. (Retired with rule 2 — the empty-stem fallback is no longer a special case.)
+//   4. A collision (the opaque id is already taken by a DIFFERENT install — supplied via
+//      takenIds) → the SAME hash widened to 8 chars. Deterministic from salt, so stable.
 //   5. The resolved id is persisted to the git-ignored PER-INSTALL SIDECAR (ADR-004.2),
 //      NEVER the committed config, when a sidecarPath is supplied AND no id was already
 //      pinned — so later derivations reuse it. (Persistence is skipped when no
 //      sidecarPath is given — the in-memory derive.) The sidecar also records the
-//      hostname the id was DERIVED from (derivedFrom) — the task-03 self-heal
-//      discriminator that distinguishes a derived id from an operator-pinned one.
+//      hostname the derivation RAN ON (derivedFrom) — the self-heal discriminator that
+//      distinguishes a derived id from an operator-pinned one. It lives in the aof home
+//      and reaches no commit.
 //
 // opts: { config, hostname, salt, takenIds?, sidecarPath? }. Returns the resolved id.
 export async function deriveNodeId({ config = {}, hostname, salt, takenIds = [], sidecarPath } = {}) {
@@ -177,20 +221,10 @@ export async function deriveNodeId({ config = {}, hostname, salt, takenIds = [],
     return pinned;
   }
 
-  // (2)/(3) Sanitize the hostname; an empty stem falls back to node-<install-hash>.
-  const stem = sanitizeHostname(hostname);
-  let id;
-  if (stem.length === 0) {
-    id = `node-${installHash(salt)}`;
-  } else {
-    id = stem;
-    // (4) Collision: the stem is already taken by a different install → append the
-    // stable per-install hash. The suffix is deterministic from salt, so two same-host
-    // installs differ and each id is stable across re-derivation.
-    const taken = new Set(takenIds);
-    if (taken.has(stem)) {
-      id = `${stem}-${installHash(salt)}`;
-    }
+  // (2) The opaque form; (4) a collision widens the same hash.
+  let id = `node-${installHash(salt)}`;
+  if (new Set(takenIds).has(id)) {
+    id = `node-${widenedInstallHash(salt)}`;
   }
 
   // (5) Persist to the sidecar on first derivation so the id is stable across
@@ -212,7 +246,7 @@ export async function deriveNodeId({ config = {}, hostname, salt, takenIds = [],
 // re-serialised in the project's 2-space + trailing-newline style. Idempotent (via
 // writeSidecarPatch): an already-matching { nodeId, salt, derivedFrom } is left
 // untouched (so a re-derivation does not rewrite the sidecar). `derivedFrom` records
-// the hostname FED to sanitizeHostname (not the resolved id) — task 03's self-heal
+// the hostname the derivation RAN ON (not the resolved id) — task 03's self-heal
 // discriminator; when supplied, it also RETIRES a stale `pinned` flag (undefined
 // deletes the key via writeSidecarPatch) — a caller that pins an id directly (never
 // through this fn) is unaffected when derivedFrom is omitted. Exported for white-box
@@ -320,10 +354,18 @@ export async function migrateIdentityToGlobal(legacySidecarPath, globalIdentityP
 //
 // The id is taken AS-GIVEN (the caller derives it via deriveNodeId first, which owns
 // the first-publish persist) so assembly stays a pure projection with no write.
-export function assembleDescriptor({ nodeId, hostname, platform, runtimes, aofVersion, now } = {}) {
+//
+// 132/02 — `hostname` is an ADDITIVE key: the machine's real name as os.hostname()
+// reports it (the `machineName` input), distinct from `host`, the advertised DIAL
+// address (the `hostname` input — an `--address` override when pinned). The fabric join
+// matches a peer's HostName against it now that an id no longer spells one. Always
+// emitted, "" when unknown, so the shape is stable. Node records live in the aof home,
+// never a checkout, which is why a machine name may sit here and not in a run record.
+export function assembleDescriptor({ nodeId, hostname, machineName, platform, runtimes, aofVersion, now } = {}) {
   return {
     nodeId: String(nodeId ?? ""),
     host: String(hostname ?? ""),
+    hostname: String(machineName ?? ""),
     os: String(platform ?? ""),
     runtimes: Array.isArray(runtimes) ? [...runtimes] : [],
     aofVersion: String(aofVersion ?? ""),

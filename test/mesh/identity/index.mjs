@@ -19,9 +19,9 @@
 // against a temp fixture), 02_mesh-identity-cli-face (spawn the real CLI — render + --json
 // single envelope + the error-code matrix). The acd-mesh-command-cli-bijection gate now
 // covers identity+status (extended above).
-import { meshNodeIdentityTests } from "./mesh-node-identity.test.mjs";
+import { meshNodeIdentityTests, runRecordsNodeIdUnitTests } from "./mesh-node-identity.test.mjs";
 import { meshIdentityStatusCommandsTests } from "./mesh-identity-status-commands.test.mjs";
-import { meshIdentityCliFaceTests } from "./mesh-identity-cli-face.test.mjs";
+import { meshIdentityCliFaceTests, runRecordsNodeIdCliTests } from "./mesh-identity-cli-face.test.mjs";
 import { meshNodeStalenessStatusTests } from "./mesh-node-staleness-status.test.mjs";
 // milestone 27 (story 00) — work-issuance-routing: the issuance directive
 // substrate + the eligibility matcher. src/mesh-issuance.mjs (NEW): the frozen
@@ -64,4 +64,8 @@ export const tests = [
   ...meshHookIdentityFromCwdTests,
   ...globalNodeIdentityTests,
   ...meshStatusDeclarationsTests,
+  // 132 — run-records-carry-the-node-id: tasks 00-02's unit scenarios (opaque derivation,
+  // the legacy/opaque predicates, the descriptor's hostname key and the fabric join).
+  ...runRecordsNodeIdUnitTests,
+  ...runRecordsNodeIdCliTests,
 ];
