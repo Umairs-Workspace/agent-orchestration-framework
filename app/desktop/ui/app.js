@@ -196,7 +196,7 @@ function nodeRowHTML(n) {
   const thisNode = n.thisNode ? '<span class="chip">this node</span>' : '';
   return `<div class="node-row">
     <span class="dot ${n.presence}"></span>
-    <div class="node-id"><span class="node-name" title="${esc(n.nodeId || n.name)}">${esc(n.name)}</span>${n.nodeId && n.nodeId !== n.name ? `<span class="node-sub">${esc(n.nodeId)}</span>` : ''}${thisNode}</div>
+    <div class="node-id"><div class="node-title"><span class="node-name" title="${esc(n.nodeId || n.name)}">${esc(n.name)}</span>${thisNode}</div>${n.nodeId && n.nodeId !== n.name ? `<span class="node-sub">${esc(n.nodeId)}</span>` : ''}</div>
     <span class="role-badge">${esc(n.role)}</span>
     <span class="node-ver">${esc(n.version)}</span>
     <div class="work">${work}</div>
