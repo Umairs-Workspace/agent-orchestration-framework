@@ -5,10 +5,10 @@ slug: the-desktop-stops-what-it-supervises
 title: "The desktop stops what it supervises — one row per declaration from the map it already keeps, a Stop that is the request first and the tree kill last through a pure core ladder, and a declarations producer that drops a honoured loop so reconcile never restarts it"
 parent: 130
 depends: [1, 2]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-21
+updated: 2026-09-23
 adrs: [ADR-004, ADR-001, ADR-002, ADR-006]
 reads:
   - wiki/work/130_milestone_stop-a-running-loop/SPEC.md
@@ -88,8 +88,8 @@ of the honoured ones (the engine stays import-free).
 ## Tasks
 
 - [x] `tasks/00_the-ladder-is-pure-and-in-core.feature` — `stop_step` over every input class; `stop_argv` from a declaration's own argv, `None` for a reserved id or a short argv; `STOP_GRACE_MS`; `reconcile` retains a held id (cargo, `#[cfg(test)]` in `supervision.rs`)
-- [ ] `tasks/01_the-rows-and-the-stop-command.feature` — `loops` on the view model from the map and the last answered declarations tick; `stop_loop(id)` → `Stop(id)`; a reserved id keeps today's path; a declaration takes hold + ladder; `stopping` on request, notice on a failed spawn, `taskkill` + wait on `Kill`, `stopped` after
-- [ ] `tasks/02_app-js-renders-the-loop-bar.feature` — one `.proc` row per view-model loop in a second `.controlbar`, absent when empty; `data-action="loop-stop"` through the one delegate; `stopping` rides the `running` dot; no Start control
+- [x] `tasks/01_the-rows-and-the-stop-command.feature` — `loops` on the view model from the map and the last answered declarations tick; `stop_loop(id)` → `Stop(id)`; a reserved id keeps today's path; a declaration takes hold + ladder; `stopping` on request, notice on a failed spawn, `taskkill` + wait on `Kill`, `stopped` after
+- [x] `tasks/02_app-js-renders-the-loop-bar.feature` — one `.proc` row per view-model loop in a second `.controlbar`, absent when empty; `data-action="loop-stop"` through the one delegate; `stopping` rides the `running` dot; no Start control
 - [x] `tasks/03_a-honoured-loop-yields-no-row.feature` — the producer reads the honoured marks and hands `stopped`; the engine skips a stopped `loopRunId` after the `supervised` guard; absent / empty / ill-typed `stopped` answers byte-identically; a `requested` mark drops nothing; `src/work/loop.mjs` gains no import
 
 ## Notes

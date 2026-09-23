@@ -5,7 +5,7 @@ slug: the-live-stop
 title: "The live stop — a real loop on this machine stopped from the verb, the fleet and the desktop, read at the source: the session's tree terminated, the run cancelled, the halt naming the request, no relaunch, and --resume bringing it back"
 parent: 130
 depends: [5]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-13
 updated: 2026-09-23

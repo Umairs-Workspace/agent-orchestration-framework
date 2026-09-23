@@ -5,10 +5,10 @@ slug: the-stop-request-has-one-home
 title: "The stop request has one home — a ten-key file in the aof home keyed by loopRunId, 129/04's ladder, a requested → honoured → cleared lifecycle, and the ONE interrupt source the shell reads"
 parent: 130
 depends: []
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-21
+updated: 2026-09-23
 adrs: [ADR-001]
 reads:
   - wiki/work/130_milestone_stop-a-running-loop/SPEC.md

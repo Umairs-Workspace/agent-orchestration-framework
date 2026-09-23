@@ -42,6 +42,15 @@ const KEY_ROWS = [
   ["aofVersion", false],
 ];
 
+const HEADING_ROWS = ["Intent", "Scope", "Decisions", "Lessons"];
+
+async function sectionHeadings() {
+  return (await readFile(SOURCE, "utf8"))
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("## "))
+    .map((line) => line.slice(3).trim());
+}
+
 const SCAFFOLD_ROWS = [
   { type: "milestone", docs: ["SPEC.md", "STATE.md"] },
   { type: "uat", docs: ["SESSION.md", "STATE.md"] },
@@ -84,14 +93,19 @@ export const digestTemplateShipsTests = [
     },
   },
 
-  {
-    name: "137/00 digest-template: the `## ` headings are Intent, Scope, Decisions, Lessons, in that order",
+  ...HEADING_ROWS.map((heading, index) => ({
+    name: `137/00 digest-template: \`## \` heading ${index + 1} is ${heading}`,
     run: async () => {
-      const headings = (await readFile(SOURCE, "utf8"))
-        .split(/\r?\n/)
-        .filter((line) => line.startsWith("## "))
-        .map((line) => line.slice(3).trim());
-      assert.deepEqual(headings, ["Intent", "Scope", "Decisions", "Lessons"]);
+      const headings = await sectionHeadings();
+      assert.equal(headings[index], heading, `heading ${index + 1} is "${heading}"; got ${JSON.stringify(headings)}`);
+    },
+  })),
+
+  {
+    name: "137/00 digest-template: the template declares exactly 4 `## ` headings",
+    run: async () => {
+      const headings = await sectionHeadings();
+      assert.equal(headings.length, 4, `exactly 4 headings; got ${JSON.stringify(headings)}`);
     },
   },
 

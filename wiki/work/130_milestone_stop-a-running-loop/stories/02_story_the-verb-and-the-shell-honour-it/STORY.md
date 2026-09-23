@@ -5,10 +5,10 @@ slug: the-verb-and-the-shell-honour-it
 title: "The verb and the shell honour it — `aof work loop <scope> --stop` writes the request through one core, the shell reads the source instead of a flag, the interrupt path always settles, a cancelled session settles cancelled, and --resume clears"
 parent: 130
 depends: [1]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-21
+updated: 2026-09-23
 adrs: [ADR-001, ADR-002, ADR-003, ADR-006]
 reads:
   - wiki/work/130_milestone_stop-a-running-loop/SPEC.md

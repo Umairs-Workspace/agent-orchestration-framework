@@ -6,7 +6,7 @@ title: "Stop a running loop — one durable request, one verb, and the fleet and
 status: in-progress
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-23
+updated: 2026-09-24
 depends: []
 schema: 1
 aofVersion: 0.1.0
@@ -114,12 +114,12 @@ Out of scope:
      Populated at the Break-down stage (refine); "to be broken down" until then. The milestone is
      accepted when all its stories are. -->
 
-- [ ] `01_story_the-stop-request-has-one-home` — `src/loop/stop-request.mjs`: the ten-key file under `<meshRoot>/loop-stops/`, 129/04's ladder, requested → honoured → cleared, and `createStopSource` — the one interrupt source (ADR-001)
-- [ ] `02_story_the-verb-and-the-shell-honour-it` — `--stop` on `work:loop` through `src/loop/stop.mjs`'s `stopLoop`; the shell reads the source, settles first, a cancel settles `cancelled`, the halt names the request, `--resume` clears (ADR-002, ADR-003)
-- [ ] `03_story_the-fleet-sees-and-stops-it` — `presence.loops[]` additive and read beside `activeRuns`, `localNodeId` on the status body, `POST /api/mesh/loop-stop` in assign's shape, one line + one button on this node's card (ADR-005)
-- [ ] `04_story_the-desktop-stops-what-it-supervises` — rows from the map it keeps, a Stop that is the request first and the tree kill last through a pure `core` ladder, and a producer that drops a honoured loop so reconcile never restarts it (ADR-004)
-- [ ] `05_story_the-register` — FF-13001–FF-13007 in three files under `test/arch/loop/`, the row 55 → 58, the red probes in VERIFICATION (all ADRs)
-- [ ] `06_story_the-live-stop` — `@manual`: a real loop on this machine stopped from the verb, the fleet and the desktop, read at the source (ADR-006 §5)
+- [x] `01_story_the-stop-request-has-one-home` — `src/loop/stop-request.mjs`: the ten-key file under `<meshRoot>/loop-stops/`, 129/04's ladder, requested → honoured → cleared, and `createStopSource` — the one interrupt source (ADR-001)
+- [x] `02_story_the-verb-and-the-shell-honour-it` — `--stop` on `work:loop` through `src/loop/stop.mjs`'s `stopLoop`; the shell reads the source, settles first, a cancel settles `cancelled`, the halt names the request, `--resume` clears (ADR-002, ADR-003)
+- [x] `03_story_the-fleet-sees-and-stops-it` — `presence.loops[]` additive and read beside `activeRuns`, `localNodeId` on the status body, `POST /api/mesh/loop-stop` in assign's shape, one line + one button on this node's card (ADR-005)
+- [x] `04_story_the-desktop-stops-what-it-supervises` — rows from the map it keeps, a Stop that is the request first and the tree kill last through a pure `core` ladder, and a producer that drops a honoured loop so reconcile never restarts it (ADR-004)
+- [x] `05_story_the-register` — FF-13001–FF-13007 in three files under `test/arch/loop/`, the row 55 → 58, the red probes in VERIFICATION (all ADRs)
+- [x] `06_story_the-live-stop` — `@manual`: a real loop on this machine stopped from the verb, the fleet and the desktop, read at the source (ADR-006 §5)
 
 ## Dependencies
 

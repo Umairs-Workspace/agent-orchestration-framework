@@ -5,10 +5,10 @@ slug: the-fleet-sees-and-stops-it
 title: "The fleet sees and stops it — presence gains an additive `loops` key read by the same pass as activeRuns, the status body names the serving node, one guarded loop-stop route in assign's shape, and one line + one button on this node's card"
 parent: 130
 depends: [2]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-21
+updated: 2026-09-23
 adrs: [ADR-005, ADR-006, ADR-002, ADR-001]
 reads:
   - wiki/work/130_milestone_stop-a-running-loop/SPEC.md

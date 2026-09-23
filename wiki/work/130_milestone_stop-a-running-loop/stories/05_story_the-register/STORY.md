@@ -5,10 +5,10 @@ slug: the-register
 title: "The register — the seven controls in three files under test/arch/loop, their registrations and the budget rows in ONE writer's hands, and a red probe per control in VERIFICATION"
 parent: 130
 depends: [2, 3, 4]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-21
+updated: 2026-09-23
 adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006]
 reads:
   - wiki/work/130_milestone_stop-a-running-loop/SPEC.md

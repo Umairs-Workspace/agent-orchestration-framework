@@ -30,7 +30,6 @@ import { sidecarPathFor, readSidecar, isSameHost, deriveNodeId, isDerivationOf }
 // rather than by a second hand-rolled copy: `checkFeature` below is a thin caller.
 import { parseFeature } from "./feature-parse.mjs";
 import { VALID_STATUS, isOpen, itemStatusEdges } from "./acceptance-horizon.mjs";
-import { digestFindings } from "./work/digest-template.mjs";
 
 // milestone 62 gate (finding D-04) — "in-review" IS NOT SPELLED HERE, and only that word.
 // This module has always carried four of the frozen five as literals and stayed under
@@ -1283,7 +1282,9 @@ export async function validateWork(workDir, config, scopeRef) {
         if (!VALID_STATUS.has(meta.status)) add(docPath, `invalid status "${meta.status ?? ""}"`);
         // Story 137 — the key set and the `## ` section set are the shipped AOF.md
         // template's, read through its one contract module rather than listed again here.
-        // The headings need the doc text; only a digest pays for this second read.
+        // The headings need the doc text; only a digest pays for this second read. Deferred, so
+        // the template reader stays out of the session driver's static reach (FF-5301's ceiling).
+        const { digestFindings } = await import("./work/digest-template.mjs");
         for (const problem of digestFindings(meta, await readFile(docPath, "utf8"))) add(docPath, problem);
       } else {
         if (meta.type !== item.type) add(docPath, `frontmatter type "${meta.type ?? ""}" ≠ folder type "${item.type}"`);
