@@ -8,7 +8,7 @@ import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { invoke } from "../../src/command-core.mjs";
 import { LOOP_STOPS, decideLoopScope } from "../../src/work/loop.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { completeRun, heartbeat, readRuns, runNodeRecordPath, runRecordPath, startRun } from "../../src/run-store.mjs";
+import { completeRun, heartbeat, readRuns, retryRun, runNodeRecordPath, runRecordPath, startRun } from "../../src/run-store.mjs";
 import { heartbeatFromConfig } from "../../src/loop-bounds.mjs";
 import { loopStopsDir, readStopRequest, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
 import { stopLoop } from "../../src/loop/stop.mjs";
@@ -640,6 +640,31 @@ export const loopCommandProbeTests = [
         await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, supervised: false }, state: "running", at: new Date().toISOString() });
         const answer = await stopLoop(fx.workspace, { scope: "03" });
         assert.equal(answer.ok, true, answer.message);
+        assert.equal(answer.live, true);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    // Measured 130/06, 2026-09-23: a live loop's own session ran `aof work resume <milestone>`, the
+    // retry carried a dead loop's `brief.loop`, and the latest-declaration rule then aimed the verb
+    // at the dead loop. The retry is unbriefed, so it must carry no declaration.
+    name: "loop stop — an operator retry of a dead loop's run carries no declaration, so the verb still addresses the live loop",
+    async run() {
+      await resetLoopStops();
+      const NOW = "2026-09-23T16:22:00.000Z";
+      const fx = await loopFixture({ mesh: { nodeId: "win-host-a" } });
+      try {
+        const dead = await writeDeclarationRun(fx, { ref: "03", declaration: { ...DECLARATION_L1, loopRunId: "L-dead" }, state: "failed", failureReason: "runtime_offline", at: "2026-09-10T00:44:45.000Z" });
+        await writeDeclarationRun(fx, { declaration: DECLARATION_L1, state: "running", at: "2026-09-23T16:21:03.000Z", heartbeatAt: NOW });
+        const resumed = await retryRun(dead.item, { now: "2026-09-23T16:21:36.000Z" });
+        assert.equal(resumed.state, "running");
+        assert.equal(resumed.retryOf, dead.record.runId);
+        assert.deepEqual(resumed.brief, {}, "the unbriefed retry carries no loop declaration");
+        const answer = await stopLoop(fx.workspace, { scope: "03", now: () => new Date(NOW) });
+        assert.equal(answer.ok, true, answer.message);
+        assert.equal(answer.loopRunId, "L1", "the verb addresses the live loop, not the resurrected one");
         assert.equal(answer.live, true);
       } finally {
         await fx.cleanup();

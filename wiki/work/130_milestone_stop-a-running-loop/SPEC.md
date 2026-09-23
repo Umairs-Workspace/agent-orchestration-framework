@@ -6,7 +6,7 @@ title: "Stop a running loop — one durable request, one verb, and the fleet and
 status: in-progress
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-23
 depends: []
 schema: 1
 aofVersion: 0.1.0

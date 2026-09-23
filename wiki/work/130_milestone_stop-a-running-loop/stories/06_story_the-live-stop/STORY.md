@@ -5,10 +5,10 @@ slug: the-live-stop
 title: "The live stop — a real loop on this machine stopped from the verb, the fleet and the desktop, read at the source: the session's tree terminated, the run cancelled, the halt naming the request, no relaunch, and --resume bringing it back"
 parent: 130
 depends: [5]
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-23
 adrs: [ADR-006, ADR-002, ADR-003, ADR-004, ADR-005]
 reads:
   - wiki/work/130_milestone_stop-a-running-loop/SPEC.md

@@ -954,6 +954,19 @@ export async function settleRunFromVendor(item, { runId, vendorTokens, model, ef
 // same-node resume semantics, byte-identical); when PASSED (a string or null) it
 // REPLACES the carry — the fleet-reclaim winner mints the reclaimed lineage under its
 // OWN session (or none), never the dead peer's (resume semantics do not cross hosts).
+// The brief an UNBRIEFED retry carries — the operator's `aof work resume` / `run-retry`, or a
+// `run-start` that reclaims — is the prior's minus `brief.loop`. A loop declaration is the claim
+// "loop <loopRunId> is driving this run", and only that loop's own mint may make it: every loop
+// retry passes its own brief. Carried, it resurrected a dead loop as `running` — measured 130/06,
+// 2026-09-23: `aof work resume 01` re-minted a 09-10 lineage under its loop's id, and the stop verb
+// and the fleet then addressed that dead loop instead of the live one (the latest declaration in
+// scope is the target, 130/ADR-002 §3c).
+function carriedBrief(prior) {
+  if (prior == null || typeof prior !== "object") return {};
+  const { loop: _loop, ...rest } = prior;
+  return rest;
+}
+
 export async function retryRun(item, { runId, maxAttempts = Infinity, brief, now, node = null, sessionId, force = false } = {}) {
   const runs = await readRuns(item);
   let prior;
@@ -995,7 +1008,7 @@ export async function retryRun(item, { runId, maxAttempts = Infinity, brief, now
   // the anti-loop backstop).
   return mintRun(item, {
     sessionId: sessionId !== undefined ? sessionId : prior.sessionId,
-    brief: brief ?? prior.brief ?? {},
+    brief: brief ?? carriedBrief(prior.brief),
     now,
     attempt: prior.attempt + 1,
     retryOf: prior.runId,
