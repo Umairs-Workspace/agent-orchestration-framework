@@ -24,6 +24,14 @@
     "plan": {
       "enabled": true
     },
+    "diagrams": {
+      "generator": "diagram-design",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "style": ".aof/diagrams/style.md"
+    },
     "test": {
       "command": "node",
       "args": [

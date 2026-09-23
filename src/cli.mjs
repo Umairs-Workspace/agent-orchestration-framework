@@ -145,6 +145,11 @@ export async function run(argv) {
     return;
   }
 
+  if (command === "diagram") {
+    await diagramCommand(rest);
+    return;
+  }
+
   // The session arm used to sit here. It is now the FIRST statement of `run()` — see the note
   // there, and 72/ADR-005 §1: this position was below `helpText()`, which is registry-derived.
 
@@ -266,6 +271,15 @@ async function workCommand(args) {
 async function graphCommand(args) {
   const [subcommand] = args;
   console.error(`Unknown graph command "${subcommand ?? ""}".\n\nExamples:\n  aof graph build <folder> [--backend claude] [--json]\n  aof graph query "what calls main" [--json]\n  aof graph impact src/command-core.mjs [src/cli.mjs ...] [--json]\n  aof graph triage [--mode conflicts] [--json]\n  aof graph serve`);
+  process.exitCode = 1;
+}
+
+// `aof diagram <verb>` — milestone 133 (ADR-004): `plan`, `export` and `file` are registry Commands
+// carrying `cli.route`, dispatched in run() through the route table + the ONE generic face. Only
+// a missing or unknown verb ever reaches this shim, which answers like graphCommand's.
+async function diagramCommand(args) {
+  const [subcommand] = args;
+  console.error(`Unknown diagram command "${subcommand ?? ""}".\n\nExamples:\n  aof diagram plan 07 ADR-002 --slug generator-seam [--json]\n  aof diagram export 07 ADR-002 [--json]\n  aof diagram file 07 ADR-002-generator-seam.png [--json]`);
   process.exitCode = 1;
 }
 
@@ -599,10 +613,11 @@ const HELP_FAMILY_TITLES = Object.freeze({
   work: "Work (ACD work stream)",
   planning: "Planning",
   graph: "Graph",
+  diagram: "Diagram",
   mesh: "Mesh",
   import: "Import",
 });
-const HELP_FAMILY_ORDER = ["usage", "project", "assets", "packages", "work", "planning", "graph", "mesh", "import"];
+const HELP_FAMILY_ORDER = ["usage", "project", "assets", "packages", "work", "planning", "graph", "diagram", "mesh", "import"];
 const HELP_USAGE_WORD_ORDER = ["init", "migrate"];
 
 // ASYNC, because the registry it derives from is now a dynamic import (72/ADR-005 §1). It is not

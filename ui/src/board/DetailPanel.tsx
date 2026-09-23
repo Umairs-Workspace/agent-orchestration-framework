@@ -31,7 +31,7 @@ import { humanizeSlug } from "./model";
 import type { Freshness, FreshnessRecord } from "./freshness.mjs";
 import { ProvenanceLine } from "./ProvenanceLine";
 import { ActionsStrip } from "./ActionsStrip";
-import { Markdown } from "./Markdown";
+import { DiagramMarkdown, Markdown } from "./Markdown";
 
 type Tab = DocName | "FINDINGS" | "TASKS" | "RUNS";
 
@@ -40,7 +40,7 @@ type Tab = DocName | "FINDINGS" | "TASKS" | "RUNS";
 // RUNS is offered at the level that OWNS a runs/ log — both milestones and stories
 // (m19 ADR-002) — and never on a uat gate (DESIGN surface 1).
 function tabsFor(item: WorkItem): Tab[] {
-  if (item.type === "milestone") return ["SPEC", "VERIFICATION", "RETROSPECTIVE", "RUNS", "FINDINGS"];
+  if (item.type === "milestone") return ["SPEC", "ARCHITECTURE", "VERIFICATION", "RETROSPECTIVE", "RUNS", "FINDINGS"];
   if (item.type === "story") return ["STORY", "TASKS", "RUNS"];
   if (item.type === "uat") return ["FINDINGS"];
   return ["SPEC"];
@@ -155,7 +155,7 @@ export function DetailPanel({
       return;
     }
     let cancelled = false;
-    const docs: DocName[] = ["SPEC", "VERIFICATION", "RETROSPECTIVE"];
+    const docs: DocName[] = ["SPEC", "ARCHITECTURE", "VERIFICATION", "RETROSPECTIVE"];
     Promise.all(
       docs.map((d) =>
         workApi
@@ -490,6 +490,7 @@ type RecordState = "present" | "none";
 function MilestoneRecords({ records }: { records: Record<string, boolean> }) {
   const rows: Array<{ label: string; key: string }> = [
     { label: "Spec / objective", key: "SPEC" },
+    { label: "Architecture", key: "ARCHITECTURE" },
     { label: "Verification", key: "VERIFICATION" },
     { label: "Retrospective", key: "RETROSPECTIVE" },
   ];
@@ -567,7 +568,8 @@ function DocMarkdown({
   // Render the cleaned (frontmatter/comment-stripped) body as HTML, not raw text.
   // The artifact's own provenance line is the region's FIRST child and is emitted
   // by `DocBody` above, so this returns the body and nothing else.
-  return <Markdown source={cleanDoc(doc.body)} />;
+  if (tab !== "ARCHITECTURE") return <Markdown source={cleanDoc(doc.body)} />;
+  return <DiagramMarkdown source={cleanDoc(doc.body)} itemRef={item.ref} load={(member) => workApi.doc(item.ref, "DIAGRAMS", member)} elsewhere={elsewhere} />;
 }
 
 // The node that reported this row, for the copy the cache-miss placeholder needs.

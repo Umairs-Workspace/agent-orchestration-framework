@@ -104,9 +104,12 @@ export async function handleWorkApi(request, response, options = {}) {
     }
 
     if (request.method === "GET" && pathname === "/api/work/doc") {
+      // milestone 133 (ADR-007 §2) — a dir-kind member (`TASKS`, `DIAGRAMS`) is forwarded, and ONLY
+      // when the param is present and non-blank, so every request without one is byte-identical.
+      const member = (params.get("member") ?? "").trim();
       const result = await invoke(
         "work:doc",
-        { ref: (params.get("ref") ?? "").trim(), doc: (params.get("doc") ?? "").trim() },
+        { ref: (params.get("ref") ?? "").trim(), doc: (params.get("doc") ?? "").trim(), ...(member === "" ? {} : { member }) },
         ctx
       );
       sendJson(response, 200, result);
@@ -272,6 +275,49 @@ export async function handleWorkApi(request, response, options = {}) {
   // generic guard does not also try to respond. (A routing concern, not an
   // operation — it stays in the face, ADR-003.)
   sendApiError(response, 404, "Work API route not found.", "not-found");
+  return true;
+}
+
+// `/api/diagram/file` — milestone 133 (133/VERIFICATION F-133-02). A committed diagram file of an
+// item, served BY BYTES for the pasted block's `Source · PNG` links, which otherwise resolve against
+// the board's own URL and 404. It sits OUTSIDE `/api/work` because that namespace is in bijection
+// with the `work:*` commands (15/ADR-005); this one maps `/api/diagram/<verb>` onto `diagram:<verb>`
+// the same way, and is wired into the one server by one additive line in `setup-ui.mjs`.
+//
+// The generator's HTML is not the operator's own record, so every answer carries
+// `Content-Security-Policy: sandbox`: the page opens in an opaque origin with no script, and cannot
+// reach this board's origin or its API. GET only; anything else falls through to the server's 404.
+export async function handleDiagramApi(request, response, options = {}) {
+  let requestUrl;
+  try {
+    requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
+  } catch {
+    return false;
+  }
+  if (request.method !== "GET" || requestUrl.pathname !== "/api/diagram/file") return false;
+  try {
+    const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));
+    const params = requestUrl.searchParams;
+    const result = await invoke(
+      "diagram:file",
+      { ref: (params.get("ref") ?? "").trim(), file: (params.get("file") ?? "").trim() },
+      { workspace }
+    );
+    if (!result.present) {
+      const where = result.onThisNode ? "is not in this item" : `is not on this node${result.reportedBy ? ` — ${result.reportedBy} holds it` : ""}`;
+      send(response, 404, "text/plain; charset=utf-8", `${result.file} ${where}.`);
+      return true;
+    }
+    response.writeHead(200, {
+      "content-type": result.contentType,
+      "content-security-policy": "sandbox",
+      "x-content-type-options": "nosniff",
+      "cache-control": "no-store",
+    });
+    response.end(Buffer.from(result.body, "base64"));
+  } catch (error) {
+    sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-api-failed");
+  }
   return true;
 }
 

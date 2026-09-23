@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { addProjectGlobalRef, capabilitiesPayload, loadEditableConfig, removeProjectGlobalRef, saveEditableResource, saveEditableSections } from "./config-editor.mjs";
 import { supportedResourceKinds, supportedRuntimes } from "./model.mjs";
-import { handleWorkApi } from "./board-ui.mjs";
+import { handleDiagramApi, handleWorkApi } from "./board-ui.mjs";
 import { attachTerminalWebSocket } from "./terminal-ws.mjs";
 // milestone 28 / story 00 (ADR-003): the default uiRoot routes through the ONE
 // SEA-safe asset-base seam instead of joining a path off a bare import.meta.url
@@ -221,6 +221,8 @@ export async function serveSetupUi(catalog, options = {}) {
     }
 
     if (await handleWorkApi(request, response, { projectDir })) return;
+    // milestone 133 (F-133-02) — `/api/diagram/file`, beside the work API (see board-ui.mjs).
+    if (await handleDiagramApi(request, response, { projectDir })) return;
 
     if (requestUrl.pathname.startsWith("/api/")) {
       sendApiError(response, 404, "API route not found.", "not-found");

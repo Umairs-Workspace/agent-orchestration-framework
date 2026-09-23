@@ -941,4 +941,123 @@ export const boardApiTests = [
       assert.equal(tsc.status, 0, `tsc -b in ui/ is clean:\n${tsc.stdout}${tsc.stderr}`);
     },
   },
+  // milestone 133 / story 04 / task 00 — a diagram's SVG rides the manifest, `work:doc` answers a
+  // member (or an absent doc), and `/api/work/doc` forwards `member` only when there is one.
+  {
+    name: "133/04 task 00: the doc command answers a diagram member, reports a missing one absent, and refuses out of contract",
+    run: async () => {
+      const { repo, workDir } = await makeRepo();
+      const previous = process.env.AOF_GLOBAL_HOME;
+      process.env.AOF_GLOBAL_HOME = await mkdtemp(path.join(os.tmpdir(), "aof-board-diagrams-home-"));
+      try {
+        const dir = await milestone(workDir, { number: "07", slug: "m", status: "in-progress", title: "M" });
+        await mkdir(path.join(dir, "diagrams"), { recursive: true });
+        for (const ext of [".html", ".svg", ".png"]) await writeFile(path.join(dir, "diagrams", `ADR-002-seam${ext}`), `body${ext}`, "utf8");
+        const cli = spawnCliSync(process.execPath, [cliPath, "work", "doc", "07", "DIAGRAMS", "ADR-002-seam.svg", "--json"], { cwd: repo, encoding: "utf8", env: { ...process.env } });
+        assert.equal(cli.status, 0, cli.stderr);
+        assert.equal(JSON.parse(cli.stdout).body, await readFile(path.join(dir, "diagrams", "ADR-002-seam.svg"), "utf8"));
+        await withServer(repo, async (url) => {
+          const absent = await getJson(url, "/api/work/doc?ref=07&doc=DIAGRAMS&member=ADR-009-none.svg");
+          assert.equal(absent.status, 200);
+          assert.equal(absent.body.present, false, "an absent diagram is an absent doc, not a thrown error");
+          const html = await getJson(url, "/api/work/doc?ref=07&doc=DIAGRAMS&member=ADR-002-seam.html");
+          const outsideTasks = await getJson(url, "/api/work/doc?ref=07&doc=TASKS&member=notes.md");
+          assert.equal(html.status, outsideTasks.status);
+          assert.equal(html.body.code, outsideTasks.body.code, "the refusal a TASKS member outside its extension gets");
+          const none = await getJson(url, "/api/work/doc?ref=07&doc=DIAGRAMS");
+          const noTasks = await getJson(url, "/api/work/doc?ref=07&doc=TASKS");
+          assert.equal(none.body.code, noTasks.body.code, "the refusal a TASKS request with no member gets");
+          assert.equal(none.body.code, "invalid-doc-member");
+        });
+      } finally {
+        await rm(process.env.AOF_GLOBAL_HOME, { recursive: true, force: true });
+        if (previous === undefined) delete process.env.AOF_GLOBAL_HOME; else process.env.AOF_GLOBAL_HOME = previous;
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "133/04 task 00: the board route forwards the member, and only when there is one",
+    run: async () => {
+      const { repo, workDir } = await makeRepo();
+      try {
+        const dir = await milestone(workDir, { number: "07", slug: "m", status: "in-progress", title: "M" });
+        await mkdir(path.join(dir, "diagrams"), { recursive: true });
+        await writeFile(path.join(dir, "diagrams", "ADR-002-seam.svg"), "<svg viewBox=\"0 0 1 1\"/>", "utf8");
+        await withServer(repo, async (url) => {
+          const member = await getJson(url, "/api/work/doc?ref=07&doc=DIAGRAMS&member=ADR-002-seam.svg");
+          assert.equal(member.status, 200);
+          assert.equal(member.body.body, "<svg viewBox=\"0 0 1 1\"/>");
+          const blank = await getJson(url, "/api/work/doc?ref=07&doc=DIAGRAMS&member=%20");
+          const none = await getJson(url, "/api/work/doc?ref=07&doc=DIAGRAMS");
+          assert.deepEqual([blank.status, blank.body], [none.status, none.body], "a blank member is no member");
+          const spec = await fetch(new URL("/api/work/doc?ref=07&doc=SPEC", url)).then((response) => response.text());
+          const specWithBlank = await fetch(new URL("/api/work/doc?ref=07&doc=SPEC&member=", url)).then((response) => response.text());
+          assert.equal(specWithBlank, spec, "a request without a member is byte-identical");
+          assert.equal(JSON.parse(spec).present, true);
+        });
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "133/04 task 03 (@finding-F-133-02): diagram:file answers the bytes, an absence, or a coded refusal",
+    run: async () => {
+      const { repo, workDir } = await makeRepo();
+      try {
+        const dir = await milestone(workDir, { number: "07", slug: "m", status: "in-progress", title: "M" });
+        await mkdir(path.join(dir, "diagrams"), { recursive: true });
+        const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0xff]);
+        await writeFile(path.join(dir, "diagrams", "ADR-002-seam.png"), png);
+        const ask = (file) => spawnCliSync(process.execPath, [cliPath, "diagram", "file", "07", file, "--json"], { cwd: repo, encoding: "utf8", env: { ...process.env } });
+        const present = ask("ADR-002-seam.png");
+        assert.equal(present.status, 0, present.stderr);
+        const envelope = JSON.parse(present.stdout);
+        assert.deepEqual([envelope.present, envelope.onThisNode, envelope.contentType, envelope.file], [true, true, "image/png", "ADR-002-seam.png"]);
+        assert.equal("body" in envelope, false, "the terminal face drops the bytes");
+        assert.equal(path.resolve(envelope.path), path.resolve(dir, "diagrams", "ADR-002-seam.png"));
+        const absent = ask("ADR-002-seam.html");
+        assert.equal(absent.status, 1);
+        assert.deepEqual([JSON.parse(absent.stdout).present, JSON.parse(absent.stdout).onThisNode], [false, true]);
+        const refused = ask("../SPEC.md");
+        assert.notEqual(refused.status, 0);
+        assert.match(refused.stdout + refused.stderr, /diagram-file-invalid/);
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "133/04 task 03 (@finding-F-133-02): the board route serves the bytes sandboxed, and says plainly when there is nothing",
+    run: async () => {
+      const { repo, workDir } = await makeRepo();
+      try {
+        const dir = await milestone(workDir, { number: "07", slug: "m", status: "in-progress", title: "M" });
+        await mkdir(path.join(dir, "diagrams"), { recursive: true });
+        const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0xff]);
+        await writeFile(path.join(dir, "diagrams", "ADR-002-seam.png"), png);
+        await writeFile(path.join(dir, "diagrams", "ADR-002-seam.html"), "<!doctype html><script>parent.x=1</script>", "utf8");
+        await withServer(repo, async (url) => {
+          const served = await fetch(new URL("/api/diagram/file?ref=07&file=ADR-002-seam.png", url));
+          assert.equal(served.status, 200);
+          assert.equal(served.headers.get("content-type"), "image/png");
+          assert.equal(served.headers.get("content-security-policy"), "sandbox");
+          assert.deepEqual(Buffer.from(await served.arrayBuffer()), png, "the file's exact bytes");
+          const html = await fetch(new URL("/api/diagram/file?ref=07&file=ADR-002-seam.html", url));
+          assert.equal(html.headers.get("content-type"), "text/html; charset=utf-8");
+          assert.equal(html.headers.get("content-security-policy"), "sandbox", "the generator's HTML runs no script in this origin");
+          await html.arrayBuffer();
+          const missing = await fetch(new URL("/api/diagram/file?ref=07&file=ADR-009-none.svg", url));
+          assert.equal(missing.status, 404);
+          assert.match(await missing.text(), /ADR-009-none\.svg is not in this item/);
+          const outside = await getJson(url, "/api/diagram/file?ref=07&file=..%2FSPEC.md");
+          assert.equal(outside.status, 400);
+          assert.equal(outside.body.code, "diagram-file-invalid");
+        });
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
 ];

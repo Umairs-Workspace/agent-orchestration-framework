@@ -42,6 +42,8 @@ import { spawnSync } from "node:child_process";
 import { statSync } from "node:fs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
 import { reportDegrade } from "./degrade.mjs";
+// milestone 133 (ADR-001 §3) — the legal `work.diagrams.generator` ids come from the registry.
+import { generatorIds } from "./diagrams/generators.mjs";
 
 const VALID_KINDS = new Set(supportedResourceKinds());
 const VALID_GLOBAL_REF_KINDS = new Set(supportedGlobalRefKinds());
@@ -1198,6 +1200,101 @@ function validateWork(work, diagnostics) {
   }
   validateWorkAgents(work.agents, diagnostics);
   validateWorkPlan(work.plan, diagnostics);
+  validateWorkDiagrams(work.diagrams, diagnostics);
+}
+
+// --- work.diagrams — the diagram generator (milestone 133 / ADR-001) ------------
+// ABSENT MEANS OFF: the one shipped generator is a user-level plugin aof cannot assume and does
+// not install, so a project opts in by writing the key. `generator: "off"` is the explicit switch.
+//
+// ONE RULE, TWO READERS: `workDiagramsDiagnostics` is the shape check, the validator reports it,
+// and the resolver resolves anything it rejects to OFF — so a consumer never throws on a bad
+// config (refine must not go down with it) and never draws on one either. The registered ids come
+// from the generator registry; this module never spells a generator's name (FF-13301).
+const DIAGRAM_FORMATS = Object.freeze(["svg", "png"]);
+const DIAGRAMS_KEYS = new Set(["generator", "formats", "style", "browser"]);
+const DIAGRAMS_OFF = Object.freeze({
+  enabled: false,
+  generator: "off",
+  formats: Object.freeze([...DIAGRAM_FORMATS]),
+  style: null,
+  browser: null,
+});
+
+function isAbsoluteAnywhere(value) {
+  return path.win32.isAbsolute(value) || path.posix.isAbsolute(value);
+}
+
+function workDiagramsDiagnostics(diagrams) {
+  const found = [];
+  const push = (pathName, message, code) => found.push(diagnostic("error", pathName, message, code));
+  if (!diagrams || typeof diagrams !== "object" || Array.isArray(diagrams)) {
+    push("work.diagrams", "work.diagrams must be an object when provided.", "diagrams-bad-shape");
+    return found;
+  }
+  for (const key of Object.keys(diagrams)) {
+    if (!DIAGRAMS_KEYS.has(key)) {
+      push(`work.diagrams.${key}`, `"${key}" is not a work.diagrams key. The keys are ${[...DIAGRAMS_KEYS].join(", ")}.`, "diagrams-key-unknown");
+    }
+  }
+  const legal = [...generatorIds(), "off"];
+  if (diagrams.generator === undefined) {
+    push("work.diagrams.generator", `work.diagrams.generator is required when work.diagrams is present: one of ${legal.join(", ")}.`, "diagrams-generator-required");
+  } else if (!legal.includes(diagrams.generator)) {
+    push(
+      "work.diagrams.generator",
+      `work.diagrams.generator "${diagrams.generator}" is not a registered diagram generator. Registered: ${legal.join(", ")}.`,
+      "diagrams-generator-unknown",
+    );
+  }
+  if (diagrams.formats !== undefined) {
+    const formats = diagrams.formats;
+    const valid = Array.isArray(formats)
+      && formats.length > 0
+      && formats.every((format) => DIAGRAM_FORMATS.includes(format))
+      && new Set(formats).size === formats.length
+      && formats.includes("svg");
+    if (!valid) {
+      push("work.diagrams.formats", 'work.diagrams.formats must be a non-empty list of distinct "svg"/"png" that contains "svg" (the console reads the SVG).', "diagrams-formats-invalid");
+    }
+  }
+  if (diagrams.style !== undefined && diagrams.style !== null) {
+    const style = diagrams.style;
+    const inside = typeof style === "string"
+      && style.trim() !== ""
+      && !isAbsoluteAnywhere(style)
+      && !path.posix.normalize(style.replace(/\\/g, "/")).split("/").includes("..");
+    if (!inside) {
+      push("work.diagrams.style", "work.diagrams.style must be a project-root-relative path that stays inside the project.", "diagrams-style-invalid");
+    }
+  }
+  if (diagrams.browser !== undefined && diagrams.browser !== null) {
+    if (typeof diagrams.browser !== "string" || !isAbsoluteAnywhere(diagrams.browser)) {
+      push("work.diagrams.browser", "work.diagrams.browser must be the absolute path of a Chromium-family executable.", "diagrams-browser-invalid");
+    }
+  }
+  return found;
+}
+
+function validateWorkDiagrams(diagrams, diagnostics) {
+  if (diagrams === undefined) return;
+  diagnostics.push(...workDiagramsDiagnostics(diagrams));
+}
+
+// THE ONE READER of `work.diagrams`. Total: absent, off and invalid all answer the same frozen OFF.
+export function resolveWorkDiagrams(config) {
+  const diagrams = config?.work?.diagrams;
+  if (diagrams === undefined || workDiagramsDiagnostics(diagrams).length > 0 || diagrams.generator === "off") {
+    return DIAGRAMS_OFF;
+  }
+  const formats = diagrams.formats ?? DIAGRAM_FORMATS;
+  return Object.freeze({
+    enabled: true,
+    generator: diagrams.generator,
+    formats: Object.freeze(DIAGRAM_FORMATS.filter((format) => formats.includes(format))),
+    style: diagrams.style ?? null,
+    browser: diagrams.browser ?? null,
+  });
 }
 
 // --- work.plan — the story build-brief gate (milestone 96 / ADR-006 §4) -------

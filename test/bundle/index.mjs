@@ -117,6 +117,8 @@ import { bundleAsksUnnumberedFindingsTests } from "./bundle-asks-unnumbered-find
 // and the pinned Mermaid promotion). The live site is @uat in both features.
 import { siteBuildTests } from "./site-build.test.mjs";
 
+// milestone 133 / story 05 — the architect draws, told how by `aof diagram plan` (ADR-008).
+import { bundleArchitectDrawsTests } from "./bundle-architect-draws.test.mjs";
 export const tests = [
   // milestone 55 / story 04 â€” frozen rules reach their declared boundaries or refuse
   ...frozenSetCompiledTests,
@@ -154,4 +156,6 @@ export const tests = [
   ...bundleAsksUnnumberedFindingsTests,
   // story 125 — the published site: workflow lint + staging step
   ...siteBuildTests,
+  // milestone 133 / story 05 — the one diagram step in the architect rule and refine Decide.
+  ...bundleArchitectDrawsTests,
 ];

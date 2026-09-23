@@ -207,6 +207,8 @@ import { archTests as acdHomeSocketCapSingleArbiterTests } from "./acd-home-sock
 //       passes every deep-equal check ever written against it).
 import { archTests as acdHomeLayoutIsAFilterTests } from "./acd-home-layout-is-a-filter.test.mjs";
 
+// milestone 133 / story 04 — FF-13304 (the console renders a diagram only as an image).
+import { archTests as acdDiagramRenderedAsImageTests } from "./acd-diagram-rendered-as-image.test.mjs";
 export const tests = [
   ...acdFleetReclaimGuardedTests,
   ...acdReusesRenderPlanTests,
@@ -257,4 +259,6 @@ export const tests = [
   ...acdHomePaneTruthTests,
   ...acdHomeSocketCapSingleArbiterTests,
   ...acdHomeLayoutIsAFilterTests,
+  // milestone 133 / story 04 — FF-13304: a diagram reaches the board only as an image.
+  ...acdDiagramRenderedAsImageTests,
 ];

@@ -321,6 +321,8 @@ import { boardStalenessA11yTests } from "./board-staleness-a11y.test.mjs";
 import { homeSessionLauncherPickerTests } from "./home-session-launcher.test.mjs";
 import { homeSessionLauncherStateTests } from "./home-session-launcher-states.test.mjs";
 
+// milestone 133 / story 04 — the diagram figure module, headless (ADR-007 §4).
+import { boardDiagramsTests } from "./board-diagrams.test.mjs";
 export const tests = [
   ...boardApiTests,
   ...boardServeTests,
@@ -411,4 +413,6 @@ export const tests = [
   // operator-visible state machine (task 02), both over the pure launcher module
   ...homeSessionLauncherPickerTests,
   ...homeSessionLauncherStateTests,
+  // milestone 133 / story 04 — the ARCHITECTURE tab's diagram figures (task 01).
+  ...boardDiagramsTests,
 ];

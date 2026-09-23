@@ -125,6 +125,12 @@ import { meshUiCommand } from "./commands/mesh/ui.mjs";
 import { meshDesktopInstallCommand, meshDesktopRunCommand, meshDesktopStopCommand } from "./commands/mesh/desktop.mjs";
 // graph:serve — m42 — see ./commands/graph/serve.mjs's header.
 import { graphServeCommand } from "./commands/graph/serve.mjs";
+// diagram:plan — milestone 133 — see ./commands/diagram/plan.mjs's header.
+import { diagramPlanCommand } from "./commands/diagram/plan.mjs";
+// diagram:export — milestone 133 — see ./commands/diagram/export.mjs's header.
+import { diagramExportCommand } from "./commands/diagram/export.mjs";
+// diagram:file — milestone 133 — see ./commands/diagram/file.mjs's header.
+import { diagramFileCommand } from "./commands/diagram/file.mjs";
 import { workUiCommand } from "./commands/work-ui.mjs";
 import { assetsUiCommand } from "./commands/assets/ui.mjs";
 // work:find — m42, m12 — see ./commands/find.mjs's header.
@@ -247,6 +253,9 @@ const COMMANDS = [
   meshDesktopRunCommand,
   meshDesktopStopCommand,
   graphServeCommand,
+  diagramPlanCommand,
+  diagramExportCommand,
+  diagramFileCommand,
   workUiCommand,
   assetsUiCommand,
   findCommand,

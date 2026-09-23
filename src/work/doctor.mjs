@@ -82,6 +82,10 @@ import { readRuns } from "../run-store.mjs";
 // opens no file: `src/story-contract.mjs` is a pure leaf with zero project imports, and asking it
 // here rather than in the lane is what keeps the lane replayable from a literal snapshot.
 import { dependsLane } from "./doctor-depends.mjs";
+// milestone 133 / story 03 — the diagrams lane, and the folder segment its listing probe reads
+// through the layout's one home (FF-13302).
+import { diagramsGroup } from "./doctor-diagrams.mjs";
+import { DIAGRAMS_DIR } from "../diagrams/layout.mjs";
 import { resolveDeclaredSet } from "../story-contract.mjs";
 
 // The record-doc mapping is owned by `work.mjs`; doctor is a consumer. `work.mjs` does
@@ -130,6 +134,19 @@ async function readDirSafe(dir) {
     return await readdir(dir, { withFileTypes: true });
   } catch {
     return [];
+  }
+}
+
+// milestone 133 / story 03 — the item's `diagrams/` FILE names for the diagrams lane, or `null`
+// when the folder is absent. Absence is data, not an error: most items have no diagrams, and the
+// lane is silent for them.
+async function diagramListingOf(itemDir) {
+  try {
+    const entries = await readdir(path.join(itemDir, DIAGRAMS_DIR), { withFileTypes: true });
+    return entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
+  } catch (error) {
+    if (error.code === "ENOENT" || error.code === "ENOTDIR") return null;
+    throw error;
   }
 }
 
@@ -527,6 +544,10 @@ export async function buildSnapshot(workDir, { cache = null, selfNode = null, pr
       // that declared nothing, which the lane reads as "cannot be evaluated" rather than as
       // "declares nothing".
       contract,
+      // milestone 133 / story 03 (ADR-006) — the diagrams lane's ONE new fact: the item's
+      // `diagrams/` file names, or `null` when it has none. One `readdir` per item; the lane
+      // pairs it with `docTexts["ARCHITECTURE.md"]`, which this snapshot already holds.
+      diagramListing: await diagramListingOf(item.dir),
       // milestone 54 / story 04 — each task feature's TEXT, keyed `tasks/<name>`, off the
       // walk above. The traceability lane parses these through the ONE feature parser; it
       // holds no second copy of the Gherkin grammar and opens no file of its own.
@@ -859,6 +880,11 @@ export const CHECK_GROUPS = [
   // fourth instance of the mechanism that makes an advisory lane structurally unable to gate —
   // and the instance FF-12402 raises from a promise about one lane to a claim about the class.
   dependsLane,
+  // milestone 133 / story 03 (ADR-006) — THE DIAGRAMS LANE, appended as one entry: a `diagrams/`
+  // link whose file is not in the tree, a linked stem with no committed export, a link under the
+  // wrong ADR, and a file nothing links. Unlike the three lanes above it, its link codes GATE —
+  // they take the acceptance horizon — and so it carries no `*_FINDING_CODES` array.
+  diagramsGroup,
 ];
 
 // ----------------------------------------------------------- the engine ----

@@ -295,4 +295,28 @@ export const archTests = [
       }
     },
   },
+  // FF-13305 (milestone 133 / ADR-007 §2) — DIAGRAMS RIDE THE ONE MANIFEST: exactly one `dir:
+  // "diagrams"` entry, SVG only, one level deep, appended after TASKS with every earlier entry kept.
+  {
+    name: "arch/133 FF-13305 (acd-work-artifact-set-single-home, extended): the manifest holds one diagrams entry, SVG only, last, and the earlier entries are unchanged",
+    run: async () => {
+      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES, artifactForRelativePath } = await import("../../../src/work/artifacts.mjs");
+      const diagrams = WORK_ITEM_ARTIFACTS.filter((entry) => entry.dir === "diagrams");
+      assert.equal(diagrams.length, 1, "exactly one entry has dir: diagrams");
+      assert.deepEqual({ ...diagrams[0] }, { name: "DIAGRAMS", dir: "diagrams", ext: ".svg" });
+      assert.equal(WORK_ITEM_ARTIFACTS.at(-1), diagrams[0], "it is the last entry");
+      assert.equal(WORK_ITEM_ARTIFACTS.at(-2).name, "TASKS", "…after TASKS, whose place is unchanged");
+      assert.equal(Object.values(WORK_ITEM_DOC_FILES).some((file) => file.includes("diagrams")), false, "WORK_ITEM_DOC_FILES carries no diagram — the derived view is file-kind only");
+      const rows = [
+        ["diagrams/ADR-002-seam.svg", { name: "DIAGRAMS", member: "ADR-002-seam.svg" }],
+        ["diagrams\\ADR-002-seam.svg", { name: "DIAGRAMS", member: "ADR-002-seam.svg" }],
+        ["diagrams/ADR-002-seam.html", null],
+        ["diagrams/ADR-002-seam.png", null],
+        ["diagrams/old/ADR-002-seam.svg", null],
+        ["diagrams/ADR-002-seam.SVG", null],
+        ["tasks/00_a.feature", { name: "TASKS", member: "00_a.feature" }],
+      ];
+      for (const [relPath, answer] of rows) assert.deepEqual(artifactForRelativePath(relPath), answer, relPath);
+    },
+  },
 ];

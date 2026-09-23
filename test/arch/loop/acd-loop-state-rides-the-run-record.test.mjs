@@ -134,7 +134,13 @@ export const archTests = [
         // through to `work:list`'s own `all` — the ONE parameter that story adds. The run/board seam
         // is otherwise untouched: no run key, no loop-state read, the envelope's shape unchanged.
         // Re-pinned rather than dropped, per 55/VERIFICATION F-55-02-1 (aof:verify 127).
-        ["src/board-ui.mjs", "959ebf96fc19bd207654f3f4cbf2f02b093ecf0d28d548c714ed6ffb60f07518"],
+        // RE-PINNED by 133/04 (ADR-007 §2): `/api/work/doc` forwards a `member` param to `work:doc`,
+        // and only when it is present and non-blank, so a request without one is byte-identical. No
+        // run key, no loop-state read, and no route added. Re-pinned rather than dropped, per
+        // 55/VERIFICATION F-55-02-1. And again at `aof:verify 133` (F-133-02, story 04 task 03): a
+        // second exported handler, `handleDiagramApi`, serves `/api/diagram/file` from `diagram:file`
+        // OUTSIDE the `/api/work` namespace; `handleWorkApi` is byte-identical. No run key is read.
+        ["src/board-ui.mjs", "bd596d549a51dbd62d2c4e47379a7d415af92c9c54727b9247f25165ce7a9969"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiFiles = trackedFilesUnder(path.join(root, "ui")).sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
@@ -198,11 +204,22 @@ export const archTests = [
       // all COMMENTS — a fixture node name in prose, swapped for a same-length placeholder. No
       // code moved, nothing under `ui/src/board/`, no run-record key read.
       //
-      // RE-PINNED for the fleet node name (2026-09-23, 132 follow-up), measured the same way:
-      // `git diff -- ui/` is FOUR files under `ui/src/fleet/` — `scope.mjs` gains
-      // `nodeDisplayName` and a `name` fact, `scope.d.mts` and `api.ts` type it, and `Fleet.tsx`
-      // titles the node card with it. Nothing under `ui/src/board/` moved; no run-record key read.
-      assert.equal(hash.digest("hex"), "37905d3ab3afd231a1566a365fff65ccb4f5b8b97c0c3664d8aaa2172f002888", "ui/ changed despite the zero-board-change contract");
+      // RE-PINNED by 133/04 (ADR-007 §3-§5; DESIGN §"Surface — the ARCHITECTURE tab"), measured the same
+      // way: `git diff -- ui/` is FIVE files, all under `ui/src/board/` — `diagrams.mjs` + `.d.mts`
+      // (new; the figure states, markup and renderer), `Markdown.tsx` (an optional `images` prop and
+      // the `DiagramMarkdown` wrapper), `api.ts` (`ARCHITECTURE` in `DocName`, an optional member on
+      // `doc`) and `DetailPanel.tsx` (the tab, the Records row, one call). Filtered to added lines that
+      // name a run record (`runs`, `runId`, `run.state`, `run.brief`, `heartbeat`, `retryOf`) the diff
+      // holds only two COMMENT lines (a citation of the `runs.mjs` contract, and "runs no script"): no
+      // run-record key is read, and the loop's state still rides the run record with no face of its own.
+      //
+      // RE-PINNED at `aof:verify 133` (F-133-01/02, story 04 task 03), measured the same way: THREE
+      // files, all under `ui/src/board/` — `diagrams.mjs` + `.d.mts` (the expand hook on a populated
+      // figure, `diagramFileUrl`, and a `link` override that points the block's `diagrams/` links at
+      // `/api/diagram/file`), `Markdown.tsx` (the full-size `DiagramViewer` over the same data URI)
+      // and `DetailPanel.tsx` (one `itemRef` prop on the one call). The run-key filter over the
+      // added lines hits nothing: no run-record key is read.
+      assert.equal(hash.digest("hex"), "ef5ca89354abe4b9f91e246ed9d1a04aebfc306e6dc2ac702bc139a54fc3dc60", "ui/ changed despite the zero-board-change contract");
     },
   },
 ];

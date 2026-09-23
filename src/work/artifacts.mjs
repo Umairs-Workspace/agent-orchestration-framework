@@ -46,6 +46,11 @@ export const WORK_ITEM_ARTIFACTS = Object.freeze([
   Object.freeze({ name: "RESEARCH", file: "RESEARCH.md" }),
   Object.freeze({ name: "STATE", file: "STATE.md" }),
   Object.freeze({ name: "TASKS", dir: "tasks", ext: ".feature" }),
+  // milestone 133 (ADR-007 §1-§2) — an ADR's diagram, as its SVG ONLY: the source HTML needs fonts
+  // and a browser frame, and the PNG is binary. The SVG rides this manifest exactly as a task
+  // feature does, so a worker-drawn diagram reaches the console through the path every record
+  // already takes. This entry is FF-13302's one named exception to the layout's single home.
+  Object.freeze({ name: "DIAGRAMS", dir: "diagrams", ext: ".svg" }),
 ]);
 
 // The DERIVED compatibility view (ADR-007): `{ NAME: "FILE.md" }` over the

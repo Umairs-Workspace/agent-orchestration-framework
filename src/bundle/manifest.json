@@ -336,7 +336,7 @@
         "id": "aof-architect",
         "kind": "agent"
       },
-      "hash": "sha256:d87421efb308c65b7d158f69ccff63a59fde3397ba90c6b22277ab4a262fde2d"
+      "hash": "sha256:1fe227588ca7f9fe7f526ed861f133a5cdf7e1330247c3b301e60fc42b583ca4"
     },
     {
       "path": ".claude/agents/aof-compliance.md",
@@ -615,7 +615,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:070645ddee063b669f384a92a496f7f8beb5ef3f0d7fc3c08d64edd1bfb33d98"
+      "hash": "sha256:09171bff0c8dc7f16edb0b60a9c9954c63139a0f8a40ddb8c1a32ed55e53074f"
     },
     {
       "path": ".claude/commands/aof/retrospective.md",
@@ -705,7 +705,7 @@
         "id": "aof-architect",
         "kind": "agent"
       },
-      "hash": "sha256:a595791058ba99ab56a8a0495cbcdf2241d54e4845adfe31e7085ebb23619ec6"
+      "hash": "sha256:bc8bf4943277134bf8e39f8d5dc97d60cb0fccfda8dbde9343d40ffedd03224a"
     },
     {
       "path": ".codex/agents/aof-compliance.md",
@@ -993,7 +993,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:d2503670d14ffc1ac4266052b7fc2b5cb7621e26ed82f1e46f250b8d397340a7"
+      "hash": "sha256:35d99efc973419621d6cb7ab4fe9bba3ad51e06ca81bebe4312083153c62f696"
     },
     {
       "path": ".codex/skills/aof-retrospective/SKILL.md",

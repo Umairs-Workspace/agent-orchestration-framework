@@ -417,6 +417,25 @@
           },
           "additionalProperties": false
         },
+        "diagrams": {
+          "type": "object",
+          "description": "OPTIONAL architecture-diagram generator (milestone 133, ADR-001). ABSENT ≡ OFF, and generator \"off\" is the explicit switch. When on, the architect draws an ADR's diagram through `aof diagram plan` and exports it with `aof diagram export`. Authoritative validation is `aof project validate` (the registered generator ids come from aof's generator registry, so this schema only types the value). Closed (additionalProperties:false).",
+          "properties": {
+            "generator": { "type": "string", "minLength": 1, "description": "A registered diagram generator id, or \"off\". Required when the object is present. An unknown id is a config error that lists the registered ids — never a fallback." },
+            "formats": {
+              "type": "array",
+              "items": { "enum": ["svg", "png"] },
+              "uniqueItems": true,
+              "minItems": 1,
+              "contains": { "const": "svg" },
+              "description": "The exports written beside the diagram source. Absent ⇒ [\"svg\", \"png\"]. Must contain \"svg\", because the console renders the SVG."
+            },
+            "style": { "type": ["string", "null"], "description": "OPTIONAL project-root-relative path to a style file in the generator's own format. aof checks only that it exists (at `aof diagram plan`) and never reads it." },
+            "browser": { "type": ["string", "null"], "description": "OPTIONAL absolute path of a Chromium-family executable for the PNG export — the first rung of the export's browser ladder." }
+          },
+          "required": ["generator"],
+          "additionalProperties": false
+        },
         "headroom": {
           "type": "object",
           "description": "OPTIONAL headroom plugin config (milestone 06). Absent ≡ off — the work-board terminal launch is byte-for-byte unchanged when this block is absent or { enabled: false }. Closed (additionalProperties:false), peer to work.ui.",

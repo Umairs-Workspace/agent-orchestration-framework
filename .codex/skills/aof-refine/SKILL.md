@@ -93,6 +93,16 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      `ARCHITECTURE.md` + the fitness functions DECLARED in its register (the arch-test file lands with
      its subject) (move any invariant out of features); UI → `aof-designer` → `DESIGN.md`.
 
+     **Diagram an ADR only when its design has moving parts** — the architect's judgement, and most
+     ADRs get none. Write the ADR's `### Diagram` brief first (why a picture helps, the view, the
+     components, the flows), then run `aof diagram plan <ref> <ADR-NNN> --slug <slug> --json`.
+     `enabled: false` → drop the brief and record nothing. `available: false` → keep the brief,
+     record `diagram not drawn: <code>` in `STATE.md`, and continue; it is never a stop. Otherwise
+     the drawing agent follows the answer's `instructions`, then run
+     `aof diagram export <ref> <ADR-NNN> --json` and paste the returned `block` under the brief — aof
+     never edits `ARCHITECTURE.md`. On a solo refine the main session is the architect and runs the
+     same step.
+
      **Declare each control where a runner can see it (the fitness register's form).** A fitness
      function is DECLARED at refine — id, invariant, intended path, source ADR — and that declaration
      is the reviewable artifact. The id stands ALONE in the first cell of its `## Fitness functions`

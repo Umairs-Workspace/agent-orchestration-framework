@@ -74,7 +74,7 @@ export type WorkStatus = "not-started" | "in-progress" | "in-review" | "blocked"
 // it is what lets a row this node published read `(this node)` (AC 11).
 export type WorkListEnvelope = { items: WorkItem[]; nodeId?: string | null };
 
-export type DocName = "SPEC" | "STORY" | "VERIFICATION" | "RETROSPECTIVE";
+export type DocName = "SPEC" | "STORY" | "ARCHITECTURE" | "VERIFICATION" | "RETROSPECTIVE";
 
 // The ARTIFACT's own provenance (milestone 43 / ADR-006) travels under the SAME
 // two wire names the row carries, because it is the same fact about a different
@@ -83,7 +83,7 @@ export type DocName = "SPEC" | "STORY" | "VERIFICATION" | "RETROSPECTIVE";
 // answered from its own disk (there is no cached copy to attribute).
 export type DocResponse = {
   ref: string;
-  doc: DocName;
+  doc: DocName | "DIAGRAMS";
   present: boolean;
   body: string;
   fromWorker?: boolean;
@@ -247,8 +247,10 @@ export const workApi = {
   fleetOrigin(): Promise<FleetOriginResponse> {
     return getJson<FleetOriginResponse>("/api/fleet-origin");
   },
-  doc(ref: string, doc: DocName): Promise<DocResponse> {
-    return getJson<DocResponse>(`/api/work/doc?ref=${encodeURIComponent(ref)}&doc=${encodeURIComponent(doc)}`);
+  // A `DIAGRAMS` request names its member (milestone 133, ADR-007 §2) — the one fetch of a diagram.
+  doc(ref: string, doc: DocName | "DIAGRAMS", member?: string): Promise<DocResponse> {
+    const query = member ? `&member=${encodeURIComponent(member)}` : "";
+    return getJson<DocResponse>(`/api/work/doc?ref=${encodeURIComponent(ref)}&doc=${encodeURIComponent(doc)}${query}`);
   },
   tasks(ref: string): Promise<TasksResponse> {
     return getJson<TasksResponse>(`/api/work/tasks?ref=${encodeURIComponent(ref)}`);
