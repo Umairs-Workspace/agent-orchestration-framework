@@ -57,7 +57,7 @@ In scope:
   "policy goes to a person, engineering may default", is this milestone's.
 - **Provenance anchored in code.** An agent never writes `stated` or `confirmed`. The upgrade is
   checked against a record the agent did not author, such as the harness's `AskUserQuestion` result
-  in the session transcript (`src/observe.mjs` already reads transcripts). Near-miss R6 (m62)
+  in the session transcript (`src/work/observe.mjs` already reads transcripts). Near-miss R6 (m62)
   applies: the ADR that names that reader owes a measured check that it returns the answer and its
   giver. If no such record can be anchored, the milestone says so and does not ship a label that
   only looks enforced. Whether `ruled` (decided by an ADR) joins the vocabulary (§7 Q5) is the

@@ -94,7 +94,19 @@ const CITATION = /(?<![A-Za-z0-9_./-])src\/[A-Za-z0-9_./-]+\.mjs/gu;
 // The five that were live at 47 and are not in these seven cleared as their modules landed
 // (`promote.mjs`, `archive.mjs`, `wave.mjs`, `cycle.mjs`, `child-drive.mjs`) or were respelled
 // (`lanes.mjs`, the ledger's two proposals). HIGH_WATER is untouched.
-const UNRESOLVED_CEILING = 54;
+// RE-PINNED 54 -> 55 at 130's accept (2026-09-24), argued here as the note above demands. Measured
+// with the same command in a clean detached worktree, which printed `56 10473 418 2460` before one
+// repair and 55 after it. 130's two modules cleared by landing, as predicted above, so the row
+// would have read 52. Three were added and one was repaired:
+//   · 134's refine (2bf716f) cites the three modules its stories will land:
+//     `src/work-examples/map.mjs`, `src/work-examples/answers.mjs` and
+//     `src/work/doctor-examples.mjs`. They are the same species as 130's pair, and they CLEAR by
+//     landing, so this row should fall to 52 at 134's accept;
+//   · 134's SPEC cited `src/observe.mjs`, a module that never existed. It is re-pointed to
+//     `src/work/observe.mjs`, the transcript reader it meant (130/VERIFICATION F-19).
+// 131's uncommitted refine, measured in the primary checkout, adds five more of the planned-module
+// species. They are not counted here because a clean gate cannot read them. HIGH_WATER is untouched.
+const UNRESOLVED_CEILING = 55;
 const HIGH_WATER = 77;
 
 // MACHINE-WRITTEN SUBTREES ARE NOT DOCUMENTS. An item's `runs/` (run records and progress ndjson,
