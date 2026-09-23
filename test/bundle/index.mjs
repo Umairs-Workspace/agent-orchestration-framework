@@ -119,6 +119,9 @@ import { siteBuildTests } from "./site-build.test.mjs";
 
 // milestone 133 / story 05 — the architect draws, told how by `aof diagram plan` (ADR-008).
 import { bundleArchitectDrawsTests } from "./bundle-architect-draws.test.mjs";
+// story 137 — the AOF.md digest template ships with the record-doc set (task 00).
+import { digestTemplateShipsTests } from "./digest-template-ships.test.mjs";
+
 export const tests = [
   // milestone 55 / story 04 â€” frozen rules reach their declared boundaries or refuse
   ...frozenSetCompiledTests,
@@ -158,4 +161,6 @@ export const tests = [
   ...siteBuildTests,
   // milestone 133 / story 05 — the one diagram step in the architect rule and refine Decide.
   ...bundleArchitectDrawsTests,
+  // story 137 — the AOF.md digest template ships with the record-doc set (task 00).
+  ...digestTemplateShipsTests,
 ];

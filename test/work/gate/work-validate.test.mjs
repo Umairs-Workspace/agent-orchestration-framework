@@ -83,7 +83,8 @@ async function writeAofMilestone(work, { folderNumber, folderSlug, fields, legac
 }
 
 // A complete, valid AOF.md digest field set — tests override one field to
-// isolate a defect against the digest schema.
+// isolate a defect against the digest schema. Story 137 closed the key set on the
+// shipped AOF.md template, so the set carries every key it requires.
 function digestFields(overrides = {}) {
   return {
     doc: "digest",
@@ -92,7 +93,9 @@ function digestFields(overrides = {}) {
     title: "Foundation",
     status: "done",
     imported: "true",
+    importedBy: "aof",
     schema: 1,
+    aofVersion: "0.1.0",
     ...overrides,
   };
 }

@@ -177,6 +177,15 @@
       "hash": "sha256:470e75c00c7de4e854436bc9923679ad3f1b58014ee2b26cdbafe60c245265e0"
     },
     {
+      "path": ".aof/templates/work/milestone/AOF.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "milestone",
+        "kind": "template"
+      },
+      "hash": "sha256:f09e49725d310a995909f621ae1c6a136496e6ef6db682b614dfbe623a69db50"
+    },
+    {
       "path": ".aof/templates/work/milestone/ARCHITECTURE.md",
       "runtime": "claude",
       "resource": {

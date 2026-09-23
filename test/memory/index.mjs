@@ -43,6 +43,9 @@ import { importIntoMemoryTests } from "./import-into-memory.test.mjs";
 // `summary` presence; ADR-006, the deferred 13×14 follow-up)
 import { importDigestTests } from "./import-digest.test.mjs";
 
+// story 137 — the import renders every AOF.md through the shipped template (task 01).
+import { importDigestTemplateTests } from "./import-digest-template.test.mjs";
+
 export const tests = [
   // milestone 55 / story 00 — anchor schema, compatibility, delivery and structural gate
   ...anchorTaxonomyTests,
@@ -55,4 +58,6 @@ export const tests = [
   ...importRecoveryTests,
   ...importIntoMemoryTests,
   ...importDigestTests,
+  // story 137 — the import renders every AOF.md through the shipped template (task 01).
+  ...importDigestTemplateTests,
 ];

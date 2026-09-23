@@ -31,6 +31,8 @@ import path from "node:path";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { importMilestoneDir, ensureImportStoreGitignore } from "./store.mjs";
+import { renderDigestDocument } from "../work/digest-template.mjs";
+import { WORK_ITEM_SCHEMA_VERSION } from "../work.mjs";
 
 // The three materialized artifact filenames — REUSING the aof doc shapes (ADR-001:
 // no new OUTPUT.md doc type). The indexer (story 02) scans for these two knowledge
@@ -196,53 +198,30 @@ function emitsDigest(normalized) {
   );
 }
 
-// The digest's frontmatter (ADR-007) — the milestone-14 digest convention
-// (`doc`/`milestone`/`slug`/`imported`/`importedBy`), enriched with `title`,
-// `status`, and an `importedAt` provenance stamp. UNLIKE the SPEC/ARCHITECTURE/
-// RETROSPECTIVE provenance (`provenanceLines`, deliberately timestamp-free so those
-// record-bearing artifacts re-import byte-identically — ADR-005), the digest
-// frontmatter is NEVER an index record source: `parseAof` reads only `## ` sections
-// and ignores frontmatter, so an `importedAt` here changes no record and breaks no
-// `source:line`. `title` is quoted (it may carry spaces/punctuation); the numeric
-// `milestone`, the `slug`, and the `status` are bare tokens. A missing title/status
-// falls back without fabricating (absence is information — ADR-005).
-function digestFrontmatter({ milestoneRef, slug, title, status, importedAt, importedBy = "aof" }) {
-  const fm = [
-    "---",
-    "doc: digest",
-    `milestone: ${milestoneRef}`,
-    `slug: ${slug ?? milestoneRef}`,
-    `title: ${JSON.stringify(title ?? "")}`,
-    `status: ${status ?? "not-started"}`,
-    "imported: true",
-    `importedBy: ${importedBy}`,
-  ];
-  if (importedAt) fm.push(`importedAt: ${importedAt}`);
-  fm.push("---");
-  return fm;
-}
-
-// Render AOF.md — the recallable digest (ADR-006/007). Reuses the EXACT milestone-14
-// digest convention `parseAof` reads: each `## ` section is one `summary` record
-// (h1 title + HTML comments are not section roots). The sections come verbatim from
-// the recovered intent, so every record traces to live text in the materialized
-// `.md` (the derived-index invariant, ADR-005). The frontmatter carries the
-// recovered milestone identity + provenance (ADR-007).
-export function renderDigest({ milestoneRef, slug, title, status, intent, importedAt, importedBy = "aof" }) {
-  const heading = title
-    ? `# ${milestoneRef} · ${title} — Digest`
-    : `# Imported milestone ${milestoneRef} — Digest`;
-  const lines = [
-    ...digestFrontmatter({ milestoneRef, slug, title, status, importedAt, importedBy }),
-    heading,
-    "",
-    "<!-- Recovered intent as a recallable digest (ADR-006/007). Each `## ` section → one `summary` record via the EXISTING parseAof. -->",
-    "",
-  ];
-  for (const section of digestSections(intent)) {
-    lines.push(`## ${section.heading}`, "", section.body, "");
-  }
-  return lines.join("\n");
+// Render AOF.md — the recallable digest (ADR-006/007), and the ONE renderer both writers call
+// (story 137): the co-located write and the legacy store's intent-only digest. The shape is the
+// SHIPPED template's (`src/work/digest-template.mjs` reads it) — frontmatter keys in its order,
+// its h1 and top comment, then each of its `## ` sections the recovered halves carry, verbatim.
+// Each section is one `summary` record via the EXISTING parseAof. The frontmatter is never an
+// index record source, so `importedAt` changes no record; `source` records WHERE it came from.
+// A missing title/status falls back without fabricating (absence is information — ADR-005), and
+// the `schema`/`aofVersion` stamp means a fresh import is never born stale.
+export function renderDigest({ milestoneRef, meta = {}, sections, importedAt, sourceSlug }) {
+  return renderDigestDocument(
+    {
+      milestoneRef,
+      values: {
+        milestone: milestoneRef,
+        slug: meta.slug ?? milestoneRef,
+        title: meta.title ?? "",
+        status: meta.status ?? "not-started",
+        source: sourceSlug,
+        importedAt,
+      },
+      sections: Object.fromEntries(sections.map((section) => [section.heading, section.body])),
+    },
+    { schemaVersion: WORK_ITEM_SCHEMA_VERSION },
+  );
 }
 
 // ─────────────────────────────────────────── CO-LOCATED digest (the rule) ──
@@ -288,39 +267,6 @@ function colocatedSections(normalized) {
   return sections;
 }
 
-// Render the co-located AOF.md — the digest frontmatter (identity + provenance) plus
-// every recovered section. `source: <sourceSlug>` records WHERE it was imported from.
-function renderColocatedDigest({ milestoneRef, meta, sections, importedAt, sourceSlug }) {
-  const title = meta.title ?? "";
-  const fm = [
-    "---",
-    "doc: digest",
-    `milestone: ${milestoneRef}`,
-    `slug: ${meta.slug ?? milestoneRef}`,
-    `title: ${JSON.stringify(title)}`,
-    `status: ${meta.status ?? "not-started"}`,
-    "imported: true",
-    "importedBy: aof",
-  ];
-  if (sourceSlug) fm.push(`source: ${sourceSlug}`);
-  if (importedAt) fm.push(`importedAt: ${importedAt}`);
-  fm.push("---");
-  const heading = title
-    ? `# ${milestoneRef} · ${title} — Digest`
-    : `# Imported milestone ${milestoneRef} — Digest`;
-  const lines = [
-    ...fm,
-    heading,
-    "",
-    "<!-- Recovered digest, co-located in the source milestone folder. Each `## ` section → one `summary` record via the EXISTING parseAof. -->",
-    "",
-  ];
-  for (const section of sections) {
-    lines.push(`## ${section.heading}`, "", section.body, "");
-  }
-  return lines.join("\n");
-}
-
 // Write the co-located AOF.md digest into the SOURCE milestone folder (the rule). A
 // `preview` (dry-run) computes the path + record count but writes nothing. NEVER
 // removes or rebuilds the target dir — it is the user's source folder; only the one
@@ -336,13 +282,7 @@ export async function writeColocatedDigest({ targetDir, sourceSlug, milestoneRef
     return { dir: targetDir, artifacts, recordCount };
   }
 
-  const content = renderColocatedDigest({
-    milestoneRef,
-    meta: normalized.meta,
-    sections,
-    importedAt,
-    sourceSlug,
-  });
+  const content = renderDigest({ milestoneRef, meta: normalized.meta, sections, importedAt, sourceSlug });
   await mkdir(targetDir, { recursive: true });
   await writeFile(filePath, `${content.replace(/\n+$/, "\n")}`, "utf8");
   return { dir: targetDir, artifacts, recordCount };
@@ -377,14 +317,7 @@ export function planMaterialize({ projectRoot, sourceSlug, milestoneRef, recover
   if (digest.length > 0) {
     specs.push({
       file: AOF_FILE,
-      content: renderDigest({
-        milestoneRef,
-        slug: normalized.meta.slug ?? milestoneRef,
-        title: normalized.meta.title ?? "",
-        status: normalized.meta.status ?? "not-started",
-        intent: normalized.intent,
-        importedAt,
-      }),
+      content: renderDigest({ milestoneRef, meta: normalized.meta, sections: digest, importedAt }),
     });
   }
 
