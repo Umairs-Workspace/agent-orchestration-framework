@@ -29,8 +29,8 @@ use mesh_desktop_core::render_state::{select_render_state, FetchOutcome, PriorGo
 use mesh_desktop_core::resolve::{form_argv_spawn, form_child_spawn, resolve_aof, ResolveEnv, ResolvedAof};
 use mesh_desktop_core::status::{parse_status, MeshStatus};
 use mesh_desktop_core::supervision::{
-    classify_exit, is_reserved_id, jittered_backoff_ms, notice_after_start, reconcile, stop_argv,
-    stop_refusal_notice, stop_step, JitterSource, LiveController, StandingNotice, StopStep,
+    attaches, classify_exit, is_reserved_id, jittered_backoff_ms, notice_after_start, reconcile, stop_argv,
+    stop_refusal_notice, stop_step, CleanExitReason, JitterSource, LiveController, StandingNotice, StopStep,
     SupervisedChild, MESH_SERVE_ID, MESH_UI_ID, STOP_GRACE_MS,
 };
 
@@ -265,6 +265,10 @@ struct ChildController {
     /// The last `--stop` spawn's answer, left here by the task that ran it for the
     /// watchdog to settle on its next wake.
     stop_outcome: Mutex<Option<StopSpawnOutcome>>,
+    /// Set when this declaration's relaunch was refused because the loop is already
+    /// running in another process (130/ADR-007): the row reports that loop and spawns
+    /// nothing further. Like a hold, nothing clears it; it goes with the row.
+    attached: AtomicBool,
     notify: Notify,
 }
 
@@ -277,8 +281,15 @@ impl ChildController {
             retired: AtomicBool::new(false),
             presses: AtomicU32::new(0),
             stop_outcome: Mutex::new(None),
+            attached: AtomicBool::new(false),
             notify: Notify::new(),
         }
+    }
+    fn attach(&self) {
+        self.attached.store(true, Ordering::SeqCst);
+    }
+    fn attached(&self) -> bool {
+        self.attached.load(Ordering::SeqCst)
     }
     /// One press on the stop ladder — counted, and the watchdog woken to apply the rung.
     fn press(&self) {
@@ -675,6 +686,35 @@ async fn supervise_child(
             refresh_tray(&app, &shared);
             return;
         }
+        // AN ATTACHED ROW (130/ADR-007): the loop runs in another process — a console's
+        // foreground loop — so there is no child to spawn, wait on or kill. Each press
+        // drives the verb against that loop, one spawn per press, and the verb escalates
+        // the level it finds on disk (drain, then cancel). There is no grace and no kill
+        // rung: the cancel is carried out by the loop's own stop bracket, and a tree kill
+        // would need a child this row does not hold. The pill reads `stopping` from the
+        // first landed press until the reconcile retires the row — the loop's halt, whose
+        // honoured mark drops it on the next declarations tick.
+        if !reserved && ctl.attached() {
+            if ladder.answered < ctl.presses() {
+                ladder.answered += 1;
+                if let Some(argv) = stop_argv(&ctl.spec) {
+                    let cancel = matches!(stop_step(ladder.answered, None, STOP_GRACE_MS, false), StopStep::Cancel);
+                    let restore = get_signal(&shared, &id);
+                    set_signal(&shared, &id, "stopping");
+                    refresh_tray(&app, &shared);
+                    if let StopSpawnOutcome::Refused { tail } = run_stop_verb(&install_dir, &ctl, argv, cancel).await {
+                        raise_notice(&shared, &ctl, &tail);
+                        set_signal(&shared, &id, restore);
+                    }
+                    refresh_tray(&app, &shared);
+                }
+                continue;
+            }
+            while ladder.answered >= ctl.presses() && !ctl.retired() {
+                ctl.notify.notified().await;
+            }
+            continue;
+        }
         if !ctl.desired() {
             set_signal(&shared, &id, "stopped");
             refresh_tray(&app, &shared);
@@ -848,14 +888,24 @@ async fn supervise_child(
                     out_handle.await.unwrap_or_default(),
                     err_handle.await.unwrap_or_default()
                 );
-                handle_exit(
+                let reason = handle_exit(
                     &shared,
                     &ctl,
                     status.map(|s| s.success()).unwrap_or(false),
                     &msg,
                     &mut attempt,
                 );
-                if !reserved && ctl.presses() > 0 {
+                if attaches(&id, ctl.presses(), reason) {
+                    // The loop answered that it is running elsewhere (130/ADR-007): the row
+                    // reports it, and the `duplicate-run` notice the exit raised is not a
+                    // fault to stand in the footer. The hold `handle_exit` placed stays, so
+                    // no tick relaunches against the live loop.
+                    ctl.attach();
+                    set_signal(&shared, &id, "running");
+                    let mut g = shared.lock().unwrap();
+                    let next = notice_after_start(g.standing_notice.as_ref(), &id);
+                    g.standing_notice = next;
+                } else if !reserved && ctl.presses() > 0 {
                     // The exit that follows a press closes the bracket: `Done`, whatever
                     // the code (130/ADR-004 §3). A loop the operator stopped is never
                     // classified as a crash and backed off against — the relaunch would
@@ -971,7 +1021,7 @@ async fn tree_kill(pid: u32) {
 /// applies it. It is handed `success`, never an exit code: a code here would be the
 /// exit-code rule ADR-006 §4 forbids, one seam over from the reconcile that reads the
 /// hold this places.
-fn handle_exit(shared: &SharedState, ctl: &ChildController, success: bool, msg: &str, attempt: &mut u32) {
+fn handle_exit(shared: &SharedState, ctl: &ChildController, success: bool, msg: &str, attempt: &mut u32) -> Option<CleanExitReason> {
     let outcome = classify_exit(&ctl.spec.label, success, msg);
 
     if outcome.hold {
@@ -990,6 +1040,8 @@ fn handle_exit(shared: &SharedState, ctl: &ChildController, success: bool, msg: 
         shared.lock().unwrap().standing_notice =
             Some(StandingNotice { id: ctl.spec.id.clone(), text });
     }
+    // The named reason, handed back for `attaches` (130/ADR-007) to read beside it.
+    outcome.reason
 }
 
 /// Sleep for `backoff_ms`, waking early if the child's desired-state changes (so a Stop

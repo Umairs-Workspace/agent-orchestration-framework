@@ -2087,7 +2087,11 @@ export const fleetScopeTests = [
       }
       assert.match(rePin[0], /nothing under `ui\/src\/board\/`/i, "…says nothing under ui/src/board/ moved");
       assert.match(rePin[0], /src\/board-ui\.mjs/, "…and that src/board-ui.mjs's digest is unchanged");
-      assert.match(gate, /\["src\/run-store\.mjs", "f18e5080e3e3d9990c1495ff2ec477729ef583f1220ece318e49c62ea615293d"\]/, "the run-store pin is the digest it was before this story");
+      // 130/06 re-pins run-store AFTER this story, with its own reason stacked above the entry
+      // (the same shape as 133's board-ui re-pin below), so this leg reads the pin as present
+      // and moved only by 130/06's stated reason rather than freezing a digest it does not own.
+      assert.match(gate, /\["src\/run-store\.mjs", "[0-9a-f]{64}"\]/, "the run-store pin is present");
+      assert.match(gate, /RE-PINNED by 130\/06[\s\S]{0,900}\["src\/run-store\.mjs"/, "the run-store pin moved after this story only with 130/06's stated reason");
       // 133/04 and `aof:verify 133` re-pin board-ui AFTER this story, each with its own reason
       // stacked above the entry (read by FF-12603 leg 6), so this leg reads it as present and
       // re-pinned by 133 rather than freezing a digest this story does not own.

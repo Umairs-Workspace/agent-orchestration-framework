@@ -686,6 +686,76 @@ node, and the fleet renders no button for a node other than `status.localNodeId`
 
 ---
 
+## ADR-007 — The desktop attaches to a loop it did not start
+
+**Supersedes ADR-004 §6 and one clause of ADR-006 §4. Ratified 2026-09-23 by the operator, from 130/06's live run.**
+
+### Context
+
+130/06's live run measured what ADR-004 §6 had named and left alone. A foreground `--supervised`
+loop yields a declarations row (126/02, "listed on its own liveness"). The desktop's controller for
+that row spawns `aof work loop <scope> --level L2 --resume`, which walls at once on the loop's open
+run: `a non-terminal run already exists for this item`, the named clean exit `duplicate-run`
+(126/ADR-006 §6). This was measured at 17:13:14, 18:48:44 and 19:15:44, plus a twelve-relaunch storm
+in run 1. The row then reports that dead child, `stopped` with no control and a
+`loop 02: duplicate-run` footer, beside a loop that is running. So the desktop can never stop a
+loop started on a console, which is the only way a loop is started, and leg 6 of 130/06 cannot pass.
+
+Two routes were measured against locked contracts. A liveness key on the row breaks 126/FF-12604
+leg 4, which pins "a row is six keys and carries no verdict". Re-classifying the exit breaks 126's
+delivered cargo test (`duplicate-run` reads `stopped`, raises the notice and places the hold).
+
+### Decision
+
+1. **The refusal is the attach.** When an UNPRESSED declaration's child exits with the named reason
+   `DuplicateRun`, the row attaches to the loop that answered. It reports `running`, the notice that
+   exit raised is cleared (`notice_after_start`, keyed to the id), and the hold `handle_exit` placed
+   stays, so no tick relaunches against the live loop. The decision is a pure core function,
+   `attaches(id, presses, reason)`, read beside `classify_exit`. `classify_exit` and its 126 test
+   are unchanged, and so is the wire: the row keeps its six keys.
+2. **An attached row's stop is the verb, rung by rung, with no kill.** Each press spawns
+   `aof work loop <scope> --stop` (`stop_argv`, ADR-004 §3) and the verb escalates the level on disk:
+   drain, then cancel. There is no grace clock and no `taskkill` rung, because the row holds no child
+   and the cancel is carried out by the loop's own stop bracket (ADR-003). A refused spawn raises the
+   footer notice and restores the pill, as ADR-004 §3 already does.
+3. **The attached row ends with the row.** The pill reads `stopping` from the first landed press until
+   the reconcile retires the row, which happens on the next declarations tick after the loop's halt
+   (its honoured mark, ADR-004 §4). An attached row shows no `stopped` frame: the desktop has no
+   exit to observe. Named here, not in DESIGN §Surface 2, whose `stopped, held` frame stays true for a
+   row the desktop spawned.
+4. **One relaunch per foreground start remains.** The attach is learned from the refusal, so the first
+   relaunch still runs (gates, then the refused mint, under two seconds, writing nothing). A row
+   carrying its liveness would remove it, at the cost of FF-12604's contract, which is not re-opened here.
+5. **`src/run-store.mjs` moves once (supersedes ADR-006 §4's "byte-pinned and unchanged").** `retryRun`
+   no longer carries `brief.loop` into an UNBRIEFED retry. Measured in run 1: `aof work resume` re-minted
+   a dead loop's 09-10 lineage under that loop's id, and `--stop` (ADR-002 §3c, latest declaration in
+   scope) resolved that dead loop. Every loop retry passes its own brief. FF-5307 re-pinned with the
+   reason (the file's rule: re-pin, never drop).
+
+### Alternatives considered
+
+- A `live` key on the declarations row: rejected. It re-opens 126/FF-12604, and the refusal already
+  carries the fact.
+- A desktop that stops the foreground loop by pid: rejected. The desktop does not know the pid, and
+  a tree kill is the last rung, never the first (ADR-004).
+- Re-scoping leg 6 to a desktop-launched loop: rejected by the operator. Nothing launches one today,
+  and the console loop is the case that exists.
+
+### Consequences
+
+The relaunch storm is bounded to one refused relaunch per foreground start, which the hold already
+did. The row now tells the truth, `running`, and has a working control. A foreground loop that dies
+without halting stays attached until its row goes (the hold means no relaunch), which is today's
+behaviour after a `duplicate-run`.
+
+### Invariant
+
+`attaches` holds only for a non-reserved id, zero presses and `DuplicateRun`, and `classify_exit`'s
+answer for that exit is unchanged (`only_an_unpressed_declarations_duplicate_run_attaches`, cargo).
+An attached row never reaches `tree_kill`. `src/run-store.mjs` matches its FF-5307 pin.
+
+---
+
 ## Codebase health — what these stories land in
 
 `src/commands/loop.mjs` at **2,311 lines** is still the widest file this milestone touches and the

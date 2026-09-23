@@ -119,7 +119,12 @@ export const archTests = [
         // SPELLING a run state — this store owns that vocabulary — and the only alternative was a
         // second home for it in the engine. Nothing else in the file moved: no behaviour, no
         // signature, no existing export. Re-pinned rather than dropped (55/VERIFICATION F-55-02-1).
-        ["src/run-store.mjs", "f18e5080e3e3d9990c1495ff2ec477729ef583f1220ece318e49c62ea615293d"],
+        // RE-PINNED by 130/06 (130/ADR-007 §3): `retryRun`'s carry, when the caller passes no
+        // brief, drops `brief.loop` (a new private `carriedBrief`). Measured live: `aof work resume`
+        // re-minted a dead loop's lineage under its loop id, and `--stop` aimed at that dead loop.
+        // Every loop retry passes its own brief, so the loop's lineage is byte-for-byte what it
+        // was. No export, no signature and no state edge moved.
+        ["src/run-store.mjs", "2c17cd1db619fc52d6e24737315db91d1bf7ac6f668655fea70cafb63ba743c0"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

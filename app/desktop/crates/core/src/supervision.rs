@@ -198,6 +198,19 @@ pub fn classify_exit(label: &str, success: bool, tail: &str) -> ExitClassificati
     }
 }
 
+/// Whether a declaration's exit ATTACHES its row to a loop already running in another
+/// process (130/ADR-007). A supervised loop started on a console yields a row like any
+/// other, and the relaunch its controller spawns is refused `duplicate-run` because that
+/// loop's own drive holds the item's run. The refusal is the loop answering "I am
+/// running", so the row reports `running` and its stop control drives the verb against
+/// that loop, rather than reading `stopped` beside a loop that is live. Only an unpressed
+/// declaration attaches: after a press the exit closes the stop bracket instead
+/// (130/ADR-004 §3), and a reserved daemon never has a row to attach.
+/// `classify_exit` is unchanged. This is read beside it, never folded into it.
+pub fn attaches(id: &str, presses: u32, reason: Option<CleanExitReason>) -> bool {
+    !is_reserved_id(id) && presses == 0 && reason == Some(CleanExitReason::DuplicateRun)
+}
+
 /// What stands after `starting_id` starts: the standing notice, or nothing when the
 /// starting id is the one it names (126/ADR-006 contract-beat §3). This replaces the
 /// blanket clear-on-restart, which N children make routine — one child's start must
@@ -776,6 +789,25 @@ mod tests {
             assert_eq!(out.notice, Some("loop 124: duplicate-run".to_string()));
             assert!(out.hold, "the refusal is surfaced once, never re-attempted every thirtieth second");
         }
+    }
+
+    // 130/ADR-007 — the duplicate-run refusal of an unpressed declaration attaches its
+    // row to the loop already running; nothing else does.
+    #[test]
+    fn only_an_unpressed_declarations_duplicate_run_attaches() {
+        let dup = Some(CleanExitReason::DuplicateRun);
+        assert!(attaches("6015c8d5-d28d-4bd4-ab0e-ce12fb5eba11", 0, dup), "the loop answered that it is running");
+        assert!(!attaches("6015c8d5-d28d-4bd4-ab0e-ce12fb5eba11", 1, dup), "after a press the exit closes the bracket");
+        assert!(!attaches(MESH_SERVE_ID, 0, dup), "a reserved daemon has no row to attach");
+        assert!(!attaches(MESH_UI_ID, 0, dup), "a reserved daemon has no row to attach");
+        for reason in [None, Some(CleanExitReason::UiBuildMissing), Some(CleanExitReason::AddrInUse), Some(CleanExitReason::LauncherAlreadyRunning)] {
+            assert!(!attaches("lr", 0, reason), "{reason:?} is not a live loop answering");
+        }
+        // The classification itself is untouched: the same exit still reads as 126 named it.
+        let out = classify_exit("loop 02", false, "a non-terminal run already exists for this item");
+        assert_eq!(out.reason, dup);
+        assert_eq!(out.signal, "stopped");
+        assert!(out.hold);
     }
 
     #[test]

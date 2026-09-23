@@ -479,14 +479,15 @@ The `d78bada9…` request file (`level 1`, `requested`) is left as evidence. It 
 `requested` mark, and no `--resume` is keyed to that id.
 
 **The relaunch storm, read at the source (a finding for 126, not this milestone).** Twelve relaunches of
-`aof work loop 01 --level L2 --resume` ran every ~30 s from 16:21:14 to 16:27:44. The row they served was
-the dead `d78bada9…` lineage: failed `runtime_offline`, attempt 1 of 3, `supervised: true`, retryable, so
-`decideSupervisedDeclarations` answered a row for it. The row is keyed by `loopRunId`, but its argv
-(`src/mesh/declarations.mjs:140`) names only the scope, and `--resume` resumes the LATEST declaration in
-scope. That was T1's live loop, so each relaunch drove T1's lineage beside T1: `cycle 3 of 3` →
-`a non-terminal run already exists`, then `cap-exhausted`. It ended when the dead lineage's latest run
-became the cancelled phantom (not retryable → no row). Story shape (operator): a relaunch resumes the
-row's own `loopRunId`, and is refused while another declaration in the scope is live.
+`aof work loop 01 --level L2 --resume` ran every ~30 s from 16:21:14 to 16:27:44. ~~The row they served was
+the dead `d78bada9…` lineage …~~ **Corrected in run 2 (read at the source):** at 16:21:14 the phantom did not
+exist yet (it was minted at 16:21:36), and the newest declaration in scope `01` was T1's own live `95597ec1…`.
+`decideSupervisedDeclarations` lists a supervised declaration whose latest run is running and fresh "on
+its own liveness" (126/02, branch (a)), and the desktop's controller for that row spawns its argv. That
+relaunch walls on T1's open run, or halts on the cap it advanced. The storm was a foreground
+`--supervised` loop's own row being relaunched against it until the controller's clean-exit hold stopped
+it. Run 2 reproduced it once per T1 start (17:13:14, 18:48:44, 19:15:44), each walled at once on
+`duplicate-run` and held. The same mechanism is leg 6's finding below.
 
 ### Run 2 attempt (2026-09-23T16:58:58Z) — scope `01` is spent; no leg ran
 
@@ -735,6 +736,16 @@ spends no further drives.
   (adopts its row, spawns nothing, and its control writes the request through `aof work loop <scope> --stop`,
   so rung 1/2 work on a loop it did not spawn), or the leg is re-scoped to a desktop-launched loop. The
   second needs a way for the desktop to launch one, which does not exist today.
+- **Routed: amendment, ratified by the operator (2026-09-23) as 130/ADR-007, "attach on duplicate-run".**
+  Fixed in `app/desktop`. Core: a pure `attaches(id, presses, reason)` beside the unchanged
+  `classify_exit`, plus cargo test `only_an_unpressed_declarations_duplicate_run_attaches` (core suite
+  118/118). Shell (`supervisor.rs`): an unpressed declaration whose relaunch is refused `DuplicateRun`
+  attaches. It reads `running`, its notice is cleared and the hold stays. Each press runs the `--stop`
+  verb, with no grace and no kill rung. `cargo check` of the app crate is clean. The same pass re-pins
+  FF-5307 for the run-store fix already committed in `51cfa6a`, which moved `src/run-store.mjs`'s digest
+  (ADR-007 §5): `acd-loop-state-rides-the-run-record` and 130/03's `fleet-scope` leg now read the pin as
+  moved only by 130/06's stated reason. Leg 6 is re-run after `install-local --desktop` and the operator's
+  restart.
 
 **a remote loop is refused by name — not exercised.** No loop was started on the Mac's console (its card:
 `node-9549`, "never seen", "idle"). Nothing was asked of the Mac.
