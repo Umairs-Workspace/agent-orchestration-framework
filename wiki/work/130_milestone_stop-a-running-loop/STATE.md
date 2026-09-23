@@ -19,7 +19,7 @@ doc: state
 - [ ] 03 · the-fleet-sees-and-stops-it — in-review (built + reviewed 2026-09-21, lane)
 - [ ] 04 · the-desktop-stops-what-it-supervises — in-review (built + reviewed 2026-09-21, lane)
 - [ ] 05 · the-register — in-review (built + reviewed 2026-09-21, solo lane)
-- [ ] 06 · the-live-stop — in-progress (2026-09-23: PRECONDITION holds; run 2: legs 1–5 PASS at the source; leg 6 a FINDING against 04 (the desktop cannot reach a foreground loop); remote not exercised — see `## 130/06` below)
+- [ ] 06 · the-live-stop — in-review (2026-09-23: legs 1–6 PASS at the source, leg 6 on ADR-007’s build; remote not exercised — see `## 130/06` below)
 
 ## Notes & decisions in flight
 
@@ -746,6 +746,57 @@ spends no further drives.
   (ADR-007 §5): `acd-loop-state-rides-the-run-record` and 130/03's `fleet-scope` leg now read the pin as
   moved only by 130/06's stated reason. Leg 6 is re-run after `install-local --desktop` and the operator's
   restart.
+
+**leg 6 — re-run on ADR-007's build (2026-09-23T21:14Z)**
+- Install, at the source: `node scripts/install-local.mjs --desktop` → `stamped BUILD_ID.json
+  (874eef6+dirty.20260923T220812)`, `cargo build --release … Finished`, `placed aof-mesh-desktop.exe`.
+  `aof.exe --version` → `0.1.0 (payload 874eef6+dirty.20260923T220812)`. The operator quit the app from
+  its own UI and relaunched it: `aof-mesh-desktop` pid 20888 started 22:13:53 local, and the daemons'
+  newest `daemon-started`: mesh-serve `2026-09-23T21:13:56.819Z … build payload 874eef6+dirty.20260923T220812`,
+  mesh-ui `2026-09-23T21:13:55.483Z … build payload 874eef6+dirty.20260923T220812`.
+- T1 (22:14:04 local): `aof work loop 02 --resume` → `loop-diag.02.2026-09-23T21-14-05-088Z.log`
+  (`start pid=19656 … build=source 874eef6+dirty`), `Cleared … (honoured, level 1)`, then
+  `2026-09-23T21:14:06.899Z stdout Driving 02/05 — verify, cycle 1 of 3, L2.`
+- The attach, at the source: the desktop's one relaunch `loop-diag.02.2026-09-23T21-14-23-075Z.log`
+  (`start pid=46176 … build=payload 874eef6+dirty.20260923T220812 argv [...,"--resume"]`) →
+  `stderr a non-terminal run already exists for this item` → `exit code=1` (21:14:24.514Z). No further
+  relaunch log was written for `02` (listing after 22:14:30 local: T1's log only). The operator saw the row
+  reach the pressable state and pressed.
+1. **Press 1** → `<path>` `level 1`, `state requested`, `requestedAt 2026-09-23T21:15:06.226Z`,
+   `by {node-7297, pid 11912}`: NOT T1's pid 19656, the desktop's own `--stop` spawn. The fleet entry read
+   `"stop":"drain"` at 21:15:07.305Z. The operator: the pill read `stopping` ("It's stopping…",
+   "graceful stop is still in progress"). The drain was not waited out: the operator pressed again
+   (below), so part 1's end, "the drive finishes, the halt reads `level=1`", was not observed from the
+   desktop. That end state is the loop's alone, the same code whoever wrote the request, and is read at
+   the source in leg 1 (verb) and leg 5's first attempt (fleet).
+2. **Press 2** → `<path>` `level 2`, `escalatedAt 2026-09-23T21:17:36.714Z`, same `by` (pid 11912). The bracket
+   and the halt, 0.6 s after the escalation, far inside 30 s:
+   ```
+   2026-09-23T21:17:37.301Z driver {"phase":"stop-requested","pid":65160,"outcome":"failed","failureReason":"cancelled"}
+   2026-09-23T21:17:38.145Z driver {"phase":"tree-terminated","pid":65160,"ok":true,"detail":"SUCCESS: The process with PID 65160 (child process of PID 19656) has been terminated."}
+   2026-09-23T21:17:38.155Z driver {"phase":"pty-released","pid":65160}
+   2026-09-23T21:17:38.230Z driver {"phase":"exit-confirmed","pid":65160,"outcome":"failed","sessionId":"04805cfa-64fa-4a17-a504-260ce6adbf8c"}
+   2026-09-23T21:17:38.372Z stdout Driven 02/05 — verify (cancelled).
+   2026-09-23T21:17:38.373Z stdout 02 — halted on operator-interrupt at 02/05 (producer stop-request). Resume with: aof work loop 02 --resume Details: signal=stop-request; level=2; request=C:\Users\Umami\.aof\mesh\loop-stops\6015c8d5-d28d-4bd4-ab0e-ce12fb5eba11.json; by=node-7297:11912; cancelled=20260923T211406919Z-0002.
+   2026-09-23T21:17:43.245Z exit code=0
+   ```
+   `02/05`'s `runs\node-7297\20260923T211406919Z-0002.json`: `state cancelled`, `outcome cancelled`,
+   `failureReason null`, `sessionId 04805cfa-64fa-4a17-a504-260ce6adbf8c` (the bracket's). `<path>`
+   `honoured` 21:17:38.369Z, `cancelled "20260923T211406919Z-0002"`. The fleet entry read `"stop":"cancel"` at
+   21:17:38.411Z and was gone at 21:17:43.604Z. `<log>` ends with the halt line and `exit code=0`, so the
+   `taskkill` fallback was NOT used (an attached row has no kill rung, ADR-007 §2).
+- [~] 1 (rung 1 landed from the desktop; its drain end read in legs 1 and 5, not here) · [x] 2 — result:
+  **pass** on ADR-007's build.
+
+### Run 2 — result, final
+
+Legs 1–5 pass at the source (above). Leg 6 passes on ADR-007's build: the desktop attached to a
+console-started loop, its presses wrote the request through its own `--stop` spawn (drain, then cancel),
+the loop's own bracket cancelled the session, and no fallback kill ran. The remote leg is not exercised
+(no Mac loop). The findings routed: ADR-007 (fixed, ratified); the retry carry (fixed, `51cfa6a`);
+handed back as story shapes, outside 130: `--resume` after a `session-needs-input` halt walls on the open
+run it left, the operator-gated story put in a wave, the resume sweep offering a finished lineage, and the
+rollback that moved `130/SPEC.md` back to `not-started`.
 
 **a remote loop is refused by name — not exercised.** No loop was started on the Mac's console (its card:
 `node-9549`, "never seen", "idle"). Nothing was asked of the Mac.

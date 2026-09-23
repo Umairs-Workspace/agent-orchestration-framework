@@ -5,7 +5,7 @@ slug: the-live-stop
 title: "The live stop — a real loop on this machine stopped from the verb, the fleet and the desktop, read at the source: the session's tree terminated, the run cancelled, the halt naming the request, no relaunch, and --resume bringing it back"
 parent: 130
 depends: [5]
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-13
 updated: 2026-09-23
@@ -52,7 +52,7 @@ result recorded for `aof:verify 130`.
 
 ## Tasks
 
-- [ ] `tasks/00_the-live-stop-read-at-the-source.feature` — `@manual`: the verb path (drain, then cancel), the record, the diag bracket, the halt line, the resume; the fleet path; the desktop path and the no-relaunch check over two declarations ticks; the payload install and the operator's restart named as preconditions
+- [x] `tasks/00_the-live-stop-read-at-the-source.feature` — `@manual`: the verb path (drain, then cancel), the record, the diag bracket, the halt line, the resume; the fleet path; the desktop path and the no-relaunch check over two declarations ticks; the payload install and the operator's restart named as preconditions
 
 ## Notes
 
