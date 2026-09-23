@@ -36,6 +36,21 @@ Scrub note: this evidence is committed, so every hostname-derived id is written 
   passes 9/9. Deployed: `aof --version` → `payload f76c153+dirty.20260923T093910`, with
   `identity.mjs` byte-equal to the source.
 
+### Task 06 — the F-5 fix (`@bug @finding-F-5`, after accept)
+
+- **`node scripts/test.mjs --only` over `mesh-workspace-workdir-absolute`, `fleet-scope` and the
+  identity CLI face** — the new `132 the registry sync keeps a node record's hostname` passes, and
+  `nodePanelFacts` titles `Desk-Host.local` as `Desk-Host`. **`cargo test` (desktop core)** — 117/117,
+  including `a_row_is_titled_with_the_machine_name_and_keeps_the_id`. The one red in that run,
+  FF-5307's `board-ui.mjs` pin, comes from 133's uncommitted board work, not this change. FF-5307's
+  `ui/` digest was re-pinned over HEAD plus these four `ui/src/fleet` files alone, and the replication was
+  checked against HEAD's own pin first. Committed `b64294c`; deployed with `install-local --desktop`
+  (`aof --version` → `payload b64294c+dirty.20260923T125223`). `verifies → tasks/06_the-fleet-names-a-node-by-its-machine.feature`
+- **Live, after the operator restarted the desktop app** (both daemons logging `b64294c`): `aof mesh identity`
+  republished this node with `hostname`, and it survived the next syncs. The two peers' copies on the
+  control dated from their join and were given the `hostname` each peer publishes itself (their daemons
+  are not running to re-propagate it). `aof mesh status --json` then answered all three nodes with a name.
+
 ### Task 04 — the `@manual` run on the control node (2026-09-23, 00:00–00:20 UTC)
 
 `verifies → tasks/04_a-real-run-on-this-node-names-no-machine.feature` — every step below was read at
@@ -95,8 +110,9 @@ the source (the file on disk or a fresh CLI process), never from an earlier step
 |---|---|---|---|---|---|---|
 | F-1 | Task 04 assumed a hostname-derived sidecar, but the control node was hand-pinned to a post-scrub placeholder id (615678a) after refine; `--reidentify` refuses a pinned id. | contract-drift | blocker | operator chose the opaque form; the sidecar was restored to its legacy shape and re-identified with the real verb | operator | closed |
 | F-2 | `aof mesh identity --name` changes a node's id without the invalidation report `--reidentify` gives. The 09-22 hand-pin left `mesh.relay.controlNode` naming the old id, so `isControlNode` read false and the desktop supervisor never started `:4182`. The operator's relaunch (00:08:54Z) came up without a control daemon and said nothing about it; any restart after the pin would have done the same. "Re-identification is one deliberate edge" does not hold while `--name` is a second, silent one. | defect | blocker | fixed in this item (task 05): a `--name` that moves an id answers the re-identification envelope through the scan `--reidentify` uses, and repairs nothing (task 01 ruling 4) | 132 task 05 | closed |
-| F-3 | No verb retires a node record keyed by an old id. `--reidentify` names `nodes/<old>.json` as stale, but the row stays in the fleet, and the direct fabric marks it `online: true` because its address still resolves. | gap | non-blocker | pending operator triage | operator | open |
-| F-4 | The WSL guest cannot reach `192.168.1.102` (a TCP probe to `:4182` and `:135` both time out; the vEthernet gateway `172.27.144.1:135` answers). `.claude/rules/build-deploy-restart.md` records the opposite (measured 2026-07-27). `:4182` binds loopback + LAN only, so the WSL node cannot enroll. | environment | non-blocker | operator: host networking (weak-host / `mirrored` WSL networking) or a control bind that includes the vEthernet address | operator | open |
+| F-3 | No verb retires a node record keyed by an old id. `--reidentify` names `nodes/<old>.json` as stale, but the row stays in the fleet, and the direct fabric marks it `online: true` because its address still resolves. | gap | non-blocker | open: the rows were removed by hand on all three machines (every peer's local store must be cleaned, or a join propagates them back); a retire verb is still missing | operator | open |
+| F-4 | The WSL guest cannot reach `192.168.1.102` (a TCP probe to `:4182` and `:135` both time out; the vEthernet gateway `172.27.144.1:135` answers). `.claude/rules/build-deploy-restart.md` records the opposite (measured 2026-07-27). `:4182` binds loopback + LAN only, so the WSL node cannot enroll. | environment | non-blocker | fixed on the host: `WeakHostReceive` enabled on the WSL vEthernet adapter (it was `Disabled`, so the strong-host model dropped the guest's packets to the LAN address); WSL then joined as `node-2976`. It may reset when the adapter is recreated | operator | closed |
+| F-5 | After accept, the fleet titled every node with its opaque id. Task 02 put `hostname` on the node record, but the registry sync rewrites each `nodes/<id>.json` from a descriptor it builds key by key, and that descriptor dropped `hostname`. The name lasted one sync interval, and neither fleet face ever read it. | defect | blocker | fixed in this item (task 06): the descriptor carries `hostname`, and both faces title the node with it, the id beside it | 132 task 06 | closed |
 
 ## Accept decision
 

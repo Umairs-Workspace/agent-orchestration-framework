@@ -16,7 +16,7 @@ Both `--reidentify` and a `--name` that moves an existing id answer `{ from, to,
 - **The operator re-points what is reported** — a control node whose `mesh.relay.controlNode` still names its old id reads `isControlNode: false` at its next start, and the desktop supervisor then starts no `:4182`.
 
 ### The fabric joins on the declared machine name
-A node record carries `hostname` (the machine name, kept in the aof home) beside `host` (the dial address), and `resolvePeers` joins fabric peers on it rather than on the id's spelling.
+A node record carries `hostname` (the machine name, kept in the aof home) beside `host` (the dial address), and `resolvePeers` joins fabric peers on it rather than on the id's spelling. The registry sync preserves it, and both fleet faces title a node with it (macOS `.local` dropped), with the opaque id beside it.
 
 ### Tracked run records name no machine
 `test/arch/mesh/acd-run-records-name-no-machine.test.mjs` passes only when every tracked `runs/<node>/` segment and every record's `node` key is opaque or baselined. The baseline holds `umamis-mac-mini` → 5 alone and may only shrink.
@@ -27,9 +27,9 @@ The Windows control node's id is `node-7297`, and the tree's former placeholder 
 ## Gaps
 
 ### The worker nodes still carry hostname-derived ids
-- **Status:** open
+- **Status:** discharged
 - **Discharge condition:** the Mac worker and the WSL node each re-identified, re-joined, and listed in the fleet under an opaque id.
-The WSL node is re-identified (`node-2976`) but not re-joined, because the guest cannot reach the control node's LAN address (132/F-4). The Mac is untouched.
+Discharged 2026-09-23: WSL (`node-2976`) and the Mac (`node-9549`) were re-identified and re-joined to `node-7297`, and their old credentials revoked.
 
 ### Node records under a retired id stay in the fleet
 - **Status:** open

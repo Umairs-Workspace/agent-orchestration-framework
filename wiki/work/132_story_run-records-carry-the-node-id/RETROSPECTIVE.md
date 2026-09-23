@@ -61,3 +61,19 @@ the commit.
 **Lesson.** When renaming a path segment across the tree, also match it as a standalone string
 next to its parent segment, and run every changed test file before committing. A digest pin
 counts comments as content.
+
+## R5 — a key added to a record was erased by another writer of the same file
+
+- **Kind:** mistake · **Area:** architecture · **Stage:** build · **Owner:** developer
+- **Raised by:** the operator, reading the desktop fleet after accept (`F-5`)
+
+**What happened.** Task 02 added `hostname` to the node record, and its tests read the record
+straight after publishing it. The registry sync, a second writer of that same `nodes/<id>.json`,
+rewrites it every few seconds from a descriptor it assembles key by key. That descriptor had no
+`hostname`, so the key was gone within one interval. Task 04's fleet check read ids and join state,
+never the name a person sees, so the story was accepted with the name already lost.
+
+**Lesson.** When a story adds a key to a record, list every writer of that record and assert that
+the key survives each one, not only the writer the story touched. When a story changes what an id
+looks like, check the human-facing surface too: an opaque id is only acceptable where a name
+stands beside it.

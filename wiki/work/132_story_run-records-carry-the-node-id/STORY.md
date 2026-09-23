@@ -43,6 +43,19 @@ files:
   - test/arch/mesh/acd-run-records-name-no-machine.test.mjs
   - test/arch/mesh/index.mjs
   - test/arch/work/acd-no-internal-project-names.test.mjs
+  - src/global-node-registry.mjs
+  - ui/src/fleet/scope.mjs
+  - ui/src/fleet/scope.d.mts
+  - ui/src/fleet/api.ts
+  - ui/src/fleet/Fleet.tsx
+  - app/desktop/crates/core/src/status.rs
+  - app/desktop/crates/core/src/view_model.rs
+  - app/desktop/crates/app/src/main.rs
+  - app/desktop/ui/app.js
+  - app/desktop/ui/styles.css
+  - test/ui/fleet-scope.test.mjs
+  - test/mesh/mesh-workspace-workdir-absolute.test.mjs
+  - test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -104,6 +117,7 @@ to be made into one.
 - [x] `tasks/03_no-run-record-names-a-machine.feature` — the fitness function at `test/arch/mesh/acd-run-records-name-no-machine.test.mjs`: a tracked segment and a record's `node` key are opaque or baselined, the baseline shrinks only, it self-checks for vacuity, and the private-terms guard gains no exemption
 - [x] `tasks/04_a-real-run-on-this-node-names-no-machine.feature` — `@manual`: after a deploy and an operator restart, re-identify this node, mint a real run, and read at the source that the folder, the `node` key, the run-status union and the fleet join all hold
 - [x] `tasks/05_a-rename-reports-what-it-strands.feature` — `@bug` F-2 (from verify): a `--name` that moves an existing id answers the re-identification envelope, naming what the old id keyed through ONE scan shared with `--reidentify`; it repairs nothing; a first pin or a repeat stays the bare node record
+- [x] `tasks/06_the-fleet-names-a-node-by-its-machine.feature` — `@bug` F-5 (after accept): the registry sync keeps the record's `hostname`, and both fleet faces title a node with it while the opaque id stays the identity beside it
 
 ## Notes
 
