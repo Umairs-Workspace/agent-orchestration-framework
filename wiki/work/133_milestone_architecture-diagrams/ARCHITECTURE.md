@@ -384,8 +384,9 @@ way every other record does.
    re-pins FF-5307's tree digest (`acd-loop-state-rides-the-run-record`) with the measured diff
    stated.
 6. **Amended at `aof:verify 133` (2026-09-23, VERIFICATION F-133-01/02), while the item was open.**
-   (a) A populated figure is a button, and the panel opens a full-size viewer over the SAME data-URI
-   `<img>`, so §4's image-only line holds. (b) The block's `Source · PNG` links are served by a
+   (a) A populated figure is a button, and the panel presents a full-size viewer over the SAME data-URI
+   `<img>` as the SHELL's fullscreen occupant (`requestFullscreen`, 45/ADR-005), so §4's image-only
+   line holds and no surface paints its own layer. (b) The block's `Source · PNG` links are served by a
    third verb of ADR-004's family, `diagram:file` (`src/commands/diagram/file.mjs`). It reads a
    committed `diagrams/` file from this node's checkout only, and checks the name with the layout's
    `diagramFile` grammar (FF-13302) before any read. The board serves it at `/api/diagram/file`,

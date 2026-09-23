@@ -49,7 +49,7 @@ not evidence for a later one. Confirm too that `aof work run-status` still answe
 both the old and the new segment, because that union is the claim that no history was lost.
 
 Before that, the focused suites: run the identity, fabric and arch lanes through
-`node scripts/test.mjs --only <files>` with `AOF_GLOBAL_HOME` set to a fresh temp dir. Never the
+the test runner's `--only` selection with `AOF_GLOBAL_HOME` set to a fresh temp dir. Never the
 full suite on this machine.
 
 ## Out of scope

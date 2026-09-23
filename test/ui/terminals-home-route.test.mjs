@@ -518,7 +518,9 @@ export const terminalsHomeRouteTests = [
         // 1000 -> 994 on 2026-09-15 by 127/04: `humanizeSlug` moved to `model.ts` (the backlog row
         // shares it) and the archived pill joined the header cluster — net −6, so the ZERO
         // headroom this row was really about is now six lines. The re-aim is the Fleet.tsx row's idiom.
-        ["ui/src/board/DetailPanel.tsx", 994, 1000, "127/04's move out and pill in; six lines of headroom now"],
+        // 994 -> 996 by 133/04 (ADR-007 §5): the ARCHITECTURE tab, its Records row and the one
+        // `DiagramMarkdown` call — everything else went to `diagrams.mjs`. Four lines of headroom.
+        ["ui/src/board/DetailPanel.tsx", 996, 1000, "127/04's move out and pill in, then 133/04's tab; four lines of headroom now"],
         ["ui/src/config/App.tsx", 1298, 1300, "untouched"],
       ];
       for (const [file, expected, ceiling, why] of untouched) {

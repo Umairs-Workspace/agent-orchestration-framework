@@ -118,10 +118,11 @@ works").
 - **The populated figure is a button.** Its frame keeps the card classes, gains `cursor-zoom-in`, a
   `hover:border-primary` hairline and a small `Enlarge` badge top-right in muted uppercase. Loading,
   missing and error figures are not buttons.
-- **The viewer.** A full-screen overlay on a `foreground/80` backdrop, with a card-surface top bar
-  holding the alt text, an `Actual size` / `Fit to screen` toggle, `Open in new tab` (the SVG) and a
-  close `×`. It opens fit to the screen. Actual size is twice the viewBox width, scrolling on both
-  axes. Esc, the backdrop and `×` close it. The image is the same data-URI `<img>` the figure holds.
+- **The viewer is the shell's fullscreen occupant** (45/ADR-005: a surface never paints its own
+  full-viewport layer). The shell's bar carries the alt text and `✕ Exit fullscreen`, and `Esc`
+  exits. Under it, a card-surface strip holds an `Actual size` / `Fit to screen` toggle and `Open in
+  new tab` (the SVG). It opens fit to the screen. Actual size is twice the viewBox width, scrolling
+  on both axes. The image is the same data-URI `<img>` the figure holds.
 - **The block's links open the committed files** in a new tab, served by the board under a sandbox
   CSP. A file another node holds answers "not on this node".
 

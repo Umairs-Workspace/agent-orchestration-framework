@@ -15,10 +15,10 @@ result at the source.
    the `0.5rem` radius, and the UI's font stacks. Keep the plugin's light→dark inversion rule.
 2. **Opt in.** Add `work.diagrams` to `.aof/aof.config.json` with the generator, both formats and
    that style path. Validate with `aof project validate --json`.
-3. **Draw.** `node src/cli.mjs diagram plan 133 ADR-002 --slug generator-seam --json`, then hand the
+3. **Draw.** `diagram plan 133 ADR-002 --slug generator-seam --json` (this checkout's CLI), then hand the
    `instructions` to a drawing agent (a subagent, or this session following them literally). It
    writes only the `.html`.
-4. **Export and paste.** `node src/cli.mjs diagram export 133 ADR-002 --json`, then paste `block`
+4. **Export and paste.** `diagram export 133 ADR-002 --json` (this checkout's CLI), then paste `block`
    under ADR-002's existing `### Diagram` brief. That is the only edit to `ARCHITECTURE.md`, and
    ADR-002's decision text does not change.
 5. **Read back.** `aof work doctor 133 --json` from the repo root, then this checkout's

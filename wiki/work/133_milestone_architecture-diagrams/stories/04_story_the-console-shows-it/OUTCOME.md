@@ -9,7 +9,7 @@
 The board's milestone detail has an `ARCHITECTURE` tab, second after `SPEC`, that renders `ARCHITECTURE.md`. Each `diagrams/<stem>.svg` image appears inline where its ADR links it, as a loading, populated, missing or error figure. A diagram body reaches the page only as an encoded `data:image/svg+xml` image (FF-13304).
 
 ### A full-size diagram viewer
-Clicking a populated figure opens a full-screen viewer over the same image. It opens fit to the screen, toggles to twice the viewBox width with scrolling, and closes on Esc, the backdrop or `×`.
+Clicking a populated figure presents a full-size viewer over the same image, as the shell's fullscreen occupant. It opens fit to the screen, toggles to twice the viewBox width with scrolling, and exits on `Esc` or the shell's `✕ Exit fullscreen`.
 
 ### The block's links open the committed files
 The pasted block's `Source · PNG` links, and the viewer's `Open in new tab`, open the committed `.html`, `.png` or `.svg` from this node's checkout through `aof diagram file` at `/api/diagram/file`. Every answer is served under `Content-Security-Policy: sandbox`.

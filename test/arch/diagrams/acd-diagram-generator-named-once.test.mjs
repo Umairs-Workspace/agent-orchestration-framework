@@ -18,6 +18,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
+import { importSpecifiers } from "../../support/module-family.mjs";
 import { generatorFor, generatorIds } from "../../../src/diagrams/generators.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -38,9 +39,15 @@ async function sourceFiles(dir = path.join(repoRoot, "src")) {
 
 // An import specifier that resolves to the one home is the registry reaching its adapter by the
 // file name ADR-002 §1 gives it — a path, not a second naming of the tool.
+// The specifiers come from the one extractor (test/support/module-family.mjs, FF-11901), and only
+// the quoted literal of a specifier that resolves to the home is blanked.
 function withoutImportsOfTheHome(file, code) {
-  return code.replace(/\bfrom\s*(["'])([^"'\n]*)\1/g, (whole, _quote, specifier) =>
-    (path.posix.join(path.posix.dirname(file), specifier) === THE_ONE_HOME ? "" : whole));
+  let out = code;
+  for (const { specifier } of importSpecifiers(code)) {
+    if (path.posix.join(path.posix.dirname(file), specifier) !== THE_ONE_HOME) continue;
+    for (const quote of ['"', "'", "`"]) out = out.split(`${quote}${specifier}${quote}`).join("");
+  }
+  return out;
 }
 
 // The detector the real sweep and the red probe share: which of these { file, text } spell it.

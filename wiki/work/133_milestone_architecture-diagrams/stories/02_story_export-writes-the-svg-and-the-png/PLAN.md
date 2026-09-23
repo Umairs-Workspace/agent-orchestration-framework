@@ -37,7 +37,7 @@ added beside ADR-005's two.
 Task 03 on this machine: the shipped command, run as `node src/cli.mjs` against a scratch project,
 renders the plugin's example architecture through the cached headless shell and again through
 Edge. Read the PNG's IHDR for 2000×960, and record the wall time against Edge's instant return.
-Before that, the focused suites plus FF-13303 through `node scripts/test.mjs --only`, under a fresh
+Before that, the focused suites plus FF-13303 through the runner's `--only` selection, under a fresh
 `AOF_GLOBAL_HOME`, with a red probe for FF-13303 (add a second argv builder, or a `playwright`
 import).
 

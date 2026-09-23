@@ -55,9 +55,10 @@ this checkout, on 2026-09-23.
     `Spec / objective` — conforms.
 - **Verdict: CONFORMS to the checklist as written. The checklist itself was then overturned by the operator**
   (F-133-01): the panel is about 350 px wide at every viewport, so a conforming figure is too small to read.
-  After the fix, the viewer was captured at 1280 (image 1248×825, labels legible) and 390, with its controls
-  `Actual size`, `Open in new tab → /api/diagram/file?ref=133&file=ADR-002-generator-seam.svg` and `×`
-  (`evidence/viewer-*.png`).
+  After the fix (and its F-133-07 rework into a shell occupant), the viewer was captured at 1280 (image 1248×782,
+  labels legible) and 390. It shows the shell's presenting overlay (`role="dialog"`, z 50 from the ladder), its
+  `✕ Exit fullscreen`, and the occupant's `Actual size` and `Open in new tab →
+  /api/diagram/file?ref=133&file=ADR-002-generator-seam.svg` (`evidence/viewer-*.png`).
 - **No designer or QA agent was spawned.** The operator's standing rule is no agent fan-out without asking. The
   judgement was made inline against DESIGN's binding checklist, from the measured DOM plus the screenshots, and the
   operator then judged the result in person (06 below). No Playwright harness exists here (`npx playwright` is
@@ -79,6 +80,16 @@ this checkout, on 2026-09-23.
   `verifies → stories/06_story_the-live-draw/tasks/00_the-repo-opts-in-and-adr-002-is-drawn-through-the-seam.feature`
 - **Still outstanding (not claimed):** the INSTALLED board shows none of this until `node scripts/install-local.mjs`
   and an operator restart of the desktop app.
+
+### The milestone gate — `aof work regression-gate 133` (whole tree)
+
+- **Run 1, at `2078166`** (a detached worktree with `prepare-worktree` and `ui-build`, a fresh `AOF_GLOBAL_HOME`,
+  launched from Bash with no `GIT_ASKPASS`), 15:54Z → 16:38Z: **red, 11 cases**, recorded in `REGRESSION.md`. Each red
+  suite was re-run alone. Ten reproduced, and the eleventh (`53/00 task03`, a session-clock case) passed alone, so it was
+  contention. Attribution: F-133-07 (six cases, 133's own), F-133-08 (two, 132's), F-133-09 (one, the root shape). After
+  the repairs, the ten suites plus their neighbours were re-run: every 133 case is green. The one remaining red is
+  FF-5307's `src/run-store.mjs` pin, which reads another session's uncommitted edit in the primary checkout. That edit is
+  not in this commit, and a gate worktree does not see it.
 
 ## User sign-off
 
@@ -119,4 +130,7 @@ restore the file, then run the control green again.
 | F-133-03 | The whole-tree control FF-11904 was red at HEAD: `test/arch/mesh/` holds 50 children against a ceiling of 49, because 132's accept commit added `acd-run-records-name-no-machine.test.mjs` without its row. | defect | medium | Inherited, mechanical: the row was raised 49 → 50 with its reason, repaired at this gate. | m132 | closed |
 | F-133-04 | FF-12603 leg 6 went red: 04's own re-pin comment on the board-ui entry pushed 127/04's reason more than 600 characters from the entry it names. | test-gap | low | Fixed in this gate: the leg reads each stacked re-pin within reach of its entry. | story 04 | closed |
 | F-133-05 | One of 133's own run records sat at `runs/umamis-msi/…-0002.json` with `"node": "umamis-msi"`. It was written before the rename at f76c153, and 132's guard refuses a machine-named segment once it is tracked. | defect | medium | Moved to `runs/node-7297/` with its `node` key rewritten, before the commit. | story 06 | closed |
+| F-133-07 | Gate run 1: six cases were 133's own. (a) The viewer painted its own `fixed inset-0 z-50` layer and portalled into `document.body`, which 45/ADR-005's shell rules forbid (`acd-no-per-surface-fixed-overlay` ×2, `acd-shell-z-ladder-single-home`). (b) FF-13301's control spelled its own import extractor (FF-11901). (c) Three ledger literals 133 moved without moving them: 130's `fleet-scope` board-ui digest, DetailPanel 994 → 996 (133/04), and the `src/work` count 43 → 44 (133/03). (d) Five of 133's own PLAN.md files restated declared paths (FF-9603). | defect | high | blocker, fixed in place. The viewer is now the shell's fullscreen occupant through `requestFullscreen`, and was re-rendered here (the shell's bar, `✕ Exit fullscreen`, rung 50 from the ladder). The control uses `importSpecifiers`. Each ledger moved with its reason, and the plans were rephrased. | story 04 / m133 | closed |
+| F-133-08 | Gate run 1: 132's `PLAN.md` line 52 restated `scripts/test.mjs` (FF-9603, two suites). | defect | low | Inherited and mechanical: the advisory line was rephrased at the owner. | m132 | closed |
+| F-133-09 | Gate run 1: `work/this-tree-holds-what-is-live` refuses the root, because 129 and 132 are `done` and not archived. | process | medium | Not 133's to act on: archiving is the operator's act (127/ADR-004). The gate stays red on this case until `aof work archive 129` and `aof work archive 132`. | operator | open |
 | F-133-06 | The `@uat` leg "the SVG renders inline on GitHub" is not observed, because the branch is not pushed. The operator chose to judge the local files now. | test-gap | low | non-blocker → observe on the first push of this branch (the committed ARCHITECTURE.md's ADR-002 figure on GitHub). | operator | open |

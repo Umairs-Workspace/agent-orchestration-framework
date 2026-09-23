@@ -22,6 +22,7 @@ import type { MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { Marked, marked } from "marked";
 import type { DocResponse } from "./api";
+import { requestFullscreen } from "../app/shell-bus.mjs";
 import { diagramFileUrl, diagramMembers, diagramRenderer, figureState } from "./diagrams.mjs";
 import type { DiagramImages, DiagramResponse } from "./diagrams.mjs";
 
@@ -40,49 +41,60 @@ export function Markdown({ source, images, itemRef }: { source: string; images?:
   return <div className="md" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-// The full-size viewer a populated figure opens (133/VERIFICATION F-133-01): the SAME data-URI
-// `<img>` the figure holds — never markup — over a backdrop, at fit-to-screen or at twice its viewBox
-// width with scrolling on both axes. Esc, the backdrop and the close button dismiss it.
-function DiagramViewer({ figure, alt, fileHref, onClose }: { figure: { uri: string; width: number | null }; alt: string; fileHref: string; onClose: () => void }) {
+// The full-size viewer a populated figure opens (133/VERIFICATION F-133-01). It is the SHELL's
+// fullscreen occupant, never a layer of its own (45/ADR-005: a surface ASKS the shell to present
+// it, and the shell owns the one fullscreen layer, its rung, its label bar, `Escape` and the exit
+// control). The occupant is the SAME data-URI `<img>` the figure holds — never markup — at
+// fit-to-screen or at twice its viewBox width with scrolling on both axes.
+//
+// The node the shell adopts is created here rather than by React, for the reason
+// TerminalFullscreenOccupant gives: the shell re-parents it, so React must own its CONTENTS (via a
+// portal into it) and never its position. `home` is a hidden sibling the node returns to.
+function DiagramViewer({ figure, alt, fileHref, opener, onClose }: { figure: { uri: string; width: number | null }; alt: string; fileHref: string; opener: HTMLElement | null; onClose: () => void }) {
   const [full, setFull] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const [node] = useState<HTMLDivElement | null>(() => {
+    if (typeof document === "undefined") return null;
+    const element = document.createElement("div");
+    element.className = "flex h-full flex-col";
+    return element;
+  });
+  const homeRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    closeRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    if (node == null) return undefined;
+    const dismiss = requestFullscreen({ id: `diagram:${fileHref}`, label: alt, node, home: homeRef.current, opener, onDismiss: onClose });
+    return () => dismiss();
+    // Presented once per open: the figure, the label and the opener are fixed while it is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node]);
   const actual = (figure.width ?? 1000) * 2;
-  return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={alt} className="fixed inset-0 z-50 flex flex-col bg-foreground/80" onClick={onClose}>
-      <div className="flex shrink-0 items-center gap-3 border-b border-border bg-card px-4 py-2 text-sm" onClick={(event) => event.stopPropagation()}>
-        <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{alt}</span>
-        <button type="button" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted" onClick={() => setFull((value) => !value)}>
-          {full ? "Fit to screen" : "Actual size"}
-        </button>
-        <a href={fileHref} target="_blank" rel="noopener noreferrer" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted">
-          Open in new tab
-        </a>
-        <button ref={closeRef} type="button" aria-label="Close" className="rounded px-2 py-1 text-lg leading-none text-muted-foreground hover:text-foreground" onClick={onClose}>
-          ×
-        </button>
-      </div>
-      <div className={`min-h-0 flex-1 overflow-auto p-4 ${full ? "" : "grid place-items-center"}`}>
-        <img
-          src={figure.uri}
-          alt={alt}
-          onClick={(event) => {
-            event.stopPropagation();
-            setFull((value) => !value);
-          }}
-          className={`rounded-md ${full ? "cursor-zoom-out" : "cursor-zoom-in"}`}
-          style={full ? { width: `${actual}px`, maxWidth: "none", height: "auto" } : { width: "100%", height: "100%", maxWidth: `${actual}px`, objectFit: "contain" }}
-        />
-      </div>
-    </div>,
-    document.body,
+  return (
+    <>
+      <div ref={homeRef} className="hidden" aria-hidden="true" />
+      {node == null
+        ? null
+        : createPortal(
+            <>
+              <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-4 py-2">
+                <button type="button" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted" onClick={() => setFull((value) => !value)}>
+                  {full ? "Fit to screen" : "Actual size"}
+                </button>
+                <a href={fileHref} target="_blank" rel="noopener noreferrer" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted">
+                  Open in new tab
+                </a>
+              </div>
+              <div className={`min-h-0 flex-1 overflow-auto p-4 ${full ? "" : "grid place-items-center"}`}>
+                <img
+                  src={figure.uri}
+                  alt={alt}
+                  onClick={() => setFull((value) => !value)}
+                  className={`rounded-md ${full ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+                  style={full ? { width: `${actual}px`, maxWidth: "none", height: "auto" } : { width: "100%", height: "100%", maxWidth: `${actual}px`, objectFit: "contain" }}
+                />
+              </div>
+            </>,
+            node,
+          )}
+    </>
   );
 }
 
@@ -100,7 +112,7 @@ export function DiagramMarkdown({
   load: (member: string) => Promise<DocResponse>;
   elsewhere: string | null;
 }) {
-  const [expanded, setExpanded] = useState<{ key: string; alt: string } | null>(null);
+  const [expanded, setExpanded] = useState<{ key: string; alt: string; opener: HTMLElement } | null>(null);
   const close = useCallback(() => setExpanded(null), []);
   const members = useMemo(() => diagramMembers(source), [source]);
   const [answers, setAnswers] = useState<Record<string, DiagramResponse>>({});
@@ -132,7 +144,7 @@ export function DiagramMarkdown({
   const onClick = (event: MouseEvent<HTMLDivElement>) => {
     const button = (event.target as HTMLElement).closest<HTMLElement>("[data-diagram-expand]");
     if (button == null) return;
-    setExpanded({ key: button.dataset.diagramExpand ?? "", alt: button.dataset.diagramAlt ?? "" });
+    setExpanded({ key: button.dataset.diagramExpand ?? "", alt: button.dataset.diagramAlt ?? "", opener: button });
   };
   const figure = expanded == null ? null : images[expanded.key];
   return (
@@ -142,6 +154,7 @@ export function DiagramMarkdown({
         <DiagramViewer
           figure={figure}
           alt={expanded.alt}
+          opener={expanded.opener}
           fileHref={diagramFileUrl(itemRef, expanded.key.slice(expanded.key.indexOf("/") + 1))}
           onClose={close}
         />

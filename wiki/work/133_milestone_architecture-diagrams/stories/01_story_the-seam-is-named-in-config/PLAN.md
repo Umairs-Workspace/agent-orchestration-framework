@@ -25,20 +25,20 @@ takes `home` as an argument. The CLI face passes `os.homedir()`, so suites steer
 `HOME`/`USERPROFILE`. `toSvg` is the plugin's documented SVG procedure done in Node, and it is
 deterministic.
 
-`diagram:plan` is a registry command in a new `src/commands/diagram/` family, wired into the CLI's
+`diagram:plan` is a registry command in a new `diagram` command family, wired into the CLI's
 top-level dispatch the way `graph` is. The check order is in task 03's rulings. Off is answered
 before any ADR check. The command writes nothing, not even the folder.
 
-The four new directories (`src/diagrams`, `src/commands/diagram`, `test/diagrams`,
-`test/arch/diagrams`) are declared EXEMPTIONS in the source-directory budget, each naming its
+The four new directories (the diagram engine, the command family, and the two suite
+directories) are declared EXEMPTIONS in the source-directory budget, each naming its
 eventual members (including story 02's `rasterize.mjs` and `export.mjs`), so story 02 edits no
-budget line. Register both new test indexes in `scripts/test.mjs`.
+budget line. Register both new test indexes with the test runner.
 
 ## The verification step
 
 The end-to-end check is task 03 run against a temp project with a fixture home: off, missing, the
 full plan and each refusal, all through the real CLI, with exit codes read unpiped. Then run the
-focused suites and the two new arch-tests through `node scripts/test.mjs --only <files>` with
+focused suites and the two new arch-tests through the runner's `--only` selection with
 `AOF_GLOBAL_HOME` set to a fresh temp directory. Record a red probe for FF-13301 (spell the id in
 `config-inspect.mjs`) and for FF-13302 (build a `"diagrams/"` path outside the layout) in
 `VERIFICATION.md`. Never run the full suite on this machine.

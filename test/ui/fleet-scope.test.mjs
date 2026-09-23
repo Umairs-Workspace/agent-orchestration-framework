@@ -2088,7 +2088,11 @@ export const fleetScopeTests = [
       assert.match(rePin[0], /nothing under `ui\/src\/board\/`/i, "…says nothing under ui/src/board/ moved");
       assert.match(rePin[0], /src\/board-ui\.mjs/, "…and that src/board-ui.mjs's digest is unchanged");
       assert.match(gate, /\["src\/run-store\.mjs", "f18e5080e3e3d9990c1495ff2ec477729ef583f1220ece318e49c62ea615293d"\]/, "the run-store pin is the digest it was before this story");
-      assert.match(gate, /\["src\/board-ui\.mjs", "959ebf96fc19bd207654f3f4cbf2f02b093ecf0d28d548c714ed6ffb60f07518"\]/, "the board-ui pin is the digest it was before this story");
+      // 133/04 and `aof:verify 133` re-pin board-ui AFTER this story, each with its own reason
+      // stacked above the entry (read by FF-12603 leg 6), so this leg reads it as present and
+      // re-pinned by 133 rather than freezing a digest this story does not own.
+      assert.match(gate, /\["src\/board-ui\.mjs", "[0-9a-f]{64}"\]/, "the board-ui pin is present");
+      assert.match(gate, /RE-PINNED by 133\/04[\s\S]{0,900}\["src\/board-ui\.mjs"/, "the board-ui pin moved after this story only with 133's stated reason");
       const { archTests } = await import("../arch/loop/acd-loop-state-rides-the-run-record.test.mjs");
       const control = archTests.find((test) => /frozen store and board read surfaces/.test(test.name));
       assert.ok(control, "the FF-5307 digest control exists");

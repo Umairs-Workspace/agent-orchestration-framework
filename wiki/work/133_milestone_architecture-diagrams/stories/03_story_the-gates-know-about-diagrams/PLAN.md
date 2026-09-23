@@ -35,7 +35,7 @@ errors are real errors, so make sure that control does not expect every new lane
 Run task 00's last scenario for real: a temp project with a broken block, `aof work doctor 07 --json`
 unpiped, then fix it and see it clean. Then run `aof work doctor --json` from THIS repo's root (never
 a subdirectory, memory `aof-doctor-subdir-false-green`) and confirm there are zero `diagram-*`
-findings. Focused suites through `node scripts/test.mjs --only` under a fresh `AOF_GLOBAL_HOME`,
+findings. Focused suites through the runner's `--only` selection under a fresh `AOF_GLOBAL_HOME`,
 including `acd-controls-never-execute` and the directory-budget arch-test.
 
 ## Out of scope

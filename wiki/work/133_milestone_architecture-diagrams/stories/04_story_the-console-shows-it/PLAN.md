@@ -36,11 +36,11 @@ Task 02 is the proof: build the UI (`npm run ui:build`), serve a scratch fixture
 from this checkout on its ephemeral port, and capture 390/768/1280 with the cached headless
 Chromium (absolute forward-slash `--screenshot`). Then judge each DESIGN checklist line in
 `VERIFICATION.md`. Before that, the focused UI and manifest suites through
-`node scripts/test.mjs --only` under a fresh `AOF_GLOBAL_HOME`, with red probes for FF-13304 (pass
+the runner's `--only` selection under a fresh `AOF_GLOBAL_HOME`, with red probes for FF-13304 (pass
 a body to `marked.parse`) and FF-13305 (add a `.png` entry).
 
 ## Out of scope
 
 - Zoom, pan, lightbox, or a gallery. The figure is inline and scales down.
 - Inline SVG markup, or a raw-file route serving `image/svg+xml`.
-- Any `src/diagrams` import. The UI knows a diagram only by its image `src`.
+- Any import of the diagram engine. The UI knows a diagram only by its image `src`.

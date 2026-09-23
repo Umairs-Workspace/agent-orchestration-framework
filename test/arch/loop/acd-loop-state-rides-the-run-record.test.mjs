@@ -216,10 +216,10 @@ export const archTests = [
       // RE-PINNED at `aof:verify 133` (F-133-01/02, story 04 task 03), measured the same way: THREE
       // files, all under `ui/src/board/` — `diagrams.mjs` + `.d.mts` (the expand hook on a populated
       // figure, `diagramFileUrl`, and a `link` override that points the block's `diagrams/` links at
-      // `/api/diagram/file`), `Markdown.tsx` (the full-size `DiagramViewer` over the same data URI)
+      // `/api/diagram/file`), `Markdown.tsx` (the full-size `DiagramViewer` over the same data URI, presented as the shell's fullscreen occupant through `requestFullscreen`)
       // and `DetailPanel.tsx` (one `itemRef` prop on the one call). The run-key filter over the
       // added lines hits nothing: no run-record key is read.
-      assert.equal(hash.digest("hex"), "ef5ca89354abe4b9f91e246ed9d1a04aebfc306e6dc2ac702bc139a54fc3dc60", "ui/ changed despite the zero-board-change contract");
+      assert.equal(hash.digest("hex"), "93286a26460e340f74d2362cb38a6579a948040fd5f8efbb80a6edbf87e82cbf", "ui/ changed despite the zero-board-change contract");
     },
   },
 ];
