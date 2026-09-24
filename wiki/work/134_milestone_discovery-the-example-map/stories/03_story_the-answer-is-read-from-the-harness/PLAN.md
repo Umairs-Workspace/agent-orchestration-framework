@@ -44,7 +44,8 @@ the spend suite gains the hand-run-settle case. FF-6908 stays green because noth
 With `AOF_GLOBAL_HOME` and `CLAUDE_CONFIG_DIR` each set to a fresh temp directory, run the two
 example indexes, the spend-ingest, spend-store and record-key suites, the FF-5307 and FF-6908
 controls, and the drive and warm-fix loop suites through `scripts/test.mjs --only`. Then do task
-03: install with `node scripts/install-local.mjs --skip-ui`, check `aof --version`, write the
+03: install the payload through the local installer with `--skip-ui` (the deploy loop in
+`.claude/rules`), check `aof --version`, write the
 three procedures and their paste slots into the milestone `STATE.md`, and stop with `NEEDS_INPUT`.
 Every leg needs an undriven interactive session, and the answer leg needs a person.
 

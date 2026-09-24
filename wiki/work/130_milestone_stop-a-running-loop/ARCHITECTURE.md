@@ -155,7 +155,11 @@ checkout. `src/` root and `src/commands/` are at ceiling; `src/loop/` is the exe
    read absence-tolerant (`null`); a file that does not parse reads `null` after
    `reportDegrade("loop-stop-request", …)` — never a throw into the loop. The module exports
    `STOP_LEVELS = Object.freeze({ drain: 1, cancel: 2 })`, the ONE map from level to word; the
-   verb, the presence read and the faces speak those two words and spell no third.
+   verb, the presence read and the faces speak those two words and spell no third. It also exports
+   `STOP_STATES = Object.freeze({ requested, honoured })`, the ONE map from state to word, so a
+   reader that must test a request's state (04's producer: `record.state === STOP_STATES.honoured`)
+   compares against the export and never spells the word *(graduated at Accept, 2026-09-24: added at
+   130/01's review close)*.
 3. **Ladder — exactly 129/04 task 06's.** `requestLoopStop(dir, { loopRunId, scope, workspaceId,
    by, now })`: no file → level 1 `requested` (`created: true`); level 1 `requested` → level 2 with
    `escalatedAt` (`escalated: true`); level 2 → unchanged (`escalated: false`); `honoured` →
@@ -364,7 +368,8 @@ diag recorder is installed (`:2298`). FF-12602 pins ten narrate lines and three 
    in-process drive. The retry loop (`while (phaseRun.outcome.outcome === "failed")`) never sees a
    cancel because §3's halt returns first; a `cancelled` record is `not-retryable` in any case.
 5. **The halt and the mark.** `haltOnStop(source, ref)` = `haltDecision("operator-interrupt", ref,
-   source.producer())` — the stop id is unchanged, `LOOP_STOPS` is twelve, the producer is a value
+   source.producer())` — the stop id is unchanged, `LOOP_STOPS` is fifteen (129/01 added three; the
+   refine's "twelve" was stale, corrected at Accept) and unchanged by this milestone, the producer is a value
    (`"SIGINT"`, `"SIGTERM"` or `"stop-request"`). Its `Details` (through `reportLine`, never
    `actShape`) are `{ signal: <producer>, level, request: <path> | null, by: "<node>:<pid>" |
    null, cancelled: <runId> | null }`. Before the state is returned, when `source.request() !=
@@ -381,7 +386,7 @@ diag recorder is installed (`:2298`). FF-12602 pins ten narrate lines and three 
    interrupt over it halts `operator-interrupt` with `sessionId` in `Details`. Nothing else in the
    ladder moves.
 8. **Pins, restated.** `LoopState` ten keys; `brief.loop` nine; the record sixteen; `LOOP_STOPS`
-   twelve; `src/run-store.mjs` byte-pinned; `actShape`'s whitelist untouched; no `writeFile`,
+   fifteen and unchanged; `src/run-store.mjs` byte-pinned (moved once, by 130/06's retry carry, re-pinned under ADR-007 §5); `actShape`'s whitelist untouched; no `writeFile`,
    `mkdir` or `rename` call form in the shell — every write goes through `stop-request.mjs`'s
    exports (FF-5307's leg holds as written).
 
@@ -584,8 +589,16 @@ line to carry the request's rung so the card's memory is eventually replaced by 
    with `L<n>` and `supervised` in `title` only); `loopStopAffordance({ loop, node, localNodeId,
    remembered })` → `{ button: null | { rung: 1 | 2, label, title, tone }, remote: boolean }` — a
    button ONLY when `localNodeId` is a non-empty string and `node.nodeId === localNodeId`, `null`
-   after rung 2, and the rung is `max(wire, remembered)`; `rememberStopRung(memory, loopRunId, rung)`
-   → a new `Map` that never lowers a rung and never expires one. `scope.mjs` gains
+   after rung 2, and the rung is `max(wire, remembered)`; `rememberStopRung(memory, loopRunId, rung,
+   runId)` → a new `Map` of `{ rung, runId }` that never lowers a rung within one DRIVE and is read
+   only while the entry's `runId` is the loop's current drive, so a `--resume` (a new drive) returns
+   the button without a reload or a timer *(graduated at Accept, 2026-09-24: the PO's ruling on
+   130/03 QA's design-gap; the refine's signature had no reset event, so a cancelled-then-resumed
+   loop read `cancelling` with no button for the page's life)*. The line and the button take an
+   OPTIONAL rung memory in the pure modules (`fleetLoopLines(presence, memory)`,
+   `nodeWorkRegion(node, localNodeId, memory)`), wire-only without it, and the Stop rides
+   `runAssign` through two additive options (`refusalCopy`, `timedOut`), so `git diff -- ui/` is
+   eight fleet files, not six *(graduated: 130/03's two stated deviations)*. `scope.mjs` gains
    `nodeWorkRegion(node, localNodeId)` → `{ lines, token, loops }`, composing
    `fleetCurrentWorkLines(node.presence)` with the loop entries and dropping the single `idle` line
    when loops exist; `nodeCurrentWork` and `fleetCurrentWorkLines` are byte-identical (the Rust
@@ -660,7 +673,7 @@ cross-node stop as a later mesh directive.
 3. **The board gets nothing.** `src/board-ui.mjs` byte-identical; nothing under `ui/src/board/`
    moves; `work:loop` stays `BOARD_DEFERRED`; no `/api/work/loop`.
 4. **Records.** `running>cancelled` is the edge used; `src/run-store.mjs` is byte-pinned and
-   unchanged; `LoopState` ten keys, `brief.loop` nine, the record sixteen; `LOOP_STOPS` twelve —
+   unchanged; `LoopState` ten keys, `brief.loop` nine, the record sixteen; `LOOP_STOPS` fifteen and unchanged —
    `operator-interrupt` is the stop and the producer names the request.
 5. **What an outsider verifies (story 06).** The SPEC's paragraph, read at the source: a live loop
    in this checkout, `aof work loop <scope> --stop` from another terminal, the session's tree
@@ -680,8 +693,8 @@ None beyond the refusal code and the absence. The invariant is the frozen set re
 
 ### Invariant
 
-`src/board-ui.mjs` and `src/run-store.mjs` keep their FF-5307 digests; `LOOP_STOPS` has twelve
-members; the verb answers `loop-stop-not-local` for a declaration whose latest run names another
+`src/board-ui.mjs` keeps its FF-5307 digest and `src/run-store.mjs` its ADR-007 §5 re-pin; `LOOP_STOPS` has fifteen
+members, none added here; the verb answers `loop-stop-not-local` for a declaration whose latest run names another
 node, and the fleet renders no button for a node other than `status.localNodeId`.
 
 ---
@@ -834,8 +847,10 @@ HARNESS SHAPE (`119/ADR-010`): each arch-test exports `archTests`, an array of `
 is registered by one import + one spread in its directory's `index.mjs` — never discovered by
 `readdir`. Every control below is `pending` until story 05 lands it (FF-13007's cargo half rides
 story 04); each landed control owes a red probe in `VERIFICATION.md`. The id stands alone in its
-first cell. Three new files land under `test/arch/loop/` (its row rises 55 → 58 by exactly that
-count) — the subject is the loop's stop, and the faces are its readers. The standing controls this
+first cell. Three new files land under `test/arch/loop/` (its row rises by exactly that count —
+written 55 → 58 at refine, landed 59 → 62 after 129/05's four; the delta is the invariant, graduated
+at Accept 2026-09-24; FF-13002's "three drive sites" likewise span the shell and `src/loop/cycle.mjs`
+since 129/04, the family FF-12602 sweeps) — the subject is the loop's stop, and the faces are its readers. The standing controls this
 milestone must keep green are cited, not redeclared: FF-5304 `acd-loop-probe-contract` (ten keys,
 zero spawns, the stops literal, `haltDecision`), FF-5307 `acd-loop-state-rides-the-run-record`
 (re-pinned by 03 with the measurement; the store and board digests unchanged), FF-5202

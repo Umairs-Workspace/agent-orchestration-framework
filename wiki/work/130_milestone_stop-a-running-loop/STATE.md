@@ -14,12 +14,12 @@ doc: state
 <!-- Story-by-story, mirroring the SPEC Stories list. The source of truth for each story's status
      is its own STORY.md frontmatter; this is the at-a-glance roll-up. -->
 
-- [ ] 01 · the-stop-request-has-one-home — in-review (built + reviewed 2026-09-21, solo lane)
-- [ ] 02 · the-verb-and-the-shell-honour-it — in-review (built + reviewed 2026-09-21, lane)
-- [ ] 03 · the-fleet-sees-and-stops-it — in-review (built + reviewed 2026-09-21, lane)
-- [ ] 04 · the-desktop-stops-what-it-supervises — in-review (built + reviewed 2026-09-21, lane)
-- [ ] 05 · the-register — in-review (built + reviewed 2026-09-21, solo lane)
-- [ ] 06 · the-live-stop — in-review (2026-09-23: legs 1–6 PASS at the source, leg 6 on ADR-007’s build; remote not exercised — see `## 130/06` below)
+- [x] 01 · the-stop-request-has-one-home — done (accepted 2026-09-24)
+- [x] 02 · the-verb-and-the-shell-honour-it — done (accepted 2026-09-24)
+- [x] 03 · the-fleet-sees-and-stops-it — done (accepted 2026-09-24)
+- [x] 04 · the-desktop-stops-what-it-supervises — done (accepted 2026-09-24)
+- [x] 05 · the-register — done (accepted 2026-09-24)
+- [x] 06 · the-live-stop — done (accepted 2026-09-24; legs 1–6 pass at the source, leg 6 on ADR-007's build; remote not exercised — see `## 130/06` below)
 
 ## Notes & decisions in flight
 
@@ -73,11 +73,11 @@ doc: state
   bar no wrap/overflow rule; at 760px roughly four rows overflow the frame. Most machines carry 0–2
   supervised loops (one declaration per scope), so nothing was codified; a later item names the
   rule if a machine ever carries more.
-- **Ratified in contract, graduates to the ADR at Accept (130/02 QA, 2026-09-13):** ADR-003 §8 and
+- **Ratified in contract; GRADUATED to ADR-003/ADR-006 at Accept, 2026-09-24 (130/02 QA, 2026-09-13):** ADR-003 §8 and
   ADR-006 §4 say `LOOP_STOPS` is "twelve"; measured at HEAD it is FIFTEEN (129/01 added three). The
   invariant the contracts assert is "unchanged by this milestone, `operator-interrupt` a member"; the
   ADR text is not re-opened (the ratification rule) and the count is corrected when the ADRs graduate.
-- **Ratified in contract, graduates to ADR-005 §5 at Accept (PO ruling on 130/03 QA's design-gap finding,
+- **Ratified in contract; GRADUATED to ADR-005 §5 at Accept, 2026-09-24 (PO ruling on 130/03 QA's design-gap finding,
   2026-09-13):** the fleet's rung memory is keyed to the DRIVE — `rememberStopRung(memory, loopRunId, rung, runId)`
   stores `{ rung, runId }` and `loopStopAffordance` reads it only while the entry's `runId` is the same drive.
   The propagation gap keeps the same `runId` (the guard holds); a `--resume` mints a new drive, so the
@@ -93,205 +93,16 @@ doc: state
   reclaim) owns `src/commands/loop.mjs` and defines the injected signal seam this milestone
   produces for. The shell story and 129/04 must not be driven in this checkout at the same time.
 
-## Feedback (for retro)
+## Feedback (for retro) — ARCHIVED at accept, 2026-09-24
 
-<!-- Raw, attributed entries captured as noticed; distilled into RETROSPECTIVE.md at aof:verify. -->
-
-- **From 129's door (2026-09-22), two observations for 130's retro.** (1) Two whole-tree reds at
-  HEAD came in with 130/02's lane commit `48ed32b`: `work:loop`'s `run` was no longer an
-  `AsyncFunction` (`command-core/00`), and `loop/loop-command-stops` spelled the frozen `LOOP_STOPS`
-  literal that `acd-loop-probe-contract` already pins — which `grade/01` forbids of that suite.
-  Repaired at the owner in `16850c7` + `6a81d14` (`async` restored; the suite asserts the length and the twelfth
-  member and cites the pin) — `m129/F-69`. (2) At the 22:14Z halt on 130/06, the wave run
-  `20260921T215324370Z-0006` settled `failed / agent_error` and the run-failed rollback reactor
-  (20/ADR-005) moved this milestone's `status:` from `in-progress` to `not-started` with five
-  stories `in-review` — uncommitted in the primary; the remedy is `aof work status 130 in-progress`
-  once 130/06's live lane is resumed or swept — `m129/F-68`.
-
-- **130/01 review close (QA lens, 2026-09-21) — contract gap, fixed at the close, no item created:**
-  ADR-001 §2's invariant forbids any module but `stop-request.mjs` spelling `"requested"`/`"honoured"`,
-  and lists `STOP_LEVELS` as the one level→word map — but named no state→word export, so story 04's
-  declarations producer ("drops a loop whose request was honoured") would have had to spell the word
-  or read `state` blind. Routed `fixed` (cheaper than a driver): an additive frozen `STOP_STATES =
-  { requested, honoured }` export, used internally and pinned in the suite. ADR-001 §2 should name
-  it when the ADRs graduate; 04's build reads `record.state === STOP_STATES.honoured`.
-
-- **130/02 build (2026-09-21) — the declared read/write set was incomplete, by sequencing, not by
-  omission:** the story was authored against the pre-129/04 shell (`:1580-1584`, `:1833`), and 129/04
-  landed first, moving `settleDriven`/`drivenRow`/`retryUntilTerminal` into `src/loop/cycle.mjs` and
-  the wave (with its interim `ctx.signalSource` seam) into `src/loop/wave.mjs`. ADR-001 §6 foresaw
-  exactly this ("whichever lands second adapts"), so the build edited both, replaced the wave's seam
-  with the shell's `stopSource`, re-pointed the lane fixture, and widened `files:` accordingly. Two
-  schema pins outside the declared set moved by exactly `stop` (FF-12602 leg 4 and the L3-gated
-  control) — the same succession `quiet` and `supervised` took. Lesson for refine: a story that
-  edits a file another in-progress story also edits should declare the OTHER story's new homes too.
-- **130/02 build — two contract readings, stated:** (1) task 02's "a spy on `createStopSource`"
-  is read as observable effect + one structural check (the real source's listener on `process`,
-  the request read from `loopStopsDir()` under the resolved id, and `pollMs: 2000` at the one
-  composition site) rather than an injected factory seam the ADR does not name. (2) The CLI's
-  human face prints a refusal's MESSAGE only, so the two messages `stop.mjs` composes name their
-  code in parentheses (`throwRefusal`'s idiom) for "stderr names `loop-stop-no-declaration`".
-- **130/02 review close (architect lens, 2026-09-21) — recorded, no item created:** the request's
-  `cancelled` slot is ONE runId (ADR-001 §2), and a wave halted at level 2 cancels one lane child
-  per lane. The shell marks a wave's request honoured with `cancelled: null` and names the
-  cancelled lanes by ref in the halt's `Details` (the wave's own `cancelled: [refs]`). Story 04
-  reads `state === STOP_STATES.honoured` and never `cancelled`, so nothing downstream is blind;
-  if a face ever wants the lane runIds, the slot would need to admit an array — a contract
-  amendment for a later item, not this one. Round 1: 0 Blockers; this Important and one nit
-  (a request whose writer has no node renders `by=<pid>`) recorded here.
-- **130/04 build (2026-09-21) — `aof test --scope impacted --story 130/04` is the FULL suite on
-  this story, and it runs at once:** four of the seven declared files are outside the JS import
-  graph (three `.rs` under `app/desktop/crates/`, plus `app/desktop/ui/app.js`), each a
-  `not-in-graph` widening, so the selector widened to `all` and launched `scripts/test.mjs` with no
-  selection — the run this machine's live `:4182` daemon forbids (the memory names new paths; a
-  non-JS path widens the same way). Killed within a minute; the runner's per-test `~/.aof-test`
-  homes kept the real home clean. The build ran the write set's suites through
-  `scripts/test.mjs --only` (19 suites, 148 ok) plus `cargo test` (116) and `cargo check` of the
-  shell. Lesson for the continue prompt / the selector: a story whose `files:` names Rust or the
-  desktop UI has no impacted scope, and `--story` should say so before it widens.
-- **130/04 build — two contract readings, stated:** (1) the shell's grace counts from the cancel
-  spawn's exit 0 (the instant the level-2 request is on disk for the loop to read), which is at or
-  after the press either way and is the one clock that measures the loop's own time to honour it;
-  (2) a retire while a declaration's child is alive waits for the child's own exit rather than
-  killing it — the row goes only for a halting loop (its honoured mark) or a terminal record, and
-  the old `start_kill` on that path is what ADR-004 names as the orphaning defect.
-- **130/04 review close (solo, 2026-09-21) — round 1: 0 Blockers; recorded, no item created:**
-  (a) *architect, nit* — `supervise_child` is now ~230 lines (the ladder's wake handler inside the
-  select arm); linear and commented, and the arch controls pin the one-spawner shape it must keep,
-  so an extraction of the wake handler onto `StopLadder` is a later tidy, not this story's.
-  (b) *QA, recorded (ADR-004's own shape)* — after the TREE KILL the desktop writes nothing: the
-  request stays `requested` at level 2, the run record stays `running` (stale after the heartbeat
-  threshold), the row persists `stopped` and HELD until `--resume` clears the request — the
-  "leaked running row" ADR-004 accepts for the fallback. ADR-004 rejected the desktop touching the
-  request file, so the fix is an ADR-level question (a `honoured` mark after a kill, or the
-  verb's `--stop` re-run as `live: false`), for verify/retro to weigh, never this lane's.
-  (c) *QA, nit* — `honouredStops` reads one mark per distinct `loopRunId` in the run records,
-  supervised or not; one ENOENT read per unlisted id every 30 s. Filtering would re-derive the
-  engine's supervision rule in the producer, which is the duplication the split forbids.
-  (d) *designer, INCONCLUSIVE by the lane's rule, CONFORMS on the fixture render* — no
-  `work.ui.baseUrl` and no `--url`, so the lane attempted no render; the developer's own headless
-  render of the standalone fixture (`index.html?loops=<signal>`, chromium-1234, light and dark)
-  matches Surface 2's binding checklist region by region (second `.controlbar`, `loop 129`, the
-  daemons' pill, one `.toggle.subtle` stop, no play glyph, absent at `stopped`, absent with no
-  rows). The live window is verify's. (e) *nit, outside the write set* — `app/desktop/ui/README.md`
-  does not yet list the `?loops=` demo param.
-- **130/03 build (2026-09-21) — two contract deviations, stated:** (1) the loop line's Stop rides
-  `runAssign` (`assign-affordance.mjs`) through two ADDITIVE options, `refusalCopy` / `timedOut`,
-  rather than a second copy of its deadline race — so `git diff -- ui/` is EIGHT fleet files, not the
-  six task 04 and ADR-005 §6 name; FF-5307's re-pin comment states eight. (2) Task 03's ruling put the
-  "held word" raise in the card; it lives in the pure modules instead — `fleetLoopLines(presence,
-  memory)` and `nodeWorkRegion(node, localNodeId, memory)` take an OPTIONAL rung memory (wire-only
-  without it) — because `Fleet.tsx` had eleven lines of headroom and the raise is headlessly testable
-  there. Both are amendment candidates for the accepting item's contract (Q1), no item created.
-- **130/03 build — item 44's hoist had a FOURTH detector requiring the copy:**
-  `acd-fleet-assign-targets-item-workspace` looked for the resolution seam INSIDE the assign branch's
-  pre-mint region. Re-aimed with the three (the seam is checked where it lives, the CALL's order still
-  in the branch). `files:` widened by it and by five pins the change legitimately moved (FF-5301's sink
-  reach 74 → 75 for `loop/stop-request.mjs`; the fed-by-route gate's projection call; the session index's
-  top-level keys; 50/04's write set; the home-route row for Fleet.tsx 1550 → 1560). Lesson for refine:
-  a story that hoists a copy should declare EVERY gate that measured the copy, not the three the ledger
-  entry happened to name.
-- **130/03 review close (architect + QA lenses, 2026-09-21) — round 1: 0 Blockers; recorded, no item
-  created:** (a) `Fleet.tsx` is at 1560/1560 with ZERO headroom, met by compacting this story's own
-  additions (one-line effect/handler, merged comments), never by trimming inherited rationale; the
-  ratchet's escape (a sibling file) is refused by `ui/src/fleet/` at 20/20 — item 18(a)'s shared layer is
-  the real remedy (item 33 stays open, as ADR-005 §5 foresaw). (b) The presence tick reads each item's
-  runs TWICE (`readActiveRuns` + `readActiveLoops`, the contract's two signatures); a shared read is
-  the fix if the 25 ms presence budget ever bites. (c) `LoopStopRow` derives its hold/message from
-  `assignAffordanceView` with picker-shaped inputs (`hasOptions: true, selected`) — one derivation
-  kept, at the cost of a shim. (d) The request file's `workspaceId` is `null` on an unpinned checkout
-  (130/02 task 01 pins it so — the verb spells `config?.mesh?.workspaceId ?? null`, TECH_DEBT item 4's
-  defect class) while the route has just resolved the id and the card carries it; a fix
-  (`resolveWorkspaceId(workspace)`) was applied and REVERTED because it contradicts 130/02's delivered
-  contract — an amendment candidate (Q1) for the PO. (e) The loop-stop route inherits the face's
-  uncapped `readJsonBody` (a 1 MiB body is lifted like a 40-byte one); a cap is face-wide, reported for
-  the register as task 02 asked. (f) Design conformance: INCONCLUSIVE — no `--url` and no
-  `work.ui.baseUrl`, so no render was attempted; the 1280 render is task 04's `@uat` lane at verify.
-- **130/03 build — the impacted run:** `aof test --scope impacted --story 130/03` widens to ALL here
-  (the dispatch worktree carries no `graphify-out/graph.json`, so every declared file is `no-graph`),
-  and the full suite binds `:4182`. Ran the 157 suites that import the changed modules through
-  `scripts/test.mjs --only` instead: 1445 ok; 3 red are `mesh-worker-clone-credential-pull` reading the
-  shell's own `GIT_ASKPASS` (0 red with it unset) — environmental, not this story's.
-
-- **130/05 build (2026-09-21, solo) — three contract literals were stale by sequencing, the DELTAS held:**
-  (1) the register and task 00 say the `test/arch/loop` row rises `55 -> 58`; 129/05 landed its four
-  after the register was written (2026-09-13), so the row was 59/59 and rises `59 -> 62` by exactly the
-  three files — the count is the invariant (FF-11904 asserts ceiling == count), the literal is not.
-  (2) FF-13002's "in `src/commands/loop.mjs` … exactly three drive sites": since 129/04 two of the
-  three (`drive(retried.record)`, the verify cross) live in `src/loop/cycle.mjs`, so the control sweeps
-  the family FF-12602 sweeps (shell + ladder) and the count holds as cited. (3) task 00's "APPENDED after
-  `...acdSiteIsProjectedNotCopiedTests`": the three spreads are appended after 129/05's block, which
-  already follows it; nothing above is re-ordered. Amendment candidates for the accepting item's
-  contract (Q1), no item created.
-- **130/05 build — the impacted run widens to ALL here too:** every declared path is a NEW test file, the
-  index or the budget table, so `aof test --scope impacted --story 130/05` widens each `not-in-graph`
-  path to the full suite the live `:4182` daemon forbids. Ran instead through `scripts/test.mjs --only`:
-  the three files (20 cases), the 16 standing controls the register cites plus the registration, purity
-  and stripper class controls (143 ok), and every `test/arch/{loop,testing,audit}` file (475 ok), each
-  under a fresh `AOF_GLOBAL_HOME`; cargo 116/116 for the cited half. `node --check` clean on the five
-  touched files; the repo has no separate lint/typecheck script (`npm run check` is the full suite).
-- **130/05 probes — one measurement against task 01's ruling 4:** the ruling expected
-  `acd-mesh-ui-no-core-import` to red beside FF-13003's route probe (the read re-implemented in
-  `ui-serve.mjs`); measured, it and `acd-mesh-ui-read-only` stay GREEN — the face still imports
-  `../loop/stop.mjs` for `STOP_REFUSALS`, and `../work/loop.mjs` / `../run-store.mjs` /
-  `../loop/stop-request.mjs` are all admitted by its allow-list. FF-13003's importer-set leg is therefore
-  the ONE guard against a re-implemented route; recorded in the register cell, no change asked of the
-  standing control (its subject is the command layer, not the core).
-- **130/05 build — the declared `reads:` was incomplete for a register story:** the controls' own
-  SUBJECTS were outside it — `src/loop/cycle.mjs` (two of FF-13002's three drive sites),
-  `src/mesh/launcher.mjs` + `src/commands/mesh/heartbeat.mjs` (FF-13005's two callers),
-  `app/desktop/crates/app/src/supervisor.rs`, `main.rs` and `app/desktop/ui/app.js` (FF-13007's node
-  leg) — plus the suites whose recipes the fixture legs mirror (`test/loop/loop-command-stops`,
-  `loop-command-resume`) and the class controls a new arch file must satisfy (`acd-purity-is-external`,
-  `acd-test-suite-registration`, `acd-mesh-ui-read-only`). Each was read and is reported here. Lesson
-  for refine: a register story's `reads:` should name every file a declared control SWEEPS, not only
-  the modules the ADRs discuss.
-- **130/05 review close (solo — architect, QA and craft lenses in turn, 2026-09-21) — round 1:
-  0 Blockers; recorded, no item created:** (a) *architect, nit* — the four-line `resolved(fromRel,
-  specifier)` helper now has three copies under `test/arch/loop/` (the two new files and
-  `acd-loop-family-boundary`); `module-family.mjs` exports the extractor and the family classifier but
-  no plain resolver, and that module is outside this story's `files:` — a lift is a later tidy.
-  (b) *architect, nit* — FF-13003's launch-predicate leg cuts the arrow's text at its first `?`; a
-  rewrite of `launch` using optional chaining before the ternary would red it with the predicate text
-  printed, which is a legible false red on a shape ADR-002 §1 spells exactly. (c) *QA, recorded* — the
-  standing mesh-ui controls do not red on FF-13003's route probe (measured above); the importer-set leg
-  is the one guard. (d) *QA, recorded* — the cited-control checks (FF-13006's `fleetCurrentWorkLines`
-  pin, FF-13007's cargo half) assert that the citation RESOLVES (the file exists, is registered, names
-  the function/tests) and do not re-run it, as the register's "(cited)" asks; the cargo half was run
-  once, for its probe. (e) *craft* — CRLF like the checkout, comment density like the neighbours,
-  no `console.log`, no silent catch; `node --check` clean.
-- **130/06 build (2026-09-21 lane, then `aof:continue 130 --solo` on 2026-09-23) — a `@manual` story
-  whose every leg is operator-gated cannot be closed by the session that builds it.** The contract names
-  the OPERATOR for the restart, T1 and the clicks, and forbids an agent starting a daemon or a loop, so
-  the build is the agent's half: the payload measured at the source, every leg's procedure and paste
-  slots written into `## 130/06` below, then handed back with the story `in-progress` — never
-  `in-review` on evidence nobody pasted. History: the 2026-09-21 lane (under `aof work loop 130`,
-  `loopRunId 7661348f-073d-4884-8544-a63efb9e53ac`) did that half, then the milestone's wave run
-  `20260921T215324370Z-0006` settled `failed` / `agent_error` and the loop halted. Its tree
-  `.aof/mesh/dispatch-worktrees/dispatch-130-06` is left as it was: `dispatch --cleanup` refuses it
-  `dispatch-lane-uncommitted-work` by design, and its one unique file is a dead `running` run record
-  under the pre-132 hostname folder, which the private-terms guard would refuse to commit. Its
-  procedure is ported below, re-measured on 2026-09-23. Four readings stated:
-  (1) **the contract's `win-host-a` is this node's id, now `node-7297`.** Task 00 was written when the
-  node's id was its hostname; f76c153 renamed that placeholder to `win-host-a`, and 132 re-identified
-  the node as the opaque `node-7297`. Everywhere the contract prints the node's id — `by.node` in the
-  request, the halt's `by=`, the status body's `localNodeId`, the `mesh serve running (node …)` line —
-  the source now reads `node-7297` (`src/loop/stop.mjs` writes `by: { node: meshNodeIdOf(...) }`).
-  Likewise `umamis-mac-mini` reads `node-9549` where an id is printed (the `loop-stop-not-local`
-  message) and "the Mac's card" on the fleet. Flagged, not changed — amending task 00 is refine's.
-  (2) **the test-bed scope is `01`**: `00` has no stories on disk on this machine. (3) **`<ref>` is read
-  off each leg's own `Driving` line**, because the loop advances between legs. (4) **the payload is
-  not reinstalled**: today's `292f5f0+dirty.20260923T152311` differs from the checkout in one file,
-  `src/config-inspect.mjs` (133's diagram work). Every file the stop path runs is byte-identical, so
-  a reinstall would only cost the operator a second relaunch. Two findings for the register, both
-  recorded, neither this story's: (a) `aof work resume` lists `130/01 READY` for run
-  `20260921T165009693Z-0000`, which run `…172423069Z-0001` (`retryOf` it, attempt 2) already closed
-  `done` — the sweep offers a lineage that has finished; (b) the failed wave run's rollback moved the
-  milestone `SPEC.md` from `in-progress` back to `not-started` while five of its six stories were
-  `in-review`, left as an uncommitted working-copy edit until this continue's mint moved it forward
-  again. Lesson for the loop (story shape, handed back): `aof work next` could hold a `@manual`-only,
-  operator-gated story as `needs-operator` rather than put it in a wave — the 09-21 wave spent a
-  mint and a lane to find out, and died doing so.
+The raw entries lived here and have graduated. They were 129's door observations, the review-close
+notes of 01–05, each build's contract readings and impacted-run measurements, and 06's four
+readings. Every lesson is now an `R<n>` in a retrospective (one per story under
+`stories/*/RETROSPECTIVE.md`, plus this milestone's `RETROSPECTIVE.md`, R1–R4). Every defect and
+gap is a numbered row in `VERIFICATION.md` (`F-01`–`F-19`). The durable decisions graduated to
+`ARCHITECTURE.md`: `STOP_STATES` (ADR-001 §2), `LOOP_STOPS` fifteen (ADR-003, ADR-006), the
+drive-keyed rung memory and 03's deviations (ADR-005 §5), the register's row delta, and ADR-007.
+The last full text is at `b5797b9`; the compaction removes only the second copy.
 
 ## 130/06 · The live stop — read at the source (for `aof:verify 130`)
 
@@ -300,9 +111,9 @@ procedure. Every observation is pasted from its source per task 00's RULING (1).
 is the repository's scrub: the home and repo paths carry the repo's spelling (`C:\Users\Umami`,
 `C:\Source\umami\…`), because the pre-commit's private-terms guard refuses the machine's own. Where the
 contract prints `win-host-a` the source prints this node's id `node-7297` — reading (1) in
-`## Feedback (for retro)`. A leg marked **PENDING (operator)** has NOT run. It needs the operator to
-launch the desktop app, run T1 on their own console (no agent starts a loop) and, for legs 5 and 6,
-click on the fleet and on the desktop window.
+`## Feedback (for retro)` (archived; see 06's RETROSPECTIVE R4). The operator launched the desktop app,
+ran T1 on their own console (no agent started a loop) and made the clicks for legs 5 and 6. Every leg
+is recorded below under `### Run 2`; the results are summarised in `VERIFICATION.md`.
 
 ### Readings (recorded once, reused by every leg — RULING 6)
 
@@ -329,7 +140,7 @@ click on the fleet and on the desktop window.
   0/30/60 s after leg 2's halt, then its `--resume`) → leg 3 (a gap stop, then `--resume`) → leg 5 →
   leg 6 → remote.
 
-### PRECONDITION — agent half DONE (2026-09-23T16:01Z); operator half PENDING
+### PRECONDITION — agent half done (2026-09-23T16:01Z); operator half done (16:20:45Z)
 
 *verifies →* `Scenario: PRECONDITION — the payload is installed and the OPERATOR restarted the desktop`
 (the install, the `--version` line, the `[--stop]` usage). The two `daemon-started` lines are the
@@ -386,7 +197,7 @@ But a startup line is not a running process. Measured at 2026-09-23T17:01:22.048
 target machine actively refused it. (127.0.0.1:4181)`, and `Get-Process aof-mesh-desktop` → none.
 Nothing was stopped, killed or started by this build.
 
-**Operator half — PENDING.** Launch the desktop app with `aof mesh desktop run`. If it is running by
+**Operator half — done (the two lines below).** Launch the desktop app with `aof mesh desktop run`. If it is running by
 then, Quit it from its own UI first — never `Stop-Process -Force`, never `taskkill`. Then paste the
 newest `daemon-started` entry from each log. Both must have `at` after the launch and
 `build payload 292f5f0+dirty.20260923T152311`, or the `buildId` of any later install:
@@ -592,7 +403,7 @@ T1 (the operator's console, 18:13:06 local): `aof work loop 02 --supervised`.
    (18:24:41.65) and +60 s (18:25:11.90), each exactly:
    `[{"id":"95597ec1-3d50-4eb7-88ef-b136aff8dad7","label":"loop 01","argv":["work","loop","01","--level","L2","--resume"],"cwd":"C:\\Source\\umami\\aof-test-repo","scope":"01","level":"L2","cap":3}]`
    — no row with `id: "<L>"`. (The one row is `01`'s needs-input lineage, run 1's; not this leg's.)
-2. PENDING (operator): the desktop's loop bar — `loop 02` pill `stopped` with no control, then gone.
+2. Not reported by the operator (the source reads in 1, 3 and 4 carry the leg): the desktop's loop bar — `loop 02` pill `stopped` with no control, then gone.
 3. `runs\node-7297\` for `02/00` at +60 s: `20260923T171308093Z-0000.json` (18:17:02) and
    `20260923T172400683Z-0001.json` (18:24:11) — nothing newer than the cancel. And no
    `loop-diag.02.*` log after `…17-24-00-076Z`: no relaunch.
@@ -801,7 +612,7 @@ rollback that moved `130/SPEC.md` back to `not-started`.
 **a remote loop is refused by name — not exercised.** No loop was started on the Mac's console (its card:
 `node-9549`, "never seen", "idle"). Nothing was asked of the Mac.
 
-### Run 2 — result
+### Run 2 — result (interim, before ADR-007; superseded by "Run 2 — result, final" above)
 
 Every leg driven from the verb and the fleet PASSES at the source: leg 1 (drain), leg 2 (cancel: the bracket
 10 ms after escalation, record `cancelled` + `failureReason null` + the bracket's `sessionId`), leg 3 (a gap
@@ -831,139 +642,20 @@ nothing. That is ADR-004 §6's row for a foreground `--supervised` loop. After t
 (17:17:02Z), no `loop-diag.02.*` log was written through 18:18 local, i.e. two declarations ticks and
 more. The honoured mark kept the stopped loop from being relaunched (leg 4's signature, here on a drain).
 
-### leg 1 — the verb drains, the run settles as it ended, and resume clears — PENDING (operator)
+### The run-1 procedure templates — removed at accept
 
-*verifies →* `Scenario: leg 1 — the verb drains, the run settles as it ended, and resume clears`
-(ADR-002 §3f–§6; ADR-003 §3, §5, §6).
-
-1. T1 shows `Driving <ref> — <phase>, cycle <n> of <cap>, L2.` with no `Driven` after it. Paste the line.
-2. T2: `Get-Date -Format o; aof work loop 01 --stop; $LASTEXITCODE` → `01 — stop requested (drain) for
-   loop <L>, live. <path>` and `0`. Paste both. `Get-Content <path>` → `level: 1`, `state: "requested"`,
-   `escalatedAt: null`, `honouredAt: null`, `cancelled: null`, `by: { node: "node-7297", pid: <T2's aof pid> }`.
-   Paste whole.
-3. After the in-flight drive finishes, paste from `<log>` with their stamps: `stdout Driven <ref> — <phase>
-   (<outcome>).` · `stdout 01 — halted on operator-interrupt at <ref> (producer stop-request). Resume with:
-   aof work loop 01 --resume Details: signal=stop-request; level=1; request=<path>; by=node-7297:<pid>.` ·
-   `exit code=0`. (`Select-String -Path <log> -Pattern "Driven |halted on|exit code" | Select-Object -Last 3`)
-4. Paste whole the newest `runs\node-7297\*.json` under `<ref>`: `state` `done` or `failed`, never
-   `running`. A `running` record after the halt is a finding against 02, not a re-try. Paste `<path>`
-   again: `state: "honoured"`, `honouredAt` set, `cancelled: null`.
-5. T1: `aof work loop 01 --resume` → paste `Cleared stop request for <L> (honoured, level 1) — resumed.`
-   (exactly once). T2: `Get-Date -Format o; Test-Path <path>` → `False`. Then paste T1's new `Driving …` line.
-- [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 — result: _(pass / finding → story NN)_
-
-### leg 2 — the verb cancels, the bracket closes the session, and the record reads cancelled — PENDING (operator)
-
-*verifies →* `Scenario: leg 2 — the verb cancels, the bracket closes the session, and the record reads
-cancelled` (ADR-001 §3; ADR-003 §1, §4, §5).
-
-1. T1 in a drive (`Driving <ref> — …`, no `Driven` after it). Paste the line.
-2. T2, twice: `Get-Date -Format o; aof work loop 01 --stop`. The first answer reads `(drain) … live`,
-   the second `01 — stop requested (cancel) for loop <L>, live. <path>`. Paste both with their instants.
-   `Get-Content <path>` → `level: 2`, `escalatedAt` set. Paste whole.
-3. Within 10 s of the second answer, paste from `<log>` in order with their stamps:
-   `driver {"phase":"stop-requested","pid":<pid>,"outcome":"failed","failureReason":"cancelled"}` ·
-   `driver {"phase":"tree-terminated","pid":<pid>,"ok":true,…}` · `driver {"phase":"pty-released","pid":<pid>}` ·
-   `driver {"phase":"exit-confirmed","pid":<pid>,…,"sessionId":"<sessionId>"}` ·
-   `stdout Driven <ref> — <phase> (cancelled).` · the halt line with `level=2; request=<path>;
-   by=node-7297:<pid>; cancelled=<runId>.` · `exit code=0`.
-   (`Select-String -Path <log> -Pattern "driver |Driven |halted on|exit code" | Select-Object -Last 7`)
-4. `Get-Content <ref folder>\runs\node-7297\<runId>.json` (the halt's `cancelled=<runId>`) →
-   `"state": "cancelled"`, `"failureReason": null`, `"sessionId": "<sessionId>"`, the bracket's. Paste whole.
-5. T2: `aof work run-status <ref> --json` → no run with `"state": "running"`. `Get-Content <path>` →
-   `state: "honoured"`, `cancelled: "<runId>"`. Paste both.
-- [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 — result: _(…)_
-
-### leg 4 — the desktop does not relaunch a stopped loop, and shows the row's end — PENDING (operator)
-
-*verifies →* `Scenario: leg 4 — the desktop does not relaunch a stopped loop, and shows the row's end`
-(ADR-004 §4a–§4b, §5; ADR-003 §6). Runs straight after leg 2's halt, before any resume.
-
-1. T2 at 0 s, 30 s and 60 s after the halt line's stamp: `Get-Date -Format o;
-   (aof mesh status --json --declarations | ConvertFrom-Json).declarations.rows | ConvertTo-Json -Depth 5`.
-   No array carries a row with `id: "<L>"`. Paste the three arrays with their instants.
-2. The desktop's loop bar shows `loop 01` with the pill `stopped` and no control, then the row and the
-   bar are gone. Note the instant of each state.
-3. T2: `Get-ChildItem <ref folder>\runs\node-7297\`. Paste it: no file newer than the cancel's `<runId>`.
-   A newer file inside the two ticks is a finding against 04 (the desktop relaunched it).
-4. T1: `aof work loop 01 --resume` → paste `Cleared stop request for <L> (honoured, level 2) — resumed.`
-   Within 30 s, the same `--declarations` command in T2 → a row with `id: "<L>"`, `label: "loop 01"`. Paste it.
-- [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 — result: _(…)_
-
-### leg 3 — a stop in the between-drives gap answers not live and still stops the next tick — PENDING (operator)
-
-*verifies →* `Scenario: leg 3 — a stop in the between-drives gap answers not live and still stops the
-next tick` (ADR-002 §3f, §6; ADR-004 §4b).
-
-1. After leg 4's resume, watch T1 for `Driven <ref> — <phase> (<outcome>).` with no `Driving …` after it
-   (a gate step, or the tick between drives). In that gap, T2: `Get-Date -Format o; aof work loop 01 --stop`
-   → `01 — stop requested (drain) for loop <L>, not live. <path>`. `Get-Content <path>` → `state: "honoured"`
-   at once, `honouredAt` set, `cancelled: null`. Paste the answer and the file. If the answer read `live.`
-   the gap was missed: paste T1's `Driving …` instant beside it and re-run at the next gap. Never a hand kill.
-2. Within 2 s of the next tick head, T1 prints no further `Driving …`. `<log>` shows the halt line with
-   `level=1; request=<path>; by=node-7297:<pid>.` then `exit code=0`. Paste both, and the listing of
-   `runs\node-7297\` showing no new record.
-3. T2: `Get-Date -Format o;` then the `--declarations` command → `declarations.rows` with no `id: "<L>"`. Paste.
-4. T1: `aof work loop 01 --resume` (leg 5's Given) → paste the `Cleared stop request …` line.
-- [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 — result: _(…)_
-
-### leg 5 — the fleet's button walks the two rungs — PENDING (operator)
-
-*verifies →* `Scenario: leg 5 — the fleet's button walks the two rungs` (ADR-005 §1–§5; DESIGN §Surface 1).
-
-1. T1 in a drive. T2: `Get-Date -Format o; curl.exe -s http://127.0.0.1:4181/api/mesh/status`. Paste the
-   body: `localNodeId` `"node-7297"`, and that node's `presence.loops[0]` is the eleven-key entry with
-   `loopRunId: "<L>"`, `stop: null`. Describe the cards: this node's current-work region shows
-   `loop 01 · <phase> <ref> · cycle <n> of <cap>` with a `Stop` button. The Mac's card (`node-9549`)
-   shows any loop line of its own with no button.
-2. Click `Stop` (note the instant). The line reads `loop 01 · stopping · …` and the button `Stop now`
-   (destructive), disabled for one poll then enabled. `Get-Content <path>` → `level: 1`. Within 20 s the
-   status body's `loops[0].stop` reads `"drain"`. Paste the file and the entry.
-3. Click `Stop now` (note the instant). The line reads `· cancelling ·` with no button. `<log>` shows leg
-   2's bracket and halt with `level=2` and `cancelled=<runId>`. `runs\node-7297\<runId>.json` reads
-   `"state": "cancelled"`. Within 20 s the line is gone, the body's `presence` carries no `loops`, and
-   `running N runs` decrements. Paste the record and the body.
-- [ ] 1 · [ ] 2 · [ ] 3 — result: _(…)_
-
-### leg 6 — the desktop's row walks the ladder without the fallback — PENDING (operator)
-
-*verifies →* `Scenario: leg 6 — the desktop's row walks the ladder without the fallback` (ADR-004 §2–§3;
-RULING 3).
-
-1. T1: `aof work loop 01 --resume`, with a drive in flight and the desktop's row `loop 01` at `running`.
-   Press the row's stop control once (note the instant). The pill reads `stopping`. `Get-Content <path>`
-   → `level: 1`, with `by.pid` NOT T1's pid (it is the desktop's spawned `aof`). After the drive, `<log>`
-   shows leg 1's halt with `level=1` then `exit code=0`. The pill reads `stopped` with no control, and
-   the row is gone after the next declarations tick. Paste the file, the halt and the instants.
-2. T1: `aof work loop 01 --resume`, with a drive in flight. Press the control twice (note both instants).
-   `Get-Content <path>` → `level: 2`. `<log>` shows the bracket, `stdout Driven <ref> — <phase> (cancelled).`,
-   the halt with `level=2; … cancelled=<runId>` and `exit code=0`, stamped inside 30 s of the second
-   press. `runs\node-7297\<runId>.json` reads `"state": "cancelled"`. A `<log>` ending with no halt line
-   and no `exit code=` line is the `taskkill` fallback: a finding against 04.
-- [ ] 1 · [ ] 2 — result: _(…)_
-
-### a remote loop is refused by name — PENDING (operator; recorded as not exercised when no Mac loop runs)
-
-*verifies →* `Scenario: a remote loop is refused by name` (ADR-006 §1; ADR-005 §5).
-
-1. A loop the OPERATOR started on the Mac's own console, in a workspace this checkout is a member of.
-2. T2: `Get-Date -Format o; aof work loop <its scope> --stop; $LASTEXITCODE` against that workspace →
-   non-zero. Stderr names `loop-stop-not-local`, `node-9549`, `node-7297` and "stop it on node-9549's
-   own console", and `Get-ChildItem ~\.aof\mesh\loop-stops\` gains no file. Paste stderr and the listing.
-3. The fleet renders that loop's line on the Mac's card with no button and a `title` ending
-   `· remote — stop from node-9549's own console` (`ui/src/fleet/scope.mjs` titles it by `nodeId`). Paste the title as rendered.
-- [ ] not exercised (no Mac loop) · [ ] 1 · [ ] 2 · [ ] 3 — result: _(…)_
-
-### every observation is in STATE.md — PENDING until the legs above are filled
-
-*verifies →* `Scenario: every observation is in STATE.md`. Each leg above carries its `verifies →`
-pointer and its paste slots. A leg's result line names pass, or the finding: unnumbered, routed to the
-owning story per `Scenario Outline: a failure signature is a finding against the owning story, never a
-re-try`, with the loop left as it is until the fix lands.
+The per-leg paste slots written before run 1 (legs 1–6 and the remote leg, each `PENDING (operator)`)
+were never filled: the legs were run and recorded under `### Run 2` above. The unfilled slots are
+removed as a second, contradicting copy; their text is at `b5797b9`.
 
 ## Verification
 
 <!-- Pointers, not restatements. -->
-- [ ] `@executable` suite green
-- [ ] Fitness functions green
-- [ ] `@manual` signed off — see `UAT.md`
+- [x] `@executable` suite green: the six stories' union lane (121 files, 1000 ok) plus cargo core 118,
+      and the whole tree at `aof work regression-gate 130` (`REGRESSION.md`).
+- [x] Fitness functions green: FF-13001 to FF-13007, each with a red probe recorded in `VERIFICATION.md`.
+- [x] `@manual` run: 04's tasks 01–02 and 130/06's legs, read at the source (below; summarised with
+      `verifies →` pointers in `VERIFICATION.md`). There is no `@uat`, so no human sign-off step.
+
+Evidence, findings and the accept decision: `VERIFICATION.md`. Lessons: `RETROSPECTIVE.md` here and
+one per story. Delivered state: `OUTCOME.md`.
