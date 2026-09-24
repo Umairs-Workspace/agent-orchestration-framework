@@ -95,6 +95,19 @@ doc: state
 - **`ruled` rejected** (ADR-001 §3): an ADR is agent-written, so a business rule decided by one
   is the smuggled default this milestone exists to stop.
 
+## Feedback (for retro)
+
+- **134/02 review (solo, loop cycle 2, 2026-09-24): no Blocker.** Two recorded Nits, both fail
+  closed and loud rather than silent: a BOM-prefixed `EXAMPLES.md` does not read its frontmatter
+  (`lines[0] === "---"`), so each frontmatter line reports `unknown-line`; and trailing whitespace
+  after an example's provenance bracket reads `bad-provenance`.
+- **`--scope impacted --story 134/02` ran the whole suite.** `scripts/test.mjs` is in `files:` (the
+  two index registrations), so the impacted set widens to everything, concurrently with another
+  lane's full run. Founding a test family should not cost a full suite; the focused
+  `--only` set was the real check.
+- **FF-9603 (2) is red on 03's `PLAN.md`** (`path-enumeration`, `scripts/install-local.mjs` @47).
+  It predates this lane (it is in cycle 2's grade baseline) and is 03's to fix.
+
 ## Verification
 
 - [ ] `@executable` suite green
