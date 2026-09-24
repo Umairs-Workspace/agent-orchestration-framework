@@ -3,7 +3,7 @@ type: milestone
 number: 134
 slug: discovery-the-example-map
 title: "Discovery before formulation — a story's rules and key examples are mapped, and its business questions go to a person, before any contract is written"
-status: in-progress
+status: not-started
 owner: product-owner
 created: 2026-09-23
 updated: 2026-09-24
