@@ -99,7 +99,12 @@ export const archTests = [
       const graph = await walkImports(driver);
       assert.ok(graph.seen.has(driver), "the import walk visited its root");
       assert.ok(graph.seen.size > 1, `the root-inclusive import walk was non-vacuous: ${graph.seen.size} modules`);
-      assert.ok(graph.seen.size <= 24, `root-inclusive driver reach ${graph.seen.size} exceeds the ADR-015 §5 ceiling 24; raising it requires an ADR (reach 22 = 68/01's otel-attribution, 23 = 70/00's phase-brief, 24 = 69/01-02's loop-bounds — see 69/ARCHITECTURE.md ADR-002 and VERIFICATION F-69-V10)`);
+      // Reach 25 is story 137's `src/work/digest-template.mjs`, reached through `observe.mjs ->
+      // work.mjs`: validate's digest check imports it statically (FF-5407 forbids work.mjs a
+      // deferred import()). It is a pure leaf whose one import, `asset-base.mjs`, the driver already
+      // reaches, so the raise adds one module and no mesh chain. Decided by the operator at 130's
+      // accept door (2026-09-24) and recorded as 130/VERIFICATION F-16.
+      assert.ok(graph.seen.size <= 25, `root-inclusive driver reach ${graph.seen.size} exceeds the ADR-015 §5 ceiling 25; raising it requires an ADR (reach 22 = 68/01's otel-attribution, 23 = 70/00's phase-brief, 24 = 69/01-02's loop-bounds — see 69/ARCHITECTURE.md ADR-002 and VERIFICATION F-69-V10; 25 = 137's digest-template, 130/VERIFICATION F-16)`);
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(srcRoot, "terminal-ws.mjs");
@@ -211,7 +216,12 @@ export const archTests = [
       // reuses) was already in the closure. No DENIED_TRANSITIVE subtree is entered and no lifecycle
       // denylist is relaxed. The DRIVER's reach is untouched (24). MEASURED with this file's own
       // walker at 130/03's build: 75.
-      assert.equal(sinkGraph.seen.size, 75, "the assignment sink reach is exactly 75: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, 130/03 adds the stop request's one home loop/stop-request.mjs behind the presence read, and none reaches anything new behind it");
+      //
+      // STORY 137 ADDS ONE: `src/work/digest-template.mjs`, reached through `work.mjs` (validate's
+      // digest check imports it statically). It is a leaf whose one import, `asset-base.mjs`, is
+      // already here, so it reaches nothing behind it. The same module raises the DRIVER's ceiling
+      // to 25 above (130/VERIFICATION F-16). MEASURED with this file's own walker at 130's accept: 76.
+      assert.equal(sinkGraph.seen.size, 76, "the assignment sink reach is exactly 76: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, 130/03 adds the stop request's one home loop/stop-request.mjs behind the presence read, 137 adds the digest template's reader work/digest-template.mjs behind work.mjs, and none reaches anything new behind it");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },
