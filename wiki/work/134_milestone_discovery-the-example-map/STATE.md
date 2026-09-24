@@ -107,6 +107,10 @@ doc: state
   `--only` set was the real check.
 - **FF-9603 (2) is red on 03's `PLAN.md`** (`path-enumeration`, `scripts/install-local.mjs` @47).
   It predates this lane (it is in cycle 2's grade baseline) and is 03's to fix.
+- **Loop cycle 3 re-dispatched `continue` on 134/02 while it was already `in-review`** (run
+  `-0002` closed `done`). This worktree's own `aof work next 134 --through-review` does not offer
+  it. Nothing was rebuilt: the story's files are unchanged 847efde..83b4d46, the focused suites
+  are green, and validate and doctor are clean. A wasted session: the wave should skip `in-review`.
 
 ## Verification
 
