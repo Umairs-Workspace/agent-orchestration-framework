@@ -30,7 +30,10 @@ import {
   mapStoreRefusal,
   retryLineage,
 } from "../work/loop.mjs";
-import { MAX_REVIEW_ROUNDS } from "../loop-bounds.mjs";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { MAX_REVIEW_ROUNDS, loopBoundsFromConfig } from "../loop-bounds.mjs";
+import { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath } from "./child-drive.mjs";
 import {
   appendProgressSample,
   decideBuildProgress,
@@ -486,9 +489,14 @@ export function transitionOptionsFor(ctx, { workspace = ctx.workspace, lockWorks
   };
 }
 
-// drivePhase — mint (or take the minted retry record) and drive one phase IN-PROCESS through
-// the registered driver. The sequential shell's one drive; the wave never calls it (a lane's
-// drive is a child process, ADR-005 §1).
+// drivePhase — mint (or take the minted retry record) and drive one phase. The sequential
+// shell's one drive; the wave never calls it (a lane's drive is a child process, ADR-005 §1).
+//
+// 2026-09-24 — WHEN `ctx.spawnPhaseDrive` IS HANDED IN, THE DRIVE IS A CHILD PROCESS in the
+// primary, through the same seam and the same outcome mapping as a lane's (`child-drive.mjs`).
+// The foreground launch hands it in; `runLoopBody` without it keeps the in-process drive the
+// sequential suites fake through the registry. A child death is then this run's
+// `runtime_offline`, retried on its lineage, never the loop's own silent death.
 export async function drivePhase({ ref, phase, cycle, declaration, brief = runBrief(declaration), retryRecord = null, fix = null, gradeAbsent = null, changeBaseline = null, progressBaseCommit = null, now }, ctx) {
   const item = requireLocalCheckout(await resolveItemExact(ctx, ref), ref);
   const opts = transitionOptionsFor(ctx);
@@ -503,6 +511,11 @@ export async function drivePhase({ ref, phase, cycle, declaration, brief = runBr
       opts,
     )
     : { record: retryRecord };
+
+  if (typeof ctx.spawnPhaseDrive === "function") {
+    const { outcome, settlementContext } = await drivePhaseInChild(ctx, { ref, phase, runId: record.runId, fix });
+    return { item, record, outcome, cycle, phase, changeBaseline, progressBaseCommit, settlementContext, gradeAbsent };
+  }
 
   let settlementContext = null;
   const outcome = await invokeRegistered(
@@ -520,6 +533,46 @@ export async function drivePhase({ ref, phase, cycle, declaration, brief = runBr
     },
   );
   return { item, record, outcome, cycle, phase, changeBaseline, progressBaseCommit, settlementContext, gradeAbsent };
+}
+
+// The child drive in the PRIMARY: the fix rides a file under the aof home for this one spawn,
+// the stop source's signal (composed onto `agentSessionDriverOptions` by the body) ends the
+// child's stdin, and the parent's deadline is the lane's (`startToCloseMs + startupGraceMs`).
+// The child runs where it is handed; the sequential default is the primary, as the ladder's is.
+async function drivePhaseInChild(ctx, {
+  ref,
+  phase,
+  runId,
+  fix,
+  worktreePath = ctx.workspace.projectRoot,
+}) {
+  const env = ctx.globalWorkStoreOptions?.env;
+  const fixFile = fix == null ? null : loopFixFilePath(runId, { env });
+  const bounds = loopBoundsFromConfig(ctx.workspace);
+  const signal = ctx.agentSessionDriverOptions?.signal;
+  try {
+    if (fixFile != null) {
+      await mkdir(path.dirname(fixFile), { recursive: true });
+      await writeFile(fixFile, `${JSON.stringify(fix, null, 2)}\n`, "utf8");
+    }
+    const answer = await ctx.spawnPhaseDrive({
+      ref,
+      phase,
+      runId,
+      lane: worktreePath,
+      ...(fixFile == null ? {} : { fixFile }),
+      env: {
+        ...(typeof process.env.AOF_GLOBAL_HOME === "string" ? { AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME } : {}),
+        ...(env ?? {}),
+      },
+      deadlineMs: bounds.startToCloseMs + bounds.startupGraceMs,
+      ...(signal == null ? {} : { signal }),
+      graceMs: LANE_CANCEL_GRACE_MS,
+    });
+    return { outcome: childDriveOutcome(answer), settlementContext: answer?.document?.settlementContext ?? null };
+  } finally {
+    if (fixFile != null) await rm(fixFile, { force: true }).catch((error) => reportDegrade("loop-fix-file", error));
+  }
 }
 
 export function progressReportFacts(act) {

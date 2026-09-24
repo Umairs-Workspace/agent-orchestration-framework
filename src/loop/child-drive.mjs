@@ -10,13 +10,54 @@
 // contract, success or refusal. A lane's death is then one lane's `runtime_offline`, never
 // the loop's.
 //
-// What this module does NOT do, by construction: it mints no failure reason (the caller,
-// story 04, maps `died` → `failed / runtime_offline`, `timeout` → `failed / timeout`,
-// `aborted` → `cancelled`), touches no run record (the child heartbeats the lent id; the
-// parent settles it), prints nothing, imports no session driver and never a shell.
+// 2026-09-24 — THE SEQUENTIAL DRIVE IS A CHILD TOO. `aof work loop 006` (another workspace,
+// `sequential`, refine phase) died twice in one day at the same line — `tree-terminated ok:true`
+// → `pty-released`, then nothing — while every lane child on the same host survived the same
+// console-list kill with "AttachConsole failed" on its own stderr. The shell's in-process drive
+// was the one PTY left inside the loop's process; `drivePhase` now reaches this seam too when
+// the foreground launch hands it `ctx.spawnPhaseDrive`. So the answer's MAPPING to a drive
+// outcome has two callers and one home here (`childDriveOutcome`), with the cancel grace and
+// the fix file's path beside it.
+//
+// What this module does NOT do, by construction: it touches no run record (the child
+// heartbeats the lent id; the parent settles it), prints nothing, imports no session driver
+// and never a shell.
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isPackaged } from "../asset-base.mjs";
 import { runBounded } from "../work-audit/spawn.mjs";
+import { globalMeshPaths } from "../workspace.mjs";
+
+// THE CANCEL GRACE — the family's one named constant (129/04 ruling): how long an aborted
+// child is given to exit on its own after its stdin is ended, before it is killed. NOT a config
+// key: a knob on how long to wait for a child the operator has already cancelled twice is a
+// knob nobody tunes.
+export const LANE_CANCEL_GRACE_MS = 10000;
+
+// The fix file's home — under the aof home (`AOF_GLOBAL_HOME` honoured), NEVER in a checkout
+// (ADR-005 §3): a lane's `git add -A` would otherwise commit it.
+export function loopFixFilePath(runId, { env } = {}) {
+  return path.join(globalMeshPaths({ env }).meshRoot, "loop-fixes", `${runId}.json`);
+}
+
+// childDriveOutcome(answer) — a `spawnLaneDrive` answer read as the driver outcome the settle
+// consumes: the document's own outcome when one parsed, `died` → `failed / runtime_offline`,
+// `timeout` → `failed / timeout`, `aborted` → `cancelled`, a refusal → `failed / agent_error`
+// carrying its code. A `failed` that names no reason is `agent_error`.
+export function childDriveOutcome(answer) {
+  const document = answer?.document ?? null;
+  const outcome = answer?.outcome === "document"
+    ? { outcome: document?.outcome ?? "failed", ...(document?.failureReason != null ? { failureReason: document.failureReason } : {}), ...(document?.sessionId != null ? { sessionId: document.sessionId } : {}) }
+    : answer?.outcome === "timeout"
+      ? { outcome: "failed", failureReason: "timeout" }
+      : answer?.outcome === "aborted"
+        ? { outcome: "cancelled" }
+        : answer?.outcome === "refused"
+          ? { outcome: "failed", failureReason: "agent_error", refusal: document?.code ?? null }
+          : { outcome: "failed", failureReason: "runtime_offline" };
+  if (outcome.outcome === "failed" && outcome.failureReason == null) outcome.failureReason = "agent_error";
+  return outcome;
+}
 
 // WHICH ARGV, decided by INTERPRETER IDENTITY — never by file presence (review round 1,
 // 2026-09-13, reproduced at the source). `process.execPath` is either a Node runtime or the

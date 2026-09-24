@@ -25,6 +25,21 @@ import { installLoopDiagnostics } from "../../src/loop-diag.mjs";
 import { createStopSource, loopStopsDir, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
 import { functionBody, stripComments } from "../support/source-slice.mjs";
 import { seedActive, withItemLockFixture } from "../support/item-lock-fixture.mjs";
+import { LANE_CANCEL_GRACE_MS, childDriveOutcome } from "../../src/loop/child-drive.mjs";
+import { drivePhase } from "../../src/loop/cycle.mjs";
+
+// 2026-09-24 — a recording `spawnPhaseDrive`: answers the scripted `spawnLaneDrive` shapes in
+// order (the last one repeats), and hands each call's args to `onSpawn` before answering.
+function fakePhaseChild(answers, { onSpawn } = {}) {
+  const calls = [];
+  const spawn = async (args) => {
+    calls.push(args);
+    await onSpawn?.(args);
+    return answers[Math.min(calls.length - 1, answers.length - 1)];
+  };
+  return { calls, spawn };
+}
+const childDocument = (document) => ({ outcome: "document", document: { ok: true, ...document }, exitCode: 0, stderrTail: [], spawn: {} });
 
 // 130/02 — the closing commands: a verify drive moves its item to done (the shape the narration
 // suite's `closingCommands` has), so a walk under a level-0 source reaches `done`.
@@ -1081,6 +1096,88 @@ aofVersion: 0.1.0
       const cycle = stripComments(await readFile(new URL("../../src/loop/cycle.mjs", import.meta.url), "utf8"));
       assert.match(cycle, /outcome\.failureReason === "cancelled" \? "cancelled" : "failed"/u, "the terminal word is computed from the driver's cancel");
       assert.match(cycle, /failureReason: terminal === "failed" \? outcome\.failureReason \?\? "agent_error" : null/u, "a cancel carries no reason");
+    },
+  },
+  {
+    name: "2026-09-24 the sequential drive is a child — spawnPhaseDrive gets the lent run in the primary, no PTY is spawned in-process, and needs-input still halts",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const pty = createFakePtySpawn();
+        const child = fakePhaseChild([childDocument({ outcome: "needs-input", sessionId: "child-session" })]);
+        const state = await runLoopBody({ scope: "03" }, {
+          ...fx.ctx,
+          agentSessionDriverOptions: { ptySpawn: pty.spawn, which: createFakeWhich(["claude"]), commandDelayMs: 0 },
+          spawnPhaseDrive: child.spawn,
+          report: () => {},
+        });
+        assert.equal(state.act.stop, "session-needs-input");
+        assert.equal(pty.spawnCalls.length, 0, "the loop's own process spawned no PTY");
+        assert.equal(child.calls.length, 1);
+        const [call] = child.calls;
+        const item = await resolveItemExact(fx.ctx, "03/01");
+        const [run] = await readRuns(item);
+        assert.equal(call.ref, "03/01");
+        assert.equal(call.phase, "continue");
+        assert.equal(call.runId, run.runId, "the child is lent the run the parent minted");
+        assert.equal(call.lane, fx.projectRoot, "the child runs in the primary");
+        assert.equal(call.graceMs, LANE_CANCEL_GRACE_MS);
+        assert.ok(call.signal instanceof AbortSignal, "the stop source's signal ends the child's stdin");
+        assert.ok(Number.isSafeInteger(call.deadlineMs) && call.deadlineMs > 0, "the parent-side deadline");
+        assert.equal("fixFile" in call, false, "no fix, no file");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "2026-09-24 a child death is the run's runtime_offline, retried on its lineage — never the loop's",
+    async run() {
+      const fx = await loopFixture({ cap: 2 });
+      try {
+        const child = fakePhaseChild([{ outcome: "died", document: null, exitCode: null, stderrTail: ["Error: AttachConsole failed"], spawn: {} }]);
+        const state = await runLoopBody({ scope: "03" }, { ...fx.ctx, spawnPhaseDrive: child.spawn, report: () => {} });
+        assert.equal(child.calls.length, 2, "the first attempt and its one retry");
+        assert.notEqual(child.calls[0].runId, child.calls[1].runId, "each attempt is lent its own run");
+        const runs = await readRuns(await resolveItemExact(fx.ctx, "03/01"));
+        assert.deepEqual(runs.map((run) => [run.state, run.failureReason]), [["failed", "runtime_offline"], ["failed", "runtime_offline"]]);
+        assert.equal(state.state, "halted");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "2026-09-24 drivePhase in a child — the fix rides a file for the one spawn and is removed after it",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const fix = { buildRun: "run-x", findings: ["F-1"] };
+        let seen = null;
+        const child = fakePhaseChild([childDocument({ outcome: "done", sessionId: "s", settlementContext: { projectsDir: "p" } })], {
+          onSpawn: async (args) => { seen = JSON.parse(await readFile(args.fixFile, "utf8")); },
+        });
+        const driven = await drivePhase({ ref: "03/01", phase: "continue", cycle: 1, declaration: DECLARATION_L1, fix }, { ...fx.ctx, spawnPhaseDrive: child.spawn });
+        assert.deepEqual(seen, fix, "the child read the fix transport from its file");
+        await assert.rejects(readFile(child.calls[0].fixFile, "utf8"), { code: "ENOENT" }, "the file is gone after the spawn");
+        assert.deepEqual(driven.outcome, { outcome: "done", sessionId: "s" });
+        assert.deepEqual(driven.settlementContext, { projectsDir: "p" }, "the child's settlement context reaches the settle");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "2026-09-24 childDriveOutcome is the one mapping — and the foreground launch hands the child spawner to the body",
+    async run() {
+      assert.deepEqual(childDriveOutcome(childDocument({ outcome: "done", sessionId: "s" })), { outcome: "done", sessionId: "s" });
+      assert.deepEqual(childDriveOutcome(childDocument({ outcome: "failed" })), { outcome: "failed", failureReason: "agent_error" });
+      assert.deepEqual(childDriveOutcome({ outcome: "died" }), { outcome: "failed", failureReason: "runtime_offline" });
+      assert.deepEqual(childDriveOutcome({ outcome: "timeout" }), { outcome: "failed", failureReason: "timeout" });
+      assert.deepEqual(childDriveOutcome({ outcome: "aborted" }), { outcome: "cancelled" });
+      assert.deepEqual(childDriveOutcome({ outcome: "refused", document: { ok: false, code: "x" } }), { outcome: "failed", failureReason: "agent_error", refusal: "x" });
+      const shell = stripComments(await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8"));
+      assert.match(shell, /return runLoopBody\(input, \{[^}]*spawnPhaseDrive: spawnLaneDrive/u,"the foreground launch drives the sequential phases in a child");
     },
   },
 ];

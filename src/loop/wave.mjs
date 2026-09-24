@@ -47,7 +47,6 @@ import {
   loopPlanRef,
   mapStoreRefusal,
 } from "../work/loop.mjs";
-import { globalMeshPaths } from "../workspace.mjs";
 import { readRuns, isRunning, isStale } from "../run-store.mjs";
 import { consumeHeartbeatQueue } from "../run-heartbeat-consumption.mjs";
 import { transitionRunComplete, transitionRunStart, transitionStaleRunsReclaimed } from "../effects/run-transitions.mjs";
@@ -61,7 +60,7 @@ import {
   resolveRefInWorktree,
 } from "../work/dispatch.mjs";
 import { headCommit, meshDispatchWorktreePath, resolveExec } from "../mesh/worktree.mjs";
-import { spawnLaneDrive as spawnLaneDriveChild } from "./child-drive.mjs";
+import { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, spawnLaneDrive as spawnLaneDriveChild } from "./child-drive.mjs";
 import {
   budgetElapsedMs,
   drivenRow,
@@ -75,18 +74,6 @@ import {
 } from "./cycle.mjs";
 
 const NO_PRINT = () => {};
-
-// THE CANCEL GRACE — the family's one named constant (129/04 ruling): how long an aborted
-// child is given to exit on its own after its stdin is ended, before it is killed. NOT a config
-// key: a knob on how long to wait for a child the operator has already cancelled twice is a
-// knob nobody tunes.
-export const LANE_CANCEL_GRACE_MS = 10000;
-
-// The fix file's home — under the aof home (`AOF_GLOBAL_HOME` honoured), NEVER in a checkout
-// (ADR-005 §3): a lane's `git add -A` would otherwise commit it.
-export function loopFixFilePath(runId, { env } = {}) {
-  return path.join(globalMeshPaths({ env }).meshRoot, "loop-fixes", `${runId}.json`);
-}
 
 async function invokeRegistered(id, input, ctx) {
   if (typeof ctx?.invokeRegistered === "function") return await ctx.invokeRegistered(id, input, ctx);
@@ -517,16 +504,7 @@ export async function runWaveBuild(shell) {
             graceMs: LANE_CANCEL_GRACE_MS,
           });
           const document = answer?.document ?? null;
-          const outcome = answer?.outcome === "document"
-            ? { outcome: document?.outcome ?? "failed", ...(document?.failureReason != null ? { failureReason: document.failureReason } : {}), ...(document?.sessionId != null ? { sessionId: document.sessionId } : {}) }
-            : answer?.outcome === "timeout"
-              ? { outcome: "failed", failureReason: "timeout" }
-              : answer?.outcome === "aborted"
-                ? { outcome: "cancelled" }
-                : answer?.outcome === "refused"
-                  ? { outcome: "failed", failureReason: "agent_error", refusal: document?.code ?? null }
-                  : { outcome: "failed", failureReason: "runtime_offline" };
-          if (outcome.outcome === "failed" && outcome.failureReason == null) outcome.failureReason = "agent_error";
+          const outcome = childDriveOutcome(answer);
           const tail = Array.isArray(answer?.stderrTail) ? answer.stderrTail : [];
           await narrate(`Lane ${ref} — drive: ${outcome.sessionId ? `session ${outcome.sessionId}` : "no session id"} (${answer?.outcome ?? "died"}${outcome.refusal ? `, ${outcome.refusal}` : ""}).`);
           for (const line of tail) await narrate(`Lane ${ref} — stderr: ${line}`);

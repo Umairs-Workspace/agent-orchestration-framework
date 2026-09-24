@@ -131,6 +131,7 @@ import { reportDegrade } from "../degrade.mjs";
 // home; the BUILD phase and the resume reconciliation are the wave module's.
 import { commitWorktreeChanges, resolveExec } from "../mesh/worktree.mjs";
 import { reconcileLanes, runWaveBuild } from "../loop/wave.mjs";
+import { spawnLaneDrive } from "../loop/child-drive.mjs";
 // 2026-09-11 — the loop's exit-reason recorder; installed only at the launch seam below.
 import { installLoopDiagnostics } from "../loop-diag.mjs";
 // 130/02 (ADR-002, ADR-003) — THE STOP. `--stop` rides `run` through the ONE verb core below the
@@ -1812,6 +1813,10 @@ export const loopCommand = {
         const diag = installLoopDiagnostics({ argv: process.argv.slice(2) });
         return runLoopBody(input, {
           config: faceCtx.options.config,
+          // THE SEQUENTIAL DRIVE IS A CHILD PROCESS (2026-09-24): the loop's own process hosts no
+          // PTY on any path, so the console-scoped kill of a finished session can only take a
+          // child down — the refine loop that died twice in one day at `pty-released`.
+          spawnPhaseDrive: spawnLaneDrive,
           // THE SESSION STOP, BRACKETED (2026-09-12): the driver reports each step of ending a
           // session — stop requested, tree terminated, pty released, exit confirmed — into the
           // same log as the exit reasons, so a death inside that sequence names its line.
