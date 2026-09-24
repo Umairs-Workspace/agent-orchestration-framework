@@ -749,6 +749,45 @@ export async function recordAnchorReading(item, { runId, anchor, value, provenan
   return reading;
 }
 
+// The seven keys of one answer record (134/ADR-003 §3), in the reader's order.
+const ANSWER_KEYS = Object.freeze(["token", "question", "answer", "toolUseId", "sessionId", "at", "entrypoint"]);
+
+function validAnswer(record, { mapToken, readMapToken }) {
+  if (record == null || typeof record !== "object" || Array.isArray(record)) return false;
+  const keys = Object.keys(record);
+  if (keys.length !== ANSWER_KEYS.length || !ANSWER_KEYS.every((key) => Object.hasOwn(record, key))) return false;
+  const filled = (value) => typeof value === "string" && value.length > 0;
+  if (!["token", "question", "answer", "toolUseId", "sessionId", "at"].every((key) => filled(record[key]))) return false;
+  if (record.entrypoint !== null && !filled(record.entrypoint)) return false;
+  const head = readMapToken(record.token);
+  return head != null && mapToken(head.storyRef, head.id) === record.token;
+}
+
+// Stamp a person's answers onto a run (134/ADR-003 §3, FF-13401) — the ONE writer of
+// `brief.answers`, on the `recordAnchorReading` pattern: the answers ride the run's brief, because
+// FF-6908 freezes the record's sixteen top-level keys and says later claims ride `brief`.
+// Validates before it reads the run, so an invalid array throws `answers-invalid` and writes
+// nothing, onto any run. STAMPED ONCE: a run whose brief already holds `answers` is never
+// re-stamped, and the file is left byte-identical. The run's lifecycle timestamps are preserved.
+// The token is validated by the map token's one reader (src/work-examples/map.mjs), imported
+// lazily: the mesh assignment sink imports this store, and its static reach is a frozen ceiling
+// (53/FF-5301) this one validation has no reason to move.
+// Answers `{ stamped, answers }` — the answers now on the run.
+export async function recordAnswers(item, { runId, answers } = {}) {
+  if (typeof runId !== "string" || runId.length === 0) {
+    throw runError("an answer stamp needs the run it belongs to", "answers-run-required", 400);
+  }
+  const token = await import("./work-examples/map.mjs");
+  if (!Array.isArray(answers) || answers.length === 0 || !answers.every((answer) => validAnswer(answer, token))) {
+    throw runError("brief.answers must be a non-empty array of answer records", "answers-invalid", 400);
+  }
+  const record = await readRun(item, runId);
+  if (record.brief?.answers != null) return { stamped: false, answers: record.brief.answers };
+  const stamp = answers.map((answer) => Object.fromEntries(ANSWER_KEYS.map((key) => [key, answer[key]])));
+  await persist(item, { ...record, brief: { ...(record.brief ?? {}), answers: stamp } });
+  return { stamped: true, answers: stamp };
+}
+
 // Apply a transition with VALIDATE-BEFORE-WRITE ordering ("an illegal transition
 // writes nothing"): read → compute (from,to) → validate → (legal) write / (illegal)
 // throw illegal-transition. An illegal transition leaves the on-disk file
@@ -806,7 +845,15 @@ export async function applyTransition(item, runId, toState, { now, failureReason
 //     clean (the producer itself imports this module's readRuns/settleRun, so a
 //     static import here would be a cycle — a dynamic import at settle resolves it);
 //   - a failure to ingest is reported (reportDegrade) rather than swallowed silently.
-export async function completeRun(item, { runId, outcome, failureReason = null, resumeAfter = null, now, projectsDir } = {}) {
+//
+// 134/03 (ADR-003 §3) — the SAME seam stamps a person's answers, beside spend and in its own try:
+// the session's tokened `AskUserQuestion` answers, read by the one reader
+// (src/work-examples/answers.mjs, imported lazily for the same reason) and written by
+// `recordAnswers`. A read with no tokened answer writes nothing; only a transcript that could not
+// be read (no session id, none there, empty) is reported. `settleSpend: false` skips the spend
+// block while the answers are still stamped — the driven settles, which settle spend themselves
+// against a resume baseline, pass it (through the transition seam's `spendSettled`).
+export async function completeRun(item, { runId, outcome, failureReason = null, resumeAfter = null, now, projectsDir, settleSpend = true } = {}) {
   let targetRunId = runId;
   if (!targetRunId) {
     const running = (await readRuns(item)).filter((run) => run.state === "running");
@@ -819,7 +866,11 @@ export async function completeRun(item, { runId, outcome, failureReason = null, 
     targetRunId = running[0].runId;
   }
   const settled = await applyTransition(item, targetRunId, outcome, { failureReason, resumeAfter, now });
-  if (typeof projectsDir === "string" && projectsDir.length > 0) {
+  if (typeof projectsDir !== "string" || projectsDir.length === 0) return settled;
+  // One degrade event carries every unread stamp: the reporter throttles per code, so a second
+  // `run-store` event inside the window would be dropped.
+  const unread = [];
+  if (settleSpend) {
     try {
       const { settleSpendFromTranscript } = await import("./run-spend-ingest.mjs");
       const { stamped, reason } = await settleSpendFromTranscript(item, {
@@ -829,12 +880,25 @@ export async function completeRun(item, { runId, outcome, failureReason = null, 
       });
       // An already-settled run is the success-of-idempotence case, not a failure.
       if (!stamped && reason && reason !== "already-settled") {
-        reportDegrade("run-store", new Error(`spend not stamped at settle: ${reason}`));
+        unread.push(`spend not stamped at settle: ${reason}`);
       }
     } catch (error) {
-      reportDegrade("run-store", error);
+      unread.push(`spend not stamped at settle: ${error?.message ?? error}`);
     }
   }
+  try {
+    const { readSessionAnswers } = await import("./work-examples/answers.mjs");
+    const sessionId = settled.sessionId;
+    const answers = await readSessionAnswers(projectsDir, sessionId);
+    if (answers == null) {
+      unread.push(`answers not stamped at settle: ${typeof sessionId === "string" && sessionId.length > 0 ? "session-unreadable" : "no-session-id"}`);
+    } else if (answers.length > 0) {
+      await recordAnswers(item, { runId: settled.runId, answers });
+    }
+  } catch (error) {
+    unread.push(`answers not stamped at settle: ${error?.message ?? error}`);
+  }
+  if (unread.length > 0) reportDegrade("run-store", new Error(unread.join("; ")));
   return settled;
 }
 
@@ -961,9 +1025,12 @@ export async function settleRunFromVendor(item, { runId, vendorTokens, model, ef
 // 2026-09-23: `aof work resume 01` re-minted a 09-10 lineage under its loop's id, and the stop verb
 // and the fleet then addressed that dead loop instead of the live one (the latest declaration in
 // scope is the target, 130/ADR-002 §3c).
+// 134/03 (ADR-003 §3) drops `brief.answers` beside it: the stamp is one session's answers, taken
+// once at settle, so a retry stamps its own session's rather than inheriting a stamp that would
+// then refuse its own.
 function carriedBrief(prior) {
   if (prior == null || typeof prior !== "object") return {};
-  const { loop: _loop, ...rest } = prior;
+  const { loop: _loop, answers: _answers, ...rest } = prior;
   return rest;
 }
 

@@ -429,10 +429,12 @@ export function createPhaseDriverCommand(phase) {
           if (!spend.stamped && !["already-settled", "resume-baseline-unavailable"].includes(spend.reason)) {
             reportDegrade("drive-spend-unavailable", new Error(spend.reason ?? "unknown"));
           }
+          // 134/03 (ADR-003 §4): the spend was settled (or withheld) just above against the
+          // resume baseline; the seam stamps the person's answers from this drive's directory.
           await transitionRunComplete(
             item,
             { runId: runRecord.runId, ...settled, now: new Date().toISOString() },
-            {},
+            { projectsDir, spendSettled: true },
           );
         } catch (error) {
           reportDegrade("drive", error);

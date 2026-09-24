@@ -124,7 +124,13 @@ export const archTests = [
         // re-minted a dead loop's lineage under its loop id, and `--stop` aimed at that dead loop.
         // Every loop retry passes its own brief, so the loop's lineage is byte-for-byte what it
         // was. No export, no signature and no state edge moved.
-        ["src/run-store.mjs", "2c17cd1db619fc52d6e24737315db91d1bf7ac6f668655fea70cafb63ba743c0"],
+        // RE-PINNED by 134/03 (134/ADR-003 §3): ONE additive export, `recordAnswers` — the one
+        // writer of a person's answers, which ride `brief.answers` (no seventeenth key, FF-6908) —
+        // and `completeRun` stamping them at settle beside spend, with a `settleSpend` option the
+        // driven settles turn off because they settle spend themselves. `carriedBrief` drops
+        // `answers` beside `loop`, so a retry stamps its own. No state edge moved, and a settle with
+        // no tokened answer writes exactly what it wrote before.
+        ["src/run-store.mjs", "94adc0e2c8c27e2f00368c61641e39633fa699da0f7046b6959237d534603e38"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

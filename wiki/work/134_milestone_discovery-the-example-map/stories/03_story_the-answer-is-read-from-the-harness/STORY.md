@@ -78,9 +78,9 @@ FF-13404.
 
 ## Tasks
 
-- [ ] 00 [one reader turns a person's answer into a record](tasks/00_one-reader-turns-a-persons-answer-into-a-record.feature)
-- [ ] 01 [the answer is stamped once at settle and collected for a story](tasks/01_the-answer-is-stamped-once-at-settle-and-collected-for-a-story.feature)
-- [ ] 02 [settle reads the transcript store that exists](tasks/02_settle-reads-the-transcript-store-that-exists.feature)
+- [x] 00 [one reader turns a person's answer into a record](tasks/00_one-reader-turns-a-persons-answer-into-a-record.feature)
+- [x] 01 [the answer is stamped once at settle and collected for a story](tasks/01_the-answer-is-stamped-once-at-settle-and-collected-for-a-story.feature)
+- [x] 02 [settle reads the transcript store that exists](tasks/02_settle-reads-the-transcript-store-that-exists.feature)
 - [ ] 03 [the anchor is measured at the source](tasks/03_the-anchor-is-measured-at-the-source.feature)
 
 ## Notes
