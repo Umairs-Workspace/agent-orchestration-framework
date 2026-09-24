@@ -574,6 +574,10 @@ export async function settleDriven(driven, ctx, { now, narrate = NO_PRINT, trans
     }
   }
   try {
+    // 134/03 (ADR-003 §4): the spend was settled (or withheld) above against the resume baseline,
+    // so the seam must not settle it again over the whole transcript tree — `spendSettled: true`.
+    // It still stamps the person's answers, from this drive's own transcript directory: `run-complete`
+    // inside a driven session writes nothing, so this is where the loop's path stamps them.
     const completed = await transitionRunComplete(
       item,
       {
@@ -583,7 +587,7 @@ export async function settleDriven(driven, ctx, { now, narrate = NO_PRINT, trans
         resumeAfter,
         now,
       },
-      transitionOptions,
+      { ...transitionOptions, projectsDir: driven.settlementContext?.projectsDir, spendSettled: true },
     );
     return { ...driven, record: completed.record };
   } catch (error) {

@@ -95,7 +95,77 @@ doc: state
 - **`ruled` rejected** (ADR-001 §3): an ADR is agent-written, so a business rule decided by one
   is the smuggled default this milestone exists to stop.
 
+## 134/03 task 03 — the anchor measured at the source (operator procedure, pending)
+
+The build lane (loop run `20260924T141559728Z-0001`, worktree `dispatch-134-03`) cannot run these:
+every leg needs an interactive session no shell is driving, the answer leg needs a person, and no
+`134/03` run may be `running`, which is true only once the build run has settled. **Precondition,
+measured 2026-09-24:** bare `aof` on this machine is the npm link to the MAIN checkout
+(`C:\Program Files\nodejs\node_modules\aof -> C:\Source\umair\aof`), so the 134/03 code reaches it
+only when this lane is merged home. So: (0) merge the lane, then from the main checkout run
+`node scripts/install-local.mjs --skip-ui` and check `aof --version` names the new payload build.
+S is the id of your interactive session opened in the repository root: the name of the newest
+`.jsonl` in `~/.claude/projects/C--Source-umair-aof`. Paste the commands' own output; never
+paraphrase. Evidence lands in `VERIFICATION.md` under `134/03 task 03`.
+
+**A. A hand-run settle stamps spend from this machine's transcript store.**
+1. `aof work run-start 134/03 --session S --json` from the interactive session in the repository
+   root. Check the envelope carries that `sessionId`.
+2. `cd wiki` and run `aof work run-complete 134/03 --outcome done` from there (a subdirectory).
+3. Print the run record: `node -e "const r=require('<run file>');console.log(r.sessionId, JSON.stringify(r.spend))"`.
+
+- Then the `spend` of the run record on disk is not null, and its `turns` are more than 0 — paste:
+  `______`
+- And the run record's path and its `spend` — paste: `______`
+
+**B. A person's answer to a tokened question is stamped with its session and entrypoint.**
+1. `aof work run-start 134/03 --session S --json` from the interactive session.
+2. In that session, have the agent ask ONE `AskUserQuestion` question whose text opens with
+   `134/03 Q1 · ` and answer it in your own words through "Other".
+3. In the same session, have it ask a second question with no token, and answer it.
+4. `aof work run-complete 134/03 --outcome done` in that session.
+5. From the repository root:
+   `node --input-type=module -e "const { collectAnswers } = await import('./src/work-examples/answers.mjs'); console.log(JSON.stringify(await collectAnswers({ ref: '134/03', dir: 'wiki/work/134_milestone_discovery-the-example-map/stories/03_story_the-answer-is-read-from-the-harness' }), null, 2))"`
+
+- Then the `brief.answers` of the run record on disk holds exactly one record, for `134/03 Q1` —
+  paste: `______`
+- And its `answer` is your own words, its `sessionId` is the run's `sessionId`, and its
+  `entrypoint` is the session's entrypoint — paste: `______`
+- And `collectAnswers` for `134/03`, called with no transcript directory, returns that record —
+  paste: `______`
+
+**C. A refused question leaves no record.**
+1. `aof work run-start 134/03 --session S --json` from the interactive session (a second run).
+2. In that session, refuse one `AskUserQuestion` call whose question opens with `134/03 Q2 · `.
+3. `aof work run-complete 134/03 --outcome done` in that session.
+
+- Then the `brief.answers` of the run record on disk holds no record for `134/03 Q2` — paste:
+  `______`
+
+Until these slots are filled, 134/03 stays `in-progress` (task 03's contract).
+
 ## Feedback (for retro)
+
+- **134/03's finished build was reclaimed as `runtime_offline` and retried (2026-09-24).** Run
+  `20260924T141559728Z-0001`'s session built tasks 00-02, reviewed them and handed back for the
+  operator at 15:45 local, yet the run was reclaimed at 16:22 and re-minted as attempt 2/3
+  (`…-0002`). That retry re-verified at the source (focused set 62 ok, validate and doctor clean)
+  and changed nothing. An operator-gated hand-back costs a retry attempt, and the third one is
+  the last.
+
+- **134/03 review (solo, loop cycle, 2026-09-24): no Blocker.** Structural, behavioural and craft
+  lenses taken in turn in this session, against the task features and ADR-003. One recorded Nit:
+  a settle now reads the session's transcript tree twice, once for spend and once for answers;
+  harmless at settle time, and a shared read would couple the two producers.
+- **134/03's declared write set was incomplete.** FF-5810 checks that shipped loop records cite
+  each export's own line, and two records cite `isStale` (run store) and `transitionRunReclaimed`
+  (the transition seam) by line. `src/bundle/loops/{mesh-assignment-reclaim,run-resilience}.md`
+  and their `.aof/loops/` copies were re-cited outside `files:`. Lane commits drop `.aof/`, so the
+  installed copies need committing by hand (or `aof work update`). A story that edits the run store
+  or the transition seam owes those records in `files:`.
+- **The first arch sweep caught three reds the story's focused set could not** (FF-5810, FF-5504's
+  "the run store never spells `transcript`", FF-5301's sink reach). All were fixed in the build.
+  The focused `--only` set alone would have passed.
 
 - **134/02 review (solo, loop cycle 2, 2026-09-24): no Blocker.** Two recorded Nits, both fail
   closed and loud rather than silent: a BOM-prefixed `EXAMPLES.md` does not read its frontmatter
