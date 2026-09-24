@@ -27,9 +27,9 @@
     }
   },
   "createdAt": "2026-09-24T00:59:08.123Z",
-  "updatedAt": "2026-09-24T00:59:08.123Z",
+  "updatedAt": "2026-09-24T01:14:44.652Z",
   "failureReason": null,
-  "heartbeatAt": null,
+  "heartbeatAt": "2026-09-24T01:14:44.652Z",
   "retryOf": null,
   "reclaimedAt": null,
   "node": "node-7297",
