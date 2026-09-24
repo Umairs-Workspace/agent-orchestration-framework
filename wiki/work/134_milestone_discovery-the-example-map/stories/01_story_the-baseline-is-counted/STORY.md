@@ -5,10 +5,10 @@ slug: the-baseline-is-counted
 title: "The baseline is counted — misunderstood-requirement findings and amendment rounds per story, on four delivered milestones, before the gate ships"
 parent: 134
 depends: []
-status: in-progress
+status: not-started
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-24
 adrs: [ADR-007]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
