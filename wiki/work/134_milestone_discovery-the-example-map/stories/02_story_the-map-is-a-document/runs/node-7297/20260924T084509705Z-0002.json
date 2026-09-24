@@ -1,0 +1,68 @@
+{
+  "runId": "20260924T084509705Z-0002",
+  "itemRef": "134/02",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "333690bd-cd18-431f-a161-4b89b74ddf3b",
+  "brief": {
+    "loop": {
+      "loopRunId": "31b98c4d-fe21-43c9-819c-16e9927e4190",
+      "scope": "134",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 2,
+      "startedAt": "2026-09-23T23:13:10.187Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-24T08:38:03.281Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/FF-5407: the deterministic engines stay pure and gain no runner — no spawn, no dynamic import(), and no edge to the grade modules",
+        "arch/53 FF-5312: source, installed dogfood and retired work-stream home are exact",
+        "arch/53 FF-5313: every delivered loop record is installed in aof's own registry, byte-identical",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "FF-6302/7 the eol RATCHET: every .aof/** asset the bundle declares is pinned eol=lf, and its two copies agree byte for byte",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
+        "arch/124/02 FF-12405 leg 9 (task 03): the manifest is a true content address, and it agrees with the lock on every path they both name",
+        "arch/96/02 FF-9603 (2) THE BAN IS A PROPERTY OF THE STREAM — every PLAN.md under wiki/work is admitted, not only the template"
+      ],
+      "baseCommit": "847efde58534d00f56379cd2be6ba5e9b8c4e69b"
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-134-02",
+      "branch": "aof/mesh/134-02",
+      "baseCommit": "847efde58534d00f56379cd2be6ba5e9b8c4e69b"
+    }
+  },
+  "createdAt": "2026-09-24T08:45:09.705Z",
+  "updatedAt": "2026-09-24T08:59:36.938Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 110,
+      "output": 31481,
+      "cacheRead": 6083629,
+      "cacheCreate": 207352
+    },
+    "costUsd": 3.0752037,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 55,
+    "toolCalls": 25,
+    "exitReason": "final_output"
+  }
+}
