@@ -304,6 +304,34 @@ export const workDispatchLaneTests = [
       }),
   },
   {
+    name: "dispatch 2026-09-24 a lane carries the primary's git-ignored .claude/settings.local.json — copied once, never over the lane's own, and nothing when the primary has none",
+    run: async () => {
+      const LOCAL = path.join(".claude", "settings.local.json");
+      const approvals = `${JSON.stringify({ enabledMcpjsonServers: ["voicevox", "aspire"] }, null, 2)}\n`;
+      await withDispatchRepo(async ({ root }) => {
+        await mkdir(path.join(root, ".claude"), { recursive: true });
+        await writeFile(path.join(root, LOCAL), approvals, "utf8");
+        const fresh = await resolveDispatchLane(root, "53/00");
+        assert.equal(fresh.created, true);
+        assert.equal(await readFile(path.join(fresh.worktree, LOCAL), "utf8"), approvals, "a fresh lane holds the primary's approvals verbatim");
+
+        const own = `${JSON.stringify({ enabledMcpjsonServers: ["lane-only"] })}\n`;
+        await writeFile(path.join(fresh.worktree, LOCAL), own, "utf8");
+        const reused = await resolveDispatchLane(root, "53/00");
+        assert.equal(reused.reused, true);
+        assert.equal(await readFile(path.join(reused.worktree, LOCAL), "utf8"), own, "a lane that holds its own file keeps it");
+
+        await unlink(path.join(reused.worktree, LOCAL));
+        const refilled = await resolveDispatchLane(root, "53/00");
+        assert.equal(await readFile(path.join(refilled.worktree, LOCAL), "utf8"), approvals, "a REUSED lane missing the file is given it — the lanes cut before this fix");
+      });
+      await withDispatchRepo(async ({ root }) => {
+        const lane = await resolveDispatchLane(root, "53/00");
+        assert.equal(existsSync(path.join(lane.worktree, LOCAL)), false, "a primary with no local settings copies nothing");
+      });
+    },
+  },
+  {
     name: "dispatch/02 a lane re-opened after cleanup CONTINUES the item's own line — it never forks a second branch for the same ref",
     run: () =>
       withDispatchRepo(async ({ root }) => {

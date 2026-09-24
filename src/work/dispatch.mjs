@@ -22,7 +22,7 @@
 // than re-invented; only the lane's root and its branch policy differ.
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { stat } from "node:fs/promises";
+import { copyFile, mkdir, stat } from "node:fs/promises";
 import {
   meshDispatchWorktreePath,
   isUnderMeshDispatchWorktreesRoot,
@@ -257,6 +257,7 @@ export async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     throw error;
   }
   const lane = await openDispatchLane(projectRoot, itemRef, options);
+  await inheritLocalClaudeSettings(projectRoot, lane.worktree);
   if (advanceTo == null) return lane;
   const advance = await advanceBranchToBase(lane.worktree, advanceTo, { exec: options.exec });
   // EVERY refusal is `lane-open-failed` (PO ruling, 129/03 fix round, I3): a lane that cannot be
@@ -266,6 +267,28 @@ export async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     ? { ...advance, code: "lane-open-failed", cause: advance.code }
     : advance;
   return { ...lane, advanced };
+}
+
+// inheritLocalClaudeSettings(projectRoot, worktree) — A LANE CARRIES THE OPERATOR'S LOCAL CLAUDE
+// CONSENT (2026-09-24). `.claude/settings.local.json` is git-ignored, so a lane cut from the primary
+// never has it — and in a repo with a `.mcp.json` it is where the operator approved those servers
+// (`enabledMcpjsonServers`). Without it every lane's `claude` opens on the MCP-approval dialog,
+// which eats the typed directive: no transcript, no session id, `failed / timeout` at the
+// deadline (voice-vox-company-portal, 01/01, 01/06, 01/08 — nine attempts, none started). The
+// primary's own file is copied, never synthesised: the lane is the same repository and the same
+// operator, so it approves exactly what the primary approved. A lane that already holds the file
+// keeps its own; a primary with none copies nothing. Best-effort — a failed copy leaves claude's
+// dialog in place, as before.
+async function inheritLocalClaudeSettings(projectRoot, worktree) {
+  const source = path.join(projectRoot, ".claude", "settings.local.json");
+  const target = path.join(worktree, ".claude", "settings.local.json");
+  if (path.resolve(source) === path.resolve(target) || !existsSync(source) || existsSync(target)) return;
+  try {
+    await mkdir(path.dirname(target), { recursive: true });
+    await copyFile(source, target);
+  } catch (error) {
+    reportDegrade("work-dispatch", error);
+  }
 }
 
 // openDispatchLane(projectRoot, itemRef, options) — the three doors, exactly as before 129/03
