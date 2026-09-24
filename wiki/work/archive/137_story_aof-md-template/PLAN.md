@@ -25,13 +25,13 @@ In `work.mjs`, the existing `meta.doc === "digest"` branch gains the key and sec
 contract module. The branch sees only `meta` today; the headings need the doc text, so read it where
 the record doc is already loaded rather than re-walking the tree.
 
-Follow the OUTCOME precedent (`test/run/outcome-template-shared-home.test.mjs`) for task 00: the
-real descriptor, the real bundle root, the real shipped manifest.
+Follow the OUTCOME precedent (the shared-home suite that pins OUTCOME.md's template) for task 00:
+the real descriptor, the real bundle root, the real shipped manifest.
 
 ## Verification
 
-- Focused lanes, isolated: `AOF_GLOBAL_HOME=$(mktemp -d) node scripts/test.mjs --only <the new and
-  touched test files>` — never the full suite on this machine.
+- Focused lanes, isolated: the test runner's `--only` lane over the new and touched test files, under
+  `AOF_GLOBAL_HOME=$(mktemp -d)`. Never the full suite on this machine.
 - `aof work validate` from the repo root stays green, including the archived 42 digest.
 - End to end: `aof import` a milestone from a scratch copy of a legacy source whose milestone sits
   in a stream folder, then `aof work validate` there — the fresh AOF.md draws no finding (no stale

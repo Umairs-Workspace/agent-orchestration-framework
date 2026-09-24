@@ -89,7 +89,10 @@ export const LINKS_IN_MOVED_BEFORE = Object.freeze({ total: 2810, resolving: 212
 // `src/…#L…`-shaped citations moved under archive/ with it (broken before the move inside the root
 // folder, broken after inside the archived one; "into archive/" is where they now resolve). Every
 // later archive of a folder carrying such citations moves this number the same way.
-export const BROKEN_INTO_MOVED_BEFORE = 51;
+// 2026-09-24 (130's door, F-23): 51 → 52 when 129 was archived. Its VERIFICATION.md:572 carries a
+// literal `](target)` placeholder link, broken inside the root folder before the move and broken
+// inside the archived one after it. 132 and 137 carried none.
+export const BROKEN_INTO_MOVED_BEFORE = 52;
 
 // The validate ratchet (see the header): the whole-tree finding set at `ba25547`, before the move,
 // was 117 findings of exactly one class. The move may not add a finding of any class.
@@ -251,7 +254,13 @@ const stripDir = ({ dir, ...rest }) => rest;
 // A LIVE row on the listing is the frozen seven keys and nothing else: no `number` (a backlog row
 // carries `number: null`), no `archived`. MAX is the highest top-level number among those.
 const isLiveRow = (row) => row.number === undefined && row.archived !== true;
-const liveTopLevelMax = (rows) => rows.filter((row) => row.parent == null && isLiveRow(row)).reduce((max, row) => Math.max(max, Number.parseInt(row.ref, 10)), -1);
+// The contract reads MAX off the LIVE rows, which held while the highest number was live. Once the
+// highest-numbered driver is archived (137, at 130's door), promote still mints past it, because an
+// archived number is never reused (127/ADR-004: `find 137` still answers). So MAX here spans every
+// numbered top-level row, live or archived; backlog rows (`number: null`) stay excluded
+// (130/VERIFICATION F-23).
+const isNumberedRow = (row) => isLiveRow(row) || row.archived === true;
+const liveTopLevelMax = (rows) => rows.filter((row) => row.parent == null && isNumberedRow(row)).reduce((max, row) => Math.max(max, Number.parseInt(row.ref, 10)), -1);
 
 // The copy is built once for the add → promote pair (scenario 3 continues scenario 2's copy) and
 // removed by the last case that uses it; a fresh one is built for the faithfulness scenario.
