@@ -24,7 +24,7 @@ authorities are the defining exports `isLegalTransition` at `src/run-store.mjs:2
 their member values.
 
 The measurement authorities are `retryReadiness` at `src/run-store.mjs:437` and `isStale` at
-`src/run-store.mjs:1031`. The actuator command ids are defined at `src/commands/run-start.mjs:31-32`,
+`src/run-store.mjs:1044`. The actuator command ids are defined at `src/commands/run-start.mjs:31-32`,
 `src/commands/run-retry.mjs:23-24`, and `src/commands/run-complete.mjs:26-27`, and are registered in
 `src/command-core.mjs:219-224`. The local recovery scan occurs on run start (RESEARCH §Q1.5), establishing
 `event:per-run-start`; the mesh clock belongs to a different loop.
