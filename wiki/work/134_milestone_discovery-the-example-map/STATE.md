@@ -14,6 +14,53 @@ doc: state
 - [x] Refined 2026-09-23 (solo): RESEARCH.md (the anchor measured), ARCHITECTURE.md (ADR-001 to
   ADR-007, FF-13401 to FF-13404 pending, one diagram for ADR-003), five stories broken down.
 - [ ] Story contracts: each story's `tasks/` at its own refine.
+  - [x] 01 refined 2026-09-24 (orchestrated: PO inline, `aof-qa` Examples, `aof-developer`
+    feasibility): one `@manual @docs` task, `reads:` widened to the 21 stories' records, `PLAN.md`.
+  - [x] 02 refined 2026-09-24 (orchestrated: PO inline, `aof-qa` Examples, `aof-developer`
+    feasibility): three `@executable` tasks (grammar, queries + token, config gate), `PLAN.md`.
+    Rulings taken in the contract: question fields read by position and fail closed both ways
+    (class → `business`, state → `open`); 13 frozen `MALFORMED_REASONS`; `EXAMPLES_DOC` is the one
+    spelling of the file name; an unknown `work.examples` key is `examples-gate-unknown-key`.
+    FF-13402 admits `src/declared-id.mjs` (the retrospective `## R<n>` heading) by name. The
+    milestone `VERIFICATION.md` is in 02's `files:` for its red probe; 03 and 04 land controls
+    too and do not declare it yet, so their refine owes the same entry.
+  - [x] 03 refined 2026-09-24 (orchestrated: PO inline, `aof-developer` feasibility first,
+    then `aof-qa` Examples): three `@executable` tasks (reader + FF-13401, stamp + collect,
+    settle directory + FF-13404) and one operator-gated `@manual` (R6 at the source), `PLAN.md`.
+    Rulings taken in the contract: the stamp rides `brief.answers` (FF-6908 freezes the sixteen
+    top-level keys; `carriedBrief` drops it on retry); a read with no tokened answer writes
+    nothing. Feasibility found a withheld-spend hazard: with a resolved default directory,
+    `completeRun` would charge a resumed run with the whole transcript's cost. So
+    `transitionRunComplete` takes `spendSettled`, the two driven settles (`src/loop/cycle.mjs`,
+    `src/commands/drive.mjs`) pass it, and both joined 03's `files:`. FF-13404 is narrowed in
+    the contract (the default applies only when a workspace is named). FF-5307's run-store pin
+    re-pins in 03. The R6 probe runs on 134/03 itself, not on a throwaway story, because a story
+    inserted under 134 would be picked up by a loop cascading it. `VERIFICATION.md` and
+    `STATE.md` are in 03's `files:`.
+  - [x] 04 refined 2026-09-24 (orchestrated: PO inline, `aof-qa` Examples, `aof-developer`
+    feasibility): four `@executable` tasks (the lane, the probe + `examples` budget row, the
+    continue door, FF-13403), `PLAN.md`. Rulings taken in the contract: the three error codes
+    take the acceptance horizon (warn once `done`); codes are `EXAMPLE_LANE_CODES`, never
+    `*_FINDING_CODES` (FF-12402); the door refuses on ANY error finding, malformed included,
+    as `examples-question-open` with `detail.findings`, before the overlay read, and only for
+    `continue`; `projectsDir` is a new `doctorWork`/`buildSnapshot` option, resolved by the doctor
+    command. Two deltas ratified in the contract, not the ADR: ADR-005 names "four codes" and §4
+    "either error code", but the lane has five codes, three of them errors; and `src/work` is
+    45 → 46, because 137's `digest-template.mjs` took 44 → 45 at 130's gate.
+    `VERIFICATION.md` is in 04's `files:`. 03's `PLAN.md` is red on FF-9603 (one path per plan);
+    04's was fixed at feasibility.
+  - [x] 05 refined 2026-09-24 (orchestrated: PO inline, `aof-qa` Examples, `aof-developer`
+    feasibility): five `@executable @docs` tasks (refine's beat, the `--autonomous` stop, the two
+    briefs, the template, the guide), `PLAN.md` (FF-9603 clean). Rulings taken in the contract:
+    the `EXAMPLES.md` template carries NO frontmatter (F-73-G: the render's byte-zero marker would
+    make it malformed), a deliberate departure from ADR-001 §2's sample; guidance and the
+    `Not applicable:` line sit in one comment, the live lines are a full legal map, and the
+    installed copy is at most 50 lines (sketched at 35). The Contract stop is by severity (a warn
+    does not stop). Each token form is taught with one worked question that 02's `readMapToken`
+    reads back. A refused `AskUserQuestion` counts as a deferral. The headline-Scenario sentence
+    moves below the beat. The suite imports nothing from 04. Feasibility widened `files:` for
+    FF-7106 (the story template directory's other two installed copies) and for the two
+    `.aof/loops` copies stale since 130, which `aof work update` rewrites.
 
 ## Notes & decisions in flight
 
@@ -37,6 +84,14 @@ doc: state
 - **Doctor at refine close:** `verification-register-missing` (error) and four `control-unresolved`
   (warn, `pending`) until the stories land FF-13401 to FF-13404 and record their red probes in a
   VERIFICATION.md. This is expected; validate passes.
+- **01's feasibility, measured at its refine (2026-09-24).** Git cannot count amendment rounds: no
+  task `.feature` of 124/126/127/133 changed after first commit except the `f76c153` scrub; 124
+  and 126 arrived squash-merged at the public-root cut. Rounds are read from the records, and 124
+  and 126 are floors. `.git-archive` is local-only, so no R7 command may depend on it. `reads:`
+  admits files only (validate reads each entry), so the stories' records are listed one by one.
+  126/F-35 and 127/F-27 have shifted register cells; R7 classifies from the prose.
+- **Open: the origin research is untracked.** `wiki/planning/research/RESEARCH-specification-by-example.md`
+  is cited by 01's contract against the committed tree and must be committed with this milestone.
 - **`ruled` rejected** (ADR-001 §3): an ADR is agent-written, so a business rule decided by one
   is the smuggled default this milestone exists to stop.
 

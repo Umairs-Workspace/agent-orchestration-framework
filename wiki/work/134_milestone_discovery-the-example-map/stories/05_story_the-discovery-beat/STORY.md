@@ -5,10 +5,10 @@ slug: the-discovery-beat
 title: "The discovery beat — refine maps rules, key examples and questions before any headline Scenario, asks a person the business questions, and --autonomous asks them at its one stop"
 parent: 134
 depends: [02]
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-24
 adrs: [ADR-001, ADR-003, ADR-004, ADR-005, ADR-006]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
@@ -30,6 +30,8 @@ reads:
   - test/bundle/bundle-architect-draws.test.mjs
   - test/work/story-plan-document.test.mjs
   - test/examples/index.mjs
+  - src/commands/insert-shared.mjs
+  - test/support/source-slice.mjs
 files:
   - src/bundle/commands/refine.md
   - src/bundle/agents/aof-product-owner.md
@@ -47,6 +49,11 @@ files:
   - .opencode/agents/aof-product-owner.md
   - .opencode/agents/aof-architect.md
   - .aof/templates/work/story/EXAMPLES.md
+  - .aof/templates/work/story/PLAN.md
+  - .aof/templates/work/story/STORY.md
+  - .aof/loops/mesh-assignment-reclaim.md
+  - .aof/loops/run-resilience.md
+  - .aof/aof.lock.json
   - test/examples/index.mjs
   - test/examples/refine-discovery-beat.test.mjs
 schema: 1
@@ -77,7 +84,11 @@ the level above the three zoom levels. All rendered copies are refreshed through
 
 ## Tasks
 
-To be authored at story refine.
+- [ ] 00 [refine opens the story contract with a discovery beat when the gate is on](tasks/00_refine-opens-the-story-contract-with-a-discovery-beat-when-the-gate-is-on.feature)
+- [ ] 01 [--autonomous brings every open business question to its one stop as a question](tasks/01_autonomous-brings-every-open-business-question-to-its-one-stop-as-a-question.feature)
+- [ ] 02 [the PO brief learns the map and the architect brief learns the classification review](tasks/02_the-po-brief-learns-the-map-and-the-architect-brief-learns-the-classification-review.feature)
+- [ ] 03 [the EXAMPLES.md template is a legal map the bundle installs](tasks/03_the-examples-template-is-a-legal-map-the-bundle-installs.feature)
+- [ ] 04 [the acceptance-criteria guide names discovery above the three zoom levels](tasks/04_the-acceptance-criteria-guide-names-discovery-above-the-three-zoom-levels.feature)
 
 ## Notes
 

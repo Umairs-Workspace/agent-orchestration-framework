@@ -1,0 +1,30 @@
+{
+  "runId": "20260923T234147650Z-0000",
+  "itemRef": "134/03",
+  "state": "running",
+  "attempt": 1,
+  "outcome": null,
+  "sessionId": "f262116a-ce58-431f-9e32-a967a4f299d3",
+  "brief": {
+    "loop": {
+      "loopRunId": "31b98c4d-fe21-43c9-819c-16e9927e4190",
+      "scope": "134",
+      "level": "L2",
+      "cap": 3,
+      "phase": "refine",
+      "cycle": 1,
+      "startedAt": "2026-09-23T23:13:10.187Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    }
+  },
+  "createdAt": "2026-09-23T23:41:47.650Z",
+  "updatedAt": "2026-09-24T00:04:13.635Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-09-24T00:04:13.635Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null
+}
