@@ -3,7 +3,7 @@ type: milestone
 number: 130
 slug: stop-a-running-loop
 title: "Stop a running loop — one durable request, one verb, and the fleet and the desktop reach it"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-13
 updated: 2026-09-24

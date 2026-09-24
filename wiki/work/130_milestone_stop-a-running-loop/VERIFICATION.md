@@ -122,8 +122,23 @@ the fleet (`http://127.0.0.1:4181`) plus a `Route` per surface, then re-run the 
 | F-21 | Gate run 2: done drivers still at the root of `wiki/work` (`129`, `132`, `137`). `work-this-tree-holds-what-is-live 02` refuses that. | process | blocker (gate) | operator's act (127/ADR-004) | the operator: `aof work archive` | fixed: archived by the agent on the operator's instruction (three pure moves, 0 links rewritten) |
 | F-22 | Gate run 2: 134's in-flight loop, committed on this branch, reds two things. 134/03's `PLAN.md:47` restates a declared path (FF-9603). Its VERIFICATION has no register rows for FF-13401/03/04, so doctor reports three error-level findings (`this-tree-holds-what-is-live 00`). | defect | blocker (gate) | another lane's live work | 134 (its loop, or the operator) | fixed once the operator confirmed 134's loop had finished: `pending (134/NN)` rows for the three controls (130's convention), and PLAN.md's install step names the installer without restating its path |
 | F-23 | Pre-gate check after F-21's archives, three knock-on reds. (a) 137's `PLAN.md` restated two declared paths (FF-9603), hidden until then behind 134's. (b) `this-tree-holds-what-is-live 00` reads MAX off LIVE rows, as 127/05's delivered contract defines it, but promote never reuses an archived number, so with 137 archived it mints 138, not 135. (c) The archive-link ratchet: 129's `VERIFICATION.md:572` carries a literal `](target)` placeholder link, now counted as broken "into archive/" (51 → 52). | defect | blocker (gate) | knock-on of the door's own archive: repair | 137 (`PLAN.md`); 127/05's suite (MAX, ratchet) | fixed. 137's PLAN names its references without their paths. The suite's MAX spans archived rows, and this item records the amendment: MAX is the highest number among every numbered top-level row, live or archived. The ratchet moves 51 → 52, documented in the pin. |
-| F-24 | Gate run 3 (`c30a05d`) was red on one case: `69/02 task00 — heartbeat silence expires only after startup grace`. The case asserts exactly one silence read inside 15 ms windows. It was green in run 2's whole tree and passed 3/3 alone at the same commit, and neither the suite nor the driver changed since 129/06. | defect | minor | non-blocker: a wall-clock-tight assertion under whole-tree contention | backlog (four-deadlines: assert `>= 1` read, or drive the silence check from an injected clock) | open. Gate re-run. |
+| F-24 | Gate run 3 (`c30a05d`) was red on one case: `69/02 task00 — heartbeat silence expires only after startup grace`. The case asserts exactly one silence read inside 15 ms windows. It was green in run 2's whole tree and passed 3/3 alone at the same commit, and neither the suite nor the driver changed since 129/06. | defect | minor | non-blocker: a wall-clock-tight assertion under whole-tree contention | backlog (four-deadlines: assert `>= 1` read, or drive the silence check from an injected clock) | open (deferred). Gate run 4 was green over the whole tree. |
 
 ## Accept decision
 
-<!-- Written at `aof:verify 130`. -->
+**ACCEPTED, 2026-09-24, at `aof:verify 130`.**
+
+- **Stories:** 01–06 accepted, each on its own evidence above. 04's `@manual` tasks were discharged
+  by cargo, FF-13007's node leg, the fixture render and 06's leg 6. 06's legs were read at the source.
+- **Whole tree:** `aof work regression-gate 130` is **green** at `9b8a5b9` (`REGRESSION.md`, row 4).
+  Rows 1–3 were red. Every red was attributed and repaired at its owner (F-15 to F-23) or classified
+  as a timing flake (F-24).
+- **Controls:** FF-13001 to FF-13007 are green, each with a recorded red probe. `aof work doctor 130`
+  reports no `control-unresolved` at either severity, and `aof work validate 130` passes.
+- **Findings:** no blocker is open. F-01 and F-02 (the live run's blockers) are fixed, and F-15 to
+  F-23 (the door's) are fixed. F-03 to F-14 and F-24 are non-blockers or design-gaps, deferred as
+  routed.
+- **Design conformance:** INCONCLUSIVE. It is not a blocker: no base URL and no `Route` exist to
+  render, and closing it is an OUTCOME gap.
+- **Operator rulings at this door:** FF-5301's reach ceilings raised for 137's module (F-16); 129,
+  132 and 137 archived by the agent (F-21); 134 repaired once its loop had finished (F-22).
