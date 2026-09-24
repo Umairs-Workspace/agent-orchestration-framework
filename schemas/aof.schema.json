@@ -436,6 +436,14 @@
           "required": ["generator"],
           "additionalProperties": false
         },
+        "examples": {
+          "type": "object",
+          "description": "OPTIONAL discovery gate (milestone 134, ADR-006). Absent means off, and off means today: refine runs no discovery beat, and the doctor lane and the continue door read no EXAMPLES.md. Only the boolean true turns it on. Authoritative validation is `aof project validate`. Closed (additionalProperties:false).",
+          "properties": {
+            "enabled": { "type": "boolean", "description": "OPTIONAL. true turns the example-map discovery gate on; false or absent leaves it off." }
+          },
+          "additionalProperties": false
+        },
         "headroom": {
           "type": "object",
           "description": "OPTIONAL headroom plugin config (milestone 06). Absent ≡ off — the work-board terminal launch is byte-for-byte unchanged when this block is absent or { enabled: false }. Closed (additionalProperties:false), peer to work.ui.",

@@ -23,6 +23,7 @@ import { tests as archAuditTests } from "../test/arch/audit/index.mjs";
 import { tests as archBundleTests } from "../test/arch/bundle/index.mjs";
 import { tests as archCommandTests } from "../test/arch/command/index.mjs";
 import { tests as archDiagramsTests } from "../test/arch/diagrams/index.mjs";
+import { tests as archExamplesTests } from "../test/arch/examples/index.mjs";
 import { tests as archGradeTests } from "../test/arch/grade/index.mjs";
 import { tests as archGraphTests } from "../test/arch/graph/index.mjs";
 import { tests as archLoopTests } from "../test/arch/loop/index.mjs";
@@ -41,6 +42,7 @@ import { tests as auditTests } from "../test/audit/index.mjs";
 import { tests as bundleTests } from "../test/bundle/index.mjs";
 import { tests as commandTests } from "../test/command/index.mjs";
 import { tests as diagramsTests } from "../test/diagrams/index.mjs";
+import { tests as examplesTests } from "../test/examples/index.mjs";
 import { tests as gradeTests } from "../test/grade/index.mjs";
 import { tests as graphTests } from "../test/graph/index.mjs";
 import { tests as loopTests } from "../test/loop/index.mjs";
@@ -79,6 +81,7 @@ export const tests = [
   ...archBundleTests,
   ...archCommandTests,
   ...archDiagramsTests,
+  ...archExamplesTests,
   ...archGradeTests,
   ...archGraphTests,
   ...archLoopTests,
@@ -97,6 +100,7 @@ export const tests = [
   ...bundleTests,
   ...commandTests,
   ...diagramsTests,
+  ...examplesTests,
   ...gradeTests,
   ...graphTests,
   ...loopTests,

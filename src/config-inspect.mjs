@@ -1200,6 +1200,7 @@ function validateWork(work, diagnostics) {
   }
   validateWorkAgents(work.agents, diagnostics);
   validateWorkPlan(work.plan, diagnostics);
+  validateWorkExamples(work.examples, diagnostics);
   validateWorkDiagrams(work.diagrams, diagnostics);
 }
 
@@ -1325,6 +1326,51 @@ function validateWorkPlan(plan, diagnostics) {
       "work.plan.enabled",
       "work.plan.enabled must be a boolean when provided.",
       "plan-gate-bad-value"
+    ));
+  }
+}
+
+// --- work.examples — the discovery gate (milestone 134 / ADR-006) ---------------
+// The plan gate's rule, carried over: a BOOLEAN whose default is FALSE, and anything that is not
+// the boolean `true` resolves OFF. Discovery costs a person's time and a refine beat, so a project
+// opts in. Off means today.
+//
+// UNLIKE THE PLAN GATE, THIS ONE HAS CODE READERS — the snapshot probe, the doctor lane and the
+// continue door (134/04) — and each asks this one resolver. It reads `enabled` alone and never
+// throws, so a config that fails validation still resolves; the diagnostic is the validator's.
+// The object is closed: a misspelt `enable` is diagnosed rather than passing silently as off.
+const EXAMPLES_KEYS = new Set(["enabled"]);
+
+export function examplesEnabledFromConfig(config) {
+  return config?.work?.examples?.enabled === true;
+}
+
+function validateWorkExamples(examples, diagnostics) {
+  if (examples === undefined) return;
+  if (!examples || typeof examples !== "object" || Array.isArray(examples)) {
+    diagnostics.push(diagnostic(
+      "error",
+      "work.examples",
+      "work.examples must be an object when provided.",
+      "examples-gate-bad-value"
+    ));
+    return;
+  }
+  for (const key of Object.keys(examples)) {
+    if (EXAMPLES_KEYS.has(key)) continue;
+    diagnostics.push(diagnostic(
+      "error",
+      `work.examples.${key}`,
+      `work.examples.${key} is not a known key; work.examples takes only "enabled".`,
+      "examples-gate-unknown-key"
+    ));
+  }
+  if (examples.enabled !== undefined && typeof examples.enabled !== "boolean") {
+    diagnostics.push(diagnostic(
+      "error",
+      "work.examples.enabled",
+      "work.examples.enabled must be a boolean when provided.",
+      "examples-gate-bad-value"
     ));
   }
 }

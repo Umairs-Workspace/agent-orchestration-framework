@@ -1,0 +1,50 @@
+{
+  "runId": "20260924T005944980Z-0001",
+  "itemRef": "134/02",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "9baca2af-fdf2-42db-8753-8f130adace64",
+  "brief": {
+    "loop": {
+      "loopRunId": "31b98c4d-fe21-43c9-819c-16e9927e4190",
+      "scope": "134",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-23T23:13:10.187Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-134-02",
+      "branch": "aof/mesh/134-02",
+      "baseCommit": "bfb3654546578a9f16290c34643f99388995a3b7"
+    }
+  },
+  "createdAt": "2026-09-24T00:59:44.980Z",
+  "updatedAt": "2026-09-24T01:14:26.121Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 260,
+      "output": 172563,
+      "cacheRead": 21120952,
+      "cacheCreate": 384733
+    },
+    "costUsd": 10.368259349999999,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 130,
+    "toolCalls": 65,
+    "exitReason": "final_output"
+  }
+}

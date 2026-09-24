@@ -5,10 +5,10 @@ slug: the-map-is-a-document
 title: "The map is a document — the EXAMPLES.md grammar and its one parser, the work-examples family, and the work.examples gate"
 parent: 134
 depends: []
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-24
 adrs: [ADR-001, ADR-002, ADR-004, ADR-006]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
@@ -65,9 +65,9 @@ and `test/arch/examples/`, each with its exemption, which names its planned memb
 
 ## Tasks
 
-- [ ] 00 [the map parses in a closed grammar and fails closed](tasks/00_the-map-parses-in-a-closed-grammar-and-fails-closed.feature)
-- [ ] 01 [the queries and the token have one home](tasks/01_the-queries-and-the-token-have-one-home.feature)
-- [ ] 02 [the examples gate is off unless a project turns it on](tasks/02_the-examples-gate-is-off-unless-a-project-turns-it-on.feature)
+- [x] 00 [the map parses in a closed grammar and fails closed](tasks/00_the-map-parses-in-a-closed-grammar-and-fails-closed.feature)
+- [x] 01 [the queries and the token have one home](tasks/01_the-queries-and-the-token-have-one-home.feature)
+- [x] 02 [the examples gate is off unless a project turns it on](tasks/02_the-examples-gate-is-off-unless-a-project-turns-it-on.feature)
 
 ## Notes
 
