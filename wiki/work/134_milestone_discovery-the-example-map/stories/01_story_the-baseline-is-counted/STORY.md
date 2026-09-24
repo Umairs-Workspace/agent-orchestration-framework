@@ -5,7 +5,7 @@ slug: the-baseline-is-counted
 title: "The baseline is counted — misunderstood-requirement findings and amendment rounds per story, on four delivered milestones, before the gate ships"
 parent: 134
 depends: []
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-09-23
 updated: 2026-09-24
@@ -121,7 +121,7 @@ lists the commands and the classification rule, so another reader can repeat the
 
 ## Tasks
 
-- [ ] 00 [the baseline is counted by a stated method](tasks/00_the-baseline-is-counted-by-a-stated-method.feature)
+- [x] 00 [the baseline is counted by a stated method](tasks/00_the-baseline-is-counted-by-a-stated-method.feature)
 
 ## Notes
 
