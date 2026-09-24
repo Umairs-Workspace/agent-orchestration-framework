@@ -3,8 +3,8 @@
 ## Mechanism
 
 The template is a plain file in the bundle's `milestone` template member — `bundle.json` declares
-the member as a directory, so adding the file is the whole install change; regenerate the shipped
-manifest with `node scripts/generate-bundle-manifest.mjs`.
+the member as a directory, so adding the file is the whole install change; then regenerate the
+shipped manifest with the repo's bundle-manifest generator.
 
 One new leaf module, `src/work/digest-template.mjs`, owns the contract. It reads the shipped
 template once through `readAssetText("bundle", "templates/milestone/AOF.md")` and parses it into
