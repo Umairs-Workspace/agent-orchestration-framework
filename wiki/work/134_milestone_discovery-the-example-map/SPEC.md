@@ -6,7 +6,7 @@ title: "Discovery before formulation — a story's rules and key examples are ma
 status: in-progress
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-24
 origin: wiki/planning/research/RESEARCH-specification-by-example.md
 schema: 1
 aofVersion: 0.1.0

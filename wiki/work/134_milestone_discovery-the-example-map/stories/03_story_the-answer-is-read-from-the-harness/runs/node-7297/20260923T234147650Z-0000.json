@@ -1,9 +1,9 @@
 {
   "runId": "20260923T234147650Z-0000",
   "itemRef": "134/03",
-  "state": "running",
+  "state": "failed",
   "attempt": 1,
-  "outcome": null,
+  "outcome": "failed",
   "sessionId": "f262116a-ce58-431f-9e32-a967a4f299d3",
   "brief": {
     "loop": {
@@ -19,11 +19,11 @@
     }
   },
   "createdAt": "2026-09-23T23:41:47.650Z",
-  "updatedAt": "2026-09-24T00:04:13.635Z",
-  "failureReason": null,
+  "updatedAt": "2026-09-24T08:37:01.529Z",
+  "failureReason": "runtime_offline",
   "heartbeatAt": "2026-09-24T00:04:13.635Z",
   "retryOf": null,
-  "reclaimedAt": null,
+  "reclaimedAt": "2026-09-24T08:37:01.529Z",
   "node": "node-7297",
   "resumeAfter": null,
   "spend": null

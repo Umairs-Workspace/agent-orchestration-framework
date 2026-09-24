@@ -1,9 +1,9 @@
 {
-  "runId": "20260924T005908123Z-0001",
+  "runId": "20260924T083726322Z-0002",
   "itemRef": "134",
-  "state": "failed",
+  "state": "running",
   "attempt": 1,
-  "outcome": "failed",
+  "outcome": null,
   "sessionId": null,
   "brief": {
     "loop": {
@@ -22,14 +22,14 @@
         "134/01",
         "134/02"
       ],
-      "baseCommit": "3666750d886d5fe658e9887fbb0831bd40cc19a7",
+      "baseCommit": "897028e53d6cb9ae76becbd3fe8b8fb5c4327e8e",
       "bound": 3
     }
   },
-  "createdAt": "2026-09-24T00:59:08.123Z",
-  "updatedAt": "2026-09-24T01:19:35.540Z",
-  "failureReason": "agent_error",
-  "heartbeatAt": "2026-09-24T01:14:44.652Z",
+  "createdAt": "2026-09-24T08:37:26.322Z",
+  "updatedAt": "2026-09-24T08:37:26.322Z",
+  "failureReason": null,
+  "heartbeatAt": null,
   "retryOf": null,
   "reclaimedAt": null,
   "node": "node-7297",
