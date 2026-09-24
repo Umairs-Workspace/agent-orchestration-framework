@@ -5,7 +5,7 @@ slug: the-answer-is-read-from-the-harness
 title: "The answer is read from the harness — one reader of AskUserQuestion answers, stamped once onto the run record at settle, from the real transcript store"
 parent: 134
 depends: [02]
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-09-23
 updated: 2026-09-24
