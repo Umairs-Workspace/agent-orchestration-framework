@@ -588,9 +588,10 @@ export const workArchiveIsAMoveTests = [
       // table; the sibling that raises it next moves this literal with it). 03's own claim — the
       // row names 127/03 and `archive.mjs` — is unchanged. It reads 44 since 133/03 landed
       // `doctor-diagrams.mjs`, the doctor family's diagram lane, with its reason in the row's `why`.
+      // It reads 45 since story 137's `digest-template.mjs`, raised at 130's door (130/VERIFICATION F-15).
       // `test/work/stream` reads 35 since 127/05 raised the row for its own suite (34 -> 35): the
       // pin is what this scenario asks for, and the raise is stated in the row's own `why`.
-      for (const [directory, ceiling, file] of [["src/commands", 69, "archive.mjs"], ["src/work", 44, "archive.mjs"], ["test/work/stream", 35, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
+      for (const [directory, ceiling, file] of [["src/commands", 69, "archive.mjs"], ["src/work", 45, "archive.mjs"], ["test/work/stream", 35, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
         const start = budget.indexOf(`directory: "${directory}",`);
         const block = budget.slice(start, budget.indexOf("}),", start));
         assert.match(block, new RegExp(`ceiling: ${ceiling},`), `${directory} reads ${ceiling}`);

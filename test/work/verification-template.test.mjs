@@ -50,8 +50,13 @@ const lines = () => source().split("\n");
 // once under the type-agnostic `shared` member, because a milestone, a story AND a chore
 // each author one. Its own membership + move is pinned by
 // test/run/outcome-template-shared-home.test.mjs.
+//
+// AOF.md JOINED at story 137: the imported milestone's digest record doc, milestone-shaped
+// (validate reads it AOF.md-first for a milestone only). Named here at 130's door, where the
+// whole tree first read it (130/VERIFICATION F-20); its own shape is pinned by
+// test/bundle/digest-template-ships.test.mjs.
 const MILESTONE_TEMPLATES_SHIPPED_BEFORE = [
-  "ARCHITECTURE.md", "COMPLIANCE.md", "DESIGN.md", "RESEARCH.md",
+  "AOF.md", "ARCHITECTURE.md", "COMPLIANCE.md", "DESIGN.md", "RESEARCH.md",
   "SECURITY.md", "SPEC.md", "STATE.md", "UAT.md",
 ];
 
