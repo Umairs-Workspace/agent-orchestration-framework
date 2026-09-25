@@ -19,7 +19,7 @@ doc: state
 - [x] 04 the answer reaches the session
 - [x] 05 the board shows the question and takes the answer
 - [x] 06 the register
-- [ ] 07 the live run (`@manual`) — waits on 08
+- [ ] 07 the live run (`@manual`) — re-refined for 08; operator procedure pending
 - [x] 08 the messaging CLI
 
 ## Notes & decisions in flight
@@ -234,32 +234,32 @@ doc: state
 
 ## 131/07 · The live run — read at the source (operator procedure, pending)
 
-**SUPERSEDED IN PART (2026-09-25):** the operator ruled the env-var setup out; 131/08 adds
-`aof messaging init discord` + `enable discord`, and 07 now depends on it. Task 01's PRECONDITION below
-(the user env var and the restart for it) is re-authored at 07's re-refine; the install, fixture and
-config of task 00 are re-done after 08 lands. Do NOT run the procedure below until then.
+**RE-REFINED at `aof:verify 131` (2026-09-25, operator-directed).** 131/08 stores the webhook
+machine-wide, so the precondition is `aof messaging init discord`, not a user env var. The restart
+stays, for the new payload. Task 00 was re-done below against the re-refined contract. The
+superseded first attempt (`cf10030+dirty.20260925T095735`) is in git history at `eb26477`.
 
 Task 00 (the agent's half) is done and pasted below. Task 01 is the operator's, and its slots are
 empty. 131/07 stays `in-progress` until every slot is filled; `aof:verify 131` reads this section.
 Paths are scrubbed (`umami`); paste the same way.
 
-### Task 00 — the stage is set (agent, 2026-09-25, run `20260925T085625727Z-0003`)
+### Task 00 — the stage is set (agent, re-done at `aof:verify 131`, 2026-09-25)
 
 verifies → `00` "the payload is installed from the main checkout and read at the source".
-`node scripts/install-local.mjs` from the main checkout `C:\Source\umami\aof` (branch `127-129`),
-no flags, exit 0: `ui:build : yes`, `synced src/`, `synced ui/dist (3 files)`,
-`stamped BUILD_ID.json (cf10030+dirty.20260925T095735)`. **The payload is the WORKING TREE:** 131's
-code (`src/notify/`, `src/loop/ask*.mjs`, the 01–06 edits) is still uncommitted, so `+dirty` is
-what carries it. Then:
+`node scripts/install-local.mjs` ran from the main checkout `C:\Source\umami\aof` (branch
+`127-129`, HEAD `d7179db`) with no flags and exited 0. It printed `synced src/`, `synced bundle/ (91 files)`,
+`synced ui/dist (3 files)` and `stamped BUILD_ID.json (d7179db+dirty.20260925T131746)`. `src/`, `ui/` and
+`scripts/` are clean at `d7179db`. The `+dirty` comes only from wiki files: 134's two, the
+backlog, and this re-refine's 07 edits.
 
 ```
 > ~/.aof/bin/aof.exe --version
-0.1.0 (payload cf10030+dirty.20260925T095735)
+0.1.0 (payload d7179db+dirty.20260925T131746)
 > Get-Content ~/.aof/bin/BUILD_ID.json
 {
-  "buildId": "cf10030+dirty.20260925T095735",
-  "installedAt": "2026-09-25T08:57:35.726Z",
-  "sourceRepo": "C:\\Source\\umami\\aof"
+  "buildId": "d7179db+dirty.20260925T131746",
+  "installedAt": "2026-09-25T12:17:46.623Z",
+  "sourceRepo": "C:\Source\umami\aof"
 }
 > ~/.aof/bin/aof.exe work answer --help
 Unknown flag "--help" for work:answer.
@@ -269,51 +269,54 @@ Usage: aof work answer <ref> "<text>" [--as <actor>] [--json]
 Unknown flag "--help" for work:loop.
 
 Usage: aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--dry-run] [--quiet] [--supervised] [--json]
+> ~/.aof/bin/aof.exe messaging status        (test-bed root)
+discord
+  this machine: not set — run `aof messaging init discord`
+  env override AOF_DISCORD_WEBHOOK_URL: not set
+  this project: enabled (discord)
 ```
 
-Both usage lines carry the named flags; `--help` itself is refused as an unknown flag, exit 1
-(recorded under Feedback). **Installed, restart pending (operator).** The builder did not restart
-the desktop app.
+Both usage lines carry the named flags (`--help` itself is refused CLI-wide, a known note). The
+`messaging status` block proves the payload carries 131/08. `this machine: not set` is the
+operator's first step (P.1). **Installed, restart pending (operator).**
 
 verifies → `00` "the test-bed carries a refined fixture milestone" and "the test-bed's config".
-Test-bed `C:\Source\umami\aof-test-repo`, branch `131-07-ask-target`, commit `77382d0`. It holds
-`03_milestone_ask-target` with three `not-started` stories, no `depends:`, each one refined task:
-`00_story_joiner` (`src/joinWords.mjs`, `test/joinWords.test.mjs`; the task reserves the separator),
-`01_story_labeller` (`src/label.mjs`, `test/label.test.mjs`; the task reserves the case) and
-`02_story_counter` (`src/countWords.mjs`, `test/countWords.test.mjs`; reserves nothing). No
-scenario, example or note spells a separator or a case. Config: `work.loop.concurrency:
-"refine_first"`; `work.notify: { "channels": { "discord": { "type": "discord" } } }`; neither
-dispatch-concurrency key set (default bound 3).
+Test-bed `C:\Source\umami\aof-test-repo`, branch `131-07-ask-target`, commit `77382d0`, unchanged
+since the first attempt. It holds `03_milestone_ask-target` with three `not-started` stories, no runs, no
+lanes and no `depends:`. `00_story_joiner` reserves the separator, `01_story_labeller` the case,
+and `02_story_counter` nothing.
 
 ```
-> aof work validate 03            (test-bed root)
+> aof messaging enable discord                (test-bed root)
+discord is already enabled for this project ("discord") — nothing changed.
+No webhook is stored on this machine yet — run `aof messaging init discord`.
+> work.loop.concurrency / dispatch / notify   (read from .aof/aof.config.json)
+{"loopConcurrency":"refine_first","loopDispatch":null,"workDispatch":null,"notify":{"channels":{"discord":{"type":"discord"}}}}
+> aof work validate 03
 PASS — 03 is well-formed.
-> aof work next 03 --through-review --json      → wave: 03/00, 03/01, 03/02; heldSet: []
-> aof work dispatch --list --json               → "bound": 3
+> aof work next 03 --through-review --json    → wave: 03/00, 03/01, 03/02; heldSet: []
+> aof work dispatch --list --json             → "bound": 3
 > aof work loop 03 --dry-run
 03 — L2, cap 3: drive continue 03/00.
-> git status --short              (test-bed, after the commit)
-                                  (empty)
+> git status --short                          (test-bed)
+                                              (empty)
 ```
 
-The dry-run answers `continue`, not `refine`: the fixture arrives refined.
+`~/.aof/mesh/loop-asks/` holds one file, `20260925T002534928Z-0009` (`01/06`, `parked`). It
+belongs to workspace `b934…`, the other repository's run named in 07's Notes, not the test-bed's
+`5229…`, so it cannot shadow an ask here. It was left alone.
 
 verifies → `00` "no webhook URL is written anywhere".
 
 ```
-> git grep -n "discord.com/api/webhooks"        (test-bed, incl. --untracked)     → nothing, exit 1
-> git grep -n "discord.com/api/webhooks" -- src .aof   (main, incl. --untracked) → nothing, exit 1
-> git grep -nE "discord(app)?\.com/api/webhooks/[0-9]{17,20}/[A-Za-z0-9_-]{40,}"
-                                  (main and test-bed, incl. --untracked)           → nothing, exit 1
-> git grep -n "discord.com/api/webhooks"        (main, whole tree)               → 16 lines, exit 0
+> git grep -nE --untracked "discord(app)?\.com/api/webhooks/[0-9]{17,20}/[A-Za-z0-9_-]{40,}"   (main)
+                                              (nothing), exit 1
+> (the same)                                  (test-bed)
+                                              (nothing), exit 1
 ```
 
-**The whole-tree literal grep in the main checkout does NOT print nothing.** All 16 hits are fixture
-literals that 131's own contract and suites spell on purpose (`…/webhooks/131/lanes`,
-`…/111/secret-token`, `…/1/abc`, in `test/loop/*`, `test/run/*`, 02's and 04's task features and
-FF-13106's row). No real-shaped webhook exists anywhere, and FF-13106's own scope (`src/**`,
-`.aof/`) is clean. This is a contract defect in task 00's `Then`, flagged and not changed (Feedback).
-The builder never read, printed or wrote `AOF_DISCORD_WEBHOOK_URL`'s value.
+The builder never read, printed or wrote the stored URL or `AOF_DISCORD_WEBHOOK_URL`'s value, and
+never opened `~/.aof/messaging/`.
 
 ### Task 01 — the live run (OPERATOR — procedure and paste slots)
 
@@ -325,7 +328,7 @@ copied text plus its message id; its instant is
 Never paste, type or show the webhook URL.
 
 **Record once, reuse in every leg:**
-- `<buildId>` = `cf10030+dirty.20260925T095735` (task 00)
+- `<buildId>` = `d7179db+dirty.20260925T131746` (task 00)
 - `<log>` = the path T1's stderr announces — slot: `______`
 - `<runA>` / `<sA>` (03/00) — slot: `______`
 - `<runB>` / `<sB>` (03/01) — slot: `______`
@@ -339,15 +342,17 @@ remedy says, and the precondition is re-checked from the top; no leg is recorded
 second table is recorded as a failed leg with the evidence and reported unnumbered, routed to the
 story the table names; leave the loop alone (no hand kill). Log: `______`
 
-**P. PRECONDITION** (before any leg) — verifies → `01` "PRECONDITION — the secret is in the operator's environment…"
-1. Set `AOF_DISCORD_WEBHOOK_URL` as a USER environment variable.
-2. Quit the desktop app from its own UI, then relaunch it with `aof mesh desktop run`. Never use
+**P. PRECONDITION** (before any leg) — verifies → `01` "PRECONDITION — the webhook is stored on this machine and the OPERATOR restarted the desktop"
+1. In any terminal run `aof messaging init discord` and paste the webhook URL at its hidden prompt.
+   The URL is never typed into argv, a transcript or a capture.
+2. Make sure `AOF_DISCORD_WEBHOOK_URL` is NOT set (the sends must read the store).
+3. Quit the desktop app from its own UI, then relaunch it with `aof mesh desktop run`. Never use
    `Stop-Process -Force` or `taskkill`.
-3. Open T1 and T2 fresh in the test-bed root. Run `[bool]$env:AOF_DISCORD_WEBHOOK_URL` in each.
-4. Read the newest `daemon-started` entry of `~/.aof/mesh/logs/mesh-serve.log` and `mesh-ui.log`.
+4. Open T1 and T2 fresh in the test-bed root. In T2 run `aof messaging status`.
+5. Read the newest `daemon-started` entry of `~/.aof/mesh/logs/mesh-serve.log` and `mesh-ui.log`.
 
 - Then both `daemon-started` entries name `build payload <buildId>` with an `at` after the relaunch — paste: `______`
-- And `[bool]$env:AOF_DISCORD_WEBHOOK_URL` prints `True` in T1 and in T2 — paste: `______`
+- And `aof messaging status` in T2 prints `this machine: set (…)`, `env override AOF_DISCORD_WEBHOOK_URL: not set` and `this project: enabled (discord)` — paste: `______`
 - And `~/.aof/bin/aof.exe --version` in T2 prints `0.1.0 (payload <buildId>)` — paste: `______`
 
 **1. Leg 1 — the question reaches you** (verifies → `01` leg 1). In T1 run `aof work loop 03`. Record `<log>`. Wait for

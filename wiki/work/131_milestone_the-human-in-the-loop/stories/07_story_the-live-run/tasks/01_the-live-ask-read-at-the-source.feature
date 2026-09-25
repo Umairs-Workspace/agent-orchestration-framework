@@ -6,8 +6,8 @@ Feature: The live ask, read at the source — a real loop asks, Discord carries 
   session's transcript, the diag log, the Discord message and the board card. A UI's word for any
   of them is never enough. Nothing lands in `src/`, and the results land in STATE.md for
   `aof:verify 131`. Deploy and restart obey `.claude/rules/build-deploy-restart.md`. An agent
-  installs (task 00). The OPERATOR sets the env var, restarts the desktop app, starts the loop and
-  gives both answers. No agent starts a daemon, the desktop app or a loop, and nothing is
+  installs (task 00). The OPERATOR stores the webhook (`aof messaging init discord`), restarts the
+  desktop app, starts the loop and gives both answers. No agent starts a daemon, the desktop app or a loop, and nothing is
   force-killed.
 
   RULINGS (QA, 2026-09-25):
@@ -20,7 +20,10 @@ Feature: The live ask, read at the source — a real loop asks, Discord carries 
   `(id >> 22) + 1420070400000` ms since the epoch, so "within seconds" is a measured difference.
   A client's `HH:MM` is not an instant.
   (3) The webhook URL is never pasted, typed into a transcript or shown on screen in a capture.
-  Its presence is checked as `[bool]$env:AOF_DISCORD_WEBHOOK_URL`, and nothing else.
+  Its presence is checked only through `aof messaging status`, which never prints the value.
+  RE-REFINED at `aof:verify 131` (2026-09-25): 131/08 stores the URL machine-wide and `notify`
+  reads it at every send. So the precondition is the store, not a user env var, and the env
+  override stays UNSET, so that the live sends prove 08's store path.
   (4) The repository scrub applies to every paste: `umami`, never the real spelling.
   (5) `<log>` is the diag log T1's stderr announces
   (`~/.aof/mesh/logs/loop-diag.03.<stamp>.log`). `<runA>` and `<sA>` are 03/00's run id and
@@ -40,11 +43,11 @@ Feature: The live ask, read at the source — a real loop asks, Discord carries 
     And terminal T1, in `C:\Source\umami\aof-test-repo`, runs `aof work loop 03` and stays visible
     And terminal T2 is in the same checkout, the board for the test-bed workspace is open (reached the operator's usual way, never through a port an agent handed out), and the Discord channel is visible beside them
 
-  Scenario: PRECONDITION — the secret is in the operator's environment and the OPERATOR restarted the desktop
-    Given the OPERATOR has set `AOF_DISCORD_WEBHOOK_URL` as a USER environment variable, holding a webhook for a channel they read
+  Scenario: PRECONDITION — the webhook is stored on this machine and the OPERATOR restarted the desktop
+    Given the OPERATOR has run `aof messaging init discord` and pasted, at its hidden prompt, a webhook for a channel they read
     When the OPERATOR quits the desktop app from its own UI and relaunches it with `aof mesh desktop run`, never with `Stop-Process -Force` or `taskkill`
     Then the newest `daemon-started` entries in `~/.aof/mesh/logs/mesh-serve.log` and `mesh-ui.log` name `build payload <buildId>`, with task 00's `<buildId>` and an `at` after the relaunch, both pasted
-    And T1 and T2 are opened after the variable was set, and `[bool]$env:AOF_DISCORD_WEBHOOK_URL` prints `True` in each, pasted
+    And `aof messaging status` in T2, in the test-bed root, prints `this machine: set (…)`, `env override AOF_DISCORD_WEBHOOK_URL: not set` and `this project: enabled (discord)`, pasted
     And `~/.aof/bin/aof.exe --version` in T2 prints `0.1.0 (payload <buildId>)`, pasted
 
   Scenario Outline: a set-up fault is corrected and the precondition re-checked, never recorded as a finding
@@ -55,7 +58,8 @@ Feature: The live ask, read at the source — a real loop asks, Discord carries 
       | signature                                                                                               | remedy                                                                                                   |
       | `aof --version` prints `embedded`, or a `buildId` other than `BUILD_ID.json`'s                          | the install is re-run (task 00), because the payload did not land                                       |
       | a `daemon-started` entry older than the relaunch, or naming another build                                | the OPERATOR restarts the desktop app again                                                              |
-      | `[bool]$env:AOF_DISCORD_WEBHOOK_URL` prints `False` in T1 or T2                                          | the terminal is closed and opened again, because a terminal keeps the environment it started with       |
+      | `aof messaging status` prints `this machine: not set`, or `this project` other than `enabled (discord)`  | the OPERATOR runs `aof messaging init discord`, or `aof messaging enable discord` in the test-bed root  |
+      | `aof messaging status` prints `env override AOF_DISCORD_WEBHOOK_URL: set`                                | the variable is removed and T1 and T2 are reopened, so the sends read the store                         |
       | a session settles the reserved choice itself, with no `waiting on you` row for its ref                    | the loop is left to finish; the story's reservation is reworded in the test-bed and the run is repeated on a fresh fixture, because WHEN a session asks is out of scope |
       | T1 prints `Driving 03/<SS> — refine`, because a fixture story arrived with no task                      | the loop is left to finish; the story is given its task in the test-bed (task 00) and the run is repeated on a fresh fixture |
       | T1 prints `03/02 — at capacity`, or the first `Wave` line does not dispatch all three stories            | the loop is left to finish; the bound or the overlapping `files:` is corrected in the test-bed (task 00) and the run is repeated on a fresh fixture |

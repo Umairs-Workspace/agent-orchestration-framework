@@ -19,6 +19,8 @@ reads:
   - wiki/work/131_milestone_the-human-in-the-loop/DESIGN.md
   - .claude/rules/build-deploy-restart.md
   - scripts/install-local.mjs
+  - src/commands/messaging/messaging.mjs
+  - src/notify/secret.mjs
 files:
   - wiki/work/131_milestone_the-human-in-the-loop/STATE.md
 schema: 1
@@ -29,15 +31,15 @@ aofVersion: 0.1.0
 ## User story
 
 As **the operator who framed this milestone after a loop died on one lane's question**,
-I want **one real `refine_first` loop, after `node scripts/install-local.mjs`, `AOF_DISCORD_WEBHOOK_URL` set as a user env var and the desktop app restarted, to ask a real question, post it to the Discord channel within seconds, take one answer from `aof work answer` and one from the board, keep its other lanes building, and finish — with the run records' `asks` read at the source**,
+I want **one real `refine_first` loop, after `node scripts/install-local.mjs`, the webhook stored with `aof messaging init discord` and the desktop app restarted, to ask a real question, post it to the Discord channel within seconds, take one answer from `aof work answer` and one from the board, keep its other lanes building, and finish — with the run records' `asks` read at the source**,
 so that **the milestone's outcome is measured on the running system, not asserted from green fixtures**.
 
-`@manual` (ADR-001, ADR-005): the procedure and the paste slots land in STATE.md; the agent does the install-and-measure half and the operator supplies the webhook, the restart and the Discord observation.
+`@manual` (ADR-001, ADR-005): the procedure and the paste slots land in STATE.md; the agent does the install-and-measure half and the operator stores the webhook, makes the restart and the Discord observation.
 
 ## Tasks
 
 - [ ] `tasks/00_the-stage-is-set-and-handed-to-the-operator.feature` — `@manual`, the agent's half: the payload installed from the main checkout and read at the source; the test-bed fixture `03_milestone_ask-target` (three refined stories with disjoint `files:`; two tasks reserve a choice to the operator, so the asks land at build in lanes, and one reserves none), `refine_first` and a Discord channel naming only the env var; no URL anywhere; the procedure and paste slots in STATE.md, then `NEEDS_INPUT`
-- [ ] `tasks/01_the-live-ask-read-at-the-source.feature` — `@manual`, operator-gated: the env var and the desktop restart as the precondition; the ask on T1 and on Discord within 10 s (by message id); the other lane driving while it waits; one answer from `aof work answer`, one from the board card, each resuming the SAME session; the loop `done`; the records' `asks` read at the source
+- [ ] `tasks/01_the-live-ask-read-at-the-source.feature` — `@manual`, operator-gated: the stored webhook (`aof messaging status`) and the desktop restart as the precondition; the ask on T1 and on Discord within 10 s (by message id); the other lane driving while it waits; one answer from `aof work answer`, one from the board card, each resuming the SAME session; the loop `done`; the records' `asks` read at the source
 
 ## Notes
 

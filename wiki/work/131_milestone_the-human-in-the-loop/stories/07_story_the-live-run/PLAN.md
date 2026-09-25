@@ -10,7 +10,7 @@ Nothing in `src/` changes. The story's product is evidence, and the seam it hang
 The builder does task 00 and stops. It installs from the main checkout (no `--skip-ui`, because
 05 changed `ui/`), reads the version at the source, and lays down a fixture on the standing
 test-bed. Then it writes task 01's procedure into STATE.md with a paste slot per line and ends on
-`NEEDS_INPUT`. The operator does task 01: set the user env var, restart the desktop app, start
+`NEEDS_INPUT`. The operator does task 01: store the webhook (`aof messaging init discord`), restart the desktop app, start
 `aof work loop 03` in the test-bed, and answer twice.
 
 **The fixture is what makes a session ask.** A session asks only at a genuine judgment call, and
@@ -22,8 +22,9 @@ run in the primary and hold the whole loop (ADR-004 §3), which leaves leg 2 not
 Keep the three `files:` sets disjoint or the wave holds one back. The third story reserves
 nothing and gives leg 2 its "the other lane keeps going" evidence.
 
-**The one config block** on the test-bed is `work.notify.channels.discord.type = "discord"`. It has
-no `urlEnv`, so the default `AOF_DISCORD_WEBHOOK_URL` applies. Never touch the variable's value.
+**The one config block** on the test-bed is `work.notify.channels.discord.type = "discord"`, as
+`aof messaging enable discord` writes it. The URL lives in the machine-wide store (131/08). Never
+read the store file or the env override's value.
 
 ## The verification step
 
