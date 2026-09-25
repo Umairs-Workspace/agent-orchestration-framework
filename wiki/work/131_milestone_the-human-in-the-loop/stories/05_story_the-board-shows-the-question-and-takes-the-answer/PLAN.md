@@ -43,6 +43,6 @@ fires on Enter, or a `--json` diff with asks on disk.
 - `DetailPanel.tsx` is at 995/1,000. Two lines, no refactor, no comment block.
 - Vite and `tsc` must both resolve `../../../src/notify/form.mjs` and its `.d.mts`; check the dev
   server's `fs.allow` as well as the build.
-- `53/FF-5307`'s `ui/` pin moves on ANY `ui/src` byte. Re-pin last, after 01's and 04's lanes have
+- `53/FF-5307`'s `ui/` pin moves on ANY byte of the board tree. Re-pin last, after 01's and 04's lanes have
   landed their pins, with the measured diff in the comment.
 - Node's clock is not the board's: every elapsed case passes `nowMs` explicitly.

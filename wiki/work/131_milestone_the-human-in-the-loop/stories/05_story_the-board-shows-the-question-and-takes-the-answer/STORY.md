@@ -5,10 +5,10 @@ slug: the-board-shows-the-question-and-takes-the-answer
 title: "The board shows the question and takes the answer — work:list rows carry an ask fact for a local lane too, the amber AskCard shows the verbatim ask with phase and elapsed wait and a free-text reply box onto the one route, with no default answer"
 parent: 131
 depends: [1, 2, 4]
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-24
 adrs: [ADR-003, ADR-006]
 reads:
   - wiki/work/131_milestone_the-human-in-the-loop/SPEC.md
@@ -75,11 +75,11 @@ What lands (ADR-006 §2, §4-§5; DESIGN §2): `applyAskOverlay` on `work:list` 
 
 ## Tasks
 
-- [ ] `00_the-list-row-carries-the-ask` — `applyAskOverlay` in `list.mjs`: the thirteen-key fact (`scope` added), local and mesh asks, the CLI byte-identical
-- [ ] `01_the-card-decides-in-one-pure-function` — `askCardState` and the relabel in `action.mjs`, words from `form.mjs`
-- [ ] `02_the-card-is-mounted-and-sends-through-one-client` — `AskCard.tsx`, `workApi.answer`, `WorkItem.ask`, the two-line mount, no fast path
-- [ ] `03_the-board-row-and-the-ui-pin-move-with-their-reasons` — `board` 24 → 25 and `53/FF-5307`'s `ui/` re-pin
-- [ ] `04_the-card-renders-to-its-checklist` (`@manual`) — the card rendered in Chromium at both frames, judged by the designer, answered end to end
+- [x] `00_the-list-row-carries-the-ask` — `applyAskOverlay` in `list.mjs`: the thirteen-key fact (`scope` added), local and mesh asks, the CLI byte-identical
+- [x] `01_the-card-decides-in-one-pure-function` — `askCardState` and the relabel in `action.mjs`, words from `form.mjs`
+- [x] `02_the-card-is-mounted-and-sends-through-one-client` — `AskCard.tsx`, `workApi.answer`, `WorkItem.ask`, the two-line mount, no fast path
+- [x] `03_the-board-row-and-the-ui-pin-move-with-their-reasons` — `board` 24 → 25 and `53/FF-5307`'s `ui/` re-pin
+- [x] `04_the-card-renders-to-its-checklist` (`@manual`) — the card rendered in Chromium at both frames, judged by the designer, answered end to end
 
 ## Notes
 

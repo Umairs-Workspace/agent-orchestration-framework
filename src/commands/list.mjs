@@ -16,11 +16,80 @@ import { listStreamCacheFirst, withoutAnsweringSide } from "../work/read.mjs";
 // state of this item?" and got the CONTROL node's own local frontmatter, which reads
 // `not-started` for work a WORKER on another machine is executing on its own branch. The
 // overlay answers the operator's three steps (is it executing / show that / else local).
-import { readExecutionOverlay, applyExecutionOverlay } from "../board-mesh-execution.mjs";
+import { readExecutionOverlay, applyExecutionOverlay, awaitsAnswer } from "../board-mesh-execution.mjs";
 // …and the WORKER's own live view of those items (streamed from its worktree into the
 // projection), which is what a mesh item's rows come from — otherwise a fully-broken-down
 // milestone reads "0 stories" because this checkout has only the pre-run scaffold.
 import { readWorkerItems, mergeWorkerItems, readCachedProvenance, applyCachedProvenance } from "../cache-read.mjs";
+import { ASK_STATES, loopAsksDir, readAsks } from "../loop/ask-request.mjs";
+import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { reportDegrade } from "../degrade.mjs";
+
+// applyAskOverlay(rows, { asks, workspaceId }) → rows — the board's ask fact (131/ADR-006 §2): a
+// row with a question waiting on the operator gains `ask`, thirteen keys in one order; every
+// other row is returned as the same object, so a board with no ask and the CLI's `--json` (which
+// never passes `mesh`) are byte-identical to before. A LOCAL ask is the ask file's own record, in
+// whatever state it holds — the answered receipt stands until the owner clears the file — and
+// attaches only to the row whose ref it names, the latest by `askedAt` winning as it does for
+// `answerAsk`. Otherwise a row whose final execution `awaitsAnswer` carries a WORKER's ask with no
+// question, because the question never reaches the control. A local ask wins over a worker's.
+export function applyAskOverlay(rows, { asks = [], workspaceId = null } = {}) {
+  const latest = new Map();
+  for (const ask of asks) if (ask.workspaceId === workspaceId) latest.set(ask.ref, ask);
+  return rows.map((row) => {
+    const local = latest.get(row.ref);
+    if (local != null) return { ...row, ask: localAsk(local) };
+    if (awaitsAnswer(row.execution)) return { ...row, ask: workerAsk(row.execution) };
+    return row;
+  });
+}
+
+function localAsk(record) {
+  return {
+    runId: record.runId ?? null,
+    state: record.state,
+    question: record.question ?? null,
+    phase: record.phase ?? null,
+    askedAt: record.askedAt ?? null,
+    parkedAt: record.parkedAt ?? null,
+    answeredAt: record.answeredAt ?? null,
+    by: record.by ?? null,
+    answer: record.answer ?? null,
+    node: record.node ?? null,
+    local: true,
+    sessionId: record.sessionId ?? null,
+    scope: record.scope ?? null,
+  };
+}
+
+function workerAsk(execution) {
+  return {
+    runId: null,
+    state: ASK_STATES.waiting,
+    question: null,
+    phase: null,
+    askedAt: execution.updatedAt ?? null,
+    parkedAt: null,
+    answeredAt: null,
+    by: null,
+    answer: null,
+    node: execution.nodeId ?? null,
+    local: false,
+    sessionId: execution.sessionId,
+    scope: execution.scopeRef ?? null,
+  };
+}
+
+// The asks of this workspace, read once per list. The store answers what it can read and degrades
+// the rest; a throw here would cost the board every row for one bad file, so it is none.
+async function readWorkspaceAsks(ctx) {
+  try {
+    return await readAsks(loopAsksDir(ctx.globalWorkStoreOptions?.env), { workspaceId: resolveWorkspaceId(ctx.workspace) });
+  } catch (error) {
+    reportDegrade("loop-ask-request", error);
+    return [];
+  }
+}
 
 export const listCommand = {
   id: "work:list",
@@ -76,7 +145,12 @@ export const listCommand = {
     // — that value answered "which node was this item ASSIGNED to", while the question this
     // key asks is "which node REPORTED this row"), so correctness here no longer depends on
     // one writer overwriting another's.
-    return applyCachedProvenance(applyExecutionOverlay(mergeWorkerItems(rows, worker), overlay), provenance);
+    //
+    // The ask fact is OUTERMOST (131/ADR-006 §2), so it reads each row's final `execution`.
+    return applyAskOverlay(
+      applyCachedProvenance(applyExecutionOverlay(mergeWorkerItems(rows, worker), overlay), provenance),
+      { asks: await readWorkspaceAsks(ctx), workspaceId: resolveWorkspaceId(ctx.workspace) },
+    );
   },
 
   cli: {

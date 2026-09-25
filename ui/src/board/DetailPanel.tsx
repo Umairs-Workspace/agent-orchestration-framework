@@ -31,6 +31,7 @@ import { humanizeSlug } from "./model";
 import type { Freshness, FreshnessRecord } from "./freshness.mjs";
 import { ProvenanceLine } from "./ProvenanceLine";
 import { ActionsStrip } from "./ActionsStrip";
+import { AskCard } from "./AskCard";
 import { DiagramMarkdown, Markdown } from "./Markdown";
 
 type Tab = DocName | "FINDINGS" | "TASKS" | "RUNS";
@@ -344,6 +345,7 @@ export function DetailPanel({
 
       {/* body */}
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <AskCard key={item.ask ? (item.ask.runId ? `${item.ask.runId}:${item.ask.askedAt}` : `mesh:${item.ask.sessionId}`) : "none"} item={item} actor={actor} now={now} />
         <DocBody
           tab={tab}
           doc={doc}

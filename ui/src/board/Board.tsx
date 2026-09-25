@@ -308,10 +308,12 @@ export function Board() {
   // action at page-load state: a session captured seconds after dispatch never
   // reached an open board, and the operator had to hard-refresh to be OFFERED the
   // terminal (measured live, 2026-07-27). A quiet board stays sync-gated — this
-  // poll arms only while work is genuinely in flight, and load({silent}) updates
-  // in place (never the loading branch, so the dock is never torn down).
+  // poll arms only while work is genuinely in flight — or a question waits on the
+  // operator (131/05), so the ask card follows its answer and leaves with the ask —
+  // and load({silent}) updates in place (never the loading branch, so the dock is
+  // never torn down).
   useEffect(() => {
-    const executing = items.some((item) => item.execution?.active === true) || runningRefs.size > 0;
+    const executing = items.some((item) => item.execution?.active === true || item.ask != null) || runningRefs.size > 0;
     if (!executing) return;
     const poll = setInterval(() => void load({ silent: true }), RUNNING_PROBE_MS);
     return () => clearInterval(poll);

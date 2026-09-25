@@ -57,6 +57,42 @@ export type WorkItem = {
   number?: null;
   backlog?: string;
   archived?: true;
+  // 131/ADR-006 §2 — a question waiting on the operator (`work:list`'s ask fact, board only).
+  // ABSENT on every row with no ask, so the panel with no ask is today's.
+  ask?: AskFact;
+};
+
+// The ask fact (131/05 task 00): thirteen keys, in this order. A LOCAL ask is the ask file's own
+// record in whatever state it holds (the answered receipt stands until the owner clears it); a
+// WORKER's ask has no question, because the question never reaches the control.
+export type AskFact = {
+  runId: string | null;
+  state: "waiting" | "parked" | "answered";
+  question: string | null;
+  phase: string | null;
+  askedAt: string | null;
+  parkedAt: string | null;
+  answeredAt: string | null;
+  by: AnswerBy | null;
+  answer: string | null;
+  node: string | null;
+  local: boolean;
+  sessionId: string | null;
+  scope: string | null;
+};
+
+export type AnswerBy = { actor: string | null; via: string; node: string | null };
+
+// `work:answer`'s eight-key document (131/04), sent verbatim by `POST /api/work/answer`.
+export type AnswerDocument = {
+  ok: true;
+  ref: string;
+  runId: string | null;
+  delivery: "waiting" | "parked" | "mesh";
+  state: "answered" | "resumed" | "dispatched";
+  by: AnswerBy;
+  answeredAt: string;
+  resume: string | null;
 };
 
 export type WorkStatus = "not-started" | "in-progress" | "in-review" | "blocked" | "done";
@@ -302,6 +338,17 @@ export const workApi = {
     });
     if (!response.ok) throw await codedError(response);
     return (await response.json()) as ResyncResponse;
+  },
+  // THE ANSWER (131/ADR-006 §4) — the operator's words onto `work:answer`, the CLI's same act. A
+  // refusal keeps its `code` so the ask card names what happened from it.
+  async answer({ ref, text, actor }: { ref: string; text: string; actor: string }): Promise<AnswerDocument> {
+    const response = await fetch("/api/work/answer", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ref, text, actor }),
+    });
+    if (!response.ok) throw await codedError(response);
+    return (await response.json()) as AnswerDocument;
   },
   async feedback(input: { ref: string; note: string; actor: string; refs?: string }): Promise<FeedbackResponse> {
     const response = await fetch("/api/work/feedback", {

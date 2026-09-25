@@ -80,9 +80,9 @@ export const UI_DIRECTORY_BUDGETS = Object.freeze([
   }),
   Object.freeze({
     directory: "board",
-    ceiling: 24,
+    ceiling: 25,
     allowance: 0,
-    why: "the board surface — and TECH_DEBT 18(a)'s accidental shared library, which the fleet still reaches into five times. Its next growth should be a MOVE: the shared parts out to `ui/src/components/` or `ui/src/terminal/`, which both other surfaces already import DOWN into. A new sibling here deepens the coupling this directory is already the measured instance of. RAISED 21 -> 22 on 2026-09-15 for `ArchivedPill.tsx` (127/04), and the choice is STATED rather than taken quietly: 127/DESIGN §\"The archived mark\" names the file and its home — a sibling of `StaleBadge.tsx`, because the mark is a new READ-ONLY vocabulary of the BOARD and not a sixth status — and the fleet deliberately paints no pill (the fleet partitions the backlog and leaves the archive to its status filter, unmarked), so this is not a shared part the fleet reaches into and not the coupling this row meters. The MOVE this row is right to want is unchanged and still owed: the parts the fleet imports from here. RAISED 22 -> 24 by 133/04 (ADR-007 §5) for `diagrams.mjs` and its `.d.mts`, the pure pair holding the ARCHITECTURE tab's figure logic (which images are diagrams, the data URI, the four figure states and the renderer). `DetailPanel.tsx` stood at 993 of its 1,000-line ceiling, so the logic could not be a region of it, and a pure headless module is what lets the figure's markup and the trust boundary (FF-13304) be tested without React. It is BOARD-ONLY vocabulary — the fleet renders no ARCHITECTURE tab — so it is not a shared part the fleet reaches into, and it deepens nothing this row meters.",
+    why: "the board surface — and TECH_DEBT 18(a)'s accidental shared library, which the fleet still reaches into five times. Its next growth should be a MOVE: the shared parts out to `ui/src/components/` or `ui/src/terminal/`, which both other surfaces already import DOWN into. A new sibling here deepens the coupling this directory is already the measured instance of. RAISED 21 -> 22 on 2026-09-15 for `ArchivedPill.tsx` (127/04), and the choice is STATED rather than taken quietly: 127/DESIGN §\"The archived mark\" names the file and its home — a sibling of `StaleBadge.tsx`, because the mark is a new READ-ONLY vocabulary of the BOARD and not a sixth status — and the fleet deliberately paints no pill (the fleet partitions the backlog and leaves the archive to its status filter, unmarked), so this is not a shared part the fleet reaches into and not the coupling this row meters. The MOVE this row is right to want is unchanged and still owed: the parts the fleet imports from here. RAISED 22 -> 24 by 133/04 (ADR-007 §5) for `diagrams.mjs` and its `.d.mts`, the pure pair holding the ARCHITECTURE tab's figure logic (which images are diagrams, the data URI, the four figure states and the renderer). `DetailPanel.tsx` stood at 993 of its 1,000-line ceiling, so the logic could not be a region of it, and a pure headless module is what lets the figure's markup and the trust boundary (FF-13304) be tested without React. It is BOARD-ONLY vocabulary — the fleet renders no ARCHITECTURE tab — so it is not a shared part the fleet reaches into, and it deepens nothing this row meters. RAISED 24 -> 25 by 131/05 (ADR-006 §4) for `AskCard.tsx`, the ask card: a question waiting on the operator and the reply that answers it. It is BOARD-ONLY vocabulary — the fleet renders no ask (131/DESIGN §2); `DetailPanel.tsx` at 995 of its 1,000-line ceiling could take only the mount; and it deepens nothing TECH_DEBT 18(a) meters, because nothing outside `ui/src/board/` imports it.",
   }),
   Object.freeze({
     directory: "components",
@@ -385,6 +385,23 @@ export const archTests = [
         `the refusal names ui/src/panels/ and says a new top-level directory is a decision, not a diff: ${JSON.stringify(violations)}`,
       );
       assert.deepEqual(uiDirectoryBudgetViolations(clean), [], "…and the CLEAN listing, in this same lane, returns none");
+    },
+  },
+
+  {
+    // 131/05 task 03 — the row moved with its subject (AskCard.tsx), and the count stays exact: a
+    // 26th file is planted in a SYNTHESIZED listing, never written to the tree.
+    name: "131/05 task03 (acd-ui-directory-budget): the board directory holds exactly its new ceiling, and a 26th file turns it red naming board",
+    run: async () => {
+      const board = UI_DIRECTORY_BUDGETS.find((row) => row.directory === "board");
+      assert.equal(board.ceiling, 25, "the board row reads 25");
+      assert.equal(board.allowance, 0, "…with no headroom");
+      assert.match(board.why, /RAISED 24 -> 25 by 131\/05 \(ADR-006 §4\) for `AskCard\.tsx`/u, "…and carries the 131/05 sentence");
+      const clean = await readUiTreeListing();
+      assert.equal(clean.filter((entry) => entry.kind === "file" && entry.path.startsWith("board/")).length, 25, "ui/src/board/ holds 25 files");
+      const planted = uiDirectoryBudgetViolations([...clean, { path: "board/Planted.tsx", kind: "file" }]);
+      assert.ok(planted.some((violation) => violation.directory === "ui/src/board/"), `a 26th file names ui/src/board/: ${JSON.stringify(planted)}`);
+      assert.deepEqual(uiDirectoryBudgetViolations(clean), [], "…and the clean listing returns none");
     },
   },
 ];

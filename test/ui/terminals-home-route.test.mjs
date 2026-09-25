@@ -520,7 +520,9 @@ export const terminalsHomeRouteTests = [
         // headroom this row was really about is now six lines. The re-aim is the Fleet.tsx row's idiom.
         // 994 -> 996 by 133/04 (ADR-007 §5): the ARCHITECTURE tab, its Records row and the one
         // `DiagramMarkdown` call — everything else went to `diagrams.mjs`. Four lines of headroom.
-        ["ui/src/board/DetailPanel.tsx", 996, 1000, "127/04's move out and pill in, then 133/04's tab; four lines of headroom now"],
+        // 996 -> 998 by 131/05 (ADR-006 §4): the ask card's import and its one-line mount; the card
+        // is its own module (`AskCard.tsx`). Two lines of headroom.
+        ["ui/src/board/DetailPanel.tsx", 998, 1000, "127/04's move out and pill in, 133/04's tab, then 131/05's ask card mount; two lines of headroom now"],
         ["ui/src/config/App.tsx", 1298, 1300, "untouched"],
       ];
       for (const [file, expected, ceiling, why] of untouched) {
