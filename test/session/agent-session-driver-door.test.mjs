@@ -233,6 +233,16 @@ const NAMES_THE_NEW_MODULE = [
   // fires. It imports neither the driver nor the sink — a naming consumer, and the census split
   // below is untouched. Named here at aof:verify 127 (129/06 in review; the entry is 129's to ratify).
   "test/arch/loop/acd-loop-family-boundary.test.mjs",
+  // milestone 134 / story 03 (FF-13401 `acd-example-answer-one-reader`) — the one-reader control
+  // NAMES the driver because that is its leg: `src/work-examples/answers.mjs` must import
+  // `HUMAN_INPUT_TOOL_NAMES` from `../agent-session-driver.mjs`, its one home, and the assertion
+  // spells that import. It imports neither the driver nor the sink — a naming consumer, and the
+  // census split below is untouched. Named here 2026-09-24, after 134/03 merged home without it.
+  "test/arch/examples/acd-example-answer-one-reader.test.mjs",
+  // milestone 134 / story 03 — the answer reader's behaviour suite imports `HUMAN_INPUT_TOOL_NAMES`
+  // from the driver, the list's one home, to build its transcript fixtures from the same names the
+  // reader matches. A binding import, not a driven session. Named here 2026-09-24 with the above.
+  "test/examples/example-answers.test.mjs",
   // chore 120 — the shared comment stripper's measured note names the transcript suite (a file
   // whose NAME carries the driver's) in a comment: a naming consumer by this leg's reading, which
   // does not strip comments, and not a census member. Named here at aof:verify 127.

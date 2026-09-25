@@ -631,6 +631,24 @@ const ESC = String.fromCharCode(27);
 const BRACKETED_PASTE_START = `${ESC}[200~`;
 const BRACKETED_PASTE_END = `${ESC}[201~`;
 const INTERACTIVE_COMMAND_SUBMIT_DELAY_MS = 900;
+
+// 2026-09-24 — READINESS IS OBSERVED, NOT ASSUMED. `INTERACTIVE_COMMAND_READY_DELAY_MS` is a
+// guess about how long claude takes to start, and under load the guess was wrong: three lanes
+// launched together in voice-vox-company-portal (plus the repo's MCP servers starting) had the
+// directive pasted before the TUI was listening — no transcript, no session id, and each lane
+// idled to the 20-minute heartbeat deadline, three attempts running. The TUI announces its own
+// readiness by enabling bracketed paste (`TUI_READY_MARKER`); a real launch now types only
+// once BOTH the delay has passed (the measured-good floor) AND the marker has been seen,
+// bounded by `INTERACTIVE_READY_CAP_MS` — after which it types anyway and says so.
+const TUI_READY_MARKER = `${ESC}[?2004h`;
+const INTERACTIVE_READY_CAP_MS = 60_000;
+// …and ACCEPTANCE IS OBSERVED TOO. A submitted directive starts a session, and a session
+// writes its transcript, which is what the session-id watch resolves on. A real launch whose
+// submit produced no session id within `DIRECTIVE_ACCEPT_TIMEOUT_MS` is stopped as `failed /
+// timeout` (retryable) in about a minute and a half rather than twenty, with what the screen
+// last showed recorded under `directive-not-accepted` — a dialog nobody could see names itself.
+const DIRECTIVE_ACCEPT_TIMEOUT_MS = 90_000;
+const SCREEN_TAIL_CHARS = 600;
 // The Enter key is a CARRIAGE RETURN. F27b measured the alternative at the soak:
 // a trailing line feed enters the text and never submits it (it is Ctrl+J).
 const SUBMIT_KEY = String.fromCharCode(13);
@@ -1099,6 +1117,11 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     let commandWriteTimer = null;
     // 70/06 — the timer for the SEPARATED submit (the Enter that follows the body).
     let commandSubmitTimer = null;
+    // 2026-09-24 — the readiness gate and the acceptance watch (see TUI_READY_MARKER).
+    let tuiReadySeen = false;
+    let onTuiReady = null;
+    let readyCapTimer = null;
+    let acceptTimer = null;
     // m42 wave (b) / TECH_DEBT item 7 — the PTY LIVENESS PROBE (below).
     let livenessTimer = null;
     let startToCloseTimer = null;
@@ -1134,6 +1157,8 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       // never let a queued command write land in an already-exited/settled PTY.
       if (commandWriteTimer != null) { clearTimeout(commandWriteTimer); commandWriteTimer = null; }
       if (commandSubmitTimer != null) { clearTimeout(commandSubmitTimer); commandSubmitTimer = null; }
+      if (readyCapTimer != null) { clearTimeout(readyCapTimer); readyCapTimer = null; }
+      if (acceptTimer != null) { clearTimeout(acceptTimer); acceptTimer = null; }
       if (livenessTimer != null) { clearInterval(livenessTimer); livenessTimer = null; }
       if (startToCloseTimer != null) { clearTimeout(startToCloseTimer); startToCloseTimer = null; }
       if (heartbeatTimer != null) { clearTimeout(heartbeatTimer); heartbeatTimer = null; }
@@ -1286,6 +1311,11 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
 
     dataSub = term.onData?.((chunk) => {
       buffer += String(chunk);
+      // The TUI's own readiness signal, read across a chunk boundary.
+      if (!tuiReadySeen && buffer.slice(-(String(chunk).length + TUI_READY_MARKER.length)).includes(TUI_READY_MARKER)) {
+        tuiReadySeen = true;
+        onTuiReady?.();
+      }
       // milestone 38 / story 06 (ADR-014) — the cross-machine terminal BRIDGE's
       // ONLY hook into this driver: an OPTIONAL, ADDITIVE `options.onOutputChunk`
       // called with EXACTLY the raw chunk `term.onData` itself just emitted, plus
@@ -1475,7 +1505,11 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     // never typed into an already-exited PTY.
     const command = typeof brief.command === "string" ? brief.command : null;
     if (command != null && command.length > 0) {
-      commandWriteTimer = setTimeout(() => {
+      // Observed readiness is for a REAL TUI: an injected `ptySpawn` is a test double that never
+      // enables bracketed paste (the same rule `terminateTree` keys on), so it keeps the fixed
+      // delay unless a suite opts in with `observeReadiness`.
+      const realLaunch = (options.commandDelayMs ?? 0) > 0 && (options.observeReadiness ?? options.ptySpawn == null);
+      const typeDirective = () => {
         try {
           // F27b (live soak 2026-07-25) — SUBMIT with carriage-return `\r`, the byte a
           // real Enter keypress sends in a terminal, NOT line-feed `\n`. Measured at the
@@ -1542,12 +1576,50 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
             } catch (error) {
               reportDegrade("mesh-worker-execution", error);
             }
+            // The acceptance watch — a real launch only, and only while the session-id
+            // watch is live (a watch that is unavailable proves nothing about the session).
+            if (realLaunch && watchCallResult != null && capturedSessionId == null) {
+              acceptTimer = setTimeout(() => {
+                acceptTimer = null;
+                if (settled || capturedSessionId != null) return;
+                const screen = buffer.slice(-4 * SCREEN_TAIL_CHARS).replace(ANSI_ESCAPE_RE, "").replace(/\s+/gu, " ").trim().slice(-SCREEN_TAIL_CHARS);
+                stopBreadcrumb("directive-not-accepted", { screen });
+                reportDegrade("directive-not-accepted", new Error(`${brief.itemRef}: no session ${options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS}ms after the directive was submitted; screen: ${screen}`));
+                stopForOutcome({ outcome: "failed", failureReason: "timeout" });
+              }, options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS);
+            }
           }, submitDelayMs);
         } catch (error) {
           // an already-exited PTY write races nothing observable here — onExit above
           // still resolves the outcome for a process that died before the write landed.
       reportDegrade("mesh-worker-execution", error); }
-      }, options.commandDelayMs ?? 0);
+      };
+      if (!realLaunch) {
+        // A scripted PTY keeps its fixed write — next tick at delay 0, byte-identical.
+        commandWriteTimer = setTimeout(typeDirective, options.commandDelayMs ?? 0);
+      } else {
+        // The readiness gate: the floor delay AND the TUI's own marker, bounded by the cap.
+        let floorPassed = false;
+        let typed = false;
+        const typeOnce = () => {
+          if (typed || settled) return;
+          typed = true;
+          if (readyCapTimer != null) { clearTimeout(readyCapTimer); readyCapTimer = null; }
+          typeDirective();
+        };
+        onTuiReady = () => { if (floorPassed) typeOnce(); };
+        commandWriteTimer = setTimeout(() => {
+          commandWriteTimer = null;
+          floorPassed = true;
+          if (tuiReadySeen) typeOnce();
+        }, options.commandDelayMs);
+        readyCapTimer = setTimeout(() => {
+          readyCapTimer = null;
+          if (typed || settled) return;
+          stopBreadcrumb("tui-ready-marker-absent", { waitedMs: options.readyCapMs ?? INTERACTIVE_READY_CAP_MS });
+          typeOnce();
+        }, options.readyCapMs ?? INTERACTIVE_READY_CAP_MS);
+      }
     }
   });
 }

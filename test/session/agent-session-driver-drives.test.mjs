@@ -48,6 +48,39 @@ import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-term
 
 const BRIEF = { itemRef: "53/00", worktreeCwd: "/tmp/wt", task: "the session driver gets a home", command: "/aof:verify 53/00" };
 
+// 2026-09-24 — the TUI's readiness marker (CSI ?2004h, bracketed paste on), spelled from char
+// codes as the paste frame is below: the driver keeps it private (FF-5302 freezes its exports).
+const TUI_READY_MARKER = `${String.fromCharCode(27)}[?2004h`;
+
+// A PTY double the TEST drives: `emit(data)` plays the TUI's output at a moment the test
+// chooses (the shared scripted PTY only answers writes), and `kill()` confirms exit.
+function emittingPty() {
+  const data = [];
+  const exits = [];
+  const pty = {
+    pid: 4343,
+    writes: [],
+    killed: false,
+    onData(cb) { data.push(cb); return { dispose() { data.splice(data.indexOf(cb), 1); } }; },
+    onExit(cb) { exits.push(cb); return { dispose() { exits.splice(exits.indexOf(cb), 1); } }; },
+    write(chunk) { pty.writes.push(chunk); },
+    resize() {},
+    kill() { pty.killed = true; exits.slice().forEach((cb) => cb({ exitCode: 0 })); },
+    emit(chunk) { data.slice().forEach((cb) => cb(chunk)); },
+    get subscribed() { return data.length > 0; },
+    exit(code = 0) { exits.slice().forEach((cb) => cb({ exitCode: code })); },
+  };
+  return { pty, spawn: async () => pty };
+}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const waitUntil = async (predicate, ms = 2000) => {
+  const until = Date.now() + ms;
+  while (!predicate()) {
+    if (Date.now() > until) throw new Error("waitUntil: condition never held");
+    await sleep(5);
+  }
+};
+
 // The base options bag: the two transcript watches are always injected (see the header)
 // and `commandDelayMs: 0` keeps every scenario on the next tick rather than a wall-wait.
 function baseOptions(extra = {}) {
@@ -818,6 +851,84 @@ export const agentSessionDriverDrivesTests = [
       assert.equal(settled.value.outcome, "needs-input", "the settle is unaffected by a faulting hook");
       assert.deepEqual(kills, [], "a test double's pid is fiction: no tree kill was attempted");
       assert.equal(ptys[0].killed, true, "the pty is still released");
+    },
+  },
+  {
+    name: "2026-09-24 readiness is observed — a real launch types only after the floor AND the TUI's bracketed-paste marker, read across a chunk boundary",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        observeReadiness: true, commandDelayMs: 20, submitDelayMs: 0, readyCapMs: 5000,
+      });
+      await sleep(80);
+      assert.deepEqual(pty.writes, [], "the floor has passed but the TUI has not said it is ready — nothing typed");
+      await waitUntil(() => pty.subscribed);
+      pty.emit(`startup${TUI_READY_MARKER.slice(0, 4)}`);
+      await waitUntil(() => pty.subscribed);
+      pty.emit(`${TUI_READY_MARKER.slice(4)} prompt`);
+      await waitUntil(() => pty.writes.length >= 1);
+      assert.deepEqual(pty.writes[0], pasted(BRIEF.command)[0], "the directive is pasted once the marker is seen");
+      pty.exit(0);
+      assert.equal((await pending).outcome, "done");
+    },
+  },
+  {
+    name: "2026-09-24 a TUI that never shows the marker is typed into at the cap, and the wait is named",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const stops = [];
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 60,
+        onSessionStop: (event) => stops.push(event),
+      });
+      await waitUntil(() => pty.writes.length >= 1);
+      assert.deepEqual(pty.writes[0], pasted(BRIEF.command)[0]);
+      assert.deepEqual(stops.map((event) => event.phase), ["tui-ready-marker-absent"]);
+      pty.exit(0);
+      await pending;
+    },
+  },
+  {
+    name: "2026-09-24 a submitted directive that starts no session fails fast as timeout, naming what the screen showed",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const stops = [];
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 80,
+        onSessionStop: (event) => stops.push(event),
+      });
+      await waitUntil(() => pty.subscribed);
+      pty.emit(`${TUI_READY_MARKER}\u001b[1mNew MCP server found in .mcp.json: voicevox\u001b[0m 1. Use this server 2. Continue without`);
+      const result = await pending;
+      assert.equal(result.outcome, "failed");
+      assert.equal(result.failureReason, "timeout", "retryable — the store's vocabulary is unchanged");
+      const notAccepted = stops.find((event) => event.phase === "directive-not-accepted");
+      assert.ok(notAccepted, stops.map((event) => event.phase).join(","));
+      assert.match(notAccepted.screen, /New MCP server found in \.mcp\.json: voicevox/u, "the screen tail, escapes stripped");
+      assert.equal(pty.killed, true);
+    },
+  },
+  {
+    name: "2026-09-24 the acceptance watch stands down once the session id is captured",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => "sess-accepted",
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 40,
+      });
+      await waitUntil(() => pty.subscribed);
+      pty.emit(TUI_READY_MARKER);
+      await waitUntil(() => pty.writes.length >= 2);
+      await sleep(120);
+      assert.equal(pty.killed, false, "a session that started is left alone");
+      pty.exit(0);
+      const result = await pending;
+      assert.equal(result.outcome, "done");
+      assert.equal(result.sessionId, "sess-accepted");
     },
   },
 ];
