@@ -137,6 +137,16 @@ import { archTests as acdLaneGradeIsLaneScopedTests } from "./acd-lane-grade-is-
 import { archTests as acdLoopStopRequestSingleHomeTests } from "./acd-loop-stop-request-single-home.test.mjs";
 import { archTests as acdLoopStopSettlesTheRunTests } from "./acd-loop-stop-settles-the-run.test.mjs";
 import { archTests as acdLoopStopReachesEveryFaceTests } from "./acd-loop-stop-reaches-every-face.test.mjs";
+// milestone 131 / story 06 — the nine controls of the human-in-the-loop register, in three files
+// (ARCHITECTURE.md § Fitness functions; each owes a red probe in VERIFICATION.md). FF-13101 +
+// FF-13102 + FF-13103 the RECORD — the ask file has one home, the question one reader, and a
+// waiting run is recorded rather than reclaimed or charged; FF-13104 + FF-13105 the LADDER — an
+// answer resumes the same session as a command, and a waiting lane holds its slot while the wave
+// builds on; FF-13106 … FF-13109 the RECORD again — the notifier, the one form and the guarded
+// answer route are how every face reads and writes the ask.
+import { archTests as acdLoopAskSingleHomeTests } from "./acd-loop-ask-single-home.test.mjs";
+import { archTests as acdLoopAskWaitsInPlaceTests } from "./acd-loop-ask-waits-in-place.test.mjs";
+import { archTests as acdLoopAskReachesEveryFaceTests } from "./acd-loop-ask-reaches-every-face.test.mjs";
 
 export const tests = [
   // milestone 52 / story 04 — the nine loop-registry fitness functions
@@ -214,4 +224,8 @@ export const tests = [
   ...acdLoopStopRequestSingleHomeTests,
   ...acdLoopStopSettlesTheRunTests,
   ...acdLoopStopReachesEveryFaceTests,
+  // milestone 131 / story 06 — FF-13101/FF-13102/FF-13103, FF-13104/FF-13105, FF-13106 … FF-13109 (see the import note).
+  ...acdLoopAskSingleHomeTests,
+  ...acdLoopAskWaitsInPlaceTests,
+  ...acdLoopAskReachesEveryFaceTests,
 ];

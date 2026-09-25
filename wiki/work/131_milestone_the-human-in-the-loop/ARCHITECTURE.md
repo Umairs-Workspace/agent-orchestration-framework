@@ -458,9 +458,44 @@ never throws.**
      line is omitted. The board runs on an ephemeral loopback port, which a phone cannot open.
 
    **The secret.** The webhook URL's path carries the token (R9). It is read only at the point of
-   send, as `env[urlEnv]`. It never enters the config, the envelope, a degrade message, a narrate
-   line or a log. A supervised loop inherits the desktop app's environment, so the variable is a user
-   env var and a supervisor restart (story 07's procedure).
+   send. It never enters the config, the envelope, a degrade message, a narrate line or a log.
+
+   **AMENDED at 131/08 (2026-09-25, the operator's call): the secret is kept machine-wide.** As
+   first written, the URL was read only as `env[urlEnv]`, so it reached a supervised loop only
+   through the desktop app's environment: a user env var plus a supervisor restart. The amendment:
+   - **The store.** `aof messaging init discord` keeps the URL in its own file,
+     `<global home>/messaging/discord.secret`. The global home is `defaultGlobalWorkspaceDir`, so
+     `AOF_GLOBAL_HOME` relocates it. The file is written atomically and is owner-only (`0600` in a
+     `0700` directory on POSIX). The mesh GitHub App key is kept the same way: a file, never a
+     config value. `src/notify/secret.mjs` is the ONE module that knows the path, and it reads and
+     writes the file.
+   - **The argv rule.** The URL arrives by a prompt with no echo, or by stdin. It never arrives by
+     argv, because argv lands in shell history and in the process list.
+   - **The read.** Resolution happens at the point of send, on every send, never cached, so a
+     running daemon picks up a new `init` with no restart. `env[urlEnv]` wins when it is set and not
+     blank; that is the override, and `urlEnv` stays in the schema. Otherwise the stored file for
+     the channel's `type` is read. When neither is present, the channel degrades
+     `notify-channel-unconfigured`, and the message names both the env var and
+     `aof messaging init <type>`. The store's home is the PROCESS's global home, never one derived
+     from the injected `env`. That keeps an injected `env: {}` in a test from reaching the real
+     `~/.aof`.
+   - **The per-project switch** is the `work.notify` block itself. `aof messaging enable <type>`
+     adds a channel named after the type as `{ type }`. `disable` removes every channel of that
+     type. Both write only `work.notify` in the project's `.aof/aof.config.json`, through
+     `src/work/delegation.mjs`'s `readConfig`/`writeConfig`. Neither writes a `url`, `webhook` or
+     `token` key; FF-13106's schema leg is unchanged.
+   - **`aof messaging status`** reports, per type, whether a URL is stored on this machine, whether
+     the env override is set (by name), and whether this project has the type enabled. It never
+     shows the value.
+   - **The home: `src/commands/messaging/messaging.mjs`**, a new command family, and not a 70th
+     flat sibling (the `src/commands` row is at its ceiling). It registers `messaging:init`,
+     `messaging:enable`, `messaging:disable` and `messaging:status`. The channel type is a
+     positional, so a second type adds a `CHANNELS` entry and a store file, and no new verb. The
+     URL-shape check for a type lives beside its renderer: `isDiscordWebhookUrl` in `discord.mjs`,
+     spelled as an escaped pattern, never as the literal FF-13106 forbids.
+   - **Out of scope, stated.** A mesh worker's secret (§6 already fires nothing for a worker's
+     ask). A verb to remove the stored URL: `disable` switches a project off, and deleting the
+     file is the machine-wide removal.
 2. **Home: `src/notify/`**, a new family with 4 files, exempt under `FLAT_LAYER_THRESHOLD`.
    - `form.mjs` and `form.d.mts` are ADR-006's formatter.
    - `notify.mjs` holds the config resolution, the channel registry `CHANNELS = { discord }`,
@@ -526,7 +561,9 @@ never throws.**
 ### Invariant
 
 `notify(` is called at exactly the six sites in §4, each with an envelope from
-`buildNotifyEnvelope`. A webhook URL is read only as `env[urlEnv]` inside `src/notify/`.
+`buildNotifyEnvelope`. A webhook URL is read only inside `src/notify/`, as `env[urlEnv]` or
+through `readMessagingSecret` (as amended at 131/08). The store's path is spelled only in
+`src/notify/secret.mjs`.
 
 ---
 
@@ -739,9 +776,9 @@ path. The shared files are sequential:
 
 HARNESS SHAPE (`119/ADR-010`): each arch-test exports `archTests`, an array of `{ name, run }`. It is
 registered by one import and one spread in its directory's `index.mjs`, and never discovered by
-`readdir`. Every control below is `pending` until story 06 lands it, and each landed control owes a
-red probe in `VERIFICATION.md`. Three new files land under `test/arch/loop/`, whose row rises from
-62 to 65 by exactly that count. The subject is the human in the loop, and the faces are its readers.
+`readdir`. Every control below landed in story 06 (2026-09-25), and each one's red probe is recorded
+in `VERIFICATION.md`. Three new files landed under `test/arch/loop/`, whose row rose from 62 to 65
+by exactly that count. The subject is the human in the loop, and the faces are its readers.
 
 These standing controls must stay green. They are cited, not redeclared:
 - `53/FF-5302`: 17 exports.
@@ -760,12 +797,12 @@ These standing controls must stay green. They are cited, not redeclared:
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-13101 | **The ask has ONE home.** Over a comment-stripped sweep of `src/**`, the literal `loop-asks` and the ask state words, used as ask states, appear only in `src/loop/ask-request.mjs`. `src/loop/ask.mjs`, `src/commands/resume.mjs` and `src/commands/list.mjs` each import it by RESOLVED specifier. No module joins `meshRoot` with an `ask` literal. `asks` is written only through `openRunAsk`, `parkRunAsk` and `answerRunAsk`. Fixture: `answerAsk` refuses `answer-control-chars` for `"ok\u001b[201~rm"`, `answer-empty` for `"  "`, and `ask-already-answered` on a second answer. Non-vacuous: the sweep finds the module and three importers. Red probe: spell `path.join(globalMeshPaths().meshRoot, "loop-asks", id)` in `list.mjs`. | `test/arch/loop/acd-loop-ask-single-home.test.mjs` *(pending — 131/06)* | ADR-003 |
-| FF-13102 | **One reader of the question.** `readLastAssistantTurn` is defined in `src/work/observe.mjs` and imported by the driver and by `ask.mjs`. No other `src/**` module both `JSON.parse`s transcript lines and reads `stop_reason`. The driver's export set stays 17 (`53/FF-5302`). `NEEDS_INPUT_INSTRUCTION` still embeds the sentinel, carries the four labels (`Decision needed:`, `Options:`, `I would pick:`, `What the answer changes:`) and keeps the "genuine judgment call" sentence. Fixture: an `end_turn` transcript answers its text minus the sentinel line, and a pending `AskUserQuestion` answers its questions and option labels. Red probe: re-inline the scan in the driver. | `test/arch/loop/acd-loop-ask-single-home.test.mjs` *(pending — 131/06)* | ADR-002 |
-| FF-13103 | **A waiting run is recorded, not reclaimed and not charged.** Minted records carry 17 keys with `asks` last and `[]`, and a 16-key record reads forward as `[]`. `transitionStaleRunsReclaimed` over a stale `running` run whose last ask is unanswered leaves it byte-unchanged, and reclaims the same run with the ask answered. `attemptElapsedMs` over a run with a 3 h ask interval is the same as over the run without it. Red probe: drop the skip. | `test/arch/loop/acd-loop-ask-single-home.test.mjs` *(pending — 131/06)* | ADR-003 §3, ADR-001 §4 |
-| FF-13104 | **An answer reaches a session only as a resumed command.** Structurally: `src/mesh/terminal-input.mjs`, `src/terminal-ws.mjs` and the driver import neither `ask-request.mjs` nor `ask.mjs`. `resume.mjs` imports no terminal-input module. The driver has no branch that skips `stopForOutcome` for `needs-input`. Fixture: `work:drive-continue` with `--answer` whose `runId` differs from the lent run refuses `drive-answer-not-own` before any mint or spawn. With its own run, the fake PTY receives `resumeSessionId` = the ask's session and the typed body = the answer, byte-for-byte. Red probe: accept a foreign session. | `test/arch/loop/acd-loop-ask-waits-in-place.test.mjs` *(pending — 131/06)* | ADR-001, ADR-003 §7 |
-| FF-13105 | **A waiting lane does not halt the wave.** Fixture over `test/support/loop/lane-fixture.mjs` with two lanes, one answering needs-input:<br>- the other lane closes and merges;<br>- the waiting lane's record carries the ask and a heartbeat newer than the ask;<br>- `waiting on you` is narrated;<br>- writing `answered` makes the lane re-drive with `--answer` and settle `done`, and the file is gone;<br>- with an immediate-park `askWait`, the lane closes `parked` and unmerged, `session-parked-unanswered` is notified once, and the halt is `session-needs-input` only after the other lane merged.<br>Structural: `"session-needs-input"` reaches `haltDecision` only inside `ask.mjs`'s `parkedHalt`, and the four sites call `awaitAnswer`. `LOOP_STOPS` is unchanged. Red probe: return the old halt at `wave.mjs`'s needs-input branch. | `test/arch/loop/acd-loop-ask-waits-in-place.test.mjs` *(pending — 131/06)* | ADR-004 |
-| FF-13106 | **The notifier is best-effort and the secret is never committed.** The `work.notify` schema is closed, and a channel has `urlEnv` and no `url`, `webhook` or `token` property. `.aof/aof.config.json` and `src/**` contain no `discord.com/api/webhooks` literal. Inside `src/notify/` the URL is read only as `env[<urlEnv>]`. Fixture with a degrade-sink spy: `notify` against a fetch that throws, returns 500, returns 429, or hangs past the bound resolves `{ delivered: [], failed: [name] }` and never rejects, and no degrade message contains the URL. `renderDiscord` over a 3,000-character ask with an open fence is ≤ 2,000 characters, keeps line 1, the action line and the link, balances the fence, and sets `allowed_mentions: { parse: [] }`. Red probe: log the URL in the failure degrade. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` *(pending — 131/06)* | ADR-005 |
-| FF-13107 | **Six firing points, one envelope.** Every `notify(` call under `src/` is one of the six sites in ADR-005 §4, enumerated by file and event literal. Each envelope comes from `buildNotifyEnvelope`, whose keys deep-equal the eleven, and `EVENTS` holds seven. Non-vacuous: the sweep finds six sites. Red probe: a seventh `notify(` in `wave.mjs`. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` *(pending — 131/06)* | ADR-005 §3-§4 |
-| FF-13108 | **One form on every face.** `src/notify/form.mjs` has zero imports and is imported by `src/loop/ask.mjs`, `src/commands/loop.mjs`, `src/notify/discord.mjs` and `ui/src/board/action.mjs`. The phrase `waiting on you` is spelled in no other `src/**` or `ui/src/**` module. The ONLY import specifier in `ui/src/**` that resolves outside `ui/src` is that file. Fixture: for one envelope, `accountLine` and the Discord line 1 share byte-identical `<ref> — <phrase> (<phase>, <elapsed>)`. Red probe: a second `formatElapsed` in `ui/src/board/`. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` *(pending — 131/06)* | ADR-006 §1 |
-| FF-13109 | **The answer route is guarded and the card has no fast path.** In `src/board-ui.mjs`, every `POST` branch calls `admitWriteRequest(` before `readJsonBody(`. The answer branch reads exactly `body.ref`, `body.text` and `body.actor`. `admitWriteRequest` in `board-ui.mjs` and in `src/mesh/ui-serve.mjs` calls `isLoopbackHost(`, and a request with `Host: evil.example:1234` and a matching `Origin` is refused `non-loopback-host`. `ui/src/**` holds exactly one `fetch("/api/work/answer"`. `AskCard.tsx` imports no `Markdown`, renders one `<button`, sets no `placeholder`, and keys on `item.ask`. Red probe: read the body before admission in the resync door. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` *(pending — 131/06)* | ADR-006 §2-§4 |
+| FF-13101 | **The ask has ONE home.** Over a comment-stripped sweep of `src/**`, the literal `loop-asks` and the ask state words, used as ask states, appear only in `src/loop/ask-request.mjs`. `src/loop/ask.mjs`, `src/commands/resume.mjs` and `src/commands/list.mjs` each import it by RESOLVED specifier. No module joins `meshRoot` with an `ask` literal. `asks` is written only through `openRunAsk`, `parkRunAsk` and `answerRunAsk`. Fixture: `answerAsk` refuses `answer-control-chars` for `"ok\u001b[201~rm"`, `answer-empty` for `"  "`, and `ask-already-answered` on a second answer. Non-vacuous: the sweep finds the module and three importers. Red probe: spell `path.join(globalMeshPaths().meshRoot, "loop-asks", id)` in `list.mjs`. | `test/arch/loop/acd-loop-ask-single-home.test.mjs` | ADR-003 |
+| FF-13102 | **One reader of the question.** `readLastAssistantTurn` is defined in `src/work/observe.mjs` and imported by the driver and by `ask.mjs`. No other `src/**` module both `JSON.parse`s transcript lines and reads `stop_reason`. The driver's export set stays 17 (`53/FF-5302`). `NEEDS_INPUT_INSTRUCTION` still embeds the sentinel, carries the four labels (`Decision needed:`, `Options:`, `I would pick:`, `What the answer changes:`) and keeps the "genuine judgment call" sentence. Fixture: an `end_turn` transcript answers its text minus the sentinel line, and a pending `AskUserQuestion` answers its questions and option labels. Red probe: re-inline the scan in the driver. | `test/arch/loop/acd-loop-ask-single-home.test.mjs` | ADR-002 |
+| FF-13103 | **A waiting run is recorded, not reclaimed and not charged.** Minted records carry 17 keys with `asks` last and `[]`, and a 16-key record reads forward as `[]`. `transitionStaleRunsReclaimed` over a stale `running` run whose last ask is unanswered leaves it byte-unchanged, and reclaims the same run with the ask answered. `attemptElapsedMs` over a run with a 3 h ask interval is the same as over the run without it. Red probe: drop the skip. | `test/arch/loop/acd-loop-ask-single-home.test.mjs` | ADR-003 §3, ADR-001 §4 |
+| FF-13104 | **An answer reaches a session only as a resumed command.** Structurally: `src/mesh/terminal-input.mjs`, `src/terminal-ws.mjs` and the driver import neither `ask-request.mjs` nor `ask.mjs`. `resume.mjs` imports no terminal-input module. The driver has no branch that skips `stopForOutcome` for `needs-input`. Fixture: `work:drive-continue` with `--answer` whose `runId` differs from the lent run refuses `drive-answer-not-own` before any mint or spawn. With its own run, the fake PTY receives `resumeSessionId` = the ask's session and the typed body = the answer, byte-for-byte. Red probe: accept a foreign session. | `test/arch/loop/acd-loop-ask-waits-in-place.test.mjs` | ADR-001, ADR-003 §7 |
+| FF-13105 | **A waiting lane does not halt the wave.** Fixture over `test/support/loop/lane-fixture.mjs` with two lanes, one answering needs-input:<br>- the other lane closes and merges;<br>- the waiting lane's record carries the ask and a heartbeat newer than the ask;<br>- `waiting on you` is narrated;<br>- writing `answered` makes the lane re-drive with `--answer` and settle `done`, and the file is gone;<br>- with an immediate-park `askWait`, the lane closes `parked` and unmerged, `session-parked-unanswered` is notified once, and the halt is `session-needs-input` only after the other lane merged.<br>Structural: `"session-needs-input"` reaches `haltDecision` only inside `ask.mjs`'s `parkedHalt`, and the four sites call `awaitAnswer`. `LOOP_STOPS` is unchanged. Red probe: return the old halt at `wave.mjs`'s needs-input branch. | `test/arch/loop/acd-loop-ask-waits-in-place.test.mjs` | ADR-004 |
+| FF-13106 | **The notifier is best-effort and the secret is never committed.** The `work.notify` schema is closed, and a channel has `urlEnv` and no `url`, `webhook` or `token` property. `.aof/aof.config.json` and `src/**` contain no `discord.com/api/webhooks` literal. Inside `src/notify/` the URL is read only as `env[<urlEnv>]` or through `readMessagingSecret`. As amended at 131/08, the `messaging` store segment is joined into a path only in `src/notify/secret.mjs`, and `src/commands/messaging/messaging.mjs` reaches the store only through it. Fixture with a degrade-sink spy: `notify` against a fetch that throws, returns 500, returns 429, or hangs past the bound resolves `{ delivered: [], failed: [name] }` and never rejects, and no degrade message contains the URL. `renderDiscord` over a 3,000-character ask with an open fence is ≤ 2,000 characters, keeps line 1, the action line and the link, balances the fence, and sets `allowed_mentions: { parse: [] }`. Red probe: log the URL in the failure degrade. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-005 |
+| FF-13107 | **Six firing points, one envelope.** Every `notify(` call under `src/` is one of the six sites in ADR-005 §4, enumerated by file and event literal. Each envelope comes from `buildNotifyEnvelope`, whose keys deep-equal the eleven, and `EVENTS` holds seven. Non-vacuous: the sweep finds six sites. Red probe: a seventh `notify(` in `wave.mjs`. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-005 §3-§4 |
+| FF-13108 | **One form on every face.** `src/notify/form.mjs` has zero imports and is imported by `src/loop/ask.mjs`, `src/commands/loop.mjs`, `src/notify/discord.mjs` and `ui/src/board/action.mjs`. The phrase `waiting on you` is spelled in no other `src/**` or `ui/src/**` module. The ONLY import specifier in `ui/src/**` that resolves outside `ui/src` is that file. Fixture: for one envelope, `accountLine` and the Discord line 1 share byte-identical `<ref> — <phrase> (<phase>, <elapsed>)`. Red probe: a second `formatElapsed` in `ui/src/board/`. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-006 §1 |
+| FF-13109 | **The answer route is guarded and the card has no fast path.** In `src/board-ui.mjs`, every `POST` branch calls `admitWriteRequest(` before `readJsonBody(`. The answer branch reads exactly `body.ref`, `body.text` and `body.actor`. `admitWriteRequest` in `board-ui.mjs` and in `src/mesh/ui-serve.mjs` calls `isLoopbackHost(`, and a request with `Host: evil.example:1234` and a matching `Origin` is refused `non-loopback-host`. `ui/src/**` holds exactly one `fetch("/api/work/answer"`. `AskCard.tsx` imports no `Markdown`, renders one `<button`, sets no `placeholder`, and keys on `item.ask`. Red probe: read the body before admission in the resync door. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-006 §2-§4 |
