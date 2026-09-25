@@ -1487,14 +1487,20 @@ function recoverableDeclaration(loop) {
 // byte-identically. `instanceof Set`, never duck-typed: a Set-like is not the producer's set.
 // Built from the global; this module still imports nothing.
 const EMPTY_STOPPED = Object.freeze(new Set());
+// THE HANDED-BACK SET (131/ADR-009 §6) — the `loopRunId`s an operator handed back to the supervisor
+// (`work:loop --hand-off`), read by the producer and never here. ADDITIVE and default-absent exactly
+// as `stopped` is: a member yields a row even when it is neither stale nor resumable, and even over an
+// honoured stop mark, because the operator asked — and the compute budget still gates it.
+const EMPTY_RESUMES = Object.freeze(new Set());
 
 export function decideSupervisedDeclarations(input = {}) {
   const workspaces = Array.isArray(input.workspaces) ? input.workspaces : [];
   // `ceilingMs` is resolved PER WORKSPACE below (each declaration against its own workspace's
   // `scheduleToClose`), so it is deliberately not destructured from `input` here — `input.ceilingMs`
   // is the fallback a member with no readable config lands on.
-  const { maxAttempts, stalenessMs, now, isRunning, isStale, retryReadiness, stopped } = input;
+  const { maxAttempts, stalenessMs, now, isRunning, isStale, retryReadiness, stopped, resumeRequested } = input;
   const stoppedSet = stopped instanceof Set ? stopped : EMPTY_STOPPED;
+  const resumeSet = resumeRequested instanceof Set ? resumeRequested : EMPTY_RESUMES;
   const nowMs = Date.parse(now);
   const rows = [];
 
@@ -1534,7 +1540,9 @@ export function decideSupervisedDeclarations(input = {}) {
       // skip PRECEDES the liveness branch, so a stopped loop is never retained on liveness either.
       // A `requested` mark is not in this set: a draining loop keeps its row until it halts. The
       // row is what keeps the reconcile from relaunching a stopped loop; `--resume` clears the mark.
-      if (stoppedSet.has(declaration.loopRunId)) continue;
+      // A hand-back overrides the mark (131/ADR-009 §6): the operator asked for this loop again.
+      const handedBack = resumeSet.has(declaration.loopRunId);
+      if (stoppedSet.has(declaration.loopRunId) && !handedBack) continue;
       const latest = [...runs].sort(compareRuns).at(-1);
 
       const inFlight = typeof isRunning === "function" && isRunning(latest) === true;
@@ -1549,8 +1557,8 @@ export function decideSupervisedDeclarations(input = {}) {
         rows.push(declarationRow(workspace, declaration));
         continue;
       }
-      const resumable = typeof retryReadiness === "function"
-        && retryReadiness(latest, maxAttempts, nowMs)?.ready === true;
+      const resumable = handedBack || (typeof retryReadiness === "function"
+        && retryReadiness(latest, maxAttempts, nowMs)?.ready === true);
       if (!stale && !resumable) continue;
 
       // Both remaining branches mean a RELAUNCH, so both are gated by the compute budget.

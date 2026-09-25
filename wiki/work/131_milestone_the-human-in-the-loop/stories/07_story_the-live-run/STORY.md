@@ -4,7 +4,7 @@ number: 07
 slug: the-live-run
 title: "The live run — a real loop on this machine asks a question, the Discord message arrives, the answer is given once from the CLI and once from the board, the other lanes keep building, and the loop finishes, read at the source"
 parent: 131
-depends: [6, 8]
+depends: [6, 8, 9, 10, 11, 12]
 status: in-progress
 owner: product-owner
 created: 2026-09-23
@@ -42,6 +42,11 @@ so that **the milestone's outcome is measured on the running system, not asserte
 - [ ] `tasks/01_the-live-ask-read-at-the-source.feature` — `@manual`, operator-gated: the stored webhook (`aof messaging status`) and the desktop restart as the precondition; the ask on T1 and on Discord within 10 s (by message id); the other lane driving while it waits; one answer from `aof work answer`, one from the board card, each resuming the SAME session; the loop `done`; the records' `asks` read at the source
 
 ## Notes
+
+- **Waits on the bot (operator, 2026-09-25).** 07 now depends on 09–12 and proves the BOT, not the
+  webhook. It is re-refined once those land: the bot posts the ask, the answer is given by a Discord
+  reply as well as from the CLI and the board, and the four slash commands are exercised. Its task 00
+  (the payload and the fixture) is redone then.
 
 - Follows the operator-gated `@manual` pattern: install from the MAIN checkout, measure at the source, write the procedure and paste slots into STATE.md, then NEEDS_INPUT — never in-review on paraphrased evidence.
 - The fixture lives on the standing test-bed (scope `03`, never `00`), never in this repository. Its two asking stories reserve a choice in their own task, because WHEN a session asks is out of 131's scope. The stories arrive refined, so the asks land at build in lanes: under `refine_first` a refine-time ask runs in the primary and holds the whole loop (ADR-004 §3), where leg 2 cannot be shown.

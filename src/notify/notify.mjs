@@ -1,23 +1,31 @@
-// src/notify/notify.mjs — THE NOTIFIER (milestone 131; ADR-005). A driven session that needs a
+// src/notify/notify.mjs — THE NOTIFIER (milestone 131; ADR-005, ADR-007, ADR-008 §4 and §7). A driven session that needs a
 // human, an answer, a park, a halt, a death and an acceptance reach the operator where they are.
 // One config reader (`resolveNotifyConfig`), one envelope builder (`buildNotifyEnvelope`), one
 // channel registry (`CHANNELS`, a renderer and a sender per type, Discord first) and one delivery
 // (`notify`). A second channel type is a renderer entry and a schema enum member, never a second
 // pipeline.
 //
-// THE SECRET. A Discord webhook URL carries its token in its path, so the URL IS the credential.
-// The config names only the ENV VAR that may override it (`urlEnv`). The URL is resolved at the
-// point of send, on EVERY send and never cached (as amended at 131/08): `env[urlEnv]` when it is set
-// and not blank, else the machine-wide store `aof messaging init` wrote (`readMessagingSecret`,
-// `./secret.mjs`), read from the PROCESS's global home — never one derived from the injected `env`.
-// So a daemon started before the `init` sends with the new URL, with no restart. The URL never
-// reaches the envelope, a degrade message, a returned value or a log.
+// THE SECRET is the bot token (ADR-007, superseding ADR-005 §1's webhook URL). The config names only
+// the Discord channel it posts to (`channelId`, not a secret) and the ENV VAR that may override the
+// token (`tokenEnv`). The token is resolved at the point of send, on EVERY send and never cached (as
+// amended at 131/08): `env[tokenEnv]` when it is set and not blank, else the machine-wide store
+// `aof messaging init` wrote (`readMessagingSecret`, `./secret.mjs`), read from the PROCESS's
+// global home — never one derived from the injected `env`. So a daemon started before the `init`
+// sends with the new token, with no restart. The token never reaches the envelope, a degrade
+// message, a returned value or a log; it goes on the wire only through `discordRequest`.
 //
 // DELIVERY is awaited (an un-awaited promise in an exiting CLI is dropped — the death class 129
 // measured), bounded at NOTIFY_TIMEOUT_MS per channel, never retried, and never throws: a failing
-// webhook never blocks or fails the run that fired it. Each failure degrades once, by name.
+// channel never blocks or fails the run that fired it. Each failure degrades once, by name.
+//
+// THE ASK INDEX (131/10, ADR-008 §4). A delivered `session-needs-input` or
+// `session-parked-unanswered` is recorded by its posted message id (`./ask-messages.mjs`), so a
+// Discord reply to it can find its ask. The record is best-effort: a write that fails degrades
+// `notify-ask-index` and never turns a delivery into a failure.
 import { reportDegrade } from "../degrade.mjs";
-import { isDiscordWebhookUrl, renderDiscord, sendDiscord } from "./discord.mjs";
+import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { recordAskMessage } from "./ask-messages.mjs";
+import { discordInviteUrl, isDiscordBotToken, isDiscordSnowflake, renderDiscord, sendDiscord } from "./discord.mjs";
 import { readMessagingSecret } from "./secret.mjs";
 
 // The seven events, in ADR-005 §3's order. A site passes one of these as a literal.
@@ -31,21 +39,33 @@ export const EVENTS = Object.freeze([
   "milestone-accepted",
 ]);
 
-// DEFAULT DECISION (ADR-005 §1): the env var a channel reads when it names none.
-export const DEFAULT_URL_ENV = "AOF_DISCORD_WEBHOOK_URL";
+// DEFAULT DECISION (ADR-007 §3): the env var that overrides the token when a channel names none.
+export const DEFAULT_TOKEN_ENV = "AOF_DISCORD_BOT_TOKEN";
 // DEFAULT DECISION (ADR-005 §5): each channel's send is abandoned at five seconds.
 export const NOTIFY_TIMEOUT_MS = 5000;
+// The events whose posted message is indexed, so a reply to it answers the ask (ADR-008 §4).
+export const ASK_EVENTS = Object.freeze(["session-needs-input", "session-parked-unanswered"]);
 
-// The channel registry: per type, one renderer, one sender, the URL shape it `accepts` and the
-// `label` a human reads (the last two serve `aof messaging`, 131/08).
+// The channel registry: per type, one renderer, one sender, the credential shape it `accepts`, the
+// channel-id shape it takes (`validChannelId`), the setup URL `init` prints (`invite`), and the
+// `label` and `credential` a human reads (the last five serve `aof messaging` too, 131/08-09). The
+// sender is `send(credential, channelId, body, opts)`.
 export const CHANNELS = Object.freeze({
-  discord: Object.freeze({ render: renderDiscord, send: sendDiscord, accepts: isDiscordWebhookUrl, label: "Discord" }),
+  discord: Object.freeze({
+    render: renderDiscord,
+    send: sendDiscord,
+    accepts: isDiscordBotToken,
+    validChannelId: isDiscordSnowflake,
+    invite: discordInviteUrl,
+    label: "Discord",
+    credential: "bot token",
+  }),
 });
 
 const isPlainObject = (value) => value != null && typeof value === "object" && !Array.isArray(value);
 const nonBlank = (value) => typeof value === "string" && value.trim().length > 0;
 
-// resolveNotifyConfig(config) → the ONE reading of `work.notify`, with its two defaults applied, or
+// resolveNotifyConfig(config) → the ONE reading of `work.notify`, with its defaults applied, or
 // `null` when there is nothing to notify (absent, not an object, or no usable channel). Nothing
 // validates the block at run time, so this meets shapes the schema refuses and never throws on
 // them: a channel that is not a plain object is skipped; a key absent or of the wrong JSON type
@@ -60,7 +80,9 @@ export function resolveNotifyConfig(config) {
     channels.push(Object.freeze({
       name,
       type: channel.type,
-      urlEnv: typeof channel.urlEnv === "string" ? channel.urlEnv : DEFAULT_URL_ENV,
+      channelId: typeof channel.channelId === "string" ? channel.channelId : null,
+      tokenEnv: typeof channel.tokenEnv === "string" ? channel.tokenEnv : DEFAULT_TOKEN_ENV,
+      allow: Object.freeze(Array.isArray(channel.allow) ? channel.allow.filter((id) => typeof id === "string") : []),
       events: Object.freeze(Array.isArray(channel.events) ? [...channel.events] : [...EVENTS]),
     }));
   }
@@ -103,7 +125,8 @@ function notifyError(message, code) {
 
 // buildNotifyEnvelope(event, fields, { config, now }) → the ONE builder of the eleven-key envelope,
 // frozen through: `{ event, ref, at, node, phase, elapsedMs, question, stop, outcome, answerPath,
-// link }`. `node` is `config.mesh.nodeId ?? null`; `link` is the configured template with every
+// link }`. `node` is `fields.node` when given (a worker's ask posted by the control, 131/ADR-010 §4),
+// else `config.mesh.nodeId ?? null`; `link` is the configured template with every
 // `{ref}` filled (read through `resolveNotifyConfig`, so a channel-less block has no link). An
 // event that is not one of the seven is a programmer error, refused `notify-unknown-event`.
 export function buildNotifyEnvelope(event, fields = {}, { config = {}, now = () => new Date() } = {}) {
@@ -119,7 +142,7 @@ export function buildNotifyEnvelope(event, fields = {}, { config = {}, now = () 
     event,
     ref,
     at: new Date(now()).toISOString(),
-    node: nodeId,
+    node: typeof given.node === "string" && given.node.length > 0 ? given.node : nodeId,
     phase: shape.phase ? given.phase ?? null : null,
     elapsedMs: shape.elapsedMs ? given.elapsedMs ?? null : null,
     question: shape.question ? given.question ?? null : null,
@@ -131,68 +154,110 @@ export function buildNotifyEnvelope(event, fields = {}, { config = {}, now = () 
 }
 
 // A degrade message built from named parts only — never a raw `error.message` — with a final pass
-// that replaces any occurrence of the URL, so a message can never carry the credential.
-function degrade(code, message, url) {
-  const safe = nonBlank(url) ? message.split(url).join("<redacted>") : message;
+// that replaces any occurrence of the token, so a message can never carry the credential.
+function degrade(code, message, secret) {
+  const safe = nonBlank(secret) ? message.split(secret).join("<redacted>") : message;
   reportDegrade(code, new Error(safe));
 }
 
-// A channel's URL, resolved at the point of send: the env override when it is set and not blank,
-// else the stored URL for the channel's type, else nothing. Read on every send, never cached.
-async function resolveUrl(channel, env) {
-  const override = env?.[channel.urlEnv];
+// A channel's token, resolved at the point of send: the env override when it is set and not blank,
+// else the stored token for the channel's type, else nothing. Read on every send, never cached.
+async function resolveToken(channel, env) {
+  const override = env?.[channel.tokenEnv];
   if (nonBlank(override)) return override;
   return readMessagingSecret(channel.type);
 }
 
-// One channel's delivery. Answers true when delivered; every failure degrades once and answers
-// false. It never throws: a throwing renderer is a delivery failure like any other.
-async function deliver(channel, envelope, { env, fetch, timeoutMs }) {
+// resolveBotToken(env) → the bot token this machine would post with — the `AOF_DISCORD_BOT_TOKEN`
+// override when it is set and not blank, else the store — or `null` when neither holds a bot token.
+// The one read the control node's launcher asks before it starts the bot (131/10, ADR-008 §1).
+export async function resolveBotToken(env = process.env) {
+  const token = await resolveToken({ type: "discord", tokenEnv: DEFAULT_TOKEN_ENV }, env);
+  return nonBlank(token) && CHANNELS.discord.accepts(token) ? token : null;
+}
+
+// Records a delivered ask message in the index, and degrades rather than throws when it cannot.
+async function indexAskMessage(workspace, envelope, channel, messageId) {
+  if (!ASK_EVENTS.includes(envelope.event) || messageId == null) return;
+  try {
+    await recordAskMessage({
+      messageId,
+      channelId: channel.channelId,
+      event: envelope.event,
+      ref: envelope.ref,
+      workspaceId: resolveWorkspaceId(workspace),
+      projectRoot: typeof workspace?.projectRoot === "string" ? workspace.projectRoot : null,
+    });
+  } catch (error) {
+    degrade("notify-ask-index", `notify channel "${channel.name}" posted the ask for ${String(envelope.ref)}, but its message could not be indexed for a reply (${error?.code === "notify-ask-index" ? error.message : error instanceof Error ? error.name : "error"})`);
+  }
+}
+
+// One channel's delivery. Answers the posted message's `{ channel, channelId, messageId }` when
+// delivered, else `null`; every failure degrades once. It never throws: a throwing renderer is a
+// delivery failure like any other.
+async function deliver(workspace, channel, envelope, { env, fetch, timeoutMs }) {
   const entry = Object.hasOwn(CHANNELS, channel.type) ? CHANNELS[channel.type] : null;
   if (entry == null) {
     degrade("notify-channel-unconfigured", `notify channel "${channel.name}" has type "${String(channel.type)}", which no renderer serves`);
-    return false;
+    return null;
   }
-  const url = await resolveUrl(channel, env);
-  if (!nonBlank(url)) {
-    degrade("notify-channel-unconfigured", `notify channel "${channel.name}" has no webhook URL — set ${channel.urlEnv} or run \`aof messaging init ${channel.type}\``);
-    return false;
+  const token = await resolveToken(channel, env);
+  if (!nonBlank(token)) {
+    degrade("notify-channel-unconfigured", `notify channel "${channel.name}" has no ${entry.label} ${entry.credential} — set ${channel.tokenEnv} or run \`aof messaging init ${channel.type}\``);
+    return null;
+  }
+  if (!entry.accepts(token)) {
+    // An old webhook URL left in the store, or a mistyped override: the shape is named, never the value.
+    degrade("notify-channel-unconfigured", `notify channel "${channel.name}" holds a credential that is not a ${entry.label} ${entry.credential} — run \`aof messaging init ${channel.type}\``, token);
+    return null;
+  }
+  if (!entry.validChannelId(channel.channelId)) {
+    degrade("notify-channel-unconfigured", `notify channel "${channel.name}" names no ${entry.label} channel id — run \`aof messaging enable ${channel.type} --channel <id>\``, token);
+    return null;
   }
   let body;
   try {
-    body = entry.render(envelope);
+    body = entry.render(envelope, { replyable: channel.allow.length > 0 });
   } catch (error) {
-    degrade("notify-delivery-failed", `notify channel "${channel.name}" could not render the message (${error instanceof Error ? error.name : "error"})`, url);
-    return false;
+    degrade("notify-delivery-failed", `notify channel "${channel.name}" could not render the message (${error instanceof Error ? error.name : "error"})`, token);
+    return null;
   }
   let errorName = null;
-  const result = await entry.send(url, body, { fetch, timeoutMs, onError: (name) => { errorName = name; } });
-  if (result.ok) return true;
+  const result = await entry.send(token, channel.channelId, body, { fetch, timeoutMs, onError: (name) => { errorName = name; } });
+  if (result.ok) {
+    const messageId = result.messageId ?? null;
+    await indexAskMessage(workspace, envelope, channel, messageId);
+    return { channel: channel.name, channelId: channel.channelId, messageId };
+  }
   if (result.reason === "rate-limited") {
-    degrade("notify-rate-limited", `notify channel "${channel.name}" was rate limited (retry after ${result.retryAfter ?? "unknown"})`, url);
+    degrade("notify-rate-limited", `notify channel "${channel.name}" was rate limited (retry after ${result.retryAfter ?? "unknown"})`, token);
   } else {
     const detail = result.status != null ? `status ${result.status}` : result.reason === "timeout" ? `no answer within ${timeoutMs}ms` : String(errorName ?? "error");
-    degrade("notify-delivery-failed", `notify channel "${channel.name}" failed to deliver (${detail})`, url);
+    degrade("notify-delivery-failed", `notify channel "${channel.name}" failed to deliver (${detail})`, token);
   }
-  return false;
+  return null;
 }
 
-// notify(workspace, envelope, { env, fetch, timeoutMs }) → `{ delivered, failed }`, lists of channel
-// names in config order. Selects the channels whose `events` hold the envelope's event and sends to
-// them in parallel. An absent or channel-less block, or an envelope or workspace that cannot be
-// read, is an honest no-op: no call and no degrade (17/ADR-004). Never rejects.
+// notify(workspace, envelope, { env, fetch, timeoutMs }) → `{ delivered, failed, messages }`:
+// channel names in config order, and one `{ channel, channelId, messageId }` per delivered channel
+// (ADR-007 §6 — the firing sites ignore it; story 10 indexes an ask's message by it). Selects the
+// channels whose `events` hold the envelope's event and sends to them in parallel. An absent or
+// channel-less block, or an envelope or workspace that cannot be read, is an honest no-op: no call
+// and no degrade (17/ADR-004). Never rejects.
 export async function notify(workspace, envelope, { env = process.env, fetch = globalThis.fetch, timeoutMs = NOTIFY_TIMEOUT_MS } = {}) {
   const resolved = resolveNotifyConfig(workspace?.config);
   const event = isPlainObject(envelope) ? envelope.event : null;
-  if (resolved == null || typeof event !== "string" || !EVENTS.includes(event)) return { delivered: [], failed: [] };
+  if (resolved == null || typeof event !== "string" || !EVENTS.includes(event)) return { delivered: [], failed: [], messages: [] };
   const selected = resolved.channels.filter((channel) => channel.events.includes(event));
   const outcomes = await Promise.all(selected.map((channel) =>
-    deliver(channel, envelope, { env, fetch, timeoutMs }).catch(() => {
+    deliver(workspace, channel, envelope, { env, fetch, timeoutMs }).catch(() => {
       degrade("notify-delivery-failed", `notify channel "${channel.name}" failed to deliver (error)`);
-      return false;
+      return null;
     })));
   return {
-    delivered: selected.filter((_, index) => outcomes[index]).map((channel) => channel.name),
-    failed: selected.filter((_, index) => !outcomes[index]).map((channel) => channel.name),
+    delivered: selected.filter((_, index) => outcomes[index] != null).map((channel) => channel.name),
+    failed: selected.filter((_, index) => outcomes[index] == null).map((channel) => channel.name),
+    messages: outcomes.filter((outcome) => outcome != null),
   };
 }

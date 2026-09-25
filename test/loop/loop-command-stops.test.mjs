@@ -1205,7 +1205,7 @@ aofVersion: 0.1.0
 // Built inside a hoisted function so the array above can spread it without a TDZ.
 function composerTests() {
   const ASKED = Date.parse("2026-09-23T17:12:00.000Z");
-  const HOOK = "https://discord.com/api/webhooks/131/composer";
+  const HOOK = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.composer"; // a synthetic bot token (131/09)
   const QUESTION_TURN = { type: "assistant", message: { stop_reason: "end_turn", content: [{ type: "text", text: "Decision needed: pick a store?" }, { type: "text", text: "NEEDS_INPUT" }] } };
 
   // A fake wait: `next()` advances the clock by `step`; `read` reads the real file unless a case
@@ -1224,7 +1224,7 @@ function composerTests() {
     };
   }
 
-  async function withComposer(body, { phase = "continue", transcript = [QUESTION_TURN], notifyBlock = { channels: { ops: { type: "discord", urlEnv: "HOOK" } } }, fetch = null } = {}) {
+  async function withComposer(body, { phase = "continue", transcript = [QUESTION_TURN], notifyBlock = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK" } } }, fetch = null } = {}) {
     const root = await mkdtemp(path.join(os.tmpdir(), "aof-131-03-"));
     try {
       const dir = path.join(root, "wiki", "work", "03_milestone_x", "stories", "01_story_y");
@@ -1603,14 +1603,14 @@ function composerTests() {
 // `ctx.askWait`, and `notify` through an injected `fetch` spy. Built inside a hoisted function so the
 // array above can spread it without a TDZ.
 function primaryAskTests() {
-  const HOOK = "https://discord.com/api/webhooks/131/primary";
+  const HOOK = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.primary"; // a synthetic bot token (131/09)
   const QUESTION = "Decision needed: split 03?\n\nOptions: A or B";
   // The stops fixture with one discord channel, a transcript home, and the story's own verify moving
   // it to done so a walk that gets there ends.
   async function withPrimary(body, { question = QUESTION } = {}) {
     const fx = await loopFixture();
     try {
-      fx.workspace.config.work.notify = { channels: { ops: { type: "discord", urlEnv: "HOOK" } } };
+      fx.workspace.config.work.notify = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK" } } };
       const env = { CLAUDE_CONFIG_DIR: path.join(fx.projectRoot, ".claude-test") };
       const projects = claudeProjectsDir({ cwd: fx.projectRoot, env });
       await mkdir(projects, { recursive: true });

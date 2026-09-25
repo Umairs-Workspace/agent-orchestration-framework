@@ -6,7 +6,7 @@ import { completeRun, heartbeat, isStale, retryRun, startRun, readRuns } from ".
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { lineageElapsedMs } from "../../src/work/loop.mjs";
-import { loopStopsDir, markStopHonoured, readStopRequest, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
+import { loopResumesDir, loopStopsDir, markStopHonoured, readResumeRequest, readStopRequest, requestLoopResume, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
 import {
   DECLARATION_L1,
   cancellableDriver,
@@ -592,6 +592,28 @@ export const loopCommandResumeTests = [
         } finally {
           await fx.cleanup();
         }
+      }
+    },
+  },
+  {
+    name: "131/11 task04 — the relaunch clears the hand-off: a --resume of the handed-back loop removes the resume request and the stop mark, and says so",
+    async run() {
+      await resetLoopStops();
+      const fx = await loopFixture();
+      try {
+        await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify" }, state: "done", at: "2026-09-13T11:00:00.000Z" });
+        const stops = loopStopsDir();
+        const resumes = loopResumesDir();
+        await requestLoopStop(stops, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:30:00.000Z") });
+        await markStopHonoured(stops, "L1", { now: () => new Date("2026-09-13T11:31:00.000Z") });
+        await requestLoopResume(resumes, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-09-13T11:40:00.000Z") });
+        const driver = completingDriver(fx, { onCommand: closing(fx) });
+        const { lines } = await runCollected({ scope: "03", resume: true, now: "2026-09-13T12:00:00.000Z" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource() });
+        assert.equal(await readResumeRequest(resumes, "L1"), null, "the resume request is gone");
+        assert.equal(await readStopRequest(stops, "L1"), null, "and so is the stop mark");
+        assert.equal(lines.filter((line) => line === "Cleared the resume request for L1 — relaunched by the supervisor.").length, 1, lines.join("\n"));
+      } finally {
+        await fx.cleanup();
       }
     },
   },

@@ -19,9 +19,12 @@ import { heartbeatFromConfig } from "../loop-bounds.mjs";
 import { meshNodeIdOf } from "../commands/mesh/gate.mjs";
 import {
   STOP_LEVELS,
+  loopResumesDir,
   loopStopsDir,
   markStopHonoured,
+  requestLoopResume,
   requestLoopStop,
+  resumeRequestPath,
   stopRequestPath,
 } from "./stop-request.mjs";
 
@@ -35,6 +38,16 @@ export const STOP_REFUSALS = Object.freeze({
   scope: "loop-stop-scope",
   noDeclaration: "loop-stop-no-declaration",
   notLocal: "loop-stop-not-local",
+});
+
+// 131/11 (ADR-009 §6) — the hand-off's refusals, values like the stop's: the face maps
+// `loop-hand-off-no-declaration` to 404 and the others to 409.
+export const HAND_OFF_REFUSALS = Object.freeze({
+  scope: "loop-hand-off-scope",
+  noDeclaration: "loop-hand-off-no-declaration",
+  notSupervised: "loop-hand-off-not-supervised",
+  running: "loop-hand-off-running",
+  notLocal: "loop-hand-off-not-local",
 });
 
 const refuse = (code, message) => ({ ok: false, code, message });
@@ -87,25 +100,34 @@ function latestRunCarrying(runs, loopRunId) {
 //
 // A third call answers `cancel` again — idempotent, never an error. A not-live loop's request is
 // honoured at the first call and never re-opened: the second and third answer `drain`/`honoured`.
-export async function stopLoop(workspace, { scope, now } = {}) {
+// The scope's latest declaration and the latest run carrying it, read from its RUN RECORDS — the one
+// read the stop and the hand-off share. Answers `{ scope, declaration, latest }`, or `{ refusal }`
+// built from the caller's own codes.
+async function scopeDeclaration(workspace, scope, codes) {
   const scoped = decideLoopScope(scope);
   if (scoped?.admitted !== true) {
-    return refuse(STOP_REFUSALS.scope, scoped?.reason ?? `scope ${JSON.stringify(scope)} is not an admitted loop scope`);
+    return { refusal: refuse(codes.scope, scoped?.reason ?? `scope ${JSON.stringify(scope)} is not an admitted loop scope`) };
   }
   const items = (await listItems(workspace.workDir)).filter((row) => loopScopeIncludes(scoped.scope, row.ref) && typeof row.dir === "string");
   const runs = [];
   for (const item of items) runs.push(...await readRuns(item));
   const declaration = readLoopDeclaration(runs);
+  return { scope: scoped.scope, declaration, latest: declaration == null ? null : latestRunCarrying(runs, declaration.loopRunId) };
+}
+
+export async function stopLoop(workspace, { scope, now } = {}) {
+  const read = await scopeDeclaration(workspace, scope, STOP_REFUSALS);
+  if (read.refusal) return read.refusal;
+  const { declaration, latest } = read;
   if (declaration == null) {
-    return refuse(STOP_REFUSALS.noDeclaration, `No run in scope ${scoped.scope} carries a loop declaration — there is no loop to stop. Start one with \`aof work loop ${scoped.scope}\` (${STOP_REFUSALS.noDeclaration}).`);
+    return refuse(STOP_REFUSALS.noDeclaration, `No run in scope ${read.scope} carries a loop declaration — there is no loop to stop. Start one with \`aof work loop ${read.scope}\` (${STOP_REFUSALS.noDeclaration}).`);
   }
-  const latest = latestRunCarrying(runs, declaration.loopRunId);
   const localNode = meshNodeIdOf(workspace.config);
   const runNode = typeof latest?.node === "string" && latest.node.length > 0 ? latest.node : null;
   if (localNode != null && runNode != null && runNode !== localNode) {
     return refuse(
       STOP_REFUSALS.notLocal,
-      `Loop ${declaration.loopRunId} in scope ${scoped.scope} last ran on ${runNode}, not on this node (${localNode}) — stop it on ${runNode}'s own console (${STOP_REFUSALS.notLocal}).`,
+      `Loop ${declaration.loopRunId} in scope ${read.scope} last ran on ${runNode}, not on this node (${localNode}) — stop it on ${runNode}'s own console (${STOP_REFUSALS.notLocal}).`,
     );
   }
   const clock = clockOf(now);
@@ -113,7 +135,7 @@ export async function stopLoop(workspace, { scope, now } = {}) {
   const dir = loopStopsDir();
   const written = await requestLoopStop(dir, {
     loopRunId: declaration.loopRunId,
-    scope: scoped.scope,
+    scope: read.scope,
     workspaceId: workspace?.config?.mesh?.workspaceId ?? null,
     by: { node: localNode, pid: process.pid },
     now: clock,
@@ -123,10 +145,48 @@ export async function stopLoop(workspace, { scope, now } = {}) {
   return {
     ok: true,
     loopRunId: declaration.loopRunId,
-    scope: scoped.scope,
+    scope: read.scope,
     live,
     request: wordFor(record.level),
     state: record.state,
     path: stopRequestPath(dir, declaration.loopRunId),
   };
+}
+
+// handOffLoop(workspace, { scope, now }) — 131/11 (ADR-009 §6): ask the SUPERVISOR to relaunch the
+// scope's supervised loop with `--resume`, and start nothing here. The process start belongs to the
+// supervisor (the desktop app polling `mesh:status` declarations), never to the caller: this writes
+// the durable resume request the declarations producer reads, and answers
+// `{ ok: true, handedOff: true, loopRunId, scope, path }`. A refusal is a value, as the stop's is:
+// no declaration, an unsupervised one (resumed from a terminal instead), or a live one.
+export async function handOffLoop(workspace, { scope, now } = {}) {
+  const read = await scopeDeclaration(workspace, scope, HAND_OFF_REFUSALS);
+  if (read.refusal) return read.refusal;
+  const { declaration, latest } = read;
+  if (declaration == null) {
+    return refuse(HAND_OFF_REFUSALS.noDeclaration, `No run in scope ${read.scope} carries a loop declaration — there is no loop to hand to the supervisor. Start one with \`aof work loop ${read.scope} --supervised\` (${HAND_OFF_REFUSALS.noDeclaration}).`);
+  }
+  if (declaration.supervised !== true) {
+    return refuse(HAND_OFF_REFUSALS.notSupervised, `Loop ${declaration.loopRunId} in scope ${read.scope} is not supervised, so no supervisor relaunches it — resume it from a terminal with \`aof work loop ${read.scope} --resume\` (${HAND_OFF_REFUSALS.notSupervised}).`);
+  }
+  // As the stop refuses it (130/ADR-006 §1): the request is a file in THIS machine's aof home, so a
+  // declaration whose latest run names another node is handed back on that node, never here.
+  const localNode = meshNodeIdOf(workspace.config);
+  const runNode = typeof latest?.node === "string" && latest.node.length > 0 ? latest.node : null;
+  if (localNode != null && runNode != null && runNode !== localNode) {
+    return refuse(HAND_OFF_REFUSALS.notLocal, `Loop ${declaration.loopRunId} in scope ${read.scope} last ran on ${runNode}, not on this node (${localNode}) — hand it back on ${runNode} (${HAND_OFF_REFUSALS.notLocal}).`);
+  }
+  const clock = clockOf(now);
+  if (latest != null && isRunning(latest) && !isStale(latest, clock().getTime(), heartbeatFromConfig(workspace))) {
+    return refuse(HAND_OFF_REFUSALS.running, `Loop ${declaration.loopRunId} in scope ${read.scope} is running — there is nothing to hand back (${HAND_OFF_REFUSALS.running}).`);
+  }
+  const dir = loopResumesDir();
+  await requestLoopResume(dir, {
+    loopRunId: declaration.loopRunId,
+    scope: read.scope,
+    workspaceId: workspace?.config?.mesh?.workspaceId ?? null,
+    by: { node: localNode, pid: process.pid },
+    now: clock,
+  });
+  return { ok: true, handedOff: true, loopRunId: declaration.loopRunId, scope: read.scope, path: resumeRequestPath(dir, declaration.loopRunId) };
 }

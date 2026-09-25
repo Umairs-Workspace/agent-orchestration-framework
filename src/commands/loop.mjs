@@ -149,10 +149,12 @@ import { buildNotifyEnvelope, notify } from "../notify/notify.mjs";
 // command layer; the shell reads the ONE interrupt source (`ctx.stopSource ?? createStopSource`)
 // instead of a `process.once` flag, and every write to the request goes through
 // `stop-request.mjs`'s exports — this module spells no path under the aof home and calls no fs.
-import { stopLoop } from "../loop/stop.mjs";
+import { handOffLoop, stopLoop } from "../loop/stop.mjs";
 import {
+  clearResumeRequest,
   clearStopRequest,
   createStopSource,
+  loopResumesDir,
   loopStopsDir,
   markStopHonoured,
   readStopRequest,
@@ -592,6 +594,23 @@ async function stopLoopCommand(input, ctx) {
   const answer = await stopLoop(ctx.workspace, { scope: input.scope, now: input.now });
   if (answer.ok === false) {
     throw commandError(answer.message, answer.code, answer.code === "loop-stop-no-declaration" ? 404 : 409);
+  }
+  return answer;
+}
+
+// 131/11 (ADR-009 §6) — THE HAND-OFF'S COMMAND FACE. `run` dispatches here on `input.handOff`, before
+// the stop and the probe. It asks the supervisor to relaunch the scope's supervised loop with
+// `--resume` and starts nothing: the core writes a durable resume request, which the declarations
+// producer reads and the `--resume` launch clears. `--hand-off` is its own request, so it is refused
+// with `--stop`, `--dry-run` or `--resume` before any read. A refusal is the core's value, mapped
+// to the command-error contract as the stop's is: 404 for no declaration, 409 otherwise.
+async function handOffLoopCommand(input, ctx) {
+  if (input.stop === true || input.dryRun === true || input.resume === true) {
+    throw commandError("--hand-off asks the supervisor to relaunch the loop and is its own request — pass it without --stop, --dry-run or --resume.", "invalid-input", 400);
+  }
+  const answer = await handOffLoop(ctx.workspace, { scope: input.scope, now: input.now });
+  if (answer.ok === false) {
+    throw commandError(answer.message, answer.code, answer.code === "loop-hand-off-no-declaration" ? 404 : 409);
   }
   return answer;
 }
@@ -1130,6 +1149,10 @@ export async function runLoopBody(input, suppliedCtx = {}) {
         await clearStopRequest(stopsDir, loopRunId);
         await narrate(`Cleared stop request for ${loopRunId} (${standing.state}, level ${standing.level}) — resumed.`);
       }
+      // 131/11 (ADR-009 §6) — the hand-off this relaunch answers is spent: cleared beside the stop
+      // mark, so the supervisor's next poll lists the loop on its own liveness, not on the request.
+      const handedBack = await clearResumeRequest(loopResumesDir(), loopRunId);
+      if (handedBack.cleared) await narrate(`Cleared the resume request for ${loopRunId} — relaunched by the supervisor.`);
       // 131/03 (ADR-005 §4, task 06) — A LOOP THAT DIED WITHOUT A WORD IS REPORTED BY THE NEXT
       // INVOCATION OF IT: when the run the latest declaration was read from is still `running` and
       // stale, the prior loop died (`loop-died`), or was relaunched by its supervisor
@@ -1862,6 +1885,10 @@ export async function runLoopBody(input, suppliedCtx = {}) {
 }
 
 export function renderLoopState(state) {
+  // 131/11 (ADR-009 §6) — the hand-off's one line, read by the key only it carries.
+  if (state?.handedOff === true) {
+    return `${state.scope} — handed to the supervisor: it relaunches loop ${state.loopRunId} with --resume on its next poll. ${state.path}`;
+  }
   // 130/02 (ADR-002 §5) — the stop's one line: the document `stopLoopCommand` answered, read by
   // the key only it carries.
   if (typeof state?.request === "string") {
@@ -1896,6 +1923,8 @@ export const loopCommand = {
       supervised: { type: "boolean" },
       // 130/02 ADR-002 §1 — the stop, in the same three homes. `run` dispatches on it alone.
       stop: { type: "boolean" },
+      // 131/11 ADR-009 §6 — the hand-off to the supervisor, in the same three homes.
+      handOff: { type: "boolean" },
     },
     required: ["scope"],
     additionalProperties: false,
@@ -1903,17 +1932,21 @@ export const loopCommand = {
   // 130/02 (ADR-002 §2) — `run` DISPATCHES: `stop: true` is the verb, otherwise the byte-identical
   // read-only probe (FF-5304's ten keys). Nothing else on the input selects the stop.
   // 129 gate (2026-09-22): `async`, because the command-core contract pins every `run` as an AsyncFunction.
-  run: async (input, ctx) => (input?.stop === true ? stopLoopCommand(input, ctx) : probeLoop(input, ctx)),
+  run: async (input, ctx) => {
+    if (input?.handOff === true) return handOffLoopCommand(input, ctx);
+    return input?.stop === true ? stopLoopCommand(input, ctx) : probeLoop(input, ctx);
+  },
   cli: {
     route: ["work", "loop"],
     spec: {
-      usage: "aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--dry-run] [--quiet] [--supervised] [--json]",
+      usage: "aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--json]",
       flags: {
         level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
         cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
         reviewClaims: { type: "string", description: "JSON structured blocker claims keyed by ref and completed review rounds" },
         resume: { type: "boolean", description: "settle stranded runs and resume the last declaration" },
         stop: { type: "boolean", description: "ask the scope's running loop to stop: the first request drains, a second cancels the in-flight session; --resume clears it" },
+        handOff: { type: "boolean", description: "hand a halted supervised loop back to its supervisor, which relaunches it with --resume on its next poll; starts nothing here" },
         dryRun: { type: "boolean", description: "render the read-only probe instead of entering the loop" },
         quiet: { type: "boolean", description: "silence the in-flight progress lines; the terminal account is printed unchanged" },
         supervised: { type: "boolean", description: "declare this loop supervised, so a restarted node relaunches it; off by default" },
@@ -1926,6 +1959,7 @@ export const loopCommand = {
       ...(options.reviewClaims != null ? { reviewClaims: JSON.parse(options.reviewClaims) } : {}),
       ...(options.resume === true ? { resume: true } : {}),
       ...(options.stop === true ? { stop: true } : {}),
+      ...(options.handOff === true ? { handOff: true } : {}),
       ...(options.dryRun === true ? { dryRun: true } : {}),
       ...(options.quiet === true ? { quiet: true } : {}),
       ...(options.supervised === true ? { supervised: true } : {}),
@@ -1933,7 +1967,7 @@ export const loopCommand = {
     // 130/02 (ADR-002 §1) — a `--stop` stays on the probe side exactly as `--dry-run` does: it
     // never enters the foreground body, never installs the diag recorder, never reaches a PTY.
     // It prints through `render`.
-    launch: (options) => options.dryRun === true || options.stop === true
+    launch: (options) => options.dryRun === true || options.stop === true || options.handOff === true
       ? null
       : (input, faceCtx) => {
         // The EXIT-REASON recorder (2026-09-11, `src/loop-diag.mjs`) — installed HERE, at the

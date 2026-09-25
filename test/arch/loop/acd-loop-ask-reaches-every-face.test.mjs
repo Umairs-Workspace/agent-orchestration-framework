@@ -1,30 +1,34 @@
-// FF-13106 + FF-13107 + FF-13108 + FF-13109 — THE ASK REACHES EVERY FACE THROUGH ONE NOTIFIER, ONE
-// FORM AND ONE GUARDED ROUTE (milestone 131 / story 06; ARCHITECTURE `## Fitness functions`,
-// ADR-005 and ADR-006). Which of this directory's three subjects: the RECORD — the envelope the
+// FF-13106 + FF-13107 + FF-13108 + FF-13109 + FF-13110 — THE ASK REACHES EVERY FACE THROUGH ONE
+// NOTIFIER, ONE FORM, ONE GUARDED ROUTE AND ONE AUTHORISED DOOR (milestone 131 / stories 06 and 09;
+// ARCHITECTURE `## Fitness functions`, ADR-005, ADR-006 and ADR-007). Which of this directory's three subjects: the RECORD — the envelope the
 // notifier sends, the form every face renders it in and the answer the board carries back are how
 // the ask record is read and written outside the loop, and these are the controls on each face.
 //
-// FF-13106, structural then fixture. The `work.notify` schema is closed and a channel names its
-// secret only by `urlEnv`: no `url`, `webhook` or `token` property at any level. Neither
-// `.aof/aof.config.json` nor `src/**` holds a `discord.com/api/webhooks` literal; inside
-// `src/notify/` the URL is read only as `env[<…urlEnv>]` or — as amended at 131/08 — through
-// `readMessagingSecret(`, called by `notify.mjs` alone; the `messaging` store segment is joined
-// into a path only in `src/notify/secret.mjs`, and `src/commands/messaging/messaging.mjs` reaches
-// the store only through it (its red probe: the verbs module joining the segment itself, run
-// against the shipped detector). No degrade call's MESSAGE names the
-// URL — the redaction pass in `notify.mjs` is a backstop, so the fixture alone could never see a
-// URL interpolated into the message it redacts (the register's red probe; this is the leg that
-// sees it). Fixture with a degrade-sink spy: `notify` against a fetch that throws, answers 500,
-// answers 429 or hangs past the bound resolves `{ delivered: [], failed: [name] }`, never rejects,
-// and no degrade message carries the URL. `renderDiscord` over a 3,000-character ask with an open
-// fence keeps line 1, the action line and the link inside 2,000 characters, balances the fence
-// and allows no mention.
+// FF-13106, structural then fixture — AMENDED at 131/09 (ADR-007): the credential is a bot token.
+// The `work.notify` schema is closed and a channel names its Discord channel by `channelId` and its
+// token override only by `tokenEnv`: no `url`, `webhook`, `token` or `urlEnv` property at any
+// level. Neither `.aof/aof.config.json` nor `src/**` holds a `discord.com/api/webhooks` literal
+// (the ban stands); inside `src/notify/` the token is read only as `env[<…tokenEnv>]` or — as
+// amended at 131/08 — through `readMessagingSecret(`, called by `notify.mjs` alone; the `messaging`
+// store segment is joined into a path only in `src/notify/secret.mjs`, and
+// `src/commands/messaging/messaging.mjs` reaches the store only through it (its red probe: the verbs
+// module joining the segment itself, run against the shipped detector). No degrade call's MESSAGE
+// names the token — the redaction pass in `notify.mjs` is a backstop, so the fixture alone could
+// never see a token interpolated into the message it redacts (the register's red probe; this is
+// the leg that sees it). Fixture with a degrade-sink spy: `notify` against a fetch that throws,
+// answers 500, answers 429 or hangs past the bound resolves `{ delivered: [], failed: [name] }`,
+// never rejects, and no degrade message carries the token. `renderDiscord` over a 3,000-character
+// ask with an open fence keeps line 1, the action line and the link inside 2,000 characters,
+// balances the fence, allows no mention and sets no `username`.
 //
 // FF-13107, structural. Every `notify(` call under `src/` (comment-stripped, the definition in
 // `src/notify/notify.mjs` excluded, calls of the imported binding only — task 00 ruling 7) is one
 // of ADR-005 §4's six sites, enumerated by file and by the event literals its envelopes are built
 // with; each site's module builds its envelope through `buildNotifyEnvelope`, whose keys
-// deep-equal the eleven, and `EVENTS` holds seven. NON-VACUOUS: the sweep finds six sites.
+// deep-equal the eleven, and `EVENTS` holds seven. NON-VACUOUS: the sweep finds six sites. AMENDED at
+// 131/12 (ADR-010 §4-§5): SEVEN sites — `session-needs-input` gains `announceWorkerAsk` in
+// `src/mesh/park-resume.mjs` (the control's post of a worker's ask), and `session-answered` stays ONE
+// call in `src/commands/resume.mjs`, serving both the local and the mesh leg.
 //
 // FF-13108, structural then fixture. `src/notify/form.mjs` imports nothing, and its direct importers
 // are `src/loop/ask.mjs`, `src/notify/discord.mjs` and `ui/src/board/action.mjs` (task 00 ruling 3:
@@ -43,10 +47,28 @@
 // `fetch("/api/work/answer"`, and `AskCard.tsx` renders no `Markdown`, sets no placeholder, keys on
 // `item.ask` and holds its buttons under ruling 4: one SEND button, at most one clamp toggle.
 //
+// FF-13114, structural then fixture (131/12, ADR-010). `ask` rides an `assignment.reported` payload only
+// on the running + needs-input park, and every other report's key set is unchanged.
+// `announceWorkerAsk(` is called only from the `settle-assignment` reactor, behind the
+// not-already-`needs-input` edge. Fixture: one park fact with `ask`, applied through the real
+// reactor, writes the row's `ask`, projects `execution.ask`, gives the board row a non-null question
+// and posts once with the worker's node; re-applying the same fact posts nothing.
+//
+// FF-13110, structural then fixture (131/09, ADR-007 §4). Over a comment-stripped sweep of
+// `src/**`, a string that opens `Bot ` (the `Authorization` value) and the host `discord.com/api`
+// are spelled only in `src/notify/discord.mjs`, whose `discordRequest` is their one builder;
+// `src/discord/**` calls `fetch` nowhere and, when it exists, reaches Discord through
+// `discordRequest`. NON-VACUOUS: the sweep finds `discord.mjs` and at least one `discordRequest(`
+// call. `isDiscordBotToken` accepts a three-segment token whose first segment decodes to a snowflake
+// and refuses a webhook URL, and it is the `discord` entry's `accepts`. Fixture: `sendDiscord`
+// against a fetch answering 200 `{ id }` answers that `messageId`, `notify` answers it in
+// `messages`, and 401 or 403 degrades `notify-delivery-failed` naming the status with no degrade
+// message holding the token.
+//
 // Every sweep reports what it read; every cut is on the language's own structure through
 // `test/support/source-slice.mjs`.
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
@@ -56,10 +78,16 @@ import { computedDynamicImports, importSpecifiers } from "../../support/module-f
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import { withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { setDegradeSinkForTest } from "../../../src/degrade.mjs";
-import { renderDiscord } from "../../../src/notify/discord.mjs";
+import { isDiscordBotToken, renderDiscord, sendDiscord } from "../../../src/notify/discord.mjs";
 import { accountLine, cost, headline } from "../../../src/notify/form.mjs";
-import { EVENTS, buildNotifyEnvelope, notify } from "../../../src/notify/notify.mjs";
+import { CHANNELS, EVENTS, buildNotifyEnvelope, notify } from "../../../src/notify/notify.mjs";
 import { serveSetupUi } from "../../../src/setup-ui.mjs";
+import { withMeshAssignFixture } from "../../support/mesh-assign-fixture.mjs";
+import { reportAssignmentSettled } from "../../../src/effects/assignment-transitions.mjs";
+import { effectsFor } from "../../../src/effects/table.mjs";
+import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+import { readExecutionOverlay } from "../../../src/board-mesh-execution.mjs";
+import { invoke } from "../../../src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
@@ -68,11 +96,23 @@ const NOTIFY_DIR = "src/notify/";
 const NOTIFY = "src/notify/notify.mjs";
 // FF-13106 as amended at 131/08: the machine-wide store's one home and the verbs that reach it.
 const SECRET_STORE = "src/notify/secret.mjs";
+// 131/10 (ADR-008 §4): the ask-message index reads its own records beside the store, never a secret.
+const ASK_INDEX = "src/notify/ask-messages.mjs";
 const MESSAGING_VERBS = "src/commands/messaging/messaging.mjs";
 const STORE_SEGMENT = /^(["'`])messaging(?:\1|\/)/u;
 const FORM = "src/notify/form.mjs";
 const WEBHOOK_LITERAL = "discord.com/api/webhooks";
-const FORBIDDEN_CHANNEL_KEYS = Object.freeze(["url", "webhook", "token"]);
+// Compared lowercased: `urlEnv` is the webhook-era override FF-13106 forbids since 131/09.
+const FORBIDDEN_CHANNEL_KEYS = Object.freeze(["url", "webhook", "token", "urlenv"]);
+// FF-13110 — the one authorised door (ADR-007 §4).
+const DOOR = "src/notify/discord.mjs";
+const API_HOST = "discord.com/api";
+const BOT_FAMILY = "src/discord/";
+// FF-13114 — a worker's ask rides the park fact (131/12, ADR-010).
+const REACTOR_TABLE = "src/effects/table.mjs";
+const REPORT_KEYS = Object.freeze(["assignmentId", "state", "runId", "sessionId", "branch", "code"]);
+const WORKER_ASK = Object.freeze({ question: "Decision needed: split 35/00?", phase: "build", askedAt: "2026-09-25T11:48:00.000Z" });
+const NOW_ISO = "2026-09-25T12:00:00.000Z";
 // ADR-005 §4 — the six firing points: each `notify(` call by file, with the event(s) its envelope
 // is built for. The death site builds one envelope whose event is `loop-relaunched` or `loop-died`.
 const FIRING_SITES = Object.freeze([
@@ -82,11 +122,14 @@ const FIRING_SITES = Object.freeze([
   "src/commands/resume.mjs session-answered",
   "src/loop/ask.mjs session-needs-input",
   "src/loop/ask.mjs session-parked-unanswered",
+  // 131/12 (ADR-010 §4) — the control's post of a worker's ask, on the edge into needs-input.
+  "src/mesh/park-resume.mjs session-needs-input",
 ]);
-const SIX = FIRING_SITES.length;
+const SEVEN = FIRING_SITES.length;
 const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
-// Task 00 ruling 3: the form's direct importers.
-const FORM_IMPORTERS = Object.freeze(["src/loop/ask.mjs", "src/notify/discord.mjs", "ui/src/board/action.mjs"]);
+// Task 00 ruling 3: the form's direct importers — and, as amended at 131/11 (ADR-009 §5), the slash
+// commands' renders, which read a waiting row exactly as the terminal and the posted message do.
+const FORM_IMPORTERS = Object.freeze(["src/discord/commands.mjs", "src/loop/ask.mjs", "src/notify/discord.mjs", "ui/src/board/action.mjs"]);
 const SHELL = "src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
@@ -166,9 +209,19 @@ export function notifySites(units, needle = "notify") {
   return sites;
 }
 
-// Each `degrade(` / `reportDegrade(` call in `code` whose MESSAGE names the URL: every argument of
-// `reportDegrade(`, and every argument but the third (the redaction input) of `degrade(`.
-export function degradeMessagesNamingUrl(code) {
+// The EXPRESSION text of one argument: every `${…}` interpolation, and the argument with its string
+// and template literals removed — so a word in a message's prose ("no bot token") is not a use of the
+// binding, while `${token}` and a bare `token` are.
+function expressionsOf(arg) {
+  const interpolated = [...arg.matchAll(/\$\{([^}]*)\}/gu)].map((match) => match[1]);
+  const bare = arg.replace(/`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/gu, " ");
+  return [bare, ...interpolated];
+}
+
+// Each `degrade(` / `reportDegrade(` call in `code` whose MESSAGE names the token (as amended at
+// 131/09; the URL before it): every argument of `reportDegrade(`, and every argument but the third
+// (the redaction input) of `degrade(`, read for the `token` binding as an expression.
+export function degradeMessagesNamingToken(code) {
   const found = [];
   for (const match of code.matchAll(/(?<![\w$.])(reportDegrade|degrade)\s*\(/gu)) {
     if (/function\s*$/u.test(code.slice(Math.max(0, match.index - 16), match.index))) continue;
@@ -176,7 +229,7 @@ export function degradeMessagesNamingUrl(code) {
     if (span == null) continue;
     const args = topLevelArguments(span.body);
     const message = match[1] === "degrade" ? args.filter((_, index) => index !== 2) : args;
-    if (message.some((arg) => /\burl\b/u.test(arg))) found.push(`${match[1]}(${span.body.trim().slice(0, 120)})`);
+    if (message.some((arg) => expressionsOf(arg).some((text) => /(?<![\w$])token(?![\w$])/u.test(text)))) found.push(`${match[1]}(${span.body.trim().slice(0, 120)})`);
   }
   return found;
 }
@@ -194,6 +247,16 @@ export function storePathJoins(units) {
     }
   }
   return found;
+}
+
+// wireSpellers(units) → per FF-13110 needle, the files whose comment-stripped code spells it: a
+// string literal opening `Bot ` (the Authorization value), and the API host. PURE, so the red probe
+// runs the shipped detector over a patched unit.
+export function wireSpellers(units) {
+  return {
+    bot: units.filter(({ code }) => /["'`]Bot\s/u.test(code)).map(({ rel }) => rel),
+    host: units.filter(({ code }) => code.includes(API_HOST)).map(({ rel }) => rel),
+  };
 }
 
 // The start of the brace block that encloses `index`.
@@ -266,9 +329,12 @@ function request(url, { route, host, origin }) {
   });
 }
 
-// FF-13106's delivery fixture: one discord channel reading its URL from HOOK.
-const SECRET = "https://discord.com/api/webhooks/131/arch-secret-token";
-const WORKSPACE = Object.freeze({ config: { work: { notify: { channels: { ops: { type: "discord", urlEnv: "HOOK" } } } } } });
+// FF-13106's and FF-13110's delivery fixture: one discord channel reading its bot token from HOOK
+// (a synthetic token whose third segment is what a leak check greps for).
+const TOKEN_SEGMENT = "arch-secret-token";
+const SECRET = `MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.${TOKEN_SEGMENT}`;
+const CHANNEL_ID = "123456789012345678";
+const WORKSPACE = Object.freeze({ config: { work: { notify: { channels: { ops: { type: "discord", channelId: CHANNEL_ID, tokenEnv: "HOOK" } } } } } });
 const NOW = () => new Date("2026-09-25T12:00:00.000Z");
 const ASK_ENVELOPE = (fields = {}) => buildNotifyEnvelope("session-needs-input", { ref: "127/02", phase: "build", elapsedMs: 720000, question: "Move the residue?", ...fields }, {
   config: { mesh: { nodeId: "aof-wsl" }, work: { notify: { channels: { ops: { type: "discord" } }, link: "https://example.test/{ref}" } } },
@@ -278,7 +344,7 @@ const response = (status) => ({ status, ok: status >= 200 && status < 300, heade
 
 export const archTests = [
   {
-    name: "arch/131 FF-13106 (acd-loop-ask-reaches-every-face): structural — the work.notify schema is closed and a channel names its secret only by urlEnv, with no url, webhook or token property at any level",
+    name: "arch/131 FF-13106 (acd-loop-ask-reaches-every-face): structural, as amended at 131/09 — the work.notify schema is closed and a channel has channelId and tokenEnv, with no url, webhook, token or urlEnv property at any level",
     run: async () => {
       const schema = JSON.parse(await readFile(path.join(repoRoot, "schemas", "aof.schema.json"), "utf8"));
       const block = schema?.$defs?.work?.properties?.notify;
@@ -286,7 +352,8 @@ export const archTests = [
       assert.equal(block.additionalProperties, false, "the work.notify schema is closed");
       const channel = block.properties?.channels?.additionalProperties;
       assert.equal(channel?.additionalProperties, false, "a channel is closed");
-      assert.ok(channel?.properties?.urlEnv != null, "a channel has urlEnv");
+      assert.ok(channel?.properties?.channelId != null, "a channel has channelId");
+      assert.ok(channel?.properties?.tokenEnv != null, "a channel has tokenEnv");
       const names = [];
       const walk = (node) => {
         if (node == null || typeof node !== "object") return;
@@ -296,11 +363,11 @@ export const archTests = [
       walk(block);
       assertRead("the property names under work.notify", names.length, 4, "name(s)");
       const forbidden = names.filter((name) => FORBIDDEN_CHANNEL_KEYS.includes(name.toLowerCase()));
-      assert.deepEqual(forbidden, [], `a channel has urlEnv and no url, webhook or token property at any level — found ${forbidden.join(", ")}: the URL is the credential (ADR-005 §1)`);
+      assert.deepEqual(forbidden, [], `a channel has channelId and tokenEnv and no url, webhook, token or urlEnv property at any level — found ${forbidden.join(", ")}: the bot token is the credential (ADR-007 §3)`);
     },
   },
   {
-    name: "arch/131 FF-13106 (acd-loop-ask-reaches-every-face): structural — no discord.com/api/webhooks literal in the config or src/**, the URL is read only as env[urlEnv] inside src/notify/, and no degrade message contains the URL",
+    name: "arch/131 FF-13106 (acd-loop-ask-reaches-every-face): structural, as amended at 131/09 — no discord.com/api/webhooks literal in the config or src/**, the token is read only as env[tokenEnv] or through readMessagingSecret inside src/notify/, and no degrade message contains the token",
     run: async () => {
       const config = await readFile(path.join(repoRoot, ".aof", "aof.config.json"), "utf8");
       assert.ok(!config.includes(WEBHOOK_LITERAL), `.aof/aof.config.json contains no ${WEBHOOK_LITERAL} literal`);
@@ -316,8 +383,8 @@ export const archTests = [
         return { rel, index: code.slice(match.index, close + 1) };
       }));
       assertRead(`the env[…] reads in ${NOTIFY_DIR}`, reads.length, 1, "read(s)");
-      const stray = reads.filter(({ index }) => !/urlEnv\s*\]$/u.test(index));
-      assert.deepEqual(stray.map(({ rel, index }) => `${rel}: ${index}`), [], "inside src/notify/ the URL is read only as env[<urlEnv>]");
+      const stray = reads.filter(({ index }) => !/tokenEnv\s*\]$/u.test(index));
+      assert.deepEqual(stray.map(({ rel, index }) => `${rel}: ${index}`), [], "inside src/notify/ the token is read only as env[<tokenEnv>]");
       // As amended at 131/08: the second read is the machine-wide store, called from the notifier
       // alone (the store module's own calls are its definition's neighbours, not a second read), and
       // the store's file is read by its own module alone.
@@ -325,16 +392,18 @@ export const archTests = [
         .filter((match) => !/function\s*$/u.test(code.slice(Math.max(0, match.index - 16), match.index)))
         .map(() => rel));
       assertRead(`the readMessagingSecret( calls in ${NOTIFY_DIR}`, storeReads.length, 1, "call(s)");
-      assert.deepEqual([...new Set(storeReads)], [NOTIFY], `inside src/notify/ the stored URL is read only by ${NOTIFY} through readMessagingSecret — found in ${storeReads.join(", ")}`);
-      const fileReads = family.filter(({ code }) => /(?<![\w$.])readFile(?:Sync)?\s*\(/u.test(code)).map(({ rel }) => rel);
-      assert.deepEqual(fileReads, [SECRET_STORE], `inside src/notify/ only ${SECRET_STORE} reads a file — found ${fileReads.join(", ")}`);
+      assert.deepEqual([...new Set(storeReads)], [NOTIFY], `inside src/notify/ the stored token is read only by ${NOTIFY} through readMessagingSecret — found in ${storeReads.join(", ")}`);
+      const fileReads = family.filter(({ code }) => /(?<![\w$.])readFile(?:Sync)?\s*\(/u.test(code)).map(({ rel }) => rel).sort();
+      assert.deepEqual(fileReads, [ASK_INDEX, SECRET_STORE].sort(), `inside src/notify/ only ${SECRET_STORE} (the store) and ${ASK_INDEX} (the ask-message index, 131/10) read a file — found ${fileReads.join(", ")}`);
+      const index = family.find(({ rel }) => rel === ASK_INDEX);
+      assert.ok(index != null && !/\.secret\b|messagingSecretPath|readMessagingSecret/u.test(index.code), `${ASK_INDEX} reads its own records and never the secret`);
       const processEnv = family.filter(({ code }) => /\bprocess\s*\.\s*env\s*(?:\.|\?\.|\[)/u.test(code)).map(({ rel }) => rel);
       assert.deepEqual(processEnv, [], `src/notify/ reads no process.env member of its own — the env is handed in: ${processEnv.join(", ")}`);
 
-      const naming = family.flatMap(({ rel, code }) => degradeMessagesNamingUrl(code).map((call) => `${rel}: ${call}`));
-      assert.deepEqual(naming, [], `no degrade message contains the URL — a degrade call's message names it: ${naming.join(" | ")}. Name the channel and the cause, never the credential (ADR-005 §1)`);
-      assert.equal(degradeMessagesNamingUrl("degrade(\"notify-delivery-failed\", `failed to deliver to ${url}`, url);").length, 1, "self-check: a URL interpolated into the message is seen, whatever the redaction pass would do");
-      assert.equal(degradeMessagesNamingUrl("degrade(\"notify-delivery-failed\", `failed (${detail})`, url);").length, 0, "self-check: the URL handed in for redaction is not a message");
+      const naming = family.flatMap(({ rel, code }) => degradeMessagesNamingToken(code).map((call) => `${rel}: ${call}`));
+      assert.deepEqual(naming, [], `no degrade message contains the token — a degrade call's message names it: ${naming.join(" | ")}. Name the channel and the cause, never the credential (ADR-007)`);
+      assert.equal(degradeMessagesNamingToken("degrade(\"notify-delivery-failed\", `failed to deliver with ${token}`, token);").length, 1, "self-check: a token interpolated into the message is seen, whatever the redaction pass would do");
+      assert.equal(degradeMessagesNamingToken("degrade(\"notify-delivery-failed\", `failed (${detail}) — no bot token`, token);").length, 0, "self-check: the token handed in for redaction, and the word in prose, are not a use");
     },
   },
   {
@@ -358,7 +427,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13106 (acd-loop-ask-reaches-every-face): fixture — notify against a fetch that throws, answers 500, answers 429 or hangs past the bound resolves { delivered: [], failed: [name] }, never rejects, and no degrade message contains the URL",
+    name: "arch/131 FF-13106 (acd-loop-ask-reaches-every-face): fixture — notify against a fetch that throws, answers 500, answers 429 or hangs past the bound resolves { delivered: [], failed: [name] }, never rejects, and no degrade message contains the token",
     run: async () => {
       const events = [];
       try {
@@ -378,11 +447,11 @@ export const archTests = [
           } catch (error) {
             assert.fail(`${label}: notify never rejects — it rejected with ${error?.message}`);
           }
-          assert.deepEqual(result, { delivered: [], failed: ["ops"] }, `${label}: notify resolves { delivered: [], failed: [name] }`);
+          assert.deepEqual({ delivered: result.delivered, failed: result.failed }, { delivered: [], failed: ["ops"] }, `${label}: notify resolves { delivered: [], failed: [name] }`);
           const seen = events.filter((event) => String(event.code).startsWith("notify-"));
           assertRead(`${label}: the degrade events`, seen.length, 1, "event(s)");
-          const leaked = seen.filter((event) => JSON.stringify(event).includes(SECRET) || JSON.stringify(event).includes("arch-secret-token"));
-          assert.deepEqual(leaked.map((event) => event.message), [], `${label}: no degrade message contains the URL`);
+          const leaked = seen.filter((event) => JSON.stringify(event).includes(SECRET) || JSON.stringify(event).includes(TOKEN_SEGMENT));
+          assert.deepEqual(leaked.map((event) => event.message), [], `${label}: no degrade message contains the token`);
         }
       } finally {
         setDegradeSinkForTest(undefined);
@@ -390,7 +459,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13106 (acd-loop-ask-reaches-every-face): fixture — renderDiscord over a 3,000-character ask with an open fence keeps line 1, the action line and the link inside 2,000 characters, balances the fence and allows no mention",
+    name: "arch/131 FF-13106 (acd-loop-ask-reaches-every-face): fixture — renderDiscord over a 3,000-character ask with an open fence keeps line 1, the action line and the link inside 2,000 characters, balances the fence, allows no mention and sets no username",
     run: () => {
       const question = `\`\`\`js\n${"x".repeat(194)}\n${"y ".repeat(1402)}`;
       assert.ok(question.length >= 3000, "the ask is 3,000 characters");
@@ -404,22 +473,89 @@ export const archTests = [
       assert.ok(lines.at(-2).includes("aof work answer 127/02"), `the action line is the answer command: ${lines.at(-2)}`);
       assert.equal((body.content.split("```").length - 1) % 2, 0, "the fence is balanced");
       assert.deepEqual(body.allowed_mentions, { parse: [] }, "allowed_mentions: { parse: [] }");
+      assert.equal(Object.hasOwn(body, "username"), false, "a bot sets no username (ADR-007 §5)");
     },
   },
   {
-    name: "arch/131 FF-13107 (acd-loop-ask-reaches-every-face): structural — every notify( call under src/ is one of the six sites in ADR-005 §4, enumerated by file and event literal, and each builds its envelope through buildNotifyEnvelope",
+    name: "arch/131 FF-13110 (acd-loop-ask-reaches-every-face): structural — the Bot authorization and the API host are spelled only in src/notify/discord.mjs, whose discordRequest is their builder, and src/discord/** calls fetch nowhere",
+    run: async () => {
+      const units = await srcUnits();
+      assertRead("the src/** sweep", units.length, 150);
+      const door = unitOf(units, DOOR);
+      const spelled = wireSpellers(units);
+      assert.deepEqual(spelled.bot, [DOOR], `a string opening "Bot " (the Authorization value) is spelled only in ${DOOR} — found in ${spelled.bot.join(", ")}. Put the token on the wire through discordRequest (ADR-007 §4)`);
+      assert.deepEqual(spelled.host, [DOOR], `the host ${API_HOST} is spelled only in ${DOOR} — found in ${spelled.host.join(", ")}. Reach Discord through discordRequest (ADR-007 §4)`);
+      const builder = functionBody(door.code, "export async function discordRequest(");
+      assert.ok(builder != null, `NOT FOUND: discordRequest in ${DOOR}`);
+      assert.match(builder, /["'`]Bot\s/u, "discordRequest builds the Bot authorization itself");
+      const calls = units.flatMap(({ rel, code }) => [...code.matchAll(/(?<![\w$.])discordRequest\s*\(/gu)]
+        .filter((match) => !/function\s*$/u.test(code.slice(Math.max(0, match.index - 16), match.index)))
+        .map(() => rel));
+      assertRead("the discordRequest( calls in src/**", calls.length, 1, "call(s)");
+
+      const family = units.filter(({ rel }) => rel.startsWith(BOT_FAMILY));
+      const fetching = family.filter(({ code }) => /(?<![\w$.])fetch\s*\(/u.test(code)).map(({ rel }) => rel);
+      assert.deepEqual(fetching, [], `${BOT_FAMILY}** calls fetch nowhere — it reaches Discord through discordRequest: ${fetching.join(", ")}`);
+      if (family.length > 0) {
+        const through = family.filter(({ rel, code }) => importSpecifiers(code).some(({ specifier }) => resolved(rel, specifier) === DOOR));
+        assert.ok(through.length > 0, `${BOT_FAMILY}** reaches Discord through ${DOOR} — none of ${family.map(({ rel }) => rel).join(", ")} imports it`);
+      }
+
+      // The red probe runs the SHIPPED detector: notify.mjs building its own Authorization header.
+      const probe = units.map((unit) => unit.rel === NOTIFY
+        ? { ...unit, code: `${unit.code}\nconst headers = { authorization: \`Bot \${token}\` };\n` }
+        : unit);
+      assert.deepEqual(wireSpellers(probe).bot.sort(), [DOOR, NOTIFY].sort(), "red probe: a second Bot authorization is seen, by file");
+    },
+  },
+  {
+    name: "arch/131 FF-13110 (acd-loop-ask-reaches-every-face): isDiscordBotToken accepts a three-segment token whose first segment decodes to a snowflake, refuses a webhook URL, and is the discord entry's accepts",
+    run: () => {
+      assert.equal(isDiscordBotToken(SECRET), true, "the synthetic token is a bot token");
+      assert.equal(isDiscordBotToken(["https://discord.com/api", "webhooks", "1", "t"].join("/")), false, "a webhook URL is not");
+      assert.equal(isDiscordBotToken(`${Buffer.from("hello").toString("base64url")}.AbCdEf.${TOKEN_SEGMENT}`), false, "a first segment that is not a snowflake is not");
+      assert.equal(CHANNELS.discord.accepts, isDiscordBotToken, "the discord entry's accepts is isDiscordBotToken");
+    },
+  },
+  {
+    name: "arch/131 FF-13110 (acd-loop-ask-reaches-every-face): fixture — sendDiscord answers the posted messageId, notify answers it in messages, and 401 or 403 degrades notify-delivery-failed naming the status without the token",
+    run: async () => {
+      const posted = { status: 200, headers: { get: (name) => (name === "content-type" ? "application/json; charset=utf-8" : null) }, json: async () => ({ id: "1234567890123456789" }) };
+      const sent = await sendDiscord(SECRET, CHANNEL_ID, { content: "x" }, { fetch: async () => posted, timeoutMs: 50 });
+      assert.equal(sent.messageId, "1234567890123456789", "sendDiscord answers the posted message's id");
+      const answered = await notify(WORKSPACE, ASK_ENVELOPE(), { env: { HOOK: SECRET }, fetch: async () => posted, timeoutMs: 50 });
+      assert.deepEqual(answered.messages, [{ channel: "ops", channelId: CHANNEL_ID, messageId: "1234567890123456789" }], "notify answers it in messages");
+      const events = [];
+      try {
+        for (const status of [401, 403]) {
+          events.length = 0;
+          setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+          const result = await notify(WORKSPACE, ASK_ENVELOPE(), { env: { HOOK: SECRET }, fetch: async () => response(status), timeoutMs: 50 });
+          assert.deepEqual(result.failed, ["ops"], `${status}: the channel failed`);
+          const seen = events.filter((event) => String(event.code).startsWith("notify-"));
+          assert.deepEqual(seen.map((event) => event.code), ["notify-delivery-failed"], `${status}: one notify-delivery-failed`);
+          assert.ok(seen[0].message.includes(String(status)), `${status}: the degrade names the status — ${seen[0].message}`);
+          assert.ok(!JSON.stringify(seen).includes(TOKEN_SEGMENT), `${status}: no degrade message holds the token`);
+        }
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "arch/131 FF-13107 (acd-loop-ask-reaches-every-face): structural, as amended at 131/12 — every notify( call under src/ is one of the seven sites (ADR-005 §4, ADR-010 §4), enumerated by file and event literal, and each builds its envelope through buildNotifyEnvelope",
     run: async () => {
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
       const sites = notifySites(units).sort();
       const strays = sites.filter((site) => !FIRING_SITES.includes(site));
-      assert.deepEqual(strays, [], `every notify( call under src/ is one of the six sites in ADR-005 §4 — not one: ${strays.join(", ")}`);
-      assert.deepEqual(sites, [...FIRING_SITES], "the six sites in ADR-005 §4 each fire once, by file and event literal");
+      assert.deepEqual(strays, [], `every notify( call under src/ is one of the seven sites (ADR-005 §4, ADR-010 §4) — not one: ${strays.join(", ")}`);
+      assert.deepEqual(sites, [...FIRING_SITES], `the seven sites each fire once, by file and event literal — found ${sites.join(", ")}`);
       for (const rel of new Set(FIRING_SITES.map((site) => site.split(" ")[0]))) {
         assert.ok(importSpecifiers(unitOf(units, rel).code).some(({ specifier }) => resolved(rel, specifier) === NOTIFY), `${rel} imports buildNotifyEnvelope and notify from ${NOTIFY}`);
       }
-      const covered = FIRING_SITES.flatMap((site) => site.split(" ")[1].split("/")).sort();
-      assert.deepEqual(covered, [...EVENTS].sort(), "the six sites fire the seven events between them, each exactly once");
+      const covered = [...new Set(FIRING_SITES.flatMap((site) => site.split(" ")[1].split("/")))].sort();
+      assert.deepEqual(covered, [...EVENTS].sort(), "the seven sites fire the seven events between them — session-needs-input from the owner and, for a worker's ask, the control");
     },
   },
   {
@@ -432,11 +568,11 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13107 (acd-loop-ask-reaches-every-face): NON-VACUOUS — the sweep finds six sites, and reds when it finds fewer",
+    name: "arch/131 FF-13107 (acd-loop-ask-reaches-every-face): NON-VACUOUS — the sweep finds seven sites, and reds when it finds fewer",
     run: async () => {
       const units = await srcUnits();
       const sites = notifySites(units);
-      assert.ok(sites.length >= SIX, `the sweep finds six sites — it found ${sites.length} (${sites.join(", ") || "none"}): a needle that finds nothing is a guard asserting over the empty set`);
+      assert.ok(sites.length >= SEVEN, `the sweep finds seven sites — it found ${sites.length} (${sites.join(", ") || "none"}): a needle that finds nothing is a guard asserting over the empty set`);
       assert.equal(notifySites([{ rel: "src/x.mjs", code: "await notify(ws, envelope);" }], "notfy").length, 0, "self-check: a misspelled needle finds no site");
       assert.deepEqual(notifySites([{ rel: "src/x.mjs", code: 'export async function notify(a) {}\nawait ctx.notify(x);\nconst e = buildNotifyEnvelope("loop-halted", {});\nawait notify(ws, e);' }]), ["src/x.mjs loop-halted"], "self-check: the definition and a member call are not sites; the binding's call is, with its envelope's event");
     },
@@ -449,7 +585,7 @@ export const archTests = [
       assert.deepEqual(importSpecifiers(form.code), [], "src/notify/form.mjs has zero imports");
       assert.deepEqual(computedDynamicImports(form.code), [], "…and no computed dynamic import");
       const importers = units.filter((unit) => !unit.declaration && importSpecifiers(unit.code).some(({ specifier }) => resolved(unit.rel, specifier) === FORM)).map(({ rel }) => rel).sort();
-      assert.deepEqual(importers, [...FORM_IMPORTERS].sort(), "src/notify/form.mjs's direct importers are ask.mjs, discord.mjs and ui/src/board/action.mjs (ruling 3)");
+      assert.deepEqual(importers, [...FORM_IMPORTERS].sort(), "src/notify/form.mjs's direct importers are ask.mjs, notify/discord.mjs and ui/src/board/action.mjs (ruling 3), and discord/commands.mjs (as amended at 131/11)");
       const shell = unitOf(units, SHELL);
       const phrases = PHRASES.filter((phrase) => shell.code.includes(phrase));
       assert.deepEqual(phrases, [], `${SHELL} spells no event phrase of its own — it renders the ask block through ask.mjs's askBlockLines: ${phrases.join(", ")}`);
@@ -564,6 +700,80 @@ export const archTests = [
         `AskCard renders one <button whose onClick reaches send(, and at most one other — the clamp toggle, whose onClick only calls setExpanded (ruling 4): ${sends.length} send, ${toggles.length} toggle, ${others} other`,
       );
       assert.equal(buttonsOf('<button onClick={() => void send()}>a</button><button onClick={() => setExpanded(!expanded)}>b</button><button onClick={() => void send()}>c</button>').filter(({ calls }) => calls.includes("send")).length, 2, "self-check: a second send button is seen");
+    },
+  },
+  {
+    name: "arch/131 FF-13114 (acd-loop-ask-reaches-every-face): structural — announceWorkerAsk( is called only from the settle-assignment reactor, behind the not-already-needs-input edge",
+    run: async () => {
+      const units = await srcUnits();
+      assertRead("the src/** sweep", units.length, 150);
+      const callers = units.flatMap(({ rel, code }) => [...code.matchAll(/(?<![\w$.])announceWorkerAsk\s*\(/gu)]
+        .filter((match) => !/function\s*$/u.test(code.slice(Math.max(0, match.index - 16), match.index)))
+        .map((match) => ({ rel, index: match.index, code })));
+      assertRead("the announceWorkerAsk( calls in src/**", callers.length, 1, "call(s)");
+      assert.deepEqual([...new Set(callers.map(({ rel }) => rel))], [REACTOR_TABLE], `announceWorkerAsk( is called only from ${REACTOR_TABLE} — found in ${callers.map(({ rel }) => rel).join(", ")}`);
+      const reactor = functionBody(unitOf(units, REACTOR_TABLE).code, "async function settleAssignment(");
+      assert.ok(reactor != null && /\bannounceWorkerAsk\s*\(/u.test(reactor), "…from inside settleAssignment");
+      assert.match(reactor, /if\s*\(\s*park\s*&&\s*!wasWaiting\b/u, "…and only behind the edge: the row was not already waiting (ADR-010 §4)");
+    },
+  },
+  {
+    name: "arch/131 FF-13114 (acd-loop-ask-reaches-every-face): fixture — ask rides only the park; one park fact writes the row, projects the ask, reaches the board and posts once with the worker's node, and its redelivery posts nothing",
+    run: async () => {
+      await withMeshAssignFixture(async ({ home, root, workspace, workspaceId }) => {
+        const env = { AOF_GLOBAL_HOME: home };
+        const journalOptions = { env };
+        // The key sets: `ask` only on the running + needs-input park.
+        const shipped = [];
+        const send = async (envelope) => { shipped.push(envelope); return { sent: true }; };
+        await reportAssignmentSettled({ assignmentId: "asg-keys", state: "done", ask: WORKER_ASK, now: NOW_ISO }, { journalOptions, sendEffectStep: send });
+        assert.deepEqual(Object.keys(shipped.at(-1).payload), REPORT_KEYS, "the done payload's key set is unchanged — no ask on a report that is not the park");
+        await reportAssignmentSettled({ assignmentId: "asg-keys", state: "running", code: "needs-input", ask: WORKER_ASK, now: NOW_ISO }, { journalOptions, sendEffectStep: send });
+        assert.deepEqual(Object.keys(shipped.at(-1).payload), [...REPORT_KEYS, "ask"], "the park's payload carries ask");
+
+        const config = { name: "demo", work: { dir: "./wiki/work", notify: { channels: { discord: { type: "discord", channelId: CHANNEL_ID } } } }, mesh: { nodeId: "control-a" } };
+        await writeFile(path.join(root, ".aof", "aof.config.json"), `${JSON.stringify(config, null, 2)}\n`, "utf8");
+        const store = await openGlobalWorkProjectionStore({ env });
+        try {
+          store.db.prepare("INSERT INTO global_workspace_descriptors (workspace_id, project_root, work_dir, descriptor_path) VALUES (?, ?, ?, ?)")
+            .run(workspaceId, root, path.join(root, "wiki", "work"), path.join(root, ".aof", "descriptor.json"));
+          store.db.prepare("INSERT INTO global_assignments (assignment_id, item_ref, workspace_id, target_node_id, issuer, state, run_id, assigned_at, updated_at) VALUES ('asg-ff', '35/00', ?, 'node-2976', 'control-a', 'running', 'run-ff', ?, ?)")
+            .run(workspaceId, NOW_ISO, NOW_ISO);
+        } finally {
+          store.close();
+        }
+        const posts = [];
+        const fetch = async (url, init) => {
+          posts.push(JSON.parse(init.body));
+          return { status: 200, headers: { get: () => "application/json" }, json: async () => ({ id: "990000000000000003" }) };
+        };
+        const park = { assignmentId: "asg-ff", state: "running", runId: "run-ff", sessionId: "sess-ff", branch: null, code: "needs-input", ask: WORKER_ASK };
+        const reactor = effectsFor("assignment.reported").find((entry) => entry.key === "settle-assignment");
+        assert.ok(reactor != null, "NOT FOUND: the settle-assignment reactor");
+        // The same fact applied through the real reactor, twice, as a redelivery applies it.
+        const applyOnce = async () => {
+          const applied = await openGlobalWorkProjectionStore({ env });
+          try {
+            await reactor.apply({ payload: park }, { store: applied, now: NOW_ISO, journalOptions, globalWorkStoreOptions: { env }, notifyOptions: { env: { AOF_DISCORD_BOT_TOKEN: SECRET }, fetch } });
+          } finally {
+            applied.close();
+          }
+        };
+        await applyOnce();
+        const check = await openGlobalWorkProjectionStore({ env });
+        try {
+          assert.deepEqual(JSON.parse(check.db.prepare("SELECT ask FROM global_assignments WHERE assignment_id = 'asg-ff'").get().ask), WORKER_ASK, "the row's ask");
+        } finally {
+          check.close();
+        }
+        assert.deepEqual((await readExecutionOverlay(workspace, { globalWorkStoreOptions: { env } })).get("35/00").ask, WORKER_ASK, "execution.ask");
+        const rows = await invoke("work:list", { mesh: true }, { workspace, globalWorkStoreOptions: { env } });
+        assert.equal(rows.find((row) => row.ref === "35/00").ask.question, WORKER_ASK.question, "the board row's question is non-null");
+        assert.equal(posts.length, 1, "one post");
+        assert.match(posts[0].content, /^\*\*35\/00 — waiting on you\*\* \(build, [^)]+\) · node-2976\n/u, "naming the worker's node");
+        await applyOnce();
+        assert.equal(posts.length, 1, `the redelivered park posts nothing — found the second POST: ${JSON.stringify(posts.slice(1).map((post) => post.content.split("\n")[0]))}`);
+      });
     },
   },
 ];

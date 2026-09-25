@@ -816,7 +816,7 @@ export async function startLauncher(ws, options = {}) {
   }
 
   // Publish this node's presence at start, then refresh it on every propagation tick.
-  const { nodeId } = await resolveNodeIdentity(ws);
+  const { nodeId, issuanceAuthority } = await resolveNodeIdentity(ws);
   // Declared BEFORE the first publish (finding F11) so a workspace-resolution loud
   // skip on the VERY FIRST presence assembly — not merely a later propagation tick —
   // is still captured on this same accumulator the caller reads off the returned
@@ -1885,6 +1885,34 @@ export async function startLauncher(ws, options = {}) {
     });
   }
 
+  // milestone 131 / story 10 (ADR-008 §1) — THE DISCORD BOT, on the CONTROL node only, and only when a
+  // bot token resolves (the `AOF_DISCORD_BOT_TOKEN` override, else the machine-wide store). Placed after
+  // every other start, and reached by DEFERRED imports inside this branch, so a worker never imports
+  // `bot.mjs` and nothing in `src/discord/` joins a static closure. With no token the bot is off, said
+  // once at info, and posting — a plain HTTPS request — is unaffected. `startDiscordBot` is injectable,
+  // as this launcher's other collaborators are, so no suite opens a socket. A start that throws is a
+  // warning, never a daemon crash.
+  let discordBot = null;
+  if (issuanceAuthority) {
+    try {
+      const { resolveBotToken } = await import("../notify/notify.mjs");
+      const token = await resolveBotToken(options?.env ?? process.env);
+      if (token == null) {
+        emitWarning(launcherWarnings, {
+          code: "discord-bot-off",
+          message: "the Discord bot is off: no bot token on this machine (run `aof messaging init discord`) — notifications still post when a project enables one",
+          path: null,
+          level: "info",
+        }, options);
+      } else {
+        const startDiscordBot = options?.startDiscordBot ?? (await import("../discord/bot.mjs")).startDiscordBot;
+        discordBot = await startDiscordBot({ token, workspace: ws, nodeId, globalWorkStoreOptions: options?.globalWorkStoreOptions ?? {} });
+      }
+    } catch (error) {
+      emitWarning(launcherWarnings, { code: "discord-bot-failed", message: `starting the Discord bot failed: ${error instanceof Error ? error.name : "error"}`, path: null }, options);
+    }
+  }
+
   // stop() — the clean daemon shutdown (ADR-003.3, the serve-unit discipline): stop
   // all tickers (peer poll + propagation + optional stream sync + optional control
   // dispatch/reclaim) cleanly, plus the stream server/client when this node started
@@ -1910,6 +1938,8 @@ export async function startLauncher(ws, options = {}) {
     Promise.resolve(sessionSpawnHandler?.stopAll?.()).catch((error) => {
       reportDegrade("mesh-launcher", error);
     });
+    // 131/10: the bot's gateway closed and its timers cleared, before the stream server goes.
+    discordBot?.stop?.();
     streamServer?.stop?.();
     streamClient?.stop?.();
     relayBroker?.stop?.();

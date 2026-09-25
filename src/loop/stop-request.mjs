@@ -9,8 +9,14 @@
 // lifecycle (requested → honoured → cleared) and `createStopSource` — the ONE interrupt source the
 // shell reads, which composes the process's own SIGINT/SIGTERM with the file.
 //
-// The segment literal `loop-stops`, the state words and the level-to-word map are spelled HERE
-// and nowhere else under `src/` (FF-13001): the shell, the verb, the presence read and the
+// 131/11 (ADR-009 §6) — THE RESUME REQUEST lives here too, beside the stop it undoes: a supervised
+// loop handed back to its supervisor (`work:loop --hand-off`) is `<meshRoot>/loop-resumes/<loopRunId>.json`,
+// five keys `{ loopRunId, scope, workspaceId, by, requestedAt }`, read by the declarations producer
+// and cleared by the `--resume` launch. It is its own record: the stop's ten keys are 130's frozen
+// contract, and a resume is not a stop state.
+//
+// The segment literals `loop-stops` and `loop-resumes`, the state words and the level-to-word map
+// are spelled HERE and nowhere else under `src/` (FF-13001): the shell, the verb, the presence read and the
 // declarations producer read one record through these exports and spell no path of their own.
 //
 // Every write goes whole through `writeText` (temp + rename, after a recursive mkdir) so a reader
@@ -33,7 +39,9 @@ export const STOP_LEVELS = Object.freeze({ drain: 1, cancel: 2 });
 export const STOP_STATES = Object.freeze({ requested: "requested", honoured: "honoured" });
 
 const STOPS_SEGMENT = "loop-stops";
+const RESUMES_SEGMENT = "loop-resumes";
 const DEGRADE_CODE = "loop-stop-request";
+const RESUME_DEGRADE_CODE = "loop-resume-request";
 // DEFAULT DECISION (ADR-001 §5): a cancel is seen within two seconds of the write, and 2 s of
 // file stats per loop is noise beside a PTY.
 const DEFAULT_POLL_MS = 2000;
@@ -46,6 +54,10 @@ const RECORD_KEYS = Object.freeze([
 
 export function loopStopsDir(env = process.env) {
   return path.join(globalMeshPaths({ env }).meshRoot, STOPS_SEGMENT);
+}
+
+export function loopResumesDir(env = process.env) {
+  return path.join(globalMeshPaths({ env }).meshRoot, RESUMES_SEGMENT);
 }
 
 // A `loopRunId` is ONE filename segment — `normalizeId`'s alphabet (a `randomUUID()` fits) — and
@@ -166,6 +178,68 @@ export async function markStopHonoured(dir, loopRunId, { now = () => new Date(),
 export async function clearStopRequest(dir, loopRunId) {
   const filePath = stopRequestPath(dir, loopRunId);
   const record = await readStopRequest(dir, loopRunId);
+  try {
+    await unlink(filePath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return { cleared: false, record: null };
+    throw error;
+  }
+  return { cleared: true, record };
+}
+
+// ── the resume request (131/11, ADR-009 §6) ─────────────────────────────────────────────────────
+
+// The record's FIVE keys, in their one order.
+const RESUME_KEYS = Object.freeze(["loopRunId", "scope", "workspaceId", "by", "requestedAt"]);
+
+export function resumeRequestPath(dir, loopRunId) {
+  return path.join(dir, `${segmentOf(loopRunId)}.json`);
+}
+
+const isResumeRecord = (value) => value != null && typeof value === "object" && !Array.isArray(value)
+  && typeof value.loopRunId === "string" && value.loopRunId.length > 0;
+
+// readResumeRequest(dir, loopRunId) → the record, or `null` for an absent file (no event) and for
+// anything that is not a record (one degrade event carrying the path). Never throws past the id refusal.
+export async function readResumeRequest(dir, loopRunId) {
+  const filePath = resumeRequestPath(dir, loopRunId);
+  let text;
+  try {
+    text = await readFile(filePath, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    reportDegrade(RESUME_DEGRADE_CODE, error, { path: filePath });
+    return null;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    reportDegrade(RESUME_DEGRADE_CODE, error, { path: filePath });
+    return null;
+  }
+  if (!isResumeRecord(parsed)) {
+    reportDegrade(RESUME_DEGRADE_CODE, new Error("not a resume request: \"loopRunId\" must be a non-empty string"), { path: filePath });
+    return null;
+  }
+  return parsed;
+}
+
+// requestLoopResume(dir, { loopRunId, scope, workspaceId, by, now }) — the ONE writer: the five keys,
+// written whole over whatever stood there, so a second hand-off before the relaunch is idempotent.
+export async function requestLoopResume(dir, { loopRunId, scope, workspaceId, by, now = () => new Date() } = {}) {
+  const fields = { loopRunId, scope, workspaceId, by, requestedAt: instant(now) };
+  const record = {};
+  for (const key of RESUME_KEYS) record[key] = fields[key] ?? null;
+  await writeRecord(resumeRequestPath(dir, loopRunId), record);
+  return record;
+}
+
+// clearResumeRequest(dir, loopRunId) → `{ cleared, record }`, the `--resume` launch's: deletes the
+// file whatever it holds; `cleared: false` only when there was no file.
+export async function clearResumeRequest(dir, loopRunId) {
+  const filePath = resumeRequestPath(dir, loopRunId);
+  const record = await readResumeRequest(dir, loopRunId);
   try {
     await unlink(filePath);
   } catch (error) {

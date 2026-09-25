@@ -493,7 +493,7 @@
         },
         "notify": {
           "type": "object",
-          "description": "Where the loop reaches the operator (131/ADR-005 §1): named channels, each by type and by the NAME of the env var that may override its webhook URL. A Discord webhook URL carries its token in its path, so the URL is the credential and no `url`, `webhook` or `token` key exists at any level: it is kept machine-wide by `aof messaging init <type>` under the global home, and this block is the per-project switch `aof messaging enable|disable <type>` writes (ADR-005 §1, as amended at 131/08). Absent (or an empty `channels`) is an honest no-op with zero network calls.",
+          "description": "Where the loop reaches the operator (131/ADR-005, superseded in part by ADR-007): named channels, each by type, by the Discord channel the bot posts to (`channelId`, not a secret) and by the NAME of the env var that may override the bot token. The token is the credential, so no `url`, `webhook`, `token` or `urlEnv` key exists at any level: it is kept machine-wide by `aof messaging init <type>` under the global home, and this block is the per-project switch `aof messaging enable <type> --channel <id>` and `aof messaging disable <type>` write. Absent (or an empty `channels`) is an honest no-op with zero network calls.",
           "properties": {
             "channels": {
               "type": "object",
@@ -502,10 +502,21 @@
                 "type": "object",
                 "properties": {
                   "type": { "enum": ["discord"], "description": "The channel's renderer. A second type is one enum member and one CHANNELS entry." },
-                  "urlEnv": {
+                  "channelId": {
+                    "type": "string",
+                    "pattern": "^[0-9]{17,20}$",
+                    "description": "The Discord channel the bot posts to: a snowflake id (Developer Mode → Copy Channel ID). Not a secret; `aof messaging enable discord --channel <id>` writes it."
+                  },
+                  "tokenEnv": {
                     "type": "string",
                     "pattern": "^[A-Z][A-Z0-9_]*$",
-                    "description": "The NAME of the environment variable that overrides the stored webhook URL when it is set and not blank (default AOF_DISCORD_WEBHOOK_URL). The URL is resolved at the point of send, from this variable or else from the machine-wide store `aof messaging init` writes, and never written into config."
+                    "description": "The NAME of the environment variable that overrides the stored bot token when it is set and not blank (default AOF_DISCORD_BOT_TOKEN). The token is resolved at the point of send, from this variable or else from the machine-wide store `aof messaging init` writes, and never written into config."
+                  },
+                  "allow": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": { "type": "string", "pattern": "^[0-9]{17,20}$" },
+                    "description": "The Discord user ids that may answer an ask by replying to the bot's message in this channel (131/ADR-008 §3; Developer Mode → Copy User ID). Absent or empty means nobody answers from Discord."
                   },
                   "events": {
                     "type": "array",
@@ -517,7 +528,7 @@
                     "description": "The events this channel receives (default: all seven)."
                   }
                 },
-                "required": ["type"],
+                "required": ["type", "channelId"],
                 "additionalProperties": false
               }
             },

@@ -340,7 +340,8 @@ function waitMs(askedAt, answeredAt) {
 }
 
 // The mesh leg: no ask file names this ref, so a worker's parked session may be the one asking.
-// Its question never reached the control (the frozen assignment wire), so nothing is announced.
+// It answers `{ document, execution }` — the execution row carries the worker's `ask` when its park
+// did (131/ADR-010), which is where the announcement's phase and wait come from.
 async function answerThroughWorker(item, text, by, now, ctx) {
   const overlay = await readExecutionOverlay(ctx.workspace, { globalWorkStoreOptions: ctx.globalWorkStoreOptions ?? {} });
   const execution = resolveScopedExecution(overlay, item.ref)?.execution ?? null;
@@ -353,7 +354,7 @@ async function answerThroughWorker(item, text, by, now, ctx) {
   if (result?.refused === true) {
     throw commandError(`The worker refused to resume ${item.ref} before it started, so the answer was not typed; it may be sent again.`, "terminal-resume-not-started", 409);
   }
-  return {
+  const document = {
     ok: true,
     ref: item.ref,
     runId: result?.confirmedRunId ?? null,
@@ -363,6 +364,7 @@ async function answerThroughWorker(item, text, by, now, ctx) {
     answeredAt: now().toISOString(),
     resume: null,
   };
+  return { document, execution };
 }
 
 export const answerCommand = {
@@ -373,7 +375,8 @@ export const answerCommand = {
       ref: { type: "string" },
       text: { type: "string" },
       as: { type: "string" },
-      // "cli" or "board" — the board's route sets it; the CLI face has no flag for it.
+      // "cli", "board" or "discord" — the board's route and the Discord bot's reply handler (131/10,
+      // ADR-008 §6) set it; the CLI face has no flag for it.
       via: { type: "string" },
       // An INJECTED clock (ISO-8601 UTC-Z), a test input, never a CLI flag.
       now: { type: "string" },
@@ -387,31 +390,41 @@ export const answerCommand = {
     if (!item) throw commandError(`No item resolves to ref "${ref}".`, "ref-not-found", 404);
     const by = {
       actor: actorOf(input.as),
-      via: input.via === "board" ? "board" : "cli",
+      via: input.via === "board" || input.via === "discord" ? input.via : "cli",
       node: meshNodeIdOf(ctx.workspace.config) ?? null,
     };
     const now = typeof input.now === "string" ? () => new Date(input.now) : () => new Date();
     const dir = loopAsksDir(askEnvFor(ctx));
     const record = await answerAsk(dir, { workspaceId: resolveWorkspaceId(ctx.workspace), ref: item.ref, text: input.text, by, now });
-    if (record == null) return await answerThroughWorker(item, input.text, by, now, ctx);
-
-    const parked = record.parkedAt != null;
-    const scope = typeof record.scope === "string" && record.scope.length > 0 ? record.scope : executionScopeRef(item.ref);
-    const document = {
-      ok: true,
-      ref: item.ref,
-      runId: record.runId,
-      delivery: parked ? "parked" : "waiting",
-      state: record.state,
-      by: record.by,
-      answeredAt: record.answeredAt,
-      resume: parked ? `aof work loop ${scope} --resume` : null,
-    };
+    let document;
+    let answered;
+    if (record == null) {
+      // The mesh leg (131/ADR-010 §5): a refused resume throws before this, so it announces nothing.
+      const mesh = await answerThroughWorker(item, input.text, by, now, ctx);
+      const carried = mesh.execution?.ask ?? null;
+      document = mesh.document;
+      answered = { phase: carried?.phase ?? null, elapsedMs: waitMs(carried?.askedAt ?? null, document.answeredAt), answer: input.text };
+    } else {
+      const parked = record.parkedAt != null;
+      const scope = typeof record.scope === "string" && record.scope.length > 0 ? record.scope : executionScopeRef(item.ref);
+      document = {
+        ok: true,
+        ref: item.ref,
+        runId: record.runId,
+        delivery: parked ? "parked" : "waiting",
+        state: record.state,
+        by: record.by,
+        answeredAt: record.answeredAt,
+        resume: parked ? `aof work loop ${scope} --resume` : null,
+      };
+      answered = { phase: record.phase, elapsedMs: waitMs(record.askedAt, record.answeredAt), answer: record.answer };
+    }
     // Announced once, after the write, and awaited: an un-awaited post in an exiting CLI is
-    // dropped. `notify` never throws, so a failing channel never fails the answer.
+    // dropped. `notify` never throws, so a failing channel never fails the answer. ONE site serves
+    // both legs (131/ADR-010 §5).
     const envelope = buildNotifyEnvelope(
       "session-answered",
-      { ref: item.ref, phase: record.phase, elapsedMs: waitMs(record.askedAt, record.answeredAt), outcome: { by: by.actor, answer: record.answer } },
+      { ref: item.ref, phase: answered.phase, elapsedMs: answered.elapsedMs, outcome: { by: by.actor, answer: answered.answer } },
       { config: ctx.workspace.config, now },
     );
     await notify(ctx.workspace, envelope, { ...(ctx.notifyOptions ?? {}) });

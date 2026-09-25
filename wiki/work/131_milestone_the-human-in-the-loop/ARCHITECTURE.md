@@ -440,6 +440,10 @@ needs-input outcome at the four sites reaches `awaitAnswer`.
 
 ## ADR-005 — The notifier
 
+> **Superseded in part (2026-09-25, stories 09–12).** ADR-007 supersedes §1's credential (the webhook
+> URL) and §2's sender. ADR-010 supersedes §6 ("a mesh worker's ask fires nothing"), and §4's firing
+> table gains ADR-010 §4's site. The rest stands.
+
 **A `work.notify` block names channels by type and by the NAME of the env var holding the secret.
 One envelope and one builder serve every channel. A registry holds one renderer per type, Discord
 first. Six firing points each name their event. Delivery is awaited, bounded, never retried and
@@ -640,6 +644,352 @@ The event phrases and the elapsed ladder are spelled only in `src/notify/form.mj
 
 ---
 
+## The bot — ADR-007 … ADR-010 (refined 2026-09-25, stories 09–12)
+
+The operator moved "answering from Discord" into scope on 2026-09-25 (STATE). aof gets its own bot.
+It replaces the webhook, posts every notification, takes answers by reply from an allowlist,
+answers four slash commands, and carries a worker's ask from the control node. ADR-005 and
+ADR-006 are delivered, so these ADRs SUPERSEDE the parts they change rather than editing them
+(ADR-005 carries a pointer). The Decide stage for 09–12 closes here, before any of their
+contracts is authored.
+
+**Memory recall** (`… --area architecture --block`, 2026-09-25):
+- **`66/ADR-007`** (*each story lands its OWN fitness functions; no late register story*) →
+  **HONOURED.** 09–12 each land their controls. 06's register-story shape is not repeated.
+- **`43/R5`** (*a removed self-healing mechanism: ask what it was silently repairing*) →
+  **HONOURED.** The webhook needed no running process. The bot's POST needs none either (ADR-007
+  §2); only the inbound half needs the daemon, and a stopped daemon costs answering, never
+  posting (ADR-008 §1).
+- **`38/ADR-010`** (*a credential resolved from a control-trusted source, never a frame*) →
+  **HONOURED.** A worker never holds the bot token. Its ask travels to the control (ADR-010).
+
+**Graph.** `aof graph build .` returned `graphify-timeout` (120 s). No usable graph was produced,
+so these boundaries are drawn from reading the source, and every coupling cited is a read
+`file:line`.
+
+**Discord facts** were checked against the developer docs on 2026-09-25 (the stories' Notes). The
+ones this design leans on: REST base `https://discord.com/api/v10`; `POST
+/channels/{id}/messages` answers the message object, `id` included; a gateway session RESUMEs with
+`session_id` + the last `seq`; close codes 4004 and 4010–4014 are fatal; an interaction needs an
+initial response within 3 s and its token lives 15 minutes.
+
+---
+
+## ADR-007 — The bot posts, and replaces the webhook
+
+**Supersedes ADR-005 §1's secret (a webhook URL) and §2's sender. One bot token per machine, stored
+exactly as 08 stores a secret. The channel ID lives in `work.notify`. One authorised request
+function in `src/notify/discord.mjs` is the only code that puts the token on the wire. The send
+answers the posted message's ID.**
+
+### Decision
+
+1. **The credential is a bot token.** `aof messaging init discord` reads it from a hidden prompt or
+   stdin, never argv (08's rule, unchanged). It is stored through `writeMessagingSecret("discord",
+   …)`, in the same `discord.secret` file and with the same owner-only mode. The shape check is
+   `isDiscordBotToken` in `discord.mjs`: three dot-separated base64url segments, the first
+   decoding to a numeric snowflake. It replaces `isDiscordWebhookUrl` as the entry's `accepts`.
+   The webhook sender and its URL shape are DELETED, not kept as a fallback (the operator's call).
+2. **`init` prints the invite URL.** `https://discord.com/oauth2/authorize?client_id=<id>&scope=bot+applications.commands&permissions=2147552320`,
+   where `<id>` is the snowflake decoded from the token's first segment. It is computed offline,
+   and `init` makes no network call. The permissions are VIEW_CHANNEL (`1<<10`), SEND_MESSAGES
+   (`1<<11`), ADD_REACTIONS (`1<<6`, ADR-008 §5), READ_MESSAGE_HISTORY (`1<<16`) and
+   USE_APPLICATION_COMMANDS (`1<<31`). DEFAULT DECISION: the decoded id. For every application
+   created since 2016, the application id equals the bot user's id, and the guide says to take the
+   portal's Application ID if they ever differ.
+3. **Config.** A channel becomes `{ type: "discord", channelId, tokenEnv?, events?, allow? }`.
+   - `channelId` is a snowflake, `^[0-9]{17,20}$`, and required. It is not a secret.
+   - `tokenEnv` replaces `urlEnv`. It defaults to `AOF_DISCORD_BOT_TOKEN`, and it is the override
+     exactly as `urlEnv` was.
+   - `allow` belongs to ADR-008 §3.
+   - `url`, `webhook`, `token` and `urlEnv` are absent from the closed schema.
+   - `aof messaging enable discord --channel <id>` writes `{ type, channelId }`. Without
+     `--channel` it refuses `messaging-channel-id-required`. A second enable with a different id
+     adds `discord-2`, the numbering 08 already has.
+   - A channel with no `channelId` degrades `notify-channel-unconfigured`, and the message names
+     the enable command.
+4. **The one authorised door.** `discordRequest(token, method, route, body, { fetch, timeoutMs })`
+   in `discord.mjs` is the ONLY `src/**` code that builds `Authorization: Bot …` or names the API
+   host. It carries 08's bounded-send discipline: one timer, an abort, never throws, never
+   retries. It answers `{ ok, status, json, reason, retryAfter }`. `sendDiscord(token, channelId,
+   body, opts)` is `POST /channels/{channelId}/messages` through it, and answers `messageId`. The
+   inbound family (ADR-008, ADR-009) reaches Discord through `discordRequest` and nothing else. A
+   degrade names a status or an error NAME and never the token.
+5. **The render.** `renderDiscord` answers `{ content, allowed_mentions: { parse: [] } }`. A bot
+   cannot set `username`, so the key is dropped. Every line, cap and clip rule of DESIGN §3 is
+   unchanged.
+6. **`notify` answers the posted IDs.** It returns `{ delivered, failed, messages }`, where
+   `messages` holds one `{ channel, channelId, messageId }` per delivered channel. The six firing
+   sites ignore the new key, so none of them changes.
+7. **`aof messaging status`** reports the stored token's presence and, for this project, each
+   discord channel's `channelId` and its allowlist size. It never shows the token.
+
+### Alternatives considered
+
+- **Keep the webhook as a fallback** — rejected by the operator. It would also be two credentials
+  and two senders.
+- **A gateway connection to post** — rejected. The REST POST needs no connection, so a loop
+  process posts without a daemon (the 43/R5 check above).
+- **Verify the token online at `init`** — rejected. `init` stays offline, as 08's is. A bad token
+  shows as a 401 degrade on the first send and as the gateway's fatal 4004 (ADR-008 §2).
+
+### Invariant
+
+The token is read only as `env[tokenEnv]` or through `readMessagingSecret`, and it is put on the
+wire only by `discordRequest`. The Discord API host is spelled only in `src/notify/discord.mjs`.
+
+---
+
+## ADR-008 — The gateway and the answer by reply
+
+**One gateway connection, held by the control node's serve daemon, answers a Discord REPLY to an
+ask message through `work:answer`. Only an allowlisted user can answer. The mapping from a message
+to its ask is a machine-wide index written at post time by the notifier.**
+
+### Decision
+
+1. **Who holds the connection.** `startLauncher` (`src/mesh/launcher.mjs:811`) starts it on the
+   CONTROL node only (`issuanceAuthority`, `:757`), through a deferred `import("../discord/bot.mjs")`,
+   and stops it in the handle's `stop()` (`:1895`). The desktop app supervises that daemon, and
+   the launcher lock (`serve.mjs`) keeps it to one per machine. A worker never connects. The bot
+   starts only when a token resolves (env override or store). With none it logs
+   `discord-bot-off` once, and posting is unaffected.
+2. **The connection, `src/discord/gateway.mjs`.** It is a new family (see the partition).
+   - It connects to `GET /gateway/bot`'s `url` with `?v=10&encoding=json`.
+   - It heartbeats on HELLO's interval, and a missed ACK is a zombie connection, closed and
+     resumed.
+   - It IDENTIFYs with intents `GUILD_MESSAGES | MESSAGE_CONTENT` (`1<<9 | 1<<15` = 33280). It
+     then RESUMEs on every reconnect with `session_id`, the last `seq` and `resume_gateway_url`,
+     and re-identifies only on INVALID_SESSION(false) or close 4007/4009.
+   - It will not IDENTIFY while `session_start_limit.remaining < 10`: it degrades
+     `discord-identify-budget` and waits `reset_after`. Discord resets the token past 1,000 a day.
+   - Close codes 4004 and 4010–4014 are FATAL. It stops, and degrades once by name:
+     4004 → `discord-token-rejected` (remedy: `aof messaging init discord`), and 4014 →
+     `discord-intent-disallowed` (remedy: turn on Message Content in the Developer Portal).
+   - Any other drop reconnects with backoff from 1 s, doubling to 60 s, with jitter.
+   - The socket factory is injected. It defaults to the `ws` package already in the lockfile, so
+     no dependency is added. A test drives a fake gateway.
+   - It never throws into the daemon. `bot.mjs` routes each dispatch (`t`, `d`) to its handler.
+3. **The allowlist.** It is per project and per channel:
+   `work.notify.channels.<name>.allow: ["<user snowflake>", …]`, unique, each matching
+   `^[0-9]{17,20}$`. It is absent by default, which means NOBODY answers from Discord: a reply is
+   refused, and the refusal names the key. It is edited in config, and the guide shows how.
+   DEFAULT DECISION: no allow/deny verb until one is asked for.
+4. **The message index, `src/notify/ask-messages.mjs`.** When `notify` delivers
+   `session-needs-input` or `session-parked-unanswered` to a discord channel, it records
+   `{ messageId, channelId, event, ref, workspaceId, projectRoot, postedAt }` (7 keys) at
+   `<messagingStoreDir()>/discord-asks/<messageId>.json`.
+   - `messagingStoreDir` is a new export of `secret.mjs`, so the `messaging` segment is still
+     spelled there alone (FF-13106).
+   - The write is atomic, and a failure degrades `notify-ask-index` and never fails the send.
+   - It prunes records older than 30 days at write. DEFAULT DECISION: a parked ask can be
+     answered days later.
+   - It is keyed by the message, not by run or ref, because a reply carries only
+     `message_reference.message_id`. The answer is still routed by `(workspaceId, ref)` through
+     `work:answer`, so a stale index entry can only reach an ask that is not waiting, which
+     `answer-not-waiting` refuses.
+5. **The reply, `src/discord/replies.mjs`.** On `MESSAGE_CREATE`:
+   - It ignores a message from a bot, a message with no `message_reference`, a reference with no
+     index record, and a record whose `channelId` differs from the reply's. It posts NOTHING for
+     any of these.
+   - It loads the workspace at `projectRoot` and finds the discord channel whose `channelId`
+     matches. If the author's id is not in that channel's `allow`, it replies with a refusal
+     (`discord-answer-not-allowed`) naming the key, and invokes nothing.
+   - Otherwise it runs `invoke("work:answer", { ref, text: content, as: "@<username>", via:
+     "discord" }, { workspace })` in-process.
+   - On success it adds a ✅ reaction to the reply and posts no text, because the verb already
+     posts `session-answered`. On any coded refusal it replies with one line built from the code:
+     `ask-already-answered` names who answered and when; `answer-not-waiting`,
+     `answer-too-long` and `answer-control-chars` say what to do. A reply to the user's reply sets
+     `allowed_mentions: { parse: [], replied_user: false }`.
+6. **`work:answer` learns `via: "discord"`** (`src/commands/resume.mjs`). `by.via` becomes
+   `"discord"`, and the CLI face still has no flag for it. The sanitation, first-answer-wins and
+   `session-answered` are 04's, untouched. The actor is `@<username>`, clipped to the verb's 80
+   code points, and never a user id: records are committed to a public repo.
+7. **The ask message says it can be answered here.** When the channel's `allow` is non-empty,
+   `renderDiscord`'s needs-input action line reads ``Answer: reply to this message, or `aof work
+   answer <ref> "…"` ``. The render gains a `{ replyable }` option. This departs from DESIGN §3's
+   action line on purpose: the reply is now an answer path on the same face.
+
+### Alternatives considered
+
+- **Buttons or a modal** — rejected by the operator, who chose a reply.
+- **The loop process holds the gateway** — rejected. Many loops would mean many connections and
+  IDENTIFYs, and one token supports one session per shard.
+- **The mapping on the ask file or the run record** — rejected. The ask file's 15 keys are frozen
+  (FF-13101), and its owner is the loop; a second writer from the notifier would break the
+  single-writer rule. A worker's ask has no local ask file at all (ADR-010).
+- **Match by quoting the ref** — rejected. It would be a second parser of free text, while a reply
+  reference is exact.
+
+### Invariant
+
+`src/discord/**` never writes an ask file or a run record. An answer from Discord enters only
+through `invoke("work:answer", … via: "discord")`, after an allowlist check against the ask's own
+project config. One module opens the gateway socket.
+
+---
+
+## ADR-009 — The slash commands
+
+**Four commands, `/status`, `/asks`, `/loop stop` and `/loop resume`, are registered per guild
+at READY and answered in the bot process. Each one DEFERS, then dispatches a registered command
+in-process. `/loop resume` starts no process: it hands the declaration to the supervisor through a
+durable resume request.**
+
+### Decision
+
+1. **Registration.** At every READY, and hourly after it, the bot takes each discord
+   `channelId` configured in the served workspaces, resolves its guild with `GET
+   /channels/{id}`, and bulk-overwrites that guild's commands with `PUT
+   /applications/{application.id}/guilds/{guild}/commands`. `application.id` comes from READY.
+   The four definitions are one frozen table in `src/discord/commands.mjs`. `/loop` is one command
+   with two subcommands, and every command takes an optional string `workspace`; the two `/loop`
+   subcommands also take a required string `scope`. DEFAULT DECISION: guild commands, which are
+   available at once, where global ones take up to an hour.
+2. **The served workspaces** are resolved on every interaction and never cached: the node's
+   members (`resolveNodeWorkspaces`, `src/mesh/presence.mjs`) plus the daemon's own workspace.
+   Only those whose `work.notify` has a discord channel with the interaction's `channel_id`
+   count. With none, the bot answers ephemerally that this channel is not an aof project channel.
+3. **Which workspace a command addresses.** Of the counted workspaces, only those whose matched
+   channel's `allow` holds the user are kept. With none, the command is refused
+   `discord-command-not-allowed`, and nothing is dispatched. `/status` and `/asks` cover every kept
+   workspace, one section each. `/loop stop` and `/loop resume` need exactly one: `workspace`, when
+   given, must name one kept workspace, matched by id or by project folder name. With several and
+   no `workspace` option, the command is refused `discord-scope-ambiguous`, naming the candidates.
+4. **Defer first, always.** Each interaction gets its initial callback (`type: 5`) before any
+   config read or dispatch, well inside the 3 s. The final text is `PATCH
+   /webhooks/{app}/{token}/messages/@original`, capped at 2,000 and clipped with `… and N more`.
+   `/status` and `/asks` defer with `flags: 64` (ephemeral), because they are views.
+   `/loop stop` and `/loop resume` defer in-channel, because an action that steers a loop is
+   attributed where everyone can see it. DEFAULT DECISION.
+5. **The dispatch table**, every call `invoke(id, input, { workspace })`, and never a shell-out:
+   - `/status` → `work:list` with `mesh: true`. It renders each `in-progress` row: ref, execution
+     state and node, and for a row with an `ask`, `waiting on you (<phase>, <elapsed>)` through
+     `form.mjs`'s `headline` and `cost`.
+   - `/asks` → `work:list` with `mesh: true`, keeping rows whose `ask.state` is `waiting` or
+     `parked`. Each renders as `accountLine`, plus a jump link to the ask's message when the index
+     has one (`https://discord.com/channels/<guild>/<channel>/<message>`).
+   - `/loop stop` → `work:loop` with `{ scope, stop: true }`, 130's verb unchanged. The reply
+     names the level it reached: the first request drains, and a second cancels.
+   - `/loop resume` → `work:loop` with `{ scope, handOff: true }` (§6).
+   DEFAULT DECISION, with its reason: no registered read answers "which loops run here" across
+   unsupervised loops, and the in-progress rows, with their execution and ask facts, ARE the lanes
+   the board shows.
+6. **`/loop resume` hands off to the supervisor.** The process start belongs to the SUPERVISOR,
+   the desktop app that polls `mesh:status` declarations. It never belongs to the bot, and it is
+   never a daemon or a hand-spawned loop.
+   - `work:loop` gains the input `handOff` and the CLI flag `--hand-off`: "ask the supervisor to
+     relaunch this scope's supervised loop with `--resume`; start nothing here".
+   - It resolves the scope's latest declaration. It refuses `loop-hand-off-not-supervised`,
+     naming the terminal command `aof work loop <scope> --resume`. It refuses
+     `loop-hand-off-running` when the latest run is live, and `loop-hand-off-no-declaration` when
+     there is none. Refusals are values, as 130's stop's are. Otherwise it writes a resume request.
+   - The resume request lives in 130's module, `src/loop/stop-request.mjs`, beside the stop request
+     it undoes. It is `<meshRoot>/loop-resumes/<loopRunId>.json`, holding `{ loopRunId, scope,
+     workspaceId, by, requestedAt }`, with `requestLoopResume`, `readResumeRequest` and
+     `clearResumeRequest`.
+   - `decideSupervisedDeclarations` (`src/work/loop.mjs:1491`, pure) gains an additive
+     `resumeRequested` set. A supervised declaration in it yields a row even when it is neither
+     stale nor resumable, and even over an honoured stop mark, because the operator asked. It is
+     still gated by the compute budget.
+   - `supervisedDeclarations` (`src/mesh/declarations.mjs`) reads the set.
+   - The `--resume` launch clears the request where it clears the stop mark (`loop.mjs:1130`).
+   - `--hand-off` is refused together with `--stop` or `--dry-run`.
+   - The reply says the supervisor relaunches the loop on its next poll.
+7. **An interaction from a DM**, or with no `member`, is refused ephemerally. The allowlist is a
+   per-project fact, and a DM names no project.
+
+### Alternatives considered
+
+- **The bot spawns `aof work loop … --resume`** — rejected. The operator ruled that the process
+  start is the supervisor's or the verb's. A daemon-spawned loop is the hand-spawned class
+  TECH_DEBT item 4 measured.
+- **Clear the stop mark and nothing else** — rejected. A halted supervised loop whose latest run
+  is `done` yields no row, so clearing a mark relaunches nothing.
+- **A new stop-request state for resume** — rejected. The stop record's ten keys are 130's frozen
+  contract, and a resume is its own request.
+- **`/answer`** — rejected by the operator. The reply is the answer path.
+
+### Invariant
+
+`src/discord/**` imports no `child_process` and dispatches only `work:list` and `work:loop`. Every
+interaction is deferred before its dispatch. The supervisor is the only thing that starts a loop
+for `/loop resume`.
+
+---
+
+## ADR-010 — A worker's ask rides the park fact
+
+**The worker reads its session's question and puts it on the durable park fact it already sends,
+as one additive `ask` key. The control writes it on the assignment row, posts it once, on the edge
+into `needs-input`, and the board and a reply read it. There is no new frame. Supersedes ADR-005
+§6's "a mesh worker's ask fires nothing".**
+
+### Decision
+
+1. **The carriage.** `assignment.reported` (running + `needs-input`,
+   `src/effects/assignment-transitions.mjs:95`) gains `ask: { question, phase, askedAt }`. It is
+   present only on that park, and omitted everywhere else, so every other payload is
+   byte-identical. `reportAssignmentSettled` passes it through.
+   - The ordinary status frame is NOT widened. It is not the park's carrier.
+   - The journal-unavailable fallback (`fallbackSend`) drops the key. That path is the ledger's
+     degrade, and the row then reads as DESIGN's "question unreadable", exactly as a worker on an
+     older build does. DEFAULT DECISION.
+2. **The worker's read.** `readWorkerAsk({ worktreePath, sessionId, phase, now })` in
+   `src/mesh/park-resume.mjs` composes `readAskQuestion` (ADR-002, the one reader) over the
+   worker's own transcripts. It clips the question to 8,000 code points with `…` (DEFAULT
+   DECISION: the answer's own cap, and a phone sees 2,000 anyway), and never throws.
+   - The two park sites call it: `worker-execution.mjs:1330`, as a same-line edit that holds
+     that file at 1,914 (item 83), and `park-resume.mjs`'s own two.
+   - `phase` is ADR-004 §6's word, taken from the directive's drive, or `null`.
+3. **The control's row.** `global_assignments` gains a nullable `ask` column (JSON text), added by
+   the house's idempotent, PRAGMA-checked `ALTER TABLE` (`src/global-work-store.mjs:381-389`).
+   `updateAssignmentState` writes it only when given one, so absent is not a clear. The execution
+   projection carries `ask` only when the column is set and the row `awaitsAnswer`.
+   `GLOBAL_WORK_SCHEMA_VERSION` moves only as the idiom's own precedent did, and its pins move
+   with the reason.
+4. **Posted once.** The `settle-assignment` reactor (`src/effects/table.mjs:331`) reads the row's
+   `code` before the transition. Only on the EDGE into `needs-input` does it call
+   `announceWorkerAsk(row, ask, ctx)` (`park-resume.mjs`).
+   - That function resolves the workspace's control-side checkout through
+     `resolveNodeWorkspaces`, builds `session-needs-input` with `node` = the WORKER's id, and
+     awaits `notify`. With no checkout it degrades `worker-ask-unannounced`.
+   - A redelivered park, whose code is already `needs-input`, posts nothing.
+   - DEPARTURE from ADR-005 §4's "not an effects reactor". The reason there was an
+     at-least-once redelivered post, and the edge makes this one at-most-once. The reactor also
+     mutates no store for the post.
+   - `buildNotifyEnvelope` takes `fields.node` over `config.mesh.nodeId`, as an additive
+     override.
+5. **Answered by reply.** The index (ADR-008 §4) records the control checkout's `projectRoot`, so
+   a reply runs `work:answer` in that workspace. That verb finds no ask file and goes down 04's
+   mesh leg, `mesh:terminal-resume` with `answer`, unchanged. The mesh leg now also fires
+   `session-answered`: the same event from the same site in `resume.mjs`, one `notify(` call
+   shared by both branches.
+6. **The board.** `applyAskOverlay`'s worker ask (`src/commands/list.mjs:65`) takes `question`,
+   `phase` and `askedAt` from `execution.ask` when present, and keeps today's null question
+   otherwise.
+7. **Out of scope, stated.** A loop run BY a worker node (not an assignment) posts from the
+   worker. The worker holds no token, so that post degrades `notify-channel-unconfigured`. One bot
+   for the mesh is the operator's ruling, and carrying that case is its own item.
+
+### Alternatives considered
+
+- **A new frame kind** — rejected. The park fact is already durable, acked and holder-guarded; a
+  second frame would be a second carrier for one fact.
+- **The worker's streamed run record** (`work_item_runs`) — rejected. It is the lane's record,
+  streamed on a different cadence, and it has no edge to post on.
+- **Post from the worker with a replicated token** — rejected by the one-bot ruling and
+  `38/ADR-010`.
+
+### Invariant
+
+A worker's question reaches the control only on the park fact's `ask`. The control posts a worker
+ask only on the edge into `needs-input`, with the worker's node. The board and a reply read it from
+the assignment row.
+
+---
+
 ## Codebase health — what these stories land in
 
 **Measured sizes, and where the new logic goes.**
@@ -772,6 +1122,80 @@ path. The shared files are sequential:
 
 ---
 
+## Partition — the bot (09–12, refined 2026-09-25)
+
+Drawn from reading the source (the graph build timed out, as noted above ADR-007).
+
+- **09 comes first.** It changes the credential, the config shape and the one authorised door that
+  every other bot story reaches Discord through.
+- **10 depends on 09.** It needs `discordRequest`, the posted `messageId` and the new channel
+  shape. 10 founds `src/discord/`, `test/discord/` and the gateway, and writes BOTH new
+  directories' exemptions, naming 11's members ahead of time (the `src/loop` precedent, which
+  named 03's `ask.mjs` before it landed). Neither 11 nor 12 edits the budget file.
+- **12 depends on 10, not only on 04 and 09.** This is a PO ruling, 2026-09-25. Its user story
+  says "answerable by a Discord reply", and the reply path is 10's. The operator's `depends: [4,
+  9]` predates the breakdown, so the edge is added and recorded in STATE.
+- **11 and 12 run in parallel.** They share no source or test path, only `VERIFICATION.md`, where each appends under its own heading.
+  - 11 writes `src/discord/commands.mjs`, `bot.mjs`'s wiring, `work:loop`'s hand-off, the
+    resume request in `stop-request.mjs`, and the declarations read.
+  - 12 writes the mesh park, the store column, the reactor, the overlay, `resume.mjs`'s mesh
+    announcement, and `notify.mjs`'s node override.
+- **Each story lands its own controls** (`66/ADR-007`).
+  - 09 amends FF-13106 and adds FF-13110 in `acd-loop-ask-reaches-every-face`.
+  - 10 founds `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs` with FF-13111 and
+    FF-13112, raising the `test/arch/loop` row from 65 to 66.
+  - 11 appends FF-13113 to 10's file.
+  - 12 appends FF-13114 and amends FF-13107 in `acd-loop-ask-reaches-every-face`. 09 has finished
+    with that file by then, because 12 follows 10, which follows 09.
+
+| story | ADRs | lands | depends |
+|---|---|---|---|
+| 09 `the-bot-posts` | ADR-007 | the bot token through `messaging init` (shape check, invite URL); `channelId`/`tokenEnv` config and `enable --channel`; `discordRequest` + `sendDiscord` answering `messageId`; `notify` answering `messages`; `username` dropped; the webhook sender deleted; `status` reporting channel and allowlist size; the guide rewritten; FF-13106 amended, FF-13110 | 02, 08 |
+| 10 `answer-by-replying-in-discord` | ADR-008 | `src/discord/{gateway,bot,replies}.mjs`; the launcher starts/stops the bot on the control; `allow` in the schema; `src/notify/ask-messages.mjs` + `messagingStoreDir`; the index recorded at delivery; `work:answer` `via: "discord"`; the replyable action line; `test/discord/` founded; the two exemptions; FF-13111, FF-13112 | 04, 09 |
+| 11 `slash-commands` | ADR-009 | `src/discord/commands.mjs` (registration, deferral, the four dispatches); `bot.mjs` routes interactions; `work:loop --hand-off`; the resume request in `stop-request.mjs`; `resumeRequested` in the decider and the declarations reader; `--resume` clears it; FF-13113 | 09, 10 |
+| 12 `a-workers-ask-reaches-discord` | ADR-010 | `readWorkerAsk` + `announceWorkerAsk` in `park-resume.mjs`; `ask` on the park fact; the `ask` column; the edge-posted notice with the worker's node; the overlay's question; `session-answered` from the mesh leg; FF-13114, FF-13107 amended | 04, 09, 10 |
+
+### Per-story `reads:` and `files:` (09–12)
+
+Derived by hand from the source read for these ADRs. The graph was unavailable, so each list is
+the subject files, their test suites, and the `file:line` citations above. The authored sets are
+in each STORY.md's frontmatter, their one home, and these lists mirror them as of the refine. The authored sets are
+in each STORY.md's frontmatter, their one home, and these lists mirror them as of the refine. `…` abbreviates
+`wiki/work/131_milestone_the-human-in-the-loop`. Write it out in full in the frontmatter.
+
+**09 `the-bot-posts`**
+- reads: `…/SPEC.md`, `…/DESIGN.md`, `…/ARCHITECTURE.md#ADR-005`, `…/ARCHITECTURE.md#ADR-007`, `src/notify/form.mjs`, `src/notify/secret.mjs`, `src/work/delegation.mjs`, `src/command-error.mjs`, `src/degrade.mjs`, `src/commands/resume.mjs`, `src/loop/ask.mjs`, `src/commands/item-status.mjs`
+- files: `src/notify/discord.mjs`, `src/notify/notify.mjs`, `src/commands/messaging/messaging.mjs`, `schemas/aof.schema.json`, `test/notify/notify-discord.test.mjs`, `test/notify/notify-channels.test.mjs`, `test/notify/notify-messaging.test.mjs`, `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs`, `wiki/architecture/discord-notifications.md`, `…/VERIFICATION.md`
+
+**10 `answer-by-replying-in-discord`**
+- reads: `…/SPEC.md`, `…/ARCHITECTURE.md#ADR-003`, `…/ARCHITECTURE.md#ADR-007`, `…/ARCHITECTURE.md#ADR-008`, `src/notify/discord.mjs`, `src/notify/notify.mjs`, `schemas/aof.schema.json`, `src/notify/form.mjs`, `src/loop/ask-request.mjs`, `src/mesh/presence.mjs`, `src/work.mjs`, `src/workspace.mjs`, `src/degrade.mjs`, `src/fs.mjs`, `src/command-core.mjs`, `src/commands/mesh/serve.mjs`, `src/mesh/declarations.mjs`, `test/support/source-slice.mjs`
+- files: `src/discord/gateway.mjs`, `src/discord/bot.mjs`, `src/discord/replies.mjs`, `src/notify/ask-messages.mjs`, `src/notify/secret.mjs`, `src/notify/notify.mjs`, `src/notify/discord.mjs`, `src/commands/resume.mjs`, `src/mesh/launcher.mjs`, `schemas/aof.schema.json`, `test/discord/index.mjs`, `test/discord/discord-fixture.mjs`, `test/discord/discord-bot.test.mjs`, `test/discord/discord-gateway.test.mjs`, `test/discord/discord-replies.test.mjs`, `test/notify/notify-channels.test.mjs`, `test/notify/notify-discord.test.mjs`, `test/run/run-session-limit-resume.test.mjs`, `scripts/test.mjs`, `test/arch/testing/acd-source-directory-budget.test.mjs`, `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs`, `test/arch/loop/index.mjs`, `wiki/architecture/discord-notifications.md`, `…/VERIFICATION.md`
+
+**11 `slash-commands`**
+- reads: `…/SPEC.md`, `…/ARCHITECTURE.md#ADR-008`, `…/ARCHITECTURE.md#ADR-009`, `wiki/work/130_milestone_stop-a-running-loop/ARCHITECTURE.md#ADR-001`, `wiki/work/130_milestone_stop-a-running-loop/ARCHITECTURE.md#ADR-002`, `wiki/work/130_milestone_stop-a-running-loop/ARCHITECTURE.md#ADR-004`, `src/discord/gateway.mjs`, `src/discord/replies.mjs`, `src/notify/discord.mjs`, `src/notify/form.mjs`, `src/notify/ask-messages.mjs`, `src/commands/list.mjs`, `src/loop/stop.mjs`, `src/loop-argv.mjs`, `src/mesh/presence.mjs`, `src/run-store.mjs`, `test/discord/discord-fixture.mjs`
+- files: `src/discord/commands.mjs`, `src/discord/bot.mjs`, `src/commands/loop.mjs`, `src/loop/stop-request.mjs`, `src/mesh/declarations.mjs`, `src/work/loop.mjs`, `test/discord/discord-commands.test.mjs`, `test/discord/index.mjs`, `test/loop/work-loop-declarations.test.mjs`, `test/loop/loop-command-stops.test.mjs`, `test/arch/loop/acd-loop-stop-request-single-home.test.mjs`, `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs`, `wiki/architecture/discord-notifications.md`, `…/VERIFICATION.md`
+
+**12 `a-workers-ask-reaches-discord`**
+- reads: `…/SPEC.md`, `…/DESIGN.md`, `…/ARCHITECTURE.md#ADR-002`, `…/ARCHITECTURE.md#ADR-005`, `…/ARCHITECTURE.md#ADR-008`, `…/ARCHITECTURE.md#ADR-010`, `wiki/work/archive/69_milestone_loop-bounds/ARCHITECTURE.md#ADR-007`, `src/work/observe.mjs`, `src/notify/ask-messages.mjs`, `src/notify/discord.mjs`, `src/mesh/presence.mjs`, `src/commands/mesh/terminal-resume.mjs`, `src/effects/journal.mjs`, `src/effects/outbox.mjs`, `src/discord/replies.mjs`, `test/discord/discord-fixture.mjs`
+- files: `src/mesh/park-resume.mjs`, `src/mesh/worker-execution.mjs`, `src/effects/assignment-transitions.mjs`, `src/effects/table.mjs`, `src/assignment-record.mjs`, `src/global-work-store.mjs`, `src/board-mesh-execution.mjs`, `src/commands/list.mjs`, `src/commands/resume.mjs`, `src/notify/notify.mjs`, `test/assignment/blocked-run-parking.test.mjs`, `test/mesh/mesh-effects-outbox.test.mjs`, `test/store/global-work-store.test.mjs`, `test/mesh/assignment/mesh-assignment-record.test.mjs`, `test/ui/board-mesh-execution.test.mjs`, `test/notify/notify-channels.test.mjs`, `test/run/run-session-limit-resume.test.mjs`, `test/discord/discord-replies.test.mjs`, `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs`, `…/VERIFICATION.md`
+
+**Shared files, sequential, one writer at a time.**
+- `src/notify/notify.mjs` and `test/notify/notify-channels.test.mjs`: 09, then 10, then 12.
+- `src/notify/discord.mjs` and `test/notify/notify-discord.test.mjs`: 09, then 10.
+- `schemas/aof.schema.json`: 09, then 10.
+- `wiki/architecture/discord-notifications.md`: 09, then 10, then 11.
+- `src/commands/resume.mjs` and `run-session-limit-resume`: 10, then 12.
+- `test/discord/discord-replies.test.mjs`: 10, then 12.
+- `src/discord/bot.mjs`, `test/discord/index.mjs` and 10's arch file: 10, then 11.
+- `acd-loop-ask-reaches-every-face`: 09, then 12.
+- `VERIFICATION.md`: each story appends its own red probes.
+
+11 ∥ 12 share no source or test path, checked path by path. They share `VERIFICATION.md` alone, and
+`aof work next` may serialise them on it. That cost is visible and cheap, and it is kept rather
+than moving the red probes out of the milestone register.
+
+---
+
 ## Fitness functions
 
 HARNESS SHAPE (`119/ADR-010`): each arch-test exports `archTests`, an array of `{ name, run }`. It is
@@ -779,6 +1203,11 @@ registered by one import and one spread in its directory's `index.mjs`, and neve
 `readdir`. Every control below landed in story 06 (2026-09-25), and each one's red probe is recorded
 in `VERIFICATION.md`. Three new files landed under `test/arch/loop/`, whose row rose from 62 to 65
 by exactly that count. The subject is the human in the loop, and the faces are its readers.
+
+FF-13110 … FF-13114 were declared at the 09–12 refine (2026-09-25, ADR-007 … ADR-010), and each
+carried `pending` in its own entry until its story landed it. All five landed at build on
+2026-09-25 (`aof:continue 131/09-12 --solo`), with the amendments to FF-13106, FF-13107 and FF-13108
+marked in their entries. Each red probe is in `VERIFICATION.md`.
 
 These standing controls must stay green. They are cited, not redeclared:
 - `53/FF-5302`: 17 exports.
@@ -802,7 +1231,12 @@ These standing controls must stay green. They are cited, not redeclared:
 | FF-13103 | **A waiting run is recorded, not reclaimed and not charged.** Minted records carry 17 keys with `asks` last and `[]`, and a 16-key record reads forward as `[]`. `transitionStaleRunsReclaimed` over a stale `running` run whose last ask is unanswered leaves it byte-unchanged, and reclaims the same run with the ask answered. `attemptElapsedMs` over a run with a 3 h ask interval is the same as over the run without it. Red probe: drop the skip. | `test/arch/loop/acd-loop-ask-single-home.test.mjs` | ADR-003 §3, ADR-001 §4 |
 | FF-13104 | **An answer reaches a session only as a resumed command.** Structurally: `src/mesh/terminal-input.mjs`, `src/terminal-ws.mjs` and the driver import neither `ask-request.mjs` nor `ask.mjs`. `resume.mjs` imports no terminal-input module. The driver has no branch that skips `stopForOutcome` for `needs-input`. Fixture: `work:drive-continue` with `--answer` whose `runId` differs from the lent run refuses `drive-answer-not-own` before any mint or spawn. With its own run, the fake PTY receives `resumeSessionId` = the ask's session and the typed body = the answer, byte-for-byte. Red probe: accept a foreign session. | `test/arch/loop/acd-loop-ask-waits-in-place.test.mjs` | ADR-001, ADR-003 §7 |
 | FF-13105 | **A waiting lane does not halt the wave.** Fixture over `test/support/loop/lane-fixture.mjs` with two lanes, one answering needs-input:<br>- the other lane closes and merges;<br>- the waiting lane's record carries the ask and a heartbeat newer than the ask;<br>- `waiting on you` is narrated;<br>- writing `answered` makes the lane re-drive with `--answer` and settle `done`, and the file is gone;<br>- with an immediate-park `askWait`, the lane closes `parked` and unmerged, `session-parked-unanswered` is notified once, and the halt is `session-needs-input` only after the other lane merged.<br>Structural: `"session-needs-input"` reaches `haltDecision` only inside `ask.mjs`'s `parkedHalt`, and the four sites call `awaitAnswer`. `LOOP_STOPS` is unchanged. Red probe: return the old halt at `wave.mjs`'s needs-input branch. | `test/arch/loop/acd-loop-ask-waits-in-place.test.mjs` | ADR-004 |
-| FF-13106 | **The notifier is best-effort and the secret is never committed.** The `work.notify` schema is closed, and a channel has `urlEnv` and no `url`, `webhook` or `token` property. `.aof/aof.config.json` and `src/**` contain no `discord.com/api/webhooks` literal. Inside `src/notify/` the URL is read only as `env[<urlEnv>]` or through `readMessagingSecret`. As amended at 131/08, the `messaging` store segment is joined into a path only in `src/notify/secret.mjs`, and `src/commands/messaging/messaging.mjs` reaches the store only through it. Fixture with a degrade-sink spy: `notify` against a fetch that throws, returns 500, returns 429, or hangs past the bound resolves `{ delivered: [], failed: [name] }` and never rejects, and no degrade message contains the URL. `renderDiscord` over a 3,000-character ask with an open fence is ≤ 2,000 characters, keeps line 1, the action line and the link, balances the fence, and sets `allowed_mentions: { parse: [] }`. Red probe: log the URL in the failure degrade. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-005 |
-| FF-13107 | **Six firing points, one envelope.** Every `notify(` call under `src/` is one of the six sites in ADR-005 §4, enumerated by file and event literal. Each envelope comes from `buildNotifyEnvelope`, whose keys deep-equal the eleven, and `EVENTS` holds seven. Non-vacuous: the sweep finds six sites. Red probe: a seventh `notify(` in `wave.mjs`. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-005 §3-§4 |
-| FF-13108 | **One form on every face.** `src/notify/form.mjs` has zero imports and is imported by `src/loop/ask.mjs`, `src/commands/loop.mjs`, `src/notify/discord.mjs` and `ui/src/board/action.mjs`. The phrase `waiting on you` is spelled in no other `src/**` or `ui/src/**` module. The ONLY import specifier in `ui/src/**` that resolves outside `ui/src` is that file. Fixture: for one envelope, `accountLine` and the Discord line 1 share byte-identical `<ref> — <phrase> (<phase>, <elapsed>)`. Red probe: a second `formatElapsed` in `ui/src/board/`. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-006 §1 |
+| FF-13106 | **The notifier is best-effort and the secret is never committed.** The `work.notify` schema is closed, and a channel has `urlEnv` and no `url`, `webhook` or `token` property. `.aof/aof.config.json` and `src/**` contain no `discord.com/api/webhooks` literal. Inside `src/notify/` the URL is read only as `env[<urlEnv>]` or through `readMessagingSecret`. As amended at 131/08, the `messaging` store segment is joined into a path only in `src/notify/secret.mjs`, and `src/commands/messaging/messaging.mjs` reaches the store only through it. Fixture with a degrade-sink spy: `notify` against a fetch that throws, returns 500, returns 429, or hangs past the bound resolves `{ delivered: [], failed: [name] }` and never rejects, and no degrade message contains the URL. `renderDiscord` over a 3,000-character ask with an open fence is ≤ 2,000 characters, keeps line 1, the action line and the link, balances the fence, and sets `allowed_mentions: { parse: [] }`. Red probe: log the URL in the failure degrade. **AMENDED at 131/09 (ADR-007), landed:** the credential is a bot token, so a channel has `channelId` and `tokenEnv` and no `url`, `webhook`, `token` or `urlEnv` property. The token is read only as `env[<tokenEnv>]` or through `readMessagingSecret`, and no degrade message contains it. `renderDiscord` sets `allowed_mentions: { parse: [] }` and no `username`. The ban on the incoming-webhook path literal stands. **AMENDED at 131/10 (ADR-008 §4), landed:** inside `src/notify/`, `src/notify/ask-messages.mjs` reads files too — its own message index — and never the secret. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-005 |
+| FF-13107 | **Six firing points, one envelope.** Every `notify(` call under `src/` is one of the six sites in ADR-005 §4, enumerated by file and event literal. Each envelope comes from `buildNotifyEnvelope`, whose keys deep-equal the eleven, and `EVENTS` holds seven. Non-vacuous: the sweep finds six sites. Red probe: a seventh `notify(` in `wave.mjs`. **AMENDED at 131/12 (ADR-010 §4-§5), landed:** seven sites. `session-needs-input` gains `announceWorkerAsk` in `src/mesh/park-resume.mjs`, and `session-answered` stays ONE call in `src/commands/resume.mjs`, serving both the local and the mesh branch. `buildNotifyEnvelope` takes `fields.node` over `config.mesh.nodeId`. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-005 §3-§4 |
+| FF-13108 | **One form on every face.** `src/notify/form.mjs` has zero imports and is imported by `src/loop/ask.mjs`, `src/commands/loop.mjs`, `src/notify/discord.mjs` and `ui/src/board/action.mjs`. The phrase `waiting on you` is spelled in no other `src/**` or `ui/src/**` module. The ONLY import specifier in `ui/src/**` that resolves outside `ui/src` is that file. Fixture: for one envelope, `accountLine` and the Discord line 1 share byte-identical `<ref> — <phrase> (<phase>, <elapsed>)`. Red probe: a second `formatElapsed` in `ui/src/board/`. **AMENDED at 131/11 (ADR-009 §5), landed:** `src/discord/commands.mjs` is a fifth importer — the slash commands render a waiting row through the same form. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-006 §1 |
 | FF-13109 | **The answer route is guarded and the card has no fast path.** In `src/board-ui.mjs`, every `POST` branch calls `admitWriteRequest(` before `readJsonBody(`. The answer branch reads exactly `body.ref`, `body.text` and `body.actor`. `admitWriteRequest` in `board-ui.mjs` and in `src/mesh/ui-serve.mjs` calls `isLoopbackHost(`, and a request with `Host: evil.example:1234` and a matching `Origin` is refused `non-loopback-host`. `ui/src/**` holds exactly one `fetch("/api/work/answer"`. `AskCard.tsx` imports no `Markdown`, renders one `<button`, sets no `placeholder`, and keys on `item.ask`. Red probe: read the body before admission in the resync door. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-006 §2-§4 |
+| FF-13110 | **One authorised door to Discord.** Over a comment-stripped sweep of `src/**`: the string `Bot ` inside an `Authorization` header and the host `discord.com/api` appear only in `src/notify/discord.mjs`, whose `discordRequest` is their one builder. `src/discord/**` imports `discordRequest` and calls `fetch` nowhere. `isDiscordBotToken` accepts a three-segment token whose first segment decodes to a snowflake and refuses a webhook URL, and the `discord` entry's `accepts` is it. Fixture: `sendDiscord` against a fetch answering 200 `{ id: "1234567890123456789" }` answers that `messageId`; `notify` answers it in `messages`; against 401 and 403 it degrades `notify-delivery-failed` naming the status, and no degrade message holds the token. Red probe: build a second `Authorization` header in `notify.mjs`. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-007 |
+| FF-13111 | **One gateway, resumed rather than re-identified.** The only `src/**` module that constructs the gateway socket is `src/discord/gateway.mjs`. `src/mesh/launcher.mjs` reaches `src/discord/bot.mjs` only by a deferred import inside its control-node branch. Fixture over an injected fake gateway: HELLO → IDENTIFY with intents 33280; a drop after READY → RESUME carrying the `session_id` and last `seq`, with no second IDENTIFY; close 4014 → no reconnect, one `discord-intent-disallowed` degrade; close 4004 → no reconnect, one `discord-token-rejected`; `session_start_limit.remaining` 5 → no IDENTIFY and one `discord-identify-budget`. Red probe: IDENTIFY on every reconnect. | `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs` | ADR-008 §1-§2 |
+| FF-13112 | **A Discord answer is an allowlisted `work:answer`.** `src/discord/**` imports no write export of `src/loop/ask-request.mjs` and nothing from `src/run-store.mjs`. Its one answer call is `invoke("work:answer"` with `via: "discord"`. The index path is joined only beneath `messagingStoreDir()`, in `src/notify/ask-messages.mjs`. Fixture over a waiting ask file and an index record: a reply from an id not in `allow` leaves the file `waiting` and posts one refusal; a reply from an allowed id makes it `answered` with `by.via: "discord"` and `by.actor` `@<username>`, and adds one reaction; a reply to an unindexed message sends nothing to Discord and changes nothing; a second allowed reply is refused `ask-already-answered` and names the first answerer. Red probe: skip the allowlist check. | `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs` | ADR-008 §3-§6 |
+| FF-13113 | **Slash commands defer, dispatch registered verbs, and start no process.** `src/discord/**` imports no `node:child_process`. Every `invoke(` in `src/discord/commands.mjs` names `work:list` or `work:loop`. `work:loop` with `handOff` writes a resume request and spawns nothing. Fixture: for each of the four commands, the interaction's `type: 5` callback is sent before the injected `invoke` is called; `/status` and `/asks` defer with `flags: 64`, and the `/loop` subcommands without it; a user not in `allow` gets `discord-command-not-allowed` and `invoke` is never called; `decideSupervisedDeclarations` with a `done`-latest supervised declaration in `resumeRequested` yields its row, and without it yields none. Red probe: dispatch before the deferral. **Landed at 131/11**, with two amendments to delivered controls: 130's FF-13001 (`acd-loop-stop-request-single-home`) owns the `loop-resumes` segment beside `loop-stops`, and its FF-13003 pin on `run` admits the hand-off branch ahead of the stop. | `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs` | ADR-009 |
+| FF-13114 | **A worker's ask rides the park fact and is posted once.** `ask` appears on an `assignment.reported` payload only with `state: "running"` and `code: "needs-input"`, and every other report's payload key set is unchanged. `announceWorkerAsk(` is called only from the `settle-assignment` reactor, and only behind the not-already-`needs-input` edge. Fixture: applying one park fact with `ask` writes the row's `ask`, projects `execution.ask`, gives the board row a non-null `question`, and calls `notify` once with `node` = the worker's id; re-applying the same fact calls `notify` zero more times. Red probe: drop the edge check. | `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` | ADR-010 |

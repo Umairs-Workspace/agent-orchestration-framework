@@ -244,9 +244,10 @@ async function runWave(fx, { child, report, extra = {} }) {
   return await runLoopBody({ scope: fx.milestone }, ctx);
 }
 
-const HOOK = "https://discord.com/api/webhooks/131/arch";
+// A synthetic bot token (131/09): the channel reads it from HOOK.
+const HOOK = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.arch";
 function notifying(fx) {
-  fx.workspace.config.work.notify = { channels: { ops: { type: "discord", urlEnv: "HOOK" } } };
+  fx.workspace.config.work.notify = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK" } } };
   const posts = [];
   const fetch = async (url, init) => {
     posts.push(JSON.parse(init.body));

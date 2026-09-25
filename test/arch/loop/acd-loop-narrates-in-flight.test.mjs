@@ -135,15 +135,19 @@ export const archTests = [
       // 130/02 (ADR-003 §6) — the resume's clear of a standing stop request: printed while the
       // walk is still pending, by the same role rule, and silenced by `--quiet` like the rest.
       assert.equal(seamOf("Cleared stop request for ${loopRunId}"), "narrate", "the cleared stop request is in flight");
+      // 131/11 (ADR-009 §6) — the same resume's clear of a spent hand-off, beside the stop's, by the
+      // same role rule.
+      assert.equal(seamOf("Cleared the resume request for ${loopRunId}"), "narrate", "the cleared resume request is in flight");
       // 129/04 — every in-flight line in the family is on the narrate seam, and the family's
       // count is pinned rather than the shell's alone: the shell's ten stay ten (the retry
       // line and the settle conflict moved down with the ladder; the fresh gate's three grade
       // lines and the refine-phase line arrived); `cycle.mjs` holds the two that moved plus the
       // cross-to-verify act line and the grade rung; `wave.mjs` narrates every lane step. None is
-      // on `report`. 130/02 — eleven in the shell: the resume's `Cleared stop request` line.
+      // on `report`. 130/02 — eleven in the shell: the resume's `Cleared stop request` line. 131/11 —
+      // twelve: the resume's `Cleared the resume request` line beside it.
       const inFlight = calls.filter((call) => call.seam === "narrate");
       assert.equal(calls.filter((call) => call.seam === "report" && /^`(?:Gate |Driving |Retrying |Resumed |Reclaimed |Lane |Wave |Baseline |Cleared )/u.test(call.text)).length, 0, "no in-flight line is on report anywhere in the family");
-      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 11, "eleven in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving and the cleared stop request");
+      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 12, "twelve in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request and the cleared resume request");
       assert.equal(printCalls(await source("src/loop/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
       assert.ok(inFlight.length >= 17, `the family narrates at least the seventeen the shell and the ladder hold (${inFlight.length})`);
     },
@@ -233,16 +237,17 @@ export const archTests = [
       assert.deepEqual(schema.properties.quiet, { type: "boolean" }, "a declared boolean property");
       assert.deepEqual(schema.required, ["scope"], "required is still exactly [scope]");
       // 130/02 (ADR-002 §1) — the NINTH property and the EIGHTH flag, `stop`, by the same
-      // three-homes rule this leg pins: an expected succession of the pin, not a drift.
+      // three-homes rule this leg pins: an expected succession of the pin, not a drift. 131/11
+      // (ADR-009 §6) — the TENTH and the NINTH, `handOff`, by the same rule.
       assert.deepEqual(
         Object.keys(schema.properties).sort(),
-        ["cap", "dryRun", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised"],
+        ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised"],
         "properties gained exactly one key",
       );
       assert.ok(!("verbose" in schema.properties), "`verbose` is an additional key on a closed schema");
 
       const flags = loopCommand.cli.spec.flags;
-      assert.equal(Object.keys(flags).length, 8, "eight flags: --quiet here, --supervised from 126/02, and --stop from 130/02");
+      assert.equal(Object.keys(flags).length, 9, "nine flags: --quiet here, --supervised from 126/02, --stop from 130/02 and --hand-off from 131/11");
       assert.equal(flags.quiet.type, "boolean");
       assert.ok(typeof flags.quiet.description === "string" && flags.quiet.description.length > 0);
       assert.match(loopCommand.cli.spec.usage, /\[--quiet\]/u);
@@ -258,6 +263,7 @@ export const archTests = [
       // `--stop` (130/02): a stop is on the probe side, printed through `render`.
       assert.equal(loopCommand.cli.launch({ dryRun: true }), null);
       assert.equal(loopCommand.cli.launch({ stop: true }), null);
+      assert.equal(loopCommand.cli.launch({ handOff: true }), null, "--hand-off starts nothing: it is on the probe side too (131/11)");
       assert.equal(typeof loopCommand.cli.launch({ quiet: true }), "function", "--quiet does not stop the body launching");
     },
   },

@@ -104,9 +104,10 @@ In scope:
 
 Out of scope:
 
-- **Answering FROM Discord** (a bot listening in the channel and routing replies to `aof work
-  answer`). The envelope and the verb make it additive; the inbound path is its own item once the
-  outbound one has run live.
+- ~~**Answering FROM Discord**~~ — MOVED IN SCOPE (operator, 2026-09-25): aof gets its own
+  Discord bot, which replaces the webhook, posts every notification, takes answers by reply from an
+  allowlist, answers four slash commands and carries a worker's ask from the control node (stories
+  09–12). 07's live run waits on them.
 - **Changing WHEN a session decides to ask.** `NEEDS_INPUT_INSTRUCTION`'s "genuine judgment call"
   threshold stands; this milestone changes the form of the ask (above) and what happens after the
   line is printed, never the bar for printing it.
@@ -132,6 +133,10 @@ Out of scope:
 - [x] `06_story_the-register` — FF-13101–FF-13109 in three files under `test/arch/loop/`, the row 62 → 65, the red probes in VERIFICATION (all ADRs) — depends 03, 04, 05
 - [ ] `07_story_the-live-run` — `@manual`: a real question, a real Discord message, both answer paths, the other lanes building, the loop finishing (ADR-001, ADR-005) — depends 06, 08
 - [x] `08_story_the-messaging-cli` — `aof messaging init discord` stores the webhook machine-wide under `~/.aof`, `enable`/`disable discord` switch it per project in `work.notify`, `status` reports presence never the value; amends ADR-005 §1 — depends 02
+- [x] `09_story_the-bot-posts` — aof's own Discord bot account posts every notification into a configured channel; its token stored machine-wide as 08 stores the webhook; replaces the webhook (ADR-007) — depends 02, 08
+- [x] `10_story_answer-by-replying-in-discord` — a Discord reply to the bot's ask, from an allowlisted user, answers the waiting session through `work:answer`; the gateway connection on the control node (ADR-008) — depends 04, 09
+- [x] `11_story_slash-commands` — `/status`, `/asks`, `/loop stop`, `/loop resume` for allowlisted users, dispatched in-process; `/loop resume` hands off to the supervisor (ADR-009) — depends 09, 10
+- [x] `12_story_a-workers-ask-reaches-discord` — a worker's ask carried to the control node on the park fact, posted by the bot, shown on the board and answerable by reply (ADR-010) — depends 04, 09, 10
 
 ## Dependencies
 
@@ -143,5 +148,6 @@ Out of scope:
   is a wave property; 129/06's `F-58` (provider wait) is the heartbeat-suspension shape reused.
 - **130 (in progress)** — stop a running loop: the durable-request pattern its verb established
   is the shape `aof work answer` follows (a request the loop reads, never a signal).
-- **A Discord webhook URL** the operator provides in `work.notify` — the one external secret;
-  read from config or env, never committed.
+- ~~**A Discord webhook URL**~~ — superseded on 2026-09-25 by ADR-007: the secret is now **a Discord
+  bot token**, stored machine-wide by `aof messaging init discord` and never committed. The
+  channel id and the answer allowlist live in `work.notify`.

@@ -1,15 +1,18 @@
 // test/notify/notify-messaging.test.mjs — milestone 131 / story 08, tasks 00 to 05 (ADR-005 §1, as
-// amended at 131/08). `aof messaging`: the family's registration and budget (00), the machine-wide
-// owner-only store (01), `init`'s prompt-or-stdin door that never reads argv (02), the per-project
-// `enable`/`disable` switch that writes only `work.notify` (03), `status`, which says whether and
-// never what (04), and the notifier reading the store at the point of send (05). FF-13106's
-// amended legs live in `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs`.
+// amended at 131/08), and story 09, tasks 00 to 03 (ADR-007). `aof messaging`: the family's
+// registration and budget (08/00), the machine-wide owner-only store (08/01), `init`'s
+// prompt-or-stdin door that never reads argv (08/02; 09/00: it takes a bot token and prints the
+// invite URL), the per-project `enable`/`disable` switch that writes only `work.notify` (08/03;
+// 09/01: `enable --channel <id>`), `status`, which says whether and never what (08/04; 09/03), and
+// the notifier reading the store at the point of send (08/05; 09/02: the bot posts to the channel
+// by id and answers the posted message's id). FF-13106's and FF-13110's legs live in
+// `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs`.
 //
 // ISOLATION. Every case runs under a fresh `AOF_GLOBAL_HOME` of its own (`withHome`), and every
 // project is a temp directory — no case touches the real `~/.aof` or this repository's config. A
-// URL is a fixture, never a real webhook, and "never echoes" is asserted over stdout, stderr and
-// every file the run left under the global home (where the degrade sink writes), for the whole URL
-// and for its token segment.
+// token is a synthetic fixture (09 QA ruling 1), never a real one, and "never echoes" is asserted
+// over stdout, stderr and every file the run left under the global home (where the degrade sink
+// writes), for the whole token and for its third segment.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { chmod, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
@@ -19,7 +22,7 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { setDegradeSinkForTest } from "../../src/degrade.mjs";
 import { invoke, listCommands } from "../../src/command-core.mjs";
-import { isDiscordWebhookUrl } from "../../src/notify/discord.mjs";
+import * as discordModule from "../../src/notify/discord.mjs";
 import { CHANNELS, buildNotifyEnvelope, notify } from "../../src/notify/notify.mjs";
 import { messagingSecretPath, messagingSecretPresent, readMessagingSecret, writeMessagingSecret } from "../../src/notify/secret.mjs";
 import { messagingInitCommand, messagingStatusCommand } from "../../src/commands/messaging/messaging.mjs";
@@ -31,14 +34,19 @@ import {
 } from "../arch/testing/acd-source-directory-budget.test.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 
+const { isDiscordBotToken } = discordModule;
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BIN = path.join(repoRoot, "bin", "aof.mjs");
-const URL_A = "https://discord.com/api/webhooks/123/tok_EN-1";
-const TOKEN_A = "tok_EN-1";
-const URL_B = "https://discord.com/api/webhooks/456/tok_OVER-2";
-const TOKEN_B = "tok_OVER-2";
-const STORED = "https://discord.com/api/webhooks/123/stored";
-const OVERRIDE = "https://discord.com/api/webhooks/9/override";
+// The fixture token (09 QA ruling 1): base64url("123456789012345678"), `.AbCdEf.`, 27 base64url
+// characters. Its third segment is what a leak check greps for.
+const SEG_A = "a1B2c3D4e5F6g7H8i9J0k1L2m3N";
+const TOKEN_A = `MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.${SEG_A}`;
+const SEG_B = "z9Y8x7W6v5U4t3S2r1Q0p9O8n7M";
+const TOKEN_B = `OTg3NjU0MzIxMDk4NzY1NDMy.AbCdEf.${SEG_B}`;
+const CHANNEL = "123456789012345678";
+const INVITE = `https://discord.com/oauth2/authorize?client_id=${CHANNEL}&scope=bot+applications.commands&permissions=2147552320`;
+// A webhook URL, built from parts so this file never spells the path literal FF-13106 bans in src/**.
+const WEBHOOK_URL = ["https://discord.com/api", "webhooks", "123", "tok_EN-1"].join("/");
 const VERBS = ["init", "enable", "disable", "status"];
 
 // A fresh global home for the body, set on the process (the store's home is the PROCESS's) and
@@ -109,7 +117,7 @@ async function filesUnder(dir, skip) {
   await walk(dir);
   return out;
 }
-async function assertNothingLeaked(texts, home, secrets = [URL_A, TOKEN_A]) {
+async function assertNothingLeaked(texts, home, secrets = [TOKEN_A, SEG_A]) {
   const left = home == null ? [] : (await filesUnder(home, messagingSecretPath("discord", { AOF_GLOBAL_HOME: home }))).map((file) => file.text);
   for (const text of [...texts, ...left]) {
     for (const secret of secrets) assert.ok(!String(text).includes(secret), `nothing printed or logged contains ${secret}: ${String(text).slice(0, 300)}`);
@@ -121,15 +129,8 @@ function degradeSink() {
   setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
   return events;
 }
-async function codeOf(fn) {
-  try {
-    await fn();
-  } catch (error) {
-    return error;
-  }
-  return null;
-}
-const seams = ({ stdin = "", isTTY = false, answer = URL_A } = {}) => {
+const notifyEventsOf = (events) => events.filter((event) => String(event.code).startsWith("notify-"));
+const seams = ({ stdin = "", isTTY = false, answer = TOKEN_A } = {}) => {
   const prompts = [];
   return {
     prompts,
@@ -145,22 +146,27 @@ async function compileSchema() {
   return new Ajv2020({ allErrors: true, strict: false }).compile(schema);
 }
 
-// ── task 05's fixtures ─────────────────────────────────────────────────────────────────────────
+// ── the notifier's fixtures (08/05, 09/01-02) ──────────────────────────────────────────────────
 const NOW = () => new Date("2026-09-25T12:00:00.000Z");
 const ENVELOPE = buildNotifyEnvelope("session-needs-input", { ref: "131/08", phase: "build", elapsedMs: 1000, question: "Ship it?" }, { config: {}, now: NOW });
-const DISCORD_ON = Object.freeze({ config: { work: { notify: { channels: { discord: { type: "discord" } } } } } });
-function fetchSpy(status = 204) {
+const discordOn = (channel = { type: "discord", channelId: CHANNEL }) => Object.freeze({ config: { work: { notify: { channels: { discord: channel } } } } });
+const DISCORD_ON = discordOn();
+// A spy standing in for `fetch`: it records each call's URL, method, authorization and body, and
+// answers `status` with `json` as a JSON body.
+function fetchSpy({ status = 200, json = { id: "1" }, behaviour = null } = {}) {
   const calls = [];
-  const spy = async (url) => {
-    calls.push(url);
-    return { status, headers: { get: () => null }, json: async () => ({}) };
+  const spy = async (url, init) => {
+    calls.push({ url, method: init.method, authorization: init.headers.authorization, body: init.body == null ? null : JSON.parse(init.body) });
+    if (behaviour != null) return behaviour(url, init);
+    return { status, headers: { get: (name) => (name.toLowerCase() === "content-type" ? "application/json" : null) }, json: async () => json };
   };
   spy.calls = calls;
   return spy;
 }
+const auths = (spy) => spy.calls.map((call) => call.authorization);
 
 export const notifyMessagingTests = [
-  // ── task 00: the family is founded and registered ─────────────────────────────────────────────
+  // ── 08 task 00: the family is founded and registered ──────────────────────────────────────────
   {
     name: "131/08 task00 — the four messaging commands are routed, each at [\"messaging\", <verb>]",
     run() {
@@ -232,17 +238,17 @@ export const notifyMessagingTests = [
     },
   },
 
-  // ── task 01: the machine-wide, owner-only store ───────────────────────────────────────────────
+  // ── 08 task 01: the machine-wide, owner-only store ────────────────────────────────────────────
   {
-    name: "131/08 task01 — a written URL is read back from <AOF_GLOBAL_HOME>/messaging/discord.secret",
+    name: "131/08 task01 — a written secret is read back from <AOF_GLOBAL_HOME>/messaging/discord.secret",
     async run() {
       await withHome(async (home) => {
-        const written = await writeMessagingSecret("discord", URL_A);
+        const written = await writeMessagingSecret("discord", TOKEN_A);
         const expected = path.join(home, "messaging", "discord.secret");
         assert.equal(written.path, expected);
         assert.equal(messagingSecretPath("discord"), expected, "the path is the process's global home");
-        assert.equal(await readFile(expected, "utf8"), `${URL_A}\n`, "the URL and one trailing newline, nothing else");
-        assert.equal(await readMessagingSecret("discord"), URL_A);
+        assert.equal(await readFile(expected, "utf8"), `${TOKEN_A}\n`, "the token and one trailing newline, nothing else");
+        assert.equal(await readMessagingSecret("discord"), TOKEN_A);
         assert.equal(await messagingSecretPresent("discord"), true);
         const leftovers = (await readdir(path.dirname(expected))).filter((name) => name !== "discord.secret");
         assert.deepEqual(leftovers, [], "the atomic write leaves no temporary file");
@@ -258,13 +264,13 @@ export const notifyMessagingTests = [
         await writeFile(file, "old\n", "utf8");
         if (process.platform === "win32") {
           // Ruling 3: the file inherits the user profile's owner-only ACL; the write still replaces.
-          await writeMessagingSecret("discord", URL_A);
-          assert.equal(await readMessagingSecret("discord"), URL_A);
+          await writeMessagingSecret("discord", TOKEN_A);
+          assert.equal(await readMessagingSecret("discord"), TOKEN_A);
           return;
         }
         await chmod(file, 0o644);
         await chmod(path.dirname(file), 0o755);
-        await writeMessagingSecret("discord", URL_A);
+        await writeMessagingSecret("discord", TOKEN_A);
         assert.equal((await stat(file)).mode & 0o777, 0o600, "the file is 0600");
         assert.equal((await stat(path.dirname(file))).mode & 0o777, 0o700, "the directory is 0700");
       });
@@ -282,53 +288,57 @@ export const notifyMessagingTests = [
       });
     },
   },
+
+  // ── 09 task 00: the bot token enters by init, and init prints the invite ──────────────────────
   {
-    name: "131/08 task01 — the Discord URL shape (ten rows), and it is the discord channel's accepts",
+    name: "131/09 task00 — the bot token's shape (nine rows), and it is the discord channel's accepts",
     run() {
       for (const [value, accepted] of [
-        ["https://discord.com/api/webhooks/123/tok_EN-1", true],
-        ["https://discordapp.com/api/webhooks/123/tok", true],
-        ["https://ptb.discord.com/api/v10/webhooks/123/tok", true],
-        ["https://canary.discord.com/api/webhooks/123/tok", true],
-        ["http://discord.com/api/webhooks/123/tok", false],
-        ["https://discord.com/api/webhooks/abc/tok", false],
-        ["https://discord.com/api/webhooks/123/", false],
-        ["https://evil.example/api/webhooks/123/tok", false],
-        ["https://discord.com.evil.example/api/webhooks/1/t", false],
-        [" ", false],
+        [TOKEN_A, true],
+        [TOKEN_B, true],
+        [`${Buffer.from("12345678901234567").toString("base64url")}.x.y`, true],
+        [WEBHOOK_URL, false],
+        ["abc.def", false],
+        [`${Buffer.from("hello").toString("base64url")}.AbCdEf.${SEG_A}`, false],
+        [`${Buffer.from("1234567890123456").toString("base64url")}.AbCdEf.${SEG_A}`, false],
+        [`${TOKEN_A}.extra`, false],
+        [` ${TOKEN_A}`, false],
       ]) {
-        assert.equal(isDiscordWebhookUrl(value), accepted, value);
+        assert.equal(isDiscordBotToken(value), accepted, value);
       }
-      assert.equal(CHANNELS.discord.accepts, isDiscordWebhookUrl);
+      assert.equal(CHANNELS.discord.accepts, isDiscordBotToken);
     },
   },
-
-  // ── task 02: init reads a prompt or stdin, never argv ─────────────────────────────────────────
   {
-    name: "131/08 task02 — a URL piped on stdin is stored, and nothing printed contains it",
+    name: "131/09 task00 — a token piped on stdin is stored and the invite URL is printed; nothing printed carries its third segment",
     async run() {
       await withHome(async (home) => {
-        const run = cli(["messaging", "init", "discord"], { home, input: `${URL_A}\n` });
+        const run = cli(["messaging", "init", "discord"], { home, input: `${TOKEN_A}\n` });
         assert.equal(run.status, 0, run.stderr);
-        assert.equal(await readMessagingSecret("discord"), URL_A);
-        const [first, second] = run.stdout.trim().split("\n");
-        assert.equal(first, `Stored the Discord webhook for this machine at ${messagingSecretPath("discord")}.`);
-        assert.equal(second, "Switch it on per project with `aof messaging enable discord`.");
-        await assertNothingLeaked([run.stdout, run.stderr], home);
+        assert.equal(await readFile(path.join(home, "messaging", "discord.secret"), "utf8"), `${TOKEN_A}\n`, "exactly the token and a newline");
+        assert.deepEqual(run.stdout.trim().split("\n"), [
+          `Stored the Discord bot token for this machine at ${messagingSecretPath("discord")}.`,
+          `Invite the bot to your server: ${INVITE}`,
+          "Switch it on per project with `aof messaging enable discord --channel <id>`.",
+        ]);
+        const json = cli(["messaging", "init", "discord", "--json"], { home, input: `${TOKEN_A}\n` });
+        assert.deepEqual(jsonOf(json), { type: "discord", path: messagingSecretPath("discord"), replaced: true, inviteUrl: INVITE });
+        assert.match(jsonOf(json).inviteUrl, /client_id=123456789012345678&.*permissions=2147552320/u);
+        await assertNothingLeaked([run.stdout, run.stderr, json.stdout, json.stderr], home);
       });
     },
   },
   {
-    name: "131/08 task02 — on a TTY the prompt asks `Discord webhook URL:` through a password prompt, stores the URL, and nothing printed contains it",
+    name: "131/09 task00 — on a TTY the prompt asks `Discord bot token:` through a password prompt, stores the token, and nothing printed contains it",
     async run() {
       await withHome(async () => {
         const events = degradeSink();
         try {
-          const seam = seams({ isTTY: true, answer: URL_A });
+          const seam = seams({ isTTY: true, answer: TOKEN_A });
           const input = await messagingInitCommand.cli.argv(["discord"], {}, seam);
-          assert.deepEqual(seam.prompts, [{ message: "Discord webhook URL:" }], "the prompt seam was asked once, with the message");
+          assert.deepEqual(seam.prompts, [{ message: "Discord bot token:" }], "the prompt seam was asked once, with the label");
           const result = await invoke("messaging:init", input, {});
-          assert.equal(await readMessagingSecret("discord"), URL_A);
+          assert.equal(await readMessagingSecret("discord"), TOKEN_A);
           await assertNothingLeaked([messagingInitCommand.cli.render(result), JSON.stringify(messagingInitCommand.cli.json(result)), JSON.stringify(events)]);
           const source = stripComments(await readFile(path.join(repoRoot, "src", "commands", "messaging", "messaging.mjs"), "utf8"));
           assert.match(source, /const\s*\{\s*password\s*\}\s*=\s*await\s+import\("@inquirer\/prompts"\)/u, "the default seam is @inquirer/prompts' password");
@@ -340,78 +350,135 @@ export const notifyMessagingTests = [
     },
   },
   {
-    name: "131/08 task02 — a second init replaces the first and says Replaced; --json answers { type, path, replaced } with no URL",
+    name: "131/09 task00 — a second init replaces the first and says Replaced",
     async run() {
       await withHome(async (home) => {
-        await writeMessagingSecret("discord", URL_B);
-        const run = cli(["messaging", "init", "discord"], { home, input: `${URL_A}\n` });
+        await writeMessagingSecret("discord", TOKEN_B);
+        const run = cli(["messaging", "init", "discord"], { home, input: `${TOKEN_A}\n` });
         assert.equal(run.status, 0, run.stderr);
-        assert.equal(await readMessagingSecret("discord"), URL_A, "the stored URL is the new one");
-        assert.match(run.stdout, /^Replaced the Discord webhook/u);
-        const json = cli(["messaging", "init", "discord", "--json"], { home, input: `${URL_A}\n` });
-        assert.deepEqual(jsonOf(json), { type: "discord", path: messagingSecretPath("discord"), replaced: true });
-        await assertNothingLeaked([run.stdout, run.stderr, json.stdout, json.stderr], home);
+        assert.equal(await readMessagingSecret("discord"), TOKEN_A, "the stored token is the new one");
+        assert.match(run.stdout, /^Replaced the Discord bot token/u);
+        await assertNothingLeaked([run.stdout, run.stderr], home, [TOKEN_A, SEG_A, TOKEN_B, SEG_B]);
       });
     },
   },
   {
-    name: "131/08 task02 — a refused init stores nothing and echoes nothing (six rows)",
+    name: "131/09 task00 — what init refuses stores nothing and echoes nothing (seven rows)",
     async run() {
-      for (const [args, input, code] of [
-        [["discord", URL_A], "", "messaging-secret-in-argv"],
-        [["discord", TOKEN_A], "", "messaging-secret-in-argv"],
-        [["discord", `--url=${URL_A}`], "", "unknown-flag"],
-        [["discord"], "\n", "messaging-url-empty"],
-        [["discord"], "https://evil.example/api/webhooks/123/tok_EN-1", "messaging-url-invalid"],
-        [["discord"], "http://discord.com/api/webhooks/123/tok_EN-1", "messaging-url-invalid"],
+      const hello = `${Buffer.from("hello").toString("base64url")}.AbCdEf.${SEG_A}`;
+      for (const [args, input, code, secrets] of [
+        [["discord"], `${WEBHOOK_URL}\n`, "messaging-token-invalid", [WEBHOOK_URL, "tok_EN-1"]],
+        [["discord"], "abc.def\n", "messaging-token-invalid", ["abc.def"]],
+        [["discord"], `${hello}\n`, "messaging-token-invalid", [hello, SEG_A]],
+        [["discord"], "\n", "messaging-url-empty", []],
+        [["discord", TOKEN_A], "", "messaging-secret-in-argv", [TOKEN_A, SEG_A]],
+        [["discord", WEBHOOK_URL], "", "messaging-secret-in-argv", [WEBHOOK_URL, "tok_EN-1"]],
+        [["discord", `--token=${TOKEN_A}`], "", "unknown-flag", [TOKEN_A, SEG_A]],
       ]) {
         await withHome(async (home) => {
           for (const json of [false, true]) {
             const run = cli(["messaging", "init", ...args, ...(json ? ["--json"] : [])], { home, input });
             assert.notEqual(run.status, 0, `${args.join(" ")} exits non-zero`);
             if (json) assert.equal(jsonOf(run).code, code, `${args.join(" ")}: ${run.stdout}`);
-            await assertNothingLeaked([run.stdout, run.stderr], home);
+            await assertNothingLeaked([run.stdout, run.stderr], home, secrets);
           }
           assert.equal(await stat(messagingSecretPath("discord")).then(() => true, () => false), false, "no discord.secret exists");
         });
       }
+      await withHome(async (home) => {
+        const run = cli(["messaging", "init", "discord", "--json"], { home, input: `${WEBHOOK_URL}\n` });
+        const { error } = jsonOf(run);
+        assert.match(error, /bot token/u, `the refusal says the channel now takes a bot token: ${error}`);
+        assert.ok(error.includes("wiki/architecture/discord-notifications.md"), `and names the guide: ${error}`);
+      });
+    },
+  },
+  {
+    name: "131/09 task00 — the webhook helpers are gone: discord.mjs exports the token check, the door, the sender and the renderer",
+    run() {
+      for (const name of ["isDiscordBotToken", "discordRequest", "sendDiscord", "renderDiscord"]) {
+        assert.equal(typeof discordModule[name], "function", `discord.mjs exports ${name}`);
+      }
+      assert.equal(Object.hasOwn(discordModule, "isDiscordWebhookUrl"), false, "and no isDiscordWebhookUrl");
     },
   },
 
-  // ── task 03: enable and disable write only work.notify ────────────────────────────────────────
+  // ── 08 task 03 / 09 task 01: enable and disable write only work.notify ────────────────────────
   {
-    name: "131/08 task03 — enable adds { channels: { discord: { type: \"discord\" } } } and nothing else, and the file validates; disable removes it",
+    name: "131/09 task01 — enable --channel writes { type, channelId } and nothing else, and the file validates; disable removes it",
     async run() {
       const validate = await compileSchema();
       await withHome(async () => {
         await withProject(baseConfig(), async ({ root, configPath }) => {
           const before = JSON.parse(await readFile(configPath, "utf8"));
-          await invoke("messaging:enable", { type: "discord", targetDir: root }, {});
+          await invoke("messaging:enable", { type: "discord", targetDir: root, channelId: CHANNEL }, {});
           const enabled = JSON.parse(await readFile(configPath, "utf8"));
-          assert.deepEqual(enabled.work.notify, { channels: { discord: { type: "discord" } } });
+          assert.deepEqual(enabled.work.notify, { channels: { discord: { type: "discord", channelId: CHANNEL } } });
           assert.deepEqual(withoutNotify(enabled), withoutNotify(before), "every other key is unchanged");
           assert.ok(validate(enabled), JSON.stringify(validate.errors));
           await invoke("messaging:disable", { type: "discord", targetDir: root }, {});
           const disabled = JSON.parse(await readFile(configPath, "utf8"));
           assert.equal(Object.hasOwn(disabled.work, "notify"), false, "no work.notify key");
           assert.deepEqual(disabled, before, "every other key is unchanged");
-          for (const text of [JSON.stringify(enabled), JSON.stringify(disabled)]) assert.doesNotMatch(text, /"(?:url|webhook|token)"/iu, "no url, webhook or token key");
+          for (const text of [JSON.stringify(enabled), JSON.stringify(disabled)]) assert.doesNotMatch(text, /"(?:url|webhook|token|urlEnv)"/iu, "no url, webhook, token or urlEnv key");
         });
       });
     },
   },
   {
-    name: "131/08 task03 — a hand-named channel is respected: enable is byte-unchanged and says already enabled",
+    name: "131/09 task01 — the CLI's --channel flag reaches the write",
+    async run() {
+      await withHome(async (home) => {
+        await withProject(baseConfig(), async ({ root, configPath }) => {
+          const run = cli(["messaging", "enable", "discord", "--channel", CHANNEL], { home, cwd: root });
+          assert.equal(run.status, 0, run.stderr);
+          assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")).work.notify, { channels: { discord: { type: "discord", channelId: CHANNEL } } });
+        });
+      });
+    },
+  },
+  {
+    name: "131/09 task01 — what enable refuses leaves the config unchanged (three rows)",
+    async run() {
+      await withHome(async (home) => {
+        for (const [argv, code] of [
+          [["messaging", "enable", "discord"], "messaging-channel-id-required"],
+          [["messaging", "enable", "discord", "--channel", "12ab"], "messaging-channel-id-invalid"],
+          [["messaging", "enable", "discord", "--channel", "123"], "messaging-channel-id-invalid"],
+        ]) {
+          await withProject(baseConfig(), async ({ root, configPath }) => {
+            const bytes = await readFile(configPath);
+            const run = cli([...argv, "--json"], { home, cwd: root });
+            assert.notEqual(run.status, 0, argv.join(" "));
+            assert.equal(jsonOf(run).code, code, `${argv.join(" ")}: ${run.stdout}`);
+            assert.ok((await readFile(configPath)).equals(bytes), "the config is unchanged");
+          });
+        }
+      });
+    },
+  },
+  {
+    name: "131/09 task01 — the same id changes nothing, a different id adds discord-2, and a channel 08 left without an id is completed in place (three rows)",
     async run() {
       await withHome(async () => {
-        const block = { channels: { ops: { type: "discord", urlEnv: "OPS_HOOK", events: ["loop-halted"] } } };
-        await withProject(baseConfig(block), async ({ root, configPath }) => {
-          const bytes = await readFile(configPath);
-          const result = await invoke("messaging:enable", { type: "discord", targetDir: root }, {});
-          assert.ok((await readFile(configPath)).equals(bytes), "the file is byte-unchanged");
-          assert.equal(result.changed, false);
-          assert.match(result.notes.join("\n"), /already enabled/u);
-        });
+        const other = "876543210987654321";
+        for (const [before, id, after, changed] of [
+          [{ channels: { discord: { type: "discord", channelId: CHANNEL, events: ["loop-halted"] } } }, CHANNEL, null, false],
+          [{ channels: { discord: { type: "discord", channelId: CHANNEL } } }, other, { channels: { discord: { type: "discord", channelId: CHANNEL }, "discord-2": { type: "discord", channelId: other } } }, true],
+          [{ channels: { discord: { type: "discord", urlEnv: "OLD_HOOK", events: ["loop-halted"] } } }, CHANNEL, { channels: { discord: { type: "discord", events: ["loop-halted"], channelId: CHANNEL } } }, true],
+        ]) {
+          await withProject(baseConfig(before), async ({ root, configPath }) => {
+            const bytes = await readFile(configPath);
+            const result = await invoke("messaging:enable", { type: "discord", targetDir: root, channelId: id }, {});
+            assert.equal(result.changed, changed, JSON.stringify(before));
+            if (!changed) {
+              assert.ok((await readFile(configPath)).equals(bytes), "byte-unchanged");
+              assert.match(result.notes.join("\n"), /already enabled/u);
+            } else {
+              assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")).work.notify, after, JSON.stringify(before));
+            }
+          });
+        }
       });
     },
   },
@@ -420,8 +487,8 @@ export const notifyMessagingTests = [
     async run() {
       await withHome(async () => {
         for (const [before, after, unchanged] of [
-          [{ channels: { discord: { type: "discord" } }, link: "https://x.test/{ref}" }, { channels: {}, link: "https://x.test/{ref}" }, false],
-          [{ channels: { a: { type: "discord" }, b: { type: "discord", urlEnv: "B" } } }, undefined, false],
+          [{ channels: { discord: { type: "discord", channelId: CHANNEL } }, link: "https://x.test/{ref}" }, { channels: {}, link: "https://x.test/{ref}" }, false],
+          [{ channels: { a: { type: "discord", channelId: CHANNEL }, b: { type: "discord", channelId: CHANNEL, tokenEnv: "B" } } }, undefined, false],
           [{ channels: {} }, { channels: {} }, true],
         ]) {
           await withProject(baseConfig(before), async ({ root, configPath }) => {
@@ -443,12 +510,12 @@ export const notifyMessagingTests = [
     async run() {
       for (const stored of [false, true]) {
         await withHome(async () => {
-          if (stored) await writeMessagingSecret("discord", URL_A);
+          if (stored) await writeMessagingSecret("discord", TOKEN_A);
           await withProject(baseConfig(), async ({ root }) => {
-            const result = await invoke("messaging:enable", { type: "discord", targetDir: root }, {});
+            const result = await invoke("messaging:enable", { type: "discord", targetDir: root, channelId: CHANNEL }, {});
             const text = result.notes.join("\n");
-            assert.equal(text.includes("No webhook is stored on this machine yet"), !stored, text);
-            if (!stored) assert.ok(text.includes("No webhook is stored on this machine yet — run `aof messaging init discord`."));
+            assert.equal(text.includes("No Discord bot token is stored on this machine yet"), !stored, text);
+            if (!stored) assert.ok(text.includes("No Discord bot token is stored on this machine yet — run `aof messaging init discord`."));
           });
         });
       }
@@ -459,7 +526,7 @@ export const notifyMessagingTests = [
     async run() {
       await withHome(async (home) => {
         await withProject(null, async ({ root }) => {
-          const run = cli(["messaging", "enable", "discord", "--json"], { home, cwd: root });
+          const run = cli(["messaging", "enable", "discord", "--channel", CHANNEL, "--json"], { home, cwd: root });
           assert.notEqual(run.status, 0);
           assert.equal(jsonOf(run).code, "messaging-no-project");
           assert.deepEqual(await readdir(root), [], "no file is created");
@@ -468,26 +535,27 @@ export const notifyMessagingTests = [
     },
   },
 
-  // ── task 04: status says whether, never what ──────────────────────────────────────────────────
+  // ── 08 task 04 / 09 task 03: status says whether, never what ──────────────────────────────────
   {
-    name: "131/08 task04 — status never shows the value, in text or JSON",
+    name: "131/09 task03 — status reports the bot and each channel id, and never the token, in text or JSON",
     async run() {
       await withHome(async () => {
-        await writeMessagingSecret("discord", URL_A);
-        await withProject(baseConfig({ channels: { discord: { type: "discord" } } }), async ({ root }) => {
-          const result = await invoke("messaging:status", { targetDir: root }, { env: { AOF_DISCORD_WEBHOOK_URL: URL_B } });
-          const entry = result.channels.find((channel) => channel.type === "discord");
+        await writeMessagingSecret("discord", TOKEN_A);
+        await withProject(baseConfig({ channels: { discord: { type: "discord", channelId: CHANNEL } } }), async ({ root }) => {
+          const result = await invoke("messaging:status", { targetDir: root }, { env: {} });
+          const [entry] = result.channels;
+          assert.equal(entry.type, "discord");
           assert.equal(entry.stored, true);
-          assert.deepEqual(entry.envOverride, { name: "AOF_DISCORD_WEBHOOK_URL", set: true });
-          assert.deepEqual(entry.project, { enabled: true, channels: ["discord"] });
+          assert.deepEqual(entry.envOverride, { name: "AOF_DISCORD_BOT_TOKEN", set: false });
+          assert.deepEqual(entry.project, { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0] });
           const text = messagingStatusCommand.cli.render(result);
           assert.equal(text, [
             "discord",
             `  this machine: set (${messagingSecretPath("discord")})`,
-            "  env override AOF_DISCORD_WEBHOOK_URL: set",
-            "  this project: enabled (discord)",
+            "  env override AOF_DISCORD_BOT_TOKEN: not set",
+            `  this project: enabled (discord → ${CHANNEL})`,
           ].join("\n"));
-          await assertNothingLeaked([text, JSON.stringify(messagingStatusCommand.cli.json(result))], null, [URL_A, TOKEN_A, URL_B, TOKEN_B]);
+          await assertNothingLeaked([text, JSON.stringify(messagingStatusCommand.cli.json(result))], null);
         });
       });
     },
@@ -495,24 +563,26 @@ export const notifyMessagingTests = [
   {
     name: "131/08 task04 — the three facts (four rows), and status is a report that exits 0",
     async run() {
+      const ON = { channels: { discord: { type: "discord", channelId: CHANNEL } } };
       for (const [stored, env, notifyBlock, expected] of [
         [false, {}, null, { stored: false, set: false, project: null }],
-        [true, {}, { channels: { discord: { type: "discord" } } }, { stored: true, set: false, project: { enabled: true, channels: ["discord"] } }],
-        [false, { AOF_DISCORD_WEBHOOK_URL: URL_B }, undefined, { stored: false, set: true, project: { enabled: false, channels: [] } }],
-        [true, { AOF_DISCORD_WEBHOOK_URL: "  " }, { channels: { discord: { type: "discord" } } }, { stored: true, set: false, project: { enabled: true, channels: ["discord"] } }],
+        [true, {}, ON, { stored: true, set: false, project: { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0] } }],
+        [false, { AOF_DISCORD_BOT_TOKEN: TOKEN_B }, undefined, { stored: false, set: true, project: { enabled: false, channels: [], channelIds: [], allowCounts: [] } }],
+        [true, { AOF_DISCORD_BOT_TOKEN: "  " }, ON, { stored: true, set: false, project: { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0] } }],
       ]) {
         await withHome(async () => {
-          if (stored) await writeMessagingSecret("discord", URL_A);
+          if (stored) await writeMessagingSecret("discord", TOKEN_A);
           await withProject(notifyBlock === null ? null : baseConfig(notifyBlock), async ({ root }) => {
             const result = await invoke("messaging:status", { targetDir: root }, { env });
             const entry = result.channels.find((channel) => channel.type === "discord");
             assert.deepEqual({ stored: entry.stored, set: entry.envOverride.set, project: entry.project }, expected, JSON.stringify({ stored, env, notifyBlock }));
+            await assertNothingLeaked([JSON.stringify(result), messagingStatusCommand.cli.render(result)], null, [TOKEN_A, SEG_A, TOKEN_B, SEG_B]);
           });
         });
       }
       await withHome(async (home) => {
         await withProject(null, async ({ root }) => {
-          const run = cli(["messaging", "status"], { home, cwd: root, env: { AOF_DISCORD_WEBHOOK_URL: "" } });
+          const run = cli(["messaging", "status"], { home, cwd: root, env: { AOF_DISCORD_BOT_TOKEN: "" } });
           assert.equal(run.status, 0, run.stderr);
           assert.match(run.stdout, /this machine: not set — run `aof messaging init discord`/u);
           assert.match(run.stdout, /this project: no project here/u);
@@ -521,28 +591,52 @@ export const notifyMessagingTests = [
     },
   },
   {
-    name: "131/08 task04 — a hand-named channel's env var is the one reported",
+    name: "131/08 task04 — a hand-named channel's env var is the one reported, and a channel left without an id says how to set one",
     async run() {
       await withHome(async () => {
-        await withProject(baseConfig({ channels: { ops: { type: "discord", urlEnv: "OPS_HOOK" } } }), async ({ root }) => {
+        await withProject(baseConfig({ channels: { ops: { type: "discord", tokenEnv: "OPS_BOT" } } }), async ({ root }) => {
           const result = await invoke("messaging:status", { targetDir: root }, { env: {} });
           const entry = result.channels.find((channel) => channel.type === "discord");
-          assert.equal(entry.envOverride.name, "OPS_HOOK");
-          assert.deepEqual(entry.project.channels, ["ops"]);
+          assert.equal(entry.envOverride.name, "OPS_BOT");
+          assert.deepEqual(entry.project, { enabled: true, channels: ["ops"], channelIds: [null], allowCounts: [0] });
+          assert.match(messagingStatusCommand.cli.render(result), /ops → no channel id — run `aof messaging enable discord --channel <id>`/u);
         });
       });
     },
   },
 
-  // ── task 05: the notifier reads the store at the point of send ────────────────────────────────
   {
-    name: "131/08 task05 — a stored URL is used when the env var is unset",
+    name: "131/10 (ADR-007 §7) — status reports how many user ids may answer by reply on each channel, never the ids",
     async run() {
       await withHome(async () => {
-        await writeMessagingSecret("discord", URL_A);
-        const spy = fetchSpy();
-        assert.deepEqual(await notify(DISCORD_ON, ENVELOPE, { env: {}, fetch: spy }), { delivered: ["discord"], failed: [] });
-        assert.deepEqual(spy.calls, [URL_A], "the fetch was called with the stored URL");
+        const allow = ["222222222222222222", "333333333333333333"];
+        await withProject(baseConfig({ channels: { discord: { type: "discord", channelId: CHANNEL, allow } } }), async ({ root }) => {
+          const result = await invoke("messaging:status", { targetDir: root }, { env: {} });
+          assert.deepEqual(result.channels[0].project.allowCounts, [2]);
+          const text = messagingStatusCommand.cli.render(result);
+          assert.ok(text.includes("this project: enabled (discord → 123456789012345678, 2 may answer by reply)"), text);
+          for (const id of allow) assert.ok(!text.includes(id) && !JSON.stringify(result).includes(id), "no user id is shown");
+        });
+      });
+    },
+  },
+
+  // ── 08 task 05 / 09 tasks 01-02: the notifier reads the store at the point of send ────────────
+  {
+    name: "131/09 task02 — a notification is posted by the bot to the configured channel, and notify answers the posted message's id",
+    async run() {
+      await withHome(async () => {
+        await writeMessagingSecret("discord", TOKEN_A);
+        const spy = fetchSpy({ json: { id: "998877665544332211" } });
+        const answer = await notify(DISCORD_ON, ENVELOPE, { env: {}, fetch: spy });
+        assert.deepEqual(answer, { delivered: ["discord"], failed: [], messages: [{ channel: "discord", channelId: CHANNEL, messageId: "998877665544332211" }] });
+        assert.equal(spy.calls.length, 1);
+        const [call] = spy.calls;
+        assert.equal(call.method, "POST");
+        assert.equal(call.url, `https://discord.com/api/v10/channels/${CHANNEL}/messages`);
+        assert.equal(call.authorization, `Bot ${TOKEN_A}`);
+        assert.ok(typeof call.body.content === "string" && call.body.content.length > 0, "the body holds content");
+        assert.deepEqual(call.body.allowed_mentions, { parse: [] }, "and allowed_mentions");
       });
     },
   },
@@ -554,11 +648,11 @@ export const notifyMessagingTests = [
         try {
           const workspace = { config: structuredClone(DISCORD_ON.config) };
           const spy = fetchSpy();
-          assert.deepEqual(await notify(workspace, ENVELOPE, { env: {}, fetch: spy }), { delivered: [], failed: ["discord"] });
-          assert.deepEqual(events.filter((e) => String(e.code).startsWith("notify-")).map((e) => e.code), ["notify-channel-unconfigured"]);
-          await writeMessagingSecret("discord", URL_A);
-          assert.deepEqual(await notify(workspace, ENVELOPE, { env: {}, fetch: spy }), { delivered: ["discord"], failed: [] });
-          assert.deepEqual(spy.calls, [URL_A]);
+          assert.deepEqual(await notify(workspace, ENVELOPE, { env: {}, fetch: spy }), { delivered: [], failed: ["discord"], messages: [] });
+          assert.deepEqual(notifyEventsOf(events).map((e) => e.code), ["notify-channel-unconfigured"]);
+          await writeMessagingSecret("discord", TOKEN_A);
+          assert.deepEqual((await notify(workspace, ENVELOPE, { env: {}, fetch: spy })).delivered, ["discord"]);
+          assert.deepEqual(auths(spy), [`Bot ${TOKEN_A}`]);
         } finally {
           setDegradeSinkForTest(undefined);
         }
@@ -566,12 +660,13 @@ export const notifyMessagingTests = [
     },
   },
   {
-    name: "131/08 task05 — which URL a send uses (four rows); the env override wins, a blank one does not",
+    name: "131/09 task02 — which token a send uses (five rows); the env override wins, a blank one does not, and a stored webhook URL is not a token",
     async run() {
       for (const [stored, env, expected] of [
-        [STORED, undefined, [STORED]],
-        [STORED, OVERRIDE, [OVERRIDE]],
-        [STORED, "   ", [STORED]],
+        [TOKEN_A, undefined, [`Bot ${TOKEN_A}`]],
+        [TOKEN_A, TOKEN_B, [`Bot ${TOKEN_B}`]],
+        [TOKEN_A, "   ", [`Bot ${TOKEN_A}`]],
+        [WEBHOOK_URL, undefined, []],
         [null, undefined, []],
       ]) {
         await withHome(async () => {
@@ -579,13 +674,63 @@ export const notifyMessagingTests = [
           try {
             if (stored != null) await writeMessagingSecret("discord", stored);
             const spy = fetchSpy();
-            await notify(DISCORD_ON, ENVELOPE, { env: env === undefined ? {} : { AOF_DISCORD_WEBHOOK_URL: env }, fetch: spy });
-            assert.deepEqual(spy.calls, expected, JSON.stringify({ stored, env }));
+            await notify(DISCORD_ON, ENVELOPE, { env: env === undefined ? {} : { AOF_DISCORD_BOT_TOKEN: env }, fetch: spy });
+            assert.deepEqual(auths(spy), expected, JSON.stringify({ stored, env }));
             if (expected.length === 0) {
-              const seen = events.filter((e) => e.code === "notify-channel-unconfigured");
-              assert.equal(seen.length, 1);
-              assert.equal(seen[0].message, "notify channel \"discord\" has no webhook URL — set AOF_DISCORD_WEBHOOK_URL or run `aof messaging init discord`", "the degrade names both remedies");
+              const seen = notifyEventsOf(events);
+              assert.deepEqual(seen.map((e) => e.code), ["notify-channel-unconfigured"]);
+              assert.ok(seen[0].message.includes("aof messaging init discord"), `the degrade names init: ${seen[0].message}`);
+              assert.ok(!JSON.stringify(seen).includes("tok_EN-1"), "and never the stored value");
             }
+          } finally {
+            setDegradeSinkForTest(undefined);
+          }
+        });
+      }
+    },
+  },
+  {
+    name: "131/09 task01 — a channel left without an id degrades by name at send, and the fetch is not called",
+    async run() {
+      await withHome(async () => {
+        const events = degradeSink();
+        try {
+          await writeMessagingSecret("discord", TOKEN_A);
+          const spy = fetchSpy();
+          const envelope = buildNotifyEnvelope("milestone-accepted", { ref: "131", outcome: { title: "T" } }, { config: {}, now: NOW });
+          const answer = await notify(discordOn({ type: "discord" }), envelope, { env: {}, fetch: spy });
+          assert.deepEqual(answer.failed, ["discord"]);
+          assert.equal(spy.calls.length, 0, "the fetch was not called");
+          const seen = notifyEventsOf(events);
+          assert.deepEqual(seen.map((e) => e.code), ["notify-channel-unconfigured"]);
+          assert.ok(seen[0].message.includes("aof messaging enable discord --channel <id>"), seen[0].message);
+        } finally {
+          setDegradeSinkForTest(undefined);
+        }
+      });
+    },
+  },
+  {
+    name: "131/09 task02 — a failed post degrades by name, resolves with no message and never carries the token (five rows)",
+    async run() {
+      const reply = (status, json = {}) => ({ status, headers: { get: () => "application/json" }, json: async () => json });
+      for (const [label, behaviour, code, named] of [
+        ["401", () => reply(401), "notify-delivery-failed", "401"],
+        ["403", () => reply(403), "notify-delivery-failed", "403"],
+        ["429", () => reply(429, { retry_after: 1.5 }), "notify-rate-limited", "1.5"],
+        ["throws TypeError", () => { throw new TypeError(`fetch failed ${TOKEN_A}`); }, "notify-delivery-failed", "TypeError"],
+        ["hangs", () => new Promise(() => {}), "notify-delivery-failed", "50ms"],
+      ]) {
+        await withHome(async () => {
+          const events = degradeSink();
+          try {
+            await writeMessagingSecret("discord", TOKEN_A);
+            const answer = await notify(DISCORD_ON, ENVELOPE, { env: {}, fetch: fetchSpy({ behaviour }), timeoutMs: 50 });
+            assert.deepEqual({ failed: answer.failed, messages: answer.messages }, { failed: ["discord"], messages: [] }, label);
+            const seen = notifyEventsOf(events);
+            assert.deepEqual(seen.map((e) => e.code), [code], label);
+            assert.ok(seen[0].message.includes(named), `${label}: names ${named} in ${seen[0].message}`);
+            await assertNothingLeaked([JSON.stringify(seen), JSON.stringify(answer)], null);
           } finally {
             setDegradeSinkForTest(undefined);
           }
@@ -599,7 +744,7 @@ export const notifyMessagingTests = [
       await withHome(async () => {
         const elsewhere = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-messaging-elsewhere-")));
         try {
-          await writeMessagingSecret("discord", URL_A, { env: { AOF_GLOBAL_HOME: elsewhere } });
+          await writeMessagingSecret("discord", TOKEN_A, { env: { AOF_GLOBAL_HOME: elsewhere } });
           const spy = fetchSpy();
           await notify(DISCORD_ON, ENVELOPE, { env: { AOF_GLOBAL_HOME: elsewhere }, fetch: spy });
           assert.deepEqual(spy.calls, [], "the process's home holds nothing, so nothing is sent");

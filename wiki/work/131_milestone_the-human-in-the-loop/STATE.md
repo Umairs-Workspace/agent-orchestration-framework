@@ -19,8 +19,12 @@ doc: state
 - [x] 04 the answer reaches the session
 - [x] 05 the board shows the question and takes the answer
 - [x] 06 the register
-- [ ] 07 the live run (`@manual`) — re-refined for 08; operator procedure pending
+- [ ] 07 the live run (`@manual`) — 09–12 accepted; waits on its re-refine for the bot, then the operator
 - [x] 08 the messaging CLI
+- [x] 09 the bot posts
+- [x] 10 answer by replying in Discord
+- [x] 11 slash commands
+- [x] 12 a worker's ask reaches Discord
 
 ## Notes & decisions in flight
 
@@ -404,6 +408,38 @@ leg 1). Open 03/01 on the board, reached your usual way.
 - And each block carries its `verifies →` pointer — check: `______`
 - And no block carries the webhook URL — check: `______`
 
+- **The bot moves in scope (operator, 2026-09-25).** aof gets its own Discord bot, so that aof is
+  an account in Discord and can be answered from it. Decisions: it posts every notification and
+  REPLACES the webhook; an answer is a Discord REPLY to the ask message (needs the privileged
+  Message Content intent); only an ALLOWLIST of Discord user IDs may answer or command; the first
+  commands are `/status`, `/asks`, `/loop stop` and `/loop resume`; there is ONE bot for the mesh,
+  on the control node, so a worker's ask is carried there. These are stories 09–12. 07 waits on
+  them and is re-refined to prove the bot. The SPEC's out-of-scope "Answering FROM Discord" is
+  struck. The Discord API facts in each STORY's Notes were checked against the developer docs.
+
+- **09–12 refined (2026-09-25, `aof:refine 131/09-12 --solo`).** ADR-007 … ADR-010 were written
+  first, and the Decide stage closed before any contract. ADR-005 is delivered, so it carries a
+  "superseded in part" pointer and is not edited. Decisions the operator should know:
+  - **The bot replaces the webhook outright (ADR-007).** `discord.secret` now holds a bot token.
+    `enable discord` REQUIRES `--channel <id>`, so a project enabled under 08 must re-run it.
+    `urlEnv` becomes `tokenEnv` (`AOF_DISCORD_BOT_TOKEN`). `init` prints the invite URL offline,
+    with permissions `2147552320`.
+  - **The control's serve daemon holds the one gateway connection (ADR-008).** It starts only on
+    the control node with a token. It RESUMEs on reconnect, and stops on a fatal close.
+    Posting never needs it.
+  - **The reply → ask mapping is a message index written by the notifier** (`src/notify/ask-messages.mjs`).
+    It is not on the ask file or the run record. The allowlist is
+    `work.notify.channels.<name>.allow`, absent by default, which means nobody answers from Discord.
+  - **`/loop resume` hands off to the supervisor (ADR-009 §6).** A new `work:loop --hand-off`
+    writes a durable resume request, which the declarations reader honours. The bot starts no
+    process, and an unsupervised loop is refused with the terminal command.
+  - **A worker's ask rides the existing park fact as one additive `ask` key (ADR-010).** It is
+    not a new frame. The control posts it once, on the edge into `needs-input`, with the worker's
+    node. This departs from ADR-005 §4's no-reactor rule, for the reason stated there.
+  - **12 now depends on 10** (PO ruling): its "answerable by reply" is 10's path.
+  - **Order: 09 → 10 → (11 ∥ 12).** 11 and 12 share only `VERIFICATION.md`.
+  - **Graph unavailable:** `aof graph build .` timed out (`graphify-timeout`), so the boundaries
+    were drawn from reading the source.
 ## Feedback (for retro)
 
 <!-- Raw, attributed entries; triaged into VERIFICATION.md / RETROSPECTIVE.md at aof:verify. -->
@@ -672,10 +708,151 @@ leg 1). Open 03/01 on the board, reached your usual way.
   08's `messaging` precondition and after F-131-02's identity re-pin. (3) `aof work regression-gate 131` needs a
   clean checkout, and this one carries 130/134/137 work. (4) F-131-03 (FF-11903 57/55) reds that gate.
   F-131-06 (`createAskPoll`) waits on the operator's ruling.
+- **(refine 131/09-12, 2026-09-25, solo)** Four stories were refined in one session. The four
+  ADRs came first (ADR-007 … ADR-010), then 25 task contracts, each story validated after its
+  authoring pass. Two contract corrections were caught by reading the source before handing
+  back, not after:
+  - 130's stop verb answers a refusal as a VALUE, and its `by` is the daemon's `{ node, pid }`,
+    not a caller-set actor. 11/03 and 11/04 were rewritten to match.
+  - `test/support/` is a counted row at its ceiling, so 10's shared Discord fixture lives in the
+    new `test/discord/` exemption instead.
+  Lesson: a story authored against a sibling milestone's verb should read that verb's refusal
+  shape and actor field before writing a Then line about them.
+- **(continue 131/09, 2026-09-25, solo)** 09 was built and reviewed inline. Its six tasks are green,
+  and FF-13106 (amended) and FF-13110 are green and red-probed.
+  - **The declared `files:` was incomplete.** Five suites outside it built webhook-era notify
+    fixtures (`urlEnv` plus a webhook URL) and would have gone red: `acd-loop-ask-waits-in-place`,
+    `loop-command-reconcile`, `loop-command-stops`, `loop-command-wave` and
+    `run-session-limit-resume`. They were moved to a synthetic bot token with `channelId`, and they
+    were added to 09's `files:`. Lesson for refine: a change to a shared fixture SHAPE (a config
+    key) has readers wherever the shape is built. Grep for the key, not only for the module's
+    importers.
+  - **Default decisions (PO to ratify at verify):**
+    - `enable --channel` over a channel that 08 left with no id completes it in place and drops its
+      `urlEnv`, rather than adding a `discord-2` that would degrade on every send. The ruling
+      covers only the same id and a different id.
+    - `status --json`'s `project.channelIds` runs parallel to `project.channels`, with `null` for
+      a channel that has no id. The human render names the enable command for it.
+    - The send validates `channelId` as a snowflake before it builds the route, so a hand-edited
+      id can never steer the bot's request to another path.
+  - **Review close (architect, QA and craft, all inline):**
+    - `fixed`: a 2xx whose body read hung past the bound was reported as `notify-delivery-failed`
+      for a message Discord had posted. The bound now answers a 2xx as delivered with no id, and a
+      case pins it.
+    - `recorded` (Nit): `src/notify/secret.mjs`'s comments still say "URL", because the store is
+      value-agnostic and the file is outside 09's `files:`.
+    - `recorded` (Nit): the bot's `User-Agent` spells the version `0.1.0` rather than reading
+      `package.json`.
+- **(continue 131/10, 2026-09-25, solo)** 10 was built and reviewed inline. Its seven tasks are green,
+  FF-13111 and FF-13112 are green and red-probed, and the `test/arch/loop` row reads 66.
+  - **Two controls outside the declared set had to move with it.**
+    - FF-13106's read leg allowed only `secret.mjs` to read a file inside `src/notify/`. The index
+      (`ask-messages.mjs`, ADR-008 §4) reads its own records there, so the leg now admits it and
+      asserts that it never reads the secret. The register records it as amended at 131/10.
+    - FF-11901 (one import-extractor home) caught a hand-rolled `import { … } from` regex in the new
+      arch file. It was rewritten on `importSpecifiers`.
+    - Both files, `notify-messaging` and `messaging.mjs` were added to 10's `files:`. Lesson for
+      refine: a new module in a family that a fitness function sweeps should list that control's
+      file.
+  - **Default decisions (PO to ratify at verify):**
+    - The bot starts only when the daemon starts. A token stored later needs one desktop-app
+      restart, and the guide says so. The PO ruling (2) covers projects enabled later, not the token.
+    - A reply's "how long ago" is Discord's own `<t:…:R>` timestamp, so no second elapsed ladder
+      exists outside `form.mjs` (FF-13108).
+    - The launcher reads the override from `options.env ?? process.env`.
+  - **Review close (architect, QA and craft, all inline):**
+    - `fixed`: ADR-007 §7 says `messaging status` reports each channel's allowlist size, and no
+      contract carried it (09 predates `allow`). `status` now answers `project.allowCounts`, and the
+      human line reads `… , N may answer by reply`. No id is shown. A case pins it.
+    - `recorded` (Nit): `replies.mjs` restates `work:answer`'s 80-code-point actor bound to clip the
+      username. The verb still enforces it.
+    - `recorded`: the launcher suites' `startLauncher` callers now see a `discord-bot-off` info
+      warning on a control node. All 20 suites stay green, and `global-work-propagation` was not run
+      because it binds the live `:4182`.
+- **(continue 131/11, 2026-09-25, solo)** 11 was built and reviewed inline. Its seven tasks are green,
+  and FF-13113 is green and red-probed four ways.
+  - **Delivered controls amended, each naming 131/11:**
+    - 126's FF-12602 (`acd-loop-narrates-in-flight`): the shell now has twelve in-flight lines,
+      the new one being the resume request's clear. `work:loop`'s schema and flags gain `handOff`,
+      and `launch({ handOff })` is `null`.
+    - 130's FF-13003 pin on `run` admits the hand-off branch ahead of the stop, and FF-13001 owns
+      `loop-resumes` beside `loop-stops`.
+    - 131's FF-13108 admits `src/discord/commands.mjs` as a `form.mjs` importer (ADR-009 §5).
+    - None of these files was in 11's `files:`. They were added, together with `src/loop/stop.mjs`
+      (the shared declaration read and `handOffLoop`), `ask-messages.mjs` (`findAskMessage` for
+      `/asks`'s link) and the launcher (the bot now takes the daemon's workspace and node id).
+  - **Default decisions (PO to ratify at verify):**
+    - The hand-off core sits beside `stopLoop` in `src/loop/stop.mjs`, and both read the scope's
+      declaration through one function.
+    - A bad scope is refused `loop-hand-off-scope`, a fourth code beside the three the contract
+      names.
+    - A `workspace:` option that names none of the kept projects is refused
+      `discord-scope-ambiguous`, listing them.
+    - `/loop stop`'s refusal reads `/loop stop <scope> was refused (<code>): <message>`.
+  - **Review close (architect, QA and craft, all inline):**
+    - `fixed` (Important): the hand-off had no `not-local` check. `stopLoop` refuses a declaration
+      whose latest run names another node, and `handOffLoop` would have written a request that
+      this node's supervisor then relaunched locally. It now refuses `loop-hand-off-not-local`,
+      mirroring the stop (130/ADR-006 §1), and a CLI refusal row pins it.
+    - `recorded` (Nit): `statusLine` builds an array for what is at most two parts.
+- **(continue 131/12, 2026-09-25, solo)** 12 was built and reviewed inline. Its five tasks are green,
+  FF-13114 is green, FF-13107 moves to seven sites, and both are red-probed.
+  - **Delivered behaviour superseded on purpose:** 04's case "no notification on the mesh leg" now
+    expects the one `session-answered` post that ADR-010 §5 adds. The store's version pins moved
+    9 → 10 with the reason "131/ADR-010: the ask column", as `code` moved them to 7. The
+    "a newer store is refused" case now stamps 11.
+  - **Default decisions (PO to ratify at verify):**
+    - `announceWorkerAsk` finds the control's checkout through `resolveWorkspaceProjectRoot`
+      (`presence.mjs`). That is the same `global_workspace_descriptors` table ADR-010 §4's
+      `resolveNodeWorkspaces` reads, keyed by the workspace directly.
+    - A re-park after a resume that started no process (`repark`) carries no `ask`. The question
+      has not changed, and absent is not a clear, so the row keeps the earlier one.
+    - A resumed session that re-asks has no directive, so its `phase` is `null`.
+    - `reportAssignmentSettled` carries `ask` only on the running + `needs-input` park, whatever a
+      caller hands it. The contract's "present only on that park" is enforced at the carriage's
+      home.
+    - The board's two rows for task 03 run in `mesh-effects-outbox` beside the reactor fixture,
+      not in `board-mesh-execution`.
+  - **Two ratchets held rather than raised.** 43's ADR-012/B4 holds `global-work-store.mjs` at 1,280
+    lines, and the file stood at 1,279, so the `ask` column is one line (the ALTER alone, which also
+    covers a fresh store). 58's FF-5810 cites `transitionAssignmentState` at
+    `assignment-transitions.mjs:272` in a shipped loop record (`src/bundle/loops/`), so the carriage
+    was folded onto its payload line rather than moving that export. 69's FF-6909 self-check
+    planted its duplicate park by the line's exact old text. It now duplicates the park line it
+    finds by what the line publishes, so it follows the line when a key is added.
+  - **Inherited reds seen by the full arch sweeps, not 09–12's:** 53/00's closed
+    `agent-session-driver` allowlist omits 131/06's two arch files (red at HEAD), F-47-04
+    (131/06's positional slices), FF-9603 (06's PLAN.md), FF-11903 (F-131-03, now 57 once
+    `src/discord/commands.mjs` exists), and the disclosure baseline (134 and two test files from
+    other sessions).
+  - **Review close (architect, QA and craft, all inline):** nothing surviving above a Nit.
+    - `recorded` (Nit): `mapAssignmentRow` does not expose `ask`. Its readers do not need it, and
+      the record's key set is pinned by its own suite.
+- **(`aof:verify 131`, 2026-09-25, second pass)** Stories 09, 10, 11 and 12 are ACCEPTED on their
+  story lanes. One isolated run over 41 entries gave 1,007 ok and 1 not ok. The red was 03's wave
+  case, which failed as `lane-open-failed` under load and was green alone (47 ok). The details are
+  in VERIFICATION `### 131/09–12`. Each story carries OUTCOME.md and RETROSPECTIVE.md.
+  - **PO rulings on the build's default decisions: all RATIFIED as built.**
+    - 09: `enable --channel` completes an 08 channel that has no id in place. `status --json`'s
+      `channelIds` is parallel to `channels`. The send checks the snowflake before it builds the route.
+    - 10: the bot starts with the daemon, so a token stored later needs one desktop restart. "How
+      long ago" is Discord's `<t:…:R>`. The launcher reads `options.env ?? process.env`.
+    - 11: the hand-off sits beside `stopLoop` and shares its declaration read. `loop-hand-off-scope`
+      is a fourth refusal. An unknown `workspace:` is `discord-scope-ambiguous`. `/loop stop`'s
+      refusal wording stands.
+    - 12: all five stand. That covers the checkout found through `resolveWorkspaceProjectRoot`, a
+      `repark` that carries no `ask`, a re-ask with phase `null`, the carriage enforced at
+      `reportAssignmentSettled`, and the board rows in `mesh-effects-outbox`.
+  - **The milestone door is still NOT reached.** (1) 07 is `in-progress`. Its contract still
+    proves the webhook, and its own note re-refines it for the bot, covering the token, `--channel`,
+    `allow`, a Discord-reply leg and the four slash commands. After that the operator runs it.
+    (2) `aof work regression-gate 131` needs a clean checkout. (3) F-131-03 (FF-11903 57/55) would
+    red that gate. (4) F-131-06 waits on the operator's ruling.
 ## Verification
 
 <!-- Pointers, not restatements. -->
 - [x] `@executable` story lanes 01–06 green (VERIFICATION `### 131/01–06`); the whole-tree `aof work regression-gate 131` is not yet run
 - [x] Fitness functions green: FF-13101…13109, 34 cases, every red probe recorded
+- [x] `@executable` story lanes 09–12 green, with FF-13110…13114 red-probed (VERIFICATION `### 131/09–12`)
 - [ ] `@manual` live run recorded (131/07, operator)
 - [x] 05's accept-time diffs over its committed range `48ac161..8f00b4a` (F-131-07 closed)

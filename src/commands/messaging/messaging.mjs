@@ -1,34 +1,36 @@
 // messaging:init / messaging:enable / messaging:disable / messaging:status — `aof messaging`, the
-// one way a notify channel's webhook enters aof and the per-project switch that turns it on
-// (milestone 131 / story 08; ADR-005 §1, as amended at 131/08). One module registers the four, as
-// `mesh/desktop.mjs` registers its verbs: they are one surface, and the channel TYPE is a
-// positional, so a second type is a `CHANNELS` entry and a store file, never a new verb.
+// one way a notify channel's credential enters aof and the per-project switch that turns it on
+// (milestone 131 / stories 08-09; ADR-005 §1 as amended at 131/08, ADR-007). One module registers
+// the four, as `mesh/desktop.mjs` registers its verbs: they are one surface, and the channel TYPE is
+// a positional, so a second type is a `CHANNELS` entry and a store file, never a new verb.
 //
-//   init <type>     — machine-wide. Reads the URL from a hidden prompt (a TTY) or the first line
-//                     of stdin, checks it with the type's `accepts`, and stores it through
-//                     `writeMessagingSecret` (`src/notify/secret.mjs`, the store's ONE home). It
-//                     needs no project and writes nothing in one.
-//   enable <type>   — per project. Adds `work.notify.channels.<type> = { type }` to the project's
-//   disable <type>    `.aof/aof.config.json`; disable removes every channel of the type. Both go
-//                     through `readConfig`/`writeConfig` (`src/work/delegation.mjs`) and change no
-//                     key outside `work.notify`. No write ever carries a `url`, `webhook` or
-//                     `token` key (FF-13106).
-//   status          — per type: stored on this machine, the env override set, enabled here. It
-//                     asks the store only whether a URL is present, and never reads an env var's
-//                     value into its answer.
+//   init <type>     — machine-wide. Reads the credential (for discord, the bot token) from a hidden
+//                     prompt (a TTY) or the first line of stdin, checks it with the type's `accepts`,
+//                     and stores it through `writeMessagingSecret` (`src/notify/secret.mjs`, the
+//                     store's ONE home). For discord it prints the invite URL, computed offline
+//                     from the token's decoded id. It needs no project and writes nothing in one.
+//   enable <type>   — per project. `enable discord --channel <id>` adds `work.notify.channels.<type>
+//   disable <type>    = { type, channelId }` to the project's `.aof/aof.config.json`; disable
+//                     removes every channel of the type. Both go through `readConfig`/`writeConfig`
+//                     (`src/work/delegation.mjs`) and change no key outside `work.notify`. No write
+//                     ever carries a `url`, `webhook` or `token` key (FF-13106).
+//   status          — per type: stored on this machine, the env override set, enabled here, with
+//                     which channel ids and how many user ids may answer by reply on each (ADR-007
+//                     §7, 131/10's `allow`). It asks the store only whether a credential is present,
+//                     and never reads an env var's value into its answer.
 //
-// THE ARGV RULE. argv lands in shell history and the process list, so the URL never arrives by
+// THE ARGV RULE. argv lands in shell history and the process list, so the token never arrives by
 // argv: any positional after the type — or a URL-looking type — is refused
 // `messaging-secret-in-argv` before any read or write, and no refusal ever repeats what it refused.
-// `--url=<value>` is refused by the face's own `parseSpecArgv` as an unknown flag, which names the
+// `--token=<value>` is refused by the face's own `parseSpecArgv` as an unknown flag, which names the
 // flag and never its value.
 //
 // PROMPTING IS A FACE CONCERN (the `promptOrchestratorModel` precedent): the async argv adapter
-// reads the URL — through an injectable `{ stdin, isTTY, promptSecret }` seam, so the TTY path is
+// reads the token — through an injectable `{ stdin, isTTY, promptSecret }` seam, so the TTY path is
 // driven with a fake prompt — and hands `run()` an input no face prints. `run()` stays headless.
 import { existsSync } from "node:fs";
 import { commandError } from "../../command-error.mjs";
-import { CHANNELS, DEFAULT_URL_ENV } from "../../notify/notify.mjs";
+import { CHANNELS, DEFAULT_TOKEN_ENV } from "../../notify/notify.mjs";
 import { messagingSecretPath, messagingSecretPresent, writeMessagingSecret } from "../../notify/secret.mjs";
 import { readConfig, writeConfig } from "../../work/delegation.mjs";
 
@@ -37,11 +39,14 @@ const KNOWN = TYPES.join(", ");
 // A word that could be a channel type is safe to name back; anything else is not repeated.
 const TYPE_WORD = /^[a-z][a-z0-9-]{0,31}$/u;
 const URL_LIKE = /[:/]/u;
+const GUIDE = "wiki/architecture/discord-notifications.md";
 const isPlainObject = (value) => value != null && typeof value === "object" && !Array.isArray(value);
 const nonBlank = (value) => typeof value === "string" && value.trim().length > 0;
 
 const labelOf = (type) => CHANNELS[type]?.label ?? type;
+const credentialOf = (type) => `${labelOf(type)} ${CHANNELS[type]?.credential ?? "credential"}`;
 const initHint = (type) => `aof messaging init ${type}`;
+const enableHint = (type) => `aof messaging enable ${type} --channel <id>`;
 
 // The channel type a verb names, refused by code when it is missing, unknown or argv-borne secret.
 function channelTypeFrom(positionals, verb) {
@@ -57,10 +62,10 @@ function channelTypeFrom(positionals, verb) {
   return type;
 }
 
-// Every verb points at `init`, the one door the URL enters by: only it prompts or reads stdin.
+// Every verb points at `init`, the one door the token enters by: only it prompts or reads stdin.
 function secretInArgv() {
   return commandError(
-    "The webhook URL is never read from the command line — argv lands in shell history and the process list. Run `aof messaging init <type>` and paste the URL at the prompt, or pipe it on stdin.",
+    "A bot token is never read from the command line — argv lands in shell history and the process list. Run `aof messaging init <type>` and paste the token at the prompt, or pipe it on stdin.",
     "messaging-secret-in-argv",
     400,
   );
@@ -72,7 +77,7 @@ function refuseExtra(positionals, from, verb) {
   }
 }
 
-// ── init: the URL's one door ───────────────────────────────────────────────────────────────────
+// ── init: the token's one door ─────────────────────────────────────────────────────────────────
 
 async function promptSecretDefault({ message }) {
   // Lazy, so the non-interactive paths never load the prompt library. No `mask`: nothing is echoed.
@@ -96,9 +101,9 @@ async function readFirstLine(stream) {
   return buffer.replace(/\r$/u, "");
 }
 
-// readSecretInput(type, seams) → the URL as typed or piped, trimmed. Never printed.
+// readSecretInput(type, seams) → the credential as typed or piped, trimmed. Never printed.
 async function readSecretInput(type, { stdin, isTTY, promptSecret } = defaultSecretSeams()) {
-  const raw = isTTY ? await promptSecret({ message: `${labelOf(type)} webhook URL:` }) : await readFirstLine(stdin);
+  const raw = isTTY ? await promptSecret({ message: `${credentialOf(type)}:` }) : await readFirstLine(stdin);
   return typeof raw === "string" ? raw.trim() : "";
 }
 
@@ -106,46 +111,52 @@ export const messagingInitCommand = {
   id: "messaging:init",
   input: {
     type: "object",
-    properties: { type: { type: "string" }, url: { type: "string" } },
-    required: ["type", "url"],
+    properties: { type: { type: "string" }, secret: { type: "string" } },
+    required: ["type", "secret"],
     additionalProperties: false,
   },
 
   async run(input) {
-    const { type, url } = input;
+    const { type, secret } = input;
     if (!Object.hasOwn(CHANNELS, type)) {
       throw commandError(`That is not a messaging channel type — the known type is ${KNOWN}.`, "messaging-unknown-channel", 400);
     }
-    if (!nonBlank(url)) {
-      throw commandError(`No ${labelOf(type)} webhook URL was given — nothing was stored.`, "messaging-url-empty", 400);
+    if (!nonBlank(secret)) {
+      throw commandError(`No ${credentialOf(type)} was given — nothing was stored.`, "messaging-url-empty", 400);
     }
-    if (!CHANNELS[type].accepts(url.trim())) {
-      throw commandError(`That is not a ${labelOf(type)} webhook URL (https, a ${labelOf(type)} host, /api/webhooks/<id>/<token>) — nothing was stored.`, "messaging-url-invalid", 400);
+    if (!CHANNELS[type].accepts(secret.trim())) {
+      throw commandError(
+        `That is not a ${credentialOf(type)} (three dot-separated segments, the first naming the bot's id). The ${labelOf(type)} channel takes a bot token, not a webhook URL — ${GUIDE} shows where to copy it. Nothing was stored.`,
+        "messaging-token-invalid",
+        400,
+      );
     }
-    const written = await writeMessagingSecret(type, url.trim());
-    return { type, path: written.path, replaced: written.replaced };
+    const written = await writeMessagingSecret(type, secret.trim());
+    const inviteUrl = CHANNELS[type].invite?.(secret.trim()) ?? null;
+    return { type, path: written.path, replaced: written.replaced, inviteUrl };
   },
 
   cli: {
     route: ["messaging", "init"],
     spec: {
-      usage: "aof messaging init <type>   (the URL is read from a hidden prompt or stdin, never argv) [--json]",
+      usage: "aof messaging init <type>   (the bot token is read from a hidden prompt or stdin, never argv) [--json]",
       workspace: false,
     },
 
-    // ASYNC by design: the URL is read HERE, before invoke, from the prompt or stdin.
+    // ASYNC by design: the token is read HERE, before invoke, from the prompt or stdin.
     async argv(positionals, _options, seams = defaultSecretSeams()) {
       if (positionals[0] !== undefined && positionals.length > 1) throw secretInArgv();
       const type = channelTypeFrom(positionals, "init");
-      return { type, url: await readSecretInput(type, seams) };
+      return { type, secret: await readSecretInput(type, seams) };
     },
 
     render: (result) => [
-      `${result.replaced ? "Replaced" : "Stored"} the ${labelOf(result.type)} webhook for this machine at ${result.path}.`,
-      `Switch it on per project with \`aof messaging enable ${result.type}\`.`,
+      `${result.replaced ? "Replaced" : "Stored"} the ${credentialOf(result.type)} for this machine at ${result.path}.`,
+      ...(result.inviteUrl == null ? [] : [`Invite the bot to your server: ${result.inviteUrl}`]),
+      `Switch it on per project with \`${enableHint(result.type)}\`.`,
     ].join("\n"),
 
-    json: ({ type, path, replaced }) => ({ type, path, replaced }),
+    json: ({ type, path, replaced, inviteUrl }) => ({ type, path, replaced, inviteUrl }),
   },
 };
 
@@ -167,7 +178,19 @@ function channelNamesOfType(config, type) {
   return Object.entries(channels).filter(([, channel]) => isPlainObject(channel) && channel.type === type).map(([name]) => name);
 }
 
-const noWebhookLine = (type) => `No webhook is stored on this machine yet — run \`${initHint(type)}\`.`;
+const noSecretLine = (type) => `No ${credentialOf(type)} is stored on this machine yet — run \`${initHint(type)}\`.`;
+
+// The channel id `enable` was handed, refused by code when it is missing or not the type's shape.
+// The value is named back only once it has passed the shape check.
+function checkedChannelId(type, channelId) {
+  if (channelId === undefined || channelId === null || channelId === "") {
+    throw commandError(`\`aof messaging enable ${type}\` needs the ${labelOf(type)} channel to post to: \`${enableHint(type)}\` (Developer Mode → Copy Channel ID).`, "messaging-channel-id-required", 400);
+  }
+  if (!CHANNELS[type].validChannelId(channelId)) {
+    throw commandError(`That is not a ${labelOf(type)} channel id — an id is 17 to 20 digits (Developer Mode → Copy Channel ID).`, "messaging-channel-id-invalid", 400);
+  }
+  return channelId;
+}
 
 const TARGET_INPUT = Object.freeze({
   type: "object",
@@ -177,10 +200,10 @@ const TARGET_INPUT = Object.freeze({
 });
 
 function switchArgv(verb) {
-  return (positionals) => {
+  return (positionals, options = {}) => {
     const type = channelTypeFrom(positionals, verb);
     refuseExtra(positionals, 1, verb);
-    return { type, targetDir: process.cwd() };
+    return { type, targetDir: process.cwd(), ...(verb === "enable" && options.channel !== undefined ? { channelId: options.channel } : {}) };
   };
 }
 
@@ -188,36 +211,60 @@ const switchJson = ({ notes, ...rest }) => rest;
 
 export const messagingEnableCommand = {
   id: "messaging:enable",
-  input: TARGET_INPUT,
+  input: {
+    type: "object",
+    properties: { type: { type: "string" }, targetDir: { type: "string" }, channelId: { type: "string" } },
+    required: ["type", "targetDir"],
+    additionalProperties: false,
+  },
 
-  async run({ type, targetDir }) {
+  // A channel of this type already on the id is left byte-unchanged. A channel of this type with NO
+  // id — one 08's enable wrote — is completed in place (DEFAULT DECISION: its `urlEnv`, which the
+  // schema now refuses, goes with it), so a re-run upgrades rather than leaving a channel that
+  // degrades on every send. Any other id adds a channel, numbered `<type>-2`, `<type>-3`, … as 08 does.
+  async run({ type, targetDir, channelId }) {
+    const id = checkedChannelId(type, channelId);
     const { configPath, config } = await projectConfigOrRefuse(targetDir, "enable");
     const stored = await messagingSecretPresent(type);
     const notes = [];
     const existing = channelNamesOfType(config, type);
-    let channels = existing;
+    const onId = existing.filter((name) => config.work.notify.channels[name].channelId === id);
+    const idless = existing.find((name) => typeof config.work.notify.channels[name].channelId !== "string");
+    let channels = onId;
     let changed = false;
-    if (existing.length > 0) {
-      notes.push(`${type} is already enabled for this project (${existing.map((name) => `"${name}"`).join(", ")}) — nothing changed.`);
+    if (onId.length > 0) {
+      notes.push(`${type} is already enabled for this project on channel ${id} (${onId.map((name) => `"${name}"`).join(", ")}) — nothing changed.`);
+    } else if (idless !== undefined) {
+      const channel = config.work.notify.channels[idless];
+      delete channel.urlEnv;
+      channel.channelId = id;
+      await writeConfig(configPath, config);
+      channels = [idless];
+      changed = true;
+      notes.push(`Set channel ${id} on "${idless}" for this project in ${configPath}.`);
     } else {
       if (!isPlainObject(config.work)) config.work = {};
       if (!isPlainObject(config.work.notify)) config.work.notify = { channels: {} };
       if (!isPlainObject(config.work.notify.channels)) config.work.notify.channels = {};
       let name = type;
       for (let n = 2; Object.hasOwn(config.work.notify.channels, name); n += 1) name = `${type}-${n}`;
-      config.work.notify.channels[name] = { type };
+      config.work.notify.channels[name] = { type, channelId: id };
       await writeConfig(configPath, config);
       channels = [name];
       changed = true;
-      notes.push(`Enabled ${type} for this project in ${configPath}.`);
+      notes.push(`Enabled ${type} on channel ${id} for this project in ${configPath}.`);
     }
-    if (!stored) notes.push(noWebhookLine(type));
-    return { type, configPath, changed, channels, stored, notes };
+    if (!stored) notes.push(noSecretLine(type));
+    return { type, configPath, changed, channels, channelId: id, stored, notes };
   },
 
   cli: {
     route: ["messaging", "enable"],
-    spec: { usage: "aof messaging enable <type> [--json]", workspace: false },
+    spec: {
+      usage: "aof messaging enable <type> --channel <id> [--json]",
+      workspace: false,
+      flags: { channel: { type: "string", description: "the Discord channel id the bot posts to (not a secret)" } },
+    },
     argv: switchArgv("enable"),
     render: (result) => result.notes.join("\n"),
     json: switchJson,
@@ -272,14 +319,22 @@ export const messagingStatusCommand = {
     const channels = [];
     for (const type of TYPES) {
       const names = inProject ? channelNamesOfType(config, type) : [];
-      const first = names.length > 0 ? config.work.notify.channels[names[0]] : null;
-      const name = typeof first?.urlEnv === "string" ? first.urlEnv : DEFAULT_URL_ENV;
+      const entries = names.map((name) => config.work.notify.channels[name]);
+      const first = entries[0] ?? null;
+      const name = typeof first?.tokenEnv === "string" ? first.tokenEnv : DEFAULT_TOKEN_ENV;
       channels.push({
         type,
         stored: await messagingSecretPresent(type),
         path: messagingSecretPath(type),
         envOverride: { name, set: nonBlank(env[name]) },
-        project: inProject ? { enabled: names.length > 0, channels: names } : null,
+        project: inProject
+          ? {
+            enabled: names.length > 0,
+            channels: names,
+            channelIds: entries.map((entry) => (typeof entry.channelId === "string" ? entry.channelId : null)),
+            allowCounts: entries.map((entry) => (Array.isArray(entry.allow) ? entry.allow.length : 0)),
+          }
+          : null,
       });
     }
     return { channels };
@@ -298,9 +353,23 @@ export const messagingStatusCommand = {
       entry.type,
       `  this machine: ${entry.stored ? `set (${entry.path})` : `not set — run \`${initHint(entry.type)}\``}`,
       `  env override ${entry.envOverride.name}: ${entry.envOverride.set ? "set" : "not set"}`,
-      `  this project: ${entry.project == null ? "no project here" : entry.project.enabled ? `enabled (${entry.project.channels.join(", ")})` : "disabled"}`,
+      `  this project: ${projectLine(entry)}`,
     ].join("\n")).join("\n\n"),
 
     json: ({ channels }) => ({ channels }),
   },
 };
+
+// `enabled (discord → 123…, 2 may answer by reply, ops → no channel id — run …)`, `disabled`, or
+// `no project here`.
+function projectLine(entry) {
+  if (entry.project == null) return "no project here";
+  if (!entry.project.enabled) return "disabled";
+  const each = entry.project.channels.map((name, index) => {
+    const id = entry.project.channelIds[index];
+    if (id == null) return `${name} → no channel id — run \`${enableHint(entry.type)}\``;
+    const allowed = entry.project.allowCounts[index];
+    return allowed > 0 ? `${name} → ${id}, ${allowed} may answer by reply` : `${name} → ${id}`;
+  });
+  return `enabled (${each.join(", ")})`;
+}

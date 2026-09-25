@@ -1567,9 +1567,9 @@ export const loopCommandWaveTests = [
 // the lane fixture: `07/01` asks, `07/03` builds. Built inside a hoisted function so the array above
 // can spread it without a TDZ.
 function waitingLaneTests() {
-  const HOOK = "https://discord.com/api/webhooks/131/lanes";
+  const HOOK = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.lanes"; // a synthetic bot token (131/09)
   const notifying = (fx) => {
-    fx.workspace.config.work.notify = { channels: { ops: { type: "discord", urlEnv: "HOOK" } } };
+    fx.workspace.config.work.notify = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK" } } };
     const posts = [];
     const fetch = async (url, init) => { posts.push(JSON.parse(init.body)); return { status: 204, headers: { get: () => null }, json: async () => ({}) }; };
     return { posts, notifyOptions: { env: { HOOK }, fetch } };

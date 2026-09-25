@@ -7,7 +7,7 @@ import { listItems, parseFrontmatter, recordDoc } from "./work.mjs";
 // widening, from the one leaf that spells the cache row's shape (see the re-export below).
 import { itemRowFault, archivedColumn, itemLocationKeys, rowLocationKeys, wireLocationKeys } from "./work/item-row.mjs";
 
-export const GLOBAL_WORK_SCHEMA_VERSION = 9;
+export const GLOBAL_WORK_SCHEMA_VERSION = 10;
 
 // m43 / ADR-007 — the artifact set MOVED to the pure leaf `work-artifacts.mjs` and
 // widened to a two-kind manifest (8 exact filenames + `tasks/` × `.feature`).
@@ -388,6 +388,7 @@ function migrateSchema(db, existingVersion) {
     if (!hasCodeColumn) {
       db.exec("ALTER TABLE global_assignments ADD COLUMN code TEXT");
     }
+    if (!assignmentColumns.some((column) => column.name === "ask")) db.exec("ALTER TABLE global_assignments ADD COLUMN ask TEXT"); // v10 (131/ADR-010 §3): a worker's ask, JSON
     // schema v8 (m43 / ADR-004 + ADR-006; OWNED BY 43/02 per ADR-010/D2 — the columns
     // are the shape this story's own upsert seam produces, so the retraction predicate
     // has something to read). The SAME in-place, PRAGMA-checked ALTER discipline as

@@ -1,5 +1,8 @@
 // test/notify/notify-discord.test.mjs — milestone 131 / story 02, task 04
-// (04_the-discord-message-keeps-its-headline-command-and-link.feature; ADR-005 §2, DESIGN §3).
+// (04_the-discord-message-keeps-its-headline-command-and-link.feature; ADR-005 §2, DESIGN §3), and
+// story 09 task 03 (ADR-007 §5): the render is the bot's own, with no `username`, and every
+// `content` expectation below is byte-for-byte 02's. Story 10 task 04 (ADR-008 §7): a channel that
+// takes answers by reply renders the two ask action lines offering the reply.
 //
 // The Discord renderer is a pure function of the envelope, so every case here is one envelope from
 // the one builder and one `renderDiscord` call — no network, no clock beyond the builder's injected
@@ -33,7 +36,7 @@ export const notifyDiscordTests = [
     run() {
       const body = renderDiscord(ASK({ question: "Move the residue? @everyone" }));
       assert.equal(body.content, [LINE1, "Move the residue? @everyone", ACTION, LINK_LINE].join("\n"));
-      assert.equal(body.username, "aof");
+      assert.deepEqual(Object.keys(body), ["content", "allowed_mentions"], "131/09 task03: a bot sets no username — the keys are exactly content and allowed_mentions");
       assert.deepEqual(body.allowed_mentions, { parse: [] });
       assert.ok(!("embeds" in body), "no embeds key");
       assert.equal([LINE1.length, ACTION.length, LINK_LINE.length].join(), "50,36,27", "the fixed lines the truncation rows are measured against");
@@ -160,6 +163,32 @@ export const notifyDiscordTests = [
         assert.equal(lines.at(-1).length, n, "the link is whole");
         if (parts === 4) assert.equal(lines[1], TO_LINK, "the body line is the suffix alone");
       }
+    },
+  },
+  {
+    name: "131/10 task04 — the action line follows the channel's allowlist (four rows)",
+    run() {
+      const at = (event) => buildNotifyEnvelope(event, { ref: event === "loop-halted" ? "131" : "131/03", question: "Q?", stop: { id: "story-failed" } }, { config: {}, now: NOW });
+      for (const [event, replyable, line] of [
+        ["session-needs-input", true, 'Answer: reply to this message, or `aof work answer 131/03 "…"`'],
+        ["session-needs-input", false, 'Answer: `aof work answer 131/03 "…"`'],
+        ["session-parked-unanswered", true, 'Answer to resume: reply to this message, or `aof work answer 131/03 "…"`'],
+        ["loop-halted", true, "Resume: `aof work loop 131 --resume`"],
+      ]) {
+        assert.equal(renderDiscord(at(event), { replyable }).content.split("\n").at(-1), line, `${event} replyable ${replyable}`);
+      }
+    },
+  },
+  {
+    name: "131/10 task04 — a long ask keeps the longer action line whole: the body is clipped, never the line",
+    run() {
+      const question = `\`\`\`js\n${"x".repeat(194)}\n${"y ".repeat(1402)}`;
+      const { content } = renderDiscord(ASK({ question }), { replyable: true });
+      const lines = content.split("\n");
+      assert.ok(content.length <= 2000, `${content.length} ≤ 2,000`);
+      assert.equal(lines.at(-2), 'Answer: reply to this message, or `aof work answer 127/02 "…"`', "the whole action line");
+      assert.equal(lines.at(-1), LINK_LINE, "and the link");
+      assert.ok(content.includes(TO_LINK), "the body was clipped");
     },
   },
 ];

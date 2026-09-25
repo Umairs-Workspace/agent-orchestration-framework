@@ -717,7 +717,7 @@ export const loopCommandReconcileTests = [
 // parks 07/01 (the fixture's immediate park); the second walk resumes it. Built inside a hoisted
 // function so the array above can spread it without a TDZ.
 function reentryTests() {
-  const HOOK = "https://discord.com/api/webhooks/131/reentry";
+  const HOOK = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.reentry"; // a synthetic bot token (131/09)
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const asking = { outcome: "document", document: { outcome: "needs-input", sessionId: "s-1" } };
   // The first walk: 07/01 asks and parks, its lane committed and unmerged, its run running with one
@@ -737,7 +737,7 @@ function reentryTests() {
     return { laneItem, run };
   }
   const notifying = (fx) => {
-    fx.workspace.config.work.notify = { channels: { ops: { type: "discord", urlEnv: "HOOK" } } };
+    fx.workspace.config.work.notify = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK" } } };
     const posts = [];
     const fetch = async (url, init) => { posts.push(JSON.parse(init.body)); return { status: 204, headers: { get: () => null }, json: async () => ({}) }; };
     return { posts, notifyOptions: { env: { HOOK }, fetch } };

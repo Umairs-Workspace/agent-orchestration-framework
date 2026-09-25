@@ -62,13 +62,16 @@ function localAsk(record) {
   };
 }
 
+// 131/12 (ADR-010 §6): the worker's question, phase and instant come from the row's `ask` when the
+// park carried one; without it the question stays `null` — the card's "question unreadable".
 function workerAsk(execution) {
+  const carried = execution.ask != null && typeof execution.ask === "object" ? execution.ask : null;
   return {
     runId: null,
     state: ASK_STATES.waiting,
-    question: null,
-    phase: null,
-    askedAt: execution.updatedAt ?? null,
+    question: typeof carried?.question === "string" ? carried.question : null,
+    phase: typeof carried?.phase === "string" ? carried.phase : null,
+    askedAt: typeof carried?.askedAt === "string" ? carried.askedAt : execution.updatedAt ?? null,
     parkedAt: null,
     answeredAt: null,
     by: null,

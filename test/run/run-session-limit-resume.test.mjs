@@ -14,6 +14,7 @@
 // never read, so nothing here is time-of-day flaky.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import { stripComments } from "../support/source-slice.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -450,14 +451,15 @@ export const runSessionLimitResumeTests = [
 
 const ANSWER_NOW = "2026-09-23T17:12:00.000Z";
 const ANSWER_ASKED = "2026-09-23T17:00:00.000Z";
-const ANSWER_SECRET = "https://discord.com/api/webhooks/111/secret-token";
+// A synthetic bot token (131/09); its third segment is what the leak checks grep for.
+const ANSWER_SECRET = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.secret-token";
 const ANSWER_DOC_KEYS = ["ok", "ref", "runId", "delivery", "state", "by", "answeredAt", "resume"];
 const DEFAULT_BY = { actor: "you", via: "cli", node: "node-7297" };
 
 function answerConfig({ mesh = { workspaceId: "w1", nodeId: "node-7297" }, notify = true } = {}) {
   return {
     name: "fixture",
-    work: { dir: "./wiki/work", ...(notify ? { notify: { channels: { ops: { type: "discord", urlEnv: "HOOK_A" } } } } : {}) },
+    work: { dir: "./wiki/work", ...(notify ? { notify: { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK_A" } } } } : {}) },
     ...(mesh ? { mesh } : {}),
   };
 }
@@ -474,7 +476,7 @@ async function buildStoryUnder(workDir, milestoneFolder, { number = "01", slug =
 }
 
 // A spy standing in for `fetch`, the 131/02 suites' shape: a response is the three members
-// `sendDiscord` reads.
+// `discordRequest` reads.
 function answerFetchSpy(answer = () => answerResponse(204)) {
   const calls = [];
   const spy = (url, init) => {
@@ -664,7 +666,7 @@ function answerVerbTests() {
         const announced = await withAnswerWorld({}, async ({ ctx, fetch }) => {
           const document = await invoke("work:answer", { ref: "03/01", text: "take b", now: ANSWER_NOW }, ctx);
           assert.equal(fetch.calls.length, 1, "one post");
-          assert.equal(fetch.calls[0].url, ANSWER_SECRET);
+          assert.equal(fetch.calls[0].init.headers.authorization, `Bot ${ANSWER_SECRET}`);
           assert.deepEqual(JSON.parse(fetch.calls[0].init.body), envelopeBody(720000));
           return document;
         });
@@ -1013,7 +1015,10 @@ function answerMeshTests() {
         assert.equal(passed, ctx, "the verb's own ctx carries the terminal-resume seams");
         assert.deepEqual(document, { ok: true, ref: "18", runId: "run-17", delivery: "mesh", state: "resumed", by: BY, answeredAt: ANSWER_NOW, resume: null });
         assert.deepEqual(await snapshotFiles(dir), {}, "no ask file was written");
-        assert.equal(fetch.calls.length, 0, "no notification on the mesh leg");
+        // 131/ADR-010 §5 superseded 04's silence here: the mesh leg now announces `session-answered`
+        // once, from the verb's one notify( site, after the worker did not refuse.
+        assert.equal(fetch.calls.length, 1, "one session-answered post on the mesh leg");
+        assert.match(JSON.parse(fetch.calls[0].init.body).content, /^\*\*18 — answered by umami\*\*/u);
       }),
     },
     {
@@ -1090,6 +1095,23 @@ function answerMeshTests() {
             }
           });
         }
+      },
+    },
+    {
+      name: "131/12 task03 — a refused resume announces nothing: terminal-resume-not-started, and no session-answered post",
+      run: () => withMeshWorld({ invokeAnswer: { ok: true, confirmed: false, refused: true, refusalCode: "terminal-resume-not-started" } }, async ({ ctx, fetch }) => {
+        await expectCode(() => invoke("work:answer", { ref: "18", text: "x", now: ANSWER_NOW }, ctx), "terminal-resume-not-started");
+        assert.equal(fetch.calls.length, 0, "no session-answered POST");
+      }),
+    },
+    {
+      name: "131/12 task03 — one announcement site: resume.mjs holds exactly one notify( call, which both legs reach",
+      run: async () => {
+        const source = stripComments(await readFile(path.join(ANSWER_REPO_ROOT, "src", "commands", "resume.mjs"), "utf8"));
+        const calls = [...source.matchAll(/(?<![\w$.])notify\s*\(/gu)].filter((match) => !/function\s*$/u.test(source.slice(Math.max(0, match.index - 16), match.index)));
+        assert.equal(calls.length, 1, "exactly one notify( call");
+        const run = source.slice(source.indexOf("async run(input, ctx)"));
+        assert.ok(run.indexOf("answerThroughWorker(") < run.indexOf("notify("), "the mesh leg returns through it, not before it");
       },
     },
     {

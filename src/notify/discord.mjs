@@ -1,5 +1,11 @@
-// src/notify/discord.mjs — THE DISCORD CHANNEL (milestone 131; ADR-005 §2, DESIGN §3). A webhook
-// renderer and its sender, the first entry in `CHANNELS` (`src/notify/notify.mjs`).
+// src/notify/discord.mjs — THE DISCORD CHANNEL (milestone 131; ADR-005 §2, DESIGN §3, ADR-007). The
+// bot's renderer, its token shape, its invite URL and its one authorised request, the first entry in
+// `CHANNELS` (`src/notify/notify.mjs`).
+//
+// ONE DOOR (ADR-007 §4). `discordRequest` is the only `src/**` code that puts the bot token on the
+// wire or names Discord's API host: posting (`sendDiscord`) goes through it, and so does every later
+// inbound use (10, 11). It never throws and never retries, and a caller hears a status or an error
+// NAME from it, never a message the token could ride out on.
 //
 // PLAIN `content`, NO EMBED: a phone's push preview shows `content` and nothing useful for an
 // embed-only message, and reaching the human where they are is the point. `allowed_mentions:
@@ -17,12 +23,15 @@ const CUT_WINDOW = 20;
 const FENCE = "```";
 const nonBlank = (value) => typeof value === "string" && value.trim().length > 0;
 
-// The body and the action line, by event (DESIGN §3's table).
-function bodyAndAction(e) {
+// The body and the action line, by event (DESIGN §3's table). When the channel takes answers by reply
+// (`replyable`, 131/10, ADR-008 §7), the two ask lines offer the reply first — a deliberate departure
+// from DESIGN §3, because the reply is an answer path on the same face.
+function bodyAndAction(e, replyable) {
+  const answer = replyable ? `reply to this message, or \`${e.answerPath}\`` : `\`${e.answerPath}\``;
   switch (e.event) {
-    case "session-needs-input": return { body: e.question, action: `Answer: \`${e.answerPath}\`` };
+    case "session-needs-input": return { body: e.question, action: `Answer: ${answer}` };
     case "session-answered": return { body: e.outcome?.answer, action: "The session is resuming." };
-    case "session-parked-unanswered": return { body: oneLineAsk(e.question), action: `Answer to resume: \`${e.answerPath}\`` };
+    case "session-parked-unanswered": return { body: oneLineAsk(e.question), action: `Answer to resume: ${answer}` };
     case "loop-halted": return { body: e.stop?.remedy, action: `Resume: \`${e.answerPath}\`` };
     case "loop-died": return { body: e.outcome?.cause, action: `Resume: \`${e.answerPath}\`` };
     case "loop-relaunched": return { body: e.outcome?.cause, action: null };
@@ -69,18 +78,11 @@ function clipBody(body, room, suffix) {
   return `${fenced.keep}${closing}${suffix}`;
 }
 
-// isDiscordWebhookUrl(value) → whether `value` is a Discord webhook URL (131/08, ADR-005 §1 as
-// amended): `https` only, one of Discord's four hosts, an optional `/v<N>` after `/api`, a numeric
-// id and a token of `[A-Za-z0-9_-]`. The pattern is spelled escaped, never as the literal
-// FF-13106 forbids in `src/**`. It is the `accepts` of the `discord` entry in `CHANNELS`.
-const DISCORD_WEBHOOK_RE = /^https:\/\/(?:discord|discordapp|ptb\.discord|canary\.discord)\.com\/api\/(?:v\d+\/)?webhooks\/\d+\/[A-Za-z0-9_-]+$/u;
-export function isDiscordWebhookUrl(value) {
-  return typeof value === "string" && DISCORD_WEBHOOK_RE.test(value);
-}
-
-// renderDiscord(envelope) → `{ content, username: "aof", allowed_mentions: { parse: [] } }`.
-export function renderDiscord(envelope) {
-  const { body, action } = bodyAndAction(envelope);
+// renderDiscord(envelope, { replyable }) → `{ content, allowed_mentions: { parse: [] } }`. A bot
+// cannot set a `username` (ADR-007 §5), so the message is the bot's own; every line, cap and clip is
+// DESIGN §3's.
+export function renderDiscord(envelope, { replyable = false } = {}) {
+  const { body, action } = bodyAndAction(envelope, replyable === true);
   const fixedBefore = [firstLine(envelope)];
   const fixedAfter = [action, envelope.link].filter((line) => line != null);
   let bodyLine = nonBlank(body) ? body : null;
@@ -93,8 +95,54 @@ export function renderDiscord(envelope) {
     }
   }
   const content = [...fixedBefore, ...(bodyLine == null ? [] : [bodyLine]), ...fixedAfter].join("\n");
-  return { content, username: "aof", allowed_mentions: { parse: [] } };
+  return { content, allowed_mentions: { parse: [] } };
 }
+
+// ── the bot token and its invite ─────────────────────────────────────────────────────────────────
+
+const SNOWFLAKE_RE = /^[0-9]{17,20}$/u;
+const TOKEN_SEGMENT_RE = /^[A-Za-z0-9_-]+$/u;
+
+// discordBotId(token) → the snowflake the token's first segment decodes to, or `null` when the value
+// is not three dot-separated base64url segments whose first decodes to a 17-20 digit id. Offline.
+export function discordBotId(token) {
+  if (typeof token !== "string") return null;
+  const segments = token.split(".");
+  if (segments.length !== 3 || !segments.every((segment) => TOKEN_SEGMENT_RE.test(segment))) return null;
+  const id = Buffer.from(segments[0], "base64url").toString("utf8");
+  return SNOWFLAKE_RE.test(id) ? id : null;
+}
+
+// isDiscordBotToken(value) → whether `value` has a bot token's shape (ADR-007 §1). It is the
+// `accepts` of the `discord` entry in `CHANNELS`; a webhook URL is not one.
+export function isDiscordBotToken(value) {
+  return discordBotId(value) != null;
+}
+
+// isDiscordSnowflake(value) → whether `value` is a Discord id as config carries it: 17-20 digits.
+export function isDiscordSnowflake(value) {
+  return typeof value === "string" && SNOWFLAKE_RE.test(value);
+}
+
+// The invite's permissions (ADR-007 §2): VIEW_CHANNEL 1<<10, SEND_MESSAGES 1<<11, ADD_REACTIONS
+// 1<<6, READ_MESSAGE_HISTORY 1<<16 and USE_APPLICATION_COMMANDS 1<<31 — BigInt, because `1 << 31`
+// is negative in a 32-bit shift.
+export const DISCORD_INVITE_PERMISSIONS = String([10n, 11n, 6n, 16n, 31n].reduce((sum, bit) => sum | (1n << bit), 0n));
+
+// discordInviteUrl(token) → the OAuth2 URL that adds the bot to a server with the commands scope
+// and the five permissions, or `null` for a value that is not a bot token. Computed offline from the
+// token's decoded id; it carries the id, which is public, and never the token.
+export function discordInviteUrl(token) {
+  const id = discordBotId(token);
+  if (id == null) return null;
+  return `https://discord.com/oauth2/authorize?client_id=${id}&scope=bot+applications.commands&permissions=${DISCORD_INVITE_PERMISSIONS}`;
+}
+
+// ── the one authorised request ───────────────────────────────────────────────────────────────────
+
+const DISCORD_API = "https://discord.com/api/v10";
+// Discord asks every bot client to identify itself as `DiscordBot (<url>, <version>)`.
+const USER_AGENT = "DiscordBot (aof, 0.1.0)";
 
 // The retry hint of a 429: the body's `retry_after` when it is a finite number, else the
 // `Retry-After` header when it is non-blank and a finite number of seconds, else `null`.
@@ -116,46 +164,67 @@ async function retryAfterOf(response) {
   return headerRetryAfter(response);
 }
 
-// sendDiscord(url, body, { fetch, timeoutMs, onError }) → `{ ok: true, status }` for a 2xx, else
-// `{ ok: false, reason, status, retryAfter }` with `reason` one of "status", "rate-limited",
-// "timeout" or "error". One JSON POST carrying an abort signal, and the bound is kept here too — a
-// plain timer raced against the whole send, 429 body read included, cleared when the send settles
-// and never unref'd (an unref'd wait would let a never-settling fetch end the process instead). It
-// never throws and never retries. `onError` hears the NAME of a thrown error, never its message,
-// so the caller can say what failed without the URL riding a message out.
-export async function sendDiscord(url, body, { fetch = globalThis.fetch, timeoutMs = 5000, onError } = {}) {
+// A response's JSON body when its content type says JSON, else `null`; an unreadable body is `null`.
+async function jsonOf(response) {
+  const type = response?.headers?.get?.("content-type");
+  if (typeof type !== "string" || !/\bjson\b/iu.test(type)) return null;
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+// discordRequest(token, method, route, body, { fetch, timeoutMs, onError }) → `{ ok, status, json,
+// reason, retryAfter }`: `ok` for a 2xx, else `reason` one of "status", "rate-limited", "timeout" or
+// "error". One request to `<API>/<route>` carrying `Authorization: Bot <token>`, a JSON body when
+// `body` is not null, and an abort signal. The bound is a plain timer raced against the whole
+// request, body reads included, cleared when it settles and never unref'd (an unref'd wait would let
+// a never-settling fetch end the process instead). It never throws and never retries. `onError`
+// hears the NAME of a thrown error, never its message.
+export async function discordRequest(token, method, route, body, { fetch = globalThis.fetch, timeoutMs = 5000, onError } = {}) {
   const controller = new AbortController();
   let status = null;
   let timer = null;
   let retryAfter = null;
+  const failed = (reason) => ({
+    ok: false,
+    status: reason === "timeout" || reason === "error" ? null : status,
+    json: null,
+    reason,
+    retryAfter: reason === "rate-limited" ? retryAfter : null,
+  });
+  // A 2xx whose body never arrives was still accepted by Discord: it is delivered, with no JSON,
+  // rather than reported as a failure for a message that was posted.
   const bound = new Promise((resolve) => {
     timer = setTimeout(() => {
       controller.abort();
-      resolve(status === 429
-        ? { ok: false, reason: "rate-limited", status, retryAfter }
-        : { ok: false, reason: "timeout", status: null, retryAfter: null });
+      if (status != null && status >= 200 && status < 300) resolve({ ok: true, status, json: null, reason: null, retryAfter: null });
+      else resolve(failed(status === 429 ? "rate-limited" : "timeout"));
     }, timeoutMs);
   });
   const send = (async () => {
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
+      const headers = { authorization: `Bot ${token}`, "user-agent": USER_AGENT };
+      if (body != null) headers["content-type"] = "application/json";
+      const response = await fetch(`${DISCORD_API}${route}`, {
+        method,
+        headers,
+        ...(body != null ? { body: JSON.stringify(body) } : {}),
         signal: controller.signal,
       });
       status = response.status;
-      if (status >= 200 && status < 300) return { ok: true, status };
       if (status === 429) {
         retryAfter = headerRetryAfter(response);
         retryAfter = await retryAfterOf(response);
-        return { ok: false, reason: "rate-limited", status, retryAfter };
+        return failed("rate-limited");
       }
-      return { ok: false, reason: "status", status, retryAfter: null };
+      if (status < 200 || status >= 300) return failed("status");
+      return { ok: true, status, json: await jsonOf(response), reason: null, retryAfter: null };
     } catch (error) {
-      if (controller.signal.aborted) return { ok: false, reason: "timeout", status: null, retryAfter: null };
+      if (controller.signal.aborted) return failed("timeout");
       onError?.(error instanceof Error ? error.name : "error");
-      return { ok: false, reason: "error", status: null, retryAfter: null };
+      return failed("error");
     }
   })();
   try {
@@ -163,4 +232,14 @@ export async function sendDiscord(url, body, { fetch = globalThis.fetch, timeout
   } finally {
     clearTimeout(timer);
   }
+}
+
+// sendDiscord(token, channelId, body, opts) → `{ ok, status, messageId, reason, retryAfter }`: one
+// `POST /channels/{channelId}/messages` through `discordRequest`. `messageId` is the posted
+// message's `id` (story 10 maps a reply back to its ask through it), `null` when the answer carries
+// none or the post failed.
+export async function sendDiscord(token, channelId, body, opts = {}) {
+  const result = await discordRequest(token, "POST", `/channels/${channelId}/messages`, body, opts);
+  const id = result.json?.id;
+  return { ok: result.ok, status: result.status, messageId: result.ok && typeof id === "string" ? id : null, reason: result.reason, retryAfter: result.retryAfter };
 }

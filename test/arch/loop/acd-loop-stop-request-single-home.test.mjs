@@ -63,6 +63,9 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 // leg reds on rather than passing over.
 const HOME = "src/loop/stop-request.mjs";
 const SEGMENT = "loop-stops";
+// 131/11 — the second segment the home owns: the resume request lives beside the stop it undoes
+// (131/ADR-009 §6).
+const RESUME_SEGMENT = "loop-resumes";
 const READERS = Object.freeze(["src/loop/stop.mjs", "src/commands/loop.mjs", "src/mesh/declarations.mjs", "src/mesh/presence.mjs"]);
 const SHELL = "src/commands/loop.mjs";
 const CORE = "src/loop/stop.mjs";
@@ -133,7 +136,10 @@ export const archTests = [
       const home = units.find(({ rel }) => rel === HOME);
       assert.ok(home != null && home.code.includes(SEGMENT), `NOT FOUND: ${HOME} does not exist or does not spell ${JSON.stringify(SEGMENT)} — the sweep must find the module before it can claim its home is the only one`);
 
-      // THE SEGMENT LITERAL — once, in the home.
+      // THE SEGMENT LITERALS — once each, in the home. The resume request lives beside the stop it
+      // undoes (131/ADR-009 §6), so its segment has the same one home.
+      const resumeSpellers = units.filter(({ code }) => code.includes(RESUME_SEGMENT)).map(({ rel }) => rel);
+      assert.deepEqual(resumeSpellers, [HOME], `the literal ${JSON.stringify(RESUME_SEGMENT)} appears only in ${HOME} — spelled by: ${resumeSpellers.join(", ")}. The resume request lives beside the stop it undoes (131/ADR-009 §6); read its path through loopResumesDir()`);
       const segmentSpellers = units.filter(({ code }) => code.includes(SEGMENT)).map(({ rel }) => rel);
       assert.deepEqual(segmentSpellers, [HOME], `the literal ${JSON.stringify(SEGMENT)} and the state literals "requested"/"honoured" (as a stop-request state) appear only in src/loop/stop-request.mjs — spelled by: ${segmentSpellers.join(", ")}. A module that composes the request's path itself is a second home for the request (ADR-001 §1); read the path through loopStopsDir()/stopRequestPath() instead`);
 
@@ -298,7 +304,9 @@ export const archTests = [
       assert.equal(typeof command.cli.launch({}), "function");
       // `run` dispatches on the flag alone — the probe is not edited (ADR-002 §2).
       // 129 gate (2026-09-22): `async` admitted — command-core/00 pins every registered `run` as an AsyncFunction.
-      assert.match(shell, /run:\s*(?:async\s+)?\(input,\s*ctx\)\s*=>\s*\(input\?\.stop === true \? stopLoopCommand\(input, ctx\) : probeLoop\(input, ctx\)\)/u, "run dispatches: stop: true is the verb, otherwise the byte-identical probe");
+      // As amended at 131/11 (ADR-009 §6): the hand-off is a second verb, dispatched first on its own
+      // flag; the stop's branch and the probe after it are unchanged.
+      assert.match(shell, /run:\s*async\s*\(input,\s*ctx\)\s*=>\s*\{\s*if \(input\?\.handOff === true\) return handOffLoopCommand\(input, ctx\);\s*return input\?\.stop === true \? stopLoopCommand\(input, ctx\) : probeLoop\(input, ctx\);\s*\}/u, "run dispatches: handOff: true is the hand-off, stop: true is the verb, otherwise the byte-identical probe");
     },
   },
   {

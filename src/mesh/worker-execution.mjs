@@ -128,7 +128,7 @@ import { transitionRunComplete, transitionRunStart } from "../effects/run-transi
 // m42 wave (d) leg d3 — a TERMINAL assignment report is a durable fact over the
 // bridge (raise -> outbox -> ack), never a fire-once frame.
 import { reportAssignmentSettled, reportTerminalResumeRefused } from "../effects/assignment-transitions.mjs";
-import { createMeshParkResume } from "./park-resume.mjs";
+import { createMeshParkResume, directivePhase, readWorkerAsk } from "./park-resume.mjs";
 import { addWorktree, reuseWorktreeOnBranch, removeWorktree, meshWorktreesRoot, meshWorktreePath, meshItemBranchName, localBranchExists, remoteBranchExists, adoptRemoteBranch, ensureCommitAvailable, advanceBranchToBase, commitWorktreeChanges } from "./worktree.mjs";
 // 129/03 (item 83 seam 3, 129/ADR-008 §4) — the ref-in-worktree resolver and its work-dir
 // helper moved to the lane's home. Imported INWARD for the handler's own two uses below (the
@@ -1327,7 +1327,7 @@ export function createMeshWorkerExecutionHandler(options = {}) {
         // This transition releases scheduler capacity. Put it on the existing
         // durable assignment-report outbox so {sent:false} means "still owed",
         // never "parked anyway".
-        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input" });
+        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input", ask: await readWorkerAsk({ worktreePath, sessionId, phase: directivePhase(directiveCommand), now: resolveNow, env: options.env }) });
         onCleanup(assignmentId, "needs-input", worktreePath);
         return;
       }
@@ -1818,7 +1818,7 @@ export function createMeshWorkerTerminalResumeHandler(options = {}) {
       await resume.observeOutcome(outcome, item, runRecord);
       clearLivePtyRegistries(assignmentId);
       const forkedSessionId = typeof outcome?.sessionId === "string" && outcome.sessionId.length > 0 ? outcome.sessionId : null;
-      await resume.settleOutcome(item, runRecord, outcome, forkedSessionId);
+      await resume.settleOutcome(item, runRecord, outcome, forkedSessionId, worktreePath);
     } catch (error) {
       clearLivePtyRegistries(assignmentId);
       await resume.handleFault(error, item, runRecord);

@@ -181,12 +181,15 @@ export function updateAssignmentState(store, assignmentId, state, options = {}) 
   // Same omitted-preserves discipline for direct callers; the status-frame apply
   // seam passes it EXPLICITLY on every frame (null clears — verbatim-per-frame).
   const code = options.code !== undefined ? options.code : existing.code;
+  // 131/12 (ADR-010 §3) — a worker's ask, as JSON text. Written only when given one: absent is not a
+  // clear, so a later `resumed` or `done` leaves it, and the projection hides it off the park.
+  const ask = options.ask != null ? JSON.stringify(options.ask) : existing.ask ?? null;
 
   store.db.prepare(`
     UPDATE global_assignments
-    SET state = ?, run_id = ?, updated_at = ?, reclaimed_at = ?, session_id = ?, code = ?
+    SET state = ?, run_id = ?, updated_at = ?, reclaimed_at = ?, session_id = ?, code = ?, ask = ?
     WHERE assignment_id = ?
-  `).run(state, runId ?? null, now, reclaimedAt ?? null, sessionId ?? null, code ?? null, assignmentId);
+  `).run(state, runId ?? null, now, reclaimedAt ?? null, sessionId ?? null, code ?? null, ask, assignmentId);
 
   return mapAssignmentRow(store.db.prepare("SELECT * FROM global_assignments WHERE assignment_id = ?").get(assignmentId));
 }

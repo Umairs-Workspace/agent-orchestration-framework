@@ -6,7 +6,8 @@
 // only that the decider can be lied to. The structural half is
 // `test/arch/loop/acd-declaration-predicate-is-composed.test.mjs`.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,6 +26,7 @@ import { publishNodeRecord } from "../../src/mesh/store.mjs";
 import { stopLoop } from "../../src/loop/stop.mjs";
 import {
   clearStopRequest,
+  loopResumesDir,
   loopStopsDir,
   markStopHonoured,
   requestLoopStop,
@@ -76,7 +78,15 @@ function ask(runs, { ceilingMs = CEILING, now = NOW, items, ...rest } = {}) {
     isStale,
     retryReadiness,
     ...("stopped" in rest ? { stopped: rest.stopped } : {}),
+    ...("resumeRequested" in rest ? { resumeRequested: rest.resumeRequested } : {}),
   });
+}
+
+// The real CLI in `dir`, under the process's (the harness's isolated) global home.
+const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "bin", "aof.mjs");
+function cliIn(dir, args) {
+  const run = spawnSync(process.execPath, [BIN, ...args], { cwd: dir, encoding: "utf8", windowsHide: true, env: { ...process.env } });
+  return { status: run.status, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };
 }
 
 /** A settled attempt of `ms`, chained onto `retryOf`, ending well before `now`. */
@@ -608,6 +618,82 @@ export const workLoopDeclarationsTests = [
         assert.equal(cleared.cleared, true);
         assert.deepEqual((await status()).declarations, before.declarations, "the row is back, deep-equal to the first answer");
       });
+    },
+  },
+  // ── 131/11 task 04 — the hand-off to the supervisor (ADR-009 §6). The engine cases add the one
+  // `resumeRequested` key to `ask`'s input; the producer and verb cases run the REAL CLI over the
+  // on-disk fixture under the harness's isolated `AOF_GLOBAL_HOME`, whose `loopResumesDir()` holds the
+  // request.
+  {
+    name: "131/11 task04 — what the decider yields for a supervised declaration (five rows)",
+    run() {
+      const done = [run({ state: "done", heartbeatAt: null })];
+      for (const [label, stopped, resumeRequested, ceilingMs, expected] of [
+        ["done, no stop mark, no resume request", undefined, undefined, CEILING, 0],
+        ["done, no stop mark, a resume request", undefined, new Set(["lr-1"]), CEILING, 1],
+        ["done, an honoured stop mark, a resume request", new Set(["lr-1"]), new Set(["lr-1"]), CEILING, 1],
+        ["done, an honoured stop mark, no resume request", new Set(["lr-1"]), undefined, CEILING, 0],
+        ["done, budget exhausted, a resume request", undefined, new Set(["lr-1"]), 1000, 0],
+      ]) {
+        const answer = ask(done, { ceilingMs, ...(stopped === undefined ? {} : { stopped }), ...(resumeRequested === undefined ? {} : { resumeRequested }) });
+        assert.equal(answer.rows.length, expected, `${label}: ${expected === 1 ? "a row" : "no row"}`);
+        if (expected === 1) assert.equal(answer.rows[0].loopRunId, "lr-1", label);
+      }
+      assert.equal(ask(done, { resumeRequested: ["lr-1"] }).rows.length, 0, "an ill-typed resumeRequested hands nothing back");
+    },
+  },
+  {
+    name: "131/11 task04 — a halted supervised loop is handed off by the CLI and then listed with --resume, and nothing is spawned",
+    async run() {
+      const record = producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null });
+      await withProducerFixture(async ({ dir, status }) => {
+        assert.equal((await status()).declarations.rows.length, 0, "a done supervised loop is not listed before the hand-off");
+        const runsBefore = await readdir(path.join(dir, "wiki", "work", "53_milestone_fixture", "runs"));
+        const run = cliIn(dir, ["work", "loop", "53", "--hand-off", "--json"]);
+        assert.equal(run.status, 0, run.stderr);
+        const answer = JSON.parse(run.stdout);
+        assert.equal(answer.handedOff, true);
+        assert.equal(answer.loopRunId, "lr-1");
+        const request = JSON.parse(await readFile(path.join(loopResumesDir(), "lr-1.json"), "utf8"));
+        assert.deepEqual(Object.keys(request), ["loopRunId", "scope", "workspaceId", "by", "requestedAt"], "the five keys");
+        assert.deepEqual(Object.keys(request.by), ["node", "pid"], "by is { node, pid }, the stop record's shape");
+        const rows = (await status()).declarations.rows;
+        assert.equal(rows.length, 1, "now listed");
+        assert.equal(rows[0].scope, "53");
+        assert.ok(rows[0].argv.includes("--resume"), `its argv carries --resume: ${rows[0].argv.join(" ")}`);
+        assert.deepEqual(await readdir(path.join(dir, "wiki", "work", "53_milestone_fixture", "runs")), runsBefore, "no run was started: nothing was spawned");
+        const again = cliIn(dir, ["work", "loop", "53", "--hand-off", "--json"]);
+        assert.equal(again.status, 0, "a second hand-off before the relaunch is idempotent");
+        await unlink(path.join(loopResumesDir(), "lr-1.json"));
+      }, { record });
+    },
+  },
+  {
+    name: "131/11 task04 — what the hand-off refuses (three rows, and the three exclusive flags): non-zero, the code, and no request written",
+    async run() {
+      const fresh = new Date().toISOString();
+      for (const [label, record, code] of [
+        ["unsupervised and halted", producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null, brief: { loop: loop({ supervised: false }) } }), "loop-hand-off-not-supervised"],
+        ["supervised with a live running run", producerRecord({ state: "running", failureReason: null, reclaimedAt: null, createdAt: fresh, heartbeatAt: fresh, updatedAt: fresh }), "loop-hand-off-running"],
+        ["absent", null, "loop-hand-off-no-declaration"],
+        ["last run on another node", producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null, node: "node-9" }), "loop-hand-off-not-local"],
+      ]) {
+        await withProducerFixture(async ({ dir }) => {
+          const run = cliIn(dir, ["work", "loop", "53", "--hand-off", "--json"]);
+          assert.notEqual(run.status, 0, `${label}: non-zero`);
+          assert.equal(JSON.parse(run.stdout).code, code, `${label}: ${run.stdout}`);
+          if (code === "loop-hand-off-not-supervised") assert.match(JSON.parse(run.stdout).error, /aof work loop 53 --resume/u, "it names the terminal command");
+          await assert.rejects(readFile(path.join(loopResumesDir(), "lr-1.json"), "utf8"), `${label}: no resume request is written`);
+        }, { record });
+      }
+      await withProducerFixture(async ({ dir }) => {
+        for (const flag of ["--stop", "--dry-run", "--resume"]) {
+          const run = cliIn(dir, ["work", "loop", "53", "--hand-off", flag, "--json"]);
+          assert.notEqual(run.status, 0, `--hand-off ${flag}: refused`);
+          assert.equal(JSON.parse(run.stdout).code, "invalid-input", `--hand-off ${flag}: ${run.stdout}`);
+        }
+        await assert.rejects(readFile(path.join(loopResumesDir(), "lr-1.json"), "utf8"), "no resume request is written");
+      }, { record: producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null }) });
     },
   },
 ];

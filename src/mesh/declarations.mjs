@@ -29,7 +29,7 @@ import { heartbeatFromConfig, scheduleToCloseFromConfig } from "../loop-bounds.m
 import { resolveAttemptCeiling } from "../commands/run-retry.mjs";
 import { listItems, loadWorkspace } from "../work.mjs";
 import { argvFor } from "../loop-argv.mjs";
-import { STOP_STATES, loopStopsDir, readStopRequest } from "../loop/stop-request.mjs";
+import { STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest } from "../loop/stop-request.mjs";
 
 // THE HONOURED MARKS (130/ADR-004 §4-§5) — the `loopRunId`s among the candidates whose stop
 // request the loop has honoured (or the verb marked honoured at once, for a loop that was not
@@ -39,7 +39,7 @@ import { STOP_STATES, loopStopsDir, readStopRequest } from "../loop/stop-request
 // read for its marks all the same. A `requested` mark is not collected: a draining loop keeps its
 // row. A mark that cannot be read (a corrupt file — one degrade event, the module's own) or an id
 // the module refuses as a filename drops nothing.
-async function honouredStops(workspaces) {
+function declarationIds(workspaces) {
   const candidates = new Set();
   for (const workspace of workspaces) {
     for (const item of workspace.items) {
@@ -49,6 +49,11 @@ async function honouredStops(workspaces) {
       }
     }
   }
+  return candidates;
+}
+
+async function honouredStops(workspaces) {
+  const candidates = declarationIds(workspaces);
   const stopped = new Set();
   const dir = loopStopsDir();
   for (const loopRunId of candidates) {
@@ -61,6 +66,25 @@ async function honouredStops(workspaces) {
     if (request?.state === STOP_STATES.honoured) stopped.add(loopRunId);
   }
   return stopped;
+}
+
+// THE HANDED-BACK LOOPS (131/ADR-009 §6) — the `loopRunId`s among the candidates an operator handed
+// back to the supervisor (`work:loop --hand-off`, `/loop resume`), read through the same module and
+// handed to the engine as its ADDITIVE `resumeRequested` set. A request that cannot be read (one
+// degrade event, the module's own) or an id it refuses as a filename hands nothing back.
+async function handedBackLoops(workspaces) {
+  const requested = new Set();
+  const dir = loopResumesDir();
+  for (const loopRunId of declarationIds(workspaces)) {
+    let request = null;
+    try {
+      request = await readResumeRequest(dir, loopRunId);
+    } catch {
+      request = null;
+    }
+    if (request != null) requested.add(loopRunId);
+  }
+  return requested;
 }
 
 export async function supervisedDeclarations(ws, localId, nowIso, ctx) {
@@ -120,6 +144,9 @@ export async function supervisedDeclarations(ws, localId, nowIso, ctx) {
     // it until `--resume` clears the mark (130/ADR-004 §4-§5). Read here, the disk-reading half;
     // the engine only takes the set.
     stopped: await honouredStops(workspaces),
+    // The hand-backs, so a halted supervised loop the operator asked for again is listed and
+    // relaunched with --resume, which clears the request (131/ADR-009 §6).
+    resumeRequested: await handedBackLoops(workspaces),
   });
 
   // The route is read off `work:loop`'s own registration through a DEFERRED import — 63/ADR-001's

@@ -350,8 +350,9 @@ export const loopCommandProbeTests = [
       assert.equal(command.cli.spec.flags.stop.type, "boolean");
       assert.ok(typeof command.cli.spec.flags.stop.description === "string" && command.cli.spec.flags.stop.description.length > 0);
       assert.match(command.cli.spec.usage, /\[--stop\]/u);
-      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised"], "nine properties");
-      assert.equal(Object.keys(command.cli.spec.flags).length, 8, "eight flags");
+      // 131/11 (ADR-009 §6) adds `handOff` by the same three-homes rule: the tenth property, the ninth flag.
+      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised"], "ten properties");
+      assert.equal(Object.keys(command.cli.spec.flags).length, 9, "nine flags");
       assert.equal(command.cli.launch({ dryRun: true }), null);
       assert.equal(command.cli.launch({ stop: true }), null);
     },

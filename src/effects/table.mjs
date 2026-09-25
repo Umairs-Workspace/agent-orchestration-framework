@@ -32,7 +32,7 @@ import { loadWorkspace, rollbackItemStatus, setItemStatus, listItems, typeHasRec
 import { publishGlobalWorkSnapshot } from "../global-work-publisher.mjs";
 import { openGlobalWorkProjectionStore, remapWorkspaceProjectionRefs, remapWorkspaceFactRefs, workspaceIdFor } from "../global-work-store.mjs";
 import { setItemBranch } from "../mesh/assignment-directive.mjs";
-import { restoreParkedAssignmentResume } from "../assignment-record.mjs";
+import { readAssignment, restoreParkedAssignmentResume } from "../assignment-record.mjs";
 import { rewriteRunItemRef } from "../run-store.mjs";
 import { remapMappingRefs } from "../notion/mapping.mjs";
 import { syncMilestoneWork } from "../notion/sync-work.mjs";
@@ -328,8 +328,14 @@ async function recordItemBranch(event, ctx = {}) {
 // PARK fact. It must survive a disconnected worker and is acknowledged only after
 // this reactor has put the code on the authoritative assignment row. Ordinary
 // accepted/running posture remains best-effort on the status frame.
+// 131/12 (ADR-010 §4) — and a park carrying a worker's `ask` puts it on the row, and is POSTED once,
+// on the EDGE into `needs-input`: the row's code is read before the transition, so a redelivered park
+// posts nothing. This departs from ADR-005 §4's "not an effects reactor" for its own stated reason —
+// that rule was against an at-least-once redelivered post, and the edge makes this one at-most-once.
+// The post is not transition evidence: it never reaches the return value, and a failed post never
+// fails the settle.
 async function settleAssignment(event, ctx = {}) {
-  const { assignmentId, state, runId, branch, sessionId, code } = event.payload ?? {};
+  const { assignmentId, state, runId, branch, sessionId, code, ask } = event.payload ?? {};
   if (!assignmentId) return { skipped: true, reason: "no-assignment" };
   const park = state === "running" && code === "needs-input";
   if (state !== "done" && state !== "failed" && !park) return { skipped: true, reason: `state-not-terminal:${state}` };
@@ -340,14 +346,20 @@ async function settleAssignment(event, ctx = {}) {
   const { transitionAssignmentState } = await import("./assignment-transitions.mjs");
   const store = ctx.store ?? (await openGlobalWorkProjectionStore(ctx.globalWorkStoreOptions ?? {}));
   try {
+    const before = readAssignment(store, assignmentId);
+    const wasWaiting = before?.state === "running" && before?.code === "needs-input";
     const result = await transitionAssignmentState(
       store,
       assignmentId,
       state,
-      { byNode: ctx.byNode ?? null, now: ctx.now, runId, sessionId, branch, code },
+      { byNode: ctx.byNode ?? null, now: ctx.now, runId, sessionId, branch, code, ...(ask == null ? {} : { ask }) },
       { journalOptions: ctx.journalOptions ?? {} },
     );
     if (!result.applied) return { settled: false, code: result.code };
+    if (park && !wasWaiting && before != null) {
+      const { announceWorkerAsk } = await import("../mesh/park-resume.mjs");
+      await announceWorkerAsk(before, ask ?? null, ctx);
+    }
     // `code` is transition evidence, not a refusal. Returning it in the reactor
     // detail would make the bridge ACK interpret a successful needs-input apply as
     // a coded rejection and pay the worker's step without a success receipt.

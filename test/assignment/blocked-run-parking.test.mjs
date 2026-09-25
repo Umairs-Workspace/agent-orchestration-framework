@@ -2,7 +2,11 @@
 // parking is exit-confirmed and durable; resume admission is bounded and deduped.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { claudeProjectsDir } from "../../src/work/observe.mjs";
+import { readWorkerAsk } from "../../src/mesh/park-resume.mjs";
 import {
   createMeshWorkerExecutionHandler,
   createMeshWorkerTerminalResumeHandler,
@@ -996,6 +1000,7 @@ export const blockedRunParkingTests = [
   },
   // 131/04 — hoisted below.
   ...answeredResumeTests(),
+  ...workerAskTests(),
 ];
 
 // ---- 131/04 task 03 — the worker types the operator's answer and records who and when ----------
@@ -1193,6 +1198,124 @@ function answeredResumeTests() {
             }
           });
         }
+      },
+    },
+  ];
+}
+
+// ── milestone 131 / story 12, task 00 — THE WORKER READS ITS QUESTION ONTO THE PARK FACT (ADR-010
+// §1-§2). The transcript is a fixture file under an isolated projects directory, and the payload is
+// read from what the worker's journal shipped (QA ruling). Built inside a hoisted function so the
+// array above can spread it without a TDZ.
+function workerAskTests() {
+  const FOUR_LINES = ["Decision needed: split 131/03?", "Options: A or B", "I would pick: A", "What the answer changes: the plan"].join("\n");
+  const askTurn = (text) => `${JSON.stringify({ type: "assistant", message: { stop_reason: "end_turn", content: [{ type: "text", text }, { type: "text", text: "NEEDS_INPUT" }] } })}\n`;
+  async function withClaudeHome(body) {
+    const configDir = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-worker-ask-")));
+    try {
+      return await body({ env: { CLAUDE_CONFIG_DIR: configDir } });
+    } finally {
+      await rm(configDir, { recursive: true, force: true });
+    }
+  }
+  async function writeTranscript(cwd, env, sessionId, text) {
+    const dir = claudeProjectsDir({ cwd, env });
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, `${sessionId}.jsonl`), askTurn(text), "utf8");
+  }
+
+  return [
+    {
+      name: "131/12 task00 — a needs-input park carries the session's question, its phase and the park instant as ask",
+      run: async () => withMeshWorkerExecFixture(async (fx) => withClaudeHome(async ({ env }) => {
+        const ws = await readyWorkspace(fx);
+        const recorder = createStatusRecorder();
+        const handler = createMeshWorkerExecutionHandler({
+          loadWs: () => Promise.resolve(ws),
+          nodeId: NODE_ID,
+          now: () => NOW,
+          env,
+          globalWorkStoreOptions: { env: fx.env },
+          pushExec: scriptedPushExec(),
+          sendAssignmentStatus: recorder.sendAssignmentStatus,
+          sendEffectStep: recorder.sendEffectStep,
+          spawnRuntime: async (brief, options) => {
+            await options.onSessionIdCaptured?.("conversation-ask");
+            await writeTranscript(brief.worktreeCwd, env, "conversation-ask", FOUR_LINES);
+            return { outcome: "needs-input", sessionId: "conversation-ask" };
+          },
+        });
+        await handler({ kind: "directive", to: NODE_ID, assignmentId: "asg-ask", itemRef: fx.itemRef, workspaceId: fx.workspaceId, at: NOW, command: "/aof:continue 69/05 --autonomous" });
+        const park = recorder.effectSteps.filter((step) => step.payload?.state === "running" && step.payload?.code === "needs-input").at(-1);
+        assert.ok(park, "the park was shipped from the worker's journal");
+        assert.deepEqual(park.payload.ask, { question: FOUR_LINES, phase: "build", askedAt: NOW });
+        assert.deepEqual(Object.keys(park.payload), ["assignmentId", "state", "runId", "sessionId", "branch", "code", "ask"]);
+      })),
+    },
+    {
+      name: "131/12 task00 — which reports carry ask (three rows): only the needs-input park",
+      run: async () => withMeshAssignFixture(async ({ home }) => {
+        const journalOptions = { env: { AOF_GLOBAL_HOME: home } };
+        const ask = { question: "Q?", phase: "build", askedAt: NOW };
+        for (const [label, report, keys] of [
+          ["a needs-input park", { state: "running", code: "needs-input", ask }, ["assignmentId", "state", "runId", "sessionId", "branch", "code", "ask"]],
+          ["done", { state: "done" }, ["assignmentId", "state", "runId", "sessionId", "branch", "code"]],
+          ["failed with daemon-restarted", { state: "failed", code: "daemon-restarted" }, ["assignmentId", "state", "runId", "sessionId", "branch", "code"]],
+        ]) {
+          const shipped = [];
+          await reportAssignmentSettled({ assignmentId: `asg-${label.length}`, now: NOW, ...report }, { journalOptions, sendEffectStep: async (envelope) => { shipped.push(envelope); return { sent: true }; } });
+          assert.deepEqual(Object.keys(shipped.at(-1).payload), keys, label);
+        }
+      }),
+    },
+    {
+      name: "131/12 task00 — what the worker reads as the question (three rows): the ask, clipped at 8,000 code points, or null",
+      run: async () => withClaudeHome(async ({ env }) => {
+        const cwd = path.join(os.tmpdir(), "aof-worker-ask-cwd");
+        const events = [];
+        setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+        try {
+          const short = "x".repeat(200);
+          await writeTranscript(cwd, env, "s-short", short);
+          assert.equal((await readWorkerAsk({ worktreePath: cwd, sessionId: "s-short", phase: "build", now: () => new Date(NOW), env })).question, short);
+          await writeTranscript(cwd, env, "s-long", "y".repeat(9000));
+          const long = await readWorkerAsk({ worktreePath: cwd, sessionId: "s-long", now: () => new Date(NOW), env });
+          assert.equal(long.question, `${"y".repeat(8000)}…`);
+          const missing = await readWorkerAsk({ worktreePath: cwd, sessionId: "s-missing", phase: "verify", now: () => new Date(NOW), env });
+          assert.deepEqual(missing, { question: null, phase: "verify", askedAt: NOW }, "null, and the phase and instant still carried");
+          assert.equal(events.filter((event) => event.code === "ask-question-unreadable").length, 1, "one ask-question-unreadable");
+        } finally {
+          setDegradeSinkForTest(undefined);
+        }
+      }),
+    },
+    {
+      name: "131/12 task00 — the journal-unavailable fallback drops the ask",
+      run: async () => {
+        const blocked = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-worker-ask-nohome-")));
+        const homeIsAFile = path.join(blocked, "home");
+        await writeFile(homeIsAFile, "not a directory\n", "utf8");
+        setDegradeSinkForTest(() => ({ write: () => {} }));
+        try {
+          const sent = [];
+          await reportAssignmentSettled(
+            { assignmentId: "asg-fallback", state: "running", code: "needs-input", ask: { question: "Q?", phase: "build", askedAt: NOW }, now: NOW },
+            { journalOptions: { env: { AOF_GLOBAL_HOME: homeIsAFile } }, fallbackSend: async (...args) => { sent.push(args); } },
+          );
+          assert.equal(sent.length, 1, "the fallback was used");
+          assert.equal(sent[0][2].code, "needs-input");
+          assert.equal(Object.hasOwn(sent[0][2], "ask"), false, "and it carries no ask");
+        } finally {
+          setDegradeSinkForTest(undefined);
+          await rm(blocked, { recursive: true, force: true });
+        }
+      },
+    },
+    {
+      name: "131/12 task00 — the sink file does not grow: src/mesh/worker-execution.mjs is 1,914 lines",
+      run: async () => {
+        const text = await readFile(new URL("../../src/mesh/worker-execution.mjs", import.meta.url), "utf8");
+        assert.equal(text.split(/\r?\n/u).length - (text.endsWith("\n") ? 1 : 0), 1914);
       },
     },
   ];

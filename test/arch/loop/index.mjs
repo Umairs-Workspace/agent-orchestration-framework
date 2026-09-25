@@ -147,6 +147,9 @@ import { archTests as acdLoopStopReachesEveryFaceTests } from "./acd-loop-stop-r
 import { archTests as acdLoopAskSingleHomeTests } from "./acd-loop-ask-single-home.test.mjs";
 import { archTests as acdLoopAskWaitsInPlaceTests } from "./acd-loop-ask-waits-in-place.test.mjs";
 import { archTests as acdLoopAskReachesEveryFaceTests } from "./acd-loop-ask-reaches-every-face.test.mjs";
+// milestone 131 / story 10 — FF-13111 and FF-13112, the RECORD once more: a Discord reply is one more
+// face that writes the ask, through one gateway and one allowlisted verb (ADR-008). 11 appends FF-13113.
+import { archTests as acdLoopAskAnsweredFromDiscordTests } from "./acd-loop-ask-answered-from-discord.test.mjs";
 
 export const tests = [
   // milestone 52 / story 04 — the nine loop-registry fitness functions
@@ -228,4 +231,6 @@ export const tests = [
   ...acdLoopAskSingleHomeTests,
   ...acdLoopAskWaitsInPlaceTests,
   ...acdLoopAskReachesEveryFaceTests,
+  // milestone 131 / story 10 — FF-13111, FF-13112.
+  ...acdLoopAskAnsweredFromDiscordTests,
 ];

@@ -42,6 +42,7 @@ import { tests as auditTests } from "../test/audit/index.mjs";
 import { tests as bundleTests } from "../test/bundle/index.mjs";
 import { tests as commandTests } from "../test/command/index.mjs";
 import { tests as diagramsTests } from "../test/diagrams/index.mjs";
+import { tests as discordTests } from "../test/discord/index.mjs";
 import { tests as examplesTests } from "../test/examples/index.mjs";
 import { tests as gradeTests } from "../test/grade/index.mjs";
 import { tests as graphTests } from "../test/graph/index.mjs";
@@ -101,6 +102,7 @@ export const tests = [
   ...bundleTests,
   ...commandTests,
   ...diagramsTests,
+  ...discordTests,
   ...examplesTests,
   ...gradeTests,
   ...graphTests,
