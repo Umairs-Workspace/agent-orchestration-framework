@@ -1,70 +1,62 @@
 @manual @cli @work @work-stream
-Feature: The stage is set and handed to the operator — the payload installed and read at the source, a fixture that asks on the test-bed, the procedure in STATE.md, and NEEDS_INPUT
+Feature: The stage is set and handed to the operator — the payload installed and read at the source, a fixture that asks three times and is stopped and resumed on the test-bed, the procedure in STATE.md, and NEEDS_INPUT
 
-  WHY. The live run (task 01) needs a person at every leg: a webhook only they may hold (stored
-  once, machine-wide, with 131/08's `aof messaging init discord`), a desktop restart only they may make, a Discord channel only they can see, and two answers in
-  their own words. An agent must not start a loop, a daemon or the desktop app
+  WHY. The live run (task 01) needs a person at every leg. Only they may hold the bot token (stored
+  once, machine-wide, with `aof messaging init discord`, ADR-007), invite the bot, name the channel
+  and their own user id, restart the desktop app, see the Discord channel, and answer in their own
+  words. An agent must not start a loop, a daemon or the desktop app
   (`.claude/rules/build-deploy-restart.md`). So this task is the agent's half, done in full and
-  then handed back. The builder installs, measures what it can at the source, lays down a fixture
-  that will really ask, writes the procedure with its paste slots, and stops. It never moves the
-  story to `in-review` on evidence it did not observe.
+  handed back. The builder installs, measures what it can at the source, lays down a fixture that
+  will really ask, writes the procedure with its paste slots, and stops. It never moves the story to
+  `in-review` on evidence it did not observe.
 
-  A session asks only at a genuine judgment call (the threshold is out of scope for 131). So the
-  fixture reserves one decision to the operator in each asking story's task, where the build
-  session reads it before writing code. The stories arrive already refined, so every ask lands at
-  BUILD, inside a lane. Under `refine_first`, REFINE runs in the primary one story at a time, and
-  an ask there holds the whole loop until it is answered (ADR-004 §3). That is the one place where
-  "the other lanes keep building" cannot be shown. The fixture lives on the standing test-bed
-  `C:\Source\umami\aof-test-repo`, never in this repository: a loop there mutates items, opens
-  lanes and commits.
+  A session asks only at a genuine judgment call (the threshold is out of scope for 131). So each
+  asking story reserves one decision to the operator in its own task. The stories arrive refined,
+  so every ask lands at BUILD, inside a lane: a refine-time ask holds the whole loop (ADR-004 §3),
+  where "the other lanes keep building" cannot be shown. The fixture lives on the standing test-bed
+  `C:\Source\umami\aof-test-repo`, never in this repository.
 
-  The webhook URL is the credential (ADR-005 §1, as amended at 131/08). The agent never reads it,
-  prints it, writes it or asks for it, and never opens `~/.aof/messaging/discord.secret`. Only its
-  presence is ever checked, through `aof messaging status`, which never prints the value.
+  The bot token is the credential (ADR-007 §1). The agent never reads it, prints it, writes it or
+  asks for it, and never opens `~/.aof/messaging/discord.secret`. Its presence is checked only
+  through `aof messaging status`. The channel id and the answer allowlist are not secrets (ADR-007
+  §3, ADR-008 §3), but only the operator knows them, so they are the operator's precondition.
 
-  RE-REFINED at `aof:verify 131` (2026-09-25, operator-directed). 131/08 stores the URL machine-wide
-  and `notify` reads it at every send, so the env var and the restart for it are gone from the
-  precondition. The restart stays, for the new payload. `enable discord` now writes the test-bed's
-  `work.notify`. The old literal grep for "no webhook URL" could not hold, because 131's own suites
-  spell fixture URLs (16 hits, all fixture shapes). It is replaced by the real-webhook shape.
+  RE-REFINED for the bot at `aof:verify 131` (2026-09-25), after 09–12 were accepted. It replaces
+  the webhook-era contract of `3ba35a1`.
 
   Background:
-    Given every `@executable` task of 131/01 to 131/06 and 131/08 is green and each of those stories is `done`
-    And the builder works in the MAIN checkout `C:\Source\umami\aof`, never a dispatch worktree, because a worktree has no `ui/node_modules`
+    Given every `@executable` task of 131/01 to 131/06 and 131/08 to 131/12 is green and each of those stories is `done`
+    And the builder works in the MAIN checkout `C:\Source\umami\aof`, never a dispatch worktree
 
   Scenario: the payload is installed from the main checkout and read at the source
-    Given `ui/` changed in 05 and `src/` in 01 to 05 and 08, while neither the Rust app nor `scripts/sea-entry.mjs` changed
-    When `node scripts/install-local.mjs` runs from the main checkout, with no `--skip-ui`, no `--desktop` and no `--sea`
+    Given `src/` changed in 09 to 12, and neither `ui/`, the Rust app nor `scripts/sea-entry.mjs` changed since the last install
+    When `node scripts/install-local.mjs --skip-ui` runs from the main checkout
     Then `~/.aof/bin/aof.exe --version` prints `0.1.0 (payload <buildId>)`, where `<buildId>` is the `buildId` in `~/.aof/bin/BUILD_ID.json`, and both are pasted
-    And `aof work answer --help` prints the verb's usage with `[--as <actor>]`, and `aof work loop --help` prints `[--stop]`, both pasted
-    And `~/.aof/bin/aof.exe messaging status`, run in the test-bed root, prints a `discord` block, which proves the payload carries 131/08, pasted
+    And `aof work loop`'s usage line carries `[--hand-off]`, pasted
+    And `~/.aof/bin/aof.exe messaging status`, run in the test-bed root, prints the bot's block (`env override AOF_DISCORD_BOT_TOKEN`), pasted
     And the desktop app is NOT restarted by the builder: STATE.md records "installed, restart pending (operator)"
 
-  Scenario: the test-bed carries a refined fixture milestone whose lanes will ask twice and build once
-    When the builder adds `03_milestone_ask-target` to the test-bed's stream
-    Then it holds three independent `not-started` stories, each one small helper function with no `depends:`: `00_story_joiner`, `01_story_labeller` and `02_story_counter`
-    And each story is already refined: one `@executable` task `.feature` under its `tasks/`, listed in its STORY.md `## Tasks`, so the loop's REFINE phase takes none of them and BUILD drives all three in lanes
-    And each story's `files:` names only its own `src/<helper>.mjs` and `test/<helper>.test.mjs`, so no two stories share a declared file and one wave admits all three
-    And the task of `00_story_joiner` states that the separator `joinWords` uses is the operator's decision, is recorded nowhere, and must be asked for before any code is written, and no scenario, example or note in the fixture spells a separator
-    And the task of `01_story_labeller` reserves the label's case (upper, lower or title) to the operator in the same words, and nothing in the fixture spells a case
-    And the task of `02_story_counter` reserves nothing, so the lane that drives it never asks
-    And `aof work validate 03`, run in the test-bed root, reports no errors, and its output is pasted
+  Scenario: the test-bed carries a fixture whose lanes ask three times and build once
+    When the builder adds `03_story_bullet` to the test-bed's `03_milestone_ask-target`
+    Then `03` holds four independent `not-started` stories, each one small helper with no `depends:` and one `@executable` task: `00_story_joiner`, `01_story_labeller`, `02_story_counter` and `03_story_bullet`
+    And each story's `files:` names only its own `src/<helper>.mjs` and `test/<helper>.test.mjs`
+    And `00_story_joiner` reserves the separator, `01_story_labeller` the case and `03_story_bullet` the marker to the operator, each in the words "recorded nowhere … ask the operator … before any code is written", while `02_story_counter` reserves nothing
+    And `aof work validate 03` in the test-bed root prints `PASS`, pasted
 
-  Scenario: the test-bed's config turns on the lanes and a Discord channel that holds no secret
-    When the builder sets `work.loop.concurrency` in the test-bed's `.aof/aof.config.json` and runs `aof messaging enable discord` in the test-bed root
-    Then `work.loop.concurrency` is `"refine_first"`
-    And neither `work.loop.dispatch.concurrency` nor `work.dispatch.concurrency` is set below 3, so the three lanes open together while two of them wait
-    And `work.notify` is `{ "channels": { "discord": { "type": "discord" } } }`, as `enable discord` writes it or finds it already there, and no `url`, `webhook` or `token` key appears; the command's output is pasted
+  Scenario: the test-bed carries a supervised stop-and-resume target
+    When the builder adds `04_milestone_resume-target` to the test-bed's stream
+    Then it holds one refined `not-started` story, `00_story_reverser`, that reserves nothing
+    And `aof work validate 04` prints `PASS`, and `aof work loop 04 --dry-run` names a drive of `04/00`, both pasted
+
+  Scenario: the test-bed's config opens four lanes and keeps the discord channel for the operator to name
+    When the builder sets `work.dispatch.concurrency` to 4 in the test-bed's `.aof/aof.config.json`
+    Then `work.loop.concurrency` is `"refine_first"` and `aof work dispatch --list --json` answers `"bound": 4`, pasted
+    And `work.notify.channels.discord` is `{ "type": "discord" }`, which `messaging status` reports as having no channel id, because the channel id is the operator's
     And the fixture and the config are committed on the test-bed's own branch, and `git status --short` in the test-bed is empty, pasted
-
-  Scenario: no webhook URL is written anywhere
-    When `git grep -nE "discord(app)?\.com/api/webhooks/[0-9]{17,20}/[A-Za-z0-9_-]{40,}"` runs in the main checkout and in the test-bed, each with `--untracked`
-    Then both print nothing and exit 1, pasted
-    And no transcript line, STATE.md line or command the builder ran contains the stored URL or the value of `AOF_DISCORD_WEBHOOK_URL`
 
   Scenario: the check stops for the operator with its procedure written down
     Given the four scenarios above are done and pasted
     When the builder reaches the end of this task
     Then the milestone `STATE.md` holds task 01's precondition and legs as a numbered procedure, with one empty paste slot per `Then` and `And` line of task 01, each slot naming the line it discharges
-    And STATE.md names the loop scope as `03` in the test-bed, never `00`, whose items have no stories on disk
+    And STATE.md names the loop scopes as `03` and `04` in the test-bed, never `00`
     And the builder's last line is `NEEDS_INPUT`, and 131/07 stays `in-progress` until every slot is filled

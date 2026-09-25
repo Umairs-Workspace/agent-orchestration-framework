@@ -19,7 +19,7 @@ doc: state
 - [x] 04 the answer reaches the session
 - [x] 05 the board shows the question and takes the answer
 - [x] 06 the register
-- [ ] 07 the live run (`@manual`) — 09–12 accepted; waits on its re-refine for the bot, then the operator
+- [ ] 07 the live run (`@manual`) — re-refined for the bot, task 00 done; waits on the operator (STATE §131/07)
 - [x] 08 the messaging CLI
 - [x] 09 the bot posts
 - [x] 10 answer by replying in Discord
@@ -238,175 +238,188 @@ doc: state
 
 ## 131/07 · The live run — read at the source (operator procedure, pending)
 
-**RE-REFINED at `aof:verify 131` (2026-09-25, operator-directed).** 131/08 stores the webhook
-machine-wide, so the precondition is `aof messaging init discord`, not a user env var. The restart
-stays, for the new payload. Task 00 was re-done below against the re-refined contract. The
-superseded first attempt (`cf10030+dirty.20260925T095735`) is in git history at `eb26477`.
+**RE-REFINED for the bot at `aof:verify 131` (2026-09-25), after 09–12 were accepted.** 07 now proves
+the bot. It posts every ask, a Discord reply answers one ask (03/03), and the slash commands run in
+legs 2 and 7. The webhook-era contract and its task 00 are in git history at `3ba35a1`.
 
-Task 00 (the agent's half) is done and pasted below. Task 01 is the operator's, and its slots are
-empty. 131/07 stays `in-progress` until every slot is filled; `aof:verify 131` reads this section.
-Paths are scrubbed (`umami`); paste the same way.
+Task 00 (the agent's half) is done, and its output is pasted below. Task 01 is yours, and its slots
+are empty. 131/07 stays `in-progress` until every slot is filled; `aof:verify 131` reads this section.
+Paths are scrubbed (`umami`); paste the same way. Never paste the bot token or your Discord user id.
 
-### Task 00 — the stage is set (agent, re-done at `aof:verify 131`, 2026-09-25)
+### Task 00 — the stage is set (agent, 2026-09-25)
 
 verifies → `00` "the payload is installed from the main checkout and read at the source".
-`node scripts/install-local.mjs` ran from the main checkout `C:\Source\umami\aof` (branch
-`127-129`, HEAD `d7179db`) with no flags and exited 0. It printed `synced src/`, `synced bundle/ (91 files)`,
-`synced ui/dist (3 files)` and `stamped BUILD_ID.json (d7179db+dirty.20260925T131746)`. `src/`, `ui/` and
-`scripts/` are clean at `d7179db`. The `+dirty` comes only from wiki files: 134's two, the
-backlog, and this re-refine's 07 edits.
+`node scripts/install-local.mjs --skip-ui` ran from the main checkout `C:\Source\umami\aof`
+(branch `127-129`, HEAD `761961f`, which holds 09–12) and exited 0. `ui/` has not changed since
+`d7179db`: `git diff --stat d7179db HEAD -- ui` is empty. It printed `synced src/`,
+`synced bundle/ (91 files)`, `synced ui/dist (3 files)`, `synced node_modules/ (140/140 prod-closure entries)`
+and `stamped BUILD_ID.json (761961f+dirty.20260925T220438)`. The `+dirty` comes only from files
+outside `src/`: the operator's `.claude/settings.json`, 134's two files and the backlog.
 
 ```
 > ~/.aof/bin/aof.exe --version
-0.1.0 (payload d7179db+dirty.20260925T131746)
+0.1.0 (payload 761961f+dirty.20260925T220438)
 > Get-Content ~/.aof/bin/BUILD_ID.json
 {
-  "buildId": "d7179db+dirty.20260925T131746",
-  "installedAt": "2026-09-25T12:17:46.623Z",
-  "sourceRepo": "C:\Source\umami\aof"
+  "buildId": "761961f+dirty.20260925T220438",
+  "installedAt": "2026-09-25T21:04:38.285Z",
+  "sourceRepo": "c:\\Source\\umami\\aof"
 }
-> ~/.aof/bin/aof.exe work answer --help
-Unknown flag "--help" for work:answer.
-
-Usage: aof work answer <ref> "<text>" [--as <actor>] [--json]
-> ~/.aof/bin/aof.exe work loop --help
-Unknown flag "--help" for work:loop.
-
-Usage: aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--dry-run] [--quiet] [--supervised] [--json]
-> ~/.aof/bin/aof.exe messaging status        (test-bed root)
+> ~/.aof/bin/aof.exe work loop --help         (last line)
+Usage: aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--json]
+> ~/.aof/bin/aof.exe messaging status          (test-bed root)
 discord
   this machine: not set — run `aof messaging init discord`
-  env override AOF_DISCORD_WEBHOOK_URL: not set
-  this project: enabled (discord)
+  env override AOF_DISCORD_BOT_TOKEN: not set
+  this project: enabled (discord → no channel id — run `aof messaging enable discord --channel <id>`)
 ```
 
-Both usage lines carry the named flags (`--help` itself is refused CLI-wide, a known note). The
-`messaging status` block proves the payload carries 131/08. `this machine: not set` is the
-operator's first step (P.1). **Installed, restart pending (operator).**
+The status block is the bot's (`AOF_DISCORD_BOT_TOKEN`, the channel-id line), so the payload carries
+09–12. `this machine: not set` and `no channel id` are your first steps (P.1–P.4). **Installed,
+restart pending (operator).**
 
-verifies → `00` "the test-bed carries a refined fixture milestone" and "the test-bed's config".
-Test-bed `C:\Source\umami\aof-test-repo`, branch `131-07-ask-target`, commit `77382d0`, unchanged
-since the first attempt. It holds `03_milestone_ask-target` with three `not-started` stories, no runs, no
-lanes and no `depends:`. `00_story_joiner` reserves the separator, `01_story_labeller` the case,
-and `02_story_counter` nothing.
+verifies → `00` "the test-bed carries a fixture whose lanes ask three times and build once", "a
+supervised stop-and-resume target" and "the test-bed's config". The test-bed is
+`C:\Source\umami\aof-test-repo`, on branch `131-07-ask-target`, at commit `d98a001`, which sits on
+`77382d0`. `03_story_bullet` was added to `03` and reserves the marker. `04_milestone_resume-target`
+was added, with one story (`00_story_reverser`) that reserves nothing. `work.dispatch.concurrency` is
+now 4. The loop's own `work.loop.dispatch.concurrency` can only lower the cap (`src/commands/dispatch.mjs:62`),
+so it stays unset.
 
 ```
-> aof messaging enable discord                (test-bed root)
-discord is already enabled for this project ("discord") — nothing changed.
-No webhook is stored on this machine yet — run `aof messaging init discord`.
-> work.loop.concurrency / dispatch / notify   (read from .aof/aof.config.json)
-{"loopConcurrency":"refine_first","loopDispatch":null,"workDispatch":null,"notify":{"channels":{"discord":{"type":"discord"}}}}
 > aof work validate 03
 PASS — 03 is well-formed.
-> aof work next 03 --through-review --json    → wave: 03/00, 03/01, 03/02; heldSet: []
-> aof work dispatch --list --json             → "bound": 3
+> aof work validate 04
+PASS — 04 is well-formed.
+> aof work next 03 --through-review --json    → wave: 03/00, 03/01, 03/02, 03/03; heldSet: []
+> aof work dispatch --list --json             → "bound": 4
 > aof work loop 03 --dry-run
 03 — L2, cap 3: drive continue 03/00.
+> aof work loop 04 --dry-run
+04 — L2, cap 3: drive continue 04/00.
+> config (work.loop.concurrency / work.dispatch / work.notify)
+{"loopConcurrency":"refine_first","workDispatch":{"concurrency":4},"notify":{"channels":{"discord":{"type":"discord"}}}}
 > git status --short                          (test-bed)
                                               (empty)
 ```
 
-`~/.aof/mesh/loop-asks/` holds one file, `20260925T002534928Z-0009` (`01/06`, `parked`). It
-belongs to workspace `b934…`, the other repository's run named in 07's Notes, not the test-bed's
-`5229…`, so it cannot shadow an ask here. It was left alone.
-
-verifies → `00` "no webhook URL is written anywhere".
-
-```
-> git grep -nE --untracked "discord(app)?\.com/api/webhooks/[0-9]{17,20}/[A-Za-z0-9_-]{40,}"   (main)
-                                              (nothing), exit 1
-> (the same)                                  (test-bed)
-                                              (nothing), exit 1
-```
-
-The builder never read, printed or wrote the stored URL or `AOF_DISCORD_WEBHOOK_URL`'s value, and
-never opened `~/.aof/messaging/`.
+The test-bed is one of node-7297's members (`resolveNodeWorkspaces`: `52294b307214c27d …\aof-test-repo`),
+so the bot serves its channel for the slash commands. A lane's ask is posted with the PRIMARY
+checkout's workspace (`src/loop/wave.mjs` `laneAsk`, loaded from the loop's cwd), so the reply's
+allowlist is read from the test-bed root's committed config. That is why P.4 commits it. The builder
+never read, printed or wrote a token and never opened `~/.aof/messaging/`.
 
 ### Task 01 — the live run (OPERATOR — procedure and paste slots)
 
-**Scope is `03` in the test-bed, never `00`**, whose items have no stories on disk. Paste each
-source verbatim per RULING (1): diag lines keep their ISO stamp, files are pasted whole with
-`Get-Content`, and a terminal answer is preceded by `Get-Date -Format o`. A Discord message is its
-copied text plus its message id; its instant is
+**The scopes are `03` and `04` in the test-bed, never `00`.** Paste each source verbatim. Diag lines
+keep their ISO stamp, files are pasted whole with `Get-Content`, and a terminal answer is preceded by
+`Get-Date -Format o`. A Discord message is its copied text plus its message id (Settings → Advanced →
+Developer Mode, then right-click → Copy Message ID). Its instant is
 `[DateTimeOffset]::FromUnixTimeMilliseconds(([long]<id> -shr 22) + 1420070400000).ToString("o")`.
-Never paste, type or show the webhook URL.
 
 **Record once, reuse in every leg:**
-- `<buildId>` = `d7179db+dirty.20260925T131746` (task 00)
+- `<buildId>` = `761961f+dirty.20260925T220438` (task 00)
 - `<log>` = the path T1's stderr announces — slot: `______`
-- `<runA>` / `<sA>` (03/00) — slot: `______`
-- `<runB>` / `<sB>` (03/01) — slot: `______`
-- `<recA>` = `<test-bed>/.aof/mesh/dispatch-worktrees/dispatch-03-00/wiki/work/03_milestone_ask-target/stories/00_story_joiner/runs/node-7297/<runA>.json`
-- `<recB>` = the same under `dispatch-03-01/…/01_story_labeller/…/<runB>.json`
+- `<runA>` / `<sA>` (03/00), `<runB>` / `<sB>` (03/01), `<runD>` / `<sD>` (03/03) — slot: `______`
+- `<recX>` = `<test-bed>/.aof/mesh/dispatch-worktrees/dispatch-03-<SS>/wiki/work/03_milestone_ask-target/stories/<SS>_story_<slug>/runs/node-7297/<runX>.json`
 - The ask files are `~/.aof/mesh/loop-asks/<run>.json`. A transcript is found with
   `Get-ChildItem ~/.claude/projects -Recurse -Filter <sX>.jsonl`.
 
-**Set-up faults and findings.** A set-up fault from task 01's first table is noted here, fixed as its
-remedy says, and the precondition is re-checked from the top; no leg is recorded. A failure from its
-second table is recorded as a failed leg with the evidence and reported unnumbered, routed to the
-story the table names; leave the loop alone (no hand kill). Log: `______`
+**Set-up faults and findings.** A set-up fault from task 01's first table is noted here and fixed as
+its remedy says, and then the precondition is re-checked from the top. No leg is recorded for it. A
+failure from the second table is a failed leg: record it with the evidence and route it to the story
+the table names. Leave the loop alone (no hand kill). Log: `______`
 
-**P. PRECONDITION** (before any leg) — verifies → `01` "PRECONDITION — the webhook is stored on this machine and the OPERATOR restarted the desktop"
-1. In any terminal run `aof messaging init discord` and paste the webhook URL at its hidden prompt.
-   The URL is never typed into argv, a transcript or a capture.
-2. Make sure `AOF_DISCORD_WEBHOOK_URL` is NOT set (the sends must read the store).
-3. Quit the desktop app from its own UI, then relaunch it with `aof mesh desktop run`. Never use
+**P. PRECONDITION** (before any leg) — verifies → `01` "PRECONDITION — the bot is stored, invited and allowed, and the OPERATOR restarted the desktop"
+1. **Create the bot.** Go to <https://discord.com/developers/applications>, then New Application, then Bot. Turn ON
+   **Message Content Intent** (Privileged Gateway Intents), then Save. Press Reset Token and copy the token.
+   `wiki/architecture/discord-notifications.md` is the full guide.
+2. **Store it.** In any terminal run `aof messaging init discord` and paste the token at the hidden
+   prompt. It prints `Stored the Discord bot token …` and an **invite URL**.
+3. **Invite it.** Open the invite URL, pick the server that holds your channel, and Authorise.
+4. **Name the channel and yourself.** In Discord, turn on Developer Mode. Right-click the channel,
+   then Copy Channel ID. Right-click your own name, then Copy User ID. In the **test-bed root**:
+   ```
+   aof messaging enable discord --channel <channel-id>
+   ```
+   It prints `Set channel <channel-id> on "discord" for this project in …`. Then edit
+   `.aof/aof.config.json` so that `work.notify.channels.discord` reads
+   `{ "type": "discord", "channelId": "<channel-id>", "allow": ["<your-user-id>"] }`, and commit it:
+   `git commit -am "test-bed: the bot's channel and answer list"`.
+5. Make sure `AOF_DISCORD_BOT_TOKEN` is NOT set.
+6. Quit the desktop app from its own UI, then run `aof mesh desktop run`. Never use
    `Stop-Process -Force` or `taskkill`.
-4. Open T1 and T2 fresh in the test-bed root. In T2 run `aof messaging status`.
-5. Read the newest `daemon-started` entry of `~/.aof/mesh/logs/mesh-serve.log` and `mesh-ui.log`.
+7. Open T1 and T2 fresh in the test-bed root. In T2 run `aof messaging status`. Read the newest
+   `daemon-started` entry of `~/.aof/mesh/logs/mesh-serve.log` and `mesh-ui.log`. In the channel, type `/`.
 
 - Then both `daemon-started` entries name `build payload <buildId>` with an `at` after the relaunch — paste: `______`
-- And `aof messaging status` in T2 prints `this machine: set (…)`, `env override AOF_DISCORD_WEBHOOK_URL: not set` and `this project: enabled (discord)` — paste: `______`
-- And `~/.aof/bin/aof.exe --version` in T2 prints `0.1.0 (payload <buildId>)` — paste: `______`
+- And `mesh-serve.log` since that entry has no `discord-bot-off` / `discord-bot-failed` / `discord-token-rejected` / `discord-intent-disallowed` / `discord-command-register-failed` — check: `______`
+- And `aof messaging status` prints `this machine: set (…)`, `env override AOF_DISCORD_BOT_TOKEN: not set`, `this project: enabled (discord → <channel-id>, 1 may answer by reply)` — paste: `______`
+- And `/` in the channel lists the bot's `status`, `asks` and `loop` — describe: `______`
+- And `git status --short` in the test-bed is empty — paste: `______`
 
-**1. Leg 1 — the question reaches you** (verifies → `01` leg 1). In T1 run `aof work loop 03`. Record `<log>`. Wait for
-`Lane 03/00 — mint: run <runA> …`, then for `03/00 — waiting on you (build, <elapsed>): …`.
+**1. Leg 1 — the question reaches you** (verifies → `01` leg 1). In T1 run `aof work loop 03` and
+record `<log>`. Wait for `Lane 03/00 — mint: run <runA> …`, then for `03/00 — waiting on you (build, <elapsed>): …`.
 
-- Then Discord's message starts `**03/00 — waiting on you** (build, <elapsed>)`, its body is the ask and its action line is ``Answer: `aof work answer 03/00 "…"` `` — paste text + message id: `______`
+- Then the bot's message starts `**03/00 — waiting on you** (build, <elapsed>)`, its body is the ask, and its action line is ``Answer: reply to this message, or `aof work answer 03/00 "…"` `` — paste text + message id: `______`
 - And the id-derived instant is within 10 s of the row's `<log>` instant — paste both instants: `______`
-- And `<log>` has no `notify-` line between the row and the message — paste: `______`
-- And the ask file for `<runA>` reads `"state": "waiting"`, `"ref": "03/00"`, `"phase": "build"`, `"sessionId": "<sA>"`, and a `question` identical to the last assistant message of `<sA>.jsonl` — paste both: `______`
+- And the ask file for `<runA>` reads `"state": "waiting"`, `"ref": "03/00"`, `"phase": "build"`, `"sessionId": "<sA>"`, with a `question` identical to the last assistant message of `<sA>.jsonl` — paste both: `______`
 - And `<recA>` reads `"state": "running"`, and its last `asks` entry has that `question`, `askedAt` set, and `answer`/`answeredAt`/`parkedAt` null — paste whole: `______`
 
-**2. Leg 2 — the other lane keeps going** (verifies → `01` leg 2). Do not answer yet. Wait for a `Lane 03/02 — …` line in
-`<log>` after the row's instant. Read `<recA>` twice, a minute apart.
+**2. Leg 2 — the other lane keeps going; `/status` and `/asks`** (verifies → `01` leg 2). Do not answer yet.
 
-- Then that `Lane 03/02 — …` line, with its instant, and T1 shows no `halted on` line — paste: `______`
-- And T1 repeats 03/00's row with a larger elapsed — paste both rows with instants: `______`
-- And `<recA>`'s `heartbeatAt` advanced between the reads while `state` stayed `running` — paste both: `______`
+- Then a `Lane 03/02 — …` line in `<log>` after the row's instant, and no `halted on` line in T1 — paste: `______`
+- And `<recA>` read twice, a minute apart: `heartbeatAt` advanced, `state` stayed `running` — paste both: `______`
+- Then `/status` answers (only to you) `**aof-test-repo**` with a line `03/00 — waiting on you (build, <elapsed>)` — paste: `______`
+- Then `/asks` lists `03/00 — waiting on you (build, <elapsed>): <ask>` followed by a `https://discord.com/channels/…/<message>` link whose message id is leg 1's — paste: `______`
 
-**3. Leg 3 — the CLI answer** (verifies → `01` leg 3). In T2: `Get-Date -Format o`, then
+**3. Leg 3 — the CLI answer** (verifies → `01` leg 3). In T2 run `Get-Date -Format o`, then
 `aof work answer 03/00 "<your own words>" --json`.
 
-- Then the envelope reads `"ok": true`, `"runId": "<runA>"`, `"delivery": "waiting"`, `"state": "answered"`, `by` = `{ "actor": "you", "via": "cli", "node": "node-7297" }` — paste: `______`
+- Then the envelope reads `"ok": true`, `"runId": "<runA>"`, `"delivery": "waiting"`, `"state": "answered"`, with `by` = `{ "actor": "you", "via": "cli", "node": "node-7297" }` — paste: `______`
 - And within 5 s T1 prints `03/00 — answered by you (build, <elapsed>)` — paste with its `<log>` instant: `______`
-- And Discord's message starts `**03/00 — answered by you** (build, <elapsed>)`, has the answer verbatim as its body, and ends `The session is resuming.` — paste text + message id: `______`
-- And `<sA>.jsonl` gains a user turn holding the answer verbatim, stamped after it — paste: `______`
-- And `<recA>`'s last `asks` entry reads the answer verbatim, `"by": "you"` and `answeredAt` set, and `sessionId` is still `<sA>` — paste: `______`
-- Then `aof work answer 03/00 "a second answer" --json`, run while the ask file still reads `answered`, exits non-zero with `ask-already-answered` naming `you`, and `<recA>` is unchanged — paste both: `______`
+- And the bot's message starts `**03/00 — answered by you** (build, <elapsed>)`, carries the answer verbatim and ends `The session is resuming.` — paste text + message id: `______`
+- And `<sA>.jsonl` gains a user turn with the answer verbatim, and `<recA>`'s last `asks` entry reads it, `"by": "you"`, `answeredAt` set, `sessionId` still `<sA>` — paste both: `______`
+- Then `aof work answer 03/00 "a second answer" --json` exits non-zero with `ask-already-answered` naming `you`, and `<recA>` is unchanged — paste both: `______`
 
-**4. Leg 4 — the board answer** (verifies → `01` leg 4). Wait for 03/01's `waiting on you` row and its Discord message (as in
-leg 1). Open 03/01 on the board, reached your usual way.
+**4. Leg 4 — the board answer** (verifies → `01` leg 4). Wait for 03/01's row and the bot's message.
+Open 03/01 on the board.
 
-- Then the detail panel opens with the ask card: `WAITING ON YOU`, `build · <elapsed>`, the question as plain text identical to the ask file's `question`, `Your answer`, an empty textarea with no placeholder, and one disabled `Send answer` — paste: `______`
-- And the card and its state, described, with the instant — describe: `______`
-- Then, after typing your own words and pressing `Send answer`, the card shows `✓ Answered by <who> · <elapsed> — the session is resuming` and the answer verbatim below — paste: `______`
-- And the ask file for `<runB>`, read DURING the re-drive, reads `"state": "answered"`, the answer verbatim, `by.via` `"board"` — paste whole: `______`
-- And T1 prints `03/01 — answered by <who> (build, <elapsed>)` and Discord carries the matching `answered by` message — paste both: `______`
-- And `<sB>.jsonl` gains a user turn holding the answer verbatim, and `<recB>`'s last `asks` entry reads it with `answeredAt` set and `sessionId` still `<sB>` — paste both: `______`
+- Then the ask card: `WAITING ON YOU`, `build · <elapsed>`, the question as plain text (identical to the ask file's), `Your answer`, an empty textarea with no placeholder, and one disabled `Send answer` — describe with instant: `______`
+- Then, after you type your words and press Send, the card shows `✓ Answered by <who> · <elapsed> — the session is resuming` with the answer below — paste: `______`
+- And the ask file for `<runB>`, read DURING the re-drive, reads `"state": "answered"`, the answer verbatim and `by.via` `"board"` — paste whole: `______`
+- And T1 prints `03/01 — answered by <who> (build, <elapsed>)`, and the bot posts the matching `answered by` message — paste both: `______`
+- And `<recB>`'s last `asks` entry reads the answer with `answeredAt` set and `sessionId` still `<sB>` — paste: `______`
 
-**5. Leg 5 — the loop finishes** (verifies → `01` leg 5). Let it run to its end.
+**5. Leg 5 — the Discord reply** (verifies → `01` leg 5). Wait for 03/03's row and the bot's message
+`<mD>`. In Discord, hover `<mD>`, press **Reply**, and send your own words.
 
-- Then T1's last line is `03 — loop done.`, `<log>` ends `exit code=0` and holds no `halted on` line — paste with instants: `______`
-- And the test-bed's `03_milestone_ask-target/SPEC.md` reads `status: done`, Discord carries `**03 — accepted**` with the title, and there is no `loop halted` message — paste both: `______`
-- And the merged run records of 03/00 and 03/01, read in the test-bed root, each carry exactly one `asks` entry (question, answer verbatim, `by`, `askedAt`, `answeredAt`, `parkedAt` null) — paste whole: `______`
-- And the merged run records of 03/02 carry `"asks": []` — paste: `______`
-- And `Get-ChildItem ~/.aof/mesh/loop-asks/` lists no file for `<runA>` or `<runB>` — paste: `______`
+- Then within 10 s your reply gets one ✅ from the bot and no refusal line — describe with your reply's message id: `______`
+- And T1 prints `03/03 — answered by @<username> (build, <elapsed>)`, and the bot posts `**03/03 — answered by @<username>** (build, <elapsed>)` with your text verbatim — paste both: `______`
+- And the ask file for `<runD>`, read DURING the re-drive, reads `"state": "answered"`, your text verbatim, `by.actor` `"@<username>"`, `by.via` `"discord"` — paste whole: `______`
+- And `<sD>.jsonl` gains a user turn with your text verbatim, and `<recD>`'s last `asks` entry reads it with `"by": "@<username>"`, `answeredAt` set and `sessionId` still `<sD>` — paste both: `______`
 
-**6. Close-out** (verifies → `01` "every observation is in STATE.md"; checked by `aof:verify 131`)
-- Then every scenario above has its procedure as run, instants, message ids, files and records, pasted per RULING (1) and scrubbed per RULING (4) — check: `______`
+**6. Leg 6 — loop 03 finishes** (verifies → `01` leg 6). Let it run to its end.
+
+- Then T1's last line is `03 — loop done.`, and `<log>` ends `exit code=0` with no `halted on` line — paste with instants: `______`
+- And `03_milestone_ask-target/SPEC.md` reads `status: done`, the bot posts `**03 — accepted**` with the title, and there is no `loop halted` message — paste both: `______`
+- And the merged run records of 03/00, 03/01 and 03/03 (test-bed root) each carry exactly one `asks` entry with the question, the answer verbatim, `by`, `askedAt` and `answeredAt` set, and `parkedAt` null — paste whole: `______`
+- And 03/02's merged records carry `"asks": []`, and `Get-ChildItem ~/.aof/mesh/loop-asks/` lists no file for `<runA>`, `<runB>` or `<runD>` — paste: `______`
+
+**7. Leg 7 — `/loop stop` and `/loop resume`** (verifies → `01` leg 7). In T1 run
+`aof work loop 04 --supervised`. Once it is driving `04/00`, run `/loop stop scope:04` in the channel.
+After T1 halts, run `/loop resume scope:04`.
+
+- Then the stop reply reads `@<username> asked 04 to stop — draining (a second /loop stop cancels the in-flight session)` — paste: `______`
+- And the drive finishes, T1 prints a `halted on` line for `04` and exits, and `~/.aof/mesh/loop-stops/<loopRunId>.json` reads `"state": "honoured"` — paste all: `______`
+- Then the resume reply reads `@<username> handed 04 to the supervisor — it relaunches with --resume on its next poll`, and `~/.aof/mesh/loop-resumes/<loopRunId>.json`, read before the relaunch, holds `loopRunId`, `scope` `"04"`, `workspaceId`, `by`, `requestedAt` — paste both: `______`
+- And a new `~/.aof/mesh/logs/loop-diag.04.<stamp>.log`, stamped after the resume reply, ends `exit code=0`, and none of your terminals started it — paste: `______`
+- And the resume request file is gone, `04_milestone_resume-target/SPEC.md` reads `status: done`, and the bot posts `**04 — accepted**` — paste all: `______`
+
+**8. Close-out** (verifies → `01` "every observation is in STATE.md"; checked by `aof:verify 131`)
+- Then every scenario above has its procedure as run, instants, message ids, files and records, pasted and scrubbed — check: `______`
 - And each block carries its `verifies →` pointer — check: `______`
-- And no block carries the webhook URL — check: `______`
+- And no block carries the bot token or your user id — check: `______`
 
 - **The bot moves in scope (operator, 2026-09-25).** aof gets its own Discord bot, so that aof is
   an account in Discord and can be answered from it. Decisions: it posts every notification and
@@ -690,9 +703,10 @@ leg 1). Open 03/01 on the board, reached your usual way.
   `600`, dir `700`, re-applied over `644`/`755`. On win32 the case takes ruling 3's no-mode branch.
   Findings recorded here, not fixed:
   (1) **Inherited red, not 08's.** FF-11903 (`acd-cited-path-resolves`) reads 57 unresolved `src/`
-  citations against a ceiling of 55. The four from this milestone are in other stories' uncommitted
-  evidence: `src/joinWords.mjs`, `src/label.mjs` and `src/countWords.mjs` (this file, 07's procedure
-  fixture), and `src/loop/ask-requests.mjs` (VERIFICATION FF-13101's non-vacuity probe). Nothing
+  citations against a ceiling of 55. The four from this milestone were in other stories' uncommitted
+  evidence: the test-bed helpers `joinWords`, `label` and `countWords` (this file, 07's procedure
+  fixture) and FF-13101's deliberately misspelled non-vacuity probe path. All four were repaired at
+  `aof:verify 131`. Nothing
   08 wrote is on the list. The whole-tree gate at `aof:verify 131` will red on it.
   (2) `aof messaging status` inside a project whose `.aof/aof.config.json` is malformed JSON exits
   non-zero (`readConfig` throws `malformed-json`). Task 04 ruling 4 says status "exits 0 whatever it
@@ -843,11 +857,11 @@ leg 1). Open 03/01 on the board, reached your usual way.
     - 12: all five stand. That covers the checkout found through `resolveWorkspaceProjectRoot`, a
       `repark` that carries no `ask`, a re-ask with phase `null`, the carriage enforced at
       `reportAssignmentSettled`, and the board rows in `mesh-effects-outbox`.
-  - **The milestone door is still NOT reached.** (1) 07 is `in-progress`. Its contract still
-    proves the webhook, and its own note re-refines it for the bot, covering the token, `--channel`,
-    `allow`, a Discord-reply leg and the four slash commands. After that the operator runs it.
-    (2) `aof work regression-gate 131` needs a clean checkout. (3) F-131-03 (FF-11903 57/55) would
-    red that gate. (4) F-131-06 waits on the operator's ruling.
+  - **Same session, after the operator said "just get this done":** 07 was re-refined for the bot
+    and its task 00 redone (§131/07: payload `761961f+dirty.20260925T220438`, test-bed `d98a001`).
+    F-131-03 was repaired (FF-11903 green), and F-131-06 was ruled KEEP. **The milestone door waits
+    on one thing: 07's operator procedure.** After it, `aof:verify 131` accepts 07, runs
+    `aof work regression-gate 131` from a clean detached worktree, and closes the milestone.
 ## Verification
 
 <!-- Pointers, not restatements. -->
