@@ -451,7 +451,15 @@ function condensedResult({ source, body, form, where, kept = null, total = null,
 // holds. It returns which indices survived, so the caller can emit them IN DOCUMENT ORDER
 // rather than in fill order. Overshoot is impossible except for the very first entry, which
 // is taken unconditionally so a bounded condenser never answers with an empty body.
-function boundedFill({ skeleton, optional, room, join = 1 }) {
+//
+// `skeletonWhole` makes EVERY skeleton entry unconditional, not just the first. It is for a
+// condenser whose rule is that its whole skeleton is carried: the architecture slice, where each
+// declared ADR heading is what binds the story. With no decision passage to reserve for (131's
+// ADRs, written with `### Decision` headings), the reserve fix above does not apply, and a small
+// room still dropped every heading after the first while the count said "none omitted" (131/03's
+// refine brief lost ADR-004 at 131's whole-tree gate). The overshoot is a few short headings, and
+// the packer prices the section by the text it gets back.
+function boundedFill({ skeleton, optional, room, join = 1, skeletonWhole = false }) {
   const chosen = new Set();
   let used = 0;
   const take = (entry, budget) => {
@@ -475,7 +483,7 @@ function boundedFill({ skeleton, optional, room, join = 1 }) {
   const wanted = optional.length > 0 ? optional[0].length + join : 0;
   const held = wanted <= room ? wanted : 0;
   for (const entry of skeleton) {
-    if (!take(entry, room - held) && chosen.size === 0) take(entry, Infinity);
+    if (!take(entry, room - held) && (chosen.size === 0 || skeletonWhole)) take(entry, Infinity);
   }
   let kept = 0;
   for (const entry of optional) if (take(entry, room)) kept += 1;
@@ -547,8 +555,8 @@ function openingLines(passage, room) {
 // (a contract's scenario is named by its headline, not by the tag lines above it). `pad` is
 // what the caller's own layout adds around the entry, priced the way its listed form was, or
 // the entry this re-fills is not the entry the caller emits.
-function boundedFillOrOpen({ skeleton, optional, room, openedRoom, join = 1, passage, pad = 0 }) {
-  const fill = boundedFill({ skeleton, optional, room, join });
+function boundedFillOrOpen({ skeleton, optional, room, openedRoom, join = 1, passage, pad = 0, skeletonWhole = false }) {
+  const fill = boundedFill({ skeleton, optional, room, join, skeletonWhole });
   if (fill.kept > 0 || optional.length === 0) return { fill, opened: null };
   const opened = openingLines(passage, openedRoom - skeletonCost(skeleton, join) - join);
   if (opened == null) return { fill, opened: null };
@@ -559,6 +567,7 @@ function boundedFillOrOpen({ skeleton, optional, room, openedRoom, join = 1, pas
       optional: [{ index: optional[0].index, length: opened.length + pad }],
       room: openedRoom,
       join,
+      skeletonWhole,
     }),
   };
 }
@@ -746,6 +755,9 @@ export function condenseArchitectureSlice(text, { budget = PHASE_BRIEF_MAX_CHARS
   });
   const { fill, opened } = boundedFillOrOpen({
     skeleton,
+    // Whole only for a DECLARED slice: there every heading is a declared ADR, and each binds the
+    // story. A milestone brief condenses its whole record, where the headings are every H2 of it.
+    skeletonWhole: blocks.every((block) => /^##\s+ADR-\d+/u.test(block.heading)),
     optional: withDecision.map((block) => ({ index: -1 - block.index, length: block.decision.length + 1 })),
     room: roomForForm(ARCHITECTURE_FORM),
     openedRoom: roomForForm(ARCHITECTURE_OPENED_FORM),

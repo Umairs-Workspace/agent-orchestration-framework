@@ -31,9 +31,9 @@ One new leaf, one new command module, and one changed line of resolution in `del
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`, run `test/notify/index.mjs`,
+Under an isolated `AOF_GLOBAL_HOME`, run the notify suite index,
 `acd-loop-ask-reaches-every-face` and `acd-source-directory-budget` through
-`node scripts/test.mjs --only`. Then run one hand probe from a temp project with the source CLI.
+the focused runner (`--only`). Then run one hand probe from a temp project with the source CLI.
 Pipe a fixture URL into `aof messaging init discord`, then run `aof messaging enable discord` and
 `aof messaging status --json`, and grep all three outputs for the token segment. Expect no hits.
 Then start a `127.0.0.1:0` server answering 204, store ITS URL with `init`, and accept a fixture
@@ -56,5 +56,5 @@ shape check.
 - `reportDegrade` throttles per code for 5 s. The no-restart case asserts one
   `notify-channel-unconfigured` and then a delivery, so reset the sink between legs as the
   existing cases do.
-- `src/notify/`'s FF-13106 sweep also bans the literal `discord.com/api/webhooks` in `src/**`. The
+- The notify family's FF-13106 sweep also bans the literal `discord.com/api/webhooks` in `src/**`. The
   shape pattern must escape its dots.

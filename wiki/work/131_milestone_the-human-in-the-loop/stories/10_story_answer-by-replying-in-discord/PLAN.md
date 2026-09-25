@@ -31,9 +31,9 @@ index), the launcher's control branch (the connection), and `work:answer` (the a
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`, run `test/discord/index.mjs`, `test/notify/index.mjs`,
-`run-session-limit-resume`, the new arch file and `acd-source-directory-budget` through `node
-scripts/test.mjs --only`.
+Under an isolated `AOF_GLOBAL_HOME`, run the discord and notify suite indexes,
+`run-session-limit-resume`, the new arch file and `acd-source-directory-budget` through the
+focused runner (`--only`).
 
 Then run one end-to-end probe with the source tree:
 1. In a temp project, write a waiting ask file and post it through `notify`, with a fake fetch
@@ -57,7 +57,7 @@ reply.
 
 ## Known traps
 
-- `72/FF-7205`: nothing in `src/discord/` may be reached by a static import from the session
+- `72/FF-7205`: nothing in the discord family may be reached by a static import from the session
   closure. The launcher's import is deferred, and `bot.mjs` defers `command-core.mjs`.
 - `reportDegrade` throttles each code for 5 s. The fatal-close cases each assert exactly one
   degrade, so reset the sink between cases.

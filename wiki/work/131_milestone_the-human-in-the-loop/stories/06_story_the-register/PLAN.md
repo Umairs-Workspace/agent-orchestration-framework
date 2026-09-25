@@ -47,7 +47,7 @@ controls do not depend on it.
 
 - Any change to a subject file. A control that needs the code changed is a finding against the
   story that owns the file, fixed there.
-- Re-pinning `53/FF-5307` digests (01/04/05 own them) and the `src/loop` exemption (it already
+- Re-pinning `53/FF-5307` digests (01/04/05 own them) and the loop family's exemption (it already
   names `ask-request.mjs` and `ask.mjs`).
 - The live run (07).
 

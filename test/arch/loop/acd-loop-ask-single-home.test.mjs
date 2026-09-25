@@ -149,13 +149,20 @@ export function spelledAskStates(code) {
 // A module that mutates an `asks` array in place: a write the three writers never make.
 const ASKS_MUTATION_RE = /\.\s*asks\s*(?:=(?!=)|\[[^\]]*\]\s*=(?!=)|\.\s*(?:push|pop|shift|unshift|splice|fill|sort|reverse|copyWithin)\s*\()/gu;
 
+// The whole source line holding offset `at`: counted by the newlines before it, then read from the
+// split lines, so no slice end rests on an `indexOf` sentinel (F-47-04).
+function lineAt(code, at) {
+  const before = [...code.matchAll(/\n/gu)].filter((newline) => newline.index < at).length;
+  return code.split(/\r?\n/u)[before] ?? "";
+}
+
 // Every `asks:` object key in `code`, with the name of the top-level function it sits in.
 function asksKeysByFunction(code) {
   const functions = [...code.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gmu)].map((match) => ({ name: match[1], at: match.index }));
   const keys = [];
   for (const match of code.matchAll(/(?<![\w$.])asks\s*:/gu)) {
     const owner = functions.filter((fn) => fn.at < match.index).at(-1)?.name ?? "<module>";
-    const line = code.slice(code.lastIndexOf("\n", match.index) + 1, code.indexOf("\n", match.index));
+    const line = lineAt(code, match.index);
     keys.push({ owner, at: match.index, line: line.trim() });
   }
   return keys;

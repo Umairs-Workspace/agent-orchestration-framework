@@ -30,8 +30,8 @@ The credential and the sender change. The six firing sites and the envelope do n
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`, run `test/notify/index.mjs` and
-`acd-loop-ask-reaches-every-face` through `node scripts/test.mjs --only`. Then run a hand probe
+Under an isolated `AOF_GLOBAL_HOME`, run the notify suite index and
+`acd-loop-ask-reaches-every-face` through the focused runner (`--only`). Then run a hand probe
 from a temp project with the source CLI:
 1. Pipe the synthetic token into `init discord` and read the invite URL it prints.
 2. Run `enable discord --channel 123456789012345678`, then `status --json`.

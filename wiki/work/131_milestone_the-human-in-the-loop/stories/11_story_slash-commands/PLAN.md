@@ -33,9 +33,9 @@ half that owns `/loop resume`.
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`, run `test/discord/index.mjs`, `work-loop-declarations`,
-`loop-command-stops`, `acd-loop-stop-request-single-home` and 10's arch file through `node
-scripts/test.mjs --only`.
+Under an isolated `AOF_GLOBAL_HOME`, run the discord suite index, `work-loop-declarations`,
+`loop-command-stops`, `acd-loop-stop-request-single-home` and 10's arch file through the
+focused runner (`--only`).
 
 Then run a hand probe in a temp project with a supervised declaration whose latest run is `done`:
 1. `aof work loop <scope> --hand-off --json` answers `handedOff`.

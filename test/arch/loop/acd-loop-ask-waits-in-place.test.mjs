@@ -144,6 +144,13 @@ function callSites(units, name) {
   return sites;
 }
 
+// The whole source line holding offset `at`: counted by the newlines before it, then read from the
+// split lines, so no slice end rests on an `indexOf` sentinel (F-47-04).
+function lineAt(code, at) {
+  const before = [...code.matchAll(/\n/gu)].filter((newline) => newline.index < at).length;
+  return code.split(/\r?\n/u)[before] ?? "";
+}
+
 // The driver's needs-input spellings that could skip the settle: an outcome COMPARED against the
 // word, and a `"needs-input"` outside the transcript mapping that is not an argument of
 // `stopForOutcome(`. PURE over the stripped source, so the self-check can plant the skip.
@@ -160,7 +167,7 @@ export function needsInputSkips(code) {
   for (const match of code.matchAll(/["']needs-input["']/gu)) {
     if (mappingAt >= 0 && match.index > mappingAt && match.index < mappingAt + mapping.length) continue;
     if (settles.some((span) => match.index > span.open && match.index < span.close)) continue;
-    const line = code.slice(code.lastIndexOf("\n", match.index) + 1, code.indexOf("\n", match.index)).trim();
+    const line = lineAt(code, match.index).trim();
     if (!found.some((entry) => entry.endsWith(line))) found.push(`outside stopForOutcome(: ${line}`);
   }
   return found;
