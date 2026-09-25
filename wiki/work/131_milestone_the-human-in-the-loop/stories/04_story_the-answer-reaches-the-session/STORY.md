@@ -5,10 +5,10 @@ slug: the-answer-reaches-the-session
 title: "The answer reaches the session — aof work answer writes the ask file for a local lane or a primary drive, carries the answer through mesh:terminal-resume for a worker, records who and when, and the board's POST /api/work/answer is the same verb behind a loopback-guarded admission"
 parent: 131
 depends: [1, 2]
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-25
 adrs: [ADR-001, ADR-003, ADR-006]
 reads:
   - wiki/work/131_milestone_the-human-in-the-loop/SPEC.md
@@ -80,13 +80,20 @@ What lands (ADR-003 §5-§7, ADR-006 §3): `work:answer` in `src/commands/resume
 
 ## Tasks
 
-- [ ] `00_one-verb-answers-the-waiting-ask` — `work:answer` in `resume.mjs`, the ladder, the eight-key document, `by`, `session-answered`, the CLI face
-- [ ] `01_the-board-answers-through-the-same-verb` — `POST /api/work/answer`, `admitWriteRequest` hoisted over every board write (feedback included), the body lift, FF-5307 re-pinned
-- [ ] `02_one-loopback-predicate-guards-both-faces` — `isLoopbackHost` in `static-serve.mjs`, `non-loopback-host` on the board's and the fleet's write routes
-- [ ] `03_a-workers-ask-takes-the-answer-through-terminal-resume` — the mesh leg: the overlay lookup, `answer: { text, by, askedAt }` on terminal-resume, envelope, router, worker, `park-resume` record
-- [ ] `04_the-sweep-names-a-run-waiting-on-an-answer` — `work:resume`'s `waiting-on-you` row and render
+- [x] `00_one-verb-answers-the-waiting-ask` — `work:answer` in `resume.mjs`, the ladder, the eight-key document, `by`, `session-answered`, the CLI face
+- [x] `01_the-board-answers-through-the-same-verb` — `POST /api/work/answer`, `admitWriteRequest` hoisted over every board write (feedback included), the body lift, FF-5307 re-pinned
+- [x] `02_one-loopback-predicate-guards-both-faces` — `isLoopbackHost` in `static-serve.mjs`, `non-loopback-host` on the board's and the fleet's write routes
+- [x] `03_a-workers-ask-takes-the-answer-through-terminal-resume` — the mesh leg: the overlay lookup, `answer: { text, by, askedAt }` on terminal-resume, envelope, router, worker, `park-resume` record
+- [x] `04_the-sweep-names-a-run-waiting-on-an-answer` — `work:resume`'s `waiting-on-you` row and render
 
 ## Notes
 
 - A mesh-worker ask is answered here but its QUESTION is not carried to the control (the frozen assignment wire) — the board shows it as unreadable and no Discord ask fires for it; recorded in STATE as a follow-up item, not debt.
 - The answer text is refused blank, over-long, or with control characters (an ESC sequence would break the driver's bracketed paste).
+
+## Accept decision
+
+**Accepted 2026-09-25 (`aof:verify 131`).**
+- **Evidence.** The story lane is green: 64 cases, with FF-13109 green (VERIFICATION `### 131/01–06`).
+- **Gates.** `aof work validate 131` returned PASS. `aof work doctor 131` reported no `control-unresolved` at either severity and no missing red probe.
+- **Findings.** None is a blocker. F-131-08 (board GETs under DNS rebinding) is deferred to backlog and recorded as a Gap in OUTCOME.

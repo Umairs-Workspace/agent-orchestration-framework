@@ -817,4 +817,146 @@ export const meshUiServeTests = [
       }
     },
   },
+  // 131/04 — hoisted below.
+  ...loopbackHostTests(),
 ];
+
+// ---- 131/04 task 02 — one loopback predicate refuses a rebinding page on both faces ---------------
+//
+// A rebinding page sends a Host naming itself and an Origin that matches it, which the exact-string
+// Origin check admits. Node's `fetch` drops a caller-set Host, so these rows go through `node:http`.
+
+function fleetRequest(url, { method = "POST", route, host, origin, contentType, body } = {}) {
+  const target = new URL(url);
+  const headers = {};
+  if (host !== undefined) headers.host = host;
+  if (origin !== undefined) headers.origin = origin;
+  if (contentType !== undefined) headers["content-type"] = contentType;
+  return new Promise((resolve, reject) => {
+    const request = http.request({ hostname: target.hostname, port: target.port, method, path: route, headers }, (response) => {
+      let text = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => { text += chunk; });
+      response.on("end", () => {
+        let parsed = null;
+        try { parsed = text === "" ? null : JSON.parse(text); } catch { parsed = text; }
+        resolve({ status: response.statusCode, body: parsed, raw: text });
+      });
+    });
+    request.on("error", reject);
+    if (body != null) request.write(body);
+    request.end();
+  });
+}
+
+function loopbackHostTests() {
+  return [
+    {
+      name: "131/04 task02 — the predicate answers only for a loopback name (forty-seven rows)",
+      async run() {
+        const { isLoopbackHost } = await import("../../../src/static-serve.mjs");
+        const rows = [
+          ["127.0.0.1", true], ["127.0.0.1:4181", true], ["localhost", true], ["localhost:4181", true], ["LOCALHOST:4181", true],
+          ["[::1]", true], ["[::1]:4181", true], ["127.1.2.3:80", true], ["evil.example:1234", false], ["192.168.1.5:4181", false],
+          ["0.0.0.0:4181", false], ["::1", false], ["[::ffff:127.0.0.1]", false], ["localhost.evil.example", false], ["127.0.0.1.evil.example", false],
+          ["localhost:abc", false], ["user@localhost", false], ["http://localhost:4181", false], ["", false], [undefined, false],
+          ["127.0.0.1:0", true], ["127.0.0.1:65535", true], ["127.0.0.1:99999", true], ["127.0.0.1:999999", false], ["Localhost", true],
+          ["127.255.255.254", true], ["128.0.0.1", false], ["127.256.0.1", false], ["127.0.0", false], ["127.0.0.1.1", false],
+          ["127.0.0.01", false], ["0x7f.0.0.1", false], ["2130706433", false], ["127.0.0.1:", false], ["127.0.0.1:4181:1", false],
+          [" 127.0.0.1", false], ["127.0.0.1 ", false], ["localhost.", false], ["localhost:4181/path", false], ["[::1]:", false],
+          ["[::1]:abc", false], ["[::1", false], ["[::2]", false], ["[0:0:0:0:0:0:0:1]", false], [["127.0.0.1"], false],
+          [2130706433, false], [null, false],
+        ];
+        assert.equal(rows.length, 47, "every row of the truth table");
+        for (const [host, expected] of rows) assert.equal(isLoopbackHost(host), expected, `isLoopbackHost(${JSON.stringify(host)})`);
+      },
+    },
+    {
+      name: "131/04 task02 — a rebinding page is refused on the fleet's write routes, and a loopback page is not (eleven rows)",
+      async run() {
+        await withPublishedAssignFixture(async ({ url, root, workspaceId }) => {
+          await writeLoopStream(root, { state: "running", node: "control-a" });
+          const port = new URL(url).port;
+          const body = { "loop-stop": JSON.stringify({ scope: "03", workspaceId }), assign: JSON.stringify({ ref: "03/01", workspaceId, target: "control-a" }), session: JSON.stringify({ workspaceId }) };
+          const rows = [
+            ["loop-stop", "evil.example:1234", true], ["assign", "evil.example:1234", true], ["session", "evil.example:1234", true],
+            ["loop-stop", `192.168.1.5:${port}`, true], ["loop-stop", `0.0.0.0:${port}`, true], ["loop-stop", `localhost.:${port}`, true],
+            ["assign", `127.0.0.1.evil.example:${port}`, true],
+            ["loop-stop", `localhost:${port}`, false], ["loop-stop", `127.0.0.1:${port}`, false], ["loop-stop", `LOCALHOST:${port}`, false], ["loop-stop", `[::1]:${port}`, false],
+          ];
+          const stopsBefore = await requestFiles();
+          for (const [route, host, refused] of rows) {
+            const response = await fleetRequest(url, { route: `/api/mesh/${route}`, host, origin: `http://${host}`, contentType: "application/json", body: body[route] });
+            if (refused) {
+              assert.equal(response.status, 403, `${route} ${host}`);
+              assert.deepEqual(response.body, { ok: false, error: "Write refused: the page was not served from a loopback address.", code: "non-loopback-host" }, `${route} ${host}`);
+              assert.ok(!response.raw.includes(host.split(":")[0]) && !response.raw.includes(port), `${route} ${host}: names neither host nor port`);
+            } else {
+              assert.notEqual(response.body?.code, "non-loopback-host", `${route} ${host}: admitted`);
+              assert.notEqual(response.body?.code, "cross-origin-refused", `${route} ${host}: admitted`);
+              assert.equal(response.status, 200, `${route} ${host}: the route's own answer (${JSON.stringify(response.body)})`);
+            }
+          }
+          assert.ok((await requestFiles()).length > stopsBefore.length, "the admitted loopback stops reached the verb");
+        });
+      },
+    },
+    {
+      name: "131/04 task02 — method, Origin, Host and content-type are checked in that order on the fleet, and the Host check precedes the body read (five rows)",
+      async run() {
+        await withPublishedAssignFixture(async ({ url }) => {
+          const rows = [
+            ["PUT", "/api/mesh/loop-stop", "evil.example:1234", "http://evil.example:1234", "application/json", null, 405, "method-not-allowed"],
+            ["POST", "/api/mesh/loop-stop", "evil.example:1234", "http://other.example", "application/json", "{}", 403, "cross-origin-refused"],
+            ["POST", "/api/mesh/loop-stop", "evil.example:1234", "http://evil.example:1234", "text/plain", "{}", 403, "non-loopback-host"],
+            ["POST", "/api/mesh/assign", "evil.example:1234", "http://evil.example:1234", undefined, "{}", 403, "non-loopback-host"],
+            ["POST", "/api/mesh/loop-stop", "evil.example:1234", "http://evil.example:1234", "application/json", "a".repeat(2_000_000), 403, "non-loopback-host"],
+          ];
+          for (const [method, route, host, origin, contentType, body, status, code] of rows) {
+            const response = await fleetRequest(url, { method, route, host, origin, contentType, body });
+            assert.equal(response.status, status, `${method} ${route} ${origin} ${contentType}`);
+            assert.equal(response.body.code, code, `${method} ${route} ${origin} ${contentType}`);
+          }
+        });
+      },
+    },
+    {
+      name: "131/04 task02 — the predicate is one export in the shared leaf, called by both admissions",
+      async run() {
+        const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => stripComments(text));
+        const leaf = await read("src/static-serve.mjs");
+        assert.deepEqual(importSpecifiers(leaf).map((entry) => entry.specifier), ["node:path"], "static-serve.mjs imports only node:path");
+        const exported = [...leaf.matchAll(/^export function (\w+)/gmu)].map((match) => match[1]).sort();
+        assert.deepEqual(exported, ["contentType", "isLoopbackHost", "safeStaticPath", "shouldServeAppShell"]);
+        for (const rel of ["src/board-ui.mjs", "src/mesh/ui-serve.mjs"]) {
+          const source = await read(rel);
+          const at = source.indexOf("function admitWriteRequest(");
+          assert.ok(at >= 0, `${rel} defines admitWriteRequest`);
+          const helper = matchedBraceBody(source, at) ?? "";
+          assert.equal((helper.match(/isLoopbackHost\(request\.headers\.host\)/gu) ?? []).length, 1, `${rel}: one call`);
+          const origin = helper.search(/originHeader\s*!==/u);
+          const loopback = helper.indexOf("isLoopbackHost(");
+          const content = helper.search(/application\\\/json/u);
+          assert.ok(origin >= 0 && origin < loopback && loopback < content, `${rel}: between the Origin check and the content-type check`);
+          assert.equal((source.match(/isLoopbackHost\(/gu) ?? []).length, 1, `${rel}: no second isLoopbackHost( call`);
+          assert.ok(!/headers\.host\s*(?:===|!==|==|!=)/u.test(source) && !/(?:===|!==|==|!=)\s*request\.headers\.host/u.test(source), `${rel}: no comparison made on headers.host`);
+        }
+        const fleet = await read("src/mesh/ui-serve.mjs");
+        assert.equal((fleet.match(/function admitWriteRequest\(/gu) ?? []).length, 1, "the fleet still defines exactly one admitWriteRequest");
+      },
+    },
+    {
+      name: "131/04 task02 — the fleet's read route ignores the Host",
+      async run() {
+        await withPublishedAssignFixture(async ({ url }) => {
+          const port = new URL(url).port;
+          const foreign = await fleetRequest(url, { method: "GET", route: "/api/mesh/status", host: "evil.example:1234" });
+          const loopback = await fleetRequest(url, { method: "GET", route: "/api/mesh/status", host: `127.0.0.1:${port}` });
+          assert.equal(foreign.status, 200);
+          assert.equal(loopback.status, 200);
+          assert.deepEqual(Object.keys(foreign.body).sort(), Object.keys(loopback.body).sort(), "the status envelope, as with a loopback Host");
+        });
+      },
+    },
+  ];
+}

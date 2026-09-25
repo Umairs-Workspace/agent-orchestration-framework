@@ -34,7 +34,7 @@
 // `narrate` and `report` are PARAMETERS (ADR-008 §3): nothing here prints on its own. The
 // family's ONE spawn seam is `child-drive.mjs` (FF-12902); this module reaches no child process
 // and no shell, and every git act goes through `src/work/dispatch.mjs`'s composed verbs.
-import { appendFile, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { loadWorkspace } from "../work.mjs";
@@ -48,7 +48,7 @@ import {
   mapStoreRefusal,
 } from "../work/loop.mjs";
 import { readRuns, isRunning, isStale } from "../run-store.mjs";
-import { consumeHeartbeatQueue } from "../run-heartbeat-consumption.mjs";
+import { consumeHeartbeatQueue, enqueueHeartbeat } from "../run-heartbeat-consumption.mjs";
 import { transitionRunComplete, transitionRunStart, transitionStaleRunsReclaimed } from "../effects/run-transitions.mjs";
 import { reportDegrade } from "../degrade.mjs";
 import {
@@ -61,6 +61,7 @@ import {
 } from "../work/dispatch.mjs";
 import { headCommit, meshDispatchWorktreePath, resolveExec } from "../mesh/worktree.mjs";
 import { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, spawnLaneDrive as spawnLaneDriveChild } from "./child-drive.mjs";
+import { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, standingAsk } from "./ask.mjs";
 import {
   budgetElapsedMs,
   drivenRow,
@@ -151,11 +152,6 @@ async function cleanupLane(ref, lane, ctx, narrate) {
   }
 }
 
-// The heartbeat line, the hook's EXACT bytes (`src/bundle/hooks/run-heartbeat-enqueue.mjs`).
-function heartbeatLine(runId, at) {
-  return `${JSON.stringify({ runId, at })}\n`;
-}
-
 // runWaveBuild(shell) → { outcome: "complete" } | { outcome: "halt", act, details } | { outcome: "handoff", act }
 //
 // `shell` is the loop's own scope, handed in as one bag: { ctx, resolved, loopRunId, startedAt,
@@ -207,6 +203,9 @@ export async function runWaveBuild(shell) {
   const lanes = new Map(); // ref → lane state, while its child/ladder is in flight
   const laneRetries = shell.laneRetries ?? new Map(); // ref → { prior } a reconcile reclaimed
   const liveElsewhere = shell.liveElsewhere ?? new Set(); // lanes another process still heartbeats
+  // 131/03 (task 04, ruling 3) — lanes whose run waits on a human with no live owner: the wave
+  // reopens each one's slot and re-enters the wait in its own tree, minting nothing.
+  const laneReentries = shell.laneReentries ?? new Map(); // ref → { run }
   // BASELINES KEYED BY BASE COMMIT (ADR-003 §1): sha → { promise, value, settled }. Seeded from
   // the scope's runs UNION the live lanes' runs a resume reconciled, so a resumed loop never
   // pays for a baseline a lane already holds.
@@ -226,12 +225,21 @@ export async function runWaveBuild(shell) {
   const drained = [];
   const cancelled = [];
   let handoff = null;
+  // 131/03 (ADR-004 §2-§3) — the lanes whose ask parked this invocation: set aside, unmerged, and
+  // the reason the wave halts on the question when nothing else can run.
+  const parkedLanes = [];
 
   // ---- the stop (ADR-005 §4, through 130/ADR-001 §5's source): the FIRST level drains — no new
   // dispatch, every child finishes, what merges merges; the source's SIGNAL (level 2) aborts
   // every child through its stdin (end → grace → kill). The wave polls the source at every ask
   // and after every lane closes, so a `--stop` written from another terminal reaches it. ----
   const stopping = () => stopSource.level() >= 1;
+  // 131/03 (task 02, ruling 4) — a lane's wait reads the wave's own stop: the operator's level, or a
+  // halt the wave already holds from another lane (the drain), parks a waiting lane silently.
+  const laneAsk = {
+    site: ladderOptions.ask?.site ?? {},
+    deps: { ...(ladderOptions.ask?.deps ?? {}), stopping: () => stopping() || halted != null },
+  };
   const abortLanes = () => { for (const lane of lanes.values()) lane.controller.abort(); };
   if (stopSource.signal?.aborted === true) abortLanes();
   else stopSource.signal?.addEventListener?.("abort", abortLanes, { once: true });
@@ -279,10 +287,9 @@ export async function runWaveBuild(shell) {
     if (waveRun == null) return;
     const at = clock();
     try {
-      const runsDir = path.join(waveRun.item.dir, "runs");
-      await mkdir(runsDir, { recursive: true });
-      await appendFile(path.join(runsDir, ".heartbeats.ndjson"), heartbeatLine(waveRun.record.runId, at), "utf8");
-      await consumeHeartbeatQueue(waveRun.item);
+      // The hook's exact bytes, appended and consumed through the ONE enqueue (131/03, ADR-001 §3),
+      // which the owner of a run waiting on a human beats through as well.
+      await enqueueHeartbeat(waveRun.item, waveRun.record.runId, at);
     } catch (error) {
       reportDegrade("loop-wave-heartbeat", error);
     }
@@ -339,7 +346,7 @@ export async function runWaveBuild(shell) {
         await consumeHeartbeatQueue(laneItem);
         const running = (await readRuns(laneItem)).find(isRunning);
         if (running != null) {
-          if (!isStale(running, Date.parse(clock()), bounds.stalenessMs)) {
+          if (!isStale(running, Date.parse(clock()), bounds.stalenessMs) && !laneReentries.has(ref)) {
             throw Object.assign(new Error(`a non-terminal run ${running.runId} is still fresh in the lane at ${lanePath}`), { code: "duplicate-run", runId: running.runId });
           }
           advance = false;
@@ -383,7 +390,7 @@ export async function runWaveBuild(shell) {
         laneRetries.set(ref, { prior: entry.record });
         await narrate(`Reclaimed ${ref} — run ${entry.record.runId} (${entry.record.failureReason}).`);
       }
-      if ((await readRuns(laneItem)).some(isRunning)) {
+      if (!laneReentries.has(ref) && (await readRuns(laneItem)).some(isRunning)) {
         return halt(haltDecision("lane-open-failed", ref, "run-store:duplicate-run"), { lane: open.worktree, branch: open.branch });
       }
 
@@ -409,7 +416,9 @@ export async function runWaveBuild(shell) {
         let fix = pendingFixes.get(ref) ?? null;
         let pendingGrade = pendingGrades.get(ref) ?? null;
         const priorCycle = cycles.get(key) ?? 0;
-        const cycle = fix?.progressContinuation === true ? Math.max(1, priorCycle) : priorCycle + 1;
+        // A RE-ENTERED lane (131/03, task 04) keeps the run it waited on: no mint, no new cycle.
+        const reentry = laneReentries.get(ref) ?? null;
+        const cycle = reentry != null || fix?.progressContinuation === true ? Math.max(1, priorCycle) : priorCycle + 1;
         if (cycle > cap) {
           const plan = loopPlanRef({ ref, type: "story", parent: parentOf(ref) });
           const capDecision = decideCycleCapExhaustion({
@@ -455,7 +464,10 @@ export async function runWaveBuild(shell) {
         let record;
         const retry = laneRetries.get(ref);
         try {
-          if (retry != null) {
+          if (reentry != null) {
+            laneReentries.delete(ref);
+            record = (await readRuns(laneItem)).find((run) => run.runId === reentry.run.runId) ?? reentry.run;
+          } else if (retry != null) {
             const resumeDeadline = decideScheduleToClose({
               elapsedMs: budgetElapsedMs({ runs: await readRuns(laneItem), record: retry.prior, stalenessMs: bounds.stalenessMs, now: clock() }),
               ceilingMs: bounds.scheduleToCloseMs,
@@ -476,7 +488,7 @@ export async function runWaveBuild(shell) {
           throw error;
         }
         lane.runIds.push(record.runId);
-        await narrate(`Lane ${ref} — mint: run ${record.runId} (cycle ${cycle} of ${cap}, attempt ${record.attempt}).`);
+        if (reentry == null) await narrate(`Lane ${ref} — mint: run ${record.runId} (cycle ${cycle} of ${cap}, attempt ${record.attempt}).`);
 
         // ---- the fix rides a file under the aof home (ADR-005 §3) ----
         if (fix != null) {
@@ -485,14 +497,15 @@ export async function runWaveBuild(shell) {
           await writeFile(fixFile, `${JSON.stringify(fix, null, 2)}\n`, "utf8");
         }
 
-        // ---- DRIVE: the child (ADR-005 §1) ----
-        const drive = async (driveRecord) => {
+        // ---- DRIVE: the child (ADR-005 §1). A RE-drive with the operator's answer (131/03, task 02)
+        // names the run's ask file and rides without the fix, which was the session's first turn. ----
+        const drive = async (driveRecord, reply = null) => {
           const answer = await spawnLaneDrive({
             ref,
             phase: "continue",
             runId: driveRecord.runId,
             lane: open.worktree,
-            ...(fixFile == null ? {} : { fixFile }),
+            ...(reply != null ? { answerFile: askFileFor(driveRecord.runId, askEnvFor(ctx)) } : fixFile == null ? {} : { fixFile }),
             // The isolated home rides EXPLICITLY (ADR-005 §1): `AOF_GLOBAL_HOME` from this process or
             // the injected store env, so a child's stores are the parent's, never the real home.
             env: {
@@ -521,28 +534,66 @@ export async function runWaveBuild(shell) {
             lane: { worktree: open.worktree, branch: open.branch, baseCommit: lane.baseCommit },
           };
         };
+        // THE LANE'S WAIT (131/03, task 02): the composer over the lane's item and tree, re-driving
+        // the lane's own child with `--answer`. Another lane's halt drains the wave, and a waiting
+        // lane under that drain parks at its next check silently, as the operator's stop does.
+        const waitInLane = async (waiting, { reenter = false } = {}) => {
+          const waited = await awaitAnswer(waiting, {
+            ...laneAsk.site,
+            drive: (reply) => drive(waiting.record, reply),
+            ref,
+            phase: "continue",
+            item: laneItem,
+            cwd: open.worktree,
+            reenter,
+          }, laneAsk.deps);
+          if (waited.parked != null) return waited;
+          const answered = await settleDriven(waited.phaseRun, laneCtx, { now: clock(), narrate, transitionOptions: laneOpts });
+          await narrate(`Lane ${ref} — settle: ${answered.record.state}${answered.record.failureReason ? ` (${answered.record.failureReason})` : ""}.`);
+          driven.push(drivenRow(answered));
+          return { phaseRun: answered };
+        };
         let phaseRun;
         try {
-          phaseRun = await drive(record);
+          // A re-entered run is not driven again before its answer: it stands where it parked.
+          phaseRun = reentry != null
+            ? { item: laneItem, record, outcome: { outcome: "needs-input", sessionId: record.sessionId }, cycle, phase: "continue", changeBaseline: null, progressBaseCommit: lane.baseCommit, settlementContext: null, gradeAbsent: null, lane: { worktree: open.worktree, branch: open.branch, baseCommit: lane.baseCommit } }
+            : await drive(record);
           phaseRun = await settleDriven(phaseRun, laneCtx, { now: clock(), narrate, transitionOptions: laneOpts });
           await narrate(`Lane ${ref} — settle: ${phaseRun.record.state}${phaseRun.record.failureReason ? ` (${phaseRun.record.failureReason})` : ""}.`);
           driven.push(drivenRow(phaseRun));
+          // 131/03 (ADR-001 §1(a), ADR-004 §2) — A LANE THAT ASKS WAITS IN ITS SLOT while the others
+          // build: the lane promise simply stays open, so nothing about scheduling changes.
           if (phaseRun.outcome.outcome === "needs-input") {
-            return halt(haltDecision("session-needs-input", ref, "driver:needs-input"), { sessionId: phaseRun.outcome.sessionId });
+            const waited = await waitInLane(phaseRun, { reenter: reentry != null });
+            if (waited.parked != null) return await parkedLane(waited.parked);
+            phaseRun = waited.phaseRun;
           }
           if (phaseRun.outcome.outcome === "cancelled") {
             cancelled.push(ref);
             return { ref, outcome: "cancelled", lane, committed: false };
           }
           const retried = await retryUntilTerminal(phaseRun, {
-            drive: (retryRecord) => { lane.runIds.push(retryRecord.runId); return drive(retryRecord); },
+            drive: (retryRecord, reply = null) => {
+              if (reply == null) lane.runIds.push(retryRecord.runId);
+              return drive(retryRecord, reply);
+            },
             ref,
             phase: "continue",
             brief,
             item: laneItem,
             transitionOptions: laneOpts,
-          }, bookkeeping, { ...ladderOptions, ctx: laneCtx, now: clock });
+          }, bookkeeping, { ...ladderOptions, ctx: laneCtx, now: clock, ask: laneAsk });
           phaseRun = retried.phaseRun;
+          // The ladder hands a park back (task 01, ruling 8): the lane closes `parked`, as a park at
+          // its own site does. A needs-input run the ladder returned under a standing stop is handed
+          // to the composer, which parks it silently (task 02, ruling 13).
+          if (retried.parked != null) return await parkedLane(retried.parked);
+          if (retried.halt == null && phaseRun.outcome.outcome === "needs-input") {
+            const waited = await waitInLane(phaseRun);
+            if (waited.parked != null) return await parkedLane(waited.parked);
+            phaseRun = waited.phaseRun;
+          }
           if (retried.halt != null) {
             return await committedHalt(retried.halt.act, retried.halt.details);
           }
@@ -603,6 +654,17 @@ export async function runWaveBuild(shell) {
       }
       return { ...halt(act, details), ...committed, committedBeforeHalt: true };
     }
+    // A LANE WHOSE ASK PARKED (131/03, task 02) is committed on its branch — the lane commit — and
+    // closes `parked`: not merged, not cleaned up, its worktree left for `--resume` to re-enter.
+    async function parkedLane(entry) {
+      let committed = { committed: false, tip: null };
+      try {
+        committed = await commitLane();
+      } catch (error) {
+        reportDegrade("loop-lane-commit", error);
+      }
+      return { ref, outcome: "parked", lane, parked: entry, ...committed };
+    }
   }
 
   // ---- a closed lane: merge home, cleanup, the rows, the wave run's epoch ----
@@ -652,6 +714,14 @@ export async function runWaveBuild(shell) {
       if (handoff == null) handoff = closed.act;
       return;
     }
+    if (closed.outcome === "parked") {
+      // Committed, not merged, not cleaned up, and set aside for this invocation (task 02, ruling 1).
+      // Under another lane's drain it rides the drained list as parked (QA ruling 2).
+      parkedLanes.push(closed.parked);
+      setAside.add(ref);
+      if (halted != null || stopping()) drained.push({ ref, parked: true });
+      return;
+    }
     if (closed.outcome === "cancelled") {
       // A child that answered `aborted` was cancelled by someone: under the operator's second
       // signal the loop already halts `operator-interrupt`; an abort nobody here raised is still
@@ -677,8 +747,14 @@ export async function runWaveBuild(shell) {
       }
       return { wait: true };
     };
+    // 131/03 (task 02, ruling 2) — THE PARKED HALT COMES FIRST: with no open lane and a lane parked
+    // on its question, every nothing-to-dispatch branch halts on the question, not its symptom. A
+    // tick that can dispatch something still dispatches it; a malformed wave keeps its own halt.
+    const questionFirst = () => (lanes.size === 0 && parkedLanes.length > 0 ? { halt: parkedHalt(parkedLanes, haltDecision) } : null);
     if (answer?.state === "done") {
       if (lanes.size === 0) {
+        const question = questionFirst();
+        if (question != null) return question;
         await narrate("Build phase complete — every story in review.");
         return { done: true };
       }
@@ -686,6 +762,8 @@ export async function runWaveBuild(shell) {
     }
     if (answer?.state === "blocked" || answer?.state === "held") {
       if (lanes.size > 0) return await wait();
+      const question = questionFirst();
+      if (question != null) return question;
       const decision = requireDecision(decideLoop({ scope: resolved.scope, level: resolved.level, l3Gate: resolved.l3Gate, cap, next: answer }));
       const act = decision.act.act === "halt" ? decision.act : haltDecision("dependency-blocked", answer.ref ?? resolved.scope, `work:next:state=${answer.state}`);
       return { halt: { act: { ...act, ref: act.ref ?? answer.ref ?? resolved.scope }, details: { waitingOn: answer.waitingOn, skipped: answer.skipped } } };
@@ -696,6 +774,8 @@ export async function runWaveBuild(shell) {
     }
     if (wave.dispatch.length === 0) {
       if (lanes.size > 0) return await wait();
+      const question = questionFirst();
+      if (question != null) return question;
       // A wave whose members are all LIVE IN A LANE THIS LOOP DID NOT OPEN (a reconcile found a
       // still-heartbeating record there) cannot be dispatched and cannot be waited on — the loop
       // never polls foreign state — so it is the open's own refusal, by name.
@@ -762,6 +842,8 @@ export async function runWaveBuild(shell) {
       lane.promise = runLane(entry.value, member, lane).then((result) => ({ ...result, ref: entry.ref }));
     }
     if (admitted.length === 0 && lanes.size === 0 && refused.length > 0) {
+      const question = questionFirst();
+      if (question != null) return question;
       const holders = refused[0].value?.holders ?? [];
       return {
         halt: {
@@ -796,10 +878,13 @@ export async function runWaveBuild(shell) {
   }
 
   const drainedBeside = (ref) => drained.filter((entry) => entry.ref !== ref);
+  // 131/03 — the lanes parked on a question ride every halt's Details, so the account prints each
+  // ask block (task 05, QA ruling 1); a halt that is the question's own already carries them.
+  const parkedBeside = (details) => (details?.parked == null && parkedLanes.length > 0 ? { parked: [...parkedLanes] } : {});
   if (halted != null) {
     await settleWaveRun("failed");
     const others = drainedBeside(halted.act.ref);
-    return { outcome: "halt", act: halted.act, details: { ...halted.details, ...(others.length > 0 ? { drained: others } : {}) } };
+    return { outcome: "halt", act: halted.act, details: { ...halted.details, ...(others.length > 0 ? { drained: others } : {}), ...parkedBeside(halted.details) } };
   }
   if (stopping()) {
     // The producer is the source's — a VALUE (`"SIGINT"`, `"SIGTERM"` or `"stop-request"`), never
@@ -809,8 +894,16 @@ export async function runWaveBuild(shell) {
     return {
       outcome: "halt",
       act: haltDecision("operator-interrupt", resolved.scope, signal),
-      details: { signal, ...(drained.length > 0 ? { drained } : {}), ...(cancelled.length > 0 ? { cancelled } : {}) },
+      details: { signal, ...(drained.length > 0 ? { drained } : {}), ...(cancelled.length > 0 ? { cancelled } : {}), ...parkedBeside(null) },
     };
+  }
+  // A wave that ends `done` or hands off with a lane parked still halts on the question: the phase
+  // is not complete while a story waits on a human (task 02, ruling 3).
+  if (parkedLanes.length > 0) {
+    await settleWaveRun("failed");
+    const question = parkedHalt(parkedLanes, haltDecision);
+    const others = drainedBeside(question.act.ref).filter((entry) => entry.parked !== true);
+    return { outcome: "halt", act: question.act, details: { ...question.details, ...(others.length > 0 ? { drained: others } : {}) } };
   }
   if (handoff != null) {
     await settleWaveRun("done");
@@ -833,6 +926,7 @@ export async function reconcileLanes(shell) {
   const clock = () => injectedNow ?? new Date().toISOString();
   const laneRetries = new Map();
   const liveElsewhere = new Set();
+  const laneReentries = new Map();
   const laneRuns = [];
   const inScope = new Set(scopeRefs);
   const inspected = await inspectDispatchLanes(primaryRoot, scopeRefs, { exec });
@@ -857,6 +951,19 @@ export async function reconcileLanes(shell) {
     const runs = await readRuns(laneItem);
     laneRuns.push(...runs);
     const running = runs.find(isRunning);
+    // 131/03 (ADR-004 §5, task 04 rulings 3 and 13) — A LANE WAITING ON A HUMAN IS RE-ENTERED, NEVER
+    // RECLAIMED: its owner gave up (the ask is parked) or died (the run is stale), so the wave reopens
+    // its slot and re-enters the wait in the lane's own tree. An unparked ask on a fresh run has a live
+    // owner, and is left exactly as a heartbeating lane is.
+    if (running != null && standingAsk(running) != null) {
+      if (liveOwnerHolds(running, { stalenessMs: bounds.stalenessMs, nowMs: Date.parse(clock()) })) {
+        liveElsewhere.add(ref);
+        await narrate(`Lane ${ref} — live: run ${running.runId} is still heartbeating; left.`);
+        continue;
+      }
+      laneReentries.set(ref, { run: running });
+      continue;
+    }
     if (running != null) {
       const laneWorkspace = await loadWorkspace(lane.worktree, undefined, { env: ctx.globalWorkStoreOptions?.env });
       const reclaimed = await transitionStaleRunsReclaimed([laneItem], { now: clock(), stalenessThreshold: bounds.stalenessMs }, transitionOptionsFor(ctx, { workspace: laneWorkspace, lockWorkspace: ctx.workspace }));
@@ -885,11 +992,11 @@ export async function reconcileLanes(shell) {
       const merge = await mergeHome(primaryRoot, ref, { milestoneDir: milestoneItem?.dir, node, exec });
       await narrate(`Lane ${ref} — merge: ${merge.outcome}${merge.code ? ` (${merge.code})` : ""}, commit ${merge.commit}.`);
       const halt = mergeHalt(merge, ref, lane, haltDecision);
-      if (halt != null) return { halt, laneRetries, liveElsewhere, laneRuns };
+      if (halt != null) return { halt, laneRetries, liveElsewhere, laneRuns, laneReentries };
     } else {
       await narrate(`Lane ${ref} — merged: tip ${tip} is already an ancestor of HEAD.`);
     }
     await cleanupLane(ref, lane, ctx, narrate);
   }
-  return { laneRetries, liveElsewhere, laneRuns };
+  return { laneRetries, liveElsewhere, laneRuns, laneReentries };
 }

@@ -12,7 +12,7 @@ data-feed: [loop:run-resilience, loop:mesh-assignment-reclaim]
 Framework record source: `src/bundle/loops/run-liveness.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 `isStale` is the exported, clock-injected observation that compares a run's durable heartbeat with
-the liveness window (`src/run-store.mjs:969-983`). It observes the system over time, so this anchor
+the liveness window (`src/run-store.mjs:1181-1185`). It observes the system over time, so this anchor
 uses `ground: live-soak`; it does not turn the presence of a timer into a stronger claim.
 
 Both `data-feed` edges cite direct consumers. `loop:run-resilience` names `isStale` as a measurement

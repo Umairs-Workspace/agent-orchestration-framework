@@ -1679,7 +1679,7 @@ export function createMeshWorkerTerminalResumeHandler(options = {}) {
     const resume = createMeshParkResume({
       assignmentId,
       sessionId,
-      parkId,
+      parkId, answer: frame.answer,
       reservation: { reservedAt, targetNodeId, previousNodeId },
       globalWorkStoreOptions,
       sendAssignmentStatus,
@@ -1763,9 +1763,9 @@ export function createMeshWorkerTerminalResumeHandler(options = {}) {
 
       if (await checkpointCrashes("before-spawn")) return;
       const outcome = await spawnRuntime(
-        // command: null — a resume re-attaches to the conversation; there is no
-        // directive to type (the driver's command write is already null-guarded).
-        { itemRef, worktreeCwd: worktreePath, task: item?.title ?? itemRef, command: null },
+        // A resume re-attaches to the conversation; the operator's answer (131/04), when the frame
+        // carries one, is the only thing typed. Without one the driver's null-guarded write is idle.
+        { itemRef, worktreeCwd: worktreePath, task: item?.title ?? itemRef, command: frame.answer?.text ?? null },
         {
           ptySpawn: options.ptySpawn,
           which: options.which,

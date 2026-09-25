@@ -332,11 +332,23 @@ async function hitRoute(url, op) {
       body: JSON.stringify({ ref: "03/01" }),
     });
   }
+  // 131/04 — feedback passes the board's write admission too, so the probe sends the server's
+  // own origin.
   if (op === "feedback") {
     return fetch(new URL("/api/work/feedback", url), {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", origin: new URL(url).origin },
       body: JSON.stringify({ ref: "03/01", note: "route coverage probe", actor: "arch-test" }),
+    });
+  }
+  // milestone 131 / story 04 (ADR-006 §3) — `answer` is a same-origin POST like the doors. The
+  // fixture holds no ask for "03/01" and no parked worker, so the verb answers 409
+  // `answer-not-waiting` as a served JSON envelope — never the namespace's `not-found`.
+  if (op === "answer") {
+    return fetch(new URL("/api/work/answer", url), {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: new URL(url).origin },
+      body: JSON.stringify({ ref: "03/01", text: "route coverage probe" }),
     });
   }
   const query =

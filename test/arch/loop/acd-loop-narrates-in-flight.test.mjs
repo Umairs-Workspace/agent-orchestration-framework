@@ -29,7 +29,9 @@ const SHELL = "src/commands/loop.mjs";
 // function there, never a second printer. So the in-flight lines this control finds are found at
 // the narrate seam WHEREVER THEY NOW LIVE, and the family as a whole is read where the shell alone
 // was read before.
-const FAMILY = Object.freeze([SHELL, "src/loop/cycle.mjs", "src/loop/wave.mjs"]);
+// 131/03 (task 05, ruling 7) — `src/loop/ask.mjs` joins the family: the waiting, answered and
+// parked rows and the stale-ask line are narrated there, through the parameter it is handed.
+const FAMILY = Object.freeze([SHELL, "src/loop/cycle.mjs", "src/loop/wave.mjs", "src/loop/ask.mjs"]);
 const PRINTERS_CONTROL = "test/arch/command/acd-console-log-confined.test.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
@@ -144,6 +146,21 @@ export const archTests = [
       assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 11, "eleven in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving and the cleared stop request");
       assert.equal(printCalls(await source("src/loop/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
       assert.ok(inFlight.length >= 17, `the family narrates at least the seventeen the shell and the ladder hold (${inFlight.length})`);
+    },
+  },
+  {
+    name: "arch/131/03 FF-12602 (extended): the ask's rows are in flight — six narrate lines in ask.mjs, and every accountLine row is on narrate, never on report",
+    run: async () => {
+      const ask = await source("src/loop/ask.mjs");
+      const calls = printCalls(ask);
+      // The waiting row at the ask, at a re-entry and on each heartbeatMs; the parked row; the
+      // answered row; and the stale-ask line of the --resume sweep (task 04, ruling 5).
+      assert.equal(calls.filter((call) => call.seam === "narrate").length, 6, "six in-flight lines in ask.mjs");
+      assert.equal(calls.filter((call) => call.seam === "report").length, 0, "ask.mjs prints no account line");
+      const rows = [...(await family()).matchAll(/await (report|narrate)\(\s*accountLine\(/gu)].map((m) => m[1]);
+      assert.equal(rows.length, 5, "five accountLine rows in the family");
+      assert.ok(rows.every((seam) => seam === "narrate"), "every accountLine row is on narrate");
+      assert.equal(calls.filter((call) => call.text.startsWith("`Ask ${ask.runId} — stale") && call.seam === "narrate").length, 1, "the stale-ask line is in flight");
     },
   },
   {

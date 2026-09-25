@@ -29,7 +29,7 @@
 // one too, because it is answerable at the terminal and parking it fast kills the
 // session the operator is about to type into.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile, rm, utimes, stat } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm, utimes, stat } from "node:fs/promises";
 import { utimesSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -40,8 +40,14 @@ import {
   HUMAN_INPUT_TOOL_NAMES,
   NEEDS_INPUT_SENTINEL,
   DIRECTIVE_COMPLETE_SENTINEL,
+  NEEDS_INPUT_INSTRUCTION,
+  DIRECTIVE_COMPLETE_INSTRUCTION,
+  WORKER_SESSION_INSTRUCTION,
 } from "../../src/agent-session-driver.mjs";
-import { claudeProjectsDir } from "../../src/work/observe.mjs";
+import * as driverModule from "../../src/agent-session-driver.mjs";
+import { claudeProjectsDir, readLastAssistantTurn, askQuestionFromTurn, readAskQuestion } from "../../src/work/observe.mjs";
+import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { fileURLToPath } from "node:url";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 
 // withTranscriptTree(fn) — a mkdtemp root carrying BOTH the hermetic CLAUDE_CONFIG_DIR
@@ -123,6 +129,321 @@ function bumpMtimeSync(file) {
   mtimeCursor += 60_000;
   const when = new Date(mtimeCursor);
   utimesSync(file, when, when);
+}
+
+// ── milestone 131 / story 01, tasks 00-01 — the one reader of the last assistant turn, and the
+// producer's four-line form (ADR-002). The reader moved out of the driver into the transcript
+// family; the driver's outcome is a mapping over it, and the rows at the foot of this block are
+// the delivered mapping read through the driver's own watch, unchanged.
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const DRIVER_SOURCE = path.join(repoRoot, "src", "agent-session-driver.mjs");
+
+const textBlock = (text) => ({ type: "text", text });
+const toolBlock = (name, input = {}) => ({ type: "tool_use", name, input });
+const QUESTION_INPUT = { questions: [{ question: "Which store?", options: [{ label: "sqlite" }, { label: "json" }] }] };
+// A(<stop>, <content>): a string content is kept as it is; a list's strings are text blocks.
+const A = (stop, content) => ({
+  type: "assistant",
+  message: { stop_reason: stop, content: typeof content === "string" ? content : content.map((c) => (typeof c === "string" ? textBlock(c) : c)) },
+});
+const U = { type: "user", message: { content: "ok" } };
+const joinRecords = (list, sep = "\n") => `${list.map((r) => (typeof r === "string" ? r : JSON.stringify(r))).join(sep)}${sep}`;
+
+// The degrade sink, injected and reset around one call — `reportDegrade` throttles per code, so a
+// sink that is not reset would hide the second scenario's event behind the first's.
+async function withDegrades(fn) {
+  const events = [];
+  setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+  try {
+    return await fn(events);
+  } finally {
+    setDegradeSinkForTest(undefined);
+  }
+}
+
+// The instruction as delivered at 2bf716f, held as a literal rather than read through `git show`
+// (a shallow clone has no such commit). The inserted paragraph removed, the current text must
+// equal it byte for byte: the threshold for asking is not this story's to move.
+const NEEDS_INPUT_INSTRUCTION_AT_2BF716F = `You are running autonomously on a worker machine with no human present to answer
+questions in real time. If you reach a genuine judgment call you cannot safely
+resolve on your own — one where guessing risks doing the wrong thing and a human would
+need to weigh in — do not guess and do not stall silently. Instead, print the exact
+line NEEDS_INPUT on its own line, with nothing else on that line, then
+stop. Only use this for a real, blocking judgment call; keep working through every
+task you can complete confidently without it.`;
+
+const ADR_002_PARAGRAPH = 'Before you print it, write your question for a human reading it on a phone, as four short lines that begin exactly "Decision needed:", "Options:", "I would pick:" and "What the answer changes:" — the one decision you need, the options you weighed, the one you would take and why, and which tasks, files or later steps depend on the answer. Keep those four lines under 1,500 characters, and put any detail after them.';
+
+const oneSpace = (text) => text.replace(/\s+/gu, " ");
+const occurrences = (text, literal) => text.split(literal).length - 1;
+// The stripper `acd-worker-driver-no-headless-print` runs over the whole driver source.
+const stripLikeTheDriverControl = (source) => source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+const instructionTemplateOf = (source) => {
+  const open = "NEEDS_INPUT_INSTRUCTION = `";
+  const start = source.indexOf(open);
+  assert.ok(start !== -1, "the NEEDS_INPUT_INSTRUCTION template literal was found");
+  const bodyStart = start + open.length;
+  return source.slice(bodyStart, source.indexOf("`;", bodyStart));
+};
+
+function readerAndProducerTests() {
+  const readerRows = [
+    { name: "records joined by CRLF", body: joinRecords([A("end_turn", ["Q", "NEEDS_INPUT"])], "\r\n"), turn: { stopReason: "end_turn", text: "Q\nNEEDS_INPUT\n", humanInputTool: null, answered: false } },
+    { name: "a half-written trailing line", body: `${JSON.stringify(A("end_turn", ["Q"]))}\n{"type":"assistant","mess`, turn: { stopReason: "end_turn", text: "Q\n", humanInputTool: null, answered: false } },
+    { name: "a string content", body: joinRecords([A("end_turn", "plain string content")]), turn: { stopReason: "end_turn", text: "plain string content", humanInputTool: null, answered: false } },
+    { name: "text, an ordinary tool and a human-input tool", body: joinRecords([A("tool_use", ["Let me ask", toolBlock("Bash"), toolBlock("AskUserQuestion", QUESTION_INPUT)])]), turn: { stopReason: "tool_use", text: "Let me ask\n", humanInputTool: { name: "AskUserQuestion", input: QUESTION_INPUT }, answered: false } },
+    { name: "an ordinary tool alone", body: joinRecords([A("tool_use", [toolBlock("Bash")])]), turn: { stopReason: "tool_use", text: "", humanInputTool: null, answered: false } },
+    { name: "a human-input tool followed by a system record", body: joinRecords([A("tool_use", [toolBlock("AskUserQuestion", QUESTION_INPUT)]), { type: "system" }]), turn: { stopReason: "tool_use", text: "", humanInputTool: { name: "AskUserQuestion", input: QUESTION_INPUT }, answered: false } },
+    { name: "a later assistant record whose message is not an object", body: joinRecords([A("end_turn", ["one"]), { type: "assistant", message: "x" }]), turn: { stopReason: "end_turn", text: "one\n", humanInputTool: null, answered: false } },
+    { name: "a user record after the turn", body: joinRecords([A("end_turn", ["old"]), U]), turn: { stopReason: "end_turn", text: "old\n", humanInputTool: null, answered: true } },
+    { name: "max_tokens", body: joinRecords([A("max_tokens", ["cut"])]), turn: { stopReason: "max_tokens", text: "cut\n", humanInputTool: null, answered: false } },
+    { name: "no stop_reason key", body: joinRecords([{ type: "assistant", message: { content: [textBlock("streaming")] } }]), turn: { stopReason: null, text: "streaming\n", humanInputTool: null, answered: false } },
+    { name: "a text block whose text is not a string", body: joinRecords([A("end_turn", ["a", { type: "text", text: 42 }, "b"])]), turn: { stopReason: "end_turn", text: "a\nb\n", humanInputTool: null, answered: false } },
+  ];
+  const end = (text) => ({ stopReason: "end_turn", text, humanInputTool: null, answered: false });
+  const ask = (input, extra = {}) => ({ stopReason: "tool_use", text: "", humanInputTool: { name: "AskUserQuestion", input }, answered: false, ...extra });
+  const questionRows = [
+    [end("Decision needed: X\nNEEDS_INPUT\n"), "Decision needed: X"],
+    [end("Run NEEDS_INPUT now\nNEEDS_INPUT\n"), "Run NEEDS_INPUT now"],
+    [end("NEEDS_INPUT.\nNEEDS_INPUT_X\n"), "NEEDS_INPUT.\nNEEDS_INPUT_X"],
+    [end("A\r\nNEEDS_INPUT\r\nB\r\n"), "A\r\nB"],
+    [end("done\n"), "done"],
+    [end("NEEDS_INPUT\nNEEDS_INPUT\n"), null],
+    [end(""), null],
+    [end("  \n\t\n"), null],
+    [ask(QUESTION_INPUT, { text: "preamble\n" }), "Which store?\n- sqlite\n- json"],
+    [ask({ questions: [{ question: "Q1", options: [{ label: "a" }, { label: "b" }] }, { question: "Q2", options: [{ label: "c" }] }] }), "Q1\n- a\n- b\n\nQ2\n- c"],
+    [ask({ questions: [{ question: "Q3" }] }), "Q3"],
+    [ask({}), null],
+    [ask({ questions: [] }), null],
+    [ask({ questions: "Q" }), null],
+    [ask(QUESTION_INPUT, { answered: true }), null],
+    [{ stopReason: null, text: "x\n", humanInputTool: null, answered: false }, null],
+    [{ stopReason: "max_tokens", text: "cut\n", humanInputTool: null, answered: false }, null],
+    [null, null],
+  ];
+
+  return [
+    {
+      name: "131/01 task00 — an ended turn answers its stop reason and its joined text; a pending human-input tool answers the block, and a user record after it answers answered",
+      run: async () => withTranscriptTree(async ({ dir }) => {
+        await mkdir(dir, { recursive: true });
+        const file = path.join(dir, "S.jsonl");
+        await writeFile(file, joinRecords([A("end_turn", ["Decision needed: move the residue?", "NEEDS_INPUT"])]), "utf8");
+        assert.deepEqual(await readLastAssistantTurn(file), { stopReason: "end_turn", text: "Decision needed: move the residue?\nNEEDS_INPUT\n", humanInputTool: null, answered: false });
+
+        await writeFile(file, joinRecords([A("tool_use", [toolBlock("AskUserQuestion", QUESTION_INPUT)])]), "utf8");
+        const pending = await readLastAssistantTurn(file);
+        assert.equal(pending.stopReason, "tool_use");
+        assert.deepEqual(pending.humanInputTool, { name: "AskUserQuestion", input: QUESTION_INPUT });
+        assert.equal(pending.answered, false);
+        await writeFile(file, joinRecords([A("tool_use", [toolBlock("AskUserQuestion", QUESTION_INPUT)]), U]), "utf8");
+        assert.equal((await readLastAssistantTurn(file)).answered, true, "a user record after the turn answers it");
+      }),
+    },
+    {
+      name: "131/01 task00 — the turn read from each transcript shape (eleven rows)",
+      run: async () => withTranscriptTree(async ({ dir }) => {
+        await mkdir(dir, { recursive: true });
+        for (const row of readerRows) {
+          const file = path.join(dir, "S.jsonl");
+          await writeFile(file, row.body, "utf8");
+          assert.deepEqual(await readLastAssistantTurn(file), row.turn, row.name);
+        }
+      }),
+    },
+    {
+      name: "131/01 task00 — records at or before the resume baseline are not read; an absent, empty or turn-less transcript answers null",
+      run: async () => withTranscriptTree(async ({ dir }) => {
+        await mkdir(dir, { recursive: true });
+        const file = path.join(dir, "S.jsonl");
+        await writeFile(file, joinRecords([A("end_turn", ["Q", "NEEDS_INPUT"])]), "utf8");
+        const baseline = (await stat(file)).size;
+        await writeFile(file, `${await readFile(file, "utf8")}${JSON.stringify(A(null, ["streaming"]))}\n`, "utf8");
+        assert.equal((await readLastAssistantTurn(file, baseline)).stopReason, null, "the post-baseline record, never the pre-baseline ended turn");
+
+        assert.equal(await readLastAssistantTurn(path.join(dir, "absent.jsonl")), null, "an absent path");
+        await writeFile(path.join(dir, "empty.jsonl"), "", "utf8");
+        assert.equal(await readLastAssistantTurn(path.join(dir, "empty.jsonl")), null, "a zero-byte file");
+        await writeFile(file, joinRecords([U, U]), "utf8");
+        assert.equal(await readLastAssistantTurn(file), null, "only user records");
+        await writeFile(file, "{ nope\n", "utf8");
+        assert.equal(await readLastAssistantTurn(file), null, "only an unparseable line");
+        await mkdir(path.join(dir, "D.jsonl"));
+        assert.equal(await readLastAssistantTurn(path.join(dir, "D.jsonl")), null, "a directory");
+      }),
+    },
+    {
+      name: "131/01 task00 — the resume baseline keeps a record that starts on it and drops a line it cuts (ten rows, LF and CRLF)",
+      run: async () => withTranscriptTree(async ({ dir }) => {
+        await mkdir(dir, { recursive: true });
+        const file = path.join(dir, "S.jsonl");
+        for (const sep of ["\n", "\r\n"]) {
+          const first = JSON.stringify(A("end_turn", ["one"]));
+          const body = joinRecords([A("end_turn", ["one"]), A("end_turn", ["two"])], sep);
+          await writeFile(file, body, "utf8");
+          const E1 = Buffer.byteLength(first + sep);
+          const N = Buffer.byteLength(body);
+          const rows = sep === "\n"
+            ? [[0, "two\n"], [5, "two\n"], [E1 - 1, "two\n"], [E1, "two\n"], [E1 + 1, null], [N, null], [N + 10, null]]
+            : [[E1 - 1, "two\n"], [E1, "two\n"], [N, null]];
+          for (const [offset, text] of rows) {
+            const turn = await readLastAssistantTurn(file, offset);
+            assert.equal(turn == null ? null : turn.text, text, `sep ${JSON.stringify(sep)}, offset ${offset}`);
+          }
+        }
+      }),
+    },
+    {
+      name: "131/01 task00 — the question is the turn's own words, and nothing else (eighteen rows, plus the two named scenarios)",
+      run: () => {
+        assert.equal(askQuestionFromTurn(end("Decision needed: X\nOptions: a, b\n  NEEDS_INPUT  \nafter\n")), "Decision needed: X\nOptions: a, b\nafter");
+        assert.equal(askQuestionFromTurn(ask(QUESTION_INPUT)), "Which store?\n- sqlite\n- json");
+        for (const [turn, question] of questionRows) {
+          assert.equal(askQuestionFromTurn(turn), question, JSON.stringify(turn));
+        }
+      },
+    },
+    {
+      name: "131/01 task00 — readAskQuestion composes the home, the reader and the question, never throws, and degrades a fault once by name",
+      run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+        await mkdir(dir, { recursive: true });
+        const file = path.join(dir, "S.jsonl");
+        await writeFile(file, joinRecords([A("end_turn", "Decision needed: X\nNEEDS_INPUT")]), "utf8");
+        await withDegrades(async (events) => {
+          assert.equal(await readAskQuestion({ cwd, env, sessionId: "S", sinceOffset: 0 }), "Decision needed: X");
+          assert.deepEqual(events, [], "the degrade sink received nothing");
+        });
+        await withDegrades(async (events) => {
+          assert.equal(await readAskQuestion({ cwd, env, sessionId: "absent", sinceOffset: 0 }), null);
+          assert.deepEqual(events.map((e) => e.code), ["ask-question-unreadable"]);
+        });
+
+        const rows = [
+          { body: joinRecords([A("tool_use", [toolBlock("AskUserQuestion", QUESTION_INPUT)])]), id: "S", offset: 0, answer: "Which store?\n- sqlite\n- json", degrades: 0 },
+          { body: joinRecords([A("end_turn", ["NEEDS_INPUT"])]), id: "S", offset: 0, answer: null, degrades: 0 },
+          { body: joinRecords([A(null, ["x"])]), id: "S", offset: 0, answer: null, degrades: 0 },
+          { dir: true, id: "S", offset: 0, answer: null, degrades: 1 },
+          { body: joinRecords([U]), id: "S", offset: 0, answer: null, degrades: 1 },
+          { body: joinRecords([A("end_turn", ["Decision needed: X", "NEEDS_INPUT"])]), id: "S", offset: "size", answer: null, degrades: 1 },
+          { body: joinRecords([A("end_turn", ["Decision needed: X", "NEEDS_INPUT"])]), id: undefined, offset: 0, answer: null, degrades: 1 },
+        ];
+        for (const [index, row] of rows.entries()) {
+          await rm(file, { recursive: true, force: true });
+          if (row.dir) await mkdir(file);
+          else await writeFile(file, row.body, "utf8");
+          const sinceOffset = row.offset === "size" ? (await stat(file)).size : row.offset;
+          await withDegrades(async (events) => {
+            assert.equal(await readAskQuestion({ cwd, env, sessionId: row.id, sinceOffset }), row.answer, `row ${index}`);
+            assert.equal(events.filter((e) => e.code === "ask-question-unreadable").length, row.degrades, `row ${index} degrades`);
+          });
+        }
+      }),
+    },
+    {
+      name: "131/01 task00 — the driver's outcome for each last turn is the one it gives today (nine rows, through the driver's own watch)",
+      run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+        await mkdir(dir, { recursive: true });
+        const rows = [
+          [[A("end_turn", ["Q", "NEEDS_INPUT"])], { outcome: "needs-input", declared: true }],
+          [[A("end_turn", ["all done", "AOF_DIRECTIVE_COMPLETE"])], { outcome: "done", declared: true }],
+          [[A("end_turn", ["all done"])], { outcome: "done", declared: false }],
+          [[A("end_turn", ["say NEEDS_INPUT here"])], { outcome: "done", declared: false }],
+          [[A("tool_use", [toolBlock("AskUserQuestion", QUESTION_INPUT)])], { outcome: "needs-input", declared: true, pending: true }],
+          [[A("tool_use", [toolBlock("AskUserQuestion", QUESTION_INPUT)]), U], null],
+          [[A("tool_use", [toolBlock("Bash")])], null],
+          [[A(null, ["x"])], null],
+          [[A("max_tokens", ["cut"])], null],
+        ];
+        for (const [index, [records, outcome]] of rows.entries()) {
+          const sessionId = `row-${index}`;
+          const file = path.join(dir, `${sessionId}.jsonl`);
+          await writeFile(file, joinRecords(records), "utf8");
+          await bumpMtime(file);
+          const controller = new AbortController();
+          const watch = defaultWatchTranscriptCompletion({ cwd, env, sessionId, signal: controller.signal, pollMs: 10, idleMs: 0, declaredIdleMs: 0 });
+          if (outcome == null) {
+            assert.deepEqual(await settledWithin(watch, 150), { settled: false }, `row ${index} is not settled`);
+            controller.abort();
+            await settledOrFail(watch);
+          } else {
+            assert.deepEqual(await settledOrFail(watch), outcome, `row ${index}`);
+          }
+        }
+      }),
+    },
+    {
+      name: "131/01 task00 — the driver's scan is a mapping over the one reader: it imports readLastAssistantTurn, walks no transcript, and keeps the frozen seventeen",
+      run: async () => {
+        const driver = stripLikeTheDriverControl(await readFile(DRIVER_SOURCE, "utf8"));
+        assert.match(driver, /import\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*from\s*"\.\/work\/observe\.mjs"/u);
+        const spawnRuntime = driver.slice(driver.indexOf("export function defaultSpawnRuntime("));
+        assert.equal(occurrences(driver, "JSON.parse("), occurrences(spawnRuntime, "JSON.parse("), "the one JSON.parse left is the codex stdout parse in defaultSpawnRuntime");
+        assert.equal(occurrences(driver, "stop_reason"), 1, "one stop_reason read is left in the driver");
+        assert.equal(occurrences(spawnRuntime, "stop_reason"), 1, "…and it is defaultSpawnRuntime's, which is not a transcript scan");
+
+        const srcRoot = path.join(repoRoot, "src");
+        const { readdir } = await import("node:fs/promises");
+        const walk = async (d) => (await Promise.all((await readdir(d, { withFileTypes: true })).map((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : e.name.endsWith(".mjs") ? [path.join(d, e.name)] : [])))).flat();
+        for (const file of await walk(srcRoot)) {
+          const rel = path.relative(srcRoot, file).split(path.sep).join("/");
+          if (rel === "work/observe.mjs" || rel === "agent-session-driver.mjs") continue;
+          assert.equal(occurrences(stripLikeTheDriverControl(await readFile(file, "utf8")), "stop_reason"), 0, `${rel} reads no stop_reason`);
+        }
+        assert.equal(Object.keys(driverModule).length, 17, "the driver's export set is still the frozen seventeen");
+        assert.equal(driverModule.HUMAN_INPUT_TOOL_NAMES, HUMAN_INPUT_TOOL_NAMES);
+      },
+    },
+    {
+      name: "131/01 task01 — the paragraph is the ADR's text, before the sentinel sentence, with the four labels once each and in order",
+      run: () => {
+        const text = NEEDS_INPUT_INSTRUCTION;
+        const before = text.indexOf("Before you print it");
+        const instead = text.indexOf("Instead, print the exact");
+        assert.ok(before !== -1 && instead > before, "the paragraph ends before the sentinel sentence");
+        assert.equal(oneSpace(text.slice(before, instead)).trim(), ADR_002_PARAGRAPH, "the paragraph is ADR-002 §3's text");
+        const labels = ["Decision needed:", "Options:", "I would pick:", "What the answer changes:"];
+        const at = labels.map((label) => {
+          assert.equal(occurrences(text, `"${label}"`), 1, `"${label}" appears exactly once`);
+          return text.indexOf(label);
+        });
+        assert.deepEqual([...at].sort((a, b) => a - b), at, "the labels are asked in the ADR's order");
+        assert.ok(at.every((i) => i > before && i < instead), "inside the one paragraph");
+        assert.equal(occurrences(oneSpace(text), "1,500 characters"), 1);
+      },
+    },
+    {
+      name: "131/01 task01 — the producer adds no second copy of a literal the detectors read, and the threshold sentences are byte-identical to 2bf716f",
+      run: () => {
+        for (const [constant, literal, count] of [
+          [NEEDS_INPUT_INSTRUCTION, "NEEDS_INPUT", 1],
+          [NEEDS_INPUT_INSTRUCTION, "AOF_DIRECTIVE_COMPLETE", 0],
+          [WORKER_SESSION_INSTRUCTION, "Decision needed:", 1],
+          [WORKER_SESSION_INSTRUCTION, "What the answer changes:", 1],
+        ]) {
+          assert.equal(occurrences(constant, literal), count, `${literal} appears ${count} times`);
+          assert.ok(constant.split("\n").every((line) => line.trim() !== "NEEDS_INPUT" && line.trim() !== "AOF_DIRECTIVE_COMPLETE"), "no line is a bare sentinel");
+        }
+        const text = NEEDS_INPUT_INSTRUCTION;
+        const inserted = text.slice(text.indexOf("Before you print it"), text.indexOf("Instead, print the exact"));
+        assert.equal(text.replace(inserted, ""), NEEDS_INPUT_INSTRUCTION_AT_2BF716F, "the threshold sentences are byte-identical");
+        assert.ok(text.includes(`line ${NEEDS_INPUT_SENTINEL} on its own line`), "the sentinel is still requested on a line of its own");
+        assert.equal(WORKER_SESSION_INSTRUCTION, `${NEEDS_INPUT_INSTRUCTION}\n\n${DIRECTIVE_COMPLETE_INSTRUCTION}`);
+      },
+    },
+    {
+      name: "131/01 task01 — the template holds nothing a comment-stripper would eat, and the stripped source keeps the instruction whole",
+      run: async () => {
+        const source = await readFile(DRIVER_SOURCE, "utf8");
+        const raw = instructionTemplateOf(source);
+        assert.ok(!raw.includes("`") && !raw.includes("//") && !raw.includes("/*"), "no backtick, no // and no /* inside the template");
+        const stripped = oneSpace(instructionTemplateOf(stripLikeTheDriverControl(source)));
+        for (const fragment of ["Before you print it", "put any detail after them.", "Instead, print the exact", "keep working through every"]) {
+          assert.ok(stripped.includes(fragment), `the stripped template still holds "${fragment}"`);
+        }
+      },
+    },
+  ];
 }
 
 export const agentSessionDriverTranscriptTests = [
@@ -648,4 +969,6 @@ export const agentSessionDriverTranscriptTests = [
       assert.deepEqual(fake.spawnCalls[0].args.slice(-2), ["--resume", "known-session"]);
     }),
   },
+  ...readerAndProducerTests(),
 ];
+

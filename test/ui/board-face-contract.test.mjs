@@ -144,10 +144,11 @@ const getJson = async (url, route) => {
   return { status: response.status, body: await response.json() };
 };
 
+// 131/04 — every board write passes admission, so a same-origin post carries the server's Origin.
 const postJson = async (url, route, payload, { raw } = {}) => {
   const response = await fetch(new URL(route, url), {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", origin: new URL(url).origin },
     body: raw !== undefined ? raw : JSON.stringify(payload),
   });
   return { status: response.status, body: await response.json() };

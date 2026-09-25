@@ -37,6 +37,7 @@ import {
   loopScopeIncludes,
   mapStoreRefusal,
   readLoopDeclaration,
+  readLoopDeclarationRun,
   resolveLoopBound,
   resolveLoopLevel,
   resolveLoopLevelGate,
@@ -98,6 +99,7 @@ import {
   settleDriven,
   settleStoryCycle,
   transitionOptionsFor,
+  reenterPrimaryAsks,
 } from "../loop/cycle.mjs";
 export {
   LOOP_FIX_TRANSPORT_KEYS,
@@ -132,8 +134,17 @@ import { reportDegrade } from "../degrade.mjs";
 import { commitWorktreeChanges, resolveExec } from "../mesh/worktree.mjs";
 import { reconcileLanes, runWaveBuild } from "../loop/wave.mjs";
 import { spawnLaneDrive } from "../loop/child-drive.mjs";
+import {
+  askBlockLines,
+  askContext,
+  askEnvFor,
+  awaitAnswer,
+  isParkedHalt,
+  parkedHalt,
+} from "../loop/ask.mjs";
 // 2026-09-11 — the loop's exit-reason recorder; installed only at the launch seam below.
-import { installLoopDiagnostics } from "../loop-diag.mjs";
+import { installLoopDiagnostics, loopDiagLogDir, loopDiagScopeTag, readLastLoopDiagEvent } from "../loop-diag.mjs";
+import { buildNotifyEnvelope, notify } from "../notify/notify.mjs";
 // 130/02 (ADR-002, ADR-003) — THE STOP. `--stop` rides `run` through the ONE verb core below the
 // command layer; the shell reads the ONE interrupt source (`ctx.stopSource ?? createStopSource`)
 // instead of a `process.once` flag, and every write to the request goes through
@@ -818,7 +829,13 @@ async function reportLine(report, state, details = {}) {
   for (const ref of acceptedMilestones) {
     await report(`Accepted milestone ${ref}.`);
   }
-  await report(`${renderLoopState(state)}${reportFacts(details)}`);
+  // 131/03 (ADR-004 §4, DESIGN §4) — A HALT THAT PARKED ASKS PRINTS THEM, whatever the stop: the
+  // halt line names each parked entry in four keys and stays one line, and the ask block follows
+  // it on `report` — the account — so the answer command is never lost (task 05).
+  const parked = Array.isArray(details.parked) && details.parked.length > 0 ? details.parked : null;
+  const shown = parked == null ? details : { ...details, parked: parked.map(({ ref, runId, sessionId, askedAt }) => ({ ref, runId, sessionId, askedAt })) };
+  await report(`${renderLoopState(state)}${reportFacts(shown)}`);
+  if (parked != null) for (const line of askBlockLines(parked)) await report(line);
 }
 
 async function runL1({ scope, level, cap, loopRunId, startedAt, resume }, ctx, report) {
@@ -909,7 +926,34 @@ function recoveredProgressStates(runs, loopRunId) {
   return states;
 }
 
+// runLoopLaunch(input, ctx) — THE LAUNCH BODY (131/03, task 06 ruling 7): everything the `cli.launch`
+// closure did after installing the diag recorder and the printer. It awaits the loop and then
+// announces a halt ONCE, after the whole account has been printed (ADR-005 §4): every halt the body
+// RETURNS except the question's own (`session-needs-input` announced itself), and never a `done`, a
+// hand-off, an L1 report or a `Nothing to resume`. It is awaited, and it changes neither the state
+// nor the exit code; a body that throws announces nothing.
+export async function runLoopLaunch(input, ctx = {}) {
+  let ended = null;
+  const state = await runLoopBody(input, { ...ctx, onLoopEnd: (end) => { ended = end; } });
+  const act = ended?.act;
+  if (act?.act === "halt" && ended.nothingToResume !== true && ended.level !== "L1" && !isParkedHalt(act) && ended.workspace != null) {
+    const at = new Date(input.now ?? Date.now());
+    const envelope = buildNotifyEnvelope("loop-halted", {
+      ref: state.scope,
+      elapsedMs: Math.max(0, at.getTime() - Date.parse(ended.startedAt)) || 0,
+      stop: { id: act.stop ?? null, producer: act.producer ?? null, remedy: act.remedy ?? null, ref: act.ref ?? null },
+    }, { config: ended.workspace.config, now: () => at });
+    await notify(ended.workspace, envelope, ctx.notifyOptions ?? {});
+  }
+  return state;
+}
+
+// runLoopBody(input, ctx) — the loop, then ONE call of `ctx.onLoopEnd` (131/03, task 06 ruling 11)
+// just before it returns a state: the RAW act (the loop document's `actShape` drops `remedy`), the
+// loop's `startedAt`, its level, the workspace, and whether it was a `Nothing to resume`. A body
+// that throws calls no sink: its death is the next `--resume`'s to report.
 export async function runLoopBody(input, suppliedCtx = {}) {
+  const end = { act: null, startedAt: null, level: null, workspace: null, nothingToResume: false };
   // `let`, for exactly one reassignment below: once the stop source is composed, every drive's
   // ctx carries its signal (130/02, ADR-003 §1), and the ctx the body drives with IS that one.
   let ctx = suppliedCtx.workspace
@@ -942,6 +986,12 @@ export async function runLoopBody(input, suppliedCtx = {}) {
   const startedAt = input.startedAt
     ?? resolved.resume.lastDeclaration?.startedAt
     ?? new Date().toISOString();
+  end.startedAt = startedAt;
+  end.workspace = ctx.workspace;
+  const endState = (fields) => {
+    end.act = fields.act;
+    return loopState(fields);
+  };
   const loopRunId = input.resume === true
     ? resolved.resume.lastDeclaration?.loopRunId ?? randomUUID()
     : randomUUID();
@@ -1022,12 +1072,14 @@ export async function runLoopBody(input, suppliedCtx = {}) {
   // source (`"SIGINT"`, `"SIGTERM"` or `"stop-request"`), never a message match. `drive` is the
   // settled phase run the halt stands over, when there is one: a cancelled record names itself
   // on the mark and in `Details`; a `needs-input` drive is not settled and names its session.
-  const haltOnStop = async (next, ref, drive = null) => {
+  // 131/03 — a stop that arrived DURING a wait parked the ask: `parked` rides the Details, so the
+  // account prints the ask block and the answer command is never lost (task 01, QA ruling 3).
+  const haltOnStop = async (next, ref, drive = null, parked = null) => {
     const cancelled = drive?.record?.state === "cancelled" ? drive.record.runId : null;
     const sessionId = drive?.outcome?.outcome === "needs-input" ? drive.outcome.sessionId ?? null : null;
     await markHonoured(cancelled);
-    const state = loopState({ ...resolved, loopRunId, next, act: haltDecision("operator-interrupt", ref, source.producer()), resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
-    await reportLine(report, state, { ...stopFacts(), cancelled, sessionId });
+    const state = endState({ ...resolved, loopRunId, next, act: haltDecision("operator-interrupt", ref, source.producer()), resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+    await reportLine(report, state, { ...stopFacts(), cancelled, sessionId, ...(parked == null ? {} : { parked }) });
     return state;
   };
   // Every drive's ctx carries the source's `signal` beside the caller's own driver options
@@ -1037,17 +1089,31 @@ export async function runLoopBody(input, suppliedCtx = {}) {
   // it — to the in-process drive, the retry ladder, the cross to verify and the wave alike.
   ctx = { ...ctx, agentSessionDriverOptions: { ...(ctx.agentSessionDriverOptions ?? {}), signal: source.signal } };
   const driven = [];
+  // 131/03 — WHAT EVERY NEEDS-INPUT SITE OF THIS INVOCATION SHARES (ADR-004 §1): the loop's scope and
+  // id, the workspace's id, and the composer's seams over this body's own source and printer. The
+  // bound of a wait counts from the later of its ask and THIS invocation's start (ADR-001 §4).
+  const ask = askContext({
+    ctx,
+    stopSource: source,
+    narrate,
+    bounds: { scheduleToCloseMs, heartbeatMs: stalenessMs },
+    invokedAt: new Date(input.now ?? Date.now()).toISOString(),
+    scope: resolved.scope,
+    loopRunId,
+  });
 
+  const walk = async () => {
   try {
     if (input.resume === true && !resolved.resume.lastDeclaration) {
       const { next, decision } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
-      const state = loopState({
+      const state = endState({
         ...resolved,
         loopRunId,
         next,
         act: decision.act,
         resumable: { stranded: [], lastDeclaration: null },
       });
+      end.nothingToResume = true;
       await report(`Nothing to resume in ${resolved.scope} — no run carries a loop declaration.`);
       return state;
     }
@@ -1063,6 +1129,27 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       if (standing != null) {
         await clearStopRequest(stopsDir, loopRunId);
         await narrate(`Cleared stop request for ${loopRunId} (${standing.state}, level ${standing.level}) — resumed.`);
+      }
+      // 131/03 (ADR-005 §4, task 06) — A LOOP THAT DIED WITHOUT A WORD IS REPORTED BY THE NEXT
+      // INVOCATION OF IT: when the run the latest declaration was read from is still `running` and
+      // stale, the prior loop died (`loop-died`), or was relaunched by its supervisor
+      // (`loop-relaunched`, read off the PRIOR declaration). A run waiting on a human is never
+      // stranded (131/01's reclaim skip), so a wait is never reported as a death. The cause is the
+      // last line of the scope's newest earlier diag log.
+      const declared = readLoopDeclarationRun(resolved.resume.runs);
+      if (declared != null && resolved.resume.stranded.some((run) => run.runId === declared.runId)) {
+        const last = await readLastLoopDiagEvent({
+          dir: loopDiagLogDir(askEnvFor(ctx)),
+          scopeTag: loopDiagScopeTag(["loop", resolved.scope]),
+          exclude: ctx.diagLogPath ?? null,
+        });
+        const at = new Date(input.now ?? Date.now());
+        const death = buildNotifyEnvelope(declared.brief.loop.supervised === true ? "loop-relaunched" : "loop-died", {
+          ref: resolved.scope,
+          elapsedMs: Math.max(0, at.getTime() - Date.parse(declared.brief.loop.startedAt)) || 0,
+          outcome: { cause: last == null ? null : last.detail == null ? last.event : `${last.event} ${last.detail}` },
+        }, { config: ctx.workspace.config, now: () => at });
+        await notify(ctx.workspace, death, ctx.notifyOptions ?? {});
       }
       let resumedProgressHalt = null;
       const reclaimed = await transitionStaleRunsReclaimed(
@@ -1169,7 +1256,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
             if (reviewDecision.act === "halt") {
               const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
               const halt = { ...reviewDecision, ref: item.ref };
-              const state = loopState({
+              const state = endState({
                 ...resolved,
                 loopRunId,
                 next,
@@ -1203,7 +1290,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       }
       if (resumedProgressHalt != null) {
         const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
-        const state = loopState({
+        const state = endState({
           ...resolved,
           loopRunId,
           next,
@@ -1243,6 +1330,8 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       // 130/02 (ADR-003 §7) — the retry ladder reads the source after every attempt it settles, so
       // the order settle → interrupt → needs-input → retry holds at that drive site too.
       stopSource: source,
+      // 131/03 — the ladder's and the verify cross's needs-input sites wait through the composer.
+      ask,
       narrate,
       report,
       input,
@@ -1286,9 +1375,12 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       // the pool's bound; `null` (unset) passes nothing, and admission is the pool's as at HEAD.
       laneBound: loopDispatchConcurrencyFromConfig(ctx.workspace),
     };
-    const laneMemory = { laneRetries: new Map(), liveElsewhere: new Set(), laneRuns: [] };
+    const laneMemory = { laneRetries: new Map(), liveElsewhere: new Set(), laneRuns: [], laneReentries: new Map() };
     const scopeRefs = (await localScopeItems(resolved.scope, ctx)).items.map((item) => item.ref);
 
+    // THE ONE PRE-WALK HALT SITE (131/03, task 04 ruling 14): the reconcile's halt and the primary
+    // re-entry's halts are reported here, once, before the walk begins.
+    let preWalkHalt = null;
     // RECONCILE LIVE LANES BEFORE THE FIRST ASK (ADR-007 §4) — a resume under `refine_first` walks
     // nothing until every lane under the dispatch root is classified and handled; `sequential`
     // runs no reconciliation and touches no lane.
@@ -1303,14 +1395,26 @@ export async function runLoopBody(input, suppliedCtx = {}) {
         resolveItem: (ref) => resolveItemExact(ctx, ref),
         haltDecision,
       });
-      if (reconciled.halt != null) {
-        const state = loopState({ ...resolved, loopRunId, next: null, act: reconciled.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
-        await reportLine(report, state, reconciled.halt.details);
-        return state;
+      if (reconciled.halt != null) preWalkHalt = reconciled.halt;
+      else {
+        laneMemory.laneRetries = reconciled.laneRetries;
+        laneMemory.liveElsewhere = reconciled.liveElsewhere;
+        laneMemory.laneRuns = reconciled.laneRuns;
+        laneMemory.laneReentries = reconciled.laneReentries;
       }
-      laneMemory.laneRetries = reconciled.laneRetries;
-      laneMemory.liveElsewhere = reconciled.liveElsewhere;
-      laneMemory.laneRuns = reconciled.laneRuns;
+    }
+    // 131/03 (ADR-004 §5, task 04) — `--resume` RE-ENTERS every in-scope primary run still waiting on
+    // a human, after the stop source has started and before the first act; asks with no waiting run
+    // behind them are swept first. A park halts on the question, before any new drive is minted.
+    if (preWalkHalt == null && input.resume === true) {
+      const reentry = await reenterPrimaryAsks({ ctx, primaryRoot: ctx.workspace.projectRoot, scope: resolved.scope, items: resolved.resume.items, ask, bookkeeping, ladderOptions, input, stalenessMs, narrate, factsFor });
+      if (reentry.stopped) return await haltOnStop(null, reentry.ref, reentry.drive, reentry.parked);
+      preWalkHalt = reentry.halt;
+    }
+    if (preWalkHalt != null) {
+      const state = endState({ ...resolved, loopRunId, next: null, act: preWalkHalt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+      await reportLine(report, state, preWalkHalt.details);
+      return state;
     }
 
     for (;;) {
@@ -1337,6 +1441,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           laneRuns: laneMemory.laneRuns,
           laneRetries: laneMemory.laneRetries,
           liveElsewhere: laneMemory.liveElsewhere,
+          laneReentries: laneMemory.laneReentries,
           resolveItem: (ref) => resolveItemExact(ctx, ref),
           haltDecision,
           requireDecision,
@@ -1352,7 +1457,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           // cancelled are named by ref in its details, so the mark carries no single run.
           const onStop = built.act.stop === "operator-interrupt";
           if (onStop) await markHonoured(null);
-          const state = loopState({ ...resolved, loopRunId, next: null, act: built.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+          const state = endState({ ...resolved, loopRunId, next: null, act: built.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
           await reportLine(report, state, onStop ? { ...stopFacts(), ...built.details } : built.details);
           return state;
         }
@@ -1384,7 +1489,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
         const committed = refined > 0 ? await commitOwnWrites(resolved.scope, ctx, { node: ladderOptions.node, exec: ctx.exec }) : { committed: false, sha: null };
         if (committed.refused != null) {
           const halt = haltDecision("lane-merge-refused", resolved.scope, `dispatch:commit-own-writes:${committed.refused.code}`);
-          const state = loopState({ ...resolved, loopRunId, next, act: halt, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+          const state = endState({ ...resolved, loopRunId, next, act: halt, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
           await reportLine(report, state, { message: committed.refused.message });
           return state;
         }
@@ -1397,7 +1502,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       // range whose units were all handed to a planner is not a range anybody closed.
       if (exhausted === true) {
         const halt = decideReadySetExhausted({ ref: lastSetAside, cap: resolved.cap });
-        const state = loopState({
+        const state = endState({
           ...resolved,
           loopRunId,
           next,
@@ -1416,7 +1521,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       if (source.level() >= 1) return await haltOnStop(next, inFlightRef ?? next?.ref ?? resolved.scope);
       if (act.act === "halt" && act.ref == null) act = { ...act, ref: next?.ref ?? resolved.scope };
       if (act.act === "done" || act.act === "halt") {
-        const state = loopState({
+        const state = endState({
           ...resolved,
           loopRunId,
           next,
@@ -1447,7 +1552,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           pendingFixes, pendingGrades, loopRunId,
         });
         if (gated.halt != null) {
-          const state = loopState({ ...resolved, loopRunId, next, act: gated.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+          const state = endState({ ...resolved, loopRunId, next, act: gated.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
           await reportLine(report, state, gated.halt.details);
           return state;
         }
@@ -1461,7 +1566,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       // decision always starts at drive/halt/done.
       if (act.act !== "drive") {
         act = haltDecision("unmapped-item-type", next?.ref ?? resolved.scope, "unexpected-engine-act");
-        const state = loopState({ ...resolved, loopRunId, next, act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+        const state = endState({ ...resolved, loopRunId, next, act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
         await reportLine(report, state, { itemType: next?.type });
         return state;
       }
@@ -1517,7 +1622,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           // graded in THIS iteration (no build ran yet), so there is no trailing grade: the
           // record is the union over the runs this loop already minted.
           const halt = { ...capDecision, ref: capDecision.ref ?? exhaustedRef };
-          const state = loopState({ ...resolved, loopRunId, next, act: halt, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+          const state = endState({ ...resolved, loopRunId, next, act: halt, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
           await reportLine(report, state, { cap: resolved.cap, findings: await accumulatedRecord(ctx, exhaustedRef, loopRunId) });
           return state;
         }
@@ -1617,7 +1722,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           });
           if (resumeDeadline.act === "halt") {
             const halt = { ...resumeDeadline, ref: act.ref };
-            const state = loopState({ ...resolved, loopRunId, next, act: halt, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+            const state = endState({ ...resolved, loopRunId, next, act: halt, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
             await reportLine(report, state, { deadline: halt.deadline, ceilingMs: halt.ceilingMs, elapsedMs: halt.elapsedMs, disposition: halt.disposition });
             return state;
           }
@@ -1642,7 +1747,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
           const stop = storeStop(error);
           if (stop != null) {
             stop.ref = act.ref;
-            const state = loopState({ ...resolved, loopRunId, next, act: stop, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+            const state = endState({ ...resolved, loopRunId, next, act: stop, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
             await reportLine(report, state, {
               readyAt: error.readyAt,
               attempt: resumedLineage.prior.attempt,
@@ -1669,22 +1774,46 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       if (source.level() >= 1) return await haltOnStop(next, act.ref, phaseRun);
 
       if (phaseRun.outcome.outcome === "needs-input") {
-        const halt = haltDecision("session-needs-input", act.ref, "driver:needs-input");
-        const state = loopState({ ...resolved, loopRunId, next, act: halt, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
-        await reportLine(report, state, { sessionId: phaseRun.outcome.sessionId });
-        return state;
+        // 131/03 (ADR-001 §1(b), ADR-004 §3) — THE PRIMARY DRIVE WAITS IN THIS PROCESS and resumes the
+        // same run with the answer; only a park halts, on the question. The re-drive is a closure
+        // over this site's own drive, so no new drive site appears.
+        const waited = await awaitAnswer(phaseRun, {
+          ...ask.site,
+          drive: (answer) => drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord: phaseRun.record, answer, gradeAbsent, changeBaseline, progressBaseCommit, now: input.now }, ctx),
+          ref: act.ref,
+          phase: act.phase,
+          item: phaseRun.item,
+          cwd: ctx.workspace.projectRoot,
+        }, ask.deps);
+        if (waited.parked != null) {
+          if (source.level() >= 1) return await haltOnStop(next, act.ref, phaseRun, [waited.parked]);
+          const questionHalt = parkedHalt([waited.parked], haltDecision);
+          const state = endState({ ...resolved, loopRunId, next, act: questionHalt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+          await reportLine(report, state, questionHalt.details);
+          return state;
+        }
+        phaseRun = await settleDriven(waited.phaseRun, ctx, { now: input.now, narrate });
+        driven.push(drivenRow(phaseRun));
+        await source.poll();
+        if (source.level() >= 1) return await haltOnStop(next, act.ref, phaseRun);
       }
 
       {
         const retried = await retryUntilTerminal(phaseRun, {
-          drive: (retryRecord) => drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord, fix, gradeAbsent, changeBaseline, progressBaseCommit, now: input.now }, ctx),
+          drive: (retryRecord, answer = null) => drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord, fix, answer, gradeAbsent, changeBaseline, progressBaseCommit, now: input.now }, ctx),
           ref: act.ref,
           phase: act.phase,
           brief,
         }, bookkeeping, { ...ladderOptions, now: input.now });
         phaseRun = retried.phaseRun;
+        // A park the ladder handed back (task 01, ruling 8) is the shell's to name: the stop when one
+        // stands, the question otherwise — through the ladder's own halt below.
+        if (retried.parked != null) {
+          if (source.level() >= 1) return await haltOnStop(next, act.ref, phaseRun, [retried.parked]);
+          retried.halt = parkedHalt([retried.parked], haltDecision);
+        }
         if (retried.halt != null) {
-          const state = loopState({ ...resolved, loopRunId, next, act: retried.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+          const state = endState({ ...resolved, loopRunId, next, act: retried.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
           await reportLine(report, state, retried.halt.details);
           return state;
         }
@@ -1715,9 +1844,9 @@ export async function runLoopBody(input, suppliedCtx = {}) {
         // against the source before the ladder's own halt, so an interrupt over a `needs-input`
         // verify names the session, and a cancelled verify names its run.
         await source.poll();
-        if (source.level() >= 1) return await haltOnStop(next, act.ref, settled.verified ?? null);
+        if (source.level() >= 1) return await haltOnStop(next, act.ref, settled.verified ?? null, settled.parked == null ? null : [settled.parked]);
         if (settled.next === "halt") {
-          const state = loopState({ ...resolved, loopRunId, next, act: settled.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+          const state = endState({ ...resolved, loopRunId, next, act: settled.halt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
           await reportLine(report, state, settled.halt.details);
           return state;
         }
@@ -1726,6 +1855,10 @@ export async function runLoopBody(input, suppliedCtx = {}) {
   } finally {
     source.stop();
   }
+  };
+  const state = await walk();
+  await suppliedCtx.onLoopEnd?.({ ...end, act: end.act ?? state?.act ?? null, level: state?.level ?? end.level });
+  return state;
 }
 
 export function renderLoopState(state) {
@@ -1811,7 +1944,9 @@ export const loopCommand = {
         // debugged; `AOF_LOOP_DIAG=0` opts out. It tees stdout and stderr into its log and
         // announces the log's path on stderr, so the printer below stays the one it was.
         const diag = installLoopDiagnostics({ argv: process.argv.slice(2) });
-        return runLoopBody(input, {
+        return runLoopLaunch(input, {
+          // 131/03 — this invocation's own log, which the death report of the loop it resumes skips.
+          diagLogPath: diag?.logPath ?? null,
           config: faceCtx.options.config,
           // THE SEQUENTIAL DRIVE IS A CHILD PROCESS (2026-09-24): the loop's own process hosts no
           // PTY on any path, so the console-scoped kill of a finished session can only take a

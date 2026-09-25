@@ -130,7 +130,7 @@ export const runStatusDocumentFrozenTests = [
         await mintDiskRun(fx, { brief: { loop } });
         const document = await status(fx, "00");
         const [record] = document.runs;
-        assert.equal(Object.keys(record).length, 16, "the disk-read record carries exactly the sixteen record keys");
+        assert.equal(Object.keys(record).length, 17, "the disk-read record carries exactly the seventeen record keys (131 appended asks)");
         assert.deepEqual(Object.keys(record.brief.loop), Object.keys(loop), "the envelope's eight keys, in order");
         assert.deepEqual(record.brief.loop, loop, "…with its values intact");
 

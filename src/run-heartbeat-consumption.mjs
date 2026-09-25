@@ -1,4 +1,4 @@
-import { readFile, rename, rm } from "node:fs/promises";
+import { appendFile, mkdir, readFile, rename, rm } from "node:fs/promises";
 import path from "node:path";
 
 import { reportDegrade } from "./degrade.mjs";
@@ -57,6 +57,17 @@ export async function consumeHeartbeatQueue(item) {
     }
   }
   await rm(batch, { force: true });
+}
+
+// enqueueHeartbeat(item, runId, at) — THE ONE ENQUEUE a loop-side beat takes (131/03, ADR-001 §3):
+// the hook's EXACT bytes (`src/bundle/hooks/run-heartbeat-enqueue.mjs`) appended to the item's
+// queue, then consumed through the one writer above — never `heartbeat()` called directly. The
+// wave run's interval and the ask's owner, beating a run that waits on a human, both call it. It
+// THROWS, and each caller degrades under its own code.
+export async function enqueueHeartbeat(item, runId, at) {
+  await mkdir(runsDir(item), { recursive: true });
+  await appendFile(path.join(runsDir(item), HEARTBEAT_QUEUE), `${JSON.stringify({ runId, at })}\n`, "utf8");
+  await consumeHeartbeatQueue(item);
 }
 
 export async function readConsumedHeartbeatAt(item, runId) {

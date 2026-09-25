@@ -20,7 +20,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 
-const FROZEN_KEYS = ["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend"];
+const FROZEN_KEYS = ["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks"];
 const RUNID_RE = /^(\d{8}T\d{9}Z)-(\d{4})$/;
 
 // --- fixture builders --------------------------------------------------------
@@ -94,6 +94,8 @@ async function writeRecord(item, overrides) {
     resumeAfter: null,
     // …and the 68 sixteenth key (68/ADR-001): the spend envelope, by the same rule.
     spend: null,
+    // …and the 131 seventeenth key (131/ADR-003 §3): the run's asks, by the same rule.
+    asks: [],
   };
   const record = { ...base, ...overrides };
   await writeFile(path.join(runsDir, `${record.runId}.json`), JSON.stringify(record, null, 2), "utf8");

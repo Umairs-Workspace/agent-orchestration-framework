@@ -170,6 +170,9 @@ const WORK_IDS = [
   // door beside work:init/work:update.
   "work:resume",
   "work:init-config",
+  // milestone 131 / story 04 — work:answer, the operator's answer to a waiting session, beside
+  // work:resume in `src/commands/resume.mjs`.
+  "work:answer",
   // milestone 54 / story 01 — work:grade, the declared rubric's ONE impure edge (the
   // milestone's only registering story, 54/ADR-003 §2). Its bare face is a READ (the plan
   // plus the last recorded grade, spawning nothing) and `--run` is the only door to

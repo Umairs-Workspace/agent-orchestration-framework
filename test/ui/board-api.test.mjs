@@ -26,6 +26,11 @@ import { serveSetupUi } from "../../src/setup-ui.mjs";
 import { withBoardFace, DEFAULT_STREAM } from "../support/board-face-fixture.mjs";
 import { withBoardApp, findAll } from "../support/board-app-harness.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
+import http from "node:http";
+import { loadWorkspace } from "../../src/command-core.mjs";
+import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
+import { loopAsksDir, openAsk, clearAsk, readAsk, answerAsk, askRequestPath } from "../../src/loop/ask-request.mjs";
+import { matchedBraceBody } from "../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
@@ -282,7 +287,7 @@ export const boardApiTests = [
         await withServer(repo, async (url) => {
           const response = await fetch(new URL("/api/work/feedback", url), {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", origin: new URL(url).origin },
             body: JSON.stringify({ ref: "03/01", note: "spec was ambiguous on the empty state", actor: "qa" }),
           });
           const body = await response.json();
@@ -313,7 +318,7 @@ export const boardApiTests = [
         await withServer(repo, async (url) => {
           const response = await fetch(new URL("/api/work/feedback", url), {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", origin: new URL(url).origin },
             body: JSON.stringify({ ref: "03/01", note: "the loading copy reads oddly", actor: "qa" }),
           });
           assert.equal(response.status, 200);
@@ -342,7 +347,7 @@ export const boardApiTests = [
         await withServer(repo, async (url) => {
           const response = await fetch(new URL("/api/work/feedback", url), {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", origin: new URL(url).origin },
             body: JSON.stringify({ ref: "03/01", note: "revisit the chip ramp", actor: "qa", refs: "DESIGN §1" }),
           });
           assert.equal(response.status, 200);
@@ -372,7 +377,7 @@ export const boardApiTests = [
         await withServer(repo, async (url) => {
           const response = await fetch(new URL("/api/work/feedback", url), {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", origin: new URL(url).origin },
             body: JSON.stringify({ ref: "03/01", note: "second note", actor: "qa" }),
           });
           assert.equal(response.status, 200);
@@ -401,7 +406,7 @@ export const boardApiTests = [
         await withServer(repo, async (url) => {
           const response = await fetch(new URL("/api/work/feedback", url), {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", origin: new URL(url).origin },
             body: JSON.stringify({ ref: "03/01", note: "only-write check", actor: "qa" }),
           });
           assert.equal(response.status, 200);
@@ -434,7 +439,7 @@ export const boardApiTests = [
         await withServer(repo, async (url) => {
           const response = await fetch(new URL("/api/work/feedback", url), {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", origin: new URL(url).origin },
             body: JSON.stringify({ ref: "03", note: "a note", actor: "qa" }),
           });
           assert.equal(response.status, 200);
@@ -459,7 +464,7 @@ export const boardApiTests = [
         await withServer(repo, async (url) => {
           const response = await fetch(new URL("/api/work/feedback", url), {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", origin: new URL(url).origin },
             body: JSON.stringify({ ref: "03/01", note: "a note", actor: "qa" }),
           });
           assert.equal(response.status, 200);
@@ -879,7 +884,8 @@ export const boardApiTests = [
       assert.doesNotMatch(stripped, /\.filter\(/, "…and filters no rows");
       assert.doesNotMatch(stripped, /\blistItems\b|\blistStream\b/, "…and imports no enumerator");
       const imports = [...stripped.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]).filter((spec) => spec.startsWith("."));
-      assert.deepEqual(imports.filter((spec) => spec !== "./cache-provenance.mjs"), ["./command-core.mjs"], "its only operation-bearing import is ./command-core.mjs (the window resolver is a pure config read)");
+      // 131/04 — `./static-serve.mjs` is the pure leaf holding the write admission's loopback predicate.
+      assert.deepEqual(imports.filter((spec) => spec !== "./cache-provenance.mjs" && spec !== "./static-serve.mjs"), ["./command-core.mjs"], "its only operation-bearing import is ./command-core.mjs (the window resolver and the loopback predicate are pure)");
       assert.equal((stripped.match(/intake/g) ?? []).length, 0, "the face contains the token `intake` zero times (FF-12704)");
 
       const listSource = await readFile(path.join(repoRoot, "src", "commands", "list.mjs"), "utf8");
@@ -1060,4 +1066,335 @@ export const boardApiTests = [
       }
     },
   },
+  // 131/04 — hoisted below.
+  ...boardAnswerTests(),
 ];
+
+// ---- 131/04 tasks 01 and 02 — the board answers through work:answer, behind one admission --------
+//
+// Every request here goes through `node:http`, because Node's `fetch` silently drops a caller-set
+// `Host` and the rebinding rows are exactly a Host the page chose. The board's ctx carries no aof
+// home of its own, so the ask is opened in the home the runner isolated (`process.env`), under a
+// run id unique to the case, and removed after it.
+
+let boardAskSeq = 0;
+
+function boardRequest(url, { method = "POST", route, host, origin, contentType, body } = {}) {
+  const target = new URL(url);
+  const headers = {};
+  if (host !== undefined) headers.host = host;
+  if (origin !== undefined) headers.origin = origin;
+  if (contentType !== undefined) headers["content-type"] = contentType;
+  return new Promise((resolve, reject) => {
+    const request = http.request({ hostname: target.hostname, port: target.port, method, path: route, headers }, (response) => {
+      let text = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => { text += chunk; });
+      response.on("end", () => {
+        let parsed = null;
+        try { parsed = text === "" ? null : JSON.parse(text); } catch { parsed = text; }
+        resolve({ status: response.statusCode, headers: response.headers, body: parsed });
+      });
+    });
+    request.on("error", reject);
+    if (body != null) request.write(body);
+    request.end();
+  });
+}
+
+// B: milestone 03 and story 03/01 with a STATE.md, and a waiting ask for the case's run.
+async function withAnswerBoard(body, { open = true } = {}) {
+  const { repo, workDir } = await makeRepo();
+  await milestone(workDir, { number: "03", slug: "work-board", status: "in-progress", title: "Work board" });
+  const storyDir = await story(workDir, "03_milestone_work-board", { number: "01", slug: "work-board", status: "in-progress", title: "The work board", parent: "3" });
+  await writeFile(path.join(storyDir, "STATE.md"), "# 01 · State\n\n## Feedback (for retro)\n\n", "utf8");
+  const workspace = await loadWorkspace(repo);
+  const workspaceId = resolveWorkspaceId(workspace);
+  const dir = loopAsksDir(process.env);
+  boardAskSeq += 1;
+  const runId = `r1-board-${process.pid}-${boardAskSeq}`;
+  if (open) await openAsk(dir, { runId, workspaceId, ref: "03/01", sessionId: "S1", phase: "build", scope: "03" });
+  try {
+    return await withServer(repo, (url) => body({ url, repo, workDir, storyDir, dir, runId, workspaceId, same: new URL(url).origin, port: new URL(url).port }));
+  } finally {
+    await clearAsk(dir, runId).catch(() => {});
+    await rm(repo, { recursive: true, force: true });
+  }
+}
+
+async function treeSnapshot(root) {
+  const snap = {};
+  async function walk(current) {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) await walk(full);
+      else snap[path.relative(root, full)] = await readFile(full, "utf8");
+    }
+  }
+  await walk(root);
+  return snap;
+}
+
+const askBytes = (dir, runId) => readFile(askRequestPath(dir, runId), "utf8").catch(() => null);
+const answerBody = (fields) => JSON.stringify(fields);
+
+function boardAnswerTests() {
+  const DOC_KEYS = ["ok", "ref", "runId", "delivery", "state", "by", "answeredAt", "resume"];
+  return [
+    {
+      name: "131/04 task01 — the board answers the waiting ask through the verb, as the board",
+      run: () => withAnswerBoard(async ({ url, same, dir, runId }) => {
+        const response = await boardRequest(url, { route: "/api/work/answer", origin: same, contentType: "application/json", body: answerBody({ ref: "03/01", text: "take b", actor: "umami" }) });
+        assert.equal(response.status, 200);
+        assert.deepEqual(Object.keys(response.body), DOC_KEYS, "the eight keys in order");
+        assert.equal(response.body.ok, true);
+        assert.equal(response.body.ref, "03/01");
+        assert.equal(response.body.runId, runId);
+        assert.equal(response.body.delivery, "waiting");
+        assert.equal(response.body.state, "answered");
+        assert.deepEqual(response.body.by, { actor: "umami", via: "board", node: null });
+        assert.match(response.body.answeredAt, /Z$/u);
+        assert.equal(response.body.resume, null);
+        const record = await readAsk(dir, runId);
+        assert.equal(record.state, "answered");
+        assert.equal(record.answer, "take b");
+        assert.equal(record.by.via, "board");
+      }),
+    },
+    {
+      name: "131/04 task01 — a refusal from the verb passes through in the frozen envelope (twelve rows)",
+      run: async () => {
+        const rows = [
+          [null, { ref: "03/01", text: "" }, 400, "answer-empty"],
+          [null, { ref: "03/01", text: "ok\u001b[201~" }, 400, "answer-control-chars"],
+          ["answered", { ref: "03/01", text: "c" }, 409, "ask-already-answered"],
+          ["none", { ref: "03/01", text: "take b" }, 409, "answer-not-waiting"],
+          [null, { ref: "999/99", text: "take b" }, 404, "ref-not-found"],
+          [null, { ref: "999/99", text: "" }, 404, "ref-not-found"],
+          [null, { text: "take b" }, 404, "ref-not-found"],
+          [null, { ref: 3, text: "take b" }, 404, "ref-not-found"],
+          [null, { ref: "03/01" }, 400, "answer-empty"],
+          [null, { ref: "03/01", text: 42 }, 400, "answer-empty"],
+          [null, { ref: "03/01", text: "a".repeat(8001) }, 400, "answer-too-long"],
+          [null, { ref: "03/01", text: "b", actor: "a".repeat(81) }, 400, "answer-actor-invalid"],
+        ];
+        for (const [index, [given, body, status, code]] of rows.entries()) {
+          await withAnswerBoard(async ({ url, same, dir, runId, workspaceId }) => {
+            if (given === "answered") await answerAsk(dir, { workspaceId, ref: "03/01", text: "a", by: { actor: "you", via: "cli", node: null } });
+            const before = await askBytes(dir, runId);
+            const response = await boardRequest(url, { route: "/api/work/answer", origin: same, contentType: "application/json", body: answerBody(body) });
+            assert.equal(response.status, status, `row ${index}: status`);
+            assert.deepEqual(Object.keys(response.body), ["ok", "error", "code"], `row ${index}: the frozen envelope`);
+            assert.equal(response.body.ok, false);
+            assert.equal(typeof response.body.error, "string");
+            assert.equal(response.body.code, code, `row ${index}: code`);
+            assert.equal(await askBytes(dir, runId), before, `row ${index}: the ask file is byte-unchanged`);
+          }, { open: given !== "none" });
+        }
+      },
+    },
+    {
+      name: "131/04 task01 — admission refuses before the body is read, and the body reader after it, on every board write route alike (forty-two rows)",
+      run: async () => {
+        const JSON_CT = "application/json";
+        const WELL = answerBody({ ref: "03/01", text: "b" });
+        const BIG = "a".repeat(2_000_000);
+        const OVERSIZE = JSON.stringify({ ref: "03/01", text: "b", pad: "a".repeat(1_000_001) });
+        // [method, route, origin, contentType, rawBody, status, code] — origin: "SAME", "SAME/", "HTTPS", "LOCALHOST" or a literal.
+        const rows = [
+          ["GET", "answer", "SAME", JSON_CT, null, 405, "method-not-allowed"],
+          ["PUT", "answer", "SAME", JSON_CT, WELL, 405, "method-not-allowed"],
+          ["DELETE", "answer", "SAME", JSON_CT, null, 405, "method-not-allowed"],
+          ["OPTIONS", "answer", "SAME", JSON_CT, null, 405, "method-not-allowed"],
+          ["POST", "answer", "http://evil.example", JSON_CT, WELL, 403, "cross-origin-refused"],
+          ["POST", "answer", "SAME/", JSON_CT, WELL, 403, "cross-origin-refused"],
+          ["POST", "answer", undefined, JSON_CT, WELL, 403, "cross-origin-refused"],
+          ["POST", "answer", "null", JSON_CT, WELL, 403, "cross-origin-refused"],
+          ["POST", "answer", "HTTPS", JSON_CT, WELL, 403, "cross-origin-refused"],
+          ["POST", "answer", "LOCALHOST", JSON_CT, WELL, 403, "cross-origin-refused"],
+          ["POST", "answer", "http://evil.example", JSON_CT, BIG, 403, "cross-origin-refused"],
+          ["POST", "answer", "SAME", "text/plain", WELL, 400, "invalid-content-type"],
+          ["POST", "answer", "SAME", undefined, WELL, 400, "invalid-content-type"],
+          ["POST", "answer", "SAME", "application/jsonp", WELL, 400, "invalid-content-type"],
+          ["POST", "answer", "SAME", "text/json", WELL, 400, "invalid-content-type"],
+          ["POST", "answer", "SAME", "application/x-www-form-urlencoded", "ref=03/01&text=b", 400, "invalid-content-type"],
+          ["POST", "answer", "SAME", "multipart/form-data", WELL, 400, "invalid-content-type"],
+          ["POST", "answer", "SAME", "text/plain", BIG, 400, "invalid-content-type"],
+          ["POST", "answer", "SAME", JSON_CT, "{ not json", 400, "malformed-json"],
+          ["POST", "answer", "SAME", JSON_CT, "", 400, "empty-json"],
+          ["POST", "answer", "SAME", JSON_CT, OVERSIZE, 413, "payload-too-large"],
+          ["POST", "answer", "SAME", JSON_CT, "null", 400, "invalid-body"],
+          ["POST", "answer", "SAME", JSON_CT, '["03/01", "b"]', 400, "invalid-body"],
+          ["POST", "answer", "SAME", JSON_CT, '"take b"', 400, "invalid-body"],
+          ["POST", "answer", "SAME", JSON_CT, "42", 400, "invalid-body"],
+          ["POST", "answer/", "SAME", JSON_CT, WELL, 404, "not-found"],
+          ["GET", "feedback", "SAME", JSON_CT, null, 405, "method-not-allowed"],
+          ["POST", "feedback", "http://evil.example", JSON_CT, answerBody({ ref: "03/01", note: "x" }), 403, "cross-origin-refused"],
+          ["POST", "feedback", undefined, JSON_CT, answerBody({ ref: "03/01", note: "x" }), 403, "cross-origin-refused"],
+          ["POST", "feedback", "SAME", "text/plain", answerBody({ ref: "03/01", note: "x" }), 400, "invalid-content-type"],
+          ["POST", "resync", undefined, JSON_CT, answerBody({ ref: "03/01" }), 403, "cross-origin-refused"],
+          ["POST", "resync", "SAME", "text/plain", answerBody({ ref: "03/01" }), 400, "invalid-content-type"],
+          ["GET", "resync", "SAME", JSON_CT, null, 405, "method-not-allowed"],
+          ["GET", "continue", "SAME", JSON_CT, null, 405, "method-not-allowed"],
+          ["POST", "continue", undefined, JSON_CT, answerBody({ ref: "03/01" }), 403, "cross-origin-refused"],
+          ["POST", "refine", "SAME", "text/plain", answerBody({ ref: "03/01" }), 400, "invalid-content-type"],
+          ["GET", "verify", "SAME", JSON_CT, null, 405, "method-not-allowed"],
+          ["POST", "verify", "http://evil.example", JSON_CT, answerBody({ ref: "03/01" }), 403, "cross-origin-refused"],
+          ["POST", "feedback", "SAME", JSON_CT, "null", 400, "invalid-body"],
+          ["POST", "resync", "SAME", JSON_CT, '["03/01"]', 400, "invalid-body"],
+          ["POST", "continue", "SAME", JSON_CT, '"03/01"', 400, "invalid-body"],
+          ["POST", "refine", "SAME", JSON_CT, "true", 400, "invalid-body"],
+        ];
+        assert.equal(rows.length, 42, "every row of the outline is walked");
+        await withAnswerBoard(async ({ url, same, port, repo, dir, runId }) => {
+          const origins = { SAME: same, "SAME/": `${same}/`, HTTPS: `https://127.0.0.1:${port}`, LOCALHOST: `http://localhost:${port}` };
+          const before = await treeSnapshot(repo);
+          const ask = await askBytes(dir, runId);
+          for (const [index, [method, route, origin, contentType, body, status, code]] of rows.entries()) {
+            const response = await boardRequest(url, { method, route: `/api/work/${route}`, origin: origins[origin] ?? origin, contentType, body });
+            assert.equal(response.status, status, `row ${index} (${method} ${route}): status`);
+            assert.equal(response.body?.code, code, `row ${index} (${method} ${route}): code`);
+            assert.notEqual(response.body?.ok, true, `row ${index}: never ok`);
+            if (status === 405) assert.equal(response.headers.allow, "POST", `row ${index}: Allow: POST`);
+          }
+          assert.deepEqual(await treeSnapshot(repo), before, "no record doc, FEEDBACK.ndjson or STATE.md under B changed");
+          assert.equal(await askBytes(dir, runId), ask, "the ask file is unchanged");
+        });
+      },
+    },
+    {
+      name: "131/04 task01 — a JSON content-type with parameters or another case is admitted, as the fleet admits it (three rows)",
+      run: () => withAnswerBoard(async ({ url, same }) => {
+        for (const contentType of ["application/json; charset=utf-8", "application/json;charset=UTF-8", "APPLICATION/JSON"]) {
+          const response = await boardRequest(url, { route: "/api/work/answer", origin: same, contentType, body: answerBody({ ref: "03/01", text: "" }) });
+          assert.equal(response.status, 400, contentType);
+          assert.equal(response.body.code, "answer-empty", `${contentType}: the verb's own refusal, so admission passed`);
+        }
+      }),
+    },
+    {
+      name: "131/04 task01 — the body's actor passes through, and the verb decides the default (six rows)",
+      run: async () => {
+        const rows = [[undefined, "you"], ["", "you"], ["   ", "you"], [null, "you"], [42, "you"], [" qa ", "qa"]];
+        for (const [actor, by] of rows) {
+          await withAnswerBoard(async ({ url, same }) => {
+            const body = actor === undefined ? { ref: "03/01", text: "take b" } : { ref: "03/01", text: "take b", actor };
+            const response = await boardRequest(url, { route: "/api/work/answer", origin: same, contentType: "application/json", body: answerBody(body) });
+            assert.equal(response.status, 200, JSON.stringify(actor));
+            assert.equal(response.body.by.actor, by, JSON.stringify(actor));
+            assert.equal(response.body.by.via, "board");
+          });
+        }
+      },
+    },
+    {
+      name: "131/04 task01 — a second answer from the board is refused naming the first, and the first stands",
+      run: () => withAnswerBoard(async ({ url, same, dir, runId }) => {
+        const post = (text) => boardRequest(url, { route: "/api/work/answer", origin: same, contentType: "application/json", body: answerBody({ ref: "03/01", text, actor: "umami" }) });
+        assert.equal((await post("take b")).status, 200);
+        const again = await post("take c");
+        assert.equal(again.status, 409);
+        assert.equal(again.body.code, "ask-already-answered");
+        assert.match(again.body.error, /umami/u);
+        assert.equal((await readAsk(dir, runId)).answer, "take b");
+      }),
+    },
+    {
+      name: "131/04 task01/02 — a read route takes no admission, and ignores the Host (five rows)",
+      run: () => withAnswerBoard(async ({ url }) => {
+        const rows = [["list", undefined, undefined], ["list", "http://evil.example", undefined], ["next", undefined, undefined], ["doctor", "http://evil.example", undefined], ["list", "http://evil.example:1234", "evil.example:1234"]];
+        for (const [route, origin, host] of rows) {
+          const response = await boardRequest(url, { method: "GET", route: `/api/work/${route}`, origin, host });
+          assert.equal(response.status, 200, `${route} ${origin ?? "(no origin)"} ${host ?? ""}`);
+          assert.notEqual(response.body?.ok, false);
+        }
+      }),
+    },
+    {
+      name: "131/04 task01 — a same-origin feedback POST still lands, so the board's own client is unaffected",
+      run: () => withAnswerBoard(async ({ url, same, storyDir }) => {
+        const response = await boardRequest(url, { route: "/api/work/feedback", origin: same, contentType: "application/json", body: answerBody({ ref: "03/01", note: "still works", actor: "qa" }) });
+        assert.equal(response.status, 200);
+        const state = await readFile(path.join(storyDir, "STATE.md"), "utf8");
+        assert.equal((state.match(/^- still works/gmu) ?? []).length, 1, "exactly one bullet");
+      }),
+    },
+    {
+      name: "131/04 task01 — only ref, text and actor are lifted off the body",
+      run: () => withAnswerBoard(async ({ url, same }) => {
+        const response = await boardRequest(url, {
+          route: "/api/work/answer", origin: same, contentType: "application/json",
+          body: answerBody({ ref: "03/01", text: "take b", actor: "umami", via: "cli", by: { actor: "root" }, now: "1999-01-01T00:00:00.000Z", state: "waiting" }),
+        });
+        assert.equal(response.status, 200);
+        assert.deepEqual(response.body.by, { actor: "umami", via: "board", node: null });
+        assert.notEqual(response.body.answeredAt, "1999-01-01T00:00:00.000Z");
+        const source = (await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8")).replace(/^\s*\/\/[^\n]*$/gmu, "");
+        const branch = matchedBraceBody(source, source.indexOf('pathname === "/api/work/answer"')) ?? "";
+        assert.deepEqual([...new Set(branch.match(/\bbody\.[a-zA-Z]+/gu))].sort(), ["body.actor", "body.ref", "body.text"]);
+      }),
+    },
+    {
+      name: "131/04 task01 — every board write passes one admission, in the source",
+      run: async () => {
+        // Whole-line comments only: a trailing-`//` strip would cut `http://${…}` in half.
+        const source = (await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8")).replace(/^\s*\/\/[^\n]*$/gmu, "");
+        assert.equal((source.match(/function admitWriteRequest\(/gu) ?? []).length, 1, "defined exactly once");
+        assert.ok(source.includes('pathname === "/api/work/answer"'));
+        assert.equal((source.match(/(?<!function )\badmitWriteRequest\(/gu) ?? []).length, 4, "four call sites");
+        const helper = matchedBraceBody(source, source.indexOf("function admitWriteRequest(")) ?? "";
+        const order = ['request.method !== "POST"', "originHeader !==", "isLoopbackHost(", "application\\/json"].map((marker) => helper.indexOf(marker));
+        assert.ok(order.every((at) => at >= 0), `every check is present: ${order}`);
+        assert.deepEqual([...order].sort((a, b) => a - b), order, "method, then Origin, then isLoopbackHost(, then content-type");
+        for (const verb of ["writeFile", "appendFile", "spawn", "exec"]) assert.ok(!new RegExp(`\\b${verb}\\s*\\(`, "u").test(source), `no ${verb}(`);
+      },
+    },
+    {
+      name: "131/04 task02 — a rebinding page is refused on the board's write routes, before the body is read (nine rows)",
+      run: () => withAnswerBoard(async ({ url, port, repo, dir, runId }) => {
+        const WELL = { answer: answerBody({ ref: "03/01", text: "b" }), feedback: answerBody({ ref: "03/01", note: "x" }) };
+        const rows = [
+          ["answer", "evil.example:1234", WELL.answer, 403, "non-loopback-host"],
+          ["feedback", "evil.example:1234", WELL.feedback, 403, "non-loopback-host"],
+          ["continue", "evil.example:1234", answerBody({ ref: "03/01" }), 403, "non-loopback-host"],
+          ["refine", "evil.example:1234", answerBody({ ref: "03/01" }), 403, "non-loopback-host"],
+          ["verify", `10.0.0.1:${port}`, answerBody({ ref: "03/01" }), 403, "non-loopback-host"],
+          ["resync", "evil.example:1234", answerBody({ ref: "03/01" }), 403, "non-loopback-host"],
+          ["answer", "evil.example:1234", "a".repeat(2_000_000), 403, "non-loopback-host"],
+          ["answer", `localhost:${port}`, answerBody({ ref: "03/01", text: "" }), 400, "answer-empty"],
+          ["answer", `[::1]:${port}`, answerBody({ ref: "03/01", text: "" }), 400, "answer-empty"],
+        ];
+        const before = await treeSnapshot(repo);
+        const ask = await askBytes(dir, runId);
+        for (const [route, host, body, status, code] of rows) {
+          const response = await boardRequest(url, { route: `/api/work/${route}`, host, origin: `http://${host}`, contentType: "application/json", body });
+          assert.equal(response.status, status, `${route} ${host}`);
+          assert.equal(response.body.code, code, `${route} ${host}`);
+          if (code === "non-loopback-host") {
+            assert.equal(response.body.error, "Write refused: the page was not served from a loopback address.");
+            assert.ok(!JSON.stringify(response.body).includes(host.split(":")[0]), "the refusal names no host");
+          }
+        }
+        assert.deepEqual(await treeSnapshot(repo), before, "no record doc changed");
+        assert.equal(await askBytes(dir, runId), ask, "no ask file changed");
+      }),
+    },
+    {
+      name: "131/04 task02 — method, Origin, Host and content-type are checked in that order on the board (five rows)",
+      run: () => withAnswerBoard(async ({ url, port }) => {
+        const rows = [
+          ["GET", "evil.example:1234", "http://evil.example:1234", "application/json", 405, "method-not-allowed"],
+          ["POST", "evil.example:1234", undefined, "application/json", 403, "cross-origin-refused"],
+          ["POST", "evil.example:1234", "http://other.example", "application/json", 403, "cross-origin-refused"],
+          ["POST", "evil.example:1234", "http://evil.example:1234", "text/plain", 403, "non-loopback-host"],
+          ["POST", `localhost:${port}`, `http://127.0.0.1:${port}`, "application/json", 403, "cross-origin-refused"],
+        ];
+        for (const [method, host, origin, contentType, status, code] of rows) {
+          const response = await boardRequest(url, { method, route: "/api/work/answer", host, origin, contentType, body: method === "GET" ? null : answerBody({ ref: "03/01", text: "b" }) });
+          assert.equal(response.status, status, `${method} ${host} ${origin}`);
+          assert.equal(response.body.code, code, `${method} ${host} ${origin}`);
+        }
+      }),
+    },
+  ];
+}

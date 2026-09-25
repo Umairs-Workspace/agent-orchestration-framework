@@ -24,9 +24,13 @@ import { completeRun, isRunning, isStale, readRuns, retryReadiness, startRun, he
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { resolveRefInWorktree } from "../../src/work/dispatch.mjs";
 import { meshDispatchWorktreePath } from "../../src/mesh/worktree.mjs";
+import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../src/loop/ask-request.mjs";
+import { loopStopsDir, requestLoopStop } from "../../src/loop/stop-request.mjs";
+import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
 import {
   withLaneRepo, fakeLaneChild, stubRubric, emits, passingTap, failingTap, collector, fakeTimers, fakeSignals,
   primaryDriver, verifyCompleter, laneCtx, statusOf, git, headSha, deferred, scriptedRegistry, laneStoryFile, replaceStatus,
+  stripAsks,
 } from "../support/loop/lane-fixture.mjs";
 
 const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
@@ -556,7 +560,7 @@ export const loopCommandWaveTests = [
         const { state, report } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())) });
         assert.equal(state.act.stop, "session-needs-input");
         assert.equal(state.act.producer, "driver:needs-input");
-        assert.match(report.lines.at(-1), /sessionId=s-1/u);
+        assert.match(report.lines.findLast((line) => line.includes(" — halted on ")), /parked=\[\{"ref":"07\/01","runId":"[^"]+","sessionId":"s-1"/u, "131/03: the session is named by the parked entry");
         const lane = meshDispatchWorktreePath(fx.root, "07/01");
         assert.ok(existsSync(lane), "the lane is kept");
         const runs = await readRuns(await resolveRefInWorktree(fx.root, fx.workDir, lane, "07/01"));
@@ -799,7 +803,7 @@ export const loopCommandWaveTests = [
           assert.ok(row03, `${row.fails}: 07/03's child finished`);
           assert.ok(["fast-forwarded", "merged"].includes(row03.merge?.outcome), `${row.fails}: 07/03 merged`);
           assert.equal(asked.length, 1, `${row.fails}: no further work:dispatch ask`);
-          assert.match(report.lines.at(-1), /drained=\[\{"ref":"07\/03","merge":"(fast-forwarded|merged)"\}\]/u, `${row.fails}: the drained detail names 07/03 with its merge outcome`);
+          assert.match(report.lines.findLast((line) => line.includes(" — halted on ")), /drained=\[\{"ref":"07\/03","merge":"(fast-forwarded|merged)"\}\]/u, `${row.fails}: the drained detail names 07/03 with its merge outcome`);
         }, { commit: { "src/x.mjs": "// base\n" } });
       }
     },
@@ -824,6 +828,7 @@ export const loopCommandWaveTests = [
         assert.equal(first.act.stop, "session-needs-input", "guard: a lane was left with a running record");
         const lane = meshDispatchWorktreePath(fx.root, "07/01");
         const laneItem = await resolveRefInWorktree(fx.root, fx.workDir, lane, "07/01");
+        await stripAsks(laneItem); // 131/03: the reclaim's seed carries no ask (task 02, ruling 11)
         const stale = (await readRuns(laneItem))[0];
         await heartbeat(laneItem, stale.runId, { now: "2026-09-14T10:00:00.000Z" });
         const { state, report } = await runWave(fx, { child: fakeLaneChild(fx), rubric: stubRubric(emits(passingTap())), input: { resume: true } });
@@ -836,6 +841,7 @@ export const loopCommandWaveTests = [
         assert.equal(first.act.stop, "session-needs-input");
         const lane = meshDispatchWorktreePath(fx.root, "07/01");
         const laneItem = await resolveRefInWorktree(fx.root, fx.workDir, lane, "07/01");
+        await stripAsks(laneItem); // 131/03: the fresh-open refusal's seed carries no ask
         const running = (await readRuns(laneItem))[0];
         await heartbeat(laneItem, running.runId, { now: new Date().toISOString() });
         const child = fakeLaneChild(fx);
@@ -1029,6 +1035,7 @@ export const loopCommandWaveTests = [
         const held = (await readRuns(laneItem))[0].brief.gradeBaseline;
         assert.ok(held?.baseCommit, "guard: the lane's run carries the baseline");
         assert.ok((await laneRunsOf(fx, "07/01")).every((r) => r.brief?.gradeBaseline == null), "guard: nothing in the primary carries it");
+        await stripAsks(laneItem); // 131/03: the reclaim's seed carries no ask (task 02, ruling 11)
         await heartbeat(laneItem, (await readRuns(laneItem))[0].runId, { now: "2026-09-14T09:00:00.000Z" });
         const rubric2 = stubRubric(emits(passingTap(["alpha"])));
         const registry = scriptedRegistry({ grade: async (input, ctx, real) => await real() });
@@ -1552,4 +1559,153 @@ export const loopCommandWaveTests = [
       assert.doesNotMatch(wave, /loop-bounds\.mjs/u, "the wave module imports nothing from the home; the number arrives on `bounds`");
     },
   },
+  ...waitingLaneTests(),
 ];
+
+// ── milestone 131 / story 03, task 02 — A WAITING LANE HOLDS ITS SLOT WHILE THE WAVE BUILDS ON, RESUMES
+// ITS OWN CHILD WITH THE ANSWER, AND PARKS UNMERGED AT THE BOUND (ADR-001 §1(a), ADR-004 §2-§3). Over
+// the lane fixture: `07/01` asks, `07/03` builds. Built inside a hoisted function so the array above
+// can spread it without a TDZ.
+function waitingLaneTests() {
+  const HOOK = "https://discord.com/api/webhooks/131/lanes";
+  const notifying = (fx) => {
+    fx.workspace.config.work.notify = { channels: { ops: { type: "discord", urlEnv: "HOOK" } } };
+    const posts = [];
+    const fetch = async (url, init) => { posts.push(JSON.parse(init.body)); return { status: 204, headers: { get: () => null }, json: async () => ({}) }; };
+    return { posts, notifyOptions: { env: { HOOK }, fetch } };
+  };
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  // A wait that answers 07/01's ask once `ready()` is true, and never reaches the bound.
+  const answerWhen = (fx, ready, text = "use the existing seam") => ({
+    now: () => new Date(),
+    next: async () => {
+      await sleep(10);
+      if (!ready()) return;
+      const workspaceId = resolveWorkspaceId(fx.workspace);
+      for (const ask of await readAsks(loopAsksDir(), { workspaceId })) {
+        if (ask.state === "waiting") await answerAsk(loopAsksDir(), { workspaceId, ref: ask.ref, text, by: { actor: "umami", via: "cli", node: null }, now: () => new Date() });
+      }
+    },
+    read: (runId) => readAsk(loopAsksDir(), runId),
+    expired: () => false,
+  });
+  const asking = (sessionId = "s-1") => ({ outcome: "document", document: { outcome: "needs-input", sessionId } });
+
+  return [
+    {
+      name: "131/03 task02 — one lane asks, the other merges while it waits, and the answer re-spawns the first lane's own child with --answer and the same run",
+      async run() {
+        await withLaneRepo(async (fx) => {
+          const { notifyOptions } = notifying(fx);
+          const child = fakeLaneChild(fx, { answers: { "07/01": [asking(), undefined] } });
+          const report = collector();
+          const wait = answerWhen(fx, () => report.lines.some((line) => /^Lane 07\/03 — merge: (fast-forwarded|merged)/u.test(line)));
+          const { state } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), report, extra: { askWait: wait, notifyOptions } });
+          assert.equal(state.state, "done", report.lines.join("\n"));
+          const mergedAt = (ref) => report.lines.findIndex((line) => line.startsWith(`Lane ${ref} — merge: `));
+          assert.ok(mergedAt("07/03") > -1 && mergedAt("07/03") < mergedAt("07/01"), "07/03 merged home while 07/01 waited");
+          const spawns = child.calls.filter((call) => call.ref === "07/01");
+          assert.equal(spawns.length, 2);
+          assert.equal(spawns[1].runId, spawns[0].runId, "the same --run");
+          assert.equal(spawns[1].answerFile, askRequestPath(loopAsksDir(), spawns[0].runId), "with --answer <its ask file>");
+          assert.equal(spawns[1].fixFile, undefined, "and no fix file");
+          assert.equal(await readAsk(loopAsksDir(), spawns[0].runId), null, "the ask file is gone");
+          assert.ok(!existsSync(meshDispatchWorktreePath(fx.root, "07/01")), "07/01 merged and was cleaned up");
+        });
+      },
+    },
+    {
+      name: "131/03 task02 — an unanswered lane parks unmerged and committed, and the wave halts on its question only after the other lane merged",
+      async run() {
+        await withLaneRepo(async (fx) => {
+          const { posts, notifyOptions } = notifying(fx);
+          const child = fakeLaneChild(fx, { answers: { "07/01": asking(), "07/03": async () => { await sleep(30); return undefined; } } });
+          const report = collector();
+          const { state } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), report, extra: { notifyOptions } });
+          assert.equal(state.act.stop, "session-needs-input");
+          assert.equal(state.act.ref, "07/01");
+          const halt = report.lines.findLast((line) => line.includes(" — halted on "));
+          assert.match(halt, /parked=\[\{"ref":"07\/01"/u);
+          assert.ok(report.lines.some((line) => /^Lane 07\/03 — merge: (fast-forwarded|merged)/u.test(line)), "07/03 merged before the halt");
+          const lane = meshDispatchWorktreePath(fx.root, "07/01");
+          assert.ok(existsSync(lane), "07/01's worktree still exists");
+          assert.notEqual((await git(["merge-base", "--is-ancestor", "aof/mesh/07-01", "HEAD"], fx.root)).status, 0, "its lane branch is not an ancestor of HEAD");
+          const laneItem = await resolveRefInWorktree(fx.root, fx.workDir, lane, "07/01");
+          const [run] = await readRuns(laneItem);
+          assert.equal(run.state, "running");
+          assert.ok(run.asks.at(-1).parkedAt && run.asks.at(-1).answeredAt == null, "one parked ask");
+          assert.equal((await readAsk(loopAsksDir(), run.runId)).state, "parked");
+          const rows = state.driven.filter((row) => row.ref === "07/01");
+          assert.ok(rows.every((row) => row.merge == null && row.outcome === "needs-input"), "its driven rows carry no merge");
+          const parkedPosts = posts.filter((p) => p.content.includes("parked, unanswered"));
+          assert.equal(parkedPosts.length, 1);
+          assert.ok(parkedPosts[0].content.includes("07/01"));
+        });
+      },
+    },
+    {
+      name: "131/03 task02 — with no open lane and a parked one, the question is the halt: a story blocked behind the parked lane never halts dependency-blocked",
+      async run() {
+        await withLaneRepo(async (fx) => {
+          const child = fakeLaneChild(fx, { answers: { "07/01": asking() } });
+          const report = collector();
+          const { state } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), report });
+          assert.equal(state.act.stop, "session-needs-input", report.lines.join("\n"));
+          assert.equal(state.act.ref, "07/01");
+          assert.match(report.lines.findLast((line) => line.includes(" — halted on ")), /parked=\[\{"ref":"07\/01"/u);
+          assert.equal(child.calls.filter((call) => call.ref === "07/03").length, 0, "07/03 waits on 07/01 and was never dispatched");
+        }, { stories: [{ number: "01" }, { number: "03", depends: ["01"] }] });
+      },
+    },
+    {
+      name: "131/03 task02 — a halt in another lane drains the wave, and the waiting lane parks without a notice and rides the drained list",
+      async run() {
+        await withLaneRepo(async (fx) => {
+          const { posts, notifyOptions } = notifying(fx);
+          const rubric = stubRubric((at, options) => (String(options.cwd).includes("dispatch-07-03") && at > 0 ? emits("", 0) : emits(passingTap())));
+          const child = fakeLaneChild(fx, { answers: { "07/01": asking() } });
+          const wait = { now: () => new Date(), next: () => sleep(20), read: (runId) => readAsk(loopAsksDir(), runId), expired: () => false };
+          const report = collector();
+          const { state } = await runWave(fx, { child, rubric, report, extra: { askWait: wait, notifyOptions } });
+          assert.equal(state.act.stop, "grade-indeterminate", report.lines.join("\n"));
+          assert.equal(state.act.ref, "07/03");
+          const lane01 = await resolveRefInWorktree(fx.root, fx.workDir, meshDispatchWorktreePath(fx.root, "07/01"), "07/01");
+          const [run] = await readRuns(lane01);
+          assert.equal((await readAsk(loopAsksDir(), run.runId)).state, "parked");
+          assert.equal(posts.filter((p) => p.content.includes("parked, unanswered")).length, 0, "no parked notice under a drain");
+          const halt = report.lines.findLast((line) => line.includes(" — halted on "));
+          assert.match(halt, /drained=\[[^\]]*\{"ref":"07\/01","parked":true\}/u);
+          assert.match(halt, /parked=\[\{"ref":"07\/01"/u);
+          assert.ok(report.lines.includes('  answer: aof work answer 07/01 "…"'), "the drained halt prints the ask block");
+        });
+      },
+    },
+    {
+      name: "131/03 task02 — the operator's stop parks every waiting lane without a notice, and the halt carries them",
+      async run() {
+        await withLaneRepo(async (fx) => {
+          const { posts, notifyOptions } = notifying(fx);
+          const signals = fakeSignals();
+          const release = deferred();
+          const child = fakeLaneChild(fx, { answers: { "07/01": asking(), "07/03": async () => { await release.promise; return undefined; } } });
+          let checks = 0;
+          const wait = {
+            now: () => new Date(),
+            next: async () => { checks += 1; await sleep(10); if (checks === 2) { await requestLoopStop(loopStopsDir(), { loopRunId: "wave-under-test", by: { node: "n", pid: 1 } }); release.resolve(); } },
+            read: (runId) => readAsk(loopAsksDir(), runId),
+            expired: () => false,
+          };
+          const report = collector();
+          const { state } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), report, signals, extra: { askWait: wait, notifyOptions } });
+          assert.equal(state.act.stop, "operator-interrupt", report.lines.join("\n"));
+          const lane01 = await resolveRefInWorktree(fx.root, fx.workDir, meshDispatchWorktreePath(fx.root, "07/01"), "07/01");
+          const [run] = await readRuns(lane01);
+          assert.equal((await readAsk(loopAsksDir(), run.runId)).state, "parked");
+          assert.equal(posts.filter((p) => p.content.includes("parked, unanswered")).length, 0);
+          assert.match(report.lines.findLast((line) => line.includes(" — halted on ")), /parked=\[\{"ref":"07\/01"/u);
+          assert.ok(report.lines.some((line) => /^Lane 07\/03 — merge: (fast-forwarded|merged)/u.test(line)), "07/03 finished and merged home");
+        });
+      },
+    },
+  ];
+}

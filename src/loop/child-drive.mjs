@@ -135,6 +135,7 @@ export async function spawnLaneDrive({
   runId,
   lane,
   fixFile,
+  answerFile,
   env,
   deadlineMs,
   signal,
@@ -148,10 +149,16 @@ export async function spawnLaneDrive({
     }
   }
 
+  // 131/03 (ADR-003 §7) — a re-drive with the operator's answer names its ask file. It rides
+  // WITHOUT the fix (the fix was the session's first turn), so the two together are a caller error.
+  const withFix = typeof fixFile === "string" && fixFile.length > 0;
+  const withAnswer = typeof answerFile === "string" && answerFile.length > 0;
+  if (withFix && withAnswer) throw new TypeError("spawnLaneDrive: \"answerFile\" and \"fixFile\" cannot ride one drive.");
   const verb = [
     "work", "drive", phase, ref,
     "--run", runId,
-    ...(typeof fixFile === "string" && fixFile.length > 0 ? ["--fix", fixFile] : []),
+    ...(withAnswer ? ["--answer", answerFile] : []),
+    ...(withFix ? ["--fix", fixFile] : []),
     "--json",
   ];
   const args = isPackaged() ? verb : [cliEntry(), ...verb];

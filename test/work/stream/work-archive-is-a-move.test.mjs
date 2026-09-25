@@ -579,7 +579,8 @@ export const workArchiveIsAMoveTests = [
       assert.match(contract, /"work:archive",/, "WORK_IDS names work:archive");
       const bijection = await read("test/arch/work/acd-work-command-cli-bijection.test.mjs");
       assert.match(bijection, /case "archive": return \["work", "archive", "999", "--json"\]/, "the bijection drives archive 999 --json");
-      assert.match(bijection, /"promote", "archive"\]\.includes\(sub\) \? \[0, 1\]/, "…and accepts exit 1 for it");
+      // Later coded-refusal probes (131/04's `answer`) join the same list after archive.
+      assert.match(bijection, /"promote", "archive"(?:, "[a-z-]+")*\]\.includes\(sub\) \? \[0, 1\]/, "…and accepts exit 1 for it");
       const routes = await read("test/arch/work/acd-work-command-route-coverage.test.mjs");
       assert.match(routes, /\r?\n\s*"archive",\r?\n/, "BOARD_DEFERRED names archive");
       assert.match(routes, /milestone 127 \/ story 03[\s\S]{0,900}\n\s*"archive",/, "…with its reason");

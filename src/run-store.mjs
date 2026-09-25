@@ -531,6 +531,13 @@ async function persist(item, record) {
 // — a run that ends before anything is ingested, a run on a runtime that reports
 // nothing, and a fifteen-key record read forward are all the SAME state: not
 // measured, never zero.
+//
+// The SEVENTEENTH key (131/ADR-003 §3) SUPERSEDES the sixteen by that same additive
+// discipline: `asks` (an array, defaulting `[]`) appended LAST — every question the run's
+// session stopped to ask a human, each entry `{ question, phase, askedAt, parkedAt, answer,
+// answeredAt, by }`, written only by the run's owner through the three ask writers below. A
+// sixteen-key record, and any non-array `asks`, reads forward as `[]`. The record keeps the
+// human's decision and its instants and never a derived wait (119/ADR-003).
 function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1, retryOf = null, node = null }) {
   return {
     runId,
@@ -549,6 +556,7 @@ function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1,
     node: node ?? null,
     resumeAfter: null,
     spend: null,
+    asks: [],
   };
 }
 
@@ -576,6 +584,7 @@ function normalizeRecord(raw) {
     node: raw.node ?? null,
     resumeAfter: raw.resumeAfter ?? null,
     spend: raw.spend ?? null,
+    asks: Array.isArray(raw.asks) ? raw.asks : [],
   };
 }
 
@@ -1096,6 +1105,67 @@ export async function heartbeat(item, runId, { now } = {}) {
   return updated;
 }
 
+// ---------------------------------------------------- the run's asks (131) ----
+//
+// THE THREE ASK WRITERS (131/ADR-003 §3) — no-state-change persists shaped like `heartbeat`,
+// and the run's OWNER is their single writer (the answering verb writes the ask file, never the
+// record: a lane's record sits in a tree the verb cannot see). Each changes `asks` and
+// `updatedAt` and nothing else — not `state`, `outcome`, `attempt`, `heartbeatAt` or
+// `spend`; liveness stays the owner's `heartbeat` call. The `running` check comes first, so a
+// settled run is refused `no-running-run` whatever its asks hold; each refusal persists nothing.
+async function readRunningRun(item, runId) {
+  const record = await readRun(item, runId);
+  if (record.state !== "running") {
+    throw runError(`run ${runId} is not running — only a running run's owner records its asks`, "no-running-run", 409);
+  }
+  return record;
+}
+
+// The last entry, when it is a plain object still waiting on an answer — else null.
+function openLastAsk(asks) {
+  const last = asks[asks.length - 1];
+  return last != null && typeof last === "object" && !Array.isArray(last) && last.answeredAt == null ? last : null;
+}
+
+// openRunAsk(item, runId, { question, phase, now }) — appends a new, open entry. Refused
+// `run-ask-open` while the last entry is still unanswered: one question at a time.
+export async function openRunAsk(item, runId, { question = null, phase = null, now } = {}) {
+  const record = await readRunningRun(item, runId);
+  if (openLastAsk(record.asks) != null) {
+    throw runError(`run ${runId} already has a question waiting on an answer`, "run-ask-open", 409);
+  }
+  const stamp = now ?? new Date().toISOString();
+  const entry = { question, phase, askedAt: stamp, parkedAt: null, answer: null, answeredAt: null, by: null };
+  const updated = { ...record, asks: [...record.asks, entry], updatedAt: stamp };
+  await persist(item, updated);
+  return updated;
+}
+
+// parkRunAsk(item, runId, { now }) — stamps `parkedAt` on the LAST entry. A parked, unanswered
+// entry is RE-STAMPED: `--resume` re-enters the wait with a fresh bound, and the bound can park
+// it again. Refused `run-ask-not-open` with no entry, or with the last one answered.
+export async function parkRunAsk(item, runId, { now } = {}) {
+  const record = await readRunningRun(item, runId);
+  const open = openLastAsk(record.asks);
+  if (open == null) throw runError(`run ${runId} has no question waiting on an answer`, "run-ask-not-open", 409);
+  const stamp = now ?? new Date().toISOString();
+  const updated = { ...record, asks: [...record.asks.slice(0, -1), { ...open, parkedAt: stamp }], updatedAt: stamp };
+  await persist(item, updated);
+  return updated;
+}
+
+// answerRunAsk(item, runId, { answer, by, now }) — stamps `answer`, `answeredAt` and `by` on
+// the LAST entry and keeps its `parkedAt`. Refused `run-ask-not-open` as parkRunAsk is.
+export async function answerRunAsk(item, runId, { answer, by = null, now } = {}) {
+  const record = await readRunningRun(item, runId);
+  const open = openLastAsk(record.asks);
+  if (open == null) throw runError(`run ${runId} has no question waiting on an answer`, "run-ask-not-open", 409);
+  const stamp = now ?? new Date().toISOString();
+  const updated = { ...record, asks: [...record.asks.slice(0, -1), { ...open, answer, answeredAt: stamp, by }], updatedAt: stamp };
+  await persist(item, updated);
+  return updated;
+}
+
 // A running run is STALE when now - heartbeatAt exceeds the threshold; a run that
 // NEVER beat (heartbeatAt null) falls back to now - updatedAt (20/ADR-004). Pure over
 // the passed-in values — the store reads no clock/config. Strict `>` so a run exactly
@@ -1147,6 +1217,11 @@ export async function staleRunningRuns(items, { now, stalenessThreshold = Infini
   for (const item of items) {
     for (const run of await readRuns(item)) {
       if (run.state !== "running") continue;
+      // 131/ADR-003 §3: a run waiting on a human is not an orphan. Its owner beats it while it
+      // waits, so this is the backstop for a PARKED one, which no one beats. Only the last entry
+      // is read, and only a plain object exempts — a corrupt entry never makes an orphan
+      // unreclaimable.
+      if (openLastAsk(run.asks) != null) continue;
       if (!isStale(run, nowMs, stalenessThreshold)) continue;
       candidates.push({ ...run, item });
     }

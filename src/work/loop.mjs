@@ -917,9 +917,43 @@ export function attemptElapsedMs(input = {}) {
   const record = input.record;
   const createdAtMs = Date.parse(record?.createdAt);
   if (!Number.isFinite(createdAtMs)) return null;
-  const endMs = attemptEndMs(record, Date.parse(input.now), input.stalenessMs, input.isStale);
+  const nowMs = Date.parse(input.now);
+  const endMs = attemptEndMs(record, nowMs, input.stalenessMs, input.isStale);
   if (!Number.isFinite(endMs)) return null;
-  return Math.max(0, endMs - createdAtMs);
+  return Math.max(0, endMs - createdAtMs - askWaitMs(record, createdAtMs, endMs, nowMs));
+}
+
+// THE WAIT ON A HUMAN IS CHARGED TO NOBODY (131/ADR-001 §4). Each ask's interval runs from its
+// `askedAt` to `answeredAt ?? parkedAt ?? now`, clipped to the attempt's own window, and the
+// intervals are MERGED before they are summed, so an overlap is never subtracted twice. An entry
+// whose chosen start or end does not parse, or whose clipped interval is empty, subtracts nothing;
+// a record with no `asks` subtracts nothing, so it answers exactly what it answered before. The
+// charge is derived from the instants on the record, never stored.
+function askWaitMs(record, startMs, endMs, nowMs) {
+  const asks = Array.isArray(record?.asks) ? record.asks : [];
+  const intervals = [];
+  for (const entry of asks) {
+    if (entry == null || typeof entry !== "object") continue;
+    const fromMs = Date.parse(entry.askedAt);
+    const toMs = entry.answeredAt != null ? Date.parse(entry.answeredAt) : entry.parkedAt != null ? Date.parse(entry.parkedAt) : nowMs;
+    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) continue;
+    const from = Math.max(fromMs, startMs);
+    const to = Math.min(toMs, endMs);
+    if (to > from) intervals.push([from, to]);
+  }
+  intervals.sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  let open = null;
+  for (const [from, to] of intervals) {
+    if (open != null && from <= open[1]) {
+      open[1] = Math.max(open[1], to);
+      continue;
+    }
+    if (open != null) total += open[1] - open[0];
+    open = [from, to];
+  }
+  if (open != null) total += open[1] - open[0];
+  return total;
 }
 
 // THE SUMMER — accumulated ATTEMPT milliseconds over a lineage, which is what `69/ADR-002` means
@@ -1554,6 +1588,16 @@ export function readLoopDeclaration(runs = []) {
     .sort(compareRuns);
   const loop = usable.at(-1)?.brief?.loop;
   return recoverableDeclaration(loop);
+}
+
+// readLoopDeclarationRun(runs) → the RUN the latest declaration is read from, on the same ordering
+// `readLoopDeclaration` uses, or `null` (131/03, task 06): the one reader of "which run carried the
+// loop last", so the death test never copies `compareRuns` into the shell.
+export function readLoopDeclarationRun(runs = []) {
+  const usable = (Array.isArray(runs) ? runs : [])
+    .filter((run) => usableDeclaration(run?.brief?.loop))
+    .sort(compareRuns);
+  return usable.at(-1) ?? null;
 }
 
 export function resolveLoopResume(input = {}) {

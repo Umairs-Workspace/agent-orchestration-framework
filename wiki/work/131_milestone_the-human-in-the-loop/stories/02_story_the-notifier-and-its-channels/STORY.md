@@ -5,10 +5,10 @@ slug: the-notifier-and-its-channels
 title: "The notifier and its channels — work.notify names channels by type and by the env var holding the secret, one eleven-key envelope, a Discord webhook renderer under the 2,000 cap, the shared headline formatter, best-effort delivery"
 parent: 131
 depends: []
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-25
 adrs: [ADR-005, ADR-006]
 reads:
   - wiki/work/131_milestone_the-human-in-the-loop/SPEC.md
@@ -59,16 +59,23 @@ What lands (ADR-005, ADR-006 §1): the new `src/notify/` family — `form.mjs` +
 
 ## Tasks
 
-- [ ] `tasks/00_the-notify-family-is-founded-and-registered.feature` — the `src/notify` and `test/notify` exemptions; `test/notify/index.mjs` imported once by `scripts/test.mjs`
-- [ ] `tasks/01_one-form-for-every-face.feature` — `form.mjs` zero-import with its six exports and `form.d.mts`; the elapsed ladder, the 100-character one-line ask, the seven phrases, headline, cost, account line
-- [ ] `tasks/02_work-notify-names-the-env-var-never-the-secret.feature` — the closed `work.notify` schema (no `url`/`webhook`/`token`, `urlEnv` pattern and default, `events`, `link`); `resolveNotifyConfig`
-- [ ] `tasks/03_one-envelope-built-in-one-place.feature` — `buildNotifyEnvelope`: the eleven keys in order, `EVENTS`, what each event keeps, `answerPath`, `link`, `node`; `stop.ref` amended in
-- [ ] `tasks/04_the-discord-message-keeps-its-headline-command-and-link.feature` — `renderDiscord`: plain `content`, four lines by event, `parse: []`, the 2,000 cap with only the body yielding, the fence closed before the suffix
-- [ ] `tasks/05_delivery-is-bounded-and-never-throws.feature` — `notify` and `sendDiscord`: the no-op, the events filter, parallel sends bounded at 5 s, no retry, the three degrade codes, the URL never out of env
-- [ ] `tasks/06_an-accepted-milestone-is-announced.feature` — the `milestone-accepted` site in `item-status.mjs`: once, after the move, awaited, never failing the accept
+- [x] `tasks/00_the-notify-family-is-founded-and-registered.feature` — the `src/notify` and `test/notify` exemptions; `test/notify/index.mjs` imported once by `scripts/test.mjs`
+- [x] `tasks/01_one-form-for-every-face.feature` — `form.mjs` zero-import with its six exports and `form.d.mts`; the elapsed ladder, the 100-character one-line ask, the seven phrases, headline, cost, account line
+- [x] `tasks/02_work-notify-names-the-env-var-never-the-secret.feature` — the closed `work.notify` schema (no `url`/`webhook`/`token`, `urlEnv` pattern and default, `events`, `link`); `resolveNotifyConfig`
+- [x] `tasks/03_one-envelope-built-in-one-place.feature` — `buildNotifyEnvelope`: the eleven keys in order, `EVENTS`, what each event keeps, `answerPath`, `link`, `node`; `stop.ref` amended in
+- [x] `tasks/04_the-discord-message-keeps-its-headline-command-and-link.feature` — `renderDiscord`: plain `content`, four lines by event, `parse: []`, the 2,000 cap with only the body yielding, the fence closed before the suffix
+- [x] `tasks/05_delivery-is-bounded-and-never-throws.feature` — `notify` and `sendDiscord`: the no-op, the events filter, parallel sends bounded at 5 s, no retry, the three degrade codes, the URL never out of env
+- [x] `tasks/06_an-accepted-milestone-is-announced.feature` — the `milestone-accepted` site in `item-status.mjs`: once, after the move, awaited, never failing the accept
 
 ## Notes
 
 - Absent `work.notify` is an honest no-op with zero network calls (17/ADR-004).
 - Writes `test/arch/testing/acd-source-directory-budget.test.mjs` BEFORE 06 does.
 - Task 00's "live tree is green" steps need lane 137's uncommitted digest-template files to land with their budget rows raised first: `src/work` 45/44, `test/bundle` 33/32, `test/memory` 12/11, `test/work/gate` 11/10, measured 2026-09-23.
+
+## Accept decision
+
+**Accepted 2026-09-25 (`aof:verify 131`).**
+- **Evidence.** The story lane is green: 78 cases, with FF-13106–FF-13108 green (VERIFICATION `### 131/01–06`).
+- **Gates.** `aof work validate 131` returned PASS. `aof work doctor 131` reported no `control-unresolved` at either severity and no missing red probe.
+- **Findings.** None. The build was clean, so there is no RETROSPECTIVE.md.

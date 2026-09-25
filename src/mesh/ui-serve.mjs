@@ -90,7 +90,7 @@ import { assetPath } from "../asset-base.mjs";
 // its union, so nothing about THIS origin's MIME answers changes).
 // `shouldServeAppShell` is the predicate that TIGHTENS this face's previously
 // unconditional catch -> index.html fallback.
-import { contentType, safeStaticPath, shouldServeAppShell } from "../static-serve.mjs";
+import { contentType, isLoopbackHost, safeStaticPath, shouldServeAppShell } from "../static-serve.mjs";
 import { serveBoard } from "../board-serve.mjs";
 // milestone 34 / story 03 (ADR-006) — the ONE global query surface this thin serve
 // face is allowed to reach for its GLOBAL `/api/mesh/status` read. `queryGlobalMeshStatus`
@@ -1306,6 +1306,12 @@ function admitWriteRequest(request, response) {
   const originHeader = request.headers.origin;
   if (typeof originHeader !== "string" || originHeader !== expectedOrigin) {
     sendApiError(response, 403, "Cross-origin write refused.", "cross-origin-refused");
+    return false;
+  }
+  // 131/ADR-006 §3 — a rebinding page's Origin matches its own Host, so the Origin check alone
+  // admits it; the Host must also name loopback. The sentence names no header value.
+  if (!isLoopbackHost(request.headers.host)) {
+    sendApiError(response, 403, "Write refused: the page was not served from a loopback address.", "non-loopback-host");
     return false;
   }
   const contentTypeHeader = String(request.headers["content-type"] ?? "");

@@ -63,6 +63,7 @@ import { tests as meshTerminalTests } from "../test/mesh/terminal/index.mjs";
 import { tests as meshUiTests } from "../test/mesh/ui/index.mjs";
 import { tests as meshWorkerTests } from "../test/mesh/worker/index.mjs";
 import { tests as notionTests } from "../test/notion/index.mjs";
+import { tests as notifyTests } from "../test/notify/index.mjs";
 import { tests as planningTests } from "../test/planning/index.mjs";
 import { tests as runTests } from "../test/run/index.mjs";
 import { tests as sessionTests } from "../test/session/index.mjs";
@@ -121,6 +122,7 @@ export const tests = [
   ...meshUiTests,
   ...meshWorkerTests,
   ...notionTests,
+  ...notifyTests,
   ...planningTests,
   ...runTests,
   ...sessionTests,

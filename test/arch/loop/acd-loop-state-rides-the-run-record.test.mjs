@@ -11,7 +11,7 @@ import { completingDriver, loopFixture, replaceStatus } from "../../loop/loop-co
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const RECORD_KEYS = Object.freeze(["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend"]);
+const RECORD_KEYS = Object.freeze(["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks"]);
 // 102/00 — EIGHT since the producer gained its loop id. 53/ARCHITECTURE.md's FF-5307 entry
 // describes seven; that milestone is `done` and its delivered register is not edited, so the
 // superseding statement lives in 102/tasks/00 and the control it pins is widened here.
@@ -130,7 +130,12 @@ export const archTests = [
         // driven settles turn off because they settle spend themselves. `carriedBrief` drops
         // `answers` beside `loop`, so a retry stamps its own. No state edge moved, and a settle with
         // no tokened answer writes exactly what it wrote before.
-        ["src/run-store.mjs", "94adc0e2c8c27e2f00368c61641e39633fa699da0f7046b6959237d534603e38"],
+        // RE-PINNED by 131/01 (131/ADR-003 §3): the SEVENTEENTH key, `asks`, appended last by
+        // 68/ADR-001's additive discipline (`buildRecord` `[]`, `normalizeRecord` reading a non-array
+        // forward as `[]`); three owner-side writers, `openRunAsk`, `parkRunAsk` and `answerRunAsk`,
+        // each a no-state-change persist shaped like `heartbeat`; and `staleRunningRuns` skipping a
+        // running run whose last ask is unanswered. No state edge moved and no existing signature changed.
+        ["src/run-store.mjs", "a2862115f737bfa229460d542302c8bc8922e39afd12ffdfe110f7700fcd22b3"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that
@@ -151,7 +156,14 @@ export const archTests = [
         // 55/VERIFICATION F-55-02-1. And again at `aof:verify 133` (F-133-02, story 04 task 03): a
         // second exported handler, `handleDiagramApi`, serves `/api/diagram/file` from `diagram:file`
         // OUTSIDE the `/api/work` namespace; `handleWorkApi` is byte-identical. No run key is read.
-        ["src/board-ui.mjs", "bd596d549a51dbd62d2c4e47379a7d415af92c9c54727b9247f25165ce7a9969"],
+        // RE-PINNED by 131/04 (ADR-006 §3): one hoisted admission and one route onto `work:answer`;
+        // no run key is read; every GET route's body is byte-identical. The measured
+        // `git diff -- src/board-ui.mjs`, non-comment lines: the five write branches match on
+        // pathname and call `admitWriteRequest` (the three phase doors now `return await`), the new
+        // `/api/work/answer` branch, `admitWriteRequest` + `sendMethodNotAllowed`, the
+        // `./static-serve.mjs` import of `isLoopbackHost`, and `readJsonBody` refusing a non-object
+        // body `invalid-body`. Re-pinned rather than dropped, per 55/VERIFICATION F-55-02-1.
+        ["src/board-ui.mjs", "50dea4d4563319fd8af398a5daf541f271e012e3020982d68db6730682a1d627"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiFiles = trackedFilesUnder(path.join(root, "ui")).sort((left, right) => left < right ? -1 : left > right ? 1 : 0);

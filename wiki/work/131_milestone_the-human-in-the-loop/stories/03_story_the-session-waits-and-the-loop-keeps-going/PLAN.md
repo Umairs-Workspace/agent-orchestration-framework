@@ -31,10 +31,8 @@ parked entry. Build in this order, so each step leans on the one before:
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`, run the story's suites through `node scripts/test.mjs --only`:
-the seven `test/loop/*` suites in `files:`, `test/arch/loop/acd-loop-narrates-in-flight.test.mjs`,
-`test/arch/mesh/acd-heartbeat-by-consumption.test.mjs`, and the standing controls this path
-crosses: `53/FF-5302`, `70/FF-7007` (`test/arch/work/acd-review-never-resumed.test.mjs`),
+Under an isolated `AOF_GLOBAL_HOME`, run every suite in the story's `files:` through the test
+runner's `--only`, and the standing controls this path crosses: `53/FF-5302`, `70/FF-7007`,
 `130/FF-13002`, `129/FF-12902` and the loop family boundary. Then run one end-to-end probe over
 the lane fixture with two lanes, the fake child answering `needs-input` for one of them. Answer
 it through `answerAsk` (131/01) while the other lane merges. The waiting lane must re-spawn with
@@ -51,8 +49,8 @@ answer `complete`. If it answers `session-needs-input`, the site still mints the
 ## Known traps
 
 - `FF-6903` (extended) pins the hook's heartbeat bytes and the one armed interval in `wave.mjs`.
-  Lift the enqueue (the bytes, the append and the consume) into ONE export in
-  `src/run-heartbeat-consumption.mjs`, and call it from `beatWaveRun` and the composer. Re-aim
+  Lift the enqueue (the bytes, the append and the consume) into ONE export in the heartbeat
+  consumption module, and call it from `beatWaveRun` and the composer. Re-aim
   that control's wave leg at the export, and admit the composer's beat by name (ADR-001 §3). Do
   not copy `heartbeatLine`.
 - `126/FF-12602` counts narrate calls per file. Add `ask.mjs` to `FAMILY`, and move each count by
@@ -60,7 +58,7 @@ answer `complete`. If it answers `session-needs-input`, the site still mints the
 - Twelve cases across three loop suites use needs-input to leave a lane open. Inject the
   immediate park and keep their assertions. The reconcile cases about RECLAIM need a seed with
   no ask (task 04, ruling 7), or they silently start testing re-entry.
-- Size. The developer's feasibility estimate is about +80–90 lines in `src/commands/loop.mjs` once
+- Size. The developer's feasibility estimate is about +80–90 lines in the loop command once
   the re-entry and the sweep sit in `ask.mjs`, and about +80 in `wave.mjs`. The ADR's ~50 and ≤ 40
   predate the `--resume` re-entry contract, so review measures the real delta against these
   estimates, and anything more is a review finding.

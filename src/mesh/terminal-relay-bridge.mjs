@@ -157,8 +157,9 @@ export function buildTerminalInputEnvelope(nodeId, sessionId, bytes) {
 // is the durable assignment.reported event being answered, so relay duplication
 // remains one resume while a later park has a new identity. The reservation fields
 // let either router or worker restore exactly this reservation on a proven refusal.
+// `answer` ({ text, by, askedAt }, 131/04) rides last, and only when `work:answer` carried one.
 // A pure projection of its inputs — no fs, no clock, no network.
-export function buildTerminalResumeEnvelope(nodeId, { sessionId, assignmentId, workspaceId, itemRef, reservedAt, previousNodeId, parkId } = {}) {
+export function buildTerminalResumeEnvelope(nodeId, { sessionId, assignmentId, workspaceId, itemRef, reservedAt, previousNodeId, parkId, answer } = {}) {
   return {
     kind: TERMINAL_RESUME_KIND,
     nodeId,
@@ -170,6 +171,7 @@ export function buildTerminalResumeEnvelope(nodeId, { sessionId, assignmentId, w
       ...(reservedAt == null ? {} : { reservedAt }),
       ...(previousNodeId == null ? {} : { previousNodeId }),
       parkId: parkId ?? null,
+      ...(answer == null ? {} : { answer }),
     },
   };
 }

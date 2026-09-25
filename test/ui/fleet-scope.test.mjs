@@ -2091,12 +2091,16 @@ export const fleetScopeTests = [
       // (the same shape as 133's board-ui re-pin below), so this leg reads the pin as present
       // and moved only by 130/06's stated reason rather than freezing a digest it does not own.
       assert.match(gate, /\["src\/run-store\.mjs", "[0-9a-f]{64}"\]/, "the run-store pin is present");
-      assert.match(gate, /RE-PINNED by 130\/06[\s\S]{0,900}\["src\/run-store\.mjs"/, "the run-store pin moved after this story only with 130/06's stated reason");
+      // 131/01 then stacks its own reason (the seventeenth key, `asks`) between the two, so the
+      // window widens by that comment's length.
+      assert.match(gate, /RE-PINNED by 130\/06[\s\S]{0,1800}\["src\/run-store\.mjs"/, "the run-store pin moved after this story only with 130/06's stated reason");
       // 133/04 and `aof:verify 133` re-pin board-ui AFTER this story, each with its own reason
       // stacked above the entry (read by FF-12603 leg 6), so this leg reads it as present and
       // re-pinned by 133 rather than freezing a digest this story does not own.
       assert.match(gate, /\["src\/board-ui\.mjs", "[0-9a-f]{64}"\]/, "the board-ui pin is present");
-      assert.match(gate, /RE-PINNED by 133\/04[\s\S]{0,900}\["src\/board-ui\.mjs"/, "the board-ui pin moved after this story only with 133's stated reason");
+      // 131/04 stacks a third board-ui mover (one hoisted admission and one route onto
+      // `work:answer`), so this window widens by its comment's length too.
+      assert.match(gate, /RE-PINNED by 133\/04[\s\S]{0,1800}\["src\/board-ui\.mjs"/, "the board-ui pin moved after this story only with 133's stated reason");
       const { archTests } = await import("../arch/loop/acd-loop-state-rides-the-run-record.test.mjs");
       const control = archTests.find((test) => /frozen store and board read surfaces/.test(test.name));
       assert.ok(control, "the FF-5307 digest control exists");

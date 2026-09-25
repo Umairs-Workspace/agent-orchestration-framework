@@ -5,10 +5,10 @@ slug: the-session-waits-and-the-loop-keeps-going
 title: "The session waits and the loop keeps going — every needs-input site calls one awaitAnswer, a waiting lane holds its slot while the wave builds, the answer resumes the same session, the bound parks it and says so, and the loop halts only when nothing else can run"
 parent: 131
 depends: [1, 2]
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-25
 adrs: [ADR-001, ADR-004]
 reads:
   - wiki/work/131_milestone_the-human-in-the-loop/SPEC.md
@@ -70,15 +70,22 @@ What lands (ADR-001, ADR-004): `src/loop/ask.mjs` (`awaitAnswer`, `parkedHalt`, 
 
 ## Tasks
 
-- [ ] `tasks/00_one-composer-asks-waits-and-answers.feature` — `src/loop/ask.mjs`: `awaitAnswer`'s order (read, record, file, notify, narrate), the `askWait` seam and the check order, the beat, the bound's park and notice, the silent stop park, the verbatim re-drive, the re-ask loop, `parkedHalt`, `PHASE_WORDS`
-- [ ] `tasks/01_the-primary-drive-waits-and-resumes-in-place.feature` — the shell, retry and verify sites call `awaitAnswer`; `drivePhase` gains `answer` over the same record; settle → interrupt → needs-input holds; the parked halt
-- [ ] `tasks/02_a-waiting-lane-holds-its-slot-and-the-wave-builds-on.feature` — a waiting lane keeps its slot; the others merge; the answer re-spawns the child with `--answer`; a parked lane is committed, unmerged and set aside; the parked halt comes first when nothing else can run; a drain parks silently
-- [ ] `tasks/03_the-answer-rides-the-drive-as-a-resumed-command.feature` — `work:drive --answer` in three homes; `drive-answer-unreadable` and `drive-answer-not-own` before any effect; the resume of the ask's own session with the answer typed; `ctx.loopDrive.answer`; `spawnLaneDrive({ answerFile })`
-- [ ] `tasks/04_resume-re-enters-a-standing-ask.feature` — `--resume` re-enters a standing ask in a lane and in the primary: answered → re-driven, waiting → waited with a fresh bound and no second notice; stale ask files cleared
-- [ ] `tasks/05_the-account-says-who-is-waiting-and-how-to-answer.feature` — the waiting, answered and parked rows through `accountLine`; the halt's ask block; `--quiet`; the parked entry's fifth key amended in; `126/FF-12602` moved
-- [ ] `tasks/06_the-loop-reports-its-own-halt-and-death.feature` — `loop-halted` once after the account (never for `session-needs-input`); `loop-died` / `loop-relaunched` on `--resume`; `readLastLoopDiagEvent`
+- [x] `tasks/00_one-composer-asks-waits-and-answers.feature` — `src/loop/ask.mjs`: `awaitAnswer`'s order (read, record, file, notify, narrate), the `askWait` seam and the check order, the beat, the bound's park and notice, the silent stop park, the verbatim re-drive, the re-ask loop, `parkedHalt`, `PHASE_WORDS`
+- [x] `tasks/01_the-primary-drive-waits-and-resumes-in-place.feature` — the shell, retry and verify sites call `awaitAnswer`; `drivePhase` gains `answer` over the same record; settle → interrupt → needs-input holds; the parked halt
+- [x] `tasks/02_a-waiting-lane-holds-its-slot-and-the-wave-builds-on.feature` — a waiting lane keeps its slot; the others merge; the answer re-spawns the child with `--answer`; a parked lane is committed, unmerged and set aside; the parked halt comes first when nothing else can run; a drain parks silently
+- [x] `tasks/03_the-answer-rides-the-drive-as-a-resumed-command.feature` — `work:drive --answer` in three homes; `drive-answer-unreadable` and `drive-answer-not-own` before any effect; the resume of the ask's own session with the answer typed; `ctx.loopDrive.answer`; `spawnLaneDrive({ answerFile })`
+- [x] `tasks/04_resume-re-enters-a-standing-ask.feature` — `--resume` re-enters a standing ask in a lane and in the primary: answered → re-driven, waiting → waited with a fresh bound and no second notice; stale ask files cleared
+- [x] `tasks/05_the-account-says-who-is-waiting-and-how-to-answer.feature` — the waiting, answered and parked rows through `accountLine`; the halt's ask block; `--quiet`; the parked entry's fifth key amended in; `126/FF-12602` moved
+- [x] `tasks/06_the-loop-reports-its-own-halt-and-death.feature` — `loop-halted` once after the account (never for `session-needs-input`); `loop-died` / `loop-relaunched` on `--resume`; `readLastLoopDiagEvent`
 
 ## Notes
 
 - A stop request at level ≥ 1 parks a waiting run and never cancels it; no notification — the operator is present.
 - The existing needs-input suites inject an immediate-park `askWait` and keep their halts.
+
+## Accept decision
+
+**Accepted 2026-09-25 (`aof:verify 131`).**
+- **Evidence.** The story lane is green: 40 cases across the loop, drive and narration suites, with FF-13104/FF-13105 green (VERIFICATION `### 131/01–06`). The `cycle.mjs` standing-stop halt was fixed on 03's authority at 06's build.
+- **Gates.** `aof work validate 131` returned PASS. `aof work doctor 131` reported no `control-unresolved` at either severity and no missing red probe.
+- **Findings.** None is open against 03.

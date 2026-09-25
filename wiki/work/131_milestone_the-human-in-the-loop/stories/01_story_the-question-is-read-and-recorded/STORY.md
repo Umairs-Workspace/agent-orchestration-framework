@@ -5,10 +5,10 @@ slug: the-question-is-read-and-recorded
 title: "The question is read and recorded — the transcript's last assistant turn read by one reader in the transcript family, the ask asked in four labelled lines, one ask file per run in the aof home, and the run record's asks key"
 parent: 131
 depends: []
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-25
 adrs: [ADR-002, ADR-003]
 reads:
   - wiki/work/131_milestone_the-human-in-the-loop/SPEC.md
@@ -65,14 +65,21 @@ What lands (ADR-002, ADR-003 §1-§4): `readLastAssistantTurn`, `askQuestionFrom
 
 ## Tasks
 
-- [ ] `tasks/00_the-reader-lives-in-the-transcript-family.feature` — `readLastAssistantTurn`, `askQuestionFromTurn` and `readAskQuestion` in `observe.mjs`; the driver's private scan maps over them with its four answers and its seventeen exports unchanged
-- [ ] `tasks/01_the-producer-asks-in-four-lines.feature` — the four-label paragraph before the sentinel sentence; the threshold sentences byte-identical; nothing a comment-stripper would eat
-- [ ] `tasks/02_the-ask-file-lives-in-the-aof-home.feature` — `src/loop/ask-request.mjs`: the path, the fifteen-key record, `ASK_STATES`, open/park/clear, the absence-tolerant read, `readAsks`, the unref'd poll
-- [ ] `tasks/03_the-answer-is-sanitised-once.feature` — `answerAsk`: blank, over-long and control-character answers refused before any lookup; verbatim storage; the first answer wins
-- [ ] `tasks/04_the-run-record-carries-asks.feature` — `asks` as the seventeenth key; the three owner-side writers and their refusals; every sixteen-key pin moved; `53/FF-5307` re-pinned
-- [ ] `tasks/05_a-waiting-run-is-not-reclaimed-or-charged.feature` — the stale scan skips an unanswered last ask; `attemptElapsedMs` subtracts clipped, merged ask intervals
+- [x] `tasks/00_the-reader-lives-in-the-transcript-family.feature` — `readLastAssistantTurn`, `askQuestionFromTurn` and `readAskQuestion` in `observe.mjs`; the driver's private scan maps over them with its four answers and its seventeen exports unchanged
+- [x] `tasks/01_the-producer-asks-in-four-lines.feature` — the four-label paragraph before the sentinel sentence; the threshold sentences byte-identical; nothing a comment-stripper would eat
+- [x] `tasks/02_the-ask-file-lives-in-the-aof-home.feature` — `src/loop/ask-request.mjs`: the path, the fifteen-key record, `ASK_STATES`, open/park/clear, the absence-tolerant read, `readAsks`, the unref'd poll
+- [x] `tasks/03_the-answer-is-sanitised-once.feature` — `answerAsk`: blank, over-long and control-character answers refused before any lookup; verbatim storage; the first answer wins
+- [x] `tasks/04_the-run-record-carries-asks.feature` — `asks` as the seventeenth key; the three owner-side writers and their refusals; every sixteen-key pin moved; `53/FF-5307` re-pinned
+- [x] `tasks/05_a-waiting-run-is-not-reclaimed-or-charged.feature` — the stale scan skips an unanswered last ask; `attemptElapsedMs` subtracts clipped, merged ask intervals
 
 ## Notes
 
 - `src/run-store.mjs` carries an uncommitted 130 edit in the shared checkout (2026-09-23); it must be committed before this story re-pins that file's `53/FF-5307` digest, or the two re-pins collide.
 - Writes `test/loop/loop-command-stops.test.mjs`, `test/loop/loop-diag.test.mjs` and `test/run/run-session-limit-resume.test.mjs` BEFORE 03/04 do — the shared files are sequential by `depends`.
+
+## Accept decision
+
+**Accepted 2026-09-25 (`aof:verify 131`).**
+- **Evidence.** The story lane is green: 40 cases, plus the shared controls (VERIFICATION `### 131/01–06`). Its own single-writer sweep was red over the delivered tree, because 05's `list.mjs` options argument tripped it. That was fixed in the gate with an exact-spelling exemption, and the sweep was re-run green (F-131-05).
+- **Gates.** `aof work validate 131` returned PASS. `aof work doctor 131` reported no `control-unresolved` at either severity and no missing red probe.
+- **Findings.** None is a blocker. F-131-05 is closed. F-131-06 (`createAskPoll` has no consumer) is open for the operator's ruling and recorded as a Gap in OUTCOME.

@@ -13,7 +13,7 @@
 //
 // Born in the subject directory `test/support/loop/` because `test/support` is at its ceiling
 // (the budget row asks exactly this of the next helper).
-import { mkdtemp, mkdir, writeFile, rm, realpath, readFile } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, realpath, readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { EventEmitter } from "node:events";
@@ -24,6 +24,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 import { resolveRefInWorktree } from "../../../src/work/dispatch.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../mesh-worker-terminal-fixture.mjs";
 import { createStopSource, loopStopsDir } from "../../../src/loop/stop-request.mjs";
+import { loopAsksDir, readAsk } from "../../../src/loop/ask-request.mjs";
 
 // git(args, cwd) — argv form only, never a shell string.
 export function git(args, cwd) {
@@ -308,10 +309,34 @@ export function verifyCompleter(fx) {
 }
 
 /** The loop ctx for one run: the fixture's workspace plus every injected seam. */
+// 131/03 (task 01 ruling 6, task 02 ruling 7) — THE IMMEDIATE PARK: an `askWait` whose first check
+// reads the real ask file and finds the bound already passed, so an unanswered needs-input lane or
+// drive parks at once (an answer already in the file still wins) and the
+// suites that use needs-input to leave a lane open keep their stop and their guards. A case that
+// waits for a real answer injects its own `askWait` through `extra`.
+export function immediatePark({ now = () => new Date() } = {}) {
+  return { read: (runId) => readAsk(loopAsksDir(), runId), now, expired: () => true, next: async () => {} };
+}
+
+// stripAsks(item) — 131/03 (task 02 ruling 11, task 04 ruling 7): a seed that uses needs-input to
+// leave a lane with a running record now leaves a PARKED ask on it, which `--resume` re-enters. A
+// case whose subject is the RECLAIM (or the fresh-open refusal) strips the asks off the item's
+// records, so the seed changes and the assertion does not.
+export async function stripAsks(item) {
+  const runsDir = path.join(item.dir, "runs");
+  for (const name of await readdir(runsDir)) {
+    if (!name.endsWith(".json")) continue;
+    const file = path.join(runsDir, name);
+    const record = JSON.parse(await readFile(file, "utf8"));
+    await writeFile(file, JSON.stringify({ ...record, asks: [] }, null, 2), "utf8");
+  }
+}
+
 export function laneCtx(fx, { child, registry, rubric, driver, report, timers, signals, now, exec = realExec, extra = {} } = {}) {
   return {
     workspace: fx.workspace,
     exec,
+    askWait: immediatePark(),
     ...(child == null ? {} : { spawnLaneDrive: child }),
     ...(registry == null ? {} : { invokeRegistered: registry }),
     ...(rubric == null ? {} : { spawnRubric: rubric }),

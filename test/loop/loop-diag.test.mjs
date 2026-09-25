@@ -28,6 +28,17 @@ import {
   stopRequestPath,
 } from "../../src/loop/stop-request.mjs";
 import {
+  answerAsk,
+  askRequestPath,
+  clearAsk,
+  createAskPoll,
+  loopAsksDir,
+  openAsk,
+  parkAsk,
+  readAsk,
+  readAsks,
+} from "../../src/loop/ask-request.mjs";
+import {
   LOOP_DIAG_ENV,
   LOOP_DIAG_KEEP,
   LOOP_DIAG_PREFIX,
@@ -38,6 +49,7 @@ import {
   loopDiagLogPath,
   loopDiagScopeTag,
   pruneLoopDiagLogs,
+  readLastLoopDiagEvent,
 } from "../../src/loop-diag.mjs";
 
 function fakeProcess() {
@@ -983,7 +995,522 @@ const stopRequestTests = [
   },
 ];
 
+// ---------------------------------------------------------------------------------------------
+// milestone 131 / story 01, tasks 02-03 — THE ASK HAS ONE HOME (`src/loop/ask-request.mjs`,
+// ADR-003 §1-§2). The loop's THIRD home-side file, beside the stop request, and driven the same
+// way: inside the isolated aof home the runner hands every test, with the degrade sink injected
+// and reset before every read, and the poll over an injected timer pair.
+// ---------------------------------------------------------------------------------------------
+
+const FIFTEEN_KEYS = ["runId", "ref", "workspaceId", "loopRunId", "scope", "sessionId", "phase", "node", "question", "askedAt", "state", "parkedAt", "answer", "answeredAt", "by"];
+const ASK = { runId: "R1", ref: "131/01", workspaceId: "w1", loopRunId: "L1", scope: "131", sessionId: "S1", phase: "refine", node: "node-7297", question: "Decision needed: X" };
+const ASK_NOW = () => new Date("2026-09-23T17:00:00.000Z");
+const ANSWER_BY = { actor: "you", via: "cli", node: "node-7297" };
+const ANSWER_NOW = () => new Date("2026-09-23T17:05:00.000Z");
+const askRecord = (over = {}) => ({ ...ASK, askedAt: "2026-09-23T17:00:00.000Z", state: "waiting", parkedAt: null, answer: null, answeredAt: null, by: null, ...over });
+const writeAskRaw = (dir, id, text) => mkdir(dir, { recursive: true }).then(() => writeFile(askRequestPath(dir, id), text, "utf8"));
+const writeAskRecord = (dir, id, value) => writeAskRaw(dir, id, `${JSON.stringify(value, null, 2)}\n`);
+const readAskRaw = (dir, id) => readFile(askRequestPath(dir, id), "utf8");
+const freshAsksDir = async () => {
+  const dir = loopAsksDir();
+  await rm(dir, { recursive: true, force: true });
+  return dir;
+};
+// A rejection's code and status, read off the thrown error.
+async function refusal(promise) {
+  try {
+    await promise;
+  } catch (error) {
+    return { code: error.code, status: error.status, message: error.message };
+  }
+  return null;
+}
+
+// Each prior state the file can hold, arranged for the run R1.
+const PRIORS = {
+  absent: async (dir) => { await rm(askRequestPath(dir, "R1"), { force: true }); },
+  waiting: (dir) => writeAskRecord(dir, "R1", askRecord()),
+  parked: (dir) => writeAskRecord(dir, "R1", askRecord({ state: "parked", parkedAt: "2026-09-23T17:30:00.000Z" })),
+  answered: (dir) => writeAskRecord(dir, "R1", askRecord({ state: "answered", answer: "b", answeredAt: "2026-09-23T17:05:00.000Z", by: ANSWER_BY })),
+  corrupt: (dir) => writeAskRaw(dir, "R1", "{ not json"),
+};
+
+const askRequestTests = [
+  // ---- task 02: the ask file lives in the aof home ------------------------------------------
+  {
+    name: "131/01 ask-request/02 the directory and the path derive from the mesh root, and only there",
+    run() {
+      const H = path.join("C:", "tmp", "aof-home");
+      const dir = loopAsksDir({ AOF_GLOBAL_HOME: H });
+      assert.equal(dir, path.join(H, "mesh", "loop-asks"));
+      assert.equal(askRequestPath(dir, "20260923T173003685Z-0000"), path.join(dir, "20260923T173003685Z-0000.json"));
+      assert.equal(dir, path.join(globalMeshPaths({ env: { AOF_GLOBAL_HOME: H } }).meshRoot, "loop-asks"), "the resolver is globalMeshPaths");
+    },
+  },
+  {
+    name: "131/01 ask-request/02 an opened ask is the fifteen keys, in order, waiting, whole — and nothing of the temp write remains",
+    async run() {
+      const dir = await freshAsksDir();
+      await openAsk(dir, { ...ASK, now: ASK_NOW });
+      const raw = JSON.parse(await readAskRaw(dir, "R1"));
+      assert.deepEqual(Object.keys(raw), FIFTEEN_KEYS);
+      assert.deepEqual(raw, askRecord());
+      assert.deepEqual((await readdir(dir)).filter((name) => name.startsWith(".tmp-")), []);
+      assert.deepEqual(await readAsk(dir, "R1"), raw);
+    },
+  },
+  {
+    name: "131/01 ask-request/02 openAsk writes a whole waiting record over whatever the file held — absent, waiting, parked, answered or corrupt",
+    async run() {
+      const dir = await freshAsksDir();
+      for (const [prior, arrange] of Object.entries(PRIORS)) {
+        await arrange(dir);
+        await openAsk(dir, { ...ASK, question: "Decision needed: Y", now: () => new Date("2026-09-23T18:00:00.000Z") });
+        degradeEvents();
+        assert.deepEqual(await readAsk(dir, "R1"), askRecord({ question: "Decision needed: Y", askedAt: "2026-09-23T18:00:00.000Z" }), `over a ${prior} file`);
+      }
+      setDegradeSinkForTest(undefined);
+    },
+  },
+  {
+    name: "131/01 ask-request/02 the key set never shrinks — an omitted carried field is written null in its slot",
+    async run() {
+      const dir = await freshAsksDir();
+      for (const omitted of ["loopRunId", "scope", "node", "sessionId"]) {
+        await openAsk(dir, { ...ASK, [omitted]: undefined, now: ASK_NOW });
+        const raw = JSON.parse(await readAskRaw(dir, "R1"));
+        assert.deepEqual(Object.keys(raw), FIFTEEN_KEYS, `omitting ${omitted}`);
+        assert.equal(raw[omitted], null, `omitting ${omitted}: it reads null`);
+      }
+    },
+  },
+  {
+    name: "131/01 ask-request/02 parkAsk moves a waiting ask and nothing else; the answer that won the race stands; clearing is quiet twice",
+    async run() {
+      const dir = await freshAsksDir();
+      const at = () => new Date("2026-09-23T19:00:00.000Z");
+      const rows = [
+        ["waiting", askRecord({ state: "parked", parkedAt: "2026-09-23T19:00:00.000Z" }), "changed", 0],
+        ["parked", "unchanged", "byte-unchanged", 0],
+        ["answered", "unchanged", "byte-unchanged", 0],
+        ["absent", null, "absent", 0],
+        ["corrupt", null, "byte-unchanged", 1],
+      ];
+      try {
+        for (const [prior, answer, after, degrades] of rows) {
+          await PRIORS[prior](dir);
+          const before = prior === "absent" ? null : await readAskRaw(dir, "R1");
+          const events = degradeEvents();
+          const parked = await parkAsk(dir, "R1", { now: at });
+          if (answer === "unchanged") assert.deepEqual(parked, JSON.parse(before), `${prior}: that record, unchanged`);
+          else assert.deepEqual(parked, answer, `${prior}: the answer`);
+          if (after === "byte-unchanged") assert.equal(await readAskRaw(dir, "R1"), before, `${prior}: the file is byte-unchanged`);
+          if (after === "absent") await assert.rejects(access(askRequestPath(dir, "R1")), { code: "ENOENT" }, `${prior}: still absent`);
+          if (after === "changed") assert.equal((await readAsk(dir, "R1")).parkedAt, "2026-09-23T19:00:00.000Z");
+          assert.equal(events.filter((e) => e.code === "loop-ask-request").length, degrades, `${prior}: degrades`);
+        }
+
+        await PRIORS.waiting(dir);
+        const events = degradeEvents();
+        await clearAsk(dir, "R1");
+        await clearAsk(dir, "R1");
+        await assert.rejects(access(askRequestPath(dir, "R1")), { code: "ENOENT" });
+        assert.deepEqual(events, [], "clearing twice is quiet");
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "131/01 ask-request/02 the write never lands under the checkout",
+    async run() {
+      const dir = loopAsksDir();
+      const C = await mkdtemp(path.join(os.tmpdir(), "aof-ask-checkout-"));
+      const previousCwd = process.cwd();
+      try {
+        await writeFile(path.join(C, "README.md"), "a fixture checkout\n");
+        process.chdir(C);
+        const before = await listTree(C);
+        await openAsk(dir, { ...ASK, now: ASK_NOW });
+        assert.deepEqual(await listTree(C), before);
+        await access(path.join(process.env.AOF_GLOBAL_HOME, "mesh", "loop-asks", "R1.json"));
+      } finally {
+        process.chdir(previousCwd);
+        await rm(C, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "131/01 ask-request/02 the read is absence-tolerant and degrades anything that is not a record to null — one coded event carrying the path",
+    async run() {
+      const dir = await freshAsksDir();
+      const filePath = askRequestPath(dir, "R1");
+      const fifteen = askRecord();
+      const rows = [
+        ["does not exist, nor does dir", async () => { await rm(dir, { recursive: true, force: true }); }, null, 0],
+        ["holds the fifteen-key waiting record", () => writeAskRecord(dir, "R1", fifteen), fifteen, 0],
+        ["holds `{ not json`", () => writeAskRaw(dir, "R1", "{ not json"), null, 1],
+        ["holds the record with state done", () => writeAskRecord(dir, "R1", { ...fifteen, state: "done" }), null, 1],
+        ["holds the record plus an unknown key", () => writeAskRecord(dir, "R1", { ...fifteen, extra: 1 }), { ...fifteen, extra: 1 }, 0],
+        ["holds { state: parked } and nothing else", () => writeAskRecord(dir, "R1", { state: "parked" }), { state: "parked" }, 0],
+        ["is empty (zero bytes)", () => writeAskRaw(dir, "R1", ""), null, 1],
+        ["holds a JSON array", () => writeAskRaw(dir, "R1", "[]"), null, 1],
+        ["holds JSON null", () => writeAskRaw(dir, "R1", "null"), null, 1],
+        ["holds the record with state WAITING", () => writeAskRecord(dir, "R1", { ...fifteen, state: "WAITING" }), null, 1],
+        ["holds the record with no state key", () => { const { state, ...rest } = fifteen; return writeAskRecord(dir, "R1", rest); }, null, 1],
+        ["is a directory", async () => { await rm(filePath, { force: true }); await mkdir(filePath, { recursive: true }); }, null, 1],
+      ];
+      try {
+        for (const [state, arrange, answer, degrades] of rows) {
+          await arrange();
+          const events = degradeEvents();
+          assert.deepEqual(await readAsk(dir, "R1"), answer, `the file ${state}`);
+          assert.equal(events.length, degrades, `the file ${state}: degrades`);
+          for (const event of events) {
+            assert.equal(event.code, "loop-ask-request");
+            assert.equal(event.path, filePath);
+          }
+        }
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "131/01 ask-request/02 a runId that is not one filename segment is refused by every export before the filesystem is touched, naming runId",
+    async run() {
+      const dir = await freshAsksDir();
+      for (const id of ["../R1", "a/b", undefined, "", "..", ".hidden", "a\\b", "a:b", "R 1", 42]) {
+        const label = JSON.stringify(id ?? "undefined");
+        assert.throws(() => askRequestPath(dir, id), (e) => e instanceof TypeError && /runId/.test(e.message), `askRequestPath refuses ${label}`);
+        await assert.rejects(openAsk(dir, { ...ASK, runId: id, now: ASK_NOW }), (e) => e instanceof TypeError && /runId/.test(e.message), `openAsk refuses ${label}`);
+        await assert.rejects(parkAsk(dir, id, { now: ASK_NOW }), TypeError, `parkAsk refuses ${label}`);
+        await assert.rejects(readAsk(dir, id), TypeError, `readAsk refuses ${label}`);
+        await assert.rejects(clearAsk(dir, id), TypeError, `clearAsk refuses ${label}`);
+        assert.throws(() => createAskPoll({ dir, runId: id, pollMs: 0 }), TypeError, `createAskPoll refuses ${label}`);
+      }
+      await assert.rejects(access(dir), { code: "ENOENT" }, "dir still does not exist");
+    },
+  },
+  {
+    name: "131/01 ask-request/02 readAsks answers one workspace's records, ordered, skipping what is not a record — and [] quietly for an empty answer",
+    async run() {
+      const dir = await freshAsksDir();
+      try {
+        for (const [state, arrange] of [
+          ["does not exist", async () => {}],
+          ["exists and is empty", () => mkdir(dir, { recursive: true })],
+          ["holds only R3 for w2", () => writeAskRecord(dir, "R3", askRecord({ runId: "R3", workspaceId: "w2" }))],
+          ["holds only a .tmp entry", async () => { await rm(dir, { recursive: true, force: true }); await mkdir(dir, { recursive: true }); await writeFile(path.join(dir, ".tmp-R1.json-1-2-x"), "{"); }],
+        ]) {
+          await arrange();
+          const events = degradeEvents();
+          assert.deepEqual(await readAsks(dir, { workspaceId: "w1" }), [], `dir ${state}`);
+          assert.deepEqual(events, [], `dir ${state}: nothing degraded`);
+        }
+
+        await rm(dir, { recursive: true, force: true });
+        await writeAskRecord(dir, "R1", askRecord({ runId: "R1", state: "answered", askedAt: "2026-09-23T17:02:00.000Z" }));
+        await writeAskRecord(dir, "R2", askRecord({ runId: "R2", askedAt: "2026-09-23T17:01:00.000Z" }));
+        await writeAskRecord(dir, "R4", askRecord({ runId: "R4", state: "parked", askedAt: "2026-09-23T17:01:00.000Z" }));
+        await writeAskRecord(dir, "R3", askRecord({ runId: "R3", workspaceId: "w2", askedAt: "2026-09-23T17:00:00.000Z" }));
+        await writeAskRaw(dir, "R6", "{ not json");
+        await writeFile(path.join(dir, ".tmp-R5.json-1-2-x"), JSON.stringify(askRecord()).slice(0, 40));
+        await writeFile(path.join(dir, "notes.txt"), "notes");
+        const events = degradeEvents();
+        assert.deepEqual((await readAsks(dir, { workspaceId: "w1" })).map((r) => r.runId), ["R2", "R4", "R1"]);
+        assert.deepEqual(events.map((e) => [e.code, e.path]), [["loop-ask-request", askRequestPath(dir, "R6")]]);
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "131/01 ask-request/02 the poll reads the file on its unref'd interval, arms only for a positive finite pollMs, and a corrupt file answers null without rejecting",
+    async run() {
+      const dir = await freshAsksDir();
+      const timers = fakeTimers();
+      const poll = createAskPoll({ dir, runId: "R1", pollMs: 5, timers });
+      assert.equal(poll.ask(), null, "construction reads nothing");
+      poll.start();
+      assert.equal(timers.set.length, 1);
+      await writeAskRecord(dir, "R1", askRecord({ state: "answered", answer: "b" }));
+      timers.set[0].fn();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      assert.equal(poll.ask().state, "answered");
+      assert.equal(timers.set[0].unrefs, 1, "the interval was unref'd");
+      poll.stop();
+      assert.deepEqual(timers.clear, [timers.set[0]], "after stop() no interval is held");
+
+      for (const [pollMs, armed, period] of [[undefined, 1, 2000], [5, 1, 5], [0, 0, null], [-1, 0, null], ["5", 0, null], [Infinity, 0, null]]) {
+        const t = fakeTimers();
+        const p = createAskPoll({ dir, runId: "R1", ...(pollMs === undefined ? {} : { pollMs }), timers: t });
+        p.start();
+        assert.equal(t.set.length, armed, `pollMs ${String(pollMs)}`);
+        if (period != null) assert.equal(t.set[0].ms, period);
+        assert.equal(p.ask(), null);
+        p.stop();
+      }
+
+      await writeAskRaw(dir, "R1", "{ not json");
+      const events = degradeEvents();
+      try {
+        const t = fakeTimers();
+        const p = createAskPoll({ dir, runId: "R1", pollMs: 5, timers: t });
+        p.start();
+        t.set[0].fn();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        assert.equal(p.ask(), null);
+        assert.deepEqual(events.map((e) => e.code), ["loop-ask-request"]);
+        p.stop();
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+  {
+    name: "131/01 ask-request/02 the ask's words have one home: no other src module spells loop-asks, and the module imports its three leaves",
+    async run() {
+      const srcRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src");
+      const files = (await readdir(srcRoot, { recursive: true })).filter((f) => f.endsWith(".mjs"));
+      assert.ok(files.length > 100, `the sweep read src/ — ${files.length} modules`);
+      for (const rel of files) {
+        if (rel.split(path.sep).join("/") === "loop/ask-request.mjs") continue;
+        assert.ok(!stripComments(await readFile(path.join(srcRoot, rel), "utf8")).includes("loop-asks"), `${rel} spells loop-asks`);
+      }
+      const own = await readFile(path.join(srcRoot, "loop", "ask-request.mjs"), "utf8");
+      assert.match(own, /import\s*\{[^}]*\bglobalMeshPaths\b[^}]*\}\s*from\s*"\.\.\/workspace\.mjs"/u);
+      assert.match(own, /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*"\.\.\/fs\.mjs"/u);
+      assert.match(own, /import\s*\{[^}]*\breportDegrade\b[^}]*\}\s*from\s*"\.\.\/degrade\.mjs"/u);
+    },
+  },
+
+  // ---- task 03: the answer is sanitised once ------------------------------------------------
+  {
+    name: "131/01 ask-request/03 an answer to a waiting ask is stored verbatim with who and when; a parked ask takes one too and keeps its parkedAt",
+    async run() {
+      const dir = await freshAsksDir();
+      await openAsk(dir, { ...ASK, now: ASK_NOW });
+      const text = "  take b — the residue is ignored\n";
+      const written = await answerAsk(dir, { workspaceId: "w1", ref: "131/01", text, by: ANSWER_BY, now: ANSWER_NOW });
+      const read = await readAsk(dir, "R1");
+      assert.deepEqual(written, read, "it answers the written record");
+      assert.equal(read.state, "answered");
+      assert.equal(read.answer, text);
+      assert.equal(read.answeredAt, "2026-09-23T17:05:00.000Z");
+      assert.deepEqual(read.by, ANSWER_BY);
+
+      await openAsk(dir, { ...ASK, now: ASK_NOW });
+      await parkAsk(dir, "R1", { now: () => new Date("2026-09-23T17:03:00.000Z") });
+      await answerAsk(dir, { workspaceId: "w1", ref: "131/01", text: "b", by: ANSWER_BY, now: ANSWER_NOW });
+      const parked = await readAsk(dir, "R1");
+      assert.equal(parked.state, "answered");
+      assert.equal(parked.parkedAt, "2026-09-23T17:03:00.000Z", "its parkedAt is kept");
+    },
+  },
+  {
+    name: "131/01 ask-request/03 a bad answer is refused 400 before any file is read — blank, over-long, control characters, in that order (twenty-five rows)",
+    async run() {
+      const dir = await freshAsksDir();
+      await openAsk(dir, { ...ASK, now: ASK_NOW });
+      const before = await readAskRaw(dir, "R1");
+      const a = (n) => "a".repeat(n);
+      const rows = [
+        ["131/01", "", "answer-empty"],
+        ["131/01", "  \n\t ", "answer-empty"],
+        ["131/01", a(8001), "answer-too-long"],
+        ["131/01", "ok\u001b[201~rm -rf .", "answer-control-chars"],
+        ["131/01", "ok\u007f", "answer-control-chars"],
+        ["999/99", "", "answer-empty"],
+        ["131/01", undefined, "answer-empty"],
+        ["131/01", null, "answer-empty"],
+        ["131/01", 42, "answer-empty"],
+        ["131/01", "\r\n", "answer-empty"],
+        ["131/01", " 　", "answer-empty"],
+        ["131/01", "\u000b", "answer-empty"],
+        ["131/01", "\u000c", "answer-empty"],
+        ["131/01", "\u0000ok", "answer-control-chars"],
+        ["131/01", "ok\u0000", "answer-control-chars"],
+        ["131/01", "\u0000", "answer-control-chars"],
+        ["131/01", "a\u0008b", "answer-control-chars"],
+        ["131/01", "a\u000bb", "answer-control-chars"],
+        ["131/01", "a\u000cb", "answer-control-chars"],
+        ["131/01", "ok\u001f", "answer-control-chars"],
+        ["131/01", "\u001b[201~", "answer-control-chars"],
+        ["131/01", `${a(8001)}\u0000`, "answer-too-long"],
+        ["131/01", "😀".repeat(8001), "answer-too-long"],
+        ["131/01", `${a(8000)}😀`, "answer-too-long"],
+        ["999/99", "ok\u001b", "answer-control-chars"],
+      ];
+      for (const [ref, text, code] of rows) {
+        const got = await refusal(answerAsk(dir, { workspaceId: "w1", ref, text, by: ANSWER_BY, now: ANSWER_NOW }));
+        assert.deepEqual(got && { code: got.code, status: got.status }, { code, status: 400 }, `${JSON.stringify(text)?.slice(0, 40)} → ${code}`);
+      }
+      assert.equal(await readAskRaw(dir, "R1"), before, "the file for R1 is byte-unchanged");
+
+      const absent = await freshAsksDir();
+      const got = await refusal(answerAsk(absent, { workspaceId: "w1", ref: "131/01", text: "ok\u001b", by: ANSWER_BY, now: ANSWER_NOW }));
+      assert.deepEqual({ code: got.code, status: got.status }, { code: "answer-control-chars", status: 400 });
+      await assert.rejects(access(absent), { code: "ENOENT" }, "dir still does not exist");
+    },
+  },
+  {
+    name: "131/01 ask-request/03 the whitespace controls and the upper limit are admitted, and stored exactly (ten rows)",
+    async run() {
+      const dir = await freshAsksDir();
+      for (const text of ["a\tb\r\nc", "a".repeat(8000), "\ta", "a\r", "x\n", "😀".repeat(8000), `${"a".repeat(7999)}😀`, "café — naïve 😀", "a b", "[201~ with no ESC"]) {
+        await openAsk(dir, { ...ASK, now: ASK_NOW });
+        const written = await answerAsk(dir, { workspaceId: "w1", ref: "131/01", text, by: ANSWER_BY, now: ANSWER_NOW });
+        assert.equal(written.answer, text);
+        assert.equal((await readAsk(dir, "R1")).answer, text);
+      }
+    },
+  },
+  {
+    name: "131/01 ask-request/03 the first answer wins and the refusal names who gave it; a ref with no ask answers null and writes nothing; another workspace is untouched",
+    async run() {
+      const dir = await freshAsksDir();
+      await openAsk(dir, { ...ASK, now: ASK_NOW });
+      await openAsk(dir, { ...ASK, runId: "R2", workspaceId: "w2", now: ASK_NOW });
+      await answerAsk(dir, { workspaceId: "w1", ref: "131/01", text: "b", by: ANSWER_BY, now: ANSWER_NOW });
+      const second = await refusal(answerAsk(dir, { workspaceId: "w1", ref: "131/01", text: "c", by: { actor: "board", via: "board", node: "node-7297" }, now: ANSWER_NOW }));
+      assert.equal(second.code, "ask-already-answered");
+      assert.equal(second.status, 409);
+      assert.match(second.message, /\byou\b/u, "the refusal names who gave the first answer");
+      assert.equal((await readAsk(dir, "R1")).answer, "b");
+      assert.equal((await readAsk(dir, "R2")).state, "waiting", "another workspace's ask for the same ref is not touched");
+
+      const listing = (await readdir(dir)).sort();
+      assert.equal(await answerAsk(dir, { workspaceId: "w1", ref: "131/02", text: "b", by: ANSWER_BY, now: ANSWER_NOW }), null);
+      assert.deepEqual((await readdir(dir)).sort(), listing, "the listing is unchanged");
+    },
+  },
+  {
+    name: "131/01 ask-request/03 the answer after each prior state of the ask, and of two asks for one ref the latest askedAt is the ask",
+    async run() {
+      const dir = await freshAsksDir();
+      const answerB = () => answerAsk(dir, { workspaceId: "w1", ref: "131/01", text: "b", by: ANSWER_BY, now: ANSWER_NOW });
+
+      await openAsk(dir, { ...ASK, now: ASK_NOW });
+      await parkAsk(dir, "R1", { now: ASK_NOW });
+      await answerAsk(dir, { workspaceId: "w1", ref: "131/01", text: "a", by: ANSWER_BY, now: ANSWER_NOW });
+      const refused = await refusal(answerB());
+      assert.deepEqual([refused.code, refused.status], ["ask-already-answered", 409]);
+      assert.match(refused.message, /\byou\b/u);
+      assert.equal((await readAsk(dir, "R1")).answer, "a");
+
+      await openAsk(dir, { ...ASK, question: "Decision needed: Y", now: ASK_NOW });
+      const reasked = await answerB();
+      assert.equal(reasked.question, "Decision needed: Y");
+      assert.equal(reasked.answer, "b");
+
+      await clearAsk(dir, "R1");
+      assert.equal(await answerB(), null);
+      await assert.rejects(access(askRequestPath(dir, "R1")), { code: "ENOENT" }, "no file is created");
+
+      await writeAskRaw(dir, "R1", "{ not json");
+      degradeEvents();
+      assert.equal(await answerB(), null);
+      assert.equal(await readAskRaw(dir, "R1"), "{ not json", "the corrupt file is byte-unchanged");
+      setDegradeSinkForTest(undefined);
+
+      for (const [r1, r3, outcome] of [["answered", "waiting", "answers"], ["waiting", "answered", "refuses"], ["waiting", "parked", "answers"]]) {
+        await rm(dir, { recursive: true, force: true });
+        const at = (hh) => ({ askedAt: `2026-09-23T17:${hh}:00.000Z` });
+        const stateOf = (s) => (s === "answered" ? { state: "answered", answer: "x", answeredAt: "2026-09-23T17:04:00.000Z", by: ANSWER_BY } : s === "parked" ? { state: "parked", parkedAt: "2026-09-23T17:04:00.000Z" } : {});
+        await writeAskRecord(dir, "R1", askRecord({ ...at("00"), ...stateOf(r1) }));
+        await writeAskRecord(dir, "R3", askRecord({ runId: "R3", ...at("03"), ...stateOf(r3) }));
+        const r1Before = await readAskRaw(dir, "R1");
+        if (outcome === "answers") {
+          const written = await answerB();
+          assert.equal(written.runId, "R3", `${r1}/${r3}: R3's record`);
+          assert.equal(written.state, "answered");
+          assert.equal(written.answer, "b");
+        } else {
+          const got = await refusal(answerB());
+          assert.deepEqual([got.code, got.status], ["ask-already-answered", 409], `${r1}/${r3}`);
+        }
+        assert.equal(await readAskRaw(dir, "R1"), r1Before, `${r1}/${r3}: R1's file is byte-unchanged`);
+      }
+    },
+  },
+];
+
+// ---------------------------------------------------------------------------------------------
+// milestone 131 / story 03, task 06 — `readLastLoopDiagEvent`: a dying loop cannot post, so its death
+// is reported by the next invocation, and this is the cause it names — the last line the recorder
+// wrote, in its own shape, from the scope's newest earlier log.
+// ---------------------------------------------------------------------------------------------
+const diagEventTests = [
+  {
+    name: "131/03 loop-diag/06 the last line of the log is read in the recorder's own shape, or not at all (twelve rows)",
+    async run() {
+      const dir = await mkdtemp(path.join(os.tmpdir(), "aof-diag-read-"));
+      try {
+        const file = path.join(dir, "loop-diag.03.2026-09-23T15-00-00-000Z.log");
+        for (const [body, answer] of [
+          ["2026-09-23T15:00:00.000Z exit code=1\n", { at: "2026-09-23T15:00:00.000Z", event: "exit", detail: "code=1" }],
+          ["2026-09-23T15:00:00.000Z beforeExit\n", { at: "2026-09-23T15:00:00.000Z", event: "beforeExit", detail: null }],
+          ["2026-09-23T15:00:00.000Z uncaught TypeError: x is not a function\n", { at: "2026-09-23T15:00:00.000Z", event: "uncaught", detail: "TypeError: x is not a function" }],
+          ["2026-09-23T15:00:00.000Z stdout 03 — halted on x (producer y).\n", { at: "2026-09-23T15:00:00.000Z", event: "stdout", detail: "03 — halted on x (producer y)." }],
+          ["2026-09-23T15:00:00.000Z exit code=1\n\n\n", { at: "2026-09-23T15:00:00.000Z", event: "exit", detail: "code=1" }],
+          ["2026-09-23T15:00:00.000Z alive\r\n2026-09-23T15:00:00.000Z exit code=1\r\n", { at: "2026-09-23T15:00:00.000Z", event: "exit", detail: "code=1" }],
+          ["2026-09-23T15:00:00.000Z uncaught Error\n    at run (file:///x.mjs:1:2)\n", null],
+          ["2026-09-23T15:00:00.000Z\n", null],
+          ["2026-09-23T15:00:00.000Z  exit code=1\n", null],
+          ["2026-09-23 15:00:00 exit code=1\n", null],
+          ["2026-02-30T15:00:00.000Z exit code=1\n", null],
+          ["", null],
+        ]) {
+          await writeFile(file, body, "utf8");
+          assert.deepEqual(await readLastLoopDiagEvent({ dir, scopeTag: "03" }), answer, JSON.stringify(body));
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "131/03 loop-diag/06 the newest earlier log of the scope is the one read (ten rows)",
+    async run() {
+      const log = (tag, hh) => `loop-diag.${tag}.2026-09-23T${hh}-00-00-000Z.log`;
+      const line = (hh) => `2026-09-23T${hh}:00:00.000Z exit code=${hh}\n`;
+      const rows = [
+        [{ [log("03", "15")]: line("15"), [log("03", "16")]: line("16") }, "03", log("03", "16"), "15", 0],
+        [{ [log("03", "15")]: line("15"), [log("03", "16")]: line("16") }, "03", null, "16", 0],
+        [{ [log("03", "15")]: line("15"), [log("03-05", "16")]: line("16") }, "03", null, "15", 0],
+        [{ [log("12", "15")]: line("15"), [log("127", "16")]: line("16") }, "12", null, "15", 0],
+        [{ [log("03", "16")]: line("16") }, "03", log("03", "16"), null, 0],
+        [{ [log("03", "15")]: line("15"), [log("03", "16")]: "" }, "03", null, null, 0],
+        [{ [log("03", "15")]: line("15"), [log("03", "16")]: "dir" }, "03", null, null, 1],
+        [{ [log("03", "15")]: line("15"), [`${log("03", "16")}.bak`]: line("16") }, "03", null, "15", 0],
+        [{ [log("04", "16")]: line("16") }, "03", null, null, 0],
+        [null, "03", null, null, 0],
+      ];
+      try {
+        for (const [index, [files, tag, exclude, read, degrades]] of rows.entries()) {
+          const dir = path.join(await mkdtemp(path.join(os.tmpdir(), "aof-diag-newest-")), "logs");
+          if (files != null) {
+            await mkdir(dir, { recursive: true });
+            for (const [name, body] of Object.entries(files)) {
+              if (body === "dir") await mkdir(path.join(dir, name));
+              else await writeFile(path.join(dir, name), body, "utf8");
+            }
+          }
+          const events = degradeEvents();
+          const answer = await readLastLoopDiagEvent({ dir, scopeTag: tag, ...(exclude == null ? {} : { exclude: path.join(dir, exclude) }) });
+          assert.equal(answer == null ? null : answer.detail.replace("code=", ""), read, `row ${index}`);
+          assert.equal(events.filter((e) => e.code === "loop-diag-read").length, degrades, `row ${index}: degrades`);
+          await rm(path.dirname(dir), { recursive: true, force: true });
+        }
+      } finally {
+        setDegradeSinkForTest(undefined);
+      }
+    },
+  },
+];
+
 // ONE export, both halves: the index spreads `loopDiagTests` and nothing else (no index edit —
 // test/loop is at its ceiling), and a selected run takes every runner-shaped array a file exports,
 // so a second exported array holding the same entries would run them twice.
-export const loopDiagTests = [...recorderTests, ...stopRequestTests];
+export const loopDiagTests = [...recorderTests, ...stopRequestTests, ...askRequestTests, ...diagEventTests];

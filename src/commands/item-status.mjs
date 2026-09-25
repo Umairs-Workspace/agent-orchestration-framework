@@ -54,6 +54,7 @@ import { doctorWork } from "../work/doctor.mjs";
 import { budgetGroup } from "../work/doctor-budget.mjs";
 import { writeText } from "../fs.mjs";
 import { headCommit } from "../mesh/worktree.mjs";
+import { buildNotifyEnvelope, notify } from "../notify/notify.mjs";
 // THE RECORD IS READ THROUGH ITS OWN MODULE AND THROUGH NOTHING ELSE (ADR-008 §1). The heading, the
 // header row, the divider, the four required facts and the door predicate all live there, so this
 // door holds no second copy of any of them — a comparison site with its own literal freezes a
@@ -297,6 +298,15 @@ export const itemStatusCommand = {
           journalOptions: ctx.effectsJournalOptions ?? {},
         },
       );
+      // 131/ADR-005 §4 — AN ACCEPTED MILESTONE IS ANNOUNCED, once, from this door and no other, after
+      // the move has been written. A direct awaited call, not an effects reactor: a notification
+      // mutates no store, and an at-least-once redelivered post is the volume problem. Awaited
+      // because an un-awaited promise in an exiting CLI is dropped. `notify` never throws, so a
+      // failing webhook never fails the accept, and the result below carries nothing about it.
+      if (item.type === "milestone" && record.status === "done") {
+        const envelope = buildNotifyEnvelope("milestone-accepted", { ref: item.ref, outcome: { title: item.title ?? null } }, { config: ctx.workspace.config });
+        await notify(ctx.workspace, envelope, { ...(ctx.notifyOptions ?? {}) });
+      }
       return threadPropagationWarnings(
         {
           ...record,

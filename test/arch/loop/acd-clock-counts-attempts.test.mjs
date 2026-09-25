@@ -522,7 +522,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/126/00 FF-12601 leg 9: nothing new is persisted — the run record's sixteen keys and the declaration's eight are unchanged",
+    name: "arch/126/00 FF-12601 leg 9: nothing new is persisted — the run record's seventeen keys (131 appended asks) and the declaration's eight are unchanged",
     run: async () => {
       const declaration = buildLoopDeclaration({
         loopRunId: "l", scope: "03", level: "L2", cap: 3, l3Gate: null,
@@ -536,7 +536,9 @@ export const archTests = [
       try {
         const minted = await startRun({ ref: "03/01", dir }, { brief: { loop: declaration }, now: at("10:00:00.000") });
         const recordKeys = Object.keys(minted);
-        assert.equal(recordKeys.length, 16, "the run record has exactly the sixteen keys it has today");
+        // 131/ADR-003 §3 appended `asks` — instants and a decision, never a derived wait, so the
+        // no-duration sweep below still holds over it.
+        assert.equal(recordKeys.length, 17, "the run record has exactly the seventeen keys it has today");
         for (const key of [...recordKeys, ...declarationKeys]) {
           assert.doesNotMatch(
             key,

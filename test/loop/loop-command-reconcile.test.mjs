@@ -15,7 +15,9 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 
 import { runLoopBody } from "../../src/commands/loop.mjs";
-import { readRuns, startRun, completeRun, heartbeat } from "../../src/run-store.mjs";
+import { readRuns, startRun, completeRun, heartbeat, recordSessionId } from "../../src/run-store.mjs";
+import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../src/loop/ask-request.mjs";
+import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { resolveRefInWorktree } from "../../src/work/dispatch.mjs";
 import { meshDispatchWorktreePath } from "../../src/mesh/worktree.mjs";
@@ -23,6 +25,7 @@ import { appendProgressSample } from "../../src/loop-progress.mjs";
 import {
   withLaneRepo, fakeLaneChild, stubRubric, emits, passingTap, collector, fakeTimers, fakeSignals,
   primaryDriver, verifyCompleter, laneCtx, statusOf, git, headSha, deferred, scriptedRegistry, laneStoryFile, replaceStatus, realExec,
+  stripAsks,
 } from "../support/loop/lane-fixture.mjs";
 
 const NOW = "2026-09-14T12:00:00.000Z";
@@ -535,6 +538,9 @@ export const loopCommandReconcileTests = [
         const { state } = await runLoop(fx, { child: fakeLaneChild(fx, { answers: { "07/01": answer ?? { outcome: "document", document: { outcome: "needs-input", sessionId: "s-1" } } } }) });
         const lane = meshDispatchWorktreePath(fx.root, "07/01");
         const laneItem = await resolveRefInWorktree(fx.root, fx.workDir, lane, "07/01");
+        // 131/03 (task 04, ruling 7): the seed changes and the assertion does not — a running record
+        // left by needs-input now carries a parked ask, which --resume re-enters rather than reclaims.
+        if (laneItem != null) await stripAsks(laneItem);
         return { state, lane, laneItem };
       };
       const stale = "2026-09-14T09:00:00.000Z";
@@ -664,6 +670,7 @@ export const loopCommandReconcileTests = [
         const { state: first } = await runLoop(fx, { child, rubric });
         assert.ok(["grade-indeterminate", "session-needs-input"].includes(first.act.stop), `guard: ${first.act.stop}`);
         const lane01 = await resolveRefInWorktree(fx.root, fx.workDir, meshDispatchWorktreePath(fx.root, "07/01"), "07/01");
+        await stripAsks(lane01); // 131/03 (task 04, ruling 7): the reclaim's seed carries no ask
         const running = (await readRuns(lane01)).find((r) => r.state === "running");
         assert.ok(running, "guard: 07/01 left running");
         await heartbeat(lane01, running.runId, { now: "2026-09-14T09:00:00.000Z" });
@@ -702,4 +709,119 @@ export const loopCommandReconcileTests = [
       }, { stories: ["01"], config: { loop: { concurrency: "sequential" } } });
     },
   },
+  ...reentryTests(),
 ];
+
+// ── milestone 131 / story 03, task 04 — --RESUME RE-ENTERS A RUN THAT IS WAITING ON A HUMAN, NEVER
+// RECLAIMS IT, AND NEVER ASKS THE OPERATOR TWICE (ADR-004 §5, ADR-001 §4). The Background's first walk
+// parks 07/01 (the fixture's immediate park); the second walk resumes it. Built inside a hoisted
+// function so the array above can spread it without a TDZ.
+function reentryTests() {
+  const HOOK = "https://discord.com/api/webhooks/131/reentry";
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const asking = { outcome: "document", document: { outcome: "needs-input", sessionId: "s-1" } };
+  // The first walk: 07/01 asks and parks, its lane committed and unmerged, its run running with one
+  // parked ask. The lane's record learns its session the way a real child's capture writes it.
+  async function parkFirst(fx) {
+    const child = fakeLaneChild(fx, {
+      answers: { "07/01": async (input) => {
+        const laneItem = await resolveRefInWorktree(fx.root, fx.workDir, input.lane, "07/01");
+        await recordSessionId(laneItem, { runId: input.runId, sessionId: "s-1" });
+        return asking;
+      } },
+    });
+    const { state } = await runLoop(fx, { child });
+    assert.equal(state.act.stop, "session-needs-input", "guard: the first walk parked 07/01");
+    const laneItem = await resolveRefInWorktree(fx.root, fx.workDir, meshDispatchWorktreePath(fx.root, "07/01"), "07/01");
+    const [run] = await readRuns(laneItem);
+    return { laneItem, run };
+  }
+  const notifying = (fx) => {
+    fx.workspace.config.work.notify = { channels: { ops: { type: "discord", urlEnv: "HOOK" } } };
+    const posts = [];
+    const fetch = async (url, init) => { posts.push(JSON.parse(init.body)); return { status: 204, headers: { get: () => null }, json: async () => ({}) }; };
+    return { posts, notifyOptions: { env: { HOOK }, fetch } };
+  };
+  const answer = (fx, text) => answerAsk(loopAsksDir(), { workspaceId: resolveWorkspaceId(fx.workspace), ref: "07/01", text, by: { actor: "you", via: "cli", node: null }, now: () => new Date() });
+
+  return [
+    {
+      name: "131/03 task04 — an answered lane is re-driven at reconcile with --answer under the same run, merges, and is never reclaimed",
+      async run() {
+        await withLaneRepo(async (fx) => {
+          const { run } = await parkFirst(fx);
+          await answer(fx, "go ahead");
+          const child = fakeLaneChild(fx);
+          const report = collector();
+          const { state } = await runLoop(fx, { child, report, input: { resume: true } });
+          assert.equal(state.state, "done", report.lines.join("\n"));
+          const spawn = child.calls.find((call) => call.ref === "07/01");
+          assert.equal(spawn.runId, run.runId, "the same --run");
+          assert.equal(spawn.answerFile, askRequestPath(loopAsksDir(), run.runId), "with --answer <its ask file>");
+          assert.ok(!report.lines.some((line) => line.startsWith("Reclaimed 07/01")), "never narrated Reclaimed");
+          assert.ok(!report.lines.some((line) => line.includes("lane-open-failed")), "no lane-open-failed");
+          assert.ok(report.lines.some((line) => /^Lane 07\/01 — merge: (fast-forwarded|merged)/u.test(line)), "merged home");
+        }, { stories: ["01"] });
+      },
+    },
+    {
+      name: "131/03 task04 — an unanswered lane is waited on again without a second notice, and settles when the answer lands",
+      async run() {
+        await withLaneRepo(async (fx) => {
+          await parkFirst(fx);
+          const { posts, notifyOptions } = notifying(fx);
+          let states = [];
+          const wait = {
+            now: () => new Date(),
+            next: async () => {
+              await sleep(20);
+              const [ask] = await readAsks(loopAsksDir(), { workspaceId: resolveWorkspaceId(fx.workspace) });
+              states.push(ask?.state);
+              if (ask?.state === "waiting") await answer(fx, "later");
+            },
+            read: (runId) => readAsk(loopAsksDir(), runId),
+            expired: () => false,
+          };
+          const report = collector();
+          const { state } = await runLoop(fx, { child: fakeLaneChild(fx), report, input: { resume: true }, extra: { askWait: wait, notifyOptions } });
+          assert.equal(state.state, "done", report.lines.join("\n"));
+          assert.equal(states[0], "waiting", "the file read waiting during the wait");
+          assert.ok(report.lines.some((line) => line.startsWith("07/01 — waiting on you (build, ")), "the waiting row");
+          assert.equal(posts.filter((p) => p.content.includes("waiting on you")).length, 0, "session-needs-input was not sent again");
+        }, { stories: ["01"] });
+      },
+    },
+    {
+      name: "131/03 task04 — a fresh, unparked standing ask has a live owner and is left; an ask file with no waiting run behind it is cleared once",
+      async run() {
+        await withLaneRepo(async (fx) => {
+          const { laneItem, run } = await parkFirst(fx);
+          // Un-park the record's ask and beat the run now: a live owner is still waiting on it.
+          const file = path.join(laneItem.dir, "runs", `${run.runId}.json`);
+          const record = JSON.parse(await readFile(file, "utf8"));
+          await writeFile(file, JSON.stringify({ ...record, asks: record.asks.map((ask) => ({ ...ask, parkedAt: null })) }, null, 2));
+          await heartbeat(laneItem, run.runId, { now: new Date().toISOString() });
+          const child = fakeLaneChild(fx);
+          const report = collector();
+          await runLoop(fx, { child, report, input: { resume: true }, now: new Date().toISOString() });
+          assert.ok(report.lines.includes(`Lane 07/01 — live: run ${run.runId} is still heartbeating; left.`), report.lines.join("\n"));
+          assert.equal(child.calls.length, 0, "never spawned");
+        }, { stories: ["01"] });
+        await withLaneRepo(async (fx) => {
+          const item = await resolveItemExact({ workspace: fx.workspace }, "07/01");
+          // A settled run carrying the loop's declaration, so the resume has a loop to resume.
+          const minted = await startRun(item, { brief: { loop: { loopRunId: "L-stale", scope: "07", level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: NOW, id: "id", supervised: false } }, now: NOW });
+          await completeRun(item, { runId: minted.runId, outcome: "done", now: NOW });
+          await openAsk(loopAsksDir(), { runId: minted.runId, ref: "07/01", workspaceId: resolveWorkspaceId(fx.workspace), sessionId: "S9", question: "Q", now: () => new Date() });
+          await openAsk(loopAsksDir(), { runId: "R-OUT", ref: "08/01", workspaceId: resolveWorkspaceId(fx.workspace), sessionId: "S8", question: "Q", now: () => new Date() });
+          const beforeOut = await readFile(askRequestPath(loopAsksDir(), "R-OUT"), "utf8");
+          const report = collector();
+          await runLoop(fx, { report, input: { resume: true } });
+          assert.equal(await readAsk(loopAsksDir(), minted.runId), null, "the stale file is gone");
+          assert.equal(report.lines.filter((line) => line === `Ask ${minted.runId} — stale: its run is not running; cleared.`).length, 1, report.lines.join("\n"));
+          assert.equal(await readFile(askRequestPath(loopAsksDir(), "R-OUT"), "utf8"), beforeOut, "an ask outside the scope is byte-unchanged");
+        }, { stories: ["01"] });
+      },
+    },
+  ];
+}

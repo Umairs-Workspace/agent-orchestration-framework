@@ -42,7 +42,19 @@ export const meshTerminalResumeCommand = {
   id: "mesh:terminal-resume",
   input: {
     type: "object",
-    properties: { session: { type: "string" }, node: { type: "string" } },
+    properties: {
+      session: { type: "string" },
+      node: { type: "string" },
+      // 131/04 — the operator's answer, when `work:answer` is what resumes the session: the text
+      // the worker types into the parked session, who gave it, and when the worker parked. One
+      // additive key, set only by that verb; the CLI face has no flag for it.
+      answer: {
+        type: "object",
+        properties: { text: { type: "string" }, by: { type: ["object", "null"] }, askedAt: { type: ["string", "null"] } },
+        required: ["text"],
+        additionalProperties: false,
+      },
+    },
     required: ["session"],
     additionalProperties: false,
   },
@@ -172,6 +184,7 @@ export const meshTerminalResumeCommand = {
         reservedAt,
         previousNodeId,
         parkId,
+        answer: input.answer,
       }));
     } catch (error) {
       await restoreParkReservation();

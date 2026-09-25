@@ -29,6 +29,10 @@ const FIFTEEN_KEYS = [...FOURTEEN_KEYS, "resumeAfter"];
 // benign here means exactly "not measured", never zero. The additive-discipline guard
 // is EXTENDED, never joined by a sibling (ADR-001).
 const SIXTEEN_KEYS = [...FIFTEEN_KEYS, "spend"];
+// 131/ADR-003 §3 SUPERSEDES the sixteen by the same additive discipline: the SEVENTEENTH key
+// is `asks` (an array, defaulting `[]`), appended LAST. A sixteen-key record reads forward with
+// asks: [] — absence is benign, and benign here means exactly "no question was asked".
+const SEVENTEEN_KEYS = [...SIXTEEN_KEYS, "asks"];
 
 async function makeItem() {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-node-additive-"));
@@ -53,16 +57,18 @@ export const archTests = [
         assert.equal(FIFTEEN_KEYS[14], "resumeAfter", "the fifteenth key is `resumeAfter`, appended last");
         assert.deepEqual(SIXTEEN_KEYS.slice(0, 15), FIFTEEN_KEYS, "the first fifteen keys are the m348 freeze, unchanged in name and order");
         assert.equal(SIXTEEN_KEYS[15], "spend", "the sixteenth key is `spend`, appended last");
+        assert.deepEqual(SEVENTEEN_KEYS.slice(0, 16), SIXTEEN_KEYS, "the first sixteen keys are the m68 freeze, unchanged in name and order");
+        assert.equal(SEVENTEEN_KEYS[16], "asks", "the seventeenth key is `asks`, appended last");
 
-        // Minted WITH a node: sixteen keys, in order, node carrying the value.
+        // Minted WITH a node: seventeen keys, in order, node carrying the value.
         const withNode = await startRun(item, { node: "node-a", now: "2026-07-02T10:00:00.000Z" });
-        assert.deepEqual(Object.keys(withNode), SIXTEEN_KEYS, "a minted record carries exactly the sixteen keys, in order");
+        assert.deepEqual(Object.keys(withNode), SEVENTEEN_KEYS, "a minted record carries exactly the seventeen keys, in order");
         assert.equal(withNode.node, "node-a", "the node key carries the injected node id");
         assert.equal(withNode.spend, null, "the minted record's spend defaults to null");
         const onDisk = JSON.parse(
           await readFile(path.join(item.dir, "runs", "node-a", `${withNode.runId}.json`), "utf8")
         );
-        assert.deepEqual(Object.keys(onDisk), SIXTEEN_KEYS, "the ON-DISK record carries exactly the sixteen keys, in order");
+        assert.deepEqual(Object.keys(onDisk), SEVENTEEN_KEYS, "the ON-DISK record carries exactly the seventeen keys, in order");
       } finally {
         await rm(repo, { recursive: true, force: true });
       }
@@ -75,10 +81,10 @@ export const archTests = [
       try {
         const { startRun } = await import("../../../src/run-store.mjs");
         const record = await startRun(item, { now: "2026-07-02T10:00:00.000Z" });
-        assert.deepEqual(Object.keys(record), SIXTEEN_KEYS, "the no-node record still carries the sixteen keys, in order");
+        assert.deepEqual(Object.keys(record), SEVENTEEN_KEYS, "the no-node record still carries the seventeen keys, in order");
         assert.equal(record.node, null, "node defaults to null");
         const onDisk = JSON.parse(await readFile(path.join(item.dir, "runs", `${record.runId}.json`), "utf8"));
-        assert.deepEqual(Object.keys(onDisk), SIXTEEN_KEYS, "the on-disk no-node record carries the sixteen keys, in order");
+        assert.deepEqual(Object.keys(onDisk), SEVENTEEN_KEYS, "the on-disk no-node record carries the seventeen keys, in order");
         assert.equal(onDisk.node, null, "the on-disk node value is null");
       } finally {
         await rm(repo, { recursive: true, force: true });
@@ -112,7 +118,7 @@ export const archTests = [
 
         const runs = await readRuns(item);
         assert.equal(runs.length, 1, "the legacy record reads back as one run, no error");
-        assert.deepEqual(Object.keys(runs[0]), SIXTEEN_KEYS, "the normalized record carries the sixteen keys, in order");
+        assert.deepEqual(Object.keys(runs[0]), SEVENTEEN_KEYS, "the normalized record carries the seventeen keys, in order");
         assert.equal(runs[0].node, null, "the missing node key reads as null (absence benign)");
         assert.equal(runs[0].spend, null, "the missing spend key reads as null (absence benign)");
         for (const key of THIRTEEN_KEYS) {

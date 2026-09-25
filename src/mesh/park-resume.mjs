@@ -3,7 +3,9 @@
 // guarded sink: one durable park identity claims one resume, the first real PTY
 // advances the existing run's liveness, and a provable pre-spawn failure restores
 // the exact control reservation through its correlated negative acknowledgement.
-import { heartbeat } from "../run-store.mjs";
+// When the resume carries the operator's answer (131/04), the same first PTY appends it to the
+// run's `asks` already answered, so a worker's record says who answered and when as a local one does.
+import { answerRunAsk, heartbeat, openRunAsk } from "../run-store.mjs";
 import {
   claimAssignmentParkResume,
   completeAssignmentParkResume,
@@ -17,6 +19,7 @@ export function createMeshParkResume({
   assignmentId,
   sessionId,
   parkId,
+  answer = null,
   reservation,
   globalWorkStoreOptions,
   sendAssignmentStatus,
@@ -71,13 +74,32 @@ export function createMeshParkResume({
     }
   }
 
+  // The answer's entry: opened at the instant the worker parked, else now, and answered at once.
+  // Every entry on a worker's record is appended already answered, so `openRunAsk` meets an open
+  // one only when something else wrote it; then nothing is stamped on an entry this worker did not
+  // open. A failed write is one degrade and never fails the session. The text is never logged.
+  async function recordAnswer(item, runRecord) {
+    if (answer == null || typeof answer.text !== "string") return;
+    const askedAt = typeof answer.askedAt === "string" && Number.isFinite(Date.parse(answer.askedAt)) ? answer.askedAt : null;
+    const by = answer.by != null && typeof answer.by === "object" && !Array.isArray(answer.by)
+      ? answer.by
+      : { actor: null, via: "mesh", node: null };
+    try {
+      await openRunAsk(item, runRecord.runId, { question: null, phase: null, now: askedAt ?? now() });
+      await answerRunAsk(item, runRecord.runId, { answer: answer.text, by, now: now() });
+    } catch (error) {
+      reportDegrade("terminal-resume-ask-record", error);
+    }
+  }
+
   function markProcessStarted(item, runRecord) {
     if (processStarted) return;
     processStarted = true;
+    // One chain: the heartbeat and the answer's entry both read-modify-write this record.
     livenessWrite = heartbeat(item, runRecord.runId, { now: now() }).catch((error) => {
       reportDegrade("terminal-resume-heartbeat", error);
       return null;
-    });
+    }).then(() => recordAnswer(item, runRecord));
   }
 
   async function observeOutcome(outcome, item, runRecord) {

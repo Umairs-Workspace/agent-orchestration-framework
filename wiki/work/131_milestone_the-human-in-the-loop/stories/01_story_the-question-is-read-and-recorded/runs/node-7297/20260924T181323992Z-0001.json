@@ -1,0 +1,46 @@
+{
+  "runId": "20260924T181323992Z-0001",
+  "itemRef": "131/01",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "5625226d-2c06-4958-b197-b69add9044d9",
+  "brief": {
+    "answers": [
+      {
+        "token": "134/03 Q1",
+        "question": "134/03 Q1 · The orphan lane aof/mesh/130-06 (3 changed files, from 130's loop) is still sitting in .aof/mesh/dispatch-worktrees. What should happen to it? (Please answer via \"Other\" in your own words — the procedure checks your exact words are recorded.)",
+        "answer": "Leave it for now",
+        "toolUseId": "toolu_01AhzTpg9kX8Xom6HrCYXfaF",
+        "sessionId": "5625226d-2c06-4958-b197-b69add9044d9",
+        "at": "2026-09-24T18:24:25.640Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-09-24T18:13:23.992Z",
+  "updatedAt": "2026-09-24T18:42:50.673Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 560,
+      "output": 209725,
+      "cacheRead": 45461839,
+      "cacheCreate": 2012551
+    },
+    "costUsd": 24.333172949999998,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 280,
+    "toolCalls": 122,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

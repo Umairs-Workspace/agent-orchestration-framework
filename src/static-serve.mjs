@@ -107,3 +107,15 @@ export function shouldServeAppShell(pathname) {
   const lastSegment = decoded.slice(decoded.lastIndexOf("/") + 1);
   return !lastSegment.includes(".");
 }
+
+// isLoopbackHost(host) — true only when a `Host` header names a loopback address: `localhost`
+// (any case), a `127.0.0.0/8` dotted quad with no leading zeros, or `[::1]`, each with an optional
+// one-to-five-digit port and nothing else (131/ADR-006 §3). Both servers bind loopback, so nothing
+// legitimate arrives under another name; a page whose DNS name was rebound to this machine does,
+// with an Origin that matches its own Host. Each write admission calls this after its Origin
+// check. The `typeof` guard is load-bearing: `.test` would coerce `["127.0.0.1"]` to a loopback
+// string.
+export function isLoopbackHost(host) {
+  return typeof host === "string"
+    && /^(?:localhost|127(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}|\[::1\])(?::\d{1,5})?$/i.test(host);
+}

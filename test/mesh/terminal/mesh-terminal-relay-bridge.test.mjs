@@ -402,4 +402,63 @@ export const meshTerminalRelayBridgeTests = [
       }
     },
   })),
+  // 131/04 — hoisted below.
+  ...resumeAnswerEnvelopeTests(),
 ];
+
+// ---- 131/04 task 03 — the answer rides the resume envelope, one additive key ----------------------
+function resumeAnswerEnvelopeTests() {
+  const BY = { actor: "umami", via: "board", node: "node-7297" };
+  const A = { text: "zq-answer-marker", by: BY, askedAt: null };
+  const FIVE = { sessionId: "s", assignmentId: "a", workspaceId: "w", itemRef: "18", parkId: "p" };
+  return [
+    {
+      name: "131/04 task03 — the envelope carries the answer only when there is one",
+      run() {
+        const withAnswer = bridge.buildTerminalResumeEnvelope("node-a", { ...FIVE, answer: { text: "take b", by: BY, askedAt: null } });
+        assert.deepEqual(Object.keys(withAnswer.signal).sort(), ["answer", "assignmentId", "itemRef", "parkId", "sessionId", "workspaceId"]);
+        assert.deepEqual(withAnswer.signal.answer, { text: "take b", by: BY, askedAt: null });
+        const without = bridge.buildTerminalResumeEnvelope("node-a", FIVE);
+        assert.equal(
+          JSON.stringify(without),
+          '{"kind":"terminal-resume","nodeId":"node-a","signal":{"sessionId":"s","assignmentId":"a","workspaceId":"w","itemRef":"18","parkId":"p"}}',
+          "today's five keys, byte-identical",
+        );
+      },
+    },
+    {
+      name: "131/04 task03 — the envelope's signal carries answer last, and only when one is given (three rows)",
+      run() {
+        const rows = [
+          [{ answer: undefined }, ["sessionId", "assignmentId", "workspaceId", "itemRef", "parkId"]],
+          [{ answer: null }, ["sessionId", "assignmentId", "workspaceId", "itemRef", "parkId"]],
+          [{ reservedAt: "r", previousNodeId: "n", answer: A }, ["sessionId", "assignmentId", "workspaceId", "itemRef", "reservedAt", "previousNodeId", "parkId", "answer"]],
+        ];
+        for (const [index, [extra, keys]] of rows.entries()) {
+          assert.deepEqual(Object.keys(bridge.buildTerminalResumeEnvelope("node-a", { ...FIVE, ...extra }).signal), keys, `row ${index}`);
+        }
+      },
+    },
+    {
+      name: "131/04 task03 — the mesh leg is one additive key on a closed schema, and imports no ask module",
+      async run() {
+        const { meshTerminalResumeCommand } = await import("../../../src/commands/mesh/terminal-resume.mjs");
+        const { input, cli } = meshTerminalResumeCommand;
+        assert.deepEqual(Object.keys(input.properties), ["session", "node", "answer"]);
+        assert.equal(input.additionalProperties, false, "the schema refuses any other key");
+        assert.deepEqual(input.properties.answer.required, ["text"]);
+        assert.deepEqual(Object.keys(input.properties.answer.properties), ["text", "by", "askedAt"]);
+        assert.equal(input.properties.answer.properties.text.type, "string");
+        assert.equal(input.properties.answer.additionalProperties, false);
+        assert.ok(!Object.hasOwn(cli.spec.flags, "answer"), "the CLI face has no answer flag");
+        assert.deepEqual(cli.argv(["sess-89d1"], {}), { session: "sess-89d1" });
+        for (const rel of ["src/mesh/terminal-input.mjs", "src/mesh/terminal-relay-bridge.mjs", "src/mesh/worker-execution.mjs", "src/mesh/park-resume.mjs"]) {
+          const source = await readFile(new URL(`../../../${rel}`, import.meta.url), "utf8");
+          assert.ok(!/from\s+["'][^"']*loop\/ask(?:-request)?\.mjs["']/u.test(source), `${rel} imports no ask module`);
+        }
+        const worker = await readFile(new URL("../../../src/mesh/worker-execution.mjs", import.meta.url), "utf8");
+        assert.ok(worker.replace(/\r\n/gu, "\n").split("\n").length - 1 <= 1914, "worker-execution.mjs is at most 1,914 lines");
+      },
+    },
+  ];
+}

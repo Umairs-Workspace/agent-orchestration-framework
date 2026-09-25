@@ -67,10 +67,23 @@ export const archTests = [
       assert.match(stripped, /heartbeatHandle = timers\.setInterval\(\(\) => beatWaveRun\(\)/u, "the one armed interval beats the wave run");
       assert.match(stripped, /Math\.floor\(bounds\.heartbeatMs \/ 3\)/u, "…on heartbeatMs / 3, the threshold handed in from the one bound home");
       assert.doesNotMatch(stripped, /heartbeatFromConfig|work\.loop\.heartbeatMs|\bheartbeat\(/u, "no second threshold, and never the store's heartbeat() directly");
-      assert.match(stripped, /\.heartbeats\.ndjson/u, "the hook's queue");
-      assert.match(stripped, /\$\{JSON\.stringify\(\{ runId, at \}\)\}\\n/u, "…the hook's exact bytes");
-      assert.match(stripped, /consumeHeartbeatQueue\(waveRun\.item\)/u, "…consumed through the one consumer");
+      // 131/03 (task 00, ruling 12) — RE-AIMED: the enqueue (the hook's exact bytes, the append to
+      // the queue and the consume) moved to ONE export beside the queue's name, which the wave's beat
+      // and the ask's owner both call. The bytes are asserted in that one home, and nowhere else.
+      assert.match(stripped, /enqueueHeartbeat\(waveRun\.item, waveRun\.record\.runId, at\)/u, "the wave beats through the one enqueue");
+      assert.doesNotMatch(stripped, /JSON\.stringify\(\{ runId, at \}\)/u, "…and spells no copy of the hook's bytes");
       assert.doesNotMatch(stripped, /setTimeout\(/u, "no self-ping by timeout either");
+      const home = (await readFile(path.join(root, "src/run-heartbeat-consumption.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
+      assert.match(home, /export async function enqueueHeartbeat\(item, runId, at\)/u, "the one enqueue");
+      assert.match(home, /HEARTBEAT_QUEUE/u, "…appends to the hook's queue");
+      assert.match(home, /\$\{JSON\.stringify\(\{ runId, at \}\)\}\\n/u, "…the hook's exact bytes");
+      assert.match(home, /enqueueHeartbeat[\s\S]*consumeHeartbeatQueue\(item\)/u, "…consumed through the one consumer");
+      // The composer's beat is admitted BY NAME (ADR-001 §3): it calls the one enqueue at its checks and
+      // arms no timer of its own.
+      const ask = (await readFile(path.join(root, "src/loop/ask.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
+      assert.match(ask, /enqueueHeartbeat\(item, runId, iso\(at\)\)/u, "the ask's owner beats through the one enqueue");
+      assert.doesNotMatch(ask, /\bsetInterval\(/u, "…and arms no interval");
+      assert.doesNotMatch(ask, /JSON\.stringify\(\{ runId, at \}\)/u, "…and spells no copy of the bytes");
       // The hook and the consumer are untouched by the extension.
       const [hook, consumer] = await Promise.all([
         readFile(path.join(root, "src/bundle/hooks/run-heartbeat-enqueue.mjs"), "utf8"),

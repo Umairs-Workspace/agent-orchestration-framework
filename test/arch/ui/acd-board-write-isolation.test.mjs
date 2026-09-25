@@ -19,6 +19,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { serveSetupUi } from "../../../src/setup-ui.mjs";
+import { matchedBraceBody } from "../../support/source-slice.mjs";
 
 const BOARD_UI = new URL("../../../src/board-ui.mjs", import.meta.url);
 const FEEDBACK_COMMAND = new URL("../../../src/commands/feedback.mjs", import.meta.url);
@@ -188,9 +189,17 @@ export const archTests = [
       // for `continue`: it touches no fs verb, imports no child_process, and serves none
       // of the run-* routes. Naming the permitted routes is STRICTER than counting them:
       // a count of 2 would admit any second POST, whereas this fails on an unlisted one.
-      const postRoutes = [...board.matchAll(/pathname\s*===\s*["']\/api\/work\/([a-z-]+)["']/g)]
-        .map((match) => match[1])
-        .filter((route) => new RegExp(`method\\s*===\\s*["']POST["'][\\s\\S]{0,200}?/api/work/${route}`).test(board));
+      //
+      // RE-BASED by 131/04 (task 01, developer ruling 12). The write routes match on PATHNAME
+      // first, so the `method === "POST"` literals this detection counted are gone. A write route
+      // is now a `/api/work/<op>` branch — sliced on its own braces — that calls
+      // `admitWriteRequest(` or `handlePhaseDoor(`, and the detected set must EQUAL the allowlist,
+      // never merely sit inside it, so this control cannot pass on an empty detection.
+      const branches = [...board.matchAll(/pathname\s*===\s*["']\/api\/work\/([a-z-]+)["']/g)]
+        .map((match) => ({ route: match[1], body: matchedBraceBody(board, match.index) ?? "" }));
+      const postRoutes = branches
+        .filter(({ body }) => /\badmitWriteRequest\(|\bhandlePhaseDoor\(/.test(body))
+        .map(({ route }) => route);
       const allowedPosts = new Set([
         "feedback",   // the pre-existing feedback write
         "continue",   // THE single continue door — decides WHERE a continue runs (local vs a worker node)
@@ -210,12 +219,28 @@ export const archTests = [
         // deliberately a NAMED set rather than a count, so this entry is a decision on the
         // record rather than a silently-admitted second POST.
         "resync",
+        // milestone 131 / story 04 (ADR-006 §3) — THE ANSWER. One invoke of `work:answer`, which
+        // writes one ask file in the aof home and no record doc; the board face itself still
+        // writes nothing and shells out to nothing.
+        "answer",
       ]);
       for (const route of postRoutes) {
         assert.ok(allowedPosts.has(route), `board-ui.mjs POSTs an unlisted route /api/work/${route} — the board face stays read-mostly`);
       }
-      const posts = [...board.matchAll(/method\s*===\s*["']POST["']/g)];
-      assert.ok(posts.length <= allowedPosts.size, `the board face has at most ${allowedPosts.size} POST routes (${[...allowedPosts].join(", ")})`);
+      assert.deepEqual([...postRoutes].sort(), [...allowedPosts].sort(), "the detected write routes are exactly the allowlist");
+      // Admission precedes every body read: a branch that reads a body calls admitWriteRequest(
+      // first, in its own body, and so does the phase doors' closure.
+      const phaseDoor = board.indexOf("const handlePhaseDoor");
+      assert.ok(phaseDoor >= 0, "the phase doors' closure is present");
+      const bodyReaders = [...branches, { route: "(phase-door closure)", body: matchedBraceBody(board, phaseDoor) ?? "" }]
+        .filter(({ body }) => body.includes("readJsonBody("));
+      assert.equal(bodyReaders.length, 3 + 1, "three branches (resync, feedback, answer) and the phase-door closure read a body");
+      for (const { route, body } of bodyReaders) {
+        const admit = body.indexOf("admitWriteRequest(");
+        assert.ok(admit >= 0 && admit < body.indexOf("readJsonBody("), `${route} calls admitWriteRequest( before readJsonBody(`);
+      }
+      const admissions = [...board.matchAll(/(?<!function\s)\badmitWriteRequest\(/g)];
+      assert.equal(admissions.length, 4, "four admitWriteRequest( call sites: the phase-door closure, resync, feedback and answer");
 
       // (d) The rerun UI surface (the pure verb module + the DetailPanel affordance)
       // reaches the launch via the runAgent → TerminalDock path and adds NO new
@@ -272,7 +297,7 @@ export const archTests = [
         try {
           const response = await fetch(new URL("/api/work/feedback", url), {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", origin: new URL(url).origin },
             body: JSON.stringify({ ref: "03/01", note: "isolation check", actor: "qa" }),
           });
           assert.equal(response.status, 200);

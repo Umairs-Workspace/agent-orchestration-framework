@@ -491,6 +491,46 @@
           },
           "additionalProperties": false
         },
+        "notify": {
+          "type": "object",
+          "description": "Where the loop reaches the operator (131/ADR-005 §1): named channels, each by type and by the NAME of the env var that may override its webhook URL. A Discord webhook URL carries its token in its path, so the URL is the credential and no `url`, `webhook` or `token` key exists at any level: it is kept machine-wide by `aof messaging init <type>` under the global home, and this block is the per-project switch `aof messaging enable|disable <type>` writes (ADR-005 §1, as amended at 131/08). Absent (or an empty `channels`) is an honest no-op with zero network calls.",
+          "properties": {
+            "channels": {
+              "type": "object",
+              "description": "Channel name -> channel. Every selected channel receives the event in parallel; a failing one never fails the run.",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "type": { "enum": ["discord"], "description": "The channel's renderer. A second type is one enum member and one CHANNELS entry." },
+                  "urlEnv": {
+                    "type": "string",
+                    "pattern": "^[A-Z][A-Z0-9_]*$",
+                    "description": "The NAME of the environment variable that overrides the stored webhook URL when it is set and not blank (default AOF_DISCORD_WEBHOOK_URL). The URL is resolved at the point of send, from this variable or else from the machine-wide store `aof messaging init` writes, and never written into config."
+                  },
+                  "events": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "enum": ["session-needs-input", "session-answered", "session-parked-unanswered", "loop-halted", "loop-died", "loop-relaunched", "milestone-accepted"]
+                    },
+                    "description": "The events this channel receives (default: all seven)."
+                  }
+                },
+                "required": ["type"],
+                "additionalProperties": false
+              }
+            },
+            "link": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "description": "An optional link template; every {ref} is filled with the item's ref. Without it the message carries no link line (the board runs on an ephemeral loopback port a phone cannot open)."
+            }
+          },
+          "required": ["channels"],
+          "additionalProperties": false
+        },
         "integrations": {
           "type": "object",
           "description": "OPTIONAL external-integration config (milestone 17). Absent ≡ off — every aof work command behaves exactly as before; a present `notion` block opts the project into Notion work-board sync. Closed (additionalProperties:false), peer to work.doctor.",

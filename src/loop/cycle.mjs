@@ -27,6 +27,7 @@ import {
   decideScheduleToClose,
   isReviewBlockerClaim,
   lineageElapsedMs,
+  loopScopeIncludes,
   mapStoreRefusal,
   retryLineage,
 } from "../work/loop.mjs";
@@ -34,6 +35,11 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { MAX_REVIEW_ROUNDS, loopBoundsFromConfig } from "../loop-bounds.mjs";
 import { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath } from "./child-drive.mjs";
+import { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks } from "./ask.mjs";
+import { readAsk } from "./ask-request.mjs";
+import { resolveRefInWorktree } from "../work/dispatch.mjs";
+import { meshDispatchWorktreePath } from "../mesh/worktree.mjs";
+import { existsSync } from "node:fs";
 import {
   appendProgressSample,
   decideBuildProgress,
@@ -497,7 +503,12 @@ export function transitionOptionsFor(ctx, { workspace = ctx.workspace, lockWorks
 // The foreground launch hands it in; `runLoopBody` without it keeps the in-process drive the
 // sequential suites fake through the registry. A child death is then this run's
 // `runtime_offline`, retried on its lineage, never the loop's own silent death.
-export async function drivePhase({ ref, phase, cycle, declaration, brief = runBrief(declaration), retryRecord = null, fix = null, gradeAbsent = null, changeBaseline = null, progressBaseCommit = null, now }, ctx) {
+//
+// 131/03 (ADR-001 §1(b)) — `answer` RE-DRIVES A RUN THAT WAITED ON A HUMAN: the waiting record is
+// the `retryRecord`, so nothing is minted and the same run is driven at the same attempt with the
+// answer typed into its own session. An answer never rides a new run.
+export async function drivePhase({ ref, phase, cycle, declaration, brief = runBrief(declaration), retryRecord = null, fix = null, answer = null, gradeAbsent = null, changeBaseline = null, progressBaseCommit = null, now }, ctx) {
+  if (answer != null && retryRecord == null) throw new TypeError("drivePhase: an answer re-drives the run that waited for it, so it needs that run as retryRecord");
   const item = requireLocalCheckout(await resolveItemExact(ctx, ref), ref);
   const opts = transitionOptionsFor(ctx);
   const { record } = retryRecord == null
@@ -513,7 +524,13 @@ export async function drivePhase({ ref, phase, cycle, declaration, brief = runBr
     : { record: retryRecord };
 
   if (typeof ctx.spawnPhaseDrive === "function") {
-    const { outcome, settlementContext } = await drivePhaseInChild(ctx, { ref, phase, runId: record.runId, fix });
+    const { outcome, settlementContext } = await drivePhaseInChild(ctx, {
+      ref,
+      phase,
+      runId: record.runId,
+      fix: answer == null ? fix : null,
+      answerFile: answer == null ? null : askFileFor(record.runId, askEnvFor(ctx)),
+    });
     return { item, record, outcome, cycle, phase, changeBaseline, progressBaseCommit, settlementContext, gradeAbsent };
   }
 
@@ -525,7 +542,7 @@ export async function drivePhase({ ref, phase, cycle, declaration, brief = runBr
       ...ctx,
       loopDrive: {
         runId: record.runId,
-        ...(fix == null ? {} : { fix }),
+        ...(answer != null ? { answer } : fix == null ? {} : { fix }),
         recordSettlementContext(value) {
           settlementContext = value;
         },
@@ -544,6 +561,7 @@ async function drivePhaseInChild(ctx, {
   phase,
   runId,
   fix,
+  answerFile = null,
   worktreePath = ctx.workspace.projectRoot,
 }) {
   const env = ctx.globalWorkStoreOptions?.env;
@@ -561,6 +579,7 @@ async function drivePhaseInChild(ctx, {
       runId,
       lane: worktreePath,
       ...(fixFile == null ? {} : { fixFile }),
+      ...(answerFile == null ? {} : { answerFile }),
       env: {
         ...(typeof process.env.AOF_GLOBAL_HOME === "string" ? { AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME } : {}),
         ...(env ?? {}),
@@ -756,7 +775,23 @@ export async function retryUntilTerminal(phaseRun, { drive, ref, phase, brief, i
       phaseRun = retryRun;
       if (await stopped()) return { phaseRun };
       if (retryRun.outcome.outcome === "needs-input") {
-        return { phaseRun, halt: { act: haltDecision("session-needs-input", ref, "driver:needs-input"), details: { sessionId: retryRun.outcome.sessionId } } };
+        // 131/03 (task 01, ruling 8) — A RETRIED ATTEMPT THAT ASKS WAITS IN ITS OWNER, and a park is
+        // HANDED BACK rather than halted on: this ladder serves the shell and the wave, which give a
+        // park different meanings. The answer re-drives the same attempt through `drive(record,
+        // answer)`, and its run is settled here as any attempt's is.
+        const waited = await awaitAnswer(retryRun, {
+          ...options.ask?.site,
+          drive: (answer) => drive(retryRun.record, answer),
+          ref,
+          phase,
+          item,
+          cwd: options.ctx?.workspace?.projectRoot,
+        }, options.ask?.deps);
+        if (waited.parked != null) return { phaseRun, parked: waited.parked };
+        retryRun = await settleDriven(waited.phaseRun, options.ctx, { now: clock(), narrate, ...(transitionOptions == null ? {} : { transitionOptions }) });
+        bookkeeping.driven.push(drivenRow(retryRun));
+        phaseRun = retryRun;
+        if (await stopped()) return { phaseRun };
       }
     } catch (error) {
       const stop = storeStop(error, haltDecision);
@@ -1036,10 +1071,104 @@ export async function settleStoryCycle(phaseRun, bookkeeping, ctx, options = {})
   // read of the stop source (settle → interrupt → needs-input, at this site as at the others) can
   // name the run it stands over.
   if (verified.outcome.outcome === "needs-input") {
-    return { ...halt(haltDecision("session-needs-input", ref, "driver:needs-input"), { sessionId: verified.outcome.sessionId }), verified };
+    // 131/03 (task 01, ruling 9) — A STOP ALREADY STANDING OPENS NO ASK: the caller's read of the
+    // source halts `operator-interrupt` naming the session, as before. Otherwise the verify waits
+    // on the operator in this process and resumes the same run with the answer.
+    await options.stopSource?.poll?.();
+    if ((options.stopSource?.level?.() ?? 0) >= 1) {
+      // The halt is spelled by `ask.mjs`'s `parkedHalt` alone (FF-13105); nothing parked, so its
+      // details stay the session this halt names.
+      const { act } = parkedHalt([{ ref, runId: verified.record?.runId ?? null, askedAt: null }], haltDecision);
+      return { ...halt(act, { sessionId: verified.outcome.sessionId }), verified };
+    }
+    const waited = await awaitAnswer(verified, {
+      ...options.ask?.site,
+      drive: (answer) => drivePhase({ ref, phase: "verify", cycle: verifyCycle, declaration: verifyDeclaration, brief: verifyBrief, retryRecord: verified.record, answer, now }, ctx),
+      ref,
+      phase: "verify",
+      item: verified.item,
+      cwd: worktreePath,
+    }, options.ask?.deps);
+    if (waited.parked != null) {
+      const questionHalt = parkedHalt([waited.parked], haltDecision);
+      return { ...halt(questionHalt.act, questionHalt.details), verified, parked: waited.parked };
+    }
+    verified = await settleDriven(waited.phaseRun, ctx, { now, narrate, ...(transitionOptions == null ? {} : { transitionOptions }) });
+    driven.push(drivenRow(verified));
   }
   if (verified.outcome.outcome === "done" && hasUat(facts.tasks?.tasks ?? [])) {
     return { ...halt(haltDecision("uat-gate", ref, "work:tasks:counts.uat"), { uatCount: uatCount(facts.tasks?.tasks ?? []) }), verified };
   }
   return { next: "verify", gradeRecord: gradedRecord, gradedSummary, verified };
+}
+
+// reenterPrimaryAsks — 131/03 (ADR-004 §5, task 04): the `--resume` re-entry of the PRIMARY's runs
+// still waiting on a human. Stale ask files are swept first (a file whose run is not running, in the
+// primary or its ref's lane, is cleared). Every in-scope running run whose last ask is unanswered and
+// has no live owner (ruling 13: parked, or stale) is re-entered through the composer — the answered
+// first, then the rest, each in `askedAt` order (ruling 12). An answered one is re-driven under its
+// own record, settled, retried as a first drive would be, and a finished build is graded through the
+// ladder (ruling 16). Answers `{ halt }` (null to walk on), or `{ stopped }` when a stop parked a wait.
+export async function reenterPrimaryAsks({ ctx, primaryRoot, scope, items, ask, bookkeeping, ladderOptions, input, stalenessMs, narrate, factsFor: readFacts }) {
+  const { dir } = ask.deps;
+  await sweepStaleAsks({
+    dir,
+    workspaceId: ask.site.workspaceId,
+    inScope: (ref) => loopScopeIncludes(scope, ref),
+    runsFor: async (ref) => {
+      const runs = [];
+      const item = await resolveItemExact(ctx, ref).catch(() => null);
+      if (item?.dir != null) runs.push(...await readRuns(item));
+      const lane = meshDispatchWorktreePath(primaryRoot, ref);
+      if (existsSync(lane)) {
+        const laneItem = await resolveRefInWorktree(primaryRoot, ctx.workspace.workDir, lane, ref).catch(() => null);
+        if (laneItem != null) runs.push(...await readRuns(laneItem));
+      }
+      return runs;
+    },
+    narrate,
+  });
+  const nowMs = Date.parse(input.now ?? new Date().toISOString());
+  const pairs = [];
+  for (const item of items) {
+    for (const run of await readRuns(item)) {
+      if (run.state !== "running" || run.brief?.wave != null || standingAsk(run) == null) continue;
+      if (liveOwnerHolds(run, { stalenessMs, nowMs })) continue;
+      pairs.push({ item, run, file: await readAsk(dir, run.runId) });
+    }
+  }
+  const parked = [];
+  let halt = null;
+  let stopped = null;
+  await reenterStandingAsks(pairs, async ({ item, run }) => {
+    if (halt != null || stopped != null) return;
+    const declaration = run.brief?.loop ?? null;
+    const phase = declaration?.phase ?? "continue";
+    const cycle = Number.isInteger(declaration?.cycle) ? declaration.cycle : 1;
+    const redrive = (retryRecord, answer = null) => drivePhase({ ref: item.ref, phase, cycle, declaration, brief: run.brief, retryRecord, answer, now: input.now }, ctx);
+    const waiting = { item, record: run, outcome: { outcome: "needs-input", sessionId: run.sessionId }, cycle, phase, settlementContext: null, changeBaseline: null, progressBaseCommit: null, gradeAbsent: null };
+    const waited = await awaitAnswer(waiting, { ...ask.site, drive: (answer) => redrive(run, answer), ref: item.ref, phase, item, cwd: primaryRoot, reenter: true }, ask.deps);
+    if (waited.parked != null) {
+      if (ask.deps.stopping()) stopped = { ref: item.ref, drive: waiting, parked: [waited.parked] };
+      else parked.push(waited.parked);
+      return;
+    }
+    let settled = await settleDriven(waited.phaseRun, ctx, { now: input.now, narrate });
+    bookkeeping.driven.push(drivenRow(settled));
+    if (settled.outcome.outcome === "failed") {
+      const retried = await retryUntilTerminal(settled, { drive: redrive, ref: item.ref, phase, brief: run.brief }, bookkeeping, { ...ladderOptions, now: input.now });
+      settled = retried.phaseRun;
+      if (retried.parked != null) { parked.push(retried.parked); return; }
+      if (retried.halt != null) { halt = retried.halt; return; }
+    }
+    if (settled.outcome.outcome === "done" && phase === "continue") {
+      const next = { ref: item.ref, type: "story", state: "ready" };
+      const graded = await settleStoryCycle(settled, bookkeeping, ctx, { ...ladderOptions, crossToVerify: true, now: input.now, next, facts: await readFacts(next, ctx) });
+      if (graded.parked != null) parked.push(graded.parked);
+      else if (graded.next === "halt") halt = graded.halt;
+    }
+  });
+  if (stopped != null) return { stopped: true, ...stopped };
+  if (halt != null) return { halt };
+  return { halt: parked.length > 0 ? parkedHalt(parked, ladderOptions.haltDecision) : null };
 }

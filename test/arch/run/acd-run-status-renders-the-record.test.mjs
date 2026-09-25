@@ -199,8 +199,11 @@ export const archTests = [
       assert.match(control, /\["src\/board-ui\.mjs", "[0-9a-f]{64}"\]/u);
       // 133/04 re-pins it again for the doc route's `member` param (133/ADR-007 §2), stacking its own
       // reason under 127/04's, so each mover is read within reach of the entry it moved.
-      assert.match(control, /RE-PINNED by 127\/04[\s\S]{0,1200}\["src\/board-ui\.mjs"/u, "the board-ui re-pin carries its reason and names the story that moved it");
-      assert.match(control, /RE-PINNED by 133\/04[\s\S]{0,600}\["src\/board-ui\.mjs"/u, "the latest board-ui re-pin carries its reason and names the story that moved it");
+      // 131/04 stacks a third (131/ADR-006 §3: one hoisted admission and one route onto
+      // `work:answer`), so the two earlier windows widen by its comment's length.
+      assert.match(control, /RE-PINNED by 127\/04[\s\S]{0,2000}\["src\/board-ui\.mjs"/u, "the board-ui re-pin carries its reason and names the story that moved it");
+      assert.match(control, /RE-PINNED by 133\/04[\s\S]{0,1400}\["src\/board-ui\.mjs"/u, "the 133/04 board-ui re-pin carries its reason and names the story that moved it");
+      assert.match(control, /RE-PINNED by 131\/04[\s\S]{0,800}\["src\/board-ui\.mjs"/u, "the latest board-ui re-pin carries its reason and names the story that moved it");
       assert.equal((control.match(/\["src\/[^"]+", "[0-9a-f]{64}"\]/gu) ?? []).length, 3, "three file entries beside the ui/ tree hash");
 
       // The moved pin names this story and why the file moved, as 119/01's re-pin does.

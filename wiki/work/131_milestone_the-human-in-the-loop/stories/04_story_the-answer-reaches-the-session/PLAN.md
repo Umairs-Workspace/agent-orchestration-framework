@@ -34,7 +34,7 @@ returns, and the owner (03) or the worker (mesh) is what resumes the session.
 ## Verification step
 
 Under an isolated `AOF_GLOBAL_HOME`, run the story's suites through `node scripts/test.mjs
---only …`: the four `test/mesh/terminal/*` and `test/assignment/blocked-run-parking` files, the
+--only …`: the story's declared terminal, relay and parking suites, the
 two board suites, `mesh-ui-serve`, `run-session-limit-resume`, `command-core-contract`, and the
 three arch gates in `files:`. Then one hand probe end to end: open a `waiting` ask file for a
 fixture item by hand, stand the board up with `aof work ui` against that fixture, POST
@@ -55,7 +55,7 @@ reaches the worker without its `answer` key.
 
 ## Known traps
 
-- `src/mesh/worker-execution.mjs` is at its 1,914-line sink ceiling. Every added line needs a
+- The worker's execution module is at its 1,914-line sink ceiling. Every added line needs a
   removed one; the two-line `command: null` comment is the obvious cut. Anything larger moves
   into `park-resume.mjs`.
 - `acd-board-write-isolation` counts `method === "POST"` literals to find POST routes. The
@@ -66,8 +66,8 @@ reaches the worker without its `answer` key.
   byte-identical to today's fixtures.
 - Node's `fetch` silently drops a caller-set `Host` header. The Host rows in every suite go
   through `node:http`.
-- `acd-loop-state-rides-the-run-record` pins `src/board-ui.mjs` by digest. Re-pin it LAST, with
-  the comment and the measured diff, after 01's `src/run-store.mjs` re-pin has landed from its
+- `acd-loop-state-rides-the-run-record` pins the board face by digest. Re-pin it LAST, with
+  the comment and the measured diff, after 01's run-store re-pin has landed from its
   own lane; and 130's uncommitted `carriedBrief` edit already moves the store digest in this
   shared checkout.
 - `run-session-limit-resume` is shared with 01 (the seventeenth key). Edit only the sweep cases.

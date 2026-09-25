@@ -26,7 +26,8 @@ import { transitionRunStart } from "../../src/effects/run-transitions.mjs";
 import { fixTransport } from "../../src/commands/loop.mjs";
 import { SOURCE_DIRECTORY_EXEMPTIONS, FLAT_LAYER_THRESHOLD } from "../arch/testing/acd-source-directory-budget.test.mjs";
 import { continueCommand, refineDoorCommand, verifyDoorCommand } from "../../src/commands/continue.mjs";
-import { readRuns, recordSessionId } from "../../src/run-store.mjs";
+import { completeRun, readRuns, recordSessionId } from "../../src/run-store.mjs";
+import { answerAsk, askRequestPath, loopAsksDir, openAsk } from "../../src/loop/ask-request.mjs";
 import { findWork } from "../../src/work.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
@@ -966,7 +967,10 @@ export const driveCommandPhaseDriverTests = [
     name: "129/02 task00 the closed input schema and the flag spec declare both flags on all three phases",
     run() {
       for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
-        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix"], `${command.id}: the schema's properties are exactly the four`);
+        // 131/03 (ADR-003 §7) appended the fifth, `answer`, in the same three homes.
+        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer"], `${command.id}: the schema's properties are exactly the five`);
+        assert.deepEqual(command.input.properties.answer, { type: "string" }, `${command.id}: answer is a string`);
+        assert.equal(command.cli.spec.flags.answer.type, "string", `${command.id}: --answer is a string flag`);
         assert.deepEqual(command.input.properties.run, { type: "string" }, `${command.id}: run is a string`);
         assert.deepEqual(command.input.properties.fix, { type: "string" }, `${command.id}: fix is a string`);
         assert.equal(command.input.additionalProperties, false, `${command.id}: the schema stays closed`);
@@ -1646,4 +1650,265 @@ export const driveCommandPhaseDriverTests = [
       assert.equal(options.windowsHide, true);
     },
   },
+  ...driveAnswerTests(),
 ];
+
+// ── milestone 131 / story 03, task 03 — THE ANSWER RIDES THE DRIVE AS A RESUMED COMMAND (ADR-001 §1,
+// §6; ADR-003 §7). `--answer <file>` is judged after the dry run and before the fix file, the mint,
+// the compile and the stdin bracket; a readable answer that is the lent run's own resumes that run's
+// own session with the answer typed, and every other answer is refused before anything happens.
+// Built inside a hoisted function so the array above can spread it without a TDZ.
+function driveAnswerTests() {
+  const ANSWER = "take option B\nand keep the tests";
+  // A lent running run R on 03/01 whose record names session S1, and an answered ask file A for it.
+  async function withAnswered(body, { answer = ANSWER, sessionOnRecord = "S1", transcript = true } = {}) {
+    const fx = await fixture();
+    try {
+      const { item, runId } = await mintRunning(fx);
+      if (sessionOnRecord != null) await recordSessionId(item, { runId, sessionId: sessionOnRecord });
+      const env = { CLAUDE_CONFIG_DIR: path.join(fx.projectRoot, ".claude-test") };
+      if (transcript) {
+        const projects = claudeProjectsDir({ cwd: fx.projectRoot, env });
+        await mkdir(projects, { recursive: true });
+        await writeFile(path.join(projects, "S1.jsonl"), `${JSON.stringify({ type: "assistant", message: { stop_reason: "end_turn", content: [{ type: "text", text: "Q\nNEEDS_INPUT" }] } })}\n`);
+      }
+      const dir = loopAsksDir();
+      await openAsk(dir, { runId, ref: "03/01", workspaceId: "w1", sessionId: "S1", phase: "build", question: "Q", now: () => new Date() });
+      if (answer != null) await answerAsk(dir, { workspaceId: "w1", ref: "03/01", text: answer, by: { actor: "you", via: "cli", node: null }, now: () => new Date() });
+      const A = askRequestPath(dir, runId);
+      return await body({ fx, item, runId, A, dir, env });
+    } finally {
+      await fx.cleanup();
+    }
+  }
+  const refusalOf = async (promise) => {
+    try {
+      await promise;
+    } catch (error) {
+      return error;
+    }
+    return null;
+  };
+  const rewrite = async (file, over) => {
+    const record = JSON.parse(await readFile(file, "utf8"));
+    await writeFile(file, JSON.stringify({ ...record, ...over }, null, 2));
+  };
+
+  return [
+    {
+      name: "131/03 task03 — an answer resumes the lent run's own session with the answer typed, mints nothing and leaves the run running",
+      async run() {
+        await withAnswered(async ({ fx, item, runId, A, env }) => {
+          const driver = scriptedDriver("done", undefined, "S1");
+          await continueDriverCommand.run({ ref: "03/01", run: runId, answer: A }, { workspace: fx.workspace, agentSessionDriverOptions: { ...driver.options, env }, stdin: stdinDouble() });
+          assert.equal(driver.spawnCalls.length, 1);
+          const args = driver.spawnCalls[0].args;
+          assert.deepEqual(args.slice(args.indexOf("--resume"), args.indexOf("--resume") + 2), ["--resume", "S1"]);
+          assert.deepEqual(driver.typed, [ANSWER], "the body typed is the answer, byte for byte");
+          const runs = await readRuns(item);
+          assert.deepEqual(runs.map((run) => [run.runId, run.state]), [[runId, "running"]], "no run was minted, and R is still running");
+        });
+      },
+    },
+    {
+      name: "131/03 task03 — the three homes carry the flag, and the argv parser reads --answer as it reads --fix (four rows)",
+      async run() {
+        for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
+          assert.deepEqual(command.input.properties.answer, { type: "string" });
+          assert.equal(command.cli.spec.flags.answer.type, "string");
+          assert.ok(command.cli.spec.usage.includes("--answer <file>"));
+        }
+        for (const [argv, expected] of [
+          [["03/01", "--run", "R", "--answer", "A", "--json"], { ref: "03/01", run: "R", answer: "A" }],
+          [["03/01", "--run", "R", "--json"], { ref: "03/01", run: "R" }],
+          [["03/01", "--answer", "A", "--fix", "F"], { ref: "03/01", answer: "A", fix: "F" }],
+        ]) {
+          const parsed = parseSpecArgv(argv.filter((a) => a !== "--json"), continueDriverCommand.cli.spec, continueDriverCommand.id);
+          assert.deepEqual(await continueDriverCommand.cli.argv(parsed._, parsed), expected, argv.join(" "));
+        }
+        assert.throws(() => parseSpecArgv(["03/01", "--run", "R", "--answer"], continueDriverCommand.cli.spec, continueDriverCommand.id), (error) => error.code === "missing-flag-value");
+      },
+    },
+    {
+      name: "131/03 task03 — every way an answer is unreadable or not this run's is refused before any effect (twenty-one rows)",
+      async run() {
+        const rows = [
+          ["missing", "R", "drive-answer-unreadable", 400],
+          ["directory", "R", "drive-answer-unreadable", 400],
+          ["{ not json", "R", "drive-answer-unreadable", 400],
+          ["empty", "R", "drive-answer-unreadable", 400],
+          ["array", "R", "drive-answer-unreadable", 400],
+          ["null", "R", "drive-answer-unreadable", 400],
+          ["waiting", "R", "drive-answer-unreadable", 400],
+          ["parked", "R", "drive-answer-unreadable", 400],
+          ["ANSWERED", "R", "drive-answer-unreadable", 400],
+          ["state only", "R", "drive-answer-unreadable", 400],
+          ["answer empty", "R", "drive-answer-unreadable", 400],
+          ["answer 42", "R", "drive-answer-unreadable", 400],
+          ["missing", null, "drive-answer-unreadable", 400],
+          ["background", null, "drive-answer-not-own", 409],
+          ["runId R2", "R", "drive-answer-not-own", 409],
+          ["runId null", "R", "drive-answer-not-own", 409],
+          ["session S2", "R", "drive-answer-not-own", 409],
+          ["session null", "R", "drive-answer-not-own", 409],
+          ["no session on record", "R", "drive-answer-not-own", 409],
+          ["runId R9", "R9", "drive-answer-not-own", 409],
+          ["record done", "R", "drive-answer-not-own", 409],
+        ];
+        for (const [file, lend, code, status] of rows) {
+          await withAnswered(async ({ fx, item, runId, A }) => {
+            if (file === "missing") await rm(A, { force: true });
+            if (file === "directory") { await rm(A, { force: true }); await mkdir(A, { recursive: true }); }
+            if (file === "{ not json") await writeFile(A, "{ not json");
+            if (file === "empty") await writeFile(A, "");
+            if (file === "array") await writeFile(A, "[]");
+            if (file === "null") await writeFile(A, "null");
+            if (file === "waiting") await rewrite(A, { state: "waiting", answer: null });
+            if (file === "parked") await rewrite(A, { state: "parked", answer: null });
+            if (file === "ANSWERED") await rewrite(A, { state: "ANSWERED" });
+            if (file === "state only") await writeFile(A, JSON.stringify({ state: "answered" }));
+            if (file === "answer empty") await rewrite(A, { answer: "" });
+            if (file === "answer 42") await rewrite(A, { answer: 42 });
+            if (file === "runId R2") await rewrite(A, { runId: "R2" });
+            if (file === "runId null") await rewrite(A, { runId: null });
+            if (file === "session S2") await rewrite(A, { sessionId: "S2" });
+            if (file === "session null") await rewrite(A, { sessionId: null });
+            if (file === "runId R9") await rewrite(A, { runId: "R9" });
+            if (file === "record done") await completeRunFor(item, runId);
+            const lent = lend === "R" ? runId : lend;
+            const before = JSON.stringify(await readRuns(item));
+            const driver = scriptedDriver("done", undefined, "S1");
+            const stdin = stdinDouble();
+            let resumed = false;
+            stdin.resume = () => { resumed = true; return stdin; };
+            const error = await refusalOf(continueDriverCommand.run({ ref: "03/01", ...(lent == null ? {} : { run: lent }), answer: A }, { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin }));
+            const label = `${file} / ${lend}`;
+            assert.equal(error?.code, code, `${label}: ${error?.message}`);
+            assert.equal(error?.status, status, label);
+            assert.equal(driver.spawnCalls.length, 0, `${label}: the PTY was never spawned`);
+            assert.equal(resumed, false, `${label}: stdin was never resumed`);
+            if (file !== "record done") assert.equal(JSON.stringify(await readRuns(item)), before, `${label}: the runs are byte-unchanged`);
+          }, { sessionOnRecord: file === "no session on record" ? null : "S1" });
+        }
+        const drive = await readFile(fileURLToPath(new URL("../../src/commands/drive.mjs", import.meta.url)), "utf8");
+        const stripped = drive.replace(/\/\/[^\n]*/gu, "");
+        const answerRead = stripped.indexOf("await readAnswerFile(input.answer)");
+        assert.ok(answerRead > 0, "the answer is read in run()");
+        for (const later of ["compileBriefForItem({", "transitionRunStart(item", "armStdinCancel(ctx.stdin"]) {
+          assert.ok(stripped.indexOf(later) > answerRead, `the answer is read before ${later}`);
+        }
+      },
+    },
+    {
+      name: "131/03 task03 — the explicit flag wins over the loop drive, an empty one is absent, and the in-process loop hands the same answer (seven rows)",
+      async run() {
+        const rows = [
+          ["flag+run", { loop: { runId: "R", answer: { runId: "R", sessionId: "S1", text: "yes" } } }, "A"],
+          ["empty flag", { loop: { runId: "R", answer: { runId: "R", sessionId: "S1", text: "yes" } } }, "yes"],
+          ["flag, lent by loop", { loop: { runId: "R" } }, "A"],
+          ["flag+run, loop R2", { loop: { runId: "R2" } }, "A"],
+          ["no answer", { loop: { runId: "R" } }, "/aof:continue 03/01"],
+          ["loop answer R2", { loop: { runId: "R", answer: { runId: "R2", sessionId: "S1", text: "yes" } } }, "drive-answer-not-own"],
+          ["loop answer empty", { loop: { runId: "R", answer: { runId: "R", sessionId: "S1", text: "" } } }, "drive-answer-unreadable"],
+        ];
+        for (const [label, { loop }, expect] of rows) {
+          await withAnswered(async ({ fx, runId, A }) => {
+            const swap = (value) => (value === "R" ? runId : value);
+            const loopDrive = { runId: swap(loop.runId), ...(loop.answer == null ? {} : { answer: { ...loop.answer, runId: swap(loop.answer.runId) } }) };
+            const input = {
+              ref: "03/01",
+              ...(label === "flag+run" || label === "flag+run, loop R2" ? { run: runId, answer: A } : {}),
+              ...(label === "empty flag" ? { answer: "" } : {}),
+              ...(label === "flag, lent by loop" ? { answer: A } : {}),
+            };
+            const driver = scriptedDriver("done", undefined, "S1");
+            const error = await refusalOf(continueDriverCommand.run(input, { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble(), loopDrive }));
+            if (expect.startsWith("drive-answer")) {
+              assert.equal(error?.code, expect, label);
+              assert.equal(driver.spawnCalls.length, 0, label);
+              return;
+            }
+            assert.equal(error, null, `${label}: ${error?.message}`);
+            const args = driver.spawnCalls[0].args;
+            if (expect === "/aof:continue 03/01") {
+              assert.equal(args.includes("--resume"), false, label);
+              assert.ok(driver.typed[0].startsWith(expect), label);
+            } else {
+              assert.deepEqual(args.slice(args.indexOf("--resume"), args.indexOf("--resume") + 2), ["--resume", "S1"], label);
+              assert.equal(driver.typed[0], expect === "A" ? ANSWER : expect, label);
+            }
+          });
+        }
+      },
+    },
+    {
+      name: "131/03 task03 — the resumed launch carries the answer and nothing else, on every phase (six rows)",
+      async run() {
+        const commands = { refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand };
+        for (const [phase, setup] of [["continue", "nothing"], ["continue", "fix"], ["continue", "raw resume"], ["continue", "tab"], ["refine", "nothing"], ["verify", "nothing"]]) {
+          await withAnswered(async ({ fx, runId, A, env }) => {
+            if (setup === "tab") await rewrite(A, { answer: "a\tb\r\nc" });
+            const driver = scriptedDriver("done", undefined, "S1");
+            const loopDrive = setup === "fix" ? { runId, fix: fixBag({ resumeBuildRun: { runId: "b0", sessionId: "S0" } }) } : undefined;
+            const result = await commands[phase].run({ ref: "03/01", run: runId, answer: A }, {
+              workspace: fx.workspace,
+              agentSessionDriverOptions: { ...driver.options, env, ...(setup === "raw resume" ? { resumeSessionId: "SX" } : {}) },
+              stdin: stdinDouble(),
+              ...(loopDrive == null ? {} : { loopDrive }),
+            });
+            const label = `${phase} / ${setup}`;
+            const args = driver.spawnCalls[0].args;
+            assert.deepEqual(args.slice(args.indexOf("--resume"), args.indexOf("--resume") + 2), ["--resume", "S1"], label);
+            assert.equal(driver.typed[0], setup === "tab" ? "a\tb\r\nc".replace(/[\r\n]+$/u, "") : ANSWER, `${label}: the body is the answer and nothing else`);
+            assert.ok(!driver.typed[0].includes("## REVIEW FINDINGS"), label);
+            assert.ok(Object.hasOwn(result.settlementContext.transcriptBaseline ?? {}, "S1.jsonl"), `${label}: the spend baseline was snapshotted over S1.jsonl`);
+          });
+        }
+      },
+    },
+    {
+      name: "131/03 task03 — the answer is judged after the dry run and before the fix file (four rows)",
+      async run() {
+        await withAnswered(async ({ fx, runId, A }) => {
+          const missing = path.join(fx.projectRoot, "no-such-ask.json");
+          const badFix = await writeFixFile(fx, "bad.json", "{ not json");
+          const goodFix = await writeFixFile(fx, "good.json", fixBag());
+          const dry = await continueDriverCommand.run({ ref: "03/01", run: runId, dryRun: true, answer: missing }, { workspace: fx.workspace });
+          assert.deepEqual(Object.keys(dry).sort(), ["command", "phase", "ref"]);
+          const driver = scriptedDriver("done", undefined, "S1");
+          const ctx = { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() };
+          assert.equal((await refusalOf(continueDriverCommand.run({ ref: "03/01", run: runId, answer: missing, fix: badFix }, ctx)))?.code, "drive-answer-unreadable");
+          assert.equal((await refusalOf(continueDriverCommand.run({ ref: "03/01", run: runId, answer: A, fix: badFix }, ctx)))?.code, "drive-fix-unreadable");
+          assert.equal(driver.spawnCalls.length, 0);
+          await continueDriverCommand.run({ ref: "03/01", run: runId, answer: A, fix: goodFix }, ctx);
+          assert.deepEqual(driver.typed, [ANSWER], "a readable fix beside an answer is not composed");
+        });
+      },
+    },
+    {
+      name: "131/03 task03 — the lane child's argv carries the answer file only when there is one (eight rows)",
+      async run() {
+        const ending = (double) => double.calls[0].args.slice(double.calls[0].args.indexOf("--run"));
+        for (const [answerFile, fixFile, expected] of [
+          ["A", undefined, ["--run", "r1", "--answer", "A", "--json"]],
+          [undefined, undefined, ["--run", "r1", "--json"]],
+          ["", undefined, ["--run", "r1", "--json"]],
+          [42, undefined, ["--run", "r1", "--json"]],
+          [undefined, "F", ["--run", "r1", "--fix", "F", "--json"]],
+          ["A", "", ["--run", "r1", "--answer", "A", "--json"]],
+          ["C:/x y/a.json", undefined, ["--run", "r1", "--answer", "C:/x y/a.json", "--json"]],
+        ]) {
+          const { double } = await lane({ ...(answerFile === undefined ? {} : { answerFile }), ...(fixFile === undefined ? {} : { fixFile }), script: { stdout: JSON.stringify(DOC) } });
+          assert.deepEqual(ending(double), expected, `${String(answerFile)} / ${String(fixFile)}`);
+        }
+        const double = laneChildDouble({ stdout: JSON.stringify(DOC) });
+        await assert.rejects(spawnLaneDrive({ ref: "127/02", phase: "continue", runId: "r1", lane: LANE, answerFile: "A", fixFile: "F", spawnChild: double.spawnChild }), TypeError);
+        assert.equal(double.calls.length, 0, "the spy was never called");
+      },
+    },
+  ];
+}
+
+async function completeRunFor(item, runId) {
+  await completeRun(item, { runId, outcome: "done", now: new Date().toISOString(), settleSpend: false });
+}

@@ -27,10 +27,8 @@ anything.
 
 ## Verification step
 
-Under an isolated `AOF_GLOBAL_HOME`, run the three notify suites and the budget control through
-`node scripts/test.mjs --only`: `test/notify/notify-form.test.mjs`,
-`test/notify/notify-channels.test.mjs`, `test/notify/notify-discord.test.mjs` and
-`test/arch/testing/acd-source-directory-budget.test.mjs`. Then run one hand probe. Start a local
+Under an isolated `AOF_GLOBAL_HOME`, run the three notify suites and the source-directory budget
+control (all four are in `files:`) through `node scripts/test.mjs --only`. Then run one hand probe. Start a local
 `http.createServer` on `127.0.0.1:0` that records the request body and answers 204. Put its URL in
 a throwaway env var named by a fixture config's `urlEnv`, and accept a fixture milestone with
 `work:status`. The server logs exactly one POST, whose `content` begins `**<ref> — accepted**`.

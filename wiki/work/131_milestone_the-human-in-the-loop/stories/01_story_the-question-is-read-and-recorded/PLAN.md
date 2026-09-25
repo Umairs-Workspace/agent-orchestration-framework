@@ -37,16 +37,14 @@ driver transcript case edited to pass.
 
 - Any caller that opens, polls or answers an ask: the owner's wait is 03's and the verb is 04's.
 - Notifying, rendering or narrating the question: 02, 03 and 05.
-- The run-status render of `asks`. `src/commands/run-status.mjs` is byte-pinned and untouched.
+- The run-status render of `asks`. That command is byte-pinned and untouched.
 - The FF-13101 to FF-13103 controls themselves, which are 06's. This story's cases prove the
   behaviour they will guard.
 
 ## Known traps
 
-- `src/run-store.mjs` carries an UNCOMMITTED 130 edit (`carriedBrief`) in the shared checkout.
-  Do not commit or revert it. It must land from its own lane before the FF-5307 digest is
-  re-pinned, or the two re-pins collide. If it is still uncommitted when you reach the re-pin,
-  stop and report.
+- The run store carried an UNCOMMITTED 130 edit (`carriedBrief`) in the shared checkout at
+  refine. It had landed by the build (2026-09-24), so the FF-5307 re-pin is this story's alone.
 - `run-store-spend` asserts `spend` is the LAST key on disk, and `run-status-document-frozen`
   asserts 16 keys. Both are in `files:` for that reason.
 - The instruction template may hold no backtick, `//` or `/*`. The ADR paragraph's em dash and

@@ -69,6 +69,16 @@ const SESSION_TARGET_NOT_CONNECTED = "session-target-not-connected";
 // 15s window and renders "the node has reported nothing", which is false — this process knew.
 // That is the control-only-fact-with-no-reader shape ADR-008 exists to close, so both exits
 // announce, and both announce the SAME code (see below).
+// liftAnswer(value) → { text, by, askedAt } | null — the operator's answer a resume carries
+// (131/04). The DOWN frame is rebuilt key by key, so the answer is lifted to exactly its three
+// keys, a missing one as null. Anything without a non-empty string `text` is dropped and the frame
+// goes on without it: a resume never fails for its answer. Its text is never logged.
+function liftAnswer(value) {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) return null;
+  if (typeof value.text !== "string" || value.text.length === 0) return null;
+  return { text: value.text, by: value.by ?? null, askedAt: value.askedAt ?? null };
+}
+
 export function createTerminalInputRouter({ dispatchDirective, now, onLog, onSessionSpawnRefused, onTerminalResumeRefused } = {}) {
   const resolveNow = () => (typeof now === "function" ? now() : now ?? new Date().toISOString());
   // A not-connected target is reported ONCE per (nodeId, sessionId) per router
@@ -136,6 +146,7 @@ export function createTerminalInputRouter({ dispatchDirective, now, onLog, onSes
         const reservedAt = signal != null && typeof signal.reservedAt === "string" && signal.reservedAt.length > 0 ? signal.reservedAt : null;
         const previousNodeId = signal != null && typeof signal.previousNodeId === "string" && signal.previousNodeId.length > 0 ? signal.previousNodeId : null;
         const parkId = signal != null && typeof signal.parkId === "string" && signal.parkId.length > 0 ? signal.parkId : null;
+        const answer = liftAnswer(signal?.answer);
         if (nodeId == null || sessionId == null || assignmentId == null || workspaceId == null || itemRef == null || reservedAt == null || previousNodeId == null || parkId == null) {
           log("warn", "terminal-resume-invalid", "terminal-resume frame dropped: missing nodeId/sessionId/assignmentId/workspaceId/reservation/parkId");
           if (nodeId != null && assignmentId != null && reservedAt != null && previousNodeId != null) {
@@ -157,6 +168,7 @@ export function createTerminalInputRouter({ dispatchDirective, now, onLog, onSes
             previousNodeId,
             parkId,
             at: resolveNow(),
+            ...(answer == null ? {} : { answer }),
           });
         } catch (error) {
           reportDegrade("mesh-terminal-input", error);

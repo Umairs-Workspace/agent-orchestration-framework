@@ -138,6 +138,15 @@ export function resolveScopedExecution(overlay, ref) {
   return null;
 }
 
+// awaitsAnswer(execution) → boolean — a worker parked this execution on a human (131/ADR-003
+// §5c): active, running, `needs-input`, and carrying the session an answer is typed into. ONE
+// spelling for its two readers — `work:answer`'s mesh leg, which accepts an answer exactly here,
+// and the board list's ask fact, so the card is never offered where the verb would refuse.
+export function awaitsAnswer(execution) {
+  return execution?.active === true && execution.state === "running" && execution.code === "needs-input"
+    && typeof execution.sessionId === "string" && execution.sessionId.length > 0;
+}
+
 // applyExecutionOverlay(rows, overlay) → rows — attaches `execution` to each row an
 // active assignment covers, and overrides `status` to `in-progress` ONLY while a worker is
 // genuinely RUNNING it (a board that reads `not-started` over a live run is the defect;

@@ -21,7 +21,7 @@ The defining `reclaimStaleAssignments` scan at `src/mesh/assignment-reclaim.mjs:
 assignment state. Its reference and measurement are the same complete gate: the defining exported AND
 `dualStalenessDecision` at `src/mesh/assignment-reclaim.mjs:136`, plus its two separately visible halves,
 `isNodeStale` at its defining site `src/mesh/presence.mjs:550` and `isStale` at its defining site
-`src/run-store.mjs:1111`. Both predicates are imported and shared rather than re-derived
+`src/run-store.mjs:1181`. Both predicates are imported and shared rather than re-derived
 (`src/mesh/assignment-reclaim.mjs:17-21`).
 
 The narrowest actuator exports are `transitionAssignmentState` at

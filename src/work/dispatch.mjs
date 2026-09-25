@@ -274,7 +274,7 @@ export async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
 // never has it — and in a repo with a `.mcp.json` it is where the operator approved those servers
 // (`enabledMcpjsonServers`). Without it every lane's `claude` opens on the MCP-approval dialog,
 // which eats the typed directive: no transcript, no session id, `failed / timeout` at the
-// deadline (voice-vox-company-portal, 01/01, 01/06, 01/08 — nine attempts, none started). The
+// deadline (a downstream project, 01/01, 01/06, 01/08 — nine attempts, none started). The
 // primary's own file is copied, never synthesised: the lane is the same repository and the same
 // operator, so it approves exactly what the primary approved. A lane that already holds the file
 // keeps its own; a primary with none copies nothing. Best-effort — a failed copy leaves claude's

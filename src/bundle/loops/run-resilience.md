@@ -17,14 +17,14 @@ layer: operational
 
 Framework record source: `src/bundle/loops/run-resilience.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
-The controlled run records are read by the defining export `readRuns` at `src/run-store.mjs:646`; their
+The controlled run records are read by the defining export `readRuns` at `src/run-store.mjs:655`; their
 frozen shape, including lifecycle state and no owner key, is at `src/run-store.mjs:344-362`. The reference
 authorities are the defining exports `isLegalTransition` at `src/run-store.mjs:281` and `isRetryable` at
 `src/run-store.mjs:312`. This record points to those authorities and intentionally restates neither of
 their member values.
 
 The measurement authorities are `retryReadiness` at `src/run-store.mjs:437` and `isStale` at
-`src/run-store.mjs:1111`. The actuator command ids are defined at `src/commands/run-start.mjs:31-32`,
+`src/run-store.mjs:1181`. The actuator command ids are defined at `src/commands/run-start.mjs:31-32`,
 `src/commands/run-retry.mjs:23-24`, and `src/commands/run-complete.mjs:26-27`, and are registered in
 `src/command-core.mjs:219-224`. The local recovery scan occurs on run start (RESEARCH §Q1.5), establishing
 `event:per-run-start`; the mesh clock belongs to a different loop.

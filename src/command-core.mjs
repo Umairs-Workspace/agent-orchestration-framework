@@ -98,7 +98,7 @@ import { regressionGateCommand } from "./commands/regression-gate.mjs";
 // work:run-retry — m09, m19, m21, 08/ADR-004 — see ./commands/run-retry.mjs's header.
 import { runRetryCommand } from "./commands/run-retry.mjs";
 // work:resume — see ./commands/resume.mjs's header.
-import { resumeCommand } from "./commands/resume.mjs";
+import { resumeCommand, answerCommand } from "./commands/resume.mjs";
 // mesh:identity / mesh:status — see ./commands/mesh/identity.mjs's header.
 import { meshIdentityCommand, meshStatusCommand } from "./commands/mesh/identity.mjs";
 // mesh:heartbeat — see ./commands/mesh/heartbeat.mjs's header.
@@ -131,6 +131,8 @@ import { diagramPlanCommand } from "./commands/diagram/plan.mjs";
 import { diagramExportCommand } from "./commands/diagram/export.mjs";
 // diagram:file — milestone 133 — see ./commands/diagram/file.mjs's header.
 import { diagramFileCommand } from "./commands/diagram/file.mjs";
+// messaging:init / messaging:enable / messaging:disable / messaging:status — 131/08 — see ./commands/messaging/messaging.mjs's header.
+import { messagingInitCommand, messagingEnableCommand, messagingDisableCommand, messagingStatusCommand } from "./commands/messaging/messaging.mjs";
 import { workUiCommand } from "./commands/work-ui.mjs";
 import { assetsUiCommand } from "./commands/assets/ui.mjs";
 // work:find — m42, m12 — see ./commands/find.mjs's header.
@@ -235,6 +237,7 @@ const COMMANDS = [
   regressionGateCommand,
   runRetryCommand,
   resumeCommand,
+  answerCommand,
   meshIdentityCommand,
   meshStatusCommand,
   meshHeartbeatCommand,
@@ -256,6 +259,10 @@ const COMMANDS = [
   diagramPlanCommand,
   diagramExportCommand,
   diagramFileCommand,
+  messagingInitCommand,
+  messagingEnableCommand,
+  messagingDisableCommand,
+  messagingStatusCommand,
   workUiCommand,
   assetsUiCommand,
   findCommand,

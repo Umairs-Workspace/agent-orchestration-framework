@@ -13,6 +13,11 @@ const RUN_RECORD_KEYS_AT_M68 = [
   "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf",
   "reclaimedAt", "node", "resumeAfter", "spend",
 ];
+// 131/ADR-003 §3 supersedes the m68 freeze by the SAME additive discipline 68/ADR-001 used: ONE key,
+// `asks`, appended last — the questions the run's session asked a human, written only by the run's
+// owner. It is not a slot, a lease or a claim, which is what this control exists to keep off the
+// record; every other later claim still rides the opaque brief.
+const RUN_RECORD_KEYS_AT_M131 = [...RUN_RECORD_KEYS_AT_M68, "asks"];
 const dispatchFiles = [
   "src/work/dispatch.mjs",
   "src/commands/dispatch.mjs",
@@ -66,19 +71,20 @@ export const archTests = [
     },
   },
   {
-    name: "arch/69 FF-6908: the run record's top-level schema is unchanged from milestone 68; later claims ride brief",
+    name: "arch/69 FF-6908: the run record's top-level schema is milestone 68's plus 131's asks, appended last; later claims ride brief",
     run: async () => {
       const source = (await readFile(path.join(root, "src", "run-store.mjs"), "utf8")).replaceAll("\r\n", "\n");
       const body = functionBody(stripComments(source), "function buildRecord");
       assert.ok(body != null, "the record constructor remains structurally readable");
       const keys = [...body.matchAll(/^\s+([A-Za-z][A-Za-z0-9]*)(?=[:,])/gm)].map((match) => match[1]);
-      assert.deepEqual(keys, RUN_RECORD_KEYS_AT_M68, "no later story reshapes the frozen top-level run record");
+      assert.deepEqual(keys.slice(0, RUN_RECORD_KEYS_AT_M68.length), RUN_RECORD_KEYS_AT_M68, "the sixteen m68 keys keep their names and order");
+      assert.deepEqual(keys, RUN_RECORD_KEYS_AT_M131, "no later story reshapes the frozen top-level run record beyond 131's asks");
       assert.doesNotMatch(body, /provenance|anchorReadings/, "claim additions ride the opaque brief rather than widening the run record");
 
       const planted = body.replace("    failureReason: null,", "    failureReason: null,\n    slotLease: null,");
       assert.notEqual(planted, body, "the run-record-key plant changed the constructor");
       const plantedKeys = [...planted.matchAll(/^\s+([A-Za-z][A-Za-z0-9]*)(?=[:,])/gm)].map((match) => match[1]);
-      assert.notDeepEqual(plantedKeys, RUN_RECORD_KEYS_AT_M68, "a planted top-level key trips the schema control");
+      assert.notDeepEqual(plantedKeys, RUN_RECORD_KEYS_AT_M131, "a planted top-level key trips the schema control");
     },
   },
   {

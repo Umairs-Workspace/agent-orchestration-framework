@@ -23,7 +23,8 @@ import { reportDegrade } from "../degrade.mjs";
 // fact never lands without its event, so a mint or a settle that skips the seam raises no
 // `run.started`/`run.completed` and inherits none of the declared cascade. Ported to the
 // same doors the sibling caller (`src/mesh/worker-execution.mjs`) has always used.
-import { recordSessionId } from "../run-store.mjs";
+import { readRuns, recordSessionId } from "../run-store.mjs";
+import { ASK_STATES, readAsk } from "../loop/ask-request.mjs";
 import { readConsumedHeartbeatAt } from "../run-heartbeat-consumption.mjs";
 import { loopBoundsFromConfig, loopAgentModeFromConfig } from "../loop-bounds.mjs";
 import { transitionRunStart, transitionRunComplete } from "../effects/run-transitions.mjs";
@@ -132,6 +133,47 @@ async function readFixFile(file) {
   return parsed;
 }
 
+// 131/03 (ADR-003 §7; ADR-001 §1, §6) — `--answer <file>` RESUMES A RUN'S OWN SESSION WITH THE
+// OPERATOR'S ANSWER TYPED. The file is an ask record (`src/loop/ask-request.mjs`), read through its
+// own rules: every way it fails to be an `answered` ask with a non-empty answer is the ONE code
+// `drive-answer-unreadable`, and it is refused before any mint, compile or spawn, as `--fix` is.
+const { waiting: _waiting, parked: _parked, answered: ASK_ANSWERED } = ASK_STATES;
+
+function answerUnreadable(message) {
+  return commandError(message, "drive-answer-unreadable", 400);
+}
+
+async function readAnswerFile(file) {
+  let record;
+  try {
+    record = await readAsk(path.dirname(file), path.basename(file, ".json"));
+  } catch (error) {
+    throw answerUnreadable(`The answer file "${file}" could not be read: ${error?.message ?? String(error)}`);
+  }
+  if (record == null) throw answerUnreadable(`The answer file "${file}" is not an ask record.`);
+  return { runId: record.runId, sessionId: record.sessionId, text: record.answer, state: record.state };
+}
+
+// The answer is this run's own, or it is refused `drive-answer-not-own` (409): a run resumes only
+// its own conversation (`70/FF-7007`, extended). A lent run must exist, the answer must name it, and
+// its RECORD must be `running` with the answer's session on it. An ask still `waiting` or `parked`,
+// or a blank answer, is unreadable: there is nothing to type.
+async function admitAnswer(answer, { lentRunId, item }) {
+  if (answer.state !== ASK_ANSWERED || typeof answer.text !== "string" || answer.text.length === 0) {
+    throw answerUnreadable(`The answer for run ${answer.runId ?? "?"} is not an answered ask with a non-empty answer.`);
+  }
+  const notOwn = (why) => commandError(`The answer is not this run's own: ${why}.`, "drive-answer-not-own", 409);
+  if (lentRunId == null) throw notOwn("no run is lent to this drive");
+  if (answer.runId !== lentRunId) throw notOwn(`it answers run ${answer.runId ?? "none"}, and run ${lentRunId} is lent`);
+  const record = (await readRuns(item)).find((run) => run.runId === lentRunId);
+  if (record == null) throw notOwn(`run ${lentRunId} has no record on ${item.ref}`);
+  if (record.state !== "running") throw notOwn(`run ${lentRunId} is ${record.state}, and only a running run waits on an answer`);
+  if (typeof record.sessionId !== "string" || record.sessionId.length === 0 || record.sessionId !== answer.sessionId) {
+    throw notOwn(`its session ${answer.sessionId ?? "none"} is not run ${lentRunId}'s session ${record.sessionId ?? "none"}`);
+  }
+  return answer;
+}
+
 // 129/02 (ADR-005 §2 and §4; rulings 2026-09-13) — under `--run` the child's STDIN is the
 // parent's cancel channel: Windows delivers no POSIX signal to a child, so the loop spawns the
 // drive with a piped stdin and ENDS it to say stop. The `end` listener is attached before the
@@ -187,6 +229,8 @@ export function createPhaseDriverCommand(phase) {
         // 129/02 (ADR-005 §2) — the lent run id and the fix file, across the process boundary.
         run: { type: "string" },
         fix: { type: "string" },
+        // 131/03 (ADR-003 §7) — the answer to a run's standing ask: the path of its ask file.
+        answer: { type: "string" },
       },
       required: ["ref"],
       additionalProperties: false,
@@ -218,6 +262,20 @@ export function createPhaseDriverCommand(phase) {
       // over it — the explicit door); `run: ""` is absent, the same `length > 0` guard.
       // `--fix` is read here, BEFORE the mint below, so its refusal precedes every effect.
       const lentRunId = typeof input.run === "string" && input.run.length > 0 ? input.run : null;
+      // 131/03 — THE ANSWER IS JUDGED FIRST: after the dry run, before the fix file, the mint, the
+      // compile and the stdin bracket. `--answer` wins over `ctx.loopDrive.answer`, as `--fix` wins
+      // over `ctx.loopDrive.fix`; `answer: ""` is absent.
+      const answerFromFile = typeof input.answer === "string" && input.answer.length > 0
+        ? await readAnswerFile(input.answer)
+        : null;
+      const loopAnswer = ctx.loopDrive?.answer == null ? null : { ...ctx.loopDrive.answer, state: ASK_ANSWERED };
+      const answer = answerFromFile ?? loopAnswer;
+      if (answer != null) {
+        await admitAnswer(answer, {
+          lentRunId: lentRunId ?? (typeof ctx.loopDrive?.runId === "string" && ctx.loopDrive.runId.length > 0 ? ctx.loopDrive.runId : null),
+          item,
+        });
+      }
       const fixFromFile = typeof input.fix === "string" && input.fix.length > 0
         ? await readFixFile(input.fix)
         : null;
@@ -274,10 +332,15 @@ export function createPhaseDriverCommand(phase) {
       // ignored exactly like a raw resumeSessionId. The `--fix` file wins over
       // `ctx.loopDrive.fix` when both are present (129/02 ruling), and is honoured
       // with an owned run too — the fix is read independently of who owns the run.
-      const fixSource = fixFromFile ?? ctx.loopDrive?.fix ?? null;
+      // 131/03 — an ANSWER resumes the ask's own session with the answer typed, and nothing else: no
+      // fix is composed beside it (the fix rode the session's first turn), the build run's resume
+      // target is not consulted, and the brief carries no context (a resumed session holds its tree).
+      const fixSource = answer == null ? fixFromFile ?? ctx.loopDrive?.fix ?? null : null;
       const fix = phase === "continue" && fixSource?.buildRun ? fixSource : null;
       const launchPhase = fix == null ? phase : "fix";
-      const resumeSessionId = fix?.resumeBuildRun == null
+      const resumeSessionId = answer != null
+        ? answer.sessionId
+        : fix?.resumeBuildRun == null
         ? null
         : await resolvePhaseResumeTarget({
           phase: launchPhase,
@@ -288,7 +351,9 @@ export function createPhaseDriverCommand(phase) {
             ? { isResumable: baseOptions.resumeSessionAvailable }
             : {}),
         });
-      const launchCommand = fix == null
+      const launchCommand = answer != null
+        ? answer.text
+        : fix == null
         ? command
         : composeFixInput(command, {
           findings: fix.findings,
@@ -449,11 +514,12 @@ export function createPhaseDriverCommand(phase) {
     cli: {
       route: ["work", "drive", phase],
       spec: {
-        usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--dry-run] [--json]`,
+        usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--dry-run] [--json]`,
         flags: {
           dryRun: { type: "boolean", description: "report the phase directive without starting an agent session" },
           run: { type: "string", description: "the lent run id: mint and settle nothing, heartbeat this record, and take stdin's end as the stop (a loop's child drive)" },
           fix: { type: "string", description: "a JSON file holding the fix transport; honoured by continue only" },
+          answer: { type: "string", description: "an answered ask file: resume the lent run's own session with the answer typed as its first input" },
         },
       },
       argv: (positionals, options) => ({
@@ -461,6 +527,7 @@ export function createPhaseDriverCommand(phase) {
         ...(options.dryRun === true ? { dryRun: true } : {}),
         ...(typeof options.run === "string" ? { run: options.run } : {}),
         ...(typeof options.fix === "string" ? { fix: options.fix } : {}),
+        ...(typeof options.answer === "string" ? { answer: options.answer } : {}),
       }),
       render(result) {
         if (result.outcome == null) {

@@ -8,6 +8,7 @@ import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { invoke } from "../../src/command-core.mjs";
 import { LOOP_STOPS, decideLoopScope } from "../../src/work/loop.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
+import { immediatePark } from "../support/loop/lane-fixture.mjs";
 import { completeRun, heartbeat, readRuns, retryRun, runNodeRecordPath, runRecordPath, startRun } from "../../src/run-store.mjs";
 import { heartbeatFromConfig } from "../../src/loop-bounds.mjs";
 import { loopStopsDir, readStopRequest, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
@@ -85,7 +86,8 @@ Feature: Ready
     milestoneDir,
     storyDir,
     workspace,
-    ctx: { workspace },
+    // 131/03 — a needs-input drive parks at its first check unless a case injects a real wait.
+    ctx: { workspace, askWait: immediatePark() },
     cleanup: () => rm(projectRoot, { recursive: true, force: true }),
   };
 }

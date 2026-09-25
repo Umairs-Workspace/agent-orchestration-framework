@@ -27,6 +27,8 @@ import { invoke, loadWorkspace } from "./command-core.mjs";
 // in the other direction. The resolver is a pure config read — no operation logic follows
 // it here, and the number itself has exactly one home (cache-provenance.mjs).
 import { resolveCacheStalenessSeconds } from "./cache-provenance.mjs";
+// 131/ADR-006 §3 — the one loopback predicate both faces' write admissions share.
+import { isLoopbackHost } from "./static-serve.mjs";
 
 // Returns true if the request was an `/api/work*` route (handled here), else
 // false so the caller falls through to its own routing/404.
@@ -190,19 +192,18 @@ export async function handleWorkApi(request, response, options = {}) {
       return true;
     }
 
+    // THE WRITE ROUTES match on PATHNAME first, so a non-POST to one answers 405 naming POST
+    // (131/04, the fleet's posture), and every one passes `admitWriteRequest` before its body is
+    // read.
+    //
     // THE phase doors (continue 2026-07-26; refine/verify m42 wave (b) — the
     // one-door completion): "do this act, optionally naming where". Each may mint
-    // an assignment, so each carries the same same-origin admission guard the
-    // fleet's own assign route uses — a same-origin browser fetch always matches
-    // this server's own http://<host>; anything else is refused before the body is
-    // read. ONE implementation (handlePhaseDoor below); the routes are spelled
+    // an assignment. ONE implementation (handlePhaseDoor below); the routes are spelled
     // explicitly so the registry-derived route-coverage gate can see each literal.
+    // Each door is AWAITED where it returns: a bare `return` of its promise would let a body-reader
+    // refusal escape the catch below as an unhandled rejection (131/04 found it on a non-object body).
     const handlePhaseDoor = async (phase) => {
-      const expectedOrigin = `http://${request.headers.host}`;
-      if (request.headers.origin !== expectedOrigin) {
-        sendApiError(response, 403, "Cross-origin write refused.", "cross-origin-refused");
-        return true;
-      }
+      if (!admitWriteRequest(request, response)) return true;
       const body = await readJsonBody(request);
       // Only ref/node are lifted off the body — the command decides everything else.
       const result = await invoke(
@@ -213,19 +214,19 @@ export async function handleWorkApi(request, response, options = {}) {
       sendJson(response, 200, result);
       return true;
     };
-    if (request.method === "POST" && pathname === "/api/work/continue") {
-      return handlePhaseDoor("continue");
+    if (pathname === "/api/work/continue") {
+      return await handlePhaseDoor("continue");
     }
-    if (request.method === "POST" && pathname === "/api/work/refine") {
-      return handlePhaseDoor("refine");
+    if (pathname === "/api/work/refine") {
+      return await handlePhaseDoor("refine");
     }
-    if (request.method === "POST" && pathname === "/api/work/verify") {
-      return handlePhaseDoor("verify");
+    if (pathname === "/api/work/verify") {
+      return await handlePhaseDoor("verify");
     }
 
     // m43 / story 04 (ADR-010/R4.2) — THE RESYNC DOOR. A POST rather than a GET because it
-    // causes a node→node request to leave this machine, and it carries the SAME same-origin
-    // admission guard the phase doors use for the same reason. It is not a board WRITE: the
+    // causes a node→node request to leave this machine, and it passes the SAME admission the
+    // phase doors do for the same reason. It is not a board WRITE: the
     // face still writes no file and spawns nothing; the command writes one request row for
     // the control daemon's own tick to drain.
     //
@@ -234,19 +235,18 @@ export async function handleWorkApi(request, response, options = {}) {
     // reporting), so it is a designed state the surface renders, not a fault it reports. The
     // face therefore passes the command's document through verbatim: `{ ok, code, ref, node,
     // message }`, which is exactly what `mesh:recover-push` established.
-    if (request.method === "POST" && pathname === "/api/work/resync") {
-      const expectedOrigin = `http://${request.headers.host}`;
-      if (request.headers.origin !== expectedOrigin) {
-        sendApiError(response, 403, "Cross-origin write refused.", "cross-origin-refused");
-        return true;
-      }
+    if (pathname === "/api/work/resync") {
+      if (!admitWriteRequest(request, response)) return true;
       const body = await readJsonBody(request);
       const result = await invoke("work:resync", { ref: body.ref }, ctx);
       sendJson(response, 200, result);
       return true;
     }
 
-    if (request.method === "POST" && pathname === "/api/work/feedback") {
+    if (pathname === "/api/work/feedback") {
+      // Behind admission since 131/04: it writes a record doc, so a cross-site page must not
+      // reach it any more than the doors.
+      if (!admitWriteRequest(request, response)) return true;
       // readJsonBody is the HTTP-body transport reader (its payload-too-large /
       // empty-json / malformed-json errors are HTTP-body concerns, not operation
       // logic — they stay in the face). The default actor "you" now lives in the
@@ -257,6 +257,18 @@ export async function handleWorkApi(request, response, options = {}) {
         { ref: body.ref, note: body.note, actor: body.actor, refs: body.refs },
         ctx
       );
+      sendJson(response, 200, result);
+      return true;
+    }
+
+    // 131/04 (ADR-006 §3) — THE ANSWER. The board's answer is the same act as the CLI's: one
+    // invoke of `work:answer`, whose document is sent verbatim and whose refusals keep their code
+    // and status. Only `ref`, `text` and `actor` are lifted off the body; `via` is always
+    // "board", so a forged `via`, `by` or `now` never reaches the verb.
+    if (pathname === "/api/work/answer") {
+      if (!admitWriteRequest(request, response)) return true;
+      const body = await readJsonBody(request);
+      const result = await invoke("work:answer", { ref: body.ref, text: body.text, as: body.actor, via: "board" }, ctx);
       sendJson(response, 200, result);
       return true;
     }
@@ -336,7 +348,41 @@ function displayPath(projectRoot, absolutePath) {
   return relative.replaceAll("\\", "/");
 }
 
+// admitWriteRequest(request, response) — THE admission every board write passes before its body
+// is read (131/04, hoisted from the phase doors' and resync's copies). Answers `true` when the
+// request is admitted; otherwise the refusal has already been sent. In order: a method other than
+// POST is 405 naming POST; an Origin other than exactly this server's own `http://<host>` (what a
+// same-origin fetch sends) is `cross-origin-refused`; a Host that is not loopback is
+// `non-loopback-host`, the rebinding page whose Origin matches its own Host; a content-type other
+// than JSON is `invalid-content-type`. The fleet keeps its own copy (`src/mesh/ui-serve.mjs`);
+// only the loopback predicate is shared. A refused body is drained unread, so the client sees the
+// refusal rather than a reset.
+function admitWriteRequest(request, response) {
+  const refuse = (sendRefusal) => {
+    request.resume();
+    sendRefusal();
+    return false;
+  };
+  if (request.method !== "POST") return refuse(() => sendMethodNotAllowed(response, "POST"));
+  const originHeader = request.headers.origin;
+  if (typeof originHeader !== "string" || originHeader !== `http://${request.headers.host}`) {
+    return refuse(() => sendApiError(response, 403, "Cross-origin write refused.", "cross-origin-refused"));
+  }
+  if (!isLoopbackHost(request.headers.host)) {
+    return refuse(() => sendApiError(response, 403, "Write refused: the page was not served from a loopback address.", "non-loopback-host"));
+  }
+  if (!/^application\/json\b/i.test(String(request.headers["content-type"] ?? ""))) {
+    return refuse(() => sendApiError(response, 400, "Content-Type must be application/json.", "invalid-content-type"));
+  }
+  return true;
+}
+
 // --- local response helpers (mirrors setup-ui.mjs; not exported there) -------
+
+function sendMethodNotAllowed(response, allowed) {
+  response.writeHead(405, { "content-type": "application/json", allow: allowed });
+  response.end(JSON.stringify({ ok: false, error: "Method not allowed.", code: "method-not-allowed" }));
+}
 
 function sendJson(response, status, payload) {
   send(response, status, "application/json", JSON.stringify(payload));
@@ -351,9 +397,10 @@ function send(response, status, contentTypeValue, body) {
   response.end(body);
 }
 
-// The HTTP request-body reader for the feedback write (transport, not
+// The HTTP request-body reader for every board write (transport, not
 // operation): caps the body size (413), rejects an empty (400) or malformed
-// (400) JSON body. These are HTTP-body concerns and stay in the face; the
+// (400) JSON body, and one that is not a plain object (400 `invalid-body`, 131/04: a
+// `null` body otherwise threw on `body.ref` to a 500). These are HTTP-body concerns and stay in the face; the
 // resolved JSON object is handed to the command as its input.
 function readJsonBody(request) {
   return new Promise((resolve, reject) => {
@@ -373,11 +420,18 @@ function readJsonBody(request) {
         reject(httpError("Request body must be JSON.", "empty-json", 400));
         return;
       }
+      let parsed;
       try {
-        resolve(JSON.parse(body));
+        parsed = JSON.parse(body);
       } catch (error) {
         reject(httpError(`Malformed JSON: ${error.message}`, "malformed-json", 400));
+        return;
       }
+      if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        reject(httpError("Request body must be a JSON object.", "invalid-body", 400));
+        return;
+      }
+      resolve(parsed);
     });
     request.on("error", reject);
   });

@@ -36,13 +36,13 @@
 // degrade-consumer sweep — never by a builder mid-move.
 import path from "node:path";
 import { execFile } from "node:child_process";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 // `claudeProjectsDir` is the EXISTING slug/projects-dir seam (work-observe.mjs, the
 // observability milestone): reused VERBATIM (never re-implemented) so the session-id
 // transcript-dir watch below resolves EXACTLY the directory a real interactive
 // `claude` session (cwd = worktreeCwd) writes its own transcript into.
-import { claudeProjectsDir } from "./work/observe.mjs";
+import { claudeProjectsDir, readLastAssistantTurn, NEEDS_INPUT_SENTINEL, HUMAN_INPUT_TOOL_NAMES } from "./work/observe.mjs";
 // milestone 38 / story 05 (ADR-013) — the interactive-`claude`-PTY driver reuses the
 // EXISTING terminal infrastructure verbatim: `resolveProvider` is the SAME seam
 // `/ws/terminal` resolves its own launch through (terminal-providers.mjs), and
@@ -134,7 +134,9 @@ export function buildDriverCommand(driver, brief) {
 // `resolveProvider` directly and never calls `resolveInteractiveDriverLaunch`, so it can
 // never false-fire on a human session. `containsNeedsInputSentinel`'s DETECTION below
 // is UNCHANGED — this amendment adds the missing PRODUCER, not a new detector.
-export const NEEDS_INPUT_SENTINEL = "NEEDS_INPUT";
+// 131/ADR-002: the literal lives in the transcript family beside the one reader of the turn it
+// marks, and is re-exported here so the frozen seventeen do not move.
+export { NEEDS_INPUT_SENTINEL };
 
 // NEEDS_INPUT_INSTRUCTION — the producer text (ADR-013 amendment, option C). Embeds
 // NEEDS_INPUT_SENTINEL via a template interpolation so the producer and
@@ -147,7 +149,13 @@ export const NEEDS_INPUT_SENTINEL = "NEEDS_INPUT";
 export const NEEDS_INPUT_INSTRUCTION = `You are running autonomously on a worker machine with no human present to answer
 questions in real time. If you reach a genuine judgment call you cannot safely
 resolve on your own — one where guessing risks doing the wrong thing and a human would
-need to weigh in — do not guess and do not stall silently. Instead, print the exact
+need to weigh in — do not guess and do not stall silently. Before you print it, write your
+question for a human reading it on a phone, as four short lines that begin exactly
+"Decision needed:", "Options:", "I would pick:" and "What the answer changes:" — the one
+decision you need, the options you weighed, the one you would take and why, and which tasks,
+files or later steps depend on the answer. Keep those four lines under 1,500 characters, and
+put any detail after them.
+Instead, print the exact
 line ${NEEDS_INPUT_SENTINEL} on its own line, with nothing else on that line, then
 stop. Only use this for a real, blocking judgment call; keep working through every
 task you can complete confidently without it.`;
@@ -325,22 +333,9 @@ export const COMPLETION_IDLE_MS = DEFAULT_HEARTBEAT_MS;
 // flush mid-write, nowhere near a wait a human would notice.
 export const DECLARED_COMPLETION_IDLE_MS = 10 * 1000;
 
-// HUMAN_INPUT_TOOL_NAMES — the closed set of tools whose PENDING call means the
-// session is, definitionally, waiting on a human (measured live 2026-07-27,
-// `/aof:autonomous 18`: instead of printing the NEEDS_INPUT line and ending its
-// turn, the session asked its scope question through the interactive
-// AskUserQuestion widget. A pending question is a `tool_use` turn, so BOTH
-// detectors read "still working" — the assignment showed a healthy `running` for
-// 28+ minutes while the session sat waiting, and the operator only discovered it
-// by opening the read-only mirror). An ORDINARY pending tool (Bash, Edit, a
-// subagent Task) is genuinely "still working" and must never match here.
-export const HUMAN_INPUT_TOOL_NAMES = ["AskUserQuestion"];
-
-function pendingHumanInputTool(message) {
-  const content = message?.content;
-  if (!Array.isArray(content)) return false;
-  return content.some((block) => block?.type === "tool_use" && HUMAN_INPUT_TOOL_NAMES.includes(block?.name));
-}
+// HUMAN_INPUT_TOOL_NAMES — the closed set of tools whose PENDING call means the session is
+// waiting on a human. Its one home is the transcript family (131/ADR-002); re-exported here.
+export { HUMAN_INPUT_TOOL_NAMES };
 
 // readTranscriptTerminalOutcome(file) => { outcome, declared } | null — the
 // transcript's SETTLED outcome, or null while the session is still working. Scans the
@@ -356,85 +351,23 @@ function pendingHumanInputTool(message) {
 // working" -> null. NEVER throws (an absent or half-written file is simply "nothing
 // settled yet").
 async function readTranscriptTerminalOutcome(file, sinceOffset = 0) {
-  let bytes;
-  try {
-    bytes = await readFile(file);
-  } catch {
+  // The scan is the transcript family's (131/ADR-002): this is a mapping over its one reader,
+  // with the four answers it has always given. The RESUME baseline rides through unchanged — a
+  // resumed session's transcript already ends in the outcome it parked with (m42, measured
+  // 2026-07-27), so only what the resumed process writes after `sinceOffset` counts.
+  const turn = await readLastAssistantTurn(file, sinceOffset);
+  if (turn == null || turn.stopReason == null) return null;
+  if (turn.stopReason !== "end_turn") {
+    // A pending HUMAN-INPUT tool call with no answer behind it is a session waiting on a
+    // person — declared, and `pending: true` because the question is live mid-turn.
+    if (turn.stopReason === "tool_use" && !turn.answered && turn.humanInputTool != null) {
+      return { outcome: "needs-input", declared: true, pending: true };
+    }
     return null;
   }
-  // RESUME baseline (m42 terminal-resume, measured 2026-07-27 14:37Z): a resumed
-  // session's transcript already ENDS in a settled outcome — the very state it
-  // parked with — and reading it as the verdict killed the fresh PTY ~12s after
-  // every resume ("resume it again to continue", forever). Records at or before
-  // `sinceOffset` (the file's size at spawn) are PRE-resume history: only what
-  // the resumed process writes AFTER it counts. The slice may start mid-line —
-  // drop the partial first line (its record is pre-baseline anyway).
-  let text;
-  if (sinceOffset > 0) {
-    // Drop a PARTIAL first line only when the baseline cut mid-record (the byte
-    // before the offset is not a newline) — a baseline that ends exactly on a
-    // record boundary must keep the very next line (it is the first POST-resume
-    // record, and dropping it would blind the watch to a fast outcome).
-    const cutMidLine = sinceOffset <= bytes.length && bytes[sinceOffset - 1] !== 0x0a;
-    text = bytes.subarray(sinceOffset).toString("utf8");
-    if (cutMidLine) {
-      const firstNewline = text.indexOf("\n");
-      text = firstNewline === -1 ? "" : text.slice(firstNewline + 1);
-    }
-  } else {
-    text = bytes.toString("utf8");
-  }
-  const lines = text.split("\n");
-  // True once any record LATER than the last assistant record is a `user` record —
-  // i.e. the assistant's pending tool call already has its answer in the stream.
-  let answeredAfterAssistant = false;
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    const line = lines[i].trim();
-    if (line.length === 0) continue;
-    let record;
-    try {
-      record = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    if (record?.type === "user") {
-      answeredAfterAssistant = true;
-      continue;
-    }
-    const message = record?.message;
-    if (record?.type === "assistant" && message && typeof message === "object") {
-      const stop = message.stop_reason;
-      if (stop == null) return null;
-      if (stop !== "end_turn") {
-        // A pending HUMAN-INPUT tool call with no answer behind it is a session
-        // waiting on a person — the invisible-stop defect. Declared: the model
-        // explicitly asked, so 69/05 parks it immediately without an idle window.
-        if (stop === "tool_use" && !answeredAfterAssistant && pendingHumanInputTool(message)) {
-          // `pending: true` — the question is LIVE (mid-turn, an interactive
-          // widget waiting at a live PTY), unlike the sentinel case below where
-          // the turn already ENDED. The watch reports this immediately, then the
-          // driver ends the PTY; the persisted conversation resumes in a new PTY.
-          return { outcome: "needs-input", declared: true, pending: true };
-        }
-        return null;
-      }
-      let body = "";
-      const content = message.content;
-      if (Array.isArray(content)) {
-        for (const block of content) {
-          if (block?.type === "text" && typeof block.text === "string") body += `${block.text}\n`;
-        }
-      } else if (typeof content === "string") {
-        body = content;
-      }
-      const lines2 = body.split("\n").map((l) => l.trim());
-      const needsInput = lines2.some((l) => l === NEEDS_INPUT_SENTINEL);
-      if (needsInput) return { outcome: "needs-input", declared: true };
-      const declaredComplete = lines2.some((l) => l === DIRECTIVE_COMPLETE_SENTINEL);
-      return { outcome: "done", declared: declaredComplete };
-    }
-  }
-  return null;
+  const lines = turn.text.split("\n").map((line) => line.trim());
+  if (lines.some((line) => line === NEEDS_INPUT_SENTINEL)) return { outcome: "needs-input", declared: true };
+  return { outcome: "done", declared: lines.some((line) => line === DIRECTIVE_COMPLETE_SENTINEL) };
 }
 
 // latestSessionActivityMtimeMs(projectsDir, sessionId) — the newest mtime across the
@@ -634,7 +567,7 @@ const INTERACTIVE_COMMAND_SUBMIT_DELAY_MS = 900;
 
 // 2026-09-24 — READINESS IS OBSERVED, NOT ASSUMED. `INTERACTIVE_COMMAND_READY_DELAY_MS` is a
 // guess about how long claude takes to start, and under load the guess was wrong: three lanes
-// launched together in voice-vox-company-portal (plus the repo's MCP servers starting) had the
+// launched together in a downstream project (plus the repo's MCP servers starting) had the
 // directive pasted before the TUI was listening — no transcript, no session id, and each lane
 // idled to the 20-minute heartbeat deadline, three attempts running. The TUI announces its own
 // readiness by enabling bracketed paste (`TUI_READY_MARKER`); a real launch now types only
