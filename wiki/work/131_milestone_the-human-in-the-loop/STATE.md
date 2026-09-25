@@ -17,7 +17,7 @@ doc: state
 - [x] 02 the notifier and its channels
 - [x] 03 the session waits and the loop keeps going
 - [x] 04 the answer reaches the session
-- [ ] 05 the board shows the question and takes the answer
+- [x] 05 the board shows the question and takes the answer
 - [x] 06 the register
 - [ ] 07 the live run (`@manual`) — waits on 08
 - [x] 08 the messaging CLI
@@ -673,4 +673,4 @@ leg 1). Open 03/01 on the board, reached your usual way.
 - [x] `@executable` story lanes 01–06 green (VERIFICATION `### 131/01–06`); the whole-tree `aof work regression-gate 131` is not yet run
 - [x] Fitness functions green: FF-13101…13109, 34 cases, every red probe recorded
 - [ ] `@manual` live run recorded (131/07, operator)
-- [ ] 05's accept-time diffs over a committed range (F-131-07)
+- [x] 05's accept-time diffs over its committed range `48ac161..8f00b4a` (F-131-07 closed)

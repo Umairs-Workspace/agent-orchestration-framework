@@ -5,10 +5,10 @@ slug: the-board-shows-the-question-and-takes-the-answer
 title: "The board shows the question and takes the answer — work:list rows carry an ask fact for a local lane too, the amber AskCard shows the verbatim ask with phase and elapsed wait and a free-text reply box onto the one route, with no default answer"
 parent: 131
 depends: [1, 2, 4]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-24
+updated: 2026-09-25
 adrs: [ADR-003, ADR-006]
 reads:
   - wiki/work/131_milestone_the-human-in-the-loop/SPEC.md
@@ -85,3 +85,10 @@ What lands (ADR-006 §2, §4-§5; DESIGN §2): `applyAskOverlay` on `work:list` 
 
 - `DetailPanel.tsx` sits at 995 of its 1,000-line ceiling — the card is its own module; the panel gains only the mount.
 - Amber is border, tint and dot only, never text (contrast; DESIGN).
+
+## Accept decision
+
+**Accepted 2026-09-25 (`aof:verify 131`).**
+- **Evidence.** The story lane is green: 28 cases in the union run and 87 on the committed state. Task 04's `@manual` render was CONFORMS in every state at both frames. Both diff scenarios were read over 05's own range, `48ac161..8f00b4a`: the panel is `2 0`, and the run-store and board-ui pins are untouched (VERIFICATION §131/05).
+- **Gates.** `aof work validate 131/05` returned PASS. `aof work doctor 131` reported no `control-unresolved`.
+- **Findings.** F-131-07 is closed. F-131-09 (a new ask on a quiet board) is open, a non-blocker for 07 to observe, and recorded as a Gap in OUTCOME. DESIGN's subjective `@uat` read of the card is 07's.

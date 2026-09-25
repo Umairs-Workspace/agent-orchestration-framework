@@ -68,6 +68,26 @@ only the `ui/` digest literal and its comment, the digest's lift into `assertUiF
 one-character case. The `src/run-store.mjs` and `src/board-ui.mjs` pins are 01's and 04's, untouched
 by 05. `aof:verify` reads both again over the committed range.
 
+**At the accept, over the committed range** (`aof:verify 131`, 2026-09-25; verifies → the two diff
+scenarios). 131 was committed per range. `48ac161` holds 01–04 and 08. `8f00b4a` is 05 alone, so its
+base is `48ac161`. `eb26477` holds 06 and the records.
+
+```
+$ git diff --numstat 48ac161..8f00b4a -- ui/src/board/DetailPanel.tsx
+2	0	ui/src/board/DetailPanel.tsx
+$ git diff --numstat 48ac161..8f00b4a -- test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs
+114	76	test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs
+```
+
+The panel's diff is the two added lines. In the pin file, no line naming `src/run-store.mjs` or
+`src/board-ui.mjs` changes in the range, so both pins stay as 01 and 04 left them. The non-comment
+changes are the `ui/` digest literal (`93286a26…` → `c470fea8…`), the lift of the digest loop into
+`uiTreePairs`/`assertUiFrozen`, and the one-character case. The lift and the case are 05 task 03's
+own contract (its ruling 6). PO reading: the scenario's "only the `ui/` digest literal and its
+comment" holds for every line that is not task 03's contracted lift. 05's lane was re-run on the
+committed state under a fresh `AOF_GLOBAL_HOME`, with `AskCard.tsx` now tracked rather than
+intent-to-add: 6 suites, 87 ok, 0 not ok, exit 0.
+
 ### 131/08 — the messaging CLI (`@executable`, `aof:verify 131/08`, 2026-09-25)
 
 **Story lane.** Under a fresh `AOF_GLOBAL_HOME`, `node scripts/test.mjs --only test/notify/index.mjs
@@ -117,12 +137,11 @@ the nine controls is green (verifies → 01–06, every `@executable` task; 06 t
 name has landed since F-131-01. The live sidecar read `"nodeId": "<machine-name>"` at that point. F-131-02 was later discharged by the
 operator's `--reidentify`.
 
-**05's accept-time diff scenarios — pending, not discharged** (verifies → 05 task 04, the last two
-scenarios). 131 is uncommitted, so there is no "story base → last commit" range. On the working
-tree: `git diff --numstat -- ui/src/board/DetailPanel.tsx` gives `2	0`, and
-`test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs` gives `129	79`, which also carries 01's and
-04's re-pins. This matches 05's build-time reading. 05 holds `in-review` until the range exists
-(F-131-07).
+**05's accept-time diff scenarios — first read on the working tree** (verifies → 05 task 04, the last two
+scenarios). At this point 131 was uncommitted, so there was no "story base → last commit" range. On the working
+tree: `git diff --numstat -- ui/src/board/DetailPanel.tsx` gave `2	0`, and
+`test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs` gave `129	79`, which also carries 01's and
+04's re-pins. Both were read again over the committed range (§131/05, "At the accept").
 
 ## Fitness functions
 
@@ -158,5 +177,6 @@ the three files were not run under the probes (task 01 ruling 4 makes that optio
 | F-131-04 | `messaging status` over a malformed `.aof/aof.config.json` exits 1 (`Invalid JSON in <path>`), while task 04 ruling 4 says it "exits 0 whatever it finds". | test-gap | low | PO ruling: upheld as built. A malformed config is not one of status's three facts. The error names the file and leaks nothing. | story 08 | closed |
 | F-131-05 | 01's own sweep (`run-store-record.test.mjs`, "asks is assigned … only in its five homes") was red over the delivered tree. It matched `{ asks: await readWorkspaceAsks(ctx), … }` in `src/commands/list.mjs`, which is the options argument of 05's contracted `applyAskOverlay(rows, { asks, workspaceId })`, not a run record. 05's close ran "every suite that reads a changed file", and missed this one because a `src/`-wide text sweep reads every file without importing any. | defect | medium | Fixed in the gate. The sweep exempts that one call by its exact spelling, so any other `asks:` in `list.mjs` still reds. Re-run green. | story 01 | closed |
 | F-131-06 | `createAskPoll` (01 task 02) ships with no consumer. 03 ruled the owner's wait a ref'd `setTimeout` over `readAsk`. Its unref'd interval is 129's silent-death shape if anything ever adopts it. The removal was made and then reverted, because amending 01 task 02's three poll scenarios and rulings (8) and QA (3) was not permitted in this session. Code and contract agree as shipped. | debt | low | Non-blocker. The operator rules: drop it (amend 01 task 02, then remove the export and its test case) or keep it. | operator | open |
-| F-131-07 | 05 task 04's last two scenarios read `git diff` "from the story's base to its last commit". None of 131 is committed, so no range exists. The working-tree reading matches the build's (`2 0`; `129 79` shared with 01/04). | gap | medium | Blocks 05's accept only. 05 holds `in-review` until 131 is committed on a branch. The diffs are then read and recorded, and 05 is accepted. | operator (commit) | open |
+| F-131-07 | 05 task 04's last two scenarios read `git diff` "from the story's base to its last commit". None of 131 is committed, so no range exists. The working-tree reading matches the build's (`2 0`; `129 79` shared with 01/04). | gap | medium | Blocks 05's accept only. Discharged 2026-09-25: 131 was committed per range on `127-129` (05 = `8f00b4a` over `48ac161`), and both diffs were read and recorded under §131/05. | operator (commit) | closed |
 | F-131-08 | The loopback-`Host` check (04, ADR-006 §3) closes DNS rebinding for WRITES only. A rebinding page can still READ the board's GET routes (`/api/work/doc` and the others). Recorded by 04's review. | security | low | Non-blocker. Outside this milestone's rulings, deferred to backlog as input for a board threat model. | backlog | open |
+| F-131-09 | On a quiet board (nothing executing, no resync watching), a NEW ask appears only on the next load or sync. The 5 s silent poll arms only once a row already carries an ask (05's `Board.tsx` fix). The Discord ping is what sends the operator to the board. | gap | low | Non-blocker. The board's sync-gated policy was not changed on 05's authority. 07's live run observes it (leg 4 opens the item after the ping), and the retro decides. | story 07 (observe) | open |
