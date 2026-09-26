@@ -1281,7 +1281,14 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       // `claude --resume <session_id>` later; RESEARCH §4.3 measured that resume
       // attaches a NEW process to the SAME persisted conversation, never reattaches
       // to a still-running one) and resolve `needs-input`, never `done`.
-      if (containsNeedsInputSentinel(buffer)) {
+      //
+      // NEVER ON A RESUMED SESSION (131, F-131-17, measured at 07's live run). A resumed claude
+      // re-renders its conversation, and the turn it parked with ENDS on a genuine sentinel line, so
+      // the output buffer carries an OLD `NEEDS_INPUT` that any redraw re-prints: an answered 05/01
+      // was killed mid-tool-call 32 s into its re-drive and asked a question with no text. A resumed
+      // session's needs-input is the transcript watch's to decide, from `resumedSinceOffset`, where
+      // only what the resumed process writes counts.
+      if (resumedSessionId == null && containsNeedsInputSentinel(buffer)) {
         stopForOutcome({ outcome: "needs-input" });
       }
     }) ?? null;

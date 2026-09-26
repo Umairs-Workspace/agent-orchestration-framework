@@ -969,6 +969,44 @@ export const agentSessionDriverTranscriptTests = [
       assert.deepEqual(fake.spawnCalls[0].args.slice(-2), ["--resume", "known-session"]);
     }),
   },
+  {
+    name: "131 F-131-17 — a resumed session's redraw of its OLD NEEDS_INPUT line is not a new ask: only the transcript after the resume decides",
+    run: async () => withTranscriptTree(async ({ env, cwd, dir }) => {
+      await mkdir(dir, { recursive: true });
+      // The parked turn, already in the transcript before the resume: it ends on the sentinel.
+      await writeFile(path.join(dir, "parked-session.jsonl"), `${JSON.stringify({ type: "assistant", message: { stop_reason: "end_turn", content: [{ type: "text", text: "Decision needed: …\nNEEDS_INPUT" }] } })}\n`, "utf8");
+      let emitExitLater = null;
+      const fake = createFakePtySpawn({
+        onWrite: ({ emitData, emitExit }) => {
+          // claude re-renders the conversation (the old sentinel line with it), then keeps working.
+          emitData("Decision needed: …\r\nNEEDS_INPUT\r\n> 0\r\n● Bash(aof work status …)\r\n");
+          emitExitLater = () => emitExit(0);
+        },
+      });
+      const pending = driveInteractiveClaudeSession(
+        { itemRef: "05/01", worktreeCwd: cwd, task: "answer", command: "0" },
+        { ptySpawn: fake.spawn, which: createFakeWhich(["claude"]), env, resumeSessionId: "parked-session", commandDelayMs: 0 },
+      );
+      for (let i = 0; i < 50 && emitExitLater == null; i += 1) await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      assert.ok(emitExitLater != null, "the answer was typed");
+      emitExitLater();
+      const result = await pending;
+      assert.notEqual(result.outcome, "needs-input", `the replayed sentinel settled nothing: ${JSON.stringify(result)}`);
+      assert.equal(result.outcome, "done", "the session ran on to its own end");
+    }),
+  },
+  {
+    name: "131 F-131-17 — a FRESH session's sentinel on the output still settles needs-input at once",
+    run: async () => {
+      const fake = createFakePtySpawn({ onWrite: ({ emitData }) => emitData("Decision needed: …\r\nNEEDS_INPUT\r\n") });
+      const result = await driveInteractiveClaudeSession(
+        { itemRef: "05/01", worktreeCwd: os.tmpdir(), task: "build", command: "/aof:continue 05/01" },
+        { ptySpawn: fake.spawn, which: createFakeWhich(["claude"]), env: { ...process.env, CLAUDE_CONFIG_DIR: path.join(os.tmpdir(), "aof-f13117-none") }, commandDelayMs: 0 },
+      );
+      assert.equal(result.outcome, "needs-input");
+    },
+  },
   ...readerAndProducerTests(),
 ];
 
