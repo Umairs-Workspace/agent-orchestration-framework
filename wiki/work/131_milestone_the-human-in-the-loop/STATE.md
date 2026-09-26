@@ -19,7 +19,7 @@ doc: state
 - [x] 04 the answer reaches the session
 - [x] 05 the board shows the question and takes the answer
 - [x] 06 the register
-- [ ] 07 the live run (`@manual`) — re-refined for the bot, task 00 done; waits on the operator (STATE §131/07)
+- [x] 07 the live run (`@manual`) — accepted 2026-09-27; the evidence is the run log below and VERIFICATION `### 131/07`
 - [x] 08 the messaging CLI
 - [x] 09 the bot posts
 - [x] 10 answer by replying in Discord

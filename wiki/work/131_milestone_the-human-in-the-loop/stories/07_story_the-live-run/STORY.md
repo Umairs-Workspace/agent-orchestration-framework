@@ -5,10 +5,10 @@ slug: the-live-run
 title: "The live run — a real loop on this machine asks three questions, the bot posts each within seconds, they are answered from the CLI, the board and a Discord reply, the other lanes keep building, the loop finishes, and a supervised loop is stopped and handed back from Discord, read at the source"
 parent: 131
 depends: [6, 8, 9, 10, 11, 12, 13]
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-25
+updated: 2026-09-26
 adrs: [ADR-001, ADR-005, ADR-007, ADR-008, ADR-009]
 reads:
   - wiki/work/131_milestone_the-human-in-the-loop/SPEC.md
@@ -44,8 +44,8 @@ so that **the milestone's outcome is measured on the running system, not asserte
 
 ## Tasks
 
-- [ ] `tasks/00_the-stage-is-set-and-handed-to-the-operator.feature` — `@manual`, the agent's half: the payload installed from the main checkout and read at the source; the test-bed fixture `03_milestone_ask-target` (four refined stories with disjoint `files:`, three reserving a choice to the operator) and `04_milestone_resume-target` (one story, for the supervised stop and resume); four lanes; the procedure and paste slots in STATE.md, then `NEEDS_INPUT`
-- [ ] `tasks/01_the-live-ask-read-at-the-source.feature` — `@manual`, operator-gated: the bot stored, invited and allowed, and the desktop restart, as the precondition; the ask on T1 and from the bot within 10 s (by message id); the other lane driving while it waits, with `/status` and `/asks`; one answer each from `aof work answer`, the board card and a Discord reply, each resuming the SAME session; the loop `done`; `/loop stop` and `/loop resume` on a supervised loop; the records' `asks` read at the source
+- [x] `tasks/00_the-stage-is-set-and-handed-to-the-operator.feature` — `@manual`, the agent's half: the payload installed from the main checkout and read at the source; the test-bed fixture `03_milestone_ask-target` (four refined stories with disjoint `files:`, three reserving a choice to the operator) and `04_milestone_resume-target` (one story, for the supervised stop and resume); four lanes; the procedure and paste slots in STATE.md, then `NEEDS_INPUT`
+- [x] `tasks/01_the-live-ask-read-at-the-source.feature` — `@manual`, operator-gated: the bot stored, invited and allowed, and the desktop restart, as the precondition; the ask on T1 and from the bot within 10 s (by message id); the other lane driving while it waits, with `/status` and `/asks`; one answer each from `aof work answer`, the board card and a Discord reply, each resuming the SAME session; the loop `done`; `/loop stop` and `/loop resume` on a supervised loop; the records' `asks` read at the source
 
 ## Notes
 

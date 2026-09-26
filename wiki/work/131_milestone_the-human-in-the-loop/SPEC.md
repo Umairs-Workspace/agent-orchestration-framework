@@ -131,7 +131,7 @@ Out of scope:
 - [x] `04_story_the-answer-reaches-the-session` — `aof work answer <ref> "<text>"` for a local lane, a primary drive and a mesh worker; who and when on the record; `POST /api/work/answer` behind the loopback-guarded admission (ADR-003, ADR-006 §3) — depends 01, 02
 - [x] `05_story_the-board-shows-the-question-and-takes-the-answer` — the `ask` fact on list rows (local lanes too), `AskCard.tsx` with the verbatim ask and a free-text reply box, no fast path (ADR-006, DESIGN) — depends 01, 02, 04
 - [x] `06_story_the-register` — FF-13101–FF-13109 in three files under `test/arch/loop/`, the row 62 → 65, the red probes in VERIFICATION (all ADRs) — depends 03, 04, 05
-- [ ] `07_story_the-live-run` — `@manual`: a real question, a real Discord message, both answer paths, the other lanes building, the loop finishing (ADR-001, ADR-005) — depends 06, 08
+- [x] `07_story_the-live-run` — `@manual`: a real question, a real Discord message, both answer paths, the other lanes building, the loop finishing (ADR-001, ADR-005) — depends 06, 08
 - [x] `08_story_the-messaging-cli` — `aof messaging init discord` stores the webhook machine-wide under `~/.aof`, `enable`/`disable discord` switch it per project in `work.notify`, `status` reports presence never the value; amends ADR-005 §1 — depends 02
 - [x] `09_story_the-bot-posts` — aof's own Discord bot account posts every notification into a configured channel; its token stored machine-wide as 08 stores the webhook; replaces the webhook (ADR-007) — depends 02, 08
 - [x] `10_story_answer-by-replying-in-discord` — a Discord reply to the bot's ask, from an allowlisted user, answers the waiting session through `work:answer`; the gateway connection on the control node (ADR-008) — depends 04, 09

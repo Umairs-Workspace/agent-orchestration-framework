@@ -325,6 +325,59 @@ replaced by the verb.
 
 **Live fold** (verifies → 14/00 ruling 7): `resolveNodeWorkspaces("node-7297")` gave workspace `52294b307214c27d` as `…\aof-test-repo\.aof\mesh\dispatch-worktrees\dispatch-04-00`, and `foldDispatchWorktree` folded it to `C:\Source\umami\aof-test-repo`. The other five members are unchanged.
 
+### 131/07 — the live run (`@manual`, operator and agent at the source, 2026-09-26)
+
+**Procedure.** 07 was re-refined for the bot (`98f84b9`), and task 00 was redone (payload
+`761961f+dirty.20260925T220438`, then `d965255`, `457420d` and `6fca0bb` as fixes landed). The
+operator stored the bot token, invited the bot, enabled the test-bed on the channel with `--allow`
+(131/13), checked it with `aof messaging test discord`, and restarted the desktop app. They then ran
+`aof work loop 03`, `--resume` twice, `aof work loop 05`, and `aof work loop 04 --supervised`, and
+answered in Discord, on the board, and (by the agent at the operator's request) from the CLI.
+Every observation was read at its source (the ask files, the run records, the transcripts, the diag
+logs and the daemon logs) and pasted into STATE `## 131/07`, **Run log so far**. The procedure's
+`______` slots were not filled one by one: the run log carries each observation with its source and
+instant, and names the leg it discharges.
+
+**Result, leg by leg** (verifies → 07/01, each scenario named):
+- **PRECONDITION:** both `daemon-started` lines name the build, and `mesh-serve.log` holds no
+  `discord-*` degrade since. `messaging status` reads `set`, `not set`, and `enabled (discord → <id>, 1
+  may answer by reply)` (agent read, 2026-09-26). `/` listed the bot's commands, since `/status` and
+  `/asks` answered.
+- **Leg 1:** three asks reached T1 and the bot within the minute, with line 1 `**03/0X — waiting on
+  you** (build, 1m) · aof-test-repo · node-7297` and the reply-able action line (operator screenshot).
+  The ask files and records read `waiting`, `phase build`, and `question` the session's last message.
+  **Not measured:** the bot message ids, so the "within 10 s by id" instant was not derived. The
+  screenshots show the minute, not an instant.
+- **Leg 2:** `Lane 03/02 — drive … settle: done … merge: merged` (13:55:46–49Z) while 03/00 and
+  03/03 stood unanswered, with no `halted on` line. `/asks` listed both with jump links. `/status`
+  listed them after F-131-11's fix. The heartbeat advanced 13:55:32Z → 14:00:33Z between reads five
+  minutes apart. T1 repeated 03/03's row after 15 minutes (15:31:22Z, then 15:46:22Z).
+- **Leg 3 (CLI):** on milestone 03's verify ask, the envelope read `ok, runId, delivery waiting, state
+  answered, by { you, cli, node-7297 }`, and T1 printed `03 — answered by you` 0.5 s later.
+- **Leg 4 (board):** on 05/00's second ask, the ask file read `answered`, `by.via board`, and the same
+  session. The card showed DESIGN §1's answered state (operator screenshot).
+- **Leg 5 (Discord reply):** on 03/01 (twice), 03/00 (a parked ask), 03/03 (twice) and 05/00 and
+  05/01. Each got ✅, the bot's `answered by @umami_b` message, the answer verbatim on the record, and
+  the same session re-driven.
+- **A parked session resumed with its answer, the same session:** 03/00, at 15:17Z.
+- **Leg 6:** `Accepted milestone 03.` / `03 — loop done.` / `exit code=0` (17:51:11Z), and
+  `SPEC.md status: done`. The merged records carry every ask, and `loop-asks/` holds none of them.
+  **Not measured:** the bot's `**03 — accepted**` message was not screenshotted.
+- **Leg 7:** `/loop resume scope:04` and `/loop stop scope:04`, with no `workspace:` (131/14). The
+  supervisor relaunched `--resume` on the new payload, and the stop request read `level 1 requested`
+  by the bot's daemon.
+
+**The legs ran on different refs than the contract names.** The operator answered 03/01 by Discord,
+not the board, and 03's asks were all answered in Discord. The CLI leg landed on 03's verify ask, and
+the board leg needed fixture 05 (`a840e78`). Each path's observations are the ones the contract
+names, taken on another story.
+
+**What the live run found**, each in `## Findings`: F-131-11 (fixed, `/status`), F-131-12 (lane
+append conflicts, workaround plus backlog), F-131-13 and F-131-15 (the form of the ask),
+F-131-14 (two elapsed clocks), F-131-17 (fixed, the resumed-redraw kill), F-131-18 (lane shadowing,
+fixed for the bot in 14), and F-131-19 (the supervisor relaunch that cleared a stop). It also led to
+two new stories: 13 (test and allow from the CLI) and 14 (one channel, several projects).
+
 ## Fitness functions
 
 <!-- THE RED-PROBE REGISTER. Every row CITES a declaration in the sibling `ARCHITECTURE.md`
