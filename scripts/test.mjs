@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 // THE SUITE REGISTRY — it names DIRECTORIES, not suites (119/03, ADR-010 §1).
@@ -141,8 +142,49 @@ export const tests = [
 // Run the suite ONLY when this module is the entry point. The
 // acd-roundtrip-registration meta-test imports the assembled `tests` array above
 // to verify every arch-test is registered; that import must NOT re-run the suite.
+// ── TIMING (2026-09-26) ────────────────────────────────────────────────────────────────────────
+// The whole tree took an hour and nothing said where: this loop printed `ok`/`not ok` and no
+// duration. Every case is now timed. The unit lane ends with `# timing` comment lines (TAP comments,
+// which every reader skips), naming the total and the slowest cases, and the slowest suite files
+// when the run knows them (a `--only` selection does, through `loadSelected`). `AOF_TEST_TIMINGS=<path>`
+// also writes every case's `{ name, file, ms, ok }` as JSON, which is what a sharded profile merges.
+const SUITE_FILE_OF = new WeakMap();
+const TIMING_TOP = 15;
+
+function reportTimings(timings) {
+  const total = timings.reduce((sum, entry) => sum + entry.ms, 0);
+  const seconds = (ms) => `${(ms / 1000).toFixed(1)}s`;
+  console.log(`# timing: ${timings.length} cases in ${seconds(total)}`);
+  console.log(`# timing: slowest cases`);
+  for (const entry of [...timings].sort((a, b) => b.ms - a.ms).slice(0, TIMING_TOP)) {
+    console.log(`#   ${seconds(entry.ms).padStart(8)}  ${entry.name}`);
+  }
+  const byFile = new Map();
+  for (const entry of timings) {
+    if (entry.file == null) continue;
+    const row = byFile.get(entry.file) ?? { ms: 0, cases: 0 };
+    row.ms += entry.ms;
+    row.cases += 1;
+    byFile.set(entry.file, row);
+  }
+  if (byFile.size > 0) {
+    console.log(`# timing: slowest suite files`);
+    for (const [file, row] of [...byFile].sort((a, b) => b[1].ms - a[1].ms).slice(0, TIMING_TOP)) {
+      console.log(`#   ${seconds(row.ms).padStart(8)}  ${row.cases} cases  ${file}`);
+    }
+  }
+  if (process.env.AOF_TEST_TIMINGS) {
+    try {
+      writeFileSync(process.env.AOF_TEST_TIMINGS, `${JSON.stringify(timings)}\n`);
+    } catch (error) {
+      console.log(`# timing: could not write ${process.env.AOF_TEST_TIMINGS} (${error?.code ?? error?.name ?? "error"})`);
+    }
+  }
+}
+
 async function runSuite(tests, { lanes = true } = {}) {
   let failures = 0;
+  const timings = [];
 
   // Per-test hermetic global AOF home (34/story 00) — see scripts/test-unit.mjs for the
   // rationale: the node identity is machine-wide now, so each test gets its OWN empty
@@ -159,22 +201,28 @@ async function runSuite(tests, { lanes = true } = {}) {
   let ghIndex = 0;
 
   console.log("# unit");
-  for (const { name, run } of tests) {
+  for (const entry of tests) {
+    const { name, run } = entry;
     const prevHome = process.env.AOF_GLOBAL_HOME;
     process.env.AOF_GLOBAL_HOME = join(ghRoot, `t-${ghIndex++}`);
+    const startedAt = performance.now();
+    let ok = false;
     try {
       await run();
+      ok = true;
       console.log(`ok - ${name}`);
     } catch (error) {
       failures += 1;
       console.error(`not ok - ${name}`);
       console.error(error.stack ?? error.message);
     } finally {
+      timings.push({ name, file: SUITE_FILE_OF.get(entry) ?? null, ms: Math.round(performance.now() - startedAt), ok });
       if (prevHome === undefined) delete process.env.AOF_GLOBAL_HOME;
       else process.env.AOF_GLOBAL_HOME = prevHome;
     }
   }
   try { rmSync(ghRoot, { recursive: true, force: true }); } catch { /* best-effort cleanup */ }
+  reportTimings(timings);
 
   // A SELECTED RUN STOPS HERE. The integration, cargo and shell lanes are the whole-suite
   // lanes; a selection of unit suites is not a reason to compile a Rust crate, and the gate is
@@ -301,7 +349,10 @@ export async function loadSelected(files) {
       unusable.push({ file, reason: "exports no array of { name, run } entries, so there is nothing in it to run" });
       continue;
     }
-    for (const array of found) selected.push(...array);
+    for (const array of found) {
+      for (const entry of array) if (!SUITE_FILE_OF.has(entry)) SUITE_FILE_OF.set(entry, file);
+      selected.push(...array);
+    }
   }
   return { selected, unusable };
 }
