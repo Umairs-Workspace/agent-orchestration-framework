@@ -17,3 +17,4 @@ same fact. A `override` row is a recorded reason for accepting WITHOUT a green g
 | ec5231556f24d8dc882161e0df1c56430fb29a4b | 2026-09-26T09:34:33.841Z | all | red | the runner exited with no verdict and enumerated no failure |
 | ec5231556f24d8dc882161e0df1c56430fb29a4b | 2026-09-26T10:36:02.458Z | all | red | the runner exited with no verdict and enumerated no failure |
 | fef237c36d5212dff1170bb098b86041ff71d756 | 2026-09-26T12:05:15.305Z | all | red | 53/00 task03 — any movement anywhere in the session tree restarts the quiet stretch, so the outcome does not settle on the original clock |
+| d965255347564839831d7db69f708efafc57d2e1 | 2026-09-26T13:33:36.252Z | all | red | dispatch/02 two stories dispatched together never share a tree — each has its own worktree and branch, and a file edited in one is invisible in the other |
