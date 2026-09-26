@@ -307,7 +307,7 @@ export const workDispatchLaneTests = [
     name: "dispatch 2026-09-24 a lane carries the primary's git-ignored .claude/settings.local.json — copied once, never over the lane's own, and nothing when the primary has none",
     run: async () => {
       const LOCAL = path.join(".claude", "settings.local.json");
-      const approvals = `${JSON.stringify({ enabledMcpjsonServers: ["voicevox", "aspire"] }, null, 2)}\n`;
+      const approvals = `${JSON.stringify({ enabledMcpjsonServers: ["example-mcp", "aspire"] }, null, 2)}\n`;
       await withDispatchRepo(async ({ root }) => {
         await mkdir(path.join(root, ".claude"), { recursive: true });
         await writeFile(path.join(root, LOCAL), approvals, "utf8");

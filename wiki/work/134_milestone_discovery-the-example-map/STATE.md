@@ -101,11 +101,11 @@ The build lane (loop run `20260924T141559728Z-0001`, worktree `dispatch-134-03`)
 every leg needs an interactive session no shell is driving, the answer leg needs a person, and no
 `134/03` run may be `running`, which is true only once the build run has settled. **Precondition,
 measured 2026-09-24:** bare `aof` on this machine is the npm link to the MAIN checkout
-(`C:\Program Files\nodejs\node_modules\aof -> C:\Source\umair\aof`), so the 134/03 code reaches it
+(`C:\Program Files\nodejs\node_modules\aof -> C:\Source\umami\aof`), so the 134/03 code reaches it
 only when this lane is merged home. So: (0) merge the lane, then from the main checkout run
 `node scripts/install-local.mjs --skip-ui` and check `aof --version` names the new payload build.
 S is the id of your interactive session opened in the repository root: the name of the newest
-`.jsonl` in `~/.claude/projects/C--Source-umair-aof`. Paste the commands' own output; never
+`.jsonl` in `~/.claude/projects/C--Source-umami-aof`. Paste the commands' own output; never
 paraphrase. Evidence lands in `VERIFICATION.md` under `134/03 task 03`.
 
 **A. A hand-run settle stamps spend from this machine's transcript store.**

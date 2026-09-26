@@ -902,13 +902,13 @@ export const agentSessionDriverDrivesTests = [
         onSessionStop: (event) => stops.push(event),
       });
       await waitUntil(() => pty.subscribed);
-      pty.emit(`${TUI_READY_MARKER}\u001b[1mNew MCP server found in .mcp.json: voicevox\u001b[0m 1. Use this server 2. Continue without`);
+      pty.emit(`${TUI_READY_MARKER}\u001b[1mNew MCP server found in .mcp.json: example-mcp\u001b[0m 1. Use this server 2. Continue without`);
       const result = await pending;
       assert.equal(result.outcome, "failed");
       assert.equal(result.failureReason, "timeout", "retryable — the store's vocabulary is unchanged");
       const notAccepted = stops.find((event) => event.phase === "directive-not-accepted");
       assert.ok(notAccepted, stops.map((event) => event.phase).join(","));
-      assert.match(notAccepted.screen, /New MCP server found in \.mcp\.json: voicevox/u, "the screen tail, escapes stripped");
+      assert.match(notAccepted.screen, /New MCP server found in \.mcp\.json: example-mcp/u, "the screen tail, escapes stripped");
       assert.equal(pty.killed, true);
     },
   },
