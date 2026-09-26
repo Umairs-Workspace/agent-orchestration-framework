@@ -696,7 +696,7 @@ const UNRESOLVED_DECLARATION = /^UNRESOLVED DECLARED ADRS:/;
 // that declares its ADRs would receive none of them. Every declared ADR's HEADING is
 // always carried, because which decisions bind a story is the fact a phase must not lose;
 // the decision passages are what the budget bounds, and the count says how many were left.
-export function condenseArchitectureSlice(text, { budget = PHASE_BRIEF_MAX_CHARS } = {}) {
+export function condenseArchitectureSlice(text, { budget = PHASE_BRIEF_MAX_CHARS, declared = [] } = {}) {
   const source = String(text ?? "");
   const headings = structuralH2Headings(source);
   if (headings.length === 0) return null;
@@ -757,7 +757,7 @@ export function condenseArchitectureSlice(text, { budget = PHASE_BRIEF_MAX_CHARS
     skeleton,
     // Whole only for a DECLARED slice: there every heading is a declared ADR, and each binds the
     // story. A milestone brief condenses its whole record, where the headings are every H2 of it.
-    skeletonWhole: blocks.every((block) => /^##\s+ADR-\d+/u.test(block.heading)),
+    skeletonWhole: declared.length > 0,
     optional: withDecision.map((block) => ({ index: -1 - block.index, length: block.decision.length + 1 })),
     room: roomForForm(ARCHITECTURE_FORM),
     openedRoom: roomForForm(ARCHITECTURE_OPENED_FORM),
@@ -958,7 +958,9 @@ function condenseSection(section, budget) {
   if (condenser == null) return null;
   // No clamp here: `roomFor` applies the one clamp, on every path into a condenser
   // including the direct calls the suites make.
-  const result = condenser(section.text, { budget });
+  // `declared` rides the same options bag: the architecture slice needs to know it is a story's
+  // DECLARED slice, not a milestone's whole record, and the section is where that fact lives.
+  const result = condenser(section.text, { budget, declared: section.declaredNames ?? [] });
   if (result == null) return null;
   return { ...result, section: { ...section, text: result.text } };
 }
