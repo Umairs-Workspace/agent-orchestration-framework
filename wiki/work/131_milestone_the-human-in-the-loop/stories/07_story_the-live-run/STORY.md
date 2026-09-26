@@ -4,7 +4,7 @@ number: 07
 slug: the-live-run
 title: "The live run — a real loop on this machine asks three questions, the bot posts each within seconds, they are answered from the CLI, the board and a Discord reply, the other lanes keep building, the loop finishes, and a supervised loop is stopped and handed back from Discord, read at the source"
 parent: 131
-depends: [6, 8, 9, 10, 11, 12]
+depends: [6, 8, 9, 10, 11, 12, 13]
 status: in-progress
 owner: product-owner
 created: 2026-09-23
