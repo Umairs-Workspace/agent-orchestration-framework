@@ -770,7 +770,8 @@ export const archTests = [
         const rows = await invoke("work:list", { mesh: true }, { workspace, globalWorkStoreOptions: { env } });
         assert.equal(rows.find((row) => row.ref === "35/00").ask.question, WORKER_ASK.question, "the board row's question is non-null");
         assert.equal(posts.length, 1, "one post");
-        assert.match(posts[0].content, /^\*\*35\/00 — waiting on you\*\* \(build, [^)]+\) · node-2976\n/u, "naming the worker's node");
+        // 131/13: the project sits between the cost and the node.
+        assert.match(posts[0].content, /^\*\*35\/00 — waiting on you\*\* \(build, [^)]+\)(?: · [^·\n]+)? · node-2976\n/u, "naming the worker's node");
         await applyOnce();
         assert.equal(posts.length, 1, `the redelivered park posts nothing — found the second POST: ${JSON.stringify(posts.slice(1).map((post) => post.content.split("\n")[0]))}`);
       });

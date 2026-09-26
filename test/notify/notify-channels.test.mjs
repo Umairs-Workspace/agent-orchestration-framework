@@ -639,7 +639,8 @@ export const notifyChannelsTests = [
         assert.equal(moved.moved, true);
         assert.equal(await statusOf(specPath), "done");
         assert.equal(spy.calls.length, 1);
-        assert.equal(JSON.parse(spy.calls[0].init.body).content, "**90 — accepted**\nFixture milestone");
+        // 131/13: line 1 names the project (the config's `name`, else its folder), before the node.
+        assert.equal(JSON.parse(spy.calls[0].init.body).content, "**90 — accepted** · fixture\nFixture milestone");
       });
 
       const events = degradeSink();
@@ -761,9 +762,10 @@ export const notifyChannelsTests = [
     name: "131/02 task06 — the accept message carries the record's title, the node and the link (three rows)",
     async run() {
       for (const [title, extraConfig, link, content] of [
-        [null, {}, undefined, "**90 — accepted**"],
-        ["Ship it @everyone", {}, undefined, "**90 — accepted**\nShip it @everyone"],
-        ["Fixture milestone", { mesh: { nodeId: "node-7297" } }, "https://x.test/{ref}", "**90 — accepted** · node-7297\nFixture milestone\nhttps://x.test/90"],
+        // 131/13: line 1 names the project (`fixture`), before the node.
+        [null, {}, undefined, "**90 — accepted** · fixture"],
+        ["Ship it @everyone", {}, undefined, "**90 — accepted** · fixture\nShip it @everyone"],
+        ["Fixture milestone", { mesh: { nodeId: "node-7297" } }, "https://x.test/{ref}", "**90 — accepted** · fixture · node-7297\nFixture milestone\nhttps://x.test/90"],
       ]) {
         const spy = fetchSpy();
         await withAcceptFixture({ title, extraConfig, notifyBlock: { ...OPS, ...(link ? { link } : {}) }, notifyOptions: { env: { HOOK_A: SECRET }, fetch: spy } }, async ({ ctx }) => {

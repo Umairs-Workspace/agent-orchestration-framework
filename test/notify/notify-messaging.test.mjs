@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import { setDegradeSinkForTest } from "../../src/degrade.mjs";
 import { invoke, listCommands } from "../../src/command-core.mjs";
 import * as discordModule from "../../src/notify/discord.mjs";
-import { CHANNELS, buildNotifyEnvelope, notify } from "../../src/notify/notify.mjs";
+import { CHANNELS, buildNotifyEnvelope, notify, sendTestMessage } from "../../src/notify/notify.mjs";
 import { messagingSecretPath, messagingSecretPresent, readMessagingSecret, writeMessagingSecret } from "../../src/notify/secret.mjs";
 import { messagingInitCommand, messagingStatusCommand } from "../../src/commands/messaging/messaging.mjs";
 import {
@@ -47,7 +47,8 @@ const CHANNEL = "123456789012345678";
 const INVITE = `https://discord.com/oauth2/authorize?client_id=${CHANNEL}&scope=bot+applications.commands&permissions=2147552320`;
 // A webhook URL, built from parts so this file never spells the path literal FF-13106 bans in src/**.
 const WEBHOOK_URL = ["https://discord.com/api", "webhooks", "123", "tok_EN-1"].join("/");
-const VERBS = ["init", "enable", "disable", "status"];
+// 131/13 adds `test`, the fifth verb, after `status` in the registry.
+const VERBS = ["init", "enable", "disable", "status", "test"];
 
 // A fresh global home for the body, set on the process (the store's home is the PROCESS's) and
 // restored after; the directory is removed.
@@ -168,7 +169,7 @@ const auths = (spy) => spy.calls.map((call) => call.authorization);
 export const notifyMessagingTests = [
   // ── 08 task 00: the family is founded and registered ──────────────────────────────────────────
   {
-    name: "131/08 task00 — the four messaging commands are routed, each at [\"messaging\", <verb>]",
+    name: "131/08 task00 — the messaging commands are routed, each at [\"messaging\", <verb>] (four at 08, five since 131/13)",
     run() {
       const byId = new Map(listCommands().map((command) => [command.id, command]));
       for (const verb of VERBS) {
@@ -176,11 +177,11 @@ export const notifyMessagingTests = [
         assert.ok(command, `messaging:${verb} is registered`);
         assert.deepEqual(command.cli?.route, ["messaging", verb], `messaging:${verb}'s route`);
       }
-      assert.equal(listCommands().filter((command) => command.id.startsWith("messaging:")).length, 4, "exactly four");
+      assert.equal(listCommands().filter((command) => command.id.startsWith("messaging:")).length, VERBS.length, `exactly ${VERBS.length}`);
     },
   },
   {
-    name: "131/08 task00 — aof --help carries a Messaging: section listing the four usage lines, and no URL",
+    name: "131/08 task00 — aof --help carries a Messaging: section listing one usage line per verb, and no URL",
     async run() {
       await withHome(async (home) => {
         const run = cli(["--help"], { home });
@@ -751,6 +752,174 @@ export const notifyMessagingTests = [
         } finally {
           setDegradeSinkForTest(undefined);
           await rm(elsewhere, { recursive: true, force: true });
+        }
+      });
+    },
+  },
+  // ── 131/13: `enable --allow` and `aof messaging test` ───────────────────────────────────────────
+  {
+    name: "131/13 task00 — enable --allow adds user ids to the channel's allow, unique and in order, keeps what is there, and the file validates",
+    async run() {
+      const validate = await compileSchema();
+      await withHome(async () => {
+        await withProject(baseConfig(), async ({ root, configPath }) => {
+          const first = await invoke("messaging:enable", { type: "discord", targetDir: root, channelId: CHANNEL, allow: "222222222222222222, 333333333333333333,222222222222222222" }, {});
+          assert.equal(first.changed, true);
+          const once = JSON.parse(await readFile(configPath, "utf8"));
+          assert.deepEqual(once.work.notify, { channels: { discord: { type: "discord", channelId: CHANNEL, allow: ["222222222222222222", "333333333333333333"] } } });
+          assert.ok(validate(once), JSON.stringify(validate.errors));
+          assert.ok(first.notes.some((note) => note.includes("Added 2 user ids") && note.includes("2 may answer by reply")), first.notes.join(" | "));
+
+          const again = await invoke("messaging:enable", { type: "discord", targetDir: root, channelId: CHANNEL, allow: "333333333333333333" }, {});
+          assert.equal(again.changed, false, "an id already listed changes nothing");
+          assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")), once, "the file is unchanged");
+
+          const more = await invoke("messaging:enable", { type: "discord", targetDir: root, channelId: CHANNEL, allow: "444444444444444444" }, {});
+          assert.equal(more.changed, true);
+          assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")).work.notify.channels.discord.allow, ["222222222222222222", "333333333333333333", "444444444444444444"], "added at the end, nothing removed");
+
+          const plain = await invoke("messaging:enable", { type: "discord", targetDir: root, channelId: CHANNEL }, {});
+          assert.equal(plain.changed, false);
+          assert.ok(plain.notes[0].endsWith("— nothing changed."), "without --allow the note is 09's, unchanged");
+        });
+      });
+    },
+  },
+  {
+    name: "131/13 task00 — a bad --allow id is refused messaging-allow-invalid before any write, and the CLI's --allow reaches the write",
+    async run() {
+      await withHome(async (home) => {
+        await withProject(baseConfig(), async ({ root, configPath }) => {
+          const before = await readFile(configPath, "utf8");
+          for (const allow of ["12", "abc", "", " , "]) {
+            await assert.rejects(
+              invoke("messaging:enable", { type: "discord", targetDir: root, channelId: CHANNEL, allow }, {}),
+              (error) => error.code === "messaging-allow-invalid",
+              `allow ${JSON.stringify(allow)} is refused`,
+            );
+          }
+          assert.equal(await readFile(configPath, "utf8"), before, "nothing was written");
+          const run = cli(["messaging", "enable", "discord", "--channel", CHANNEL, "--allow", "555555555555555555"], { home, cwd: root });
+          assert.equal(run.status, 0, run.stderr);
+          assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")).work.notify.channels.discord.allow, ["555555555555555555"]);
+          const status = cli(["messaging", "status"], { home, cwd: root });
+          assert.match(status.stdout, new RegExp(`discord → ${CHANNEL}, 1 may answer by reply`, "u"));
+        });
+      });
+    },
+  },
+  {
+    name: "131/13 task01 — messaging test posts the bot's test message to each discord channel through the one door, answers the message id, and degrades nothing",
+    async run() {
+      await withHome(async () => {
+        const events = degradeSink();
+        try {
+          await writeMessagingSecret("discord", TOKEN_A);
+          await withProject({ ...baseConfig(), name: "smoke", work: { ...baseConfig().work, notify: { channels: { discord: { type: "discord", channelId: CHANNEL } } } } }, async ({ root }) => {
+            const spy = fetchSpy({ json: { id: "998877665544332211" } });
+            const result = await invoke("messaging:test", { type: "discord", targetDir: root }, { env: {}, fetch: spy });
+            assert.equal(spy.calls.length, 1, "one post");
+            assert.match(spy.calls[0].url, new RegExp(`/channels/${CHANNEL}/messages$`, "u"));
+            assert.equal(spy.calls[0].method, "POST");
+            assert.equal(spy.calls[0].authorization, `Bot ${TOKEN_A}`);
+            assert.deepEqual(spy.calls[0].body, CHANNELS.discord.renderTest({ project: "smoke" }));
+            assert.match(spy.calls[0].body.content, /^\*\*aof — test message\*\* · smoke\n/u, "line 1 names the project");
+            assert.deepEqual(spy.calls[0].body.allowed_mentions, { parse: [] }, "it pings nobody");
+            assert.deepEqual(result.results.map(({ channel, channelId, ok, messageId }) => ({ channel, channelId, ok, messageId })), [{ channel: "discord", channelId: CHANNEL, ok: true, messageId: "998877665544332211" }]);
+            assert.deepEqual(notifyEventsOf(events), [], "a test degrades nothing");
+            await assertNothingLeaked([JSON.stringify(result)], null);
+          });
+        } finally {
+          setDegradeSinkForTest(undefined);
+        }
+      });
+    },
+  },
+  {
+    name: "131/13 task01 — a refused test post is messaging-test-failed with the fix named from Discord's answer (401, 403, 404), and never the token",
+    async run() {
+      await withHome(async () => {
+        const events = degradeSink();
+        try {
+          await writeMessagingSecret("discord", TOKEN_A);
+          const on = { ...baseConfig(), work: { ...baseConfig().work, notify: { channels: { discord: { type: "discord", channelId: CHANNEL } } } } };
+          await withProject(on, async ({ root }) => {
+            for (const [status, words] of [[401, "rejected the bot token"], [403, "may not post in channel"], [404, "knows no channel"]]) {
+              const spy = fetchSpy({ status, json: { message: "nope", code: 0 } });
+              await assert.rejects(
+                invoke("messaging:test", { type: "discord", targetDir: root }, { env: {}, fetch: spy }),
+                (error) => {
+                  assert.equal(error.code, "messaging-test-failed");
+                  assert.ok(error.message.includes(words) && error.message.includes(`(${status})`), error.message);
+                  assert.ok(!error.message.includes(TOKEN_A) && !error.message.includes(SEG_A), "the token is never named");
+                  return true;
+                },
+              );
+            }
+          });
+          assert.deepEqual(notifyEventsOf(events), [], "a test degrades nothing");
+        } finally {
+          setDegradeSinkForTest(undefined);
+        }
+      });
+    },
+  },
+  {
+    name: "131/13 task01 — with no token, or no discord channel, messaging test posts nothing and says what to run",
+    async run() {
+      await withHome(async () => {
+        const spy = fetchSpy();
+        const on = { ...baseConfig(), work: { ...baseConfig().work, notify: { channels: { discord: { type: "discord", channelId: CHANNEL } } } } };
+        await withProject(on, async ({ root }) => {
+          await assert.rejects(
+            invoke("messaging:test", { type: "discord", targetDir: root }, { env: {}, fetch: spy }),
+            (error) => error.code === "messaging-test-failed" && error.message.includes("aof messaging init discord"),
+          );
+        });
+        await withProject(baseConfig(), async ({ root }) => {
+          await assert.rejects(
+            invoke("messaging:test", { type: "discord", targetDir: root }, { env: {}, fetch: spy }),
+            (error) => error.code === "messaging-not-enabled" && error.message.includes("aof messaging enable discord --channel <id>"),
+          );
+        });
+        assert.deepEqual(spy.calls, [], "nothing was posted");
+        assert.deepEqual(await sendTestMessage({ config: {} }, { type: "discord", env: {}, fetch: spy }), [], "no channel, no answer");
+      });
+    },
+  },
+  {
+    name: "131/13 task01 — messaging:test is routed at [\"messaging\", \"test\"] and --help lists it after status",
+    async run() {
+      const command = listCommands().find((entry) => entry.id === "messaging:test");
+      assert.ok(command, "messaging:test is registered");
+      assert.deepEqual(command.cli?.route, ["messaging", "test"]);
+      await withHome(async (home) => {
+        const run = cli(["--help"], { home });
+        assert.equal(run.status, 0, run.stderr);
+        const section = run.stdout.slice(run.stdout.indexOf("\nMessaging:\n") + 1).split("\n\n")[0];
+        assert.ok(section.indexOf("aof messaging test <type>") > section.indexOf("aof messaging status"), section);
+      });
+    },
+  },
+  {
+    name: "131/13 task01 — every message's line 1 names the project: the config's name, else the project folder, and none when neither is known",
+    async run() {
+      await withHome(async () => {
+        const events = degradeSink();
+        try {
+          await writeMessagingSecret("discord", TOKEN_A);
+          const channels = { discord: { type: "discord", channelId: CHANNEL } };
+          for (const [workspace, expected] of [
+            [{ config: { name: "named", work: { notify: { channels } } }, projectRoot: path.join(os.tmpdir(), "folder-a") }, "**131/08 — waiting on you** (build, 1s) · named"],
+            [{ config: { work: { notify: { channels } } }, projectRoot: path.join(os.tmpdir(), "folder-b") }, "**131/08 — waiting on you** (build, 1s) · folder-b"],
+            [{ config: { work: { notify: { channels } } } }, "**131/08 — waiting on you** (build, 1s)"],
+          ]) {
+            const spy = fetchSpy();
+            await notify(workspace, ENVELOPE, { env: {}, fetch: spy });
+            assert.equal(spy.calls[0].body.content.split("\n")[0], expected);
+          }
+        } finally {
+          setDegradeSinkForTest(undefined);
         }
       });
     },

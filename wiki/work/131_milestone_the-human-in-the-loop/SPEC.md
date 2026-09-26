@@ -6,7 +6,7 @@ title: "The human in the loop — a session that needs you asks where you are, w
 status: in-progress
 owner: product-owner
 created: 2026-09-16
-updated: 2026-09-25
+updated: 2026-09-26
 depends: [129]
 schema: 1
 aofVersion: 0.1.0
@@ -137,6 +137,7 @@ Out of scope:
 - [x] `10_story_answer-by-replying-in-discord` — a Discord reply to the bot's ask, from an allowlisted user, answers the waiting session through `work:answer`; the gateway connection on the control node (ADR-008) — depends 04, 09
 - [x] `11_story_slash-commands` — `/status`, `/asks`, `/loop stop`, `/loop resume` for allowlisted users, dispatched in-process; `/loop resume` hands off to the supervisor (ADR-009) — depends 09, 10
 - [x] `12_story_a-workers-ask-reaches-discord` — a worker's ask carried to the control node on the park fact, posted by the bot, shown on the board and answerable by reply (ADR-010) — depends 04, 09, 10
+- [x] `13_story_test-and-allow-from-the-cli` — `aof messaging test discord` posts one real message and names the fix; `enable discord --allow` writes the answer list (ADR-007, ADR-008) — depends 08, 09, 10
 
 ## Dependencies
 

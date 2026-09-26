@@ -12,7 +12,7 @@
 // { parse: [] }` means a question containing `@everyone` pings no one; `content` is never escaped.
 //
 // At most four parts, each omitted when absent and never a placeholder: line 1 (bold headline, cost,
-// node), the body, the action line, the link. Line 1, the action line and the link never truncate;
+// project, node), the body, the action line, the link. Line 1, the action line and the link never truncate;
 // the body takes what is left of 2,000 UTF-16 units and is clipped with a suffix, and a clipped body
 // holding an odd number of code fences is closed BEFORE the suffix, so an open block can never
 // swallow the answer command.
@@ -41,11 +41,13 @@ function bodyAndAction(e, replyable) {
 }
 
 // Line 1: `**<headline>**` (a halt gains ` at <stop.ref>` inside the bold), then ` <cost>`, then
-// ` · <node>`, each only when present. Built from `form.mjs`'s headline and cost, never re-spelled.
-function firstLine(e) {
+// ` · <project>` and ` · <node>`, each only when present. Built from `form.mjs`'s headline and cost,
+// never re-spelled. The project is the render's option, not an envelope key (the eleven stay frozen):
+// one bot and one channel can serve several projects, and a bare `03/00` names none of them.
+function firstLine(e, project = null) {
   const halt = e.event === "loop-halted" && nonBlank(e.stop?.ref) ? ` at ${e.stop.ref}` : "";
   const price = cost(e);
-  return `**${headline(e)}${halt}**${price == null ? "" : ` ${price}`}${e.node == null ? "" : ` · ${e.node}`}`;
+  return `**${headline(e)}${halt}**${price == null ? "" : ` ${price}`}${nonBlank(project) ? ` · ${project}` : ""}${e.node == null ? "" : ` · ${e.node}`}`;
 }
 
 const countFences = (text) => text.split(FENCE).length - 1;
@@ -78,12 +80,12 @@ function clipBody(body, room, suffix) {
   return `${fenced.keep}${closing}${suffix}`;
 }
 
-// renderDiscord(envelope, { replyable }) → `{ content, allowed_mentions: { parse: [] } }`. A bot
+// renderDiscord(envelope, { replyable, project }) → `{ content, allowed_mentions: { parse: [] } }`. A bot
 // cannot set a `username` (ADR-007 §5), so the message is the bot's own; every line, cap and clip is
 // DESIGN §3's.
-export function renderDiscord(envelope, { replyable = false } = {}) {
+export function renderDiscord(envelope, { replyable = false, project = null } = {}) {
   const { body, action } = bodyAndAction(envelope, replyable === true);
-  const fixedBefore = [firstLine(envelope)];
+  const fixedBefore = [firstLine(envelope, project)];
   const fixedAfter = [action, envelope.link].filter((line) => line != null);
   let bodyLine = nonBlank(body) ? body : null;
   if (bodyLine != null) {
@@ -96,6 +98,17 @@ export function renderDiscord(envelope, { replyable = false } = {}) {
   }
   const content = [...fixedBefore, ...(bodyLine == null ? [] : [bodyLine]), ...fixedAfter].join("\n");
   return { content, allowed_mentions: { parse: [] } };
+}
+
+// renderDiscordTest({ project }) → the one message `aof messaging test discord` posts: line 1 names the
+// project as every message's does, and the body says nothing waits, so nobody reads it as an ask. It
+// pings nobody, as every message does.
+export function renderDiscordTest({ project = null } = {}) {
+  const where = nonBlank(project) ? ` · ${project}` : "";
+  return {
+    content: `**aof — test message**${where}\nThe bot can post in this channel. Nothing needs an answer.`,
+    allowed_mentions: { parse: [] },
+  };
 }
 
 // ── the bot token and its invite ─────────────────────────────────────────────────────────────────

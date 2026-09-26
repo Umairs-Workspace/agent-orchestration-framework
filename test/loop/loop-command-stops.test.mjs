@@ -1802,7 +1802,8 @@ function primaryAskTests() {
           const driver = watcherDriver([{ outcome: "failed", failureReason: "agent_error" }]);
           await runLoopLaunch({ scope: "03", startedAt: "2026-09-23T17:00:00.000Z", now: "2026-09-23T18:30:00.000Z" }, { ...fx.ctx, notifyOptions: { env: { HOOK }, fetch }, agentSessionDriverOptions: { ...driver.options, env }, report: () => {} });
           assert.equal(posts.length, 1);
-          assert.deepEqual(posts[0].content.split("\n"), ["**03 — loop halted on run-not-retryable at 03/01**", "Resume: `aof work loop 03 --resume`"]);
+          // 131/13: line 1 names the project; this fixture's config has no `name`, so it is the folder.
+          assert.deepEqual(posts[0].content.split("\n"), [`**03 — loop halted on run-not-retryable at 03/01** · ${path.basename(fx.projectRoot)}`, "Resume: `aof work loop 03 --resume`"]);
         });
       },
     },

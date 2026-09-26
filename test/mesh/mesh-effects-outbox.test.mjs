@@ -530,7 +530,8 @@ function workerAskControlTests() {
         await apply({ ...PARK, ask: ASK });
         assert.equal(posts.length, 1, "exactly one POST");
         const [line1, body] = posts[0].body.content.split("\n");
-        assert.equal(line1, `**35/00 — waiting on you** (build, 12m) · ${WORKER}`);
+        // 131/13: line 1 names the control's project (`demo`), then the worker's node.
+        assert.equal(line1, `**35/00 — waiting on you** (build, 12m) · demo · ${WORKER}`);
         assert.equal(body, ASK.question);
         assert.ok(posts[0].url.endsWith(`/channels/${CHANNEL}/messages`));
       }),

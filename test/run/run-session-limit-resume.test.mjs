@@ -539,7 +539,7 @@ function envelopeBody(elapsedMs, { ref = "03/01", by = "you", answer = "take b",
     "session-answered",
     { ref, phase: "build", elapsedMs, outcome: { by, answer } },
     { config, now: () => new Date(ANSWER_NOW) },
-  ));
+  ), { project: config?.name ?? null }); // 131/13: line 1 names the project
 }
 
 async function withAnswerWorld(options, body) {

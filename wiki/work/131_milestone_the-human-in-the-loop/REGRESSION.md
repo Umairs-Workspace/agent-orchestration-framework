@@ -16,3 +16,4 @@ same fact. A `override` row is a recorded reason for accepting WITHOUT a green g
 | 9d6353ae30071169b91adf05614a37b606c84e6a | 2026-09-25T23:33:47.408Z | all | red | arch/FF-6604: exactly ONE module under src/ carries an id pattern — src/declared-id.mjs, 69/04 task 00 wiring: the production work:dispatch command sends a multi-ref ready set through the bounded pool, 129/04 task03 [outline] the delta is applied per lane against the one baseline (5 rows) |
 | ec5231556f24d8dc882161e0df1c56430fb29a4b | 2026-09-26T09:34:33.841Z | all | red | the runner exited with no verdict and enumerated no failure |
 | ec5231556f24d8dc882161e0df1c56430fb29a4b | 2026-09-26T10:36:02.458Z | all | red | the runner exited with no verdict and enumerated no failure |
+| fef237c36d5212dff1170bb098b86041ff71d756 | 2026-09-26T12:05:15.305Z | all | red | 53/00 task03 — any movement anywhere in the session tree restarts the quiet stretch, so the outcome does not settle on the original clock |

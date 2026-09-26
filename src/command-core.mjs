@@ -131,8 +131,8 @@ import { diagramPlanCommand } from "./commands/diagram/plan.mjs";
 import { diagramExportCommand } from "./commands/diagram/export.mjs";
 // diagram:file — milestone 133 — see ./commands/diagram/file.mjs's header.
 import { diagramFileCommand } from "./commands/diagram/file.mjs";
-// messaging:init / messaging:enable / messaging:disable / messaging:status — 131/08 — see ./commands/messaging/messaging.mjs's header.
-import { messagingInitCommand, messagingEnableCommand, messagingDisableCommand, messagingStatusCommand } from "./commands/messaging/messaging.mjs";
+// messaging:init / messaging:enable / messaging:disable / messaging:status / messaging:test — 131/08 — see ./commands/messaging/messaging.mjs's header.
+import { messagingInitCommand, messagingEnableCommand, messagingDisableCommand, messagingStatusCommand, messagingTestCommand } from "./commands/messaging/messaging.mjs";
 import { workUiCommand } from "./commands/work-ui.mjs";
 import { assetsUiCommand } from "./commands/assets/ui.mjs";
 // work:find — m42, m12 — see ./commands/find.mjs's header.
@@ -263,6 +263,7 @@ const COMMANDS = [
   messagingEnableCommand,
   messagingDisableCommand,
   messagingStatusCommand,
+  messagingTestCommand,
   workUiCommand,
   assetsUiCommand,
   findCommand,

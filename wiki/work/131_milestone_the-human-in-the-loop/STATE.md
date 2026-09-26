@@ -25,6 +25,7 @@ doc: state
 - [x] 10 answer by replying in Discord
 - [x] 11 slash commands
 - [x] 12 a worker's ask reaches Discord
+- [x] 13 test and allow from the CLI
 
 ## Notes & decisions in flight
 
@@ -338,14 +339,17 @@ the table names. Leave the loop alone (no hand kill). Log: `______`
    prompt. It prints `Stored the Discord bot token …` and an **invite URL**.
 3. **Invite it.** Open the invite URL, pick the server that holds your channel, and Authorise.
 4. **Name the channel and yourself.** In Discord, turn on Developer Mode. Right-click the channel,
-   then Copy Channel ID. Right-click your own name, then Copy User ID. In the **test-bed root**:
+   then Copy Channel ID. Right-click your own name, then Copy User ID. In the **test-bed root**
+   (`--allow` is 131/13's):
    ```
-   aof messaging enable discord --channel <channel-id>
+   aof messaging enable discord --channel <channel-id> --allow <your-user-id>
+   aof messaging test discord
+   git commit -am "test-bed: the bot's channel and answer list"
    ```
-   It prints `Set channel <channel-id> on "discord" for this project in …`. Then edit
-   `.aof/aof.config.json` so that `work.notify.channels.discord` reads
-   `{ "type": "discord", "channelId": "<channel-id>", "allow": ["<your-user-id>"] }`, and commit it:
-   `git commit -am "test-bed: the bot's channel and answer list"`.
+   `enable` prints `Set channel <channel-id> on "discord" …` and `Added 1 user id to the answer list
+   of "discord" (1 may answer by reply).` `test` must print `Posted the Discord test message to
+   discord → <channel-id> …`, and the message must appear in the channel. If it fails, it names the
+   fix (401 token, 403 invite and permissions, 404 channel id). That is a set-up fault, not a leg.
 5. Make sure `AOF_DISCORD_BOT_TOKEN` is NOT set.
 6. Quit the desktop app from its own UI, then run `aof mesh desktop run`. Never use
    `Stop-Process -Force` or `taskkill`.
@@ -862,6 +866,12 @@ After T1 halts, run `/loop resume scope:04`.
     F-131-03 was repaired (FF-11903 green), and F-131-06 was ruled KEEP. **The milestone door waits
     on one thing: 07's operator procedure.** After it, `aof:verify 131` accepts 07, runs
     `aof work regression-gate 131` from a clean detached worktree, and closes the milestone.
+- **(`aof:verify 131`, 2026-09-26)** 13 was built, reviewed and ACCEPTED in this session. The
+  operator asked for `aof messaging test discord` and `enable --allow` during 07's setup, then asked
+  for the project on each message after the first live test. The build is recorded under VERIFICATION
+  `### 131/13`, and it has an OUTCOME and a RETROSPECTIVE. The gate history on this branch reads
+  `fef237c` red on one inherited 53 timing case (F-131-10, green alone twice), so the gate is re-run
+  on the commit that carries 13.
 ## Verification
 
 <!-- Pointers, not restatements. -->

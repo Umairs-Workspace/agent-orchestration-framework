@@ -118,6 +118,22 @@ an admin.
    `discord-2`. Without `--channel` it is refused with `messaging-channel-id-required`, and an id
    that is not 17 to 20 digits with `messaging-channel-id-invalid`.
 
+   To let people answer by reply and run the slash commands in the same step, add their Discord
+   user ids (right-click a name → **Copy User ID**), comma-separated:
+
+   ```
+   aof messaging enable discord --channel <channel-id> --allow <user-id>,<user-id>
+   ```
+
+   ```
+   Enabled discord on channel <channel-id> for this project in <project>/.aof/aof.config.json.
+   Added 2 user ids to the answer list of "discord" (2 may answer by reply).
+   ```
+
+   `--allow` only ADDS to the channel's `allow` list: ids already there stay, and running it again
+   with the same id changes nothing. An id that is not 17 to 20 digits is refused with
+   `messaging-allow-invalid`, and nothing is written. To remove someone, edit the file.
+
 To turn it off: `aof messaging disable discord`. To stop sending from a machine entirely, delete
 `<aof home>/messaging/discord.secret`. No verb removes it.
 
@@ -140,41 +156,39 @@ facts, with the channel ids in `project.channelIds`. Once a channel has an `allo
 never the ids themselves. `<aof home>` is `~/.aof` unless
 `AOF_GLOBAL_HOME` is set.
 
-**Send a test message.** These read the stored token from the file, so it never lands in shell
-history or in a process's argv. Put your channel id in place of `<channel-id>`:
+**Send a test message.** In the project's root:
 
-PowerShell:
-
-```powershell
-$token = (Get-Content "$HOME/.aof/messaging/discord.secret" -Raw).Trim()
-Invoke-RestMethod -Method Post -ContentType 'application/json' `
-  -Headers @{ Authorization = "Bot $token" } `
-  -Uri 'https://discord.com/api/v10/channels/<channel-id>/messages' `
-  -Body '{"content":"aof test — setup works","allowed_mentions":{"parse":[]}}'
+```
+aof messaging test discord
 ```
 
-bash / zsh (`printf` is a shell builtin, and curl reads the header from its config on stdin):
-
-```bash
-printf 'header = "Authorization: Bot %s"\n' "$(cat ~/.aof/messaging/discord.secret)" | curl -sS -K - \
-  -H 'Content-Type: application/json' \
-  -d '{"content":"aof test — setup works","allowed_mentions":{"parse":[]}}' \
-  'https://discord.com/api/v10/channels/<channel-id>/messages'
+```
+Posted the Discord test message to discord → <channel-id> (message <message-id>).
 ```
 
-The message should appear in the channel within a second. A `401` means the token is wrong (reset
-it and re-run `init`). A `403` means the bot cannot see or post in the channel (add it to the
-channel's permissions). A `404` means the channel id is wrong. Accepting a milestone
-(`aof work status <NN> done`) is the end-to-end check through aof itself, and posts
-`**<NN> — accepted**` with the title.
+It posts `**aof — test message** · <project>` to each discord channel of the project, through the same
+checks and sender a real notification uses, and pings nobody. The token is read from the store
+and never printed. When the post does not arrive, it exits non-zero with
+`messaging-test-failed` and names the fix from Discord's answer:
+
+| Discord answered | What it means | What to do |
+|---|---|---|
+| `401` | the token is wrong or was reset | `aof messaging init discord` with the current token |
+| `403` | the bot cannot see or post in the channel | invite it with the URL `init` printed, and give it View Channel and Send Messages in the channel |
+| `404` | the channel id is wrong, or the bot is not in that server | copy the id again (Developer Mode → Copy Channel ID) |
+
+With no token stored, or no discord channel enabled, it posts nothing and names the command to
+run. Accepting a milestone (`aof work status <NN> done`) is the end-to-end check through aof
+itself, and posts `**<NN> — accepted**` with the title.
 
 ## What the messages look like
 
 Every message uses the same headline as the terminal and the board, `**<ref> — <phrase>** (<phase>,
-<elapsed>)`, then a body, then the action:
+<elapsed>)`, then ` · <project>` and ` · <node>`, then a body, then the action. The project is the
+config's `name`, else the project's folder, so one channel can serve several projects:
 
 ```
-**03/00 — waiting on you** (build, 12s)
+**03/00 — waiting on you** (build, 12s) · my-project · node-7297
 Decision needed: … Options: … I would pick: … What the answer changes: …
 Answer: `aof work answer 03/00 "…"`
 ```
@@ -208,8 +222,8 @@ visibly, and nothing changes.
    post is a plain request.
 3. **Each person's Discord user id.** With **Developer Mode** on (step 3.2), right-click the
    person's name and choose **Copy User ID**.
-4. **The `allow` list**, on the channel in the project's `.aof/aof.config.json`. There is no verb
-   for it, so edit the file:
+4. **The `allow` list**, on the channel in the project's `.aof/aof.config.json`. Add ids with
+   `aof messaging enable discord --channel <channel-id> --allow <user-id>` (step 3), or edit the file:
 
    ```json
    "notify": {

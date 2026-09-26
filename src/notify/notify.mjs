@@ -25,7 +25,7 @@
 import { reportDegrade } from "../degrade.mjs";
 import { resolveWorkspaceId } from "../workspace-identity.mjs";
 import { recordAskMessage } from "./ask-messages.mjs";
-import { discordInviteUrl, isDiscordBotToken, isDiscordSnowflake, renderDiscord, sendDiscord } from "./discord.mjs";
+import { discordInviteUrl, isDiscordBotToken, isDiscordSnowflake, renderDiscord, renderDiscordTest, sendDiscord } from "./discord.mjs";
 import { readMessagingSecret } from "./secret.mjs";
 
 // The seven events, in ADR-005 §3's order. A site passes one of these as a literal.
@@ -47,12 +47,13 @@ export const NOTIFY_TIMEOUT_MS = 5000;
 export const ASK_EVENTS = Object.freeze(["session-needs-input", "session-parked-unanswered"]);
 
 // The channel registry: per type, one renderer, one sender, the credential shape it `accepts`, the
-// channel-id shape it takes (`validChannelId`), the setup URL `init` prints (`invite`), and the
-// `label` and `credential` a human reads (the last five serve `aof messaging` too, 131/08-09). The
-// sender is `send(credential, channelId, body, opts)`.
+// channel-id shape it takes (`validChannelId`), the setup URL `init` prints (`invite`), the message
+// `aof messaging test` posts (`renderTest`), and the `label` and `credential` a human reads (all but
+// `render` serve `aof messaging` too, 131/08-09). The sender is `send(credential, channelId, body, opts)`.
 export const CHANNELS = Object.freeze({
   discord: Object.freeze({
     render: renderDiscord,
+    renderTest: renderDiscordTest,
     send: sendDiscord,
     accepts: isDiscordBotToken,
     validChannelId: isDiscordSnowflake,
@@ -193,32 +194,51 @@ async function indexAskMessage(workspace, envelope, channel, messageId) {
   }
 }
 
+// projectName(workspace) → the name a message carries for its project: the config's `name`, else the
+// project folder's own name, else `null` (a render then names none).
+function projectName(workspace) {
+  const name = workspace?.config?.name;
+  if (nonBlank(name)) return name.trim();
+  const root = workspace?.projectRoot;
+  if (!nonBlank(root)) return null;
+  const folder = root.replace(/[\\/]+$/u, "").split(/[\\/]/u).pop();
+  return nonBlank(folder) ? folder : null;
+}
+
+// readyChannel(channel, env) → `{ entry, token }` for a channel that can be sent to, or
+// `{ problem, token }` naming why it cannot — its type, its token, or its channel id. The ONE set of
+// pre-send checks: `deliver` degrades the problem, `sendTestMessage` answers it. `token` rides the
+// answer only so a degrade can redact it; no problem message ever contains it.
+async function readyChannel(channel, env) {
+  const entry = Object.hasOwn(CHANNELS, channel.type) ? CHANNELS[channel.type] : null;
+  if (entry == null) return { problem: `notify channel "${channel.name}" has type "${String(channel.type)}", which no renderer serves`, token: null };
+  const token = await resolveToken(channel, env);
+  if (!nonBlank(token)) {
+    return { problem: `notify channel "${channel.name}" has no ${entry.label} ${entry.credential} — set ${channel.tokenEnv} or run \`aof messaging init ${channel.type}\``, token: null };
+  }
+  if (!entry.accepts(token)) {
+    // An old webhook URL left in the store, or a mistyped override: the shape is named, never the value.
+    return { problem: `notify channel "${channel.name}" holds a credential that is not a ${entry.label} ${entry.credential} — run \`aof messaging init ${channel.type}\``, token };
+  }
+  if (!entry.validChannelId(channel.channelId)) {
+    return { problem: `notify channel "${channel.name}" names no ${entry.label} channel id — run \`aof messaging enable ${channel.type} --channel <id>\``, token };
+  }
+  return { entry, token };
+}
+
 // One channel's delivery. Answers the posted message's `{ channel, channelId, messageId }` when
 // delivered, else `null`; every failure degrades once. It never throws: a throwing renderer is a
 // delivery failure like any other.
 async function deliver(workspace, channel, envelope, { env, fetch, timeoutMs }) {
-  const entry = Object.hasOwn(CHANNELS, channel.type) ? CHANNELS[channel.type] : null;
-  if (entry == null) {
-    degrade("notify-channel-unconfigured", `notify channel "${channel.name}" has type "${String(channel.type)}", which no renderer serves`);
+  const ready = await readyChannel(channel, env);
+  if (ready.problem != null) {
+    degrade("notify-channel-unconfigured", ready.problem, ready.token);
     return null;
   }
-  const token = await resolveToken(channel, env);
-  if (!nonBlank(token)) {
-    degrade("notify-channel-unconfigured", `notify channel "${channel.name}" has no ${entry.label} ${entry.credential} — set ${channel.tokenEnv} or run \`aof messaging init ${channel.type}\``);
-    return null;
-  }
-  if (!entry.accepts(token)) {
-    // An old webhook URL left in the store, or a mistyped override: the shape is named, never the value.
-    degrade("notify-channel-unconfigured", `notify channel "${channel.name}" holds a credential that is not a ${entry.label} ${entry.credential} — run \`aof messaging init ${channel.type}\``, token);
-    return null;
-  }
-  if (!entry.validChannelId(channel.channelId)) {
-    degrade("notify-channel-unconfigured", `notify channel "${channel.name}" names no ${entry.label} channel id — run \`aof messaging enable ${channel.type} --channel <id>\``, token);
-    return null;
-  }
+  const { entry, token } = ready;
   let body;
   try {
-    body = entry.render(envelope, { replyable: channel.allow.length > 0 });
+    body = entry.render(envelope, { replyable: channel.allow.length > 0, project: projectName(workspace) });
   } catch (error) {
     degrade("notify-delivery-failed", `notify channel "${channel.name}" could not render the message (${error instanceof Error ? error.name : "error"})`, token);
     return null;
@@ -260,4 +280,28 @@ export async function notify(workspace, envelope, { env = process.env, fetch = g
     failed: selected.filter((_, index) => outcomes[index] == null).map((channel) => channel.name),
     messages: outcomes.filter((outcome) => outcome != null),
   };
+}
+
+// sendTestMessage(workspace, { type, env, fetch, timeoutMs }) → one `{ channel, channelId, ok,
+// messageId, problem, status, reason, retryAfter }` per channel of `type` in the project, in config
+// order: `aof messaging test` (131, after 09's live setup). It posts the type's own test message
+// (`renderTest`) through the SAME pre-send checks and sender a notification uses, so a green test is
+// the path an ask will take. Unlike `notify`, it DEGRADES NOTHING: the caller asked, so each outcome
+// is answered as a value for the caller to print. It is not a notification: no envelope, no event,
+// no ask index, and not one of the firing sites. Never rejects; the token never enters an answer.
+export async function sendTestMessage(workspace, { type, env = process.env, fetch = globalThis.fetch, timeoutMs = NOTIFY_TIMEOUT_MS } = {}) {
+  const resolved = resolveNotifyConfig(workspace?.config);
+  const channels = (resolved?.channels ?? []).filter((channel) => channel.type === type);
+  const project = projectName(workspace);
+  return await Promise.all(channels.map(async (channel) => {
+    const base = { channel: channel.name, channelId: channel.channelId, ok: false, messageId: null, problem: null, status: null, reason: null, retryAfter: null };
+    try {
+      const ready = await readyChannel(channel, env);
+      if (ready.problem != null) return { ...base, problem: ready.problem };
+      const result = await ready.entry.send(ready.token, channel.channelId, ready.entry.renderTest({ project }), { fetch, timeoutMs });
+      return { ...base, ok: result.ok === true, messageId: result.messageId ?? null, status: result.status ?? null, reason: result.reason ?? null, retryAfter: result.retryAfter ?? null };
+    } catch (error) {
+      return { ...base, reason: error instanceof Error ? error.name : "error" };
+    }
+  }));
 }

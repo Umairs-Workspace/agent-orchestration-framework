@@ -280,6 +280,45 @@ recorded above, and this accept re-ran none of them.
 accept), `control-runner-unchecked`, `rubric-join-unchecked` ×11, and `depends-edge-unwitnessed`
 07 → 11 and 07 → 12 (07's, open until its re-refine).
 
+### 131/13 — test and allow from the CLI (`@executable` + `@manual`, `aof:verify 131`, 2026-09-26)
+
+**Story lane.** Two isolated runs, each under a fresh `AOF_GLOBAL_HOME`.
+- `test/notify/index.mjs`, `test/discord/index.mjs`, `loop-command-stops`, `mesh-effects-outbox`,
+  `acd-loop-ask-reaches-every-face`, `acd-loop-ask-answered-from-discord`,
+  `run-session-limit-resume` and `acd-source-directory-budget`: exit 0, 270 ok. Of those, 8 cases
+  are 13's (`131/13 task00` ×2, `131/13 task01` ×6), and 08's registration cases now read the verb
+  list and count five.
+- The command-registry controls (`acd-work-command-cli-bijection`, `acd-command-route-derived`,
+  `acd-work-command-route-coverage`, `acd-command-namespace`, `acd-command-layer-imports-downward`,
+  `acd-console-log-confined`, `acd-no-new-silent-catch`, `acd-purity-is-external`,
+  `command-core-contract` and the FF-7205 closures), plus the suites that post through `notify`
+  (`loop-command-wave`, `-reconcile`, `-resume`, `acd-loop-ask-waits-in-place`,
+  `blocked-run-parking`, `work-loop-declarations`): exit 0, 254 ok.
+
+FF-13106 (the token is read only in `notify.mjs`), FF-13107 (seven `notify(` sites) and FF-13110
+(`Bot ` only in `discord.mjs`) are green over the new send, which is not a `notify(` call and
+reaches the wire only through `discordRequest`. FF-13108 caught the first draft's test message
+spelling "waiting on you" outside `form.mjs`, and the body now reads "Nothing needs an answer."
+(verifies → 13 tasks 00 and 01, every `@executable` scenario).
+
+**Hand probe, source CLI, temp project, fresh home** (verifies → 13/00, 13/01). `enable discord
+--channel <id> --allow <A>,<B>` exited 0 and printed `Added 2 user ids to the answer list of
+"discord" (2 may answer by reply).`. Re-running with `<A>` printed `Everyone named by --allow
+already answers …`. `--allow 12` was refused `messaging-allow-invalid`, and the file was unchanged.
+`status` printed `discord → <id>, 2 may answer by reply`. `test discord` with no token exited 1,
+naming `aof messaging init discord`. `--help` lists `aof messaging test <type>` after `status`.
+The operator then ran `aof messaging test discord` in this repository against the live bot, and the
+message arrived ("aof test works", 2026-09-26). That prompted ruling (7), the project on line 1.
+
+**The guide walk (`@manual`, agent-run; verifies → 13/01's last scenario).** Step 3 of
+`wiki/architecture/discord-notifications.md` now shows `--allow` with the two output lines the
+probe printed, character for character, and the `messaging-allow-invalid` refusal. Step 4 shows
+`aof messaging test discord`, its `Posted the Discord test message to discord → <channel-id>
+(message <message-id>).` line, which matches the verb's render, and the 401/403/404 table, which
+matches `testHint`. The allowlist section no longer says there is no verb, and the message-format
+section shows ` · <project>` before the node. The manual PowerShell and curl send commands are gone,
+replaced by the verb.
+
 ## Fitness functions
 
 <!-- THE RED-PROBE REGISTER. Every row CITES a declaration in the sibling `ARCHITECTURE.md`
@@ -322,3 +361,4 @@ the three files were not run under the probes (task 01 ruling 4 makes that optio
 | F-131-07 | 05 task 04's last two scenarios read `git diff` "from the story's base to its last commit". None of 131 is committed, so no range exists. The working-tree reading matches the build's (`2 0`; `129 79` shared with 01/04). | gap | medium | Blocks 05's accept only. Discharged 2026-09-25: 131 was committed per range on `127-129` (05 = `8f00b4a` over `48ac161`), and both diffs were read and recorded under §131/05. | operator (commit) | closed |
 | F-131-08 | The loopback-`Host` check (04, ADR-006 §3) closes DNS rebinding for WRITES only. A rebinding page can still READ the board's GET routes (`/api/work/doc` and the others). Recorded by 04's review. | security | low | Non-blocker. Outside this milestone's rulings, deferred to backlog as input for a board threat model. | backlog | open |
 | F-131-09 | On a quiet board (nothing executing, no resync watching), a NEW ask appears only on the next load or sync. The 5 s silent poll arms only once a row already carries an ask (05's `Board.tsx` fix). The Discord ping is what sends the operator to the board. | gap | low | Non-blocker. The board's sync-gated policy was not changed on 05's authority. 07's live run observes it (leg 4 opens the item after the ping), and the retro decides. | story 07 (observe) | open |
+| F-131-10 | The whole-tree gate at `fef237c` was red on one case alone: `53/00 task03 — any movement anywhere in the session tree restarts the quiet stretch`. It was green alone twice (33/33), and the same case went red once in 129 gate history. Cause, read in `defaultWatchTranscriptCompletion` (`src/agent-session-driver.mjs`): `tick` awaits the tree mtime and the transcript read, then calls `now()`. A tick that began before the test bumps the mtime and advances the virtual clock reads the OLD mtime, then judges quiet at the NEW instant, and settles. Under whole-tree load that interleaving happens. | defect | low | Non-blocker: a race in 53 test timing, not 131 behaviour, and outside 131 files. The fix is to take `now()` once at the top of `tick`, before either read, so a poll judges quiet at the instant it observed. That change is to a heavily pinned driver and is routed to backlog. The gate is re-run. | backlog (53 driver) | open |
