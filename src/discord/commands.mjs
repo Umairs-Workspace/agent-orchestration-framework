@@ -161,7 +161,10 @@ async function renderStatus(workspaces, context, nowMs) {
   for (const workspace of workspaces) {
     let lines;
     try {
-      const rows = (await listOf(workspace, context)).filter((row) => row?.status === "in-progress");
+      // An in-progress row, or ANY row whose ask waits or is parked: a lane's story reads
+      // `not-started` in the primary until its lane merges, and its waiting ask is exactly what
+      // /status must show (found at 131/07's live run, F-131-11).
+      const rows = (await listOf(workspace, context)).filter((row) => row?.status === "in-progress" || row?.ask?.state === "waiting" || row?.ask?.state === "parked");
       lines = rows.length === 0 ? ["nothing in progress"] : rows.map((row) => statusLine(row, nowMs));
     } catch (error) {
       lines = [`could not read ${folderOf(workspace)}: ${error?.code ?? (error instanceof Error ? error.name : "error")}`];

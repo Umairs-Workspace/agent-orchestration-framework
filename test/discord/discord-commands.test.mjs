@@ -282,6 +282,22 @@ export const discordCommandsTests = [
       assert.equal(edit(failing.sequence), "**alpha**\ncould not read alpha: workspace-load-failed\n\n**beta**\n131/10 — running · node-2976");
     },
   },
+  {
+    name: "131/11 task02 (F-131-11) — /status also renders a row whose ask waits or is parked, whatever its status: a lane's story reads not-started in the primary until it merges",
+    async run() {
+      const asked = (state) => ({ state, phase: "build", askedAt: "2026-09-25T11:48:00.000Z" });
+      const rows = [
+        { ref: "03", status: "in-progress" },
+        { ref: "03/00", status: "not-started", ask: asked("waiting") },
+        { ref: "03/01", status: "not-started", ask: asked("parked") },
+        { ref: "03/02", status: "not-started" },
+        { ref: "03/03", status: "not-started", ask: asked("answered") },
+      ];
+      const ctx = context({ workspaces: [ALPHA], invoke: async () => rows });
+      await handleInteraction(interaction({ name: "status" }), ctx);
+      assert.equal(edit(ctx.sequence), "**alpha**\n03\n03/00 — waiting on you (build, 12m)\n03/01 — parked, unanswered (build, 12m)", "a waiting or parked ask shows; a not-started row with no standing ask does not");
+    },
+  },
 
   // ── task 03: /loop stop through 130's verb ───────────────────────────────────────────────────
   {
