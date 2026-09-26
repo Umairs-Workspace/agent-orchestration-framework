@@ -36,8 +36,13 @@ function servedWorkspacesOf({ workspace, nodeId, globalWorkStoreOptions, loadWor
     if (typeof workspace?.projectRoot === "string") roots.push(workspace.projectRoot);
     if (typeof nodeId === "string" && nodeId.length > 0) {
       const { resolveNodeWorkspaces } = await import("../mesh/presence.mjs");
+      // A dispatch lane's worktree is not a project: presence can record a lane's root as its
+      // workspace's (F-131-18, measured at 07), so each member is folded home to its primary.
+      const { foldDispatchWorktree } = await import("../work-acceptor/observations.mjs");
       const resolved = await resolveNodeWorkspaces(nodeId, { globalWorkStoreOptions: globalWorkStoreOptions ?? {} });
-      for (const member of resolved?.ok === true ? resolved.workspaces : []) if (typeof member?.projectRoot === "string") roots.push(member.projectRoot);
+      for (const member of resolved?.ok === true ? resolved.workspaces : []) {
+        if (typeof member?.projectRoot === "string") roots.push(foldDispatchWorktree(member.projectRoot).workspace ?? member.projectRoot);
+      }
     }
     const served = [];
     for (const root of [...new Set(roots)]) {

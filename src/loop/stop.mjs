@@ -115,6 +115,18 @@ async function scopeDeclaration(workspace, scope, codes) {
   return { scope: scoped.scope, declaration, latest: declaration == null ? null : latestRunCarrying(runs, declaration.loopRunId) };
 }
 
+// hasLoopOn(workspace, scope) → whether the scope carries a loop declaration in this workspace,
+// through the same read the stop and the hand-off use. A refused scope is `false`. It lets one
+// Discord channel serve several projects: `/loop` picks the project whose loop the scope names.
+export async function hasLoopOn(workspace, scope) {
+  try {
+    const read = await scopeDeclaration(workspace, scope, STOP_REFUSALS);
+    return read.refusal == null && read.declaration != null;
+  } catch {
+    return false;
+  }
+}
+
 export async function stopLoop(workspace, { scope, now } = {}) {
   const read = await scopeDeclaration(workspace, scope, STOP_REFUSALS);
   if (read.refusal) return read.refusal;

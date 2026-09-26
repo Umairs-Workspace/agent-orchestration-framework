@@ -212,18 +212,35 @@ function stopSentence(answer) {
   return "draining (a second /loop stop cancels the in-flight session)";
 }
 
+// The default `hasLoopOn`: the stop core's own declaration read, reached by a deferred import so
+// this module's static closure stays the two verbs it dispatches.
+async function hasLoopOnDefault(workspace, scope) {
+  const { hasLoopOn } = await import("../loop/stop.mjs");
+  return await hasLoopOn(workspace, scope);
+}
+
 async function answerLoop(command, kept, user, context) {
   const scope = command.options.scope;
   let targets = kept;
   if (typeof command.options.workspace === "string") {
     const wanted = command.options.workspace;
     targets = kept.filter((workspace) => resolveWorkspaceId(workspace) === wanted || folderOf(workspace) === wanted);
+    if (targets.length === 0) {
+      return refusal("discord-scope-ambiguous", `No project here is named ${wanted} — pick one of ${kept.map(folderOf).join(", ")} with \`workspace:\``);
+    }
+  } else if (kept.length > 1) {
+    // ONE CHANNEL, SEVERAL PROJECTS (operator, 07's live run): the scope names a loop, and only a
+    // project that has one on it can mean it. The one project with a loop on the scope is taken;
+    // `workspace:` is asked for only when two projects both have one.
+    const hasLoopOn = context.hasLoopOn ?? hasLoopOnDefault;
+    const flags = await Promise.all(kept.map((workspace) => hasLoopOn(workspace, scope).catch(() => false)));
+    targets = kept.filter((_, index) => flags[index]);
+    if (targets.length === 0) {
+      return refusal("discord-loop-not-found", `No project in this channel has a loop on scope ${scope} — the projects are ${kept.map(folderOf).join(", ")}`);
+    }
   }
   if (targets.length !== 1) {
-    const names = kept.map(folderOf).join(", ");
-    return refusal("discord-scope-ambiguous", targets.length === 0
-      ? `No project here is named ${command.options.workspace} — pick one of ${names} with \`workspace:\``
-      : `This channel reaches several projects — pick one of ${names} with \`workspace:\``);
+    return refusal("discord-scope-ambiguous", `Several projects in this channel have a loop on scope ${scope} — pick one of ${targets.map(folderOf).join(", ")} with \`workspace:\``);
   }
   const [workspace] = targets;
   const who = `@${user.username}`;

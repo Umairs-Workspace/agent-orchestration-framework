@@ -181,10 +181,11 @@ export const discordCommandsTests = [
     },
   },
   {
-    name: "131/11 task01 — an ambiguous loop command names its candidates, and workspace: picks one",
+    name: "131/11 task01 (131/14 task00) — an ambiguous loop command names its candidates, and workspace: picks one",
     async run() {
       const both = [served("alpha", { allow: [ALPHA_USER] }), served("beta", { allow: [BETA_USER, ALPHA_USER] })];
-      const ambiguous = context({ workspaces: both });
+      // 131/14: two projects are ambiguous only when BOTH have a loop on the scope.
+      const ambiguous = { ...context({ workspaces: both }), hasLoopOn: async () => true };
       await handleInteraction(interaction({ name: "loop", sub: "stop", options: { scope: "131" } }), ambiguous);
       assert.deepEqual(invokes(ambiguous.sequence), [], "invoke is never called");
       assert.match(edit(ambiguous.sequence), /discord-scope-ambiguous/u);
@@ -193,6 +194,26 @@ export const discordCommandsTests = [
       const picked = context({ workspaces: both, invoke: async () => ({ ok: true, request: "drain", state: "requested" }) });
       await handleInteraction(interaction({ name: "loop", sub: "stop", options: { scope: "131", workspace: "beta" } }), picked);
       assert.deepEqual(invokes(picked.sequence).map((entry) => [entry.id, entry.workspace]), [["work:loop", "beta"]]);
+    },
+  },
+  {
+    name: "131/14 task00 — one channel, several projects: /loop takes the one project with a loop on the scope, and says so when none has one",
+    async run() {
+      const both = [served("alpha", { allow: [ALPHA_USER] }), served("beta", { allow: [BETA_USER, ALPHA_USER] })];
+      const answer = async () => ({ ok: true, request: "drain", state: "requested", live: true });
+      const onlyBeta = async (workspace, scope) => path.basename(workspace.projectRoot) === "beta" && scope === "131";
+      for (const sub of ["stop", "resume"]) {
+        const ctx = { ...context({ workspaces: both, invoke: answer }), hasLoopOn: onlyBeta };
+        await handleInteraction(interaction({ name: "loop", sub, options: { scope: "131" } }), ctx);
+        assert.deepEqual(invokes(ctx.sequence).map((entry) => [entry.id, entry.workspace]), [["work:loop", "beta"]], `/loop ${sub} reaches the project with the loop, with no workspace:`);
+      }
+      const none = { ...context({ workspaces: both, invoke: answer }), hasLoopOn: async () => false };
+      await handleInteraction(interaction({ name: "loop", sub: "stop", options: { scope: "131" } }), none);
+      assert.deepEqual(invokes(none.sequence), [], "nothing is invoked");
+      assert.match(edit(none.sequence), /No project in this channel has a loop on scope 131 .*\(discord-loop-not-found\)/u);
+      const single = { ...context({ workspaces: [served("alpha", { allow: [ALPHA_USER] })], invoke: answer }), hasLoopOn: async () => { throw new Error("not consulted"); } };
+      await handleInteraction(interaction({ name: "loop", sub: "stop", options: { scope: "131" } }), single);
+      assert.deepEqual(invokes(single.sequence).map((entry) => entry.id), ["work:loop"], "one project needs no lookup: the verb itself refuses a scope with no loop");
     },
   },
   {

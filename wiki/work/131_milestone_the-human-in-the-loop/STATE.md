@@ -26,6 +26,7 @@ doc: state
 - [x] 11 slash commands
 - [x] 12 a worker's ask reaches Discord
 - [x] 13 test and allow from the CLI
+- [x] 14 one channel, several projects
 
 ## Notes & decisions in flight
 
@@ -319,9 +320,14 @@ Developer Mode, then right-click → Copy Message ID). Its instant is
 `[DateTimeOffset]::FromUnixTimeMilliseconds(([long]<id> -shr 22) + 1420070400000).ToString("o")`.
 
 **Record once, reuse in every leg:**
-- `<buildId>` = `761961f+dirty.20260925T220438` (task 00)
-- `<log>` = the path T1's stderr announces — slot: `______`
-- `<runA>` / `<sA>` (03/00), `<runB>` / `<sB>` (03/01), `<runD>` / `<sD>` (03/03) — slot: `______`
+- `<buildId>` = `d965255+dirty.20260926T133300` (task 00's payload re-installed on 2026-09-26 for 131/13; the first was `761961f+dirty.20260925T220438`)
+- `<log>` = the path T1's stderr announces — `C:\Users\umami\.aof\mesh\logs\loop-diag.03.2026-09-26T13-47-27-317Z.log`
+- `<runA>` = `20260926T134730348Z-0000` (03/00), `<runB>` = `20260926T134730490Z-0000` (03/01),
+  `<runD>` = `20260926T134730929Z-0000` (03/03); 03/02 is `20260926T134730712Z-0000`.
+  `<sA>` / `<sB>` / `<sD>` — slot: `______` (each ask file names its `sessionId`)
+- The loop started 2026-09-26T13:47:26Z (14:47 local); T1 printed `Refine phase complete — 0 stories
+  refined.` and `Wave 1 — dispatching 03/00, 03/01, 03/02, 03/03 (bound 4).`, so neither the refine
+  nor the capacity set-up fault fired.
 - `<recX>` = `<test-bed>/.aof/mesh/dispatch-worktrees/dispatch-03-<SS>/wiki/work/03_milestone_ask-target/stories/<SS>_story_<slug>/runs/node-7297/<runX>.json`
 - The ask files are `~/.aof/mesh/loop-asks/<run>.json`. A transcript is found with
   `Get-ChildItem ~/.claude/projects -Recurse -Filter <sX>.jsonl`.
@@ -356,8 +362,12 @@ the table names. Leave the loop alone (no hand kill). Log: `______`
 7. Open T1 and T2 fresh in the test-bed root. In T2 run `aof messaging status`. Read the newest
    `daemon-started` entry of `~/.aof/mesh/logs/mesh-serve.log` and `mesh-ui.log`. In the channel, type `/`.
 
-- Then both `daemon-started` entries name `build payload <buildId>` with an `at` after the relaunch — paste: `______`
-- And `mesh-serve.log` since that entry has no `discord-bot-off` / `discord-bot-failed` / `discord-token-rejected` / `discord-intent-disallowed` / `discord-command-register-failed` — check: `______`
+- Then both `daemon-started` entries name `build payload <buildId>` with an `at` after the relaunch — paste (read at the source by the agent, 2026-09-26):
+  ```
+  mesh-serve.log:13387 {"at":"2026-09-26T13:42:25.293Z","proc":"mesh-serve","level":"info","code":"daemon-started","message":"mesh serve running (node node-7297, build payload d965255+dirty.20260926T133300)","node":"node-7297"}
+  mesh-ui.log:46      {"at":"2026-09-26T13:42:18.869Z","proc":"mesh-ui","level":"info","code":"daemon-started","message":"mesh ui running (build payload d965255+dirty.20260926T133300)"}
+  ```
+- And `mesh-serve.log` since that entry has no `discord-bot-off` / `discord-bot-failed` / `discord-token-rejected` / `discord-intent-disallowed` / `discord-command-register-failed` — check: the 26 `mesh-serve.log` lines after :13387 and every `degrade.log` entry at or after 13:42Z hold no `discord` code (agent, at the source, 2026-09-26).
 - And `aof messaging status` prints `this machine: set (…)`, `env override AOF_DISCORD_BOT_TOKEN: not set`, `this project: enabled (discord → <channel-id>, 1 may answer by reply)` — paste: `______`
 - And `/` in the channel lists the bot's `status`, `asks` and `loop` — describe: `______`
 - And `git status --short` in the test-bed is empty — paste: `______`
@@ -373,7 +383,45 @@ record `<log>`. Wait for `Lane 03/00 — mint: run <runA> …`, then for `03/00 
 **2. Leg 2 — the other lane keeps going; `/status` and `/asks`** (verifies → `01` leg 2). Do not answer yet.
 
 - Then a `Lane 03/02 — …` line in `<log>` after the row's instant, and no `halted on` line in T1 — paste: `______`
-- And `<recA>` read twice, a minute apart: `heartbeatAt` advanced, `state` stayed `running` — paste both: `______`
+- And a standing ask's record read twice, at least five minutes apart: `heartbeatAt` advanced, `state` stayed `running` — paste both (agent, at the source, 03/03's record `…/dispatch-03-03/…/03_story_bullet/runs/node-7297/20260926T134914729Z-0001.json`):
+  ```
+  read1 2026-09-26T13:59:48.932Z running heartbeatAt 2026-09-26T13:55:32.165Z
+  read2 2026-09-26T14:06:40.200Z running heartbeatAt 2026-09-26T14:00:33.371Z
+  ```
+  The 14:00:33Z beat landed while 03/03 was still waiting. It parked at 14:02:35Z, when F-131-12's halt drained the wave.
+  (Corrected at the live run: the wait beats every `heartbeatMs / 3`, which is 5 min at the 15-min default, per `src/loop/ask.mjs`.
+  03/00's record read `heartbeatAt` 13:55:33.399Z at both 13:57:15Z and 13:58:20Z, so a minute is inside one beat.)
+- And T1 repeats a standing ask's row, with a larger elapsed, once 15 min have passed since the ask — paste both rows with instants (agent, from `loop-diag.03.2026-09-26T15-31-17-597Z.log`, the `--resume` run):
+  ```
+  2026-09-26T15:31:22.057Z stdout 03/03 — waiting on you (build, 1h 42m): I checked where the run stands: …
+  2026-09-26T15:46:22.077Z stdout 03/03 — waiting on you (build, 1h 57m): I checked where the run stands: …
+  ```
+
+**Run log so far (agent, at the source; verifies → the legs named):**
+- **The Discord-reply answer path (leg 5), done on 03/01 at 13:52:27Z.** The ✅ reaction and
+  `**03/01 — answered by @umami_b** (build, 1m) · aof-test-repo · node-7297` arrived. The record
+  `…/01_story_labeller/runs/node-7297/20260926T134914349Z-0001.json` `asks[0]` reads `answer "Go for
+  none"`, `by "@umami_b"`, `answeredAt 13:52:27.419Z`, `parkedAt null`. `sessionId` is still
+  `1669df23-df2a-4d2e-bb37-ecedd07a0fb3`, and T1 printed `Lane 03/01 — drive: session 1669df23… (document)`
+  at 13:53:08.980Z. The session re-asked (`asks[1]`, 13:53:08.986Z), because "none" was not one of
+  its choices (F-131-13), and a second Discord reply answered that at 13:53:43Z.
+- **A parked session resumed with its answer, the same session (the SPEC's `--resume` re-drive).**
+  03/00 parked at 14:02:35Z, in F-131-12's drain. The operator's Discord reply `Let's go with
+  comma-space please` landed at 14:02:46.805Z (`by: { actor: "@umami_b", via: "discord", node:
+  "node-7297" }`). The resume at 15:17Z printed `03/00 — answered by @umami_b (build, 1h 27m)` at
+  15:17:11.919Z, then `Lane 03/00 — drive: session 3d6fcae3-a105-4423-8443-b7d743f5a8df (document)`
+  at 15:22:49.775Z, which is the session that asked, then `settle: done`.
+- **Two halts, both posted by the bot with the project and node:** `**03 — loop halted on
+  lane-merge-conflict at 03/01** · aof-test-repo · node-7297` (15:02 local) and the same at 03/00 (16:22
+  local). The parked lanes rode each halt silently, as ruled (03 ruling 3). F-131-12 is the cause, and
+  its workaround is in place.
+- **03/00 merged home** in the 15:31Z run (`merge: fast-forwarded`, `e262eab`).
+- **The CLI answer path (leg 3), on milestone 03's verify-phase ask.** At the operator's request the agent ran it in the test-bed root. `Get-Date -Format o` gave `2026-09-26T18:48:44.0499075+01:00`, and `aof work answer 03 "b — accept with --gate-override: …" --json` answered `{ "ok": true, "ref": "03", "runId": "20260926T173426698Z-0007", "delivery": "waiting", "state": "answered", "by": { "actor": "you", "via": "cli", "node": "node-7297" }, "answeredAt": "2026-09-26T17:48:44.688Z", "resume": null }`. T1 printed `03 — answered by you (verify, 14m)` at 17:48:45.205Z. The ask file named session `8a7e7e31-29be-4669-a4c9-2fbfd27394e3`, and the re-drive child ran `--answer <that ask file>`. The first try, from this repository's root, was refused `answer-not-waiting` (wrong workspace), which is correct.
+- **The board answer path (leg 4), on fixture 05 (`a840e78`), 05/00's second ask.** The operator answered from the board's ask card ("it worked"). The ask file `~/.aof/mesh/loop-asks/…` for 05/00 read `state "answered"`, `answer "hyphen in between"`, `by { actor "you", via "board", node "node-7297" }`, `answeredAt 2026-09-26T18:13:46.440Z` and session `914dae91-c29a-439f-ac88-49c5cf3fba8d`, the one that asked (`18:12:21.644Z Lane 05/00 — drive: session 914dae91…`). T1 printed `05/00 — answered by you (build, 6m)` at 18:13:48.406Z. The card after sending (operator screenshot): heading `ANSWERED BY YOU`, cost `build · 1m`, the question as plain text clamped under `Show the full question`, and the receipt `✓ Answered by you · 1m — the session is resuming` with `hyphen in between` beneath it, which is DESIGN §1's answered state. The 1m is counted from the re-ask's `askedAt` (F-131-14).
+- **The loop finished (leg 6).** `loop-diag.03.2026-09-26T15-31-17-597Z.log` ends `17:51:11.326Z Accepted milestone 03.`, then `17:51:11.327Z 03 — loop done.` and `17:51:11.329Z exit code=0`, and holds no `halted on` line. `03_milestone_ask-target/SPEC.md` reads `status: done`. The merged records read: 03/00 (`…134914274Z-0001`) 1 ask answered by `@umami_b`; 03/01 (`…134914349Z-0001`) 2 asks, and its verify run (`…163243392Z-0003`) 1 more; 03/03 (`…134914729Z-0001`) 2 asks; 03/02, none. Every ask carries its answer verbatim, `by`, `askedAt` and `answeredAt`. Two carry `parkedAt` from F-131-12's halts. `~/.aof/mesh/loop-asks/` holds no file for any of these runs.
+- **`/asks` (leg 2)** listed 03/00 and 03/03 as `waiting on you (build, 3m)`, each with a jump link
+  (operator screenshot, 13:54Z). **`/status`** missed them (F-131-11). The fix is installed and waits
+  on the desktop restart before it is re-checked.
 - Then `/status` answers (only to you) `**aof-test-repo**` with a line `03/00 — waiting on you (build, <elapsed>)` — paste: `______`
 - Then `/asks` lists `03/00 — waiting on you (build, <elapsed>): <ask>` followed by a `https://discord.com/channels/…/<message>` link whose message id is leg 1's — paste: `______`
 

@@ -95,7 +95,8 @@ Feature: The live ask, read at the source — a real loop asks, the bot carries 
     Given 03/00's `waiting on you` row is standing and has not been answered
     When the operator waits until `<log>` shows a `Lane 03/02 — …` line after the row's instant
     Then that line is pasted with its instant, and T1 has printed no `halted on` line
-    And `<recA>` is read twice, a minute apart, and its `heartbeatAt` advanced between the two reads while `state` stayed `running`: both pasted
+    And a standing ask's record is read twice, at least five minutes apart, and its `heartbeatAt` advanced between the two reads while `state` stayed `running`: both pasted
+    And T1 repeats a standing ask's row, with a larger elapsed, once `heartbeatMs` has passed since the ask: both rows pasted with their instants
     When the operator runs `/status` in the channel
     Then the reply, visible only to them, is headed `**aof-test-repo**` and holds a line `03/00 — waiting on you (build, <elapsed>)`, pasted
     When the operator runs `/asks` in the channel

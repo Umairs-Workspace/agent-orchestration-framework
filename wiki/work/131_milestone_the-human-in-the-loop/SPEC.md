@@ -138,6 +138,7 @@ Out of scope:
 - [x] `11_story_slash-commands` — `/status`, `/asks`, `/loop stop`, `/loop resume` for allowlisted users, dispatched in-process; `/loop resume` hands off to the supervisor (ADR-009) — depends 09, 10
 - [x] `12_story_a-workers-ask-reaches-discord` — a worker's ask carried to the control node on the park fact, posted by the bot, shown on the board and answerable by reply (ADR-010) — depends 04, 09, 10
 - [x] `13_story_test-and-allow-from-the-cli` — `aof messaging test discord` posts one real message and names the fix; `enable discord --allow` writes the answer list (ADR-007, ADR-008) — depends 08, 09, 10
+- [x] `14_story_one-channel-several-projects` — one channel serves every project: `/loop` finds the project by the loop the scope names; a dispatch lane is never served as a project (ADR-009) — depends 11
 
 ## Dependencies
 
