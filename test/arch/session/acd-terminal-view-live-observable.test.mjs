@@ -92,11 +92,12 @@ function sliceBalanced(source, openIndex) {
 // The brace-balanced body of `const finish = (result) => { … }` — the driver's ONE
 // settle point, which covers done/failed (via onExit) AND needs-input (via the
 // sentinel branch, which kills the PTY first). ADR-014 inv.8 pins the end emission
-// HERE, not on one of the three outcome paths separately.
+// HERE, not on one of the three outcome paths separately. The body opens at the anchor's own
+// last `{`: a default parameter (`settle = {}`, 138/00) puts an earlier brace inside the parens.
 function finishBody(workerSource) {
   const anchor = /const\s+finish\s*=\s*\([^)]*\)\s*=>\s*\{/.exec(workerSource);
   if (!anchor) return null;
-  return sliceBalanced(workerSource, workerSource.indexOf("{", anchor.index));
+  return sliceBalanced(workerSource, anchor.index + anchor[0].length - 1);
 }
 // The transcript-watch resolution chain — where `capturedSessionId` first becomes
 // non-null mid-run. ADR-013 inv.7 pins the live report HERE.

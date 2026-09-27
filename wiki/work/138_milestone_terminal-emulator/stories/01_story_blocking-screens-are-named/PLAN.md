@@ -35,7 +35,7 @@ family. The driver is not touched: 00 wired every verdict kind.
 ## Verification step
 
 Under an isolated `AOF_GLOBAL_HOME`, run `node scripts/test.mjs --only` over the registry suite,
-FF-13802, the three loop suites this story writes, 00's four `test/terminal` suites and FF-13801,
+FF-13802, the three loop suites this story writes, 00's four terminal suites and FF-13801,
 and `acd-loop-family-boundary`. Then one zero-token live check: a real `claude` under an empty
 `CLAUDE_CONFIG_DIR`, driven through `driveInteractiveClaudeSession` from a scratch directory with
 `commandDelayMs` 5000. It resolves `failed / blocked_screen` with `screen: { id: "first-run" }`
@@ -56,7 +56,7 @@ Enter sent into the theme picker.
   Never rewrite the whole file from an old read; delete the two keys in one step.
 - The MCP dialog comes after trust in an untrusted folder. Record it in a second launch, or the
   fixture holds two screens.
-- `test/loop` suites spawn children and real git worktrees. Run them with `--only`, never under
+- The loop suites spawn children and real git worktrees. Run them with `--only`, never under
   another suite's load.
 - `reportFacts` prints a detail's value with `JSON.stringify` unless it is a string, so pass the id
   string, not the `{ id }` object.

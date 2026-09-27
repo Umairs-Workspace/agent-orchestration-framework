@@ -59,12 +59,15 @@ files:
   - test/fixtures/claude-screens/ready.json
   - test/fixtures/claude-screens/first-run.json
   - test/fixtures/claude-screens/usage-limit.json
+  - test/fixtures/claude-screens/ready.classic.json
   - test/arch/terminal/index.mjs
   - test/arch/terminal/acd-screen-has-one-reader.test.mjs
   - test/session/agent-session-driver-drives.test.mjs
   - test/session/agent-session-driver-door.test.mjs
   - test/work/four-deadlines.test.mjs
   - test/arch/session/acd-session-driver-mesh-blind.test.mjs
+  - test/arch/session/acd-terminal-mirror-geometry-pinned.test.mjs
+  - test/arch/session/acd-terminal-view-live-observable.test.mjs
   - test/arch/testing/acd-source-directory-budget.test.mjs
 schema: 1
 aofVersion: 0.1.0
@@ -101,7 +104,8 @@ What lands (ADR-001, ADR-002, ADR-004, and ADR-003 §1 and §6):
 - **`degrade.mjs`.** `reportDegrade` gains an optional `extra.key`, and throttles per
   (code, key).
 - **Fixtures.** `ready`, `first-run` (the menu the `ready` recogniser must reject) and a synthetic
-  `usage-limit`.
+  `usage-limit`. `ready.classic`, the classic renderer's box on the normal buffer, joined at
+  138's verify, when the operator struck the alternate-buffer clause (m138/F-03).
 - **Controls.** FF-13801, and FF-5301 re-pinned (direct imports plus
   `terminal/session-screen.mjs`, reach 25 → 28).
 

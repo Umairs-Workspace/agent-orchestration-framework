@@ -2,7 +2,9 @@
 // RECORDED (milestone 138 / story 01, task 04; 138/ADR-002 §1, ADR-003 §1 §2 §4 §7).
 //
 // Over the live registry and the live fixture directory:
-//   - every entry has `test/fixtures/claude-screens/<id>.json`, and every fixture names a registered id;
+//   - every entry has `test/fixtures/claude-screens/<id>.json`, and every fixture names a registered id:
+//     `<id>.json`, or `<id>.<variant>.json` for a further recording of the same screen (the classic
+//     renderer's box is `ready.classic.json`, recorded at 138's verify);
 //   - every fixture's `claude` field is a version string, or begins `synthetic:`;
 //   - rendered through `screen.mjs`, each fixture is recognised by its own entry and, among the
 //     entries of its own kind (the frame-deciding ones, or the `wait` ones), by no other (01/01,
@@ -48,7 +50,7 @@ export async function screenRegistryViolations({ registry, fixtures }) {
     if (entry.action === "consent" && !(typeof entry.option === "string" && entry.option.length > 0)) say({ rule: "missing option", entry: entry.id });
   }
   for (const { name, data } of fixtures) {
-    const own = byId.get(name.replace(/\.json$/u, ""));
+    const own = byId.get(name.replace(/\.json$/u, "").split(".")[0]);
     if (own == null) say({ rule: "missing entry", fixture: name });
     const source = data?.claude;
     if (!(typeof source === "string" && (VERSION_RE.test(source) || source.startsWith("synthetic:")))) say({ rule: "missing version", fixture: name });
@@ -74,6 +76,7 @@ export async function screenRegistryViolations({ registry, fixtures }) {
 
 async function liveFixtures() {
   const names = (await readdir(fixtureDir)).filter((name) => name.endsWith(".json")).sort();
+  assert.ok(names.length >= 7, `non-vacuity: ${fixtureDir} holds ${names.length} recordings, fewer than the six v1 screens and the classic box`);
   return Promise.all(names.map(async (name) => ({ name, data: JSON.parse(await readFile(path.join(fixtureDir, name), "utf8")) })));
 }
 
@@ -85,7 +88,7 @@ export const archTests = [
     name: "arch/138 FF-13802 (acd-screen-registry-is-recorded): every registered screen is recorded, every recording is its own screen, and the input box is never a dialog",
     run: async () => {
       const fixtures = await liveFixtures();
-      assert.ok(CLAUDE_SCREENS.length >= 6 && fixtures.length >= 6, `non-vacuity: ${CLAUDE_SCREENS.length} entries, ${fixtures.length} recordings`);
+      assert.ok(CLAUDE_SCREENS.length >= 6 && fixtures.length >= 7, `non-vacuity: ${CLAUDE_SCREENS.length} entries, ${fixtures.length} recordings`);
       assert.deepEqual(await screenRegistryViolations({ registry: CLAUDE_SCREENS, fixtures }), []);
     },
   },

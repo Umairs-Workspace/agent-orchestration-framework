@@ -8,11 +8,13 @@ Feature: the directive is typed on the input box — on the first ready frame, n
   model, the door answers today's byte gate, moved out of the driver verbatim. The driver opens the
   door through `options.openSessionScreen`, whose default is the real one.
 
-  RULINGS (PO, 2026-09-27). (1) A frame is ready when all four hold: the alternate buffer is
-  active; the cursor's row R begins with `❯` (U+276F) at column 0; row R−1 and row R+1 are each
-  `─` (U+2500) across all `cols`; and R−1 and R+1 are inside the viewport. (2) A real launch is
-  what it is today: `commandDelayMs` above 0 and either no injected `ptySpawn` or `observeReadiness`
-  set. A scripted launch keeps its fixed write at `commandDelayMs` whatever the screen shows.
+  RULINGS (PO, 2026-09-27). (1) A frame is ready when all three hold, on either buffer: the
+  cursor's row R begins with `❯` (U+276F) at column 0; row R−1 and row R+1 are each `─` (U+2500)
+  across all `cols`; and R−1 and R+1 are inside the viewport. (As refined, the alternate buffer was
+  a fourth clause. The operator struck it at 138's verify: claude's classic renderer draws the same
+  box on the normal buffer, recorded as `ready.classic.json`, m138/F-03, ADR-002 §1 amended.)
+  (2) A real launch is what it is today: `commandDelayMs` above 0 and either no injected `ptySpawn`
+  or `observeReadiness` set. A scripted launch keeps its fixed write at `commandDelayMs` whatever the screen shows.
   (3) With a model, a real launch pastes on the first `ready` verdict and does not wait for
   `commandDelayMs`; the Enter is still its own write after the submit delay (70/06). (4) With a
   model and no `ready` verdict by `readyCapMs` (default 60 s), nothing is typed: the session stops
@@ -46,8 +48,10 @@ Feature: the directive is typed on the input box — on the first ready frame, n
     Examples:
       | frame                                                                                                   | ready |
       | the `ready.json` recording                                                                              | yes   |
+      | the `ready.classic.json` recording: the classic renderer's box on the normal buffer                     | yes   |
       | the `first-run.json` recording                                                                          | no    |
-      | the `ready.json` frame redrawn on the normal buffer                                                     | no    |
+      | the `ready.json` frame redrawn on the normal buffer                                                     | yes   |
+      | the `ready.json` frame redrawn on the normal buffer with the `❯` row indented by one space              | no    |
       | the `ready.json` frame with the `❯` row indented by one space                                           | no    |
       | the `ready.json` frame with both rules drawn in `╌`                                                     | no    |
       | the `ready.json` frame with the lower rule 79 characters wide                                           | no    |
@@ -62,6 +66,13 @@ Feature: the directive is typed on the input box — on the first ready frame, n
     When `READY` is emitted 20 ms after the spawn
     Then the directive's bracketed paste is the first write, within 1,000 ms of the spawn
     And the Enter is the second write, on its own
+
+  Scenario: on the classic renderer the directive is pasted on the box on the normal buffer, not at the cap
+    Given the real door over a real model and a degrade sink the case reads
+    And the drive is a real launch with `commandDelayMs` 5000 and `readyCapMs` 10000
+    When the chunks of `test/fixtures/claude-screens/ready.classic.json` are emitted 20 ms after the spawn
+    Then the directive's bracketed paste is the first write, within 1,000 ms of the spawn
+    And the sink holds no `screen-not-ready` and no `tui-ready-marker-absent` event
 
   Scenario: nothing ready, nothing typed — the cap stops the session
     Given the real door over a real model and a degrade sink the case reads

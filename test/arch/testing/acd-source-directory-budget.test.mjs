@@ -603,7 +603,7 @@ export const SOURCE_DIRECTORY_EXEMPTIONS = Object.freeze([
   Object.freeze({ directory: "src/terminal", why: "the session driver's screen (138/ADR-001): `screen.mjs` (the headless model, the ONE importer of `@xterm/headless`, FF-13801), `session-screen.mjs` (the door: the model, the recognition pass, the byte-gate fallback and the evidence) and `claude-screens.mjs` (the recorded registry, ADR-003) — three members, under the threshold. The root `terminal-*.mjs` modules are the family's natural later members, moved by an item of their own; a ninth is a row." }),
   Object.freeze({ directory: "test/terminal", why: "milestone 138's screen suites (138/ADR-001): `index.mjs`, `screen-model`, `session-screen-ready`, `session-screen-verdicts` and `session-screen-evidence` (story 00), and story 01's `claude-screens-registry` — six members, under the threshold." }),
   Object.freeze({ directory: "test/arch/terminal", why: "milestone 138's screen controls (138/ADR-001): `index.mjs`, FF-13801 `acd-screen-has-one-reader` (story 00) and story 01's FF-13802 `acd-screen-registry-is-recorded` — three members, under the threshold." }),
-  Object.freeze({ directory: "test/fixtures/claude-screens", why: "the recorded claude screens (138/ADR-001 §6, ADR-003 §7) — data the screen suites replay, not a layer of modules: `ready`, `first-run` and `usage-limit` (story 00), and story 01's `trust`, `mcp-approval` and `login` — six `.json` recordings, under the threshold." }),
+  Object.freeze({ directory: "test/fixtures/claude-screens", why: "the recorded claude screens (138/ADR-001 §6, ADR-003 §7) — data the screen suites replay, not a layer of modules: `ready`, `first-run` and `usage-limit` (story 00), story 01's `trust`, `mcp-approval` and `login`, and `ready.classic` (the classic renderer's box, recorded at 138's verify) — seven `.json` recordings, under the threshold." }),
   // milestone 131 — the notify family (ADR-005 §2), founded by story 02 as TWO exemptions on 133's
   // precedent, each naming its members so no later story edits a budget line to land one.
   Object.freeze({ directory: "src/notify", why: "the notifier (131/ADR-005 §2, ADR-006 §1): `form.mjs` and `form.d.mts` (the one zero-import formatter every face reads), `notify.mjs` (the config reader, the envelope builder, the channel registry and the delivery), `discord.mjs` (the first channel's renderer, its token shape and its one authorised request, ADR-007), story 08's `secret.mjs` (the machine-wide messaging store's ONE home, ADR-005 §1 as amended at 131/08) and story 10's `ask-messages.mjs` (the index from a posted ask message to its ask, ADR-008 §4) — six members, under the threshold. A second channel type is a sixth file here; a ninth is a row." }),
@@ -964,7 +964,7 @@ export const archTests = [
         "src/terminal": ["screen.mjs", "session-screen.mjs", "claude-screens.mjs"],
         "test/terminal": ["index.mjs", "screen-model", "session-screen-ready", "session-screen-verdicts", "session-screen-evidence", "claude-screens-registry"],
         "test/arch/terminal": ["index.mjs", "acd-screen-has-one-reader", "acd-screen-registry-is-recorded"],
-        "test/fixtures/claude-screens": ["ready", "first-run", "usage-limit", "trust", "mcp-approval", "login"],
+        "test/fixtures/claude-screens": ["ready", "first-run", "usage-limit", "trust", "mcp-approval", "login", "ready.classic"],
       };
       for (const [directory, members] of Object.entries(planned)) {
         const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === directory);

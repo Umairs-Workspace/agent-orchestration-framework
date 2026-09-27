@@ -174,14 +174,20 @@ RESEARCH Q2 measured the real ready frame. It also measured that the first-run m
 
 ### Decision
 
-1. **Ready means all four of these hold.**
-   - The **alternate** buffer is active.
+1. **Ready means all three of these hold, on either buffer** (amended at 138's verify,
+   2026-09-27, by the operator's ruling on m138/F-03).
    - A row R's text begins with `❯` (U+276F) at column 0.
    - Rows R−1 and R+1 each consist entirely of `─` (U+2500) across the full width.
    - The cursor is on row R.
 
    The test is structural, not textual. The placeholder (`Try "…"`) is never read. A menu fails
-   it three ways: normal buffer, indented `❯`, dashed `╌` rules.
+   it two ways: indented `❯`, dashed `╌` rules.
+   - **Why the buffer left the test.** As refined, §1 also required the alternate buffer, and a
+     menu failed it three ways. 138/02 then found that claude's classic renderer draws the same
+     box on the **normal** buffer (`ready.classic.json`, recorded at verify). It runs once after a
+     fullscreen boot that did not finish, and on every launch under `/tui default`. Under the
+     buffer clause, every such drive typed nothing and stopped at the cap, which the byte gate
+     never did. The two structural tests still separate every recorded dialog from the box.
 2. **The paste is typed on the first ready frame.** Typing no longer waits on the fixed floor on
    this path. `commandDelayMs` still marks a real launch and is still the fallback's floor.
    The Enter stays its own write (70/06).
@@ -293,7 +299,8 @@ in seconds.
    snapshot's rows, where it used to read the escape-stripped byte window. The pattern keeps its
    home in `loop-bounds.mjs`.
 7. **The fixtures.**
-   - **Path:** `test/fixtures/claude-screens/<id>.json`, holding
+   - **Path:** `test/fixtures/claude-screens/<id>.json`, and `<id>.<variant>.json` for a further
+     recording of the same screen (the classic renderer's box is `ready.classic.json`), holding
      `{ claude: "<version>", cols, rows, chunks: [{ t, d }] }`: the raw chunks as the probe
      records them (RESEARCH Q2 recipe) and the version they were recorded from. The version lives
      in the file, not the name, so a re-capture keeps its path.

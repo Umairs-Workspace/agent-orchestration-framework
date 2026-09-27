@@ -26,13 +26,16 @@ import { PROVIDER_WAIT_RE } from "../loop-bounds.mjs";
 const PROMPT = "❯";
 const RULE = "─";
 
-// ready (ADR-002 §1) — all four hold: the alternate buffer is active; the cursor's row R begins
-// with `❯` at column 0; rows R−1 and R+1 are each `─` across all cols; and both are inside the
-// viewport. Structural, never textual: the placeholder after the glyph changes with every release
-// and is never read. A resumed session's earlier turns begin with `❯` too, but the cursor is not on
-// them and no rules hold them, so the live box is the only one that passes.
+// ready (ADR-002 §1, amended at 138's verify) — all three hold, on EITHER buffer: the cursor's row R
+// begins with `❯` at column 0; rows R−1 and R+1 are each `─` across all cols; and both are inside
+// the viewport. The fullscreen renderer draws the box on the alternate buffer and the classic one
+// on the normal buffer (`ready.classic.json`), so the buffer is not part of the test; a menu still
+// fails it twice, by its indented `❯` and its dashed rules. Structural, never textual: the
+// placeholder after the glyph changes with every release and is never read. A resumed session's
+// earlier turns begin with `❯` too, but the cursor is not on them and no rules hold them, so the
+// live box is the only one that passes.
 function isInputBox(snapshot) {
-  if (snapshot?.buffer !== "alternate") return false;
+  if (snapshot == null) return false;
   const row = snapshot.cursor?.row;
   const rows = snapshot.rows ?? [];
   if (!Number.isInteger(row) || row - 1 < 0 || row + 1 > rows.length - 1) return false;

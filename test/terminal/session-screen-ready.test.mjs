@@ -118,10 +118,16 @@ const READY_ROW = async () => (await readyFrame()).cursor.row;
 export const sessionScreenReadyTests = [
   ...[
     ["the `ready.json` recording", async () => READY_CHUNKS(), true],
+    ["the `ready.classic.json` recording: the classic renderer's box on the normal buffer", async () => (await loadFixture("ready.classic")).chunks.map((chunk) => chunk.d), true],
     ["the `first-run.json` recording", async () => (await loadFixture("first-run")).chunks.map((chunk) => chunk.d), false],
     ["the `ready.json` frame redrawn on the normal buffer", async () => {
       const base = await readyFrame();
       return [frame({ alternate: false, ...base })];
+    }, true],
+    ["the `ready.json` frame redrawn on the normal buffer with the `❯` row indented by one space", async () => {
+      const base = await readyFrame();
+      base.rows[base.cursor.row] = ` ${base.rows[base.cursor.row]}`;
+      return [frame({ alternate: false, rows: base.rows, cursor: { row: base.cursor.row, col: base.cursor.col + 1 } })];
     }, false],
     ["the `ready.json` frame with the `❯` row indented by one space", async () => {
       const base = await readyFrame();
@@ -187,6 +193,27 @@ export const sessionScreenReadyTests = [
       assert.equal(pty.writes[1], SUBMIT_KEY, "the Enter is the second write, on its own");
       pty.exit(0);
       assert.equal((await pending).outcome, "done");
+    },
+  },
+  {
+    name: "138/00 task03 — on the classic renderer the directive is pasted on the box on the normal buffer, not at the cap",
+    run: async () => {
+      const chunks = (await loadFixture("ready.classic")).chunks.map((chunk) => chunk.d);
+      const sink = captureDegrades();
+      try {
+        const { pty, pending, startedAt } = drive({ options: { commandDelayMs: 5000, readyCapMs: 10_000, submitDelayMs: undefined } });
+        await sleep(20);
+        pty.emitAll(chunks);
+        await waitUntil(() => pty.writes.length >= 1, 10_000);
+        const pastedAfterMs = Date.now() - startedAt;
+        assert.equal(pty.writes[0], pasteOf(BRIEF.command), "the first write is the directive's bracketed paste");
+        assert.ok(pastedAfterMs < 1000, `pasted ${pastedAfterMs} ms after the spawn — neither the floor nor the 10,000 ms cap was waited for`);
+        pty.exit(0);
+        assert.equal((await pending).outcome, "done");
+        assert.deepEqual(sink.events.map((event) => event.code).filter((code) => code === "screen-not-ready" || code === "tui-ready-marker-absent"), [], "no cap and no byte-gate line");
+      } finally {
+        sink.restore();
+      }
     },
   },
   {

@@ -61,4 +61,5 @@ shows as a paste into the picker, or as byte-tail evidence.
 - `acd-no-new-silent-catch` counts `catch` blocks. The loader's catch reports
   `screen-model-unavailable`, and the model's own catches report too.
 - The first-run fixture must not be what a cap case draws: story 01 registers it as blocking.
-- `test/session` is at 37 of 37. Every new case goes in `test/terminal`.
+- The session suite directory is at its budget, 37 of 37. Every new case goes in the new
+  terminal suite directory.
