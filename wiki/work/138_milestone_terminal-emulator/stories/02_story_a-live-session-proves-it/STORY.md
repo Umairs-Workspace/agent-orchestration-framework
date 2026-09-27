@@ -5,7 +5,7 @@ slug: a-live-session-proves-it
 title: "A live session proves it — the deployed driver types on the input box, names a blocking screen in seconds, and leaves the screen in the degrade log, on this node and the WSL node"
 parent: 138
 depends: ["00", "01"]
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
@@ -23,7 +23,11 @@ reads:
   - src/commands/drive.mjs
   - src/agent-session-driver.mjs
   - src/terminal/claude-screens.mjs
-files: []
+files:
+  - src/agent-session-driver.mjs
+  - scripts/deploy-wsl.sh
+  - test/terminal/session-screen-ready.test.mjs
+  - test/loop/unattended-launch-envelope.test.mjs
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -52,9 +56,9 @@ What is measured (no source file; evidence goes in `VERIFICATION.md`):
 
 ## Tasks
 
-- [ ] `tasks/00_the-payload-lands-on-both-nodes-read-at-the-source.feature` — install `--wsl` from the main checkout; version and `@xterm/headless` 6.0.0 read on both nodes; nothing restarted
-- [ ] `tasks/01_a-blocking-screen-is-named-in-seconds-on-both-nodes.feature` — empty config: drive and loop stop `first-run` in seconds, picker in the degrade log; the WSL node the same (zero-token)
-- [ ] `tasks/02_a-real-drive-types-on-the-box-and-its-stop-leaves-the-repl.feature` — one small turn: accepted, cancelled at 45 s, the REPL in the degrade log, no fallback line
+- [x] `tasks/00_the-payload-lands-on-both-nodes-read-at-the-source.feature` — install `--wsl` from the main checkout; version and `@xterm/headless` 6.0.0 read on both nodes; nothing restarted
+- [x] `tasks/01_a-blocking-screen-is-named-in-seconds-on-both-nodes.feature` — empty config: drive and loop stop `first-run` in seconds, picker in the degrade log; the WSL node the same (zero-token)
+- [x] `tasks/02_a-real-drive-types-on-the-box-and-its-stop-leaves-the-repl.feature` — one small turn: accepted, cancelled at 45 s, the REPL in the degrade log, no fallback line
 
 ## Notes
 
@@ -66,3 +70,8 @@ What is measured (no source file; evidence goes in `VERIFICATION.md`):
   once, which is ADR-001 §4 working as designed, not a failure of this story.
 - **Tokens.** The typed-directive check spends one small real turn. Every other check is
   zero-token.
+- **Built 2026-09-27.** The legs found two defects, both fixed in `d8d2230`, and their failed
+  attempts stay in `VERIFICATION.md` as evidence:
+  - `deploy-wsl.sh` synced `package.json` without its lock, and stamped a failed `npm ci`.
+  - On Windows, a launch with no `TERM` made claude draw `>` for `❯`, so the driver recognised no
+    screen. The launch env now declares the PTY's terminal.

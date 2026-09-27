@@ -18,6 +18,8 @@ doc: state
 - [x] Contracts authored 2026-09-27 (`aof:refine 138/00-02 --solo`): 00 has seven tasks, 01 five
   and 02 three, each with a `PLAN.md`. All three validate. The dependency approval is still
   00's first task, not this refine's.
+- [x] Built 2026-09-27: 00 and 01 in-review (see Notes). 02's live legs passed on both nodes after
+  two fixes, `d8d2230`. Next: `aof:verify 138`.
 
 ## Notes & decisions in flight
 
@@ -88,17 +90,27 @@ doc: state
   - `aof:refine 138/01 --solo` re-authored 01's tasks 00, 01, 02 and 04, its STORY and its PLAN to
     match.
 - **Open, for the operator:**
-  - `npm ci` on the Mac worker after it pulls.
-  - **02 waits, at the operator's choice (2026-09-27).** 00 and 01 are built, reviewed and
-    in-review.
-    - At the operator's word they were merged into the feature branch `138-terminal-emulator`, and
-      `main` (139, #3) was merged in after them (`cd1e4e3`). The build worktree and the two task
-      branches are removed.
-    - The main checkout therefore now holds the new driver, and live loops 02 and 03 load it on
-      their next drive.
-    - What 02 still needs: `install-local --wsl` from the main checkout, the operator's restart of
-      the desktop app, then `aof:continue 138`.
-    - The milestone run `20260927T122453098Z-0001` is left open. The next mint reclaims it.
+  - **Installed, restart pending (operator).** This node's payload is
+    `d8d2230+dirty.20260927T173721` and the WSL node's tree is `f75fa75` (the same code). Both
+    daemons keep the build they started on until the desktop app is restarted. The WSL worker
+    daemon is the same: restart it to pick up the tree.
+  - **`npm ci` on the Mac worker after it pulls.** Until then it logs `screen-model-unavailable`
+    once and runs the byte gate, which is ADR-001 §4 working.
+  - **The classic-renderer finding needs the operator's ruling** (VERIFICATION, 138/02). claude's
+    classic renderer draws the REPL on the normal buffer, and ADR-002 §1 requires the alternate
+    one. Routed `story (operator)`: accepting the box on either buffer amends ADR-002 §1.
+- **02 was built 2026-09-27 (`aof:continue 138 --solo`).**
+  - The operator's `aof:continue 138` came after the merge. The phase reclaimed the stranded
+    milestone run (`20260927T160008202Z-0002`, retry of `…-0001`).
+  - All three legs ran without a desktop restart: each is a CLI verb or a script, and each call
+    loads the payload.
+  - The test-bed gained fixture milestones `06` (`screen-proof`, five stories) and `07`
+    (`loop-proof`, one story) on its branch. Their failed and cancelled runs stay as evidence.
+- **02's token cost, recorded before its one real leg (2026-09-27, ruling 1 of 02/02).** One small
+  real turn: the operator's configured claude receives `/aof:continue` on the test-bed's fixture
+  story and is cancelled 45 s after launch. Every other leg of 02 is zero-token.
+  - The first attempt (`06/02`) ran on a build without the fix and typed nothing.
+  - The counted leg (`06/04`) cost $0.40, as measured: 8 turns and 5 tool calls.
 
 ## Feedback (for retro)
 
@@ -141,6 +153,33 @@ doc: state
   of 15 runs. The BASE, `4831f38` without 00, reproduces it: it failed in 1 of 12 runs, one of them
   a combined run that the build passed. It reads `defaultWatchTranscriptCompletion`, which 00 does
   not touch. Routed as a recorded finding: the case needs its tick to be quiescent before the bump.
+- **02: every recording came from a shell that declared a Unicode terminal (fixed in `d8d2230`).**
+  - 01's captures removed `WT_SESSION` but ran under Git Bash's `TERM=xterm-256color`. The driver
+    scrubs `TERM_PROGRAM` too.
+  - So from a PowerShell with neither, claude 2.1.283 drew `>` for `❯` and `√` for `✔`. The first
+    live drive then ran to the 60 s cap on a screen the registry knows.
+  - Lesson: a recording names the environment it was drawn in, and the launch declares the
+    terminal it emulates rather than inheriting the operator's.
+- **02: the WSL deploy stamped a failed install (fixed in `d8d2230`).** `deploy-wsl.sh` copied
+  `package.json` without `package-lock.json`, so `npm ci` refused. The script never checked the
+  failure and wrote the new lock's sha anyway, and `install-local` exited 0. Lesson: the first
+  dependency this deploy path ever carried was the first test of its reinstall branch.
+- **02: the contract's literal checks against what held.** These are for the PO at `aof:verify`.
+  - Background: 00 and 01 were `in-review`, not `done`.
+  - Task 01, ruling 3's `~/.claude.json` mtime: every live claude rewrites the file, so the check
+    is confounded rather than passed. The drive did not write it: the trust pre-write returns on an
+    already-trusted cwd.
+  - Task 01: `aof work loop` admits no story ref, so the loop leg drove fixture milestone 07.
+  - Task 02: the first user record opens with claude's `<pasted_content>` wrapper, with
+    `/aof:continue 06/04` as its first line inside.
+- **02: a concurrent session reinstalled the payload 4 s before the real leg.** It deployed from
+  the shared main checkout, which did not yet hold the fix. That voided task 02's first attempt,
+  which typed nothing. The re-run read the build stamp before and after. Recorded finding: live
+  legs on a shared checkout need their build pinned, or read at both ends.
+- **02: recorded, not fixed.**
+  - Under the SEA launcher, node-pty's console-list `fork()` re-enters the aof CLI, prints its
+    usage to stderr on every PTY kill, and waits out a 5 s fallback. This predates 138.
+  - `ensureWorktreeTrusted` ignores `CLAUDE_CONFIG_DIR`.
 
 ## Verification
 
