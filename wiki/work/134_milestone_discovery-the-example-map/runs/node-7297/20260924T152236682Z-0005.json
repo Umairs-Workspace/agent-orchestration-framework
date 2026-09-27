@@ -1,9 +1,9 @@
 {
   "runId": "20260924T152236682Z-0005",
   "itemRef": "134",
-  "state": "running",
+  "state": "failed",
   "attempt": 1,
-  "outcome": null,
+  "outcome": "failed",
   "sessionId": null,
   "brief": {
     "loop": {
@@ -27,8 +27,8 @@
     }
   },
   "createdAt": "2026-09-24T15:22:36.682Z",
-  "updatedAt": "2026-09-24T15:37:51.596Z",
-  "failureReason": null,
+  "updatedAt": "2026-09-24T15:38:38.315Z",
+  "failureReason": "agent_error",
   "heartbeatAt": "2026-09-24T15:37:51.596Z",
   "retryOf": null,
   "reclaimedAt": null,
