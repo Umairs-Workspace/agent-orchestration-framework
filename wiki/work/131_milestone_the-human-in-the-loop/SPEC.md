@@ -3,10 +3,10 @@ type: milestone
 number: 131
 slug: the-human-in-the-loop
 title: "The human in the loop — a session that needs you asks where you are, waits in place, and the loop keeps going"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-16
-updated: 2026-09-26
+updated: 2026-09-27
 depends: [129]
 schema: 1
 aofVersion: 0.1.0

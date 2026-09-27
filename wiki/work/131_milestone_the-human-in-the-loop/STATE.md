@@ -506,6 +506,8 @@ After T1 halts, run `/loop resume scope:04`.
   - **Order: 09 → 10 → (11 ∥ 12).** 11 and 12 share only `VERIFICATION.md`.
   - **Graph unavailable:** `aof graph build .` timed out (`graphify-timeout`), so the boundaries
     were drawn from reading the source.
+- **(`aof:verify 131`, 2026-09-27) MILESTONE ACCEPTED** on `--gate-override`, as the operator instructed. The reason is in VERIFICATION `## Accept decision`. The Feedback below has graduated into RETROSPECTIVE.md (milestone R1–R2) and the story retrospectives. It is kept as the archive of the run.
+
 ## Feedback (for retro)
 
 <!-- Raw, attributed entries; triaged into VERIFICATION.md / RETROSPECTIVE.md at aof:verify. -->
