@@ -121,3 +121,40 @@ screen: screen normal {"row":21,"col":52}
 node-pty's forked console-list agent also printed `AttachConsole failed` twice after the tree
 kill. That is the known Windows kill path running against a tree `taskkill /T` had already ended
 (the 2026-09-12 bracket), not the driver.
+
+## 138/01 task 00 — three screens recorded from a real claude (`@manual`, 2026-09-27)
+
+`claude --version` printed `2.1.283 (Claude Code)`. Each capture ran from the builder's scratch
+directory through the driver's own seams (80×24, `WT_SESSION` removed), with zero tokens: no prompt
+was typed.
+
+| fixture | how it was reached | chunks | duration | rendered frame |
+|---|---|---|---|---|
+| `login.json` | empty `CLAUDE_CONFIG_DIR`, one Enter on the theme picker | 9 | 573 ms | normal buffer: `Select login method:`, `❯ 1. Claude account with subscription · Pro, Max, Team, or Enterprise`, then the Console and 3rd-party rows |
+| `trust.json` | the operator's configured claude in a never-trusted scratch cwd, no key | 7 | 745 ms | normal buffer, between rules: `Accessing workspace:`, the scratch path, `Quick safety check: …`, `❯ No, exit`, `  Yes, I trust this folder`, `Enter to confirm · Esc to cancel` |
+| `mcp-approval.json` | a second scratch cwd whose `.mcp.json` names `probe-mcp` (`node -e process.exit(0)`), no key | 8 | 1,066 ms | normal buffer, dashed rules: `New MCP server found in this project: probe-mcp`, `Use this MCP server`, `Use this and all future MCP servers in this project`, `❯ Continue without using this MCP server` |
+
+- **Scrubbed.** `trust.json` draws the scratch path. `Umair` became `Umami` and `umair` became
+  `umami`, both same-length, so the frame renders the same. The private-terms check over every
+  fixture found 0 hits.
+- **The operator was told before their config was touched, and it is as it was.**
+  - The `projects` keys were read by key and never printed: they name private projects, so the
+    lists are pasted as a count and a hash.
+  - Before the captures: 53,037 keys, sha256 `655a1b75a6c81ae3ed1338324bfe9105054d0003b2869e6c6f4b3c7b5fe1f29e`.
+  - The captures added one key, the MCP folder's pre-trust. The trust capture ended on the
+    unanswered dialog, so claude wrote nothing for it.
+  - The cleanup removed that one key in one temp-then-rename write, as `src/claude-trust.mjs`
+    writes.
+  - After the cleanup: 53,037 keys, the same sha256. No prior key was missing and no scratch key
+    was left. The scratch folders are deleted.
+- **Three departures from the contract, each forced by what claude 2.1.283 draws.** They are routed
+  to the operator in `STATE.md`.
+  1. `trust.json`'s highlighted row is `❯ No, exit`. `Yes, I trust this folder` is the second
+     option and is unnumbered, so the scenario's `❯ 1. Yes, I trust this folder` row does not
+     exist.
+  2. ADR-003 §4 admits one Enter and no arrow key, so no key can answer Yes. The MCP folder was
+     therefore trusted through aof's own pre-write, `ensureWorktreeTrusted`, the seam every lane
+     launch uses. No key reached either launch.
+  3. `login.json` holds the whole recording, not "the chunks from the Enter on". Replayed alone,
+     the two chunks after the Enter render the menu without its item numbers or banner: Ink
+     redraws only the cells that changed.

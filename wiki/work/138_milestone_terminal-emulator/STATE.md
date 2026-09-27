@@ -76,6 +76,20 @@ doc: state
   `C:\Source\umami\aof-138` on branch `138-terminal-emulator-00`, cut from `4831f38`.
 - **Open, for the operator:**
   - `npm ci` on the Mac worker after it pulls.
+  - **01's contract does not match claude 2.1.283's trust dialog (found at 01/00's capture,
+    2026-09-27). 01 halts here until it is decided.**
+    - What claude draws: the highlighted default is `❯ No, exit`, and `Yes, I trust this folder`
+      is the second, unnumbered option.
+    - ADR-003 §4's consent is one Enter, only on a highlighted named option, and never an arrow
+      key. It therefore can never answer this dialog: an Enter here would EXIT claude.
+    - 01/01's "the highlighted row is the named option in the recording" and 01/02's "trust is
+      answered once" are false against `trust.json`.
+    - The MCP dialog's default is `❯ Continue without using this MCP server`, not "Use this
+      server" as the 2026-09-27 driver comment says.
+    - The choice (an ADR-003 amendment, then `aof:refine 138/01`) is one of three:
+      - trust becomes a `fail`, because the pre-write IS the consent and a dialog means it lost;
+      - the consent may send Down then Enter on this dialog only;
+      - trust stays a consent that in practice always fails as `blocked_screen: trust`.
 
 ## Feedback (for retro)
 
