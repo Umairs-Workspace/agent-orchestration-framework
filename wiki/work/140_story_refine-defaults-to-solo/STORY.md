@@ -3,7 +3,7 @@ type: story
 number: 140
 slug: refine-defaults-to-solo
 title: "Refine runs solo unless told otherwise — continue stays orchestrated by hand and solo under the loop"
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
@@ -37,6 +37,7 @@ files:
   - test/loop/drive-command-phase-drivers.test.mjs
   - test/loop/autonomous-shell-out-prompt.test.mjs
   - test/arch/loop/acd-loop-concurrency-single-home.test.mjs
+  - test/arch/work/acd-phase-door-not-a-driver.test.mjs
   - test/loop/loop-command-reconcile.test.mjs
   - test/loop/loop-only-fail-redrives.test.mjs
   - test/loop/loop-cap-exhaustion-carries-the-record.test.mjs
@@ -70,9 +71,9 @@ because a single author sees all of them.**
 
 ## Tasks
 
-- [ ] `tasks/00_each-prompt-states-its-own-default.feature` — an unset `work.agents.mode` plays
+- [x] `tasks/00_each-prompt-states-its-own-default.feature` — an unset `work.agents.mode` plays
   refine solo and continue orchestrated; an orchestrated refine gives each story one `aof-qa`
-- [ ] `tasks/01_the-loop-drives-both-phases-solo.feature` — an unset `work.loop.agents.<phase>.mode`
+- [x] `tasks/01_the-loop-drives-both-phases-solo.feature` — an unset `work.loop.agents.<phase>.mode`
   composes `--solo`; the loop never inherits `work.agents.mode`
 - [ ] `tasks/02_every-repo-runs-the-new-defaults.feature` — this repo and every repo the operator
   names drop their mode pins and re-render (@manual)

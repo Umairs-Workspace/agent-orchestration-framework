@@ -24,6 +24,7 @@ import {
   LOOP_BOUND_VALUE_RESOLVERS,
   LOOP_CONCURRENCY_MODES,
   LOOP_AGENT_MODES,
+  LOOP_AGENT_MODE_DEFAULTS,
   LOOP_AGENT_MODE_RESOLVERS,
   NO_DECLARED_RANGE,
   OUTSIDE_DECLARED_RANGE,
@@ -755,8 +756,45 @@ export const clampTests = [
       assert.equal(loopAgentModeFromConfig(workspace, "refine"), "solo");
       assert.equal(loopAgentModeFromConfig(workspace, "continue"), "orchestrated");
       assert.equal(loopAgentModeFromConfig(workspace, "verify"), null, "verify resolves no mode");
-      assert.equal(loopAgentModeFromConfig({ config: { work: {} } }, "refine"), null, "unset is null");
       assert.deepEqual(Object.keys(LOOP_AGENT_MODE_RESOLVERS), ["refine", "continue"]);
+    },
+  },
+  // ── 140/01 — the loop's default has one home ─────────────────────────────────
+  //
+  // `140_story_refine-defaults-to-solo/tasks/01_the-loop-drives-both-phases-solo.feature`. The
+  // default is applied at the PHASE level: the per-key resolvers keep answering null for unset,
+  // so the range probe and the tuner still step from null. Supersedes 129/07 task 00's
+  // "unset is null" leg of `loopAgentModeFromConfig`.
+  {
+    name: "140/01 the loop's default has one home — LOOP_AGENT_MODE_DEFAULTS, applied by loopAgentModeFromConfig when the key is unset",
+    run() {
+      assert.deepEqual(LOOP_AGENT_MODE_DEFAULTS, { refine: "solo", continue: "solo" });
+      assert.equal(Object.isFrozen(LOOP_AGENT_MODE_DEFAULTS), true, "frozen");
+      assert.deepEqual(Object.keys(LOOP_AGENT_MODE_DEFAULTS), Object.keys(LOOP_AGENT_MODE_RESOLVERS), "one default per phase that resolves a mode — the two phase maps cannot drift apart");
+      for (const mode of Object.values(LOOP_AGENT_MODE_DEFAULTS)) assert.ok(LOOP_AGENT_MODES.includes(mode), `${mode} is a member of LOOP_AGENT_MODES`);
+      const set = { config: { work: { loop: { agents: { refine: { mode: "orchestrated" }, continue: { mode: "orchestrated" } } } } } };
+      const unset = { config: { work: {} } };
+      assert.equal(loopAgentModeFromConfig(set, "refine"), "orchestrated", "a set key answers its value");
+      assert.equal(loopAgentModeFromConfig(set, "continue"), "orchestrated");
+      assert.equal(loopAgentModeFromConfig(unset, "refine"), "solo", "an unset key answers the phase's default");
+      assert.equal(loopAgentModeFromConfig(unset, "continue"), "solo");
+      assert.equal(loopAgentModeFromConfig({ config: { work: { loop: { agents: { continue: { mode: "Solo" } } } } } }, "continue"), "solo", "a non-member is unset");
+      assert.equal(loopAgentModeFromConfig(unset, "verify"), null, "verify resolves no mode");
+      assert.equal(loopAgentModeFromConfig(set, "verify"), null);
+      assert.equal(resolveLoopAgentMode(undefined), null, "the value resolver still answers null for unset");
+      assert.equal(loopAgentRefineModeFromConfig(unset), null, "…and so do the per-key config resolvers");
+      assert.equal(loopAgentContinueModeFromConfig(unset), null);
+      assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.agents.refine.mode"](unset), null, "the registry map answers null too");
+    },
+  },
+  {
+    name: "140/01 the loop never reads the workspace twin — neither the bounds home nor the drive reads work.agents.mode",
+    async run() {
+      for (const file of ["src/loop-bounds.mjs", "src/commands/drive.mjs"]) {
+        const code = stripComments(await readFile(new URL(`../../${file}`, import.meta.url), "utf8"));
+        assert.doesNotMatch(code, /agents\??\.mode\b/u, `${file}: work.agents.mode is not read`);
+        assert.doesNotMatch(code, /work\??\.agents\??\.mode/u, `${file}: nor spelled as a key`);
+      }
     },
   },
   ...[

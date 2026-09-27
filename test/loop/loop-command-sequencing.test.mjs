@@ -18,7 +18,7 @@ export const loopCommandSequencingTests = [{
         { scope: "03" },
         { ...fx.ctx, agentSessionDriverOptions: driver.options, report: () => {} },
       );
-      assert.deepEqual(driver.typed.map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01", "/aof:verify 03/01", "/aof:verify 03"], "each driven phase leads its first input with its own directive (70/00's compiled brief follows)");
+      assert.deepEqual(driver.typed.map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01 --solo", "/aof:verify 03/01", "/aof:verify 03"], "each driven phase leads its first input with its own directive (70/00's compiled brief follows)");
       assert.equal(state.state, "done");
       assert.deepEqual(state.driven.map(({ ref, phase, cycle }) => ({ ref, phase, cycle })), [
         { ref: "03/01", phase: "continue", cycle: 1 },

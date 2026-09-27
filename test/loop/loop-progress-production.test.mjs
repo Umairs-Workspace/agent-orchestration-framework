@@ -96,7 +96,7 @@ async function productionFixture({ counts, mutate, cap = 3 }) {
   };
   const driver = completingDriver(fx, {
     onCommand(command) {
-      if (mutate && command === "/aof:continue 03/01") appendFileSync(subject, `round ${gradeIndex}\n`);
+      if (mutate && command === "/aof:continue 03/01 --solo") appendFileSync(subject, `round ${gradeIndex}\n`);
     },
   });
   driver.options.resumeSessionAvailable = async () => true;

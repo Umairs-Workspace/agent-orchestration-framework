@@ -125,7 +125,7 @@ export const loopCommandNarrationTests = [
         const lines = [];
         const driver = actingDriver(fx, {
           onCommand: async (command) => {
-            if (command === "/aof:continue 03/01") {
+            if (command === "/aof:continue 03/01 --solo") {
               // The agent's closing act, as the store received it: the item's single running run.
               // Taken only once the driver's session-id capture has LANDED on the record (live:
               // the capture at ~2s, the act twenty minutes later). `recordSessionId` is a

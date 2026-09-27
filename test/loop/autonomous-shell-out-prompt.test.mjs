@@ -558,9 +558,10 @@ export const autonomousShellOutPromptTests = [
   // ── 129/07 task 02 — the prompts carry the surface ───────────────────────────
   //
   // `…/07_story_the-loop-settings-are-self-contained/tasks/02_the-drive-carries-the-phase-mode.feature`
-  // — the prompt-side rows (the drive's rows are in `drive-command-phase-drivers`).
+  // — the prompt-side rows (the drive's rows are in `drive-command-phase-drivers`). The row's
+  // "falling back to `work.agents.mode`" clause is superseded by 140/00, whose cases follow.
   ...["refine", "continue"].map((prompt) => ({
-    name: `129/07 task02 ${prompt}.md parses --orchestrated as --solo's twin and names its loop key with the fallback`,
+    name: `129/07 task02 ${prompt}.md parses --orchestrated as --solo's twin and names its loop key`,
     run: () => {
       const bundle = loadBundle();
       const member = bundle.resources.find((entry) => entry.id === prompt);
@@ -572,7 +573,6 @@ export const autonomousShellOutPromptTests = [
       assert.match(config, /`--orchestrated` OVERRIDES a solo config to orchestrated for this run/u);
       assert.match(config, /The two together are contradictory: STOP before any role runs/u);
       assert.match(config, new RegExp(`work\\.loop\\.agents\\.${prompt}\\.mode`, "u"), "the loop key the drive composes the flag from is named");
-      assert.match(config, /composes nothing when it is unset, so a loop-driven \w+ falls back to `work\.agents\.mode`/u, "…with its fallback");
       assert.match(config, /src\/loop-bounds\.mjs/u, "…and its home");
       for (const runtime of ["claude", "codex", "opencode"]) {
         const rendered = renderBundleOutputs(bundle, { runtimes: [runtime] }).find((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
@@ -609,4 +609,108 @@ export const autonomousShellOutPromptTests = [
       ]);
     },
   },
+  // ── 140/00 — each prompt states its own default ──────────────────────────────
+  //
+  // `140_story_refine-defaults-to-solo/tasks/00_each-prompt-states-its-own-default.feature`.
+  // Supersedes 129/07 task 02's "…falling back to `work.agents.mode`" prompt rows.
+  ...[
+    ["refine", "solo", "orchestrated"],
+    ["continue", "orchestrated", "solo"],
+  ].map(([prompt, fallback, other]) => ({
+    name: `140/00 an unset work.agents.mode resolves to the command's own default [${prompt}: unset → ${fallback}, "${other}" → ${other}]`,
+    run: () => {
+      const config = configBlocksOf(prompt);
+      assert.match(config, new RegExp(`An unset \`work\\.agents\\.mode\` resolves to ${fallback}\\b`, "u"), `${prompt}: the unset default`);
+      assert.match(config, new RegExp(`\`work\\.agents\\.mode: "${other}"\` resolves to ${other}\\b`, "u"), `${prompt}: the set value still governs`);
+    },
+  })),
+  ...["refine", "continue"].map((prompt) => ({
+    name: `140/00 ${prompt}.md names what the loop composes, and no fallback to work.agents.mode`,
+    run: () => {
+      const config = configBlocksOf(prompt);
+      assert.match(config, new RegExp(`The loop composes a flag on every ${prompt} it drives: \`work\\.loop\\.agents\\.${prompt}\\.mode\` when set, \`--solo\` when unset`, "u"));
+      assert.match(config, new RegExp(`A loop-driven ${prompt} therefore never reads \`work\\.agents\\.mode\``, "u"));
+      assert.doesNotMatch(config, /composes nothing when it is unset/u);
+      assert.match(config, /the loop's own default, whose home is `src\/loop-bounds\.mjs`/u);
+    },
+  })),
+  {
+    name: "140/00 an orchestrated refine gives each story one QA agent",
+    run: () => {
+      const body = flattened(loadBundle().resources.find((entry) => entry.id === "refine").body);
+      const start = body.indexOf("**story — Contract (Three Amigos):**");
+      assert.ok(start >= 0, "the story Contract step is found");
+      const step = body.slice(start, body.indexOf("**Gate check (before authoring):**", start));
+      assert.match(step, /Under orchestrated mode, one `aof-qa` writes the Examples tables for all of the story's tasks/u);
+      assert.match(step, /The QA pass is never split into one agent per task/u);
+    },
+  },
+  {
+    name: "140/00 the schema describes the per-command default and the loop's own key",
+    run: () => {
+      const schema = JSON.parse(readFileSync(path.join(repoRoot, "schemas", "aof.schema.json"), "utf8"));
+      const description = schema.$defs.work.properties.agents.properties.mode.description;
+      assert.match(description, /An unset key resolves to each command's own default: refine runs solo, and every other role-spawning command runs orchestrated\./u);
+      assert.match(description, /a loop-driven session reads work\.loop\.agents\.<phase>\.mode, never this key/u);
+    },
+  },
+  {
+    name: "140/00 the renders, the manifest and the lock agree with the source",
+    run: () => {
+      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      assert.equal(dry.status, 0, dry.stderr);
+      const { summary } = JSON.parse(dry.stdout);
+      assert.deepEqual({ created: summary.created, updated: summary.updated, deleted: summary.deleted, drift: summary["drift-warning"] }, { created: 0, updated: 0, deleted: 0, drift: 0 });
+      const bundle = loadBundle();
+      for (const [prompt, fallback] of [["refine", "solo"], ["continue", "orchestrated"]]) {
+        const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
+        assert.equal(renders.length, 3, `${prompt}: one render per runtime`);
+        for (const render of renders) {
+          const onDisk = flattened(readFileSync(path.join(repoRoot, render.path), "utf8"));
+          assert.match(onDisk, new RegExp(`An unset \`work\\.agents\\.mode\` resolves to ${fallback}\\b`, "u"), `${render.path} states the unset default`);
+        }
+      }
+      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(manifestPath(), "utf8"), "the shipped manifest is regenerated");
+    },
+  },
+  // ── 140/01 — the autonomous prompt names the loop's default beside the mode ────
+  {
+    name: "140/01 the autonomous prompt names the loop's default beside the mode, and the lane bound's fallback",
+    run: async () => {
+      const { bundle, member } = bundleFacts();
+      const loopParagraph = (body) => String(body).replace(/<!--[^]*?-->/g, " ").split(/\n\s*\n/u).map((p) => p.replace(/\s+/g, " ").trim()).filter((p) => p.includes("work.loop.concurrency"));
+      const modes = /`work\.loop\.agents\.refine\.mode` and `work\.loop\.agents\.continue\.mode` \([^)]*\) default to `solo` when unset and do not fall back to `work\.agents\.mode`/u;
+      const bound = /`work\.loop\.dispatch\.concurrency` — [^—]*— which falls back to its workspace twin `work\.dispatch\.concurrency` when unset/u;
+      const [paragraph, ...more] = loopParagraph(member.body);
+      assert.equal(more.length, 0, "exactly one paragraph names the mode");
+      assert.match(paragraph, modes);
+      assert.match(paragraph, bound);
+      const { sentences, statedValues, unitOf } = await import("../arch/command/acd-prompt-bounds-name-their-home.test.mjs");
+      const keys = ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode"];
+      for (const sentence of sentences(paragraph)) {
+        for (const key of keys.filter((k) => sentence.includes(k))) assert.deepEqual(statedValues(sentence, unitOf(key)), [], `no value is stated for ${key}: ${sentence}`);
+      }
+      const configKeys = [...flattened(member.body).matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
+      assert.deepEqual([...new Set(configKeys)].sort(), [
+        "work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.dispatch.concurrency",
+        "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency",
+      ]);
+      const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => entry.resource.id === "autonomous" || entry.resource.id === "aof-autonomous");
+      assert.equal(renders.length, 3, "three rendered files");
+      for (const render of renders) {
+        const [onDisk] = loopParagraph(readFileSync(path.join(repoRoot, render.path), "utf8"));
+        assert.match(onDisk ?? "", modes, `${render.path} carries the modes' default`);
+        assert.match(onDisk ?? "", bound, `${render.path} carries the lane bound's fallback`);
+      }
+    },
+  },
 ];
+
+// The `<config>` blocks of a bundled prompt, flattened — continue.md carries two.
+function configBlocksOf(prompt) {
+  const member = loadBundle().resources.find((entry) => entry.id === prompt);
+  assert.ok(member, `${prompt} is a bundle member`);
+  const blocks = [...String(member.body).matchAll(/<config>([^]*?)<\/config>/gu)].map((match) => match[1]);
+  assert.ok(blocks.length > 0, `${prompt}: a <config> block`);
+  return flattened(blocks.join("\n"));
+}

@@ -289,7 +289,7 @@ export const loopRecordReachesTheRedriveTests = [
         // AND THE LOOP CROSSES TO `verify`.
         assert.deepEqual(
           driver.typed.map((input) => input.split("\n\n")[0]),
-          ["/aof:continue 03/01", "/aof:verify 03/01", "/aof:verify 03"],
+          ["/aof:continue 03/01 --solo", "/aof:verify 03/01", "/aof:verify 03"],
           "the continue is followed straight by the verify for the same story",
         );
         assert.equal(state.state, "done");

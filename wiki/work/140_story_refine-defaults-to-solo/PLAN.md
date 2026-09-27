@@ -30,13 +30,13 @@ There are two seams, and neither needs a new key.
 - Rename a re-pointed 129/07 case to `140/01 …` (drive) or `140/00 …` (prompt) so traceability
   names the item that owns the rule. Leave 129/07's override cases and its "ADR-001 §5 records the
   amendment" case alone; 129's ARCHITECTURE is not edited.
-- Prose next, then `aof work update` and `node scripts/generate-bundle-manifest.mjs`.
+- Prose next, then `aof work update` and the bundle-manifest generator script.
 - `.aof/aof.config.json` last, and by hand: the lane reconcile resets `.aof/`.
 
 ## Verification
 
-Focused runs only, isolated (`AOF_GLOBAL_HOME=$(mktemp -d)`), through `node scripts/test.mjs
---only <files>` over the declared test set. Never use `--scope impacted` or a full suite; this
+Focused runs only, isolated (`AOF_GLOBAL_HOME=$(mktemp -d)`), through the test runner's
+`--only <files>` mode over the declared test set. Never use `--scope impacted` or a full suite; this
 machine's live daemon holds `:4182`.
 
 End to end, after the config change: `aof work drive refine 140 --dry-run --json` answers

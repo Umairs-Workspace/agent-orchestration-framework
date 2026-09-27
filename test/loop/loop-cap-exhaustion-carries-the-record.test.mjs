@@ -117,7 +117,7 @@ export const loopCapExhaustionCarriesTheRecordTests = [
         const { state, record } = await exhaust(capped, emitsPassing(["alpha", "beta"]), { report: capturingReport(), driver });
         assert.deepEqual(
           driver.typed.map((input) => input.split("\n\n")[0]),
-          ["/aof:continue 03/01", "/aof:verify 03/01", "/aof:refine 03"],
+          ["/aof:continue 03/01 --solo", "/aof:verify 03/01", "/aof:refine 03 --solo"],
           "guard: the loop drove the build, crossed to verify, came back to a story still in-progress, and handed it to its plan",
         );
         // THE STOP IS UNCHANGED AND ITS PRODUCER IS THE ENGINE'S — no module outside
@@ -560,7 +560,7 @@ export const loopCapExhaustionReturnsToThePlanTests = [
         const { state, directives, refines } = await walk(fx);
         // THE COMMAND THE SHELL INVOKED IS `work:drive-refine`, observed as the directive the
         // refine phase driver types. No new command id, no new act kind, no `GATE_ORDER` row.
-        assert.deepEqual(directives, ["/aof:continue 03/01", "/aof:verify 03/01", "/aof:refine 03"]);
+        assert.deepEqual(directives, ["/aof:continue 03/01 --solo", "/aof:verify 03/01", "/aof:refine 03 --solo"]);
         // …AND `state.driven` GAINED THE ROW.
         assert.equal(refines.length, 1, "exactly one refine row");
         assert.equal(refines[0].ref, PLAN_MILESTONE, "…aimed at the plan, not at the unit");
@@ -587,7 +587,7 @@ export const loopCapExhaustionReturnsToThePlanTests = [
       const fx = await planFixture({ stories: 1, cap: 1, sibling: true, authoredParents: { "01": 4 } });
       try {
         const { directives, refines } = await walk(fx);
-        assert.deepEqual(directives, ["/aof:continue 03/01", "/aof:verify 03/01", "/aof:refine 03"], "the directory decides, the key does not");
+        assert.deepEqual(directives, ["/aof:continue 03/01 --solo", "/aof:verify 03/01", "/aof:refine 03 --solo"], "the directory decides, the key does not");
         assert.deepEqual(refines.map((row) => row.ref), [PLAN_MILESTONE]);
       } finally {
         await fx.cleanup();
@@ -692,7 +692,7 @@ export const loopCapExhaustionReturnsToThePlanTests = [
         assert.equal(refines.length, 1, "the plan was re-entered once, not once per unit");
         // THE FIRST UNIT WAS HANDED BACK AND THEN STEPPED OVER — no further act names it, and
         // the walk moved to another member of the ready set `work:next` returned.
-        const afterHandOff = directives.slice(directives.indexOf("/aof:refine 03") + 1);
+        const afterHandOff = directives.slice(directives.indexOf("/aof:refine 03 --solo") + 1);
         assert.equal(afterHandOff.some((directive) => directive.endsWith(" 03/01")), false, "no act names the exhausted unit again");
         assert.ok(afterHandOff.some((directive) => directive.endsWith(" 03/02")), "the next act targets another member of the ready set");
         // THE LOOP DID NOT WRITE THE EXHAUSTED UNIT'S STATUS.
@@ -748,7 +748,7 @@ export const loopCapExhaustionReturnsToThePlanTests = [
       const fx = await planFixture({ stories: 0, cap: 1 });
       try {
         const { state, directives, refines } = await walk(fx);
-        assert.deepEqual(directives, ["/aof:refine 03"], "the milestone was refined once and never re-entered");
+        assert.deepEqual(directives, ["/aof:refine 03 --solo"], "the milestone was refined once and never re-entered");
         assert.equal(refines.length, 1);
         assert.equal(state.act.stop, "cap-exhausted");
         assert.equal(state.act.producer, "engine:plan-re-entry>=cap", "the re-entry was refused, not the ready set exhausted");
@@ -810,7 +810,7 @@ export const loopCapExhaustionReturnsToThePlanTests = [
         const { directives, refines } = await walk(fx);
         // THE PLAN'S REFINE ROW IS FOLLOWED BY ACTS FOR THE LATER UNITS — the range did not end
         // at the first unit, which is exactly what it did before this story.
-        const handOff = directives.indexOf("/aof:refine 03");
+        const handOff = directives.indexOf("/aof:refine 03 --solo");
         assert.ok(handOff >= 0, "the hand-off happened");
         assert.ok(
           directives.slice(handOff + 1).some((directive) => directive.endsWith(" 03/02")),
