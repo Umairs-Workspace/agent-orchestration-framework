@@ -921,7 +921,7 @@ export const agentSessionDriverDrivesTests = [
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 40,
       });
       await waitUntil(() => pty.subscribed);
-      pty.emit(TUI_READY_MARKER);
+      pty.emit(`${TUI_READY_MARKER}❯ prompt`);
       await waitUntil(() => pty.writes.length >= 2);
       await sleep(120);
       assert.equal(pty.killed, false, "a session that started is left alone");
@@ -929,6 +929,80 @@ export const agentSessionDriverDrivesTests = [
       const result = await pending;
       assert.equal(result.outcome, "done");
       assert.equal(result.sessionId, "sess-accepted");
+    },
+  },
+  {
+    name: "2026-09-27 the first marker is not the prompt — a pre-REPL ON…OFF that draws nothing is not ready, and neither are escapes alone; the REPL's ON plus its drawn frame is",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000,
+      });
+      await waitUntil(() => pty.subscribed);
+      // claude 2.1.283's capability probe, as measured: ON, keyboard modes and two queries, OFF.
+      pty.emit(`Permission deny rule (.claude\\settings.json): Write(x) is not matched\r\n${ESC}[m${ESC}[?25l`);
+      pty.emit(`${TUI_READY_MARKER}${ESC}[?2031h${ESC}[?1004h${ESC}[<u${ESC}[>5u${ESC}[>4;2m`);
+      pty.emit(`${ESC}[>0q${ESC}[?u`);
+      await sleep(60);
+      assert.deepEqual(pty.writes, [], "the probe's ON drew nothing — not ready, though the floor has passed");
+      pty.emit(`${ESC}[>4m${ESC}[<u${ESC}[?2031l${ESC}[?2004l`);
+      await sleep(30);
+      assert.deepEqual(pty.writes, [], "the mode is OFF again");
+      // The REPL's own ON, then the window title (an OSC) — still nothing a person would see.
+      pty.emit(`${TUI_READY_MARKER}${ESC}[<u${ESC}[>5u${ESC}[>4;2m${ESC}]0;✳ Claude Code${String.fromCharCode(7)}`);
+      await sleep(30);
+      assert.deepEqual(pty.writes, [], "a title and keyboard modes are not a drawn frame");
+      pty.emit(`${ESC}[?1049h${ESC}[2J${ESC}[H ▐▛███▛█ Claude Code v2.1.283`);
+      await waitUntil(() => pty.writes.length >= 1);
+      assert.deepEqual(pty.writes[0], pasted(BRIEF.command)[0], "typed once the REPL has drawn while listening");
+      pty.exit(0);
+      assert.equal((await pending).outcome, "done");
+    },
+  },
+  {
+    name: "2026-09-27 a paste still parked in the input box gets ONE more Enter, and the run is otherwise unchanged",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const stops = [];
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 400, resubmitAfterMs: 60,
+        onSessionStop: (event) => stops.push(event),
+      });
+      await waitUntil(() => pty.subscribed);
+      pty.emit(`${TUI_READY_MARKER}❯ Try "fix lint errors"`);
+      await waitUntil(() => pty.writes.length >= 2);
+      pty.emit(`${ESC}[22;3H${ESC}[38;2;153;153;153m[Pasted text #1 +1 lines]${ESC}[m`);
+      await waitUntil(() => pty.writes.length >= 3);
+      assert.equal(pty.writes[2], SUBMIT_KEY, "the Enter, sent once more");
+      assert.ok(stops.some((event) => event.phase === "directive-resubmitted"), stops.map((event) => event.phase).join(","));
+      const result = await pending;
+      assert.equal(result.failureReason, "timeout", "still no session: the acceptance watch settles it as before");
+      assert.equal(pty.writes.length, 3, "one resubmit, never a second");
+    },
+  },
+  {
+    name: "2026-09-27 no parked paste on the screen, no extra Enter — a dialog is never answered for the operator, and the body's own echo is not a parked paste",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const stops = [];
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 300, resubmitAfterMs: 60,
+        onSessionStop: (event) => stops.push(event),
+      });
+      await waitUntil(() => pty.subscribed);
+      pty.emit(`${TUI_READY_MARKER}❯ Try "fix lint errors"`);
+      await waitUntil(() => pty.writes.length >= 2);
+      pty.emit(`${BRIEF.command}\r\n`);
+      pty.emit("New MCP server found in .mcp.json: example-mcp 1. Use this server 2. Continue without");
+      const result = await pending;
+      assert.equal(result.failureReason, "timeout");
+      assert.equal(pty.writes.length, 2, "the paste and its one Enter, nothing more");
+      assert.equal(stops.some((event) => event.phase === "directive-resubmitted"), false);
     },
   },
 ];

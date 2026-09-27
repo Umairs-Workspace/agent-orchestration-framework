@@ -288,7 +288,21 @@ function containsNeedsInputSentinel(buffer) {
 // beside the heartbeat deadline it suspends (the driver's export set is the frozen seventeen of
 // 53/FF-5302, so the pattern lives in a leaf this module already imports rather than on its door).
 const PROVIDER_WAIT_WINDOW = 4096;
-const ANSI_ESCAPE_RE = /\[[0-9;?]*[ -/]*[@-~]/gu;
+// A terminal escape sequence, stripped to read what the TUI DREW: a CSI with ANY parameter bytes
+// (0x30-0x3F, so the private `<`, `=`, `>` forms claude 2.1.283 emits for its keyboard modes, such
+// as `CSI <u` and `CSI >5u`, are stripped too, not left as text), an OSC ended by BEL or ST (the
+// window title, hyperlinks), or a two-byte escape. `]` is left out of the two-byte class so an OSC
+// still in flight is `PARTIAL_ESCAPE_RE`'s to drop rather than half-stripped here.
+const ANSI_ESCAPE_RE = /\u001b(?:\[[0-?]*[ -/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)|[@-Z\\^_])/gu;
+// The same sequences cut off at the end of what has arrived so far: their tail is still in flight
+// and must not read as drawn text.
+const PARTIAL_ESCAPE_RE = /\u001b(?:\[[0-?]*[ -/]*|\][^\u0007\u001b]*)?$/u;
+
+// hasVisibleText(output) — whether the TUI drew anything a person would see: text left over once
+// every escape sequence (complete or still in flight) and control character is gone.
+function hasVisibleText(output) {
+  return output.replace(ANSI_ESCAPE_RE, "").replace(PARTIAL_ESCAPE_RE, "").replace(/[\u0000-\u001f\u007f]/gu, "").trim().length > 0;
+}
 
 // TASK COMPLETION, DETECTED FROM THE TRANSCRIPT (VERIFICATION F-38.06h, live soak
 // 2026-07-25). An interactive `claude` session NEVER exits after finishing a slash
@@ -573,7 +587,20 @@ const INTERACTIVE_COMMAND_SUBMIT_DELAY_MS = 900;
 // readiness by enabling bracketed paste (`TUI_READY_MARKER`); a real launch now types only
 // once BOTH the delay has passed (the measured-good floor) AND the marker has been seen,
 // bounded by `INTERACTIVE_READY_CAP_MS` — after which it types anyway and says so.
+//
+// 2026-09-27 — THE FIRST MARKER IS NOT THE PROMPT. claude 2.1.283 enables bracketed paste
+// TWICE: at ~1.2s for a short pre-REPL capability probe (it queries `CSI >0q` and `CSI ?u`,
+// draws nothing), turns it OFF again at ~1.5s (`TUI_PASTE_OFF_MARKER`), then back ON at
+// ~2.3s when the REPL mounts and draws its banner. Input written in between is echoed by
+// ConPTY in cooked mode and lost: pasted on the first marker, 4 of 4 directives were dropped,
+// one of them only 140ms before the mount. Keyed on the first marker, only the floor protected
+// the paste, and a slow start (language-tutor 03/03 and a downstream 02/02, 2026-09-26) burned
+// three attempts each on `directive-not-accepted`. So the TUI is READY only while the mode is
+// ON and something VISIBLE has been drawn since it went ON. The probe draws nothing between
+// its ON and its OFF, and the REPL draws its frame right after its own ON. Pasting the instant
+// that holds, with no floor at all, landed 6 of 6 on 2.1.283 and 2 of 2 on 2.1.282.
 const TUI_READY_MARKER = `${ESC}[?2004h`;
+const TUI_PASTE_OFF_MARKER = `${ESC}[?2004l`;
 const INTERACTIVE_READY_CAP_MS = 60_000;
 // …and ACCEPTANCE IS OBSERVED TOO. A submitted directive starts a session, and a session
 // writes its transcript, which is what the session-id watch resolves on. A real launch whose
@@ -582,6 +609,16 @@ const INTERACTIVE_READY_CAP_MS = 60_000;
 // last showed recorded under `directive-not-accepted` — a dialog nobody could see names itself.
 const DIRECTIVE_ACCEPT_TIMEOUT_MS = 90_000;
 const SCREEN_TAIL_CHARS = 600;
+// 2026-09-27 — ONE MORE ENTER FOR A PARKED PASTE. A downstream 02/02's second attempt ended with
+// the directive sitting in claude's input box (`[Pasted text #1 +1 lines]`), never submitted,
+// until the acceptance watch killed it. Relaunching fails the same way, while the live session
+// only needed its Enter. So if no session has started `DIRECTIVE_RESUBMIT_AFTER_MS` after the
+// submit, and what claude drew since the paste shows the paste still parked, the Enter is sent
+// once more. The id watch polls every 200ms, so an accepted directive is known long before this
+// fires. The Enter is sent ONLY on that positive sign: a blind Enter would accept whatever
+// dialog is up at the time (the MCP-server prompt's default is "Use this server").
+const DIRECTIVE_RESUBMIT_AFTER_MS = 20_000;
+const PARKED_PASTE_RE = /\[Pasted text #\d+/u;
 // The Enter key is a CARRIAGE RETURN. F27b measured the alternative at the soak:
 // a trailing line feed enters the text and never submits it (it is Ctrl+J).
 const SUBMIT_KEY = String.fromCharCode(13);
@@ -1044,6 +1081,8 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     const terminateTree = options.terminateTree ?? (options.ptySpawn == null);
     const terminateTreeExec = options.terminateTreeExec ?? execFile;
     let buffer = "";
+    // What the screen last showed, escapes stripped, for a degrade that has to say why it gave up.
+    const screenTail = () => buffer.slice(-4 * SCREEN_TAIL_CHARS).replace(ANSI_ESCAPE_RE, "").replace(/\s+/gu, " ").trim().slice(-SCREEN_TAIL_CHARS);
     let dataSub = null;
     let exitSub = null;
     // F27 — the timer for the READINESS-DELAYED directive-command write (below).
@@ -1051,10 +1090,16 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     // 70/06 — the timer for the SEPARATED submit (the Enter that follows the body).
     let commandSubmitTimer = null;
     // 2026-09-24 — the readiness gate and the acceptance watch (see TUI_READY_MARKER).
+    // `pasteModeOnAt` is the buffer offset just past the latest ON marker while the mode is ON,
+    // `null` while it is OFF (2026-09-27); `pastedAt` is the buffer offset the directive's paste
+    // was written at, which the resubmit reads what was drawn after.
     let tuiReadySeen = false;
+    let pasteModeOnAt = null;
+    let pastedAt = null;
     let onTuiReady = null;
     let readyCapTimer = null;
     let acceptTimer = null;
+    let resubmitTimer = null;
     // m42 wave (b) / TECH_DEBT item 7 — the PTY LIVENESS PROBE (below).
     let livenessTimer = null;
     let startToCloseTimer = null;
@@ -1092,6 +1137,7 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       if (commandSubmitTimer != null) { clearTimeout(commandSubmitTimer); commandSubmitTimer = null; }
       if (readyCapTimer != null) { clearTimeout(readyCapTimer); readyCapTimer = null; }
       if (acceptTimer != null) { clearTimeout(acceptTimer); acceptTimer = null; }
+      if (resubmitTimer != null) { clearTimeout(resubmitTimer); resubmitTimer = null; }
       if (livenessTimer != null) { clearInterval(livenessTimer); livenessTimer = null; }
       if (startToCloseTimer != null) { clearTimeout(startToCloseTimer); startToCloseTimer = null; }
       if (heartbeatTimer != null) { clearTimeout(heartbeatTimer); heartbeatTimer = null; }
@@ -1243,11 +1289,22 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     }
 
     dataSub = term.onData?.((chunk) => {
-      buffer += String(chunk);
-      // The TUI's own readiness signal, read across a chunk boundary.
-      if (!tuiReadySeen && buffer.slice(-(String(chunk).length + TUI_READY_MARKER.length)).includes(TUI_READY_MARKER)) {
-        tuiReadySeen = true;
-        onTuiReady?.();
+      const text = String(chunk);
+      buffer += text;
+      // The TUI's own readiness signal, read across a chunk boundary: the mode's latest toggle,
+      // then something visible drawn since it went ON (2026-09-27, see TUI_READY_MARKER). The
+      // window reaches back one byte short of a marker, so it only finds markers that END in this
+      // chunk, and a marker already read is never read twice. Both markers are the same length.
+      if (!tuiReadySeen) {
+        const window = buffer.slice(-(text.length + TUI_READY_MARKER.length - 1));
+        const on = window.lastIndexOf(TUI_READY_MARKER);
+        const off = window.lastIndexOf(TUI_PASTE_OFF_MARKER);
+        if (on > off) pasteModeOnAt = buffer.length - window.length + on + TUI_READY_MARKER.length;
+        else if (off > on) pasteModeOnAt = null;
+        if (pasteModeOnAt != null && hasVisibleText(buffer.slice(pasteModeOnAt))) {
+          tuiReadySeen = true;
+          onTuiReady?.();
+        }
       }
       // milestone 38 / story 06 (ADR-014) — the cross-machine terminal BRIDGE's
       // ONLY hook into this driver: an OPTIONAL, ADDITIVE `options.onOutputChunk`
@@ -1504,6 +1561,7 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
           const composed = composePhaseBriefInput(command, brief.context);
           const body = composed.split(BRACKETED_PASTE_END).join("");
           if (body !== composed) reportDegrade("directive-paste-marker-stripped", new Error(`${brief.itemRef}: the composed directive contained an end-of-paste marker`));
+          pastedAt = buffer.length;
           term.write(`${BRACKETED_PASTE_START}${body}${BRACKETED_PASTE_END}`);
           // The settle guard is BOTH here and in cleanupSubs, and it has to be: a PTY
           // that exits on the BODY write settles the run BEFORE this assignment runs, so
@@ -1522,11 +1580,27 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
               acceptTimer = setTimeout(() => {
                 acceptTimer = null;
                 if (settled || capturedSessionId != null) return;
-                const screen = buffer.slice(-4 * SCREEN_TAIL_CHARS).replace(ANSI_ESCAPE_RE, "").replace(/\s+/gu, " ").trim().slice(-SCREEN_TAIL_CHARS);
+                const screen = screenTail();
                 stopBreadcrumb("directive-not-accepted", { screen });
                 reportDegrade("directive-not-accepted", new Error(`${brief.itemRef}: no session ${options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS}ms after the directive was submitted; screen: ${screen}`));
                 stopForOutcome({ outcome: "failed", failureReason: "timeout" });
               }, options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS);
+              // One more Enter for a paste still parked in the input box (2026-09-27, see
+              // DIRECTIVE_RESUBMIT_AFTER_MS), read from what was drawn after the paste. The
+              // placeholder is claude's own rendering of a paste it holds, so the raw echo of a
+              // paste the TUI never received (the body text itself) never passes for it.
+              resubmitTimer = setTimeout(() => {
+                resubmitTimer = null;
+                if (settled || capturedSessionId != null) return;
+                if (!PARKED_PASTE_RE.test(buffer.slice(pastedAt ?? 0).replace(ANSI_ESCAPE_RE, ""))) return;
+                stopBreadcrumb("directive-resubmitted");
+                reportDegrade("directive-resubmitted", new Error(`${brief.itemRef}: no session ${options.resubmitAfterMs ?? DIRECTIVE_RESUBMIT_AFTER_MS}ms after the directive was submitted, and the paste is still in the input box; sent Enter once more`));
+                try {
+                  term.write(SUBMIT_KEY);
+                } catch (error) {
+                  reportDegrade("mesh-worker-execution", error);
+                }
+              }, options.resubmitAfterMs ?? DIRECTIVE_RESUBMIT_AFTER_MS);
             }
           }, submitDelayMs);
         } catch (error) {
@@ -1538,7 +1612,9 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
         // A scripted PTY keeps its fixed write — next tick at delay 0, byte-identical.
         commandWriteTimer = setTimeout(typeDirective, options.commandDelayMs ?? 0);
       } else {
-        // The readiness gate: the floor delay AND the TUI's own marker, bounded by the cap.
+        // The readiness gate: the floor delay AND the TUI's own readiness, bounded by the cap.
+        // At the cap the wait is a degrade as well as a breadcrumb: a lane child wires no
+        // `onSessionStop`, so the degrade log is the only place the wait is written down.
         let floorPassed = false;
         let typed = false;
         const typeOnce = () => {
@@ -1556,7 +1632,10 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
         readyCapTimer = setTimeout(() => {
           readyCapTimer = null;
           if (typed || settled) return;
-          stopBreadcrumb("tui-ready-marker-absent", { waitedMs: options.readyCapMs ?? INTERACTIVE_READY_CAP_MS });
+          const waitedMs = options.readyCapMs ?? INTERACTIVE_READY_CAP_MS;
+          const pasteModeOn = pasteModeOnAt != null;
+          stopBreadcrumb("tui-ready-marker-absent", { waitedMs, pasteModeOn });
+          reportDegrade("tui-ready-marker-absent", new Error(`${brief.itemRef}: the TUI showed no ready prompt within ${waitedMs}ms (bracketed paste ${pasteModeOn ? "on, nothing drawn since" : "off"}); typing the directive anyway; screen: ${screenTail()}`));
           typeOnce();
         }, options.readyCapMs ?? INTERACTIVE_READY_CAP_MS);
       }

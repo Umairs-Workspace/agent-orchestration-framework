@@ -198,10 +198,11 @@ process.stdout.write("provider-ready\\r\\n");
 // protocol (measured: the live transcript holds the directive with no ESC byte in it).
 // This shim must model the same contract, or it asserts on bytes no real TUI ever sees.
 const ESC = String.fromCharCode(27);
-// …and, like \`claude\`, it ANNOUNCES the mode: a real launch types only once the TUI has enabled
-// bracketed paste (cf10030's readiness gate), so a shim that never does is typed into only at the
-// 60 s cap, which is this suite's own hang guard.
-process.stdout.write(ESC + "[?2004h");
+// …and, like \`claude\`, it ANNOUNCES the mode and then DRAWS its prompt: a real launch types only
+// once the TUI has enabled bracketed paste and drawn something since (cf10030's readiness gate, as
+// sharpened 2026-09-27), so a shim that does neither is typed into only at the 60 s cap, which is
+// this suite's own hang guard.
+process.stdout.write(ESC + "[?2004h> ");
 const stripPaste = (s) => s.split(ESC + "[200~").join("").split(ESC + "[201~").join("");
 process.stdin.on("data", (chunk) => {
   input += chunk;
