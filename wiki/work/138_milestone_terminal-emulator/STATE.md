@@ -89,6 +89,16 @@ doc: state
     match.
 - **Open, for the operator:**
   - `npm ci` on the Mac worker after it pulls.
+  - **02 waits, at the operator's choice (2026-09-27).** 00 and 01 are built, reviewed and
+    in-review on branch `138-terminal-emulator-01`, which contains `-00`, in the worktree
+    `../aof-138`.
+    - 02 installs from the MAIN checkout after they merge into it. Loops 02 and 03, from other
+      workspaces, were still live on that checkout, and their next drive would have loaded the new
+      driver.
+    - The order when they have drained or been stopped: fast-forward `138-terminal-emulator` to
+      `138-terminal-emulator-01`, run `install-local --wsl`, have the operator restart the desktop
+      app, then `aof:continue 138`.
+    - The milestone run `20260927T122453098Z-0001` is left open. The next mint reclaims it.
 
 ## Feedback (for retro)
 
