@@ -69,8 +69,48 @@ doc: state
 - **The base is committed, 2026-09-27.** At the operator's word ("create a new branch now, and
   commit everything (in batches)"), the 2026-09-27 driver fix and the 138 records were committed
   on branch `138-terminal-emulator` (`bbb6046`, `0f69623`, `229f391`) before the build began.
+- **00 was built in a worktree, 2026-09-27.** Two `aof work loop` runs (02 and 03, other
+  workspaces) were live on the main checkout through the npm-linked `aof`. Every drive child they
+  spawn loads that checkout's `src/`, so a half-rewired driver there would have reached their next
+  drive, and `npm ci` there would have pulled `node_modules` from under them. The build ran in
+  `C:\Source\umami\aof-138` on branch `138-terminal-emulator-00`, cut from `4831f38`.
 - **Open, for the operator:**
   - `npm ci` on the Mac worker after it pulls.
+
+## Feedback (for retro)
+
+- **The snapshot carries `cols` (00/02, 00/03).** ADR-001 §1 lists `{ buffer, cursor, rows }`.
+  ADR-002 §1's "rules across all cols" cannot be read from right-trimmed rows, so the snapshot also
+  carries the width it was drawn at. The change is additive and the ruled keys are unchanged.
+- **`@xterm/headless` 6.0.0 gates `terminal.buffer` behind `allowProposedApi`.** Without it the
+  first snapshot throws. `screen.mjs` sets it, and says why.
+- **The door opens synchronously (00/03).** It is opened just before the spawn, as PLAN says, but it
+  does not await the model: chunks that arrive while the package loads wait in order. Awaiting the
+  load before the spawn would have moved the spawn for every one of the driver's 27 test dependents
+  on a process's first drive.
+- **00's declared write set was one file short.** `test/session/agent-session-driver-door.test.mjs`
+  holds ADR-015 §2's closed allowlist of test files that name the driver, and the two driver-driving
+  terminal suites and FF-13801 had to join it with a reason. The file was added to `files:` at
+  build. Two other controls outside the set caught design points and were answered in `src/`, not
+  by editing them:
+  - FF-6306 anchors on `containsNeedsInputSentinel`, so the bounded scan keeps that name.
+  - 129/02's abort row wants the stop's kill synchronous, so the door FREEZES the frame at the
+    decision instead of delaying the kill.
+- **Review close for 00 (solo, one round, no Blocker).** Two findings were fixed at the close:
+  - the door's open continuation now degrades to the byte gate rather than rejecting unhandled;
+  - the evidence suite asserts ruling 7's shared evidence object.
+
+  Two Nits are recorded:
+  - The terminal suites' driven-PTY double (`screenPty`) repeats the drives suite's local
+    `emittingPty`. Both belong in `test/support/mesh-worker-terminal-fixture.mjs`.
+  - The driver grew about 90 lines (1,682 to 1,775) although its byte readers left. The verdict
+    switch and the evidence record are what came in.
+- **A transcript flake, not caused here.** `agent-session-driver-transcript`'s "any movement …
+  restarts the quiet stretch" is a real-fs mtime case. A poll tick already in flight reads the old
+  mtime while the case advances its virtual clock (129's F-77 race). Over the build it failed in 3
+  of 15 runs. The BASE, `4831f38` without 00, reproduces it: it failed in 1 of 12 runs, one of them
+  a combined run that the build passed. It reads `defaultWatchTranscriptCompletion`, which 00 does
+  not touch. Routed as a recorded finding: the case needs its tick to be quiescent before the bump.
 
 ## Verification
 

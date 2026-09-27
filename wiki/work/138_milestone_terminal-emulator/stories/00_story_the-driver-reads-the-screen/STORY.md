@@ -5,7 +5,7 @@ slug: the-driver-reads-the-screen
 title: "The driver reads the screen — one headless model per session behind one door, typing on the input box, and the screen recorded at every stop"
 parent: 138
 depends: []
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
@@ -62,6 +62,7 @@ files:
   - test/arch/terminal/index.mjs
   - test/arch/terminal/acd-screen-has-one-reader.test.mjs
   - test/session/agent-session-driver-drives.test.mjs
+  - test/session/agent-session-driver-door.test.mjs
   - test/work/four-deadlines.test.mjs
   - test/arch/session/acd-session-driver-mesh-blind.test.mjs
   - test/arch/testing/acd-source-directory-budget.test.mjs
@@ -106,13 +107,13 @@ What lands (ADR-001, ADR-002, ADR-004, and ADR-003 §1 and §6):
 
 ## Tasks
 
-- [ ] `tasks/00_the-dependency-lands-approved-pinned-and-audited.feature` — operator approval first; `6.0.0` exact; frozen, scripts off; audit clean (`@manual`)
-- [ ] `tasks/01_the-terminal-family-is-founded-and-registered.feature` — four exemptions naming 01's members too; two indexes; FF-5301 at 28, FF-5302 unmoved
-- [ ] `tasks/02_one-screen-model-renders-what-claude-drew.feature` — `createScreen`, `scrollback: 0`, the lazy load memoised per loader; the three fixtures
-- [ ] `tasks/03_the-directive-is-typed-on-the-input-box.feature` — the four-part `ready` test; paste on the first ready frame; nothing typed at the cap; the byte path verbatim; parked paste from the box
-- [ ] `tasks/04_every-verdict-the-screen-can-give-is-acted-on.feature` — consent once, blocked by name within a frame, the wait from the screen, via an injected registry
-- [ ] `tasks/05_every-stop-but-done-leaves-the-screen.feature` — one event per non-`done` stop, before the kill; `reportDegrade` per (code, key)
-- [ ] `tasks/06_the-driver-reads-no-screen-of-its-own.feature` — FF-13801 with plants and a red probe; the sentinel scan keeps one line
+- [x] `tasks/00_the-dependency-lands-approved-pinned-and-audited.feature` — operator approval first; `6.0.0` exact; frozen, scripts off; audit clean (`@manual`)
+- [x] `tasks/01_the-terminal-family-is-founded-and-registered.feature` — four exemptions naming 01's members too; two indexes; FF-5301 at 28, FF-5302 unmoved
+- [x] `tasks/02_one-screen-model-renders-what-claude-drew.feature` — `createScreen`, `scrollback: 0`, the lazy load memoised per loader; the three fixtures
+- [x] `tasks/03_the-directive-is-typed-on-the-input-box.feature` — the four-part `ready` test; paste on the first ready frame; nothing typed at the cap; the byte path verbatim; parked paste from the box
+- [x] `tasks/04_every-verdict-the-screen-can-give-is-acted-on.feature` — consent once, blocked by name within a frame, the wait from the screen, via an injected registry
+- [x] `tasks/05_every-stop-but-done-leaves-the-screen.feature` — one event per non-`done` stop, before the kill; `reportDegrade` per (code, key)
+- [x] `tasks/06_the-driver-reads-no-screen-of-its-own.feature` — FF-13801 with plants and a red probe; the sentinel scan keeps one line
 
 ## Notes
 
