@@ -948,6 +948,60 @@ export async function applyItemFrontmatter(item, mutate) {
   return { ref: item.ref, doc };
 }
 
+// ------------------------------------------------------ depends entries --
+
+// THE ONE NUMBER/SLUG SPLIT (story 139). A `depends:` entry, as `parseFrontmatter` hands it
+// (quotes and surrounding spaces stripped), is a NUMBER iff it is all digits; anything else is a
+// slug. Three readers ask the question — the shift's rewriter (`src/work/reindex.mjs`), promote's
+// classifier and validate's numbered path below — and they asked it two ways until a backlog
+// held slug edges: `/^\d+$/` in promote, `Number.parseInt` in the other two, which reads
+// `10x-faster` as 10. One predicate, so a digit-led slug is a slug everywhere.
+export const isDependNumber = (entry) => /^\d+$/.test(String(entry ?? ""));
+
+// rewriteDependsEntry(token, map) — ONE entry of an inline list (or a bare scalar), rewritten
+// through the caller's `map(core) -> replacement | null`, where `core` is the entry with its
+// surrounding spacing and one quote pair stripped. `null` leaves the entry byte-identical. A
+// rewritten entry keeps its own spacing and quotes, and a zero-padded NUMBER keeps its ORIGINAL
+// width (`010` → `011`, never `11`). Only a number has a width to keep: a slug may start `0<digit>`
+// too (`007-bond`), and its replacement is the minted ref as spelled, never padded to the slug's
+// length. No arithmetic happens here: the mapping is the caller's — the shift's `old → old + 1`,
+// promote's `slug → minted ref`.
+export function rewriteDependsEntry(token, map) {
+  const leading = (token.match(/^\s*/) ?? [""])[0];
+  const trailing = (token.match(/\s*$/) ?? [""])[0];
+  const core = token.slice(leading.length, token.length - trailing.length);
+  const quoted = core.match(/^(["'])([\s\S]*)\1$/);
+  const quote = quoted ? quoted[1] : "";
+  const raw = quoted ? quoted[2] : core;
+  const replacement = map(raw);
+  if (replacement == null) return { text: token, changed: false };
+  const value = String(replacement);
+  const padded = isDependNumber(raw) && /^0\d/.test(raw) && isDependNumber(value) ? value.padStart(raw.length, "0") : value;
+  return { text: `${leading}${quote}${padded}${quote}${trailing}`, changed: true };
+}
+
+// rewriteDependsEntries(text, map) — the SURGICAL `depends: [a, b]` rewrite of one record doc's
+// text, per entry through `rewriteDependsEntry`: only the entries the map answers for change, and
+// every other byte — the other entries, the line's own spacing, every other frontmatter line, the
+// body, the line endings — is reassembled untouched (41/ADR-001, 18/ADR-007: no `parseFrontmatter`
+// round-trip). Only the inline-list form is rewritten, as the shift always has. Returns the text
+// unchanged (the same string) when nothing matched, so `=== text` is the "wrote nothing" test.
+export function rewriteDependsEntries(text, map) {
+  const block = String(text ?? "").match(/^(---\r?\n)([\s\S]*?)(\r?\n---)/);
+  if (!block) return text;
+  const rewritten = block[2].replace(/^(depends:[ \t]*\[)([^\]]*)(\].*)$/m, (whole, prefix, inner, suffix) => {
+    let changed = false;
+    const parts = inner.split(",").map((part) => {
+      const entry = rewriteDependsEntry(part, map);
+      if (entry.changed) changed = true;
+      return entry.text;
+    });
+    return changed ? `${prefix}${parts.join(",")}${suffix}` : whole;
+  });
+  if (rewritten === block[2]) return text;
+  return block[1] + rewritten + block[3] + text.slice(block[0].length);
+}
+
 // ----------------------------------------------------------------- find ----
 
 // `query` is a structured ref (`NN`, `NN/SS`) or a free-text slug match.
@@ -1234,15 +1288,37 @@ export async function validateWork(workDir, config, scopeRef) {
   );
   const siblingsOf = (item) => siblingIndex.get(String(Number.parseInt(item.parent, 10))) ?? [];
 
+  // Story 139 — THE BACKLOG'S SLUG EDGES. On a backlog row an all-digit entry is still the
+  // operator's note (promotion checks it, the shift keeps it current); a SLUG entry is an edge to
+  // another backlog item, and it must name one — a row whose `number` is null, at any group depth.
+  // A slug that a numbered depend target carries is the one mistake worth a hint: that item is
+  // named by its number. The lookup is over `isDependTarget` rows, so a nested story never
+  // answers it.
+  const backlogSlugs = new Set(items.filter((item) => item.number == null).map((item) => item.slug));
+  const streamNumberBySlug = new Map();
+  for (const item of items) {
+    if (item.number != null && isDependTarget(item) && !streamNumberBySlug.has(item.slug)) streamNumberBySlug.set(item.slug, item.number);
+  }
+  const backlogEdges = [];
+
   for (const item of items) {
     const meta = recordDoc(item) ? await readMeta(item) : {};
 
-    // A backlog driver is never a SOURCE either (127/ADR-003 §6): its `depends:` is a
-    // planning note validated at promotion, so it enters no graph and gates nothing. Keying
-    // it here would put a node at `NaN`.
+    // A backlog driver is never a SOURCE either (127/ADR-003 §6): its `depends:` gates
+    // nothing in the stream, so it enters no driver graph. Keying it here would put a node at
+    // `NaN`. Only a NUMBER entry is an edge here (story 139): `10x-faster` is a slug, and
+    // `Number.parseInt` would have graphed it as 10.
     if (item.number != null && isDriver(item)) {
-      const deps = asList(meta.depends).map((value) => Number.parseInt(value, 10));
+      const deps = asList(meta.depends).filter(isDependNumber).map((value) => Number.parseInt(value, 10));
       graph.set(Number.parseInt(item.number, 10), deps);
+    }
+
+    // Story 139 — a BACKLOG row's slug entries are edges between backlog items, graphed in a
+    // SEPARATE map keyed by slug, as the per-parent story graphs are. Collected for every
+    // backlog row whatever the scope, and ordered by slug after the walk.
+    if (item.number == null) {
+      const edges = asList(meta.depends).filter((dep) => !isDependNumber(dep) && backlogSlugs.has(dep));
+      backlogEdges.push([item.slug, edges]);
     }
 
     // m65/00 — a STORY's `depends` is graphed too, within its parent. Built for EVERY
@@ -1327,17 +1403,32 @@ export async function validateWork(workDir, config, scopeRef) {
       }
     }
 
-    // 3a. depends references resolve (to any top-level item). A backlog driver's entry is a
-    //     planning note, not an edge (see the graph build above) — nothing is reported on it.
+    // 3a. depends references resolve (to any top-level item), and only a NUMBER entry can —
+    //     a slug on a numbered item, digit-led or not, is reported.
     if (item.number != null && isDriver(item)) {
       for (const dep of asList(meta.depends)) {
-        if (!dependTargetNumbers.has(Number.parseInt(dep, 10))) {
+        if (!isDependNumber(dep) || !dependTargetNumbers.has(Number.parseInt(dep, 10))) {
           // The message names what is ACTUALLY admitted. It read "a milestone/uat item"
           // while spikes and chores had long been admitted too, so an author reading the
           // finding was told a narrower rule than the one being applied — and the fix it
           // implied (re-point at a milestone) was wrong for four of the five kinds.
           add(path.join(item.dir, recordDoc(item)), `depends "${dep}" does not resolve to a top-level item (a milestone, uat gate, spike, chore, or parentless story)`);
         }
+      }
+    }
+
+    // 3a-ter. Story 139 — a backlog row's SLUG entry names a backlog item. Its numeric entries
+    //     are not checked here (127/01 task 03's rows keep their answer).
+    if (item.number == null && recordDoc(item)) {
+      for (const dep of asList(meta.depends)) {
+        if (isDependNumber(dep) || backlogSlugs.has(dep)) continue;
+        const inStream = streamNumberBySlug.get(dep);
+        add(
+          path.join(item.dir, recordDoc(item)),
+          inStream != null
+            ? `depends "${dep}" names no backlog item — "${dep}" is ${inStream} in the stream, so the edge is written ${inStream}`
+            : `depends "${dep}" names no backlog item — an edge to another backlog item is its slug, and an edge to a stream item is its number`,
+        );
       }
     }
 
@@ -1385,6 +1476,18 @@ export async function validateWork(workDir, config, scopeRef) {
     const storyCycle = findCycle(storyGraph);
     if (storyCycle) add(milestoneDirs.get(parentKey) ?? workDir, `depends cycle: ${storyCycle.join(" → ")}`);
   }
+
+  // 3c-bis. Story 139 — the backlog's slug graph acyclic. A cycle there is never resolvable:
+  // every item on it waits on another item on it, so every promote on it is refused
+  // `promote-depends-backlog` for ever. Built in SLUG order, so one backlog always names its
+  // cycle the same way, and filed at `<work>/backlog` whatever the scope — like the driver cycle,
+  // a stream-level fact a scoped run must not lose. The same "depends cycle: " prefix.
+  const backlogGraph = new Map();
+  for (const [slug, edges] of backlogEdges.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
+    backlogGraph.set(slug, [...(backlogGraph.get(slug) ?? []), ...edges]);
+  }
+  const backlogCycle = findCycle(backlogGraph);
+  if (backlogCycle) add(path.join(workDir, BACKLOG_ROOT), `depends cycle: ${backlogCycle.join(" → ")}`);
 
   // 3d. milestone 127 / ADR-001 §3 — `backlog-slug-duplicate`. A backlog ref IS its slug
   // (`findWork` resolves it by slug, and a group carries no semantics), so two leaves sharing

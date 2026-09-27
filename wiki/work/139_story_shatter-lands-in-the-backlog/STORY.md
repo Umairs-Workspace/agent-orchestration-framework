@@ -3,7 +3,7 @@ type: story
 number: 139
 slug: shatter-lands-in-the-backlog
 title: "Shatter lands its drivers in the backlog, with their depends kept as slug edges that promotion enforces and resolves"
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
@@ -103,20 +103,20 @@ same optional `in <group/path>` the `aof:add-*` prompts take, and defaults to th
 
 ## Tasks
 
-- [ ] `tasks/00_promotion-resolves-the-edge-it-satisfies.feature` — the dependent is refused while
+- [x] `tasks/00_promotion-resolves-the-edge-it-satisfies.feature` — the dependent is refused while
   its target waits; promoting the target rewrites every backlog slug edge on it to the minted ref,
   after the seam, per entry, backlog-only and unique-only; `rewired` iff non-empty; nothing on refusal
-- [ ] `tasks/01_validate-checks-a-backlog-slug-edge.feature` — a backlog slug entry must name a
+- [x] `tasks/01_validate-checks-a-backlog-slug-edge.feature` — a backlog slug entry must name a
   backlog item (a stream item's slug is named with its number); backlog slug cycles are reported once
   at `<work>/backlog`; 127/01's backlog rows still report nothing; scheduling readers unchanged
-- [ ] `tasks/02_a-slug-is-never-read-as-a-number.feature` — one all-digit predicate: the shift leaves
+- [x] `tasks/02_a-slug-is-never-read-as-a-number.feature` — one all-digit predicate: the shift leaves
   a digit-led slug alone, promote classifies it as a slug, validate's numbered path neither resolves
   it nor graphs it
-- [ ] `tasks/03_shatter-lands-its-drivers-in-the-backlog.feature` — the prompt contract: backlog
+- [x] `tasks/03_shatter-lands-its-drivers-in-the-backlog.feature` — the prompt contract: backlog
   folders with no number, slug edges backward in PRD order, the intake branch promoting in order
   under `"stream"`, `in <group/path>`; `promote.md` names the rewrite; FF-12405's recall block and
   the three mirrors of each prompt hold
-- [ ] `tasks/04_a-shattered-prd-schedules-one-promotion-at-a-time.feature` — `@manual`: shatter
+- [x] `tasks/04_a-shattered-prd-schedules-one-promotion-at-a-time.feature` — `@manual`: shatter
   the committed Acme Notify PRD in a scratch project under each intake and read the result at the
   source
 

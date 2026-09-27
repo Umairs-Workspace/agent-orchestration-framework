@@ -606,7 +606,7 @@
         "id": "promote",
         "kind": "command"
       },
-      "hash": "sha256:59057d3caca31a80ad0b501b3049b18cb5aa0a208908f255a64758985d18173e"
+      "hash": "sha256:58f4c245d6fea0ad1022e8de4371fffea9ba8a08ce73f3021691dc2a41131d72"
     },
     {
       "path": ".claude/commands/aof/recent.md",
@@ -642,7 +642,7 @@
         "id": "shatter",
         "kind": "command"
       },
-      "hash": "sha256:88d6e22efecdfc1a8ccfef83744027bf7ee97429fcc18f6fe57c212ace6cf932"
+      "hash": "sha256:7081ce9510f9ca1a06722926cad2d379c7e48e82593ea058318a5ace7e159b48"
     },
     {
       "path": ".claude/commands/aof/validate.md",
@@ -984,7 +984,7 @@
         "id": "aof-promote",
         "kind": "skill"
       },
-      "hash": "sha256:caae31da3e4ea8a38f8a72b252cc83f71e7c6acfee19438eb167515712dbd1ce"
+      "hash": "sha256:39e65bd6aa941b74c1b07cd22846e54dac3fae19304916d19a4464cda5eb5917"
     },
     {
       "path": ".codex/skills/aof-recent/SKILL.md",
@@ -1020,7 +1020,7 @@
         "id": "aof-shatter",
         "kind": "skill"
       },
-      "hash": "sha256:fb498b4e096f451c23494590b23f87c7859ed90fc4da0a1532a73b8818c7ae25"
+      "hash": "sha256:6b0e2dee57f6f5edf29b36150952c9ff0ad69418960115c08cfaac5e02442abe"
     },
     {
       "path": ".codex/skills/aof-validate/SKILL.md",
