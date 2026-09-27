@@ -25,6 +25,9 @@ const EXPECTED_DIRECT = Object.freeze([
   // untouched. Recorded here at `aof:verify 69` (VERIFICATION F-69-V10); the import had been
   // live since 69/01–02 merged with this census unmoved.
   "loop-bounds.mjs",
+  // milestone 138/00 (138/ADR-001 §5 and §7) — THE DOOR: the driver's one way to know what is on
+  // claude's screen. Imported WITHOUT re-export, so FF-5302's frozen seventeen are untouched.
+  "terminal/session-screen.mjs",
 ]);
 const DENIED_TRANSITIVE = Object.freeze([
   "run-store.mjs", "global-work-store.mjs", "workspace-identity.mjs", "item-lock.mjs",
@@ -104,7 +107,12 @@ export const archTests = [
       // deferred import()). It is a pure leaf whose one import, `asset-base.mjs`, the driver already
       // reaches, so the raise adds one module and no mesh chain. Decided by the operator at 130's
       // accept door (2026-09-24) and recorded as 130/VERIFICATION F-16.
-      assert.ok(graph.seen.size <= 25, `root-inclusive driver reach ${graph.seen.size} exceeds the ADR-015 §5 ceiling 25; raising it requires an ADR (reach 22 = 68/01's otel-attribution, 23 = 70/00's phase-brief, 24 = 69/01-02's loop-bounds — see 69/ARCHITECTURE.md ADR-002 and VERIFICATION F-69-V10; 25 = 137's digest-template, 130/VERIFICATION F-16)`);
+      // Reach 28 is milestone 138/00's `src/terminal/` family (138/ADR-001 §7): the door
+      // `session-screen.mjs`, the model `screen.mjs` and the registry `claude-screens.mjs`. Their
+      // other imports, `degrade.mjs` and `loop-bounds.mjs`, were already in the closure, and
+      // `@xterm/headless` is a bare specifier outside the walk. MEASURED with this file's own walker
+      // at 138/00's build: 25 before, 28 after.
+      assert.ok(graph.seen.size <= 28, `root-inclusive driver reach ${graph.seen.size} exceeds the ADR-015 §5 ceiling 28; raising it requires an ADR (reach 22 = 68/01's otel-attribution, 23 = 70/00's phase-brief, 24 = 69/01-02's loop-bounds — see 69/ARCHITECTURE.md ADR-002 and VERIFICATION F-69-V10; 25 = 137's digest-template, 130/VERIFICATION F-16; 28 = 138/00's session-screen.mjs, screen.mjs and claude-screens.mjs, 138/ADR-001 §7)`);
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(srcRoot, "terminal-ws.mjs");
@@ -221,7 +229,12 @@ export const archTests = [
       // digest check imports it statically). It is a leaf whose one import, `asset-base.mjs`, is
       // already here, so it reaches nothing behind it. The same module raises the DRIVER's ceiling
       // to 25 above (130/VERIFICATION F-16). MEASURED with this file's own walker at 130's accept: 76.
-      assert.equal(sinkGraph.seen.size, 76, "the assignment sink reach is exactly 76: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, 130/03 adds the stop request's one home loop/stop-request.mjs behind the presence read, 137 adds the digest template's reader work/digest-template.mjs behind work.mjs, and none reaches anything new behind it");
+      //
+      // MILESTONE 138/00 ADDS THREE, all behind the DRIVER, which this sink re-exports: the
+      // `src/terminal/` family (138/ADR-001 §7), the same three modules that raise the driver's
+      // ceiling to 28 above. Their other imports were already here, so they reach nothing behind
+      // them. MEASURED with this file's own walker at 138/00's build: 79.
+      assert.equal(sinkGraph.seen.size, 79, "the assignment sink reach is exactly 79: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, 130/03 adds the stop request's one home loop/stop-request.mjs behind the presence read, 137 adds the digest template's reader work/digest-template.mjs behind work.mjs, 138/00 adds the driver's terminal family (session-screen, screen, claude-screens), and none reaches anything new behind it");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

@@ -34,6 +34,7 @@ import { tests as archPlanningTests } from "../test/arch/planning/index.mjs";
 import { tests as archRunTests } from "../test/arch/run/index.mjs";
 import { tests as archSessionTests } from "../test/arch/session/index.mjs";
 import { tests as archStoreTests } from "../test/arch/store/index.mjs";
+import { tests as archTerminalTests } from "../test/arch/terminal/index.mjs";
 import { tests as archTestingTests } from "../test/arch/testing/index.mjs";
 import { tests as archUiTests } from "../test/arch/ui/index.mjs";
 import { tests as archWorkTests } from "../test/arch/work/index.mjs";
@@ -69,6 +70,7 @@ import { tests as planningTests } from "../test/planning/index.mjs";
 import { tests as runTests } from "../test/run/index.mjs";
 import { tests as sessionTests } from "../test/session/index.mjs";
 import { tests as storeTests } from "../test/store/index.mjs";
+import { tests as terminalTests } from "../test/terminal/index.mjs";
 import { tests as testingTests } from "../test/testing/index.mjs";
 import { tests as uiTests } from "../test/ui/index.mjs";
 import { tests as workTests } from "../test/work/index.mjs";
@@ -94,6 +96,7 @@ export const tests = [
   ...archRunTests,
   ...archSessionTests,
   ...archStoreTests,
+  ...archTerminalTests,
   ...archTestingTests,
   ...archUiTests,
   ...archWorkTests,
@@ -129,6 +132,7 @@ export const tests = [
   ...runTests,
   ...sessionTests,
   ...storeTests,
+  ...terminalTests,
   ...testingTests,
   ...uiTests,
   ...workTests,

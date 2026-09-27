@@ -53,7 +53,11 @@ import { resolveProvider } from "./terminal-providers.mjs";
 import { createTerminalSpawn, loadNodePty } from "./terminal-ws.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
 import { reportDegrade } from "./degrade.mjs";
-import { DEFAULT_HEARTBEAT_MS, PROVIDER_WAIT_RE } from "./loop-bounds.mjs";
+import { DEFAULT_HEARTBEAT_MS } from "./loop-bounds.mjs";
+// 138/ADR-001 §5 — THE DOOR. Everything this driver knows about claude's screen arrives through it
+// as a verdict (ready, consent, blocked, wait) or as evidence at a stop; the driver reads no screen
+// content of its own (FF-13801).
+import { openSessionScreen } from "./terminal/session-screen.mjs";
 
 // ------------------------------------------------------- the headless driver ----
 
@@ -276,32 +280,28 @@ export async function defaultWatchTranscriptSessionId({ cwd, env, signal, maxWai
 // detected exactly once, the moment the newline actually completes the line;
 // "NEEDS_INPUTS" (or "...says NEEDS_INPUT to the user...") never matches, since
 // neither trims down to an exact "NEEDS_INPUT" line.
-function containsNeedsInputSentinel(buffer) {
-  const lines = buffer.split("\n");
-  for (let i = 0; i < lines.length - 1; i += 1) {
-    if (lines[i].trim() === NEEDS_INPUT_SENTINEL) return true;
-  }
-  return false;
+//
+// 138/ADR-001 §3 — THE SCAN KEEPS ONE LINE. It used to re-split the session's WHOLE accumulated
+// output on every chunk, so a long session cost a line read per line per chunk and a string that
+// grew with it. Now each completed line is read once, when its newline arrives, and what is held
+// between chunks is the unterminated tail line only — and only while it can still become the
+// sentinel: a tail that already cannot (it holds anything but the sentinel and whitespace) is held
+// as one character that never trims to it, so the carry is bounded whatever the TUI draws.
+const NOT_THE_SENTINEL = "\u0000";
+
+function sentinelCarry(tail) {
+  const start = tail.trimStart();
+  if (NEEDS_INPUT_SENTINEL.startsWith(start)) return start;
+  if (start.startsWith(NEEDS_INPUT_SENTINEL) && start.slice(NEEDS_INPUT_SENTINEL.length).trim() === "") return `${NEEDS_INPUT_SENTINEL} `;
+  return NOT_THE_SENTINEL;
 }
 
-// 129/06 F-58 — THE PROVIDER-WAIT LINE is read with `PROVIDER_WAIT_RE`, defined in `loop-bounds.mjs`
-// beside the heartbeat deadline it suspends (the driver's export set is the frozen seventeen of
-// 53/FF-5302, so the pattern lives in a leaf this module already imports rather than on its door).
-const PROVIDER_WAIT_WINDOW = 4096;
-// A terminal escape sequence, stripped to read what the TUI DREW: a CSI with ANY parameter bytes
-// (0x30-0x3F, so the private `<`, `=`, `>` forms claude 2.1.283 emits for its keyboard modes, such
-// as `CSI <u` and `CSI >5u`, are stripped too, not left as text), an OSC ended by BEL or ST (the
-// window title, hyperlinks), or a two-byte escape. `]` is left out of the two-byte class so an OSC
-// still in flight is `PARTIAL_ESCAPE_RE`'s to drop rather than half-stripped here.
-const ANSI_ESCAPE_RE = /\u001b(?:\[[0-?]*[ -/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)|[@-Z\\^_])/gu;
-// The same sequences cut off at the end of what has arrived so far: their tail is still in flight
-// and must not read as drawn text.
-const PARTIAL_ESCAPE_RE = /\u001b(?:\[[0-?]*[ -/]*|\][^\u0007\u001b]*)?$/u;
-
-// hasVisibleText(output) — whether the TUI drew anything a person would see: text left over once
-// every escape sequence (complete or still in flight) and control character is gone.
-function hasVisibleText(output) {
-  return output.replace(ANSI_ESCAPE_RE, "").replace(PARTIAL_ESCAPE_RE, "").replace(/[\u0000-\u001f\u007f]/gu, "").trim().length > 0;
+// containsNeedsInputSentinel(carry, chunk) => { found, carry } — whether a line this chunk completes
+// is the sentinel, each line read once, and the carry for the next chunk.
+function containsNeedsInputSentinel(carry, chunk) {
+  const lines = `${carry}${chunk}`.split("\n");
+  const tail = lines.pop();
+  return { found: lines.some((line) => line.trim() === NEEDS_INPUT_SENTINEL), carry: sentinelCarry(tail) };
 }
 
 // TASK COMPLETION, DETECTED FROM THE TRANSCRIPT (VERIFICATION F-38.06h, live soak
@@ -579,28 +579,15 @@ const BRACKETED_PASTE_START = `${ESC}[200~`;
 const BRACKETED_PASTE_END = `${ESC}[201~`;
 const INTERACTIVE_COMMAND_SUBMIT_DELAY_MS = 900;
 
-// 2026-09-24 — READINESS IS OBSERVED, NOT ASSUMED. `INTERACTIVE_COMMAND_READY_DELAY_MS` is a
-// guess about how long claude takes to start, and under load the guess was wrong: three lanes
-// launched together in a downstream project (plus the repo's MCP servers starting) had the
-// directive pasted before the TUI was listening — no transcript, no session id, and each lane
-// idled to the 20-minute heartbeat deadline, three attempts running. The TUI announces its own
-// readiness by enabling bracketed paste (`TUI_READY_MARKER`); a real launch now types only
-// once BOTH the delay has passed (the measured-good floor) AND the marker has been seen,
-// bounded by `INTERACTIVE_READY_CAP_MS` — after which it types anyway and says so.
-//
-// 2026-09-27 — THE FIRST MARKER IS NOT THE PROMPT. claude 2.1.283 enables bracketed paste
-// TWICE: at ~1.2s for a short pre-REPL capability probe (it queries `CSI >0q` and `CSI ?u`,
-// draws nothing), turns it OFF again at ~1.5s (`TUI_PASTE_OFF_MARKER`), then back ON at
-// ~2.3s when the REPL mounts and draws its banner. Input written in between is echoed by
-// ConPTY in cooked mode and lost: pasted on the first marker, 4 of 4 directives were dropped,
-// one of them only 140ms before the mount. Keyed on the first marker, only the floor protected
-// the paste, and a slow start (language-tutor 03/03 and a downstream 02/02, 2026-09-26) burned
-// three attempts each on `directive-not-accepted`. So the TUI is READY only while the mode is
-// ON and something VISIBLE has been drawn since it went ON. The probe draws nothing between
-// its ON and its OFF, and the REPL draws its frame right after its own ON. Pasting the instant
-// that holds, with no floor at all, landed 6 of 6 on 2.1.283 and 2 of 2 on 2.1.282.
-const TUI_READY_MARKER = `${ESC}[?2004h`;
-const TUI_PASTE_OFF_MARKER = `${ESC}[?2004l`;
+// 2026-09-24 — READINESS IS OBSERVED, NOT ASSUMED, and since 138 (ADR-002) it is read off the
+// SCREEN: a real launch types the directive on the first frame the door calls `ready` — claude's
+// input box, the prompt between its two rules with the cursor on it — and waits for no floor. A
+// select menu draws the same `❯`, so nothing looser is ever typed into. With a live model and no
+// ready frame by `INTERACTIVE_READY_CAP_MS`, NOTHING is typed: the session stops `failed / timeout`
+// with its screen recorded under `screen-not-ready`, because the blind keystroke at the cap is the
+// one that answers a dialog by accident. With NO model (the package absent, ADR-001 §4) the door is
+// the 2026-09-24/27 byte gate, unchanged: the floor, then bracketed paste ON with something visible
+// drawn since, and at the cap the directive is typed anyway under `tui-ready-marker-absent`.
 const INTERACTIVE_READY_CAP_MS = 60_000;
 // …and ACCEPTANCE IS OBSERVED TOO. A submitted directive starts a session, and a session
 // writes its transcript, which is what the session-id watch resolves on. A real launch whose
@@ -608,17 +595,19 @@ const INTERACTIVE_READY_CAP_MS = 60_000;
 // timeout` (retryable) in about a minute and a half rather than twenty, with what the screen
 // last showed recorded under `directive-not-accepted` — a dialog nobody could see names itself.
 const DIRECTIVE_ACCEPT_TIMEOUT_MS = 90_000;
-const SCREEN_TAIL_CHARS = 600;
 // 2026-09-27 — ONE MORE ENTER FOR A PARKED PASTE. A downstream 02/02's second attempt ended with
 // the directive sitting in claude's input box (`[Pasted text #1 +1 lines]`), never submitted,
 // until the acceptance watch killed it. Relaunching fails the same way, while the live session
 // only needed its Enter. So if no session has started `DIRECTIVE_RESUBMIT_AFTER_MS` after the
-// submit, and what claude drew since the paste shows the paste still parked, the Enter is sent
-// once more. The id watch polls every 200ms, so an accepted directive is known long before this
-// fires. The Enter is sent ONLY on that positive sign: a blind Enter would accept whatever
+// submit, and the door reads the paste as still parked IN THE INPUT BOX (ADR-002 §6), the Enter is
+// sent once more. The id watch polls every 200ms, so an accepted directive is known long before
+// this fires. The Enter is sent ONLY on that positive sign: a blind Enter would accept whatever
 // dialog is up at the time (the MCP-server prompt's default is "Use this server").
 const DIRECTIVE_RESUBMIT_AFTER_MS = 20_000;
-const PARKED_PASTE_RE = /\[Pasted text #\d+/u;
+// The PTY's one geometry (138/ADR-001 §2): the spawn and the screen model are sized from this pair,
+// so what the model renders is what claude drew.
+const PTY_COLS = 80;
+const PTY_ROWS = 24;
 // The Enter key is a CARRIAGE RETURN. F27b measured the alternative at the soak:
 // a trailing line feed enters the text and never submits it (it is Ctrl+J).
 const SUBMIT_KEY = String.fromCharCode(13);
@@ -939,19 +928,34 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     return { outcome: "failed", failureReason: "cancelled", sessionId: null, processStarted: false };
   }
 
+  // 138/ADR-001 §5 — the session's screen, opened after every pre-spawn refusal and just before the
+  // spawn. It opens synchronously and loads its model in the background, so the spawn is not moved.
+  // Its verdicts reach `onScreenVerdict`, which the settle body below assigns before any chunk can
+  // arrive. `options.openSessionScreen` is the injected seam (default: the real door).
+  let onScreenVerdict = null;
+  const door = (options.openSessionScreen ?? openSessionScreen)({
+    cols: PTY_COLS,
+    rows: PTY_ROWS,
+    onVerdict: (verdict) => onScreenVerdict?.(verdict),
+  });
+
   let term;
   try {
     term = await ptySpawn(launch.bin, launch.args, {
       name: "xterm-256color",
-      cols: 80,
-      rows: 24,
+      cols: PTY_COLS,
+      rows: PTY_ROWS,
       cwd: brief.worktreeCwd,
       env: launch.env,
     });
   } catch {
+    door.dispose();
     return { outcome: "failed", failureReason: "agent_error", sessionId: null, processStarted: false };
   }
   const attemptStartedAtMs = Date.now();
+  // ADR-004 §3 — this invocation's key for its screen evidence, drawn once: the degrade throttle is
+  // per (code, key), so a daemon hosting several sessions keeps every session's screen.
+  const screenKey = randomUUID();
 
   // 2026-07-27 (withdraw notify) — hand the caller a kill for THIS live PTY the
   // moment it exists, so a control-side withdrawal can end the run instead of
@@ -1080,23 +1084,17 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     };
     const terminateTree = options.terminateTree ?? (options.ptySpawn == null);
     const terminateTreeExec = options.terminateTreeExec ?? execFile;
-    let buffer = "";
-    // What the screen last showed, escapes stripped, for a degrade that has to say why it gave up.
-    const screenTail = () => buffer.slice(-4 * SCREEN_TAIL_CHARS).replace(ANSI_ESCAPE_RE, "").replace(/\s+/gu, " ").trim().slice(-SCREEN_TAIL_CHARS);
+    // 138/ADR-001 §3 — the NEEDS_INPUT scan's carry: the unterminated line, never the session.
+    let sentinelCarry = "";
     let dataSub = null;
     let exitSub = null;
     // F27 — the timer for the READINESS-DELAYED directive-command write (below).
     let commandWriteTimer = null;
     // 70/06 — the timer for the SEPARATED submit (the Enter that follows the body).
     let commandSubmitTimer = null;
-    // 2026-09-24 — the readiness gate and the acceptance watch (see TUI_READY_MARKER).
-    // `pasteModeOnAt` is the buffer offset just past the latest ON marker while the mode is ON,
-    // `null` while it is OFF (2026-09-27); `pastedAt` is the buffer offset the directive's paste
-    // was written at, which the resubmit reads what was drawn after.
-    let tuiReadySeen = false;
-    let pasteModeOnAt = null;
-    let pastedAt = null;
-    let onTuiReady = null;
+    // 2026-09-24 — the readiness gate and the acceptance watch (see INTERACTIVE_READY_CAP_MS).
+    // `onReady` is the gate's answer to the door's `ready` verdict, set by a real launch below.
+    let onReady = null;
     let readyCapTimer = null;
     let acceptTimer = null;
     let resubmitTimer = null;
@@ -1116,6 +1114,32 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     let providerWaitReported = false;
     // 129/02 — the caller's abort listener (below), removed at the single settle point.
     let abortListener = null;
+    // 138/ADR-004 — THE SCREEN AT EVERY STOP BUT `done`. One event per invocation, written to the
+    // degrade log (every drive is a child process, so loop-diag cannot receive it, RESEARCH Q4), under
+    // the stop's own code where it has one and `session-screen` otherwise, keyed by `screenKey`. It is
+    // taken at the moment of decision: `final` freezes the door's frame at this call, so nothing the
+    // dying session draws afterwards (claude leaves its alternate screen on exit) reaches it. The door
+    // is closed only after it: `screenRecording` is what the settle waits on.
+    let screenRecording = null;
+
+    const recordScreen = (code, result, detail, evidence) => {
+      if (screenRecording != null) return screenRecording;
+      screenRecording = (async () => {
+        let screen = evidence;
+        if (screen === undefined) {
+          try {
+            screen = await door.evidence({ final: true });
+          } catch (error) {
+            reportDegrade("session-screen-evidence", error);
+            screen = null;
+          }
+        }
+        const ended = result.failureReason == null ? result.outcome : `${result.outcome}/${result.failureReason}`;
+        reportDegrade(code, new Error(`${brief.itemRef}: ${ended}${detail ? ` — ${detail}` : ""}`), { key: screenKey, screen });
+        return screen;
+      })();
+      return screenRecording;
+    };
 
     const cleanupSubs = () => {
       try { dataSub?.dispose?.(); } catch (error) { /* already-exited guard (win32) */
@@ -1156,12 +1180,17 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     // ORDERS the mid-run `running` frame strictly before the caller's terminal frame.
     // When the watch already resolved an id this is an already-settled promise (one
     // microtask), so the pre-invariant-7 timing is otherwise unchanged.
-    const finish = (result) => {
+    const finish = (result, settle = {}) => {
       if (settled) return;
       settled = true;
       cleanupSubs();
       watchController.abort();
+      // ADR-004 §2 — a death or a non-zero exit nobody asked for leaves its screen too. The model
+      // still holds the last frame: nothing is fed to it once `dataSub` is gone.
+      if (settle.unasked === true && result.outcome !== "done") recordScreen("session-screen", result);
       (async () => {
+        if (screenRecording != null) await screenRecording;
+        door.dispose();
         let watched = null;
         try {
           watched = await watchPromise;
@@ -1245,10 +1274,19 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
         }, killConfirmationMs);
       }
     };
-    const stopForOutcome = (result) => {
+    // stopForOutcome(result, stop) — `stop.code` names the screen event (`session-screen` when the
+    // stop has no code of its own), `stop.detail` adds to its message, and `stop.evidence` is a
+    // screen already taken by the caller. Every stop but `done` records its screen (ADR-004 §2):
+    // the door freezes the frame at this call, so the kill that follows at once cannot change what
+    // is recorded, and the settle waits for the record before it resolves.
+    const stopForOutcome = (result, stop = {}) => {
       if (settled || requestedStopOutcome != null) return;
       requestedStopOutcome = result;
       stopBreadcrumb("stop-requested", { outcome: result.outcome, failureReason: result.failureReason ?? null });
+      if (result.outcome !== "done") recordScreen(stop.code ?? "session-screen", result, stop.detail, stop.evidence);
+      terminateSession();
+    };
+    const terminateSession = () => {
       const pid = typeof term.pid === "number" && Number.isFinite(term.pid) && term.pid > 0 ? term.pid : null;
       if (process.platform !== "win32" || !terminateTree || pid == null) {
         releasePty();
@@ -1288,24 +1326,44 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       if (options.signal.aborted === true) abortListener();
     }
 
-    dataSub = term.onData?.((chunk) => {
-      const text = String(chunk);
-      buffer += text;
-      // The TUI's own readiness signal, read across a chunk boundary: the mode's latest toggle,
-      // then something visible drawn since it went ON (2026-09-27, see TUI_READY_MARKER). The
-      // window reaches back one byte short of a marker, so it only finds markers that END in this
-      // chunk, and a marker already read is never read twice. Both markers are the same length.
-      if (!tuiReadySeen) {
-        const window = buffer.slice(-(text.length + TUI_READY_MARKER.length - 1));
-        const on = window.lastIndexOf(TUI_READY_MARKER);
-        const off = window.lastIndexOf(TUI_PASTE_OFF_MARKER);
-        if (on > off) pasteModeOnAt = buffer.length - window.length + on + TUI_READY_MARKER.length;
-        else if (off > on) pasteModeOnAt = null;
-        if (pasteModeOnAt != null && hasVisibleText(buffer.slice(pasteModeOnAt))) {
-          tuiReadySeen = true;
-          onTuiReady?.();
-        }
+    // 138/ADR-002, ADR-003 — THE DOOR'S VERDICTS, acted on. `ready` goes to the gate below (a real
+    // launch types on it); `consent` is answered with its keys as one write of their own (the door
+    // gives one only while the directive is untyped, once per dialog, and only on the named option);
+    // `blocked` stops the session by the screen's name, on this frame, through the same bracket as
+    // every other stop; `wait` is the provider's wait, seen on this frame (129/06 F-58, below).
+    onScreenVerdict = (verdict) => {
+      if (settled || requestedStopOutcome != null) return;
+      switch (verdict?.kind) {
+        case "ready":
+          onReady?.(verdict.source);
+          return;
+        case "consent":
+          try {
+            term.write(verdict.keys);
+          } catch (error) {
+            reportDegrade("mesh-worker-execution", error);
+          }
+          return;
+        case "blocked":
+          stopForOutcome({ outcome: "failed", failureReason: "blocked_screen", screen: { id: verdict.id } });
+          return;
+        case "wait":
+          // 129/06 F-58 — the instant the wait was last seen is the last settled frame that showed
+          // it; no timer refreshes it. Reported once as a breadcrumb so the loop's diagnostics name it.
+          providerWaitSeenAtMs = Date.now();
+          if (!providerWaitReported) {
+            providerWaitReported = true;
+            stopBreadcrumb("provider-wait", { detail: String(verdict.detail ?? "").slice(0, 120) });
+          }
+          return;
+        default:
+          reportDegrade("session-screen-verdict", new Error(`${brief.itemRef}: unknown screen verdict ${verdict?.kind}`));
       }
+    };
+
+    dataSub = term.onData?.((chunk) => {
+      // 138/ADR-001 §2 — every chunk the PTY emits goes to the screen, the same chunk the bridge gets.
+      door.feed(chunk);
       // milestone 38 / story 06 (ADR-014) — the cross-machine terminal BRIDGE's
       // ONLY hook into this driver: an OPTIONAL, ADDITIVE `options.onOutputChunk`
       // called with EXACTLY the raw chunk `term.onData` itself just emitted, plus
@@ -1320,17 +1378,6 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       } catch (error) {
         // a bridge fault must never crash/backpressure the driven session itself.
       reportDegrade("mesh-worker-execution", error); }
-      // 129/06 F-58 — the provider-wait line, read off the OUTPUT (the tail of the buffer with
-      // the terminal's escapes stripped, since the TUI colours it and a chunk boundary can fall
-      // inside the phrase). Reported once as a breadcrumb so the loop's diagnostics name it.
-      const providerWait = PROVIDER_WAIT_RE.exec(buffer.slice(-PROVIDER_WAIT_WINDOW).replace(ANSI_ESCAPE_RE, ""));
-      if (providerWait != null) {
-        providerWaitSeenAtMs = Date.now();
-        if (!providerWaitReported) {
-          providerWaitReported = true;
-          stopBreadcrumb("provider-wait", { detail: providerWait[0].trim().slice(0, 120) });
-        }
-      }
       // task 02 — the NEEDS_INPUT sentinel yields the THIRD outcome BEFORE any exit
       // is ever observed: a "turn end" is not a process exit, so this driver must
       // detect it from the OUTPUT stream, never wait on onExit for it. Once detected,
@@ -1345,15 +1392,24 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       // was killed mid-tool-call 32 s into its re-drive and asked a question with no text. A resumed
       // session's needs-input is the transcript watch's to decide, from `resumedSinceOffset`, where
       // only what the resumed process writes counts.
-      if (resumedSessionId == null && containsNeedsInputSentinel(buffer)) {
-        stopForOutcome({ outcome: "needs-input" });
+      //
+      // This is the ONE output reader left in the driver, and it is not the screen: the scan reads
+      // the lines as they complete (138/ADR-001 §3, `containsNeedsInputSentinel`).
+      if (resumedSessionId == null) {
+        const scan = containsNeedsInputSentinel(sentinelCarry, String(chunk));
+        sentinelCarry = scan.carry;
+        if (scan.found) stopForOutcome({ outcome: "needs-input" });
       }
     }) ?? null;
 
     exitSub = term.onExit?.(({ exitCode }) => {
       const requested = requestedStopOutcome;
       requestedStopOutcome = null;
-      finish(requested ?? (exitCode === 0 ? { outcome: "done" } : { outcome: "failed", failureReason: "agent_error" }));
+      if (requested != null) {
+        finish(requested);
+        return;
+      }
+      finish(exitCode === 0 ? { outcome: "done" } : { outcome: "failed", failureReason: "agent_error" }, { unasked: true });
     }) ?? null;
 
     // 69/02 (ADR-002/004) — aof owns both per-attempt deadlines because this is
@@ -1430,7 +1486,7 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
           // `stop-requested done` → `exit-confirmed failed`, 55 ms apart, and the loop halted
           // `run-not-retryable` on a refine that had finished). The requested outcome is the
           // truth the probe honours; a death nobody asked for is still `agent_died`.
-          finish(requestedStopOutcome ?? { outcome: "failed", failureReason: "agent_died" });
+          finish(requestedStopOutcome ?? { outcome: "failed", failureReason: "agent_died" }, { unasked: requestedStopOutcome == null });
         }
       }, livenessIntervalMs);
       // NOT unref'd: an unref'd probe lets the process exit before its first tick
@@ -1561,7 +1617,7 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
           const composed = composePhaseBriefInput(command, brief.context);
           const body = composed.split(BRACKETED_PASTE_END).join("");
           if (body !== composed) reportDegrade("directive-paste-marker-stripped", new Error(`${brief.itemRef}: the composed directive contained an end-of-paste marker`));
-          pastedAt = buffer.length;
+          door.markPaste();
           term.write(`${BRACKETED_PASTE_START}${body}${BRACKETED_PASTE_END}`);
           // The settle guard is BOTH here and in cleanupSubs, and it has to be: a PTY
           // that exits on the BODY write settles the run BEFORE this assignment runs, so
@@ -1577,29 +1633,37 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
             // The acceptance watch — a real launch only, and only while the session-id
             // watch is live (a watch that is unavailable proves nothing about the session).
             if (realLaunch && watchCallResult != null && capturedSessionId == null) {
+              // The screen is taken first, so the breadcrumb and the stop's one event carry the
+              // SAME evidence object (ADR-004 §3), and a session id that lands while it is taken
+              // still stands the stop down.
               acceptTimer = setTimeout(() => {
                 acceptTimer = null;
                 if (settled || capturedSessionId != null) return;
-                const screen = screenTail();
-                stopBreadcrumb("directive-not-accepted", { screen });
-                reportDegrade("directive-not-accepted", new Error(`${brief.itemRef}: no session ${options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS}ms after the directive was submitted; screen: ${screen}`));
-                stopForOutcome({ outcome: "failed", failureReason: "timeout" });
+                const acceptTimeoutMs = options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS;
+                door.evidence().then((screen) => {
+                  if (settled || requestedStopOutcome != null || capturedSessionId != null) return;
+                  stopBreadcrumb("directive-not-accepted", { screen });
+                  stopForOutcome(
+                    { outcome: "failed", failureReason: "timeout" },
+                    { code: "directive-not-accepted", detail: `no session ${acceptTimeoutMs}ms after the directive was submitted`, evidence: screen },
+                  );
+                });
               }, options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS);
               // One more Enter for a paste still parked in the input box (2026-09-27, see
-              // DIRECTIVE_RESUBMIT_AFTER_MS), read from what was drawn after the paste. The
-              // placeholder is claude's own rendering of a paste it holds, so the raw echo of a
-              // paste the TUI never received (the body text itself) never passes for it.
+              // DIRECTIVE_RESUBMIT_AFTER_MS), as the door reads the box (ADR-002 §6).
               resubmitTimer = setTimeout(() => {
                 resubmitTimer = null;
                 if (settled || capturedSessionId != null) return;
-                if (!PARKED_PASTE_RE.test(buffer.slice(pastedAt ?? 0).replace(ANSI_ESCAPE_RE, ""))) return;
-                stopBreadcrumb("directive-resubmitted");
-                reportDegrade("directive-resubmitted", new Error(`${brief.itemRef}: no session ${options.resubmitAfterMs ?? DIRECTIVE_RESUBMIT_AFTER_MS}ms after the directive was submitted, and the paste is still in the input box; sent Enter once more`));
-                try {
-                  term.write(SUBMIT_KEY);
-                } catch (error) {
-                  reportDegrade("mesh-worker-execution", error);
-                }
+                door.parked().then((parked) => {
+                  if (!parked || settled || requestedStopOutcome != null || capturedSessionId != null) return;
+                  stopBreadcrumb("directive-resubmitted");
+                  reportDegrade("directive-resubmitted", new Error(`${brief.itemRef}: no session ${options.resubmitAfterMs ?? DIRECTIVE_RESUBMIT_AFTER_MS}ms after the directive was submitted, and the paste is still in the input box; sent Enter once more`));
+                  try {
+                    term.write(SUBMIT_KEY);
+                  } catch (error) {
+                    reportDegrade("mesh-worker-execution", error);
+                  }
+                });
               }, options.resubmitAfterMs ?? DIRECTIVE_RESUBMIT_AFTER_MS);
             }
           }, submitDelayMs);
@@ -1612,30 +1676,54 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
         // A scripted PTY keeps its fixed write — next tick at delay 0, byte-identical.
         commandWriteTimer = setTimeout(typeDirective, options.commandDelayMs ?? 0);
       } else {
-        // The readiness gate: the floor delay AND the TUI's own readiness, bounded by the cap.
-        // At the cap the wait is a degrade as well as a breadcrumb: a lane child wires no
-        // `onSessionStop`, so the degrade log is the only place the wait is written down.
+        // The readiness gate (ADR-002): with a model, the first `ready` frame, and no floor; with
+        // none, the byte gate's readiness AND the floor delay. Both are bounded by the cap. A stop
+        // already asked for types nothing. At the cap the wait is a degrade as well as a breadcrumb:
+        // a lane child wires no `onSessionStop`, so the degrade log is the only place it is written.
         let floorPassed = false;
+        let bytesReady = false;
         let typed = false;
         const typeOnce = () => {
-          if (typed || settled) return;
+          if (typed || settled || requestedStopOutcome != null) return;
           typed = true;
           if (readyCapTimer != null) { clearTimeout(readyCapTimer); readyCapTimer = null; }
           typeDirective();
         };
-        onTuiReady = () => { if (floorPassed) typeOnce(); };
+        onReady = (source) => {
+          if (source === "screen") {
+            typeOnce();
+            return;
+          }
+          bytesReady = true;
+          if (floorPassed) typeOnce();
+        };
         commandWriteTimer = setTimeout(() => {
           commandWriteTimer = null;
           floorPassed = true;
-          if (tuiReadySeen) typeOnce();
+          if (bytesReady) typeOnce();
         }, options.commandDelayMs);
         readyCapTimer = setTimeout(() => {
           readyCapTimer = null;
-          if (typed || settled) return;
+          if (typed || settled || requestedStopOutcome != null) return;
           const waitedMs = options.readyCapMs ?? INTERACTIVE_READY_CAP_MS;
-          const pasteModeOn = pasteModeOnAt != null;
-          stopBreadcrumb("tui-ready-marker-absent", { waitedMs, pasteModeOn });
-          reportDegrade("tui-ready-marker-absent", new Error(`${brief.itemRef}: the TUI showed no ready prompt within ${waitedMs}ms (bracketed paste ${pasteModeOn ? "on, nothing drawn since" : "off"}); typing the directive anyway; screen: ${screenTail()}`));
+          const gate = door.gate();
+          // ADR-002 §5 — the model is live and never showed the input box: type NOTHING. A slow
+          // start and an unknown screen look the same from the screen alone, so it is a retryable
+          // `timeout`, with the screen that was up recorded under `screen-not-ready`.
+          if (gate.mode === "screen") {
+            stopForOutcome({ outcome: "failed", failureReason: "timeout" }, { code: "screen-not-ready", detail: `no ready frame within ${waitedMs}ms; nothing was typed` });
+            return;
+          }
+          // The byte gate's cap (ADR-002 §4): typed anyway, and said so with the byte tail. A
+          // warning before a typed directive, not a stop, so it is not the stop's one event.
+          stopBreadcrumb("tui-ready-marker-absent", { waitedMs, pasteModeOn: gate.pasteModeOn });
+          door.evidence().then((screen) => {
+            reportDegrade(
+              "tui-ready-marker-absent",
+              new Error(`${brief.itemRef}: the TUI showed no ready prompt within ${waitedMs}ms (bracketed paste ${gate.pasteModeOn ? "on, nothing drawn since" : "off"}); typing the directive anyway`),
+              { key: screenKey, screen },
+            );
+          });
           typeOnce();
         }, options.readyCapMs ?? INTERACTIVE_READY_CAP_MS);
       }

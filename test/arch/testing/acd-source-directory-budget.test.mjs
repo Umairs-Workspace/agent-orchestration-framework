@@ -43,7 +43,7 @@
 // once driven to a violation). Every plant asserts it LANDED before the detector is asked, and
 // the clean listing is shown quiet in the same lane.
 import assert from "node:assert/strict";
-import { readdir } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -596,6 +596,14 @@ export const SOURCE_DIRECTORY_EXEMPTIONS = Object.freeze([
   Object.freeze({ directory: "src/work-examples", why: "the work-examples sub-family (134/ADR-002), born `src/work-<subject>/` as chore 106's rule 1 and the `src` row require: `map.mjs` (story 02 — the example map's closed grammar, its pure queries and its token pair, FF-13402) and story 03's `answers.mjs` (the one reader of a person's answer from the harness record, FF-13401). Two members, well under the threshold. The doctor lane over the map is NOT a member: it is `src/work/doctor-examples.mjs`, a module of the doctor family by FF-5905's rule." }),
   Object.freeze({ directory: "test/examples", why: "milestone 134's example-map suites, seven by the milestone's end: the index, `example-map-parse` and `examples-config-gate` (story 02), `example-answers` (story 03), `doctor-examples-lane` and `continue-door-examples` (story 04), and `refine-discovery-beat` (story 05). Under the threshold of eight; an eighth is a case on one of these or a row." }),
   Object.freeze({ directory: "test/arch/examples", why: "milestone 134's example-map controls: the index, FF-13402 `acd-example-map-single-home` (story 02), FF-13401 `acd-example-answer-one-reader` and FF-13404 `acd-settle-reads-the-transcript-store` (story 03), and FF-13403 `acd-examples-off-is-today` (story 04). Five members, under the threshold." }),
+  // milestone 138 — the terminal family (138/ADR-001 §6), founded by story 00 as FOUR exemptions on
+  // 133's precedent. Each names every member the milestone plans for it, story 01's included, so 01
+  // adds its files without touching a budget line. A member named here and not yet landed is not a
+  // violation; only an absent DIRECTORY is (the stale-exemption rule).
+  Object.freeze({ directory: "src/terminal", why: "the session driver's screen (138/ADR-001): `screen.mjs` (the headless model, the ONE importer of `@xterm/headless`, FF-13801), `session-screen.mjs` (the door: the model, the recognition pass, the byte-gate fallback and the evidence) and `claude-screens.mjs` (the recorded registry, ADR-003) — three members, under the threshold. The root `terminal-*.mjs` modules are the family's natural later members, moved by an item of their own; a ninth is a row." }),
+  Object.freeze({ directory: "test/terminal", why: "milestone 138's screen suites (138/ADR-001): `index.mjs`, `screen-model`, `session-screen-ready`, `session-screen-verdicts` and `session-screen-evidence` (story 00), and story 01's `claude-screens-registry` — six members, under the threshold." }),
+  Object.freeze({ directory: "test/arch/terminal", why: "milestone 138's screen controls (138/ADR-001): `index.mjs`, FF-13801 `acd-screen-has-one-reader` (story 00) and story 01's FF-13802 `acd-screen-registry-is-recorded` — three members, under the threshold." }),
+  Object.freeze({ directory: "test/fixtures/claude-screens", why: "the recorded claude screens (138/ADR-001 §6, ADR-003 §7) — data the screen suites replay, not a layer of modules: `ready`, `first-run` and `usage-limit` (story 00), and story 01's `trust`, `mcp-approval` and `login` — six `.json` recordings, under the threshold." }),
   // milestone 131 — the notify family (ADR-005 §2), founded by story 02 as TWO exemptions on 133's
   // precedent, each naming its members so no later story edits a budget line to land one.
   Object.freeze({ directory: "src/notify", why: "the notifier (131/ADR-005 §2, ADR-006 §1): `form.mjs` and `form.d.mts` (the one zero-import formatter every face reads), `notify.mjs` (the config reader, the envelope builder, the channel registry and the delivery), `discord.mjs` (the first channel's renderer, its token shape and its one authorised request, ADR-007), story 08's `secret.mjs` (the machine-wide messaging store's ONE home, ADR-005 §1 as amended at 131/08) and story 10's `ask-messages.mjs` (the index from a posted ask message to its ask, ADR-008 §4) — six members, under the threshold. A second channel type is a sixth file here; a ninth is a row." }),
@@ -945,6 +953,85 @@ export const archTests = [
         `an exemption that has outgrown its size claim fires: ${JSON.stringify(grownViolations.map((violation) => violation.directory))}`,
       );
       assert.deepEqual(sourceDirectoryBudgetViolations(clean), [], "…and the CLEAN listing, in this same lane, returns none");
+    },
+  },
+
+  // ── milestone 138 / story 00, task 01 — the terminal family is founded and registered ──────────
+  {
+    name: "138/00 task01 — the terminal family is four exemptions, each naming every member the milestone plans and citing 138/ADR-001, and the src root row is what it was",
+    run: async () => {
+      const planned = {
+        "src/terminal": ["screen.mjs", "session-screen.mjs", "claude-screens.mjs"],
+        "test/terminal": ["index.mjs", "screen-model", "session-screen-ready", "session-screen-verdicts", "session-screen-evidence", "claude-screens-registry"],
+        "test/arch/terminal": ["index.mjs", "acd-screen-has-one-reader", "acd-screen-registry-is-recorded"],
+        "test/fixtures/claude-screens": ["ready", "first-run", "usage-limit", "trust", "mcp-approval", "login"],
+      };
+      for (const [directory, members] of Object.entries(planned)) {
+        const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === directory);
+        assert.ok(exemption != null, `${directory}/ is a declared exemption`);
+        assert.match(exemption.why, /138\/ADR-001/u, `${directory}: the exemption cites 138/ADR-001`);
+        for (const member of members) assert.ok(exemption.why.includes(`\`${member}`), `${directory}: the exemption names ${member}`);
+        assert.equal(SOURCE_DIRECTORY_BUDGETS.some((budget) => budget.directory === directory), false, `${directory}/ is an exemption, not a row`);
+      }
+      const srcRow = SOURCE_DIRECTORY_BUDGETS.find((budget) => budget.directory === "src");
+      assert.deepEqual({ ceiling: srcRow.ceiling, allowance: srcRow.allowance }, { ceiling: 92, allowance: 0 }, "the src root row is what it was at the story's base commit: no module joined the root");
+      assert.deepEqual(sourceDirectoryBudgetViolations(await readTreeListing()), [], "the budget's own run over the live tree is green");
+    },
+  },
+  {
+    name: "138/00 task01 outline — the terminal exemptions hold only while the family stays small, and a family that is gone is a stale exemption",
+    run: async () => {
+      const clean = await readTreeListing();
+      // The live listing with `directory` replaced by `count` synthesized files, or removed (null).
+      const withLayer = (directory, count) => {
+        const cut = directory.lastIndexOf("/");
+        const parent = directory.slice(0, cut);
+        const name = directory.slice(cut + 1);
+        const rest = clean.filter((entry) => entry.dir !== directory && !(entry.dir === parent && entry.name === name));
+        if (count == null) return rest;
+        const files = Array.from({ length: count }, (_, index) => ({ dir: directory, name: `member-${index}.mjs`, kind: "file" }));
+        return [...rest, { dir: parent, name, kind: "dir" }, ...files];
+      };
+      const rows = [
+        { directory: "src/terminal", count: 3, fires: null },
+        { directory: "src/terminal", count: 8, fires: null },
+        { directory: "src/terminal", count: 9, fires: /owes a ROW/u },
+        { directory: "test/terminal", count: 9, fires: /owes a ROW/u },
+        { directory: "test/fixtures/claude-screens", count: 6, fires: null },
+        { directory: "src/terminal", count: null, fires: /NOT in the tree/u },
+      ];
+      for (const row of rows) {
+        const label = `${row.directory}/ ${row.count == null ? "absent" : `holding ${row.count} direct files`}`;
+        const named = sourceDirectoryBudgetViolations(withLayer(row.directory, row.count)).filter((violation) => violation.directory === row.directory);
+        if (row.fires == null) {
+          assert.deepEqual(named, [], `${label}: no violation`);
+        } else {
+          assert.equal(named.length, 1, `${label}: exactly one violation, naming the directory`);
+          assert.match(named[0].message, row.fires, label);
+        }
+      }
+    },
+  },
+  {
+    name: "138/00 task01 — the terminal suites are registered through two indexes and one registry import each, and each index spreads every suite it imports and reads no directory",
+    run: async () => {
+      // Line-wise and CRLF-tolerant: a binding is spread when a line is exactly `...<binding>` with or
+      // without its trailing comma.
+      const lines = (text) => text.split(/\r?\n/u).map((line) => line.trim());
+      const spreads = (text, binding) => lines(text).filter((line) => line === `...${binding}` || line === `...${binding},`).length;
+      const runner = await readFile(path.join(repoRoot, "scripts", "test.mjs"), "utf8");
+      for (const index of ["../test/terminal/index.mjs", "../test/arch/terminal/index.mjs"]) {
+        const imports = lines(runner).map((line) => /^import \{ tests as (\w+) \} from "([^"]+)";$/u.exec(line)).filter((match) => match?.[2] === index);
+        assert.equal(imports.length, 1, `scripts/test.mjs imports ${index} exactly once`);
+        assert.equal(spreads(runner, imports[0][1]), 1, `…and spreads what it exports (${imports[0][1]}) once`);
+      }
+      for (const index of ["test/terminal/index.mjs", "test/arch/terminal/index.mjs"]) {
+        const source = await readFile(path.join(repoRoot, index), "utf8");
+        assert.doesNotMatch(source, /readdir/u, `${index} decides nothing by readdir`);
+        const bindings = lines(source).map((line) => /^import \{ (?:\w+ as )?(\w+) \} from "\.\/[^"]+\.test\.mjs";$/u.exec(line)?.[1]).filter(Boolean);
+        assert.ok(bindings.length > 0, `${index} imports its suites`);
+        for (const binding of bindings) assert.equal(spreads(source, binding), 1, `${index} spreads ${binding} once`);
+      }
     },
   },
 ];

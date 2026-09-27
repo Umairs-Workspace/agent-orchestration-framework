@@ -267,6 +267,16 @@ const NAMES_THE_NEW_MODULE = [
   // split below is untouched. Found at 124's whole-tree gate, not in its story lane — the
   // census is one directory over from everything the story declared (119/R3's species).
   "test/arch/planning/acd-contract-set-has-one-home.test.mjs",
+  // milestone 138 / story 00 (138/ADR-001 §5, FF-13801) — the screen family. Two suites DRIVE the
+  // driver over the real door and model, because what they prove is what the driver does with a
+  // verdict (typing on the input box, stopping by a screen's name, recording the screen at a
+  // stop): they import the driver itself, not the sink. FF-13801 names the driver as its subject:
+  // the comment-stripped driver must spell none of the byte readers that moved into the door. None
+  // imports the sink, so the census split below is untouched. Found at 138/00's build, one
+  // directory over from the story's declared write set (119/R3's species again).
+  "test/terminal/session-screen-ready.test.mjs",
+  "test/terminal/session-screen-evidence.test.mjs",
+  "test/arch/terminal/acd-screen-has-one-reader.test.mjs",
 ].sort();
 
 // The named driver + completion suites that must survive the move green AND registered.

@@ -45,12 +45,19 @@ import {
   OTEL_TELEMETRY_ENV_KEY,
 } from "../../src/otel-attribution.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
+import { openSessionScreen } from "../../src/terminal/session-screen.mjs";
 
 const BRIEF = { itemRef: "53/00", worktreeCwd: "/tmp/wt", task: "the session driver gets a home", command: "/aof:verify 53/00" };
 
 // 2026-09-24 — the TUI's readiness marker (CSI ?2004h, bracketed paste on), spelled from char
 // codes as the paste frame is below: the driver keeps it private (FF-5302 freezes its exports).
 const TUI_READY_MARKER = `${String.fromCharCode(27)}[?2004h`;
+
+// 138/00 task 03 (QA 3) — the 2026-09-24 and 2026-09-27 readiness cases below drive the BYTE path:
+// the real door with a `load` that throws, so no screen model exists and the door is the byte gate
+// they were written against. Their assertions are unchanged.
+const noScreenModel = () => { throw Object.assign(new Error("Cannot find package '@xterm/headless'"), { code: "ERR_MODULE_NOT_FOUND" }); };
+const BYTE_PATH = { openSessionScreen: (options) => openSessionScreen({ ...options, load: noScreenModel }) };
 
 // A PTY double the TEST drives: `emit(data)` plays the TUI's output at a moment the test
 // chooses (the shared scripted PTY only answers writes), and `kill()` confirms exit.
@@ -858,7 +865,7 @@ export const agentSessionDriverDrivesTests = [
     run: async () => {
       const { pty, spawn } = emittingPty();
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
         observeReadiness: true, commandDelayMs: 20, submitDelayMs: 0, readyCapMs: 5000,
       });
       await sleep(80);
@@ -879,7 +886,7 @@ export const agentSessionDriverDrivesTests = [
       const { pty, spawn } = emittingPty();
       const stops = [];
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 60,
         onSessionStop: (event) => stops.push(event),
       });
@@ -896,7 +903,7 @@ export const agentSessionDriverDrivesTests = [
       const { pty, spawn } = emittingPty();
       const stops = [];
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]),
         watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 80,
         onSessionStop: (event) => stops.push(event),
@@ -908,7 +915,8 @@ export const agentSessionDriverDrivesTests = [
       assert.equal(result.failureReason, "timeout", "retryable — the store's vocabulary is unchanged");
       const notAccepted = stops.find((event) => event.phase === "directive-not-accepted");
       assert.ok(notAccepted, stops.map((event) => event.phase).join(","));
-      assert.match(notAccepted.screen, /New MCP server found in \.mcp\.json: example-mcp/u, "the screen tail, escapes stripped");
+      // 138/00 task 05 (QA 3): the screen is the evidence object now; on the byte path its text is `tail`.
+      assert.match(notAccepted.screen.tail, /New MCP server found in \.mcp\.json: example-mcp/u, "the screen tail, escapes stripped");
       assert.equal(pty.killed, true);
     },
   },
@@ -917,7 +925,7 @@ export const agentSessionDriverDrivesTests = [
     run: async () => {
       const { pty, spawn } = emittingPty();
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => "sess-accepted",
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => "sess-accepted",
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 40,
       });
       await waitUntil(() => pty.subscribed);
@@ -936,7 +944,7 @@ export const agentSessionDriverDrivesTests = [
     run: async () => {
       const { pty, spawn } = emittingPty();
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000,
       });
       await waitUntil(() => pty.subscribed);
@@ -966,7 +974,7 @@ export const agentSessionDriverDrivesTests = [
       const { pty, spawn } = emittingPty();
       const stops = [];
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]),
         watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 400, resubmitAfterMs: 60,
         onSessionStop: (event) => stops.push(event),
@@ -989,7 +997,7 @@ export const agentSessionDriverDrivesTests = [
       const { pty, spawn } = emittingPty();
       const stops = [];
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]),
         watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 300, resubmitAfterMs: 60,
         onSessionStop: (event) => stops.push(event),
@@ -1003,6 +1011,43 @@ export const agentSessionDriverDrivesTests = [
       assert.equal(result.failureReason, "timeout");
       assert.equal(pty.writes.length, 2, "the paste and its one Enter, nothing more");
       assert.equal(stops.some((event) => event.phase === "directive-resubmitted"), false);
+    },
+  },
+
+  // 138/00 task 06 (ADR-001 §3, QA 2) — THE SENTINEL SCAN KEEPS ONE LINE, proved by its cost: a
+  // session of 40,000 one-line chunks settles within 10 s, where a scan that re-reads the whole
+  // output on every chunk does 800 million line reads and cannot. The bound is ten times what the
+  // linear scan needs on this machine, so contention cannot fake a red.
+  {
+    name: "138/00 task06 — a long session is scanned once: 40,000 one-line chunks and an exit settle `done` within 10 s",
+    run: async () => {
+      const { spawn } = createFakePtySpawn({
+        onWrite: ({ chunk, emitData, emitExit }) => {
+          if (chunk === SUBMIT_KEY) return;
+          for (let n = 1; n <= 40_000; n += 1) emitData(`line ${n}\r\n`);
+          emitExit(0);
+        },
+      });
+      const startedAt = Date.now();
+      const settled = await drive({ ptySpawn: spawn });
+      assert.equal(settled.value.outcome, "done");
+      assert.ok(Date.now() - startedAt < 10_000, `settled in ${Date.now() - startedAt} ms`);
+    },
+  },
+  {
+    name: "138/00 task06 — a sentinel after a long session is still found at once: 40,000 lines, then `NEEDS_INPUT`, resolve `needs-input` within 10 s",
+    run: async () => {
+      const { spawn } = createFakePtySpawn({
+        onWrite: ({ chunk, emitData }) => {
+          if (chunk === SUBMIT_KEY) return;
+          for (let n = 1; n <= 40_000; n += 1) emitData(`line ${n}\r\n`);
+          emitData(`${NEEDS_INPUT_SENTINEL}\r\n`);
+        },
+      });
+      const startedAt = Date.now();
+      const settled = await drive({ ptySpawn: spawn });
+      assert.equal(settled.value.outcome, "needs-input");
+      assert.ok(Date.now() - startedAt < 10_000, `found in ${Date.now() - startedAt} ms`);
     },
   },
 ];
