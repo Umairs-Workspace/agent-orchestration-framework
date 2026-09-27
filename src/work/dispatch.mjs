@@ -22,7 +22,7 @@
 // than re-invented; only the lane's root and its branch policy differ.
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, stat } from "node:fs/promises";
+import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
 import {
   meshDispatchWorktreePath,
   isUnderMeshDispatchWorktreesRoot,
@@ -257,7 +257,7 @@ export async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     throw error;
   }
   const lane = await openDispatchLane(projectRoot, itemRef, options);
-  await inheritLocalClaudeSettings(projectRoot, lane.worktree);
+  await inheritIgnoredClaudeFiles(projectRoot, lane.worktree, { exec: options.exec });
   if (advanceTo == null) return lane;
   const advance = await advanceBranchToBase(lane.worktree, advanceTo, { exec: options.exec });
   // EVERY refusal is `lane-open-failed` (PO ruling, 129/03 fix round, I3): a lane that cannot be
@@ -269,8 +269,10 @@ export async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
   return { ...lane, advanced };
 }
 
-// inheritLocalClaudeSettings(projectRoot, worktree) — A LANE CARRIES THE OPERATOR'S LOCAL CLAUDE
-// CONSENT (2026-09-24). `.claude/settings.local.json` is git-ignored, so a lane cut from the primary
+// inheritIgnoredClaudeFiles(projectRoot, worktree, { exec }) — A LANE CARRIES WHAT GIT IGNORES BUT
+// ITS SESSION NEEDS. Two sources, one copy rule, on every open (created or reused).
+//
+// (1) THE OPERATOR'S LOCAL CLAUDE CONSENT (2026-09-24). `.claude/settings.local.json` is git-ignored, so a lane cut from the primary
 // never has it — and in a repo with a `.mcp.json` it is where the operator approved those servers
 // (`enabledMcpjsonServers`). Without it every lane's `claude` opens on the MCP-approval dialog,
 // which eats the typed directive: no transcript, no session id, `failed / timeout` at the
@@ -279,16 +281,69 @@ export async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
 // operator, so it approves exactly what the primary approved. A lane that already holds the file
 // keeps its own; a primary with none copies nothing. Best-effort — a failed copy leaves claude's
 // dialog in place, as before.
-async function inheritLocalClaudeSettings(projectRoot, worktree) {
-  const source = path.join(projectRoot, ".claude", "settings.local.json");
-  const target = path.join(worktree, ".claude", "settings.local.json");
-  if (path.resolve(source) === path.resolve(target) || !existsSync(source) || existsSync(target)) return;
+//
+// (2) THE FILES AOF RENDERED, WHERE THE PROJECT IGNORES THEM (2026-09-27). `.claude/settings.json`
+// is tracked, so a lane inherits it, and it runs the PostToolUse heartbeat as
+// `${CLAUDE_PROJECT_DIR}/.claude/hooks/aof/run-heartbeat-enqueue.mjs`. A project that ignores its
+// generated output hands every lane a settings file naming a hook that is not there
+// (one consumer repository tracks `settings.json` and `.gitignore` under `.claude/`, nothing else).
+// node then exits MODULE_NOT_FOUND on every tool call (68 non-blocking hook errors in one lane
+// session), no heartbeat is written, and the driver's heartbeat deadline kills a WORKING session at
+// 20 minutes: five attempts across 02/01 and 02/02, each 105-127 turns in, about $64 thrown away. Its
+// agents and `/aof:*` commands were missing from the lane the same way. WHICH files is the lock's
+// answer, never a directory walk: every path `.aof/aof.lock.json` records as rendered (`files` and
+// `work.files`), read from the lane's own copy, which is tracked and describes the lane's commit. A
+// rendered path is copied only when git IGNORES it. An ignored file is one the lane's `git add -A`
+// never commits, whereas a missing file that is not ignored would land in the lane's commit, so it is
+// left alone. Copied, never linked (FF-7207); a file the lane already holds is never overwritten.
+const LOCAL_CLAUDE_SETTINGS = path.join(".claude", "settings.local.json");
+
+async function inheritIgnoredClaudeFiles(projectRoot, worktree, { exec } = {}) {
+  if (path.resolve(projectRoot) === path.resolve(worktree)) return;
+  let rendered = [];
   try {
-    await mkdir(path.dirname(target), { recursive: true });
-    await copyFile(source, target);
+    rendered = await ignoredRenderedFiles(projectRoot, worktree, resolveExec({ exec }));
   } catch (error) {
     reportDegrade("work-dispatch", error);
   }
+  for (const relpath of [LOCAL_CLAUDE_SETTINGS, ...rendered]) {
+    const source = path.join(projectRoot, relpath);
+    const target = path.join(worktree, relpath);
+    if (!existsSync(source) || existsSync(target)) continue;
+    try {
+      await mkdir(path.dirname(target), { recursive: true });
+      await copyFile(source, target);
+    } catch (error) {
+      reportDegrade("work-dispatch", error);
+    }
+  }
+}
+
+// ignoredRenderedFiles(projectRoot, worktree, exec) → the lock's rendered paths the lane lacks, the
+// primary holds and git ignores, forward-slashed and relative. A path that is absolute or climbs out
+// of the tree is dropped: the lock is repository content, and a copy never leaves the lane.
+async function ignoredRenderedFiles(projectRoot, worktree, exec) {
+  let lock;
+  try {
+    lock = JSON.parse(await readFile(path.join(worktree, ".aof", "aof.lock.json"), "utf8"));
+  } catch {
+    return [];
+  }
+  const entries = [...(Array.isArray(lock?.files) ? lock.files : []), ...(Array.isArray(lock?.work?.files) ? lock.work.files : [])];
+  const relpaths = new Set();
+  for (const entry of entries) {
+    if (typeof entry?.path !== "string") continue;
+    const relpath = entry.path.replaceAll("\\", "/");
+    if (relpath.length === 0 || path.isAbsolute(relpath) || /^[A-Za-z]:/u.test(relpath) || relpath.split("/").includes("..")) continue;
+    relpaths.add(relpath);
+  }
+  const missing = [...relpaths].filter((relpath) => !existsSync(path.join(worktree, relpath)) && existsSync(path.join(projectRoot, relpath)));
+  if (missing.length === 0) return [];
+  // `git check-ignore` lists the ignored ones, verbatim as given; exit 1 means none are.
+  const answer = await exec(["check-ignore", "--", ...missing], { cwd: worktree });
+  if (answer.status !== 0 && answer.status !== 1) throw new Error(`git check-ignore failed in ${worktree}: ${answer.stderr || answer.stdout}`);
+  const ignored = new Set(String(answer.stdout ?? "").split(/\r?\n/u).map((line) => line.trim().replaceAll("\\", "/")).filter(Boolean));
+  return missing.filter((relpath) => ignored.has(relpath));
 }
 
 // openDispatchLane(projectRoot, itemRef, options) — the three doors, exactly as before 129/03

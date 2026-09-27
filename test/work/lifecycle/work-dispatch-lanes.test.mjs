@@ -332,6 +332,50 @@ export const workDispatchLaneTests = [
     },
   },
   {
+    name: "dispatch 2026-09-27 a lane carries the rendered files its project ignores (the hooks the tracked settings name), never one git would commit, never over the lane's own, and a reused lane is refilled",
+    run: async () => {
+      const HOOK = ".claude/hooks/aof/run-heartbeat-enqueue.mjs";
+      const AGENT = ".claude/agents/aof-developer.md";
+      await withDispatchRepo(async ({ root }) => {
+        // A source that DOES exist one level above the primary, so the climbing lock path below is
+        // refused by the guard rather than by the file simply being absent.
+        const escape = `${path.basename(root)}-escape.txt`;
+        await writeFile(path.join(root, "..", escape), "outside the tree\n", "utf8");
+        try {
+          // A consumer repository's shape: `.claude/` ignores everything but settings.json and itself,
+          // and the lock (tracked) records what aof rendered — one entry in the Windows-written form.
+          await writeRel(root, ".claude/.gitignore", "*\n!settings.json\n!.gitignore\n");
+          await writeRel(root, ".claude/settings.json", "{}\n");
+          await writeRel(root, ".aof/aof.lock.json", `${JSON.stringify({
+            files: [{ path: ".claude\\agents\\aof-developer.md" }],
+            work: { files: [{ path: HOOK }, { path: "docs/generated.md" }, { path: `../${escape}` }] },
+          }, null, 2)}\n`);
+          await git(["add", ".claude/.gitignore", ".claude/settings.json", ".aof/aof.lock.json"], root);
+          await git(["commit", "-m", "fixture: tracked settings, ignored render"], root);
+          await writeRel(root, HOOK, "// the heartbeat hook\n");
+          await writeRel(root, AGENT, "# aof-developer\n");
+          await writeRel(root, "docs/generated.md", "rendered, but not ignored\n");
+
+          const fresh = await resolveDispatchLane(root, "53/00");
+          assert.equal(await readFile(path.join(fresh.worktree, HOOK), "utf8"), "// the heartbeat hook\n", "the hook the tracked settings name is in the lane");
+          assert.equal(await readFile(path.join(fresh.worktree, AGENT), "utf8"), "# aof-developer\n", "a backslash lock path is read forward-slashed");
+          assert.equal(existsSync(path.join(fresh.worktree, "docs", "generated.md")), false, "a rendered file git does not ignore would land in the lane's commit — left alone");
+          assert.equal(existsSync(path.join(fresh.worktree, "..", escape)), false, "a lock path that climbs out of the tree is never followed");
+          assert.equal((await git(["status", "--porcelain"], fresh.worktree)).stdout.trim(), "", "what was carried is ignored: the lane's tree is clean");
+
+          await writeRel(fresh.worktree, HOOK, "// the lane's own\n");
+          await unlink(path.join(fresh.worktree, ...AGENT.split("/")));
+          const reused = await resolveDispatchLane(root, "53/00");
+          assert.equal(reused.reused, true);
+          assert.equal(await readFile(path.join(reused.worktree, HOOK), "utf8"), "// the lane's own\n", "a file the lane holds is never overwritten");
+          assert.equal(await readFile(path.join(reused.worktree, AGENT), "utf8"), "# aof-developer\n", "a REUSED lane missing one is given it — the lanes cut before this fix");
+        } finally {
+          await unlink(path.join(root, "..", escape)).catch(() => {});
+        }
+      });
+    },
+  },
+  {
     name: "dispatch/02 a lane re-opened after cleanup CONTINUES the item's own line — it never forks a second branch for the same ref",
     run: () =>
       withDispatchRepo(async ({ root }) => {
