@@ -34,8 +34,12 @@ For: "$ARGUMENTS"
    `aof work promote "<slug>" [--at <P>] --json`. The verb resolves the one backlog row, takes the
    next number (an append) or opens the slot at `P` through the same re-index engine `aof:insert-*`
    uses, renames the backlog folder into the stream and stamps `number:` into the record doc's
-   frontmatter. **Never** move the folder, renumber anything or write a `number:` line by hand, and
-   never work the number out yourself — deciding it is the verb's job and nothing else's (ADR-003 §1,
+   frontmatter. It then **rewrites the slug edges other backlog items hold on the promoted item**:
+   every `depends:` entry in another backlog item that names this item's slug becomes its minted
+   number, so a dependent that was refused while this one waited is promotable next. The envelope's
+   `rewired` lists each item it rewrote (absent when there were none). **Never** move the folder,
+   renumber anything, write a `number:` line or re-type a `depends:` edge by hand, and never work
+   the number out yourself — deciding it is the verb's job and nothing else's (ADR-003 §1,
    41/ADR-002).
 3. **Count-gated confirmation (ADR-004).** `--at <P>` re-indexes every item from `P` onward up by
    one. If the CLI reports the shift needs confirmation (many items must move — a costly re-order),
@@ -56,6 +60,8 @@ For: "$ARGUMENTS"
 <progress_tracking>
 Promotion is PLACEMENT, not authorship: the item keeps the `status:` it had, its `updated:` is not
 bumped, and nothing in the folder changes but the `number:` line and the `# NN · ` heading prefix.
+The one write outside the promoted folder is the `depends:` lines of the other backlog items that
+named its slug — each entry rewritten to the minted number, nothing else in those docs touched.
 What tracks the item afterwards is what tracked it before — its own record doc.
 </progress_tracking>
 

@@ -33,8 +33,9 @@
 //
 // EVERY REFUSAL LANDS BEFORE ANY WRITE. The order is: resolve → numeric-ref → record doc usable →
 // destination free → depends → archived-number → gate → [seam: lock → shift → event] → rename →
-// stamp. Everything before the seam is a pure read, so a refused promote leaves the backlog leaf,
-// its group and the stream byte-identical.
+// stamp → rewire (the backlog edges this promotion satisfies, story 139). Everything before the
+// seam is a pure read, so a refused promote leaves the backlog leaf, its group and the stream
+// byte-identical.
 //
 // THE ALIASES LIVE HERE TOO (ADR-003 §4, task 03). `runInsertTopLevel` — `insert-milestone`,
 // `insert-chore`, `insert-uat` and the two loop promotion faces — keeps its delivered signature and
@@ -44,7 +45,17 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, rename, rm } from "node:fs/promises";
-import { listItems, findWork, parseFrontmatter, recordDoc, isLiveStreamRow, isDependTarget, BACKLOG_ROOT } from "../work.mjs";
+import {
+  listItems,
+  findWork,
+  parseFrontmatter,
+  recordDoc,
+  isLiveStreamRow,
+  isDependTarget,
+  isDependNumber,
+  rewriteDependsEntries,
+  BACKLOG_ROOT,
+} from "../work.mjs";
 import { appendPosition } from "../work-promote/promotion.mjs";
 import { transitionStreamReindexed } from "../effects/stream-transitions.mjs";
 import { writeText } from "../fs.mjs";
@@ -181,18 +192,20 @@ export function prefixFirstHeading(text, padded) {
 
 // ──────────────────────────────────────────────────────── depends at promotion ──
 
-// ADR-003 §6 — a backlog item's `depends:` is a planning note until promotion checks it, so this is
-// where the note becomes an edge. Entries are read as `parseFrontmatter` hands them (quotes and
-// surrounding spaces stripped, an empty entry dropped, a duplicate kept) and checked against the
-// PRE-shift stream: the operator wrote them against the numbers that exist now, and the engine's
-// own rewrite carries them across a shift.
+// ADR-003 §6 — promotion is where a backlog item's `depends:` is checked as a gate on entering the
+// stream. Entries are read as `parseFrontmatter` hands them (quotes and surrounding spaces
+// stripped, an empty entry dropped, a duplicate kept), split into number and slug by the one
+// predicate (`isDependNumber`, story 139), and checked against the PRE-shift stream: the operator
+// wrote them against the numbers that exist now, and the engine's own rewrite carries them
+// across a shift.
 //
 //   · an all-digit entry must name a NUMBERED top-level item `isDependTarget` admits — LIVE OR
 //     ARCHIVED. An archived target is satisfied, not missing (ADR-002 §3: the archive is a
 //     location, not a status), and `sameNum` makes `5` and `05` one number.
 //   · an entry naming a BACKLOG slug (exact, case-sensitive — a slug is lowercase by grammar) is
-//     `promote-depends-backlog`: numbers are minted in the order the operator promotes, so a
-//     backlog → backlog edge cannot be written as a number yet.
+//     `promote-depends-backlog`: the item waits on work that has not entered the stream, so it
+//     cannot enter ahead of it. Promoting that target rewrites this entry to its minted number
+//     (`resolveBacklogEdges` below), which is what clears the gate.
 //   · anything else is `promote-depends-unresolved`.
 //
 // EVERY offending entry comes back, in the order written, so the operator fixes the note once.
@@ -202,7 +215,7 @@ export function classifyDepends(entries, items) {
   const offenders = [];
   for (const raw of entries) {
     const entry = String(raw);
-    if (/^\d+$/.test(entry)) {
+    if (isDependNumber(entry)) {
       if (!targets.some((item) => sameNum(item.number, entry))) {
         offenders.push({ entry, code: "promote-depends-unresolved" });
       }
@@ -216,7 +229,7 @@ export function classifyDepends(entries, items) {
 function dependsRefusal(slug, offenders) {
   const lines = offenders.map(({ entry, code }) =>
     code === "promote-depends-backlog"
-      ? `\`${entry}\` is a backlog item — a planning note, not a gate. Promote \`${entry}\` first, or drop the entry.`
+      ? `\`${entry}\` is still in the backlog — this item waits on it. Promote \`${entry}\` first, or drop the entry.`
       : `\`${entry}\` resolves to no numbered item in the stream or the archive.`);
   const error = commandError(
     `"${slug}" cannot be promoted as its \`depends:\` is written:\n- ${lines.join("\n- ")}`,
@@ -225,6 +238,51 @@ function dependsRefusal(slug, offenders) {
   );
   error.detail = { entries: offenders };
   return error;
+}
+
+// ─────────────────────────────────────────── the edges this promotion satisfies ──
+
+// Story 139 — THE OTHER HALF OF THE GATE. A backlog item whose `depends:` names this item's slug
+// was refused while it waited (`promote-depends-backlog`); now that the item has a number, every
+// such entry is rewritten to it, so the dependent's next promote passes rather than dangling as
+// `promote-depends-unresolved` until someone re-types the edge.
+//
+// Run AFTER the seam, the move and the stamp: the shift rewrites number entries, and `padded` is
+// the number the item landed at, so an entry written before the seam would be carried one past
+// it. Two bounds, both deliberate:
+//   · BACKLOG rows only. A numbered item naming a slug is validate's finding, the operator's to fix.
+//   · a UNIQUE slug only, judged over the PRE-move backlog (`before`). An `insert-*` alias
+//     scaffolds a root leaf and promotes it directly, so a grouped leaf can share its slug — an
+//     edge then names the leaf that is still in the backlog, and nothing is rewritten.
+// The write is the shared per-entry rewriter in work.mjs (never `reindex.mjs`, FF-12703): an
+// entry equal to the slug — exact and case-sensitive — becomes `padded`, keeping its spacing and
+// quotes, and no other byte of the doc moves. Answers `{ ref, dir }` per doc written, ordered by
+// backlog path.
+async function resolveBacklogEdges(workDir, row, padded, before) {
+  const sharing = before.filter((item) => item.number == null && item.slug === row.slug);
+  if (sharing.length !== 1) return [];
+
+  // Re-listed, because the promoted folder has moved and must not be read as its own dependent.
+  const dependents = (await listItems(workDir)).filter((item) => item.number == null);
+  const rewired = [];
+  for (const dependent of dependents) {
+    const doc = recordDoc(dependent);
+    if (doc == null) continue;
+    const docPath = path.join(dependent.dir, doc);
+    let text;
+    try {
+      text = await readFile(docPath, "utf8");
+    } catch {
+      continue;
+    }
+    const updated = rewriteDependsEntries(text, (entry) => (entry === row.slug ? padded : null));
+    if (updated === text) continue;
+    await writeText(docPath, updated);
+    rewired.push({ ref: dependent.slug, dir: dependent.dir, label: backlogLabel(dependent) });
+  }
+  return rewired
+    .sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0))
+    .map(({ ref, dir }) => ({ ref, dir }));
 }
 
 // ─────────────────────────────────────────────────── the archived-number check ──
@@ -371,8 +429,11 @@ async function promoteRow(ctx, row, { at: namedAt, atGiven, yes } = {}) {
   // is why the aliases can return it verbatim with no arithmetic of their own.
   const stampedMeta = parseFrontmatter(stamped);
   if ("depends" in stampedMeta) {
-    created.depends = asList(stampedMeta.depends).map((entry) => Number.parseInt(entry, 10)).filter(Number.isInteger);
+    created.depends = asList(stampedMeta.depends).filter(isDependNumber).map((entry) => Number.parseInt(entry, 10));
   }
+
+  // (10) THE EDGES THIS PROMOTION SATISFIES — last, after the seam, the move and the stamp.
+  const rewired = await resolveBacklogEdges(workDir, row, padded, items);
 
   return {
     shifted,
@@ -380,6 +441,9 @@ async function promoteRow(ctx, row, { at: namedAt, atGiven, yes } = {}) {
     space,
     created,
     from: { ref: row.slug, backlog: row.backlog ?? "", dir: row.dir },
+    // Present iff a doc was rewritten, so every promote that rewires nothing reports the
+    // delivered envelope byte-for-byte (127/02 task 00).
+    ...(rewired.length > 0 ? { rewired } : {}),
   };
 }
 
@@ -511,12 +575,16 @@ export const promoteCommand = {
     // already receives rather than smuggled onto the result.
     render(result, faceCtx) {
       const named = faceCtx?.options?.at != null;
-      return named
+      const promoted = named
         ? `Promoted "${result.created.slug}" to ${result.created.ref} (at ${result.at}, shifted ${result.shifted} item(s)).`
         : `Promoted "${result.created.slug}" to ${result.created.ref} (appended).`;
+      // Story 139 — one more line, only when edges were resolved, naming them in envelope order.
+      if (!Array.isArray(result.rewired) || result.rewired.length === 0) return promoted;
+      const slugs = result.rewired.map((entry) => entry.ref).join(", ");
+      return `${promoted}\nRewired ${result.rewired.length} backlog edge(s) to ${result.created.ref}: ${slugs}.`;
     },
 
-    // The stdout envelope is the in-process envelope with its two `dir` values forward-slashed
+    // The stdout envelope is the in-process envelope with its `dir` values forward-slashed
     // (task 00: "stdout is the envelope above, `dir` values forward-slashed") — a path the
     // operator can paste on any shell. Every OTHER key is byte-identical: the in-process envelope
     // keeps native paths for its callers, and `created.depends`, when present, is untouched.
@@ -524,6 +592,7 @@ export const promoteCommand = {
       ...result,
       created: { ...result.created, dir: slash(result.created.dir) },
       from: { ...result.from, dir: slash(result.from.dir) },
+      ...(result.rewired ? { rewired: result.rewired.map((entry) => ({ ...entry, dir: slash(entry.dir) })) } : {}),
     }),
   },
 };

@@ -21,7 +21,16 @@
 // must change; the write is always the targeted line replacement.
 import path from "node:path";
 import { readFile, rename } from "node:fs/promises";
-import { listItems, parseFrontmatter, recordDoc, ITEM_RE, isLiveStreamRow } from "../work.mjs";
+import {
+  listItems,
+  parseFrontmatter,
+  recordDoc,
+  ITEM_RE,
+  isLiveStreamRow,
+  isDependNumber,
+  rewriteRefEntry,
+  rewriteDependsEntries,
+} from "../work.mjs";
 import { writeText } from "../fs.mjs";
 
 // Mirrors work.mjs's private `workError` (the command-error contract: `.code`/
@@ -96,50 +105,19 @@ function replaceFrontmatterBlock(text, transform) {
   return block[1] + rewritten + block[3] + text.slice(block[0].length);
 }
 
-// One `[a, b]`-style inline-list entry (or a bare scalar): strip leading/
-// trailing whitespace and an optional quote pair to find the numeric value: if
-// it matches a shifted number, rewrite it to the new number, preserving the
-// entry's own leading/trailing spacing, quoting, and zero-pad width (a value
-// written with a leading zero — `"02"` — stays zero-padded at its ORIGINAL
-// width; an unpadded value stays unpadded) — ADR-006's "preserve the inline-list
-// format exactly" bound, applied per-entry (a partial-rewrite, never a whole-list
-// replace).
-function rewriteToken(token, shiftMap) {
-  const leading = (token.match(/^\s*/) ?? [""])[0];
-  const trailing = (token.match(/\s*$/) ?? [""])[0];
-  const core = token.slice(leading.length, token.length - trailing.length);
-  const quoted = core.match(/^(["'])([\s\S]*)\1$/);
-  const quote = quoted ? quoted[1] : "";
-  const raw = quoted ? quoted[2] : core;
-  const num = Number.parseInt(raw, 10);
-  if (!Number.isFinite(num) || !shiftMap.has(num)) return { text: token, changed: false };
-  const newNum = shiftMap.get(num);
-  const padded = /^0\d/.test(raw) ? String(newNum).padStart(raw.length, "0") : String(newNum);
-  const newCore = quote ? `${quote}${padded}${quote}` : padded;
-  return { text: `${leading}${newCore}${trailing}`, changed: true };
-}
+// The shift as a per-entry mapping: a NUMBER entry (the one all-digit predicate, story 139)
+// naming a shifted item maps to its new number; everything else — a slug, `10x-faster`
+// included — maps to null and is left byte-identical. The per-entry rewriter it feeds lives in
+// work.mjs beside `applyItemFrontmatter`, shared with promote's edge resolution, and keeps each
+// entry's spacing, quotes and zero-pad width (ADR-006's "preserve the inline-list format
+// exactly", applied per entry — a partial rewrite, never a whole-list replace).
+const shiftedEntry = (shiftMap) => (raw) =>
+  isDependNumber(raw) && shiftMap.has(Number.parseInt(raw, 10)) ? String(shiftMap.get(Number.parseInt(raw, 10))) : null;
 
 // Bump the `number:` line to the new (zero-padded) folder number — the ONE
 // mandatory rewrite every shifted item's record doc receives.
 function applyNumberBump(text, newNumStr) {
   return replaceFrontmatterBlock(text, (fm) => fm.replace(/^(number:[ \t]*).*$/m, `$1${newNumStr}`));
-}
-
-// Rewrite ONLY the `depends: [a, b]` entries that point at a shifted item —
-// entries that don't are left byte-identical (ADR-003 Tier 1 / feature 01's
-// "partial-rewrite" scenario).
-function applyDependsRewrite(text, shiftMap) {
-  return replaceFrontmatterBlock(text, (fm) =>
-    fm.replace(/^(depends:[ \t]*\[)([^\]]*)(\].*)$/m, (whole, prefix, inner, suffix) => {
-      let changed = false;
-      const newParts = inner.split(",").map((part) => {
-        const res = rewriteToken(part, shiftMap);
-        if (res.changed) changed = true;
-        return res.text;
-      });
-      return changed ? `${prefix}${newParts.join(",")}${suffix}` : whole;
-    }),
-  );
 }
 
 // Rewrite the `parent:` scalar when the nested story's owning milestone
@@ -148,7 +126,7 @@ function applyDependsRewrite(text, shiftMap) {
 function applyParentRewrite(text, shiftMap) {
   return replaceFrontmatterBlock(text, (fm) =>
     fm.replace(/^(parent:[ \t]*)(.*)$/m, (whole, prefix, rest) => {
-      const res = rewriteToken(rest, shiftMap);
+      const res = rewriteRefEntry(rest, shiftedEntry(shiftMap));
       return res.changed ? `${prefix}${res.text}` : whole;
     }),
   );
@@ -191,12 +169,12 @@ async function rewriteReferences(workDir, shiftMap) {
         updated = applyParentRewrite(text, shiftMap);
       }
     } else {
-      // A top-level driver (or a standalone story): rewrite any `depends`
-      // entry pointing at a shifted driver.
+      // A top-level driver (or a standalone story, or a backlog leaf): rewrite
+      // any NUMBER entry pointing at a shifted driver — a slug entry never.
       const deps = asList(meta.depends);
-      const needsRewrite = deps.some((dep) => shiftMap.has(Number.parseInt(dep, 10)));
+      const needsRewrite = deps.some((dep) => isDependNumber(dep) && shiftMap.has(Number.parseInt(dep, 10)));
       if (needsRewrite) {
-        updated = applyDependsRewrite(text, shiftMap);
+        updated = rewriteDependsEntries(text, shiftedEntry(shiftMap));
       }
     }
 

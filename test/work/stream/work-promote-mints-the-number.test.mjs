@@ -24,7 +24,7 @@
 // they must keep green, and spread by test/work/stream/index.mjs. The textual halves of the story's
 // contracts (FF-12703 / FF-12704) live in test/arch/work.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile, readFile, rm, readdir, rename } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm, readdir, rename, cp } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -1252,5 +1252,254 @@ export const workPromoteMintsTheNumberTests = [
         assert.ok(existsSync(path.join(work, "12_chore_gamma")));
       }, { config: { rest: { work: { intake: "stream" } } } });
     },
+  },
+
+  // ============================================================================
+  // 139 / 00_promotion-resolves-the-edge-it-satisfies.feature
+  // ============================================================================
+
+  // Scenario: a dependent is refused while the item it waits on is still in the backlog
+  {
+    name: "work/promote-mints-the-number: 139/00 a dependent is refused while the item it waits on is still in the backlog",
+    run: () =>
+      withFixture(async ({ work, workspace }) => {
+        await setFrontmatterLine(docPathOf(work, "backlog/ideas/milestone_delta", "milestone"), "depends", "[gamma]");
+        const before = await snapshot(work);
+        const outcome = await refusal(() => promote(workspace, { slug: "delta" }));
+        assert.equal(outcome.code, "promote-depends-backlog", `refused promote-depends-backlog (got ${outcome.code}: ${outcome.message})`);
+        assert.deepEqual(outcome.detail, { entries: [{ entry: "gamma", code: "promote-depends-backlog" }] });
+        assert.ok(
+          outcome.message.includes("`gamma` is still in the backlog — this item waits on it. Promote `gamma` first, or drop the entry."),
+          `the message reads as the contract words it: ${outcome.message}`,
+        );
+        assert.deepEqual(sorted(await snapshot(work)), sorted(before), "the backlog leaves, their groups and the stream are byte-identical");
+      }),
+  },
+
+  // Scenario: promoting the target rewrites the edge, and the dependent then promotes
+  {
+    name: "work/promote-mints-the-number: 139/00 promoting the target rewrites the edge, and the dependent then promotes",
+    run: () =>
+      withFixture(async ({ root, work, workspace }) => {
+        const specPath = docPathOf(work, "backlog/ideas/milestone_delta", "milestone");
+        const before = await setFrontmatterLine(specPath, "depends", "[gamma]");
+        const findingsBefore = await validateWork(work, workspace.config);
+
+        const first = runCli(root, ["work", "promote", "gamma", "--json"]);
+        assert.equal(first.status, 0, first.stderr);
+        assert.ok(existsSync(path.join(work, "12_chore_gamma")), "12_chore_gamma exists at the stream root");
+        assert.equal(await readFile(specPath, "utf8"), before.replace("depends: [gamma]", "depends: [12]"), "delta carries depends: [12], every other byte unchanged");
+        assert.deepEqual(
+          JSON.parse(first.stdout).rewired,
+          [{ ref: "delta", dir: slash(path.join(work, "backlog", "ideas", "milestone_delta")) }],
+          `the envelope carries rewired, forward-slashed: ${first.stdout}`,
+        );
+
+        const second = runCli(root, ["work", "promote", "delta", "--json"]);
+        assert.equal(second.status, 0, second.stderr);
+        const created = JSON.parse(second.stdout).created;
+        assert.equal(created.ref, "13", "13_milestone_delta is minted");
+        assert.ok(existsSync(path.join(work, "13_milestone_delta")));
+        assert.deepEqual(created.depends, [12], "created.depends is [12]");
+
+        const findingsAfter = await validateWork(work, workspace.config);
+        const key = (finding) => `${finding.path}\u0000${finding.problem}`;
+        const known = new Set(findingsBefore.map(key));
+        assert.deepEqual(findingsAfter.filter((finding) => !known.has(key(finding))), [], "validate reports no finding it did not report before the first promotion");
+      }),
+  },
+
+  // Scenario: a slot opened with --at writes the number the target lands at, not one past it
+  {
+    name: "work/promote-mints-the-number: 139/00 a slot opened with --at writes the number the target lands at, not one past it",
+    run: () =>
+      withFixture(async ({ work, workspace }) => {
+        const specPath = docPathOf(work, "backlog/ideas/milestone_delta", "milestone");
+        await setFrontmatterLine(specPath, "depends", "[gamma, 10]");
+        await promote(workspace, { slug: "gamma", at: 10, yes: true });
+        for (const folder of ["10_chore_gamma", "11_milestone_alpha", "12_chore_beta"]) {
+          assert.ok(existsSync(path.join(work, folder)), `${folder} exists at the stream root (got ${JSON.stringify(await readdir(work))})`);
+        }
+        assert.match(await readFile(specPath, "utf8"), /^depends: \[10, 11\]$/m, "gamma where it landed, alpha where the shift moved it");
+      }),
+  },
+
+  // Scenario Outline: the rewrite is per entry and leaves the rest of the line as written
+  ...[
+    { before: "depends: [gamma]", after: "depends: [12]", rewired: ["delta"], why: "the headline" },
+    { before: "depends: [ gamma , 05 ]", after: "depends: [ 12 , 05 ]", rewired: ["delta"], why: "spacing kept per entry; a number entry untouched" },
+    { before: 'depends: ["gamma"]', after: 'depends: ["12"]', rewired: ["delta"], why: "the quote pair kept" },
+    { before: "depends: ['gamma', 05]", after: "depends: ['12', 05]", rewired: ["delta"], why: "single quotes too" },
+    { before: "depends: [epsilon, gamma]", after: "depends: [epsilon, 12]", rewired: ["delta"], why: "another backlog slug is untouched, order kept" },
+    { before: "depends: [gamma, gamma]", after: "depends: [12, 12]", rewired: ["delta"], why: "a duplicate entry is the same edge, the doc listed once" },
+    { before: "depends: [gammas]", after: "depends: [gammas]", rewired: null, why: "exact, never a substring" },
+    { before: "depends: [Gamma]", after: "depends: [Gamma]", rewired: null, why: "case-sensitive — a slug is lowercase by grammar" },
+    { before: "depends: []", after: "depends: []", rewired: null, why: "nothing names gamma" },
+  ].map(({ before, after, rewired, why }) => ({
+    name: `work/promote-mints-the-number: 139/00 the rewrite is per entry — \`${before}\` → \`${after}\` (${why})`,
+    run: () =>
+      withFixture(async ({ work, workspace }) => {
+        // Written CRLF, so "every other line is byte-identical, its line endings included" is
+        // measured on the ending a hand-written Windows doc carries, not only on the fixture's LF.
+        const specPath = docPathOf(work, "backlog/ideas/milestone_delta", "milestone");
+        const lf = await setFrontmatterLine(specPath, "depends", before.slice("depends: ".length));
+        const crlf = lf.replace(/\n/g, "\r\n");
+        await writeFile(specPath, crlf, "utf8");
+
+        const envelope = await promote(workspace, { slug: "gamma" });
+
+        const text = await readFile(specPath, "utf8");
+        assert.equal(text, crlf.replace(`${before}\r\n`, `${after}\r\n`), `that line reads ${after}, and every other byte — CRLF included — is unchanged (got ${JSON.stringify(text.split("\r\n").find((line) => line.startsWith("depends:")))})`);
+        if (rewired == null) {
+          assert.ok(!("rewired" in envelope), `the envelope carries no rewired key: ${JSON.stringify(Object.keys(envelope))}`);
+        } else {
+          assert.deepEqual(envelope.rewired.map((entry) => entry.ref), rewired, "the envelope lists the doc once");
+        }
+      }),
+  })),
+
+  // Scenario: every backlog dependent is reached at any depth, and no numbered doc is written
+  {
+    name: "work/promote-mints-the-number: 139/00 every backlog dependent is reached at any depth, and no numbered doc is written",
+    run: () =>
+      withFixture(async ({ work, workspace }) => {
+        const delta = docPathOf(work, "backlog/ideas/milestone_delta", "milestone");
+        const epsilon = docPathOf(work, "backlog/ideas/later/spike_epsilon", "spike");
+        const beta = docPathOf(work, "11_chore_beta", "chore");
+        const eta = docPathOf(work, "archive/06_chore_eta", "chore");
+        await setFrontmatterLine(delta, "depends", "[gamma]");
+        await setFrontmatterLine(epsilon, "depends", "[gamma]");
+        const betaBefore = await setFrontmatterLine(beta, "depends", "[05, gamma]");
+        const etaBefore = await setFrontmatterLine(eta, "depends", "[gamma]");
+
+        const envelope = await promote(workspace, { slug: "gamma" });
+
+        assert.match(await readFile(delta, "utf8"), /^depends: \[12\]$/m, "delta carries depends: [12]");
+        assert.match(await readFile(epsilon, "utf8"), /^depends: \[12\]$/m, "epsilon, two groups deep, carries depends: [12]");
+        assert.deepEqual(envelope.rewired.map((entry) => entry.ref), ["epsilon", "delta"], "ideas/later/spike_epsilon sorts before ideas/milestone_delta");
+        assert.deepEqual(envelope.rewired.map((entry) => entry.dir), [path.dirname(epsilon), path.dirname(delta)], "each entry names its leaf dir");
+        assert.equal(await readFile(beta, "utf8"), betaBefore, "11_chore_beta — a numbered doc — is byte-identical");
+        assert.equal(await readFile(eta, "utf8"), etaBefore, "archive/06_chore_eta is byte-identical");
+      }),
+  },
+
+  // Review regression (139 round 1): a slug may start `0<digit>`, and only a NUMBER entry keeps
+  // its zero-pad width — a zero-led slug is rewired to the minted ref as spelled, never padded to
+  // the slug's own length (`007-bond` → `00000012` was the defect).
+  {
+    name: "work/promote-mints-the-number: 139/00 a zero-led slug is rewired to the minted ref, never padded to the slug's width",
+    run: () =>
+      withFixture(async ({ work, workspace }) => {
+        await plantRow(work, "backlog/chore_007-bond");
+        const specPath = docPathOf(work, "backlog/ideas/milestone_delta", "milestone");
+        await setFrontmatterLine(specPath, "depends", "[007-bond, 010]");
+        await promote(workspace, { slug: "007-bond" });
+        assert.match(await readFile(specPath, "utf8"), /^depends: \[12, 010\]$/m, "the slug becomes 12, the padded number entry beside it is untouched");
+      }),
+  },
+
+  // Scenario: a slug two backlog leaves share is rewired nowhere
+  {
+    name: "work/promote-mints-the-number: 139/00 a slug two backlog leaves share is rewired nowhere",
+    run: () =>
+      withFixture(async ({ root, work, workspace }) => {
+        // The alias scaffolds from the milestone template, so the REAL one is copied in — the
+        // three-root fixture carries none.
+        await cp(path.join(repoRoot, ".aof", "templates", "work", "milestone"), path.join(root, ".aof", "templates", "work", "milestone"), { recursive: true });
+        const specPath = docPathOf(work, "backlog/ideas/milestone_delta", "milestone");
+        const before = await setFrontmatterLine(specPath, "depends", "[gamma]");
+        const envelope = await invoke("work:insert-milestone", { slug: "gamma", at: 12 }, { workspace });
+        assert.ok(existsSync(path.join(work, "12_milestone_gamma")), "12_milestone_gamma exists at the stream root");
+        assert.ok(existsSync(path.join(work, "backlog", "chore_gamma", "CHORE.md")), "backlog/chore_gamma is still in the backlog");
+        assert.equal(await readFile(specPath, "utf8"), before, "delta still carries depends: [gamma] — the edge names the leaf still there");
+        assert.deepEqual(Object.keys(envelope).sort(), ["at", "created", "shifted", "space"], "the alias's delivered four keys");
+      }),
+  },
+
+  // Scenario: the render names what was rewired, in envelope order
+  {
+    name: "work/promote-mints-the-number: 139/00 the render names what was rewired, in envelope order",
+    run: () =>
+      withFixture(async ({ root, work }) => {
+        await setFrontmatterLine(docPathOf(work, "backlog/ideas/milestone_delta", "milestone"), "depends", "[gamma]");
+        await setFrontmatterLine(docPathOf(work, "backlog/ideas/later/spike_epsilon", "spike"), "depends", "[gamma]");
+        const result = runCli(root, ["work", "promote", "gamma"]);
+        assert.equal(result.status, 0, result.stderr);
+        assert.deepEqual(result.stdout.trimEnd().split(/\r?\n/), [
+          'Promoted "gamma" to 12 (appended).',
+          "Rewired 2 backlog edge(s) to 12: epsilon, delta.",
+        ], `stdout is exactly two lines: ${JSON.stringify(result.stdout)}`);
+      }),
+  },
+
+  // Scenario: a promote that rewires nothing is the delivered promote
+  {
+    name: "work/promote-mints-the-number: 139/00 a promote that rewires nothing is the delivered promote",
+    run: async () => {
+      await withFixture(async ({ root }) => {
+        const result = runCli(root, ["work", "promote", "delta", "--json"]);
+        assert.equal(result.status, 0, result.stderr);
+        assert.deepEqual(Object.keys(JSON.parse(result.stdout)), ["shifted", "at", "space", "created", "from"], "exactly the delivered keys");
+      });
+      await withFixture(async ({ root }) => {
+        const result = runCli(root, ["work", "promote", "delta"]);
+        assert.equal(result.status, 0, result.stderr);
+        assert.equal(result.stdout.trimEnd(), 'Promoted "delta" to 12 (appended).', "the render is the single delivered line");
+      });
+    },
+  },
+
+  // Scenario: a refused promote rewrites nothing
+  {
+    name: "work/promote-mints-the-number: 139/00 a refused promote rewrites nothing",
+    run: () =>
+      withFixture(async ({ work, workspace }) => {
+        await setFrontmatterLine(docPathOf(work, "backlog/chore_gamma", "chore"), "depends", "[99]");
+        const specPath = docPathOf(work, "backlog/ideas/milestone_delta", "milestone");
+        const before = await setFrontmatterLine(specPath, "depends", "[gamma]");
+        const outcome = await refusal(() => promote(workspace, { slug: "gamma" }));
+        assert.equal(outcome.code, "promote-depends-unresolved", `refused promote-depends-unresolved (got ${outcome.code})`);
+        assert.equal(await readFile(specPath, "utf8"), before, "delta still carries depends: [gamma], byte-identical");
+      }),
+  },
+
+  // ============================================================================
+  // 139 / 02_a-slug-is-never-read-as-a-number.feature — the promote legs
+  // ============================================================================
+
+  // Scenario Outline: promote reads a digit-led entry as the slug it is
+  ...[
+    { depends: "[10x-faster]", refused: "promote-depends-backlog", why: "a backlog slug, never item 10" },
+    { depends: "[10]", promotedDepends: [10], why: "a number entry resolves as it always has" },
+  ].map(({ depends, refused, promotedDepends, why }) => ({
+    name: `work/promote-mints-the-number: 139/02 promote reads a digit-led entry as the slug it is — depends: ${depends} (${why})`,
+    run: () =>
+      withFixture(async ({ work, workspace }) => {
+        await plantRow(work, "backlog/milestone_10x-faster");
+        await setFrontmatterLine(docPathOf(work, "backlog/ideas/milestone_delta", "milestone"), "depends", depends);
+        const outcome = await refusal(() => promote(workspace, { slug: "delta" }));
+        if (refused) {
+          assert.equal(outcome.code, refused, `refused ${refused} (got ${outcome.code}: ${outcome.message})`);
+          assert.deepEqual(outcome.detail, { entries: [{ entry: "10x-faster", code: refused }] }, "naming 10x-faster");
+          return;
+        }
+        assert.equal(outcome.code, null, `it proceeds (refused ${outcome.code}: ${outcome.message})`);
+        assert.ok(existsSync(path.join(work, "12_milestone_delta")), "promoted to 12_milestone_delta");
+        assert.deepEqual(outcome.result.created.depends, promotedDepends);
+      }),
+  })),
+
+  // Scenario: promoting a digit-led slug rewires its dependents like any other slug
+  {
+    name: "work/promote-mints-the-number: 139/02 promoting a digit-led slug rewires its dependents like any other slug",
+    run: () =>
+      withFixture(async ({ work, workspace }) => {
+        await plantRow(work, "backlog/milestone_10x-faster");
+        const specPath = docPathOf(work, "backlog/ideas/milestone_delta", "milestone");
+        await setFrontmatterLine(specPath, "depends", "[10x-faster, 10]");
+        await promote(workspace, { slug: "10x-faster" });
+        assert.ok(existsSync(path.join(work, "12_milestone_10x-faster")), "12_milestone_10x-faster exists");
+        assert.match(await readFile(specPath, "utf8"), /^depends: \[12, 10\]$/m, "delta carries depends: [12, 10]");
+      }),
   },
 ];
