@@ -3,7 +3,7 @@ type: story
 number: 139
 slug: shatter-lands-in-the-backlog
 title: "Shatter lands its drivers in the backlog, with their depends kept as slug edges that promotion enforces and resolves"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27

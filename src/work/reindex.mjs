@@ -28,7 +28,7 @@ import {
   ITEM_RE,
   isLiveStreamRow,
   isDependNumber,
-  rewriteDependsEntry,
+  rewriteRefEntry,
   rewriteDependsEntries,
 } from "../work.mjs";
 import { writeText } from "../fs.mjs";
@@ -126,7 +126,7 @@ function applyNumberBump(text, newNumStr) {
 function applyParentRewrite(text, shiftMap) {
   return replaceFrontmatterBlock(text, (fm) =>
     fm.replace(/^(parent:[ \t]*)(.*)$/m, (whole, prefix, rest) => {
-      const res = rewriteDependsEntry(rest, shiftedEntry(shiftMap));
+      const res = rewriteRefEntry(rest, shiftedEntry(shiftMap));
       return res.changed ? `${prefix}${res.text}` : whole;
     }),
   );

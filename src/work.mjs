@@ -958,7 +958,7 @@ export async function applyItemFrontmatter(item, mutate) {
 // `10x-faster` as 10. One predicate, so a digit-led slug is a slug everywhere.
 export const isDependNumber = (entry) => /^\d+$/.test(String(entry ?? ""));
 
-// rewriteDependsEntry(token, map) — ONE entry of an inline list (or a bare scalar), rewritten
+// rewriteRefEntry(token, map) — ONE ref entry (of an inline `depends:` list, or the `parent:` scalar), rewritten
 // through the caller's `map(core) -> replacement | null`, where `core` is the entry with its
 // surrounding spacing and one quote pair stripped. `null` leaves the entry byte-identical. A
 // rewritten entry keeps its own spacing and quotes, and a zero-padded NUMBER keeps its ORIGINAL
@@ -966,7 +966,7 @@ export const isDependNumber = (entry) => /^\d+$/.test(String(entry ?? ""));
 // too (`007-bond`), and its replacement is the minted ref as spelled, never padded to the slug's
 // length. No arithmetic happens here: the mapping is the caller's — the shift's `old → old + 1`,
 // promote's `slug → minted ref`.
-export function rewriteDependsEntry(token, map) {
+export function rewriteRefEntry(token, map) {
   const leading = (token.match(/^\s*/) ?? [""])[0];
   const trailing = (token.match(/\s*$/) ?? [""])[0];
   const core = token.slice(leading.length, token.length - trailing.length);
@@ -981,7 +981,7 @@ export function rewriteDependsEntry(token, map) {
 }
 
 // rewriteDependsEntries(text, map) — the SURGICAL `depends: [a, b]` rewrite of one record doc's
-// text, per entry through `rewriteDependsEntry`: only the entries the map answers for change, and
+// text, per entry through `rewriteRefEntry`: only the entries the map answers for change, and
 // every other byte — the other entries, the line's own spacing, every other frontmatter line, the
 // body, the line endings — is reassembled untouched (41/ADR-001, 18/ADR-007: no `parseFrontmatter`
 // round-trip). Only the inline-list form is rewritten, as the shift always has. Returns the text
@@ -992,7 +992,7 @@ export function rewriteDependsEntries(text, map) {
   const rewritten = block[2].replace(/^(depends:[ \t]*\[)([^\]]*)(\].*)$/m, (whole, prefix, inner, suffix) => {
     let changed = false;
     const parts = inner.split(",").map((part) => {
-      const entry = rewriteDependsEntry(part, map);
+      const entry = rewriteRefEntry(part, map);
       if (entry.changed) changed = true;
       return entry.text;
     });

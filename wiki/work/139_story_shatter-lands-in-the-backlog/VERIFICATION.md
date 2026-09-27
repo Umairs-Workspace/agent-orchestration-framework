@@ -440,3 +440,48 @@ $ aof work validate --json
 []
 exit=0
 ```
+
+## Verify-time evidence (`aof:verify 139`, 2026-09-27)
+
+**The `@executable` lane, re-run by the verifier.** Scoped to the story, never the whole tree:
+`node scripts/test.mjs --only` over the four `test/work/stream/` suites the story touches
+(promote, three-root, reindex-rewrite, top-level places), `test/work/work-intake-write-side.test.mjs`,
+`test/planning/planning-prd.test.mjs`, and the controls the diff reaches — FF-12405, FF-12701,
+FF-12702, FF-12703, FF-12704, FF-12706, FF-11904 (the directory budget: no file joins `src/work/`
+or `test/work/stream/`), `acd-work-insert-command-bundle-parity`, `acd-bundle-manifest-hashes`,
+`acd-declared-writes-include-generated-siblings` — under an isolated `AOF_GLOBAL_HOME`. After
+F-139-02's fix: **exit 0, 495 ok, 0 not ok**, 56 of them `139/*` cases. Traceability: tasks 00–03
+declare 55 scenarios and Outline rows, each named by its own passing case; the 56th is the round-1
+regression case. Task 04's three `@manual` scenarios each have an evidence row above.
+
+**Task 04, re-measured at the source.** Scenario 1's CLI acts, repeated by the verifier in a fresh
+scratch project (backlog intake, `00_milestone_platform`, the three Acme Notify SPECs written into
+`backlog/` with the backward slug edge) with the CLI from this tree: validate `[]`; promoting
+delivery tracking refused `promote-depends-backlog` naming `channel-send-core`; promoting the send
+core minted `01` with `rewired` listing both dependents; both `depends:` lines then read `[01]`; the
+dependents minted `02` and `03` with `created.depends` `[1]`; validate `[]`; backlog empty. The same
+project then probed validate's new checks — `[no-such-slug]` gave the generic message, `[platform]`
+gave "`platform` is 00 in the stream, so the edge is written 00", and `alpha ↔ bravo` gave one
+`depends cycle: alpha → bravo → alpha` filed at `wiki/work/backlog`. The build-time record holds.
+
+## Findings
+
+| id | observed | type | severity | triage | routed-to | status |
+|---|---|---|---|---|---|---|
+| F-139-01 | Build review: shatter's recall block says no ref exists "until step 3", suspected stale because no number exists until step 7. | doc | nit | No change needed. Step 3 frames each driver in the backlog, and a backlog item's ref IS its slug (`promote` answers `from.ref: "channel-send-core"`), so the clause still holds, and the block stays byte-identical as task 03 requires. | — | closed |
+| F-139-02 | Build review: the per-entry rewriter was named `rewriteDependsEntry`, but the shift's `parent:` scalar also calls it. | craft | nit | Fixed at verify: renamed `rewriteRefEntry` in `src/work.mjs` and `src/work/reindex.mjs`, with its comment naming both callers. No test names it. The lane re-ran green (above). | verifier | closed |
+| F-139-03 | `work/this-tree-holds-what-is-live` has three red cases on this branch: the config diff since `28bbce2`, a `done` 131 at the root, and dangling archived `reads:`. The same three are red on the main-derived `4831f38`, and 139 touches none of those paths. | process | medium | Inherited; not 139's. Same class as m133/F-133-09: archiving is the operator's act (127/ADR-004), and the whole-tree gate is where it reds. | operator | open |
+
+## Accept decision
+
+**Accepted — 2026-09-27.** Validate PASS: `aof work validate 139` exit 0, `aof work loops validate`
+0 errors, and doctor warn-only with no `control-unresolved`. Traceability is clean. The story-scoped
+lane is green. Task 04's `@manual` evidence was re-measured at the source. No `@uat`, no UI. No
+blocker is open; F-139-03 is inherited and routed to the operator. Parentless, so there is no
+milestone `## Stories` box to tick.
+
+`RETROSPECTIVE.md` (R1) and `OUTCOME.md` were written at this accept. `aof work memory ingest` was
+not run from this worktree, because the live store is the main checkout's `.aof/` index and that
+tree cannot see 139 until the branch merges. The next whole-stream ingest after the merge picks up
+`OUTCOME.md`. R1 will not be recallable even then: the indexer reads a `RETROSPECTIVE.md` for
+milestones only (m128/F-128-G).
