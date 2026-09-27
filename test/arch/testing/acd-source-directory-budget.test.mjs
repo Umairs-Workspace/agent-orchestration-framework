@@ -1020,10 +1020,12 @@ export const archTests = [
       const lines = (text) => text.split(/\r?\n/u).map((line) => line.trim());
       const spreads = (text, binding) => lines(text).filter((line) => line === `...${binding}` || line === `...${binding},`).length;
       const runner = await readFile(path.join(repoRoot, "scripts", "test.mjs"), "utf8");
-      for (const index of ["../test/terminal/index.mjs", "../test/arch/terminal/index.mjs"]) {
-        const imports = lines(runner).map((line) => /^import \{ tests as (\w+) \} from "([^"]+)";$/u.exec(line)).filter((match) => match?.[2] === index);
-        assert.equal(imports.length, 1, `scripts/test.mjs imports ${index} exactly once`);
-        assert.equal(spreads(runner, imports[0][1]), 1, `…and spreads what it exports (${imports[0][1]}) once`);
+      // The specifier is counted, and the binding named, as 131/02 does: FF-11901 keeps the one
+      // import extractor in `test/support/module-family.mjs`.
+      for (const [index, binding] of [["../test/terminal/index.mjs", "terminalTests"], ["../test/arch/terminal/index.mjs", "archTerminalTests"]]) {
+        assert.equal(runner.split(`"${index}"`).length - 1, 1, `scripts/test.mjs imports ${index} exactly once`);
+        assert.ok(lines(runner).includes(`import { tests as ${binding} } from "${index}";`), `…as ${binding}`);
+        assert.equal(spreads(runner, binding), 1, `…and spreads what it exports (${binding}) once`);
       }
       for (const index of ["test/terminal/index.mjs", "test/arch/terminal/index.mjs"]) {
         const source = await readFile(path.join(repoRoot, index), "utf8");

@@ -3,6 +3,43 @@ doc: verification
 ---
 # 138 · The session driver sees claude's screen — Verification
 
+## Verification evidence
+
+Recorded at `aof:verify 138` (2026-09-27). Every run below ran in a detached worktree of the
+commit it names, `C:\Source\umami\aof-gate-138`, under a fresh `AOF_GLOBAL_HOME` and a launch env
+with no `CLAUDE*`, `GIT_ASKPASS` or `TERM`. The primary checkout held another session's uncommitted
+`src/work/dispatch.mjs`, and later its SEA-launcher edits.
+
+**The story lane, at `1a2c455`.** One focused run over 136 files: every suite that names the driver,
+`src/terminal/`, the loop settle modules (`child-drive`, `wave`, `cycle`), `degrade.mjs` or the worker
+execution, plus the two terminal families, the source-directory budget and the launch envelope.
+`node scripts/test.mjs --only …` printed **1,620 ok and 3 not ok**, exit 1. The runner writes
+`not ok` to stderr, so a count of stdout alone reads 0. The three were whole-tree controls reading
+138/00's driver, not 138 scenarios: F-10, F-11 and F-12, each repaired and red-probed.
+
+**After the repairs and F-03's amendment, at the working tree of `6227ef6`.** The terminal families,
+FF-13801, FF-13802, the budget, FF-11902's census and the two loop suites that replay fixtures
+printed **258 ok, 0 not ok**, exit 0. FF-11901 (F-13) printed 11 ok, exit 0.
+
+- **138/00 — the driver reads the screen.** 79 `138/00` cases green at `1a2c455`, plus the
+  amendment's three new cases after it. *verifies →* tasks 01–06 (`@executable`). Task 00
+  (`@manual`) was re-read at the source at verify: `package.json` pins `@xterm/headless` `6.0.0`
+  under `dependencies` with none under `devDependencies`. The gate worktree's `npm ci
+  --ignore-scripts` (through `prepare-worktree.mjs`) exited 0. `node scripts/supply-chain-audit.mjs`
+  printed `supply-chain audit passed: 0 warning(s)`. *verifies →* task 00.
+- **138/01 — blocking screens are named.** 34 `138/01` cases and FF-13802's 8 green. *verifies →*
+  tasks 01–04 (`@executable`). Task 00's recordings are below, and FF-13802 renders each one on
+  every run. *verifies →* task 00.
+- **138/02 — a live session proves it.** The `TERM` case (1) is green. The three `@manual` legs are
+  recorded below. Re-read at the source at verify:
+  - `work run-status` in the test-bed answers `06/03` `failed / blocked_screen`, and `06/04`
+    `cancelled` with session `92d9d07e-…` and `costUsd` 0.4023. That session's transcript exists.
+  - The WSL node holds `node_modules/@xterm/headless/package.json`, and its stamp is `3749338d…2407`.
+  - *verifies →* tasks 00–02.
+- **Design conformance:** not applicable. 138 has no `DESIGN.md` and no UI surface; the fleet
+  mirror keeps its byte tail (ADR-005).
+- **`@uat`:** none in scope.
+
 ## Fitness functions
 
 Run each probe at the source: mutate one file, run the control and read its failure, then restore
@@ -11,7 +48,7 @@ the file and run the control green again.
 | id | enforced by | result | red probe |
 |---|---|---|---|
 | FF-13801 | `test/arch/terminal/acd-screen-has-one-reader.test.mjs` | green, 6 cases (138/00, 2026-09-27) | Appended `const hasVisibleText = 0;` to the live `src/agent-session-driver.mjs` and ran the control alone: it went red with `no module but the model imports the emulator, the driver reads no screen, and only the door spells the markers` and `+ [ { file: 'src/agent-session-driver.mjs', spelling: 'hasVisibleText' } ] - []`. The backup was restored and `cmp` matched it, and the control ran green again. |
-| FF-13802 | `test/arch/terminal/acd-screen-registry-is-recorded.test.mjs` | green, 8 cases (138/01, 2026-09-27) | Set `trust`'s `option` in the live `src/terminal/claude-screens.mjs` to `Always trust this folder` and ran the control alone: it went red with `+ [ { entry: 'trust', fixture: 'trust.json', message: 'trust.json · trust · option absent from its menu', rule: 'option absent from its menu' } ]`. The backup was restored and `cmp` matched it, and the control ran green again. |
+| FF-13802 | `test/arch/terminal/acd-screen-registry-is-recorded.test.mjs` | green, 8 cases (138/01, 2026-09-27) | Set `trust`'s `option` in the live `src/terminal/claude-screens.mjs` to `Always trust this folder` and ran the control alone: it went red with `+ [ { entry: 'trust', fixture: 'trust.json', message: 'trust.json · trust · option absent from its menu', rule: 'option absent from its menu' } ]`. The backup was restored and `cmp` matched it, and the control ran green again. **(2) At verify (F-03):** the alternate-buffer clause put back into `isInputBox` in the gate worktree (`if (snapshot?.buffer !== "alternate") return false;`). FF-13802 went red with `ready.classic.json · ready · not recognised by its own entry`, and the ready suite's three new cases went red with it. The backup was restored, `cmp` matched it, and both files ran green again. |
 
 ## 138/00 task 00 — the dependency lands approved, pinned, frozen and audited (`@manual`)
 
@@ -709,3 +746,87 @@ The leg's measured cost is $0.40. The 45 s session left no fullscreen boot strik
 - **A shared checkout's payload can change under a leg.** Task 02's first attempt was voided by
   another session's `install-local` from the main checkout, 4 s before launch. Read the build stamp
   before and after a live leg, as task 02's re-run did.
+
+## 138 verify — F-03: the classic renderer's box, recorded and made ready (2026-09-27)
+
+The operator ruled at verify: fix it in 138. ADR-002 §1 is amended (the buffer clause struck), and
+00/task 03 carries the amended ruling, three new Examples rows and one new scenario.
+
+**The recording.** A zero-token probe drove the operator's `claude` 2.1.283 through the driver's
+own seams (`resolveInteractiveDriverLaunch("claude")`, `defaultPtySpawn`, 80×24,
+`TERM=xterm-256color`) in the test-bed. It fed a live screen model and read `~/.claude.json`'s
+`fullscreenBootStrikes` key alone. Nothing but a local `/exit` and its Enter was ever written. The
+operator agreed to the strike before the probe ran. As printed:
+
+```
+strike  (killed at 8 s)   strikes before: null  → t=8062ms buf=alternate cursor={"row":21,"col":2}  → strikes after: null
+record  (next launch)     strikes before: null  → t=2111ms box drawn: buf=normal cursor={"row":9,"col":2} boxAtCursor=true
+ 0 |Claude Code's fullscreen renderer didn't finish starting last time on this machi
+ 1 |ne, so this launch is using the classic renderer. It will try fullscreen again n
+ 2 |ext launch; /tui default keeps the classic renderer.
+ 8 |────────────────────────────────────────────────────────────────────────────────
+ 9 |❯ Try "create a util logging.py that..."
+10 |────────────────────────────────────────────────────────────────────────────────
+                          wrote 13 chunks · /exit → exited={"exitCode":0} strikes after: {"count":1,"version":"2.1.283"}
+clear   (a fullscreen launch held to 18.6 s, then /exit)   t=12437ms strikes={"count":1,…}  t=15518ms strikes=null  → exited 0, strikes after: null
+```
+
+- **What the probes showed about the strike.** A fullscreen launch killed early leaves no key. The
+  NEXT launch draws the classic renderer, and writes `{"count":1}` itself. A fullscreen launch held
+  past about 15 s clears it, and so does a clean `/exit` of a fullscreen launch. The key read `null`
+  before the probes, and `null` after them.
+- **The fixture.** `test/fixtures/claude-screens/ready.classic.json` holds the 13 chunks. The one
+  path it draws was scrubbed with the same-length substitution (1 replacement). It renders on the
+  normal buffer with the cursor on row 9, between two full `─` rules.
+- **The change.** `isInputBox` no longer reads the buffer. FF-13802 maps `<id>.<variant>.json` to
+  its entry (ADR-003 §7), so the recording is proved on every run. The ready suite gains the
+  classic recording (ready), the normal-buffer redraw (now ready), its indented twin (not ready),
+  and a drive that pastes on the classic box within 1,000 ms, with no cap line.
+- **No dialog became ready.** Every dialog fixture still fails by its indented `❯` or dashed rules:
+  FF-13802's "ready claims a dialog" leg is green over all seven recordings.
+- **Red probe:** see FF-13802 (2) in the register above.
+- **Not yet deployed.** The payload here is `1a2c455+dirty.20260927T175811`, installed by another
+  session from the primary checkout. A reinstall from that checkout would ship that session's
+  uncommitted edits.
+
+## 138 verify — the whole-tree controls 138 had reddened, repaired (2026-09-27)
+
+- **F-10, FF-11902.** FF-13802's `liveFixtures` narrowed a `readdir` by `.json` with no floor on
+  the result. It now asserts at least seven recordings, naming the directory.
+- **F-11, 46's geometry tie.** It matched `ptySpawn({ cols: 80, rows: 24 })` as literals, and
+  138/00 spells `PTY_COLS`/`PTY_ROWS`. The control now follows a constant to its literal.
+  - Red probe: `PTY_COLS = 100` in the gate worktree's driver.
+  - Observed: `the mirror descriptor's columns (80) must equal the worker's ptySpawn columns (100)`.
+  - Restored, `cmp` matched, and it ran green again.
+- **F-12, 38's end-of-stream check.** It sliced `finish()` from the first `{` after its anchor.
+  138/00's `(result, settle = {})` put that brace inside the parens, so the check read `{}`. It now
+  slices from the anchor's own last brace.
+  - Red probe: `options.onSessionEnd?.(endedSessionId)` replaced by `undefined` in the gate
+    worktree's driver.
+  - Observed: `the driver's finish() does not emit an end-of-stream`.
+  - Restored, `cmp` matched, and it ran green again.
+- **F-13, FF-11901.** 138/00's budget case spelled its own `from "…"` extractor. It now counts the
+  specifier and names the binding, as 131/02's case does.
+- **F-14, FF-9603.** 138/00's and 138/01's `PLAN.md` each named two or more declared paths, and so
+  did 139's. Each was rephrased without the paths. `restatementViolations` over every `PLAN.md`
+  under `wiki/work` then found 0.
+
+## Findings
+
+| id | observed | type | severity | triage | routed-to | status |
+|---|---|---|---|---|---|---|
+| F-01 | 138/02 task 01, first attempt: a Windows launch with no `TERM` made claude 2.1.283 draw `>` for `❯` and `√` for `✔`, so the deployed driver recognised no screen and ran to the 60 s cap. | defect | blocker | blocker — fix | 138/02 (`resolveInteractiveDriverLaunch`) | fixed `d8d2230`; red probe recorded above |
+| F-02 | 138/02 task 00: `deploy-wsl.sh` synced `package.json` without its lock, stamped the failed `npm ci`'s sha anyway, and `install-local` exited 0 over a node with no emulator. | defect | blocker | blocker — fix | 138/02 (`scripts/deploy-wsl.sh`) | fixed `d8d2230` |
+| F-03 | claude's classic renderer draws the REPL box on the normal buffer, and ADR-002 §1 required the alternate one. A drive launched on it (once after an unfinished fullscreen boot, and always under `/tui default`) typed nothing and stopped at the cap, where the byte gate had typed. | defect | major | blocker — fix (operator's ruling at verify) | 138/00 (ADR-002 §1, `claude-screens.mjs`) | fixed `6227ef6`; `ready.classic.json`; FF-13802 red probe (2) |
+| F-04 | Another session ran `install-local` from the shared checkout 4 s before 138/02's real leg, so the leg ran a build without the fix and was void. | process | minor | non-blocker — lesson | retro (138/02) | recorded; the re-run read the build stamp at both ends |
+| F-05 | Under the SEA launcher, node-pty's console-list agent `fork()`s through `process.execPath`, re-enters the aof CLI, prints its usage on every PTY kill, and waits out a 5 s fallback. It predates 138. | defect | minor | non-blocker — defer | backlog (the launcher or the Windows kill path) | open |
+| F-06 | `ensureWorktreeTrusted` writes `os.homedir()/.claude.json` even when `CLAUDE_CONFIG_DIR` points elsewhere, so an isolated drive touches the operator's real file and its own claude never reads the write. | defect | minor | non-blocker — defer | backlog (`src/claude-trust.mjs`) | open |
+| F-07 | claude 2.1.283 records the bracketed paste inside a `<pasted_content>` wrapper; the session still invoked `/aof:continue` as a skill. | gap | minor | non-blocker — watch | OUTCOME assumption | recorded |
+| F-08 | 138/02 task 01 ruling 3 (QA) asks for an unchanged `~/.claude.json` mtime, which no machine running live claude sessions can give: every claude rewrites the file. | process | minor | non-blocker — lesson | retro (138/02) | recorded as confounded, not passed |
+| F-09 | `agent-session-driver-transcript`'s "any movement … restarts the quiet stretch" real-fs mtime case failed 3 of 15 runs over the build and 1 of 12 at the base `4831f38`: a poll tick in flight reads the old mtime (129's F-77 race). | defect | minor | non-blocker — defer | backlog (the case's tick quiescence) | open |
+| F-10 | Verify lane at `1a2c455`: FF-11902 red on FF-13802's unfloored fixture `readdir`. | defect | blocker (gate) | own — repair | 138/01 (FF-13802) | fixed `6227ef6` |
+| F-11 | Verify lane: 46's geometry tie found no literal `cols`/`rows` in `ptySpawn`, because 138/00 spells them through `PTY_COLS`/`PTY_ROWS`. | defect | blocker (gate) | own — repair | 138/00 (the control follows the constant) | fixed `6227ef6`; red-probed |
+| F-12 | Verify lane: 38's end-of-stream check read an empty `finish()`, because 138/00's default parameter `settle = {}` precedes the body's brace. | defect | blocker (gate) | own — repair | 138/00 (the control's slice) | fixed `6227ef6`; red-probed |
+| F-13 | Gate pre-scan: FF-11901 red on 138/00's budget case, which spelled its own import extractor. | defect | blocker (gate) | own — repair | 138/00 (the budget case) | fixed at 138's door |
+| F-14 | Gate pre-scan: FF-9603 red on the `PLAN.md` of 138/00, 138/01 and 139, each enumerating declared paths. | defect | blocker (gate) | own + inherited — repair | 138/00, 138/01, 139 (`PLAN.md`) | fixed `6227ef6`, `01a2d7d` |
+| F-15 | Gate pre-scan: done drivers 131 and 139 at the root of `wiki/work` (`this-tree-holds-what-is-live 02`). | process | blocker (gate) | operator's act (127/ADR-004) | the operator: `aof work archive` | fixed: archived on the operator's instruction (`01a2d7d`, `c872058`). A process held 131's folder in the primary checkout, so the verb ran in the clean worktree; the empty folder is the operator's to delete |
