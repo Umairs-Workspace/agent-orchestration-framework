@@ -8,10 +8,14 @@ import { screenModelTests } from "./screen-model.test.mjs";
 import { sessionScreenReadyTests } from "./session-screen-ready.test.mjs";
 import { sessionScreenVerdictsTests } from "./session-screen-verdicts.test.mjs";
 import { sessionScreenEvidenceTests } from "./session-screen-evidence.test.mjs";
+// milestone 138 / story 01 — the six v1 screens (task 01), and trust navigated to, the rest stopped
+// by name (task 02).
+import { claudeScreensRegistryTests } from "./claude-screens-registry.test.mjs";
 
 export const tests = [
   ...screenModelTests,
   ...sessionScreenReadyTests,
   ...sessionScreenVerdictsTests,
   ...sessionScreenEvidenceTests,
+  ...claudeScreensRegistryTests,
 ];

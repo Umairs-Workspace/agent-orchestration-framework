@@ -462,6 +462,45 @@ export const driveCommandPhaseDriverTests = [
     },
   },
   {
+    name: "138/01 task03 — the drive document carries the screen a blocked session was stopped on",
+    async run() {
+      const fx = await fixture();
+      try {
+        // The injected driver is the real one over a scripted PTY that draws claude's recorded first-run
+        // screen once the directive is pasted, so the real door stops it by that screen's name.
+        const recordingPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "claude-screens", "first-run.json");
+        const recording = JSON.parse(await readFile(recordingPath, "utf8"));
+        let drawn = false;
+        const fake = createFakePtySpawn({
+          onWrite: ({ emitData }) => {
+            if (drawn) return;
+            drawn = true;
+            for (const chunk of recording.chunks) emitData(chunk.d);
+          },
+        });
+        const document = await continueDriverCommand.run(
+          { ref: "03/01" },
+          {
+            workspace: fx.workspace,
+            agentSessionDriverOptions: {
+              ptySpawn: fake.spawn,
+              which: createFakeWhich(["claude"]),
+              watchTranscriptSessionId: async () => null,
+              commandDelayMs: 0,
+            },
+          },
+        );
+        assert.equal(document.outcome, "failed");
+        assert.equal(document.failureReason, "blocked_screen");
+        assert.deepEqual(document.screen, { id: "first-run" });
+        assert.equal(document.sessionId, null);
+        assert.equal(JSON.parse(JSON.stringify(document)).screen.id, "first-run", "and it survives the --json rendering");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
     name: "loop phase drivers — bare drives mint a run carrying the captured session id while shipped doors retain their where contract",
     async run() {
       const fx = await fixture();

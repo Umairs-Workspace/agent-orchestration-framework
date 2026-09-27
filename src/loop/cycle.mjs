@@ -805,6 +805,9 @@ export async function retryUntilTerminal(phaseRun, { drive, ref, phase, brief, i
               readyAt: error.readyAt,
               attempt: phaseRun.record.attempt,
               failureReason: phaseRun.record.failureReason,
+              // 138/01 (ADR-003 §5) — the screen a blocked session was stopped on, as its id string,
+              // so the halt line reads `screen=<id>`. Absent for every other failure.
+              ...(phaseRun.outcome?.screen?.id != null ? { screen: phaseRun.outcome.screen.id } : {}),
             },
           },
         };

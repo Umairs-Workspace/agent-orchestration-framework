@@ -86,6 +86,14 @@ const parentOf = (ref) => (typeof ref === "string" && ref.includes("/") ? ref.sl
 const isObjectName = (value) => typeof value === "string" && /^[0-9a-f]{7,64}$/iu.test(value);
 const short = (sha) => (typeof sha === "string" ? sha.slice(0, 7) : String(sha));
 
+// The lane's settle line: the run's state and reason, and — 138/01 (ADR-003 §5) — the screen a
+// blocked session was stopped on, `settle: failed (blocked_screen: mcp-approval).`
+const settleLine = (ref, phaseRun) => {
+  const reason = phaseRun.record.failureReason;
+  const screen = phaseRun.outcome?.screen?.id;
+  return `Lane ${ref} — settle: ${phaseRun.record.state}${reason ? ` (${reason}${screen ? `: ${screen}` : ""})` : ""}.`;
+};
+
 // A `work:dispatch` answer, read as ENTRIES whichever face it took: a batch answers
 // `dispatched[]`; a single ref answers the `open` shape, which is read exactly as one entry would
 // be (ADR-006; task 05's "wave of one" scenario).
@@ -549,7 +557,7 @@ export async function runWaveBuild(shell) {
           }, laneAsk.deps);
           if (waited.parked != null) return waited;
           const answered = await settleDriven(waited.phaseRun, laneCtx, { now: clock(), narrate, transitionOptions: laneOpts });
-          await narrate(`Lane ${ref} — settle: ${answered.record.state}${answered.record.failureReason ? ` (${answered.record.failureReason})` : ""}.`);
+          await narrate(settleLine(ref, answered));
           driven.push(drivenRow(answered));
           return { phaseRun: answered };
         };
@@ -560,7 +568,7 @@ export async function runWaveBuild(shell) {
             ? { item: laneItem, record, outcome: { outcome: "needs-input", sessionId: record.sessionId }, cycle, phase: "continue", changeBaseline: null, progressBaseCommit: lane.baseCommit, settlementContext: null, gradeAbsent: null, lane: { worktree: open.worktree, branch: open.branch, baseCommit: lane.baseCommit } }
             : await drive(record);
           phaseRun = await settleDriven(phaseRun, laneCtx, { now: clock(), narrate, transitionOptions: laneOpts });
-          await narrate(`Lane ${ref} — settle: ${phaseRun.record.state}${phaseRun.record.failureReason ? ` (${phaseRun.record.failureReason})` : ""}.`);
+          await narrate(settleLine(ref, phaseRun));
           driven.push(drivenRow(phaseRun));
           // 131/03 (ADR-001 §1(a), ADR-004 §2) — A LANE THAT ASKS WAITS IN ITS SLOT while the others
           // build: the lane promise simply stays open, so nothing about scheduling changes.
@@ -602,7 +610,7 @@ export async function runWaveBuild(shell) {
             return { ref, outcome: "cancelled", lane, committed: false };
           }
           if (phaseRun.outcome.outcome !== "done") {
-            return await committedHalt(haltDecision("run-not-retryable", ref, "run-store:not-retryable"), { failureReason: phaseRun.record.failureReason });
+            return await committedHalt(haltDecision("run-not-retryable", ref, "run-store:not-retryable"), { failureReason: phaseRun.record.failureReason, ...(phaseRun.outcome?.screen?.id != null ? { screen: phaseRun.outcome.screen.id } : {}) });
           }
         } finally {
           await removeFixFile();

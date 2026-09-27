@@ -5,8 +5,9 @@
 //
 // `action` is one of four:
 //   type     the frame is claude's input box: the directive is typed on it (ADR-002);
-//   consent  a dialog whose answer the operator has already given: one Enter, but only when the
-//            highlighted row is the entry's `option` and the directive is still untyped (§4);
+//   consent  a dialog whose answer the operator has already given: the door walks the menu to the
+//            entry's `option` by the screen, one confirmed arrow at a time, then one Enter, and
+//            only while the directive is untyped (§4, amended 2026-09-27);
 //   fail     a screen no retry can get past: the session stops `failed / blocked_screen` by name (§5);
 //   wait     the provider's own wait, which suspends the heartbeat deadline (§6).
 // `recognise` answers a truthy value when the frame is this screen: a `wait` entry answers the text
@@ -41,6 +42,18 @@ function isInputBox(snapshot) {
   return rows[row - 1] === rule && rows[row + 1] === rule;
 }
 
+// A DIALOG (§3), recorded from claude 2.1.283 (RESEARCH Q2, Q5): drawn on the NORMAL buffer, with a
+// select menu whose `❯` is indented, and one line of the dialog's own words. Each is keyed on all
+// three, and none holds where the input box does, so a working session that quotes a dialog's words
+// above a live box is never that dialog (01/01, ruling 4).
+const INDENTED_MENU_CURSOR = /^\s+❯\s/u;
+function dialog(words) {
+  return (snapshot) => snapshot?.buffer === "normal"
+    && !isInputBox(snapshot)
+    && (snapshot.rows ?? []).some((row) => INDENTED_MENU_CURSOR.test(row))
+    && (snapshot.rows ?? []).some((row) => row.includes(words));
+}
+
 // usage-limit (§6, 129/06 F-58) — the provider's own wait, anywhere on screen. Answers the row.
 function providerWaitRow(snapshot) {
   for (const row of snapshot?.rows ?? []) {
@@ -49,7 +62,15 @@ function providerWaitRow(snapshot) {
   return false;
 }
 
+// The v1 registry, in ADR-003's order. `trust` is the one consent: the loop being pointed at this
+// checkout is the operator's answer, which `ensureWorktreeTrusted` pre-writes, so the dialog means
+// the pre-write lost (F24). claude opens it on `No, exit`, and the door walks to the option by the
+// screen (ADR-003 §4 as amended 2026-09-27). The three fails are screens no retry can get past.
 export const CLAUDE_SCREENS = Object.freeze([
   Object.freeze({ id: "ready", action: "type", recognise: isInputBox }),
+  Object.freeze({ id: "trust", action: "consent", option: "Yes, I trust this folder", recognise: dialog("Quick safety check") }),
+  Object.freeze({ id: "mcp-approval", action: "fail", recognise: dialog("New MCP server found in this project") }),
+  Object.freeze({ id: "first-run", action: "fail", recognise: dialog("Choose the text style that looks best with your terminal") }),
+  Object.freeze({ id: "login", action: "fail", recognise: dialog("Select login method") }),
   Object.freeze({ id: "usage-limit", action: "wait", recognise: providerWaitRow }),
 ]);

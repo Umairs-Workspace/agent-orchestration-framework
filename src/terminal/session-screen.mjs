@@ -4,9 +4,10 @@
 // keeps the PTY, its timers, the stop bracket and the transcript watches, and reads no screen
 // content itself (FF-13801).
 //
-//   openSessionScreen({ cols, rows, registry, load, onVerdict }) => door, synchronously. The model
-//   loads in the background, and a chunk fed before it arrives waits in order, so opening the door
-//   never moves the spawn.
+//   openSessionScreen({ cols, rows, registry, load, onVerdict, consentStepMs }) => door,
+//   synchronously. The model loads in the background, and a chunk fed before it arrives waits in
+//   order, so opening the door never moves the spawn. `consentStepMs` bounds how long an arrow a
+//   consent sent may take to show on screen (ADR-003 §4, amended).
 //
 //   door.feed(chunk)    every chunk the PTY emits, in order;
 //   door.markPaste()    the directive's paste is about to be written;
@@ -89,11 +90,21 @@ const PARKED_PASTE_RE = /\[Pasted text #\d+/u;
 
 // ── the screen path (ADR-002, ADR-003) ─────────────────────────────────────────────────────────
 const RULE = "─";
-const MENU_CURSOR = "❯";
-// A numbered menu item under the cursor glyph, indented or not: `❯ 1. Yes, I trust this folder`.
-const MENU_ITEM_RE = /^\s*❯\s*\d+\./u;
-// A consent is one Enter: the driver never sends an arrow key (ADR-003 §4).
-const CONSENT_KEYS = String.fromCharCode(13);
+// The menu's cursor glyph, with what it leads: `❯ 1. Yes, I trust this folder`, ` ❯ No, exit`.
+const MENU_CURSOR_RE = /^(\s*)❯(\s*)/u;
+const ITEM_NUMBER_RE = /^\d+\.\s*/u;
+
+// ADR-003 §4, AMENDED 2026-09-27 — a consent NAVIGATES by the screen. The keys it may send: one Enter
+// on the named option, and an arrow toward it, spelled for the TUI's cursor-key mode.
+const ENTER = String.fromCharCode(13);
+const ARROWS = Object.freeze({
+  normal: Object.freeze({ down: `${ESC}[B`, up: `${ESC}[A` }),
+  application: Object.freeze({ down: `${ESC}OB`, up: `${ESC}OA` }),
+});
+// At most this many arrows per consent, and an option further away than this is not walked to.
+const CONSENT_MAX_KEYS = 8;
+// How long an arrow may take to show on screen before the consent is given up, by name.
+const CONSENT_STEP_MS = 2_000;
 
 const isRule = (row, cols) => row === RULE.repeat(cols);
 
@@ -109,13 +120,41 @@ function inputBoxRows(snapshot) {
   return snapshot.rows.slice(above + 1, below);
 }
 
-// The menu's highlighted row: a numbered item under `❯` when there is one, else the first `❯` row.
-function highlightedRow(snapshot) {
-  const numbered = snapshot.rows.find((row) => MENU_ITEM_RE.test(row));
-  return numbered ?? snapshot.rows.find((row) => row.includes(MENU_CURSOR)) ?? null;
+// readConsentMenu(snapshot, option) => { items, highlighted, option } | null — the select menu as
+// the door navigates it (ADR-003 §4, amended).
+// - The highlighted item is the first row the menu's `❯` leads.
+// - The menu is the unbroken run of rows around it whose text starts in the SAME column as the
+//   highlighted item's text. The dialog's prose starts elsewhere and a blank row ends the run, so
+//   neither is ever an item.
+// - The option is the item whose text, its `N. ` number set aside, IS the named option.
+// `items` are row numbers in screen order; `highlighted` and `option` index into them. Null when there
+// is no menu cursor or the named option is not an item of the menu.
+export function readConsentMenu(snapshot, option) {
+  if (typeof option !== "string" || option.length === 0) return null;
+  const rows = snapshot?.rows ?? [];
+  const cursorRow = rows.findIndex((row) => {
+    const lead = MENU_CURSOR_RE.exec(row);
+    return lead != null && row.length > lead[0].length;
+  });
+  if (cursorRow === -1) return null;
+  const column = MENU_CURSOR_RE.exec(rows[cursorRow])[0].length;
+  const isItem = (index) => {
+    const row = rows[index] ?? "";
+    return row.length > column && row.slice(0, column).trim() === "" && row[column] !== " ";
+  };
+  let first = cursorRow;
+  while (first - 1 >= 0 && isItem(first - 1)) first -= 1;
+  let last = cursorRow;
+  while (last + 1 < rows.length && isItem(last + 1)) last += 1;
+  const items = [];
+  for (let index = first; index <= last; index += 1) items.push(index);
+  const textOf = (index) => rows[index].slice(column).replace(ITEM_NUMBER_RE, "").trim();
+  const optionIndex = items.findIndex((index) => textOf(index) === option);
+  if (optionIndex === -1) return null;
+  return { items, highlighted: items.indexOf(cursorRow), option: optionIndex };
 }
 
-export function openSessionScreen({ cols = 80, rows = 24, registry = CLAUDE_SCREENS, load, onVerdict } = {}) {
+export function openSessionScreen({ cols = 80, rows = 24, registry = CLAUDE_SCREENS, load, onVerdict, consentStepMs = CONSENT_STEP_MS } = {}) {
   let mode = "pending";
   let model = null;
   let disposed = false;
@@ -174,6 +213,63 @@ export function openSessionScreen({ cols = 80, rows = 24, registry = CLAUDE_SCRE
   };
 
   // ── screen ──
+  // A consent's episode, by id (ADR-003 §4, amended 2026-09-27): `navigating` while arrows walk the
+  // highlight to the option, each `awaiting` the frame that shows it; `entered` once the Enter went.
+  // `cleared` is set by any frame on which the entry does not recognise, so a dialog that comes back
+  // after it went away is a return.
+  const refuse = (entry, state) => {
+    if (state != null) {
+      clearTimeout(state.timer);
+      state.awaiting = null;
+      state.refused = true;
+    }
+    say({ kind: "blocked", id: entry.id });
+  };
+
+  const consent = (entry, snapshot) => {
+    let state = answered.get(entry.id);
+    if (state?.refused) return;
+    // The dialog RETURNED after it went away: whatever was answered did not hold.
+    if (state?.cleared) return refuse(entry, state);
+    // A repaint before claude takes the Enter is not a return: wait for the frame that moves on.
+    if (state?.phase === "entered") return;
+    // A consent after the directive was typed is not an answer anybody gave.
+    if (typed) return refuse(entry, state);
+    const menu = readConsentMenu(snapshot, entry.option);
+    if (menu == null) return refuse(entry, state);
+    if (state == null) {
+      state = { phase: "navigating", keys: 0, awaiting: null, timer: null, cleared: false, refused: false };
+      answered.set(entry.id, state);
+      // An option further away than the key budget is not walked to at all.
+      if (Math.abs(menu.option - menu.highlighted) > CONSENT_MAX_KEYS) return refuse(entry, state);
+    }
+    if (state.awaiting != null) {
+      const moved = menu.highlighted - state.awaiting.from;
+      // Not drawn yet: wait. The step timer bounds the wait.
+      if (moved === 0) return;
+      // The menu went the other way: its order is not what the screen said.
+      if (Math.sign(moved) !== state.awaiting.direction) return refuse(entry, state);
+      clearTimeout(state.timer);
+      state.awaiting = null;
+    }
+    const distance = menu.option - menu.highlighted;
+    if (distance === 0) {
+      state.phase = "entered";
+      say({ kind: "consent", id: entry.id, keys: ENTER });
+      return;
+    }
+    if (state.keys >= CONSENT_MAX_KEYS) return refuse(entry, state);
+    const direction = Math.sign(distance);
+    state.keys += 1;
+    state.awaiting = { from: menu.highlighted, direction };
+    state.timer = setTimeout(() => {
+      if (state.awaiting != null && !state.refused) refuse(entry, state);
+    }, consentStepMs);
+    const arrows = ARROWS[snapshot.cursorKeys === "application" ? "application" : "normal"];
+    say({ kind: "consent", id: entry.id, keys: direction > 0 ? arrows.down : arrows.up });
+    return;
+  };
+
   const decide = (entry, snapshot) => {
     switch (entry.action) {
       case "type":
@@ -182,25 +278,9 @@ export function openSessionScreen({ cols = 80, rows = 24, registry = CLAUDE_SCRE
       case "fail":
         say({ kind: "blocked", id: entry.id });
         return;
-      case "consent": {
-        // A consent after the directive was typed, or on a highlighted row that is not the named
-        // option, is not an answer anybody gave: it is a named failure (ADR-003 §4).
-        const highlighted = highlightedRow(snapshot);
-        if (typed || typeof entry.option !== "string" || highlighted == null || !highlighted.includes(entry.option)) {
-          say({ kind: "blocked", id: entry.id });
-          return;
-        }
-        const state = answered.get(entry.id);
-        if (state == null) {
-          answered.set(entry.id, { cleared: false });
-          say({ kind: "consent", id: entry.id, keys: CONSENT_KEYS });
-          return;
-        }
-        // The dialog RETURNED after it went away: its answer did not hold. A repaint before claude
-        // took the Enter (never cleared) is not a return, and is ignored.
-        if (state.cleared) say({ kind: "blocked", id: entry.id });
+      case "consent":
+        consent(entry, snapshot);
         return;
-      }
       default:
         reportDegrade("session-screen-unknown-action", new Error(`screen ${entry.id}: unknown action ${entry.action}`));
     }
@@ -307,6 +387,7 @@ export function openSessionScreen({ cols = 80, rows = 24, registry = CLAUDE_SCRE
       if (disposed) return;
       disposed = true;
       queue = [];
+      for (const state of answered.values()) clearTimeout(state.timer);
       settleDrained?.();
       model?.dispose();
     },

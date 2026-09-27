@@ -519,6 +519,31 @@ export const loopCommandWaveTests = [
     },
   },
   {
+    name: "138/01 task03 [outline] the lane's settle line names the screen, and the lane's halt line carries it (3 rows)",
+    run: async () => {
+      const rows = [
+        { document: { outcome: "failed", failureReason: "blocked_screen", screen: { id: "mcp-approval" } }, line: "failed (blocked_screen: mcp-approval).", screen: "mcp-approval" },
+        { document: { outcome: "failed", failureReason: "blocked_screen" }, line: "failed (blocked_screen).", screen: null },
+        { document: { outcome: "failed", failureReason: "agent_error" }, line: "failed (agent_error).", screen: null },
+      ];
+      for (const row of rows) {
+        await withLaneRepo(async (fx) => {
+          const child = fakeLaneChild(fx, { answers: { "07/01": [{ outcome: "document", document: row.document }] } });
+          const { state, report } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())) });
+          const label = row.line;
+          assert.ok(report.lines.includes(`Lane 07/01 — settle: ${row.line}`), `${label}: ${report.lines.filter((printed) => printed.includes("settle:")).join(" | ")}`);
+          assert.equal(state.act.stop, "run-not-retryable", `${label}: halt`);
+          assert.equal(state.act.producer, "run-store:not-retryable", `${label}: producer`);
+          assert.equal(child.calls.filter((call) => call.ref === "07/01").length, 1, `${label}: driven once`);
+          const halt = report.lines.at(-1);
+          assert.match(halt, new RegExp(`failureReason=${row.document.failureReason}`, "u"), `${label}: ${halt}`);
+          if (row.screen == null) assert.doesNotMatch(halt, /screen=/u, `${label}: no screen`);
+          else assert.match(halt, new RegExp(`screen=${row.screen}`, "u"), `${label}: ${halt}`);
+        }, { stories: [{ number: "01" }] });
+      }
+    },
+  },
+  {
     name: "129/04 task02 [outline] the lane sequence stops at the step that fails and names it (10 rows)",
     run: async () => {
       // OPEN — a dispatch entry answering ok:false

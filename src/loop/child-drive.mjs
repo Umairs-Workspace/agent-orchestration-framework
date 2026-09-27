@@ -44,10 +44,19 @@ export function loopFixFilePath(runId, { env } = {}) {
 // consumes: the document's own outcome when one parsed, `died` → `failed / runtime_offline`,
 // `timeout` → `failed / timeout`, `aborted` → `cancelled`, a refusal → `failed / agent_error`
 // carrying its code. A `failed` that names no reason is `agent_error`.
+//
+// 138/01 (ADR-003 §5) — a blocked session's SCREEN rides the document as `screen: { id }`, and it
+// crosses a process boundary, so its shape is checked, not trusted: only `{ id }` with an id of the
+// registry's own form passes, as `{ id }` and nothing else.
+const SCREEN_ID_RE = /^[a-z][a-z0-9-]{0,39}$/u;
+const documentScreen = (screen) => (screen != null && typeof screen === "object" && typeof screen.id === "string" && SCREEN_ID_RE.test(screen.id)
+  ? { screen: { id: screen.id } }
+  : {});
+
 export function childDriveOutcome(answer) {
   const document = answer?.document ?? null;
   const outcome = answer?.outcome === "document"
-    ? { outcome: document?.outcome ?? "failed", ...(document?.failureReason != null ? { failureReason: document.failureReason } : {}), ...(document?.sessionId != null ? { sessionId: document.sessionId } : {}) }
+    ? { outcome: document?.outcome ?? "failed", ...(document?.failureReason != null ? { failureReason: document.failureReason } : {}), ...(document?.sessionId != null ? { sessionId: document.sessionId } : {}), ...documentScreen(document?.screen) }
     : answer?.outcome === "timeout"
       ? { outcome: "failed", failureReason: "timeout" }
       : answer?.outcome === "aborted"

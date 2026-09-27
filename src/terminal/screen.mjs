@@ -49,10 +49,12 @@ function terminalConstructor(load) {
 // createScreen({ cols, rows, load }) => Promise<model | null> — never rejects. A model answers:
 //   write(chunk)  a promise that settles once the emulator has PARSED the chunk (and at once after
 //                 dispose, so a late write is quiet);
-//   snapshot()    { buffer: "normal" | "alternate", cursor: { row, col }, rows, cols } — `rows` is
-//                 exactly `rows` strings, each viewport row's `translateToString(true)`; the cursor
-//                 is zero-based within the viewport; `cols` is the width the frame was drawn at,
-//                 which a rule "across all cols" is measured against (ADR-002 §1);
+//   snapshot()    { buffer: "normal" | "alternate", cursor: { row, col }, rows, cols, cursorKeys } —
+//                 `rows` is exactly `rows` strings, each viewport row's `translateToString(true)`;
+//                 the cursor is zero-based within the viewport; `cols` is the width the frame was
+//                 drawn at, which a rule "across all cols" is measured against (ADR-002 §1);
+//                 `cursorKeys` is `"application"` while the TUI has DECCKM on and `"normal"`
+//                 otherwise, which is how an arrow key must be spelled to it (ADR-003 §4, amended);
 //   dispose()     releases the emulator.
 export async function createScreen({ cols = 80, rows = 24, load = defaultLoad } = {}) {
   const Terminal = await terminalConstructor(load);
@@ -94,7 +96,7 @@ export async function createScreen({ cols = 80, rows = 24, load = defaultLoad } 
       });
     },
     snapshot() {
-      if (disposed) return { buffer: "normal", cursor: { row: 0, col: 0 }, rows: Array.from({ length: rows }, () => ""), cols };
+      if (disposed) return { buffer: "normal", cursor: { row: 0, col: 0 }, rows: Array.from({ length: rows }, () => ""), cols, cursorKeys: "normal" };
       const active = terminal.buffer.active;
       const lines = [];
       for (let index = 0; index < rows; index += 1) {
@@ -106,6 +108,7 @@ export async function createScreen({ cols = 80, rows = 24, load = defaultLoad } 
         cursor: { row: active.baseY + active.cursorY - active.viewportY, col: active.cursorX },
         rows: lines,
         cols,
+        cursorKeys: terminal.modes?.applicationCursorKeysMode === true ? "application" : "normal",
       };
     },
     dispose() {

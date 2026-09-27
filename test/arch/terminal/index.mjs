@@ -4,7 +4,10 @@
 
 // milestone 138 / story 00 — FF-13801 (the screen has one reader).
 import { archTests as acdScreenHasOneReaderTests } from "./acd-screen-has-one-reader.test.mjs";
+// milestone 138 / story 01 — FF-13802 (every registered screen is recorded).
+import { archTests as acdScreenRegistryIsRecordedTests } from "./acd-screen-registry-is-recorded.test.mjs";
 
 export const tests = [
   ...acdScreenHasOneReaderTests,
+  ...acdScreenRegistryIsRecordedTests,
 ];
