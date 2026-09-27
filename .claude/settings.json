@@ -76,7 +76,12 @@
       }
     ]
   },
+  "disableClaudeAiConnectors": true,
+  "deniedMcpServers": [
+      { "serverName": "claude_design" }
+  ],
   "enabledPlugins": {
+    "cloudflare@cloudflare": false,
     "pm-execution@pm-skills": true,
     "pm-product-discovery@pm-skills": true,
     "pm-product-strategy@pm-skills": true

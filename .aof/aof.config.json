@@ -96,11 +96,26 @@
     "loop": {
       "concurrency": "refine_first",
       "agents": {
-        "refine": { "mode": "orchestrated" },
-        "continue": { "mode": "solo" }
+        "refine": {
+          "mode": "orchestrated"
+        },
+        "continue": {
+          "mode": "solo"
+        }
       },
       "startToCloseMs": 14400000,
       "scheduleToCloseMs": 43200000
+    },
+    "notify": {
+      "channels": {
+        "discord": {
+          "type": "discord",
+          "channelId": "1553365880904089651",
+          "allow": [
+            "1119197349521137757"
+          ]
+        }
+      }
     }
   },
   "memory": {
