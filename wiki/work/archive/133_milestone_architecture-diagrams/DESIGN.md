@@ -13,7 +13,7 @@ doc: design
 
 A milestone's decisions are in its `ARCHITECTURE.md`, and today the board cannot show them. The
 detail panel's milestone tabs are `SPEC, VERIFICATION, RETROSPECTIVE, RUNS, FINDINGS`
-([DetailPanel.tsx:42-47](../../../ui/src/board/DetailPanel.tsx#L42)). This milestone adds **one tab,
+([DetailPanel.tsx:42-47](../../../../ui/src/board/DetailPanel.tsx#L42)). This milestone adds **one tab,
 ARCHITECTURE**. It renders the document the way every other doc tab does, and shows each ADR's
 diagram **inline, where the ADR links it**, as a figure the reader can take in at a glance. The
 page gets no new panel, viewer or chrome. A diagram is part of the reading flow of its ADR, not a
@@ -42,11 +42,11 @@ neutral: a hairline border, the card surface, and nothing that competes with it.
 
 | Fact | Where | Consequence |
 |---|---|---|
-| The doc tabs render `cleanDoc(body)` through `Markdown` (`marked`, GFM), with the provenance line as the region's first child | [DetailPanel.tsx:466-484](../../../ui/src/board/DetailPanel.tsx#L466), [DetailPanel.tsx:525-571](../../../ui/src/board/DetailPanel.tsx#L525) | ARCHITECTURE uses the SAME region, provenance line and `DocMarkdown`. It gets no bespoke layout. |
-| Absent is not an error: dashed `border-border` box, muted text | [DetailPanel.tsx:552-566](../../../ui/src/board/DetailPanel.tsx#L552) | An item with no `ARCHITECTURE.md` says `No ARCHITECTURE yet` in that box, like every other absent doc. |
-| The Records summary on a milestone's SPEC tab probes `SPEC, VERIFICATION, RETROSPECTIVE` | [DetailPanel.tsx:150-170](../../../ui/src/board/DetailPanel.tsx#L150), [DetailPanel.tsx:490-520](../../../ui/src/board/DetailPanel.tsx#L490) | The probe and the list gain `Architecture`, after `Spec / objective`, in the tab order. |
+| The doc tabs render `cleanDoc(body)` through `Markdown` (`marked`, GFM), with the provenance line as the region's first child | [DetailPanel.tsx:466-484](../../../../ui/src/board/DetailPanel.tsx#L466), [DetailPanel.tsx:525-571](../../../../ui/src/board/DetailPanel.tsx#L525) | ARCHITECTURE uses the SAME region, provenance line and `DocMarkdown`. It gets no bespoke layout. |
+| Absent is not an error: dashed `border-border` box, muted text | [DetailPanel.tsx:552-566](../../../../ui/src/board/DetailPanel.tsx#L552) | An item with no `ARCHITECTURE.md` says `No ARCHITECTURE yet` in that box, like every other absent doc. |
+| The Records summary on a milestone's SPEC tab probes `SPEC, VERIFICATION, RETROSPECTIVE` | [DetailPanel.tsx:150-170](../../../../ui/src/board/DetailPanel.tsx#L150), [DetailPanel.tsx:490-520](../../../../ui/src/board/DetailPanel.tsx#L490) | The probe and the list gain `Architecture`, after `Spec / objective`, in the tab order. |
 | A diagram arrives as an SVG body through `work:doc <ref> DIAGRAMS <member>` and is shown only as an `<img>` data URI | ARCHITECTURE ADR-007 §4 | The figure is an image: it scales as a whole, runs nothing, and uses local fallback fonts. |
-| Tokens | [index.css:3-25](../../../ui/src/index.css#L3) | Every colour below is an existing token. None is added. |
+| Tokens | [index.css:3-25](../../../../ui/src/index.css#L3) | Every colour below is an existing token. None is added. |
 
 ## Surface — the ARCHITECTURE tab
 
@@ -82,7 +82,7 @@ neutral: a hairline border, the card surface, and nothing that competes with it.
 | error | the dashed frame holding `Could not load diagram: <message>` in `text-sm text-accent`, the one tone the doc region already uses for a fault |
 
 **States (the tab):** loading, absent, error and populated are exactly the other doc tabs' four
-states ([DetailPanel.tsx:535-571](../../../ui/src/board/DetailPanel.tsx#L535)). A document with
+states ([DetailPanel.tsx:535-571](../../../../ui/src/board/DetailPanel.tsx#L535)). A document with
 zero diagrams is simply populated, with no empty-diagram notice. Most ADRs have no diagram, and
 saying so would be noise.
 
