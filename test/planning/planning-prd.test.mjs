@@ -12,12 +12,18 @@
 //                                        (the @manual shatter/origin scenarios
 //                                         and the @uat round-trip are verified
 //                                         later at aof:verify, not here)
+//
+// Story 139 task 03 (the last section) — shatter's own prompt contract after it lands its drivers in
+// the backlog: read from the SOURCE prompt by structure and token, never by whole sentences, plus
+// the one half of promote.md's contract and the tracked renders nothing else asserts on disk.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { discoverPrd, readSeam } from "../../src/planning-prd.mjs";
+import { loadBundle, renderBundleOutputs } from "../../src/work/bundle.mjs";
+import { hashContent } from "../../src/lock.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.resolve(
@@ -381,4 +387,132 @@ export const planningPrdTests = [
       }
     },
   },
+
+  // ------------------------------- 139/03 shatter lands its drivers in the backlog ---
+  // Scenario: the prompt reads the intake and works out no number
+  {
+    name: "shatter/139-03: the prompt reads the intake and works out no number",
+    run: async () => {
+      const text = await readPrompt("shatter.md");
+      const config = joined(section(text, "config"));
+      assert.ok(config.includes("`work.intake`"), "<config> names work.intake");
+      assert.match(config, /ABSENT `work\.intake` reads as `"stream"`/u, 'an absent key reads as "stream"');
+
+      const process = section(text, "process").split(/\r?\n/u);
+      for (const token of ["contiguous block", "NN_", "lower-numbered", "number the spike"]) {
+        assert.deepEqual(process.filter((line) => line.includes(token)), [], `no line of <process> contains ${JSON.stringify(token)}`);
+      }
+
+      const stepTwo = joined(step(text, 2));
+      assert.match(stepTwo, /PRD order/u, "step 2 orders the drivers in PRD order");
+      assert.match(stepTwo, /deciding one is `aof work promote`'s job/u, "…and names `aof work promote` as the verb that decides a number");
+    },
+  },
+
+  // Scenario: every driver is written into the backlog, under either intake
+  {
+    name: "shatter/139-03: every driver is written into the backlog, under either intake",
+    run: async () => {
+      const text = await readPrompt("shatter.md");
+      const stepThree = joined(step(text, 3));
+      assert.ok(stepThree.includes("`<work.dir>/backlog/[<group>/]<type>_<slug>/`"), "step 3 names the backlog folder");
+      assert.match(stepThree, /whatever `work\.intake` is set to/u, "…under either intake");
+      assert.match(stepThree, /bare `number:`/u, "the record doc carries a bare number:");
+      assert.match(stepThree, /no number prefix/u, "…and a heading with no number prefix");
+
+      const hint = text.split(/\r?\n/u).find((line) => line.startsWith("argument-hint:"));
+      assert.ok(hint?.includes("in <group/path>"), `the argument-hint offers in <group/path> (got ${hint})`);
+      // A defaulted group is a line that speaks of a group together with a default, or with the
+      // PRD's own name — the argument-hint's "PRD path" beside "<group/path>" is neither.
+      const defaulted = text.split(/\r?\n/u).filter((line) =>
+        /\bgroup\b/iu.test(line) && (/\bdefault/iu.test(line) || /PRD(?:'s)? (?:name|slug|title)|(?:after|for) the PRD/iu.test(line)));
+      assert.deepEqual(defaulted, [], "no line of the prompt names the PRD as a default group");
+      assert.match(joined(section(text, "config")), /none is invented when it is absent/u, "…and <config> says no group is invented");
+    },
+  },
+
+  // Scenario Outline: step 5 writes each kind of edge in its own form
+  ...[
+    { target: "another driver of the same shatter", tokens: [/driver of THIS shatter/u, /\*\*slug\*\*/u, /earlier in PRD order/u] },
+    { target: "an item already in the stream", tokens: [/already in the stream/u, /\*\*number\*\*/u] },
+    { target: "the spike a milestone waits on", tokens: [/spike's gate/u, /`depends: \[<spike-slug>\]`/u, /spike is placed \*\*before\*\*/u] },
+  ].map(({ target, tokens }) => ({
+    name: `shatter/139-03 outline: step 5 writes an edge to ${target} in its own form`,
+    run: async () => {
+      const stepFive = joined(step(await readPrompt("shatter.md"), 5));
+      for (const token of tokens) assert.match(stepFive, token, `step 5 carries ${token}`);
+    },
+  })),
+
+  // Scenario: the intake decides only whether the drivers stay
+  {
+    name: "shatter/139-03: the intake decides only whether the drivers stay",
+    run: async () => {
+      const text = await readPrompt("shatter.md");
+      assert.match(joined(step(text, 6)), /\*\*Check the graph\.\*\*/u, "guard: step 6 is the graph check");
+      const stepSeven = joined(step(text, 7));
+      assert.match(stepSeven, /`work\.intake: "backlog"` they STAY/u, 'under "backlog" the drivers stay');
+      assert.ok(stepSeven.includes("`aof:promote <slug>`"), "…and are scheduled with aof:promote <slug>");
+      assert.match(stepSeven, /Under `"stream"`/u, 'the "stream" branch is named');
+      assert.ok(stepSeven.includes("`aof work promote <slug> --json`"), "…which runs aof work promote <slug> --json");
+      assert.match(stepSeven, /every driver, in PRD order/u, "…over every driver, in PRD order");
+      assert.match(stepSeven, /refusal is a stop/u, "a promote refusal is a stop");
+      assert.match(stepSeven, /not yet promoted stay in the backlog/u, "…that leaves the remaining drivers in the backlog");
+    },
+  },
+
+  // Scenario: the promote prompt names the rewrite
+  {
+    name: "shatter/139-03: the promote prompt names the rewrite",
+    run: async () => {
+      const text = await readPrompt("promote.md");
+      const stepTwo = joined(step(text, 2));
+      assert.match(stepTwo, /rewrites the slug edges other backlog items hold on the promoted item/u, "step 2 says the verb rewrites the other backlog items' slug edges");
+      assert.match(stepTwo, /becomes its minted number/u, "…to the promoted item's minted number");
+      const tracking = joined(section(text, "progress_tracking"));
+      assert.match(tracking, /one write outside the promoted folder is the `depends:` lines/u, "<progress_tracking> names those depends: lines as the one write outside the folder");
+    },
+  },
+
+  // Scenario Outline: every tracked render of the promote prompt matches a fresh render
+  ...[
+    { rel: ".claude/commands/aof/promote.md", why: "`acd-bundle-manifest-hashes` hashes the re-render, never the disk" },
+    { rel: ".codex/skills/aof-promote/SKILL.md", why: "the same" },
+    { rel: ".opencode/commands/aof/promote.md", why: "the manifest holds no `.opencode/` entry at all" },
+  ].map(({ rel, why }) => ({
+    name: `shatter/139-03 outline: the tracked render ${rel} matches a fresh render (${why})`,
+    run: async () => {
+      const outputs = renderBundleOutputs(await loadBundle(), { runtimes: ["claude", "codex", "opencode"] });
+      const rendered = outputs.find((output) => String(output.path).split("\\").join("/") === rel);
+      assert.ok(rendered != null, `${rel} is in the render set`);
+      const onDisk = await readFile(path.join(REPO_ROOT, ...rel.split("/")), "utf8");
+      assert.equal(
+        hashContent(onDisk.replace(/\r\n/gu, "\n")),
+        hashContent(String(rendered.content).replace(/\r\n/gu, "\n")),
+        `${rel} matches its re-render from src/bundle/commands/promote.md`,
+      );
+    },
+  })),
 ];
+
+// ── 139/03 helpers ───────────────────────────────────────────────────────────────────────────
+const REPO_ROOT = path.resolve(here, "..", "..");
+const readPrompt = (name) => readFile(path.join(REPO_ROOT, "src", "bundle", "commands", name), "utf8");
+// Markdown wraps prose mid-phrase, so a clause is read over the lines joined.
+const joined = (text) => text.replace(/\r?\n\s*/gu, " ");
+
+// The text between `<tag>` and `</tag>` — one section of a prompt.
+function section(text, tag) {
+  const match = text.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "u"));
+  assert.ok(match, `guard: the prompt carries a <${tag}> section`);
+  return match[1];
+}
+
+// One numbered step of `<process>`: from its `N. **` heading to the next step's, or the section end.
+function step(text, number) {
+  const lines = section(text, "process").split(/\r?\n/u);
+  const start = lines.findIndex((line) => line.startsWith(`${number}. **`));
+  assert.ok(start >= 0, `guard: <process> carries step ${number}`);
+  const end = lines.findIndex((line, index) => index > start && /^\d+\. \*\*/u.test(line));
+  return lines.slice(start, end < 0 ? lines.length : end).join("\n");
+}

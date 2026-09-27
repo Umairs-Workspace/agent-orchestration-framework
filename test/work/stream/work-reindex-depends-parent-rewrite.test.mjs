@@ -7,10 +7,20 @@
 // for the exact rewritten `depends`/`parent` VALUE, which find/list --json do
 // not expose — by reading the referencing item's record-doc frontmatter line
 // directly, exactly as the feature's own litmus prescribes.
+//
+// Story 139 task 02's SHIFT legs land here too (the last section): the shift's per-entry rewriter
+// splits an entry into number and slug through the one all-digit predicate, so a digit-led slug
+// such as `10x-faster` is never shifted. They are driven through `aof work promote --at` over
+// 127/01's three-root fixture, as the contract names them, because a backlog slug edge only
+// exists beside a backlog.
 import assert from "node:assert/strict";
-import { findWork, validateWork } from "../../../src/work.mjs";
+import { readFile, rm } from "node:fs/promises";
+import path from "node:path";
+import { findWork, validateWork, loadWorkspace } from "../../../src/work.mjs";
 import { reindexForInsert } from "../../../src/work/reindex.mjs";
+import { invoke } from "../../../src/command-core.mjs";
 import { withWork, buildTopLevelStream, writeMilestoneItem, writeStoryItem, writeUatItem, readDocText } from "../../support/work-reindex-fixture.mjs";
+import { buildThreeRootFixture, writeItem } from "./work-backlog-archive-enumerate.test.mjs";
 
 const CONFIG = {};
 
@@ -199,4 +209,38 @@ export const workReindexDependsParentRewriteTests = [
         assert.equal(extractLine(foxtrotText, "depends"), "depends: [2]", "no top-level item's depends value changes");
       }),
   },
+
+  // ============================================================================
+  // 139 / 02_a-slug-is-never-read-as-a-number.feature — the shift legs
+  // ============================================================================
+
+  // Scenario Outline: the shift rewrites a number entry and leaves a slug entry alone
+  ...[
+    { before: "[10x-faster]", after: "depends: [10x-faster]", why: "a digit-led slug is a slug (headline — today `[11]`)" },
+    { before: "[10x-faster, 10]", after: "depends: [10x-faster, 11]", why: "the number beside it still shifts" },
+    { before: '["10x-faster"]', after: 'depends: ["10x-faster"]', why: "quoted, still a slug" },
+    { before: "[010]", after: "depends: [011]", why: "a padded number keeps its width, as delivered" },
+    { before: '["11"]', after: 'depends: ["12"]', why: "a quoted number is still a number" },
+    { before: "[10a]", after: "depends: [10a]", why: "not all digits, so never shifted" },
+  ].map(({ before, after, why }) => ({
+    name: `work-reindex/depends-parent: 139/02 the shift rewrites a number entry and leaves a slug alone — depends: ${before} (${why})`,
+    run: async () => {
+      const { root, work } = await buildThreeRootFixture();
+      try {
+        await writeItem(work, "backlog/milestone_10x-faster", { type: "milestone", slug: "10x-faster" });
+        await writeItem(work, "backlog/ideas/milestone_delta", { type: "milestone", slug: "delta", title: "Delta", depends: before });
+        const specPath = path.join(work, "backlog", "ideas", "milestone_delta", "SPEC.md");
+        const text = await readFile(specPath, "utf8");
+
+        const envelope = await invoke("work:promote", { slug: "gamma", at: 10, yes: true }, { workspace: await loadWorkspace(root) });
+        assert.equal(envelope.shifted, 2, "10 shifted to 11 and 11 to 12");
+
+        const rewritten = await readFile(specPath, "utf8");
+        assert.equal(extractLine(rewritten, "depends"), after, `that line reads ${after}`);
+        assert.equal(rewritten, text.replace(`depends: ${before}`, after), "…and it is the only line that moved");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  })),
 ];

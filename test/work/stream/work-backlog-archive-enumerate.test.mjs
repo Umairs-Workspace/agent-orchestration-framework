@@ -39,7 +39,7 @@ import {
   ARCHIVE_ROOT,
 } from "../../../src/work.mjs";
 import { doctorWork, buildSnapshot } from "../../../src/work/doctor.mjs";
-import { resolvedDependsEdges } from "../../../src/work/doctor-depends.mjs";
+import { resolvedDependsEdges, classifyDependsEdges } from "../../../src/work/doctor-depends.mjs";
 import { statusCoherenceGroup } from "../../../src/work/doctor-coherence.mjs";
 import { appendPosition } from "../../../src/work-promote/promotion.mjs";
 import { countShiftedByInsert, refsTouchedByInsert } from "../../../src/work/reindex.mjs";
@@ -1078,4 +1078,168 @@ export const workBacklogArchiveEnumerateTests = [
         assert.equal((await resolveMilestoneFolder({ cwd: root, ref: "milestone_delta" })).folder, "backlog/ideas/milestone_delta");
       }),
   },
+
+  // ============================================================================
+  // 139 / 01_validate-checks-a-backlog-slug-edge.feature
+  // ============================================================================
+
+  // Scenario Outline: a slug entry on a backlog row must name a backlog item
+  ...[
+    { source: "backlog/ideas/milestone_delta", depends: "[gamma]", finding: null, why: "a slug naming a backlog item — 127/01's row, still" },
+    { source: "backlog/chore_gamma", depends: "[delta, 05]", finding: null, why: "127/01's row, still — a number on a backlog row is not checked" },
+    { source: "backlog/ideas/milestone_delta", depends: "[99]", finding: null, why: "127/01's row, still" },
+    { source: "backlog/ideas/milestone_delta", depends: "[11]", finding: null, why: "127/01's row, still" },
+    { source: "backlog/ideas/milestone_delta", depends: "[epsilon]", finding: null, why: "a leaf two groups deep resolves" },
+    { source: "backlog/ideas/milestone_delta", depends: "[gama]", finding: backlogGeneric("gama"), why: "the typo a batch author makes (headline)" },
+    { source: "backlog/ideas/milestone_delta", depends: "[alpha]", finding: `depends "alpha" names no backlog item — "alpha" is 10 in the stream, so the edge is written 10`, why: "a live item is named by its number" },
+    { source: "backlog/ideas/milestone_delta", depends: "[zeta]", finding: `depends "zeta" names no backlog item — "zeta" is 05 in the stream, so the edge is written 05`, why: "an archived item too" },
+    { source: "backlog/ideas/milestone_delta", depends: "[alpha-one]", finding: backlogGeneric("alpha-one"), why: "a nested story is never a `depends:` target" },
+    { source: "backlog/ideas/milestone_delta", depends: "[Gamma]", finding: backlogGeneric("Gamma"), why: "exact is exact" },
+    { source: "backlog/ideas/later/spike_epsilon", depends: "[gamma, gama]", finding: backlogGeneric("gama"), why: "each entry is judged alone" },
+  ].map((row) => ({
+    name: `work/backlog-archive-enumerate: 139/01 outline ${row.source} declaring depends ${row.depends} → ${row.finding ? "one finding" : "nothing"} (${row.why})`,
+    run: () =>
+      withThreeRoots({}, async ({ work }) => {
+        const docPath = await declareBacklogDepends(work, row.source, row.depends);
+        const findings = await validateWork(work, {});
+        if (row.finding == null) assert.deepEqual(findings, [], `nothing reported (got ${JSON.stringify(findings)})`);
+        else assert.deepEqual(findings, [{ path: docPath, problem: row.finding }], "exactly one finding, filed at the source's record doc");
+      }),
+  })),
+
+  // Scenario: a cycle among backlog slug edges is reported once, at the backlog root
+  {
+    name: "work/backlog-archive-enumerate: 139/01 a cycle among backlog slug edges is reported once, at the backlog root",
+    run: () =>
+      withThreeRoots({}, async ({ root, work }) => {
+        await declareBacklogDepends(work, "backlog/ideas/milestone_delta", "[gamma]");
+        await declareBacklogDepends(work, "backlog/chore_gamma", "[epsilon]");
+        await declareBacklogDepends(work, "backlog/ideas/later/spike_epsilon", "[delta]");
+        const findings = await validateWork(work, {});
+        assert.deepEqual(
+          findings.filter((finding) => /^depends cycle:/.test(finding.problem)),
+          [{ path: path.join(work, "backlog"), problem: "depends cycle: delta → gamma → epsilon → delta" }],
+          `exactly one cycle finding, at <work>/backlog (got ${JSON.stringify(findings)})`,
+        );
+        const workspace = await loadWorkspace(root);
+        for (const slug of ["delta", "gamma", "epsilon"]) {
+          let code = null;
+          try {
+            await invoke("work:promote", { slug }, { workspace });
+          } catch (error) {
+            code = error.code;
+          }
+          assert.equal(code, "promote-depends-backlog", `promote ${slug} is refused promote-depends-backlog (got ${code})`);
+        }
+      }),
+  },
+
+  // Scenario Outline: a cycle is reported whatever the scope and whatever its length
+  ...[
+    { edges: [["backlog/ideas/milestone_delta", "[delta]"]], scope: "delta", cycle: "delta → delta", why: "a self-edge is a cycle of one" },
+    { edges: [["backlog/ideas/milestone_delta", "[gamma]"], ["backlog/chore_gamma", "[delta]"]], scope: "10", cycle: "delta → gamma → delta", why: "a stream-level fact survives a scoped run" },
+  ].map((row) => ({
+    name: `work/backlog-archive-enumerate: 139/01 outline a backlog cycle under scope ${row.scope} → depends cycle: ${row.cycle} (${row.why})`,
+    run: () =>
+      withThreeRoots({}, async ({ root, work }) => {
+        for (const [source, depends] of row.edges) await declareBacklogDepends(work, source, depends);
+        const cli = runCli(root, ["work", "validate", row.scope, "--json"]);
+        const findings = JSON.parse(cli.stdout).filter((finding) => /^depends cycle:/.test(finding.problem));
+        assert.equal(findings.length, 1, `one cycle finding (got ${cli.stdout})`);
+        assert.equal(findings[0].problem, `depends cycle: ${row.cycle}`);
+        assert.match(findings[0].path.replace(/\\/g, "/"), /(^|\/)wiki\/work\/backlog$/, `filed at <work>/backlog (got ${findings[0].path})`);
+      }),
+  })),
+
+  // Scenario: a resolved slug edge is not a scheduling edge
+  {
+    name: "work/backlog-archive-enumerate: 139/01 a resolved slug edge is not a scheduling edge",
+    run: () =>
+      withThreeRoots({}, async ({ root, work }) => {
+        const census = async () => {
+          const counts = classifyDependsEdges(await buildSnapshot(work, { projectRoot: root }));
+          return [counts.witnessed.length, counts.unwitnessed.length, counts.uncheckedType.length, counts.uncheckedUndeclared.length];
+        };
+        const nextBefore = runCli(root, ["work", "next", "--json"]);
+        const censusBefore = await census();
+
+        await declareBacklogDepends(work, "backlog/ideas/milestone_delta", "[gamma]");
+
+        const nextAfter = runCli(root, ["work", "next", "--json"]);
+        assert.equal(nextAfter.status, nextBefore.status, nextAfter.stderr);
+        assert.deepEqual(JSON.parse(nextAfter.stdout), JSON.parse(nextBefore.stdout), "next answers exactly what it answers without the edge");
+        assert.deepEqual(await census(), censusBefore, "the depends lane's four census counts are unchanged");
+      }),
+  },
+
+  // Scenario: a target leaves the backlog by promotion or by deletion, never by archiving
+  {
+    name: "work/backlog-archive-enumerate: 139/01 a target leaves the backlog by promotion or by deletion, never by archiving",
+    run: () =>
+      withThreeRoots({}, async ({ root, work }) => {
+        const docPath = await declareBacklogDepends(work, "backlog/ideas/milestone_delta", "[gamma]");
+        const workspace = await loadWorkspace(root);
+        const attempt = async (id, input) => {
+          try {
+            return { code: null, result: await invoke(id, input, { workspace }) };
+          } catch (error) {
+            return { code: error.code ?? null, message: String(error.message ?? ""), detail: error.detail ?? null };
+          }
+        };
+
+        const archived = await attempt("work:archive", { ref: "gamma" });
+        assert.equal(archived.code, "archive-backlog-ref", `archive gamma is refused archive-backlog-ref (got ${archived.code})`);
+        assert.ok(existsSync(path.join(work, "backlog", "chore_gamma", "CHORE.md")), "backlog/chore_gamma is still in the backlog");
+
+        await rm(path.join(work, "backlog", "chore_gamma"), { recursive: true, force: true });
+        assert.deepEqual(await validateWork(work, {}), [{ path: docPath, problem: backlogGeneric("gamma") }], "the generic dangling message naming gamma, at delta's SPEC");
+
+        const promoted = await attempt("work:promote", { slug: "delta" });
+        assert.equal(promoted.code, "promote-depends-unresolved", `promote delta is refused promote-depends-unresolved (got ${promoted.code})`);
+        assert.deepEqual(promoted.detail, { entries: [{ entry: "gamma", code: "promote-depends-unresolved" }] }, "naming gamma");
+      }),
+  },
+
+  // ============================================================================
+  // 139 / 02_a-slug-is-never-read-as-a-number.feature — the validate legs
+  // ============================================================================
+
+  // Scenario Outline: validate's numbered path neither resolves nor graphs a digit-led slug
+  ...[
+    { alpha: null, beta: "[10x-faster]", problems: [unresolvedTarget("10x-faster")], why: "today it resolves silently to 10" },
+    { alpha: "[11]", beta: "[10x-faster]", problems: [unresolvedTarget("10x-faster")], why: "today the graph gains a phantom 11 → 10 edge and reports 10 → 11 → 10" },
+    { alpha: "[11]", beta: "[10]", problems: ["depends cycle: 10 → 11 → 10"], why: "a real cycle is still reported" },
+  ].map((row) => ({
+    name: `work/backlog-archive-enumerate: 139/02 outline 10 depends ${row.alpha ?? "nothing"}, 11 depends ${row.beta} → ${row.problems.join("; ")} (${row.why})`,
+    run: () =>
+      withThreeRoots({ betaDepends: row.beta }, async ({ work }) => {
+        await writeItem(work, "backlog/milestone_10x-faster", { type: "milestone", slug: "10x-faster" });
+        if (row.alpha) await writeItem(work, "10_milestone_alpha", { type: "milestone", number: "10", slug: "alpha", status: "in-progress", title: "Alpha", depends: row.alpha });
+        const findings = await validateWork(work, {});
+        assert.deepEqual(findings.map((finding) => finding.problem), row.problems, `exactly these findings (got ${JSON.stringify(findings)})`);
+      }),
+  })),
 ];
+
+// ── 139 helpers ──────────────────────────────────────────────────────────────────────────────
+
+// The two messages 139/01 and 139/02 name, spelled once.
+function backlogGeneric(entry) {
+  return `depends "${entry}" names no backlog item — an edge to another backlog item is its slug, and an edge to a stream item is its number`;
+}
+function unresolvedTarget(entry) {
+  return `depends "${entry}" does not resolve to a top-level item (a milestone, uat gate, spike, chore, or parentless story)`;
+}
+
+// Rewrite one of the three backlog leaves with a `depends:` line, through the fixture's own writer so
+// the rest of the doc is the fixture's. Answers the record doc's path.
+const BACKLOG_LEAVES = {
+  "backlog/chore_gamma": { type: "chore", slug: "gamma", title: "Gamma" },
+  "backlog/ideas/milestone_delta": { type: "milestone", slug: "delta", title: "Delta" },
+  "backlog/ideas/later/spike_epsilon": { type: "spike", slug: "epsilon", title: "Epsilon" },
+};
+async function declareBacklogDepends(work, source, depends) {
+  const leaf = BACKLOG_LEAVES[source];
+  const dir = await writeItem(work, source, { ...leaf, depends });
+  return path.join(dir, RECORD_DOC[leaf.type]);
+}

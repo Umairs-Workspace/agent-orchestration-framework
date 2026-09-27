@@ -19,9 +19,12 @@ strategy (ADR-004).
 </objective>
 
 <config>
-Read `.aof/aof.config.json` → `work.dir`, `work.agents`. The **only** input is the PRD — the seam
-artifact. shatter is a `/work` command: it knows nothing about *how* the PRD was produced (which
-planner, which plugins, whether they're installed) — it just consumes the document.
+Read `.aof/aof.config.json` → `work.dir`, `work.agents`, `work.intake`. An ABSENT `work.intake`
+reads as `"stream"`, so an existing project is unchanged without a migration; only the exact string
+`"backlog"` selects the backlog. The **only** input is the PRD — the seam artifact. shatter is a
+`/work` command: it knows nothing about *how* the PRD was produced (which planner, which plugins,
+whether they're installed) — it just consumes the document. An optional group comes from the
+arguments (`in <group/path>`) and is a PATH and nothing more — none is invented when it is absent.
 
 1. **Resolve the PRD** per the `discoverPrd(workspaceDir, explicitPath)` rule in
    `src/planning-prd.mjs`: an explicit "$ARGUMENTS" path always wins (even an unprefixed one), else
@@ -63,37 +66,61 @@ the PRD:
      enough to *gate a milestone* — worth its own roadmap slot, a driver the milestone waits on. An
      unknown resolvable *inside* one milestone's own scope is **not** a spike — it is settled later by
      that milestone's `aof:refine` (its `aof-researcher → RESEARCH.md`), no top-level driver.
-   Number every driver as the next contiguous block in `work.dir` — continue the timeline, never
-   renumber existing items. Confirm the partition **and any milestone-vs-spike call** with the user
-   (`AskUserQuestion`) only for a genuine boundary/type ambiguity.
-3. **Frame each driver from its own template — milestone OR spike.**
-   - **Milestone** → one `SPEC.md` from the milestone template — `Objective`, `Scope` (in/out), an
-     **empty `## Stories`** ("to be broken down"), and `## Dependencies`.
-   - **Spike** → a `NN_spike_<slug>/SPIKE.md` from the spike template (`.aof/templates/work/spike/`),
+   **Order the drivers in PRD order** — the order the PRD delivers them in, with a spike placed
+   before the milestone it gates. Do NOT work out a stream number for any of them: there is none
+   yet, and deciding one is `aof work promote`'s job (41/ADR-002). Confirm the partition **and any
+   milestone-vs-spike call** with the user (`AskUserQuestion`) only for a genuine boundary/type
+   ambiguity.
+3. **Frame each driver from its own template — milestone OR spike — in the backlog.** Slug = kebab.
+   Each driver's folder is `<work.dir>/backlog/[<group>/]<type>_<slug>/` whatever `work.intake` is
+   set to — the backlog is where every driver of a shatter is written. Its record doc's frontmatter
+   carries a bare `number:` with NO value, and its heading is `# <Title>` with no number prefix; the
+   number and the prefix arrive together when the driver is promoted.
+   - **Milestone** → `milestone_<slug>/SPEC.md` from the milestone template
+     (`.aof/templates/work/milestone/`) — `Objective`, `Scope` (in/out), an **empty `## Stories`**
+     ("to be broken down"), and `## Dependencies`.
+   - **Spike** → `spike_<slug>/SPIKE.md` from the spike template (`.aof/templates/work/spike/`),
      frontmatter `type: spike` + `origin:` → the PRD: `## Question` (the unknown), `## Timebox`, and the
      empty `## Investigation`/`## Finding`/`## Outcome / Next` (filled when the spike runs, not now).
      **A spike groups no stories** — it is the actionable unit itself (ADR-001), so it has **no
      `stories/` and no `.feature`**.
-   **Frame only; do not break anything down** — a milestone's stories are `aof:refine <NN>` later, and
-   a spike is never broken down at all.
+   **Frame only; do not break anything down** — a milestone's stories are `aof:refine <NN>` once it
+   has a number, and a spike is never broken down at all.
 4. **Stamp origin.** Each driver's record doc (`SPEC.md` / `SPIKE.md`) frontmatter carries `origin:`
    pointing at the PRD it was shattered from — so every driver is traceable to its source. (Deeper
    provenance — which planner/sha wrote the PRD — lives with the PRD / planning layer, not here.)
    Reference the PRD; never restate it.
 5. **Author `depends` (why this command owns it).** This batch session sees all the new drivers at
-   once, so set the cross-driver edges now — **backward-only** (a driver depends only on
-   lower-numbered items, never forward; a backward edge to an *existing* milestone is fine, a forward
-   one is never authored). Put the **edge** in frontmatter `depends: [NN, …]` and the **rationale** in
-   the `## Dependencies` prose (edge = machine, prose = why; don't restate the number list in both).
-   **Wire each spike's gate:** the milestone that consumes a spike's finding carries the **backward-only**
-   `depends: [<spike-NN>]` to it — so number the spike **below** the milestone it gates (a spike is a
-   lower-numbered driver its consumer waits on), and the milestone's `## Dependencies` prose names *which
+   once, so set the cross-driver edges now — **backward-only in PRD order** (a driver depends only
+   on drivers EARLIER in PRD order, or on items already in the stream; a forward edge is never
+   authored). Each kind of edge is written in its own form:
+   - **to another driver of THIS shatter** → that driver's **slug** — `depends: [<slug>, …]` — and
+     only ever to one earlier in PRD order. It is an edge between two backlog items: promotion
+     refuses the dependent while its target is still in the backlog, and rewrites the slug to the
+     target's number the moment the target is promoted.
+   - **to an item already in the stream** → its **number**, exactly as it is written today.
+   Put the **edge** in frontmatter `depends:` and the **rationale** in the `## Dependencies` prose
+   (edge = machine, prose = why; don't restate the list in both).
+   **Wire each spike's gate:** the milestone that consumes a spike's finding carries the
+   **backward-only** slug edge `depends: [<spike-slug>]` to it — so the spike is placed **before**
+   the milestone it gates in PRD order, and the milestone's `## Dependencies` prose names *which
    finding* it waits on (the gate's why). A spike itself is usually a pure dependency (no forward
    `depends`). **Omit `depends` where a driver is independent** — absence means parallel-eligible.
 6. **Check the graph.** Self-verify the new `depends` edges all resolve (a spike is a first-class
    `depends` target, ADR-001/FF-3702) and the graph is **acyclic**; then run `aof:validate` over the new
-   drivers for the structural (folder ↔ frontmatter) checks. The validate **must report green before
-   finishing** — a red validate blocks the report; fix the roadmap (or flag a genuine blocker) first.
+   drivers. Validate checks the structure (folder ↔ frontmatter) AND the backlog's slug edges: each
+   one must name a backlog item, and together they must form no cycle — so the self-check is not
+   this prompt's alone. The validate **must report green before finishing** — a red validate blocks
+   the report; fix the roadmap (or flag a genuine blocker) first.
+7. **Then the intake decides whether the drivers stay.** Under `work.intake: "backlog"` they STAY:
+   the roadmap is a set of candidates, and each is scheduled later with `aof:promote <slug>` — one
+   at a time, in the order the operator chooses, which promotion keeps honest by refusing a driver
+   ahead of what it waits on and rewriting the slug edges as each target lands. Under `"stream"` (or
+   an absent key) run `aof work promote <slug> --json` over **every driver, in PRD order**, and
+   report each minted ref — the drivers land appended as one block, their slug edges rewritten to
+   numbers as each target is promoted. **A promote refusal is a stop**: report it, and the drivers
+   not yet promoted stay in the backlog where they were written; never work around it by editing
+   the tree or promoting out of order.
 </process>
 
 <guardrails>
@@ -113,10 +140,12 @@ the PRD:
 </guardrails>
 
 <output>
-Report: the PRD consumed (+ provenance), the drivers created (numbers + titles, each tagged
-**milestone** or **spike**), the `depends` graph (edges + their rationale, incl. each milestone→spike
-gate), and the validate result. Next, per milestone and in `depends` order: `aof:refine <NN>` to break
-it into stories, `aof:continue <NN>` to build and review it, `aof:verify <NN>` to accept it. A spike
-needs no refine — run the investigation, then `aof:verify <NN>`. (`aof:autonomous <range>` still drives
-the lot unattended, but it is deprecated in favour of loop engineering.)
+Report: the PRD consumed (+ provenance), the drivers created (slugs + titles in PRD order, each
+tagged **milestone** or **spike**, and — under `"stream"` — the ref each was minted), the `depends`
+graph (edges + their rationale, incl. each milestone→spike gate), and the validate result. Next,
+under `"backlog"`: `aof:promote <slug>` for each driver in PRD order as the operator schedules it,
+then the steps below. Under `"stream"`, per milestone and in `depends` order: `aof:refine <NN>` to
+break it into stories, `aof:continue <NN>` to build and review it, `aof:verify <NN>` to accept it. A
+spike needs no refine — run the investigation, then `aof:verify <NN>`. (`aof:autonomous <range>`
+still drives the lot unattended, but it is deprecated in favour of loop engineering.)
 </output>
