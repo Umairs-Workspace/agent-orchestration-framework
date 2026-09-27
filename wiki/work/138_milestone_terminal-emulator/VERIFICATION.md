@@ -834,3 +834,27 @@ clear   (a fullscreen launch held to 18.6 s, then /exit)   t=12437ms strikes={"c
 | F-17 | Gate run 1 (`3bd522d`): `claude-settings/03` pinned the operator's five top-level keys, and PR #1 (`28bbce2`) added `deniedMcpServers` and `disableClaudeAiConnectors` to the tracked `.claude/settings.json`. Red on `main`. | defect | blocker (gate) | inherited — repair | 43/03's suite | fixed at 138's door: the measured set re-pinned to seven, both new keys asserted byte-identical |
 | F-18 | Gate run 1: `autonomous-shell-out/black-box` timed out. Its PTY shim drew a bare `> ` after paste-ON, which the byte gate took as ready and the screen gate (138/00) never does, so the source-local loop waited out the 60 s cap. | defect | blocker (gate) | own — repair | 138/00 (the suite's shim draws claude's input box) | fixed at 138's door |
 | F-19 | Gate run 1: FF-12401 task 03's census read 306 considered against 313 authored. The seven are slug edges of the four backlog milestones `dc461e1` shattered, which validate resolves in its backlog slug graph (139), and which the doctor's depends lane, numeric by 139's ruling, never considers. | defect | blocker (gate) | inherited — repair | 124/00's suite (the identity excludes backlog slug edges, citing 139) | fixed at 138's door |
+
+## Accept decision
+
+**ACCEPTED, 2026-09-27, at `aof:verify 138`.**
+
+- **Stories:** 00, 01 and 02 were accepted, each on its own evidence above (`5c3786d`). 02's three
+  `@manual` legs were run on both nodes and re-read at the source at verify.
+- **Whole tree:** `aof work regression-gate 138` is **green** at `5c3786d` (`REGRESSION.md`, row 2).
+  Row 1 (`3bd522d`) was red on five cases, each attributed and repaired: F-16 (two cases), F-17,
+  F-18 and F-19.
+- **Controls:** FF-13801 and FF-13802 are green, each with a recorded red probe. FF-13802 has a
+  second probe, for F-03. `aof work doctor 138` reports no `control-unresolved` at either severity,
+  and `aof work validate 138` passes.
+- **Findings:** no blocker is open.
+  - Fixed: F-01, F-02 and F-03 (the build's and verify's blockers), and F-10 to F-19 (the lane's
+    and the gate's).
+  - Deferred: F-05, F-06 and F-09, as non-blockers routed to the backlog.
+  - Recorded as lessons: F-04, F-07 and F-08.
+- **Design conformance:** not applicable (no `DESIGN.md`, no UI surface).
+- **`@uat`:** none in scope.
+- **Operator rulings at this door:**
+  - F-03 fixed in 138 (ADR-002 §1 amended).
+  - 131 and 139 archived (F-15).
+  - The squash-merge backlog story folded in and discharged (F-16).

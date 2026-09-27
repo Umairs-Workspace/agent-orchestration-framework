@@ -3,7 +3,7 @@ type: milestone
 number: 138
 slug: terminal-emulator
 title: "The session driver sees claude's screen — a server-side terminal emulator beside node-pty"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-25
 updated: 2026-09-27

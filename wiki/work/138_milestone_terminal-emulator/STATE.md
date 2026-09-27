@@ -20,6 +20,10 @@ doc: state
   00's first task, not this refine's.
 - [x] Built 2026-09-27: 00 and 01 in-review (see Notes). 02's live legs passed on both nodes after
   two fixes, `d8d2230`. Next: `aof:verify 138`.
+- [x] Verified and accepted 2026-09-27 (`aof:verify 138`): 00, 01 and 02 accepted on their lanes
+  (`5c3786d`); the regression gate is green at `5c3786d` (REGRESSION.md, row 2) after row 1 was
+  red and attributed (F-16 to F-19). The milestone is `done`. Next: `aof work archive 138`, the
+  operator's act.
 
 ## Notes & decisions in flight
 
@@ -96,9 +100,8 @@ doc: state
     daemon is the same: restart it to pick up the tree.
   - **`npm ci` on the Mac worker after it pulls.** Until then it logs `screen-model-unavailable`
     once and runs the byte gate, which is ADR-001 §4 working.
-  - **The classic-renderer finding needs the operator's ruling** (VERIFICATION, 138/02). claude's
-    classic renderer draws the REPL on the normal buffer, and ADR-002 §1 requires the alternate
-    one. Routed `story (operator)`: accepting the box on either buffer amends ADR-002 §1.
+  - ~~**The classic-renderer finding needs the operator's ruling.**~~ Ruled at verify: fixed in 138
+    (F-03, `6227ef6`, ADR-002 §1 amended). It is not deployed yet: see OUTCOME's gaps.
 - **02 was built 2026-09-27 (`aof:continue 138 --solo`).**
   - The operator's `aof:continue 138` came after the merge. The phase reclaimed the stranded
     milestone run (`20260927T160008202Z-0002`, retry of `…-0001`).
@@ -112,77 +115,31 @@ doc: state
   - The first attempt (`06/02`) ran on a build without the fix and typed nothing.
   - The counted leg (`06/04`) cost $0.40, as measured: 8 turns and 5 tool calls.
 
-## Feedback (for retro)
+- **Rulings at verify, 2026-09-27 (`aof:verify 138`), each asked and answered in one line.**
+  - The classic renderer: "Fix in 138 now" (F-03).
+  - 131 and 139, done at the root: "Archive both" (F-15). A process held 131's folder in the
+    primary checkout, so the verb ran in a clean worktree. The operator asked that the leftover
+    empty folder be left for them to delete.
+  - The two squash-merge reds: "Fold the fix in" (F-16). The backlog story
+    `tree-checks-survive-a-squash-merge` is discharged and deleted.
 
-- **The snapshot carries `cols` (00/02, 00/03).** ADR-001 §1 lists `{ buffer, cursor, rows }`.
-  ADR-002 §1's "rules across all cols" cannot be read from right-trimmed rows, so the snapshot also
-  carries the width it was drawn at. The change is additive and the ruled keys are unchanged.
-- **`@xterm/headless` 6.0.0 gates `terminal.buffer` behind `allowProposedApi`.** Without it the
-  first snapshot throws. `screen.mjs` sets it, and says why.
-- **The door opens synchronously (00/03).** It is opened just before the spawn, as PLAN says, but it
-  does not await the model: chunks that arrive while the package loads wait in order. Awaiting the
-  load before the spawn would have moved the spawn for every one of the driver's 27 test dependents
-  on a process's first drive.
-- **00's declared write set was one file short.** `test/session/agent-session-driver-door.test.mjs`
-  holds ADR-015 §2's closed allowlist of test files that name the driver, and the two driver-driving
-  terminal suites and FF-13801 had to join it with a reason. The file was added to `files:` at
-  build. Two other controls outside the set caught design points and were answered in `src/`, not
-  by editing them:
-  - FF-6306 anchors on `containsNeedsInputSentinel`, so the bounded scan keeps that name.
-  - 129/02's abort row wants the stop's kill synchronous, so the door FREEZES the frame at the
-    decision instead of delaying the kill.
-- **Review close for 00 (solo, one round, no Blocker).** Two findings were fixed at the close:
-  - the door's open continuation now degrades to the byte gate rather than rejecting unhandled;
-  - the evidence suite asserts ruling 7's shared evidence object.
+## Feedback (for retro) — ARCHIVED at accept, 2026-09-27
 
-  Two Nits are recorded:
-  - The terminal suites' driven-PTY double (`screenPty`) repeats the drives suite's local
-    `emittingPty`. Both belong in `test/support/mesh-worker-terminal-fixture.mjs`.
-  - The driver grew about 90 lines (1,682 to 1,775) although its byte readers left. The verdict
-    switch and the evidence record are what came in.
-- **Review close for 01 (solo, one round, no Blocker).**
-  - The driver is untouched (ADR-006). The consent's navigation is the door's, and the cursor-key
-    mode is the model's snapshot.
-  - The live check named the theme picker `first-run` 655 ms after the spawn. Under 00 alone it
-    stopped at the 60 s cap.
-  - Nothing was fixed at the close, and nothing is routed. The test-double Nit recorded at 00 holds
-    for 01's suite too, which reuses 00's helpers.
-- **A transcript flake, not caused here.** `agent-session-driver-transcript`'s "any movement …
-  restarts the quiet stretch" is a real-fs mtime case. A poll tick already in flight reads the old
-  mtime while the case advances its virtual clock (129's F-77 race). Over the build it failed in 3
-  of 15 runs. The BASE, `4831f38` without 00, reproduces it: it failed in 1 of 12 runs, one of them
-  a combined run that the build passed. It reads `defaultWatchTranscriptCompletion`, which 00 does
-  not touch. Routed as a recorded finding: the case needs its tick to be quiescent before the bump.
-- **02: every recording came from a shell that declared a Unicode terminal (fixed in `d8d2230`).**
-  - 01's captures removed `WT_SESSION` but ran under Git Bash's `TERM=xterm-256color`. The driver
-    scrubs `TERM_PROGRAM` too.
-  - So from a PowerShell with neither, claude 2.1.283 drew `>` for `❯` and `√` for `✔`. The first
-    live drive then ran to the 60 s cap on a screen the registry knows.
-  - Lesson: a recording names the environment it was drawn in, and the launch declares the
-    terminal it emulates rather than inheriting the operator's.
-- **02: the WSL deploy stamped a failed install (fixed in `d8d2230`).** `deploy-wsl.sh` copied
-  `package.json` without `package-lock.json`, so `npm ci` refused. The script never checked the
-  failure and wrote the new lock's sha anyway, and `install-local` exited 0. Lesson: the first
-  dependency this deploy path ever carried was the first test of its reinstall branch.
-- **02: the contract's literal checks against what held.** These are for the PO at `aof:verify`.
-  - Background: 00 and 01 were `in-review`, not `done`.
-  - Task 01, ruling 3's `~/.claude.json` mtime: every live claude rewrites the file, so the check
-    is confounded rather than passed. The drive did not write it: the trust pre-write returns on an
-    already-trusted cwd.
-  - Task 01: `aof work loop` admits no story ref, so the loop leg drove fixture milestone 07.
-  - Task 02: the first user record opens with claude's `<pasted_content>` wrapper, with
-    `/aof:continue 06/04` as its first line inside.
-- **02: a concurrent session reinstalled the payload 4 s before the real leg.** It deployed from
-  the shared main checkout, which did not yet hold the fix. That voided task 02's first attempt,
-  which typed nothing. The re-run read the build stamp before and after. Recorded finding: live
-  legs on a shared checkout need their build pinned, or read at both ends.
-- **02: recorded, not fixed.**
-  - Under the SEA launcher, node-pty's console-list `fork()` re-enters the aof CLI, prints its
-    usage to stderr on every PTY kill, and waits out a 5 s fallback. This predates 138.
-  - `ensureWorktreeTrusted` ignores `CLAUDE_CONFIG_DIR`.
+The raw entries lived here and have graduated.
+- **The lessons** are `R<n>` entries in the retrospectives, one per story under
+  `stories/*/RETROSPECTIVE.md`, plus this milestone's `RETROSPECTIVE.md`.
+- **The defects and gaps** are the register rows `F-01` to `F-19` in `VERIFICATION.md`: the `TERM`
+  glyphs, the WSL lock, the classic renderer, the shared payload, the console-list agent, the trust
+  pre-write, the paste wrapper, the confounded mtime and the transcript flake.
+- **The design facts stayed in the code, where their readers are.** These are the snapshot's
+  `cols`, `allowProposedApi`, the synchronous door open, and the frame frozen at the decision. Each
+  is commented at its site in `src/terminal/`.
+- **The write-set miss** (the door suite's allowlist) is in 00's `files:`.
+- **Two review Nits stand as recorded, not as findings:** the driven-PTY double repeated between the
+  terminal and drives suites, and the driver's net +90 lines.
 
 ## Verification
 
-- [ ] `@executable` suite green
-- [ ] Fitness functions green
-- [ ] `@manual` signed off — see `UAT.md`
+- [x] `@executable` suite green (the regression gate, green at `5c3786d`)
+- [x] Fitness functions green (FF-13801, FF-13802, each with a red probe)
+- [x] `@manual` run and recorded in `VERIFICATION.md` (no `@uat` in scope)
