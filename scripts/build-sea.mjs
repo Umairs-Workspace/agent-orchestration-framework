@@ -46,6 +46,21 @@ import { generateAssetManifest } from "./sea-asset-manifest.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+// embeddedBuildId() — the id compiled into the bundle as `__AOF_EMBEDDED_BUILD_ID__`, so an
+// embedded run reports the code it actually runs (2026-09-27: a July bundle printed the payload's
+// September stamp for two months). install-local passes its payload's id as AOF_BUILD_ID, so a
+// launcher and the payload shipped with it carry one id; a bare build stamps git's own.
+function embeddedBuildId() {
+  if (typeof process.env.AOF_BUILD_ID === "string" && process.env.AOF_BUILD_ID.length > 0) return process.env.AOF_BUILD_ID;
+  try {
+    const sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
+    const dirty = execFileSync("git", ["status", "--porcelain"], { cwd: repoRoot, encoding: "utf8" }).trim().length > 0;
+    return `${sha}${dirty ? "+dirty" : ""}.${new Date().toISOString().replace(/[-:]/gu, "").slice(0, 15)}`;
+  } catch {
+    return null;
+  }
+}
+
 function parseArgs(argv) {
   const options = { out: path.join(repoRoot, "dist-sea"), skipMacosCodesign: false };
   for (let i = 0; i < argv.length; i += 1) {
@@ -184,6 +199,7 @@ async function main() {
       // ADR-003 seam), never `import`ed, so esbuild never sees them as
       // inputs — they ship as the sidecar this script copies below.
       external: ["node-pty"],
+      define: { __AOF_EMBEDDED_BUILD_ID__: JSON.stringify(embeddedBuildId()) },
       logLevel: "info",
     })
   );

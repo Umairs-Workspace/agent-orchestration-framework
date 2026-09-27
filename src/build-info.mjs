@@ -11,9 +11,9 @@
 //   - "embedded" — the SEA ran its compiled-in bundle (a release artefact, an
 //                  AOF_SEA_EMBEDDED=1 run, or a pre-payload install).
 //
-// The build id comes from BUILD_ID.json beside the exe, written by
+// A payload's build id comes from BUILD_ID.json beside the exe, written by
 // scripts/install-local.mjs at every payload/SEA install ({ buildId,
-// installedAt }). Absent-not-error: an old install has no stamp, and the answer
+// installedAt }); an embedded run's comes from the bundle itself (below). Absent-not-error: an old install has no stamp, and the answer
 // is then honestly "no build stamp", never a fabricated id. Anchored at
 // asset-base.mjs's sidecarAnchor() — the ONE exe-dir anchor every sidecar uses.
 import path from "node:path";
@@ -83,9 +83,12 @@ export function runtimeMode({ env = process.env } = {}) {
 
 // readBuildInfo({ env }) → { mode, buildId, installedAt }. In source mode the
 // buildId is the repo's own git hash (resolveSourceBuildId above — null without
-// git); installedAt is null. In a SEA the stamp file answers; an unstamped
-// install is null (absent-not-error, the packageVersionString degrade
-// discipline).
+// git); installedAt is null. In PAYLOAD mode the stamp file answers; an
+// unstamped install is null (absent-not-error, the packageVersionString degrade
+// discipline). In EMBEDDED mode the answer is the id compiled into the bundle
+// (sea-entry.mjs stamps it as AOF_EMBEDDED_BUILD_ID), never BUILD_ID.json: that
+// file describes the PAYLOAD, a different build, and reading it here is how a
+// July bundle reported a September id for two months (2026-09-27).
 export function readBuildInfo({ env = process.env } = {}) {
   const mode = runtimeMode({ env });
   let buildId = null;
@@ -93,7 +96,11 @@ export function readBuildInfo({ env = process.env } = {}) {
   if (mode === "source") {
     buildId = resolveSourceBuildId();
   }
-  if (isPackaged()) {
+  if (mode === "embedded") {
+    const embedded = env.AOF_EMBEDDED_BUILD_ID;
+    if (typeof embedded === "string" && embedded.length > 0) buildId = embedded;
+  }
+  if (mode === "payload") {
     try {
       const raw = JSON.parse(readFileSync(path.join(sidecarAnchor(), BUILD_ID_FILENAME), "utf8"));
       if (typeof raw?.buildId === "string" && raw.buildId.length > 0) buildId = raw.buildId;

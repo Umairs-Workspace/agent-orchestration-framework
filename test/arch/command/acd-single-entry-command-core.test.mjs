@@ -113,6 +113,20 @@ export const archTests = [
         /AOF_RUNTIME_MODE/.test(code),
         "the chosen mode is stamped (AOF_RUNTIME_MODE) so build-info/--version can report which code is running",
       );
+      // 2026-09-27 — a payload install passing through "absent" (install-local replacing src/) is
+      // never stood in for by the embedded bundle: the launcher waits for the payload, then refuses.
+      assert.ok(
+        /existsSync\(\s*payloadStampPath\s*\)/.test(code) && /path\.join\(\s*path\.dirname\(\s*process\.execPath\s*\)\s*,\s*["']BUILD_ID\.json["']\s*\)/.test(code),
+        "a payload install is recognised by its BUILD_ID.json stamp beside the exe",
+      );
+      assert.ok(
+        /payloadPresent\s*=\s*payloadReappears\(\s*payloadCliPath\s*\)/.test(code) && code.includes("Refusing to run this binary's embedded build"),
+        "a missing payload on a payload install is waited for, then refused loudly — never silently replaced by the embedded bundle",
+      );
+      assert.ok(
+        /process\.env\.AOF_EMBEDDED_BUILD_ID\s*=\s*EMBEDDED_BUILD_ID/.test(code),
+        "an embedded run stamps the bundle's own build id, so --version never borrows the payload's",
+      );
     },
   },
   {
