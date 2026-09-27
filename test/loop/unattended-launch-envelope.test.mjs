@@ -184,6 +184,7 @@ const BEFORE_ENV = Object.freeze({
   AOF_TERMINAL_SESSION: "fixed-terminal-session",
   AOF_TERMINAL_PROVIDER: "claude",
   ENABLE_PROMPT_CACHING_1H: "1",
+  TERM: "xterm-256color",
 });
 
 // The one long token is compared by digest rather than inline: a 1,044-character system

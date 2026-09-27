@@ -608,6 +608,12 @@ const DIRECTIVE_RESUBMIT_AFTER_MS = 20_000;
 // so what the model renders is what claude drew.
 const PTY_COLS = 80;
 const PTY_ROWS = 24;
+// The terminal the PTY is, and the one the screen model emulates. The spawn names it and the launch
+// env declares it as `TERM`: node-pty does the second itself off Windows only, and claude picks its
+// glyphs from it. Measured 2026-09-27 (138/02) on claude 2.1.283 under Windows: without `TERM` (the
+// scrub below removes `TERM_PROGRAM` too) claude draws `>` for `❯` and `√` for `✔`, so no registered
+// screen, the input box included, can ever be recognised.
+const PTY_NAME = "xterm-256color";
 // The Enter key is a CARRIAGE RETURN. F27b measured the alternative at the soak:
 // a trailing line feed enters the text and never submits it (it is Ctrl+J).
 const SUBMIT_KEY = String.fromCharCode(13);
@@ -825,6 +831,10 @@ export function resolveInteractiveDriverLaunch(driver, options = {}) {
   // seam, and for the same reason, as 68/01's OTel keys below. A window that silently
   // halves itself depending on how the account is billed is a window held by accident.
   sessionEnv.ENABLE_PROMPT_CACHING_1H = "1";
+  // 138/02 — the session's TERM is the PTY's own terminal, never the launching shell's. It is set
+  // AFTER the scrub for the same reason as the key above, and it replaces an inherited value, as
+  // node-pty already does off Windows: the parent's TERM names the parent's terminal.
+  sessionEnv.TERM = PTY_NAME;
   // 68/ADR-005 §2 (story 68/01) — the OTel spawn attribution, added AFTER the scrub so
   // the IDE-attachment removal above can never delete it (the scrub removes only
   // VSCODE_* / CLAUDE_CODE_SSE_PORT / TERM_PROGRAM* — the OTEL_* keys ride through
@@ -942,7 +952,7 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
   let term;
   try {
     term = await ptySpawn(launch.bin, launch.args, {
-      name: "xterm-256color",
+      name: PTY_NAME,
       cols: PTY_COLS,
       rows: PTY_ROWS,
       cwd: brief.worktreeCwd,

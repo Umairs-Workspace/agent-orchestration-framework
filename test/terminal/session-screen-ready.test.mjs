@@ -346,4 +346,26 @@ export const sessionScreenReadyTests = [
       assert.equal(stops.some((event) => event.phase === "directive-resubmitted"), false);
     },
   })),
+  {
+    // 138/02's live leg: from a shell with no TERM, claude 2.1.283 on Windows drew `>` for `❯`, so
+    // nothing on screen could be recognised and the drive ran to the cap. node-pty sets TERM from
+    // the spawn's `name` off Windows only, so the launch env carries it on every platform.
+    name: "138/02 — the session is told the terminal the model emulates: TERM is the PTY's name, whatever the launching shell's was",
+    run: async () => {
+      const spawned = [];
+      const { pty, spawn } = screenPty();
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: async (bin, args, options) => { spawned.push(options); return spawn(); },
+        which: createFakeWhich(["claude"]),
+        watchTranscriptSessionId: pendingWatch,
+        env: { PATH: "/stub/bin", TERM: "dumb", TERM_PROGRAM: "vscode" },
+      });
+      await waitUntil(() => spawned.length === 1 && pty.subscribed);
+      pty.exit(0);
+      await pending;
+      assert.equal(spawned[0].name, "xterm-256color", "the PTY is an xterm-256color, the terminal the model emulates");
+      assert.equal(spawned[0].env.TERM, spawned[0].name, "the session's TERM names the PTY, not the launching shell's `dumb`");
+      assert.equal(Object.hasOwn(spawned[0].env, "TERM_PROGRAM"), false, "the editor-attachment scrub still removes TERM_PROGRAM");
+    },
+  },
 ];
