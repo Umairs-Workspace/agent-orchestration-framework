@@ -5,7 +5,7 @@ slug: blocking-screens-are-named
 title: "Blocking screens are named — trust answered by standing consent, navigated on the screen, MCP approval, first-run and login failed by name within seconds, and the name carried to the loop's own output"
 parent: 138
 depends: ["00"]
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
@@ -90,11 +90,11 @@ What lands (ADR-003):
 
 ## Tasks
 
-- [ ] `tasks/00_three-screens-are-recorded-from-a-real-claude.feature` — `login` isolated; `trust` and `mcp-approval` operator-told, never approved, the projects entries removed; the arrow order measured live (`@manual`)
-- [ ] `tasks/01_the-registry-holds-the-six-v1-screens.feature` — the six in ADR-003's order; each recording claimed by its own entry; a quoted dialog above a live box is not a dialog
-- [ ] `tasks/02_trust-is-answered-and-the-rest-stop-by-name.feature` — arrows toward the option, each confirmed, then one Enter; unconfirmable navigation and returns fail; the other three stop within a frame, nothing typed
-- [ ] `tasks/03_the-screen-s-name-reaches-the-loop-s-own-output.feature` — `childDriveOutcome` checks the shape; the settle line; `screen=<id>` on both halt paths
-- [ ] `tasks/04_ff-13802-every-registered-screen-is-recorded.feature` — the control, its plants, its red probe, and `pending` retired
+- [x] `tasks/00_three-screens-are-recorded-from-a-real-claude.feature` — `login` isolated; `trust` and `mcp-approval` operator-told, never approved, the projects entries removed; the arrow order measured live (`@manual`)
+- [x] `tasks/01_the-registry-holds-the-six-v1-screens.feature` — the six in ADR-003's order; each recording claimed by its own entry; a quoted dialog above a live box is not a dialog
+- [x] `tasks/02_trust-is-answered-and-the-rest-stop-by-name.feature` — arrows toward the option, each confirmed, then one Enter; unconfirmable navigation and returns fail; the other three stop within a frame, nothing typed
+- [x] `tasks/03_the-screen-s-name-reaches-the-loop-s-own-output.feature` — `childDriveOutcome` checks the shape; the settle line; `screen=<id>` on both halt paths
+- [x] `tasks/04_ff-13802-every-registered-screen-is-recorded.feature` — the control, its plants, its red probe, and `pending` retired
 
 ## Notes
 

@@ -11,7 +11,7 @@ the file and run the control green again.
 | id | enforced by | result | red probe |
 |---|---|---|---|
 | FF-13801 | `test/arch/terminal/acd-screen-has-one-reader.test.mjs` | green, 6 cases (138/00, 2026-09-27) | Appended `const hasVisibleText = 0;` to the live `src/agent-session-driver.mjs` and ran the control alone: it went red with `no module but the model imports the emulator, the driver reads no screen, and only the door spells the markers` and `+ [ { file: 'src/agent-session-driver.mjs', spelling: 'hasVisibleText' } ] - []`. The backup was restored and `cmp` matched it, and the control ran green again. |
-| FF-13802 | `test/arch/terminal/acd-screen-registry-is-recorded.test.mjs` | pending (138/01) | — |
+| FF-13802 | `test/arch/terminal/acd-screen-registry-is-recorded.test.mjs` | green, 8 cases (138/01, 2026-09-27) | Set `trust`'s `option` in the live `src/terminal/claude-screens.mjs` to `Always trust this folder` and ran the control alone: it went red with `+ [ { entry: 'trust', fixture: 'trust.json', message: 'trust.json · trust · option absent from its menu', rule: 'option absent from its menu' } ]`. The backup was restored and `cmp` matched it, and the control ran green again. |
 
 ## 138/00 task 00 — the dependency lands approved, pinned, frozen and audited (`@manual`)
 
@@ -131,8 +131,8 @@ was typed.
 | fixture | how it was reached | chunks | duration | rendered frame |
 |---|---|---|---|---|
 | `login.json` | empty `CLAUDE_CONFIG_DIR`, one Enter on the theme picker | 9 | 573 ms | normal buffer: `Select login method:`, `❯ 1. Claude account with subscription · Pro, Max, Team, or Enterprise`, then the Console and 3rd-party rows |
-| `trust.json` | the operator's configured claude in a never-trusted scratch cwd, no key | 7 | 745 ms | normal buffer, between rules: `Accessing workspace:`, the scratch path, `Quick safety check: …`, `❯ No, exit`, `  Yes, I trust this folder`, `Enter to confirm · Esc to cancel` |
-| `mcp-approval.json` | a second scratch cwd whose `.mcp.json` names `probe-mcp` (`node -e process.exit(0)`), no key | 8 | 1,066 ms | normal buffer, dashed rules: `New MCP server found in this project: probe-mcp`, `Use this MCP server`, `Use this and all future MCP servers in this project`, `❯ Continue without using this MCP server` |
+| `trust.json` | the operator's configured claude in a never-trusted scratch cwd, no key | 7 | 745 ms | normal buffer, a solid rule on top: `Accessing workspace:`, the scratch path, `Quick safety check: …`, `❯ No, exit`, `  Yes, I trust this folder`, `Enter to confirm · Esc to cancel` |
+| `mcp-approval.json` | a second scratch cwd whose `.mcp.json` names `probe-mcp` (`node -e process.exit(0)`), no key | 8 | 1,066 ms | normal buffer, a solid rule on top: `New MCP server found in this project: probe-mcp`, `Use this MCP server`, `Use this and all future MCP servers in this project`, `❯ Continue without using this MCP server` |
 
 - **Scrubbed.** `trust.json` draws the scratch path. `Umair` became `Umami` and `umair` became
   `umami`, both same-length, so the frame renders the same. The private-terms check over every
@@ -174,3 +174,23 @@ was typed.
   - Afterwards the `projects` keys were 53,038. The one new key is another live session's lane,
     `…/.aof/mesh/dispatch-02-01` in another workspace, not the probe's. No key under the scratch
     root was added, and the scratch cwd is deleted.
+
+## 138/01 — the build's live check (PLAN.md, verification step)
+
+Run on 2026-09-27 against `claude 2.1.283` from a scratch directory, with zero tokens and no real
+config touched. The probe drove a real `claude` under an EMPTY `CLAUDE_CONFIG_DIR` through
+`driveInteractiveClaudeSession`, over the real node-pty spawn, the real door, the real model and
+the shipped registry. It used `observeReadiness`, `terminateTree`, `commandDelayMs` 5000 and
+`readyCapMs` 60000, and an isolated `AOF_GLOBAL_HOME`. As printed:
+
+```
+result: {"outcome":"failed","failureReason":"blocked_screen","screen":{"id":"first-run"},"sessionId":null} after 1453 ms
+writes to the PTY: []
+breadcrumbs: 655ms stop-requested blocked_screen | 1378ms tree-terminated | 1390ms pty-released | 1453ms exit-confirmed
+event: session-screen | 138/00-probe: failed/blocked_screen | screen normal rows=22 first="Welcome to Claude Code v2.1.283"
+```
+
+- The theme picker was named `first-run` 655 ms after the spawn, within seconds and not at the
+  60 s cap. Under 00 alone the same launch stopped at the cap as `screen-not-ready`.
+- Nothing was typed.
+- The one screen event is the frame as drawn.

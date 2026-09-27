@@ -140,7 +140,7 @@ and no Enter was sent where it would answer anything. The recordings are in
 |---|---|
 | trust dialog | normal buffer, a solid rule on top, `Accessing workspace:`, the path, `Quick safety check: …`, then the menu, then `Enter to confirm · Esc to cancel` |
 | trust menu | ` ❯ No, exit` (highlighted, the DEFAULT) above `   Yes, I trust this folder`, both unnumbered |
-| MCP dialog | normal buffer, dashed rules, `New MCP server found in this project: <name>`, three unnumbered options; the highlighted DEFAULT is `❯ Continue without using this MCP server` |
+| MCP dialog | normal buffer, a solid rule on top, `New MCP server found in this project: <name>`, three unnumbered options; the highlighted DEFAULT is `❯ Continue without using this MCP server` |
 | login screen | normal buffer, `Select login method:`, `❯ 1. Claude account with subscription …` highlighted |
 | cursor-key mode | no recording enables DECCKM (`CSI ?1h`), so an arrow is `CSI B` / `CSI A` |
 | one Down on the trust menu | highlights `❯ Yes, I trust this folder`, in a 78–81 byte redraw that moves `❯` from row 16 to row 17 (`CSI 16;2H` space, `CSI 17;2H ❯`) |

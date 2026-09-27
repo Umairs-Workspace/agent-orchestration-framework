@@ -118,6 +118,13 @@ doc: state
     `emittingPty`. Both belong in `test/support/mesh-worker-terminal-fixture.mjs`.
   - The driver grew about 90 lines (1,682 to 1,775) although its byte readers left. The verdict
     switch and the evidence record are what came in.
+- **Review close for 01 (solo, one round, no Blocker).**
+  - The driver is untouched (ADR-006). The consent's navigation is the door's, and the cursor-key
+    mode is the model's snapshot.
+  - The live check named the theme picker `first-run` 655 ms after the spawn. Under 00 alone it
+    stopped at the 60 s cap.
+  - Nothing was fixed at the close, and nothing is routed. The test-double Nit recorded at 00 holds
+    for 01's suite too, which reuses 00's helpers.
 - **A transcript flake, not caused here.** `agent-session-driver-transcript`'s "any movement …
   restarts the quiet stretch" is a real-fs mtime case. A poll tick already in flight reads the old
   mtime while the case advances its virtual clock (129's F-77 race). Over the build it failed in 3
