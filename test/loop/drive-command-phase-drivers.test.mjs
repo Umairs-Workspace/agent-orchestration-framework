@@ -31,6 +31,7 @@ import { answerAsk, askRequestPath, loopAsksDir, openAsk } from "../../src/loop/
 import { findWork } from "../../src/work.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
+import { stripComments } from "../support/source-slice.mjs";
 
 // The bracketed-paste protocol bytes, built here from char codes rather than
 // imported: they are a TERMINAL PROTOCOL constant (like the carriage return that
@@ -270,6 +271,27 @@ async function lane(overrides = {}) {
   return { answer, double };
 }
 
+// The dry-run drive composes `command` from the fixture's `work` config, read in-process and
+// off a REAL child process with that config on disk (129/07 task 02, 140/01).
+async function assertDriveComposes(phase, work, command) {
+  const fx = await fixture();
+  try {
+    const driver = scriptedDriver();
+    const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, ...work } } };
+    const byPhase = { refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand };
+    const result = await byPhase[phase].run({ ref: "03/01", dryRun: true }, { workspace, agentSessionDriverOptions: driver.options });
+    assert.deepEqual(result, { ref: "03/01", phase, command });
+    assert.equal(driver.spawnCalls.length, 0);
+    await mkdir(path.dirname(fx.workspace.configPath), { recursive: true });
+    await writeFile(fx.workspace.configPath, `${JSON.stringify({ name: "drive-fixture", work: workspace.config.work }, null, 2)}\n`, "utf8");
+    const child = spawnSyncHardened(process.execPath, [ENTRY, "work", "drive", phase, "03/01", "--dry-run", "--json"], { cwd: fx.projectRoot, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME ?? await mkdtemp(path.join(tmpdir(), "aof-drive-home-")) } });
+    assert.equal(child.status, 0, `the child exited 0: ${child.stderr}`);
+    assert.equal(JSON.parse(child.stdout).command, command, "the real CLI composes the same command");
+  } finally {
+    await fx.cleanup();
+  }
+}
+
 export const driveCommandPhaseDriverTests = [
   {
     name: "loop phase drivers — each command spawns once and types only its own phase directive",
@@ -323,7 +345,7 @@ export const driveCommandPhaseDriverTests = [
           { ref: "03/01", dryRun: true },
           { workspace: fx.workspace, agentSessionDriverOptions: driver.options },
         );
-        assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01" });
+        assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo" });
         assert.equal(driver.spawnCalls.length, 0);
       } finally {
         await fx.cleanup();
@@ -376,7 +398,7 @@ export const driveCommandPhaseDriverTests = [
         assert.deepEqual(result, {
           ref: "03/01",
           phase: "continue",
-          command: "/aof:continue 03/01",
+          command: "/aof:continue 03/01 --solo",
           outcome: "done",
           sessionId: "session-default-watch",
           // 129/02 (ADR-005 §2) — every real drive reports the baseline its launch took.
@@ -864,7 +886,7 @@ export const driveCommandPhaseDriverTests = [
           { ref: "03/01", run: "r1", fix: F },
           { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() },
         );
-        const expected = composeFixInput("/aof:continue 03/01", { findings: bag.findings, changeUnderReview: bag.changeUnderReview });
+        const expected = composeFixInput("/aof:continue 03/01 --solo", { findings: bag.findings, changeUnderReview: bag.changeUnderReview });
         const typed = driver.typed[0];
         assert.ok(typed.startsWith(expected), `the brief command equals composeFixInput(...) (the compiled phase brief follows it)\n--- typed ---\n${typed.slice(0, expected.length + 40)}`);
         const findings = typed.indexOf("## REVIEW FINDINGS");
@@ -1039,7 +1061,7 @@ export const driveCommandPhaseDriverTests = [
         assert.deepEqual(result, {
           ref: "03/01",
           phase: "continue",
-          command: "/aof:continue 03/01",
+          command: "/aof:continue 03/01 --solo",
           outcome: "done",
           sessionId: "sess-1",
           settlementContext: coldSettlement(fx),
@@ -1060,7 +1082,7 @@ export const driveCommandPhaseDriverTests = [
             { ref: "03/01", dryRun: true, ...extra },
             { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() },
           );
-          assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01" }, `dry-run ${JSON.stringify(extra)}`);
+          assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo" }, `dry-run ${JSON.stringify(extra)}`);
           assert.equal(driver.spawnCalls.length, 0, `dry-run ${JSON.stringify(extra)}: never launched`);
           const item = await resolveItemExact({ workspace: fx.workspace }, "03/01");
           assert.deepEqual(await readRuns(item), [], `dry-run ${JSON.stringify(extra)}: no record`);
@@ -1125,7 +1147,7 @@ export const driveCommandPhaseDriverTests = [
           assert.deepEqual(result, {
             ref: "03/01",
             phase,
-            command: `/aof:${phase} 03/01`,
+            command: phase === "verify" ? "/aof:verify 03/01" : `/aof:${phase} 03/01 --solo`,
             outcome: "failed",
             failureReason: "cancelled",
             sessionId: "sess-1",
@@ -1591,40 +1613,47 @@ export const driveCommandPhaseDriverTests = [
   // ── 129/07 task 02 — the drive carries the phase mode ────────────────────────
   //
   // `…/07_story_the-loop-settings-are-self-contained/tasks/02_the-drive-carries-the-phase-mode.feature`.
-  // The flag is composed from `work.loop.agents.<phase>.mode` through the bounds home; unset is
-  // byte-identical to HEAD (no flag), so the prompt's own `work.agents.mode` read is the fallback.
+  // The flag is composed from `work.loop.agents.<phase>.mode` through the bounds home. The rows
+  // here are the ones a SET key answers. 129/07's unset rows (no flag) are superseded by
+  // 140/01, whose own table follows: an unset key composes the phase's default, `--solo`.
   ...[
-    ["refine", {}, "/aof:refine 03/01"],
     ["refine", { loop: { agents: { refine: { mode: "solo" } } } }, "/aof:refine 03/01 --solo"],
     ["refine", { loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
-    ["refine", { loop: { agents: { continue: { mode: "solo" } } } }, "/aof:refine 03/01"],
     ["continue", { loop: { agents: { continue: { mode: "solo" } } } }, "/aof:continue 03/01 --solo"],
-    ["continue", { loop: { agents: { refine: { mode: "solo" } } } }, "/aof:continue 03/01"],
-    ["continue", { loop: { agents: { continue: { mode: "Solo" } } } }, "/aof:continue 03/01"],
-    ["continue", { agents: { mode: "solo" } }, "/aof:continue 03/01"],
     ["verify", { loop: { agents: { continue: { mode: "solo" } } } }, "/aof:verify 03/01"],
   ].map(([phase, work, command]) => ({
-    name: `129/07 task02 the phase drive composes the flag from the loop key, and nothing when unset [${phase}, ${JSON.stringify(work)} → ${command}]`,
-    async run() {
-      const fx = await fixture();
-      try {
-        const driver = scriptedDriver();
-        const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, ...work } } };
-        const byPhase = { refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand };
-        const result = await byPhase[phase].run({ ref: "03/01", dryRun: true }, { workspace, agentSessionDriverOptions: driver.options });
-        assert.deepEqual(result, { ref: "03/01", phase, command });
-        assert.equal(driver.spawnCalls.length, 0);
-        // …and off a REAL child process, the config on disk: the CLI composes the same command.
-        await mkdir(path.dirname(fx.workspace.configPath), { recursive: true });
-        await writeFile(fx.workspace.configPath, `${JSON.stringify({ name: "drive-fixture", work: workspace.config.work }, null, 2)}\n`, "utf8");
-        const child = spawnSyncHardened(process.execPath, [ENTRY, "work", "drive", phase, "03/01", "--dry-run", "--json"], { cwd: fx.projectRoot, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME ?? await mkdtemp(path.join(tmpdir(), "aof-drive-home-")) } });
-        assert.equal(child.status, 0, `the child exited 0: ${child.stderr}`);
-        assert.equal(JSON.parse(child.stdout).command, command, "the real CLI composes the same command");
-      } finally {
-        await fx.cleanup();
-      }
-    },
+    name: `129/07 task02 the phase drive composes the flag from the loop key [${phase}, ${JSON.stringify(work)} → ${command}]`,
+    run: () => assertDriveComposes(phase, work, command),
   })),
+  // ── 140/01 — the loop drives both phases solo ─────────────────────────────────
+  //
+  // `140_story_refine-defaults-to-solo/tasks/01_the-loop-drives-both-phases-solo.feature`. An
+  // unset `work.loop.agents.<phase>.mode` composes the phase's default (`--solo`), never nothing,
+  // and `work.agents.mode` is never read by the loop.
+  ...[
+    ["refine", {}, "/aof:refine 03/01 --solo"],
+    ["refine", { loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
+    ["refine", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --solo"],
+    ["refine", { agents: { mode: "orchestrated" } }, "/aof:refine 03/01 --solo"],
+    ["continue", {}, "/aof:continue 03/01 --solo"],
+    ["continue", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:continue 03/01 --orchestrated"],
+    ["continue", { loop: { agents: { continue: { mode: "Solo" } } } }, "/aof:continue 03/01 --solo"],
+    ["continue", { agents: { mode: "orchestrated" } }, "/aof:continue 03/01 --solo"],
+    ["verify", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:verify 03/01"],
+  ].map(([phase, work, command]) => ({
+    name: `140/01 the phase drive composes a flag for every refine and continue it drives [${phase}, ${JSON.stringify(work)} → ${command}]`,
+    run: () => assertDriveComposes(phase, work, command),
+  })),
+  {
+    name: "140/01 the drive spells no mode of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS",
+    async run() {
+      const drive = stripComments(await readFile(new URL("../../src/commands/drive.mjs", import.meta.url), "utf8"));
+      const flagsLine = drive.split(/\r?\n/u).filter((line) => line.includes("PHASE_MODE_FLAGS = Object.freeze("));
+      assert.equal(flagsLine.length, 1, "the flag map is declared on one line");
+      const outside = drive.split(flagsLine[0]).join("");
+      assert.doesNotMatch(outside, /["'`](?:solo|orchestrated)["'`]/u, "no mode literal outside PHASE_MODE_FLAGS — the default is the bounds home's");
+    },
+  },
   {
     name: "129/07 task02 the two phases are independent — refine solo, continue orchestrated, under a solo workspace",
     async run() {

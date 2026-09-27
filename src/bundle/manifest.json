@@ -489,7 +489,7 @@
         "id": "autonomous",
         "kind": "command"
       },
-      "hash": "sha256:b7c7a74fc3546cc31457c23c6e0ded1f75e4a012e3bfa1913d12875f13cfb14c"
+      "hash": "sha256:c8704c8ddd5a7f648b1079030682add075dd45230ba09ed5dd6118be76db9c89"
     },
     {
       "path": ".claude/commands/aof/code-review.md",
@@ -507,7 +507,7 @@
         "id": "continue",
         "kind": "command"
       },
-      "hash": "sha256:b85465daf11f5a087caa5f59e9c8f9f6c89ca3e20f1ab50d96bb68115e6493df"
+      "hash": "sha256:cf01622dfe91472833e6a02e03f559f05a24d89fe91a0f27fd894c1bb82565dc"
     },
     {
       "path": ".claude/commands/aof/delegate.md",
@@ -624,7 +624,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:09171bff0c8dc7f16edb0b60a9c9954c63139a0f8a40ddb8c1a32ed55e53074f"
+      "hash": "sha256:b6071a6fb4ae2ae60934ba8b0a02c15065040202814927b230e03cb1b5963a51"
     },
     {
       "path": ".claude/commands/aof/retrospective.md",
@@ -867,7 +867,7 @@
         "id": "aof-autonomous",
         "kind": "skill"
       },
-      "hash": "sha256:ccadbc07988e31adf0b1d5a88819ad186a1ea90d163e701bd1eee76249cada13"
+      "hash": "sha256:e72b6c1622c8e2630bc33138a72a8e5f179c156fc891f432c2bbe98a34a9c1f7"
     },
     {
       "path": ".codex/skills/aof-code-review/SKILL.md",
@@ -885,7 +885,7 @@
         "id": "aof-continue",
         "kind": "skill"
       },
-      "hash": "sha256:a8ca73f93cd3eab8f582395a620418a325aa55ba03f25969018de3a5b40aac60"
+      "hash": "sha256:5ed3344c5e09edf26925ff3870e73bb04401db3a7218d138dbdea617ae03f0f0"
     },
     {
       "path": ".codex/skills/aof-delegate/SKILL.md",
@@ -1002,7 +1002,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:35d99efc973419621d6cb7ab4fe9bba3ad51e06ca81bebe4312083153c62f696"
+      "hash": "sha256:d8306aa2aa8776437aa5db61716c5a26246fb18e9260af3623047988ff3376ab"
     },
     {
       "path": ".codex/skills/aof-retrospective/SKILL.md",

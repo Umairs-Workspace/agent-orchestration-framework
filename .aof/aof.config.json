@@ -5,7 +5,6 @@
     "dir": "./wiki/work",
     "intake": "backlog",
     "agents": {
-      "mode": "orchestrated",
       "productOwner": "inline"
     },
     "codeReview": {
@@ -95,14 +94,6 @@
     },
     "loop": {
       "concurrency": "refine_first",
-      "agents": {
-        "refine": {
-          "mode": "orchestrated"
-        },
-        "continue": {
-          "mode": "solo"
-        }
-      },
       "startToCloseMs": 14400000,
       "scheduleToCloseMs": 43200000
     },

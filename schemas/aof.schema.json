@@ -362,7 +362,7 @@
           "properties": {
             "mode": {
               "enum": ["orchestrated", "solo"],
-              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline."
+              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline. An unset key resolves to each command's own default: refine runs solo, and every other role-spawning command runs orchestrated. Governs the sessions an operator types only: a loop-driven session reads work.loop.agents.<phase>.mode, never this key."
             },
             "productOwner": {
               "enum": ["inline", "agent"],

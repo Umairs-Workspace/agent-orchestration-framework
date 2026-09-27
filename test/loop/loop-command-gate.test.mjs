@@ -27,13 +27,13 @@ export const loopCommandGateTests = [
         let continues = 0;
         const driver = completingDriver(fx, {
           onCommand(command) {
-            if (command === "/aof:continue 03/01" && ++continues === 2) writeFileSync(feature, validFeature);
+            if (command === "/aof:continue 03/01 --solo" && ++continues === 2) writeFileSync(feature, validFeature);
             if (command === "/aof:verify 03/01") replaceStatus(path.join(fx.storyDir, "STORY.md"), "done");
             if (command === "/aof:verify 03") replaceStatus(path.join(fx.milestoneDir, "SPEC.md"), "done");
           },
         });
         const state = await runLoopBody({ scope: "03" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: () => {} });
-        assert.deepEqual(driver.typed.slice(0, 3).map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01", "/aof:continue 03/01", "/aof:verify 03/01"]);
+        assert.deepEqual(driver.typed.slice(0, 3).map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01 --solo", "/aof:continue 03/01 --solo", "/aof:verify 03/01"]);
         assert.deepEqual(state.driven.filter((row) => row.phase === "continue").map((row) => row.cycle), [1, 2]);
         assert.equal(state.state, "done");
       } finally {
@@ -49,7 +49,7 @@ export const loopCommandGateTests = [
         writeFileSync(path.join(fx.storyDir, "tasks", "00_ready.feature"), invalidFeature);
         const driver = completingDriver(fx);
         const state = await runLoopBody({ scope: "03" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: () => {} });
-        assert.deepEqual(driver.typed.map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01", "/aof:continue 03/01"]);
+        assert.deepEqual(driver.typed.map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01 --solo", "/aof:continue 03/01 --solo"]);
         assert.equal(state.state, "halted");
         assert.equal(state.cap, 3, "the engine cap remains a separate value");
         assert.equal(state.act.stop, "cap-exhausted");

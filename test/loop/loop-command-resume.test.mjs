@@ -83,7 +83,7 @@ export const loopCommandResumeTests = [
         assert.equal(prior.state, "failed");
         assert.equal(prior.failureReason, "runtime_offline");
         assert.ok(prior.reclaimedAt);
-        assert.equal(driver.typed[0].split("\n\n")[0], "/aof:continue 03/01", "resume re-asked work:next instead of restoring a phase pointer (the directive leads its first input)");
+        assert.equal(driver.typed[0].split("\n\n")[0], "/aof:continue 03/01 --solo", "resume re-asked work:next instead of restoring a phase pointer (the directive leads its first input)");
         assert.equal(state.state, "done");
       } finally {
         await fx.cleanup();

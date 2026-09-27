@@ -278,7 +278,7 @@ export const loopGateCostLadderTests = [
         // continue).
         assert.deepEqual(
           driver.typed.map((typed) => typed.split("\n\n")[0]).slice(0, 2),
-          ["/aof:continue 03/01", "/aof:verify 03/01"],
+          ["/aof:continue 03/01 --solo", "/aof:verify 03/01"],
           "the loop drives verify for that story without asking work:next for a fresh decision",
         );
         assert.equal(state.state, "done");

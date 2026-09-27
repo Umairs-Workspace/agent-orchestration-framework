@@ -57,7 +57,8 @@ export const NUMERIC_LOOP_KEYS = Object.freeze([
   "work.loop.progressMaxResets",
 ]);
 // THE THREE OF 129/07 — the loop's own lane bound and per-phase modes, each answering null when
-// unset (inherit the workspace twin); pinned here for the same reason the eight are.
+// unset (the lane bound inherits its workspace twin; a mode takes its phase's default at the phase
+// level, 140); pinned here for the same reason the eight are.
 export const SELF_CONTAINED_LOOP_KEYS = Object.freeze([
   "work.loop.dispatch.concurrency",
   "work.loop.agents.refine.mode",
@@ -210,7 +211,8 @@ export const archTests = [
       assert.equal(loopBounds.resolveLoopConcurrency(undefined), "sequential", "unset is sequential");
 
       // 129/07 — the three self-contained keys map to the leaf's own resolvers by identity, sit
-      // AFTER the mode in the declared order, and answer null when unset (inherit the twin).
+      // AFTER the mode in the declared order, and answer null when unset (140: a mode's default is
+      // the phase's, applied by `loopAgentModeFromConfig`, never the key resolver's).
       assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(9), [...SELF_CONTAINED_LOOP_KEYS], "the three are appended after the mode, in order");
       assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(9), [...SELF_CONTAINED_LOOP_KEYS], "…in both maps");
       assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS["work.loop.dispatch.concurrency"], loopBounds.resolveLoopDispatchConcurrency, "the lane bound's value resolver by identity");
@@ -220,7 +222,7 @@ export const archTests = [
       assert.equal(loopBounds.LOOP_BOUND_CONFIG_RESOLVERS["work.loop.agents.refine.mode"], loopBounds.loopAgentRefineModeFromConfig, "…and the refine config resolver");
       assert.equal(loopBounds.LOOP_BOUND_CONFIG_RESOLVERS["work.loop.agents.continue.mode"], loopBounds.loopAgentContinueModeFromConfig, "…and the continue config resolver");
       for (const key of SELF_CONTAINED_LOOP_KEYS) {
-        assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS[key](undefined), null, `${key}: unset answers null — inherit the workspace twin, never a number or a mode of its own`);
+        assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS[key](undefined), null, `${key}: unset answers null at the key — the lane bound inherits its workspace twin and a mode its phase's default, neither resolved here`);
       }
       assert.equal(loopBounds.rangeProbe("work.loop.dispatch.concurrency", 2).admissible, true, "a positive integer lane bound is admissible");
       assert.equal(loopBounds.rangeProbe("work.loop.dispatch.concurrency", 0).admissible, false, "zero is not");

@@ -95,9 +95,10 @@ export function composeFixInput(command, { findings = [], changeUnderReview = ""
 
 // 129/07 (ADR-001 §5, amended) — the phase's role mode, composed from the loop's OWN key
 // `work.loop.agents.<phase>.mode` through the bounds home: `solo` → `--solo`, `orchestrated` →
-// `--orchestrated` (the twin the prompts gained in the same story), and `null` (unset, or a
-// phase that resolves no mode — `verify`) → no flag, byte-identical to HEAD, so the prompt's own
-// read of `work.agents.mode` is the fallback. The drive never reads the workspace twin.
+// `--orchestrated` (the twin the prompts gained in the same story). An unset key answers the
+// phase's own default from the bounds home (140: `solo` for refine and continue), so every
+// refine and continue the loop drives carries a flag; only `null` — a phase that resolves no
+// mode, `verify` — composes none. The drive never reads the workspace twin `work.agents.mode`.
 export const PHASE_MODE_FLAGS = Object.freeze({ solo: "--solo", orchestrated: "--orchestrated" });
 
 export function phaseCommand(phase, ref, mode = null) {

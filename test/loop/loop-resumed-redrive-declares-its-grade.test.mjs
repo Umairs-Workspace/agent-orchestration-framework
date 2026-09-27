@@ -101,7 +101,7 @@ async function seedInterrupted(fx, { cap = 3, grade = null, baseline = CLEAN_BAS
 function resumingDriver(fx, spawn, seen) {
   return completingDriver(fx, {
     onCommand(command) {
-      if (command === "/aof:continue 03/01") {
+      if (command === "/aof:continue 03/01 --solo") {
         seen.launchesWhenRedriveStarted ??= spawn.calls.length;
         writeFileSync(featurePath(fx), VALID_FEATURE);
       }

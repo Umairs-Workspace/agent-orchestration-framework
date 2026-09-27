@@ -60,7 +60,7 @@ export const loopCommandReconcileTests = [
     run: async () => {
       await withLaneRepo(async (fx) => {
         const driver = primaryDriver(fx, { onCommand: async (command) => {
-          if (command === "/aof:refine 07/02") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_ready.feature"), "@executable\nFeature: R\n  Scenario: r\n    Given a\n    When b\n    Then c\n", "utf8");
+          if (command === "/aof:refine 07/02 --solo") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_ready.feature"), "@executable\nFeature: R\n  Scenario: r\n    Given a\n    When b\n    Then c\n", "utf8");
           await verifyCompleter(fx)(command);
         } });
         const child = fakeLaneChild(fx);
@@ -68,9 +68,9 @@ export const loopCommandReconcileTests = [
         const { state, report } = await runLoop(fx, { child, driver });
         assert.equal(state.state, "done", report.lines.join("\n"));
         const { refines } = phasesOf(report, driver);
-        assert.deepEqual(refines, ["/aof:refine 07/02"], "the first drive is refine on 07/02, in the primary, through the driver seam");
+        assert.deepEqual(refines, ["/aof:refine 07/02 --solo"], "the first drive is refine on 07/02, in the primary, through the driver seam");
         assert.equal(child.calls.some((c) => c.phase === "refine"), false, "…never through spawnLaneDrive");
-        assert.equal(driver.directives()[0], "/aof:refine 07/02");
+        assert.equal(driver.directives()[0], "/aof:refine 07/02 --solo");
         const log = (await git(["log", "--format=%H %s", `${before}..main`], fx.root)).stdout.trim().split("\n").reverse();
         const refineCommit = log.find((line) => line.endsWith("aof(loop): refine 07"));
         assert.ok(refineCommit, `the primary gained aof(loop): refine 07: ${log.join(" | ")}`);
@@ -88,17 +88,17 @@ export const loopCommandReconcileTests = [
     name: "129/04 task01 [outline] the three phases run in order from any starting state, and every BUILD ask carries throughReview (5 rows)",
     run: async () => {
       const rows = [
-        { label: "07/02 unrefined", stories: ["01", { number: "02", tasks: false }, "03"], refines: ["/aof:refine 07/02"], commit: true, waveMembers: ["07/01", "07/02", "07/03"], verifies: ["/aof:verify 07/01", "/aof:verify 07/02", "/aof:verify 07/03", "/aof:verify 07"] },
+        { label: "07/02 unrefined", stories: ["01", { number: "02", tasks: false }, "03"], refines: ["/aof:refine 07/02 --solo"], commit: true, waveMembers: ["07/01", "07/02", "07/03"], verifies: ["/aof:verify 07/01", "/aof:verify 07/02", "/aof:verify 07/03", "/aof:verify 07"] },
         { label: "every story refined", stories: ["01", "02", "03"], refines: [], commit: false, waveMembers: ["07/01", "07/02", "07/03"], verifies: ["/aof:verify 07/01", "/aof:verify 07/02", "/aof:verify 07/03", "/aof:verify 07"] },
-        { label: "zero stories", stories: [], refines: ["/aof:refine 07"], commit: true, waveMembers: [], verifies: [] },
+        { label: "zero stories", stories: [], refines: ["/aof:refine 07 --solo"], commit: true, waveMembers: [], verifies: [] },
         { label: "every story in-review", stories: [{ number: "01", status: "in-review" }, { number: "03", status: "in-review" }], refines: [], commit: false, waveMembers: [], verifies: ["/aof:verify 07/01", "/aof:verify 07/03", "/aof:verify 07"] },
         { label: "every story done", stories: [{ number: "01", status: "done" }, { number: "03", status: "done" }], refines: [], commit: false, waveMembers: [], verifies: ["/aof:verify 07"] },
       ];
       for (const row of rows) {
         await withLaneRepo(async (fx) => {
           const driver = primaryDriver(fx, { onCommand: async (command) => {
-            if (command === "/aof:refine 07/02") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_ready.feature"), "@executable\nFeature: R\n  Scenario: r\n    Given a\n    When b\n    Then c\n", "utf8");
-            if (command === "/aof:refine 07") {
+            if (command === "/aof:refine 07/02 --solo") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_ready.feature"), "@executable\nFeature: R\n  Scenario: r\n    Given a\n    When b\n    Then c\n", "utf8");
+            if (command === "/aof:refine 07 --solo") {
               // The refine of an empty milestone scaffolds a story with tasks; BUILD then runs it.
               const { mkdir } = await import("node:fs/promises");
               const dir = path.join(fx.milestoneDir, "stories", "01_story_s01");
@@ -123,7 +123,7 @@ export const loopCommandReconcileTests = [
             assert.equal(phases.waves.length >= 1, true, `${row.label}: a wave`);
             assert.deepEqual([...new Set(child.calls.map((c) => c.ref))].sort(), row.waveMembers, `${row.label}: the wave's members`);
           } else if (row.label === "zero stories") {
-            assert.ok(phases.refines[0] === "/aof:refine 07" && phases.refineLine != null, `${row.label}: refine 07 first, then the commit, then BUILD`);
+            assert.ok(phases.refines[0] === "/aof:refine 07 --solo" && phases.refineLine != null, `${row.label}: refine 07 first, then the commit, then BUILD`);
           } else {
             assert.equal(child.calls.length, 0, `${row.label}: no lane opened`);
             assert.ok(phases.complete >= 0, `${row.label}: Build phase complete on the first ask`);
@@ -154,7 +154,7 @@ export const loopCommandReconcileTests = [
       await withLaneRepo(async (fx) => {
         await writeFile(path.join(fx.root, "README.md"), "# edited by the operator\n", "utf8");
         const driver = primaryDriver(fx, { onCommand: async (command) => {
-          if (command === "/aof:refine 07/02") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_x.feature"), "@executable\nFeature: X\n  Scenario: x\n    Given a\n    When b\n    Then c\n", "utf8");
+          if (command === "/aof:refine 07/02 --solo") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_x.feature"), "@executable\nFeature: X\n  Scenario: x\n    Given a\n    When b\n    Then c\n", "utf8");
           await verifyCompleter(fx)(command);
         } });
         const { state } = await runLoop(fx, { driver });
@@ -253,7 +253,7 @@ export const loopCommandReconcileTests = [
           let fixInput = null;
           const { state } = await runLoop(fx, { registry, report, driver, input: { cap: 3 }, extra: { readChangeUnderReview: async () => "" } });
           const label = `validate=${row.validate} doctor=${row.doctor} recorded=${row.recorded}`;
-          assert.equal(driver.directives()[0], `/aof:${row.next} 07/01`, `${label}: next act (${report.lines.join(" | ")})`);
+          assert.equal(driver.directives()[0], row.next === "continue" ? "/aof:continue 07/01 --solo" : `/aof:${row.next} 07/01`, `${label}: next act (${report.lines.join(" | ")})`);
           const firstRow = state.driven.find((r) => r.ref === "07/01");
           assert.equal(firstRow.phase, row.next, `${label}: phase`);
           assert.equal(firstRow.cycle, row.cycle, `${label}: cycle`);
@@ -285,7 +285,7 @@ export const loopCommandReconcileTests = [
         const child = fakeLaneChild(fx);
         const report = collector();
         const { state } = await runLoop(fx, { registry, driver, child, report, extra: { readChangeUnderReview: async () => "" } });
-        assert.equal(driver.directives()[0], "/aof:continue 07/01");
+        assert.equal(driver.directives()[0], "/aof:continue 07/01 --solo");
         const row = state.driven.find((r) => r.ref === "07/01");
         assert.equal(row.cycle, 2, "at cycle 2");
         assert.equal(row.phase, "continue");
@@ -312,13 +312,13 @@ export const loopCommandReconcileTests = [
         const asks = [];
         const registry = scriptedRegistry({ next: async (input, ctx, real) => { asks.push(input); return await real(); } });
         const driver = primaryDriver(fx, { onCommand: async (command) => {
-          if (command === "/aof:refine 07/02") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_ready.feature"), "@executable\nFeature: R\n  Scenario: r\n    Given a\n    When b\n    Then c\n", "utf8");
+          if (command === "/aof:refine 07/02 --solo") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_ready.feature"), "@executable\nFeature: R\n  Scenario: r\n    Given a\n    When b\n    Then c\n", "utf8");
           await verifyCompleter(fx)(command);
         } });
         const child = fakeLaneChild(fx);
         const { state } = await runLoop(fx, { registry, driver, child, extra: { readChangeUnderReview: async () => "" } });
         assert.equal(state.state, "done");
-        assert.deepEqual(driver.directives().slice(0, 3), ["/aof:continue 07/01", "/aof:verify 07/01", "/aof:refine 07/02"], "interleaved per story in ready order");
+        assert.deepEqual(driver.directives().slice(0, 3), ["/aof:continue 07/01 --solo", "/aof:verify 07/01", "/aof:refine 07/02 --solo"], "interleaved per story in ready order");
         assert.ok(asks.every((input) => input.throughReview !== true), "no work:next ask carries throughReview");
         assert.equal(child.calls.length, 0, "no lane");
         assert.equal((await git(["log", "--format=%s"], fx.root)).stdout.includes("aof(loop):"), false, "no aof(loop) commit");
@@ -365,7 +365,7 @@ export const loopCommandReconcileTests = [
             assert.equal(state.act.stop, "grade-indeterminate", row.records);
             assert.equal(state.act.producer, "work:grade:runner-timeout", row.records);
           } else {
-            assert.equal(driver.directives()[0], `/aof:${row.next} 07/01`, `${row.records}: next`);
+            assert.equal(driver.directives()[0], row.next === "continue" ? "/aof:continue 07/01 --solo" : `/aof:${row.next} 07/01`, `${row.records}: next`);
             assert.equal(state.driven.find((r) => r.ref === "07/01").cycle, row.cycle, `${row.records}: cycle`);
           }
         }, { stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
@@ -377,7 +377,7 @@ export const loopCommandReconcileTests = [
     run: async () => {
       await withLaneRepo(async (fx) => {
         const driver = primaryDriver(fx, { onCommand: async (command) => {
-          if (command === "/aof:refine 07/02") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_x.feature"), "@executable\nFeature: X\n  Scenario: x\n    Given a\n    When b\n    Then c\n", "utf8");
+          if (command === "/aof:refine 07/02 --solo") await writeFile(path.join(fx.storyDir("07/02"), "tasks", "00_x.feature"), "@executable\nFeature: X\n  Scenario: x\n    Given a\n    When b\n    Then c\n", "utf8");
         } });
         let before = null;
         const exec = async (args, options) => {

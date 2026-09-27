@@ -382,7 +382,7 @@ depends: []
         const driver = completingDriver(taskUatFx);
         const result = await runReported({ scope: "03" }, taskUatFx, { agentSessionDriverOptions: driver.options });
         record("s02", "p02", result, { stop: "uat-gate", producer: "work:tasks:counts.uat", ref: "03/01" }, /uatCount=1/u);
-        assert.deepEqual(driver.typed.map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01", "/aof:verify 03/01"]);
+        assert.deepEqual(driver.typed.map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01 --solo", "/aof:verify 03/01"]);
       } finally { await taskUatFx.cleanup(); }
 
       const blockedFx = await loopFixture();
@@ -631,7 +631,7 @@ aofVersion: 0.1.0
         });
         const completed = await runReported({ scope: "03" }, fx, { agentSessionDriverOptions: resumed.options });
         assert.equal(completed.state.state, "done");
-        assert.deepEqual(resumed.typed.slice(0, 2).map((t) => t.split("\n\n")[0]), ["/aof:continue 03/02", "/aof:verify 03/02"]);
+        assert.deepEqual(resumed.typed.slice(0, 2).map((t) => t.split("\n\n")[0]), ["/aof:continue 03/02 --solo", "/aof:verify 03/02"]);
         assert.ok((await readRuns({ ref: "03/02", dir: secondDir })).length > 0, "the cleared rerun starts at the next stream item");
       } finally { await fx.cleanup(); }
     },
