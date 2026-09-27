@@ -61,9 +61,15 @@ doc: state
     call. Its WSL leg drives the distro's deployed tree from a scratch script (02/00, 02/01).
   - RESEARCH Q2's banner row is scrubbed for the private-terms guard, and recordings are scrubbed
     with same-length substitutions (00/02).
+- **Dependency approved by the operator, 2026-09-27** (`aof:continue 138 --solo`, before
+  `package.json` changed). Asked: "Do you approve adding `@xterm/headless@6.0.0` as an
+  exact-pinned RUNTIME dependency? Per RESEARCH Q1: MIT licence, 1,957,834 bytes unpacked, no
+  dependencies of its own, same 6.0.0 as the board's `@xterm/xterm`." The operator answered:
+  **"Approve"**.
+- **The base is committed, 2026-09-27.** At the operator's word ("create a new branch now, and
+  commit everything (in batches)"), the 2026-09-27 driver fix and the 138 records were committed
+  on branch `138-terminal-emulator` (`bbb6046`, `0f69623`, `229f391`) before the build began.
 - **Open, for the operator:**
-  - approval of `@xterm/headless@6.0.0` as a runtime dependency (00's first task);
-  - committing the 2026-09-27 driver fix, uncommitted on main, before any lane branches;
   - `npm ci` on the Mac worker after it pulls.
 
 ## Verification
