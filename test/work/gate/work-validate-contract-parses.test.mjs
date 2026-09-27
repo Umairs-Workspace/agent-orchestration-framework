@@ -116,20 +116,20 @@ const isStructural = (finding) => finding.problem.includes("structural parse fai
 // population is judged file by file in the whole-stream scenario below, and a row's claim is
 // what is REPORTED for that milestone under the horizon.
 const MILESTONE_ROWS = [
-  { milestone: "00", folder: "00_milestone_work-cli", status: "done", reported: "nothing" },
-  { milestone: "04", folder: "04_milestone_round-trip-proof", status: "done", reported: "nothing" },
-  { milestone: "27", folder: "27_milestone_work-issuance-routing", status: "done", reported: "nothing" },
-  { milestone: "37", folder: "37_milestone_spike-chore-item-types", status: "done", reported: "nothing" },
-  { milestone: "38", folder: "38_milestone_cross-machine-worker-execution", status: "done", reported: "nothing" },
-  { milestone: "43", folder: "43_milestone_mesh-artifact-authority", status: "done", reported: "nothing" },
-  { milestone: "49", folder: "49_milestone_terminals-home", status: "done", reported: "nothing" },
-  { milestone: "52", folder: "52_milestone_loop-registry-and-graph", status: "done", reported: "nothing" },
+  { milestone: "00", folder: "archive/00_milestone_work-cli", status: "done", reported: "nothing" },
+  { milestone: "04", folder: "archive/04_milestone_round-trip-proof", status: "done", reported: "nothing" },
+  { milestone: "27", folder: "archive/27_milestone_work-issuance-routing", status: "done", reported: "nothing" },
+  { milestone: "37", folder: "archive/37_milestone_spike-chore-item-types", status: "done", reported: "nothing" },
+  { milestone: "38", folder: "archive/38_milestone_cross-machine-worker-execution", status: "done", reported: "nothing" },
+  { milestone: "43", folder: "archive/43_milestone_mesh-artifact-authority", status: "done", reported: "nothing" },
+  { milestone: "49", folder: "archive/49_milestone_terminals-home", status: "done", reported: "nothing" },
+  { milestone: "52", folder: "archive/52_milestone_loop-registry-and-graph", status: "done", reported: "nothing" },
   // RE-MEASURED 2026-08-28, which is this row's whole purpose. 53 was the LIVE row —
   // the one unparseable file under an open item, the one this gate existed to make
   // somebody fix. It was fixed: `04_gate-order-and-cap.feature` now parses with
   // `structural: []`, and milestone 53 has since been accepted. The row stays because
   // deleting it would erase the record that the gate worked.
-  { milestone: "53", folder: "53_milestone_loop-artifact", status: "done", reported: "nothing" },
+  { milestone: "53", folder: "archive/53_milestone_loop-artifact", status: "done", reported: "nothing" },
 ];
 
 // Examples: scope semantics measured against `validateWork` on a fixture.
@@ -274,7 +274,9 @@ export const contractParsesTests = [
       // record, never a green pass over nothing.
       assert.ok(unparseable.length > 0, "the walk of wiki/work found no unparseable contract — the grandfathering leg below would be asserted over nothing; re-measure and record");
       for (const file of unparseable) {
-        const [folder] = rel(file).split("/");
+        // The item folder is the first ITEM-shaped segment: under `archive/` (127/05) it is the second.
+        const segments = rel(file).split("/");
+        const folder = segments[0] === "archive" ? `${segments[0]}/${segments[1]}` : segments[0];
         const spec = await readFile(path.join(realWorkDir, folder, "SPEC.md"), "utf8");
         assert.equal(parseFrontmatter(spec).status, "done", `${rel(file)} is unparseable and its milestone ${folder} is not done — a LIVE finding, which is what this gate exists to make somebody fix`);
       }

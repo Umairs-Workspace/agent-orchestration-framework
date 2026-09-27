@@ -404,6 +404,10 @@ const featureZero = [
           ["remap-control-facts", "control-store"],
           ["publish-projection", "local"],
         ],
+        // milestone 127 / ADR-004 (story 03) — the archive cascade, declared after this story:
+        // one consequence, the publish, at the local locus. In the census so the "one name" claim
+        // stays about the ruling name rather than freezing the stream's vocabulary.
+        "stream.archived": [["publish-projection", "local"]],
         "assignment.reported": [["settle-assignment", "control-store"]],
         "terminal.resume-refused": [["restore-parked-resume", "control-store"]],
         "assignment.settled": [["record-item-branch", "control-store"]],

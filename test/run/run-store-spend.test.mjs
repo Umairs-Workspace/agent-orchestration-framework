@@ -63,18 +63,20 @@ export const runStoreSpendTests = [
   // ══ 00_sixteenth-key-additive.feature ══
   // Scenario: a newly minted run record carries spend as its sixteenth key
   {
-    name: "run-store-spend/00 a newly minted run record carries spend as its sixteenth and last key, null, with the fifteen delivered keys unchanged",
+    name: "run-store-spend/00 a newly minted run record carries spend as its sixteenth key, null, with the fifteen delivered keys unchanged and only 131's asks after it",
     async run() {
       const { repo, item } = await makeItem();
       try {
         const record = await startOne(item);
         const keys = Object.keys(record);
         assert.deepEqual(keys.slice(0, 15), FIFTEEN_KEYS, "the fifteen delivered keys are unchanged in name, order and meaning");
-        assert.equal(keys[15], "spend", "spend is the sixteenth and last key");
-        assert.equal(keys.length, 16, "the record carries exactly sixteen keys");
+        assert.equal(keys[15], "spend", "spend is the sixteenth key");
+        // 131/ADR-003 §3 appended a seventeenth key, `asks`, after it by the same additive rule.
+        assert.deepEqual(keys.slice(16), ["asks"], "the one key after spend is 131's asks");
+        assert.equal(keys.length, 17, "the record carries exactly seventeen keys");
         assert.equal(record.spend, null, "spend reads null on a freshly minted run");
         const onDisk = JSON.parse(await readFile(path.join(item.dir, "runs", `${record.runId}.json`), "utf8"));
-        assert.equal(Object.keys(onDisk).at(-1), "spend", "spend is appended last on disk");
+        assert.equal(Object.keys(onDisk).at(-2), "spend", "spend is the sixteenth key on disk, with only 131's asks after it");
         assert.equal(onDisk.spend, null, "the on-disk spend is null");
       } finally {
         await rm(repo, { recursive: true, force: true });

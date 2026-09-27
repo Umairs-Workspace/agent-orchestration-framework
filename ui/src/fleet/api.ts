@@ -67,6 +67,32 @@ export type PresenceRecord = {
   activeRuns: string[];
   sessions: PresenceSession[];
   aofVersion: string;
+  // milestone 130 / story 03 (ADR-005 §1) — the live loops on the node, the SEVENTH
+  // additive key, OMITTED when the node runs none (the `buildId` discipline, not the
+  // `sessions` one: eleven suites deep-equal the record's key list, and an always-present
+  // key would re-pin every one of them for no reader's benefit). Every reader treats
+  // absence as `[]`. Read by the SAME pass as `activeRuns` (`readActiveLoops`,
+  // src/mesh/presence.mjs), one entry per `loopRunId`, in encounter order — the card sorts.
+  loops?: PresenceLoop[];
+};
+
+// One live loop, as the node publishes it — the ELEVEN keys, frozen order, the typed mirror
+// of `readActiveLoops`'s entry. `stop` is the standing stop request's word (ADR-001 §2's
+// two words, through STOP_LEVELS; `null` when none stands); `ref`/`runId` name the loop's
+// latest running drive; `phase`/`cycle`/`cap` are COPIED from the declaration, not
+// validated — the line renders them fail-closed (`fleetLoopLines`, ./runs.mjs).
+export type PresenceLoop = {
+  loopRunId: string;
+  workspaceId: string | null;
+  scope: string;
+  level: string;
+  cap: number | null;
+  phase: string | null;
+  cycle: number | null;
+  ref: string | null;
+  runId: string;
+  supervised: boolean;
+  stop: null | "drain" | "cancel";
 };
 
 // A fleet node — the m22 node record (nodeId + capability footer fields) joined
@@ -83,6 +109,8 @@ export type PresenceRecord = {
 export type FleetNode = {
   nodeId: string;
   host?: string;
+  // The machine name (132/02), kept in the aof home; the fleet titles a node with it.
+  hostname?: string;
   os?: string;
   runtimes?: string[];
   skills?: string[];
@@ -167,6 +195,15 @@ export type GlobalWorkItem = {
   // copy of something another machine said.
   reportedBy?: string | null;
   syncedAt?: string | null;
+  // milestone 127 / ADR-006 — the three roots, as the ONE row mapper (`mapItemRow`) states
+  // them, the same three optional keys the board's `WorkItem` carries: a BACKLOG row is
+  // `number: null` + `backlog` (its group path, `""` at the top; its ref is its slug), an
+  // ARCHIVED row is `archived: true`. All three are ABSENT on a live row. The fleet's milestone
+  // list partitions the backlog out on `number === null` (`scope.mjs`) and leaves an archived
+  // row to its status filter; nothing here reads a ref's shape.
+  number?: null;
+  backlog?: string;
+  archived?: true;
 };
 
 // A global registry node descriptor (src/global-node-registry.mjs) — the "node
@@ -268,6 +305,12 @@ export type MeshSession = {
 // copy — or a default — on this side of the wire.
 export type GlobalMeshStatus = {
   scope: "global" | "local";
+  // milestone 130 / story 03 (ADR-005 §3; TECH_DEBT item 18 (b)) — WHICH MACHINE is serving
+  // this read, stamped by the route beside `scope` (the board's own `nodeId` precedent):
+  // a fact about the SERVER, never the store, so the projection carries no such key. `null`
+  // on an unconfigured machine — present, never absent — and then no card shows a Stop.
+  // It is the card's ONE test of locality: a button renders iff `node.nodeId === localNodeId`.
+  localNodeId?: string | null;
   workspaceId?: string | null;
   workspaces: GlobalWorkspace[];
   items: GlobalWorkItem[];
@@ -393,4 +436,34 @@ export const fleetApi = {
     if (!response.ok) throw await safeError(response);
     return (await response.json()) as WorkAssignment;
   },
+
+  // milestone 130 / story 03 (ADR-005 §4) — the fleet face's THIRD write route and the ONE
+  // `fetch("/api/mesh/loop-stop"` in `ui/`: a same-origin `POST { scope, workspaceId }` in
+  // assign's exact shape, into `stopLoop` for that workspace. `workspaceId` is the LOOP's
+  // own (the presence entry's), never the daemon's — F21's rule, one axis over. The route
+  // answers the verb's seven-key document (`request` is `"drain"` after the first press and
+  // `"cancel"` after the second) or its coded refusal, which surfaces here as a thrown
+  // `FleetApiError` carrying `code` and the server sentence, exactly as `assign` does.
+  async loopStop(scope: string, workspaceId: string): Promise<LoopStopDocument> {
+    const response = await fetch("/api/mesh/loop-stop", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ scope, workspaceId }),
+    });
+    if (!response.ok) throw await safeError(response);
+    return (await response.json()) as LoopStopDocument;
+  },
+};
+
+// ADR-002 §4's document, verbatim from the verb core: `request` is the word for the level
+// AFTER this call, `state` the request file's, `live` the record's own liveness (reported,
+// never refused — a loop caught between drives answers `live: false` and the request stands).
+export type LoopStopDocument = {
+  ok: true;
+  loopRunId: string;
+  scope: string;
+  live: boolean;
+  request: "drain" | "cancel";
+  state: "requested" | "honoured";
+  path: string;
 };

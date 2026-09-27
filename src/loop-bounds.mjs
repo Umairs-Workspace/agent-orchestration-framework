@@ -1,9 +1,19 @@
 // The single declaration and resolution home for every `work.loop.*` key: the deadlines and
-// loop caps of milestone 69, and the concurrency MODE of milestone 129. A pure leaf: callers
-// pass it a workspace/config value and receive immutable policy facts.
+// loop caps of milestone 69, the concurrency MODE of milestone 129, and (129/07) the loop's own
+// lane bound and per-phase role modes. A pure leaf: callers pass it a workspace/config value and
+// receive immutable policy facts.
 
 export const DEFAULT_START_TO_CLOSE_MS = 30 * 60 * 1000;
 export const DEFAULT_HEARTBEAT_MS = 15 * 60 * 1000;
+// 129/06 F-58 — THE PROVIDER-WAIT LINE, the one condition that SUSPENDS the heartbeat deadline
+// above rather than expiring it. The two spellings `claude` prints when the account's usage limit
+// is reached and it waits for the reset (measured 2026-09-15 on loop 127, five sessions):
+// `Usage limit reached · continuing automatically at 1:40pm` on the status line and `You've hit
+// your session limit · resets 1:40pm (Europe/London)` as the turn's text. The driver reads it off
+// the tail of its output buffer with the terminal's escapes stripped. Defined HERE, not on the
+// driver's door: that door is the frozen seventeen of 53/FF-5302, and this leaf is one the driver
+// already imports (aof:verify 127 moved it; 129/06's row pins the two spellings from here).
+export const PROVIDER_WAIT_RE = /Usage limit reached[^\n\r]{0,80}|hit your (?:session|usage) limit[^\n\r]{0,80}/u;
 export const DEFAULT_SCHEDULE_TO_START_MS = 10 * 60 * 1000;
 export const DEFAULT_SCHEDULE_TO_CLOSE_MS = 2 * 60 * 60 * 1000;
 export const DEFAULT_STARTUP_GRACE_MS = 5 * 60 * 1000;
@@ -125,6 +135,11 @@ export function progressMaxResetsFromConfig(workspace) {
 // the tuner already refuses a non-numeric step as `NOT_AN_ORDINAL_KNOB`.
 export const LOOP_CONCURRENCY_MODES = Object.freeze(["sequential", "refine_first"]);
 export const DEFAULT_LOOP_CONCURRENCY = LOOP_CONCURRENCY_MODES[0];
+// 129/04 — the shell branches on the mode it resolved here, and it compares against THIS
+// binding rather than a second spelling of the word: the array above is the vocabulary's one
+// home, and a caller that spelled `"refine_first"` beside it would be the second literal
+// 129/ADR-001 admits for the engine's branch alone.
+export const REFINE_FIRST_CONCURRENCY = LOOP_CONCURRENCY_MODES[1];
 
 export const resolveLoopConcurrency = (value) => (
   LOOP_CONCURRENCY_MODES.includes(value) ? value : DEFAULT_LOOP_CONCURRENCY
@@ -132,6 +147,58 @@ export const resolveLoopConcurrency = (value) => (
 
 export function loopConcurrencyFromConfig(workspace) {
   return resolveLoopConcurrency(loopConfig(workspace)?.concurrency);
+}
+
+// ── THE LOOP'S OWN LANE BOUND AND PHASE MODES (129/07) ───────────────────────
+//
+// The loop's settings are self-contained under `work.loop`: beside the mode sit
+// `work.loop.dispatch.concurrency` — the loop's own bound on concurrent lanes — and
+// `work.loop.agents.<phase>.mode` for the two driven phases that resolve a role mode
+// (`refine`, `continue`; `verify` reads none). Each answers its member VERBATIM and
+// `null` for anything else — no clamp, no trim, no case-fold, never a throw — and `null`
+// means UNSET: inherit the workspace twin. The twin is NOT read here. This leaf declares
+// `work.loop.*` keys and nothing else (69/ADR-001; FF-6901 holds the line), so the fallback
+// to `work.dispatch.concurrency` and `work.agents.mode` belongs to the consumer that already
+// reads the twin: `work:dispatch`'s one resolution site narrows the pool's bound by the
+// number the loop hands it (129/ADR-006, amended), and the command prompts resolve
+// `work.agents.mode` themselves when the drive composes no flag (129/ADR-001 §5, amended).
+//
+// The range probe (`resolve(p) === p`) therefore admits exactly the members: a positive
+// integer for the bound, `solo` / `orchestrated` for a mode. A step on an UNSET key steps
+// from `null` — there is no value in effect to step from, and no loop record declares one of
+// these as a ceiling, so the tuner never meets that case.
+export const LOOP_AGENT_MODES = Object.freeze(["solo", "orchestrated"]);
+
+export const resolveLoopDispatchConcurrency = (value) => positiveInteger(value, null);
+export const resolveLoopAgentMode = (value) => (LOOP_AGENT_MODES.includes(value) ? value : null);
+
+export function loopDispatchConcurrencyFromConfig(workspace) {
+  return resolveLoopDispatchConcurrency(loopConfig(workspace)?.dispatch?.concurrency);
+}
+
+const loopAgentsConfig = (workspace) => loopConfig(workspace)?.agents;
+
+export function loopAgentRefineModeFromConfig(workspace) {
+  return resolveLoopAgentMode(loopAgentsConfig(workspace)?.refine?.mode);
+}
+
+export function loopAgentContinueModeFromConfig(workspace) {
+  return resolveLoopAgentMode(loopAgentsConfig(workspace)?.continue?.mode);
+}
+
+// The phase → config-shaped resolver map the drive composes its flag from (129/07 task 02).
+// Only the phases that resolve a mode appear; `verify` is absent, and an absent phase answers
+// `null` — no flag.
+export const LOOP_AGENT_MODE_RESOLVERS = Object.freeze({
+  refine: loopAgentRefineModeFromConfig,
+  continue: loopAgentContinueModeFromConfig,
+});
+
+export function loopAgentModeFromConfig(workspace, phase) {
+  const resolve = Object.prototype.hasOwnProperty.call(LOOP_AGENT_MODE_RESOLVERS, phase)
+    ? LOOP_AGENT_MODE_RESOLVERS[phase]
+    : null;
+  return typeof resolve === "function" ? resolve(workspace) : null;
 }
 
 // The registry's config-pointer authority is derived from callable resolvers,
@@ -150,6 +217,11 @@ export const LOOP_BOUND_CONFIG_RESOLVERS = Object.freeze({
   // admit `ceiling: [config:work.loop.concurrency]` and FF-6111's two-way key equality
   // holds; it is NOT in `loopBoundsFromConfig` below, which is the driver's deadline policy.
   "work.loop.concurrency": loopConcurrencyFromConfig,
+  // 129/07 — the loop's own lane bound and the two phase modes, appended after the mode in
+  // this order; each answers null when unset (inherit the workspace twin).
+  "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig,
+  "work.loop.agents.refine.mode": loopAgentRefineModeFromConfig,
+  "work.loop.agents.continue.mode": loopAgentContinueModeFromConfig,
 });
 
 export const LOOP_BOUND_CONFIG_KEYS = Object.freeze(Object.keys(LOOP_BOUND_CONFIG_RESOLVERS));
@@ -205,6 +277,10 @@ export const LOOP_BOUND_VALUE_RESOLVERS = Object.freeze({
   // 129/ADR-001 §1 — the mode's value-shaped twin, appended last to mirror its config-shaped
   // sibling above; `rangeProbe` answers for the key through this callable alone.
   "work.loop.concurrency": resolveLoopConcurrency,
+  // 129/07 — the value-shaped twins of the three above, in the same order.
+  "work.loop.dispatch.concurrency": resolveLoopDispatchConcurrency,
+  "work.loop.agents.refine.mode": resolveLoopAgentMode,
+  "work.loop.agents.continue.mode": resolveLoopAgentMode,
 });
 
 export const LOOP_BOUND_VALUE_KEYS = Object.freeze(Object.keys(LOOP_BOUND_VALUE_RESOLVERS));

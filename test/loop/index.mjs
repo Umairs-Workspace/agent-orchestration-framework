@@ -44,6 +44,14 @@ import { loopCommandResumeTests } from "./loop-command-resume.test.mjs";
 // printer while a drive or a gate is still pending, and what `--quiet` does and does not silence.
 // The structural half is `test/arch/loop/acd-loop-narrates-in-flight.test.mjs`.
 import { loopCommandNarrationTests } from "./loop-command-narration.test.mjs";
+// milestone 129 / story 04 — THE WAVE TICK. Two behavioural suites over a REAL git repo: the
+// per-story ladder extracted to `src/loop/cycle.mjs`, the lanes (open → mint → child → settle →
+// ladder → commit → merge → cleanup), the per-base-commit baseline, the milestone-level wave run
+// and its heartbeat, and dispatch's admission (tasks 00, 02, 03, 04, 05); and the three phases of
+// `refine_first`, the fresh gate, the two signals, the parent deadline and the resume
+// reconciliation (tasks 01, 06). The LADDER suites, split by subject: the wave and what surrounds it.
+import { loopCommandWaveTests } from "./loop-command-wave.test.mjs";
+import { loopCommandReconcileTests } from "./loop-command-reconcile.test.mjs";
 // milestone 126 / story 02, tasks 00-01 — the declaration predicate driven over literal run
 // records, and the ninth declaration key. FF-12604 driven half.
 import { workLoopDeclarationsTests } from "./work-loop-declarations.test.mjs";
@@ -274,6 +282,9 @@ export const tests = [
   ...loopCommandStopsTests,
   ...loopCommandResumeTests,
   ...loopCommandNarrationTests,
+  // milestone 129 / story 04 — the wave tick (tasks 00, 02–05) and its phases, gate, signals and reconcile (tasks 01, 06).
+  ...loopCommandWaveTests,
+  ...loopCommandReconcileTests,
   ...workLoopDeclarationsTests,
   ...loopCommandBoardStateTests,
   ...loopCommandRefusalTests,

@@ -31,7 +31,7 @@ import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "./fabric
 import { readNodeRecords } from "./store.mjs";
 import { deriveNodeId, sidecarPathFor, readSidecar } from "../node-identity.mjs";
 import { packageVersionString } from "../asset-base.mjs";
-import { assemblePresenceRecord, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot } from "./presence.mjs";
+import { assemblePresenceRecord, readActiveLoops, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot } from "./presence.mjs";
 // `listItems` is STILL imported here and must stay: mesh-launcher's OTHER read (:1503) is a
 // WORKER-side read of a materialized worktree, which ADR-005 pins to disk by positive
 // assertion — a worker must never read another node's opinion of its own checkout.
@@ -416,8 +416,15 @@ function resolveAggregationWorkspaces(ws, registryResult) {
 // below, so the whole aggregation opens the projection AT MOST ONCE however many workspaces
 // it walks (m43 / ADR-016/G7). Absent (every existing caller and test double) it is `{}`,
 // which is byte-identical to the per-read open this function used to do.
+// milestone 130 / story 03 (ADR-005 §2) — the union ALSO answers `loops`: this node's live
+// loops, one entry per loopRunId per workspace, read by the SAME pass over the SAME local items
+// and stamped with that workspace's id. ONLY the local half contributes — the cached-run half
+// (`readCachedActiveRunIds`) names runs on workspaces this machine does not hold, and a loop is
+// local by definition (ADR-006). A workspace whose enumeration throws loses its loops with its
+// runs, inside the same isolation; the tick completes.
 export async function assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions = {}) {
   const activeRuns = [];
+  const loops = [];
   const workspacesWithRuns = new Set();
   for (const workspace of workspaces) {
     // PER-WORKSPACE ISOLATION (never a daemon crash): a workspace whose items can't
@@ -442,11 +449,12 @@ export async function assembleActiveRunsAndSubsumedWorkspaces(workspaces, listIt
           workspacesWithRuns.add(workspace.workspaceId);
         }
       }
+      loops.push(...await readActiveLoops(local.items, { workspaceId: workspace.workspaceId ?? null }));
     } catch (error) {
       // absence-is-benign — this workspace's runs are skipped, not fatal.
       reportDegrade("mesh-launcher", error); }
   }
-  return { activeRuns, workspacesWithRuns };
+  return { activeRuns, workspacesWithRuns, loops };
 }
 
 // emitWarning(sink, warning, options) — review fix (live soak, 2026-07-17): every
@@ -582,7 +590,7 @@ async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openSt
   const listItemsFn = typeof options?.listItems === "function"
     ? options.listItems
     : (workDir, workspace) => listItemsCacheFirst(workspace ?? { workDir, projectRoot: workDir }, cacheOptions);
-  const { activeRuns, workspacesWithRuns } = await assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions);
+  const { activeRuns, workspacesWithRuns, loops } = await assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions);
 
   // sessions is the union of this node's LIVE session records (ADR-001/002), stored
   // per-NODE (mesh-session.mjs) so ONE read covers every workspace; a read fault here
@@ -600,7 +608,10 @@ async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openSt
 
   // m42 wave (c) / item 1 — the build stamp rides the presence record (the sixth
   // additive key), so `aof mesh status` answers WHICH build a remote node runs.
-  return assemblePresenceRecord({ nodeId, heartbeatAt: resolveNow(options), activeRuns, sessions, aofVersion: packageVersionString(), buildId: buildInfoString(readBuildInfo()) });
+  // 130/ADR-005 §2 — `loops` rides the tick's record LAST and only when non-empty. This tick is
+  // the record this machine actually publishes; a heartbeat that carried the key alone would be
+  // erased by the next one.
+  return assemblePresenceRecord({ nodeId, heartbeatAt: resolveNow(options), activeRuns, sessions, aofVersion: packageVersionString(), buildId: buildInfoString(readBuildInfo()), loops });
 }
 
 function configuredRelayUrl(config) {
@@ -805,7 +816,7 @@ export async function startLauncher(ws, options = {}) {
   }
 
   // Publish this node's presence at start, then refresh it on every propagation tick.
-  const { nodeId } = await resolveNodeIdentity(ws);
+  const { nodeId, issuanceAuthority } = await resolveNodeIdentity(ws);
   // Declared BEFORE the first publish (finding F11) so a workspace-resolution loud
   // skip on the VERY FIRST presence assembly — not merely a later propagation tick —
   // is still captured on this same accumulator the caller reads off the returned
@@ -1874,6 +1885,34 @@ export async function startLauncher(ws, options = {}) {
     });
   }
 
+  // milestone 131 / story 10 (ADR-008 §1) — THE DISCORD BOT, on the CONTROL node only, and only when a
+  // bot token resolves (the `AOF_DISCORD_BOT_TOKEN` override, else the machine-wide store). Placed after
+  // every other start, and reached by DEFERRED imports inside this branch, so a worker never imports
+  // `bot.mjs` and nothing in `src/discord/` joins a static closure. With no token the bot is off, said
+  // once at info, and posting — a plain HTTPS request — is unaffected. `startDiscordBot` is injectable,
+  // as this launcher's other collaborators are, so no suite opens a socket. A start that throws is a
+  // warning, never a daemon crash.
+  let discordBot = null;
+  if (issuanceAuthority) {
+    try {
+      const { resolveBotToken } = await import("../notify/notify.mjs");
+      const token = await resolveBotToken(options?.env ?? process.env);
+      if (token == null) {
+        emitWarning(launcherWarnings, {
+          code: "discord-bot-off",
+          message: "the Discord bot is off: no bot token on this machine (run `aof messaging init discord`) — notifications still post when a project enables one",
+          path: null,
+          level: "info",
+        }, options);
+      } else {
+        const startDiscordBot = options?.startDiscordBot ?? (await import("../discord/bot.mjs")).startDiscordBot;
+        discordBot = await startDiscordBot({ token, workspace: ws, nodeId, globalWorkStoreOptions: options?.globalWorkStoreOptions ?? {} });
+      }
+    } catch (error) {
+      emitWarning(launcherWarnings, { code: "discord-bot-failed", message: `starting the Discord bot failed: ${error instanceof Error ? error.name : "error"}`, path: null }, options);
+    }
+  }
+
   // stop() — the clean daemon shutdown (ADR-003.3, the serve-unit discipline): stop
   // all tickers (peer poll + propagation + optional stream sync + optional control
   // dispatch/reclaim) cleanly, plus the stream server/client when this node started
@@ -1899,6 +1938,8 @@ export async function startLauncher(ws, options = {}) {
     Promise.resolve(sessionSpawnHandler?.stopAll?.()).catch((error) => {
       reportDegrade("mesh-launcher", error);
     });
+    // 131/10: the bot's gateway closed and its timers cleared, before the stream server goes.
+    discordBot?.stop?.();
     streamServer?.stop?.();
     streamClient?.stop?.();
     relayBroker?.stop?.();

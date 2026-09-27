@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp } from "node:fs/promises";
-import { doctorConfig, inspectConfig, inspectGlobalConfig, validateConfig, validateGlobalConfig } from "../../src/config-inspect.mjs";
+import { doctorConfig, inspectConfig, inspectGlobalConfig, resolveWorkDiagrams, validateConfig, validateGlobalConfig } from "../../src/config-inspect.mjs";
+import { generatorIds } from "../../src/diagrams/generators.mjs";
 
 export const configInspectTests = [
   {
@@ -85,8 +86,140 @@ export const configInspectTests = [
   {
     name: "reports unsafe associated file declarations",
     run: reportsUnsafeAssociatedFileDeclarations
+  },
+  // milestone 133 / story 01 / task 00 — `work.diagrams` names the generator, absent means off,
+  // and one reader answers for every consumer (ADR-001).
+  {
+    name: "133/01 task 00: the one reader resolves every legal work.diagrams shape, frozen",
+    run: resolvesEveryLegalDiagramsShape
+  },
+  {
+    name: "133/01 task 00: an absent work.diagrams raises no diagnostic",
+    run: absentDiagramsRaisesNothing
+  },
+  {
+    name: "133/01 task 00: a bad work.diagrams shape is one coded error, and still resolves to off",
+    run: badDiagramsShapeIsCodedAndOff
+  },
+  {
+    name: "133/01 task 00: an unknown generator is refused by naming what is registered, never by falling back",
+    run: unknownGeneratorListsRegistered
+  },
+  {
+    name: "133/01 task 00: a style path that does not exist is not a config error",
+    run: missingStyleFileIsNotAConfigError
+  },
+  {
+    name: "133/01 task 00: the schema describes the same work.diagrams object",
+    run: schemaDescribesDiagrams
   }
 ];
+
+const DIAGRAMS_ID = generatorIds()[0];
+const DIAGRAMS_DEFAULT = { enabled: false, generator: "off", formats: ["svg", "png"], style: null, browser: null };
+
+async function withDiagramsProject(diagrams, fn) {
+  const targetDir = await mkdtemp(path.join(os.tmpdir(), "aof-diagrams-"));
+  const previous = process.env.AOF_GLOBAL_HOME;
+  process.env.AOF_GLOBAL_HOME = await mkdtemp(path.join(os.tmpdir(), "aof-diagrams-home-"));
+  try {
+    const config = { name: "demo", resources: [], work: { dir: "./wiki/work", ...(diagrams === undefined ? {} : { diagrams }) } };
+    await mkdir(path.join(targetDir, ".aof"), { recursive: true });
+    await writeFile(path.join(targetDir, ".aof", "aof.config.json"), `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    return await fn(targetDir, config);
+  } finally {
+    await rm(process.env.AOF_GLOBAL_HOME, { recursive: true, force: true });
+    restoreEnv("AOF_GLOBAL_HOME", previous);
+    await rm(targetDir, { recursive: true, force: true });
+  }
+}
+
+const diagramsDiagnostics = (diagnostics) => diagnostics.filter((item) => item.path.startsWith("work.diagrams"));
+
+const LEGAL_DIAGRAMS_ROWS = () => [
+  [undefined, DIAGRAMS_DEFAULT],
+  [{ generator: "off" }, DIAGRAMS_DEFAULT],
+  [{ generator: DIAGRAMS_ID }, { enabled: true, generator: DIAGRAMS_ID, formats: ["svg", "png"], style: null, browser: null }],
+  [{ generator: DIAGRAMS_ID, formats: ["svg"] }, { enabled: true, generator: DIAGRAMS_ID, formats: ["svg"], style: null, browser: null }],
+  [{ generator: DIAGRAMS_ID, formats: ["png", "svg"] }, { enabled: true, generator: DIAGRAMS_ID, formats: ["svg", "png"], style: null, browser: null }],
+  [{ generator: DIAGRAMS_ID, style: ".aof/diagrams/style.md" }, { enabled: true, generator: DIAGRAMS_ID, formats: ["svg", "png"], style: ".aof/diagrams/style.md", browser: null }],
+  [{ generator: DIAGRAMS_ID, browser: "C:/Tools/chrome.exe" }, { enabled: true, generator: DIAGRAMS_ID, formats: ["svg", "png"], style: null, browser: "C:/Tools/chrome.exe" }],
+];
+
+async function resolvesEveryLegalDiagramsShape() {
+  for (const [diagrams, resolved] of LEGAL_DIAGRAMS_ROWS()) {
+    await withDiagramsProject(diagrams, async (targetDir, config) => {
+      const answer = resolveWorkDiagrams(config);
+      assert.deepEqual(answer, resolved, JSON.stringify(diagrams));
+      assert.ok(Object.isFrozen(answer), "the answer is frozen");
+      assert.ok(Object.isFrozen(answer.formats), "its formats are frozen");
+      assert.deepEqual(diagramsDiagnostics(await validateConfig(targetDir)), [], `${JSON.stringify(diagrams)} validates`);
+    });
+  }
+}
+
+async function absentDiagramsRaisesNothing() {
+  await withDiagramsProject(undefined, async (targetDir) => {
+    assert.deepEqual(diagramsDiagnostics(await validateConfig(targetDir)), []);
+  });
+}
+
+async function badDiagramsShapeIsCodedAndOff() {
+  const rows = [
+    [DIAGRAMS_ID, "work.diagrams", "diagrams-bad-shape"],
+    [{ formats: ["svg"] }, "work.diagrams.generator", "diagrams-generator-required"],
+    [{ generator: "mermaid" }, "work.diagrams.generator", "diagrams-generator-unknown"],
+    [{ generator: DIAGRAMS_ID, formats: ["png"] }, "work.diagrams.formats", "diagrams-formats-invalid"],
+    [{ generator: DIAGRAMS_ID, formats: ["svg", "pdf"] }, "work.diagrams.formats", "diagrams-formats-invalid"],
+    [{ generator: DIAGRAMS_ID, formats: ["svg", "svg"] }, "work.diagrams.formats", "diagrams-formats-invalid"],
+    [{ generator: DIAGRAMS_ID, formats: [] }, "work.diagrams.formats", "diagrams-formats-invalid"],
+    [{ generator: DIAGRAMS_ID, style: "../outside/style.md" }, "work.diagrams.style", "diagrams-style-invalid"],
+    [{ generator: DIAGRAMS_ID, style: "C:/abs/style.md" }, "work.diagrams.style", "diagrams-style-invalid"],
+    [{ generator: DIAGRAMS_ID, browser: "chrome.exe" }, "work.diagrams.browser", "diagrams-browser-invalid"],
+    [{ generator: DIAGRAMS_ID, format: ["svg"] }, "work.diagrams.format", "diagrams-key-unknown"],
+  ];
+  for (const [diagrams, pathName, code] of rows) {
+    await withDiagramsProject(diagrams, async (targetDir, config) => {
+      const errors = (await validateConfig(targetDir)).filter((item) => item.severity === "error");
+      assert.deepEqual(errors.map((item) => [item.path, item.code]), [[pathName, code]], JSON.stringify(diagrams));
+      assert.equal(resolveWorkDiagrams(config).enabled, false, `${JSON.stringify(diagrams)} resolves off`);
+    });
+  }
+}
+
+async function unknownGeneratorListsRegistered() {
+  await withDiagramsProject({ generator: "mermaid" }, async (targetDir, config) => {
+    const [error] = diagramsDiagnostics(await validateConfig(targetDir));
+    assert.equal(error.code, "diagrams-generator-unknown");
+    assert.match(error.message, /mermaid/);
+    assert.ok(error.message.includes([...generatorIds(), "off"].join(", ")), "lists every registered id, then off");
+    assert.equal(resolveWorkDiagrams(config).generator, "off");
+  });
+}
+
+async function missingStyleFileIsNotAConfigError() {
+  await withDiagramsProject({ generator: DIAGRAMS_ID, style: ".aof/diagrams/style.md" }, async (targetDir) => {
+    assert.deepEqual(diagramsDiagnostics(await validateConfig(targetDir)), []);
+  });
+}
+
+async function schemaDescribesDiagrams() {
+  const schemaUrl = new URL("../../schemas/aof.schema.json", import.meta.url);
+  const schema = JSON.parse(await readFile(schemaUrl, "utf8"));
+  const diagrams = schema.$defs.work.properties.diagrams;
+  assert.equal(diagrams.type, "object");
+  assert.deepEqual(Object.keys(diagrams.properties).sort(), ["browser", "formats", "generator", "style"]);
+  assert.equal(diagrams.additionalProperties, false);
+  assert.equal(diagrams.properties.formats.type, "array");
+  assert.equal(diagrams.properties.formats.uniqueItems, true);
+  assert.deepEqual(diagrams.properties.formats.items.enum, ["svg", "png"]);
+  const Ajv2020 = (await import("ajv/dist/2020.js")).default;
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
+  for (const [shape] of LEGAL_DIAGRAMS_ROWS()) {
+    const config = { name: "x", resources: [], work: shape === undefined ? {} : { diagrams: shape } };
+    assert.equal(validate(config), true, `${JSON.stringify(shape)}: ${JSON.stringify(validate.errors)}`);
+  }
+}
 
 async function inspectsValidConfig() {
   const targetDir = await mkdtemp(path.join(os.tmpdir(), "aof-"));

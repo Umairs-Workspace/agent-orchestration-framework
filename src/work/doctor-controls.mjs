@@ -103,7 +103,20 @@ export const RUNNERS_CONFIG_KEY = "work.controls.runners";
 // recogniser read it from here. One predicate, because they are the same question
 // asked from two directions: leg B asserts a runner names the cited file's basename,
 // and only a test-shaped name ever appears in a runner.
-const CONTROL_FILE_NAME = /\.(?:test|spec)\.[A-Za-z0-9]+$/;
+//
+// TWO SPELLINGS OF ONE QUESTION, BECAUSE TWO ECOSYSTEMS SPELL A TEST FILE DIFFERENTLY.
+// The JS/TS runners glob `*.test.*`/`*.spec.*`. A .NET test project has no filename
+// glob at all — every source in it compiles — and marks a test CLASS by its name, one
+// class per file, so the file is `<Name>Tests.cs` or `<Name>Test.cs` (xunit/NUnit/MSTest
+// convention; `.fs`/`.vb` for F#/VB). A downstream .NET milestone citing
+// `tests/X.Tests/Architecture/FooTests.cs` got `control-unresolved` on every row without
+// this branch. The suffix is CASE-SENSITIVE and ANCHORED at the extension, so an
+// ordinary source (`Program.cs`, `CallMapper.cs`, `Latest.cs`) and a test HELPER
+// (`TestSupport.cs`, `IntegrationTestBase.cs`) stay out. Widening here widens the
+// staging prohibition with it — a `FooTests.cs` staged under `<work.dir>` is a staged
+// control — which is the one-predicate rule above working as designed, and is a strict
+// superset of ADR-004 §4's `*.test.*`/`*.spec.*`, so that invariant still holds.
+const CONTROL_FILE_NAME = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$/;
 
 export function isControlFileName(name) {
   return CONTROL_FILE_NAME.test(String(name ?? ""));

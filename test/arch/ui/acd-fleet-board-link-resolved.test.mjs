@@ -35,7 +35,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripComments, matchedBraceBody, enclosingParenGroup, blockOrStatementAfter } from "../../support/source-slice.mjs";
+import { stripComments, matchedBraceBody, enclosingParenGroup, blockOrStatementAfter, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FLEET_DIR = path.join(repoRoot, "ui", "src", "fleet");
@@ -104,6 +104,27 @@ function routeRegions(code) {
 function resolvedWorkspaceRow(body) {
   const match = body.match(/const\s+(\w+)\s*=\s*\([^;\n]*\.workspaces\s*\?\?\s*\[\]\s*\)\s*\.find\(/);
   return match ? match[1] : null;
+}
+
+// ── milestone 130 / story 03 (TECH_DEBT item 44 paid) — THE RESOLUTION HAS ONE HOME ────────
+//
+// Item 44 measured that THIS detector required the copy in place: it looked for the binding
+// and the probe INSIDE each route's own branch, so the first author to hoist the block into a
+// helper would go red for doing the right thing. The block is now `resolveLocalWorkspaceRow(
+// workspaceId, response)` — one helper inside `ui-serve.mjs` — and a route resolves a row by
+// CALLING it. The obligation is unchanged (probe, then refuse 409 `workspace-not-local`, then
+// consume) and is now checked ONCE, on the helper's own body; every caller inherits it by
+// construction, which is a strictly stronger statement than "the text appears in this branch".
+// A route that binds a row INLINE (the pre-hoist shape) is still checked on its own body.
+const RESOLVER_HELPER = "resolveLocalWorkspaceRow";
+
+function callsResolverHelper(body) {
+  return new RegExp(`\\b${RESOLVER_HELPER}\\s*\\(`).test(body);
+}
+
+// The helper's brace-balanced body, cut past its parameter list (never a param-list `{}`).
+function resolverHelperBody(code) {
+  return functionBody(code, `async function ${RESOLVER_HELPER}(`) ?? functionBody(code, `function ${RESOLVER_HELPER}(`);
 }
 
 // The obligation, checked over the row's own binding: the reachability probe, its 409
@@ -300,9 +321,11 @@ export const archTests = [
         "the route slicer reaches every exact-path branch this face declares, in source order — a shortfall is the detector losing its subject, not the subject improving",
       );
 
+      // A route resolves a row INLINE (its own `(….workspaces ?? []).find(` binding) or through
+      // the ONE helper (130/03); either way it is in the sweep and owes the obligation.
       const resolvers = regions
-        .map((region) => ({ ...region, row: resolvedWorkspaceRow(region.body) }))
-        .filter((region) => region.row != null);
+        .map((region) => ({ ...region, row: resolvedWorkspaceRow(region.body), viaHelper: callsResolverHelper(region.body) }))
+        .filter((region) => region.row != null || region.viaHelper);
 
       // NON-VACUITY: all of today's are found, by name. A new one joins this list the
       // day it is written, and inherits the obligation without its author knowing the rule
@@ -326,7 +349,10 @@ export const archTests = [
       // A POLICY ALLOWLIST with its floor (FF-11902): the three routes that resolve a `workspaces`
       // row are named AMONG what the sweep found, and every resolver found is one of them — the
       // fourth route is asserted absent below as a positive claim.
-      const RESOLVING_ROUTES = ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/session"];
+      // …AND THE FIFTH ROUTE (130/03's `POST /api/mesh/loop-stop`) joins the list on the day it
+      // is written, exactly as this clause predicted for the third — through the helper, so
+      // the obligation it inherits is the one the helper is checked for below.
+      const RESOLVING_ROUTES = ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/loop-stop", "/api/mesh/session"];
       const resolving = resolvers.map((region) => region.path).sort();
       for (const route of RESOLVING_ROUTES) assert.ok(resolving.includes(route), `${route} resolves a workspaces row — the sweep must find it, or the detector has stopped reaching the subject`);
       for (const route of resolving) assert.ok(RESOLVING_ROUTES.includes(route), `${route} resolves a workspaces row and is not one of the three the fleet admits`);
@@ -335,8 +361,22 @@ export const archTests = [
         "the sweep finds the routes that resolve a `workspaces` row out of queryGlobalMeshStatus — if this list is empty, the detector has stopped reaching the subject",
       );
 
+      // The helper is checked ONCE, on its own body, with its own binding — and a route that
+      // calls it inherits that verdict. A route that binds inline is checked on its branch.
+      const helperBody = resolvers.some((region) => region.viaHelper) ? resolverHelperBody(code) : null;
+      const helperRow = helperBody == null ? null : resolvedWorkspaceRow(helperBody);
+      const helperFault = helperBody == null
+        ? `no brace-balanced \`${RESOLVER_HELPER}(\`) body could be cut — a route calls a resolver the face does not declare`
+        : helperRow == null
+          ? `${RESOLVER_HELPER} binds no \`(….workspaces ?? []).find(\` row — it is not the resolution it stands in for`
+          : reachabilityProbeFault(helperBody, helperRow);
       const faults = resolvers
-        .map((region) => ({ path: region.path, fault: reachabilityProbeFault(region.body, region.row) }))
+        .map((region) => ({
+          path: region.path,
+          fault: region.row != null
+            ? reachabilityProbeFault(region.body, region.row)
+            : (helperFault == null ? null : `(via ${RESOLVER_HELPER}) ${helperFault}`),
+        }))
         .filter((entry) => entry.fault != null)
         .map((entry) => `${entry.path} → ${entry.fault}`);
 
@@ -354,11 +394,17 @@ export const archTests = [
     name: "arch/47 ADR-011 (acd-fleet-board-link-resolved): self-check — the reachability detector fires on the PRE-ADR-011 board-url route (probe removed), on a probe that refuses the wrong code, and on a probe placed AFTER the row is consumed; and stays silent on the real one (non-vacuous)",
     run: async () => {
       const code = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
-      const real = routeRegions(code).find((region) => region.path === "/api/mesh/board-url");
-      assert.ok(real, "the real board-url route is sliceable");
+      // 130/03 — the resolution lives ONCE, in `resolveLocalWorkspaceRow`; the board-url route
+      // calls it (asserted), so the region the plants are cut from is the HELPER's body, and
+      // the binding is the helper's `row`. The rule and the plants are otherwise unchanged.
+      const boardUrl = routeRegions(code).find((region) => region.path === "/api/mesh/board-url");
+      assert.ok(boardUrl, "the real board-url route is sliceable");
+      assert.ok(callsResolverHelper(boardUrl.body), "…and it resolves its row through the ONE helper");
+      const real = { body: resolverHelperBody(code) };
+      assert.ok(real.body, "the real resolver helper is sliceable");
       const row = resolvedWorkspaceRow(real.body);
-      assert.equal(row, "workspace", "…and its resolved row binding is found");
-      assert.equal(reachabilityProbeFault(real.body, row), null, "the REAL route satisfies the rule");
+      assert.equal(row, "row", "…and its resolved row binding is found");
+      assert.equal(reachabilityProbeFault(real.body, row), null, "the REAL helper satisfies the rule");
 
       // Line endings normalised before PLANTING (this repo's tree is CRLF on Windows) —
       // the plants below are multi-line rewrites, and a `\n`-shaped pattern silently
@@ -370,7 +416,7 @@ export const archTests = [
       // (a) THE PRE-ADR-011 TREE, reconstructed by deleting the probe from the real region.
       // This is the exact code that answered 200 for a deleted checkout.
       const withoutProbe = body.replace(
-        /if \(!workspace\.projectRoot[\s\S]*?\n\s*\}\n/,
+        /if \(!row\.projectRoot[\s\S]*?\n\s*\}\n/,
         "",
       );
       assert.notEqual(withoutProbe, body, "the plant genuinely removed the probe");
@@ -389,12 +435,13 @@ export const archTests = [
       );
 
       // (c) THE ORDERING, which is the half a "the probe exists" check cannot see: a probe
-      // that runs AFTER `boardUrlForWorkspace` has already launched and memoised a server.
-      const probeMatch = body.match(/\n(\s*)if \(!workspace\.projectRoot[\s\S]*?\n\1\}\n/);
+      // that runs AFTER the row has been handed out — in the helper's terms, after the
+      // `return { status, row }` that every caller consumes (the launch, the load, the stop).
+      const probeMatch = body.match(/\n(\s*)if \(!row\.projectRoot[\s\S]*?\n\1\}\n/);
       assert.ok(probeMatch, "the probe block is sliceable for the reordering plant");
       const reordered = body
         .replace(probeMatch[0], "\n")
-        .replace(/(\n\s*const url = await boardUrlForWorkspace\([^\n]*\n)/, `$1${probeMatch[0]}`);
+        .replace(/(\n\s*return \{ status, row \};)/, `\n  const handed = row;${probeMatch[0]}$1`);
       assert.notEqual(reordered, body, "the reordering plant genuinely moved the probe");
       assert.match(
         String(reachabilityProbeFault(reordered, row)),
@@ -413,9 +460,9 @@ export const archTests = [
       // re-establishes on every run rather than a claim in a review someone has to go and find.
       const padding = Array.from(
         { length: 6 },
-        (_, n) => `        const auditNote${n} = \`board-url probe pass ${n} for \${workspace.workspaceId} on \${process.platform}\`;`,
+        (_, n) => `        const auditNote${n} = \`board-url probe pass ${n} for \${row.workspaceId} on \${process.platform}\`;`,
       ).join("\n");
-      const padded = body.replace(/(if \(!workspace\.projectRoot[^\n]*\n)/, `$1${padding}\n`);
+      const padded = body.replace(/(if \(!row\.projectRoot[^\n]*\n)/, `$1${padding}\n`);
       assert.notEqual(padded, body, "the padding plant genuinely widened the probe block");
       assert.ok(padded.length - body.length > 300, `the plant really does push the refusal past the old cutoff (+${padded.length - body.length} characters)`);
       assert.equal(

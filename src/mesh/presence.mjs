@@ -32,6 +32,12 @@ import { meshDir, presenceRecordPath } from "./store.mjs";
 // layer reuses (never a parallel heartbeat — the SPEC §Dependencies constraint). Both
 // are imported, not re-derived, so the two layers provably share one definition.
 import { readRuns, isStale } from "../run-store.mjs";
+// milestone 130 / story 03 (ADR-005 §1) — the loop dimension: presence READS the standing
+// stop request for each live loop through story 01's ONE module (never a path of its own —
+// FF-13001) and speaks its two words through STOP_LEVELS; "usable" is the declaration read's
+// own five-key rule (src/work/loop.mjs, `usableDeclaration`), applied one run at a time.
+import { STOP_LEVELS, loopStopsDir, readStopRequest } from "../loop/stop-request.mjs";
+import { readLoopDeclaration } from "../work/loop.mjs";
 // milestone 38 / story 00 (ADR-001/002) — the session dimension: presence READS the
 // live (non-expired) session records for this node's projection, exactly as it reads
 // (never mutates) the run records for activeRuns. isSessionLive/resolveSessionTtlSeconds
@@ -75,6 +81,91 @@ export async function readActiveRuns(items) {
     }
   }
   return runIds;
+}
+
+// ----------------------------------------------------- the activeLoops read ----
+
+// The ELEVEN keys of a loop entry, in the one frozen order every producer emits (130/ADR-005
+// §1). `stop` is the standing request's word — null | "drain" | "cancel" — and trails.
+const LOOP_ENTRY_KEYS = Object.freeze(["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop"]);
+
+// The word for a request's level through the ONE map (ADR-001 §2): a record whose level is not
+// in the map — impossible for a record `readStopRequest` admits — reads as no request at all.
+function stopWordFor(request) {
+  if (request == null) return null;
+  return Object.entries(STOP_LEVELS).find(([, level]) => level === request.level)?.[0] ?? null;
+}
+
+// "Latest" is the declaration read's own order — `createdAt`, then `runId` (`compareRuns`,
+// src/work/loop.mjs) — so the entry names the same run `readLoopDeclaration` would resolve.
+function laterRun(left, right) {
+  const leftTime = String(left.createdAt ?? "");
+  const rightTime = String(right.createdAt ?? "");
+  if (leftTime !== rightTime) return leftTime < rightTime ? right : left;
+  return String(left.runId ?? "") < String(right.runId ?? "") ? right : left;
+}
+
+// The default request read: story 01's absence-tolerant read under the ONE home. It answers
+// null for an absent or unparseable file (ADR-001 §2 — one degrade event, never a throw), and
+// a loopRunId the module refuses as a filename segment is caught here for the same reason:
+// this is a READ inside the presence tick, and nothing in it may take the tick down.
+async function readStopRequestFor(loopRunId) {
+  try {
+    return await readStopRequest(loopStopsDir(), loopRunId);
+  } catch {
+    return null;
+  }
+}
+
+// readActiveLoops(items, { workspaceId, stopRequestFor }) — the LIVE-LOOP read beside
+// readActiveRuns (130/ADR-005 §1-§2): over the SAME readRuns read, every `running` run whose
+// `brief.loop` is USABLE (the five-key rule the declaration read owns — `readLoopDeclaration`
+// over that one run answers null otherwise) contributes to ONE entry per `loopRunId`, the
+// LATEST such run naming `ref` (its itemRef) and `runId`. Eleven keys, frozen order:
+//   { loopRunId, workspaceId, scope, level, cap, phase, cycle, ref, runId, supervised, stop }
+// The values are COPIED, not validated: `cap: 0` rides as 0 and a missing `cycle` as null —
+// how the line renders them is the fleet's question. `supervised` is the one field read by the
+// mint's own fail-closed rule (126/02 — only the boolean `true` raises it), exactly as the
+// declaration read projects it. Liveness is not this read's question either: a `running` run
+// with a stale heartbeat is listed exactly as `activeRuns` lists it. Entry order is encounter
+// order over the items handed in (the UI sorts). `stop` is the standing request's word, read
+// through `stopRequestFor(loopRunId)` (default: story 01's module under the ONE home) and
+// mapped by STOP_LEVELS — a `honoured` request still maps by level, the loop is exiting.
+// A READ: no run record and no request file is written or moved.
+export async function readActiveLoops(items, { workspaceId = null, stopRequestFor = readStopRequestFor } = {}) {
+  const latestByLoop = new Map();
+  for (const item of items) {
+    const runs = await readRuns(item);
+    for (const run of runs) {
+      if (run.state !== "running") continue;
+      if (readLoopDeclaration([run]) == null) continue;
+      const loopRunId = run.brief.loop.loopRunId;
+      const prior = latestByLoop.get(loopRunId);
+      // A Map keeps its insertion position on `set`, so the entry order stays the FIRST
+      // encounter's while the value follows the latest run.
+      latestByLoop.set(loopRunId, prior == null ? run : laterRun(prior, run));
+    }
+  }
+  const loops = [];
+  for (const [loopRunId, run] of latestByLoop) {
+    const loop = run.brief.loop;
+    const request = await stopRequestFor(loopRunId);
+    const entry = {
+      loopRunId,
+      workspaceId,
+      scope: loop.scope,
+      level: loop.level,
+      cap: loop.cap,
+      phase: loop.phase ?? null,
+      cycle: loop.cycle ?? null,
+      ref: run.itemRef ?? null,
+      runId: run.runId,
+      supervised: loop.supervised === true,
+      stop: stopWordFor(request),
+    };
+    loops.push(Object.fromEntries(LOOP_ENTRY_KEYS.map((key) => [key, entry[key]])));
+  }
+  return loops;
 }
 
 // ----------------------------------------------------- the sessions[] read ----
@@ -315,7 +406,12 @@ export async function resolveWorkspaceCloneUrl(workspaceId, options = {}) {
 // reads-but-never-mutates run state); aofVersion is the provenance string.
 // A PURE projection of its inputs — the same inputs yield a content-equivalent record
 // (rebuildability), so it is never a second authority.
-export function assemblePresenceRecord({ nodeId, heartbeatAt, activeRuns, sessions, aofVersion, buildId }) {
+// milestone 130 / story 03 (ADR-005 §1) — `loops` is the SEVENTH additive key, emitted LAST
+// and ONLY when non-empty: the `buildId` discipline, chosen over the `sessions` one because
+// eleven suites deep-equal this record's key list and an always-present key would re-pin every
+// one of them for no reader's benefit. Every reader treats an absent key as `[]`. A non-array
+// is not a loops list and is dropped, as a blank buildId is.
+export function assemblePresenceRecord({ nodeId, heartbeatAt, activeRuns, sessions, aofVersion, buildId, loops }) {
   return {
     nodeId,
     heartbeatAt,
@@ -329,6 +425,7 @@ export function assemblePresenceRecord({ nodeId, heartbeatAt, activeRuns, sessio
     // absent discipline. Survives the fabric-liveness merge by construction (F23's
     // fix: liveness spreads the record; it no longer whitelists keys).
     ...(typeof buildId === "string" && buildId.length > 0 ? { buildId } : {}),
+    ...(Array.isArray(loops) && loops.length > 0 ? { loops } : {}),
   };
 }
 

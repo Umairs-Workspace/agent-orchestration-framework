@@ -17,7 +17,7 @@
 // global-shaped panel is what production always mounts). A thin wrapper over
 // ./runs.mjs's fleetCurrentWorkLines, kept here (not inline in the .tsx) so
 // node:test can exercise it directly, mirroring this file's own pattern.
-import { fleetCurrentWorkLines } from "./runs.mjs";
+import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance } from "./runs.mjs";
 
 // ----------------------------------------------------- scope + URL -----------
 
@@ -395,8 +395,21 @@ export function emptyStateCopy(narrowings) {
 // (milestones, stories, tasks). The fleet UI's top-level global list is a
 // milestone list, so it projects that complete payload down to milestone rows at
 // render time instead of asking the store to forget lower-level items.
+//
+// milestone 127 / ADR-006 §1 (story 04) — THE BACKLOG IS PARTITIONED OUT, before the list is
+// derived. The payload now carries a backlog milestone as `{ type: "milestone", number: null,
+// backlog: <group> }` — an un-numbered idea whose ref is its slug; fed to this list it would be
+// painted as a milestone row with its slug in the ref slot AND handed an `AssignAffordance`,
+// offering to dispatch an item that cannot be scheduled because it has no number and gates
+// nothing. The rule is the wire's own fact, `number === null` — the key is PRESENT only on a
+// backlog row (an absent key is a numbered row), and the ref's shape is never consulted.
+// An ARCHIVED milestone is NOT partitioned here: it is a `done` row to the status filter the
+// fleet already has (`workStatusAdmits` below — `open` hides it, `all` and `done` show it),
+// unmarked. DESIGN designs no fleet surface, so this file adds nothing visible; a mark on the
+// fleet is a later design's, with a checklist, not this story's guess (a documented default).
+// The filter DROPS rows and rewrites none: every surviving row is byte-identical.
 export function milestoneListItems(items) {
-  return (items ?? []).filter((item) => item?.type === "milestone");
+  return (items ?? []).filter((item) => item?.type === "milestone" && item?.number !== null);
 }
 
 function sameMilestoneParent(parent, milestoneRef) {
@@ -657,10 +670,19 @@ export function isCredentialField(key) {
 // capabilities, and fabric address when known". PURE projection; never mutates
 // the input, and never carries a credential-shaped field through (belt-and-braces
 // with withoutCredentialFields above).
+// nodeDisplayName(node) — the name a person reads for a node: its machine name (the record's
+// `hostname`, macOS `.local` dropped) when the record carries one, else its id. The id stays the
+// identity; this is only what the card is titled with (132 — ids are opaque, names are not).
+export function nodeDisplayName(node) {
+  const hostname = typeof node?.hostname === "string" ? node.hostname.trim().replace(/\.local$/iu, "") : "";
+  return hostname.length > 0 ? hostname : (node?.nodeId ?? null);
+}
+
 export function nodePanelFacts(node) {
   const safe = withoutCredentialFields(node ?? {});
   return {
     nodeId: safe.nodeId ?? null,
+    name: nodeDisplayName(safe),
     role: safe.role ?? (safe.local ? "this node" : null),
     host: safe.host ?? null,
     lastSeenAt: safe.lastSeenAt ?? safe.presence?.heartbeatAt ?? null,
@@ -686,6 +708,34 @@ export function nodePanelFacts(node) {
 // exactly as nodePanelFacts does, since both carry `presence` the same way.
 export function nodeCurrentWork(node) {
   return fleetCurrentWorkLines(node?.presence ?? {});
+}
+
+// nodeWorkRegion(node, localNodeId, memory) — milestone 130 / story 03 (ADR-005 §5;
+// DESIGN §Surface 1): the WHOLE current-work region of the card that production renders —
+// `{ lines, token, loops }` — composing the pinned `fleetCurrentWorkLines` (byte-identical,
+// untouched: the Rust drift pin reads it) with the loop entries beside it:
+//   - `lines` are the pinned projection's lines, except that the single `idle` line is
+//     DROPPED when a loop exists — a loop between drives is not an idle node (DESIGN default 1;
+//     38 S1/S9's cap becomes 2 + L). `token` is `primary` whenever a loop exists, for the
+//     same reason: the loop is still doing work at every rung.
+//   - `loops` are `fleetLoopLines`' entries (ascending by scope), each composed with the
+//     REMOTE half of `loopStopAffordance`: on a card whose node is NOT the serving node the
+//     `title` tail says why there is no button — `· remote — stop from <nodeId>'s own console`
+//     (49's affordance-table rule: every absence carries its reason). The line itself is NOT
+//     gated by locality — a remote node's loop renders, buttonless; the BUTTON is the card's
+//     to compose per entry, because the rung memory it climbs is the card's own state.
+//   - `memory` (optional, the card's rung memory) raises each entry's word to the one held
+//     locally for the same drive — the composition the DESIGN calls "held locally".
+// PURE; absent presence (a never-beat node) degrades to `{}` and reads `idle`, never a throw.
+export function nodeWorkRegion(node, localNodeId, memory) {
+  const presence = node?.presence ?? {};
+  const pinned = fleetCurrentWorkLines(presence);
+  const loops = fleetLoopLines(presence, memory).map((entry) => {
+    const { remote } = loopStopAffordance({ loop: entry, node, localNodeId });
+    return remote ? { ...entry, title: `${entry.title} · remote — stop from ${node?.nodeId}'s own console` } : entry;
+  });
+  if (loops.length === 0) return { lines: pinned.lines, token: pinned.token, loops };
+  return { lines: pinned.state === "idle" ? [] : pinned.lines, token: "primary", loops };
 }
 
 // ---------------------------------------------- assign-to-node affordance -----

@@ -23,6 +23,9 @@ import { reportDegrade } from "../degrade.mjs";
 // call site needed it first is not a rule (assignment-transitions.mjs's discipline,
 // copied deliberately). No mint can reach the run store without passing it.
 import { guardItemLock } from "../item-lock.mjs";
+// 134/03 (ADR-003 §4, FF-13404) — the one place that knows where Claude Code keeps a project's
+// transcripts, so a settle reads the store that exists rather than the repository root.
+import { claudeProjectsDir } from "../work/observe.mjs";
 
 // transitionRunStart(item, edge, opts) — mint a run and raise `run.started`
 // (m42 wave (d) leg d4, port 1). The MINT is the second run-store fact to get a
@@ -90,27 +93,42 @@ export async function transitionRunStart(item, edge = {}, opts = {}) {
 //          edge and passed through as data — this seam does no clock arithmetic;
 //          its coded rejections — no-running-run / ambiguous-run /
 //          illegal-transition — propagate untouched, and NOTHING is appended)
-//   opts — { workspace, projectsDir, journalOptions, drain = true }
+//   opts — { workspace, projectsDir, spendSettled = false, env, home, journalOptions, drain = true }
 //          `projectsDir` — where the session's transcript tree lives, for 68/02's
-//          spend stamp. DELIBERATELY a separate opt from `workspace`, for exactly the
-//          reason `lock` is (above): `workspace` also sets the event's workspaceRoot,
-//          so a caller that wants its run priced but does NOT propagate — the local
-//          drive command — cannot express that by passing `workspace`. Defaults to
-//          `workspace.projectRoot`, so every existing caller is unchanged.
+//          spend stamp and 134/03's answer stamp. DELIBERATELY a separate opt from
+//          `workspace`, for exactly the reason `lock` is (above): `workspace` also sets
+//          the event's workspaceRoot, so a caller that wants its run priced but does NOT
+//          propagate — the local drive command — cannot express that by passing
+//          `workspace`. When the caller gives none, it is RESOLVED (settleProjectsDir,
+//          below) — never the repository root, where no transcript lives (134 RESEARCH R5).
+//          `spendSettled` — the caller settled (or withheld) the spend itself, so it is not
+//          settled again here; the answers are still stamped (134/03, the driven settles).
+//          `env` / `home` — injectable for the resolution, defaulting to the process's.
 export async function transitionRunComplete(item, { runId, outcome, failureReason = null, resumeAfter = null, now } = {}, opts = {}) {
   const {
     workspace = null,
     projectsDir = undefined,
+    spendSettled = false,
+    env = process.env,
+    home = undefined,
     publisherOptions = null,
     journalOptions = {},
     drain = true,
   } = opts;
 
   // (1) The FACT — the store's own guarded terminal transition. A refusal here
-  // means no event: facts precede announcements. `projectsDir` (the workspace
-  // project root, where the session's transcript tree lives) rides completeRun's
-  // optional settle seam (68/02) so the run's spend is stamped at settle.
-  const record = await completeRun(item, { runId, outcome, failureReason, resumeAfter, now, projectsDir: projectsDir ?? workspace?.projectRoot ?? undefined });
+  // means no event: facts precede announcements. The transcript directory rides
+  // completeRun's settle seam (68/02, 134/03) so the run's spend and its person's
+  // answers are stamped at settle.
+  const record = await completeRun(item, {
+    runId,
+    outcome,
+    failureReason,
+    resumeAfter,
+    now,
+    projectsDir: settleProjectsDir({ projectsDir, workspace, env, home }),
+    settleSpend: !spendSettled,
+  });
 
   // (2) The EVENT — past tense, carrying its own evidence (never a ping that
   // forces reactors to re-read racing state).
@@ -126,6 +144,18 @@ export async function transitionRunComplete(item, { runId, outcome, failureReaso
     workspaceRoot: workspace?.projectRoot ?? null,
   };
   return await raise("run.completed", payload, record, { workspace, publisherOptions, journalOptions, drain, now });
+}
+
+// settleProjectsDir — the transcript directory a settle reads (134/ADR-003 §4, FF-13404). The
+// caller's own wins (an empty string is none given). Otherwise, only when the caller names a
+// workspace, the directory Claude Code keeps for that workspace's root — a CLI settle run from a
+// subdirectory still loads the workspace at the repository root, and a lane's workspace is its
+// dispatch worktree, whose slug is the one its session wrote under. A caller that names neither —
+// the mesh callers, whose sessions ran elsewhere — reads nothing, as before.
+function settleProjectsDir({ projectsDir, workspace, env, home }) {
+  if (typeof projectsDir === "string" && projectsDir.length > 0) return projectsDir;
+  if (typeof workspace?.projectRoot !== "string" || workspace.projectRoot.length === 0) return undefined;
+  return claudeProjectsDir({ cwd: workspace.projectRoot, env, ...(home ? { home } : {}) });
 }
 
 // transitionRunReclaimed(item, edge, opts) — THE reclaim edge, shared by both

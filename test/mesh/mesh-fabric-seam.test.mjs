@@ -22,8 +22,8 @@ const STATUS_FIXTURE = {
   Version: "1.80.0",
   BackendState: "Running",
   Self: {
-    HostName: "umamis-msi",
-    DNSName: "umamis-msi.tail1a2b.ts.net.",
+    HostName: "win-host-a",
+    DNSName: "win-host-a.tail1a2b.ts.net.",
     OS: "windows",
     TailscaleIPs: ["198.51.100.123", "fd7a:115c:a1e0::1"],
     Online: true,

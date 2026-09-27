@@ -98,7 +98,7 @@ import { regressionGateCommand } from "./commands/regression-gate.mjs";
 // work:run-retry — m09, m19, m21, 08/ADR-004 — see ./commands/run-retry.mjs's header.
 import { runRetryCommand } from "./commands/run-retry.mjs";
 // work:resume — see ./commands/resume.mjs's header.
-import { resumeCommand } from "./commands/resume.mjs";
+import { resumeCommand, answerCommand } from "./commands/resume.mjs";
 // mesh:identity / mesh:status — see ./commands/mesh/identity.mjs's header.
 import { meshIdentityCommand, meshStatusCommand } from "./commands/mesh/identity.mjs";
 // mesh:heartbeat — see ./commands/mesh/heartbeat.mjs's header.
@@ -125,6 +125,14 @@ import { meshUiCommand } from "./commands/mesh/ui.mjs";
 import { meshDesktopInstallCommand, meshDesktopRunCommand, meshDesktopStopCommand } from "./commands/mesh/desktop.mjs";
 // graph:serve — m42 — see ./commands/graph/serve.mjs's header.
 import { graphServeCommand } from "./commands/graph/serve.mjs";
+// diagram:plan — milestone 133 — see ./commands/diagram/plan.mjs's header.
+import { diagramPlanCommand } from "./commands/diagram/plan.mjs";
+// diagram:export — milestone 133 — see ./commands/diagram/export.mjs's header.
+import { diagramExportCommand } from "./commands/diagram/export.mjs";
+// diagram:file — milestone 133 — see ./commands/diagram/file.mjs's header.
+import { diagramFileCommand } from "./commands/diagram/file.mjs";
+// messaging:init / messaging:enable / messaging:disable / messaging:status / messaging:test — 131/08 — see ./commands/messaging/messaging.mjs's header.
+import { messagingInitCommand, messagingEnableCommand, messagingDisableCommand, messagingStatusCommand, messagingTestCommand } from "./commands/messaging/messaging.mjs";
 import { workUiCommand } from "./commands/work-ui.mjs";
 import { assetsUiCommand } from "./commands/assets/ui.mjs";
 // work:find — m42, m12 — see ./commands/find.mjs's header.
@@ -148,6 +156,8 @@ import { insertStoryCommand } from "./commands/insert-story.mjs";
 import { insertChoreCommand } from "./commands/insert-chore.mjs";
 // work:promote — milestone 127 / ADR-003 — see ./commands/promote.mjs's header.
 import { promoteCommand } from "./commands/promote.mjs";
+// work:archive — milestone 127 / ADR-004 — see ./commands/archive.mjs's header.
+import { archiveCommand } from "./commands/archive.mjs";
 import { promoteGapToChoreCommand } from "./commands/promote-gap-to-chore.mjs";
 // work:promote-finding — see ./commands/promote-finding-to-chore.mjs's header.
 import { promoteFindingToChoreCommand } from "./commands/promote-finding-to-chore.mjs";
@@ -227,6 +237,7 @@ const COMMANDS = [
   regressionGateCommand,
   runRetryCommand,
   resumeCommand,
+  answerCommand,
   meshIdentityCommand,
   meshStatusCommand,
   meshHeartbeatCommand,
@@ -245,6 +256,14 @@ const COMMANDS = [
   meshDesktopRunCommand,
   meshDesktopStopCommand,
   graphServeCommand,
+  diagramPlanCommand,
+  diagramExportCommand,
+  diagramFileCommand,
+  messagingInitCommand,
+  messagingEnableCommand,
+  messagingDisableCommand,
+  messagingStatusCommand,
+  messagingTestCommand,
   workUiCommand,
   assetsUiCommand,
   findCommand,
@@ -265,6 +284,7 @@ const COMMANDS = [
   insertStoryCommand,
   insertChoreCommand,
   promoteCommand,
+  archiveCommand,
   promoteGapToChoreCommand,
   promoteFindingToChoreCommand,
   upgradeCommand,

@@ -32,7 +32,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { handleWorkApi } from "../../src/board-ui.mjs";
-import { openGlobalWorkProjectionStore, upsertWorkItemContent, workspaceIdFor } from "../../src/global-work-store.mjs";
+import { openGlobalWorkProjectionStore, upsertWorkItemContent, upsertWorkItems, readWorkspaceItems, workspaceIdFor } from "../../src/global-work-store.mjs";
 import { RESYNC_REQUESTED, readResync, runResyncDispatchTick } from "../../src/mesh/resync.mjs";
 import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../src/assignment-record.mjs";
 import { loadWorkspace } from "../../src/work.mjs";
@@ -116,7 +116,42 @@ async function writeStream(workDir, stream) {
       "utf8",
     );
   }
+  // milestone 127 / story 04 (task 02) — the two OPTIONAL members beside milestone / stories /
+  // gate, so the board lanes mount the real <Board/> against a real three-root stream:
+  //   `backlog: [{ type, slug, title?, group }]` — written as `backlog/[<group>/]<type>_<slug>/`
+  //     with NO `number:` line (127/ADR-001 §2: an un-numbered driver, its slug its ref; a
+  //     `title` left out is a row whose title the wire answers null for);
+  //   `archived: [{ type, number, slug, title, status, stories? }]` — written under `archive/`,
+  //     name VERBATIM, `status: done` (127/ADR-004: a move touches no number).
+  // The default stream declares neither, so every existing lane reads exactly what it read.
+  for (const row of stream.backlog ?? []) {
+    const dir = path.join(workDir, "backlog", ...(row.group ? row.group.split("/") : []), `${row.type}_${row.slug}`);
+    await mkdir(dir, { recursive: true });
+    const title = row.title === undefined ? "" : `title: "${row.title}"\n`;
+    await writeFile(path.join(dir, RECORD_DOC[row.type]), `---\ntype: ${row.type}\nslug: ${row.slug}\nstatus: not-started\n${title}---\n\n# ${row.slug}\n`, "utf8");
+  }
+  for (const row of stream.archived ?? []) {
+    const dir = path.join(workDir, "archive", `${row.number}_${row.type}_${row.slug}`);
+    await mkdir(dir, { recursive: true });
+    await writeFile(
+      path.join(dir, RECORD_DOC[row.type]),
+      `---\ntype: ${row.type}\nnumber: ${row.number}\nslug: ${row.slug}\nstatus: ${row.status ?? "done"}\ntitle: "${row.title ?? row.slug}"\n---\n\n# ${row.number} · ${row.title ?? row.slug}\n`,
+      "utf8",
+    );
+    for (const story of row.stories ?? []) {
+      const storyDir = path.join(dir, "stories", `${story.number}_story_${story.slug}`);
+      await mkdir(storyDir, { recursive: true });
+      await writeFile(
+        path.join(storyDir, "STORY.md"),
+        `---\ntype: story\nnumber: ${story.number}\nslug: ${story.slug}\nparent: ${row.number}\nstatus: ${story.status ?? "done"}\ntitle: "${story.title ?? story.slug}"\n---\n\n# ${story.number} · ${story.title ?? story.slug}\n`,
+        "utf8",
+      );
+    }
+  }
 }
+
+// The record doc each driver type carries (`recordDoc` in src/work.mjs, by type).
+const RECORD_DOC = { milestone: "SPEC.md", story: "STORY.md", chore: "CHORE.md", spike: "SPIKE.md", uat: "SESSION.md" };
 
 // The response shim `handleWorkApi` writes into when the fixture needs to see the
 // real face's answer before forwarding it. The face uses exactly `writeHead` +
@@ -306,6 +341,38 @@ export async function withBoardFace(fn, { stream = DEFAULT_STREAM, nodeId = "aof
           const set = columns.map((column) => `${column} = NULL`).join(", ");
           if (ref === "*") store.db.prepare(`UPDATE work_items SET ${set} WHERE workspace_id = ?`).run(workspaceId);
           else store.db.prepare(`UPDATE work_items SET ${set} WHERE workspace_id = ? AND ref = ?`).run(workspaceId, ref);
+        } finally {
+          store.close();
+        }
+        return face;
+      },
+      // reportedRow(ref, { node, at }) — ONE row re-reported by `node` at `at`, through the
+      // REAL row upsert with a worker's `reported` authority — a delta frame's write, which is
+      // never filtered by who authored the cached row. It is how a lane states two rows'
+      // instants INDEPENDENTLY (`reportedBy` above publishes the whole workspace at one
+      // instant), which the threshold-crossing scenarios need: one row 301s old beside one
+      // 299s old, under one window.
+      async reportedRow(ref, { node = nodeId, at } = {}) {
+        const store = await openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
+        try {
+          const workspaceId = workspaceIdFor(root);
+          const row = readWorkspaceItems(store, workspaceId).find((candidate) => candidate.ref === ref);
+          if (!row) throw new Error(`board face: reportedRow(${ref}) — the cache holds no row for it; publish first (reportedBy)`);
+          const result = upsertWorkItems(store, workspaceId, [row], { nodeId: node, authority: "reported", syncedAt: at });
+          if (result.upserted !== 1) throw new Error(`board face: reportedRow(${ref}) did not land: ${JSON.stringify(result.skipped)}`);
+        } finally {
+          store.close();
+        }
+        return face;
+      },
+      // unpublish(ref) — the row was NEVER cache-published: it leaves the cache entirely, so
+      // the wire carries no provenance key for it at all (a different fact from "published,
+      // author unknown", which `forget` models with explicit nulls). A read of the store's own
+      // seam would answer it from disk with `answeredFrom: "disk"` and nothing else.
+      async unpublish(ref) {
+        const store = await openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
+        try {
+          store.db.prepare("DELETE FROM work_items WHERE workspace_id = ? AND ref = ?").run(workspaceIdFor(root), ref);
         } finally {
           store.close();
         }

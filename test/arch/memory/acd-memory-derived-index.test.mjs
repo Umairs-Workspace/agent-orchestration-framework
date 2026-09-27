@@ -19,7 +19,7 @@ import { reindex, memoryIndexPath } from "../../../src/memory/local-indexing.mjs
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
 const REAL_WORK_DIR = path.join(REPO_ROOT, "wiki", "work");
-const M01_DIR = path.join(REAL_WORK_DIR, "01_milestone_acd-asset-bundle");
+const M01_DIR = path.join(REAL_WORK_DIR, "archive", "01_milestone_acd-asset-bundle");
 
 // Build a temp stream from the real milestone-01 corpus (RETROSPECTIVE + ARCHITECTURE)
 // plus a tiny synthesized second milestone, so the proof covers both source kinds.

@@ -84,8 +84,19 @@ async function realSource() {
 // mutation surface, so that non-movement is its subject rather than a side note: the whole
 // load-bearing statement of story 04 is that the fleet face learned to REPORT a spawn
 // outcome without learning to do anything new.
-const WRITE_ROUTES = Object.freeze(["/api/mesh/assign", "/api/mesh/session"]);
+//
+// milestone 130 / story 03 (ADR-005 §4; TECH_DEBT item 44 paid) — the named set is THREE:
+// `POST /api/mesh/loop-stop`, in assign's exact shape. And the SHAPE moved: the method guard
+// (with SECURITY T13's admission) is no longer inline text in each branch — item 44 measured
+// that this detector REQUIRED the copy in place, so the first author to hoist it would go red
+// for doing the right thing — it is ONE helper, `admitWriteRequest(request, response)`, and
+// every write branch CALLS it before it reads a body. That is a strictly stronger statement
+// than "the text appears in this branch": a copy that drifts cannot satisfy it. The detector
+// below accepts EITHER form per branch (the inline guard, or the call) and, whenever a branch
+// relies on the call, requires the helper to exist and to carry the guard itself.
+const WRITE_ROUTES = Object.freeze(["/api/mesh/assign", "/api/mesh/session", "/api/mesh/loop-stop"]);
 const READ_ROUTES = Object.freeze(["/api/mesh/board-url", "/api/mesh/session-outcome", "/api/mesh/status"]);
+const ADMISSION_HELPER = "admitWriteRequest";
 
 // routeBranchBody(source, route) — the BRACE-BALANCED body of `if (pathname === "…") {`.
 //
@@ -104,8 +115,17 @@ function routeBranchBody(source, route) {
 
 // The guard must be the branch's OWN and must run FIRST — before a body is read or a
 // verb/dispatch is reached. 200 characters of the branch's own body is the same
-// "at the top of the handler" bound, now measured inside the handler.
+// "at the top of the handler" bound, now measured inside the handler. A CALL to the hoisted
+// helper is the branch's own guard for the same purpose — provided the helper carries it.
 const METHOD_GUARD_HEAD_CH = 200;
+
+// admissionHelperBody(source) — the brace-balanced body of `function admitWriteRequest(`, or
+// null when the face declares no such helper (then every branch must guard inline).
+function admissionHelperBody(source) {
+  const anchor = new RegExp(`function\\s+${ADMISSION_HELPER}\\s*\\([^)]*\\)\\s*\\{`).exec(source);
+  if (anchor == null) return null;
+  return sliceBalanced(source, anchor.index + anchor[0].length - 1);
+}
 
 function routeTableProblems(source) {
   const problems = [];
@@ -123,15 +143,26 @@ function routeTableProblems(source) {
   // EVERY named write route guards ITSELF to POST only — a GET/PUT/DELETE on one is a
   // rejection, never a dispatch. Checked per route, inside that route's own branch, so
   // adding a name to the set cannot inherit its sibling's guard.
+  const helper = admissionHelperBody(source);
   for (const route of WRITE_ROUTES) {
     const body = routeBranchBody(source, route);
     if (body == null) {
       problems.push(`${route} has no brace-balanced \`if (pathname === "${route}") { … }\` branch to check`);
       continue;
     }
-    const guardAt = body.search(/request\.method\s*!==\s*["']POST["']/);
-    if (guardAt < 0 || guardAt > METHOD_GUARD_HEAD_CH) {
-      problems.push(`POST ${route} is not guarded to POST-only before dispatch`);
+    const inlineAt = body.search(/request\.method\s*!==\s*["']POST["']/);
+    const callAt = body.search(new RegExp(`\\b${ADMISSION_HELPER}\\s*\\(`));
+    const inline = inlineAt >= 0 && inlineAt <= METHOD_GUARD_HEAD_CH;
+    const called = callAt >= 0 && callAt <= METHOD_GUARD_HEAD_CH;
+    if (!inline && !called) {
+      problems.push(`POST ${route} is not guarded to POST-only before dispatch — neither an inline method guard nor a call to ${ADMISSION_HELPER}( leads its branch`);
+      continue;
+    }
+    // A branch that RELIES on the call inherits nothing unless the helper is real: it must
+    // exist, and it must be the guard it stands in for.
+    if (!inline && called) {
+      if (helper == null) problems.push(`POST ${route} calls ${ADMISSION_HELPER}( but the face declares no such helper — the call guards nothing`);
+      else if (!/request\.method\s*!==\s*["']POST["']/.test(helper)) problems.push(`${ADMISSION_HELPER} carries no POST-only method guard — every branch that calls it is ungated`);
     }
   }
   return problems;
@@ -224,6 +255,7 @@ export const archTests = [
         if (pathname === "/api/mesh/board-url") { if (request.method !== "GET" && request.method !== "HEAD") return; }
         if (pathname === "/api/mesh/assign") { if (request.method !== "POST") return; }
         if (pathname === "/api/mesh/session") { if (request.method !== "POST") return; }
+        if (pathname === "/api/mesh/loop-stop") { if (request.method !== "POST") return; }
         if (pathname === "/api/mesh/session-outcome") { if (request.method !== "GET" && request.method !== "HEAD") return; }
       `);
       const planted = stripComments(`
@@ -231,6 +263,7 @@ export const archTests = [
         if (pathname === "/api/mesh/board-url") { if (request.method !== "GET" && request.method !== "HEAD") return; }
         if (pathname === "/api/mesh/assign") { if (request.method !== "POST") return; }
         if (pathname === "/api/mesh/session") { if (request.method !== "POST") return; }
+        if (pathname === "/api/mesh/loop-stop") { if (request.method !== "POST") return; }
         if (pathname === "/api/mesh/session-outcome") { if (request.method !== "GET" && request.method !== "HEAD") return; }
         if (pathname === "/api/mesh/route") { sendJson(response, 200, { ok: true }); }
       `);
@@ -249,6 +282,7 @@ export const archTests = [
           if (pathname === "/api/mesh/board-url") { if (request.method !== "GET" && request.method !== "HEAD") return; }
           if (pathname === "/api/mesh/assign") { if (request.method !== "POST") return; }
           if (pathname === "/api/mesh/session") { if (request.method !== "POST") return; }
+          if (pathname === "/api/mesh/loop-stop") { if (request.method !== "POST") return; }
           if (pathname === "/api/mesh/session-outcome") { if (request.method !== "GET" && request.method !== "HEAD") return; }
           if (pathname === "${name}") { sendJson(response, 200, { ok: true }); }
         `);
@@ -267,6 +301,7 @@ export const archTests = [
         if (pathname === "/api/mesh/board-url") { if (request.method !== "GET" && request.method !== "HEAD") return; }
         if (pathname === "/api/mesh/assign") { const result = await assignWork(workspace, ref, nodeId, ctx); }
         if (pathname === "/api/mesh/session") { if (request.method !== "POST") return; }
+        if (pathname === "/api/mesh/loop-stop") { if (request.method !== "POST") return; }
         if (pathname === "/api/mesh/session-outcome") { if (request.method !== "GET" && request.method !== "HEAD") return; }
       `);
       assert.notEqual(ungatedPlant, clean, "the plant actually differs from the clean synthesized shape");
@@ -280,6 +315,7 @@ export const archTests = [
         if (pathname === "/api/mesh/board-url") { if (request.method !== "GET" && request.method !== "HEAD") return; }
         if (pathname === "/api/mesh/assign") { if (request.method !== "POST") return; }
         if (pathname === "/api/mesh/session") { await terminalInputPush.push(envelope); }
+        if (pathname === "/api/mesh/loop-stop") { if (request.method !== "POST") return; }
         if (pathname === "/api/mesh/session-outcome") { if (request.method !== "GET" && request.method !== "HEAD") return; }
       `);
       assert.notEqual(ungatedSession, clean, "the plant actually differs from the clean synthesized shape");
@@ -287,6 +323,35 @@ export const archTests = [
         routeTableProblems(ungatedSession).some((problem) => problem.includes("/api/mesh/session")),
         "self-check: an ungated SESSION route trips the detector BY NAME — the method guard is checked per write route",
       );
+
+      // ── 130/03 (TECH_DEBT item 44's hoist) — the CALL form, and its two broken halves ──
+      // The accepted hoisted shape: every write branch CALLS admitWriteRequest( at its head,
+      // and the helper carries the guard. This is what the real face ships now.
+      const hoisted = stripComments(`
+        function admitWriteRequest(request, response) {
+          if (request.method !== "POST") { sendMethodNotAllowed(response, "POST"); return false; }
+          return true;
+        }
+        if (pathname === "/api/mesh/status") { if (request.method !== "GET" && request.method !== "HEAD") return; }
+        if (pathname === "/api/mesh/board-url") { if (request.method !== "GET" && request.method !== "HEAD") return; }
+        if (pathname === "/api/mesh/assign") { if (!admitWriteRequest(request, response)) return; }
+        if (pathname === "/api/mesh/session") { if (!admitWriteRequest(request, response)) return; }
+        if (pathname === "/api/mesh/loop-stop") { if (!admitWriteRequest(request, response)) return; }
+        if (pathname === "/api/mesh/session-outcome") { if (request.method !== "GET" && request.method !== "HEAD") return; }
+      `);
+      assert.deepEqual(routeTableProblems(hoisted), [], "self-check: the hoisted shape — a CALL per branch and a helper that carries the guard — stays quiet");
+      // (a) a branch that stops calling the helper is ungated, whatever the others do.
+      const droppedCall = hoisted.replace('if (pathname === "/api/mesh/loop-stop") { if (!admitWriteRequest(request, response)) return; }', 'if (pathname === "/api/mesh/loop-stop") { const body = await readJsonBody(request); }');
+      assert.notEqual(droppedCall, hoisted, "the plant actually differs from the hoisted shape");
+      assert.ok(routeTableProblems(droppedCall).some((problem) => problem.includes("/api/mesh/loop-stop")), "self-check: a branch that neither guards inline nor calls the helper trips BY NAME");
+      // (b) the helper exists and is called, but it lost its guard — every caller is ungated at once.
+      const hollowHelper = hoisted.replace('if (request.method !== "POST") { sendMethodNotAllowed(response, "POST"); return false; }', "");
+      assert.notEqual(hollowHelper, hoisted, "the plant actually differs from the hoisted shape");
+      assert.ok(routeTableProblems(hollowHelper).some((problem) => /carries no POST-only method guard/.test(problem)), "self-check: a helper without the guard trips — the call is only as good as what it calls");
+      // (c) a call to a helper the face never declares guards nothing.
+      const phantomHelper = hoisted.replace(/function admitWriteRequest[\s\S]*?\n\s*\}\n/, "");
+      assert.notEqual(phantomHelper, hoisted, "the plant actually differs from the hoisted shape");
+      assert.ok(routeTableProblems(phantomHelper).some((problem) => /declares no such helper/.test(problem)), "self-check: a call to an undeclared helper trips");
     },
   },
 
@@ -412,6 +477,15 @@ export const archTests = [
           { method: "POST", path: "/api/mesh/issue" },
           { method: "POST", path: "/api/mesh/revoke" },
         ];
+        // 130/03 — the THIRD named write route answers the same way on every method but POST,
+        // and a POST is refused by the SAME admission before any body is read.
+        rows.push(
+          { method: "PUT", path: "/api/mesh/loop-stop" },
+          { method: "DELETE", path: "/api/mesh/loop-stop" },
+          { method: "GET", path: "/api/mesh/loop-stop" },
+          { method: "POST", path: "/api/mesh/loop-stop" },
+          { method: "POST", path: "/api/mesh/loop-stop", origin: "NONE" },
+        );
         for (const row of rows) {
           const headers = { "content-type": "application/json" };
           if (row.origin !== "NONE") headers.origin = new URL(url).origin;

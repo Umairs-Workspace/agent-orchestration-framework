@@ -66,8 +66,9 @@ function frontmatter(fields) {
 
 // writeItem(work, rel, { type, number?, slug, status, title?, parent?, depends?, body? }) — one
 // record doc, valid by default (schema: 1 beside its status, created + updated). `number`
-// is OMITTED for a backlog item, which is the rule task 03 checks.
-async function writeItem(work, rel, { type, number, slug, status = "not-started", title, parent, depends, extra = {}, body = "" }) {
+// is OMITTED for a backlog item, which is the rule task 03 checks. EXPORTED (127/03) so the
+// archive suite extends this fixture through the same writer rather than a second spelling.
+export async function writeItem(work, rel, { type, number, slug, status = "not-started", title, parent, depends, extra = {}, body = "" }) {
   const dir = path.join(work, ...rel.split("/"));
   await mkdir(dir, { recursive: true });
   const fields = {

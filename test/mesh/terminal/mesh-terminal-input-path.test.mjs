@@ -816,4 +816,75 @@ export const meshTerminalInputPathTests = [
       }
     },
   },
+  // 131/04 — hoisted below.
+  ...resumeAnswerRouterTests(),
 ];
+
+// ---- 131/04 task 03 — the control router forwards the answer on the DOWN frame, unlogged ---------
+function resumeAnswerRouterTests() {
+  const BY = { actor: "umami", via: "board", node: "node-7297" };
+  const A = { text: "zq-answer-marker", by: BY, askedAt: null };
+  const FIELDS = { sessionId: "sess-1", assignmentId: "asg-1", workspaceId: "ws-1", itemRef: "18", reservedAt: NOW, previousNodeId: "worker-a", parkId: "park-1" };
+  const ELEVEN = {
+    kind: TERMINAL_RESUME_KIND, to: "worker-a", sessionId: "sess-1", assignmentId: "asg-1", workspaceId: "ws-1", itemRef: "18",
+    reservedAt: NOW, targetNodeId: "worker-a", previousNodeId: "worker-a", parkId: "park-1", at: NOW,
+  };
+  // The envelope as the relay carries it: `signal.answer` set to exactly what a case names, even a
+  // shape the builder would never make.
+  const envelopeWith = (answer) => {
+    const envelope = buildTerminalResumeEnvelope("worker-a", FIELDS);
+    return answer === undefined ? envelope : { ...envelope, signal: { ...envelope.signal, answer } };
+  };
+  const routerFor = (sent = true) => {
+    const dispatched = [];
+    const logs = [];
+    const router = createTerminalInputRouter({
+      dispatchDirective: (frame) => { dispatched.push(frame); return { sent }; },
+      now: () => NOW,
+      onLog: (entry) => logs.push(entry),
+    });
+    return { router, dispatched, logs };
+  };
+  return [
+    {
+      name: "131/04 task03 — the control router forwards the answer on the DOWN frame and does not log it",
+      run() {
+        const { router, dispatched, logs } = routerFor();
+        assert.equal(router.apply(envelopeWith({ text: "take b", by: BY, askedAt: null })), true);
+        assert.equal(router.apply(envelopeWith(undefined)), true);
+        assert.deepEqual(dispatched[0], { ...ELEVEN, answer: { text: "take b", by: BY, askedAt: null } }, "today's eleven keys plus answer");
+        assert.deepEqual(dispatched[1], ELEVEN, "without answer, today's eleven-key frame exactly");
+        assert.equal(JSON.stringify(dispatched[1]), JSON.stringify(ELEVEN), "…byte for byte, in order");
+        assert.ok(logs.length > 0, "the router did log its resume lines");
+        for (const entry of logs) assert.ok(!entry.message.includes("take b"), "no log line contains the answer");
+      },
+    },
+    {
+      name: "131/04 task03 — the router forwards a usable answer, drops any other, and never refuses the frame for it (ten rows)",
+      run() {
+        const rows = [
+          [A, A],
+          [{ text: "zq-answer-marker" }, { text: "zq-answer-marker", by: null, askedAt: null }],
+          [{ ...A, extra: "x" }, A],
+          [{ text: "   ", by: BY, askedAt: null }, { text: "   ", by: BY, askedAt: null }],
+          [{ text: "", by: BY, askedAt: null }, null],
+          [{ text: 42, by: BY }, null],
+          [{ by: BY, askedAt: null }, null],
+          ["zq-answer-marker", null],
+          [null, null],
+          [["zq-answer-marker"], null],
+        ];
+        for (const [index, [answer, expected]] of rows.entries()) {
+          const { router, dispatched, logs } = routerFor();
+          assert.equal(router.apply(envelopeWith(answer)), true, `row ${index}: apply answers true`);
+          assert.equal(dispatched.length, 1, `row ${index}: one frame`);
+          assert.deepEqual(dispatched[0], expected == null ? ELEVEN : { ...ELEVEN, answer: expected }, `row ${index}: the frame`);
+          const offline = routerFor(false);
+          offline.router.apply(envelopeWith(answer));
+          for (const entry of [...logs, ...offline.logs]) assert.ok(!entry.message.includes("zq-answer-marker"), `row ${index}: no log line contains the marker`);
+          assert.ok(offline.logs.some((entry) => entry.code === "terminal-resume-target-not-connected"), `row ${index}: the not-connected line was logged`);
+        }
+      },
+    },
+  ];
+}

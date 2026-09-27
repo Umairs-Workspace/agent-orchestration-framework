@@ -19,6 +19,12 @@
 // engine BEFORE its renames (work-reindex.mjs's buildRefRemap) — after them the old
 // refs exist nowhere to be derived from, so the event must carry them.
 import { reindexForInsert, refsTouchedByInsert } from "../work/reindex.mjs";
+// milestone 127 / ADR-004, story 03 — the stream's OTHER write act: the verbatim MOVE under
+// `archive/`. Its engine lives beside the reindex engine (`src/work/archive.mjs`) because THIS
+// seam imports its fact-writers and the command imports this seam — a fact-writer inside the
+// command would close a cycle. `refsMovedByArchive` is the engine's own selection of what moves
+// (each driver and its stories), which the lock below reads rather than deriving a second time.
+import { archiveItems, refsMovedByArchive } from "../work/archive.mjs";
 import { resolveWorkspaceId } from "../workspace-identity.mjs";
 // m43 / ADR-003 + ADR-004 — the CONTROL-SIDE MUTATION door. STATE's settled rule
 // ("control-side writes refused mid-phase, allowed at a gate") lands in the SAME guard
@@ -82,9 +88,18 @@ export async function transitionStreamReindexed(workspace, { at, space, parent }
     shifted: result.shifted,
     remap: result.remap,
   };
-  const name = "stream.reindexed";
   // Append-time applicability (m42 wave (d) leg d4, port 4): the seam owes only
   // what can apply — here the mesh predicate on the control-facts remap.
+  return { ...result, ...(await raiseStreamEvent("stream.reindexed", payload, { workspace, publisherOptions, journalOptions, drain, now: opts.now })) };
+}
+
+// raiseStreamEvent(name, payload, { workspace, publisherOptions, journalOptions, drain, now }) —
+// the ONE tail every stream event shares, so the two transitions above and below differ only in
+// their lock, their fact and their payload: applicability is evaluated once at append time, the
+// journal is opened (its health never gating the cascade — a journal that fails to open degrades
+// to the ephemeral run, the d2 rule), the event is appended with `source: "stream-transition"`,
+// and the reactors are drained when asked. Returns `{ eventId, effects }`.
+async function raiseStreamEvent(name, payload, { workspace, publisherOptions = null, journalOptions = {}, drain = true, now } = {}) {
   const reactorCtx = {
     ...(publisherOptions ? { publisherOptions } : {}),
     workspace,
@@ -101,14 +116,65 @@ export async function transitionStreamReindexed(workspace, { at, space, parent }
 
   if (!journal) {
     const effects = drain ? await runEffectsEphemeral(name, payload, { reactors, ctx: reactorCtx }) : [];
-    return { ...result, eventId: null, effects };
+    return { eventId: null, effects };
   }
 
   try {
-    const { eventId } = appendEvent(journal, { name, payload, source: "stream-transition", now: opts.now }, reactors);
-    const effects = drain ? await drainEffects({ journal, eventId, now: opts.now, ctx: reactorCtx }) : [];
-    return { ...result, eventId, effects };
+    const { eventId } = appendEvent(journal, { name, payload, source: "stream-transition", now }, reactors);
+    const effects = drain ? await drainEffects({ journal, eventId, now, ctx: reactorCtx }) : [];
+    return { eventId, effects };
   } finally {
     journal.close();
   }
+}
+
+// transitionStreamArchived(workspace, { names }, opts) — move the named done drivers under
+// `archive/` and raise the cascade (milestone 127 / ADR-004 §3-§4, story 03 task 03).
+//
+//   workspace — the loaded workspace (its workDir is moved within; its projectRoot is what the
+//               publish reactor rebuilds from)
+//   names     — the FOLDER NAMES at the stream root to move (`12_milestone_theta`); the face has
+//               already decided each is a done, un-archived, top-level driver — the engine's own
+//               coded refusals (archive-destination-exists / archive-source-missing /
+//               archive-rewrite-failed) propagate untouched
+//   opts      — { publisherOptions, journalOptions, drain = true }
+//
+// The same shape as the insert cascade above, with LESS in it: no ref changes, so nothing is
+// remapped, and the whole cascade is the publish (ADR-004 §4 — "publish, don't renumber"):
+//   (0) THE LOCK — every ref that moves (each driver and each of its stories) must be free; a
+//       held ref refuses with the lock's own code naming the holder, before any rename;
+//   (1) THE FACT — `archiveItems`: the renames, then the one link-rewrite pass;
+//   (2) THE EVENT — `stream.archived`, past tense, carrying what moved and what was rewritten
+//       as its own evidence. The journal's health never gates the move (the d2 rule): a journal
+//       that fails to open degrades to the ephemeral run, and the fact stands.
+//
+// Returns the engine's `{ archived, rewritten }` plus `eventId` and the per-reactor `effects`.
+// A run that moved nothing (an empty `names`) raises NO event — a ledger entry claiming a move
+// that did not happen would be a lie the crash-recovery drain would faithfully repeat.
+export async function transitionStreamArchived(workspace, { names = [] } = {}, opts = {}) {
+  const { publisherOptions = null, journalOptions = {}, drain = true } = opts;
+
+  // (0) THE LOCK — in front of the fact, so a refused archive renames not one folder. The
+  // guarded set is the engine's OWN selection (refsMovedByArchive), never a second derivation.
+  await guardItemLock(await refsMovedByArchive(workspace.workDir, { names }), {
+    lock: lockContextFor(workspace, opts.publisherOptions ?? {}),
+  });
+
+  // (1) The FACT — the engine's renames and rewrite.
+  const result = await archiveItems(workspace.workDir, { names });
+  const { archived: moved, rewritten } = result;
+  if (!Array.isArray(moved) || moved.length === 0) {
+    return { ...result, eventId: null, effects: [] };
+  }
+
+  // (2) The EVENT — past tense. `archived` carries `{ ref, name, from, to }` per moved driver
+  // (the publish reactor takes authorship of exactly those refs and their stories); `rewritten`
+  // is the engine's own list, byte-equal to the envelope's.
+  const payload = {
+    workspaceRoot: workspace.projectRoot ?? null,
+    workspaceId: resolveWorkspaceId(workspace) ?? null,
+    archived: moved.map(({ ref, name, from, to }) => ({ ref, name, from, to })),
+    rewritten,
+  };
+  return { ...result, ...(await raiseStreamEvent("stream.archived", payload, { workspace, publisherOptions, journalOptions, drain, now: opts.now })) };
 }

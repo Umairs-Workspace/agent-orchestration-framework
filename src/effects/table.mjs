@@ -28,11 +28,11 @@
 //   control-store       — the authoritative mesh SQLite (d3 wires its reactors)
 //   local               — this node's own projection/logs
 //   integration:<name>  — an external system + credentials (d4 wires Notion)
-import { loadWorkspace, rollbackItemStatus, setItemStatus, listItems, typeHasRecordDoc } from "../work.mjs";
+import { loadWorkspace, rollbackItemStatus, setItemStatus, listItems, typeHasRecordDoc, isLiveStreamRow } from "../work.mjs";
 import { publishGlobalWorkSnapshot } from "../global-work-publisher.mjs";
 import { openGlobalWorkProjectionStore, remapWorkspaceProjectionRefs, remapWorkspaceFactRefs, workspaceIdFor } from "../global-work-store.mjs";
 import { setItemBranch } from "../mesh/assignment-directive.mjs";
-import { restoreParkedAssignmentResume } from "../assignment-record.mjs";
+import { readAssignment, restoreParkedAssignmentResume } from "../assignment-record.mjs";
 import { rewriteRunItemRef } from "../run-store.mjs";
 import { remapMappingRefs } from "../notion/mapping.mjs";
 import { syncMilestoneWork } from "../notion/sync-work.mjs";
@@ -161,7 +161,7 @@ async function publishItemProjection(event, ctx = {}) {
   const workspace = await loadWorkspace(workspaceRoot);
   const publish = await publishGlobalWorkSnapshot(workspace, {
     ...(ctx.publisherOptions ?? {}),
-    operatorRefs: operatorRefsFor(event.payload),
+    operatorRefs: await operatorRefsWithArchivedStories(workspace, event.payload),
   });
   if (publish.warning) throw projectionPropagationError(publish.warning);
   if (publish.skipped) return { published: false, skipped: true, code: publish.code };
@@ -191,6 +191,30 @@ function operatorRefsFor(payload = {}) {
     for (const end of [entry?.from, entry?.to]) {
       if (typeof end === "string" && end.length > 0) refs.push(end);
     }
+  }
+  // milestone 127 / ADR-004 §4 — an ARCHIVE names the drivers it moved. Their refs did not
+  // change, but their `source_path` did, and a row another node authored would otherwise keep
+  // answering the old folder forever (the disk-derived tick steps over rows it did not author).
+  const { archived: moved = [] } = payload ?? {};
+  for (const entry of Array.isArray(moved) ? moved : []) {
+    if (typeof entry?.ref === "string" && entry.ref.length > 0) refs.push(entry.ref);
+  }
+  return refs;
+}
+
+// operatorRefsWithArchivedStories(workspace, payload) — the archive's reach is the moved FOLDER,
+// which holds the driver's stories too: their refs did not change either, and their rows carry
+// the same stale `source_path`. The payload names the drivers (its own evidence); the stories
+// are the rows the enumerator now finds under the archived driver — a story whose row is no
+// longer live (127/ADR-002 §1: the one predicate, so `.archived` is read in `src/work.mjs` and
+// nowhere else) — read from the same disk the publish below re-derives its snapshot from.
+async function operatorRefsWithArchivedStories(workspace, payload = {}) {
+  const refs = operatorRefsFor(payload);
+  const { archived: moved = [] } = payload ?? {};
+  if (!Array.isArray(moved) || moved.length === 0) return refs;
+  const numbers = new Set(moved.map((entry) => entry?.ref).filter((ref) => typeof ref === "string" && ref.length > 0));
+  for (const item of await listItems(workspace.workDir)) {
+    if (item.parent != null && !isLiveStreamRow(item) && numbers.has(item.parent)) refs.push(item.ref);
   }
   return refs;
 }
@@ -304,8 +328,14 @@ async function recordItemBranch(event, ctx = {}) {
 // PARK fact. It must survive a disconnected worker and is acknowledged only after
 // this reactor has put the code on the authoritative assignment row. Ordinary
 // accepted/running posture remains best-effort on the status frame.
+// 131/12 (ADR-010 §4) — and a park carrying a worker's `ask` puts it on the row, and is POSTED once,
+// on the EDGE into `needs-input`: the row's code is read before the transition, so a redelivered park
+// posts nothing. This departs from ADR-005 §4's "not an effects reactor" for its own stated reason —
+// that rule was against an at-least-once redelivered post, and the edge makes this one at-most-once.
+// The post is not transition evidence: it never reaches the return value, and a failed post never
+// fails the settle.
 async function settleAssignment(event, ctx = {}) {
-  const { assignmentId, state, runId, branch, sessionId, code } = event.payload ?? {};
+  const { assignmentId, state, runId, branch, sessionId, code, ask } = event.payload ?? {};
   if (!assignmentId) return { skipped: true, reason: "no-assignment" };
   const park = state === "running" && code === "needs-input";
   if (state !== "done" && state !== "failed" && !park) return { skipped: true, reason: `state-not-terminal:${state}` };
@@ -316,14 +346,20 @@ async function settleAssignment(event, ctx = {}) {
   const { transitionAssignmentState } = await import("./assignment-transitions.mjs");
   const store = ctx.store ?? (await openGlobalWorkProjectionStore(ctx.globalWorkStoreOptions ?? {}));
   try {
+    const before = readAssignment(store, assignmentId);
+    const wasWaiting = before?.state === "running" && before?.code === "needs-input";
     const result = await transitionAssignmentState(
       store,
       assignmentId,
       state,
-      { byNode: ctx.byNode ?? null, now: ctx.now, runId, sessionId, branch, code },
+      { byNode: ctx.byNode ?? null, now: ctx.now, runId, sessionId, branch, code, ...(ask == null ? {} : { ask }) },
       { journalOptions: ctx.journalOptions ?? {} },
     );
     if (!result.applied) return { settled: false, code: result.code };
+    if (park && !wasWaiting && before != null) {
+      const { announceWorkerAsk } = await import("../mesh/park-resume.mjs");
+      await announceWorkerAsk(before, ask ?? null, ctx);
+    }
     // `code` is transition evidence, not a refusal. Returning it in the reactor
     // detail would make the bridge ACK interpret a successful needs-input apply as
     // a coded rejection and pay the worker's step without a success receipt.
@@ -621,6 +657,18 @@ export const EFFECTS = Object.freeze({
       apply: remapControlFactRefs,
       applies: meshFactsApply,
     }),
+    Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+  ]),
+  // milestone 127 / ADR-004 §3-§4 — the ARCHIVE cascade, raised by
+  // effects/stream-transitions.mjs's transitionStreamArchived. An archive is the reindex
+  // cascade with LESS in it: no ref changes, so nothing is remapped — the run records, the
+  // Notion sidecar, the assignment rows and the item branches all key on refs that still
+  // mean what they meant. The ONE consequence is the publish: the snapshot re-derives every
+  // row from disk (three roots, 127/01), so the moved driver and its stories are upserted at
+  // the SAME refs with their NEW `source_path`, and the operator's reach is exactly those
+  // refs (operatorRefsFor + the stories under them) — the fleet cache follows the move on the
+  // tick after it rather than whenever a later publish happened to run.
+  "stream.archived": Object.freeze([
     Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
   ]),
   // m42 wave (d) leg d3 — every assignment state change flows through

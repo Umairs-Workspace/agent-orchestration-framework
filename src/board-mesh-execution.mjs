@@ -54,7 +54,7 @@ export async function readExecutionOverlay(workspace, options = {}) {
     store = await openStore({ ...storeOptions, paths: storeOptions.paths ?? globalMeshPaths(storeOptions) });
 
     const rows = store.db.prepare(
-      "SELECT assignment_id, item_ref, target_node_id, state, session_id, code, updated_at FROM global_assignments WHERE workspace_id = ? ORDER BY updated_at ASC",
+      "SELECT assignment_id, item_ref, target_node_id, state, session_id, code, updated_at, ask FROM global_assignments WHERE workspace_id = ? ORDER BY updated_at ASC",
     ).all(workspaceId);
 
     for (const row of rows) {
@@ -62,7 +62,7 @@ export async function readExecutionOverlay(workspace, options = {}) {
       // the MOST RECENT assignment always wins — an item reassigned after a failure
       // reports the run that matters NOW, never a stale earlier one.
       const active = isActiveAssignmentState(row.state);
-      overlay.set(row.item_ref, {
+      const execution = {
         assignmentId: row.assignment_id,
         // `active` is the step-1 answer ("is it being executed RIGHT NOW"). A TERMINAL row
         // is still reported — but as `active:false`, so it can never claim a live run.
@@ -82,7 +82,10 @@ export async function readExecutionOverlay(workspace, options = {}) {
         // The branch the work actually lives on (recorded on every successful push) — the
         // answer to "where IS the work, then?" when the local checkout does not have it.
         branch: safeBranch(store, workspaceId, row.item_ref),
-      });
+      };
+      // 131/12 (ADR-010 §3, §6) — a worker's ask, only while the row still awaits an answer.
+      if (row.ask != null && awaitsAnswer(execution)) execution.ask = parseAsk(row.ask, row.assignment_id);
+      overlay.set(row.item_ref, execution);
     }
   } catch {
     // Step 3: any fault (no store, an unpublished workspace, a projection this node
@@ -93,6 +96,17 @@ export async function readExecutionOverlay(workspace, options = {}) {
       reportDegrade("board-mesh-execution", error); }
   }
   return overlay;
+}
+
+// A stored ask, parsed; unparseable JSON is `null` after one `assignment-ask-unreadable` degrade.
+function parseAsk(text, assignmentId) {
+  try {
+    const parsed = JSON.parse(text);
+    return parsed != null && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch (error) {
+    reportDegrade("assignment-ask-unreadable", error, { assignmentId });
+    return null;
+  }
 }
 
 function safeBranch(store, workspaceId, itemRef) {
@@ -136,6 +150,15 @@ export function resolveScopedExecution(overlay, ref) {
     if (inherited != null) return { execution: inherited, scopeRef: scope };
   }
   return null;
+}
+
+// awaitsAnswer(execution) → boolean — a worker parked this execution on a human (131/ADR-003
+// §5c): active, running, `needs-input`, and carrying the session an answer is typed into. ONE
+// spelling for its two readers — `work:answer`'s mesh leg, which accepts an answer exactly here,
+// and the board list's ask fact, so the card is never offered where the verb would refuse.
+export function awaitsAnswer(execution) {
+  return execution?.active === true && execution.state === "running" && execution.code === "needs-input"
+    && typeof execution.sessionId === "string" && execution.sessionId.length > 0;
 }
 
 // applyExecutionOverlay(rows, overlay) → rows — attaches `execution` to each row an

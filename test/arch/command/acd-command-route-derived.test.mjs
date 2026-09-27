@@ -46,6 +46,7 @@ const GROUP_DISPATCHERS = Object.freeze({
   packages: "packagesCommand",
   project: "projectCommand",
   graph: "graphCommand",
+  diagram: "diagramCommand",
   mesh: "meshCommand",
 });
 

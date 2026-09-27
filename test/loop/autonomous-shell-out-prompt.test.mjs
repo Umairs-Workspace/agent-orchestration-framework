@@ -53,7 +53,11 @@ const commandIdsBeforeStory = [
   // pre-existing member set this leg calls COMPLETE grew by one. Recorded here the same way
   // `pay-debt` had to be, and for the same reason the residue pins above were retired: a literal
   // census only tells the truth if the diff that moves the tree moves it too.
-  "observe", "pay-debt", "promote", "recent", "refine", "retrospective", "shatter", "validate", "verify",
+  // `archive` ADDED AT 127/03, in the descriptor's own order (after `promote`), at the milestone door:
+  // `src/bundle/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
+  // and it landed outside the story's declared write set — the same species as `promote`, repaired
+  // at `aof:verify 127`.
+  "observe", "pay-debt", "promote", "archive", "recent", "refine", "retrospective", "shatter", "validate", "verify",
 ];
 const delegatedCommandRows = [
   ["c01", "/aof:autonomous 03", "aof work loop 03 --level L2"],
@@ -151,7 +155,16 @@ async function launcherFixture(kind) {
   await mkdir(shimDir, { recursive: true });
   await writeFile(path.join(projectRoot, ".aof", "aof.config.json"), `${JSON.stringify({
     name: "fixture",
-    work: { dir: "./wiki/work", agents: { mode: "solo" }, autonomous: { maxAttempts: 1 } },
+    work: {
+      dir: "./wiki/work",
+      agents: { mode: "solo" },
+      autonomous: { maxAttempts: 1 },
+      // 131/03 (ADR-001): a session that prints NEEDS_INPUT now WAITS for an answer, bounded by
+      // `scheduleToCloseMs` counted from the ask, where it used to halt at once. The story fixture's
+      // provider asks and nobody answers, so an unbounded wait here is this suite's 60s hang guard
+      // firing on the behaviour, not a hang. A 1 ms bound parks it at the wait's first check.
+      ...(kind === "story" ? { loop: { scheduleToCloseMs: 1 } } : {}),
+    },
     memory: { backend: "none" },
     runtimes: ["claude", "codex"],
   }, null, 2)}\n`);
@@ -185,6 +198,10 @@ process.stdout.write("provider-ready\\r\\n");
 // protocol (measured: the live transcript holds the directive with no ESC byte in it).
 // This shim must model the same contract, or it asserts on bytes no real TUI ever sees.
 const ESC = String.fromCharCode(27);
+// …and, like \`claude\`, it ANNOUNCES the mode: a real launch types only once the TUI has enabled
+// bracketed paste (cf10030's readiness gate), so a shim that never does is typed into only at the
+// 60 s cap, which is this suite's own hang guard.
+process.stdout.write(ESC + "[?2004h");
 const stripPaste = (s) => s.split(ESC + "[200~").join("").split(ESC + "[201~").join("");
 process.stdin.on("data", (chunk) => {
   input += chunk;
@@ -379,7 +396,7 @@ export const autonomousShellOutPromptTests = [
     },
   },
   {
-    name: "autonomous-shell-out/survivors: range, solo, ship and max-attempts keep their admitted effects while prompt-owned config narrows to two keys",
+    name: "autonomous-shell-out/survivors: range, solo, ship and max-attempts keep their admitted effects while prompt-owned config names the loop surface and its twins",
     run: () => {
       const { member } = bundleFacts();
       assert.equal(
@@ -399,7 +416,7 @@ export const autonomousShellOutPromptTests = [
       assert.match(text, /after the shell reports a milestone accepted, run `aof:code-review <NN>`/);
       assert.match(text, /A halt never ships an unaccepted milestone/);
       const configKeys = [...text.matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
-      assert.deepEqual([...new Set(configKeys)].sort(), ["work.agents", "work.agents.mode", "work.codeReview.autoComplete"]);
+      assert.deepEqual([...new Set(configKeys)].sort(), ["work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.dispatch.concurrency", "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency"], "129/07: the loop's three keys and their two workspace twins join the mode");
     },
   },
   {
@@ -536,6 +553,60 @@ export const autonomousShellOutPromptTests = [
       for (const test of autonomousShellOutPromptTests) {
         assert.ok(registered.has(test.name), `registered: ${test.name}`);
       }
+    },
+  },
+  // ── 129/07 task 02 — the prompts carry the surface ───────────────────────────
+  //
+  // `…/07_story_the-loop-settings-are-self-contained/tasks/02_the-drive-carries-the-phase-mode.feature`
+  // — the prompt-side rows (the drive's rows are in `drive-command-phase-drivers`).
+  ...["refine", "continue"].map((prompt) => ({
+    name: `129/07 task02 ${prompt}.md parses --orchestrated as --solo's twin and names its loop key with the fallback`,
+    run: () => {
+      const bundle = loadBundle();
+      const member = bundle.resources.find((entry) => entry.id === prompt);
+      assert.ok(member, `${prompt} is a bundle member`);
+      assert.match(member.argumentHint, /--solo \| --orchestrated/u, "the argument hint names both, as one choice");
+      const text = flattened(member.body);
+      // continue.md carries two <config> blocks; the execution-mode paragraph is read off the whole body.
+      const config = text;
+      assert.match(config, /`--orchestrated` OVERRIDES a solo config to orchestrated for this run/u);
+      assert.match(config, /The two together are contradictory: STOP before any role runs/u);
+      assert.match(config, new RegExp(`work\\.loop\\.agents\\.${prompt}\\.mode`, "u"), "the loop key the drive composes the flag from is named");
+      assert.match(config, /composes nothing when it is unset, so a loop-driven \w+ falls back to `work\.agents\.mode`/u, "…with its fallback");
+      assert.match(config, /src\/loop-bounds\.mjs/u, "…and its home");
+      for (const runtime of ["claude", "codex", "opencode"]) {
+        const rendered = renderBundleOutputs(bundle, { runtimes: [runtime] }).find((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
+        assert.ok(rendered, `${prompt} renders for ${runtime}`);
+        const onDisk = readFileSync(path.join(repoRoot, rendered.path), "utf8");
+        assert.ok(onDisk.includes("--orchestrated"), `${rendered.path} on disk carries --orchestrated`);
+        assert.ok(onDisk.includes(`work.loop.agents.${prompt}.mode`), `${rendered.path} on disk names the key`);
+      }
+    },
+  })),
+  {
+    name: "129/07 task02 the autonomous prompt names the three keys and their fallbacks beside the mode, states no cardinal for them, and its key set is the eight",
+    run: async () => {
+      const { member } = bundleFacts();
+      const text = flattened(member.body);
+      const paragraphs = String(member.body).replace(/<!--[^]*?-->/g, " ").split(/\n\s*\n/u).map((p) => p.replace(/\s+/g, " ").trim());
+      const paragraph = paragraphs.filter((p) => p.includes("work.loop.concurrency"));
+      assert.equal(paragraph.length, 1, "exactly one paragraph names the mode");
+      for (const key of ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode", "work.dispatch.concurrency", "work.agents.mode"]) {
+        assert.ok(paragraph[0].includes(key), `the paragraph names ${key}`);
+      }
+      assert.match(paragraph[0], /falls back to its workspace twin/u);
+      const { sentences, statedValues, unitOf } = await import("../arch/command/acd-prompt-bounds-name-their-home.test.mjs");
+      for (const sentence of sentences(paragraph[0])) {
+        for (const key of ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode"]) {
+          if (sentence.includes(key)) assert.deepEqual(statedValues(sentence, unitOf(key)), [], `no cardinal is stated for ${key}: ${sentence}`);
+        }
+      }
+      assert.equal((text.match(/aof work loop/g) ?? []).length, 2, "the family count is unchanged");
+      const configKeys = [...text.matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
+      assert.deepEqual([...new Set(configKeys)].sort(), [
+        "work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.dispatch.concurrency",
+        "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency",
+      ]);
     },
   },
 ];

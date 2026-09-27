@@ -38,6 +38,7 @@
 // `AOF_LOOP_DIAG=0` opts out. Idempotent per process: a second install answers the first's
 // log path and registers nothing twice.
 import { appendFileSync, mkdirSync, readdirSync, unlinkSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
 import { constants as osConstants } from "node:os";
 import path from "node:path";
 import { globalMeshPaths } from "./workspace.mjs";
@@ -46,6 +47,7 @@ import { globalMeshPaths } from "./workspace.mjs";
 // a failing diagnostic write cannot re-enter the tee; it is throttled per code and never
 // throws, so it cannot fail the loop it is diagnosing either.
 import { reportDegrade } from "./degrade.mjs";
+import { buildInfoString, readBuildInfo } from "./build-info.mjs";
 
 export const LOOP_DIAG_ENV = "AOF_LOOP_DIAG";
 export const LOOP_DIAG_PREFIX = "loop-diag.";
@@ -118,6 +120,10 @@ export function installLoopDiagnostics({
   now = () => new Date(),
   fs = { appendFileSync, mkdirSync, readdirSync, unlinkSync },
   aliveIntervalMs = ALIVE_INTERVAL_MS,
+  // The tree that ran, on the first line — `aof --version`'s own string. Read at 129/06's third
+  // live run (2026-09-21): the payload was re-stamped mid-run and nothing in the log could say
+  // which tree the loop had loaded at start.
+  build = () => buildInfoString(readBuildInfo({ env })),
 } = {}) {
   if (!loopDiagEnabled(env)) return null;
   const prior = installed.get(proc);
@@ -131,7 +137,9 @@ export function installLoopDiagnostics({
   try { fs.mkdirSync(path.dirname(logPath), { recursive: true }); } catch (error) { reportDegrade("loop-diag-write", error); }
   pruneLoopDiagLogs(path.dirname(logPath), LOOP_DIAG_KEEP, fs);
 
-  write("start", `pid=${proc.pid} node=${proc.version} argv=${JSON.stringify(argv)}`);
+  let buildLine = null;
+  try { buildLine = build(); } catch (error) { reportDegrade("loop-diag-build", error); }
+  write("start", `pid=${proc.pid} node=${proc.version} build=${buildLine ?? "unknown"} argv=${JSON.stringify(argv)}`);
 
   // Every way out, named. `beforeExit` fires ONLY on a drained loop — it is the one line that
   // says "nothing was left to wait on", which is what a silently abandoned promise looks like.
@@ -234,4 +242,49 @@ export function installLoopDiagnostics({
   };
   installed.set(proc, handle);
   return handle;
+}
+
+// readLastLoopDiagEvent({ dir, scopeTag, exclude }) → the last event of the scope's NEWEST earlier
+// log, as `{ at, event, detail }`, or `null` (131/03, task 06; ADR-005 §4). A dying loop cannot post,
+// so its death is reported by the next invocation, and this is the cause it names: the last line
+// the recorder wrote, in `formatLoopDiagLine`'s own shape. Only `loop-diag.<scopeTag>.<stamp>.log`
+// names count, the tag matched as the whole second dot-segment; `exclude` (this invocation's own log)
+// is compared by base name. The NEWEST name decides — an empty or unparseable newest log answers
+// `null` with no fall-back to an older one, and a line that is not the recorder's shape is never
+// walked back past. An unreadable file answers `null` after one `reportDegrade("loop-diag-read")`;
+// an absent directory answers `null` quietly. It never throws.
+export async function readLastLoopDiagEvent({ dir = loopDiagLogDir(), scopeTag = "loop", exclude = null } = {}) {
+  let names;
+  try {
+    names = await readdir(dir);
+  } catch (error) {
+    if (error?.code !== "ENOENT") reportDegrade("loop-diag-read", error);
+    return null;
+  }
+  const prefix = `${LOOP_DIAG_PREFIX}${scopeTag}.`;
+  const skip = exclude == null ? null : path.basename(exclude);
+  const logs = names
+    .filter((name) => name.startsWith(prefix) && name.endsWith(".log") && !name.slice(prefix.length, -".log".length).includes(".") && name !== skip)
+    .sort();
+  const newest = logs.at(-1);
+  if (newest == null) return null;
+  let text;
+  try {
+    text = await readFile(path.join(dir, newest), "utf8");
+  } catch (error) {
+    reportDegrade("loop-diag-read", error);
+    return null;
+  }
+  const last = text.split(/\r?\n/u).map((line) => line.trimEnd()).filter((line) => line.length > 0).at(-1);
+  if (last == null) return null;
+  const match = /^(\S+) (\S+)(?: (.*))?$/u.exec(last);
+  if (match == null) return null;
+  const [, at, event, detail] = match;
+  let canonical = null;
+  try {
+    canonical = new Date(at).toISOString();
+  } catch {
+    return null;
+  }
+  return canonical === at ? { at, event, detail: detail ?? null } : null;
 }

@@ -47,6 +47,12 @@ const BOUND_HOME = "src/work/dispatch.mjs";
 //   · declaring a second default constant;
 //   · re-implementing the resolver.
 const CONFIG_KEY = /\bdispatch\s*(?:\?\.|\.)\s*concurrency\b/;
+// 129/07 — the LOOP's own `work.loop.dispatch.concurrency` is a different key with a different
+// home (`src/loop-bounds.mjs`, where it is read as `loopConfig(workspace)?.dispatch?.concurrency`
+// and spelled as a map entry `"work.loop.dispatch.concurrency"`). Those two forms are erased
+// before the pool key's pattern is asked, so the bounds home is not a second site of THIS key,
+// while a `work?.dispatch?.concurrency` read anywhere but the home still is.
+const LOOP_OWN_KEY_FORMS = /\bloopConfig\([^)]*\)\s*\?\.\s*dispatch\s*\?\.\s*concurrency\b|\bloop\.dispatch\.concurrency\b/g;
 const SECOND_DEFAULT = /\bDEFAULT_DISPATCH_CONCURRENCY\s*=/;
 const SECOND_RESOLVER = /\bfunction\s+resolveDispatchConcurrency\b|\bfunction\s+dispatchConcurrencyFromConfig\b/;
 
@@ -55,8 +61,9 @@ export function boundSiteOffenders(listing, home = BOUND_HOME) {
   let homeSeen = false;
   for (const file of Array.isArray(listing) ? listing : []) {
     const code = stripComments(String(file?.source ?? "")).replace(/\r\n/g, "\n");
+    const poolCode = code.replace(LOOP_OWN_KEY_FORMS, "");
     const hits = [];
-    if (CONFIG_KEY.test(code)) hits.push("reads the configured key `work.dispatch.concurrency` directly");
+    if (CONFIG_KEY.test(poolCode)) hits.push("reads the configured key `work.dispatch.concurrency` directly");
     if (SECOND_DEFAULT.test(code)) hits.push("declares DEFAULT_DISPATCH_CONCURRENCY");
     if (SECOND_RESOLVER.test(code)) hits.push("defines resolveDispatchConcurrency / dispatchConcurrencyFromConfig");
     if (hits.length === 0) continue;
@@ -115,6 +122,14 @@ export const archTests = [
         assert.equal(offenders.length, 1, `self-check: ${label} is reported exactly once (got ${JSON.stringify(offenders)})`);
         assert.ok(offenders[0].includes(planted.path), `self-check: …and the offending file is NAMED (${label})`);
       }
+
+      // 129/07 — the bounds home reading ITS OWN `work.loop.dispatch.concurrency` (and spelling it as
+      // a map entry) is not a second site of the pool key; the same file reading the pool key is.
+      const loopHome = { path: "src/loop-bounds.mjs", source: 'const loopConfig = (w) => w?.config?.work?.loop;\nexport function loopDispatchConcurrencyFromConfig(workspace) { return positiveInteger(loopConfig(workspace)?.dispatch?.concurrency, null); }\nexport const M = { "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig };' };
+      assert.deepEqual(boundSiteOffenders([home, consumer, loopHome]), [], "self-check: the loop key's own home is not a second site of the pool key");
+      const annexing = { path: "src/loop-bounds.mjs", source: `${loopHome.source}\nconst pool = workspace?.config?.work?.dispatch?.concurrency;` };
+      const annexed = boundSiteOffenders([home, consumer, annexing]);
+      assert.equal(annexed.length, 1, `self-check: the same file reading the pool key is reported (got ${JSON.stringify(annexed)})`);
 
       // …and a COMMENT naming the key is history, not an instance of it — otherwise the
       // module that documents the rule would be the first to break it.

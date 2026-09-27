@@ -21,6 +21,8 @@ import path from "node:path";
 
 const { readRuns, startRun, completeRun, settleRun, PRICE_TABLE_VERSION } = await import("../../src/run-store.mjs");
 const { settleSpendFromTranscript, readTranscriptTree } = await import("../../src/run-spend-ingest.mjs");
+const { transitionRunComplete } = await import("../../src/effects/run-transitions.mjs");
+const { projectSlug } = await import("../../src/work/observe.mjs");
 
 async function makeItem() {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-ingest-"));
@@ -397,6 +399,35 @@ export const runSpendIngestTests = [
         assert.equal(onDisk.state, "failed", "the ghost run still settled to its own outcome");
         assert.equal(onDisk.outcome, "failed", "the settle's outcome is unchanged by an unreadable transcript");
         assert.equal(onDisk.spend, null, "a transcript that cannot be read leaves spend null");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  // 134/03 task 02 — Scenario: a hand-run settle now stamps spend from the session's transcript.
+  // RESEARCH R5: the seam fell back to the repository root, where no transcript lives, so a hand-run
+  // `aof work run-complete` never stamped spend. It now resolves the store through claudeProjectsDir.
+  {
+    name: "run-spend-ingest/134-03 02 a hand-run settle now stamps spend from the session's transcript — the seam resolves the transcript store for a named workspace",
+    async run() {
+      const { repo, item } = await makeItem();
+      try {
+        const config = path.join(repo, "claude-config");
+        const store = path.join(config, "projects", projectSlug(repo));
+        await mkdir(store, { recursive: true });
+        await writeParent(store, "sess-hand", [
+          { usage: { input_tokens: 120, output_tokens: 12, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+        ]);
+        const record = await startSession(item, "sess-hand");
+        await transitionRunComplete(
+          item,
+          { runId: record.runId, outcome: "done", now: "2026-08-20T11:00:00.000Z" },
+          { workspace: { projectRoot: repo }, env: { CLAUDE_CONFIG_DIR: config }, journalOptions: { env: process.env }, drain: false },
+        );
+        const onDisk = (await readRuns(item)).find((r) => r.runId === record.runId);
+        assert.equal(onDisk.state, "done", "the run settled");
+        assert.ok(onDisk.spend && typeof onDisk.spend === "object", "the settle stamped spend with no transcript directory given");
+        assert.equal(onDisk.spend.tokens.input, 120, "the envelope came from the session's transcript under the config directory");
       } finally {
         await rm(repo, { recursive: true, force: true });
       }

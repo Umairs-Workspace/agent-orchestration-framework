@@ -113,4 +113,49 @@ export const meshWorkerLivenessTests = [
       }
     },
   },
+  // ── 129/06 task 01 — F-59: the probe honours the stop this driver requested ────
+  //
+  // `…/06_story_the-second-live-run/tasks/01_the-driver-honours-its-own-stop-and-a-provider-wait.feature`.
+  // Measured 2026-09-15 (loop 127, attempt 5): `stop-requested done` → `tree-terminated` →
+  // `exit-confirmed failed` 55 ms later — the probe saw the killed pid before onExit delivered.
+  {
+    name: "129/06 task01 a requested done survives the probe seeing the killed pid first — never agent_died",
+    async run() {
+      // A pid that cannot exist: the moment the driver requests its stop and releases the PTY
+      // (the fake's kill() emits no exit), the probe's next tick sees a dead pid — exactly the
+      // window between `taskkill` and `term.onExit` in production.
+      const term = fakeTerm({ pid: 2 ** 30 + 12345 });
+      const breadcrumbs = [];
+      const result = await driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: async () => term,
+        which: createFakeWhich(["claude"]),
+        watchTranscriptSessionId: async () => "sess-f59",
+        watchTranscriptCompletion: async () => ({ outcome: "done" }),
+        commandDelayMs: 0,
+        livenessIntervalMs: 10,
+        killConfirmationMs: 400,
+        onSessionStop: (event) => breadcrumbs.push(event),
+      });
+      assert.equal(result.outcome, "done", `the requested outcome is what the probe settles: ${JSON.stringify(result)}`);
+      assert.notEqual(result.failureReason, "agent_died");
+      const phases = breadcrumbs.map((event) => `${event.phase}${event.outcome ? ` ${event.outcome}` : ""}`);
+      assert.ok(phases.includes("stop-requested done"), `stop-requested done was reported: ${phases.join(" → ")}`);
+      assert.ok(phases.includes("exit-confirmed done"), `…and confirmed as done: ${phases.join(" → ")}`);
+    },
+  },
+  {
+    name: "129/06 task01 a death nobody requested is still agent_died",
+    async run() {
+      const term = fakeTerm({ pid: 2 ** 30 + 12345 });
+      const result = await driveInteractiveClaudeSession(BRIEF, {
+        ptySpawn: async () => term,
+        which: createFakeWhich(["claude"]),
+        watchTranscriptSessionId: async () => null,
+        commandDelayMs: 0,
+        livenessIntervalMs: 10,
+      });
+      assert.equal(result.outcome, "failed");
+      assert.equal(result.failureReason, "agent_died", "no stop was requested: the probe still names the class");
+    },
+  },
 ];

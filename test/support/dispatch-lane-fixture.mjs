@@ -9,7 +9,7 @@
 // double would assert the fixture's opinion of git, which is exactly the shape of test that
 // passes while the feature is broken. This is milestone 35's own resolution for tasks 00/03
 // (RESEARCH.md §4/§5) reused for the same reason.
-import { mkdtemp, mkdir, writeFile, rm, realpath } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, realpath, readdir, readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
@@ -22,6 +22,36 @@ export function git(args, cwd) {
       else resolve({ stdout: String(stdout ?? ""), stderr: String(stderr ?? ""), status: error ? (typeof error.code === "number" ? error.code : 1) : 0 });
     });
   });
+}
+
+// writeRel(root, rel, body) — write a posix-relative path under `root`, creating its directories.
+// One spelling for the three lane suites (129/05 · F-39): a fixture helper that each suite
+// re-spelled is three places a change to the fixture's opinion of a path has to land.
+export async function writeRel(root, rel, body) {
+  const target = path.join(root, ...rel.split("/"));
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeFile(target, body, "utf8");
+}
+
+// mergeHeadAbsent(cwd) — `git rev-parse -q --verify MERGE_HEAD` exits non-zero: the repo is
+// NOT left in a MERGING state.
+export const mergeHeadAbsent = async (cwd) => (await git(["rev-parse", "-q", "--verify", "MERGE_HEAD"], cwd)).status !== 0;
+
+// conflictMarkers(dir) — a real recursive scan of a tree's files (never a single named path):
+// `<<<<<<<`, `=======`, `>>>>>>>` must exist NOWHERE after an abort.
+export async function conflictMarkers(dir) {
+  const hits = [];
+  const walk = async (current) => {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      if (entry.name === ".git" || entry.name === ".aof" || entry.name === "node_modules") continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) { await walk(full); continue; }
+      const body = await readFile(full, "utf8").catch(() => "");
+      if (/^<{7}/mu.test(body) || /^={7}$/mu.test(body) || /^>{7}/mu.test(body)) hits.push(full);
+    }
+  };
+  await walk(dir);
+  return hits;
 }
 
 function frontmatter(fields) {

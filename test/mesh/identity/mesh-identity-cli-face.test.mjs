@@ -12,12 +12,16 @@
 //     emits ONE { ok:false, error, code } envelope on stdout + non-zero exit); the
 //     single-parseable-JSON-document discipline.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { meshDir } from "../../../src/mesh/store.mjs";
+import { installHash, sanitizeHostname } from "../../../src/node-identity.mjs";
+import { loadWorkspace } from "../../../src/work.mjs";
+import { keyedByOldId } from "../../../src/commands/mesh/identity.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
@@ -48,11 +52,11 @@ async function seedPeer(workDir, id) {
   return record;
 }
 
-function runCli(root, args) {
+function runCli(root, args, env = {}) {
   const result = spawnCliSync(process.execPath, [cliPath, ...args], {
     cwd: root,
     encoding: "utf8",
-    env: { ...process.env, NODE_NO_WARNINGS: "1" },
+    env: { ...process.env, NODE_NO_WARNINGS: "1", ...env },
   });
   return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
 }
@@ -71,10 +75,10 @@ export const meshIdentityCliFaceTests = [
         assert.equal(json.status, 0, `identity --json exits 0 (stderr: ${json.stderr})`);
         const record = JSON.parse(json.stdout);
         // 34/story 02 (operator directive): `skills` is REMOVED from the
-        // descriptor (see assembleDescriptor) — the frozen schema is six keys.
+        // descriptor (see assembleDescriptor); 132/02 added `hostname`, the fabric join key.
         assert.deepEqual(
           Object.keys(record),
-          ["nodeId", "host", "os", "runtimes", "aofVersion", "publishedAt"],
+          ["nodeId", "host", "hostname", "os", "runtimes", "aofVersion", "publishedAt"],
           "the JSON is a node record carrying the complete frozen schema"
         );
       } finally {
@@ -204,3 +208,236 @@ export const meshIdentityCliFaceTests = [
     },
   },
 ];
+
+// ════════════════════════════════════════════════════════════════════════════════════════
+// 132 · run-records-carry-the-node-id — the CLI-face scenarios: task 01's `--reidentify`
+// edge and task 02's publish into the aof home. Each drives the real CLI against its OWN
+// isolated aof home `H`, so the identity it reads and rewrites is the fixture's.
+// ════════════════════════════════════════════════════════════════════════════════════════
+const SALT_132 = "2d4c74e4-66e3-4c7a-bd88-b199d8f81b7f";
+
+async function isolatedHome(identity, globalConfig) {
+  const home = await mkdtemp(path.join(os.tmpdir(), "aof-132-home-"));
+  await mkdir(path.join(home, "mesh", "nodes"), { recursive: true });
+  if (identity) await writeFile(path.join(home, "mesh", "identity.json"), `${JSON.stringify(identity, null, 2)}\n`, "utf8");
+  if (globalConfig) await writeFile(path.join(home, "aof.config.json"), `${JSON.stringify(globalConfig, null, 2)}\n`, "utf8");
+  return home;
+}
+
+async function listTree(dir) {
+  const out = [];
+  async function walk(d, rel) {
+    for (const entry of (await readdir(d, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+      const r = rel ? `${rel}/${entry.name}` : entry.name;
+      out.push(r);
+      if (entry.isDirectory()) await walk(path.join(d, entry.name), r);
+    }
+  }
+  await walk(dir, "");
+  return out;
+}
+
+export const runRecordsNodeIdCliTests = [
+  {
+    name: "132/01 --reidentify is the one deliberate edge, and it reports what it invalidates",
+    async run() {
+      const { root } = await buildFixture();
+      // A LEGACY id for THIS machine — its sanitized hostname stem, recorded as derived from
+      // THIS machine's hostname — so the load-time heal has neither trigger and the move is
+      // made by the verb alone. Computed, never spelled, so no machine name enters the repo.
+      const legacy = sanitizeHostname(os.hostname());
+      const home = await isolatedHome(
+        { salt: SALT_132, nodeId: legacy, derivedFrom: os.hostname() },
+        { mesh: { credential: { relayAuth: "fixture", nodeId: legacy, controlNode: "ctl" } } },
+      );
+      try {
+        const stale = { nodeId: legacy, host: "192.168.1.102", os: "win32", runtimes: [], aofVersion: "0.1.0", publishedAt: "2026-09-17T00:00:00.000Z" };
+        await writeFile(path.join(home, "mesh", "nodes", `${legacy}.json`), JSON.stringify(stale, null, 2), "utf8");
+        const to = `node-${installHash(SALT_132)}`;
+
+        const first = runCli(root, ["mesh", "identity", "--reidentify", "--json"], { AOF_GLOBAL_HOME: home });
+        assert.equal(first.status, 0, `--reidentify exits 0 (stdout: ${first.stdout} stderr: ${first.stderr})`);
+        const envelope = JSON.parse(first.stdout);
+        assert.equal(envelope.from, legacy);
+        assert.equal(envelope.to, to);
+        const sidecar = JSON.parse(await readFile(path.join(home, "mesh", "identity.json"), "utf8"));
+        assert.equal(sidecar.nodeId, to);
+        assert.equal(sidecar.derivedFrom, os.hostname(), "derivedFrom is the current hostname");
+        const kinds = envelope.invalidated.filter((entry) => entry.nodeId === legacy).map((entry) => entry.kind);
+        assert.ok(kinds.includes("enrollment-credential"), `the enrollment credential is named (got ${JSON.stringify(envelope.invalidated)})`);
+        assert.ok(kinds.includes("node-record"), "the stale node record is named");
+
+        const identityBytes = await readFile(path.join(home, "mesh", "identity.json"), "utf8");
+        const recordBytes = await readFile(path.join(home, "mesh", "nodes", `${to}.json`), "utf8");
+        const second = runCli(root, ["mesh", "identity", "--reidentify", "--json"], { AOF_GLOBAL_HOME: home });
+        assert.equal(second.status, 0, `second --reidentify exits 0 (stderr: ${second.stderr})`);
+        const again = JSON.parse(second.stdout);
+        assert.equal(again.from, to);
+        assert.equal(again.to, to);
+        assert.equal(await readFile(path.join(home, "mesh", "identity.json"), "utf8"), identityBytes, "the sidecar's bytes are unchanged");
+        assert.equal(await readFile(path.join(home, "mesh", "nodes", `${to}.json`), "utf8"), recordBytes, "the node record's bytes are unchanged");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "132/01 --reidentify refuses a pinned id",
+    async run() {
+      const { root } = await buildFixture();
+      const home = await isolatedHome({ salt: SALT_132, nodeId: "aof-wsl", pinned: true });
+      try {
+        const before = await readFile(path.join(home, "mesh", "identity.json"), "utf8");
+        const result = runCli(root, ["mesh", "identity", "--reidentify", "--json"], { AOF_GLOBAL_HOME: home });
+        assert.notEqual(result.status, 0, "it fails");
+        const parsed = JSON.parse(result.stdout);
+        assert.equal(parsed.ok, false);
+        assert.equal(parsed.code, "identity-pinned");
+        assert.match(parsed.error, /--name/, "names --name as the way to change a pinned id");
+        assert.equal(await readFile(path.join(home, "mesh", "identity.json"), "utf8"), before, "the sidecar's bytes are unchanged");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "132/02 the machine name is published to the aof home and reaches no checkout",
+    async run() {
+      const { root } = await buildFixture();
+      const home = await isolatedHome();
+      try {
+        const before = await listTree(root);
+        const result = runCli(root, ["mesh", "identity", "--json"], { AOF_GLOBAL_HOME: home });
+        assert.equal(result.status, 0, `identity exits 0 (stderr: ${result.stderr})`);
+        const published = JSON.parse(result.stdout);
+        const recordPath = path.join(home, "mesh", "nodes", `${published.nodeId}.json`);
+        const record = JSON.parse(await readFile(recordPath, "utf8"));
+        assert.equal(record.hostname, os.hostname(), "the record under <H>/mesh carries this machine's real name");
+        assert.deepEqual(await listTree(root), before, "the checkout's listing is unchanged by the publish");
+        const tracked = spawnSync("git", ["ls-files"], { cwd: repoRoot, encoding: "utf8" }).stdout.split(/\r?\n/);
+        assert.ok(!tracked.some((file) => /(^|\/)mesh\/nodes\//.test(file)), "git ls-files names no node record");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+  // ══ 132/05 (F-2) — a rename with --name reports what the old id keyed ══════════════════
+  {
+    name: "132/05 renaming a control node names every setting keyed by the old id",
+    async run() {
+      const { root, home } = await renameFixture();
+      try {
+        const result = runCli(root, ["mesh", "identity", "--name", "new-node", "--json"], { AOF_GLOBAL_HOME: home });
+        assert.equal(result.status, 0, `--name exits 0 (stderr: ${result.stderr})`);
+        const envelope = JSON.parse(result.stdout);
+        assert.equal(envelope.from, "old-node");
+        assert.equal(envelope.to, "new-node");
+        assert.equal(envelope.changed, true);
+        assert.deepEqual(
+          envelope.invalidated.map((entry) => [entry.kind, entry.nodeId, entry.where ?? "record"]),
+          [
+            ["node-record", "old-node", "record"],
+            ["enrollment-credential", "old-node", "mesh.credential"],
+            ["control-node-nomination", "old-node", "mesh.relay.controlNode"],
+          ],
+        );
+        assert.equal(envelope.record.nodeId, "new-node", "the record is this node's descriptor under the new id");
+        const published = JSON.parse(await readFile(path.join(home, "mesh", "nodes", "new-node.json"), "utf8"));
+        assert.equal(published.nodeId, "new-node", "published under the new id");
+        const sidecar = JSON.parse(await readFile(path.join(home, "mesh", "identity.json"), "utf8"));
+        assert.equal(sidecar.nodeId, "new-node");
+        assert.equal(sidecar.pinned, true);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "132/05 the rename reports and repairs nothing",
+    async run() {
+      const { root, home } = await renameFixture();
+      try {
+        const configBefore = await readFile(path.join(home, "aof.config.json"), "utf8");
+        const result = runCli(root, ["mesh", "identity", "--name", "new-node", "--json"], { AOF_GLOBAL_HOME: home });
+        assert.equal(result.status, 0, `--name exits 0 (stderr: ${result.stderr})`);
+        assert.equal(await readFile(path.join(home, "aof.config.json"), "utf8"), configBefore, "no config key is re-pointed");
+        await readFile(path.join(home, "mesh", "nodes", "old-node.json"), "utf8"); // throws if it was deleted
+      } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "132/05 both verbs compute the same report from the same scan",
+    async run() {
+      const { root, home } = await renameFixture();
+      try {
+        const ws = await loadWorkspace(root, undefined, { env: { ...process.env, AOF_GLOBAL_HOME: home } });
+        const scanned = await keyedByOldId(ws, ws.config, "old-node");
+        const result = runCli(root, ["mesh", "identity", "--name", "new-node", "--json"], { AOF_GLOBAL_HOME: home });
+        assert.equal(result.status, 0, `--name exits 0 (stderr: ${result.stderr})`);
+        assert.deepEqual(JSON.parse(result.stdout).invalidated, scanned, "the rename reports exactly what the shared scan finds");
+        // …and --reidentify reports through that same scan, not a copy of it.
+        const source = await readFile(path.join(repoRoot, "src", "commands", "mesh", "identity.mjs"), "utf8");
+        const reidentifyBody = source.slice(source.indexOf("async function reidentify("), source.indexOf("export async function keyedByOldId("));
+        assert.match(reidentifyBody, /await keyedByOldId\(ws, config, from\)/, "--reidentify calls the shared scan");
+        assert.equal((source.match(/invalidated\.push\(/g) ?? []).length, 4, "the four report entries are pushed in ONE place");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "132/05 a publish that moves no id keeps the bare node record (Scenario Outline)",
+    async run() {
+      for (const prior of [null, { salt: SALT_132, nodeId: "aof-wsl", pinned: true }]) {
+        const { root } = await buildFixture();
+        const home = await isolatedHome(prior);
+        try {
+          const result = runCli(root, ["mesh", "identity", "--name", "aof-wsl", "--json"], { AOF_GLOBAL_HOME: home });
+          assert.equal(result.status, 0, `--name exits 0 (stderr: ${result.stderr})`);
+          const published = JSON.parse(result.stdout);
+          assert.equal(published.nodeId, "aof-wsl", `prior ${JSON.stringify(prior)}: the bare record`);
+          for (const key of ["from", "to", "invalidated"]) assert.ok(!(key in published), `prior ${JSON.stringify(prior)}: no ${key}`);
+        } finally {
+          await rm(root, { recursive: true, force: true });
+          await rm(home, { recursive: true, force: true });
+        }
+      }
+    },
+  },
+  {
+    name: "132/05 the text face says what the rename stranded",
+    async run() {
+      const { root, home } = await renameFixture();
+      try {
+        const result = runCli(root, ["mesh", "identity", "--name", "new-node"], { AOF_GLOBAL_HOME: home });
+        assert.equal(result.status, 0, `--name exits 0 (stderr: ${result.stderr})`);
+        assert.match(result.stdout, /Re-identified old-node → new-node\./);
+        assert.match(result.stdout, /Keyed by the old id, now stale:\n {2}node-record old-node .*\n {2}enrollment-credential old-node \(mesh\.credential\)\n {2}control-node-nomination old-node \(mesh\.relay\.controlNode\)/);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+];
+
+// 132/05 — a control node about to be renamed: its sidecar holds `old-node`, its config keys the
+// enrollment credential and the control-node nomination by it, and a record for it exists.
+async function renameFixture() {
+  const { root } = await buildFixture();
+  const home = await isolatedHome(
+    { salt: SALT_132, nodeId: "old-node", pinned: true },
+    { mesh: { relay: { controlNode: "old-node" }, credential: { relayAuth: "fixture", nodeId: "old-node", controlNode: "old-node" } } },
+  );
+  const record = { nodeId: "old-node", host: "192.0.2.10", os: "linux", runtimes: [], aofVersion: "0.1.0", publishedAt: "2026-09-22T00:00:00.000Z" };
+  await writeFile(path.join(home, "mesh", "nodes", "old-node.json"), JSON.stringify(record, null, 2), "utf8");
+  return { root, home };
+}

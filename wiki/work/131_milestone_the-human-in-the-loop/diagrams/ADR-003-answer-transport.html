@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADR-003 — the answer's transport</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <!--
+    Drawn for 131/ADR-003's `### Diagram` brief, in the aof console style (.aof/diagrams/style.md).
+    Assumptions, noted here because the reader was not reachable:
+    - Sequence view, minimal light variant, doc-inline size, static.
+    - The brief names six components and a sequence allows five lifelines, so the lane child and
+      `claude --resume` are ONE lifeline: the child is the process that resumes the session.
+    - The CLI verb and the board route are one lifeline ("answer verb"): the route invokes the verb.
+    - One ALT fragment carries the two endings the brief names: [answered] and [bound reached].
+    - Crimson marks the focal node (the ask file, ADR-003's one home) and the one headline message
+      (the answer written); teal marks the command flow into the child; everything else is muted.
+  -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #f3f5f7;
+      --color-ink:    #1b1f27;
+      --color-muted:  #585f6a;
+      --color-accent: #ba2646;
+      --font-sans:  Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono:  ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Sequence · 131 / ADR-003</p>
+    <h1>The answer's transport</h1>
+
+    <svg viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="adr-003-answer-transport-title adr-003-answer-transport-desc">
+      <title id="adr-003-answer-transport-title">ADR-003 — the answer's transport</title>
+      <desc id="adr-003-answer-transport-desc">Sequence showing a lane session that needs input: the wave records the ask on the run record and in one ask file in the aof home, the answer verb marks that file answered, and the wave records the answer and re-drives the same session with the answer typed, or parks the ask when the bound is reached.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#585f6a"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ba2646"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#13766d"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f3f5f7"/>
+
+      <!-- LIFELINES. Centres: verb 104, ask file 304, wave 504, run record 704, lane child 896 -->
+      <line x1="104" y1="128" x2="104" y2="712" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="304" y1="128" x2="304" y2="712" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="504" y1="128" x2="504" y2="712" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="704" y1="128" x2="704" y2="712" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="896" y1="128" x2="896" y2="712" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- ALT FRAME (drawn early so messages sit on top) -->
+      <rect x="36" y="344" width="928" height="360" rx="4" fill="rgba(27,31,39,0.02)" stroke="rgba(27,31,39,0.22)" stroke-width="1"/>
+      <rect x="36" y="344" width="40" height="16" rx="2" fill="#f3f5f7" stroke="rgba(27,31,39,0.22)" stroke-width="1"/>
+      <text x="56" y="356" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.12em">ALT</text>
+      <text x="48" y="376" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" letter-spacing="0.04em">[answered]</text>
+      <line x1="44" y1="604" x2="956" y2="604" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="48" y="624" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" letter-spacing="0.04em">[bound reached]</text>
+
+      <!-- ACTIVATION BARS -->
+      <!-- wave: owns the wait from the needs-input answer to the end -->
+      <rect x="500" y="172" width="8" height="520" fill="rgba(27,31,39,0.06)" stroke="#585f6a" stroke-width="0.8"/>
+      <!-- lane child: the first drive, then the resumed drive -->
+      <rect x="892" y="140" width="8" height="40" fill="rgba(27,31,39,0.06)" stroke="#585f6a" stroke-width="0.8"/>
+      <rect x="892" y="504" width="8" height="44" fill="rgba(27,31,39,0.06)" stroke="#585f6a" stroke-width="0.8"/>
+
+      <!-- MESSAGES (time flows down) -->
+      <!-- M1 child → wave: the drive answers needs-input (return) -->
+      <line x1="892" y1="176" x2="508" y2="176" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <!-- M2 wave → run record: openRunAsk -->
+      <line x1="508" y1="216" x2="703" y2="216" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M3 wave → ask file: openAsk, waiting -->
+      <line x1="500" y1="256" x2="305" y2="256" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M4 wave self: notify, poll, beat -->
+      <path d="M 508 288 L 540 288 Q 548 288 548 296 L 548 312 Q 548 320 540 320 L 510 320" fill="none" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- [answered] -->
+      <!-- M5 verb → ask file: answerAsk (headline) -->
+      <line x1="104" y1="400" x2="303" y2="400" stroke="#ba2646" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <!-- M6 ask file → wave: the poll reads it (return) -->
+      <line x1="304" y1="436" x2="498" y2="436" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <!-- M7 wave → run record: answerRunAsk -->
+      <line x1="508" y1="472" x2="703" y2="472" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M8 wave → lane child: spawn with answer (command flow) -->
+      <line x1="508" y1="508" x2="890" y2="508" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- M9 lane child → wave: the resumed drive's outcome (return) -->
+      <line x1="892" y1="544" x2="510" y2="544" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <!-- M10 wave → ask file: clearAsk -->
+      <line x1="500" y1="580" x2="305" y2="580" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- [bound reached] -->
+      <!-- M11 wave → ask file: parkAsk -->
+      <line x1="500" y1="648" x2="305" y2="648" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M12 wave → run record: parkRunAsk -->
+      <line x1="508" y1="684" x2="703" y2="684" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- MESSAGE LABELS (opaque masks, 6px clear of their stroke) -->
+      <rect x="760" y="158" width="80" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="800" y="167" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NEEDS_INPUT</text>
+
+      <rect x="564" y="198" width="80" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="604" y="207" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">OPEN RUN ASK</text>
+
+      <rect x="356" y="238" width="96" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="404" y="247" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">OPEN · WAITING</text>
+
+      <rect x="556" y="286" width="84" height="28" rx="2" fill="#f3f5f7"/>
+      <text x="598" y="297" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NOTIFY</text>
+      <text x="598" y="309" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">POLL · BEAT</text>
+
+      <rect x="156" y="382" width="96" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="204" y="391" fill="#ba2646" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WRITE ANSWERED</text>
+
+      <rect x="356" y="418" width="92" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="402" y="427" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">POLL READS IT</text>
+
+      <rect x="556" y="454" width="96" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="604" y="463" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ANSWER RUN ASK</text>
+
+      <rect x="752" y="490" width="96" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="800" y="499" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SPAWN --ANSWER</text>
+
+      <rect x="768" y="526" width="64" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="800" y="535" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">OUTCOME</text>
+
+      <rect x="368" y="562" width="68" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="402" y="571" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CLEAR ASK</text>
+
+      <rect x="356" y="630" width="92" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="402" y="639" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PARK · PARKED</text>
+
+      <rect x="564" y="666" width="80" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="604" y="675" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PARK RUN ASK</text>
+
+      <!-- ACTORS (drawn after arrows and labels) -->
+      <!-- Answer verb (input) -->
+      <rect x="32" y="72" width="144" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="32" y="72" width="144" height="56" rx="8" fill="rgba(88,95,106,0.10)" stroke="#7a818d" stroke-width="1"/>
+      <rect x="40" y="80" width="24" height="12" rx="2" fill="transparent" stroke="rgba(122,129,141,0.40)" stroke-width="0.8"/>
+      <text x="52" y="89" fill="#7a818d" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">IN</text>
+      <text x="104" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Answer verb</text>
+      <text x="104" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">CLI · board route</text>
+
+      <!-- Ask file (focal) -->
+      <rect x="224" y="72" width="160" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="224" y="72" width="160" height="56" rx="8" fill="rgba(186,38,70,0.08)" stroke="#ba2646" stroke-width="1"/>
+      <rect x="232" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(186,38,70,0.50)" stroke-width="0.8"/>
+      <text x="248" y="89" fill="#ba2646" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HOME</text>
+      <text x="304" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Ask file</text>
+      <text x="304" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">loop-asks/&lt;runId&gt;.json</text>
+
+      <!-- Wave (lane owner) -->
+      <rect x="432" y="72" width="144" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="432" y="72" width="144" height="56" rx="8" fill="#ffffff" stroke="#1b1f27" stroke-width="1"/>
+      <rect x="440" y="80" width="36" height="12" rx="2" fill="transparent" stroke="rgba(27,31,39,0.40)" stroke-width="0.8"/>
+      <text x="458" y="89" fill="#585f6a" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">OWNER</text>
+      <text x="504" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Wave</text>
+      <text x="504" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">awaitAnswer</text>
+
+      <!-- Run record (store) -->
+      <rect x="632" y="72" width="144" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="632" y="72" width="144" height="56" rx="8" fill="rgba(27,31,39,0.05)" stroke="#585f6a" stroke-width="1"/>
+      <rect x="640" y="80" width="36" height="12" rx="2" fill="transparent" stroke="rgba(88,95,106,0.40)" stroke-width="0.8"/>
+      <text x="658" y="89" fill="#585f6a" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+      <text x="704" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Run record</text>
+      <text x="704" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">asks · lane tree</text>
+
+      <!-- Lane child (drive → claude resume) -->
+      <rect x="816" y="72" width="160" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="816" y="72" width="160" height="56" rx="8" fill="#ffffff" stroke="#1b1f27" stroke-width="1"/>
+      <rect x="824" y="80" width="28" height="12" rx="2" fill="transparent" stroke="rgba(27,31,39,0.40)" stroke-width="0.8"/>
+      <text x="838" y="89" fill="#585f6a" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PTY</text>
+      <text x="896" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Lane child</text>
+      <text x="896" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">claude --resume</text>
+
+      <!-- LEGEND -->
+      <line x1="32" y1="736" x2="968" y2="736" stroke="rgba(27,31,39,0.10)" stroke-width="0.8"/>
+      <text x="32" y="752" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="32" y="768" width="14" height="10" rx="2" fill="rgba(186,38,70,0.08)" stroke="#ba2646" stroke-width="1"/>
+      <text x="52" y="776" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">The one home</text>
+
+      <rect x="164" y="764" width="4" height="18" fill="rgba(27,31,39,0.06)" stroke="#585f6a" stroke-width="0.8"/>
+      <text x="176" y="776" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Holds control</text>
+
+      <line x1="292" y1="774" x2="320" y2="774" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="328" y="776" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Write</text>
+
+      <line x1="400" y1="774" x2="428" y2="774" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <text x="436" y="776" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Return / read</text>
+
+      <line x1="540" y1="774" x2="568" y2="774" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="576" y="776" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Command (spawn)</text>
+
+      <line x1="700" y1="774" x2="728" y2="774" stroke="#ba2646" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <text x="736" y="776" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">The answer</text>
+    </svg>
+  </div>
+</body>
+</html>

@@ -161,7 +161,7 @@ export const meshDirectFabricTests = [
     async run() {
       const { projectRoot, env } = await scaffoldProject();
       // The WSL case: the guest's real hostname IS its host's.
-      let ws = await loadWorkspace(projectRoot, undefined, { hostname: "Umamis-MSI", env });
+      let ws = await loadWorkspace(projectRoot, undefined, { hostname: "Win-Host-A", env });
       const published = await meshIdentityCommand.run(
         { name: "aof-wsl", address: "172.27.155.33" },
         { workspace: ws },
@@ -174,7 +174,7 @@ export const meshDirectFabricTests = [
       assert.equal(sidecar.address, "172.27.155.33", "the address has ONE home — the sidecar");
       assert.equal(sidecar.derivedFrom, undefined, "a pinned id records no derivation host");
 
-      ws = await loadWorkspace(projectRoot, undefined, { hostname: "Umamis-MSI", env });
+      ws = await loadWorkspace(projectRoot, undefined, { hostname: "Win-Host-A", env });
       assert.equal(ws.config.mesh.nodeId, "aof-wsl", "reload hydrates the pinned id");
       assert.equal(ws.config.mesh.address, "172.27.155.33", "reload hydrates the address mesh-fabric reads");
       assert.equal(await selfAddress(ws.config), "172.27.155.33", "the fabric seam reads the override");

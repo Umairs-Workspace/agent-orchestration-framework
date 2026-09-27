@@ -114,6 +114,42 @@ import { archTests as acdDeclarationPredicateIsComposedTests } from "./acd-decla
 // control whose predicate it shares, because 124/02's FF-12405 leg 10 freezes `test/arch/bundle/`
 // at its 23 parity controls — a ceiling that may only fall.
 import { archTests as acdSiteIsProjectedNotCopiedTests } from "./acd-site-is-projected-not-copied.test.mjs";
+// milestone 129 / story 05 — the seven controls of the loop-concurrency register, in four files
+// (ARCHITECTURE.md § Fitness functions; each owes a red probe in VERIFICATION.md). Every one names
+// which of this row's three subjects it is: the LADDER — the wave tick is the ladder run in lanes.
+// FF-12901 the mode's one home and the absence of a concurrency number; FF-12902 + FF-12906 the
+// family boundary (a lane drive is a child process; the wave is read, never recomputed);
+// FF-12903 + FF-12907 the lane's record and the one declaration; FF-12905 the lane-scoped grade.
+// FF-12904 is an EXTENSION of `test/arch/grade/acd-gate-propagation-never-discards`, registered
+// there.
+import { archTests as acdLoopConcurrencySingleHomeTests } from "./acd-loop-concurrency-single-home.test.mjs";
+import { archTests as acdLoopFamilyBoundaryTests } from "./acd-loop-family-boundary.test.mjs";
+import { archTests as acdLaneRecordsAndTheDeclarationTests } from "./acd-lane-records-and-the-declaration.test.mjs";
+import { archTests as acdLaneGradeIsLaneScopedTests } from "./acd-lane-grade-is-lane-scoped.test.mjs";
+// milestone 130 / story 05 — the seven controls of the stop register, in three files
+// (ARCHITECTURE.md § Fitness functions; each owes a red probe in VERIFICATION.md). Every one names
+// which of this row's three subjects it is. FF-13001 + FF-13003 the RECORD — the stop request is
+// one file under the aof home and the verb is a probe-shaped write through one core; FF-13002 +
+// FF-13004 the LADDER — the interrupt path always settles, and a honoured declaration yields no
+// row; FF-13005 + FF-13006 + FF-13007 (node leg) the RECORD again — the loop's presence entry
+// carried additively by the same pass, the fleet's local-only button and its one route, the
+// desktop's argv formed in core. FF-13007's cargo half rides `supervision.rs` (130/04).
+import { archTests as acdLoopStopRequestSingleHomeTests } from "./acd-loop-stop-request-single-home.test.mjs";
+import { archTests as acdLoopStopSettlesTheRunTests } from "./acd-loop-stop-settles-the-run.test.mjs";
+import { archTests as acdLoopStopReachesEveryFaceTests } from "./acd-loop-stop-reaches-every-face.test.mjs";
+// milestone 131 / story 06 — the nine controls of the human-in-the-loop register, in three files
+// (ARCHITECTURE.md § Fitness functions; each owes a red probe in VERIFICATION.md). FF-13101 +
+// FF-13102 + FF-13103 the RECORD — the ask file has one home, the question one reader, and a
+// waiting run is recorded rather than reclaimed or charged; FF-13104 + FF-13105 the LADDER — an
+// answer resumes the same session as a command, and a waiting lane holds its slot while the wave
+// builds on; FF-13106 … FF-13109 the RECORD again — the notifier, the one form and the guarded
+// answer route are how every face reads and writes the ask.
+import { archTests as acdLoopAskSingleHomeTests } from "./acd-loop-ask-single-home.test.mjs";
+import { archTests as acdLoopAskWaitsInPlaceTests } from "./acd-loop-ask-waits-in-place.test.mjs";
+import { archTests as acdLoopAskReachesEveryFaceTests } from "./acd-loop-ask-reaches-every-face.test.mjs";
+// milestone 131 / story 10 — FF-13111 and FF-13112, the RECORD once more: a Discord reply is one more
+// face that writes the ask, through one gateway and one allowlisted verb (ADR-008). 11 appends FF-13113.
+import { archTests as acdLoopAskAnsweredFromDiscordTests } from "./acd-loop-ask-answered-from-discord.test.mjs";
 
 export const tests = [
   // milestone 52 / story 04 — the nine loop-registry fitness functions
@@ -182,4 +218,19 @@ export const tests = [
   ...acdDeclarationPredicateIsComposedTests,
   // story 125 / task 01 — the published site's placement control (see the import note).
   ...acdSiteIsProjectedNotCopiedTests,
+  // milestone 129 / story 05 — FF-12901, FF-12902/FF-12906, FF-12903/FF-12907, FF-12905 (see the import note).
+  ...acdLoopConcurrencySingleHomeTests,
+  ...acdLoopFamilyBoundaryTests,
+  ...acdLaneRecordsAndTheDeclarationTests,
+  ...acdLaneGradeIsLaneScopedTests,
+  // milestone 130 / story 05 — FF-13001/FF-13003, FF-13002/FF-13004, FF-13005/FF-13006/FF-13007 (see the import note).
+  ...acdLoopStopRequestSingleHomeTests,
+  ...acdLoopStopSettlesTheRunTests,
+  ...acdLoopStopReachesEveryFaceTests,
+  // milestone 131 / story 06 — FF-13101/FF-13102/FF-13103, FF-13104/FF-13105, FF-13106 … FF-13109 (see the import note).
+  ...acdLoopAskSingleHomeTests,
+  ...acdLoopAskWaitsInPlaceTests,
+  ...acdLoopAskReachesEveryFaceTests,
+  // milestone 131 / story 10 — FF-13111, FF-13112.
+  ...acdLoopAskAnsweredFromDiscordTests,
 ];

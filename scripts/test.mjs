@@ -22,6 +22,8 @@ import { tests as archAssignmentTests } from "../test/arch/assignment/index.mjs"
 import { tests as archAuditTests } from "../test/arch/audit/index.mjs";
 import { tests as archBundleTests } from "../test/arch/bundle/index.mjs";
 import { tests as archCommandTests } from "../test/arch/command/index.mjs";
+import { tests as archDiagramsTests } from "../test/arch/diagrams/index.mjs";
+import { tests as archExamplesTests } from "../test/arch/examples/index.mjs";
 import { tests as archGradeTests } from "../test/arch/grade/index.mjs";
 import { tests as archGraphTests } from "../test/arch/graph/index.mjs";
 import { tests as archLoopTests } from "../test/arch/loop/index.mjs";
@@ -39,6 +41,9 @@ import { tests as assignmentTests } from "../test/assignment/index.mjs";
 import { tests as auditTests } from "../test/audit/index.mjs";
 import { tests as bundleTests } from "../test/bundle/index.mjs";
 import { tests as commandTests } from "../test/command/index.mjs";
+import { tests as diagramsTests } from "../test/diagrams/index.mjs";
+import { tests as discordTests } from "../test/discord/index.mjs";
+import { tests as examplesTests } from "../test/examples/index.mjs";
 import { tests as gradeTests } from "../test/grade/index.mjs";
 import { tests as graphTests } from "../test/graph/index.mjs";
 import { tests as loopTests } from "../test/loop/index.mjs";
@@ -59,6 +64,7 @@ import { tests as meshTerminalTests } from "../test/mesh/terminal/index.mjs";
 import { tests as meshUiTests } from "../test/mesh/ui/index.mjs";
 import { tests as meshWorkerTests } from "../test/mesh/worker/index.mjs";
 import { tests as notionTests } from "../test/notion/index.mjs";
+import { tests as notifyTests } from "../test/notify/index.mjs";
 import { tests as planningTests } from "../test/planning/index.mjs";
 import { tests as runTests } from "../test/run/index.mjs";
 import { tests as sessionTests } from "../test/session/index.mjs";
@@ -76,6 +82,8 @@ export const tests = [
   ...archAuditTests,
   ...archBundleTests,
   ...archCommandTests,
+  ...archDiagramsTests,
+  ...archExamplesTests,
   ...archGradeTests,
   ...archGraphTests,
   ...archLoopTests,
@@ -93,6 +101,9 @@ export const tests = [
   ...auditTests,
   ...bundleTests,
   ...commandTests,
+  ...diagramsTests,
+  ...discordTests,
+  ...examplesTests,
   ...gradeTests,
   ...graphTests,
   ...loopTests,
@@ -113,6 +124,7 @@ export const tests = [
   ...meshUiTests,
   ...meshWorkerTests,
   ...notionTests,
+  ...notifyTests,
   ...planningTests,
   ...runTests,
   ...sessionTests,

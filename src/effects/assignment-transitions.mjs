@@ -93,9 +93,9 @@ export function guardAssignmentTransition(existing, state, { byNode = null, code
 //                         behaviour never gates on the ledger's health (the d2
 //                         rule).
 export async function reportAssignmentSettled(report = {}, opts = {}) {
-  const { assignmentId, state, runId = null, sessionId = null, branch = null, code = null, now } = report;
+  const { assignmentId, state, runId = null, sessionId = null, branch = null, code = null, ask = null, now } = report;
   const { journalOptions = {}, sendEffectStep = null, fallbackSend = null } = opts;
-  const payload = { assignmentId, state, runId, sessionId, branch, code };
+  const payload = { assignmentId, state, runId, sessionId, branch, code, ...(ask != null && state === "running" && code === "needs-input" ? { ask } : {}) }; // 131/ADR-010 §1: ask rides only the park, and fallbackSend drops it
   // Append-time applicability (m42 wave (d) leg d4, port 4): the uniform seam
   // rule, a pass-through while this event's reactors declare no predicate.
   const reactors = await applicableReactors("assignment.reported", payload);
@@ -270,7 +270,7 @@ export async function completeAssignmentParkResume({ parkId, assignmentId, sessi
 // Returns the apply seam's own result shape so its callers are unchanged:
 //   { applied, assignment, skipped?, code?, workspaceId?, eventId?, effects? }
 export async function transitionAssignmentState(store, assignmentId, state, edge = {}, opts = {}) {
-  const { byNode = null, now, runId, sessionId, code, reclaimedAt, branch = null } = edge;
+  const { byNode = null, now, runId, sessionId, code, reclaimedAt, branch = null, ask } = edge;
   const { journalOptions = {}, drain = true, loci = CONTROL_LOCI, raiseEvent = true } = opts;
 
   const existing = store.db.prepare("SELECT * FROM global_assignments WHERE assignment_id = ?").get(assignmentId);
@@ -285,7 +285,7 @@ export async function transitionAssignmentState(store, assignmentId, state, edge
   }
   // (1) THE FACT — the store's own writer, guards now in front of it rather than
   // scattered behind it.
-  const updated = updateAssignmentState(store, assignmentId, state, { now, runId, sessionId, code, reclaimedAt });
+  const updated = updateAssignmentState(store, assignmentId, state, { now, runId, sessionId, code, reclaimedAt, ask });
   if (updated == null) return { applied: false, skipped: true, code: ASSIGNMENT_UNKNOWN };
   if (!raiseEvent) return { applied: true, assignment: updated };
 

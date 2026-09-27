@@ -9,13 +9,14 @@
 // them in it is not something a test may do.
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
 import {
+  RENAME_LEDGER_PATH,
   RENAME_LOG_ARGS,
   buildRenameMap,
   parseRenameRecords,
@@ -31,6 +32,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const KNOWN_RENAME = Object.freeze({ from: "src/commands/errors.mjs", to: "src/command-error.mjs" });
 
 async function realRenameMap() {
+  const ledger = await readFile(path.join(repoRoot, ...RENAME_LEDGER_PATH), "utf8").catch(() => "");
   const { stdout } = await execFileAsync("git", [...RENAME_LOG_ARGS], {
     cwd: repoRoot,
     encoding: "utf8",
@@ -38,7 +40,7 @@ async function realRenameMap() {
     maxBuffer: 16 * 1024 * 1024,
     windowsHide: true,
   });
-  return buildRenameMap(parseRenameRecords(stdout));
+  return buildRenameMap(parseRenameRecords(`${stdout}\n${ledger}`));
 }
 
 export const citedPathResolveTests = [

@@ -531,6 +531,13 @@ async function persist(item, record) {
 // — a run that ends before anything is ingested, a run on a runtime that reports
 // nothing, and a fifteen-key record read forward are all the SAME state: not
 // measured, never zero.
+//
+// The SEVENTEENTH key (131/ADR-003 §3) SUPERSEDES the sixteen by that same additive
+// discipline: `asks` (an array, defaulting `[]`) appended LAST — every question the run's
+// session stopped to ask a human, each entry `{ question, phase, askedAt, parkedAt, answer,
+// answeredAt, by }`, written only by the run's owner through the three ask writers below. A
+// sixteen-key record, and any non-array `asks`, reads forward as `[]`. The record keeps the
+// human's decision and its instants and never a derived wait (119/ADR-003).
 function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1, retryOf = null, node = null }) {
   return {
     runId,
@@ -549,6 +556,7 @@ function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1,
     node: node ?? null,
     resumeAfter: null,
     spend: null,
+    asks: [],
   };
 }
 
@@ -576,6 +584,7 @@ function normalizeRecord(raw) {
     node: raw.node ?? null,
     resumeAfter: raw.resumeAfter ?? null,
     spend: raw.spend ?? null,
+    asks: Array.isArray(raw.asks) ? raw.asks : [],
   };
 }
 
@@ -749,6 +758,45 @@ export async function recordAnchorReading(item, { runId, anchor, value, provenan
   return reading;
 }
 
+// The seven keys of one answer record (134/ADR-003 §3), in the reader's order.
+const ANSWER_KEYS = Object.freeze(["token", "question", "answer", "toolUseId", "sessionId", "at", "entrypoint"]);
+
+function validAnswer(record, { mapToken, readMapToken }) {
+  if (record == null || typeof record !== "object" || Array.isArray(record)) return false;
+  const keys = Object.keys(record);
+  if (keys.length !== ANSWER_KEYS.length || !ANSWER_KEYS.every((key) => Object.hasOwn(record, key))) return false;
+  const filled = (value) => typeof value === "string" && value.length > 0;
+  if (!["token", "question", "answer", "toolUseId", "sessionId", "at"].every((key) => filled(record[key]))) return false;
+  if (record.entrypoint !== null && !filled(record.entrypoint)) return false;
+  const head = readMapToken(record.token);
+  return head != null && mapToken(head.storyRef, head.id) === record.token;
+}
+
+// Stamp a person's answers onto a run (134/ADR-003 §3, FF-13401) — the ONE writer of
+// `brief.answers`, on the `recordAnchorReading` pattern: the answers ride the run's brief, because
+// FF-6908 freezes the record's sixteen top-level keys and says later claims ride `brief`.
+// Validates before it reads the run, so an invalid array throws `answers-invalid` and writes
+// nothing, onto any run. STAMPED ONCE: a run whose brief already holds `answers` is never
+// re-stamped, and the file is left byte-identical. The run's lifecycle timestamps are preserved.
+// The token is validated by the map token's one reader (src/work-examples/map.mjs), imported
+// lazily: the mesh assignment sink imports this store, and its static reach is a frozen ceiling
+// (53/FF-5301) this one validation has no reason to move.
+// Answers `{ stamped, answers }` — the answers now on the run.
+export async function recordAnswers(item, { runId, answers } = {}) {
+  if (typeof runId !== "string" || runId.length === 0) {
+    throw runError("an answer stamp needs the run it belongs to", "answers-run-required", 400);
+  }
+  const token = await import("./work-examples/map.mjs");
+  if (!Array.isArray(answers) || answers.length === 0 || !answers.every((answer) => validAnswer(answer, token))) {
+    throw runError("brief.answers must be a non-empty array of answer records", "answers-invalid", 400);
+  }
+  const record = await readRun(item, runId);
+  if (record.brief?.answers != null) return { stamped: false, answers: record.brief.answers };
+  const stamp = answers.map((answer) => Object.fromEntries(ANSWER_KEYS.map((key) => [key, answer[key]])));
+  await persist(item, { ...record, brief: { ...(record.brief ?? {}), answers: stamp } });
+  return { stamped: true, answers: stamp };
+}
+
 // Apply a transition with VALIDATE-BEFORE-WRITE ordering ("an illegal transition
 // writes nothing"): read → compute (from,to) → validate → (legal) write / (illegal)
 // throw illegal-transition. An illegal transition leaves the on-disk file
@@ -806,7 +854,15 @@ export async function applyTransition(item, runId, toState, { now, failureReason
 //     clean (the producer itself imports this module's readRuns/settleRun, so a
 //     static import here would be a cycle — a dynamic import at settle resolves it);
 //   - a failure to ingest is reported (reportDegrade) rather than swallowed silently.
-export async function completeRun(item, { runId, outcome, failureReason = null, resumeAfter = null, now, projectsDir } = {}) {
+//
+// 134/03 (ADR-003 §3) — the SAME seam stamps a person's answers, beside spend and in its own try:
+// the session's tokened `AskUserQuestion` answers, read by the one reader
+// (src/work-examples/answers.mjs, imported lazily for the same reason) and written by
+// `recordAnswers`. A read with no tokened answer writes nothing; only a transcript that could not
+// be read (no session id, none there, empty) is reported. `settleSpend: false` skips the spend
+// block while the answers are still stamped — the driven settles, which settle spend themselves
+// against a resume baseline, pass it (through the transition seam's `spendSettled`).
+export async function completeRun(item, { runId, outcome, failureReason = null, resumeAfter = null, now, projectsDir, settleSpend = true } = {}) {
   let targetRunId = runId;
   if (!targetRunId) {
     const running = (await readRuns(item)).filter((run) => run.state === "running");
@@ -819,7 +875,11 @@ export async function completeRun(item, { runId, outcome, failureReason = null, 
     targetRunId = running[0].runId;
   }
   const settled = await applyTransition(item, targetRunId, outcome, { failureReason, resumeAfter, now });
-  if (typeof projectsDir === "string" && projectsDir.length > 0) {
+  if (typeof projectsDir !== "string" || projectsDir.length === 0) return settled;
+  // One degrade event carries every unread stamp: the reporter throttles per code, so a second
+  // `run-store` event inside the window would be dropped.
+  const unread = [];
+  if (settleSpend) {
     try {
       const { settleSpendFromTranscript } = await import("./run-spend-ingest.mjs");
       const { stamped, reason } = await settleSpendFromTranscript(item, {
@@ -829,12 +889,25 @@ export async function completeRun(item, { runId, outcome, failureReason = null, 
       });
       // An already-settled run is the success-of-idempotence case, not a failure.
       if (!stamped && reason && reason !== "already-settled") {
-        reportDegrade("run-store", new Error(`spend not stamped at settle: ${reason}`));
+        unread.push(`spend not stamped at settle: ${reason}`);
       }
     } catch (error) {
-      reportDegrade("run-store", error);
+      unread.push(`spend not stamped at settle: ${error?.message ?? error}`);
     }
   }
+  try {
+    const { readSessionAnswers } = await import("./work-examples/answers.mjs");
+    const sessionId = settled.sessionId;
+    const answers = await readSessionAnswers(projectsDir, sessionId);
+    if (answers == null) {
+      unread.push(`answers not stamped at settle: ${typeof sessionId === "string" && sessionId.length > 0 ? "session-unreadable" : "no-session-id"}`);
+    } else if (answers.length > 0) {
+      await recordAnswers(item, { runId: settled.runId, answers });
+    }
+  } catch (error) {
+    unread.push(`answers not stamped at settle: ${error?.message ?? error}`);
+  }
+  if (unread.length > 0) reportDegrade("run-store", new Error(unread.join("; ")));
   return settled;
 }
 
@@ -954,6 +1027,22 @@ export async function settleRunFromVendor(item, { runId, vendorTokens, model, ef
 // same-node resume semantics, byte-identical); when PASSED (a string or null) it
 // REPLACES the carry — the fleet-reclaim winner mints the reclaimed lineage under its
 // OWN session (or none), never the dead peer's (resume semantics do not cross hosts).
+// The brief an UNBRIEFED retry carries — the operator's `aof work resume` / `run-retry`, or a
+// `run-start` that reclaims — is the prior's minus `brief.loop`. A loop declaration is the claim
+// "loop <loopRunId> is driving this run", and only that loop's own mint may make it: every loop
+// retry passes its own brief. Carried, it resurrected a dead loop as `running` — measured 130/06,
+// 2026-09-23: `aof work resume 01` re-minted a 09-10 lineage under its loop's id, and the stop verb
+// and the fleet then addressed that dead loop instead of the live one (the latest declaration in
+// scope is the target, 130/ADR-002 §3c).
+// 134/03 (ADR-003 §3) drops `brief.answers` beside it: the stamp is one session's answers, taken
+// once at settle, so a retry stamps its own session's rather than inheriting a stamp that would
+// then refuse its own.
+function carriedBrief(prior) {
+  if (prior == null || typeof prior !== "object") return {};
+  const { loop: _loop, answers: _answers, ...rest } = prior;
+  return rest;
+}
+
 export async function retryRun(item, { runId, maxAttempts = Infinity, brief, now, node = null, sessionId, force = false } = {}) {
   const runs = await readRuns(item);
   let prior;
@@ -995,7 +1084,7 @@ export async function retryRun(item, { runId, maxAttempts = Infinity, brief, now
   // the anti-loop backstop).
   return mintRun(item, {
     sessionId: sessionId !== undefined ? sessionId : prior.sessionId,
-    brief: brief ?? prior.brief ?? {},
+    brief: brief ?? carriedBrief(prior.brief),
     now,
     attempt: prior.attempt + 1,
     retryOf: prior.runId,
@@ -1012,6 +1101,67 @@ export async function heartbeat(item, runId, { now } = {}) {
   const record = await readRun(item, runId);
   const stamp = now ?? new Date().toISOString();
   const updated = { ...record, heartbeatAt: stamp, updatedAt: stamp };
+  await persist(item, updated);
+  return updated;
+}
+
+// ---------------------------------------------------- the run's asks (131) ----
+//
+// THE THREE ASK WRITERS (131/ADR-003 §3) — no-state-change persists shaped like `heartbeat`,
+// and the run's OWNER is their single writer (the answering verb writes the ask file, never the
+// record: a lane's record sits in a tree the verb cannot see). Each changes `asks` and
+// `updatedAt` and nothing else — not `state`, `outcome`, `attempt`, `heartbeatAt` or
+// `spend`; liveness stays the owner's `heartbeat` call. The `running` check comes first, so a
+// settled run is refused `no-running-run` whatever its asks hold; each refusal persists nothing.
+async function readRunningRun(item, runId) {
+  const record = await readRun(item, runId);
+  if (record.state !== "running") {
+    throw runError(`run ${runId} is not running — only a running run's owner records its asks`, "no-running-run", 409);
+  }
+  return record;
+}
+
+// The last entry, when it is a plain object still waiting on an answer — else null.
+function openLastAsk(asks) {
+  const last = asks[asks.length - 1];
+  return last != null && typeof last === "object" && !Array.isArray(last) && last.answeredAt == null ? last : null;
+}
+
+// openRunAsk(item, runId, { question, phase, now }) — appends a new, open entry. Refused
+// `run-ask-open` while the last entry is still unanswered: one question at a time.
+export async function openRunAsk(item, runId, { question = null, phase = null, now } = {}) {
+  const record = await readRunningRun(item, runId);
+  if (openLastAsk(record.asks) != null) {
+    throw runError(`run ${runId} already has a question waiting on an answer`, "run-ask-open", 409);
+  }
+  const stamp = now ?? new Date().toISOString();
+  const entry = { question, phase, askedAt: stamp, parkedAt: null, answer: null, answeredAt: null, by: null };
+  const updated = { ...record, asks: [...record.asks, entry], updatedAt: stamp };
+  await persist(item, updated);
+  return updated;
+}
+
+// parkRunAsk(item, runId, { now }) — stamps `parkedAt` on the LAST entry. A parked, unanswered
+// entry is RE-STAMPED: `--resume` re-enters the wait with a fresh bound, and the bound can park
+// it again. Refused `run-ask-not-open` with no entry, or with the last one answered.
+export async function parkRunAsk(item, runId, { now } = {}) {
+  const record = await readRunningRun(item, runId);
+  const open = openLastAsk(record.asks);
+  if (open == null) throw runError(`run ${runId} has no question waiting on an answer`, "run-ask-not-open", 409);
+  const stamp = now ?? new Date().toISOString();
+  const updated = { ...record, asks: [...record.asks.slice(0, -1), { ...open, parkedAt: stamp }], updatedAt: stamp };
+  await persist(item, updated);
+  return updated;
+}
+
+// answerRunAsk(item, runId, { answer, by, now }) — stamps `answer`, `answeredAt` and `by` on
+// the LAST entry and keeps its `parkedAt`. Refused `run-ask-not-open` as parkRunAsk is.
+export async function answerRunAsk(item, runId, { answer, by = null, now } = {}) {
+  const record = await readRunningRun(item, runId);
+  const open = openLastAsk(record.asks);
+  if (open == null) throw runError(`run ${runId} has no question waiting on an answer`, "run-ask-not-open", 409);
+  const stamp = now ?? new Date().toISOString();
+  const updated = { ...record, asks: [...record.asks.slice(0, -1), { ...open, answer, answeredAt: stamp, by }], updatedAt: stamp };
   await persist(item, updated);
   return updated;
 }
@@ -1067,6 +1217,11 @@ export async function staleRunningRuns(items, { now, stalenessThreshold = Infini
   for (const item of items) {
     for (const run of await readRuns(item)) {
       if (run.state !== "running") continue;
+      // 131/ADR-003 §3: a run waiting on a human is not an orphan. Its owner beats it while it
+      // waits, so this is the backstop for a PARKED one, which no one beats. Only the last entry
+      // is read, and only a plain object exempts — a corrupt entry never makes an orphan
+      // unreclaimable.
+      if (openLastAsk(run.asks) != null) continue;
       if (!isStale(run, nowMs, stalenessThreshold)) continue;
       candidates.push({ ...run, item });
     }

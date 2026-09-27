@@ -36,13 +36,13 @@
 // degrade-consumer sweep — never by a builder mid-move.
 import path from "node:path";
 import { execFile } from "node:child_process";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 // `claudeProjectsDir` is the EXISTING slug/projects-dir seam (work-observe.mjs, the
 // observability milestone): reused VERBATIM (never re-implemented) so the session-id
 // transcript-dir watch below resolves EXACTLY the directory a real interactive
 // `claude` session (cwd = worktreeCwd) writes its own transcript into.
-import { claudeProjectsDir } from "./work/observe.mjs";
+import { claudeProjectsDir, readLastAssistantTurn, NEEDS_INPUT_SENTINEL, HUMAN_INPUT_TOOL_NAMES } from "./work/observe.mjs";
 // milestone 38 / story 05 (ADR-013) — the interactive-`claude`-PTY driver reuses the
 // EXISTING terminal infrastructure verbatim: `resolveProvider` is the SAME seam
 // `/ws/terminal` resolves its own launch through (terminal-providers.mjs), and
@@ -53,7 +53,7 @@ import { resolveProvider } from "./terminal-providers.mjs";
 import { createTerminalSpawn, loadNodePty } from "./terminal-ws.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
 import { reportDegrade } from "./degrade.mjs";
-import { DEFAULT_HEARTBEAT_MS } from "./loop-bounds.mjs";
+import { DEFAULT_HEARTBEAT_MS, PROVIDER_WAIT_RE } from "./loop-bounds.mjs";
 
 // ------------------------------------------------------- the headless driver ----
 
@@ -134,7 +134,9 @@ export function buildDriverCommand(driver, brief) {
 // `resolveProvider` directly and never calls `resolveInteractiveDriverLaunch`, so it can
 // never false-fire on a human session. `containsNeedsInputSentinel`'s DETECTION below
 // is UNCHANGED — this amendment adds the missing PRODUCER, not a new detector.
-export const NEEDS_INPUT_SENTINEL = "NEEDS_INPUT";
+// 131/ADR-002: the literal lives in the transcript family beside the one reader of the turn it
+// marks, and is re-exported here so the frozen seventeen do not move.
+export { NEEDS_INPUT_SENTINEL };
 
 // NEEDS_INPUT_INSTRUCTION — the producer text (ADR-013 amendment, option C). Embeds
 // NEEDS_INPUT_SENTINEL via a template interpolation so the producer and
@@ -147,7 +149,13 @@ export const NEEDS_INPUT_SENTINEL = "NEEDS_INPUT";
 export const NEEDS_INPUT_INSTRUCTION = `You are running autonomously on a worker machine with no human present to answer
 questions in real time. If you reach a genuine judgment call you cannot safely
 resolve on your own — one where guessing risks doing the wrong thing and a human would
-need to weigh in — do not guess and do not stall silently. Instead, print the exact
+need to weigh in — do not guess and do not stall silently. Before you print it, write your
+question for a human reading it on a phone, as four short lines that begin exactly
+"Decision needed:", "Options:", "I would pick:" and "What the answer changes:" — the one
+decision you need, the options you weighed, the one you would take and why, and which tasks,
+files or later steps depend on the answer. Keep those four lines under 1,500 characters, and
+put any detail after them.
+Instead, print the exact
 line ${NEEDS_INPUT_SENTINEL} on its own line, with nothing else on that line, then
 stop. Only use this for a real, blocking judgment call; keep working through every
 task you can complete confidently without it.`;
@@ -276,6 +284,12 @@ function containsNeedsInputSentinel(buffer) {
   return false;
 }
 
+// 129/06 F-58 — THE PROVIDER-WAIT LINE is read with `PROVIDER_WAIT_RE`, defined in `loop-bounds.mjs`
+// beside the heartbeat deadline it suspends (the driver's export set is the frozen seventeen of
+// 53/FF-5302, so the pattern lives in a leaf this module already imports rather than on its door).
+const PROVIDER_WAIT_WINDOW = 4096;
+const ANSI_ESCAPE_RE = /\[[0-9;?]*[ -/]*[@-~]/gu;
+
 // TASK COMPLETION, DETECTED FROM THE TRANSCRIPT (VERIFICATION F-38.06h, live soak
 // 2026-07-25). An interactive `claude` session NEVER exits after finishing a slash
 // command — it returns to its idle prompt and stays alive — so `term.onExit` (the
@@ -319,22 +333,9 @@ export const COMPLETION_IDLE_MS = DEFAULT_HEARTBEAT_MS;
 // flush mid-write, nowhere near a wait a human would notice.
 export const DECLARED_COMPLETION_IDLE_MS = 10 * 1000;
 
-// HUMAN_INPUT_TOOL_NAMES — the closed set of tools whose PENDING call means the
-// session is, definitionally, waiting on a human (measured live 2026-07-27,
-// `/aof:autonomous 18`: instead of printing the NEEDS_INPUT line and ending its
-// turn, the session asked its scope question through the interactive
-// AskUserQuestion widget. A pending question is a `tool_use` turn, so BOTH
-// detectors read "still working" — the assignment showed a healthy `running` for
-// 28+ minutes while the session sat waiting, and the operator only discovered it
-// by opening the read-only mirror). An ORDINARY pending tool (Bash, Edit, a
-// subagent Task) is genuinely "still working" and must never match here.
-export const HUMAN_INPUT_TOOL_NAMES = ["AskUserQuestion"];
-
-function pendingHumanInputTool(message) {
-  const content = message?.content;
-  if (!Array.isArray(content)) return false;
-  return content.some((block) => block?.type === "tool_use" && HUMAN_INPUT_TOOL_NAMES.includes(block?.name));
-}
+// HUMAN_INPUT_TOOL_NAMES — the closed set of tools whose PENDING call means the session is
+// waiting on a human. Its one home is the transcript family (131/ADR-002); re-exported here.
+export { HUMAN_INPUT_TOOL_NAMES };
 
 // readTranscriptTerminalOutcome(file) => { outcome, declared } | null — the
 // transcript's SETTLED outcome, or null while the session is still working. Scans the
@@ -350,85 +351,23 @@ function pendingHumanInputTool(message) {
 // working" -> null. NEVER throws (an absent or half-written file is simply "nothing
 // settled yet").
 async function readTranscriptTerminalOutcome(file, sinceOffset = 0) {
-  let bytes;
-  try {
-    bytes = await readFile(file);
-  } catch {
+  // The scan is the transcript family's (131/ADR-002): this is a mapping over its one reader,
+  // with the four answers it has always given. The RESUME baseline rides through unchanged — a
+  // resumed session's transcript already ends in the outcome it parked with (m42, measured
+  // 2026-07-27), so only what the resumed process writes after `sinceOffset` counts.
+  const turn = await readLastAssistantTurn(file, sinceOffset);
+  if (turn == null || turn.stopReason == null) return null;
+  if (turn.stopReason !== "end_turn") {
+    // A pending HUMAN-INPUT tool call with no answer behind it is a session waiting on a
+    // person — declared, and `pending: true` because the question is live mid-turn.
+    if (turn.stopReason === "tool_use" && !turn.answered && turn.humanInputTool != null) {
+      return { outcome: "needs-input", declared: true, pending: true };
+    }
     return null;
   }
-  // RESUME baseline (m42 terminal-resume, measured 2026-07-27 14:37Z): a resumed
-  // session's transcript already ENDS in a settled outcome — the very state it
-  // parked with — and reading it as the verdict killed the fresh PTY ~12s after
-  // every resume ("resume it again to continue", forever). Records at or before
-  // `sinceOffset` (the file's size at spawn) are PRE-resume history: only what
-  // the resumed process writes AFTER it counts. The slice may start mid-line —
-  // drop the partial first line (its record is pre-baseline anyway).
-  let text;
-  if (sinceOffset > 0) {
-    // Drop a PARTIAL first line only when the baseline cut mid-record (the byte
-    // before the offset is not a newline) — a baseline that ends exactly on a
-    // record boundary must keep the very next line (it is the first POST-resume
-    // record, and dropping it would blind the watch to a fast outcome).
-    const cutMidLine = sinceOffset <= bytes.length && bytes[sinceOffset - 1] !== 0x0a;
-    text = bytes.subarray(sinceOffset).toString("utf8");
-    if (cutMidLine) {
-      const firstNewline = text.indexOf("\n");
-      text = firstNewline === -1 ? "" : text.slice(firstNewline + 1);
-    }
-  } else {
-    text = bytes.toString("utf8");
-  }
-  const lines = text.split("\n");
-  // True once any record LATER than the last assistant record is a `user` record —
-  // i.e. the assistant's pending tool call already has its answer in the stream.
-  let answeredAfterAssistant = false;
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    const line = lines[i].trim();
-    if (line.length === 0) continue;
-    let record;
-    try {
-      record = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    if (record?.type === "user") {
-      answeredAfterAssistant = true;
-      continue;
-    }
-    const message = record?.message;
-    if (record?.type === "assistant" && message && typeof message === "object") {
-      const stop = message.stop_reason;
-      if (stop == null) return null;
-      if (stop !== "end_turn") {
-        // A pending HUMAN-INPUT tool call with no answer behind it is a session
-        // waiting on a person — the invisible-stop defect. Declared: the model
-        // explicitly asked, so 69/05 parks it immediately without an idle window.
-        if (stop === "tool_use" && !answeredAfterAssistant && pendingHumanInputTool(message)) {
-          // `pending: true` — the question is LIVE (mid-turn, an interactive
-          // widget waiting at a live PTY), unlike the sentinel case below where
-          // the turn already ENDED. The watch reports this immediately, then the
-          // driver ends the PTY; the persisted conversation resumes in a new PTY.
-          return { outcome: "needs-input", declared: true, pending: true };
-        }
-        return null;
-      }
-      let body = "";
-      const content = message.content;
-      if (Array.isArray(content)) {
-        for (const block of content) {
-          if (block?.type === "text" && typeof block.text === "string") body += `${block.text}\n`;
-        }
-      } else if (typeof content === "string") {
-        body = content;
-      }
-      const lines2 = body.split("\n").map((l) => l.trim());
-      const needsInput = lines2.some((l) => l === NEEDS_INPUT_SENTINEL);
-      if (needsInput) return { outcome: "needs-input", declared: true };
-      const declaredComplete = lines2.some((l) => l === DIRECTIVE_COMPLETE_SENTINEL);
-      return { outcome: "done", declared: declaredComplete };
-    }
-  }
-  return null;
+  const lines = turn.text.split("\n").map((line) => line.trim());
+  if (lines.some((line) => line === NEEDS_INPUT_SENTINEL)) return { outcome: "needs-input", declared: true };
+  return { outcome: "done", declared: lines.some((line) => line === DIRECTIVE_COMPLETE_SENTINEL) };
 }
 
 // latestSessionActivityMtimeMs(projectsDir, sessionId) — the newest mtime across the
@@ -625,6 +564,24 @@ const ESC = String.fromCharCode(27);
 const BRACKETED_PASTE_START = `${ESC}[200~`;
 const BRACKETED_PASTE_END = `${ESC}[201~`;
 const INTERACTIVE_COMMAND_SUBMIT_DELAY_MS = 900;
+
+// 2026-09-24 — READINESS IS OBSERVED, NOT ASSUMED. `INTERACTIVE_COMMAND_READY_DELAY_MS` is a
+// guess about how long claude takes to start, and under load the guess was wrong: three lanes
+// launched together in a downstream project (plus the repo's MCP servers starting) had the
+// directive pasted before the TUI was listening — no transcript, no session id, and each lane
+// idled to the 20-minute heartbeat deadline, three attempts running. The TUI announces its own
+// readiness by enabling bracketed paste (`TUI_READY_MARKER`); a real launch now types only
+// once BOTH the delay has passed (the measured-good floor) AND the marker has been seen,
+// bounded by `INTERACTIVE_READY_CAP_MS` — after which it types anyway and says so.
+const TUI_READY_MARKER = `${ESC}[?2004h`;
+const INTERACTIVE_READY_CAP_MS = 60_000;
+// …and ACCEPTANCE IS OBSERVED TOO. A submitted directive starts a session, and a session
+// writes its transcript, which is what the session-id watch resolves on. A real launch whose
+// submit produced no session id within `DIRECTIVE_ACCEPT_TIMEOUT_MS` is stopped as `failed /
+// timeout` (retryable) in about a minute and a half rather than twenty, with what the screen
+// last showed recorded under `directive-not-accepted` — a dialog nobody could see names itself.
+const DIRECTIVE_ACCEPT_TIMEOUT_MS = 90_000;
+const SCREEN_TAIL_CHARS = 600;
 // The Enter key is a CARRIAGE RETURN. F27b measured the alternative at the soak:
 // a trailing line feed enters the text and never submits it (it is Ctrl+J).
 const SUBMIT_KEY = String.fromCharCode(13);
@@ -1093,10 +1050,25 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     let commandWriteTimer = null;
     // 70/06 — the timer for the SEPARATED submit (the Enter that follows the body).
     let commandSubmitTimer = null;
+    // 2026-09-24 — the readiness gate and the acceptance watch (see TUI_READY_MARKER).
+    let tuiReadySeen = false;
+    let onTuiReady = null;
+    let readyCapTimer = null;
+    let acceptTimer = null;
     // m42 wave (b) / TECH_DEBT item 7 — the PTY LIVENESS PROBE (below).
     let livenessTimer = null;
     let startToCloseTimer = null;
     let heartbeatTimer = null;
+    // 129/06 F-58 — THE PROVIDER WAIT. Measured 2026-09-15 (loop 127, four attempts): `claude`
+    // prints `Usage limit reached · continuing automatically at 1:40pm` (and `You've hit your
+    // session limit · resets 1:40pm`) and then waits, alive, for the reset — no transcript
+    // progress, so the heartbeat deadline read it as a hung session and killed it after 15
+    // minutes, five times, an hour of blind retries against a limit no retry can lift. The
+    // instant that line was last seen; while no heartbeat is NEWER than it, the session is
+    // waiting on the provider by the tool's own word and the heartbeat rule is suspended —
+    // `startToCloseMs` (the attempt's wall clock) still bounds the wait, as it bounds everything.
+    let providerWaitSeenAtMs = null;
+    let providerWaitReported = false;
     // 129/02 — the caller's abort listener (below), removed at the single settle point.
     let abortListener = null;
 
@@ -1118,6 +1090,8 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       // never let a queued command write land in an already-exited/settled PTY.
       if (commandWriteTimer != null) { clearTimeout(commandWriteTimer); commandWriteTimer = null; }
       if (commandSubmitTimer != null) { clearTimeout(commandSubmitTimer); commandSubmitTimer = null; }
+      if (readyCapTimer != null) { clearTimeout(readyCapTimer); readyCapTimer = null; }
+      if (acceptTimer != null) { clearTimeout(acceptTimer); acceptTimer = null; }
       if (livenessTimer != null) { clearInterval(livenessTimer); livenessTimer = null; }
       if (startToCloseTimer != null) { clearTimeout(startToCloseTimer); startToCloseTimer = null; }
       if (heartbeatTimer != null) { clearTimeout(heartbeatTimer); heartbeatTimer = null; }
@@ -1270,6 +1244,11 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
 
     dataSub = term.onData?.((chunk) => {
       buffer += String(chunk);
+      // The TUI's own readiness signal, read across a chunk boundary.
+      if (!tuiReadySeen && buffer.slice(-(String(chunk).length + TUI_READY_MARKER.length)).includes(TUI_READY_MARKER)) {
+        tuiReadySeen = true;
+        onTuiReady?.();
+      }
       // milestone 38 / story 06 (ADR-014) — the cross-machine terminal BRIDGE's
       // ONLY hook into this driver: an OPTIONAL, ADDITIVE `options.onOutputChunk`
       // called with EXACTLY the raw chunk `term.onData` itself just emitted, plus
@@ -1284,6 +1263,17 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       } catch (error) {
         // a bridge fault must never crash/backpressure the driven session itself.
       reportDegrade("mesh-worker-execution", error); }
+      // 129/06 F-58 — the provider-wait line, read off the OUTPUT (the tail of the buffer with
+      // the terminal's escapes stripped, since the TUI colours it and a chunk boundary can fall
+      // inside the phrase). Reported once as a breadcrumb so the loop's diagnostics name it.
+      const providerWait = PROVIDER_WAIT_RE.exec(buffer.slice(-PROVIDER_WAIT_WINDOW).replace(ANSI_ESCAPE_RE, ""));
+      if (providerWait != null) {
+        providerWaitSeenAtMs = Date.now();
+        if (!providerWaitReported) {
+          providerWaitReported = true;
+          stopBreadcrumb("provider-wait", { detail: providerWait[0].trim().slice(0, 120) });
+        }
+      }
       // task 02 — the NEEDS_INPUT sentinel yields the THIRD outcome BEFORE any exit
       // is ever observed: a "turn end" is not a process exit, so this driver must
       // detect it from the OUTPUT stream, never wait on onExit for it. Once detected,
@@ -1291,7 +1281,14 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
       // `claude --resume <session_id>` later; RESEARCH §4.3 measured that resume
       // attaches a NEW process to the SAME persisted conversation, never reattaches
       // to a still-running one) and resolve `needs-input`, never `done`.
-      if (containsNeedsInputSentinel(buffer)) {
+      //
+      // NEVER ON A RESUMED SESSION (131, F-131-17, measured at 07's live run). A resumed claude
+      // re-renders its conversation, and the turn it parked with ENDS on a genuine sentinel line, so
+      // the output buffer carries an OLD `NEEDS_INPUT` that any redraw re-prints: an answered 05/01
+      // was killed mid-tool-call 32 s into its re-drive and asked a question with no text. A resumed
+      // session's needs-input is the transcript watch's to decide, from `resumedSinceOffset`, where
+      // only what the resumed process writes counts.
+      if (resumedSessionId == null && containsNeedsInputSentinel(buffer)) {
         stopForOutcome({ outcome: "needs-input" });
       }
     }) ?? null;
@@ -1332,6 +1329,13 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
           }
           if (settled) return;
           const heartbeatAtMs = typeof heartbeatAt === "string" ? Date.parse(heartbeatAt) : NaN;
+          // 129/06 F-58 — waiting on the provider is not silence: while the last provider-wait
+          // line is newer than every heartbeat, re-ask a window later and kill nothing. The
+          // first heartbeat after the line (the session resumed) restores the ordinary rule.
+          if (providerWaitSeenAtMs != null && !(Number.isFinite(heartbeatAtMs) && heartbeatAtMs > providerWaitSeenAtMs)) {
+            scheduleHeartbeatCheck(Date.now() + deadlinePolicy.heartbeatMs);
+            return;
+          }
           const silenceStartedAt = Number.isFinite(heartbeatAtMs)
             ? Math.max(graceEndsAt, heartbeatAtMs)
             : graceEndsAt;
@@ -1363,7 +1367,13 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
         try {
           process.kill(term.pid, 0);
         } catch {
-          finish({ outcome: "failed", failureReason: "agent_died" });
+          // 129/06 F-59 — a stop THIS driver requested (`done`, a deadline, a cancel) kills the
+          // tree, and the probe can see the dead pid before `term.onExit` delivers; settling
+          // `agent_died` there records a COMPLETED session as a death (measured 2026-09-15:
+          // `stop-requested done` → `exit-confirmed failed`, 55 ms apart, and the loop halted
+          // `run-not-retryable` on a refine that had finished). The requested outcome is the
+          // truth the probe honours; a death nobody asked for is still `agent_died`.
+          finish(requestedStopOutcome ?? { outcome: "failed", failureReason: "agent_died" });
         }
       }, livenessIntervalMs);
       // NOT unref'd: an unref'd probe lets the process exit before its first tick
@@ -1435,7 +1445,11 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
     // never typed into an already-exited PTY.
     const command = typeof brief.command === "string" ? brief.command : null;
     if (command != null && command.length > 0) {
-      commandWriteTimer = setTimeout(() => {
+      // Observed readiness is for a REAL TUI: an injected `ptySpawn` is a test double that never
+      // enables bracketed paste (the same rule `terminateTree` keys on), so it keeps the fixed
+      // delay unless a suite opts in with `observeReadiness`.
+      const realLaunch = (options.commandDelayMs ?? 0) > 0 && (options.observeReadiness ?? options.ptySpawn == null);
+      const typeDirective = () => {
         try {
           // F27b (live soak 2026-07-25) — SUBMIT with carriage-return `\r`, the byte a
           // real Enter keypress sends in a terminal, NOT line-feed `\n`. Measured at the
@@ -1502,12 +1516,50 @@ export async function driveInteractiveClaudeSession(brief, options = {}) {
             } catch (error) {
               reportDegrade("mesh-worker-execution", error);
             }
+            // The acceptance watch — a real launch only, and only while the session-id
+            // watch is live (a watch that is unavailable proves nothing about the session).
+            if (realLaunch && watchCallResult != null && capturedSessionId == null) {
+              acceptTimer = setTimeout(() => {
+                acceptTimer = null;
+                if (settled || capturedSessionId != null) return;
+                const screen = buffer.slice(-4 * SCREEN_TAIL_CHARS).replace(ANSI_ESCAPE_RE, "").replace(/\s+/gu, " ").trim().slice(-SCREEN_TAIL_CHARS);
+                stopBreadcrumb("directive-not-accepted", { screen });
+                reportDegrade("directive-not-accepted", new Error(`${brief.itemRef}: no session ${options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS}ms after the directive was submitted; screen: ${screen}`));
+                stopForOutcome({ outcome: "failed", failureReason: "timeout" });
+              }, options.acceptTimeoutMs ?? DIRECTIVE_ACCEPT_TIMEOUT_MS);
+            }
           }, submitDelayMs);
         } catch (error) {
           // an already-exited PTY write races nothing observable here — onExit above
           // still resolves the outcome for a process that died before the write landed.
       reportDegrade("mesh-worker-execution", error); }
-      }, options.commandDelayMs ?? 0);
+      };
+      if (!realLaunch) {
+        // A scripted PTY keeps its fixed write — next tick at delay 0, byte-identical.
+        commandWriteTimer = setTimeout(typeDirective, options.commandDelayMs ?? 0);
+      } else {
+        // The readiness gate: the floor delay AND the TUI's own marker, bounded by the cap.
+        let floorPassed = false;
+        let typed = false;
+        const typeOnce = () => {
+          if (typed || settled) return;
+          typed = true;
+          if (readyCapTimer != null) { clearTimeout(readyCapTimer); readyCapTimer = null; }
+          typeDirective();
+        };
+        onTuiReady = () => { if (floorPassed) typeOnce(); };
+        commandWriteTimer = setTimeout(() => {
+          commandWriteTimer = null;
+          floorPassed = true;
+          if (tuiReadySeen) typeOnce();
+        }, options.commandDelayMs);
+        readyCapTimer = setTimeout(() => {
+          readyCapTimer = null;
+          if (typed || settled) return;
+          stopBreadcrumb("tui-ready-marker-absent", { waitedMs: options.readyCapMs ?? INTERACTIVE_READY_CAP_MS });
+          typeOnce();
+        }, options.readyCapMs ?? INTERACTIVE_READY_CAP_MS);
+      }
     }
   });
 }

@@ -213,6 +213,11 @@ export const globalWorkPropagationTests = [
           platform: "linux",
           peerPollTicker: peerTicker,
           propagationTicker,
+          // 129 gate (2026-09-22): the real control stream server bound the fleet port (4182) and
+          // crashed the whole-tree run (unhandled EADDRINUSE) on a control node whose daemon holds it;
+          // this case measures the propagation ticker, not the listener — the same fake the launcher
+          // suites inject (mesh-launcher-stream-role).
+          startControlStreamServer: async () => ({ stop() {}, updatePeers() {} }),
           globalPublisher: async () => {
             calls += 1;
             if (calls === 1) {
@@ -225,7 +230,10 @@ export const globalWorkPropagationTests = [
 
         assert.equal(handle.refused, undefined);
         assert.equal(calls, 1, "initial publish attempted after preflight");
-        assert.equal(handle.warnings.length, 1, "initial failure is captured as a launcher warning");
+        // 131/10 (ADR-008 §1): a control-node launcher with no bot token also says `discord-bot-off`
+        // once, at info. That line is the bot's, not this case's subject.
+        const publishWarnings = handle.warnings.filter((warning) => warning.code !== "discord-bot-off");
+        assert.equal(publishWarnings.length, 1, "initial failure is captured as a launcher warning");
         assert.equal(peerTicker.handles.length, 1, "peer loop still started");
         propagationTicker.fire(propagationTicker.handles[0]);
         // WAIT FOR THE CONDITION, NOT THE CLOCK. This slept a flat 25ms for an async

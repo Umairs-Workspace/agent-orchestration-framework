@@ -1,0 +1,47 @@
+{
+  "runId": "20260914T123830334Z-0001",
+  "itemRef": "129/04",
+  "state": "done",
+  "attempt": 2,
+  "outcome": "done",
+  "sessionId": "5d48a79e-7a14-4ab0-939a-2a145038ce6f",
+  "brief": {
+    "loop": {
+      "loopRunId": "27dbcc7a-3e23-402b-96fd-b59131131c56",
+      "scope": "129",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-12T23:26:43.240Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-13T11:03:00.475Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/119 FF-11901 · 121: NO control under test/arch/ spells an import-specifier extractor of its own — the one home is test/support/module-family.mjs, and the remainder is a named, shrink-only baseline",
+        "arch/119 FF-11902: NO control narrows a repository walk by a filename PREDICATE without a non-vacuity leg — a move REDS a control, it never empties one",
+        "arch/119 FF-11902: NO control retypes a tree-walk equality — the count is derived into the property it stood in for, over every member, with a floor kept",
+        "arch/119 FF-11902: NO control retypes a member census — a derived set is never asserted equal to a string-array literal; a home is named AMONG the set, under a floor and a declared ceiling",
+        "arch/119 FF-11903: the citation sweep is bounded by a shrink-only ceiling pinned to a measured count",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): frozen store and board read surfaces remain byte-identical to the milestone base",
+        "arch/124/02 FF-12405 leg 3 (task 00): the query is keyed to the seam, and refine is read rather than written",
+        "arch/43 ADR-014/E7 + 59 FF-5903 (acd-test-suite-registration): every test suite on disk contributes its tests to the ASSEMBLED runner suite — registration is runtime membership, and the unregistered set only ever shrinks"
+      ]
+    }
+  },
+  "createdAt": "2026-09-14T12:38:30.334Z",
+  "updatedAt": "2026-09-14T15:04:59.837Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": "20260913T110303238Z-0000",
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null
+}

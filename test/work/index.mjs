@@ -230,6 +230,9 @@ import { storyPlanDocumentTests } from "./story-plan-document.test.mjs";
 // test/arch/work/acd-census-reports-its-denominator.test.mjs, so the real stream is measured once.
 // Tasks 00 and 01 trace to the already-spread storyContextContractTests.
 import { doctorDependsLaneTests } from "./doctor-depends-lane.test.mjs";
+// milestone 133 / story 03 — the diagrams doctor lane (ADR-006): links, exports, the ADR a link
+// sits under, and orphans.
+import { doctorDiagramsLaneTests } from "./doctor-diagrams-lane.test.mjs";
 
 export const tests = [
   // milestone 59 / story 01 — the fast-lane-only six, now in what CI executes
@@ -316,4 +319,5 @@ export const tests = [
   ...storyPlanDocumentTests,
   // milestone 124 / story 00 — the depends lane (tasks 02–03; see the import note).
   ...doctorDependsLaneTests,
+  ...doctorDiagramsLaneTests,
 ];

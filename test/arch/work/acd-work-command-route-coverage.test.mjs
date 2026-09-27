@@ -107,6 +107,12 @@ const BOARD_DEFERRED = new Set([
   // `/api/work/promote` would let the board HOST mint a number from its own copy of the stream. A
   // deliberate carve-out recorded here, not an oversight.
   "promote",
+  // milestone 127 / story 03 (127/ADR-004 §1) — `archive` inherits `promote`'s carve-out: a
+  // mechanical CLI act over the operator's own tree (a done driver's folder moves under
+  // `archive/`), no board affordance was asked for, and a served `/api/work/archive` would let
+  // the board HOST move folders in a checkout it does not own. A deliberate carve-out recorded
+  // here, not an oversight.
+  "archive",
   "upgrade",
   // m42 wave (d) leg d1 (wave-3 tail) — work:ui is the BOARD LAUNCHER itself
   // (a launcher-seam command: probe run + cli.launch serve body). A board
@@ -326,11 +332,23 @@ async function hitRoute(url, op) {
       body: JSON.stringify({ ref: "03/01" }),
     });
   }
+  // 131/04 — feedback passes the board's write admission too, so the probe sends the server's
+  // own origin.
   if (op === "feedback") {
     return fetch(new URL("/api/work/feedback", url), {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", origin: new URL(url).origin },
       body: JSON.stringify({ ref: "03/01", note: "route coverage probe", actor: "arch-test" }),
+    });
+  }
+  // milestone 131 / story 04 (ADR-006 §3) — `answer` is a same-origin POST like the doors. The
+  // fixture holds no ask for "03/01" and no parked worker, so the verb answers 409
+  // `answer-not-waiting` as a served JSON envelope — never the namespace's `not-found`.
+  if (op === "answer") {
+    return fetch(new URL("/api/work/answer", url), {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: new URL(url).origin },
+      body: JSON.stringify({ ref: "03/01", text: "route coverage probe" }),
     });
   }
   const query =

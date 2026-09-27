@@ -688,29 +688,31 @@ export const sessionSpawnOutcomeLaneTests = [
     // The four route-table detectors are the gates; this clause is the traceability
     // statement over the shipped source AND over the detectors themselves — a detector
     // that was never taught the new name is a detector whose green means nothing.
-    name: "50/04 task 00 lane A: the fleet face gains a READ route and its write allowlist stays exactly two",
+    name: "50/04 task 00 lane A: the fleet face gains a READ route and its write allowlist does not grow with it (two at 50/04; three by name since 130/03's loop-stop)",
     async run() {
       const face = (await readFile(path.join(repoRoot, "src", "mesh", "ui-serve.mjs"), "utf8"))
         .replace(/\r\n/g, "\n")
         .replace(/\/\/[^\n]*/g, "")
         .replace(/\/\*[\s\S]*?\*\//g, "");
       const declared = [...new Set([...face.matchAll(/pathname\s*===\s*["']\/api\/mesh\/([^"']+)["']/g)].map((match) => match[1]))].sort();
+      // 130/03 (ADR-005 §4) adds the THIRD named write route, `loop-stop`, by name — six routes.
       assert.deepEqual(
         declared,
-        ["assign", "board-url", "session", "session-outcome", "status"],
-        "the declared /api/mesh/* routes are exactly the five, enumerated by name",
+        ["assign", "board-url", "loop-stop", "session", "session-outcome", "status"],
+        "the declared /api/mesh/* routes are exactly the six, enumerated by name",
       );
 
-      // THE WRITE ROUTES ARE STILL EXACTLY TWO, read as the routes that guard themselves to
-      // POST. The outcome route guards itself to GET/HEAD, so it cannot join this set by
-      // accident.
+      // THE WRITE ROUTES ARE EXACTLY THE NAMED THREE, read as the routes that guard themselves to
+      // POST. Since 130/03 (TECH_DEBT item 44 paid) that guard is ONE hoisted helper every write
+      // branch CALLS at its head — `admitWriteRequest(` — so a branch is POST-guarded by the call.
+      // The outcome route guards itself to GET/HEAD, so it cannot join this set by accident.
       const postGuarded = declared.filter((name) => {
         const anchor = new RegExp(`if\\s*\\(\\s*pathname\\s*===\\s*["']/api/mesh/${name}["']\\s*\\)\\s*\\{`).exec(face);
         if (anchor == null) return false;
         const head = face.slice(anchor.index, anchor.index + 400);
-        return /request\.method\s*!==\s*["']POST["']/.test(head);
+        return /request\.method\s*!==\s*["']POST["']/.test(head) || /\badmitWriteRequest\s*\(/.test(head);
       });
-      assert.deepEqual(postGuarded.sort(), ["assign", "session"], "the WRITE routes are still exactly {assign, session}");
+      assert.deepEqual(postGuarded.sort(), ["assign", "loop-stop", "session"], "the WRITE routes are exactly {assign, session, loop-stop} — session-outcome never joined them");
 
       // AND EACH OF THE FOUR DETECTORS WAS ACTUALLY TAUGHT THE NAME. A route added to the
       // face while a detector still enumerates four is a detector reading green about a
@@ -731,7 +733,7 @@ export const sessionSpawnOutcomeLaneTests = [
       }
       const writeIsolation = await readFile(path.join(repoRoot, await suitePathByBasename(repoRoot, "acd-mesh-ui-write-isolation.test.mjs")), "utf8");
       assert.match(writeIsolation, /const READ_ROUTES = Object\.freeze\(\["board-url", "session-outcome", "status"\]\)/, "…in acd-mesh-ui-write-isolation's READ set");
-      assert.match(writeIsolation, /const WRITE_ROUTES = Object\.freeze\(\["assign", "session"\]\)/, "…and in NONE of its write sets");
+      assert.match(writeIsolation, /const WRITE_ROUTES = Object\.freeze\(\["assign", "session", "loop-stop"\]\)/, "…and in NONE of its write sets (three by name since 130/03)");
 
       // THE FACE STILL PERFORMS ZERO FS WRITE AND NO SHELL-OUT — the posture clause the
       // gates hold file-wide, restated here because it is half of the acceptance criterion.

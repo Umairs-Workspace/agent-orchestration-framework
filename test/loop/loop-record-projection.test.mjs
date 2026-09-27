@@ -50,7 +50,7 @@ const capOf = (value) => ({ work: { autonomous: { maxAttempts: value } } });
 const capped = (id) => loopNode(id, { ceiling: { config: CAP_KEY } });
 
 // A run record in the fifteen-key shape `run-store.mjs` writes (measured against a real record at
-// `wiki/work/38_.../runs/umamis-msi/20260712T213809392Z-0000.json`).
+// `wiki/work/38_.../runs/node-7297/20260712T213809392Z-0000.json`).
 const run = ({ runId, createdAt, loop = null, state = "running", outcome = null, failureReason = null, retryOf = null, attempt = 1 }) => ({
   runId,
   itemRef: "78/00",

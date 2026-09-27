@@ -108,7 +108,7 @@ async function readGitConfig(root) {
   });
 }
 
-function tailscaleExecWithControlPeer({ controlId = "umamis-msi", address = "203.0.113.180" } = {}) {
+function tailscaleExecWithControlPeer({ controlId = "win-host-a", address = "203.0.113.180" } = {}) {
   const payload = {
     BackendState: "Running",
     Self: { HostName: JOINER_ID, DNSName: `${JOINER_ID}.tail1a2b.ts.net.`, TailscaleIPs: ["100.1.1.1"], Online: true },
@@ -126,8 +126,8 @@ export const meshJoinProvisionTests = [
     name: "mesh-join-provision/02 command argv accepts --control <tailscale-name> as the human-facing join target",
     run() {
       assert.deepEqual(
-        meshJoinCommand.cli.argv(["123456"], { control: "umamis-msi" }),
-        { code: "123456", control: "umamis-msi", relayUrl: undefined },
+        meshJoinCommand.cli.argv(["123456"], { control: "win-host-a" }),
+        { code: "123456", control: "win-host-a", relayUrl: undefined },
         "the command input maps --control into the join request"
       );
     },
@@ -149,11 +149,11 @@ export const meshJoinProvisionTests = [
           return {
             ok: true,
             status: 200,
-            json: async () => ({ ok: true, credential: { relayAuth: "secret", nodeId: JOINER_ID, controlNode: "umamis-msi", gitRemote: null } }),
+            json: async () => ({ ok: true, credential: { relayAuth: "secret", nodeId: JOINER_ID, controlNode: "win-host-a", gitRemote: null } }),
           };
         };
 
-        const result = await invoke("mesh:join", { code: "123456", control: "umamis-msi" }, {
+        const result = await invoke("mesh:join", { code: "123456", control: "win-host-a" }, {
           workspace,
           env,
           exec: tailscaleExecWithControlPeer(),
@@ -167,7 +167,7 @@ export const meshJoinProvisionTests = [
         const paths = globalWorkspacePaths({ env });
         const globalConfig = JSON.parse(await readFile(paths.configPath, "utf8"));
         assert.equal(globalConfig.mesh.relay.url, "ws://203.0.113.180:4182/ws/relay", "the global config persists the resolved relay URL");
-        assert.equal(globalConfig.mesh.relay.controlNode, "umamis-msi", "the global config keeps the friendly control node identity separately");
+        assert.equal(globalConfig.mesh.relay.controlNode, "win-host-a", "the global config keeps the friendly control node identity separately");
       } finally {
         if (joiner) await rm(joiner.root, { recursive: true, force: true });
       }

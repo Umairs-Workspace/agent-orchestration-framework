@@ -1,0 +1,45 @@
+{
+  "runId": "20260911T142532076Z-0001",
+  "itemRef": "127",
+  "state": "failed",
+  "attempt": 2,
+  "outcome": "failed",
+  "sessionId": "8ca055b8-3455-4d13-9659-1813d4778f06",
+  "brief": {
+    "loop": {
+      "loopRunId": "5c554454-2f26-4613-9c89-c21c957bca90",
+      "scope": "127",
+      "level": "L2",
+      "cap": 3,
+      "phase": "refine",
+      "cycle": 2,
+      "startedAt": "2026-09-11T13:03:43.182Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": true
+    }
+  },
+  "createdAt": "2026-09-11T14:25:32.076Z",
+  "updatedAt": "2026-09-11T14:55:33.390Z",
+  "failureReason": "timeout",
+  "heartbeatAt": "2026-09-11T14:45:30.592Z",
+  "retryOf": "20260911T130343598Z-0000",
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 452,
+      "output": 120532,
+      "cacheRead": 33886054,
+      "cacheCreate": 820426
+    },
+    "costUsd": 15.0517497,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 226,
+    "toolCalls": 146,
+    "exitReason": "error"
+  }
+}

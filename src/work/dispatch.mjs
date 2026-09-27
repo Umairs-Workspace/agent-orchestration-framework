@@ -22,7 +22,7 @@
 // than re-invented; only the lane's root and its branch policy differ.
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { stat } from "node:fs/promises";
+import { copyFile, mkdir, stat } from "node:fs/promises";
 import {
   meshDispatchWorktreePath,
   isUnderMeshDispatchWorktreesRoot,
@@ -86,6 +86,17 @@ export function resolveDispatchConcurrency(value) {
 // story-01 lesson). Tolerant of a missing config/work/dispatch subtree.
 export function dispatchConcurrencyFromConfig(workspace) {
   return resolveDispatchConcurrency(workspace?.config?.work?.dispatch?.concurrency);
+}
+
+// narrowDispatchBound(pool, requested) — 129/07 (129/ADR-006, amended). A caller may ask for
+// FEWER lanes than the pool allows and never more: a positive-integer request narrows the
+// effective bound to min(requested, pool); anything else (absent, 0, a float, a string, a value
+// above the pool's) leaves the pool's bound in effect. The pool bound stays the ONE number for
+// the machine; this is how the loop's own `work.loop.dispatch.concurrency` reaches admission
+// without a second resolution site for the pool's key.
+export function narrowDispatchBound(pool, requested) {
+  if (typeof requested !== "number" || !Number.isInteger(requested) || requested <= 0) return pool;
+  return Math.min(requested, pool);
 }
 
 // ───────────────────────────────────────────────────── the injected exec seam ────
@@ -246,6 +257,7 @@ export async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     throw error;
   }
   const lane = await openDispatchLane(projectRoot, itemRef, options);
+  await inheritLocalClaudeSettings(projectRoot, lane.worktree);
   if (advanceTo == null) return lane;
   const advance = await advanceBranchToBase(lane.worktree, advanceTo, { exec: options.exec });
   // EVERY refusal is `lane-open-failed` (PO ruling, 129/03 fix round, I3): a lane that cannot be
@@ -255,6 +267,28 @@ export async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     ? { ...advance, code: "lane-open-failed", cause: advance.code }
     : advance;
   return { ...lane, advanced };
+}
+
+// inheritLocalClaudeSettings(projectRoot, worktree) — A LANE CARRIES THE OPERATOR'S LOCAL CLAUDE
+// CONSENT (2026-09-24). `.claude/settings.local.json` is git-ignored, so a lane cut from the primary
+// never has it — and in a repo with a `.mcp.json` it is where the operator approved those servers
+// (`enabledMcpjsonServers`). Without it every lane's `claude` opens on the MCP-approval dialog,
+// which eats the typed directive: no transcript, no session id, `failed / timeout` at the
+// deadline (a downstream project, 01/01, 01/06, 01/08 — nine attempts, none started). The
+// primary's own file is copied, never synthesised: the lane is the same repository and the same
+// operator, so it approves exactly what the primary approved. A lane that already holds the file
+// keeps its own; a primary with none copies nothing. Best-effort — a failed copy leaves claude's
+// dialog in place, as before.
+async function inheritLocalClaudeSettings(projectRoot, worktree) {
+  const source = path.join(projectRoot, ".claude", "settings.local.json");
+  const target = path.join(worktree, ".claude", "settings.local.json");
+  if (path.resolve(source) === path.resolve(target) || !existsSync(source) || existsSync(target)) return;
+  try {
+    await mkdir(path.dirname(target), { recursive: true });
+    await copyFile(source, target);
+  } catch (error) {
+    reportDegrade("work-dispatch", error);
+  }
 }
 
 // openDispatchLane(projectRoot, itemRef, options) — the three doors, exactly as before 129/03

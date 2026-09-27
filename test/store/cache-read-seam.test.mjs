@@ -38,17 +38,30 @@
 // misses 02 while the CHOKEPOINT already answers for it). Neither state can coexist with
 // stage 3 in one tree, which is why they are here rather than in a lane below.
 import assert from "node:assert/strict";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   withCacheReadFixture, withDegradeCapture, plantCacheRow, runCommand,
-  removeStore, tearStore, writeItem,
+  removeStore, tearStore, writeItem, stream,
   CONTROL_NODE, WORKER_NODE, SYNCED_AT,
 } from "../support/cache-read-fixture.mjs";
+import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { loadWorkspace } from "../../src/command-core.mjs";
 import {
   listItemsCacheFirst, findWorkCacheFirst, listStreamCacheFirst, nextWorkCacheFirst,
   DEGRADE_CACHE_MISS, DEGRADE_CACHE_UNAVAILABLE,
+  withoutAnsweringSide, ANSWERING_SIDE_KEYS,
 } from "../../src/work/read.mjs";
-import { listItems, findWork, listStream, nextWork } from "../../src/work.mjs";
+import { listItems, findWork, listStream, nextWork, isLiveStreamRow } from "../../src/work.mjs";
+// 127/04 task 01 — the OWNING node's disk projection is what its cache reports, so the
+// remote-node fixture below projects 127/01's three-root fixture through the real own-disk
+// read and streams the rows through the real frame door.
+import { readWorkspaceProjectionItems } from "../../src/global-work-store.mjs";
+import { buildThreeRootFixture } from "../work/stream/work-backlog-archive-enumerate.test.mjs";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const cliPath = path.join(repoRoot, "bin", "aof.mjs");
 
 // The Background's stream: this node's own disk holds milestones "00" and "01" ONLY.
 const DISK_STREAM = [{ number: "00", stories: [] }, { number: "01", stories: [] }];
@@ -72,6 +85,58 @@ async function background(fx) {
 }
 
 const rowFor = (rows, ref) => rows.find((row) => row.ref === ref) ?? null;
+
+// ── 127/04 task 01: the remote-node fixture ────────────────────────────────────
+// The instant the owning node reported its whole stream.
+const REMOTE_AT = "2026-09-15T09:00:00.000Z";
+
+// writeRootItem(workDir, folder, fields) — one record doc at the stream root in the three-root
+// fixture's own spelling (127/01's `writeItem`), so this node's live items are byte-identical
+// to the owning node's copies of them.
+async function writeRootItem(workDir, folder, { type, number, slug, status = "not-started", title, parent }) {
+  const dir = path.join(workDir, ...folder.split("/"));
+  await mkdir(dir, { recursive: true });
+  const doc = { milestone: "SPEC.md", story: "STORY.md", chore: "CHORE.md", spike: "SPIKE.md", uat: "SESSION.md" }[type];
+  const fields = { type, number, slug, status, title: `"${title ?? slug}"`, parent, created: "2026-09-11", updated: "2026-09-11", schema: 1 };
+  const lines = Object.entries(fields).filter(([, value]) => value !== undefined).map(([key, value]) => `${key}: ${value}`);
+  await writeFile(path.join(dir, doc), `---\n${lines.join("\n")}\n---\n`, "utf8");
+  return dir;
+}
+
+// withRemoteNode(body) — "a workspace whose disk holds only 10_milestone_alpha and 11_chore_beta,
+// and a hermetic store whose rows for this workspace are the three-root fixture's full projection
+// reported by node aof-wsl". The owning node is a SECOND three-root fixture on disk; its rows are
+// read through the REAL own-disk projection and arrive through the REAL snapshot frame door
+// under the node id the connection authenticated as — exactly a worker's first report.
+async function withRemoteNode(body) {
+  return withCacheReadFixture(async (fx) => {
+    await writeRootItem(fx.workDir, "10_milestone_alpha", { type: "milestone", number: "10", slug: "alpha", status: "in-progress", title: "Alpha" });
+    await writeRootItem(fx.workDir, "10_milestone_alpha/stories/00_story_alpha-one", { type: "story", number: "00", slug: "alpha-one", parent: "10", title: "Alpha one" });
+    await writeRootItem(fx.workDir, "11_chore_beta", { type: "chore", number: "11", slug: "beta", title: "Beta" });
+    const owner = await buildThreeRootFixture();
+    try {
+      const projected = await readWorkspaceProjectionItems({ config: { name: "owner", work: { dir: "./wiki/work" } }, projectRoot: owner.root, workDir: owner.work });
+      assert.deepEqual(projected.errors, [], "the owning node's projection is clean");
+      const landed = await stream(fx, WORKER_NODE, projected.rows, { kind: "snapshot", at: REMOTE_AT });
+      assert.equal(landed.upserted, projected.rows.length, `every row the owner reported landed (${JSON.stringify(landed.skippedRows)})`);
+    } finally {
+      await rm(owner.root, { recursive: true, force: true });
+    }
+    return body(fx);
+  }, { stream: [] });
+}
+
+// cliJson(fx, argv) — `aof work <argv> --json` as a child process from the workspace root, the
+// fixture's store selected through its AOF_GLOBAL_HOME.
+function cliJson(fx, argv) {
+  const result = spawnCliSync(process.execPath, [cliPath, "work", ...argv, "--json"], {
+    cwd: fx.root,
+    encoding: "utf8",
+    env: { ...process.env, AOF_GLOBAL_HOME: fx.home, NODE_NO_WARNINGS: "1" },
+  });
+  assert.equal(result.status, 0, `aof work ${argv.join(" ")} --json exits 0 (stderr: ${result.stderr})`);
+  return JSON.parse(result.stdout);
+}
 
 export const cacheReadSeamTests = [
   // ==========================================================================
@@ -306,5 +371,249 @@ export const cacheReadSeamTests = [
       assert.equal(next.status, "in-progress", "…at the DISK's status");
       assert.ok(!("answeredFrom" in next), "…carrying no answering-side stamp");
     }, { stream: DISK_STREAM }),
+  },
+  // ============================================================================
+  // milestone 127 / story 04 / task 01 —
+  //   tasks/01_a-remote-node-answers-for-a-backlog-or-archived-item.feature (@executable)
+  //
+  // A node whose disk does not hold the item answers `aof work find` for a backlog slug or an
+  // archived number EXACTLY as the owning node does. The seam rebuilds a cache-only row in the
+  // enumerator's shape off the store's FACTS (`backlog`'s presence, `archived: true`), never off
+  // the ref's spelling; every cache-first reader and the CLI agree row for row; and a checkout
+  // that still holds the folder keeps its own location (the overlay rule, a documented default).
+  //
+  // THE REMOTE-NODE FIXTURE: this node's disk holds only 127/01's two live items; the cache
+  // holds the three-root fixture's FULL projection, reported by `aof-wsl` through the REAL
+  // frame door (`applyStreamFrame` — the same door a worker's snapshot arrives through).
+  // ============================================================================
+  {
+    name: "cache-read/127-04-01 the seam rebuilds a cache-only backlog row and a cache-only archived row in the enumerator's shape — number null + backlog, or the numbered shape plus archived: true — and isLiveStreamRow answers the same as it would on the owning node",
+    run: () => withRemoteNode(async (fx) => {
+      const { workspace, options } = await seamCtx(fx);
+      const items = await listItemsCacheFirst(workspace, options);
+      const byRef = new Map(items.map((item) => [item.ref, item]));
+
+      assert.deepEqual(byRef.get("gamma"), {
+        number: null, type: "chore", slug: "gamma", name: null, dir: null, ref: "gamma", parent: null, backlog: "",
+        answeredFrom: "cache", reportedBy: WORKER_NODE, syncedAt: REMOTE_AT,
+      }, "the top-of-backlog row is rebuilt in the enumerator's own shape, with number null off the store's backlog fact");
+      assert.equal(byRef.get("epsilon").backlog, "ideas/later", "a grouped row carries its group path");
+      assert.deepEqual(byRef.get("05"), {
+        number: "05", type: "milestone", slug: "zeta", name: null, dir: null, ref: "05", parent: null, archived: true,
+        answeredFrom: "cache", reportedBy: WORKER_NODE, syncedAt: REMOTE_AT,
+      }, "an archived driver is the numbered shape plus archived: true");
+      assert.equal(byRef.get("05/00").parent, "05");
+      assert.equal(byRef.get("05/00").archived, true, "…and its story carries the flag with its parent");
+
+      for (const ref of ["gamma", "delta", "epsilon", "05", "05/00", "06"]) {
+        assert.equal(isLiveStreamRow(byRef.get(ref)), false, `${ref} is not a live stream row here, exactly as on the owning node`);
+      }
+      for (const ref of ["10", "10/00", "11"]) {
+        assert.equal(isLiveStreamRow(byRef.get(ref)), true, `${ref} is live`);
+        const disk = (await listItems(fx.workDir)).find((item) => item.ref === ref);
+        assert.ok(disk?.dir && disk?.name, "the disk holds the folder");
+        assert.deepEqual(byRef.get(ref), { ...disk, answeredFrom: "cache", reportedBy: WORKER_NODE, syncedAt: REMOTE_AT }, `${ref} is the DISK's own row (dir and name set), stamped cache-answered — byte-identical to what the seam answered before this task`);
+      }
+    }),
+  },
+  ...[
+    {
+      reader: 'findWorkCacheFirst(ws, "gamma")',
+      call: (ws, options) => findWorkCacheFirst(ws, "gamma", options),
+      then: (rows) => {
+        assert.equal(rows.length, 1, "exactly one row");
+        assert.equal(rows[0].ref, "gamma");
+        assert.equal(rows[0].number, null);
+        assert.equal(rows[0].backlog, "");
+        assert.equal(rows[0].dir, null);
+        assert.equal(rows[0].answeredFrom, "cache");
+      },
+    },
+    {
+      reader: 'findWorkCacheFirst(ws, "delta")',
+      call: (ws, options) => findWorkCacheFirst(ws, "delta", options),
+      then: (rows) => {
+        assert.equal(rows.length, 1, "exactly one row");
+        assert.equal(rows[0].ref, "delta");
+        assert.equal(rows[0].type, "milestone");
+        assert.equal(rows[0].backlog, "ideas");
+      },
+    },
+    {
+      reader: 'findWorkCacheFirst(ws, "05")',
+      call: (ws, options) => findWorkCacheFirst(ws, "05", options),
+      then: (rows) => {
+        assert.equal(rows.length, 1, "exactly one row");
+        assert.equal(rows[0].ref, "05");
+        assert.equal(rows[0].archived, true);
+        assert.equal(rows[0].status, "done");
+        assert.equal(rows[0].dir, null);
+      },
+    },
+    {
+      reader: 'findWorkCacheFirst(ws, "05/00")',
+      call: (ws, options) => findWorkCacheFirst(ws, "05/00", options),
+      then: (rows) => {
+        assert.equal(rows.length, 1, "exactly one row");
+        assert.equal(rows[0].ref, "05/00");
+        assert.equal(rows[0].parent, "05");
+        assert.equal(rows[0].archived, true);
+      },
+    },
+    {
+      reader: "listStreamCacheFirst(ws)",
+      call: (ws, options) => listStreamCacheFirst(ws, options),
+      then: (rows) => {
+        assert.deepEqual(rows.map((row) => row.ref), ["10", "10/00", "11", "gamma", "delta", "epsilon"], "the default listing: the live rows, then the backlog, and no archived row");
+        const gamma = rowFor(rows, "gamma");
+        assert.equal(gamma.number, null);
+        assert.equal(gamma.backlog, "");
+      },
+    },
+    {
+      reader: "listStreamCacheFirst(ws, { all: true })",
+      call: (ws, options) => listStreamCacheFirst(ws, { ...options, all: true }),
+      then: (rows) => {
+        assert.deepEqual(rows.map((row) => row.ref), ["10", "10/00", "11", "gamma", "delta", "epsilon", "05", "05/00", "06"], "with all: true the archive follows, after the live and backlog rows (ADR-002 §5's order)");
+        for (const ref of ["05", "05/00", "06"]) assert.equal(rowFor(rows, ref).archived, true, `${ref} carries archived: true`);
+      },
+    },
+    {
+      reader: 'nextWorkCacheFirst(ws, "05")',
+      call: (ws, options) => nextWorkCacheFirst(ws, "05", options),
+      then: (result) => assert.equal(result.state, "done", "an archived driver is finished, never proposed"),
+    },
+    {
+      reader: "nextWorkCacheFirst(ws)",
+      call: (ws, options) => nextWorkCacheFirst(ws, undefined, options),
+      then: (result) => {
+        const never = new Set(["05", "05/00", "06", "gamma", "delta", "epsilon"]);
+        assert.ok(!never.has(result.ref), `the unscoped walk never returns an archived or backlog ref (got ${result.ref})`);
+        for (const member of result.readySet ?? []) assert.ok(!never.has(member.ref), `the ready set holds none of them (has ${member.ref})`);
+      },
+    },
+  ].map(({ reader, call, then }) => ({
+    name: `cache-read/127-04-01 ${reader} answers, from a disk that has neither, what the owning node would answer`,
+    run: () => withRemoteNode(async (fx) => {
+      const { workspace, options } = await seamCtx(fx);
+      then(await call(workspace, options));
+    }),
+  })),
+  ...[
+    {
+      argv: ["find", "gamma"],
+      then: (doc, fx) => {
+        assert.equal(doc.length, 1, "one document");
+        const { syncedAt, ...rest } = doc[0];
+        assert.deepEqual(rest, {
+          ref: "gamma", type: "chore", slug: "gamma", status: "not-started", title: "Gamma", parent: null, dir: null,
+          number: null, backlog: "", answeredFrom: "cache", reportedBy: WORKER_NODE,
+        }, `the document carries the rebuilt row and its stamp (fixture root ${fx.root})`);
+        assert.equal(syncedAt, REMOTE_AT);
+      },
+    },
+    {
+      argv: ["find", "05"],
+      then: (doc) => {
+        assert.equal(doc.length, 1, "one document");
+        assert.equal(doc[0].ref, "05");
+        assert.equal(doc[0].archived, true);
+        assert.equal(doc[0].dir, null);
+        assert.equal(doc[0].answeredFrom, "cache");
+      },
+    },
+    {
+      argv: ["list"],
+      then: (rows) => {
+        assert.deepEqual(rows.map((row) => row.ref), ["10", "10/00", "11", "gamma", "delta", "epsilon"]);
+        for (const ref of ["10", "10/00", "11"]) {
+          assert.deepEqual(Object.keys(rowFor(rows, ref)), ["ref", "type", "slug", "status", "title", "parent", "dir"], `${ref}: the frozen seven keys and nothing else — the frozen face strips the stamp`);
+        }
+        for (const ref of ["gamma", "delta", "epsilon"]) {
+          const row = rowFor(rows, ref);
+          assert.equal(row.number, null, `${ref}: number null`);
+          assert.equal(typeof row.backlog, "string", `${ref}: a backlog group`);
+          assert.ok(!("answeredFrom" in row), `${ref}: no answeredFrom key on the frozen face`);
+        }
+      },
+    },
+    {
+      argv: ["list", "--all"],
+      then: (rows) => {
+        assert.deepEqual(rows.map((row) => row.ref), ["10", "10/00", "11", "gamma", "delta", "epsilon", "05", "05/00", "06"], "the archive follows epsilon");
+        for (const ref of ["05", "05/00", "06"]) assert.equal(rowFor(rows, ref).archived, true, `${ref}: archived: true`);
+      },
+    },
+    {
+      argv: ["next"],
+      then: (doc) => {
+        assert.ok(!["05", "06", "gamma", "delta", "epsilon"].includes(doc.ref), `next never proposes an archived or backlog ref (got ${doc.ref})`);
+      },
+    },
+  ].map(({ argv, then }) => ({
+    name: `cache-read/127-04-01 the CLI on the remote node agrees with the seam — aof work ${argv.join(" ")} --json`,
+    run: () => withRemoteNode(async (fx) => {
+      then(cliJson(fx, argv), fx);
+    }),
+  })),
+  {
+    name: "cache-read/127-04-01 a checkout that still holds the folder at the root keeps its own location when the cache says archived — status is the cache's, location is the disk's, doctor reports no divergence; once the folder moves on this disk too, the reads answer archived",
+    run: () => withCacheReadFixture(async (fx) => {
+      // This checkout: `12_milestone_theta` at the stream root, done.
+      const theta = await writeRootItem(fx.workDir, "12_milestone_theta", { type: "milestone", number: "12", slug: "theta", status: "done", title: "Theta" });
+      // The cache: 12 reported by the CONTROL node (this node's own id) as archived, from under archive/.
+      await stream(fx, CONTROL_NODE, [{
+        ref: "12", type: "milestone", slug: "theta", status: "done", title: "Theta", parent: null,
+        sourcePath: "/elsewhere/wiki/work/archive/12_milestone_theta/SPEC.md", archived: true,
+      }], { kind: "delta", at: SYNCED_AT });
+
+      const { workspace, options } = await seamCtx(fx);
+      const found = await findWorkCacheFirst(workspace, "12", options);
+      assert.equal(found.length, 1);
+      assert.equal(found[0].dir, theta, "the row's dir is THIS checkout's folder — never a path under an archive/ it does not have");
+      assert.ok(!("archived" in found[0]), "NO archived key — a location fact is never overlaid from the cache");
+      assert.equal(found[0].status, "done", "status is the cache's (it agrees)");
+      assert.equal(found[0].answeredFrom, "cache");
+      const listed = await listStreamCacheFirst(workspace, options);
+      assert.ok(listed.some((row) => row.ref === "12" && !("archived" in row)), "the default listing includes 12 as a live done row");
+
+      const { findings } = await runCommand(fx, "work:doctor", {});
+      const about12 = findings.filter((finding) => String(finding.path ?? "").includes("12_milestone_theta"));
+      assert.ok(!about12.some((finding) => finding.code === "cache-status-divergence"), "no cache-status-divergence — status agrees");
+      assert.ok(!about12.some((finding) => /archive|location/i.test(String(finding.problem ?? finding.message ?? ""))), `no finding about its location (${JSON.stringify(about12)})`);
+
+      // The folder moves on THIS disk too: the disk leads, the cache agrees.
+      await mkdir(path.join(fx.workDir, "archive"), { recursive: true });
+      await rename(theta, path.join(fx.workDir, "archive", "12_milestone_theta"));
+      const moved = await findWorkCacheFirst(workspace, "12", options);
+      assert.equal(moved.length, 1);
+      assert.equal(moved[0].archived, true, "now archived");
+      assert.ok(moved[0].dir.replaceAll("\\", "/").includes("/archive/12_milestone_theta"), "…with a dir under archive/");
+      assert.ok(!(await listStreamCacheFirst(workspace, options)).some((row) => row.ref === "12"), "…and out of the default listing");
+      assert.ok((await listStreamCacheFirst(workspace, { ...options, all: true })).some((row) => row.ref === "12" && row.archived === true), "…but in the --all listing");
+    }, { stream: [] }),
+  },
+  {
+    name: "cache-read/127-04-01 the seam's own guarantees are unchanged by the two new shapes — a disk-answered row carries answeredFrom disk and nothing else, withoutAnsweringSide strips exactly ANSWERING_SIDE_KEYS, and work.mjs imports nothing new",
+    run: () => withRemoteNode(async (fx) => {
+      const { workspace, options } = await seamCtx(fx);
+      await removeStore(fx);
+      const rows = await withDegradeCapture(async () => listStreamCacheFirst(workspace, options));
+      assert.ok(rows.length > 0);
+      for (const row of rows) {
+        assert.equal(row.answeredFrom, "disk", `${row.ref}: answered from disk with no cache`);
+        assert.ok(!("reportedBy" in row) && !("syncedAt" in row), `${row.ref}: …and nothing else`);
+      }
+      const stamped = { ref: "x", answeredFrom: "cache", reportedBy: "n", syncedAt: "t", number: null, backlog: "", archived: true };
+      assert.deepEqual(withoutAnsweringSide(stamped), { ref: "x", number: null, backlog: "", archived: true }, "the strip removes exactly the answering-side keys and leaves the two shapes");
+      assert.deepEqual([...ANSWERING_SIDE_KEYS], ["answeredFrom", "reportedBy", "syncedAt"]);
+
+      // work.mjs's four disk readers keep their exact return shape over a stream with neither
+      // root — and the module imports nothing new for the seam's sake (it consumes the
+      // enumerator's row and isLiveStreamRow; the seam re-derives neither).
+      const source = await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8");
+      const imports = [...source.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]).filter((spec) => spec.startsWith("."));
+      assert.ok(!imports.some((spec) => spec.includes("read.mjs") || spec.includes("cache-read") || spec.includes("global-work-store") || spec.includes("item-row")), `work.mjs imports no cache module (${imports.join(", ")})`);
+    }),
   },
 ];

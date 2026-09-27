@@ -15,7 +15,7 @@
 // asserting the fixture's opinion of git rather than git's behaviour.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { readFile, writeFile, mkdir, stat, readdir, unlink } from "node:fs/promises";
+import { readFile, writeFile, mkdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -27,6 +27,7 @@ import {
   overlappingFiles,
   laneChanges,
   dispatchConcurrencyFromConfig,
+  narrowDispatchBound,
   resolveDispatchConcurrency,
   DEFAULT_DISPATCH_CONCURRENCY,
   dispatchLaneBase,
@@ -42,8 +43,9 @@ import {
   meshItemBranchName,
   listWorktrees,
 } from "../../../src/mesh/worktree.mjs";
-import { withDispatchRepo, git, dirtyPaths } from "../../support/dispatch-lane-fixture.mjs";
+import { withDispatchRepo, git, dirtyPaths, writeRel, mergeHeadAbsent, conflictMarkers } from "../../support/dispatch-lane-fixture.mjs";
 import { dispatchCommand } from "../../../src/commands/dispatch.mjs";
+import { findWork } from "../../../src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHARED = "src/sandbox/provisionSandboxAgent.ts";
@@ -62,14 +64,8 @@ const SHARED = "src/sandbox/provisionSandboxAgent.ts";
 const MILESTONE_DIR = "wiki/work/127_m";
 const STATE_BASE = "---\ndoc: state\n---\n\n## Notes\n\n- base note\n";
 
-async function writeRel(root, rel, body) {
-  const target = path.join(root, ...rel.split("/"));
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, body, "utf8");
-}
 const rev = async (cwd, ref) => (await git(["rev-parse", ref], cwd)).stdout.trim();
 const porcelain = async (cwd) => (await git(["status", "--porcelain"], cwd)).stdout.split(/\r?\n/).filter((line) => line.length > 0);
-const mergeHeadAbsent = async (cwd) => (await git(["rev-parse", "-q", "--verify", "MERGE_HEAD"], cwd)).status !== 0;
 const shownNames = async (cwd, ref) => (await git(["show", "--name-only", "--format=", ref], cwd)).stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).sort();
 
 // commitIn(cwd, rel, body|null, message) — one commit on whatever branch `cwd` is checked out on;
@@ -80,21 +76,6 @@ async function commitIn(cwd, rel, body, message) {
   await git(["add", "-A", "--", rel], cwd);
   await git(["-c", "user.email=fixture@aof.test", "-c", "user.name=aof fixture", "commit", "-q", "-m", message], cwd);
   return rev(cwd, "HEAD");
-}
-
-async function conflictMarkers(dir) {
-  const hits = [];
-  const walk = async (current) => {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      if (entry.name === ".git" || entry.name === ".aof" || entry.name === "node_modules") continue;
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) { await walk(full); continue; }
-      const body = await readFile(full, "utf8").catch(() => "");
-      if (/^<{7}/mu.test(body) || /^={7}$/mu.test(body) || /^>{7}/mu.test(body)) hits.push(full);
-    }
-  };
-  await walk(dir);
-  return hits;
 }
 
 async function withMergeHomeRepo(body, { laneCommit = true } = {}) {
@@ -321,6 +302,34 @@ export const workDispatchLaneTests = [
         assert.equal(second.worktree, meshDispatchWorktreePath(root, "53/00"), "the reused path is in the seam's own basis, not git's");
         if (path.sep === "\\") assert.ok(!second.worktree.includes("/"), "on Windows a returned lane path is not forward-slashed");
       }),
+  },
+  {
+    name: "dispatch 2026-09-24 a lane carries the primary's git-ignored .claude/settings.local.json — copied once, never over the lane's own, and nothing when the primary has none",
+    run: async () => {
+      const LOCAL = path.join(".claude", "settings.local.json");
+      const approvals = `${JSON.stringify({ enabledMcpjsonServers: ["example-mcp", "aspire"] }, null, 2)}\n`;
+      await withDispatchRepo(async ({ root }) => {
+        await mkdir(path.join(root, ".claude"), { recursive: true });
+        await writeFile(path.join(root, LOCAL), approvals, "utf8");
+        const fresh = await resolveDispatchLane(root, "53/00");
+        assert.equal(fresh.created, true);
+        assert.equal(await readFile(path.join(fresh.worktree, LOCAL), "utf8"), approvals, "a fresh lane holds the primary's approvals verbatim");
+
+        const own = `${JSON.stringify({ enabledMcpjsonServers: ["lane-only"] })}\n`;
+        await writeFile(path.join(fresh.worktree, LOCAL), own, "utf8");
+        const reused = await resolveDispatchLane(root, "53/00");
+        assert.equal(reused.reused, true);
+        assert.equal(await readFile(path.join(reused.worktree, LOCAL), "utf8"), own, "a lane that holds its own file keeps it");
+
+        await unlink(path.join(reused.worktree, LOCAL));
+        const refilled = await resolveDispatchLane(root, "53/00");
+        assert.equal(await readFile(path.join(refilled.worktree, LOCAL), "utf8"), approvals, "a REUSED lane missing the file is given it — the lanes cut before this fix");
+      });
+      await withDispatchRepo(async ({ root }) => {
+        const lane = await resolveDispatchLane(root, "53/00");
+        assert.equal(existsSync(path.join(lane.worktree, LOCAL)), false, "a primary with no local settings copies nothing");
+      });
+    },
   },
   {
     name: "dispatch/02 a lane re-opened after cleanup CONTINUES the item's own line — it never forks a second branch for the same ref",
@@ -690,13 +699,13 @@ export const workDispatchLaneTests = [
     name: "129/03 task 02 — a lane merges home by a real merge when the primary moved elsewhere",
     run: () => withMergeHomeRepo(async ({ root, milestoneDir, l1 }) => {
       const p1 = await PRIMARY["P1 touching `README.md`"](root);
-      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): merge 127/02", node: "umamis-msi" });
+      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): merge 127/02", node: "win-host-a" });
       assert.equal(answer.outcome, "merged", `the answer's outcome is merged: ${JSON.stringify(answer)}`);
       assert.equal(answer.commit, await rev(root, "main"), "…and commit equals git rev-parse main");
       assert.equal(await rev(root, "main^1"), p1, "git rev-parse main^1 is P1");
       assert.equal(await rev(root, "main^2"), l1, "git rev-parse main^2 is L1");
       const log = (await git(["log", "-1", "--format=%an <%ae>%n%s", "main"], root)).stdout.split(/\r?\n/);
-      assert.equal(log[0], "aof-mesh (umamis-msi) <aof-mesh@users.noreply.github.com>", "the merge is under the mesh identity, node named");
+      assert.equal(log[0], "aof-mesh (win-host-a) <aof-mesh@users.noreply.github.com>", "the merge is under the mesh identity, node named");
       assert.equal(log[1], "aof(loop): merge 127/02", "…with the given message");
     }),
   },
@@ -743,14 +752,14 @@ export const workDispatchLaneTests = [
     name: `129/03 task 02 — the loop's own writes are committed before the merge, scoped to the milestone dir [${row.dirt}]`,
     run: () => withMergeHomeRepo(async ({ root, milestoneDir, b0, l1 }) => {
       await row.plant(root);
-      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): 127/02 home", node: "umamis-msi" });
+      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): 127/02 home", node: "win-host-a" });
       assert.equal(answer.outcome, row.outcome, `the answer's outcome is ${row.outcome}: ${JSON.stringify(answer)}`);
       if (row.ownWrites === "none") {
         const log = (await git(["log", "--format=%H", `${b0}..main`], root)).stdout.split(/\r?\n/).filter(Boolean);
         assert.deepEqual(log, [l1], "no commit was created besides the merge (a fast-forward to L1)");
       } else {
         const shown = (await git(["show", "--name-status", "--format=%an%n%s", "main^1"], root)).stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-        assert.equal(shown[0], "aof-mesh (umamis-msi)", "main^1 is the own-writes commit under the mesh identity");
+        assert.equal(shown[0], "aof-mesh (win-host-a)", "main^1 is the own-writes commit under the mesh identity");
         assert.equal(shown[1], "aof(loop): 127/02 home", "…with the message");
         const entries = shown.slice(2).map((l) => l.split(/\s+/u));
         assert.deepEqual(entries.map((e) => e[1]).sort(), row.ownWrites, `…containing exactly ${row.ownWrites.join(", ")}`);
@@ -833,13 +842,13 @@ export const workDispatchLaneTests = [
     name: `129/03 task 02 — commitDispatchLane commits the lane and reports its tip [${row.dirt}]`,
     run: () => withMergeHomeRepo(async ({ lane, l1 }) => {
       await row.plant(lane);
-      const answer = await commitDispatchLane(lane, { message: "aof(loop): 127/02 settled", node: "umamis-msi" });
+      const answer = await commitDispatchLane(lane, { message: "aof(loop): 127/02 settled", node: "win-host-a" });
       assert.equal(answer.committed, row.committed, `committed is ${row.committed}`);
       assert.equal(answer.tip, await rev(lane, "HEAD"), "tip equals git rev-parse HEAD in the lane");
       if (row.committed) {
         assert.notEqual(answer.tip, l1, "the tip is a new sha");
         assert.equal(await rev(lane, "HEAD^"), l1, "…whose parent is L1");
-        assert.equal((await git(["log", "-1", "--format=%an", "HEAD"], lane)).stdout.trim(), "aof-mesh (umamis-msi)", "…by the mesh identity");
+        assert.equal((await git(["log", "-1", "--format=%an", "HEAD"], lane)).stdout.trim(), "aof-mesh (win-host-a)", "…by the mesh identity");
       } else {
         assert.equal(answer.tip, l1, "the tip is L1");
       }
@@ -931,7 +940,7 @@ export const workDispatchLaneTests = [
       await git(["add", "--", "README.md"], root);
       await writeRel(root, `${MILESTONE_DIR}/STATE.md`, `${STATE_BASE}- loop note\n`);
       assert.deepEqual(await porcelain(root), ["M  README.md", " M wiki/work/127_m/STATE.md"], "the fixture planted a STAGED out-of-scope edit and a dirty in-scope one");
-      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): 127/02 home", node: "umamis-msi" });
+      const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir, message: "aof(loop): 127/02 home", node: "win-host-a" });
       assert.deepEqual(
         { outcome: answer.outcome, code: answer.code, files: answer.files, base: answer.base, tip: answer.tip },
         { outcome: "refused", code: "lane-merge-refused", files: ["README.md"], base: b0, tip: l1 },
@@ -1110,13 +1119,102 @@ export const workDispatchLaneTests = [
     run: async () => {
       const lines = (await readFile(path.join(repoRoot, ".gitattributes"), "utf8")).split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0 && !line.startsWith("#"));
       const mergeLines = lines.filter((line) => line.includes("merge="));
-      assert.deepEqual(mergeLines, ["wiki/work/**/STATE.md merge=union"], "exactly one non-comment line carries merge=, and it is the union line");
+      // 119/FF-11902's admitted form (applied at aof:verify 127; 129/03's case): the union line is named
+      // AMONG the derived set and every member is asserted admitted — never the set as a literal.
+      const UNION_LINE = "wiki/work/**/STATE.md merge=union";
+      assert.ok(mergeLines.includes(UNION_LINE), "the union line is the merge attribute");
+      for (const line of mergeLines) assert.equal(line, UNION_LINE, `only the union line carries merge= — found ${line}`);
       for (const line of lines) {
         if (line === "wiki/work/**/STATE.md merge=union") continue;
         const [, ...attrs] = line.split(/\s+/u);
         assert.ok(attrs.length > 0, `${line} names an attribute`);
         for (const attr of attrs) assert.match(attr, /^-?text$|^eol=/u, `${line}: "${attr}" is a text/eol attribute, as before this story`);
       }
+    },
+  },
+  // ── 129/07 task 01 — the lane bound narrows ──────────────────────────────────
+  //
+  // `wiki/work/129_milestone_loop-concurrency/stories/07_story_the-loop-settings-are-self-contained/
+  //   tasks/01_the-lane-bound-narrows.feature` — the dispatch-side rows. The loop-side rows (the
+  // key passed when set, the serial wave) are in `test/loop/loop-command-wave.test.mjs`.
+  ...[
+    [3, {}, 3],
+    [3, { bound: 2 }, 2],
+    [3, { bound: 1 }, 1],
+    [3, { bound: 3 }, 3],
+    [3, { bound: 5 }, 3],
+    [3, { bound: 0 }, 3],
+    [3, { bound: 2.5 }, 3],
+    [3, { bound: "2" }, 3],
+    [undefined, { bound: 2 }, 2],
+    [undefined, {}, 3],
+    [2, { bound: 3 }, 2],
+  ].map(([pool, ask, effective]) => ({
+    name: `129/07 task01 the effective bound is the pool's narrowed by a caller's positive integer [pool ${pool ?? "unset"}, ${JSON.stringify(ask)} → ${effective}]`,
+    run: () => withDispatchRepo(async ({ root }) => {
+      const workspace = { projectRoot: root, config: { work: pool === undefined ? {} : { dispatch: { concurrency: pool } } } };
+      const answer = await dispatchCommand.run({ list: true, ...ask }, { workspace });
+      assert.equal(answer.action, "list");
+      assert.equal(answer.bound, effective, "the answer's bound is the effective one");
+      assert.equal(narrowDispatchBound(pool === undefined ? 3 : pool, ask.bound), effective, "…and the pure narrowing agrees");
+    }),
+  })),
+  {
+    name: "129/07 task01 admission runs under the narrowed bound and every face answers it",
+    run: () => withDispatchRepo(async ({ root }) => {
+      const workspace = { projectRoot: root, config: { work: { dispatch: { concurrency: 3 } } } };
+      let inFlight = 0;
+      let peak = 0;
+      const ctx = {
+        workspace,
+        runDispatchLane: async (member) => {
+          inFlight += 1;
+          peak = Math.max(peak, inFlight);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          inFlight -= 1;
+          return { ref: member.ref, outcome: "opened", worktree: `lane-${member.ref}`, created: true, reused: false };
+        },
+      };
+      const answer = await dispatchCommand.run({ refs: ["53/00", "53/01", "53/02"], bound: 2 }, ctx);
+      assert.equal(answer.bound, 2, "the answer's bound is the narrowed one");
+      const outcomes = answer.dispatched.map((entry) => entry.value?.outcome ?? entry.outcome ?? "opened");
+      assert.deepEqual(outcomes, ["opened", "opened", "refused"], "two admitted, one refused");
+      assert.equal(answer.dispatched[2].value.reason, "at-capacity");
+      assert.ok(answer.peak <= 2, `materialised peak ${answer.peak} is at most 2`);
+      assert.ok(peak <= 2, `observed peak ${peak} is at most 2`);
+      assert.equal((await dispatchCommand.run({ list: true, bound: 2 }, ctx)).bound, 2);
+      assert.equal((await dispatchCommand.run({ list: true }, ctx)).bound, 3, "…and without the narrowing the pool's bound is answered");
+      assert.equal((await dispatchCommand.run({ cleanup: true, ref: "53/00", bound: 2 }, ctx)).bound, 2, "cleanup answers the narrowed bound too");
+    }, { stories: ["00", "01", "02"] }),
+  },
+  {
+    name: "129/07 task01 the input schema declares bound as a number, additionalProperties stays false, and the narrowing ignores a non-integer",
+    run: () => {
+      assert.deepEqual(dispatchCommand.input.properties.bound, { type: "number" });
+      assert.equal(dispatchCommand.input.additionalProperties, false);
+      assert.equal(narrowDispatchBound(3, 2.5), 3);
+      assert.equal(narrowDispatchBound(3, "2"), 3);
+      assert.equal(narrowDispatchBound(3, Number.NaN), 3);
+      assert.equal(narrowDispatchBound(3, -1), 3);
+      assert.equal(narrowDispatchBound(3, 2), 2);
+    },
+  },
+  {
+    name: "129/07 task01 ADR-006 records the amendment — a dated 2026-09-15 narrowing, read in the bounds home, handed to work:dispatch as bound; the invariant still says the family reads neither key",
+    run: async () => {
+      // 127/ADR-004 §3 — the milestone is reached by REF, never by a literal folder: `findWork`
+      // answers wherever the folder sits, so 129's own archive after its accept reddens nothing here.
+      const [milestone] = await findWork(path.join(repoRoot, "wiki", "work"), "129");
+      assert.ok(milestone?.dir, "milestone 129 resolves through findWork (live or archived)");
+      const adr = await readFile(path.join(milestone.dir, "ARCHITECTURE.md"), "utf8");
+      const start = adr.indexOf("## ADR-006");
+      const end = adr.indexOf("## ADR-007");
+      assert.ok(start >= 0 && end > start, "ADR-006 is present");
+      const body = adr.slice(start, end);
+      assert.ok(body.includes("AMENDED 2026-09-15 (129/07"), "a dated amendment");
+      for (const needle of ["work.loop.dispatch.concurrency", "min(bound, pool)", "src/loop-bounds.mjs", "narrowDispatchBound", "`bound`"]) assert.ok(body.includes(needle), `the amendment names ${needle}`);
+      const invariant = body.slice(body.indexOf("### Invariant"));
+      assert.ok(invariant.includes("contain no read of `work.dispatch.concurrency`, spell no") && invariant.includes("`work.loop.dispatch.concurrency`"), "the invariant still holds the family to neither key");
     },
   },
 ];

@@ -1,5 +1,6 @@
-// Type declarations for action.mjs (the state-aware primary-action mapping).
-import type { WorkItem } from "./api";
+// Type declarations for action.mjs (the state-aware primary-action mapping, and the ask card's
+// state, 131/05).
+import type { AnswerDocument, AskFact, WorkItem } from "./api";
 
 // The action the primary button represents:
 //   view     — a live LOCAL session is already bound to this item → "View terminal"
@@ -37,3 +38,33 @@ export type PrimaryActionCtx = {
 };
 
 export function primaryAction(item: WorkItem, ctx: PrimaryActionCtx): PrimaryAction;
+
+// The ask card's send phase, and what it holds between renders.
+export type AskCardPhase = "idle" | "sending" | "error";
+
+export type AskCardCtx = {
+  ref: string;
+  phase?: AskCardPhase;
+  error?: { code?: string; message?: string } | null;
+  sent?: AnswerDocument | null;
+  text?: unknown;
+  expanded?: boolean;
+  nowMs: number;
+};
+
+// Everything the card shows, in this order: a component that paints these decides no word.
+export type AskCardState = {
+  state: "waiting" | "parked" | "answered";
+  heading: string;
+  cost: string | null;
+  question: string | null;
+  unreadable: string | null;
+  toggle: string;
+  notice: string | null;
+  helper: string | null;
+  button: { label: string; disabled: boolean; busy: boolean } | null;
+  receipt: string | null;
+  message: { text: string; title: string | null } | null;
+};
+
+export function askCardState(ask: AskFact | null | undefined, ctx: AskCardCtx): AskCardState | null;

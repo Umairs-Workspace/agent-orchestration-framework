@@ -23,9 +23,19 @@ import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHELL = "src/commands/loop.mjs";
+// 129/04 (ADR-008 §3) — THE NEEDLE SCAN IS EXTENDED OVER THE FAMILY. The per-story ladder, the
+// retry ladder and the drive/settle trio moved from the shell into `src/loop/cycle.mjs`, and the
+// wave tick lives in `src/loop/wave.mjs`; `narrate` and `report` are PARAMETERS of every
+// function there, never a second printer. So the in-flight lines this control finds are found at
+// the narrate seam WHEREVER THEY NOW LIVE, and the family as a whole is read where the shell alone
+// was read before.
+// 131/03 (task 05, ruling 7) — `src/loop/ask.mjs` joins the family: the waiting, answered and
+// parked rows and the stale-ask line are narrated there, through the parameter it is handed.
+const FAMILY = Object.freeze([SHELL, "src/loop/cycle.mjs", "src/loop/wave.mjs", "src/loop/ask.mjs"]);
 const PRINTERS_CONTROL = "test/arch/command/acd-console-log-confined.test.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
+const family = async () => (await Promise.all(FAMILY.map(source))).join("\n");
 
 /** Every `await report(...)` / `await narrate(...)` call in the stripped shell, with its seam. */
 function printCalls(shell) {
@@ -40,6 +50,9 @@ export const archTests = [
       const shell = await source(SHELL);
       const logs = [...shell.matchAll(/console\.log\(/gu)];
       assert.equal(logs.length, 1, "exactly one console.log, the launcher's injected printer");
+      for (const rel of FAMILY.slice(1)) {
+        assert.doesNotMatch(await source(rel), /console\.(?:log|error)\(|process\.stdout\.write\(/u, `${rel} prints through no printer of its own — narrate and report are its parameters`);
+      }
       assert.match(shell, /report:\s*\(line\)\s*=>\s*console\.log\(line\)/u, "…and it is the `cli.launch` body's");
 
       // DERIVED, not injected beside `report`. A second injected parameter is what would let a
@@ -49,7 +62,7 @@ export const archTests = [
         /const narrate = input\.quiet === true \? NO_PRINT : report;/u,
         "narrate is derived from report",
       );
-      assert.doesNotMatch(shell, /suppliedCtx\.narrate|ctx\.narrate/u, "…and is never injected beside it");
+      assert.doesNotMatch(await family(), /suppliedCtx\.narrate|ctx\.narrate/u, "…and is never injected beside it, in the shell or anywhere in the family");
 
       const printers = await read(PRINTERS_CONTROL);
       assert.match(printers, /\b12\b/u, "the roster's ceiling is still 12");
@@ -68,8 +81,15 @@ export const archTests = [
       // ACCOUNTS: what an invocation RETURNS. The nineteen `reportLine` sites, plus the two the
       // call-site proxy missed — `runL1`'s row lines (an L1 invocation's ENTIRE output) and
       // `Nothing to resume`.
+      // Sixteen since 129/04: the three sites that printed the ladder's own halts (the review
+      // gate's, the progress halt's, the indeterminate grade's) moved with the ladder and are now
+      // ONE site — the shell prints whatever `settleStoryCycle` answered — so the count fell by
+      // three; the wave, the reconcile, the refine-end commit and the fresh gate each added one and
+      // the L1 / resume sites are unchanged. The account is printed HERE and nowhere in the family:
+      // `src/loop/` returns halts, it never prints them (the wave drains its lanes first).
       const reportLineCalls = [...shell.matchAll(/await reportLine\(\s*(\w+)/gu)].map((m) => m[1]);
-      assert.equal(reportLineCalls.length, 19, "nineteen reportLine call sites");
+      assert.equal(reportLineCalls.length, 16, "sixteen reportLine call sites");
+      for (const rel of FAMILY.slice(1)) assert.doesNotMatch(await source(rel), /reportLine\(/u, `${rel} prints no account line`);
       for (const seam of reportLineCalls) {
         assert.equal(seam, "report", "every reportLine site is handed the account seam");
       }
@@ -79,7 +99,7 @@ export const archTests = [
         "reportLine's own two loops print through the account seam it is handed",
       );
 
-      const calls = printCalls(shell);
+      const calls = printCalls(await family());
       const seamOf = (needle) => {
         const hit = calls.find((call) => call.text.includes(needle));
         assert.ok(hit, `no printed line matches ${needle}`);
@@ -97,7 +117,9 @@ export const archTests = [
       for (const needle of ["Gate work:validate", "Gate work:doctor", "Gate work:grade"]) {
         assert.equal(seamOf(needle), "narrate", `${needle} is in flight`);
       }
-      for (const needle of ["Driving ${act.ref}", "Retrying ${act.ref}", "Resumed ${act.ref}", "Reclaimed ${entry.item.ref}"]) {
+      // The retry ladder moved into `cycle.mjs` (129/04), where the act is `ref`/`phase` rather
+      // than `act.ref`/`act.phase`; the wave's own `Resumed`/`Reclaimed` lines are the same lines.
+      for (const needle of ["Driving ${act.ref}", "Retrying ${ref}", "Resumed ${act.ref}", "Reclaimed ${entry.item.ref}"]) {
         assert.equal(seamOf(needle), "narrate", `${needle} is in flight`);
       }
       // 2026-09-12 — the settle that lost its race. A run settled out from under the shell
@@ -110,34 +132,67 @@ export const archTests = [
       // drive, announced like the gate rungs it belongs beside, and silenced by `--quiet` for
       // the same reason — it is a measurement in flight, not part of what the invocation returns.
       assert.equal(seamOf("Baseline work:grade ${act.ref}"), "narrate", "the grade baseline is in flight");
-      assert.equal(
-        calls.filter((call) => call.seam === "narrate").length,
-        10,
-        "ten in-flight lines: the three that moved, the four this contract adds, the "
-        + "act line at the cross to verify — a third drive site the refine-time line numbers "
-        + "did not enumerate, found by leg 3 deriving the count from the sites — the "
-        + "settle conflict and the grade baseline (both 2026-09-12)",
-      );
+      // 130/02 (ADR-003 §6) — the resume's clear of a standing stop request: printed while the
+      // walk is still pending, by the same role rule, and silenced by `--quiet` like the rest.
+      assert.equal(seamOf("Cleared stop request for ${loopRunId}"), "narrate", "the cleared stop request is in flight");
+      // 131/11 (ADR-009 §6) — the same resume's clear of a spent hand-off, beside the stop's, by the
+      // same role rule.
+      assert.equal(seamOf("Cleared the resume request for ${loopRunId}"), "narrate", "the cleared resume request is in flight");
+      // 129/04 — every in-flight line in the family is on the narrate seam, and the family's
+      // count is pinned rather than the shell's alone: the shell's ten stay ten (the retry
+      // line and the settle conflict moved down with the ladder; the fresh gate's three grade
+      // lines and the refine-phase line arrived); `cycle.mjs` holds the two that moved plus the
+      // cross-to-verify act line and the grade rung; `wave.mjs` narrates every lane step. None is
+      // on `report`. 130/02 — eleven in the shell: the resume's `Cleared stop request` line. 131/11 —
+      // twelve: the resume's `Cleared the resume request` line beside it.
+      const inFlight = calls.filter((call) => call.seam === "narrate");
+      assert.equal(calls.filter((call) => call.seam === "report" && /^`(?:Gate |Driving |Retrying |Resumed |Reclaimed |Lane |Wave |Baseline |Cleared )/u.test(call.text)).length, 0, "no in-flight line is on report anywhere in the family");
+      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 12, "twelve in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request and the cleared resume request");
+      assert.equal(printCalls(await source("src/loop/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
+      assert.ok(inFlight.length >= 17, `the family narrates at least the seventeen the shell and the ladder hold (${inFlight.length})`);
+    },
+  },
+  {
+    name: "arch/131/03 FF-12602 (extended): the ask's rows are in flight — six narrate lines in ask.mjs, and every accountLine row is on narrate, never on report",
+    run: async () => {
+      const ask = await source("src/loop/ask.mjs");
+      const calls = printCalls(ask);
+      // The waiting row at the ask, at a re-entry and on each heartbeatMs; the parked row; the
+      // answered row; and the stale-ask line of the --resume sweep (task 04, ruling 5).
+      assert.equal(calls.filter((call) => call.seam === "narrate").length, 6, "six in-flight lines in ask.mjs");
+      assert.equal(calls.filter((call) => call.seam === "report").length, 0, "ask.mjs prints no account line");
+      const rows = [...(await family()).matchAll(/await (report|narrate)\(\s*accountLine\(/gu)].map((m) => m[1]);
+      assert.equal(rows.length, 5, "five accountLine rows in the family");
+      assert.ok(rows.every((seam) => seam === "narrate"), "every accountLine row is on narrate");
+      assert.equal(calls.filter((call) => call.text.startsWith("`Ask ${ask.runId} — stale") && call.seam === "narrate").length, 1, "the stale-ask line is in flight");
     },
   },
   {
     name: "arch/126/00 FF-12602 leg 3: every drive announces itself once — `Driving` before the main site, `Retrying` after the store admits the retry",
     run: async () => {
       const shell = await source(SHELL);
-      const drives = [...shell.matchAll(/await drivePhase\(\{/gu)];
-      assert.equal(drives.length, 3, "three drive sites: the main one, the in-process retry, and the cross to verify");
-      // EVERY drive site is preceded by an in-flight line, and the count is derived from the
-      // sites rather than listed — a fourth drive added without one is what this catches.
+      const cycle = await source("src/loop/cycle.mjs");
+      // 129/04 — the three drive sites are now spread over the shell and the ladder: the main
+      // site stays in the shell, the cross to verify moved to `cycle.mjs` with the ladder, and the
+      // in-process retry is the ladder's `drive(retried.record)` seam (the shell hands it
+      // `drivePhase`; the wave hands it a child spawn in the same lane). Every one still announces
+      // itself, and the count is derived from the sites rather than listed.
+      const drives = [
+        ...[...shell.matchAll(/await drivePhase\(\{/gu)].map((m) => ({ text: shell, index: m.index })),
+        ...[...cycle.matchAll(/await drivePhase\(\{/gu)].map((m) => ({ text: cycle, index: m.index })),
+        ...[...cycle.matchAll(/await drive\(retried\.record\)/gu)].map((m) => ({ text: cycle, index: m.index })),
+      ];
+      assert.equal(drives.length, 3, "three drive sites: the main one (shell), the in-process retry and the cross to verify (both in the ladder)");
       for (const drive of drives) {
-        const before = shell.slice(0, drive.index);
+        const before = drive.text.slice(0, drive.index);
         const announced = Math.max(
           before.lastIndexOf("await narrate(`Driving "),
           before.lastIndexOf("await narrate(`Retrying "),
         );
         assert.ok(announced > -1, "every drive site announces itself");
         assert.doesNotMatch(
-          shell.slice(announced, drive.index),
-          /await drivePhase\(\{/u,
+          drive.text.slice(announced, drive.index),
+          /await drivePhase\(\{|await drive\(retried\.record\)/u,
           "…with its OWN line, not a previous site's",
         );
       }
@@ -154,9 +209,10 @@ export const archTests = [
 
       // `Retrying` is printed AFTER `transitionRunStart` admits the mint: a retry the store
       // refuses (`not-retryable`, `retry-parked`, `attempts-exhausted`) must not announce itself.
-      const retryIndex = shell.indexOf("let retryRun = await drivePhase({");
-      const retryingIndex = shell.lastIndexOf("await narrate(`Retrying ", retryIndex);
-      const retryMint = shell.lastIndexOf("const retried = await transitionRunStart(", retryingIndex);
+      // (In the ladder since 129/04, for both the shell's drive and the wave's child.)
+      const retryIndex = cycle.indexOf("let retryRun = await drive(retried.record);");
+      const retryingIndex = cycle.lastIndexOf("await narrate(`Retrying ", retryIndex);
+      const retryMint = cycle.lastIndexOf("const retried = await transitionRunStart(", retryingIndex);
       assert.ok(retryMint > -1 && retryMint < retryingIndex && retryingIndex < retryIndex,
         "the mint is admitted, then the line, then the drive");
 
@@ -164,9 +220,10 @@ export const archTests = [
       const resumeMint = shell.lastIndexOf("const resumed = await transitionRunStart(", resumedIndex);
       assert.ok(resumeMint > -1 && resumeMint < resumedIndex, "`Resumed` announces an admitted mint too");
 
-      // The lines carry the shell's own facts and no second spelling of a stop.
+      // The lines carry the family's own facts and no second spelling of a stop.
+      const everywhere = printCalls(await family());
       for (const line of ["Driving", "Retrying", "Resumed", "Reclaimed"]) {
-        const call = printCalls(shell).find((c) => c.text.startsWith("`" + line + " "));
+        const call = everywhere.find((c) => c.text.startsWith("`" + line + " "));
         assert.ok(call, `${line} is printed`);
         assert.equal(call.seam, "narrate");
       }
@@ -179,15 +236,18 @@ export const archTests = [
       assert.equal(schema.additionalProperties, false);
       assert.deepEqual(schema.properties.quiet, { type: "boolean" }, "a declared boolean property");
       assert.deepEqual(schema.required, ["scope"], "required is still exactly [scope]");
+      // 130/02 (ADR-002 §1) — the NINTH property and the EIGHTH flag, `stop`, by the same
+      // three-homes rule this leg pins: an expected succession of the pin, not a drift. 131/11
+      // (ADR-009 §6) — the TENTH and the NINTH, `handOff`, by the same rule.
       assert.deepEqual(
         Object.keys(schema.properties).sort(),
-        ["cap", "dryRun", "level", "quiet", "resume", "reviewClaims", "scope", "supervised"],
+        ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised"],
         "properties gained exactly one key",
       );
       assert.ok(!("verbose" in schema.properties), "`verbose` is an additional key on a closed schema");
 
       const flags = loopCommand.cli.spec.flags;
-      assert.equal(Object.keys(flags).length, 7, "seven flags: --quiet here, and --supervised from 126/02");
+      assert.equal(Object.keys(flags).length, 9, "nine flags: --quiet here, --supervised from 126/02, --stop from 130/02 and --hand-off from 131/11");
       assert.equal(flags.quiet.type, "boolean");
       assert.ok(typeof flags.quiet.description === "string" && flags.quiet.description.length > 0);
       assert.match(loopCommand.cli.spec.usage, /\[--quiet\]/u);
@@ -199,8 +259,11 @@ export const archTests = [
       const shell = await source(SHELL);
       assert.doesNotMatch(shell, /verbose/iu, "the ratchet is the flag's direction: silence is what has to be asked for");
 
-      // `--json` still never launches, so the frozen probe is untouched.
+      // `--json` still never launches, so the frozen probe is untouched — and neither does
+      // `--stop` (130/02): a stop is on the probe side, printed through `render`.
       assert.equal(loopCommand.cli.launch({ dryRun: true }), null);
+      assert.equal(loopCommand.cli.launch({ stop: true }), null);
+      assert.equal(loopCommand.cli.launch({ handOff: true }), null, "--hand-off starts nothing: it is on the probe side too (131/11)");
       assert.equal(typeof loopCommand.cli.launch({ quiet: true }), "function", "--quiet does not stop the body launching");
     },
   },

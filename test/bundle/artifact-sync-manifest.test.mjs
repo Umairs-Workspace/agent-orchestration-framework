@@ -366,4 +366,25 @@ export const artifactSyncManifestTests = [
       await assert.rejects(() => fx.doc(ITEM_REF, "NOTES"), (error) => error.code === "invalid-doc");
     }),
   },
+  // milestone 133 / story 04 / task 00 — an ADR's diagram rides the wire as its SVG only, and the
+  // control node answers it from the cache with the worker's provenance.
+  {
+    name: "133/04 task 00: a worker streams a diagram's SVG and never its source or PNG, and the control answers it from the cache",
+    run: async () => withArtifactSyncFixture(async (fx) => {
+      await writeArtifact(fx.itemDir, "diagrams/ADR-002-seam.html", "<html>source</html>\n");
+      await writeArtifact(fx.itemDir, "diagrams/ADR-002-seam.svg", "<svg viewBox=\"0 0 1 1\"/>\n");
+      await writeArtifact(fx.itemDir, "diagrams/ADR-002-seam.png", "not really a png\n");
+      const before = fx.contentFrames().length;
+      await fx.tick();
+      await fx.deliver();
+      const carried = carriedDocs(fx, before).filter((doc) => doc.startsWith("DIAGRAMS/"));
+      assert.deepEqual(carried, ["DIAGRAMS/ADR-002-seam.svg"], "only the SVG member is carried");
+      const answer = await fx.doc(ITEM_REF, "DIAGRAMS", "ADR-002-seam.svg");
+      assert.equal(answer.present, true);
+      assert.equal(answer.body, "<svg viewBox=\"0 0 1 1\"/>\n");
+      assert.equal(answer.reportedBy, WORKER_ID, "the answer carries the reporting node");
+      assert.equal(typeof answer.syncedAt, "string", "…and the row's syncedAt");
+      assert.equal(answer.answeredFrom, "cache");
+    }),
+  },
 ];

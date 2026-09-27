@@ -413,7 +413,13 @@ export const siteBuildTests = [
     name: "site-build/00 the repository gains exactly one publishing workflow: pages.yml is present, release.yml is untouched in claim, and no third workflow is added",
     run: async () => {
       const members = (await readdir(workflowsDir)).sort();
-      assert.deepEqual(members, ["pages.yml", "release.yml"], ".github/workflows/ holds the release workflow and the ONE publishing workflow, and nothing else");
+      // 119/FF-11902's admitted form, applied at aof:verify 127: the set is DERIVED from the tree, so it is
+      // floored, its required members are named AMONG it, and every member is asserted admitted —
+      // never enumerated as the answer. "Nothing else" is the admission leg, not a literal list.
+      const ADMITTED_WORKFLOWS = new Set(["pages.yml", "release.yml"]);
+      assert.ok(members.length >= 2, `.github/workflows/ was read and holds the two workflows (${members.length})`);
+      for (const required of ["pages.yml", "release.yml"]) assert.ok(members.includes(required), `.github/workflows/ holds ${required}`);
+      for (const member of members) assert.ok(ADMITTED_WORKFLOWS.has(member), `.github/workflows/ holds the release workflow and the ONE publishing workflow, and nothing else — found ${member}`);
       // release.yml's claims — its legs, triggers, permissions and jobs — are held by the 21 rows of
       // `release-workflow-lint.test.mjs`; what this row adds is that the two workflows share no
       // vocabulary, so neither could have been edited into the other's shape.
@@ -495,7 +501,12 @@ export const siteBuildTests = [
     name: "site-build/00 the site's shell is committed and its content is not: docs/ holds the config, the layout and the landing page, no build-produced page, and the staging directory is git-ignored",
     run: async () => {
       const files = await listFiles(path.join(repoRoot, SHELL_DIR));
-      assert.deepEqual(files, ["_config.yml", "_layouts/default.html", "acd.md", "index.md"], "docs/ holds exactly the site's configuration, its layout, the ACD page and the landing page");
+      // 119/FF-11902's admitted form, applied at aof:verify 127: floored, named among, every member admitted.
+      const SHELL_FILES = ["_config.yml", "_layouts/default.html", "acd.md", "index.md"];
+      const ADMITTED_SHELL = new Set(SHELL_FILES);
+      assert.ok(files.length >= SHELL_FILES.length, `docs/ was read and holds the shell (${files.length} files)`);
+      for (const required of SHELL_FILES) assert.ok(files.includes(required), `docs/ holds ${required}`);
+      for (const file of files) assert.ok(ADMITTED_SHELL.has(file), `docs/ holds exactly the site's configuration, its layout, the ACD page and the landing page — found ${file}`);
 
       // No file in the shell is a staged page (the builder's provenance envelope) or carries a
       // manifest source's bytes.
@@ -680,17 +691,20 @@ export const siteBuildTests = [
   {
     name: "site-build/delivered the page is composed from every ACCEPTED item's outcome and nothing else: done items in, other statuses and un-numbered folders out, newest first with a milestone before its stories, only the `## Delivered` section, comments stripped, en dashes, a literal `{% endraw %}` spaced so it cannot close the guard, and a TOC of items",
     run: async () => {
-      await withSiteFixture({}, async ({ root }) => {
-        await writeOutcomeFixture(root, "50_milestone_alpha", { record: "SPEC.md", status: "done", title: "50 · Alpha", delivered: "### One thing\nThe system is X — measured.\n\n### Another\nThe guard is `{% raw %}…{% endraw %}`." });
-        await writeOutcomeFixture(root, "50_milestone_alpha/stories/01_story_beta", { record: "STORY.md", status: "done", title: "50/01 · Beta", delivered: "### A story capability\nIt IS." });
-        await writeOutcomeFixture(root, "51_story_gamma", { record: "STORY.md", status: "in-review", title: "51 · Gamma", delivered: "### Not yet\nNot accepted." });
-        await writeOutcomeFixture(root, "52_chore_delta", { record: "CHORE.md", status: "done", title: "52 · Delta", delivered: "### The chore's state\nPinned." });
-        await writeOutcomeFixture(root, "backlog/epsilon_story", { record: "STORY.md", status: "done", title: "Epsilon", delivered: "### Unnumbered\nNever." });
-        const items = await collectDelivered(root, await loadWorkspace(root));
+      // The fixture root is bound under its OWN name: `root` is a REPO-derived scratch path elsewhere in
+      // this file (the site-gate case), and FF-11902's reader resolves names file-wide — under `root`
+      // this fixture's oracle read as a retyped tree census (aof:verify 127).
+      await withSiteFixture({}, async ({ root: fixtureRoot }) => {
+        await writeOutcomeFixture(fixtureRoot, "50_milestone_alpha", { record: "SPEC.md", status: "done", title: "50 · Alpha", delivered: "### One thing\nThe system is X — measured.\n\n### Another\nThe guard is `{% raw %}…{% endraw %}`." });
+        await writeOutcomeFixture(fixtureRoot, "50_milestone_alpha/stories/01_story_beta", { record: "STORY.md", status: "done", title: "50/01 · Beta", delivered: "### A story capability\nIt IS." });
+        await writeOutcomeFixture(fixtureRoot, "51_story_gamma", { record: "STORY.md", status: "in-review", title: "51 · Gamma", delivered: "### Not yet\nNot accepted." });
+        await writeOutcomeFixture(fixtureRoot, "52_chore_delta", { record: "CHORE.md", status: "done", title: "52 · Delta", delivered: "### The chore's state\nPinned." });
+        await writeOutcomeFixture(fixtureRoot, "backlog/epsilon_story", { record: "STORY.md", status: "done", title: "Epsilon", delivered: "### Unnumbered\nNever." });
+        const items = await collectDelivered(fixtureRoot, await loadWorkspace(fixtureRoot));
         assert.deepEqual(items.map((item) => item.label), ["52", "50", "50/01"], "done, numbered items only — newest first, the milestone before its story");
         assert.deepEqual(items.map((item) => item.title), ["Delta", "Alpha", "Beta"], "titles come from the outcome's H1 with the ref and the ' — Outcome' suffix removed");
-        const out = path.join(root, DEFAULT_OUT);
-        const result = await buildSite({ root, out });
+        const out = path.join(fixtureRoot, DEFAULT_OUT);
+        const result = await buildSite({ root: fixtureRoot, out });
         const page = result.pages.find((entry) => entry.permalink === "/delivered/");
         assert.ok(page, "the Delivered page is staged");
         const { frontMatter, body } = partsOfStagedPage(await readFile(path.join(out, page.page), "utf8"));
@@ -729,7 +743,10 @@ export const siteBuildTests = [
           "the build refuses, the refusal names the missing path, and its `path` is the absolute one",
         );
         assert.equal(await exists(out), false, "no staged site is left for the deploy step to publish");
-        const stranded = (await readdir(root)).filter((name) => name.startsWith(`.${DEFAULT_OUT}-`));
+        // An absence claim floors the read behind it (119/FF-11902's admitted form, applied at aof:verify 127).
+        const rootEntries = await readdir(root);
+        assert.ok(rootEntries.length > 0, `the root was read and holds the fixture (${rootEntries.length} entries)`);
+        const stranded = rootEntries.filter((name) => name.startsWith(`.${DEFAULT_OUT}-`));
         assert.deepEqual(stranded, [], "and no temporary staging directory is stranded beside it");
         const everything = await listFiles(root);
         assert.ok(!everything.some((file) => path.basename(file) === path.basename(missing)), "no page was staged for the missing source anywhere in the tree");
@@ -793,7 +810,9 @@ export const siteBuildTests = [
           "the build refuses, naming the directory it would not clear",
         );
         assert.deepEqual(await snapshot(root), before, "and the whole tree is byte-untouched");
-        assert.deepEqual((await readdir(root)).filter((name) => name.startsWith(".somebody-elses-")), [], "and no temporary directory was left beside the target");
+        const rootEntriesAfter = await readdir(root);
+        assert.ok(rootEntriesAfter.length > 0, `the root was read and holds the fixture (${rootEntriesAfter.length} entries)`);
+        assert.deepEqual(rootEntriesAfter.filter((name) => name.startsWith(".somebody-elses-")), [], "and no temporary directory was left beside the target");
 
         // (b) A directory that LOOKS like a staging — it has the shell's config — but also holds a
         // file this builder did not stage. Refused too, naming the file.

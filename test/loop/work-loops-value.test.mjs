@@ -66,8 +66,8 @@ import {
 import { examplesTables } from "../support/feature-parse.mjs";
 import { markedRegion } from "../support/source-slice.mjs";
 
-const LOADER_TASKS = "wiki/work/52_milestone_loop-registry-and-graph/stories/00_story_loop-model-and-loader/tasks";
-const CHECK_TASKS = "wiki/work/52_milestone_loop-registry-and-graph/stories/01_story_structural-checks/tasks";
+const LOADER_TASKS = "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/00_story_loop-model-and-loader/tasks";
+const CHECK_TASKS = "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/01_story_structural-checks/tasks";
 const GRAMMAR_FEATURE = `${LOADER_TASKS}/02_field-value-grammar.feature`;
 const POINTER_FEATURE = `${LOADER_TASKS}/03_pointer-endpoint-syntax.feature`;
 const TIMESCALE_FEATURE = `${CHECK_TASKS}/04_timescale-comparability.feature`;
@@ -183,12 +183,12 @@ function codesEmitted(model) {
 // tables and are deliberately NOT added to `coverage`, which is milestone 52's ledger over
 // milestone 52's features and is bound row-for-row by `test/loop/work-loops-coverage-ledger.test.mjs`.
 //
-// Contracts: `wiki/work/58_milestone_supervising-loops/stories/00_story_the-supervision-vocabulary/
+// Contracts: `wiki/work/archive/58_milestone_supervising-loops/stories/00_story_the-supervision-vocabulary/
 // tasks/01_what-an-arbiter-must-declare.feature` and `…/03_the-layer-a-loop-declares.feature`.
 // ADR-002 §1/§2/§3, ADR-003 §2/§4/§5, ADR-004 §3.
 
 const REPO_ROOT_58 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const TASKS_58 = "wiki/work/58_milestone_supervising-loops/stories/00_story_the-supervision-vocabulary/tasks";
+const TASKS_58 = "wiki/work/archive/58_milestone_supervising-loops/stories/00_story_the-supervision-vocabulary/tasks";
 const DECLARE_FEATURE_58 = `${TASKS_58}/01_what-an-arbiter-must-declare.feature`;
 const LAYER_FEATURE_58 = `${TASKS_58}/03_the-layer-a-loop-declares.feature`;
 

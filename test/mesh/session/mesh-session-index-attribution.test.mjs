@@ -58,7 +58,10 @@ const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "
 // binding clause — "the same set, with the same values, that the same fixture produces
 // without this feature" — is asserted here against what the shaper really produces, so
 // a seventh pre-existing key cannot be silently dropped to make a list match.
-const PRE_EXISTING_TOP_LEVEL_KEYS = ["scope", "workspaceId", "stalenessSeconds", "workspaces", "items", "nodes", "diagnostics"];
+// 130/03 (ADR-005 §3) appends `localNodeId` — the ROUTE's stamp of which machine is serving the
+// read (the board's own `nodeId` precedent), beside `scope`, after the projection's keys. It is
+// a fact about the server, never the store: `shapeGlobalStatus` still carries no such key.
+const PRE_EXISTING_TOP_LEVEL_KEYS = ["scope", "workspaceId", "stalenessSeconds", "workspaces", "items", "nodes", "diagnostics", "localNodeId"];
 const FEATURE_NAMED_TOP_LEVEL_KEYS = ["scope", "workspaceId", "workspaces", "items", "nodes", "diagnostics"];
 
 async function withTemp(prefix, fn) {

@@ -56,7 +56,7 @@ const RETIRED_MATCHER_VOCABULARY = ["agentMatchesMilestone", "matchesMilestone",
 // A rung name reaching the record would show up here as a key nobody froze.
 const RUN_RECORD_KEYS = new Set([
   "runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt",
-  "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend",
+  "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks",
 ]);
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));

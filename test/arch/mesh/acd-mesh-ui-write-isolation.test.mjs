@@ -51,8 +51,12 @@ function stripComments(source) {
 // LIST DOES NOT MOVE. That non-movement is the load-bearing statement of story 04, so it
 // is written here as the thing a reviewer reads first: `session-outcome` is a GET that
 // reads an in-memory Map, and the mutation surface is still exactly two named routes.
+//
+// milestone 130 / story 03 (ADR-005 §4) — the WRITE list grows to THREE by name: `loop-stop`,
+// in assign's exact shape, after TECH_DEBT item 44's hoist ("do this BEFORE a fourth write
+// route is added" — and this is the one it was written for). The read list does not move.
 const READ_ROUTES = Object.freeze(["board-url", "session-outcome", "status"]);
-const WRITE_ROUTES = Object.freeze(["assign", "session"]);
+const WRITE_ROUTES = Object.freeze(["assign", "session", "loop-stop"]);
 
 // THE CAPTURE IS THE WHOLE STRING LITERAL, NOT A NAME-SHAPE (review fix, 2026-08-14).
 // It used to be `[a-zA-Z0-9-]+`, a character class that cannot match `/` or `_` — so
@@ -330,6 +334,7 @@ export const archTests = [
       const declaresIssueRoute = /pathname\s*===\s*["']\/api\/mesh\/issue["']/.test(source);
       const declaresAssignRoute = /pathname\s*===\s*["']\/api\/mesh\/assign["']/.test(source);
       const declaresSessionRoute = /pathname\s*===\s*["']\/api\/mesh\/session["']/.test(source);
+      const declaresLoopStopRoute = /pathname\s*===\s*["']\/api\/mesh\/loop-stop["']/.test(source);
       const declaresOtherWriteRoute = /pathname\s*===\s*["']\/api\/mesh\/(route|revoke)["']/.test(source);
 
       assert.ok(
@@ -348,6 +353,14 @@ export const archTests = [
         declaresSessionRoute,
         "mesh-ui-serve.mjs declares pathname === \"/api/mesh/session\" — the m50 named write route (ADR-001 decision 1)"
       );
+      assert.ok(
+        declaresLoopStopRoute,
+        "mesh-ui-serve.mjs declares pathname === \"/api/mesh/loop-stop\" — the 130 named write route (ADR-005 §4)"
+      );
+      // …and the third route reaches its mutation through the verb CORE, exactly as the first
+      // reaches assignWork: `stopLoop(` is called, and no request file is written here.
+      assert.ok(/\bstopLoop\s*\(/.test(source), "mesh-ui-serve.mjs reaches the loop stop via stopLoop(...) — the core, wrapped verbatim");
+      assert.ok(!/\brequestLoopStop\s*\(/.test(source), "mesh-ui-serve.mjs makes no direct requestLoopStop( call — the request file is written ONLY inside the core");
       assert.ok(
         !declaresOtherWriteRoute,
         "mesh-ui-serve.mjs declares no /api/mesh/route|revoke sibling — never a THIRD write route"
@@ -487,16 +500,16 @@ export const archTests = [
       const declared = declaredMeshRoutes(source);
       assert.deepEqual(
         declared,
-        ["assign", "board-url", "session", "session-outcome", "status"],
-        "the real fleet face declares exactly the THREE READ routes (board-url, session-outcome, status) and the two NAMED write routes (assign, session) — no sixth /api/mesh/* route exists"
+        ["assign", "board-url", "loop-stop", "session", "session-outcome", "status"],
+        "the real fleet face declares exactly the THREE READ routes (board-url, session-outcome, status) and the THREE named write routes (assign, session, loop-stop) — no seventh /api/mesh/* route exists"
       );
       // m50/ADR-008: the two halves of the bound, stated SEPARATELY, because the story's
       // acceptance criterion is about the second one specifically. A read route joining the
       // enumeration must never be readable as the write set having grown.
       assert.deepEqual(
         WRITE_ROUTES,
-        ["assign", "session"],
-        "the WRITE allowlist is STILL exactly {assign, session} — story 04 adds a READ route and the mutation surface does not grow (ADR-008 decision 5)"
+        ["assign", "session", "loop-stop"],
+        "the WRITE allowlist is exactly {assign, session, loop-stop} — 130/03 adds the third by NAME (ADR-005 §4); m50/04's session-outcome stays a READ"
       );
       assert.ok(
         READ_ROUTES.includes("session-outcome") && !WRITE_ROUTES.includes("session-outcome"),
@@ -524,6 +537,8 @@ export const archTests = [
         // is here rather than merely in the list above so the enumeration is exercised
         // through the same detector every refused name is.
         { route: "session-outcome", allowed: true },
+        // 130/ADR-005 §4 — the third write route, ALLOWED because it is enumerated by name.
+        { route: "loop-stop", allowed: true },
         { route: "route", allowed: false },
         { route: "revoke", allowed: false },
         { route: "terminate", allowed: false },

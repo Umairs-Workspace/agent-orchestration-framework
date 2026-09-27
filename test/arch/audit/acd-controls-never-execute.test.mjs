@@ -120,6 +120,10 @@ const DOCTOR_LANE_MODULES = Object.freeze([
   // It is a doctor lane on the same reading as the seventh: it reports findings about the work
   // stream and executes nothing, which is the side of ADR-002's boundary it belongs on.
   "./doctor-depends.mjs",
+  // THE NINTH — milestone 133 / story 03's diagrams lane, named in the change that lands it. A
+  // doctor lane on the same reading as the eighth: it reports on the work stream's own records
+  // (an ADR's diagram links against the item's `diagrams/` listing) and executes nothing.
+  "./doctor-diagrams.mjs",
 ]);
 
 // ADR-002 §2's named extractors — the ONE edge from the audit into the doctor family. They are

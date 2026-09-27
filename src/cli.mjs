@@ -145,6 +145,11 @@ export async function run(argv) {
     return;
   }
 
+  if (command === "diagram") {
+    await diagramCommand(rest);
+    return;
+  }
+
   // The session arm used to sit here. It is now the FIRST statement of `run()` — see the note
   // there, and 72/ADR-005 §1: this position was below `helpText()`, which is registry-derived.
 
@@ -254,7 +259,7 @@ async function workCommand(args) {
   // in commands/orchestrator-delegation.mjs, riding the route table; the
   // prompts live in their async argv adapters, the prints in their renders.
 
-  throw new Error(`Unknown work command "${subcommand ?? ""}".\n\nExamples:\n  aof work init [dir] [--dry-run] [--runtime claude,codex] [--force] [--with-headroom]\n  aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--json]\n  aof work update [dir] [--dry-run] [--force]\n  aof work find 04\n  aof work find 04/02\n  aof work find auth --json\n  aof work list\n  aof work list 03\n  aof work list --json\n  aof work doc 04 SPEC\n  aof work tasks 04/02 --json\n  aof work feedback 04/02 --note "spec was thin" --actor qa\n  aof work run-start 19 [--session sess-1] [--brief '{"initiator":"operator"}'] [--json]\n  aof work run-complete 19 --outcome done|failed [--run <runId>] [--reason timeout] [--json]\n  aof work run-status 19 [--json]\n  aof work status 19/02 [not-started|in-progress|blocked|in-review|done] [--json]\n  aof work run-retry 19 [--run <runId>] [--max-attempts 3] [--force] [--json]\n  aof work resume [19] [--force] [--json]\n  aof work memory recall "pin line endings"\n  aof work validate\n  aof work doctor [scope] [--json] [--strict]\n  aof work next 03-10\n  aof work ui [--port 4180]\n  aof work integrations notion sync-work 17 [--dry-run] [--json]\n  aof work orchestrator [fable|opus] [--show]\n  aof work delegation [on|off] [--model fable|opus] [--gpt-model <id>] [--no-model] [--show]\n  aof work delegation-model [<id>] [--show]\n  aof work use-headroom\n  aof work unuse-headroom\n  aof work insert-milestone "widget-support" --at 2 [--yes] [--json]\n  aof work insert-uat "release-gate" --at 1 [--depends 0,2] [--yes] [--json]\n  aof work insert-story "auth-guard" --at 1 --under 5 [--yes] [--json]\n  aof work insert-chore "tidy-config" --at 2 [--yes] [--json]\n  aof work promote "widget-support" [--at 2] [--yes] [--json]\n  aof work promote-gap "warnings_delivered field" --discharge "a production path writes warnings_delivered" [--status open] [--at 2] [--yes] [--json]\n  aof work upgrade [--dry-run] [--json]`);
+  throw new Error(`Unknown work command "${subcommand ?? ""}".\n\nExamples:\n  aof work init [dir] [--dry-run] [--runtime claude,codex] [--force] [--with-headroom]\n  aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--json]\n  aof work update [dir] [--dry-run] [--force]\n  aof work find 04\n  aof work find 04/02\n  aof work find auth --json\n  aof work list\n  aof work list 03\n  aof work list --json\n  aof work doc 04 SPEC\n  aof work tasks 04/02 --json\n  aof work feedback 04/02 --note "spec was thin" --actor qa\n  aof work run-start 19 [--session sess-1] [--brief '{"initiator":"operator"}'] [--json]\n  aof work run-complete 19 --outcome done|failed [--run <runId>] [--reason timeout] [--json]\n  aof work run-status 19 [--json]\n  aof work status 19/02 [not-started|in-progress|blocked|in-review|done] [--json]\n  aof work run-retry 19 [--run <runId>] [--max-attempts 3] [--force] [--json]\n  aof work resume [19] [--force] [--json]\n  aof work memory recall "pin line endings"\n  aof work validate\n  aof work doctor [scope] [--json] [--strict]\n  aof work next 03-10\n  aof work ui [--port 4180]\n  aof work integrations notion sync-work 17 [--dry-run] [--json]\n  aof work orchestrator [fable|opus] [--show]\n  aof work delegation [on|off] [--model fable|opus] [--gpt-model <id>] [--no-model] [--show]\n  aof work delegation-model [<id>] [--show]\n  aof work use-headroom\n  aof work unuse-headroom\n  aof work insert-milestone "widget-support" --at 2 [--yes] [--json]\n  aof work insert-uat "release-gate" --at 1 [--depends 0,2] [--yes] [--json]\n  aof work insert-story "auth-guard" --at 1 --under 5 [--yes] [--json]\n  aof work insert-chore "tidy-config" --at 2 [--yes] [--json]\n  aof work promote "widget-support" [--at 2] [--yes] [--json]\n  aof work archive 12 | --done [--yes] [--json]\n  aof work promote-gap "warnings_delivered field" --discharge "a production path writes warnings_delivered" [--status open] [--at 2] [--yes] [--json]\n  aof work upgrade [--dry-run] [--json]`);
 }
 
 // `aof graph <verb>` — build/query/triage/impact MIGRATED (m42 wave (d) leg d1,
@@ -266,6 +271,15 @@ async function workCommand(args) {
 async function graphCommand(args) {
   const [subcommand] = args;
   console.error(`Unknown graph command "${subcommand ?? ""}".\n\nExamples:\n  aof graph build <folder> [--backend claude] [--json]\n  aof graph query "what calls main" [--json]\n  aof graph impact src/command-core.mjs [src/cli.mjs ...] [--json]\n  aof graph triage [--mode conflicts] [--json]\n  aof graph serve`);
+  process.exitCode = 1;
+}
+
+// `aof diagram <verb>` — milestone 133 (ADR-004): `plan`, `export` and `file` are registry Commands
+// carrying `cli.route`, dispatched in run() through the route table + the ONE generic face. Only
+// a missing or unknown verb ever reaches this shim, which answers like graphCommand's.
+async function diagramCommand(args) {
+  const [subcommand] = args;
+  console.error(`Unknown diagram command "${subcommand ?? ""}".\n\nExamples:\n  aof diagram plan 07 ADR-002 --slug generator-seam [--json]\n  aof diagram export 07 ADR-002 [--json]\n  aof diagram file 07 ADR-002-generator-seam.png [--json]`);
   process.exitCode = 1;
 }
 
@@ -599,10 +613,11 @@ const HELP_FAMILY_TITLES = Object.freeze({
   work: "Work (ACD work stream)",
   planning: "Planning",
   graph: "Graph",
+  diagram: "Diagram",
   mesh: "Mesh",
   import: "Import",
 });
-const HELP_FAMILY_ORDER = ["usage", "project", "assets", "packages", "work", "planning", "graph", "mesh", "import"];
+const HELP_FAMILY_ORDER = ["usage", "project", "assets", "packages", "work", "planning", "graph", "diagram", "mesh", "import"];
 const HELP_USAGE_WORD_ORDER = ["init", "migrate"];
 
 // ASYNC, because the registry it derives from is now a dynamic import (72/ADR-005 §1). It is not

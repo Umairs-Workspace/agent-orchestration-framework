@@ -83,7 +83,7 @@ export const runStatusRenderTests = [
     name: "126/01 task00 — the lineage and attribution facts are named, and a null is a silence",
     run() {
       const rows = [
-        [1, "sess-a1", "umamis-msi", ["attempt 1", "session sess-a1", "node umamis-msi"], []],
+        [1, "sess-a1", "win-host-a", ["attempt 1", "session sess-a1", "node win-host-a"], []],
         [2, "sess-a2", "aof-wsl", ["attempt 2", "session sess-a2", "node aof-wsl"], []],
         [3, null, "aof-wsl", ["attempt 3", "node aof-wsl"], ["session"]],
         [1, "sess-c1", null, ["attempt 1", "session sess-c1"], ["node"]],
@@ -342,13 +342,13 @@ aofVersion: 0.1.0
           config: { work: { dir: "wiki/work" } },
         };
         const brief = { loop: { loopRunId: "l", scope: "03", level: "L2", cap: 3, phase: "continue", cycle: 2, startedAt: `${DAY}10:00:00.000Z`, id: "id" } };
-        await startRun({ ref: "03/01", dir: storyDir }, { brief, now: `${DAY}10:00:00.000Z`, node: "umamis-msi" });
+        await startRun({ ref: "03/01", dir: storyDir }, { brief, now: `${DAY}10:00:00.000Z`, node: "win-host-a" });
 
         const result = await invoke("work:run-status", { ref: "03/01" }, { workspace });
         const out = runStatusCommand.cli.render(result, { now: `${DAY}10:25:00.000Z` });
         assert.match(out, /^03\/01 — 1 run\(s\):$/mu);
         assert.ok(out.includes("running") && out.includes("continue") && out.includes("2/3") && out.includes("L2"));
-        assert.ok(out.includes("attempt 1") && out.includes("node umamis-msi"));
+        assert.ok(out.includes("attempt 1") && out.includes("node win-host-a"));
         assert.ok(out.includes("elapsed 1500000ms"), out);
         assertClean(out, "invoked result");
       } finally {

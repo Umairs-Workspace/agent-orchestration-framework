@@ -37,7 +37,11 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // `work:promote-finding-to-chore` / `work:promote-gap-to-chore` are review-lane faces reached by an
 // agent through `aof:code-review`, not operator doors with prompts of their own — so the predicate
 // admits the bare `work:promote` and nothing suffixed.
-const wrappedFamily = (id) => id.startsWith("work:insert-") || id === "work:promote";
+// milestone 127 / story 03 task 04 — widened once more, by the same rule and in the same control:
+// `work:archive` is the operator's door out of the stream (127/ADR-004 §1), the twin of `promote`'s
+// door in, and a `work:*` verb is not done until its wrapper ships (m41 R5). The predicate stays
+// EXACT on the bare id, so a helper face could never be admitted by prefix.
+const wrappedFamily = (id) => id.startsWith("work:insert-") || id === "work:promote" || id === "work:archive";
 
 const wrappedSubcommands = () =>
   listCommands()
@@ -63,6 +67,7 @@ export const archTests = [
       // Non-vacuity with a name on it: the ONE mint must be IN the swept family, so a
       // `work:promote` that stopped being registered fails here rather than narrowing the sweep.
       assert.ok(subs.includes("promote"), "work:promote is registered and therefore swept (127/ADR-003 §1 — the one verb that mints)");
+      assert.ok(subs.includes("archive"), "work:archive is registered and therefore swept (127/ADR-004 §1 — the one verb that moves)");
       assert.ok(subs.some((sub) => sub.startsWith("insert-")), "…beside the insert-* placement twins m41 R5 was written for");
       const members = bundleCommandMembers();
       for (const sub of subs) {
@@ -102,6 +107,28 @@ export const archTests = [
       assert.match(text, /aof:verify <NN>/u, "…and a chore / spike / uat to its own record doc, closed by verify");
       for (const doc of ["CHORE.md", "SPIKE.md", "SESSION.md"]) {
         assert.ok(text.includes(doc), `the hand-off names the record doc a ${doc} type is worked in`);
+      }
+    },
+  },
+
+  // milestone 127 / story 03 task 04 — "the archive prompt moves nothing by hand". The wrapper
+  // EXISTING is the first leg; this is the wrapper being HONEST. A `/aof:archive` that renamed the
+  // folder or rewrote a link itself when the verb refused would re-open the one door 127/ADR-004
+  // closes — deciding and moving are the verb's — in the prompt whose entire subject is the move.
+  // The phrases are the ones a prompt that moved folders or rewrote links by hand would need.
+  {
+    name: "arch/127-03 (m41 R5 sibling): the /aof:archive wrapper drives `aof work archive … --json` and moves nothing by hand",
+    run: async () => {
+      const member = bundleCommandMembers().get("archive");
+      assert.ok(member != null, "the archive bundle command member is declared (the first leg says why)");
+      const text = await readFile(path.join(repoRoot, "src", "bundle", member.file), "utf8");
+
+      assert.match(text, /aof work archive/u, "the prompt drives the verb");
+      assert.match(text, /--json/u, "…on its machine face, so what moved is read rather than guessed");
+      assert.match(text, /archive-confirm-required/u, "the one refusal answered by re-running is named");
+      assert.match(text, /candidates/u, "…and the list the operator confirms is read from the envelope");
+      for (const phrase of [/rename\(/u, / mv /u, /git mv/u, /\.\.\/archive\//u]) {
+        assert.doesNotMatch(text, phrase, `the archive prompt moves no folder and rewrites no link by hand (${phrase}) — one verb moves (ADR-004 §1)`);
       }
     },
   },

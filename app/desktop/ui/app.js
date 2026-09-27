@@ -46,6 +46,11 @@ const FLEET_STATUS = {
   ],
 };
 const LOCAL_STATE = { meshServer: 'running', meshWebUi: 'running', aofVersion: '1.9.3' };
+// The loop-row fixture (130/DESIGN §Conformance) — rendered ONLY when `?loops=<signal>` names a
+// ramp word, so the 36 mock (no loop bar) is byte-identical by default and the second bar can be
+// screenshotted at all. A fixture is not a second data path: under Tauri `loops` is the view model's.
+const LOOP_FIXTURE_SIGNALS = ['running', 'restarting', 'stopping', 'stopped'];
+const loopFixture = (signal) => [{ id: 'lr-2026-09-13T10-00-00-000Z-1', label: 'loop 129', signal }];
 
 // ---------- pure view-model (story 02 · status-render-model) ----------
 // STALE-FIRST PRECEDENCE (authoritative rule mirrored from the Rust core's
@@ -72,7 +77,8 @@ function mapStatusToView(status) {
   const nodes = (status.nodes || []).map((n) => {
     const work = currentWork(n);
     return {
-      name: n.nodeId,
+      name: (typeof n.hostname === 'string' && n.hostname.trim().replace(/\.local$/i, '')) || n.nodeId,
+      nodeId: n.nodeId,
       thisNode: n.local === true,
       role: roleOf(n),
       version: aofVersionOf(n),
@@ -127,6 +133,52 @@ function renderControlBar(view, local) {
   document.getElementById('controlbar').innerHTML = parts.join('');
 }
 
+// One supervised-loop row (130/DESIGN §Surface 2) in the daemon row's own vocabulary, minus Start:
+// the producer's `label` verbatim, the daemons' pill, and ONE `.toggle.subtle` stop control — never
+// `.toggle.primary`, never a `.play-glyph` (a declaration starts through the reconcile, so the row
+// has no Start). Its own small template rather than `procControlHTML` with a flag: that function
+// paints a play glyph for anything not `running`, and this row must not. The four signal words are
+// the local-process ramp plus `stopping`, the one word 130 added; `stopping` rides the `running` dot
+// (the child IS alive, and amber is reserved for a genuine fault). The control is present in
+// `running` / `restarting` / `stopping` and OMITTED at `stopped` — never a dead item — which is the
+// row's one geometry change. At `stopping` only the title changes (rung 2 hurries the ladder); the
+// class, glyph and size are the same, so the row never moves while the child lives. No debounce and
+// never `disabled`: the supervisor counts presses (ADR-004 §2-§3), so every click reaches `invoke`.
+function loopRowHTML(row) {
+  const signal = String(row.signal || 'stopped');
+  const dotClass = signal === 'running' || signal === 'stopping' ? 'running'
+    : signal === 'restarting' ? 'restarting' : 'stopped';
+  const title = signal === 'stopping' ? `Stop ${row.label} now — skip the grace` : `Stop ${row.label}`;
+  const control = signal === 'stopped' ? ''
+    : `<button class="toggle subtle" data-action="loop-stop" data-id="${esc(row.id)}" title="${esc(title)}" aria-label="${esc(title)}"><span class="stop-glyph"></span></button>`;
+  return `<div class="proc">
+    <span class="proc-label">${esc(row.label)}</span>
+    <span class="pill"><span class="pill-dot ${dotClass}"></span><span class="pill-text">${esc(signal)}</span></span>
+    ${control}
+  </div>`;
+}
+
+// The loop bar — a SECOND `.controlbar` immediately after `#controlbar` (the same class, fill,
+// hairline and padding, verbatim), holding one `.proc` per view-model row in the order supplied,
+// separated by `.vsep`. NOT rendered at all when there are no rows: the ambient posture is a
+// glance, and a permanent `loops: none` on most machines is noise (130/DESIGN §Surface 2). The
+// same holds when `loops` is absent (an older core) or `null` — an absent bar asserts nothing.
+function renderLoopBar(loops) {
+  const rows = Array.isArray(loops) ? loops : [];
+  let bar = document.getElementById('loopbar');
+  if (rows.length === 0) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'controlbar';
+    bar.id = 'loopbar';
+    document.getElementById('controlbar').insertAdjacentElement('afterend', bar);
+  }
+  bar.innerHTML = rows.map(loopRowHTML).join('<span class="vsep"></span>');
+}
+
 function nodeRowHTML(n) {
   // `n.workLabel` (set only by the Tauri-IPC path, `normalizeIpcView` — F7/F8 fix):
   // the Rust core's already-formatted current-work TEXT is rendered VERBATIM as ONE
@@ -144,7 +196,7 @@ function nodeRowHTML(n) {
   const thisNode = n.thisNode ? '<span class="chip">this node</span>' : '';
   return `<div class="node-row">
     <span class="dot ${n.presence}"></span>
-    <div class="node-id"><span class="node-name">${esc(n.name)}</span>${thisNode}</div>
+    <div class="node-id"><div class="node-title"><span class="node-name" title="${esc(n.nodeId || n.name)}">${esc(n.name)}</span>${thisNode}</div>${n.nodeId && n.nodeId !== n.name ? `<span class="node-sub">${esc(n.nodeId)}</span>` : ''}</div>
     <span class="role-badge">${esc(n.role)}</span>
     <span class="node-ver">${esc(n.version)}</span>
     <div class="work">${work}</div>
@@ -223,6 +275,7 @@ function normalizeIpcView(ipcModel) {
     const active = n.work_state !== 'idle';
     return {
       name: n.name,
+      nodeId: n.node_id,
       thisNode: n.this_node === true,
       role: n.role,
       // The Rust core's `version_cell()` hands back the RAW version ("1.9.3") — this
@@ -240,6 +293,10 @@ function normalizeIpcView(ipcModel) {
     count: nodes.length,
     online: nodes.filter((n) => n.presence === 'online').length,
     stale: nodes.filter((n) => n.presence === 'stale').length,
+    // The supervised-loop rows, passed through UNCHANGED (130/ADR-004 §1): `{ id, label, signal }`
+    // is the Rust core's shape and this path re-derives nothing from it. Absent or `null` (an
+    // older core) reads as no rows.
+    loops: Array.isArray(ipcModel.loops) ? ipcModel.loops : [],
   };
 }
 
@@ -255,16 +312,18 @@ function startTauriPolling() {
 }
 
 // Wire the control-bar buttons to the LOCAL-supervisor IPC commands (start/stop the
-// real child on THIS machine; open the running web UI). Read-only over the fleet — no
-// affordance here spawns a mesh-mutating verb (ADR-004 d3). Event-delegated + attached
-// once, so re-renders don't stack listeners.
+// real child on THIS machine; open the running web UI; stop a supervised loop by id).
+// Read-only over the fleet — no affordance here spawns a mesh-mutating verb (ADR-004
+// d3). ONE event delegate, hosted on the bars' parent so it covers `#controlbar` AND
+// the loop bar `renderLoopBar` creates and removes beside it (130/ADR-004 §2) —
+// attached once, so re-renders don't stack listeners.
 let _controlBarWired = false;
 function wireControlBarActions(invoke) {
   if (_controlBarWired) return;
   _controlBarWired = true;
   const bar = document.getElementById('controlbar');
   if (!bar) return;
-  bar.addEventListener('click', (ev) => {
+  (bar.parentElement || bar).addEventListener('click', (ev) => {
     const btn = ev.target.closest('[data-action]');
     if (!btn || btn.disabled) return;
     const action = btn.getAttribute('data-action');
@@ -275,6 +334,10 @@ function wireControlBarActions(invoke) {
       invoke(running ? 'stop_mesh_ui' : 'start_mesh_ui');
     } else if (action === 'open-web-ui') {
       invoke('open_web_ui');
+    } else if (action === 'loop-stop') {
+      // The one command; the supervisor counts the presses (rung 1 requests, rung 2
+      // cancels now) and the next poll tick renders the pill it reports.
+      invoke('stop_loop', { id: btn.getAttribute('data-id') });
     }
     // The next poll tick re-renders the true state the supervisor reports.
   });
@@ -328,10 +391,13 @@ async function render() {
         aofVersion: thisNode && thisNode.version ? thisNode.version.replace(/^v/, '') : '',
       };
       renderControlBar(view, local);
+      renderLoopBar(view.loops);
       renderBody(view, state);
       // Surface a named clean-exit reason (ui-build-missing / EADDRINUSE / launcher
-      // already running) in the footer when the supervisor reports one — the "surface
-      // the message, don't restart-storm" half of ADR-002 d2 (cleared on a restart).
+      // already running) — or a refused loop stop (`loop <scope>: <line>`, 130/ADR-004
+      // §3) — in the footer when the supervisor reports one: the "surface the message,
+      // don't restart-storm" half of ADR-002 d2 (cleared by that child's next start).
+      // The loop bar carries no error text of its own; the footer is the one notice slot.
       document.getElementById('footer-text').textContent =
         ipcModel.notice || FOOTERS[state] || FOOTERS.populated;
     } catch (err) {
@@ -348,11 +414,15 @@ async function render() {
   const state = requestedState || 'populated';
   const view = mapStatusToView(FLEET_STATUS);
   renderControlBar(view, LOCAL_STATE);
+  // `?loops=running|restarting|stopping|stopped` renders the loop-row fixture at that signal
+  // (130/DESIGN §Conformance); absent, no loop bar — the 36 mock as it was.
+  const loopsParam = params.get('loops');
+  renderLoopBar(LOOP_FIXTURE_SIGNALS.includes(loopsParam) ? loopFixture(loopsParam) : []);
   renderBody(view, state);
   document.getElementById('footer-text').textContent = FOOTERS[state] || FOOTERS.populated;
 }
 
 // Expose the pure view-model for reuse/testing (story 02's status-render-model unit).
-window.MeshView = { mapStatusToView, presenceOf, currentWork, aofVersionOf, roleOf, normalizeIpcView, tauriInvoke };
+window.MeshView = { mapStatusToView, presenceOf, currentWork, aofVersionOf, roleOf, normalizeIpcView, tauriInvoke, loopRowHTML, renderLoopBar };
 
 render();

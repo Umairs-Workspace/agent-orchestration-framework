@@ -62,6 +62,9 @@ import { workRatchetTests } from "./work-ratchet.test.mjs";
 // 00–02), with a read-only observation-boundary/registration fitness suite.
 import { workCountersTests } from "./work-counters.test.mjs";
 
+// story 137 — validate holds an AOF.md record doc to the template (task 02).
+import { workValidateDigestTemplateTests } from "./work-validate-digest-template.test.mjs";
+
 export const tests = [
   ...validateStreamTests,
   // milestone 77 / story 00 - the prompt layer (tasks 00-02) plus FF-7701 and FF-7702.
@@ -78,4 +81,6 @@ export const tests = [
   ...workRatchetTests,
   // milestone 57 / story 04 — escape/intervention counters (tasks 00–02)
   ...workCountersTests,
+  // story 137 — validate holds an AOF.md record doc to the template (task 02).
+  ...workValidateDigestTemplateTests,
 ];

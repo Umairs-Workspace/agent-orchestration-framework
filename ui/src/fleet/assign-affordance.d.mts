@@ -29,6 +29,14 @@ export declare const ASSIGN_DETAIL_TIMED_OUT: string;
 
 // DG-13 clause 4 — outcome > holder > all else, keyed by the verb's own code.
 export declare const ASSIGN_REFUSAL_COPY: Readonly<Record<string, string>>;
+
+// milestone 130 / story 03 — the loop line's Stop: the same slot, classes and shaping, its own
+// words (DESIGN §Surface 1 "Refused"; the two verb codes whose sentence leads with a fact the
+// line already shows, and the deadline pair that says the outcome is unknown, never negative).
+export declare const LOOP_STOP_REFUSAL_COPY: Readonly<Record<string, string>>;
+export declare const LOOP_STOP_MESSAGE_TIMED_OUT: "timed out";
+export declare const LOOP_STOP_DETAIL_TIMED_OUT: string;
+export declare const LOOP_STOP_TIMED_OUT: Readonly<{ message: string; detail: string }>;
 // DG-17 — the message slot's character budget and the copy LADDER that keeps the
 // holder atomic (renders whole, or is omitted; never CSS-truncated mid-id).
 export declare const ASSIGN_MESSAGE_BUDGET_CH: number;
@@ -129,8 +137,8 @@ export type AssignAffordanceView = {
 export declare function assignAtRest(): AssignAffordanceState;
 export declare function assignBegin(): AssignAffordanceState;
 export declare function assignSucceeded(): AssignAffordanceState;
-export declare function assignRefused(cause: AssignRefusalCause | string | null | undefined): AssignAffordanceState;
-export declare function assignTimedOut(): AssignAffordanceState;
+export declare function assignRefused(cause: AssignRefusalCause | string | null | undefined, copy?: Readonly<Record<string, string>>): AssignAffordanceState;
+export declare function assignTimedOut(timedOut?: Readonly<{ message: string; detail: string }>): AssignAffordanceState;
 export declare function assignAckExpired(state: AssignAffordanceState | null | undefined): AssignAffordanceState;
 
 export declare function assignAffordanceView(ctx: {
@@ -145,16 +153,21 @@ export declare function assignAffordanceView(ctx: {
 // to refine on the route when absent.
 export type AssignLifecyclePhase = "refine" | "continue" | "verify";
 
-export declare function runAssign(
+// Generic over the record the call answers (`WorkAssignment` for assign, the loop-stop
+// document for the loop line's Stop) — milestone 130 / story 03 rides the same orchestrator
+// with its own `refusalCopy` and `timedOut` words.
+export declare function runAssign<Answer = WorkAssignment>(
   deps: {
-    assign: (ref: string, nodeId: string, workspaceId: string, phase?: string) => Promise<WorkAssignment>;
+    assign: (ref: string, nodeId: string, workspaceId: string, phase?: string) => Promise<Answer>;
     onAssigned?: (() => void) | null;
     onState?: ((next: AssignAffordanceState) => void) | null;
     timeoutMs?: number;
+    refusalCopy?: Readonly<Record<string, string>>;
+    timedOut?: Readonly<{ message: string; detail: string }>;
   },
-  request: { ref: string; nodeId: string; workspaceId: string; phase?: AssignLifecyclePhase }
+  request: { ref?: string; nodeId?: string; workspaceId?: string; phase?: AssignLifecyclePhase }
 ): Promise<
-  | { ok: true; record: WorkAssignment }
+  | { ok: true; record: Answer }
   | { ok: false; error: unknown; timedOut?: undefined }
   | { ok: false; timedOut: true; error?: undefined }
 >;

@@ -12,7 +12,7 @@ or a developer about to forget to pin line endings, has no way to be told *"we a
 **Memory** is the seam that carries those lessons forward. It is a **CLI surface** — `aof work memory
 …` — that any ACD agent or command can call to **recall** relevant prior lessons at a decision point,
 and to **ingest** new ones at Accept. It was delivered by milestone
-[`05_work-memory`](work/05_milestone_work-memory/SPEC.md).
+[`05_work-memory`](work/archive/05_milestone_work-memory/SPEC.md).
 
 ## The load-bearing constraint: memory is a *derived index*
 
@@ -127,14 +127,14 @@ An unknown backend name is rejected by the `$defs/memory` schema enum, not disco
 
 Memory is **callable but not yet auto-invoked.** The verb surface, the local backend, and config
 selection are done and verified (stories `00`–`02`); the **read/write hooks** that wire it into the
-loop are [story `03_story_memory-hooks`](work/05_milestone_work-memory/stories/03_story_memory-hooks/STORY.md)
+loop are [story `03_story_memory-hooks`](work/archive/05_milestone_work-memory/stories/03_story_memory-hooks/STORY.md)
 — authored as acceptance criteria, not yet built:
 
 - No bundled ACD agent or command prompt yet calls `aof work memory recall` / `ingest` on its own — not
   `refine`, not `continue`, not `verify`. An agent recalls only if a human runs the verb.
 - So memory does not yet *automatically* surface a recall at a decision point or ingest a lesson at
   Accept. Threading the verbs into [the agent prompts and the workflow](agents.md) is the next step the
-  seam was built to enable (see [05's spike findings](work/05_milestone_work-memory/spike/FINDINGS.md)).
+  seam was built to enable (see [05's spike findings](work/archive/05_milestone_work-memory/spike/FINDINGS.md)).
 
 Until those hooks land, the value is realised by invoking the verbs directly — `aof work memory recall
 "<the decision you're about to make>"` before committing to an approach.
@@ -144,4 +144,4 @@ Until those hooks land, the value is realised by invoking the verbs directly —
 - The documents memory reads from (`RETROSPECTIVE.md`, `ARCHITECTURE.md`) → [documents.md](documents.md)
 - Why single-source-of-truth / derived-not-duplicated matters → [philosophy.md](philosophy.md)
 - Who would call recall/ingest once the hooks land → [agents.md](agents.md)
-- The milestone that delivered it → [work/05_milestone_work-memory/](work/05_milestone_work-memory/SPEC.md)
+- The milestone that delivered it → [work/05_milestone_work-memory/](work/archive/05_milestone_work-memory/SPEC.md)

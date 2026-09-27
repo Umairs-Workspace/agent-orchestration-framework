@@ -50,14 +50,23 @@ export const archTests = [
         specifiers.includes("./assignment.mjs"),
         "mesh-ui-serve.mjs imports the assignWork core from ./mesh/assignment.mjs — the ONE sanctioned write-verb door (38/ADR-012, re-homed by m42 wave (d))"
       );
+      // milestone 130 / story 03 (ADR-005 §4; ADR-002 §8) — the SECOND sanctioned write door,
+      // and the allow-list grows by EXACTLY this one specifier: `stopLoop`, the verb core BELOW
+      // the command layer that `work:loop --stop` also calls. A second CALLER of the same core,
+      // never a re-implementation — and never `commands/loop.mjs`, which stays denied below.
+      assert.ok(
+        specifiers.includes("../loop/stop.mjs"),
+        "mesh-ui-serve.mjs imports the stopLoop core from ../loop/stop.mjs — the SECOND sanctioned write door (130/ADR-005 §4)"
+      );
       // No OTHER local ./<module> import brings in fleet-core/operation logic. The
       // deny-list is the mesh-core modules + ANY direct command-body import.
       const operationBearing = importSpecifiers(source).filter((i) => {
         const spec = i.specifier;
         if (!spec.startsWith(".")) return false; // node:* / package deps are not fleet-core
         if (spec === "../global-mesh-query.mjs") return false; // the read door
-        if (spec === "./assignment.mjs") return false; // the ONE sanctioned write door (38/ADR-012)
-        return /\.\/mesh-(store|presence|registry|sync)\.mjs$/.test(spec) || /\.\/global-(work-store|node-registry)\.mjs$/.test(spec) || spec.startsWith("./commands/");
+        if (spec === "./assignment.mjs") return false; // the FIRST sanctioned write door (38/ADR-012)
+        if (spec === "../loop/stop.mjs") return false; // the SECOND sanctioned write door (130/ADR-005 §4)
+        return /\.\/mesh-(store|presence|registry|sync)\.mjs$/.test(spec) || /\.\/global-(work-store|node-registry)\.mjs$/.test(spec) || spec.startsWith("./commands/") || spec.startsWith("../commands/");
       });
       assert.deepEqual(
         operationBearing.map((i) => i.specifier),
@@ -70,6 +79,7 @@ export const archTests = [
       const plantedBypass = stripComments(`
         import { queryGlobalMeshStatus } from "../global-mesh-query.mjs";
         import { assignWork } from "./assignment.mjs";
+        import { stopLoop } from "../loop/stop.mjs";
         import { issueDirective } from "./commands/mesh-issue.mjs";
       `);
       const plantedOperationBearing = importSpecifiers(plantedBypass).filter((i) => {
@@ -77,12 +87,24 @@ export const archTests = [
         if (!spec.startsWith(".")) return false;
         if (spec === "./global-mesh-query.mjs") return false;
         if (spec === "./assignment.mjs") return false;
-        return /\.\/mesh-(store|presence|registry|sync)\.mjs$/.test(spec) || /\.\/global-(work-store|node-registry)\.mjs$/.test(spec) || spec.startsWith("./commands/");
+        if (spec === "../loop/stop.mjs") return false;
+        return /\.\/mesh-(store|presence|registry|sync)\.mjs$/.test(spec) || /\.\/global-(work-store|node-registry)\.mjs$/.test(spec) || spec.startsWith("./commands/") || spec.startsWith("../commands/");
       });
       assert.notDeepEqual(
         plantedOperationBearing.map((i) => i.specifier),
         [],
-        "self-check: the detector FIRES on a planted commands/* import beside the sanctioned mesh-assignment door"
+        "self-check: the detector FIRES on a planted commands/* import beside the two sanctioned doors"
+      );
+      // …and the COMMAND face of the loop stop (`../commands/loop.mjs`) is not the door: the
+      // core is. A face that imported the command would trip here.
+      const plantedCommandFace = stripComments(`
+        import { stopLoop } from "../loop/stop.mjs";
+        import { workLoopCommand } from "../commands/loop.mjs";
+      `);
+      assert.deepEqual(
+        importSpecifiers(plantedCommandFace).filter((i) => i.specifier.startsWith("../commands/")).map((i) => i.specifier),
+        ["../commands/loop.mjs"],
+        "self-check: the loop's COMMAND module is caught as a commands/* import — only the core is sanctioned"
       );
     },
   },

@@ -48,6 +48,51 @@ export type WorkItem = {
   // a missing `syncedAt` is never rendered as `stale`.
   reportedBy?: string | null;
   syncedAt?: string | null;
+  // milestone 127 / ADR-006 (the three roots, as the wire states them). A BACKLOG row —
+  // an un-numbered driver under `<work.dir>/backlog/` — carries `number: null` and `backlog`,
+  // its group path relative to the backlog root (`""` at the top); its `ref` is its slug. An
+  // ARCHIVED row — an accepted item moved under `archive/`, number and ref untouched — carries
+  // `archived: true`. All three are ABSENT on a live row, so a component reads a fact the
+  // wire carries rather than one it guesses from `ref`'s shape (`number` is never parsed).
+  number?: null;
+  backlog?: string;
+  archived?: true;
+  // 131/ADR-006 §2 — a question waiting on the operator (`work:list`'s ask fact, board only).
+  // ABSENT on every row with no ask, so the panel with no ask is today's.
+  ask?: AskFact;
+};
+
+// The ask fact (131/05 task 00): thirteen keys, in this order. A LOCAL ask is the ask file's own
+// record in whatever state it holds (the answered receipt stands until the owner clears it); a
+// WORKER's ask has no question, because the question never reaches the control.
+export type AskFact = {
+  runId: string | null;
+  state: "waiting" | "parked" | "answered";
+  question: string | null;
+  phase: string | null;
+  askedAt: string | null;
+  parkedAt: string | null;
+  answeredAt: string | null;
+  by: AnswerBy | null;
+  answer: string | null;
+  node: string | null;
+  local: boolean;
+  sessionId: string | null;
+  scope: string | null;
+};
+
+export type AnswerBy = { actor: string | null; via: string; node: string | null };
+
+// `work:answer`'s eight-key document (131/04), sent verbatim by `POST /api/work/answer`.
+export type AnswerDocument = {
+  ok: true;
+  ref: string;
+  runId: string | null;
+  delivery: "waiting" | "parked" | "mesh";
+  state: "answered" | "resumed" | "dispatched";
+  by: AnswerBy;
+  answeredAt: string;
+  resume: string | null;
 };
 
 export type WorkStatus = "not-started" | "in-progress" | "in-review" | "blocked" | "done";
@@ -65,7 +110,7 @@ export type WorkStatus = "not-started" | "in-progress" | "in-review" | "blocked"
 // it is what lets a row this node published read `(this node)` (AC 11).
 export type WorkListEnvelope = { items: WorkItem[]; nodeId?: string | null };
 
-export type DocName = "SPEC" | "STORY" | "VERIFICATION" | "RETROSPECTIVE";
+export type DocName = "SPEC" | "STORY" | "ARCHITECTURE" | "VERIFICATION" | "RETROSPECTIVE";
 
 // The ARTIFACT's own provenance (milestone 43 / ADR-006) travels under the SAME
 // two wire names the row carries, because it is the same fact about a different
@@ -74,7 +119,7 @@ export type DocName = "SPEC" | "STORY" | "VERIFICATION" | "RETROSPECTIVE";
 // answered from its own disk (there is no cached copy to attribute).
 export type DocResponse = {
   ref: string;
-  doc: DocName;
+  doc: DocName | "DIAGRAMS";
   present: boolean;
   body: string;
   fromWorker?: boolean;
@@ -224,8 +269,13 @@ export type FleetOriginResponse = {
 };
 
 export const workApi = {
-  list(): Promise<WorkListEnvelope> {
-    return getJson<WorkListEnvelope>("/api/work/list");
+  // milestone 127 / ADR-006 §2 — archived rows are hidden by default and revealed by ONE
+  // parameter that flips the request. Hidden is a property of the FETCH, never a filter the
+  // board applies: OFF requests the list with no query string at all (a testable absence), ON
+  // requests `?includeArchived=1` — the one spelling the face reads, and the board is its only
+  // sender.
+  list({ includeArchived = false }: { includeArchived?: boolean } = {}): Promise<WorkListEnvelope> {
+    return getJson<WorkListEnvelope>(includeArchived ? "/api/work/list?includeArchived=1" : "/api/work/list");
   },
   // The route lives on `serveSetupUi`'s own router beside `/api/config` and `/api/capabilities`
   // (ADR-004's amendment), NOT on the work-API face: the origin is not a command-core operation
@@ -233,8 +283,10 @@ export const workApi = {
   fleetOrigin(): Promise<FleetOriginResponse> {
     return getJson<FleetOriginResponse>("/api/fleet-origin");
   },
-  doc(ref: string, doc: DocName): Promise<DocResponse> {
-    return getJson<DocResponse>(`/api/work/doc?ref=${encodeURIComponent(ref)}&doc=${encodeURIComponent(doc)}`);
+  // A `DIAGRAMS` request names its member (milestone 133, ADR-007 §2) — the one fetch of a diagram.
+  doc(ref: string, doc: DocName | "DIAGRAMS", member?: string): Promise<DocResponse> {
+    const query = member ? `&member=${encodeURIComponent(member)}` : "";
+    return getJson<DocResponse>(`/api/work/doc?ref=${encodeURIComponent(ref)}&doc=${encodeURIComponent(doc)}${query}`);
   },
   tasks(ref: string): Promise<TasksResponse> {
     return getJson<TasksResponse>(`/api/work/tasks?ref=${encodeURIComponent(ref)}`);
@@ -286,6 +338,17 @@ export const workApi = {
     });
     if (!response.ok) throw await codedError(response);
     return (await response.json()) as ResyncResponse;
+  },
+  // THE ANSWER (131/ADR-006 §4) — the operator's words onto `work:answer`, the CLI's same act. A
+  // refusal keeps its `code` so the ask card names what happened from it.
+  async answer({ ref, text, actor }: { ref: string; text: string; actor: string }): Promise<AnswerDocument> {
+    const response = await fetch("/api/work/answer", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ref, text, actor }),
+    });
+    if (!response.ok) throw await codedError(response);
+    return (await response.json()) as AnswerDocument;
   },
   async feedback(input: { ref: string; note: string; actor: string; refs?: string }): Promise<FeedbackResponse> {
     const response = await fetch("/api/work/feedback", {

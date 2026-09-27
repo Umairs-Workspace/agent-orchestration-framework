@@ -204,10 +204,18 @@ export const archTests = [
   {
     name: "arch/69 F-69-V7 the loop command reaches the progress producer and decision authority",
     run: async () => {
-      const command = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
+      // 129/04 (ADR-008 §3) — the per-story ladder, and with it the progress producer and the
+      // rung-3 grade, moved from the shell to `src/loop/cycle.mjs`; the shell reaches both
+      // through `settleStoryCycle` and holds no producer of its own. The reach this control
+      // protects is therefore read off the LADDER, and the shell is held to reaching the ladder.
+      const shell = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
+      const command = await readFile(path.join(root, "src", "loop", "cycle.mjs"), "utf8");
       const engine = await readFile(path.join(root, "src", "work", "loop.mjs"), "utf8");
+      assert.match(shell, /settleStoryCycle\(phaseRun, bookkeeping, ctx, \{/u, "the shell reaches the producer through the ladder");
+      assert.doesNotMatch(shell, /recordBuildProgress\(/u, "…and holds no producer call of its own");
       assert.match(command, /sampleWorktreeProgress/u);
       assert.match(command, /appendProgressSample/u);
+      assert.match(shell, /readProgressSamples/u, "the shell still reads the ledger at resume and at the fresh gate");
       assert.match(command, /readProgressSamples/u);
       // RE-AIMED 2026-08-27 (milestone 55 / VERIFICATION F-55-M-5), and re-aimed rather than
       // re-pinned. This asserted one literal ARGUMENT SPELLING —
@@ -224,7 +232,7 @@ export const archTests = [
       assert.ok(gradeCall >= 0, "the loop command invokes work:grade through the registry");
       const gradeArgs = matchedParenSpan(command, gradeCall);
       assert.ok(gradeArgs != null, "the work:grade invocation's argument list is balanced and closes");
-      assert.match(gradeArgs.body, /\bref:\s*act\.ref\b/u, "the grade is taken for the ACTING item, not a re-derived ref");
+      assert.match(gradeArgs.body, /\bref\b/u, "the grade is taken for the ACTING item — the ladder's own ref, the settled drive's item — not a re-derived one");
       assert.match(gradeArgs.body, /\brun:\s*true\b/u, "the grade is RUN, not read from a stale record");
       assert.match(command, /decideLoopProgress/u);
       assert.match(engine, /evaluateProgressPolicy/u);
@@ -239,9 +247,12 @@ export const archTests = [
     name: "arch/69 F-69-V7 the command creates no second progress measurement home",
     run: async () => {
       const command = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
-      assert.doesNotMatch(command, /\["status",\s*"--porcelain"\]/u);
-      assert.doesNotMatch(command, /\["diff",\s*"--numstat"/u);
-      assert.doesNotMatch(command, /\["rev-list",\s*"--count"/u);
+      for (const rel of ["src/commands/loop.mjs", "src/loop/cycle.mjs", "src/loop/wave.mjs"]) {
+        const member = await readFile(path.join(root, rel), "utf8");
+        assert.doesNotMatch(member, /\["status",\s*"--porcelain"\]/u, `${rel} measures no porcelain of its own`);
+        assert.doesNotMatch(member, /\["diff",\s*"--numstat"/u, `${rel} measures no numstat of its own`);
+        assert.doesNotMatch(member, /\["rev-list",\s*"--count"/u, `${rel} counts no commits of its own`);
+      }
       assert.match(command, /commit:\s*head\.trim\(\)/u, "capturing the round's starting commit is not a second measurement");
     },
   },

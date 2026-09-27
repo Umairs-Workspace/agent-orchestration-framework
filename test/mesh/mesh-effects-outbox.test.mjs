@@ -9,6 +9,11 @@
 // completion, an offline send loses nothing, and the control node's verdict — not
 // the socket — is what ends the obligation.
 import assert from "node:assert/strict";
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
+import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { readExecutionOverlay } from "../../src/board-mesh-execution.mjs";
+import { buildNotifyEnvelope } from "../../src/notify/notify.mjs";
 import { openEffectsJournal, appendEvent, readEventSteps, pendingSteps } from "../../src/effects/journal.mjs";
 import { drainEffects, LOCAL_LOCI, CONTROL_LOCI } from "../../src/effects/dispatch.mjs";
 import { drainOutbox, remoteSteps, applyEffectAck, EFFECT_STEP_FRAME_KIND, EFFECT_ACK_FRAME_KIND } from "../../src/effects/outbox.mjs";
@@ -372,4 +377,227 @@ export const meshEffectsOutboxTests = [
       }
     },
   },
+  ...workerAskControlTests(),
 ];
+
+// ── milestone 131 / story 12, tasks 01-03 — THE CONTROL KEEPS, POSTS AND SHOWS A WORKER'S ASK
+// (ADR-010 §3-§6). One park fact, raised the way a worker raises it and applied IN PLACE through the
+// real `settle-assignment` reactor (the locus decides, as the case above shows), with `notify`
+// observed through a fake fetch counting POSTs. The control's checkout of the workspace is the
+// fixture's own repo, registered as its descriptor, with `discord` enabled. Built inside a hoisted
+// function so the array above can spread it without a TDZ.
+function workerAskControlTests() {
+  const TOKEN = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.workerAskSecretSegment01";
+  const CHANNEL = "123456789012345678";
+  const WORKER = "node-2976";
+  const ASK = Object.freeze({ question: "Decision needed: split 35/00?", phase: "build", askedAt: "2026-07-31T09:48:00.000Z" });
+
+  async function withWorkerAskWorld(body, { descriptor = true } = {}) {
+    return withMeshAssignFixture(async (fx) => {
+      const { home, root, workspaceId } = fx;
+      const config = { name: "demo", work: { dir: "./wiki/work", notify: { channels: { discord: { type: "discord", channelId: CHANNEL } } } }, mesh: { nodeId: "control-a" } };
+      await writeFile(path.join(root, ".aof", "aof.config.json"), `${JSON.stringify(config, null, 2)}\n`, "utf8");
+      const env = { AOF_GLOBAL_HOME: home };
+      if (descriptor) {
+        const store = await openGlobalWorkProjectionStore({ env });
+        try {
+          store.db.prepare("INSERT INTO global_workspace_descriptors (workspace_id, project_root, work_dir, descriptor_path) VALUES (?, ?, ?, ?)")
+            .run(workspaceId, root, path.join(root, "wiki", "work"), path.join(root, ".aof", "descriptor.json"));
+        } finally {
+          store.close();
+        }
+      }
+      await seedAssignment({ home }, {
+        assignmentId: "asg-ask", itemRef: "35/00", workspaceId, targetNodeId: WORKER, issuer: "control-a",
+        state: "running", runId: "run-ask", assignedAt: "2026-07-31T09:00:00.000Z", updatedAt: "2026-07-31T09:00:00.000Z",
+      });
+      const posts = [];
+      const fetch = async (url, init) => {
+        posts.push({ url, body: JSON.parse(init.body) });
+        return { status: 200, headers: { get: () => "application/json" }, json: async () => ({ id: "990000000000000001" }) };
+      };
+      // Raises the worker's report and applies it in place through the control reactor.
+      const apply = async (report) => {
+        const { eventId } = await raiseReport({ home }, { assignmentId: "asg-ask", runId: "run-ask", ...report });
+        const store = await openGlobalWorkProjectionStore({ env });
+        try {
+          await withJournal({ home }, (journal) => drainEffects({
+            journal, eventId, loci: CONTROL_LOCI, now: NOW,
+            ctx: { store, now: NOW, journalOptions: { env }, globalWorkStoreOptions: { env }, notifyOptions: { env: { AOF_DISCORD_BOT_TOKEN: TOKEN }, fetch } },
+          }));
+        } finally {
+          store.close();
+        }
+      };
+      const raw = async () => {
+        const store = await openGlobalWorkProjectionStore({ env });
+        try {
+          return store.db.prepare("SELECT state, code, ask FROM global_assignments WHERE assignment_id = 'asg-ask'").get();
+        } finally {
+          store.close();
+        }
+      };
+      const setRow = async (fields) => {
+        const store = await openGlobalWorkProjectionStore({ env });
+        try {
+          const keys = Object.keys(fields);
+          store.db.prepare(`UPDATE global_assignments SET ${keys.map((key) => `${key} = ?`).join(", ")} WHERE assignment_id = 'asg-ask'`).run(...keys.map((key) => fields[key]));
+        } finally {
+          store.close();
+        }
+      };
+      const overlay = async () => (await readExecutionOverlay(fx.workspace, { globalWorkStoreOptions: { env } })).get("35/00");
+      return body({ ...fx, env, posts, apply, raw, setRow, overlay });
+    });
+  }
+  const PARK = Object.freeze({ state: "running", code: "needs-input", sessionId: "sess-ask" });
+
+  return [
+    {
+      name: "131/12 task01 — a park fact's ask lands on the row as JSON, and the execution overlay carries it",
+      run: async () => withWorkerAskWorld(async ({ apply, raw, overlay }) => {
+        await apply({ ...PARK, ask: ASK });
+        assert.deepEqual(JSON.parse((await raw()).ask), ASK, "the row's ask column holds that object as JSON");
+        assert.deepEqual((await overlay()).ask, ASK, "the overlay for 35/00 carries it");
+      }),
+    },
+    {
+      name: "131/12 task01 — when the overlay carries the ask (three rows), and a park with no ask leaves the column alone",
+      run: async () => withWorkerAskWorld(async ({ apply, setRow, raw, overlay }) => {
+        await apply({ ...PARK, ask: ASK });
+        for (const [label, fields, present] of [
+          ["running, needs-input", { state: "running", code: "needs-input" }, true],
+          ["running, resumed", { state: "running", code: "resumed" }, false],
+          ["done", { state: "done", code: null }, false],
+        ]) {
+          await setRow(fields);
+          const execution = await overlay();
+          assert.equal(Object.hasOwn(execution, "ask"), present, `${label}: ${present ? "the parsed object" : "absent"}`);
+          if (present) assert.deepEqual(execution.ask, ASK, label);
+        }
+        await setRow({ state: "running", code: "resumed" });
+        await apply({ ...PARK });
+        assert.deepEqual(JSON.parse((await raw()).ask), ASK, "a park with no ask leaves the earlier question");
+      }),
+    },
+    {
+      name: "131/12 task01 — an unparseable ask column projects ask: null after one assignment-ask-unreadable",
+      run: async () => withWorkerAskWorld(async ({ setRow, overlay }) => {
+        const events = [];
+        setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+        try {
+          await setRow({ state: "running", code: "needs-input", session_id: "sess-ask", ask: "{not json" });
+          assert.equal((await overlay()).ask, null);
+          assert.equal(events.filter((event) => event.code === "assignment-ask-unreadable").length, 1);
+        } finally {
+          setDegradeSinkForTest(undefined);
+        }
+      }),
+    },
+    {
+      name: "131/12 task01 — an older store gains the ask column without losing a row, and opening it again changes nothing",
+      run: async () => withMeshAssignFixture(async ({ home, workspaceId }) => {
+        const env = { AOF_GLOBAL_HOME: home };
+        for (const id of ["asg-1", "asg-2", "asg-3"]) {
+          await seedAssignment({ home }, { assignmentId: id, itemRef: "35/00", workspaceId, targetNodeId: WORKER, issuer: "control-a", state: "running", assignedAt: NOW, updatedAt: NOW });
+        }
+        const old = await openGlobalWorkProjectionStore({ env });
+        let before;
+        try {
+          old.db.exec("ALTER TABLE global_assignments DROP COLUMN ask");
+          old.db.prepare("UPDATE aof_schema SET value = 9 WHERE key = 'version'").run();
+          before = old.db.prepare("SELECT * FROM global_assignments ORDER BY assignment_id").all();
+        } finally {
+          old.close();
+        }
+        for (const pass of ["first", "second"]) {
+          const store = await openGlobalWorkProjectionStore({ env });
+          try {
+            const columns = store.db.prepare("PRAGMA table_info(global_assignments)").all().map((column) => column.name);
+            assert.ok(columns.includes("ask"), `${pass}: the ask column exists`);
+            const rows = store.db.prepare("SELECT * FROM global_assignments ORDER BY assignment_id").all().map(({ ask, ...rest }) => rest);
+            assert.deepEqual(rows, before.map((row) => ({ ...row })), `${pass}: the three rows are unchanged`);
+            assert.equal(Number(store.db.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get().value), 10);
+          } finally {
+            store.close();
+          }
+        }
+      }),
+    },
+    {
+      name: "131/12 task02 — a worker's ask is posted once, by the control, naming the worker's node, with the question as its body",
+      run: async () => withWorkerAskWorld(async ({ apply, posts }) => {
+        await apply({ ...PARK, ask: ASK });
+        assert.equal(posts.length, 1, "exactly one POST");
+        const [line1, body] = posts[0].body.content.split("\n");
+        // 131/13: line 1 names the control's project (`demo`), then the worker's node.
+        assert.equal(line1, `**35/00 — waiting on you** (build, 12m) · demo · ${WORKER}`);
+        assert.equal(body, ASK.question);
+        assert.ok(posts[0].url.endsWith(`/channels/${CHANNEL}/messages`));
+      }),
+    },
+    {
+      name: "131/12 task02 — when the control posts (four rows): only on the edge into needs-input",
+      run: async () => {
+        for (const [label, before, report, posted] of [
+          ["null, a park", null, { ...PARK, ask: ASK }, 1],
+          ["resumed, a re-ask", "resumed", { ...PARK, ask: ASK }, 1],
+          ["needs-input, the park redelivered", "needs-input", { ...PARK, ask: ASK }, 0],
+          ["null, a done fact", null, { state: "done" }, 0],
+        ]) {
+          await withWorkerAskWorld(async ({ apply, setRow, posts }) => {
+            if (before != null) await setRow({ code: before, session_id: "sess-ask" });
+            await apply(report);
+            assert.equal(posts.length, posted, label);
+          });
+        }
+      },
+    },
+    {
+      name: "131/12 task02 — no checkout, no post: one worker-ask-unannounced names the workspace, and the row still parks",
+      run: async () => withWorkerAskWorld(async ({ apply, posts, raw, workspaceId }) => {
+        const events = [];
+        setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+        try {
+          await apply({ ...PARK, ask: ASK });
+          assert.equal(posts.length, 0, "no POST");
+          const unannounced = events.filter((event) => event.code === "worker-ask-unannounced");
+          assert.equal(unannounced.length, 1);
+          assert.match(unannounced[0].message, new RegExp(workspaceId, "u"));
+          assert.equal((await raw()).code, "needs-input");
+        } finally {
+          setDegradeSinkForTest(undefined);
+        }
+      }, { descriptor: false }),
+    },
+    {
+      name: "131/12 task02 — a local ask keeps its own node: with no fields.node the envelope's node is config.mesh.nodeId",
+      run() {
+        assert.equal(buildNotifyEnvelope("session-needs-input", { ref: "131/03" }, { config: { mesh: { nodeId: "node-7297" } } }).node, "node-7297");
+        assert.equal(buildNotifyEnvelope("session-needs-input", { ref: "131/03", node: WORKER }, { config: { mesh: { nodeId: "node-7297" } } }).node, WORKER);
+      },
+    },
+    {
+      name: "131/12 task03 — the board's worker ask (two rows): the row's question, phase and instant, or today's null question",
+      run: async () => {
+        for (const [label, withAsk] of [["the column set", true], ["absent", false]]) {
+          await withWorkerAskWorld(async ({ apply, workspace, env }) => {
+            await apply(withAsk ? { ...PARK, ask: ASK } : { ...PARK });
+            const { invoke } = await import("../../src/command-core.mjs");
+            const rows = await invoke("work:list", { mesh: true }, { workspace, globalWorkStoreOptions: { env } });
+            const ask = rows.find((row) => row.ref === "35/00")?.ask;
+            assert.ok(ask != null, `${label}: the row carries an ask`);
+            assert.equal(ask.local, false, label);
+            assert.equal(ask.node, WORKER, label);
+            if (withAsk) {
+              assert.deepEqual({ question: ask.question, phase: ask.phase, askedAt: ask.askedAt }, ASK, label);
+            } else {
+              assert.deepEqual({ question: ask.question, phase: ask.phase }, { question: null, phase: null }, label);
+              assert.equal(ask.askedAt, NOW, `${label}: askedAt is the row's updatedAt`);
+            }
+          });
+        }
+      },
+    },
+  ];
+}

@@ -316,3 +316,95 @@ export function blockOrStatementAfter(code, from) {
   const stop = Math.min(end < 0 ? code.length : end + 1, line < 0 ? code.length : line);
   return { braced: false, body: code.slice(i, stop) };
 }
+
+// THE ENCLOSING-FUNCTION RULE — sites classified by the declaration that owns them (129/05).
+//
+// Lifted from `test/arch/work/acd-number-null-safe.test.mjs`'s `classifyNumberSites` (the
+// `.number` parse sweep), which is the one instance of this shape in the tree and the one FF-12702
+// and FF-12906 both reuse: a SITE (`siteRe`, sticky or global) is guarded when the text from its
+// enclosing declaration's line down to the site matches `guardRe`. The rule is deliberately
+// textual and forward-only — a guard that stands BELOW the site does not cover it, and a site
+// with no declaration above it is owned by `(module scope)`. Generic so a third sweep is a pair
+// of regexes and not a 124th stripper (TECH_DEBT item 24); comments are stripped THROUGH THIS
+// MODULE's scanner and nowhere else.
+//
+// `declarationRe` names what counts as an owning declaration, matched per line: the default is
+// the number sweep's — a `function` (optionally exported/async) or a `const`/`let` at column 0 —
+// and a caller whose subject nests its functions (`src/loop/wave.mjs` declares `tick`, `runLane`
+// and `mintWaveRun` two spaces in) passes one that admits indentation. Both capture groups name
+// the declaration; whichever matched is the owner's name.
+//
+// Answers `[{ line, text, fn, guarded }]` with `line` the site's ORIGINAL line (the stripper
+// keeps code bytes in order and drops whole-comment lines, so a monotonic forward search over
+// trimmed lines recovers it).
+export const TOP_LEVEL_DECLARATION_RE = /^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:export\s+)?(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=/u;
+export const NESTED_FUNCTION_DECLARATION_RE = /^\s*(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:export\s+)?(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=/u;
+
+function originalLineOf(strippedLines, originalLines, strippedIndex) {
+  let cursor = 0;
+  for (let index = 0; index <= strippedIndex; index += 1) {
+    const needle = strippedLines[index].trim();
+    if (needle === "") continue;
+    while (cursor < originalLines.length && !originalLines[cursor].trim().startsWith(needle)) cursor += 1;
+    if (index === strippedIndex) return cursor + 1;
+    cursor += 1;
+  }
+  return strippedIndex + 1;
+}
+
+export function classifySites(source, { siteRe, guardRe, declarationRe = TOP_LEVEL_DECLARATION_RE } = {}) {
+  if (!(siteRe instanceof RegExp) || !(guardRe instanceof RegExp)) {
+    throw new TypeError("classifySites: `siteRe` and `guardRe` must both be regular expressions");
+  }
+  // `matchAll` needs a global regex; a caller's non-global site pattern is re-flagged rather than
+  // refused, and a global guard is never `.test`ed directly (its `lastIndex` would carry over).
+  const site = siteRe.global ? siteRe : new RegExp(siteRe.source, `${siteRe.flags}g`);
+  const guard = new RegExp(guardRe.source, guardRe.flags.replace(/[gy]/gu, ""));
+  const stripped = stripComments(source);
+  const strippedLines = stripped.split("\n");
+  const originalLines = source.split("\n");
+  const declarations = [];
+  strippedLines.forEach((line, index) => {
+    const match = line.match(declarationRe);
+    if (match) declarations.push({ line: index, name: match[1] ?? match[2] });
+  });
+  const sites = [];
+  strippedLines.forEach((line, index) => {
+    for (const match of line.matchAll(site)) {
+      const owner = [...declarations].reverse().find((declaration) => declaration.line <= index) ?? null;
+      const from = owner ? owner.line : 0;
+      const window = strippedLines.slice(from, index).join("\n") + "\n" + line.slice(0, match.index);
+      sites.push({
+        line: originalLineOf(strippedLines, originalLines, index),
+        text: match[0],
+        fn: owner?.name ?? "(module scope)",
+        guarded: guard.test(window),
+      });
+    }
+  });
+  return sites;
+}
+
+// A CALL'S ARGUMENTS, split at depth-0 commas — the body a `matchedParenSpan` answered, cut into
+// the arguments the language sees (129/05). A regex split with a bracket lookahead cannot do this:
+// an options object holding a nested call splits at its own commas, and a gate then judges half
+// an argument. Brace, bracket and paren depth are tracked; string and template literals are not
+// (callers cut comment-stripped source, where a comma inside a literal is rare enough that a full
+// lexer would be more machinery than the risk — the same ruling `matchedBraceBody` states).
+export function topLevelArguments(body) {
+  const args = [];
+  let depth = 0;
+  let current = "";
+  for (const char of String(body ?? "")) {
+    if (char === "(" || char === "[" || char === "{") depth += 1;
+    else if (char === ")" || char === "]" || char === "}") depth -= 1;
+    if (char === "," && depth === 0) {
+      args.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  if (current.trim().length > 0 || args.length > 0) args.push(current.trim());
+  return args;
+}

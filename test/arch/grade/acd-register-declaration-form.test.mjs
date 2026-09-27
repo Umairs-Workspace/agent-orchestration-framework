@@ -140,7 +140,8 @@ async function walkWork(dir = workDir, out = []) {
 // both address milestone 66's documents, and the id is unique within its register FILE
 // (ADR-001 §5), which the milestone folder is the addressable unit of.
 const itemOf = (file) => {
-  const match = /^(\d+)_/.exec(path.relative(workDir, file).replaceAll("\\", "/"));
+  // An archived item (127/05) sits one root down: `archive/<NN>_…` addresses milestone NN too.
+  const match = /^(?:archive\/)?(\d+)_/.exec(path.relative(workDir, file).replaceAll("\\", "/"));
   return match ? String(Number(match[1])) : null;
 };
 
@@ -328,7 +329,7 @@ export const archTests = [
       // closure ADR adds `FF-6609`. That is a cross-story coupling the partition does
       // not declare, and one FF-6607 already owns. The invariant is that the register's
       // OWN ROWS and the recogniser agree — not how many rows there are.
-      const ownRegister = await readFile(path.join(workDir, "66_milestone_controls-that-run", "ARCHITECTURE.md"), "utf8");
+      const ownRegister = await readFile(path.join(workDir, "archive", "66_milestone_controls-that-run", "ARCHITECTURE.md"), "utf8");
       const own = registerDeclarations(ownRegister, "ARCHITECTURE.md").map((entry) => entry.id);
       assert.ok(own.length > 0, "this milestone's own register declares its controls, comment and all");
       for (const id of own) assert.match(id, /^FF-66\d\d$/, `${id} is one of this milestone's own id space`);
@@ -568,7 +569,7 @@ export const archTests = [
       // THE TWO CONSEQUENCES, both this milestone's own failure mode. `F-49-VER`
       // declared four times in ONE register file is a false `register-duplicate-id`;
       // `-b/-d/-e/-f` declared nowhere makes every citation of them dangle.
-      const m49 = await readFile(path.join(workDir, "49_milestone_terminals-home", "VERIFICATION.md"), "utf8");
+      const m49 = await readFile(path.join(workDir, "archive", "49_milestone_terminals-home", "VERIFICATION.md"), "utf8");
       const declared = registerDeclarations(m49, "VERIFICATION.md").map((entry) => entry.id);
       assert.equal(declared.filter((id) => id === "F-49-VER").length, 0, "the truncated id is declared zero times, not four");
       const duplicated = declared.filter((id, index) => declared.indexOf(id) !== index);

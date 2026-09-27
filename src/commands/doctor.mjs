@@ -39,6 +39,7 @@
 //   validate's sibling with a richer { code, severity, path, message } envelope.
 import path from "node:path";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS } from "../work/doctor.mjs";
@@ -46,7 +47,7 @@ import { buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS } fro
 // history; the engine stays a pure function of the snapshot and names no spawn door, which
 // `test/arch/audit/acd-controls-never-execute.test.mjs` asserts of the spine. The map is derived from
 // git's own rename records rather than stored, so it cannot go stale.
-import { RENAME_LOG_ARGS, buildRenameMap, parseRenameRecords } from "../cited-path-resolve.mjs";
+import { RENAME_LEDGER_PATH, RENAME_LOG_ARGS, buildRenameMap, parseRenameRecords } from "../cited-path-resolve.mjs";
 import { declaredReportFrom } from "../work/doctor-rubric.mjs";
 import { computeLoopReady } from "../work/doctor-loop-ready.mjs";
 // m43 / story 06 (ADR-005) — the cache's three per-item facts (status, convention-doc
@@ -79,7 +80,12 @@ export async function readRenameMap(projectRoot, runGit = null) {
     return stdout;
   });
   try {
-    return buildRenameMap(parseRenameRecords(await run([...RENAME_LOG_ARGS])));
+    const live = await run([...RENAME_LOG_ARGS]);
+    // The ledger of the history the public root cannot carry (RENAME_LEDGER_PATH's own note): read
+    // AFTER git's records so the live history wins for a name renamed again since the cut, and an
+    // absent ledger is simply no records — the resolver's parser ignores what is not a record.
+    const ledger = await readFile(path.join(projectRoot, ...RENAME_LEDGER_PATH), "utf8").catch(() => "");
+    return buildRenameMap(parseRenameRecords(`${live}\n${ledger}`));
   } catch {
     // Not a checkout, no git on PATH, a shallow clone with no history — every one of them means
     // "history records no rename from here", which is exactly an empty map.

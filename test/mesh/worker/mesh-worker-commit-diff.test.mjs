@@ -23,7 +23,7 @@ import { resolveRefInWorktree as resolveRefInWorktreeFromHome } from "../../../s
 import { markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";
 import { withMeshWorkerPushFixture } from "../../support/mesh-worker-push-fixture.mjs";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
-import { git } from "../../support/dispatch-lane-fixture.mjs";
+import { git, writeRel as writeUnder } from "../../support/dispatch-lane-fixture.mjs";
 import { stripComments, matchedParenSpan } from "../../support/source-slice.mjs";
 
 const NODE_ID = "worker-a";
@@ -92,12 +92,6 @@ function scriptedExec(script = {}) {
 
 function frontmatter(fields) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n`;
-}
-
-async function writeUnder(root, rel, body) {
-  const target = path.join(root, ...rel.split("/"));
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, body, "utf8");
 }
 
 // withMoveFixture(body) — a repo at T0 holding a tracked `src/a.mjs`, `README.md`, a plain
@@ -300,13 +294,13 @@ export const meshWorkerCommitDiffTests = [
     name: `129/03 task 00 — a dirty worktree is committed under the mesh identity, whatever the dirt [${row.dirt}]`,
     run: () => withMoveFixture(async ({ worktree, t0 }) => {
       await row.apply(worktree);
-      const answer = await commitWorktreeChanges(worktree, { message: "aof(loop): lane 127/02", node: "umamis-msi" });
+      const answer = await commitWorktreeChanges(worktree, { message: "aof(loop): lane 127/02", node: "win-host-a" });
       assert.deepEqual(answer, { committed: true }, "the answer is { committed: true }");
       const head = await revParse(worktree, "HEAD");
       assert.notEqual(head, t0, "HEAD is a new commit");
       assert.equal(await revParse(worktree, "HEAD^"), t0, "…whose parent is T0");
       const log = (await git(["log", "-1", "--format=%an <%ae>%n%s"], worktree)).stdout.split(/\r?\n/);
-      assert.equal(log[0], "aof-mesh (umamis-msi) <aof-mesh@users.noreply.github.com>", "committed under the mesh identity, node named");
+      assert.equal(log[0], "aof-mesh (win-host-a) <aof-mesh@users.noreply.github.com>", "committed under the mesh identity, node named");
       assert.equal(log[1], "aof(loop): lane 127/02", "…with the given message");
       assert.deepEqual((await nameStatus(worktree)).sort(), [...row.committedAs].sort(), `git show --name-status lists exactly ${row.committedAs.join(" and ")}`);
       assert.deepEqual(await porcelainLines(worktree), [], "git status --porcelain in the worktree is empty");

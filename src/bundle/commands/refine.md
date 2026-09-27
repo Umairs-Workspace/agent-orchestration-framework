@@ -1,6 +1,6 @@
 ---
 description: Refine a work item — break a milestone into independent stories, or author a story's task features (Three Amigos), producing ARCHITECTURE/DESIGN/RESEARCH as needed. With --autonomous, cascade the whole item (break down + author every contract) and stop once for a single review at the end.
-argument-hint: <item ref — NN or slug> [--autonomous] [--solo]
+argument-hint: <item ref — NN or slug> [--autonomous] [--solo | --orchestrated]
 allowed-tools: [Read, Grep, Glob, Write, Edit, Bash, Task]
 ---
 <objective>
@@ -10,9 +10,9 @@ author a story's task `.feature` files via Three Amigos.
 
 <config>
 Read `.aof/aof.config.json` → `work.dir`, `work.agents`, `work.tags`. Parse `$ARGUMENTS` into the item
-**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag and an optional **`--solo`**
-flag. Resolve the ref by running `aof work find "<ref>" --json` (folder-name lookup — never glob
-`**/*.md`).
+**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag and an optional **`--solo`** or
+**`--orchestrated`** flag. Resolve the ref by running `aof work find "<ref>" --json` (folder-name
+lookup — never glob `**/*.md`).
 
 **Step 0 — a BACKLOG ref is promoted first, here, before anything else.** When that `aof work find`
 answers a row with `number: null`, the item is in the backlog: it has no number yet, and everything
@@ -28,8 +28,13 @@ belongs where the operator is and is never dispatched to a worker.)
 **Execution mode.** Resolve from `work.agents.mode`: `"solo"` → play every role inline in this
 session; any other value → orchestrated (spawn the role agents). **`--solo` OVERRIDES an
 orchestrated config to solo for this run** — the same effect as `work.agents.mode: "solo"`, without
-editing config. It changes only WHO does the work, never WHAT is produced: the same documents, the
-same contracts, the same gates.
+editing config — and **`--orchestrated` OVERRIDES a solo config to orchestrated for this run**, its
+twin in the other direction. The two together are contradictory: STOP before any role runs and
+report it. The loop composes one of the two when `work.loop.agents.refine.mode` is set in
+`.aof/aof.config.json` (its home is `src/loop-bounds.mjs`), and composes nothing when it is unset,
+so a loop-driven refine falls back to `work.agents.mode` exactly as a hand-run one does. Either flag
+changes only WHO does the work, never WHAT is produced: the same documents, the same contracts, the
+same gates.
 
 Use it when the orchestration is costing more than it buys — a well-trodden change where the
 main session already holds the context a fresh sub-agent would have to rediscover. A spawned agent
@@ -80,6 +85,16 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      `aof-researcher` → `RESEARCH.md`; non-trivial decision → `aof-architect` → ADRs in
      `ARCHITECTURE.md` + the fitness functions DECLARED in its register (the arch-test file lands with
      its subject) (move any invariant out of features); UI → `aof-designer` → `DESIGN.md`.
+
+     **Diagram an ADR only when its design has moving parts** — the architect's judgement, and most
+     ADRs get none. Write the ADR's `### Diagram` brief first (why a picture helps, the view, the
+     components, the flows), then run `aof diagram plan <ref> <ADR-NNN> --slug <slug> --json`.
+     `enabled: false` → drop the brief and record nothing. `available: false` → keep the brief,
+     record `diagram not drawn: <code>` in `STATE.md`, and continue; it is never a stop. Otherwise
+     the drawing agent follows the answer's `instructions`, then run
+     `aof diagram export <ref> <ADR-NNN> --json` and paste the returned `block` under the brief — aof
+     never edits `ARCHITECTURE.md`. On a solo refine the main session is the architect and runs the
+     same step.
 
      **Declare each control where a runner can see it (the fitness register's form).** A fitness
      function is DECLARED at refine — id, invariant, intended path, source ADR — and that declaration

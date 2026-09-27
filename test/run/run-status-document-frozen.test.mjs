@@ -36,7 +36,7 @@ async function mintDiskRun(fx, { ref = "00", now = "2026-09-08T10:00:00.000Z", b
   const workspace = await loadWorkspace(fx.root, undefined, { env: fx.env });
   const item = await resolveItemExact({ workspace }, ref);
   assert.ok(item?.dir != null, `${ref} resolves to a local folder in the fixture`);
-  return startRun(item, { brief, now, node: "umamis-msi" });
+  return startRun(item, { brief, now, node: "win-host-a" });
 }
 
 export const runStatusDocumentFrozenTests = [
@@ -130,7 +130,7 @@ export const runStatusDocumentFrozenTests = [
         await mintDiskRun(fx, { brief: { loop } });
         const document = await status(fx, "00");
         const [record] = document.runs;
-        assert.equal(Object.keys(record).length, 16, "the disk-read record carries exactly the sixteen record keys");
+        assert.equal(Object.keys(record).length, 17, "the disk-read record carries exactly the seventeen record keys (131 appended asks)");
         assert.deepEqual(Object.keys(record.brief.loop), Object.keys(loop), "the envelope's eight keys, in order");
         assert.deepEqual(record.brief.loop, loop, "…with its values intact");
 

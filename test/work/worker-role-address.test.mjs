@@ -16,7 +16,7 @@ import assert from "node:assert/strict";
 import { meshRole, controlNodeIdFor } from "../../src/mesh/role.mjs";
 import { resolvePeers } from "../../src/mesh/fabric.mjs";
 
-const CONTROL_ID = "umamis-msi";
+const CONTROL_ID = "win-host-a";
 
 function statusFixture({ peers = {} } = {}) {
   return { BackendState: "Running", Self: { HostName: "self", TailscaleIPs: ["100.1.1.1"] }, Peer: peers };
@@ -47,8 +47,8 @@ export const workerRoleAddressTests = [
     name: "worker-role-address/00 a node's mesh role follows the control-node config",
     run() {
       const rows = [
-        { nodeId: "umamis-mac-mini", controlNode: "umamis-msi", role: "worker" },
-        { nodeId: "umamis-msi", controlNode: "umamis-msi", role: "control" },
+        { nodeId: "umamis-mac-mini", controlNode: "win-host-a", role: "worker" },
+        { nodeId: "win-host-a", controlNode: "win-host-a", role: "control" },
         { nodeId: "umamis-mac-mini", controlNode: undefined, role: "standalone" },
       ];
       for (const row of rows) {

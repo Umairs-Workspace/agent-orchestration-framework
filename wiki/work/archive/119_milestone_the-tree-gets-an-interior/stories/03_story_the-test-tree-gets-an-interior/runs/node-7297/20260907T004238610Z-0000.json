@@ -1,0 +1,18 @@
+{
+  "runId": "20260907T004238610Z-0000",
+  "itemRef": "119/03",
+  "state": "failed",
+  "attempt": 1,
+  "outcome": "failed",
+  "sessionId": "002c890f-98dd-4c1b-a188-2d334de67463",
+  "brief": {},
+  "createdAt": "2026-09-07T00:42:38.610Z",
+  "updatedAt": "2026-09-07T01:37:30.651Z",
+  "failureReason": "blocked: 489 stranded suite citations in 156 delivered .feature files, no resolver covers them",
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null
+}

@@ -14,7 +14,7 @@ import { examplesTables, scenarioTitles } from "../support/feature-parse.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const source = path.join(root, "test", "fixtures-that-do-not-exist", "loops");
-const taskDir = path.join(root, "wiki", "work", "57_milestone_paired-loops", "stories", "01_story_independence-and-the-gate", "tasks");
+const taskDir = path.join(root, "wiki", "work", "archive", "57_milestone_paired-loops", "stories", "01_story_independence-and-the-gate", "tasks");
 const nodePath = (id) => path.join(source, `${id.replaceAll(":", "-")}.md`);
 const endpoint = (raw) => ({ raw, scheme: raw.slice(0, raw.indexOf(":")), operand: raw.slice(raw.indexOf(":") + 1), resolved: true });
 
@@ -119,7 +119,7 @@ monitoring: [loop:${target}]
 // TEST NAME and every name is RESOLVED against the array that exports it: a pointer at a test that
 // no longer exists is exactly how a coverage claim quietly becomes fiction (52/05's ledger rule).
 const TASKS_5802 = path.join(
-  root, "wiki", "work", "58_milestone_supervising-loops",
+  root, "wiki", "work", "archive", "58_milestone_supervising-loops",
   "stories", "02_story_layer-separation-and-the-gate", "tasks",
 );
 

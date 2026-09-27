@@ -270,4 +270,5 @@ Report the verification evidence, any human sign-offs, findings (with triage + r
 result, and the accept decision. For a spike/chore, report the per-type close criterion checked (the
 recorded finding, or the ticked checklist + validate result) and the accept/decline decision — no
 scenario-run or human sign-off section applies.
+Next, for a milestone just accepted: `aof work archive <NN>` moves its folder under `archive/` — the operator's act, never this ceremony's (127/ADR-004).
 </output>

@@ -122,6 +122,13 @@ import { archTests as acdNextWalkersExcludeArchivedTests } from "./acd-next-walk
 // reader and the whole doctor family hold zero; the writer and the reader must each carry it.
 import { archTests as acdOneMintTests } from "./acd-one-mint.test.mjs";
 import { archTests as acdIntakeWriteSideOnlyTests } from "./acd-intake-write-side-only.test.mjs";
+// milestone 127 / story 03 — archive is a move: the one control the story lands. FF-12705 (archive
+// never renumbers): the face's and the engine's import specifiers are each a closed set, every
+// transitive path to the reindex engine or insert-shared crosses the stream seam (a source-level
+// walk, non-vacuous on the seam path itself), neither file writes a number, the rewriter matches
+// link syntax only (driven over a scratch text whose `number:` line must stay byte-identical), and
+// the face calls the seam rather than the engine.
+import { archTests as acdArchiveNeverRenumbersTests } from "./acd-archive-never-renumbers.test.mjs";
 
 export const tests = [
   ...acdPhaseDoorNotADriverTests,
@@ -177,4 +184,6 @@ export const tests = [
   // milestone 127 / story 02 — FF-12703 and FF-12704 (see the import note).
   ...acdOneMintTests,
   ...acdIntakeWriteSideOnlyTests,
+  // milestone 127 / story 03 — FF-12705 (see the import note).
+  ...acdArchiveNeverRenumbersTests,
 ];

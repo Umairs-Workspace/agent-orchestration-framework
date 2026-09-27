@@ -32,7 +32,7 @@ may never rise.
 
 **Item 0 is the umbrella.** Items 1–6 are its symptoms, not six unrelated bugs.
 
-> **Promoted 2026-07-26:** items 0–7 → [`42_milestone_structural-overhaul`](42_milestone_structural-overhaul/SPEC.md).
+> **Promoted 2026-07-26:** items 0–7 → [`42_milestone_structural-overhaul`](archive/42_milestone_structural-overhaul/SPEC.md).
 > The milestone is the payment plan.
 
 ---
@@ -486,7 +486,7 @@ to re-report — and is the only other story that touches this seam's read side.
 ## 14. The clone-credential provider is fleet-GLOBAL, so a GitHub-configured mesh cannot dispatch to any other repo
 
 **Measured 2026-08-03**, during the m43 live cross-machine verification, on a two-node fleet (Windows
-control `umamis-msi` + WSL worker `umamis-msi-wsl`) against a purpose-built local test repo
+control `win-host-a` + WSL worker `win-host-a-wsl`) against a purpose-built local test repo
 (`C:\Source\umami\aof-test-repo`, workspace `52294b307214c27d`, `cloneUrl`
 `file:///mnt/c/Source/umami/aof-test-repo`).
 
@@ -526,8 +526,8 @@ workspace — all three membership rows are present in its `global_node_workspac
 
 ```
 [{"node_id":"umamis-mac-mini","workspace_id":"52294b307214c27d"},
- {"node_id":"umamis-msi","workspace_id":"52294b307214c27d"},
- {"node_id":"umamis-msi-wsl","workspace_id":"52294b307214c27d"}]
+ {"node_id":"win-host-a","workspace_id":"52294b307214c27d"},
+ {"node_id":"win-host-a-wsl","workspace_id":"52294b307214c27d"}]
 ```
 
 The WORKER's own local projection store has **no row for that workspace at all** — neither the
@@ -545,7 +545,7 @@ first reading of this item ("stale until restart") and points at the real cause 
 
 **The root cause, measured.** A node's workspace membership is derived from the workspaces that node can
 **see on its own filesystem**, and is published in its own node record. The worker's
-`~/.aof/mesh/nodes/umamis-msi-wsl.json` lists exactly one workspace:
+`~/.aof/mesh/nodes/win-host-a-wsl.json` lists exactly one workspace:
 
 ```json
 "workspaces": [ { "workspaceId": "9db1fd84f5895e38", "name": "aof",
@@ -612,14 +612,15 @@ value and the shape rule it failed — the same treatment the codebase gives eve
 
 ---
 
-## 18. `ui/` has no interior structure either — one surface's folder is the shared library, and the fleet cannot say which machine it is
+## 18. `ui/` has no interior structure either — one surface's folder is the shared library
 
 **Status:** open (measured 2026-08-03 by the architect, during milestone 43 story 04's **second-pass**
 structural review — the UI half). **Severity:** medium. This is TECH_DEBT item 10 (`src/` has no
 interior structure) seen in the other half of the codebase, plus one concrete consequence that is
 already blocking a test someone wants to write.
 
-**What's wrong — two things with one cause, that `ui/` was never given a shared layer.**
+**What's wrong — two things with one cause, that `ui/` was never given a shared layer.** *(The
+second, (b), was PAID by 130/03 — kept below only as the paid half of a two-part entry.)*
 
 **(a) `ui/src/board/` is the de-facto shared UI library, and nothing declares it.** `ui/src/fleet/`
 reaches into `ui/src/board/` **seven** times — `runs.mjs` (the one relative-time formatter),
@@ -643,45 +644,29 @@ Line-count trend for the same subtree, measured from this repo's history:
 `acd-ui-surface-file-budget` (m43/ADR-015 F2) now ratchets the first two so the *files* stop growing;
 it does nothing about the missing *layer*, which is this item.
 
-**(b) The fleet payload cannot say which machine is serving it, so "this node" is unrenderable there.**
-Milestone 43/04 gave the board's `/api/work/list` envelope a `nodeId` key, and the board now reads
-`from aof-control (this node)` on rows it published itself. The fleet has no equivalent:
-`shapeGlobalStatus` (`src/global-mesh-query.mjs`) states `stalenessSeconds` but no serving-node
-identity, and `mesh-ui-serve.mjs` already resolves one internally (`controlNodeId()`, used only as the
-assign `issuer`). The fleet's `node.local` marker IS produced — by the `mesh:status` command
-(`src/commands/mesh-identity.mjs:~343`) — but its only web consumer is `NodeCard`
-(`ui/src/fleet/Fleet.tsx:1069`), which **never mounts in the web app**: the codebase records this at
-`Fleet.tsx:951-954` (m38 finding F9) — *"mesh-ui-serve.mjs serves BOTH scopes from
-queryGlobalMeshStatus, so isGlobalStatus(status) is always true and NodeCard/NodesRegion never mount
-there."* The card that does render falls back to the registry's `role` (`control`/`worker`), which
-answers a different question.
+**(b) PAID by 130/03 (130/ADR-005 §3).** The `/api/mesh/status` route stamps `localNodeId: await
+controlNodeId()` on its body beside `scope` (`src/mesh/ui-serve.mjs`, the status branch) — the board's
+own `nodeId` precedent, `null` on an unconfigured machine, the projection (`shapeGlobalStatus`) untouched
+because which machine serves a payload is the server's fact. The fleet card renders its Stop only where
+`node.nodeId === status.localNodeId` (`ui/src/fleet/runs.mjs`'s `loopStopAffordance`), which is the
+cross-surface lane this clause said could not be written.
 
 **How it bites.** (a) compounds silently: the next shared primitive lands in `board/` too, and the
-fleet's dependency on the board deepens until neither can be moved. (b) bites now and concretely —
-**a lane asserting that the fleet's "this node" tag and the board's new `(this node)` clause agree
-about the same machine cannot be written**, because the fleet has no such tag on the wire. Two
-surfaces answering "which machine is this?" differently, with no test able to compare them, is the
-disagreement class milestone 43 exists to remove. It also leaves a whole local-shape render path
-(`NodesRegion`, `NodeCard`, `BoardsRegion`, `BoardDrillIn` — several hundred lines) reachable by no
-production request, dead since m38 and never routed.
+fleet's dependency on the board deepens until neither can be moved. (The local-shape render path (b)
+named — `NodesRegion`, `NodeCard`, `BoardsRegion`, `BoardDrillIn` — was retired by m47/ADR-006(b).)
 
-**The fix.** Two independent, both small.
-- **(a)** A shared layer — `ui/src/ramps/` (the five read-only ramps: status, runs, assignment,
-  presence, freshness) or an honest `ui/src/shared/` — and move the cross-surface modules into it, so
-  `fleet → board` becomes `fleet → shared ← board`. Mechanical, but it touches every importer, which
-  is why it is here rather than inside a story.
-- **(b)** `shapeGlobalStatus` states the serving node's identity on the payload, the way
-  `/api/work/list` now does (`mesh-ui-serve.mjs` already has it memoised). Then `node.local` is
-  derivable in `ui/` for the card that actually renders, the two surfaces answer the question from one
-  source, and the cross-surface lane becomes writable. While there, decide the fate of the
-  never-mounting local-shape components: render them or retire them, but not neither.
+**The fix.** (a) only, now: a shared layer — `ui/src/ramps/` (the five read-only ramps: status, runs,
+assignment, presence, freshness) or an honest `ui/src/shared/` — and move the cross-surface modules
+into it, so `fleet → board` becomes `fleet → shared ← board`. Mechanical, but it touches every
+importer, which is why it is here rather than inside a story. ((b) is paid — the route stamp, not the
+projection, was the right home: see 130/ADR-005 §3's rejected alternative.)
 
 ---
 
 ## 19. A settled run can read `running` forever — three surfaces disagree about one run's outcome
 
 **Measured 2026-08-05**, live on the standing test-bed, while running `43/06`'s `@manual` soak. For run
-`20260803T001759834Z-0000` (assignment `428fd15a`, milestone `00`, worker `umamis-msi-wsl`):
+`20260803T001759834Z-0000` (assignment `428fd15a`, milestone `00`, worker `win-host-a-wsl`):
 
 | surface | state |
 |---|---|
@@ -879,7 +864,7 @@ live servers, which wants its own chore and a deploy to verify). **Severity:** m
 omits the port silently gets another server's.
 
 Measured 2026-08-08 at `14ac6e1`, during `aof:refine 46` (recorded in
-[46/ARCHITECTURE.md §Codebase health finding 4](46_milestone_terminal-control-unification/ARCHITECTURE.md)).
+[46/ARCHITECTURE.md §Codebase health finding 4](archive/46_milestone_terminal-control-unification/ARCHITECTURE.md)).
 
 Five servers, four homes for the numbers, and they do not agree:
 
@@ -901,7 +886,7 @@ Two distinct faults, and the second is the one that will bite:
   silently gets a different server's port.
 - **`DEFAULT_MESH_UI_PORT` lives inside the fleet SERVER module.** So any other module that needs to name
   the fleet's origin either imports a server — a cycle, which is exactly why
-  [46/ADR-004](46_milestone_terminal-control-unification/ARCHITECTURE.md) resolves the standalone default
+  [46/ADR-004](archive/46_milestone_terminal-control-unification/ARCHITECTURE.md) resolves the standalone default
   in the command layer instead — or re-types the number. That is how
   `FLEET_PORT = 4181` came to sit in a browser component
   ([ui/src/board/TerminalDock.tsx:78](../../ui/src/board/TerminalDock.tsx#L78)) in the first place.
@@ -923,7 +908,7 @@ This item forecast that *"any other module that needs to name the fleet's origin
 a cycle — or re-types the number."* Milestone 46 took the sanctioned branch and it bit anyway.
 
 `src/commands/work-ui.mjs:25` imports `DEFAULT_MESH_UI_PORT` from `../mesh-ui-serve.mjs` — the fleet
-**server** — which is exactly the route [46/ADR-004](46_milestone_terminal-control-unification/ARCHITECTURE.md)
+**server** — which is exactly the route [46/ADR-004](archive/46_milestone_terminal-control-unification/ARCHITECTURE.md)
 sanctions (the command layer is the layer allowed to know both faces, m08/ADR-001). That import puts the
 command module **on a real import ring**, confirmed edge-by-edge on the codebase graph (`aof graph build .`,
 no `--backend`; **8,973 nodes / 21,370 edges, `builtAt` 2026-08-08T17:53:28.450Z**):
@@ -1181,7 +1166,7 @@ Measured 2026-08-08 at milestone 46's last structural review, same method as ite
 | `ui/src/app/shell-layout.mjs` | — | 845 | **1,006** | crossed 1,000 **unbudgeted** |
 
 **The sharp part is the prediction, not the number.**
-[46/ADR-001](46_milestone_terminal-control-unification/ARCHITECTURE.md) states as a consequence that the
+[46/ADR-001](archive/46_milestone_terminal-control-unification/ARCHITECTURE.md) states as a consequence that the
 terminal subtree comes out **net file-negative** — *"two components and six helpers (plus six `.d.mts`)
 become one component and one helper set"*, ≈14 files / ≈1,370 lines. It shipped at **31 files / ≈4,430
 lines** (including the two call-site mount modules): **~2.2× the files, ~3.2× the lines.** About 35% of
@@ -1360,7 +1345,7 @@ producing an unattractive consequence is a contract decision to be raised, never
 ## 33. The `ui/src` file-budget table is at its ceiling across the board — the ratchet is an alarm, and the whole tree is standing on it
 
 **Measured 2026-08-10 at `d71d508`, at milestone 47's refine** (architect's codebase-health pass,
-[47/ARCHITECTURE §Codebase health](47_milestone_fleet-repo-filter/ARCHITECTURE.md) finding 1). Filed here
+[47/ARCHITECTURE §Codebase health](archive/47_milestone_fleet-repo-filter/ARCHITECTURE.md) finding 1). Filed here
 rather than inside m47 because paying it down means extracting from files m47 does not touch, and a limit
 one milestone imposes on another's files fails CI for reasons unrelated to the diff that trips it — the
 ruling m43, m45 and m46 have each made in turn.
@@ -1396,7 +1381,7 @@ milestones are already queued against these files: m47 against `Fleet.tsx`, m49'
 
 It has also already produced one near-miss: m47's own refine found `Fleet.tsx` with 13 lines of headroom
 while the milestone needs to add a filter control, a chip and an empty-state branch to it. That milestone
-can pay for itself — [47/ADR-006](47_milestone_fleet-repo-filter/ARCHITECTURE.md) deletes ~250 lines of
+can pay for itself — [47/ADR-006](archive/47_milestone_fleet-repo-filter/ARCHITECTURE.md) deletes ~250 lines of
 unreachable local-shape branch — but that was luck of a kind: the dead code happened to be in the same
 file. `DetailPanel.tsx`'s next author has one line and no windfall.
 
@@ -1432,7 +1417,7 @@ paid — and it would erase the one measurement that says the tree is under pres
 ## 34. `writeText` adds ~62 unbounded characters to every atomic write — a legal filename can be unwritable, and the rule has two homes
 
 **Status:** open (raised 2026-08-11 by milestone 48's story-00 developer, measured through the real
-producer; ruled out of m48's scope by [48/ADR-011](48_milestone_fleet-session-identity/ARCHITECTURE.md)).
+producer; ruled out of m48's scope by [48/ADR-011](archive/48_milestone_fleet-session-identity/ARCHITECTURE.md)).
 **Severity:** low likelihood, silent failure mode, repo-wide reach.
 
 <!-- ADR-011's paste-ready block cites this as "item 29". That number was already taken (item 29 is the
@@ -1479,7 +1464,7 @@ arrives in this module's own envelope rather than as a stack trace.
 
 **Status:** open (raised 2026-08-11 by milestone 48's QA pass, measured on this machine; the residual is
 ACCEPTED and the failure MODE re-stated by
-[48/ADR-013 R14](48_milestone_fleet-session-identity/ARCHITECTURE.md), which supersedes ADR-010/R1's
+[48/ADR-013 R14](archive/48_milestone_fleet-session-identity/ARCHITECTURE.md), which supersedes ADR-010/R1's
 "collision" framing). **Severity:** negligible likelihood (needs caller misuse), silent, and the one
 failure mode the whole identity contract is built to exclude.
 
@@ -1619,8 +1604,8 @@ guard-if-present lane in the suite.
 ## 37. The desktop and web "current work" lines are two implementations, and their cross-surface gate compares SOURCE TEXT rather than BEHAVIOUR — so it is green over a branch on which they already disagree
 
 **Status:** open (measured by the architect at milestone 49's refine, routed by
-[49/ADR-010](49_milestone_terminals-home/ARCHITECTURE.md) and by
-[§Codebase health finding 5](49_milestone_terminals-home/ARCHITECTURE.md); **written to this ledger at
+[49/ADR-010](archive/49_milestone_terminals-home/ARCHITECTURE.md) and by
+[§Codebase health finding 5](archive/49_milestone_terminals-home/ARCHITECTURE.md); **written to this ledger at
 story 49/01's structural review, which is where the routing was found to have stopped at the ADR**).
 **Severity:** a satisfied-looking contract over two implementations that are already known to differ.
 
@@ -1671,7 +1656,7 @@ completely.
 ## 38. Two shipped, tested RENDERING PATHS have no production producer — `unavailable` and `STATE_MOUNTING` — and each was built on a prediction that the NEXT milestone would supply one
 
 **Status:** open (measured by the architect at milestone 49's refine as
-[§Codebase health findings 4 and 6](49_milestone_terminals-home/ARCHITECTURE.md), with finding 6
+[§Codebase health findings 4 and 6](archive/49_milestone_terminals-home/ARCHITECTURE.md), with finding 6
 folded in here deliberately; **written to this ledger at story 49/02's structural review, which is
 where the routing was found to have stopped inside an immutable ADR**). Re-verified in the working
 tree at that review: both mount producers pass `unavailable: null`
@@ -1994,54 +1979,6 @@ keyboard target. One declaration in `host-model.mjs`, and the four hosts each st
 **Ratchet:** a lane that walks sequential focus order over a mounted control per host, asserting the
 set of stops equals what the host declares. The m49 harness now models the textarea, so this is
 writable today.
-
----
-
-## 44. The fleet face's write routes are a COPY, not a shape — and three fitness functions now require the duplication in place
-
-*(Raised 2026-08-14 at milestone 50/02's structural review. Recorded here rather than fixed in 50/02:
-the extraction is a four-file change — the face plus three detectors that are written to find the
-guards INSIDE each route's own branch body — and story 02's contract is one route.)*
-
-**What's wrong, measured on the working tree at 50/02.** `POST /api/mesh/session`
-([src/mesh-ui-serve.mjs:607-746](../../src/mesh-ui-serve.mjs#L607)) is 89 comment-free lines, of which
-**63 are verbatim-identical to lines in the `/api/mesh/assign` branch** above it
-([:409-570](../../src/mesh-ui-serve.mjs#L409)). Four blocks are copy-paste, in order:
-
-| block | assign | session | lines |
-|---|---|---|---|
-| method guard → 405 | :410-413 | :608-611 | 4 |
-| SECURITY T13 admission (Origin + content-type) | :423-433 | :615-625 | 11 |
-| `readJsonBody` → coded 400 | :435-441 | :627-633 | 7 |
-| `queryGlobalMeshStatus` → row → 404 → `existsSync` probe → 409 | :498-513 | :651-665 | 15 |
-| `controlNodeId()` → 409 `control-identity-unknown` | :545-554 | :681-690 | 10 |
-
-The workspace-resolution block is now its **THIRD** copy (`board-url`, `assign`, `session`); the T13
-admission block its second.
-
-**How it bites — and this is the half worth the entry.** The duplication is not merely tolerated, it is
-**load-bearing for CI**. Three detectors read the guards out of each route's *own* branch body:
-
-- [acd-fleet-face-single-mutation-route.test.mjs:115-125](../../test/arch/acd-fleet-face-single-mutation-route.test.mjs#L115) —
-  brace-cuts each write route and searches its first 200 chars for `request.method !== "POST"`;
-- [acd-fleet-board-link-resolved.test.mjs:104-107](../../test/arch/acd-fleet-board-link-resolved.test.mjs#L104) —
-  requires the `.workspaces ?? []).find(` binding and its `existsSync` probe inside each route region,
-  and pins the resolver list by name;
-- [acd-mesh-ui-read-only.test.mjs:93-105](../../test/arch/acd-mesh-ui-read-only.test.mjs#L93) — pins the
-  route table by exact name.
-
-So the first author to hoist `admitWriteRequest(request, response)` and `resolveLocalWorkspaceRow(...)`
-into one helper each makes three gates go red **for doing the right thing**, and the path of least
-resistance is to copy the blocks a fourth time. A ratchet that punishes de-duplication is pointed the
-wrong way: m47/ADR-011's gate was written to make the third route *comply*, and it did — it just did so
-by making the third route a copy.
-
-**The fix.** Hoist the two blocks to named helpers inside `mesh-ui-serve.mjs` (no new module — the face
-is one file's concern) and **re-aim the three detectors at the helper**: assert that every write-route
-branch *calls* `admitWriteRequest` before it reads a body, and that every route binding a `workspaces`
-row *calls* `resolveLocalWorkspaceRow`. That is a strictly stronger statement than "the text appears in
-this branch" — it cannot be satisfied by a copy that drifts — and it removes the incentive that keeps
-the copies alive. Do this **before** a fourth write route is added, not after.
 
 ---
 
@@ -3291,7 +3228,7 @@ the one place where getting it wrong means an unbounded child process.
 **The debt is the NAME, not the code.** A module under `src/work-audit/` is now on the hot path of a
 command that has nothing to do with auditing, so the directory no longer describes ownership, and the
 next reader looking for "how does aof spawn things" has no reason to look there. The fix is a re-home
-to `src/bounded-spawn.mjs` with `src/work-audit/spawn.mjs` retired — but it is NOT free, because
+to a `bounded-spawn.mjs` at the src root with `src/work-audit/spawn.mjs` retired — but it is NOT free, because
 `59/FF-5904`'s closure walk is anchored on the family and clause (B) names the module by position:
 the re-home has to move the freeze with it, in the same commit, or the audit family loses its
 single-seam guarantee silently. That is a story, not a tidy-up, which is why 72 declined to do it
@@ -3462,7 +3399,7 @@ spawning a batch file without a shell — so a resolver that does not consult `P
 produce an accurate *diagnosis*, let alone a resolution (72/ADR-001's Consequences). Each copy will
 learn that separately, in a different repo, as a support question.
 
-**Shape of the fix.** Export the `terminal-providers.mjs` implementation to `src/path-resolve.mjs`,
+**Shape of the fix.** Export the `terminal-providers.mjs` implementation to a `path-resolve.mjs` at the src root,
 migrate the other three call sites to it, and add a fitness function asserting one `PATHEXT`-aware
 resolver in `src/`. One story; the migration is mechanical and the tests already exist per call site.
 

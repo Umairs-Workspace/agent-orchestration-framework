@@ -3,6 +3,7 @@
   "name": "aof",
   "work": {
     "dir": "./wiki/work",
+    "intake": "backlog",
     "agents": {
       "mode": "orchestrated",
       "productOwner": "inline"
@@ -23,6 +24,14 @@
     "plan": {
       "enabled": true
     },
+    "diagrams": {
+      "generator": "diagram-design",
+      "formats": [
+        "svg",
+        "png"
+      ],
+      "style": ".aof/diagrams/style.md"
+    },
     "test": {
       "command": "node",
       "args": [
@@ -35,7 +44,7 @@
       "roots": [
         "test"
       ],
-      "deadlineMs": 2700000,
+      "deadlineMs": 7200000,
       "report": {
         "format": "tap"
       }
@@ -85,8 +94,28 @@
       }
     },
     "loop": {
+      "concurrency": "refine_first",
+      "agents": {
+        "refine": {
+          "mode": "orchestrated"
+        },
+        "continue": {
+          "mode": "solo"
+        }
+      },
       "startToCloseMs": 14400000,
       "scheduleToCloseMs": 43200000
+    },
+    "notify": {
+      "channels": {
+        "discord": {
+          "type": "discord",
+          "channelId": "1553365880904089651",
+          "allow": [
+            "1119197349521137757"
+          ]
+        }
+      }
     }
   },
   "memory": {

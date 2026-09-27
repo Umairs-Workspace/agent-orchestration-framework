@@ -34,9 +34,9 @@
 //   acd-mesh-command-cli-bijection gate (story 00, fitness #3).
 import os from "node:os";
 import crypto from "node:crypto";
-import { publishNodeRecord, readNodeRecord, readNodeRecords } from "../../mesh/store.mjs";
+import { publishNodeRecord, readNodeRecord, readNodeRecords, nodeRecordPath } from "../../mesh/store.mjs";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals, refuseReadMiss } from "./face-shared.mjs";
-import { deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, sanitizeHostname } from "../../node-identity.mjs";
+import { deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, readSidecar, sanitizeHostname } from "../../node-identity.mjs";
 // milestone 28 / story 00 (ADR-003): the version read routes through the ONE
 // SEA-safe asset-base seam instead of joining a path off a bare
 // import.meta.url — dev behaviour is byte-for-byte unchanged.
@@ -106,7 +106,13 @@ export const meshIdentityCommand = {
     type: "object",
     // `name` / `address` (2026-07-27) — the REGISTRATION OVERRIDES. Both are optional
     // and only meaningful on a publish (no ref); a read ignores them.
-    properties: { ref: { type: "string" }, name: { type: "string" }, address: { type: "string" } },
+    // `reidentify` (132/01) — the one deliberate re-identification edge; see reidentify().
+    properties: {
+      ref: { type: "string" },
+      name: { type: "string" },
+      address: { type: "string" },
+      reidentify: { type: "boolean" },
+    },
     additionalProperties: false,
   },
 
@@ -118,6 +124,13 @@ export const meshIdentityCommand = {
     // store's ENOENT→null discipline). The face turns absent into node-not-found.
     if (ref) {
       return await readNodeRecord(ws, ref);
+    }
+
+    if (input?.reidentify === true) {
+      if (typeof input?.name === "string" || typeof input?.address === "string") {
+        throw faceError("mesh:identity --reidentify takes no --name or --address — run them separately.", "invalid-input");
+      }
+      return await reidentify(ws);
     }
 
     // No ref → PUBLISH this node. Resolve a stable salt, derive (+ persist) the id,
@@ -154,6 +167,10 @@ export const meshIdentityCommand = {
     // through the SAME writeSidecarPatch every other sidecar writer uses.
     const requestedName = typeof input?.name === "string" ? input.name.trim() : "";
     const requestedAddress = typeof input?.address === "string" ? input.address.trim() : "";
+    // A `--name` that MOVES an existing id is a re-identification (132/05, F-2): it answers the
+    // same envelope `--reidentify` does, naming what the old id keyed. A first pin, or one that
+    // repeats the current id, moves nothing and stays the bare node record.
+    let renamedFrom = null;
     if (requestedName.length > 0) {
       const pinnedId = sanitizeHostname(requestedName);
       if (pinnedId.length === 0) {
@@ -162,6 +179,8 @@ export const meshIdentityCommand = {
           "invalid-node-name",
         );
       }
+      const prior = (await readSidecar(sidecarPath)).nodeId;
+      if (typeof prior === "string" && prior.length > 0 && prior !== pinnedId) renamedFrom = prior;
       // `pinned: true` + clearing `derivedFrom` is exactly the discriminator
       // healIdentitySidecar reads to leave an operator-set id alone forever.
       await writeSidecarPatch(sidecarPath, { nodeId: pinnedId, pinned: true, derivedFrom: undefined });
@@ -178,20 +197,11 @@ export const meshIdentityCommand = {
       salt,
       sidecarPath,
     });
-    // The ADVERTISED host: the override when set (this publish's, or one pinned by an
-    // earlier publish and hydrated onto config.mesh.address), else the real hostname.
-    // This is the value peers resolve on a `direct` fabric.
-    const advertisedHost = typeof config?.mesh?.address === "string" && config.mesh.address.length > 0
-      ? config.mesh.address
-      : hostname;
-    const descriptor = assembleDescriptor({
-      nodeId,
-      hostname: advertisedHost,
-      platform: process.platform,
-      runtimes: Array.isArray(config.runtimes) ? config.runtimes : [],
-      aofVersion: packageVersionString(),
-    });
-    await publishNodeRecord(ws, nodeId, descriptor);
+    const descriptor = await publishSelf(ws, config, nodeId, hostname);
+    if (renamedFrom != null) {
+      const invalidated = await keyedByOldId(ws, config, renamedFrom);
+      return { from: renamedFrom, to: nodeId, changed: true, invalidated, record: descriptor };
+    }
     return descriptor;
   },
 
@@ -200,20 +210,26 @@ export const meshIdentityCommand = {
     // the ONE generic face; meshVerbCli's cli.mjs ladder branch is deleted.
     route: ["mesh", "identity"],
     spec: {
-      usage: "aof mesh identity [<id>] [--name <id>] [--address <ip-or-host>] [--workspace <path|id>] [--json]",
+      usage: "aof mesh identity [<id>] [--name <id>] [--address <ip-or-host>] [--reidentify] [--workspace <path|id>] [--json]",
       flags: {
         name: { type: "string", description: "registration override: the node id to publish as" },
         address: { type: "string", description: "registration override: the address to advertise" },
+        reidentify: { type: "boolean", description: "move a derived id to the opaque node-<hash> form, reporting what that invalidates" },
         ...MESH_WORKSPACE_FLAG,
       },
     },
 
-    // `aof mesh identity [<id>] [--name <id>] [--address <ip-or-host>]` — an optional
-    // positional is the read ref; the two options are the publish-side registration
-    // overrides (the hostname-collision escape hatch).
+    // `aof mesh identity [<id>] [--name <id>] [--address <ip-or-host>] [--reidentify]` —
+    // an optional positional is the read ref; the two options are the publish-side
+    // registration overrides (the hostname-collision escape hatch).
     argv: (positionals, options = {}) => {
       guardMeshPositionals("identity", positionals, { max: 1 });
-      return { ref: positionals[0], name: options.name, address: options.address };
+      return {
+        ref: positionals[0],
+        name: options.name,
+        address: options.address,
+        ...(options.reidentify === true ? { reidentify: true } : {}),
+      };
     },
 
     // Publish confirmation names the node id; a read renders the node line. A
@@ -221,6 +237,7 @@ export const meshIdentityCommand = {
     render(result, faceCtx = {}) {
       refuseReadMiss(result, faceCtx);
       if (result == null) return "No node record.";
+      if (isReidentifyResult(result)) return renderReidentify(result);
       const caps = describeCaps(result);
       return `Node ${result.nodeId} — ${caps}`;
     },
@@ -232,6 +249,109 @@ export const meshIdentityCommand = {
     },
   },
 };
+
+// Assemble and publish THIS node's descriptor — the one publish rule both the ordinary
+// publish and a re-identification take. The ADVERTISED host is the override when set
+// (this publish's, or one pinned earlier and hydrated onto config.mesh.address), else the
+// real hostname: the value peers resolve on a `direct` fabric. The machine's real name
+// rides beside it as `hostname` (132/02), the key the fabric join matches.
+async function publishSelf(ws, config, nodeId, hostname) {
+  const advertisedHost = typeof config?.mesh?.address === "string" && config.mesh.address.length > 0
+    ? config.mesh.address
+    : hostname;
+  const descriptor = assembleDescriptor({
+    nodeId,
+    hostname: advertisedHost,
+    machineName: hostname,
+    platform: process.platform,
+    runtimes: Array.isArray(config.runtimes) ? config.runtimes : [],
+    aofVersion: packageVersionString(),
+  });
+  await publishNodeRecord(ws, nodeId, descriptor);
+  return descriptor;
+}
+
+// 132/01 — `aof mesh identity --reidentify`: the ONE deliberate edge from a legacy,
+// hostname-derived id to the opaque form. The load-time self-heal recognises legacy ids
+// (isDerivationOf's legacy arm) precisely so that this move is never made by a daemon
+// start; it is made here, by an operator, and it says what it broke.
+//
+// Re-derives from the sidecar's OWN salt, so it lands on the id a fresh install with that
+// salt would derive, and a second run answers the same id and writes nothing. REFUSED on a
+// pinned sidecar: an operator who typed a name owns it, and `--name` is how to change one.
+// It REPORTS the fleet-side consequences keyed by the old id rather than repairing them —
+// the stale node record, an enrollment credential, the control-node nomination — so the
+// operator can re-join or re-nominate deliberately. It publishes this node's record under
+// the new id only when the id moved.
+async function reidentify(ws) {
+  const config = ws.config ?? {};
+  const sidecarPath = ws.identityPath ?? sidecarPathFor(ws.aofDir);
+  const sidecar = await readSidecar(sidecarPath);
+  if (sidecar.pinned === true) {
+    throw faceError(
+      `mesh:identity --reidentify refuses a pinned id ("${sidecar.nodeId}") — an operator-set id is changed with --name <id>.`,
+      "identity-pinned",
+    );
+  }
+  const from = typeof sidecar.nodeId === "string" && sidecar.nodeId.length > 0
+    ? sidecar.nodeId
+    : typeof config?.mesh?.nodeId === "string" && config.mesh.nodeId.length > 0 ? config.mesh.nodeId : null;
+  const salt = await resolveInstallSalt(sidecarPath, { mesh: { salt: sidecar.salt } });
+  const hostname = os.hostname();
+  // config: {} — never the pinned-id rule; the point is to re-derive.
+  const to = await deriveNodeId({ config: {}, hostname, salt, sidecarPath });
+  if (from === to) {
+    return { from, to, changed: false, invalidated: [] };
+  }
+
+  const invalidated = await keyedByOldId(ws, config, from);
+  const record = await publishSelf(ws, { ...config, mesh: { ...(config.mesh ?? {}), nodeId: to } }, to, hostname);
+  return { from, to, changed: true, invalidated, record };
+}
+
+// What a move away from `from` leaves stale: every setting and record still keyed by the old
+// id. ONE scan for both verbs that move an id — `--reidentify`, and a `--name` that renames
+// (132/05, F-2) — so their reports can never disagree. It REPORTS; the operator re-points or
+// re-joins deliberately (132/01 ruling 4).
+export async function keyedByOldId(ws, config, from) {
+  const invalidated = [];
+  if (from == null) return invalidated;
+  if ((await readNodeRecord(ws, from)) != null) {
+    invalidated.push({ kind: "node-record", nodeId: from, path: nodeRecordPath(ws, from) });
+  }
+  const credential = config?.mesh?.credential;
+  if (credential != null && typeof credential === "object" && credential.nodeId === from) {
+    invalidated.push({ kind: "enrollment-credential", nodeId: from, where: "mesh.credential" });
+  }
+  let registry = null;
+  try {
+    registry = await readRegistry(ws);
+  } catch {
+    registry = null; // a torn registry reports nothing rather than failing the move
+  }
+  const roster = Array.isArray(registry?.roster) ? registry.roster : [];
+  if (roster.some((entry) => entry?.nodeId === from)) {
+    invalidated.push({ kind: "enrollment-credential", nodeId: from, where: "registry roster" });
+  }
+  if (config?.mesh?.relay?.controlNode === from) {
+    invalidated.push({ kind: "control-node-nomination", nodeId: from, where: "mesh.relay.controlNode" });
+  }
+  return invalidated;
+}
+
+function isReidentifyResult(result) {
+  return result != null && typeof result === "object" && "from" in result && "to" in result && Array.isArray(result.invalidated);
+}
+
+function renderReidentify(result) {
+  if (!result.changed) return `Node id ${result.to} — unchanged.`;
+  const lines = [`Re-identified ${result.from ?? "(none)"} → ${result.to}.`];
+  if (result.invalidated.length > 0) {
+    lines.push("Keyed by the old id, now stale:");
+    for (const entry of result.invalidated) lines.push(`  ${entry.kind} ${entry.nodeId} (${entry.path ?? entry.where})`);
+  }
+  return lines.join("\n");
+}
 
 export const meshStatusCommand = {
   id: "mesh:status",

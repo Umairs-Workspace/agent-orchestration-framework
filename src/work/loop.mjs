@@ -917,9 +917,43 @@ export function attemptElapsedMs(input = {}) {
   const record = input.record;
   const createdAtMs = Date.parse(record?.createdAt);
   if (!Number.isFinite(createdAtMs)) return null;
-  const endMs = attemptEndMs(record, Date.parse(input.now), input.stalenessMs, input.isStale);
+  const nowMs = Date.parse(input.now);
+  const endMs = attemptEndMs(record, nowMs, input.stalenessMs, input.isStale);
   if (!Number.isFinite(endMs)) return null;
-  return Math.max(0, endMs - createdAtMs);
+  return Math.max(0, endMs - createdAtMs - askWaitMs(record, createdAtMs, endMs, nowMs));
+}
+
+// THE WAIT ON A HUMAN IS CHARGED TO NOBODY (131/ADR-001 §4). Each ask's interval runs from its
+// `askedAt` to `answeredAt ?? parkedAt ?? now`, clipped to the attempt's own window, and the
+// intervals are MERGED before they are summed, so an overlap is never subtracted twice. An entry
+// whose chosen start or end does not parse, or whose clipped interval is empty, subtracts nothing;
+// a record with no `asks` subtracts nothing, so it answers exactly what it answered before. The
+// charge is derived from the instants on the record, never stored.
+function askWaitMs(record, startMs, endMs, nowMs) {
+  const asks = Array.isArray(record?.asks) ? record.asks : [];
+  const intervals = [];
+  for (const entry of asks) {
+    if (entry == null || typeof entry !== "object") continue;
+    const fromMs = Date.parse(entry.askedAt);
+    const toMs = entry.answeredAt != null ? Date.parse(entry.answeredAt) : entry.parkedAt != null ? Date.parse(entry.parkedAt) : nowMs;
+    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) continue;
+    const from = Math.max(fromMs, startMs);
+    const to = Math.min(toMs, endMs);
+    if (to > from) intervals.push([from, to]);
+  }
+  intervals.sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  let open = null;
+  for (const [from, to] of intervals) {
+    if (open != null && from <= open[1]) {
+      open[1] = Math.max(open[1], to);
+      continue;
+    }
+    if (open != null) total += open[1] - open[0];
+    open = [from, to];
+  }
+  if (open != null) total += open[1] - open[0];
+  return total;
 }
 
 // THE SUMMER — accumulated ATTEMPT milliseconds over a lineage, which is what `69/ADR-002` means
@@ -1447,12 +1481,26 @@ function recoverableDeclaration(loop) {
 // persists a `deadline-exhausted` halt, so a lineage whose compute budget is spent still looks
 // `ready` to the store — and a reconciler fed that row would relaunch it every tick, forever. The
 // comparison routes through `decideScheduleToClose` so `>=` is the halt in ONE home.
+// THE STOPPED SET'S DEFAULT-ABSENT VALUE (130/ADR-004 §4). `stopped` is an ADDITIVE input — the
+// `loopRunId`s whose stop request the loop has honoured, read by the producer and never here —
+// and an absent, empty or ill-typed one drops nothing, so every existing caller answers
+// byte-identically. `instanceof Set`, never duck-typed: a Set-like is not the producer's set.
+// Built from the global; this module still imports nothing.
+const EMPTY_STOPPED = Object.freeze(new Set());
+// THE HANDED-BACK SET (131/ADR-009 §6) — the `loopRunId`s an operator handed back to the supervisor
+// (`work:loop --hand-off`), read by the producer and never here. ADDITIVE and default-absent exactly
+// as `stopped` is: a member yields a row even when it is neither stale nor resumable, and even over an
+// honoured stop mark, because the operator asked — and the compute budget still gates it.
+const EMPTY_RESUMES = Object.freeze(new Set());
+
 export function decideSupervisedDeclarations(input = {}) {
   const workspaces = Array.isArray(input.workspaces) ? input.workspaces : [];
   // `ceilingMs` is resolved PER WORKSPACE below (each declaration against its own workspace's
   // `scheduleToClose`), so it is deliberately not destructured from `input` here — `input.ceilingMs`
   // is the fallback a member with no readable config lands on.
-  const { maxAttempts, stalenessMs, now, isRunning, isStale, retryReadiness } = input;
+  const { maxAttempts, stalenessMs, now, isRunning, isStale, retryReadiness, stopped, resumeRequested } = input;
+  const stoppedSet = stopped instanceof Set ? stopped : EMPTY_STOPPED;
+  const resumeSet = resumeRequested instanceof Set ? resumeRequested : EMPTY_RESUMES;
   const nowMs = Date.parse(now);
   const rows = [];
 
@@ -1488,6 +1536,13 @@ export function decideSupervisedDeclarations(input = {}) {
       // what the loop is doing now.
       const declaration = readLoopDeclaration(runs);
       if (declaration == null || declaration.supervised !== true) continue;
+      // A HONOURED stop yields no row (130/ADR-004 §4-§5), whatever the latest record says — the
+      // skip PRECEDES the liveness branch, so a stopped loop is never retained on liveness either.
+      // A `requested` mark is not in this set: a draining loop keeps its row until it halts. The
+      // row is what keeps the reconcile from relaunching a stopped loop; `--resume` clears the mark.
+      // A hand-back overrides the mark (131/ADR-009 §6): the operator asked for this loop again.
+      const handedBack = resumeSet.has(declaration.loopRunId);
+      if (stoppedSet.has(declaration.loopRunId) && !handedBack) continue;
       const latest = [...runs].sort(compareRuns).at(-1);
 
       const inFlight = typeof isRunning === "function" && isRunning(latest) === true;
@@ -1502,8 +1557,8 @@ export function decideSupervisedDeclarations(input = {}) {
         rows.push(declarationRow(workspace, declaration));
         continue;
       }
-      const resumable = typeof retryReadiness === "function"
-        && retryReadiness(latest, maxAttempts, nowMs)?.ready === true;
+      const resumable = handedBack || (typeof retryReadiness === "function"
+        && retryReadiness(latest, maxAttempts, nowMs)?.ready === true);
       if (!stale && !resumable) continue;
 
       // Both remaining branches mean a RELAUNCH, so both are gated by the compute budget.
@@ -1541,6 +1596,16 @@ export function readLoopDeclaration(runs = []) {
     .sort(compareRuns);
   const loop = usable.at(-1)?.brief?.loop;
   return recoverableDeclaration(loop);
+}
+
+// readLoopDeclarationRun(runs) → the RUN the latest declaration is read from, on the same ordering
+// `readLoopDeclaration` uses, or `null` (131/03, task 06): the one reader of "which run carried the
+// loop last", so the death test never copies `compareRuns` into the shell.
+export function readLoopDeclarationRun(runs = []) {
+  const usable = (Array.isArray(runs) ? runs : [])
+    .filter((run) => usableDeclaration(run?.brief?.loop))
+    .sort(compareRuns);
+  return usable.at(-1) ?? null;
 }
 
 export function resolveLoopResume(input = {}) {

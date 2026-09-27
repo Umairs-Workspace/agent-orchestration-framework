@@ -33,10 +33,10 @@ import { loadLoops } from "../../src/work/loops.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BUNDLE = path.join(root, "src", "bundle");
 
-// The sixteen keys the store froze, in order — measured against a real record rather than believed.
+// The seventeen keys the store froze (131/ADR-003 §3 appended asks), in order — measured against a real record rather than believed.
 const RECORD_KEYS = Object.freeze([
   "runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt",
-  "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend",
+  "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks",
 ]);
 
 const CONFIG = { work: { autonomous: { maxAttempts: 3 } } };
@@ -228,7 +228,7 @@ export const loopDeclarationJoinTests = [
   },
   {
     // Scenario: the run record shape is untouched
-    name: "loop-declaration-join/02: a run carrying the declaration keeps the store's frozen sixteen keys, in order",
+    name: "loop-declaration-join/02: a run carrying the declaration keeps the store's frozen seventeen keys, in order",
     run: () => withItem(async (item) => {
       await mint(item, [{ loop: built({ loopRunId: "lr-1" }) }, {}]);
       const [carrying, empty] = await readRuns(item);

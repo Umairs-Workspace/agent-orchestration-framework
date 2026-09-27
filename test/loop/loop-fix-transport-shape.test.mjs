@@ -36,6 +36,10 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const strip = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 const loopSource = async () => strip(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+// 129/04 (ADR-008 §3) — the sites that prepare a re-drive are split between the shell (the resume
+// path's two and the fresh gate's) and the ladder (`src/loop/cycle.mjs`: the gate re-drive, the
+// progress reset and the progress continue). The four causes are asserted over BOTH.
+const familySource = async () => [await loopSource(), strip(await readFile(path.join(repoRoot, "src", "loop", "cycle.mjs"), "utf8"))].join("\n");
 
 const INVALID_FEATURE = "Feature: Invalid\n  Scenario: missing lane\n    Given a fixture\n";
 const seedInvalid = (fx) => writeFileSync(path.join(fx.storyDir, "tasks", "00_ready.feature"), INVALID_FEATURE);
@@ -96,7 +100,7 @@ export const loopFixTransportShapeTests = [
 
       // AND EVERY SITE THAT PREPARES A PENDING FIX GOES THROUGH IT, so the bag the driver
       // receives can only ever be that shape — `pendingFixes.get` is its one source.
-      const code = await loopSource();
+      const code = await familySource();
       const sites = [...code.matchAll(/pendingFixes\.set\(/g)].length;
       const throughConstructor = [...code.matchAll(/pendingFixes\.set\([^,]+,\s*fixTransport\(/g)].length;
       assert.ok(sites > 0, "guard: the shell really does prepare pending fixes");
@@ -106,13 +110,14 @@ export const loopFixTransportShapeTests = [
       // rides the closed input (`54/ADR-009 §3`). 129/02 (ADR-005 §2) widened the schema by
       // exactly the two strings a CHILD drive needs across the process boundary: `run`, the
       // lent id, and `fix`, the PATH of a file holding this transport — the transport itself
-      // still never enters the input.
+      // still never enters the input. 131/03 (ADR-003 §7) adds `answer`, the PATH of an answered ask
+      // file, by the same rule: a path across the boundary, never a payload.
       assert.deepEqual(createPhaseDriverCommand("continue").input, {
         type: "object",
-        properties: { ref: { type: "string" }, dryRun: { type: "boolean" }, run: { type: "string" }, fix: { type: "string" } },
+        properties: { ref: { type: "string" }, dryRun: { type: "boolean" }, run: { type: "string" }, fix: { type: "string" }, answer: { type: "string" } },
         required: ["ref"],
         additionalProperties: false,
-      }, "the driver's registered input schema is the four-key one 129/02 declared, and holds no transport");
+      }, "the driver's registered input schema is 129/02's four keys plus 131/03's answer path, and holds no transport");
     },
   },
 
@@ -187,7 +192,7 @@ export const loopFixTransportShapeTests = [
   {
     name: "81/03 [outline] every site that prepares a re-drive prepares the same transport (4 causes)",
     run: async () => {
-      const code = await loopSource();
+      const code = await familySource();
 
       // THE FOUR CAUSES, AS THE SHELL'S OWN CALL SITES. Each is one `pendingFixes.set`, and
       // the property under test is that they are INDISTINGUISHABLE in the shape they produce

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADR-003 — the anchor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <!--
+    Drawn for 134/ADR-003's Diagram brief, in the aof console style (.aof/diagrams/style.md).
+    Assumptions, noted here because the reader was not reachable:
+    - Data-flow view, left to right, static, doc-inline size.
+    - The brief's "harness" and "transcript" are one node: the harness writes the transcript and
+      nothing else reads the harness. "Doctor lane" and "continue door" are one node, because
+      ADR-005 §4 has them call one pure function. That leaves nine nodes.
+    - An "Agent" node (the refine session) is added. Without it the reader cannot see that the
+      agent's only arrow goes into EXAMPLES.md.
+    - Crimson marks the one reader (focal) and the agent's one write. Teal marks the anchor chain.
+      Dashed marks the live path for a running run, and the ask.
+  -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #f3f5f7;
+      --color-ink:    #1b1f27;
+      --color-muted:  #585f6a;
+      --font-sans:  Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono:  ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Data flow · 134 / ADR-003</p>
+    <h1>The anchor</h1>
+
+    <svg viewBox="0 64 976 424" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="adr-003-the-anchor-title adr-003-the-anchor-desc">
+      <title id="adr-003-the-anchor-title">ADR-003 — the anchor</title>
+      <desc id="adr-003-the-anchor-desc">A person's answer is written by the harness into the session transcript. One reader turns it into answer records, which one writer stamps onto the run record at settle. collectAnswers joins the stamped answers of settled runs with the live answers of a running run through the same reader, and the doctor lane and continue door check the agent-written example map against them. The agent's only write is the map.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#585f6a"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ba2646"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#13766d"/></marker>
+      </defs>
+
+      <rect x="0" y="64" width="976" height="424" fill="#f3f5f7"/>
+
+      <!-- ARROWS (before boxes) -->
+      <!-- the refine session asks the person -->
+      <line x1="104" y1="288" x2="104" y2="162" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <rect x="112" y="218" width="28" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="126" y="227" fill="#7a818d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ASKS</text>
+      <!-- person to transcript: the answer -->
+      <line x1="176" y1="128" x2="222" y2="128" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="182" y="108" width="36" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="200" y="117" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ANSWER</text>
+      <!-- transcript to the one reader -->
+      <line x1="368" y1="128" x2="414" y2="128" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="378" y="108" width="28" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="392" y="117" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">READ</text>
+      <!-- reader to writer, at settle -->
+      <line x1="560" y1="128" x2="606" y2="128" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="566" y="108" width="36" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="584" y="117" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SETTLE</text>
+      <!-- writer to run record -->
+      <line x1="752" y1="128" x2="798" y2="128" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="759" y="108" width="32" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="775" y="117" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">STAMP</text>
+      <!-- reader to collectAnswers, live (a running run) -->
+      <path d="M 488,160 V 304 Q 488,312 496,312 H 606" fill="none" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <rect x="496" y="220" width="28" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="510" y="229" fill="#7a818d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LIVE</text>
+      <!-- run record to collectAnswers, settled -->
+      <path d="M 872,160 V 216 Q 872,224 864,224 H 688 Q 680,224 680,232 V 286" fill="none" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="740" y="204" width="48" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="764" y="213" fill="#7a818d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SETTLED</text>
+      <!-- collectAnswers to lane and door -->
+      <line x1="752" y1="320" x2="798" y2="320" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="756" y="300" width="40" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="776" y="309" fill="#7a818d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ANSWERS</text>
+      <!-- the agent's only write: the map -->
+      <line x1="176" y1="320" x2="222" y2="320" stroke="#ba2646" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <rect x="182" y="300" width="36" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="200" y="309" fill="#ba2646" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WRITES</text>
+      <!-- map to lane and door -->
+      <path d="M 296,352 V 392 Q 296,400 304,400 H 864 Q 872,400 872,392 V 354" fill="none" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="468" y="380" width="24" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="480" y="389" fill="#7a818d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MAP</text>
+
+      <!-- NODES -->
+      <!-- Person (input) -->
+      <rect x="32" y="96" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="32" y="96" width="144" height="64" rx="8" fill="rgba(88,95,106,0.10)" stroke="#7a818d" stroke-width="1"/>
+      <rect x="40" y="102" width="36" height="12" rx="2" fill="none" stroke="rgba(122,129,141,0.40)" stroke-width="0.8"/>
+      <text x="58" y="111" fill="#7a818d" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HUMAN</text>
+      <text x="104" y="132" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">Person</text>
+      <text x="104" y="148" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">the operator</text>
+      <!-- Transcript (external) -->
+      <rect x="224" y="96" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="224" y="96" width="144" height="64" rx="8" fill="rgba(27,31,39,0.03)" stroke="rgba(27,31,39,0.30)" stroke-width="1"/>
+      <rect x="232" y="102" width="44" height="12" rx="2" fill="none" stroke="rgba(27,31,39,0.30)" stroke-width="0.8"/>
+      <text x="254" y="111" fill="rgba(27,31,39,0.60)" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HARNESS</text>
+      <text x="296" y="132" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">Transcript</text>
+      <text x="296" y="148" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">&lt;session&gt;.jsonl</text>
+      <!-- The one reader (focal) -->
+      <rect x="416" y="96" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="416" y="96" width="144" height="64" rx="8" fill="rgba(186,38,70,0.08)" stroke="#ba2646" stroke-width="1.2"/>
+      <rect x="424" y="102" width="40" height="12" rx="2" fill="none" stroke="rgba(186,38,70,0.40)" stroke-width="0.8"/>
+      <text x="444" y="111" fill="#ba2646" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">READER</text>
+      <text x="488" y="132" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">The one reader</text>
+      <text x="488" y="148" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">answers.mjs</text>
+      <!-- The one writer (backend) -->
+      <rect x="608" y="96" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="608" y="96" width="144" height="64" rx="8" fill="#ffffff" stroke="#1b1f27" stroke-width="1"/>
+      <rect x="616" y="102" width="40" height="12" rx="2" fill="none" stroke="rgba(27,31,39,0.40)" stroke-width="0.8"/>
+      <text x="636" y="111" fill="rgba(27,31,39,0.80)" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WRITER</text>
+      <text x="680" y="132" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">The one writer</text>
+      <text x="680" y="148" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">recordAnswers</text>
+      <!-- Run record (store) -->
+      <rect x="800" y="96" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="800" y="96" width="144" height="64" rx="8" fill="rgba(27,31,39,0.05)" stroke="#585f6a" stroke-width="1"/>
+      <rect x="808" y="102" width="40" height="12" rx="2" fill="none" stroke="rgba(88,95,106,0.40)" stroke-width="0.8"/>
+      <text x="828" y="111" fill="#585f6a" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RECORD</text>
+      <text x="872" y="132" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">Run record</text>
+      <text x="872" y="148" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">runs/&lt;node&gt;/*.json</text>
+      <!-- Refine session (input) -->
+      <rect x="32" y="288" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="32" y="288" width="144" height="64" rx="8" fill="rgba(88,95,106,0.10)" stroke="#7a818d" stroke-width="1"/>
+      <rect x="40" y="294" width="36" height="12" rx="2" fill="none" stroke="rgba(122,129,141,0.40)" stroke-width="0.8"/>
+      <text x="58" y="303" fill="#7a818d" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">AGENT</text>
+      <text x="104" y="324" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">Refine session</text>
+      <text x="104" y="340" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">discovery beat</text>
+      <!-- Example map (optional) -->
+      <rect x="224" y="288" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="224" y="288" width="144" height="64" rx="8" fill="rgba(27,31,39,0.02)" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <rect x="232" y="294" width="28" height="12" rx="2" fill="none" stroke="rgba(27,31,39,0.30)" stroke-width="0.8"/>
+      <text x="246" y="303" fill="rgba(27,31,39,0.60)" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DOC</text>
+      <text x="296" y="324" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">Example map</text>
+      <text x="296" y="340" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">EXAMPLES.md</text>
+      <!-- collectAnswers (backend) -->
+      <rect x="608" y="288" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="608" y="288" width="144" height="64" rx="8" fill="#ffffff" stroke="#1b1f27" stroke-width="1"/>
+      <rect x="616" y="294" width="32" height="12" rx="2" fill="none" stroke="rgba(27,31,39,0.40)" stroke-width="0.8"/>
+      <text x="632" y="303" fill="rgba(27,31,39,0.80)" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">JOIN</text>
+      <text x="680" y="324" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">collectAnswers</text>
+      <text x="680" y="340" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">settled + live</text>
+      <!-- Lane · door (backend) -->
+      <rect x="800" y="288" width="144" height="64" rx="8" fill="#f3f5f7"/>
+      <rect x="800" y="288" width="144" height="64" rx="8" fill="#ffffff" stroke="#1b1f27" stroke-width="1"/>
+      <rect x="808" y="294" width="32" height="12" rx="2" fill="none" stroke="rgba(27,31,39,0.40)" stroke-width="0.8"/>
+      <text x="824" y="303" fill="rgba(27,31,39,0.80)" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GATE</text>
+      <text x="872" y="324" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif" text-anchor="middle">Lane · door</text>
+      <text x="872" y="340" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" text-anchor="middle">doctor · continue</text>
+
+      <!-- LEGEND (bottom strip) -->
+      <line x1="30" y1="440" x2="946" y2="440" stroke="rgba(27,31,39,0.10)" stroke-width="0.8"/>
+      <text x="30" y="465" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <rect x="100" y="456" width="16" height="12" rx="3" fill="rgba(186,38,70,0.08)" stroke="#ba2646" stroke-width="1"/>
+      <text x="124" y="465" fill="#585f6a" font-size="9" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif">The one reader</text>
+      <rect x="216" y="456" width="16" height="12" rx="3" fill="rgba(27,31,39,0.02)" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="240" y="465" fill="#585f6a" font-size="9" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif">Agent-written</text>
+      <rect x="324" y="456" width="16" height="12" rx="3" fill="rgba(27,31,39,0.05)" stroke="#585f6a" stroke-width="1"/>
+      <text x="348" y="465" fill="#585f6a" font-size="9" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif">Committed record</text>
+      <rect x="452" y="456" width="16" height="12" rx="3" fill="rgba(88,95,106,0.10)" stroke="#7a818d" stroke-width="1"/>
+      <text x="476" y="465" fill="#585f6a" font-size="9" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif">Actor</text>
+      <line x1="516" y1="462" x2="548" y2="462" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="556" y="465" fill="#585f6a" font-size="9" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif">The anchor chain</text>
+      <line x1="656" y1="462" x2="688" y2="462" stroke="#ba2646" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <text x="696" y="465" fill="#585f6a" font-size="9" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif">The agent's only write</text>
+      <line x1="812" y1="462" x2="844" y2="462" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <text x="852" y="465" fill="#585f6a" font-size="9" font-family="Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif">Live / asked</text>
+    </svg>
+  </div>
+</body>
+</html>

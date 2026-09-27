@@ -135,7 +135,21 @@ export function isMeshWorktree(projectRoot) {
 // cacheOnlyItem(row) — a `listItems`-shaped item for a ref the cache knows and this node's
 // disk does not. `dir` and `name` are NULL, not invented: both are facts about a FOLDER,
 // and there is no folder here (rule 4). Everything else is the cache's own row.
+//
+// milestone 127 / ADR-006 §1 (story 04) — THE TWO SHAPES ARE READ OFF THE ROW'S FACTS, never
+// off the ref's spelling. A backlog row's ref is its slug, so deriving `number` from the ref
+// answered `number: "gamma"` and `isLiveStreamRow` said TRUE of an un-numbered idea; an
+// archived row's flag was never rebuilt, so a remote `next` could propose a driver the owning
+// node had put away. The store carries both facts now (`backlog`'s PRESENCE is what `number:
+// null` derives from — `""` is the top of the backlog and is a string; `archived: true` rides
+// as itself), and the rebuilt item is the enumerator's own row for that root: a backlog leaf
+// is `{ number: null, …, parent: null, backlog }`, an archived row is the numbered shape plus
+// `archived: true`, and every other row is byte-identical to before. `name` and `dir` stay
+// null on all three — a backlog leaf's folder name is as absent here as a numbered one's.
 function cacheOnlyItem(row) {
+  if (typeof row.backlog === "string") {
+    return { number: null, type: row.type, slug: row.slug ?? "", name: null, dir: null, ref: row.ref, parent: null, backlog: row.backlog };
+  }
   const parent = row.parent == null ? null : String(row.parent);
   return {
     number: String(row.ref).includes("/") ? String(row.ref).split("/")[1] : String(row.ref),
@@ -145,6 +159,7 @@ function cacheOnlyItem(row) {
     dir: null,
     ref: row.ref,
     parent,
+    ...(row.archived === true ? { archived: true } : {}),
   };
 }
 
@@ -158,6 +173,13 @@ function cacheOnlyItem(row) {
 //     it to a status overlay would make a migrated `next` stop honouring gates.
 // This is `mergeWorkerItems`' rule ("the worker's status/title win; the row keeps its local
 // dir"), applied one layer down so every reader inherits it rather than the board alone.
+//
+// 127/04, a documented default: `archived` and `backlog` are LOCATION facts and are NOT
+// overlaid either. A checkout that still holds `12` at the stream root while the owning node
+// has archived it answers `12` as a live row with its OWN `dir` — the honest report of a
+// checkout that has not pulled — and never a `dir` under an `archive/` it does not have. The
+// disagreement stays visible rather than papered over, the same class doctor's
+// `cache-status-divergence` already reports for status.
 function stateOverlay(row) {
   const overlay = {};
   if (row.status !== undefined) overlay.status = row.status ?? null;

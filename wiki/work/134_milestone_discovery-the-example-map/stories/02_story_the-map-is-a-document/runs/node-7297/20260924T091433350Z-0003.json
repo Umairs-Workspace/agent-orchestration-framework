@@ -1,0 +1,63 @@
+{
+  "runId": "20260924T091433350Z-0003",
+  "itemRef": "134/02",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "b618103f-4a72-4d5e-a1a7-8e925d5d02c2",
+  "brief": {
+    "loop": {
+      "loopRunId": "31b98c4d-fe21-43c9-819c-16e9927e4190",
+      "scope": "134",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 3,
+      "startedAt": "2026-09-23T23:13:10.187Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-24T09:07:18.734Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
+        "arch/96/02 FF-9603 (2) THE BAN IS A PROPERTY OF THE STREAM — every PLAN.md under wiki/work is admitted, not only the template"
+      ],
+      "baseCommit": "83b4d4692f2891ad82973549c5a1a0c8426ae29b"
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-134-02",
+      "branch": "aof/mesh/134-02",
+      "baseCommit": "83b4d4692f2891ad82973549c5a1a0c8426ae29b"
+    }
+  },
+  "createdAt": "2026-09-24T09:14:33.350Z",
+  "updatedAt": "2026-09-24T09:17:11.402Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "unknown",
+    "tokens": {
+      "input": 48,
+      "output": 9101,
+      "cacheRead": 2006978,
+      "cacheCreate": 109326
+    },
+    "costUsd": 1.1487249,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 24,
+    "toolCalls": 13,
+    "exitReason": "final_output"
+  }
+}

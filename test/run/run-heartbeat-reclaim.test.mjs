@@ -19,6 +19,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 // --- fixture builders --------------------------------------------------------
 
@@ -328,4 +329,179 @@ export const runHeartbeatReclaimTests = [
       }
     },
   },
+  ...runWaitTests(),
 ];
+
+// ── milestone 131 / story 01, task 05 — A RUN WAITING ON A HUMAN IS NOT RECLAIMED, AND THE WAIT IS
+// CHARGED TO NO ATTEMPT (131/ADR-003 §3-§4, ADR-001 §4). The scan's skip is asked of the store's
+// one pure scan, which every sweep selects through; the charge of `attemptElapsedMs`, the pure
+// engine, over records it is handed. Built inside a hoisted function so the array above can
+// spread it without a TDZ.
+function runWaitTests() {
+  const NOW = "2026-09-23T14:00:00.000Z";
+  const FIVE_MIN = 300000;
+  const at = (hhmm) => `2026-09-23T${hhmm}:00.000Z`;
+  const BY = { actor: "you", via: "cli", node: "node-7297" };
+  const entry = (from, { parked = null, answered = null } = {}) => ({
+    question: "Q", phase: "build", askedAt: from, parkedAt: parked, answer: answered == null ? null : "b", answeredAt: answered, by: answered == null ? null : BY,
+  });
+  const OPEN = entry(at("10:30"));
+  const PARKED = entry(at("10:30"), { parked: at("11:00") });
+  const ANSWERED = entry(at("10:30"), { answered: at("11:00") });
+  const RUN_ID = "20260923T100000000Z-0000";
+
+  async function withItem(fn) {
+    const { repo, workDir } = await makeRepo();
+    try {
+      return await fn(await milestoneItem(workDir, { number: "131", slug: "the-human-in-the-loop" }));
+    } finally {
+      await rm(repo, { recursive: true, force: true });
+    }
+  }
+  const staleRunning = (asks, over = {}) => ({
+    runId: RUN_ID, state: "running", createdAt: at("10:00"), updatedAt: at("10:01"), heartbeatAt: at("10:01"),
+    node: null, resumeAfter: null, spend: null, ...(asks === undefined ? {} : { asks }), ...over,
+  });
+
+  return [
+    {
+      name: "131/01 task05 — the stale scan skips a run waiting on an unanswered last ask, and only that run (eleven rows)",
+      async run() {
+        const { staleRunningRuns } = await import("../../src/run-store.mjs");
+        const rows = [
+          ["[]", [], true],
+          ["one entry, open", [OPEN], false],
+          ["one entry, parked and unanswered", [PARKED], false],
+          ["one entry, answered", [ANSWERED], true],
+          ["an answered entry, then an open entry", [ANSWERED, OPEN], false],
+          ["absent (a sixteen-key record)", undefined, true],
+          ['"x" (read forward as [])', "x", true],
+          ["[null]", [null], true],
+          ["an open entry, then an answered entry", [OPEN, ANSWERED], true],
+          ["two answered entries", [ANSWERED, ANSWERED], true],
+          ["an answered entry, then a parked, unanswered entry", [ANSWERED, PARKED], false],
+        ];
+        await withItem(async (item) => {
+          for (const [label, asks, selected] of rows) {
+            await writeRecord(item, staleRunning(asks));
+            const picked = await staleRunningRuns([item], { now: NOW, stalenessThreshold: FIVE_MIN });
+            assert.equal(picked.some((run) => run.runId === RUN_ID), selected, `asks ${label}`);
+          }
+          for (const [label, over] of [
+            ["running, last beat at 13:58", { heartbeatAt: at("13:58"), updatedAt: at("13:58") }],
+            ["settled done", { state: "done", outcome: "done" }],
+            ["settled failed / runtime_offline", { state: "failed", outcome: "failed", failureReason: "runtime_offline" }],
+          ]) {
+            await writeRecord(item, staleRunning([OPEN], over));
+            assert.deepEqual(await staleRunningRuns([item], { now: NOW, stalenessThreshold: FIVE_MIN }), [], `${label}: not selected`);
+          }
+        });
+      },
+    },
+    {
+      name: "131/01 task05 — every sweep inherits the skip and leaves a waiting run byte-unchanged; once answered, the same sweep reclaims it",
+      async run() {
+        const { reclaimStaleRuns, answerRunAsk, readRuns } = await import("../../src/run-store.mjs");
+        const { transitionStaleRunsReclaimed } = await import("../../src/effects/run-transitions.mjs");
+        await withItem(async (item) => {
+          for (const [label, asks, sweep] of [
+            ["open / reclaimStaleRuns", [OPEN], () => reclaimStaleRuns([item], { now: NOW, stalenessThreshold: FIVE_MIN })],
+            ["parked / reclaimStaleRuns", [PARKED], () => reclaimStaleRuns([item], { now: NOW, stalenessThreshold: FIVE_MIN })],
+            ["parked / transitionStaleRunsReclaimed", [PARKED], () => transitionStaleRunsReclaimed([item], { now: NOW, stalenessThreshold: FIVE_MIN })],
+            ["open / transitionStaleRunsReclaimed", [OPEN], () => transitionStaleRunsReclaimed([item], { now: NOW, stalenessThreshold: FIVE_MIN })],
+          ]) {
+            await writeRecord(item, staleRunning(asks));
+            const before = await readFileBytes(item, RUN_ID);
+            assert.deepEqual(await sweep(), [], `${label}: reclaims nothing`);
+            assert.equal(await readFileBytes(item, RUN_ID), before, `${label}: the record is byte-unchanged`);
+          }
+
+          // The last row left R running with an OPEN ask and a 10:01 beat. The answer does not
+          // refresh its liveness, so the same sweep now reclaims it.
+          await answerRunAsk(item, RUN_ID, { answer: "b", by: BY, now: at("13:59") });
+          const settled = await transitionStaleRunsReclaimed([item], { now: NOW, stalenessThreshold: FIVE_MIN });
+          assert.equal(settled.length, 1, "the answered run is reclaimed");
+          const [run] = await readRuns(item);
+          assert.equal(run.state, "failed");
+          assert.equal(run.failureReason, "runtime_offline");
+        });
+      },
+    },
+    {
+      name: "131/01 task05 — the wait is charged to nobody: a three-hour answered wait, and an interval that ends at the answer, the park or now, clipped to the attempt",
+      async run() {
+        const { attemptElapsedMs } = await import("../../src/work/loop.mjs");
+        const record = (over) => ({ runId: RUN_ID, createdAt: at("10:00"), updatedAt: at("10:00"), heartbeatAt: null, reclaimedAt: null, state: "running", ...over });
+        const doneAt = (hhmm) => ({ state: "done", updatedAt: at(hhmm) });
+
+        const waited = record({ ...doneAt("13:30"), asks: [entry(at("10:15"), { answered: at("13:15") })] });
+        assert.equal(attemptElapsedMs({ record: waited, now: NOW }), 30 * 60 * 1000, "the three answered hours are removed");
+
+        for (const [label, over, ms] of [
+          ["running, still open from 12:00", { asks: [entry(at("12:00"))] }, 2 * 60 * 60 * 1000],
+          ["running, parked 12:00→13:00", { asks: [entry(at("12:00"), { parked: at("13:00") })] }, 3 * 60 * 60 * 1000],
+          ["settled at 11:00, open from 10:30", { ...doneAt("11:00"), asks: [entry(at("10:30"))] }, 30 * 60 * 1000],
+        ]) {
+          assert.equal(attemptElapsedMs({ record: record(over), now: NOW }), ms, label);
+        }
+      },
+    },
+    {
+      name: "131/01 task05 — intervals are clipped to the attempt, merged, and never charged twice (fourteen rows)",
+      async run() {
+        const { attemptElapsedMs } = await import("../../src/work/loop.mjs");
+        const { isStale } = await import("../../src/run-store.mjs");
+        const record = (over) => ({ runId: RUN_ID, createdAt: at("10:00"), updatedAt: at("10:00"), heartbeatAt: null, reclaimedAt: null, state: "running", ...over });
+        const rows = [
+          ["09:00 answered 10:30", [entry(at("09:00"), { answered: at("10:30") })], {}, 12600000],
+          ["09:00 still open", [entry(at("09:00"))], {}, 0],
+          ["11-12 and 11:30-12:30", [entry(at("11:00"), { answered: at("12:00") }), entry(at("11:30"), { answered: at("12:30") })], {}, 9000000],
+          ["11-13 and 11:30-12", [entry(at("11:00"), { answered: at("13:00") }), entry(at("11:30"), { answered: at("12:00") })], {}, 7200000],
+          ["10:15-10:45 and 12-12:30", [entry(at("10:15"), { answered: at("10:45") }), entry(at("12:00"), { answered: at("12:30") })], {}, 10800000],
+          ["11-12 answered, 13 open", [entry(at("11:00"), { answered: at("12:00") }), entry(at("13:00"))], {}, 7200000],
+          ["12 parked 13 answered 13:30", [entry(at("12:00"), { parked: at("13:00"), answered: at("13:30") })], {}, 9000000],
+          ["askedAt not-a-date", [{ ...entry("not-a-date", { answered: at("12:00") }) }], {}, 14400000],
+          ["askedAt null", [{ ...entry(null, { answered: at("12:00") }) }], {}, 14400000],
+          ["answeredAt garbage", [{ ...entry(at("12:00")), answeredAt: "garbage" }], {}, 14400000],
+          ["12 answered at 11", [entry(at("12:00"), { answered: at("11:00") })], {}, 14400000],
+          ["settled 11, 13-13:30", [entry(at("13:00"), { answered: at("13:30") })], { state: "done", updatedAt: at("11:00") }, 3600000],
+        ];
+        for (const [label, asks, over, ms] of rows) {
+          assert.equal(attemptElapsedMs({ record: record({ asks, ...over }), now: NOW }), ms, label);
+        }
+        const staleRecord = record({ heartbeatAt: at("13:00"), updatedAt: at("13:00"), asks: [entry(at("12:00"), { parked: at("13:00") })] });
+        assert.equal(attemptElapsedMs({ record: staleRecord, now: NOW, stalenessMs: FIVE_MIN, isStale }), 7200000, "stale: ends at its last beat");
+        assert.equal(attemptElapsedMs({ record: record({ createdAt: "x", asks: [entry(at("12:00"))] }), now: NOW }), null, "an unreadable createdAt");
+      },
+    },
+    {
+      name: "131/01 task05 — an answered ask on an earlier attempt is not charged to the lineage, and a record without asks answers what it answered before",
+      async run() {
+        const { attemptElapsedMs, lineageElapsedMs } = await import("../../src/work/loop.mjs");
+        const one = { runId: "a1", createdAt: at("10:00"), updatedAt: at("11:00"), state: "failed", heartbeatAt: null, reclaimedAt: null, asks: [entry(at("10:15"), { answered: at("10:45") })] };
+        const two = { runId: "a2", retryOf: "a1", createdAt: at("12:00"), updatedAt: at("13:00"), state: "done", heartbeatAt: null, reclaimedAt: null, asks: [] };
+        assert.equal(lineageElapsedMs({ runs: [one, two], now: NOW }), 5400000);
+
+        const plain = [
+          { createdAt: at("10:00"), updatedAt: at("11:00"), state: "done" },
+          { createdAt: at("10:00"), updatedAt: at("10:00"), state: "running" },
+          { createdAt: at("10:00"), updatedAt: at("10:30"), state: "failed", reclaimedAt: at("13:00"), heartbeatAt: at("10:20") },
+        ];
+        for (const base of plain) {
+          const without = attemptElapsedMs({ record: base, now: NOW });
+          assert.equal(attemptElapsedMs({ record: { ...base, asks: [] }, now: NOW }), without, "asks: [] answers what an absent asks answers");
+        }
+        assert.equal(lineageElapsedMs({ runs: plain.map((r) => ({ ...r, asks: [] })), now: NOW }), lineageElapsedMs({ runs: plain, now: NOW }));
+      },
+    },
+    {
+      name: "131/01 task05 — the engine stays pure: src/work/loop.mjs has zero imports and reads no clock",
+      async run() {
+        const { stripComments } = await import("../support/source-slice.mjs");
+        const source = stripComments(await readFile(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "work", "loop.mjs"), "utf8"));
+        assert.doesNotMatch(source, /^\s*import\s/mu, "zero import statements");
+        assert.ok(!source.includes("Date.now(") && !source.includes("new Date("), "no Date.now( and no new Date(");
+      },
+    },
+  ];
+}

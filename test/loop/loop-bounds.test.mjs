@@ -23,6 +23,8 @@ import {
   LOOP_BOUND_VALUE_KEYS,
   LOOP_BOUND_VALUE_RESOLVERS,
   LOOP_CONCURRENCY_MODES,
+  LOOP_AGENT_MODES,
+  LOOP_AGENT_MODE_RESOLVERS,
   NO_DECLARED_RANGE,
   OUTSIDE_DECLARED_RANGE,
   STEP_WOULD_BE_COMPOUND,
@@ -30,8 +32,14 @@ import {
   deadlineApplicability,
   loopBoundsFromConfig,
   loopConcurrencyFromConfig,
+  loopDispatchConcurrencyFromConfig,
+  loopAgentRefineModeFromConfig,
+  loopAgentContinueModeFromConfig,
+  loopAgentModeFromConfig,
   rangeProbe,
   resolveLoopConcurrency,
+  resolveLoopDispatchConcurrency,
+  resolveLoopAgentMode,
   resolveStartToCloseMs,
   resolveReviewRounds,
   resolvesLoopBoundConfigKey,
@@ -50,6 +58,7 @@ import {
   progressSample,
 } from "../../src/loop-progress.mjs";
 import { resolveAttemptCeiling } from "../../src/commands/run-retry.mjs";
+import { stripComments } from "../support/source-slice.mjs";
 import { loopCommand } from "../../src/commands/loop.mjs";
 import { loopFixture } from "./loop-command-probe.test.mjs";
 
@@ -150,8 +159,10 @@ export const loopBoundsTests = [
   {
     name: "69/00 bounds/00 dispatch concurrency and maxAttempts keep their existing homes",
     async run() {
-      const source = await readFile(path.join(root, "src", "loop-bounds.mjs"), "utf8");
-      assert.doesNotMatch(source, /dispatch\??\.concurrency|autonomous\??\.maxAttempts/u);
+      const source = stripComments(await readFile(path.join(root, "src", "loop-bounds.mjs"), "utf8"));
+      // The POOL bound (`work.dispatch.concurrency`) and maxAttempts keep their homes; the home's
+      // OWN `work.loop.dispatch.concurrency` (129/07) is read here and is not the pool's key.
+      assert.doesNotMatch(source, /work\??\.dispatch\??\.concurrency|autonomous\??\.maxAttempts/u);
       assert.equal(dispatchConcurrencyFromConfig({ config: { work: { dispatch: { concurrency: 7 } } } }), 7);
       const retry = await readFile(path.join(root, "src", "commands", "run-retry.mjs"), "utf8");
       assert.match(retry, /config\?\.work\?\.autonomous\?\.maxAttempts\s*\?\?\s*3/u);
@@ -652,18 +663,131 @@ export const clampTests = [
     },
   })),
   {
-    name: "129/01/00 the key is a member of BOTH resolver maps and of both key lists — nine keys, appended last",
+    name: "129/01/00 the key is a member of BOTH resolver maps and of both key lists — the ninth, after the eight deadlines and caps (129/07's three follow it)",
     run() {
       assert.equal(LOOP_BOUND_VALUE_RESOLVERS["work.loop.concurrency"], resolveLoopConcurrency);
       assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.concurrency"], loopConcurrencyFromConfig);
       assert.deepEqual([...LOOP_BOUND_VALUE_KEYS].sort(), [...LOOP_BOUND_CONFIG_KEYS].sort());
-      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 9);
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 9);
-      // APPENDED LAST: the eight keys 69 and 61 declared keep their order in both lists.
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-1), "work.loop.concurrency");
-      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-1), "work.loop.concurrency");
+      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 12);
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 12);
+      // THE NINTH: the eight keys 69 and 61 declared keep their order in both lists, the mode
+      // follows them, and 129/07's three follow the mode.
+      assert.equal(LOOP_BOUND_CONFIG_KEYS[8], "work.loop.concurrency");
+      assert.equal(LOOP_BOUND_VALUE_KEYS[8], "work.loop.concurrency");
       assert.deepEqual(LOOP_BOUND_CONFIG_KEYS.slice(0, 8), Object.keys(defaults).map((field) => `work.loop.${field}`), "the eight before it are the deadline policy's, in its order");
       assert.equal(resolvesLoopBoundConfigKey("work.loop.concurrency"), true);
+    },
+  },
+  // ── 129/07 task 00 — the three self-contained keys ───────────────────────────
+  {
+    name: "129/07 task00 both maps carry exactly twelve keys, the three appended last in order, each resolving its config key",
+    run() {
+      const three = ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode"];
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 12);
+      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 12);
+      assert.deepEqual([...LOOP_BOUND_VALUE_KEYS].sort(), [...LOOP_BOUND_CONFIG_KEYS].sort());
+      assert.deepEqual(LOOP_BOUND_CONFIG_KEYS.slice(9), three, "indices 9–11 are the three, in order");
+      assert.deepEqual(LOOP_BOUND_VALUE_KEYS.slice(9), three, "…in both lists");
+      assert.deepEqual(LOOP_BOUND_CONFIG_KEYS.slice(0, 9), [...Object.keys(defaults).map((field) => `work.loop.${field}`), "work.loop.concurrency"], "indices 0–8 are unchanged");
+      for (const key of three) assert.equal(resolvesLoopBoundConfigKey(key), true, `${key} resolves`);
+      assert.equal(LOOP_BOUND_VALUE_RESOLVERS["work.loop.dispatch.concurrency"], resolveLoopDispatchConcurrency);
+      assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.dispatch.concurrency"], loopDispatchConcurrencyFromConfig);
+      assert.equal(LOOP_BOUND_VALUE_RESOLVERS["work.loop.agents.refine.mode"], resolveLoopAgentMode);
+      assert.equal(LOOP_BOUND_VALUE_RESOLVERS["work.loop.agents.continue.mode"], resolveLoopAgentMode);
+      assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.agents.refine.mode"], loopAgentRefineModeFromConfig);
+      assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.agents.continue.mode"], loopAgentContinueModeFromConfig);
+      assert.deepEqual([...LOOP_AGENT_MODES], ["solo", "orchestrated"]);
+    },
+  },
+  ...[
+    ["resolveLoopDispatchConcurrency", 2, 2],
+    ["resolveLoopDispatchConcurrency", 1, 1],
+    ["resolveLoopDispatchConcurrency", 0, null],
+    ["resolveLoopDispatchConcurrency", -1, null],
+    ["resolveLoopDispatchConcurrency", 2.5, null],
+    ["resolveLoopDispatchConcurrency", "2", null],
+    ["resolveLoopDispatchConcurrency", undefined, null],
+    ["resolveLoopDispatchConcurrency", null, null],
+    ["resolveLoopAgentMode", "solo", "solo"],
+    ["resolveLoopAgentMode", "orchestrated", "orchestrated"],
+    ["resolveLoopAgentMode", "Solo", null],
+    ["resolveLoopAgentMode", " solo", null],
+    ["resolveLoopAgentMode", "inline", null],
+    ["resolveLoopAgentMode", 1, null],
+    ["resolveLoopAgentMode", undefined, null],
+  ].map(([resolver, value, answer]) => ({
+    name: `129/07 task00 value resolver — ${resolver}(${JSON.stringify(value)}) answers ${JSON.stringify(answer)} verbatim-or-null and does not throw`,
+    run() {
+      const resolve = { resolveLoopDispatchConcurrency, resolveLoopAgentMode }[resolver];
+      assert.doesNotThrow(() => resolve(value));
+      assert.equal(resolve(value), answer);
+    },
+  })),
+  ...[
+    ["loopDispatchConcurrencyFromConfig", { dispatch: { concurrency: 2 } }, 2],
+    ["loopDispatchConcurrencyFromConfig", { dispatch: { concurrency: 0 } }, null],
+    ["loopDispatchConcurrencyFromConfig", { dispatch: {} }, null],
+    ["loopDispatchConcurrencyFromConfig", {}, null],
+    ["loopDispatchConcurrencyFromConfig", undefined, null],
+    ["loopAgentRefineModeFromConfig", { agents: { refine: { mode: "solo" } } }, "solo"],
+    ["loopAgentRefineModeFromConfig", { agents: { continue: { mode: "solo" } } }, null],
+    ["loopAgentContinueModeFromConfig", { agents: { continue: { mode: "orchestrated" } } }, "orchestrated"],
+    ["loopAgentContinueModeFromConfig", { agents: { refine: { mode: "orchestrated" } } }, null],
+    ["loopAgentContinueModeFromConfig", { agents: { continue: { mode: "SOLO" } } }, null],
+    ["loopAgentContinueModeFromConfig", { agents: "solo" }, null],
+  ].map(([resolver, loop, answer]) => ({
+    name: `129/07 task00 config resolver — ${resolver} over work.loop ${JSON.stringify(loop)} answers ${JSON.stringify(answer)}`,
+    run() {
+      const resolve = { loopDispatchConcurrencyFromConfig, loopAgentRefineModeFromConfig, loopAgentContinueModeFromConfig }[resolver];
+      const workspace = loop === undefined ? { config: { work: {} } } : { config: { work: { loop } } };
+      assert.equal(resolve(workspace), answer);
+      assert.equal(LOOP_BOUND_CONFIG_RESOLVERS[{
+        loopDispatchConcurrencyFromConfig: "work.loop.dispatch.concurrency",
+        loopAgentRefineModeFromConfig: "work.loop.agents.refine.mode",
+        loopAgentContinueModeFromConfig: "work.loop.agents.continue.mode",
+      }[resolver]](workspace), answer, "the map answers the same");
+    },
+  })),
+  {
+    name: "129/07 task00 loopAgentModeFromConfig(workspace, phase) answers the phase's key, and null for a phase that resolves no mode",
+    run() {
+      const workspace = { config: { work: { loop: { agents: { refine: { mode: "solo" }, continue: { mode: "orchestrated" } } } } } };
+      assert.equal(loopAgentModeFromConfig(workspace, "refine"), "solo");
+      assert.equal(loopAgentModeFromConfig(workspace, "continue"), "orchestrated");
+      assert.equal(loopAgentModeFromConfig(workspace, "verify"), null, "verify resolves no mode");
+      assert.equal(loopAgentModeFromConfig({ config: { work: {} } }, "refine"), null, "unset is null");
+      assert.deepEqual(Object.keys(LOOP_AGENT_MODE_RESOLVERS), ["refine", "continue"]);
+    },
+  },
+  ...[
+    ["work.loop.dispatch.concurrency", 1, true, null],
+    ["work.loop.dispatch.concurrency", 3, true, null],
+    ["work.loop.dispatch.concurrency", 0, false, OUTSIDE_DECLARED_RANGE],
+    ["work.loop.dispatch.concurrency", "3", false, OUTSIDE_DECLARED_RANGE],
+    ["work.loop.agents.refine.mode", "solo", true, null],
+    ["work.loop.agents.refine.mode", "orchestrated", true, null],
+    ["work.loop.agents.refine.mode", "parallel", false, OUTSIDE_DECLARED_RANGE],
+    ["work.loop.agents.continue.mode", "solo", true, null],
+    ["work.loop.agents.continue.mode", 1, false, OUTSIDE_DECLARED_RANGE],
+  ].map(([key, proposed, admissible, code]) => ({
+    name: `129/07 task00 range probe — ${JSON.stringify(proposed)} for ${key} is ${admissible ? "admissible" : "refused"}`,
+    run() {
+      const probed = rangeProbe(key, proposed);
+      assert.equal(probed.admissible, admissible);
+      assert.equal(probed.code, code);
+      assert.equal(probed.key, key);
+    },
+  })),
+  {
+    name: "129/07 task00 the deadline policy is untouched and the home reads no workspace twin",
+    async run() {
+      const workspace = { config: { work: { loop: { dispatch: { concurrency: 1 }, agents: { refine: { mode: "solo" } } } } } };
+      assert.deepEqual(Object.keys(loopBoundsFromConfig(workspace)), Object.keys(defaults), "the eight of HEAD, no more");
+      const home = stripComments(await readFile(new URL("../../src/loop-bounds.mjs", import.meta.url), "utf8"));
+      assert.doesNotMatch(home, /work\??\.dispatch\??\.concurrency/u, "the pool bound is not read here");
+      assert.doesNotMatch(home, /agents\??\.mode\b/u, "work.agents.mode is not read here");
+      assert.doesNotMatch(home, /work\??\.agents\b/u, "work.agents is not read here");
+      assert.match(home, /loopConfig\(workspace\)\?\.dispatch\?\.concurrency/u, "the home's own read is the loop key's");
     },
   },
   // Scenario Outline: the range probe admits exactly the two modes — through the resolver

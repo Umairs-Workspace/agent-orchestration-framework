@@ -757,8 +757,12 @@ export const terminalHarnessShellFocusKeyboardTests = [
         .map((file) => path.relative(repoRoot, file).split(path.sep).join("/"));
       assert.deepEqual(
         askers,
-        ["test/session/terminal-harness-shell-focus-keyboard.test.mjs"],
-        `only this story's own suite asks for host nodes, per lane — no harness asks on a suite's behalf (found: ${askers.join(", ")})`,
+        // 127/04's board suite is the second legitimate asker (aof:verify 127): the milestone switcher
+        // reads bare `document` and positions its listbox off `getBoundingClientRect`, so opening it
+        // headlessly needs a real host node and a rect stamped on it — asked for BY THAT SUITE, per
+        // lane, which is exactly the shape this leg admits; no harness asks on its behalf.
+        ["test/session/terminal-harness-shell-focus-keyboard.test.mjs", "test/ui/board-backlog-and-archive.test.mjs"],
+        `only the suites that legitimately ask for host nodes do so, per lane — no harness asks on a suite's behalf (found: ${askers.join(", ")})`,
       );
 
       // …and each surface harness's default is read by PARSE rather than by a substring: the

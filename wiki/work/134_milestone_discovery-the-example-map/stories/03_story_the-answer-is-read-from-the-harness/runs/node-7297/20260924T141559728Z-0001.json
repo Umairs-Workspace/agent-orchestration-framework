@@ -1,0 +1,49 @@
+{
+  "runId": "20260924T141559728Z-0001",
+  "itemRef": "134/03",
+  "state": "failed",
+  "attempt": 1,
+  "outcome": "failed",
+  "sessionId": "93773dab-4a8e-46d2-9072-e6ed01c09f6c",
+  "brief": {
+    "loop": {
+      "loopRunId": "31b98c4d-fe21-43c9-819c-16e9927e4190",
+      "scope": "134",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-23T23:13:10.187Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-09-24T14:08:59.832Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/119 FF-11903: the citation sweep is bounded by a shrink-only ceiling pinned to a measured count",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
+        "arch/96/02 FF-9603 (2) THE BAN IS A PROPERTY OF THE STREAM — every PLAN.md under wiki/work is admitted, not only the template"
+      ],
+      "baseCommit": "525eb7dcf10a54cf010072ae0bbf354a3c000b05"
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-134-03",
+      "branch": "aof/mesh/134-03",
+      "baseCommit": "525eb7dcf10a54cf010072ae0bbf354a3c000b05"
+    }
+  },
+  "createdAt": "2026-09-24T14:15:59.728Z",
+  "updatedAt": "2026-09-24T15:22:35.369Z",
+  "failureReason": "runtime_offline",
+  "heartbeatAt": "2026-09-24T14:45:10.592Z",
+  "retryOf": null,
+  "reclaimedAt": "2026-09-24T15:22:35.369Z",
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null
+}

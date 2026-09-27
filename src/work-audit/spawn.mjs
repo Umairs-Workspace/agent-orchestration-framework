@@ -184,6 +184,17 @@ export async function runBounded({
   graceMs,
   stdin = "ignore",
   spawnChild = spawnChildProcess,
+  // 129/06 F-63 — THE CHILD'S OWN CONSOLE. On win32 a child spawned with piped stdio still
+  // ATTACHES to its parent's console, and a console-scoped kill inside the child — node-pty's
+  // ConPTY console-list agent, which enumerates and terminates every process of the console it
+  // reaches — can then take the PARENT down (measured 2026-09-15 19:35Z: the loop died,
+  // unbracketed, at a lane child's session kill; loop death #4 on 2026-09-13 was the same agent
+  // from inside the loop). `ownConsole: true` spawns the child DETACHED on win32 — its own
+  // console (hidden), no console shared with the caller — so nothing that kills a console the
+  // child holds can reach the process that asked for it. Stdio pipes are handles, not the
+  // console, so the document, stderr and the stdin cancel channel are untouched; the deadline,
+  // grace and abort kills below still land (`child.kill` is by pid). Elsewhere a no-op.
+  ownConsole = false,
 } = {}) {
   const bound = Number.isFinite(deadlineMs) && deadlineMs > 0 ? deadlineMs : DEFAULT_DEADLINE_MS;
   // The grace is a positive safe integer or the named default — `0`, a negative, `NaN`,
@@ -236,6 +247,7 @@ export async function runBounded({
       env,
       stdio: [stdin, "pipe", "pipe"],
       windowsHide: true,
+      ...(ownConsole === true && process.platform === "win32" ? { detached: true } : {}),
     });
   } catch (error) {
     return result({

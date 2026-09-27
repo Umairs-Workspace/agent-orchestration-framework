@@ -24,10 +24,15 @@ import {
 } from "./runs.mjs";
 import { StatusRing, StatusChip } from "./status";
 import { StaleBadge, ProvenanceLabel } from "./StaleBadge";
+// 127/04 — the archived mark in the header cluster (a DRIVER's context only), and the H2's
+// slug fallback from the board's ONE humaniser (the backlog row shares it).
+import { ArchivedPill, carriesArchivedMark } from "./ArchivedPill";
+import { humanizeSlug } from "./model";
 import type { Freshness, FreshnessRecord } from "./freshness.mjs";
 import { ProvenanceLine } from "./ProvenanceLine";
 import { ActionsStrip } from "./ActionsStrip";
-import { Markdown } from "./Markdown";
+import { AskCard } from "./AskCard";
+import { DiagramMarkdown, Markdown } from "./Markdown";
 
 type Tab = DocName | "FINDINGS" | "TASKS" | "RUNS";
 
@@ -36,7 +41,7 @@ type Tab = DocName | "FINDINGS" | "TASKS" | "RUNS";
 // RUNS is offered at the level that OWNS a runs/ log — both milestones and stories
 // (m19 ADR-002) — and never on a uat gate (DESIGN surface 1).
 function tabsFor(item: WorkItem): Tab[] {
-  if (item.type === "milestone") return ["SPEC", "VERIFICATION", "RETROSPECTIVE", "RUNS", "FINDINGS"];
+  if (item.type === "milestone") return ["SPEC", "ARCHITECTURE", "VERIFICATION", "RETROSPECTIVE", "RUNS", "FINDINGS"];
   if (item.type === "story") return ["STORY", "TASKS", "RUNS"];
   if (item.type === "uat") return ["FINDINGS"];
   return ["SPEC"];
@@ -151,7 +156,7 @@ export function DetailPanel({
       return;
     }
     let cancelled = false;
-    const docs: DocName[] = ["SPEC", "VERIFICATION", "RETROSPECTIVE"];
+    const docs: DocName[] = ["SPEC", "ARCHITECTURE", "VERIFICATION", "RETROSPECTIVE"];
     Promise.all(
       docs.map((d) =>
         workApi
@@ -205,6 +210,7 @@ export function DetailPanel({
               badge is `text-[11px]`. */}
           <span className="ml-auto flex items-center gap-1.5">
             <StaleBadge freshness={freshness} form="full" />
+            {carriesArchivedMark(item) ? <ArchivedPill /> : null}
             <StatusChip status={item.status} />
           </span>
         </div>
@@ -339,6 +345,7 @@ export function DetailPanel({
 
       {/* body */}
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <AskCard key={item.ask ? (item.ask.runId ? `${item.ask.runId}:${item.ask.askedAt}` : `mesh:${item.ask.sessionId}`) : "none"} item={item} actor={actor} now={now} />
         <DocBody
           tab={tab}
           doc={doc}
@@ -485,6 +492,7 @@ type RecordState = "present" | "none";
 function MilestoneRecords({ records }: { records: Record<string, boolean> }) {
   const rows: Array<{ label: string; key: string }> = [
     { label: "Spec / objective", key: "SPEC" },
+    { label: "Architecture", key: "ARCHITECTURE" },
     { label: "Verification", key: "VERIFICATION" },
     { label: "Retrospective", key: "RETROSPECTIVE" },
   ];
@@ -562,7 +570,8 @@ function DocMarkdown({
   // Render the cleaned (frontmatter/comment-stripped) body as HTML, not raw text.
   // The artifact's own provenance line is the region's FIRST child and is emitted
   // by `DocBody` above, so this returns the body and nothing else.
-  return <Markdown source={cleanDoc(doc.body)} />;
+  if (tab !== "ARCHITECTURE") return <Markdown source={cleanDoc(doc.body)} />;
+  return <DiagramMarkdown source={cleanDoc(doc.body)} itemRef={item.ref} load={(member) => workApi.doc(item.ref, "DIAGRAMS", member)} elsewhere={elsewhere} />;
 }
 
 // The node that reported this row, for the copy the cache-miss placeholder needs.
@@ -974,17 +983,6 @@ function shortSession(sessionId: string | null): string {
   if (!sessionId) return "sess·—";
   const head = sessionId.replace(/^sess(ion)?[-_]?/i, "").slice(0, 4);
   return head ? `sess·${head}…` : "sess·—";
-}
-
-// A title-cased reading of a slug, for the H2 fallback when an item has no
-// explicit title — "work-board-ui" → "Work Board Ui". Keeps the H2 readable
-// without re-printing the raw slug twice (the meta line is then suppressed).
-function humanizeSlug(slug: string): string {
-  return slug
-    .split(/[-_]+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }
 
 // Strip the YAML frontmatter block and HTML comments so the rendered doc reads as

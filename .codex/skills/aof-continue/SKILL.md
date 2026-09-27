@@ -5,7 +5,7 @@ description: Execute/resume a work item — build its tasks to green, then struc
 
 <!-- aof-generated: true; aof-runtime: codex -->
 
-Use this skill when the user asks for `$aof-continue <item ref, or a NN/MM-PP story span> [--solo]`, or asks to run the AOF `aof:continue` procedure in Codex.
+Use this skill when the user asks for `$aof-continue <item ref, or a NN/MM-PP story span> [--solo | --orchestrated]`, or asks to run the AOF `aof:continue` procedure in Codex.
 
 Where this procedure mentions `$ARGUMENTS`, use the text the user supplied after the skill name.
 Where it mentions Claude slash command `/aof:continue`, treat that as this Codex skill invocation.
@@ -45,14 +45,18 @@ where the operator is and is never dispatched to a worker.)
 </config>
 
 <config>
-Parse `$ARGUMENTS` into the item **ref** and an optional **`--solo`** flag.
+Parse `$ARGUMENTS` into the item **ref** and an optional **`--solo`** or **`--orchestrated`** flag.
 
 **Execution mode.** Resolve from `work.agents.mode`: `"solo"` → play every role inline in this
 session; any other value → orchestrated (spawn the role agents). **`--solo` OVERRIDES an
-orchestrated config to solo for this run.** This command delegates to no other command, so the flag
-governs exactly one thing: which roles this session plays inline and which it spawns. It changes
-only WHO does the work, never WHAT is produced — the same build, the same review lanes, the same
-gates.
+orchestrated config to solo for this run**, and **`--orchestrated` OVERRIDES a solo config to
+orchestrated for this run** — its twin in the other direction. The two together are contradictory:
+STOP before any role runs and report it. The loop composes one of the two when
+`work.loop.agents.continue.mode` is set in `.aof/aof.config.json` (its home is `src/loop-bounds.mjs`),
+and composes nothing when it is unset, so a loop-driven continue falls back to `work.agents.mode`
+exactly as a hand-run one does. This command delegates to no other command, so the flag governs
+exactly one thing: which roles this session plays inline and which it spawns. It changes only WHO
+does the work, never WHAT is produced — the same build, the same review lanes, the same gates.
 
 Reach for it when the main session already holds the context a spawned agent would have to
 rediscover from cold: a well-trodden change, a small story, or a fix round on work you just did.

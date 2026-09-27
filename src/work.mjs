@@ -21,15 +21,16 @@ import { readJson, writeText } from "./fs.mjs";
 // milestone 33 / story 00 (ADR-004, F-3203) — the per-install identity hydration
 // seam. sidecarPathFor is the ONE sidecar-path builder (never re-derived here);
 // readSidecar is the ONE tolerant sidecar read (22/R2, shared with every other
-// sidecar reader/writer in node-identity.mjs); sanitizeHostname + deriveNodeId are
+// sidecar reader/writer in node-identity.mjs); isSameHost + deriveNodeId are
 // reused so the self-heal re-derive is the IDENTICAL precedence chain deriveNodeId
 // itself uses, not a private re-derivation.
-import { sidecarPathFor, readSidecar, sanitizeHostname, deriveNodeId, isDerivationOf } from "./node-identity.mjs";
+import { sidecarPathFor, readSidecar, isSameHost, deriveNodeId, isDerivationOf } from "./node-identity.mjs";
 // milestone 66 / story 00 (ADR-003 §1, ADR-002) — the ONE Gherkin reader, and the ONE
 // acceptance-horizon predicate. Both are leaves this god-node now reaches by import
 // rather than by a second hand-rolled copy: `checkFeature` below is a thin caller.
 import { parseFeature } from "./feature-parse.mjs";
 import { VALID_STATUS, isOpen, itemStatusEdges } from "./acceptance-horizon.mjs";
+import { digestFindings } from "./work/digest-template.mjs";
 
 // milestone 62 gate (finding D-04) — "in-review" IS NOT SPELLED HERE, and only that word.
 // This module has always carried four of the frozen five as literals and stayed under
@@ -194,13 +195,14 @@ export async function healIdentitySidecar({ sidecar = {}, hostname, sidecarPath,
   // Trigger 1 (the copied-.aof symptom): the CURRENT machine's sanitized hostname no
   // longer matches the RECORDED derivation host (compared derivedFrom-vs-hostname, never
   // the resolved nodeId — a collision-suffixed id never equals its own bare stem).
-  const hostnameChanged = sanitizeHostname(hostname) !== sanitizeHostname(sidecar.derivedFrom);
+  const hostnameChanged = !isSameHost(hostname, sidecar.derivedFrom);
   // Trigger 2 (F-3302 — a derivation-RULE change self-migrates): the stored id is no
   // longer a valid derivation of its OWN recorded host under current rules (e.g. a
   // pre-`.local`-strip `umamis-mac-mini-local`). isDerivationOf recognises the
-  // collision-suffixed / empty-stem forms, so a legitimate collision id is NOT churned
-  // (the craft/architect regression). Self-terminating: after the heal the id IS a valid
-  // derivation, so a second load is a keep.
+  // opaque forms AND the legacy hostname-stem forms (132/01), so neither a legitimate
+  // collision id nor a pre-132 stem id is churned — moving a legacy id to the opaque form
+  // is `aof mesh identity --reidentify`, never a load. Self-terminating: after the heal
+  // the id IS a valid derivation, so a second load is a keep.
   const staleFormat = !isDerivationOf(sidecar.nodeId, sidecar.derivedFrom, sidecar.salt);
   if (!hostnameChanged && !staleFormat) {
     return sidecar; // still on the recorded derivation host with a valid-format id.
@@ -361,7 +363,7 @@ export async function loadWorkspace(cwd = process.cwd(), explicitConfig, { hostn
   //
   // WHY it exists: on `direct` a peer is found by resolving its advertised host, and a
   // guest can INHERIT its host machine's name (a WSL2 distro defaults to the Windows
-  // hostname — measured: both answer `Umamis-MSI`). Resolving that name from either
+  // hostname — measured: both answer `Win-Host-A`). Resolving that name from either
   // side returns the HOST, so without an explicit address the guest is unreachable and
   // its nodeId collides. `aof mesh identity --name <id> --address <ip>` breaks both.
   if (typeof sidecar.address === "string" && sidecar.address.length > 0) {
@@ -1279,6 +1281,10 @@ export async function validateWork(workDir, config, scopeRef) {
         if (!sameNum(meta.milestone ?? "", item.number)) add(docPath, `digest milestone "${meta.milestone ?? ""}" ≠ folder "${item.number}"`);
         if (meta.slug !== item.slug) add(docPath, `digest slug "${meta.slug ?? ""}" ≠ folder "${item.slug}"`);
         if (!VALID_STATUS.has(meta.status)) add(docPath, `invalid status "${meta.status ?? ""}"`);
+        // Story 137 — the key set and the `## ` section set are the shipped AOF.md
+        // template's, read through its one contract module rather than listed again here.
+        // The headings need the doc text; only a digest pays for this second read.
+        for (const problem of digestFindings(meta, await readFile(docPath, "utf8"))) add(docPath, problem);
       } else {
         if (meta.type !== item.type) add(docPath, `frontmatter type "${meta.type ?? ""}" ≠ folder type "${item.type}"`);
         // 127/ADR-005 §3 — a BACKLOG record doc carries no `number:` until `promote` mints

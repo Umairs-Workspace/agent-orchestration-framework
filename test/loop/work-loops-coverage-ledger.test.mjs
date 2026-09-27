@@ -67,7 +67,7 @@ import { coverage as commandsCoverage, workLoopsCommandsTests } from "./work-loo
 import { coverage as censusCoverage, workLoopsRegistryCensusTests } from "./work-loops-registry-census.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const MILESTONE = "wiki/work/52_milestone_loop-registry-and-graph";
+const MILESTONE = "wiki/work/archive/52_milestone_loop-registry-and-graph";
 const STORY_05 = `${MILESTONE}/stories/05_story_behavioural-suites`;
 const S00 = `${MILESTONE}/stories/00_story_loop-model-and-loader/tasks`;
 const S01 = `${MILESTONE}/stories/01_story_structural-checks/tasks`;

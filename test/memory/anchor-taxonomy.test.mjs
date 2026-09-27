@@ -37,7 +37,7 @@ async function withRegistry(files, run) {
 // ————— milestone 59 / story 00 · task 04 — the anchor's `checked:` date ————————————————
 
 const CHECKED_FEATURE_59 =
-  "wiki/work/59_milestone_audit-loops/stories/00_story_the-auditor-kind/tasks/04_an-anchor-says-when-it-was-checked.feature";
+  "wiki/work/archive/59_milestone_audit-loops/stories/00_story_the-auditor-kind/tasks/04_an-anchor-says-when-it-was-checked.feature";
 
 /** A complete `kind: watcher` record — 57/ADR-001 §2, unchanged by this story. */
 const watcher59 = (stem, extra = {}) =>
@@ -200,7 +200,7 @@ export const anchorTaxonomyTests = [
   // needs to know about it is what an anchor may say. Whether a given date is too OLD is a window,
   // and the window is 59/03's — nothing below compares a date to anything.
   //
-  // Contract: `wiki/work/59_milestone_audit-loops/stories/00_story_the-auditor-kind/tasks/
+  // Contract: `wiki/work/archive/59_milestone_audit-loops/stories/00_story_the-auditor-kind/tasks/
   // 04_an-anchor-says-when-it-was-checked.feature`. ADR-005 §2. FF-5902.
   {
     name: "anchor-taxonomy/59 an anchor records when it was last checked, and its other declarations are untouched",

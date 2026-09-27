@@ -1,0 +1,30 @@
+{
+  "runId": "20260911T153209386Z-0000",
+  "itemRef": "127/01",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "b0cafc98-35b3-4358-915a-1aa456ad8647",
+  "brief": {
+    "loop": {
+      "loopRunId": "5c554454-2f26-4613-9c89-c21c957bca90",
+      "scope": "127",
+      "level": "L2",
+      "cap": 6,
+      "phase": "refine",
+      "cycle": 1,
+      "startedAt": "2026-09-11T13:03:43.182Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": true
+    }
+  },
+  "createdAt": "2026-09-11T15:32:09.386Z",
+  "updatedAt": "2026-09-11T17:03:17.827Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-09-11T16:21:43.173Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null
+}

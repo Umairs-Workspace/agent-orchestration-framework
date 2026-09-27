@@ -38,7 +38,7 @@ import { renameMapFromHistory, renameMapProblems, resolveCitedSuite } from "../.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");
-const milestoneDir = path.join(workDir, "66_milestone_controls-that-run");
+const milestoneDir = path.join(workDir, "archive", "66_milestone_controls-that-run");
 const architecturePath = path.join(milestoneDir, "ARCHITECTURE.md");
 
 // Both runners, NAMED (never globbed): measured, 287 suites in `test/arch/` are named

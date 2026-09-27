@@ -67,6 +67,122 @@ export function claudeProjectsDir({ cwd = process.cwd(), home = os.homedir(), en
   return path.join(base, "projects", projectSlug(cwd));
 }
 
+// milestone 131 / ADR-002 — THE LAST ASSISTANT TURN IS READ HERE, ONCE. The driver used to
+// walk a transcript privately for its settled outcome and throw the turn's words away; the
+// question a session asks lives in those words, so the scan moved into the transcript family
+// and the driver's outcome is a mapping over it. The two literals the reader and the detectors
+// share live beside it, because this module may not import the driver that imports it (the
+// driver re-exports both, so its frozen seventeen do not move).
+export const NEEDS_INPUT_SENTINEL = "NEEDS_INPUT";
+// The closed set of tools whose PENDING call means the session is waiting on a human (measured
+// live 2026-07-27, `/aof:autonomous 18`: a scope question asked through the widget read as a
+// healthy `running` for 28+ minutes). An ordinary pending tool is still working and never matches.
+export const HUMAN_INPUT_TOOL_NAMES = ["AskUserQuestion"];
+
+// readLastAssistantTurn(file, sinceOffset = 0) → null | { stopReason, text, humanInputTool,
+// answered } — the transcript's LAST assistant record, read from the end. Records at or before
+// `sinceOffset` (a resumed session's size at spawn) are pre-resume history and are not read; a
+// baseline that cuts a line drops that partial line, and one that lands on a record boundary
+// keeps the next record. `text` joins the turn's text blocks, each followed by one `\n` (a string
+// `content` is taken as it is); `humanInputTool` is its `{ name, input }` human-input `tool_use`
+// block, or `null`; `answered` is true once a `user` record follows the turn. NEVER throws: an
+// absent, unreadable or turn-less transcript is `null`.
+export async function readLastAssistantTurn(file, sinceOffset = 0) {
+  let bytes;
+  try {
+    bytes = await fsp.readFile(file);
+  } catch {
+    return null;
+  }
+  let text;
+  if (sinceOffset > 0) {
+    const cutMidLine = sinceOffset <= bytes.length && bytes[sinceOffset - 1] !== 0x0a;
+    text = bytes.subarray(sinceOffset).toString("utf8");
+    if (cutMidLine) {
+      const firstNewline = text.indexOf("\n");
+      text = firstNewline === -1 ? "" : text.slice(firstNewline + 1);
+    }
+  } else {
+    text = bytes.toString("utf8");
+  }
+  const lines = text.split("\n");
+  let answered = false;
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i].trim();
+    if (line.length === 0) continue;
+    const record = safeParse(line);
+    if (record == null) continue;
+    if (record.type === "user") {
+      answered = true;
+      continue;
+    }
+    const message = record.message;
+    if (record.type !== "assistant" || message == null || typeof message !== "object") continue;
+    const content = message.content;
+    let body = "";
+    let humanInputTool = null;
+    if (Array.isArray(content)) {
+      for (const block of content) {
+        if (block?.type === "text" && typeof block.text === "string") body += `${block.text}\n`;
+        if (humanInputTool == null && block?.type === "tool_use" && HUMAN_INPUT_TOOL_NAMES.includes(block?.name)) {
+          humanInputTool = { name: block.name, input: block.input };
+        }
+      }
+    } else if (typeof content === "string") {
+      body = content;
+    }
+    return { stopReason: message.stop_reason ?? null, text: body, humanInputTool, answered };
+  }
+  return null;
+}
+
+// askQuestionFromTurn(turn) → string | null — PURE. The question is the turn's own words: an
+// ended turn's text with every sentinel line (a line whose trim() is the sentinel) removed and
+// the whole trimmed; an unanswered human-input tool's questions, each followed by its option
+// labels as `- <label>` lines, one blank line between questions. Anything else, and an empty
+// result, is `null`. Never throws.
+export function askQuestionFromTurn(turn) {
+  if (turn == null || typeof turn !== "object") return null;
+  if (turn.stopReason === "end_turn") {
+    const kept = String(turn.text ?? "").split("\n").filter((line) => line.trim() !== NEEDS_INPUT_SENTINEL);
+    const question = kept.join("\n").trim();
+    return question.length > 0 ? question : null;
+  }
+  if (turn.stopReason === "tool_use" && turn.answered !== true && turn.humanInputTool != null) {
+    const questions = turn.humanInputTool.input?.questions;
+    if (!Array.isArray(questions)) return null;
+    const blocks = [];
+    for (const entry of questions) {
+      if (typeof entry?.question !== "string") continue;
+      const labels = Array.isArray(entry.options)
+        ? entry.options.filter((option) => typeof option?.label === "string").map((option) => `- ${option.label}`)
+        : [];
+      blocks.push([entry.question, ...labels].join("\n"));
+    }
+    const question = blocks.join("\n\n").trim();
+    return question.length > 0 ? question : null;
+  }
+  return null;
+}
+
+// readAskQuestion({ cwd, env, sessionId, sinceOffset }) → Promise<string | null> — the owner's
+// one read of the question (ADR-004), composed from the projects dir and the two above. NEVER
+// throws. A transcript that cannot be read, or holds no assistant turn after the baseline, is a
+// fault: `null` after ONE `reportDegrade("ask-question-unreadable")`. A readable turn with
+// nothing to ask is `null` quietly — the session asked nothing in words.
+export async function readAskQuestion({ cwd, env = process.env, sessionId, sinceOffset = 0 } = {}) {
+  try {
+    if (typeof sessionId !== "string" || sessionId.length === 0) throw new Error("no session id to read a question from");
+    const file = path.join(claudeProjectsDir({ cwd, env }), `${sessionId}.jsonl`);
+    const turn = await readLastAssistantTurn(file, sinceOffset);
+    if (turn == null) throw new Error(`no assistant turn to read in ${file}`);
+    return askQuestionFromTurn(turn);
+  } catch (error) {
+    reportDegrade("ask-question-unreadable", error, { sessionId: sessionId ?? null });
+    return null;
+  }
+}
+
 function safeParse(line) {
   try {
     return JSON.parse(line);

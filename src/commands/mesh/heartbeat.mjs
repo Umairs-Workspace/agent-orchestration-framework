@@ -49,8 +49,13 @@ import { resolveInstallSalt } from "./identity.mjs";
 import { packageVersionString } from "../../asset-base.mjs";
 import { deriveNodeId, sidecarPathFor } from "../../node-identity.mjs";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals } from "./face-shared.mjs";
+// milestone 130 / story 03 (ADR-005 §2) — the loop entries ride the SAME record, read by the
+// same pass as activeRuns and stamped with THIS workspace's one identity (the launcher tick
+// stamps each aggregated workspace's own; this verb reads its launch workspace alone).
+import { resolveWorkspaceId } from "../../workspace-identity.mjs";
 import {
   assemblePresenceRecord,
+  readActiveLoops,
   readActiveRuns,
   publishPresenceRecord,
 } from "../../mesh/presence.mjs";
@@ -99,12 +104,15 @@ export const meshHeartbeatCommand = {
       ...(await readActiveRuns(local.items)),
       ...(await readCachedActiveRunIds(ws, local.skipped, seamOptions)),
     ];
+    // 130/ADR-005 §2 — the live loops, from the SAME local run files (a loop is local by
+    // definition, ADR-006; the cached half of the union contributes none).
+    const loops = await readActiveLoops(local.items, { workspaceId: resolveWorkspaceId(ws) });
 
     // The heartbeat instant — the injected now (white-box) or wall-clock, UTC-Z.
     const heartbeatAt = typeof input?.now === "string" && input.now.length > 0 ? input.now : new Date().toISOString();
 
     // Assemble the frozen-schema record.
-    const record = assemblePresenceRecord({ nodeId, heartbeatAt, activeRuns, aofVersion: packageVersionString() });
+    const record = assemblePresenceRecord({ nodeId, heartbeatAt, activeRuns, aofVersion: packageVersionString(), loops });
 
     // GIT, UNCONDITIONAL — the durable floor (story 00 / ADR-002). milestone 33 / story 01
     // (ADR-002.1) RETIRES the relay best-effort push that used to follow this write: the

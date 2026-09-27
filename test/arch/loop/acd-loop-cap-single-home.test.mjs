@@ -210,7 +210,12 @@ function loopBoundHomeProblems(units) {
       problems.push(`FF-6901: ${unit.rel} reads the retired work.autonomous.heartbeatStaleMs bypass`);
     }
   }
-  if (/autonomous\?\.maxAttempts|dispatch\?\.concurrency/u.test(home)) {
+  // ANNEXATION — the home reads no `work.autonomous.maxAttempts` and no POOL bound
+  // (`work?.dispatch?.concurrency`, `src/work/dispatch.mjs`'s key). Its OWN
+  // `work.loop.dispatch.concurrency` (129/07) is read as `loopConfig(workspace)?.dispatch?.concurrency`
+  // and is a `work.loop.*` key this home exists to hold, so the pool read is told apart by the
+  // object it hangs off (`work?.`), never by the key's last two segments.
+  if (/autonomous\?\.maxAttempts|work\??\.dispatch\??\.concurrency/u.test(home)) {
     problems.push("FF-6901: loop-bounds annexes maxAttempts or dispatch concurrency");
   }
   return problems;
@@ -397,6 +402,12 @@ export const archTests = [
       assert.match(loopBoundHomeProblems(secondHome).join("\n"), /second-loop-bound-home/u);
       const annexed = replacing(units, LOOP_BOUND_HOME, `${units.find((unit) => unit.rel === LOOP_BOUND_HOME).code}\nconst cap = config?.work?.autonomous?.maxAttempts;\n`);
       assert.match(loopBoundHomeProblems(annexed).join("\n"), /annexes maxAttempts/u);
+      // 129/07 — the POOL bound annexed into the home is named; the home's own
+      // `loopConfig(workspace)?.dispatch?.concurrency` (the real tree) is not an annexation.
+      const annexedPool = replacing(units, LOOP_BOUND_HOME, `${units.find((unit) => unit.rel === LOOP_BOUND_HOME).code}\nconst lanes = workspace?.config?.work?.dispatch?.concurrency;\n`);
+      assert.match(loopBoundHomeProblems(annexedPool).join("\n"), /annexes maxAttempts or dispatch concurrency/u);
+      assert.match(units.find((unit) => unit.rel === LOOP_BOUND_HOME).code, /loopConfig\(workspace\)\?\.dispatch\?\.concurrency/u, `${LOOP_BOUND_HOME}: NOT FOUND — the home's own lane-bound read is absent (129/07)`);
+      assert.doesNotMatch(loopBoundHomeProblems(units).join("\n"), /annexes/u, "the home's own work.loop.dispatch.concurrency read is not an annexation");
       const duplicate = [...units, { rel: "src/commands/private-loop-bound.mjs", code: "const DEFAULT_HEARTBEAT_MS = 15 * 60 * 1000;\n" }];
       const duplicateProblems = loopBoundHomeProblems(duplicate).join("\n");
       assert.match(duplicateProblems, /private-loop-bound.*standalone loop-bound authority DEFAULT_HEARTBEAT_MS/u);

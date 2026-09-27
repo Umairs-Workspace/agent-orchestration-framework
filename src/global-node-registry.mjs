@@ -84,11 +84,15 @@ export async function assembleGlobalRegistrySnapshot(workspace, options = {}) {
     const peer = peersById.get(nodeId) ?? {};
     const presence = presenceById.get(nodeId) ?? null;
     const controlNode = config?.mesh?.relay?.controlNode === nodeId;
+    // The machine's own name (132/02's `hostname`), carried through so the fleet can show
+    // a person a name they recognise beside the opaque id. It lives in the aof home only.
+    const hostname = safeString(record.hostname);
     const descriptor = {
       nodeId,
       role: controlNode ? "control" : "worker",
       controlNode,
       host: safeString(record.host ?? peer.host),
+      ...(hostname ? { hostname } : {}),
       os: safeString(record.os),
       runtimes: safeStringArray(record.runtimes),
       aofVersion: safeString(record.aofVersion),
@@ -205,6 +209,8 @@ export async function queryGlobalRegistry(store, options = {}) {
     // through assemblePresenceRecord ONLY to guarantee the frozen FIVE-key
     // order (ADR-001); sessions[]/activeRuns travel through EXACTLY as the
     // publisher emitted them — no liveness/subsumption is recomputed here.
+    // 130/ADR-005 §2 — `loops` (the seventh, omitted-when-empty key) rides through the
+    // same spread: present iff the disk record carried it, and LAST, as the assembler emits it.
     const diskPresence = await readPresenceRecord(presenceWorkspace, row.node_id);
     if (diskPresence) node.presence = assemblePresenceRecord(diskPresence);
     nodes.push(node);

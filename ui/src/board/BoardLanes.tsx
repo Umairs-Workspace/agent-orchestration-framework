@@ -8,6 +8,9 @@ import type * as React from "react";
 import { StatusRing, StatusDot, statusMeta, LANE_ORDER } from "./status";
 import type { StatusKind } from "./status";
 import { StaleBadge } from "./StaleBadge";
+// milestone 127 — the archived mark, wherever an archived milestone's identity row is painted
+// on this view: the switcher button, each switcher row, the lane card under `all` focus.
+import { ArchivedPill, carriesArchivedMark } from "./ArchivedPill";
 import type { Derived } from "./model";
 import { gatesFor, titleOf } from "./model";
 import type { WorkItem } from "./api";
@@ -225,12 +228,15 @@ function LaneCardView({
   onSelect: () => void;
 }) {
   const meta = statusMeta(item.status);
+  // An archived DRIVER's lane card (under `all` focus) takes the quiet `bg-muted/40` surface and
+  // the pill; its stories carry neither (127/DESIGN §Surface 2 — one pill per item context).
+  const archived = carriesArchivedMark(item);
   return (
     <button
       type="button"
       data-card
       onClick={onSelect}
-      className={`relative w-full rounded-lg border bg-card p-2.5 text-left transition ${
+      className={`relative w-full rounded-lg border ${archived ? "bg-muted/40" : "bg-card"} p-2.5 text-left transition ${
         selected
           ? "border-[1.5px] shadow-md"
           : "border-border hover:border-primary/40"
@@ -263,7 +269,10 @@ function LaneCardView({
           No Resync here, and that is STRUCTURAL: the card is itself a `<button
           data-card>`, and an HTML button may never nest another interactive
           element (m38/ADR-012); a non-interactive `<span>` badge inside it is
-          fine. */}
+          fine.
+          127/04 — with no chip on this card the archived pill takes the meta line's
+          right end, in the cluster's standing order `[stale][archived]` (DESIGN
+          §Surface 2's binding checklist: `[stale][archived][chip]`, minus the chip). */}
       <div className="mt-1.5 flex items-center gap-2">
         {item.status === "in-progress" ? (
           <span className="min-w-0 flex-1">
@@ -272,9 +281,10 @@ function LaneCardView({
         ) : (
           <span className="text-[11px] text-muted-foreground">{meta.short}</span>
         )}
-        {freshness?.badge ? (
-          <span className="ml-auto">
-            <StaleBadge freshness={freshness} form="short" />
+        {freshness?.badge || archived ? (
+          <span className="ml-auto flex items-center gap-1.5">
+            {freshness?.badge ? <StaleBadge freshness={freshness} form="short" /> : null}
+            {archived ? <ArchivedPill /> : null}
           </span>
         ) : null}
       </div>
@@ -364,6 +374,9 @@ function MilestoneSwitcher({
       >
         {focused ? <StatusDot status={focused.item.status} size={8} /> : <span className="text-muted-foreground">✦</span>}
         <span className="mono">{buttonLabel}</span>
+        {/* 127/04 — an archived milestone's board says why the row is there: the pill after
+            the mono label, in the button itself (DESIGN §Surface 2). */}
+        {focused && carriesArchivedMark(focused.item) ? <ArchivedPill /> : null}
         <span className="text-muted-foreground">▾</span>
       </button>
 
@@ -386,7 +399,12 @@ function MilestoneSwitcher({
               <StatusDot status={m.item.status} size={8} />
               <span className="mono text-xs text-muted-foreground">{m.num}</span>
               <span className="min-w-0 flex-1 truncate">{titleOf(m.item)}</span>
-              <span className="ml-2 shrink-0 text-xs text-muted-foreground">{statusMeta(m.item.status).short}</span>
+              {/* The trailing short-status text carries the mark as a WORD on a switcher row —
+                  `done · archived` — the same span, so the row's geometry is unchanged. */}
+              <span className="ml-2 shrink-0 text-xs text-muted-foreground">
+                {statusMeta(m.item.status).short}
+                {carriesArchivedMark(m.item) ? " · archived" : ""}
+              </span>
             </SwitchRow>
           ))}
         </div>

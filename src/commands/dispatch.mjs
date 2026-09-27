@@ -44,6 +44,7 @@ import {
   overlappingFiles,
   dispatchReadySet,
   dispatchConcurrencyFromConfig,
+  narrowDispatchBound,
   inspectDispatchLaneAdmission,
   planDispatchLaneAdmissions,
   withDispatchLaneAdmissionLock,
@@ -57,6 +58,9 @@ export const dispatchCommand = {
       ref: { type: "string" },
       refs: { type: "array", items: { type: "string" } },
       list: { type: "boolean" },
+      // 129/07 — a caller's NARROWING of the pool bound (the loop's own
+      // `work.loop.dispatch.concurrency`); it can ask for fewer lanes, never more.
+      bound: { type: "number" },
       sweep: { type: "boolean" },
       cleanup: { type: "boolean" },
       remove: { type: "boolean" },
@@ -67,9 +71,10 @@ export const dispatchCommand = {
   async run(input, ctx) {
     const ws = ctx.workspace;
     const seamOptions = { globalWorkStoreOptions: ctx.globalWorkStoreOptions ?? {} };
-    // The bound is READ, never invented — from the one resolution site, and it rides EVERY
-    // answer this verb gives, so a caller never has to ask a second question to know it.
-    const bound = dispatchConcurrencyFromConfig(ws);
+    // The bound is READ, never invented — from the one resolution site, narrowed (never
+    // widened) by what the caller asked for — and it rides EVERY answer this verb gives, so a
+    // caller never has to ask a second question to know it.
+    const bound = narrowDispatchBound(dispatchConcurrencyFromConfig(ws), input.bound);
     if (input.cleanup) {
       const ref = requireRef(input, "cleanup");
       const result = await cleanupDispatchLane(ws.projectRoot, ref, {

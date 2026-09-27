@@ -90,6 +90,17 @@ export function parkPublicationProblems({ workerSource, effectSource, resumeComm
   return problems;
 }
 
+// The planted duplicate: the ONE line that publishes the park, whatever else it carries (131/12 added
+// the worker's `ask` to it), written twice. Found by what it publishes, not by its exact text, so the
+// self-check keeps tripping the detector when the line gains a key.
+function duplicateParkLine(source, callee, needle = "") {
+  const lines = source.split(/\r?\n/u);
+  const at = lines.findIndex((line) => new RegExp(`await ${callee}\\(`, "u").test(line) && line.includes('"running"') && line.includes('code: "needs-input"') && line.includes(needle));
+  assert.ok(at >= 0, `NOT FOUND: the ${callee}( line that publishes the park`);
+  lines.splice(at, 0, lines[at]);
+  return lines.join("\n");
+}
+
 async function productionSources() {
   const read = (rel) => readFile(path.join(root, rel), "utf8");
   const [workerSource, effectSource, resumeCommandSource, resumeOrchestrationSource] = await Promise.all([
@@ -124,19 +135,13 @@ export const archTests = [
 
       const duplicateFresh = parkPublicationProblems({
         ...sources,
-        workerSource: sources.workerSource.replace(
-          '        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input" });',
-          '        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input" });\n        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input" });',
-        ),
+        workerSource: duplicateParkLine(sources.workerSource, "reportSettled"),
       });
       assert.ok(duplicateFresh.some((problem) => problem.includes("fresh-run post-exit park") && problem.includes("2 times, not exactly once")));
 
       const duplicateResume = parkPublicationProblems({
         ...sources,
-        resumeOrchestrationSource: sources.resumeOrchestrationSource.replace(
-          '      await report("running", { runId: runRecord.runId, sessionId: forkedSessionId, code: "needs-input" });',
-          '      await report("running", { runId: runRecord.runId, sessionId: forkedSessionId, code: "needs-input" });\n      await report("running", { runId: runRecord.runId, sessionId: forkedSessionId, code: "needs-input" });',
-        ),
+        resumeOrchestrationSource: duplicateParkLine(sources.resumeOrchestrationSource, "report", "forkedSessionId"),
       });
       assert.ok(duplicateResume.some((problem) => problem.includes("resumed post-exit park") && problem.includes("2 times, not exactly once")));
 

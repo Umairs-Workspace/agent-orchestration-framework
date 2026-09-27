@@ -80,6 +80,10 @@ pub struct Presence {
 #[serde(rename_all = "camelCase")]
 pub struct Node {
     pub node_id: String,
+    /// OPTIONAL — the machine's own name (132/02), kept in the aof home. The row is titled
+    /// with it; the opaque `node_id` stays the identity. Absent on older records.
+    #[serde(default)]
+    pub hostname: Option<String>,
     /// `true` on EXACTLY this node's own entry, omitted (defaults false) elsewhere —
     /// a per-node boolean, never a top-level id string (RESEARCH §3).
     #[serde(default)]
@@ -359,11 +363,11 @@ mod tests {
         let doc = r#"{
             "nodes": [
                 {
-                    "nodeId": "umamis-msi",
+                    "nodeId": "win-host-a",
                     "stale": false,
                     "local": true,
                     "presence": {
-                        "nodeId": "umamis-msi",
+                        "nodeId": "win-host-a",
                         "heartbeatAt": "2026-07-12T20:55:20.455Z",
                         "activeRuns": [],
                         "sessions": [
@@ -418,7 +422,7 @@ mod tests {
     fn node_without_presence_reads_idle_unknown_without_crashing() {
         let doc = r#"{
             "nodes": [
-                { "nodeId": "umamis-msi", "stale": true }
+                { "nodeId": "win-host-a", "stale": true }
             ],
             "boards": [],
             "isControlNode": false
@@ -437,7 +441,7 @@ mod tests {
         let doc = r#"{
             "nodes": [
                 { "nodeId": "umamis-mac-mini", "stale": false },
-                { "nodeId": "umamis-msi", "stale": true, "local": true }
+                { "nodeId": "win-host-a", "stale": true, "local": true }
             ],
             "boards": [],
             "isControlNode": true
@@ -447,7 +451,7 @@ mod tests {
         assert!(status.nodes[1].local, "the second node reads local true");
         let locals: Vec<&Node> = status.nodes.iter().filter(|n| n.local).collect();
         assert_eq!(locals.len(), 1, "exactly one node reads local true");
-        assert_eq!(status.local_node().unwrap().node_id, "umamis-msi");
+        assert_eq!(status.local_node().unwrap().node_id, "win-host-a");
     }
 
     // Scenario Outline: node.stale deserializes as a boolean on each node.
@@ -504,7 +508,7 @@ mod tests {
               "stale": false
             },
             {
-              "nodeId": "umamis-msi",
+              "nodeId": "win-host-a",
               "role": "control",
               "controlNode": true,
               "stale": true,
@@ -516,7 +520,7 @@ mod tests {
         }"#;
         let status = parse_status(doc).expect("the full measured live shape parses");
         assert_eq!(status.nodes.len(), 2);
-        assert_eq!(status.local_node().unwrap().node_id, "umamis-msi");
+        assert_eq!(status.local_node().unwrap().node_id, "win-host-a");
         assert!(status.nodes[0].has_presence());
         assert!(!status.nodes[1].has_presence());
         assert!(status.is_control_node());
@@ -533,7 +537,7 @@ mod tests {
             None => String::new(),
         };
         format!(
-            r#"{{"nodes":[{{"nodeId":"umamis-msi","role":"control","local":true,"stale":false}}],"boards":[],"isControlNode":true{key}}}"#
+            r#"{{"nodes":[{{"nodeId":"win-host-a","role":"control","local":true,"stale":false}}],"boards":[],"isControlNode":true{key}}}"#
         )
     }
 
@@ -545,7 +549,7 @@ mod tests {
 
     fn assert_fleet_document_intact(status: &MeshStatus) {
         assert_eq!(status.nodes.len(), 1, "`nodes` reads exactly as it does today");
-        assert_eq!(status.nodes[0].node_id, "umamis-msi");
+        assert_eq!(status.nodes[0].node_id, "win-host-a");
         assert!(status.boards.is_empty(), "`boards` reads exactly as it does today");
         assert!(status.is_control_node(), "`isControlNode` reads exactly as it does today");
     }

@@ -8,7 +8,9 @@
 // overlay answers the operator's three steps: (1) is it executing, (2) show THAT, (3) else
 // fall back to local.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import os from "node:os";
 import path from "node:path";
 import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
@@ -17,7 +19,13 @@ import { setItemBranch } from "../../src/mesh/assignment-directive.mjs";
 import { readExecutionOverlay, applyExecutionOverlay, resolveScopedExecution } from "../../src/board-mesh-execution.mjs";
 import { resolveContinueDecision, resolveDirectivePhase } from "../../src/commands/continue.mjs";
 import { mergeWorkerItems, applyCachedProvenance } from "../../src/cache-read.mjs";
-import { listCommand } from "../../src/commands/list.mjs";
+import { listCommand, applyAskOverlay } from "../../src/commands/list.mjs";
+import { loadWorkspace } from "../../src/work.mjs";
+import { loopAsksDir, openAsk, parkAsk, answerAsk, clearAsk, askRequestPath } from "../../src/loop/ask-request.mjs";
+import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { stripComments } from "../support/source-slice.mjs";
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const WS = "ws-board-1";
 
@@ -413,4 +421,294 @@ export const boardMeshExecutionTests = [
       }
     },
   },
+  // 131/04 — hoisted below.
+  ...askOverlayTests(),
 ];
+
+// ---- 131/05 task 00 — the list row carries the ask fact (ADR-006 §2) ------------------------------
+//
+// W is an on-disk workspace pinned `mesh.workspaceId: "w1"` holding 03 (stories 03/01, 03/02) and
+// 04, under an isolated aof home H per case. Asks are written through 01's writers, and mesh rows
+// through the assignment store's own writers; the `extra` and `{ not json` rows are raw files.
+const ASK_KEYS = ["runId", "state", "question", "phase", "askedAt", "parkedAt", "answeredAt", "by", "answer", "node", "local", "sessionId", "scope"];
+const ASK_QUESTION = "Decision needed: move the residue?";
+
+async function askWorld(body) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-ask-overlay-"));
+  const repo = path.join(root, "W");
+  const home = path.join(root, "H");
+  const env = { AOF_GLOBAL_HOME: home };
+  try {
+    await mkdir(path.join(repo, ".aof"), { recursive: true });
+    await mkdir(home, { recursive: true });
+    await writeFile(path.join(repo, ".aof", "aof.config.json"), JSON.stringify({ name: "ask-fixture", work: { dir: "./wiki/work" }, mesh: { enabled: true, workspaceId: "w1" } }, null, 2), "utf8");
+    const work = path.join(repo, "wiki", "work");
+    for (const [number, slug] of [["03", "residue"], ["04", "later"]]) {
+      await mkdir(path.join(work, `${number}_milestone_${slug}`), { recursive: true });
+      await writeFile(path.join(work, `${number}_milestone_${slug}`, "SPEC.md"), `---\ntype: milestone\nnumber: "${number}"\nslug: ${slug}\nstatus: in-progress\ntitle: "M${number}"\n---\n# ${number}\n`, "utf8");
+    }
+    for (const [number, slug] of [["01", "first"], ["02", "second"]]) {
+      const dir = path.join(work, "03_milestone_residue", "stories", `${number}_story_${slug}`);
+      await mkdir(path.join(dir, "tasks"), { recursive: true });
+      await writeFile(path.join(dir, "STORY.md"), `---\ntype: story\nnumber: "${number}"\nslug: ${slug}\nstatus: in-progress\ntitle: "S${number}"\nparent: "03"\n---\n# ${number}\n`, "utf8");
+    }
+    const dir = loopAsksDir(env);
+    const list = async (input = { mesh: true }) => listCommand.run(input, { workspace: await loadWorkspace(repo, undefined, { env }), globalWorkStoreOptions: { env } });
+    const open = (runId, ref, fields = {}) => openAsk(dir, {
+      runId, workspaceId: "w1", ref, phase: "build", scope: "03", node: "node-7297", sessionId: `sess-${runId}`, question: ASK_QUESTION,
+      now: () => new Date("2026-09-23T17:00:00.000Z"), ...fields,
+    });
+    const execution = async (itemRef, { workspaceId = "w1", state = "running", code = "needs-input", sessionId = "S9", node = "node-2976", at = "2026-09-23T17:05:00.000Z" } = {}) => {
+      const store = await openGlobalWorkProjectionStore({ env });
+      try {
+        const record = assembleAssignmentRecord({ itemRef, workspaceId, targetNodeId: node, issuer: "control", now: at });
+        insertAssignment(store, record);
+        if (state !== "assigned") updateAssignmentState(store, record.assignmentId, state, { now: at, sessionId, code });
+      } finally {
+        store.close?.();
+      }
+    };
+    return await body({ repo, home, env, dir, list, open, execution });
+  } finally {
+    setDegradeSinkForTest(undefined);
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+const rowOf = (rows, ref) => rows.find((row) => row.ref === ref);
+const carriers = (rows) => rows.filter((row) => "ask" in row).map((row) => row.ref).sort();
+const fact = (fields = {}) => ({
+  runId: "R1", state: "waiting", question: ASK_QUESTION, phase: "build", askedAt: "2026-09-23T17:00:00.000Z", parkedAt: null,
+  answeredAt: null, by: null, answer: null, node: "node-7297", local: true, sessionId: "sess-R1", scope: "03", ...fields,
+});
+const workerFact = (fields = {}) => ({
+  runId: null, state: "waiting", question: null, phase: null, askedAt: "2026-09-23T17:05:00.000Z", parkedAt: null,
+  answeredAt: null, by: null, answer: null, node: "node-2976", local: false, sessionId: "S9", scope: "03", ...fields,
+});
+const withoutAsk = ({ ask, ...rest }) => rest;
+function askDegrades() {
+  const events = [];
+  setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+  return events;
+}
+
+function askOverlayTests() {
+  return [
+    {
+      name: "131/05 task00 — a local lane's waiting ask rides its row, and no other row changes",
+      run: () => askWorld(async ({ list, open }) => {
+        const before = await list();
+        await open("R1", "03/01");
+        const rows = await list();
+        const ask = rowOf(rows, "03/01").ask;
+        assert.deepEqual(Object.keys(ask), ASK_KEYS, "thirteen keys, in order");
+        assert.deepEqual(ask, fact());
+        for (const ref of ["03", "03/02", "04"]) {
+          assert.ok(!("ask" in rowOf(rows, ref)), `${ref} carries no ask key`);
+          assert.deepEqual(rowOf(rows, ref), rowOf(before, ref), `${ref} is the no-ask run's row`);
+        }
+        assert.deepEqual(withoutAsk(rowOf(rows, "03/01")), rowOf(before, "03/01"), "03/01 differs only by its ask");
+      }),
+    },
+    {
+      name: "131/05 task00 — every state the file holds is carried, so the receipt outlives the answer (seven rows)",
+      run: async () => {
+        const UB = { actor: "umami", via: "board", node: "node-7297" };
+        const YOU = { actor: "you", via: "cli", node: "node-7297" };
+        const rows = [
+          ["parked", async ({ dir, open }) => { await open("R1", "03/01"); await parkAsk(dir, "R1", { now: () => new Date("2026-09-23T18:00:00.000Z") }); },
+            fact({ state: "parked", parkedAt: "2026-09-23T18:00:00.000Z" })],
+          ["answered", async ({ dir, open }) => { await open("R1", "03/01"); await answerAsk(dir, { workspaceId: "w1", ref: "03/01", text: "take b —\n  keep the tests", by: UB, now: () => new Date("2026-09-23T17:12:00.000Z") }); },
+            fact({ state: "answered", answeredAt: "2026-09-23T17:12:00.000Z", by: UB, answer: "take b —\n  keep the tests" })],
+          ["parked then answered", async ({ dir, open }) => {
+            await open("R1", "03/01");
+            await parkAsk(dir, "R1", { now: () => new Date("2026-09-23T18:00:00.000Z") });
+            await answerAsk(dir, { workspaceId: "w1", ref: "03/01", text: "take b", by: YOU, now: () => new Date("2026-09-23T19:00:00.000Z") });
+          }, fact({ state: "answered", parkedAt: "2026-09-23T18:00:00.000Z", answeredAt: "2026-09-23T19:00:00.000Z", by: YOU, answer: "take b" })],
+          ["answered then re-opened", async ({ dir, open }) => {
+            await open("R1", "03/01");
+            await answerAsk(dir, { workspaceId: "w1", ref: "03/01", text: "take b", by: YOU });
+            await open("R1", "03/01", { question: "Decision needed: Y", now: () => new Date("2026-09-23T18:30:00.000Z") });
+          }, fact({ question: "Decision needed: Y", askedAt: "2026-09-23T18:30:00.000Z" })],
+          ["scope and sessionId omitted", async ({ open }) => { await open("R1", "03/01", { scope: undefined, sessionId: undefined }); },
+            fact({ scope: null, sessionId: null })],
+          ["an extra key by hand", async ({ dir, open }) => {
+            await open("R1", "03/01");
+            const record = JSON.parse(await readFile(askRequestPath(dir, "R1"), "utf8"));
+            await writeFile(askRequestPath(dir, "R1"), JSON.stringify({ ...record, extra: 1 }), "utf8");
+          }, fact()],
+          ["cleared after its answer", async ({ dir, open }) => {
+            await open("R1", "03/01");
+            await answerAsk(dir, { workspaceId: "w1", ref: "03/01", text: "take b", by: YOU });
+            await clearAsk(dir, "R1");
+          }, null],
+        ];
+        for (const [label, prepare, expected] of rows) {
+          await askWorld(async (world) => {
+            const before = await world.list();
+            await prepare(world);
+            const row = rowOf(await world.list(), "03/01");
+            if (expected == null) {
+              assert.ok(!("ask" in row), `${label}: no ask key`);
+              assert.deepEqual(row, rowOf(before, "03/01"), `${label}: the no-ask run's row`);
+            } else {
+              assert.deepEqual(Object.keys(row.ask), ASK_KEYS, `${label}: exactly thirteen keys`);
+              assert.deepEqual(row.ask, expected, label);
+            }
+          });
+        }
+      },
+    },
+    {
+      name: "131/05 task00 — a worker waiting on a human carries an ask with no question, wherever the verb would accept the answer",
+      run: () => askWorld(async ({ list, execution }) => {
+        await execution("03");
+        const rows = await list();
+        assert.deepEqual(rowOf(rows, "03").ask, workerFact());
+        assert.deepEqual(rowOf(rows, "03/01").ask, workerFact(), "a story inherits its milestone's worker ask");
+        assert.deepEqual(rowOf(rows, "03/02").ask, workerFact());
+        assert.ok(!("ask" in rowOf(rows, "04")));
+      }),
+    },
+    {
+      name: "131/05 task00 — an execution row that the verb would not answer carries no ask (ten rows)",
+      run: async () => {
+        const rows = [
+          { code: null }, { code: "resumed" }, { state: "assigned", code: null, sessionId: null }, { state: "accepted" },
+          { state: "done" }, { state: "failed" }, { sessionId: null }, { sessionId: "" }, { code: "NEEDS-INPUT" }, { workspaceId: "w2" },
+        ];
+        for (const [index, override] of rows.entries()) {
+          await askWorld(async ({ list, execution }) => {
+            await execution("03", override);
+            assert.deepEqual(carriers(await list()), [], `row ${index}: no row carries an ask (${JSON.stringify(override)})`);
+          });
+        }
+      },
+    },
+    {
+      name: "131/05 task00 — of the asks for a workspace, the row takes its own ref's latest, and nothing else (thirteen rows)",
+      run: async () => {
+        const at = (clock) => ({ now: () => new Date(`2026-09-23T${clock}:00.000Z`) });
+        const UMAMI = { actor: "umami", via: "cli", node: null };
+        const rows = [
+          ["R1 03/01 waiting, R2 03/02 parked", async ({ dir, open }) => { await open("R1", "03/01"); await open("R2", "03/02", at("17:01")); await parkAsk(dir, "R2"); },
+            (rows) => { assert.equal(rowOf(rows, "03/01").ask.runId, "R1"); assert.equal(rowOf(rows, "03/02").ask.state, "parked"); assert.deepEqual(carriers(rows), ["03/01", "03/02"]); }],
+          ["R1 answered, R3 later waiting", async ({ dir, open }) => { await open("R1", "03/01"); await answerAsk(dir, { workspaceId: "w1", ref: "03/01", text: "a", by: UMAMI }); await open("R3", "03/01", at("17:05")); },
+            (rows) => { assert.equal(rowOf(rows, "03/01").ask.runId, "R3"); assert.equal(rowOf(rows, "03/01").ask.state, "waiting"); }],
+          ["R1 waiting, R3 later answered", async ({ dir, open }) => { await open("R1", "03/01"); await open("R3", "03/01", at("17:05")); await answerAsk(dir, { workspaceId: "w1", ref: "03/01", text: "a", by: UMAMI }); },
+            (rows) => { assert.equal(rowOf(rows, "03/01").ask.runId, "R3"); assert.equal(rowOf(rows, "03/01").ask.state, "answered"); }],
+          ["R1 and R3 tied at 17:00", async ({ open }) => { await open("R1", "03/01"); await open("R3", "03/01"); },
+            (rows) => assert.equal(rowOf(rows, "03/01").ask.runId, "R3")],
+          ["only R3 in w2", async ({ open }) => { await open("R3", "03/01", { workspaceId: "w2" }); }, (rows) => assert.deepEqual(carriers(rows), [])],
+          ["only R3 with a null workspace", async ({ open }) => { await open("R3", "03/01", { workspaceId: null }); }, (rows) => assert.deepEqual(carriers(rows), [])],
+          ["R1 w1 and R3 w2 later", async ({ open }) => { await open("R1", "03/01"); await open("R3", "03/01", { workspaceId: "w2", ...at("17:05") }); },
+            (rows) => assert.equal(rowOf(rows, "03/01").ask.runId, "R1")],
+          ["only R5 on a ref with no row", async ({ open }) => { await open("R5", "09/01"); }, (rows, before) => { assert.deepEqual(carriers(rows), []); assert.deepEqual(rows, before, "none is added"); }],
+          ["only R1 on 03", async ({ open }) => { await open("R1", "03"); }, (rows) => assert.deepEqual(carriers(rows), ["03"], "never to a child")],
+          ["only R1 on 03/1", async ({ open }) => { await open("R1", "03/1"); }, (rows) => assert.deepEqual(carriers(rows), [], "the ref is matched exactly")],
+          ["a needs-input 03 and 03/01's own done row", async ({ execution }) => { await execution("03"); await execution("03/01", { state: "done", code: null, at: "2026-09-23T17:06:00.000Z" }); },
+            (rows) => assert.deepEqual(carriers(rows), ["03", "03/02"])],
+          ["03/01's own needs-input row", async ({ execution }) => { await execution("03/01", { sessionId: "S7" }); },
+            (rows) => { assert.deepEqual(carriers(rows), ["03/01"]); assert.equal(rowOf(rows, "03/01").ask.sessionId, "S7"); assert.equal(rowOf(rows, "03/01").ask.scope, "03/01"); }],
+          ["R2 on 03/01 and a needs-input 03", async ({ open, execution }) => { await open("R2", "03/01"); await execution("03"); },
+            (rows) => {
+              assert.equal(rowOf(rows, "03/01").ask.runId, "R2");
+              assert.equal(rowOf(rows, "03/01").ask.local, true);
+              assert.equal(rowOf(rows, "03").ask.sessionId, "S9");
+              assert.equal(rowOf(rows, "03/02").ask.sessionId, "S9");
+            }],
+        ];
+        assert.equal(rows.length, 13);
+        for (const [label, prepare, check] of rows) {
+          await askWorld(async (world) => {
+            const before = await world.list();
+            await prepare(world);
+            try {
+              check(await world.list(), before);
+            } catch (error) {
+              error.message = `${label}: ${error.message}`;
+              throw error;
+            }
+          });
+        }
+      },
+    },
+    {
+      name: "131/05 task00 — the overlay carries a null the store cannot hold (two rows)",
+      run() {
+        const execution = { active: true, state: "running", code: "needs-input", nodeId: "node-2976", sessionId: "S9", updatedAt: "2026-09-23T17:05:00.000Z", scopeRef: "03" };
+        const shape = (override) => ["03", "03/01", "03/02"].map((ref) => ({ ref, execution: { ...execution, ...override } }));
+        const nullUpdated = applyAskOverlay(shape({ updatedAt: null }), { asks: [], workspaceId: "w1" });
+        for (const row of nullUpdated) assert.equal(row.ask.askedAt, null, `${row.ref}: askedAt null`);
+        const nullNode = applyAskOverlay(shape({ nodeId: null }), { asks: [], workspaceId: "w1" });
+        assert.equal(nullNode[0].ask.node, null);
+        assert.equal(nullNode[0].ask.local, false);
+      },
+    },
+    {
+      name: "131/05 task00 — a local ask wins over a worker's on the same row",
+      run: () => askWorld(async ({ list, open, execution }) => {
+        await open("R1", "03");
+        await execution("03");
+        const ask = rowOf(await list(), "03").ask;
+        assert.equal(ask.runId, "R1");
+        assert.equal(ask.local, true);
+      }),
+    },
+    {
+      name: "131/05 task00 — the CLI's list is byte-identical with asks on disk",
+      run: () => askWorld(async ({ repo, home, dir, list, open }) => {
+        await open("R1", "03/01");
+        const cli = () => spawnSync(process.execPath, [path.join(REPO_ROOT, "src", "cli.mjs"), "work", "list", "--json"], {
+          cwd: repo, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
+        });
+        const withAsk = cli();
+        const plain = await list({});
+        assert.equal(withAsk.status, 0, withAsk.stderr);
+        assert.ok(JSON.parse(withAsk.stdout).length >= 4, "the CLI listed the stream");
+        await rm(dir, { recursive: true, force: true });
+        const without = cli();
+        assert.equal(withAsk.stdout, without.stdout, "byte-identical with and without the ask file");
+        assert.deepEqual(plain, await list({}), "work:list with no mesh is the same call with dir removed");
+      }),
+    },
+    {
+      name: "131/05 task00 — an unreadable ask store never costs the list a row (seven rows)",
+      run: async () => {
+        const rows = [
+          ["does not exist", async () => {}, [], 0],
+          ["exists and is empty", async ({ dir }) => { await mkdir(dir, { recursive: true }); }, [], 0],
+          ["only { not json", async ({ dir }) => { await mkdir(dir, { recursive: true }); await writeFile(path.join(dir, "R6.json"), "{ not json", "utf8"); }, [], 1],
+          ["only a temp file", async ({ dir }) => { await mkdir(dir, { recursive: true }); await writeFile(path.join(dir, ".tmp-R1.json-1-2-x"), '{"runId":"R1","ref":"03/01"', "utf8"); }, [], 0],
+          ["only a record in state done", async ({ dir }) => {
+            await mkdir(dir, { recursive: true });
+            await writeFile(path.join(dir, "R1.json"), JSON.stringify({ runId: "R1", ref: "03/01", workspaceId: "w1", state: "done" }), "utf8");
+          }, [], 1],
+          ["{ not json beside a waiting ask", async ({ dir, open }) => { await open("R1", "03/01"); await writeFile(path.join(dir, "R6.json"), "{ not json", "utf8"); }, ["03/01"], 1],
+          ["a regular file", async ({ dir }) => { await mkdir(path.dirname(dir), { recursive: true }); await writeFile(dir, "not a directory", "utf8"); }, [], null],
+        ];
+        for (const [label, prepare, carrying, degrades] of rows) {
+          await askWorld(async (world) => {
+            const before = await world.list();
+            await prepare(world);
+            const events = askDegrades();
+            const rows = await world.list();
+            assert.deepEqual(rows.map((row) => row.ref), before.map((row) => row.ref), `${label}: every row`);
+            assert.deepEqual(carriers(rows), carrying, `${label}: carriers`);
+            if (degrades != null) assert.equal(events.filter((event) => event.code === "loop-ask-request").length, degrades, `${label}: loop-ask-request degrades`);
+          });
+        }
+      },
+    },
+    {
+      name: "131/05 task00 — the list reads the ask through its one home",
+      async run() {
+        const source = stripComments(await readFile(path.join(REPO_ROOT, "src", "commands", "list.mjs"), "utf8"));
+        assert.match(source, /import \{[^}]*\bASK_STATES\b[^}]*\} from "\.\.\/loop\/ask-request\.mjs"/u);
+        for (const name of ["readAsks", "loopAsksDir"]) assert.match(source, new RegExp(`import \\{[^}]*\\b${name}\\b[^}]*\\} from "\\.\\./loop/ask-request\\.mjs"`, "u"), name);
+        for (const word of ['"waiting"', '"parked"', '"answered"', "loop-asks"]) assert.ok(!source.includes(word), `list.mjs spells no ${word}`);
+        assert.match(source, /export function applyAskOverlay\(/u);
+      },
+    },
+  ];
+}

@@ -195,11 +195,13 @@ function safeDescriptorStringArray(value) {
 function readJoinerNodeRecord(parsed, joiner, nowIso) {
   const candidate = parsed?.nodeRecord;
   if (candidate == null || typeof candidate !== "object" || candidate.nodeId !== joiner) {
-    return { nodeId: joiner, host: "", os: "", runtimes: [], aofVersion: "", publishedAt: nowIso };
+    return { nodeId: joiner, host: "", hostname: "", os: "", runtimes: [], aofVersion: "", publishedAt: nowIso };
   }
   return {
     nodeId: joiner,
     host: safeDescriptorString(candidate.host),
+    // 132/02 — the joiner's machine name, the key the control's fabric join matches.
+    hostname: safeDescriptorString(candidate.hostname),
     os: safeDescriptorString(candidate.os),
     runtimes: safeDescriptorStringArray(candidate.runtimes),
     aofVersion: safeDescriptorString(candidate.aofVersion),

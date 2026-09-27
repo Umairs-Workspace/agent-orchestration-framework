@@ -27,8 +27,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const SETTINGS = path.join(repoRoot, ".claude", "settings.json");
 const GUARD = path.join(repoRoot, ".claude", "hooks", "aof", "guard-test-isolation.mjs");
 const LEDGERS = [
-  [path.join(repoRoot, "wiki", "work", "55_milestone_anchors-and-frozen-set", "OUTCOME.md"), "This repository still runs the pre-55 hand-wired isolation hook"],
-  [path.join(repoRoot, "wiki", "work", "55_milestone_anchors-and-frozen-set", "stories", "04_story_the-frozen-set-compiled", "OUTCOME.md"), "This repository's own installed guard hook"],
+  [path.join(repoRoot, "wiki", "work", "archive", "55_milestone_anchors-and-frozen-set", "OUTCOME.md"), "This repository still runs the pre-55 hand-wired isolation hook"],
+  [path.join(repoRoot, "wiki", "work", "archive", "55_milestone_anchors-and-frozen-set", "stories", "04_story_the-frozen-set-compiled", "OUTCOME.md"), "This repository's own installed guard hook"],
 ];
 
 const blocked = (command) => evaluate({ tool_input: { command } }).blocked;

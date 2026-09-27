@@ -165,7 +165,11 @@ async function driveAndCountSpawns(options) {
 // ------------------------------------------------------- the attended byte-identity rows ----
 
 // Captured from this seam on the base commit, BEFORE the fourth enforcement point compiled.
-const BEFORE_INSTRUCTION = "sha256:9885486c96a318f1d5b1a0a06250072e08d51f549a7560e20ace6fd6ce977735";
+// Re-captured at 131/01 task 01 (131/ADR-002): `NEEDS_INPUT_INSTRUCTION` gained the paragraph that
+// asks for the four-line form of the ask. It is an expected succession of this pin, not a drift: the
+// instruction still produces the needs-input signal, and this row still proves the envelope adds
+// nothing to an attended launch (both arms are compared against the same capture).
+const BEFORE_INSTRUCTION = "sha256:e596821e200cd16ae2932b02f1f54d5194d7effc06dff6d670734be79118eaee";
 const BEFORE_FLAGS = Object.freeze([
   "--permission-mode",
   "auto",

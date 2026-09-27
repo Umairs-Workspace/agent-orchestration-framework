@@ -1,0 +1,19 @@
+{
+  "runId": "20260924T220057080Z-0000",
+  "itemRef": "131/06",
+  "state": "cancelled",
+  "attempt": 1,
+  "outcome": "cancelled",
+  "sessionId": null,
+  "brief": {},
+  "createdAt": "2026-09-24T22:00:57.080Z",
+  "updatedAt": "2026-09-24T22:01:21.215Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

@@ -1,0 +1,38 @@
+{
+  "runId": "20260921T192134576Z-0003",
+  "itemRef": "130",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": null,
+  "brief": {
+    "loop": {
+      "loopRunId": "7661348f-073d-4884-8544-a63efb9e53ac",
+      "scope": "130",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-09-21T16:42:18.166Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false
+    },
+    "wave": {
+      "members": [
+        "130/03",
+        "130/04"
+      ],
+      "baseCommit": "46cb366d9907a63ec0c8014f522d14d801f95580",
+      "bound": 3
+    }
+  },
+  "createdAt": "2026-09-21T19:21:34.576Z",
+  "updatedAt": "2026-09-21T20:15:04.008Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-09-21T20:11:49.896Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null
+}

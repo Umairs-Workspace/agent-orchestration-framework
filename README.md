@@ -151,7 +151,7 @@ aof work use-headroom | unuse-headroom           # toggle the headroom context-c
 `aof work` runs as a set of **declared control loops** — build-to-green, review → fix → re-review, verify → triage → accept, the autonomous cascade — each a record in the loop registry (`.aof/loops/`, shipped with the bundle) naming its reference, measurement, actuator, cadence and ceiling. The registry is read-only framework data; these verbs read it and drive it:
 
 ```sh
-aof work loop <ref|NN-MM> [--level L1|L2|L3] [--resume]   # the code-owned loop shell: refine → build → verify in dependency order, gates, caps and stop-conditions enforced in code (milestone 53)
+aof work loop <ref|NN-MM> [--level L1|L2|L3] [--resume] [--stop]   # the code-owned loop shell: refine → build → verify in dependency order, gates, caps and stop-conditions enforced in code (milestone 53); --stop asks a running loop to halt from any terminal — once drains, twice cancels the in-flight session — and --resume brings it back (milestone 130)
 aof work loops show [--id <node-id>]   # the declared records
 aof work loops graph                   # the loop graph as Mermaid
 aof work loops validate                # the registry's checks (grounding, pairing, reference ownership, actuator arbitration, timescale)

@@ -79,6 +79,13 @@ const WORK_IDS = [
   // the insert family (the mint belongs where the operator's stream is, ADR-003 §7); its `/aof:`
   // wrapper is task 04's and is held to parity by acd-work-insert-command-bundle-parity.
   "work:promote",
+  // milestone 127 / story 03 (127/ADR-004 §1) — work:archive, the verbatim MOVE: a done top-level
+  // driver's folder goes under `archive/` name verbatim, no number touched, reached through the
+  // stream seam (`transitionStreamArchived`). CLI-only, same BOARD_DEFERRED carve-out as `promote`
+  // (a mechanical act over the operator's own tree; a served route would let the board host move
+  // folders in a checkout it does not own); its `/aof:archive` wrapper is task 04's and is held to
+  // parity by acd-work-insert-command-bundle-parity.
+  "work:archive",
   "work:upgrade",
   // work:continue (TECH_DEBT item 0 "one door per act") — the SINGLE continue door
   // (CLI, board POST, fleet all route through it; the where-to-run decision lives
@@ -163,6 +170,9 @@ const WORK_IDS = [
   // door beside work:init/work:update.
   "work:resume",
   "work:init-config",
+  // milestone 131 / story 04 — work:answer, the operator's answer to a waiting session, beside
+  // work:resume in `src/commands/resume.mjs`.
+  "work:answer",
   // milestone 54 / story 01 — work:grade, the declared rubric's ONE impure edge (the
   // milestone's only registering story, 54/ADR-003 §2). Its bare face is a READ (the plan
   // plus the last recorded grade, spawning nothing) and `--run` is the only door to

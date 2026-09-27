@@ -168,3 +168,167 @@ export function fleetCurrentWorkLines(presence) {
     state,
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// milestone 130 / story 03 (ADR-005 §5; DESIGN §Surface 1) — THE LOOP LINE AND ITS BUTTON
+// ARE PURE PROJECTIONS, siblings of `fleetCurrentWorkLines` and never lines inside it: that
+// function is byte-pinned to the Rust `current_work()` over captured fixtures
+// (`acd-captured-producer-fixture`), so the loop lines are composed BESIDE it, in
+// `nodeWorkRegion` (./scope.mjs), and the desktop's node row gains no loop text. Every fact
+// the card renders — the line, its `title`, which rung the button offers and whether one is
+// offered at all — is computed here, in a module node:test drives without React.
+//
+// THE WIRE'S TWO WORDS, AND THE THREE RUNGS. `presence.loops[].stop` is `null`, `"drain"` or
+// `"cancel"` (ADR-001 §2's STOP_LEVELS, spoken by the presence read). The line speaks them as
+// `stopping` / `cancelling`, second in the line right after `loop <scope>` — the line
+// truncates from its tail, and the request state is the one fact that must survive on the
+// card that has no button (a remote node's). A button's `rung` is the rung a click REQUESTS:
+// 1 = drain (`Stop`), 2 = cancel (`Stop now`); the wire maps null → 1, drain → 2,
+// cancel → 3, and rung 3 is "nothing left to ask" — no button (36's rule: omit, never show a
+// dead item; the line's `cancelling` is the receipt until the line disappears).
+//
+// THE MEMORY IS KEYED TO THE DRIVE, NOT TO THE LOOP'S LIFE (PO ruling, 2026-09-13). A stop's
+// wire receipt lags up to ~20 s (a 15 s propagation tick plus the 5 s poll), and a hold that
+// DECAYED on a timer would re-offer `Stop` inside that gap — where a reassuring second click
+// cancels a session. So the card remembers the rung it reached per `loopRunId` AGAINST the
+// drive's `runId`, never lowers it for the same drive, and never expires it on a timer; the
+// wire wins by `max`, so the memory is replaced by the wire once the wire has caught up. A
+// `--resume` mints a NEW drive (a new `runId`, ADR-003 §6 clears the request), so its entry
+// reads a memory from another drive as ABSENT and the button returns on its own — no timer,
+// no reload. The propagation gap keeps the SAME `runId` (the drive continues while
+// draining), which is exactly where the guard must hold.
+
+const STOP_WORDS = Object.freeze({ drain: "stopping", cancel: "cancelling" });
+// The rung the wire's word puts the card at: the request that stands, plus one — the rung the
+// NEXT click would ask for. `null` → 1 (nothing stands, `Stop` drains).
+const WIRE_RUNG = Object.freeze({ drain: 2, cancel: 3 });
+// The word a remembered rung holds the line at until the wire confirms it (DESIGN "held
+// locally"): rung 2 means a drain was asked for, rung 3 a cancel.
+const HELD_WORD = Object.freeze({ 2: "drain", 3: "cancel" });
+const NO_BUTTON_RUNG = 3;
+
+function positiveInteger(value) {
+  return Number.isInteger(value) && value > 0;
+}
+
+function nonEmptyString(value) {
+  return typeof value === "string" && value.length > 0;
+}
+
+function stopWord(value) {
+  return value === "drain" || value === "cancel" ? value : null;
+}
+
+// The plain codepoint comparison the region already uses (38 S6; the `(session)` line's step
+// 4) — never a locale collation, which could disagree with the Rust surface's byte-wise sort.
+function byScopeThenLoopRunId(left, right) {
+  if (left.scope !== right.scope) return left.scope < right.scope ? -1 : 1;
+  return left.loopRunId < right.loopRunId ? -1 : left.loopRunId > right.loopRunId ? 1 : 0;
+}
+
+// fleetLoopLines(presence, memory) — one entry per `presence.loops[]` element, ascending by
+// `scope` (ties by `loopRunId`), each `{ key, line, title, loopRunId, scope, workspaceId, runId,
+// stop }`. `memory` (optional — the card's, a Map of `{ rung, runId }` per `loopRunId` from
+// `rememberStopRung`) raises each entry's `stop` to the HELD word for the same drive before
+// the line is composed (DESIGN "held locally"); without it the projection is wire-only.
+//
+// THE ANATOMY (DESIGN §Surface 1, left → right):
+//   `loop <scope> [· stopping | · cancelling] [· <phase> <ref>] · cycle <n>[ of <cap>]`
+// FAIL-CLOSED — the line never prints a value the mint could not have produced: the
+// `<phase> <ref>` segment only when both are non-empty strings (between drives the loop has
+// no ref, so it reads `loop 129 · cycle 2 of 3` rather than asserting one); the `cycle`
+// segment only for a positive-integer `cycle`; ` of <cap>` only for a positive-integer `cap`;
+// and an unrecognised `stop` renders no state word and is reported `null`. `level` and
+// `supervised` are NOT on the line — a level is configuration, not liveness, and
+// "supervised" matters only for what happens after the stop, the desktop's row to say — both
+// ride the `title` tail: `… · L2 · supervised`. An absent, null or non-array `loops` is `[]`,
+// never a throw. PURE: the presence record is read, never mutated.
+export function fleetLoopLines(presence, memory) {
+  const loops = Array.isArray(presence?.loops) ? presence.loops : [];
+  return loops
+    .filter((loop) => loop != null && typeof loop === "object")
+    .map((loop) => {
+      const scope = String(loop.scope ?? "");
+      const stop = heldStopWord(loop, memory instanceof Map ? memory.get(loop.loopRunId) : undefined);
+      const parts = [`loop ${scope}`];
+      if (stop) parts.push(STOP_WORDS[stop]);
+      if (nonEmptyString(loop.phase) && nonEmptyString(loop.ref)) parts.push(`${loop.phase} ${loop.ref}`);
+      if (positiveInteger(loop.cycle)) parts.push(positiveInteger(loop.cap) ? `cycle ${loop.cycle} of ${loop.cap}` : `cycle ${loop.cycle}`);
+      const line = parts.join(" · ");
+      const tail = [];
+      if (nonEmptyString(loop.level)) tail.push(loop.level);
+      if (loop.supervised === true) tail.push("supervised");
+      return {
+        key: `loop:${loop.loopRunId}`,
+        line,
+        title: [line, ...tail].join(" · "),
+        loopRunId: String(loop.loopRunId ?? ""),
+        scope,
+        workspaceId: typeof loop.workspaceId === "string" ? loop.workspaceId : null,
+        // The drive this entry names — what the rung memory is keyed against.
+        runId: typeof loop.runId === "string" ? loop.runId : null,
+        stop,
+      };
+    })
+    .sort(byScopeThenLoopRunId);
+}
+
+// heldStopWord(loop, remembered) — the wire's word raised to the remembered rung, for the
+// SAME drive only: the "held locally" word the line shows between a 2xx and the wire's
+// confirmation. A memory from another drive is absent; a wire word higher than the memory
+// wins by construction (it is the max of the two).
+function heldStopWord(loop, remembered) {
+  const wire = stopWord(loop?.stop);
+  const rung = Math.max(wire ? WIRE_RUNG[wire] : 1, rememberedRung(loop, remembered));
+  return HELD_WORD[rung] ?? null;
+}
+
+// The remembered rung, admitted ONLY while it names this entry's drive (`runId`), else 0.
+function rememberedRung(loop, remembered) {
+  if (remembered == null || typeof remembered !== "object") return 0;
+  if (!Number.isInteger(remembered.rung) || remembered.runId !== loop?.runId) return 0;
+  return remembered.rung;
+}
+
+// The DESIGN's two buttons, verbatim — label, `title`/`aria-label` and tone. Rung 0 is
+// `muted` (draining is the ordinary way a loop ends and loses nothing; the quietest control
+// the card renders); rung 1 is `destructive` (the second press cancels a live session
+// mid-flight — work is lost), and the tone AND the label change together so the escalation is
+// never colour-only and never label-only.
+function buttonFor(rung, scope) {
+  if (rung === 1) return { rung: 1, label: "Stop", title: `Stop loop ${scope} — the current drive finishes first`, tone: "muted" };
+  return { rung: 2, label: "Stop now", title: `Stop loop ${scope} now — cancels the in-flight session`, tone: "destructive" };
+}
+
+// loopStopAffordance({ loop, node, localNodeId, remembered }) → `{ button, remote }`.
+//
+// A button ONLY on THIS node's card: `localNodeId` a non-empty string AND `node.nodeId ===
+// localNodeId` — a strict `===`, never a case fold, because a node id is an identity, not a
+// label. A `null`/empty `localNodeId` (an unconfigured serving machine, DESIGN default 6) is
+// neither local nor remote: no button, `remote: false`, no tail; a `localNodeId` no card
+// carries makes EVERY card remote. The rung is `max(wire, remembered)` — the memory admitted
+// only for the same drive — and rung 3 is `null`: nothing left to ask. `remote` is what
+// `nodeWorkRegion` turns into the line's `title` tail (`· remote — stop from <nodeId>'s own
+// console`): every absence carries its reason (49's affordance-table rule).
+export function loopStopAffordance({ loop, node, localNodeId, remembered } = {}) {
+  const local = nonEmptyString(localNodeId) && node?.nodeId === localNodeId;
+  if (!local) return { button: null, remote: nonEmptyString(localNodeId) };
+  const wire = stopWord(loop?.stop);
+  const rung = Math.max(wire ? WIRE_RUNG[wire] : 1, rememberedRung(loop, remembered));
+  if (rung >= NO_BUTTON_RUNG) return { button: null, remote: false };
+  return { button: buttonFor(rung, String(loop?.scope ?? "")), remote: false };
+}
+
+// rememberStopRung(memory, loopRunId, rung, runId) → a NEW Map (the input is never mutated —
+// React state) holding `{ rung, runId }` for `loopRunId`. For the SAME drive the rung never
+// lowers (a memory of 2 over a request of 1 stays 2); a DIFFERENT `runId` is a new drive and
+// starts a new memory at the requested rung, whatever the old one held. Every other key rides
+// through unchanged. Nothing here expires — the wire is the only thing that retires a memory,
+// by naming a new drive or by the line disappearing with the loop.
+export function rememberStopRung(memory, loopRunId, rung, runId) {
+  const next = new Map(memory instanceof Map ? memory : []);
+  const prior = next.get(loopRunId);
+  const sameDrive = prior != null && prior.runId === runId;
+  next.set(loopRunId, { rung: sameDrive ? Math.max(prior.rung, rung) : rung, runId });
+  return next;
+}

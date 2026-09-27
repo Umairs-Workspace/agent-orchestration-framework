@@ -35,7 +35,12 @@ import {
 
 async function readOptional(filePath) {
   try {
-    return await readFile(filePath, "utf8");
+    // LINE ENDINGS ARE NORMALISED AT THE READ, because the ceiling counts CHARACTERS and a CRLF
+    // checkout would otherwise pay one budget byte per line for nothing — measured at aof:verify 127:
+    // the same tree packed a story's architecture slice past every declared id on an LF checkout and
+    // short of one on a CRLF checkout (127/VERIFICATION F-22). The brief is typed into a session;
+    // the CR is noise there, exactly as 70/ADR-009 §7 read it out of the frontmatter parse.
+    return (await readFile(filePath, "utf8")).replace(/\r\n/gu, "\n");
   } catch {
     // best-effort — a read fault of ANY kind is an absent section, never a failed spawn.
     // Both arms of the old `ENOENT`/`ENOTDIR` test returned null, so the test decided

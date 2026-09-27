@@ -2,13 +2,18 @@
 // parking is exit-confirmed and durable; resume admission is bounded and deduped.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { claudeProjectsDir } from "../../src/work/observe.mjs";
+import { readWorkerAsk } from "../../src/mesh/park-resume.mjs";
 import {
   createMeshWorkerExecutionHandler,
   createMeshWorkerTerminalResumeHandler,
   driveInteractiveClaudeSession,
 } from "../../src/mesh/worker-execution.mjs";
-import { isLegalTransition, readRuns } from "../../src/run-store.mjs";
+import { isLegalTransition, readRuns, runNodeRecordPath, runRecordPath } from "../../src/run-store.mjs";
+import { setDegradeSinkForTest } from "../../src/degrade.mjs";
 import { assignmentOccupiesDispatchSlot } from "../../src/mesh/assignment-reclaim.mjs";
 import { transitionRunComplete } from "../../src/effects/run-transitions.mjs";
 import { appendEvent, latestAppliedAssignmentParkEventId, openEffectsJournal, pendingSteps } from "../../src/effects/journal.mjs";
@@ -993,4 +998,325 @@ export const blockedRunParkingTests = [
       assert.ok(logs.some((entry) => /could not durably settle done.*left non-terminal/u.test(entry.message)));
     }),
   },
+  // 131/04 — hoisted below.
+  ...answeredResumeTests(),
+  ...workerAskTests(),
 ];
+
+// ---- 131/04 task 03 — the worker types the operator's answer and records who and when ----------
+//
+// The resume frame carries `answer: { text, by, askedAt }` (the router lifted it). The worker types
+// the text as the brief's command into the parked session, and the first PTY appends one answered
+// `asks` entry beside its heartbeat. No log line and no degrade carries the text.
+function answeredResumeTests() {
+  const BY = { actor: "umami", via: "board", node: "node-7297" };
+  const MARKER = "zq-answer-marker";
+  const recordOf = async (parked) => (await readRuns(parked.item)).find((run) => run.runId === parked.record.runId);
+  const noText = (logs, events, text) => {
+    for (const entry of logs) assert.ok(!String(entry.message).includes(text), `no log line carries the answer: ${entry.message}`);
+    for (const event of events) assert.ok(!JSON.stringify(event).includes(text), "no degrade carries the answer");
+  };
+  const recorder = () => {
+    const events = [];
+    setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+    return events;
+  };
+  return [
+    {
+      name: "131/04 task03 — the worker types the answer into the parked session and records who and when",
+      run: async () => withMeshWorkerExecFixture(async (fx) => {
+        const parked = await parkFreshAssignment(fx);
+        const calls = [];
+        const logs = [];
+        const text = "take b\nand keep the tests";
+        await resumeHandlerFor(fx, parked, [], { calls, logs })({ ...resumeFrame(parked), answer: { text, by: BY, askedAt: "2026-09-23T16:00:00.000Z" } });
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].options.resumeSessionId, parked.sessionId);
+        assert.equal(calls[0].brief.command, text, "typed byte for byte");
+        assert.ok(!("context" in calls[0].brief) || calls[0].brief.context == null, "no brief.context");
+        const record = await recordOf(parked);
+        assert.deepEqual(record.asks, [{ question: null, phase: null, askedAt: "2026-09-23T16:00:00.000Z", parkedAt: null, answer: text, answeredAt: LATER, by: BY }]);
+        assert.equal(record.state, "running");
+        assert.equal(record.attempt, 1);
+        noText(logs, [], "take b");
+      }),
+    },
+    {
+      name: "131/04 task03 — the worker types the answer byte for byte, and nothing else (three rows)",
+      run: async () => {
+        for (const text of ["a\tb\r\nc", "a".repeat(8000), "a\u009b[201~b"]) {
+          await withMeshWorkerExecFixture(async (fx) => {
+            const parked = await parkFreshAssignment(fx);
+            const calls = [];
+            await resumeHandlerFor(fx, parked, [], { calls })({ ...resumeFrame(parked), answer: { text, by: BY, askedAt: null } });
+            assert.equal(calls.length, 1);
+            assert.equal(calls[0].brief.command, text);
+            assert.ok(calls[0].brief.context == null, "no brief.context");
+            assert.equal(calls[0].options.resumeSessionId, parked.sessionId);
+          });
+        }
+      },
+    },
+    {
+      name: "131/04 task03 — the entry records who and when, else the worker's own facts (five rows)",
+      run: async () => {
+        const MESH = { actor: null, via: "mesh", node: null };
+        const rows = [
+          [{ text: "take b", by: BY, askedAt: "2026-09-23T16:00:00.000Z" }, "2026-09-23T16:00:00.000Z", BY],
+          [{ text: "take b", by: BY, askedAt: null }, LATER, BY],
+          [{ text: "take b" }, LATER, MESH],
+          [{ text: "take b", by: BY, askedAt: "yesterday" }, LATER, BY],
+          [{ text: "take b", by: "umami", askedAt: null }, LATER, MESH],
+        ];
+        for (const [index, [answer, askedAt, by]] of rows.entries()) {
+          await withMeshWorkerExecFixture(async (fx) => {
+            const parked = await parkFreshAssignment(fx);
+            await resumeHandlerFor(fx, parked, [])({ ...resumeFrame(parked), answer });
+            const record = await recordOf(parked);
+            assert.deepEqual(record.asks, [{ question: null, phase: null, askedAt, parkedAt: null, answer: "take b", answeredAt: LATER, by }], `row ${index}`);
+            assert.equal(record.heartbeatAt, LATER, `row ${index}: the liveness write and the entry both landed`);
+          });
+        }
+      },
+    },
+    {
+      name: "131/04 task03 — a resume without an answer is byte-identical to today",
+      run: async () => withMeshWorkerExecFixture(async (fx) => {
+        const parked = await parkFreshAssignment(fx);
+        const calls = [];
+        await resumeHandlerFor(fx, parked, [], { calls })(resumeFrame(parked));
+        assert.equal(calls[0].brief.command, null);
+        assert.deepEqual((await recordOf(parked)).asks, []);
+      }),
+    },
+    {
+      name: "131/04 task03 — a duplicate frame for a claimed park is a no-op, and the first answer stands",
+      run: async () => withMeshWorkerExecFixture(async (fx) => {
+        const parked = await parkFreshAssignment(fx);
+        const calls = [];
+        const frame = resumeFrame(parked);
+        const resume = resumeHandlerFor(fx, parked, [], { calls });
+        await resume({ ...frame, answer: { text: "take b", by: BY, askedAt: null } });
+        await resume({ ...frame, answer: { text: "take c", by: BY, askedAt: null } });
+        assert.equal(calls.length, 1, "spawned once in all");
+        const asks = (await recordOf(parked)).asks;
+        assert.equal(asks.length, 1);
+        assert.equal(asks[0].answer, "take b");
+      }),
+    },
+    {
+      name: "131/04 task03 — an answer to a later park appends a second entry",
+      run: async () => withMeshWorkerExecFixture(async (fx) => {
+        const parked = await parkFreshAssignment(fx);
+        const calls = [];
+        const resume = resumeHandlerFor(fx, parked, [{ outcome: "needs-input" }, { outcome: "needs-input" }], { calls });
+        const first = latestParkId(parked);
+        await resume({ ...resumeFrame(parked, first), answer: { text: "take b", by: BY, askedAt: null } });
+        const second = latestParkId(parked);
+        assert.notEqual(second, first, "the resumed session parked again under a new parkId");
+        await resume({ ...resumeFrame(parked, second), answer: { text: "take c", by: BY, askedAt: null } });
+        assert.equal(calls.length, 2, "spawned twice");
+        const asks = (await recordOf(parked)).asks;
+        assert.deepEqual(asks.map((entry) => entry.answer), ["take b", "take c"]);
+        assert.ok(asks.every((entry) => entry.answeredAt != null), "both entries are answered");
+      }),
+    },
+    {
+      name: "131/04 task03 — a record write that fails is one degrade, and the session still resumes",
+      run: async () => withMeshWorkerExecFixture(async (fx) => {
+        const parked = await parkFreshAssignment(fx);
+        const file = parked.record.node ? runNodeRecordPath(parked.item, parked.record.node, parked.record.runId) : runRecordPath(parked.item, parked.record.runId);
+        const open = { question: null, phase: null, askedAt: NOW, parkedAt: null, answer: null, answeredAt: null, by: null };
+        const current = JSON.parse(await readFile(file, "utf8"));
+        await writeFile(file, JSON.stringify({ ...current, asks: [open] }, null, 2), "utf8");
+        const events = recorder();
+        try {
+          const calls = [];
+          await resumeHandlerFor(fx, parked, [], { calls })({ ...resumeFrame(parked), answer: { text: "take b", by: BY, askedAt: null } });
+          assert.equal(calls.length, 1);
+          assert.equal(calls[0].brief.command, "take b");
+          assert.deepEqual(events.filter((event) => event.code === "terminal-resume-ask-record").length, 1, "exactly one terminal-resume-ask-record");
+          assert.deepEqual((await recordOf(parked)).asks, [open], "the open entry is byte-unchanged: no answer was stamped on it");
+          noText([], events, "take b");
+        } finally {
+          setDegradeSinkForTest(undefined);
+        }
+      }),
+    },
+    {
+      name: "131/04 task03 — a resume that starts no process records nothing and logs no answer (eight rows)",
+      run: async () => {
+        const rows = [
+          ["the worktree is gone", { prepare: ({ parked }) => rm(meshWorktreePath(parked.ws.projectRoot, parked.assignmentId), { recursive: true, force: true }) }, 0],
+          ["the itemRef does not resolve", { overrides: { findWork: async () => [] } }, 0],
+          ["another assignment's run is running", { overrides: ({ parked }) => ({ readRuns: async () => [parked.record, { ...parked.record, runId: "run-other", brief: { assignmentId: "asg-other" } }] }) }, 0],
+          ["the run has settled done", { overrides: ({ parked }) => ({ readRuns: async () => [{ ...parked.record, state: "done" }] }) }, 0],
+          ["the sessionId is not the frame's", { overrides: ({ parked }) => ({ readRuns: async () => [{ ...parked.record, sessionId: "different-conversation" }] }) }, 0],
+          ["a live PTY already holds the assignment", { live: true }, 0],
+          ["the fake fails before any process starts", { outcomes: [{ outcome: "failed", processStarted: false, failureReason: "launch refused" }] }, 1],
+          ["the fake throws before any process starts", { throws: true }, 1],
+        ];
+        for (const [label, row, spawned] of rows) {
+          await withMeshWorkerExecFixture(async (fx) => {
+            const parked = await parkFreshAssignment(fx);
+            await row.prepare?.({ fx, parked });
+            const supplied = typeof row.overrides === "function" ? row.overrides({ fx, parked }) : row.overrides ?? {};
+            const calls = [];
+            const logs = [];
+            const events = recorder();
+            try {
+              let release = null;
+              let answeredCalls = 0;
+              const resume = resumeHandlerFor(fx, parked, row.outcomes ?? [], {
+                calls,
+                logs,
+                ...supplied,
+                ...(row.throws ? { spawnRuntime: async (brief) => { calls.push({ brief }); throw new Error("spawn exploded"); } } : {}),
+                ...(row.live ? {
+                  spawnRuntime: async (brief, options) => {
+                    calls.push({ brief, options });
+                    options.onPtyLive?.(() => {}, () => {});
+                    await new Promise((resolve) => { release = resolve; });
+                    return { outcome: "needs-input", sessionId: parked.sessionId };
+                  },
+                } : {}),
+              });
+              let holding = null;
+              if (row.live) {
+                holding = resume(resumeFrame(parked));
+                await waitFor(() => release != null, "the live PTY");
+                answeredCalls = calls.length;
+              }
+              await resume({ ...resumeFrame(parked), answer: { text: MARKER, by: BY, askedAt: null } });
+              assert.equal(calls.length - answeredCalls, spawned, `${label}: spawned ${spawned}`);
+              release?.();
+              await holding;
+              assert.deepEqual((await recordOf(parked)).asks, [], `${label}: asks is []`);
+              noText(logs, events, MARKER);
+            } finally {
+              setDegradeSinkForTest(undefined);
+            }
+          });
+        }
+      },
+    },
+  ];
+}
+
+// ── milestone 131 / story 12, task 00 — THE WORKER READS ITS QUESTION ONTO THE PARK FACT (ADR-010
+// §1-§2). The transcript is a fixture file under an isolated projects directory, and the payload is
+// read from what the worker's journal shipped (QA ruling). Built inside a hoisted function so the
+// array above can spread it without a TDZ.
+function workerAskTests() {
+  const FOUR_LINES = ["Decision needed: split 131/03?", "Options: A or B", "I would pick: A", "What the answer changes: the plan"].join("\n");
+  const askTurn = (text) => `${JSON.stringify({ type: "assistant", message: { stop_reason: "end_turn", content: [{ type: "text", text }, { type: "text", text: "NEEDS_INPUT" }] } })}\n`;
+  async function withClaudeHome(body) {
+    const configDir = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-worker-ask-")));
+    try {
+      return await body({ env: { CLAUDE_CONFIG_DIR: configDir } });
+    } finally {
+      await rm(configDir, { recursive: true, force: true });
+    }
+  }
+  async function writeTranscript(cwd, env, sessionId, text) {
+    const dir = claudeProjectsDir({ cwd, env });
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, `${sessionId}.jsonl`), askTurn(text), "utf8");
+  }
+
+  return [
+    {
+      name: "131/12 task00 — a needs-input park carries the session's question, its phase and the park instant as ask",
+      run: async () => withMeshWorkerExecFixture(async (fx) => withClaudeHome(async ({ env }) => {
+        const ws = await readyWorkspace(fx);
+        const recorder = createStatusRecorder();
+        const handler = createMeshWorkerExecutionHandler({
+          loadWs: () => Promise.resolve(ws),
+          nodeId: NODE_ID,
+          now: () => NOW,
+          env,
+          globalWorkStoreOptions: { env: fx.env },
+          pushExec: scriptedPushExec(),
+          sendAssignmentStatus: recorder.sendAssignmentStatus,
+          sendEffectStep: recorder.sendEffectStep,
+          spawnRuntime: async (brief, options) => {
+            await options.onSessionIdCaptured?.("conversation-ask");
+            await writeTranscript(brief.worktreeCwd, env, "conversation-ask", FOUR_LINES);
+            return { outcome: "needs-input", sessionId: "conversation-ask" };
+          },
+        });
+        await handler({ kind: "directive", to: NODE_ID, assignmentId: "asg-ask", itemRef: fx.itemRef, workspaceId: fx.workspaceId, at: NOW, command: "/aof:continue 69/05 --autonomous" });
+        const park = recorder.effectSteps.filter((step) => step.payload?.state === "running" && step.payload?.code === "needs-input").at(-1);
+        assert.ok(park, "the park was shipped from the worker's journal");
+        assert.deepEqual(park.payload.ask, { question: FOUR_LINES, phase: "build", askedAt: NOW });
+        assert.deepEqual(Object.keys(park.payload), ["assignmentId", "state", "runId", "sessionId", "branch", "code", "ask"]);
+      })),
+    },
+    {
+      name: "131/12 task00 — which reports carry ask (three rows): only the needs-input park",
+      run: async () => withMeshAssignFixture(async ({ home }) => {
+        const journalOptions = { env: { AOF_GLOBAL_HOME: home } };
+        const ask = { question: "Q?", phase: "build", askedAt: NOW };
+        for (const [label, report, keys] of [
+          ["a needs-input park", { state: "running", code: "needs-input", ask }, ["assignmentId", "state", "runId", "sessionId", "branch", "code", "ask"]],
+          ["done", { state: "done" }, ["assignmentId", "state", "runId", "sessionId", "branch", "code"]],
+          ["failed with daemon-restarted", { state: "failed", code: "daemon-restarted" }, ["assignmentId", "state", "runId", "sessionId", "branch", "code"]],
+        ]) {
+          const shipped = [];
+          await reportAssignmentSettled({ assignmentId: `asg-${label.length}`, now: NOW, ...report }, { journalOptions, sendEffectStep: async (envelope) => { shipped.push(envelope); return { sent: true }; } });
+          assert.deepEqual(Object.keys(shipped.at(-1).payload), keys, label);
+        }
+      }),
+    },
+    {
+      name: "131/12 task00 — what the worker reads as the question (three rows): the ask, clipped at 8,000 code points, or null",
+      run: async () => withClaudeHome(async ({ env }) => {
+        const cwd = path.join(os.tmpdir(), "aof-worker-ask-cwd");
+        const events = [];
+        setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+        try {
+          const short = "x".repeat(200);
+          await writeTranscript(cwd, env, "s-short", short);
+          assert.equal((await readWorkerAsk({ worktreePath: cwd, sessionId: "s-short", phase: "build", now: () => new Date(NOW), env })).question, short);
+          await writeTranscript(cwd, env, "s-long", "y".repeat(9000));
+          const long = await readWorkerAsk({ worktreePath: cwd, sessionId: "s-long", now: () => new Date(NOW), env });
+          assert.equal(long.question, `${"y".repeat(8000)}…`);
+          const missing = await readWorkerAsk({ worktreePath: cwd, sessionId: "s-missing", phase: "verify", now: () => new Date(NOW), env });
+          assert.deepEqual(missing, { question: null, phase: "verify", askedAt: NOW }, "null, and the phase and instant still carried");
+          assert.equal(events.filter((event) => event.code === "ask-question-unreadable").length, 1, "one ask-question-unreadable");
+        } finally {
+          setDegradeSinkForTest(undefined);
+        }
+      }),
+    },
+    {
+      name: "131/12 task00 — the journal-unavailable fallback drops the ask",
+      run: async () => {
+        const blocked = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-worker-ask-nohome-")));
+        const homeIsAFile = path.join(blocked, "home");
+        await writeFile(homeIsAFile, "not a directory\n", "utf8");
+        setDegradeSinkForTest(() => ({ write: () => {} }));
+        try {
+          const sent = [];
+          await reportAssignmentSettled(
+            { assignmentId: "asg-fallback", state: "running", code: "needs-input", ask: { question: "Q?", phase: "build", askedAt: NOW }, now: NOW },
+            { journalOptions: { env: { AOF_GLOBAL_HOME: homeIsAFile } }, fallbackSend: async (...args) => { sent.push(args); } },
+          );
+          assert.equal(sent.length, 1, "the fallback was used");
+          assert.equal(sent[0][2].code, "needs-input");
+          assert.equal(Object.hasOwn(sent[0][2], "ask"), false, "and it carries no ask");
+        } finally {
+          setDegradeSinkForTest(undefined);
+          await rm(blocked, { recursive: true, force: true });
+        }
+      },
+    },
+    {
+      name: "131/12 task00 — the sink file does not grow: src/mesh/worker-execution.mjs is 1,914 lines",
+      run: async () => {
+        const text = await readFile(new URL("../../src/mesh/worker-execution.mjs", import.meta.url), "utf8");
+        assert.equal(text.split(/\r?\n/u).length - (text.endsWith("\n") ? 1 : 0), 1914);
+      },
+    },
+  ];
+}
