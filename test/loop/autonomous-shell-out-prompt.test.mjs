@@ -198,11 +198,13 @@ process.stdout.write("provider-ready\\r\\n");
 // protocol (measured: the live transcript holds the directive with no ESC byte in it).
 // This shim must model the same contract, or it asserts on bytes no real TUI ever sees.
 const ESC = String.fromCharCode(27);
-// …and, like \`claude\`, it ANNOUNCES the mode and then DRAWS its prompt: a real launch types only
-// once the TUI has enabled bracketed paste and drawn something since (cf10030's readiness gate, as
-// sharpened 2026-09-27), so a shim that does neither is typed into only at the 60 s cap, which is
-// this suite's own hang guard.
-process.stdout.write(ESC + "[?2004h> ");
+// …and, like \`claude\`, it ANNOUNCES the mode and then DRAWS its input box: \`❯\` at column 0 between
+// two full-width rules, the cursor on the \`❯\` row. A real launch reads that box off the screen
+// (138/ADR-002 §1) and, with no screen model, falls back to paste-ON-then-drawn (cf10030). A shim
+// that draws a bare \`> \` satisfies only the fallback, so the screen gate waits out its 60 s cap and
+// nothing is typed (m138/F-18).
+const RULE = "─".repeat(80);
+process.stdout.write(ESC + "[?2004h" + ESC + "[2J" + ESC + "[1;1H" + RULE + ESC + "[2;1H❯ " + ESC + "[3;1H" + RULE + ESC + "[2;3H");
 const stripPaste = (s) => s.split(ESC + "[200~").join("").split(ESC + "[201~").join("");
 process.stdin.on("data", (chunk) => {
   input += chunk;

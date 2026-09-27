@@ -18,12 +18,12 @@ import {
   storyAnchorResolves,
   storyContractList,
 } from "../story-contract.mjs";
-import { resolveCitedPath } from "../cited-path-resolve.mjs";
+import { archivedCitationOf, resolveCitedPath } from "../cited-path-resolve.mjs";
 // The impure half of ADR-004's resolver, already exported so a command edge does not spell its
 // own git read. THIS is the third reader the ADR did not enumerate (see the `reads:` probe).
 import { readRenameMap } from "./doctor.mjs";
 import { itemInScope } from "../work/ref-scope.mjs";
-import { listItems, recordDoc, validateWork as validateCoreWork } from "../work.mjs";
+import { ARCHIVE_ROOT, listItems, recordDoc, validateWork as validateCoreWork } from "../work.mjs";
 
 // Milestone 70's optional ADR declaration is a validation concern, but src/work.mjs
 // is byte-frozen by m53/FF-5308. Keep the additive check on this existing validation
@@ -140,6 +140,11 @@ export async function validateWork(workDir, config, scopeRef, { projectRoot } = 
           // has not become malformed, and a DELIVERED story's record cannot be edited to say
           // otherwise — which is the whole reason the resolver exists.
           if (resolveCitedPath(resolved.projectPath, { renameMap }).resolved) continue;
+          // …or if it names an item the archive verb has since moved: an item created and archived
+          // inside one squash leaves no rename to follow, and the archive rule is the answer
+          // (m138/F-16). The resolver names the candidate; this edge probes it.
+          const archived = archivedCitationOf(resolved.projectPath, path.relative(resolvedProjectRoot, workDir), ARCHIVE_ROOT);
+          if (archived != null && (await readFile(path.join(resolvedProjectRoot, archived), "utf8").catch(() => null)) != null) continue;
           // Clean, not a warning naming the claimant: the findings envelope carries no severity
           // channel, so a warning would still be a finding, still red the gate ladder, and still
           // teach the author to drop the entry. 62/R8 left that choice open; this is it.

@@ -64,7 +64,9 @@ const ARTIFACT_SYNC_HOOK = {
 // and the door scenarios below run with the real bundle too.
 const ISOLATED = { bundleHooks: [] };
 
-const OPERATOR_TOP_LEVEL = ["hooks", "enabledPlugins", "extraKnownMarketplaces", "permissions", "sandbox"];
+// The operator's measured top-level set. PR #1 (`28bbce2`) added `deniedMcpServers` and
+// `disableClaudeAiConnectors` to the tracked file; re-measured at 138's door (m138/F-17).
+const OPERATOR_TOP_LEVEL = ["hooks", "enabledPlugins", "extraKnownMarketplaces", "permissions", "sandbox", "deniedMcpServers", "disableClaudeAiConnectors"];
 const HAND_WIRED_EVENTS = ["SessionStart", "UserPromptSubmit", "SessionEnd", "PreToolUse"];
 
 async function operatorFixtureText() {
@@ -138,7 +140,7 @@ export const claudeSettingsMergeTests = [
     name: "claude-settings/03 every pre-existing key survives the merge byte-identical",
     run: async () => withFixture(async ({ dir, config, settingsPath }) => {
       const before = await readSettings(settingsPath);
-      // Non-vacuous: the fixture really is the operator's file, with all five top-level
+      // Non-vacuous: the fixture really is the operator's file, with all seven top-level
       // keys and all five hand-wired hook events.
       assert.deepEqual(Object.keys(before).sort(), [...OPERATOR_TOP_LEVEL].sort(), "the fixture carries the operator's measured top-level key set");
       assert.deepEqual(Object.keys(before.hooks).sort(), [...HAND_WIRED_EVENTS, "PostToolUse"].sort(), "…and its five hook events");
@@ -152,7 +154,7 @@ export const claudeSettingsMergeTests = [
       for (const event of HAND_WIRED_EVENTS) {
         assert.equal(canonical(after.hooks[event]), canonical(before.hooks[event]), `hooks.${event} is byte-identical to before`);
       }
-      for (const key of ["permissions", "sandbox", "enabledPlugins", "extraKnownMarketplaces"]) {
+      for (const key of ["permissions", "sandbox", "enabledPlugins", "extraKnownMarketplaces", "deniedMcpServers", "disableClaudeAiConnectors"]) {
         assert.equal(canonical(after[key]), canonical(before[key]), `${key} is byte-identical to before`);
       }
       assert.equal(after.hooks.PostToolUse.length, 1, "hooks.PostToolUse grew by exactly one aof-authored entry");

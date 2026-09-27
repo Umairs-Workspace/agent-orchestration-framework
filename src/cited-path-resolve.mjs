@@ -109,6 +109,26 @@ export function resolveThroughRenames(citedPath, renameMap) {
   return hops === 0 ? null : current;
 }
 
+// THE ARCHIVE RULE, beside the renames (the backlog story `tree-checks-survive-a-squash-merge`,
+// folded into 138's door, m138/F-16). An item created and archived inside ONE squash leaves no
+// rename in history: the squash records an ADD at the archive path, and neither git's records nor
+// the ledger hold it. The archive verb's own invariant answers it instead — a driver moves under
+// `<work.dir>/<archive root>/` with its folder name kept (127/ADR-004) — so a cited
+// `<work.dir>/<item>/…` has exactly one archived twin. Pure, like the chain above: this answers the
+// candidate, and the caller probes it as it probes a rename's target. `null` when the path is not
+// under the work dir, or is already archived. Both roots are the caller's, so nothing is spelled
+// twice.
+export function archivedCitationOf(citedPath, workDir, archiveRoot) {
+  const posix = (value) => String(value ?? "").replaceAll("\\", "/").replace(/^\.\//u, "").replace(/\/+$/u, "");
+  const file = posix(citedPath);
+  const root = posix(workDir);
+  const archive = posix(archiveRoot);
+  if (root === "" || archive === "" || !file.startsWith(`${root}/`)) return null;
+  const rest = file.slice(root.length + 1);
+  if (rest === "" || rest === archive || rest.startsWith(`${archive}/`)) return null;
+  return `${root}/${archive}/${rest}`;
+}
+
 // THE ONE ANSWER BOTH READERS TAKE.
 //
 //   · `existsAtHead` supplied → the whole question is answered here: `via: "head"` when the path is

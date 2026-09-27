@@ -40,7 +40,7 @@ import {
   resolvedDependsEdges,
 } from "../../../src/work/doctor-depends.mjs";
 import { resolveDeclaredSet } from "../../../src/story-contract.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { isDependNumber, loadWorkspace } from "../../../src/work.mjs";
 import { validateWork } from "../../../src/commands/validate.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
@@ -368,8 +368,13 @@ export const archTests = [
       // TARGET AND NEVER A SOURCE: validate reports nothing about its `depends:`, and neither does
       // this lane, which is behaviour rather than an omission.
       const isSource = (item) => isDriver(item) || (item.type === "story" && item.parent != null && item.parent !== "");
-      const authored = snapshot.items.filter(isSource).reduce((total, item) => total + asList(item.meta?.depends).length, 0);
-      assert.equal(census.considered, authored - unresolved.length, "the lane's domain IS the edge set validateWork resolves");
+      // A BACKLOG ROW'S SLUG EDGE is validate's own backlog slug graph (139), resolved by slug and
+      // never by number, and 139 ruled the doctor's depends lane numeric ("keeps its parseInt"). So
+      // it is outside the lane's domain by decision, exactly as a parentless story's `depends:` is
+      // (measured at 138's door: seven slug edges across four shattered backlog milestones).
+      const inLaneDomain = (item, entry) => item.number != null || isDependNumber(entry);
+      const authored = snapshot.items.filter(isSource).reduce((total, item) => total + asList(item.meta?.depends).filter((entry) => inLaneDomain(item, entry)).length, 0);
+      assert.equal(census.considered, authored - unresolved.length, "the lane's domain IS the edge set validateWork resolves by number");
 
       const parentless = snapshot.items.filter((item) => item.type === "story" && (item.parent == null || item.parent === ""));
       const strayed = parentless.reduce((total, item) => total + asList(item.meta?.depends).length, 0);
