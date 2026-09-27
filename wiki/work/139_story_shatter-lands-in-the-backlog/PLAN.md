@@ -42,8 +42,8 @@ with `aof work update`, never by hand.
 ## The verification step
 
 Focused suites first, always with `AOF_GLOBAL_HOME` set to a fresh temp dir, through
-`node scripts/test.mjs --only`: the promote, three-root and reindex-rewrite suites under
-`test/work/stream/`, `test/planning/planning-prd.test.mjs`, and the controls this touches —
+the test runner's `--only` mode: the promote, three-root and reindex-rewrite suites under
+the work-stream test folder, the planning-PRD suite, and the controls this touches —
 `acd-one-mint`, `acd-intake-write-side-only`, `acd-number-null-safe`,
 `acd-learning-edge-reaches-every-cut`, `acd-declared-writes-include-generated-siblings`. Never
 `--scope impacted`: a story touching `src/work.mjs` widens to the whole tree.
