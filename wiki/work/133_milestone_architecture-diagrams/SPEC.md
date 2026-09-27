@@ -3,10 +3,10 @@ type: milestone
 number: 133
 slug: architecture-diagrams
 title: "Architecture diagrams — the architect draws the design, the diagram lives with its ADR, and the console shows it"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-22
-updated: 2026-09-23
+updated: 2026-09-27
 schema: 1
 aofVersion: 0.1.0
 ---

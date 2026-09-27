@@ -134,3 +134,21 @@ restore the file, then run the control green again.
 | F-133-08 | Gate run 1: 132's `PLAN.md` line 52 restated `scripts/test.mjs` (FF-9603, two suites). | defect | low | Inherited and mechanical: the advisory line was rephrased at the owner. | m132 | closed |
 | F-133-09 | Gate run 1: `work/this-tree-holds-what-is-live` refuses the root, because 129 and 132 are `done` and not archived. | process | medium | Not 133's to act on: archiving is the operator's act (127/ADR-004). The gate stays red on this case until `aof work archive 129` and `aof work archive 132`. | operator | open |
 | F-133-06 | The `@uat` leg "the SVG renders inline on GitHub" is not observed, because the branch is not pushed. The operator chose to judge the local files now. | test-gap | low | non-blocker → observe on the first push of this branch (the committed ARCHITECTURE.md's ADR-002 figure on GitHub). | operator | open |
+
+## Accept decision
+
+**ACCEPTED, 2026-09-27, at `aof:verify 133`** (the 2026-09-23 verify's evidence and sign-off stand).
+
+- **Stories:** 01–06 are `done`, each on its evidence above, and the operator signed off in the
+  browser (`## User sign-off`).
+- **Whole tree:** accepted under `--gate-override` at the operator's instruction (`REGRESSION.md`, row 2),
+  not on a 133 gate run. Row 1 (`2078166`, 2026-09-23) was red. Its causes were fixed as F-133-07
+  and F-133-08, and F-133-09 was cleared when the operator archived 129 and 132. 138's whole-tree
+  gate ran green at `5c3786d` over a tree holding all of 133's code.
+- **Controls:** FF-13301 to FF-13305 are green, each with a recorded red probe. `aof work doctor 133`
+  reports no `control-unresolved` at either severity, and `aof work validate 133` passes.
+- **Findings:** no blocker is open. F-133-01 to F-133-05, F-133-07 and F-133-08 are closed. F-133-09
+  is closed by the archive. F-133-06 (the SVG inline on GitHub) stays open as a non-blocker until
+  the first push of this branch.
+- **Story retrospectives:** 01, 03 and 04 carry one. 02, 05 and 06 surfaced no lesson of their own,
+  so they carry none; the milestone's R1–R3 hold every lesson this build taught.
