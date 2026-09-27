@@ -1,12 +1,12 @@
 ---
 type: milestone
-number:
+number: 138
 slug: terminal-emulator
 title: "The session driver sees claude's screen — a server-side terminal emulator beside node-pty"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-09-25
-updated: 2026-09-25
+updated: 2026-09-27
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -16,7 +16,7 @@ aofVersion: 0.1.0
   (ARCHITECTURE / DESIGN / RESEARCH / UAT live in this folder too, conditionally).
   Does NOT contain: a per-story user story (→ each STORY.md) or acceptance criteria (→ task .feature).
 -->
-# The session driver sees claude's screen — a server-side terminal emulator beside node-pty
+# 138 · The session driver sees claude's screen — a server-side terminal emulator beside node-pty
 
 ## Objective
 
@@ -76,7 +76,16 @@ Out of scope:
 
 ## Stories
 
-To be broken down (`aof:refine`).
+Linear by construction: 01 consumes the verdict seam 00 lands, and 02 measures both (ADR-006).
+
+- [ ] `00_story_the-driver-reads-the-screen`: the dependency, the `src/terminal/` family (model,
+  door, registry with `ready` and `usage-limit`), the driver typing on the input box, every
+  verdict kind wired, and the screen recorded at every non-`done` stop.
+- [ ] `01_story_blocking-screens-are-named` (depends 00): `trust` answered by standing consent;
+  `mcp-approval`, `first-run` and `login` failed as `blocked_screen`; the id carried to the lane
+  narration and the halt line.
+- [ ] `02_story_a-live-session-proves-it` (depends 00, 01): the deployed driver measured against a
+  real `claude` on this node and the WSL node.
 
 ## Dependencies
 
