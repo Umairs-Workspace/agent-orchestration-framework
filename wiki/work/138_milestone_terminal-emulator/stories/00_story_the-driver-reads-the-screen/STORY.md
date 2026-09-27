@@ -5,7 +5,7 @@ slug: the-driver-reads-the-screen
 title: "The driver reads the screen — one headless model per session behind one door, typing on the input box, and the screen recorded at every stop"
 parent: 138
 depends: []
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27

@@ -5,7 +5,7 @@ slug: blocking-screens-are-named
 title: "Blocking screens are named — trust answered by standing consent, navigated on the screen, MCP approval, first-run and login failed by name within seconds, and the name carried to the loop's own output"
 parent: 138
 depends: ["00"]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27

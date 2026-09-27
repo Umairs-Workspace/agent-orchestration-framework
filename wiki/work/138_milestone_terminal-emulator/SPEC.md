@@ -78,13 +78,13 @@ Out of scope:
 
 Linear by construction: 01 consumes the verdict seam 00 lands, and 02 measures both (ADR-006).
 
-- [ ] `00_story_the-driver-reads-the-screen`: the dependency, the `src/terminal/` family (model,
+- [x] `00_story_the-driver-reads-the-screen`: the dependency, the `src/terminal/` family (model,
   door, registry with `ready` and `usage-limit`), the driver typing on the input box, every
   verdict kind wired, and the screen recorded at every non-`done` stop.
-- [ ] `01_story_blocking-screens-are-named` (depends 00): `trust` answered by standing consent;
+- [x] `01_story_blocking-screens-are-named` (depends 00): `trust` answered by standing consent;
   `mcp-approval`, `first-run` and `login` failed as `blocked_screen`; the id carried to the lane
   narration and the halt line.
-- [ ] `02_story_a-live-session-proves-it` (depends 00, 01): the deployed driver measured against a
+- [x] `02_story_a-live-session-proves-it` (depends 00, 01): the deployed driver measured against a
   real `claude` on this node and the WSL node.
 
 ## Dependencies

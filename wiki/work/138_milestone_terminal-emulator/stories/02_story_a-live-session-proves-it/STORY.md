@@ -5,7 +5,7 @@ slug: a-live-session-proves-it
 title: "A live session proves it — the deployed driver types on the input box, names a blocking screen in seconds, and leaves the screen in the degrade log, on this node and the WSL node"
 parent: 138
 depends: ["00", "01"]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
