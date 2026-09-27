@@ -387,6 +387,7 @@ depends: []
         const driver = completingDriver(gateFx);
         const result = await runReported({ scope: "03" }, gateFx, { agentSessionDriverOptions: driver.options });
         record("s05", "p05", result, { stop: "cap-exhausted", producer: "engine:cycle>=cap", ref: "03/01" }, /cap=2; findings=\[/u);
+        assert.doesNotMatch(result.report, /--cap/u, "an engine cap-exhausted halt keeps the bare resume line");
       } finally { await gateFx.cleanup(); }
 
       const exhaustedFx = await loopFixture({ cap: 3 });
@@ -395,6 +396,9 @@ depends: []
         const result = await runReported({ scope: "03" }, exhaustedFx, { agentSessionDriverOptions: driver.options });
         record("s06", "p06", result, { stop: "cap-exhausted", producer: "run-store:attempts-exhausted", ref: "03/01" }, /attempt=3/u);
         assert.equal(driver.spawnCalls.length, 3);
+        // 2026-09-27 — a bare --resume re-reads the three spent attempts and halts again at once;
+        // the line names the one override that admits a fourth.
+        assert.match(result.report, /Resume with: aof work loop 03 --resume --cap 4 /u);
       } finally { await exhaustedFx.cleanup(); }
 
       const needsFx = await loopFixture();

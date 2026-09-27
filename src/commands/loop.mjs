@@ -960,7 +960,7 @@ export async function runLoopLaunch(input, ctx = {}) {
     const envelope = buildNotifyEnvelope("loop-halted", {
       ref: state.scope,
       elapsedMs: Math.max(0, at.getTime() - Date.parse(ended.startedAt)) || 0,
-      stop: { id: act.stop ?? null, producer: act.producer ?? null, remedy: act.remedy ?? null, ref: act.ref ?? null },
+      stop: { id: act.stop ?? null, producer: act.producer ?? null, remedy: act.remedy ?? loopHaltRemedy(state), ref: act.ref ?? null },
     }, { config: ended.workspace.config, now: () => at });
     await notify(ended.workspace, envelope, ctx.notifyOptions ?? {});
   }
@@ -1894,14 +1894,31 @@ export function renderLoopState(state) {
   if (typeof state?.request === "string") {
     return `${state.scope} — stop requested (${state.request}) for loop ${state.loopRunId}, ${state.live === true ? "live" : "not live"}. ${state.path}`;
   }
-  const resume = `aof work loop ${state.scope} --resume`;
   if (state.act.act === "done") return `${state.scope} — loop done.`;
   if (state.act.act === "halt") {
-    return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer ?? "unknown"}). Resume with: ${resume}`;
+    return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer ?? "unknown"}). Resume with: ${loopResumeCommand(state)}`;
   }
   const target = state.act.ref ? ` ${state.act.ref}` : "";
   const phase = state.act.phase ? ` ${state.act.phase}` : "";
   return `${state.scope} — ${state.level}, cap ${state.cap}: ${state.act.act}${phase}${target}.`;
+}
+
+// loopResumeCommand(state) — the command a halt tells the operator to run next. A run that has
+// spent its attempts halts `run-store:attempts-exhausted`, and a bare `--resume` re-reads the
+// same exhausted run and halts again at once (language-tutor 03, 2026-09-27: twice, 12 seconds
+// apart). Only a raised ceiling admits another attempt, and an explicit `--cap` wins on resume and
+// becomes the retry's `maxAttempts`, so that halt names the one-more override.
+function loopResumeCommand(state) {
+  const resume = `aof work loop ${state.scope} --resume`;
+  const exhausted = state.act?.producer === "run-store:attempts-exhausted" && Number.isSafeInteger(state.cap);
+  return exhausted ? `${resume} --cap ${state.cap + 1}` : resume;
+}
+
+// The halt's remedy for the announcement: an attempts-exhausted halt names the raised ceiling,
+// because the announcement's own resume line is the bare `--resume` that cannot clear it.
+function loopHaltRemedy(state) {
+  if (state.act?.producer !== "run-store:attempts-exhausted" || !Number.isSafeInteger(state.cap)) return null;
+  return `The run spent all ${state.cap} attempts, so a bare --resume halts again. Run: ${loopResumeCommand(state)}`;
 }
 
 export const loopCommand = {

@@ -706,4 +706,40 @@ export const loopCommandResumeTests = [
       for (const name of ["createStopSource", "loopStopsDir", "markStopHonoured", "clearStopRequest", "readStopRequest"]) assert.ok(names.includes(name), name);
     },
   },
+  {
+    name: "2026-09-27 — an attempts-exhausted halt names the override that clears it, and that override drives a fourth attempt",
+    async run() {
+      const fx = await loopFixture({ cap: 3 });
+      try {
+        const item = await resolveItemExact(fx.ctx, "03/01");
+        // Three failed attempts on one lineage (language-tutor 03/03's shape: timeouts, no session).
+        let prior = await startRun(item, { brief: { loop: capThree }, now: "2026-09-08T10:00:00.000Z" });
+        await completeRun(item, { runId: prior.runId, outcome: "failed", failureReason: "timeout", now: "2026-09-08T10:00:00.050Z" });
+        for (const at of ["10:00:01", "10:00:02"]) {
+          prior = await retryRun(item, { runId: prior.runId, maxAttempts: 3, brief: { loop: capThree }, now: `2026-09-08T${at}.000Z` });
+          await completeRun(item, { runId: prior.runId, outcome: "failed", failureReason: "timeout", now: `2026-09-08T${at}.050Z` });
+        }
+
+        const bare = [];
+        const halted = await runLoopBody(
+          { scope: "03", resume: true, now: "2026-09-08T10:00:03.000Z" },
+          { ...fx.ctx, agentSessionDriverOptions: completingDriver(fx).options, report: (line) => bare.push(line) },
+        );
+        assert.equal(halted.act.producer, "run-store:attempts-exhausted", "a bare --resume re-reads the spent attempts");
+        assert.match(bare.at(-1), /Resume with: aof work loop 03 --resume --cap 4 /u);
+
+        const lines = [];
+        const driver = completingDriver(fx);
+        await runLoopBody(
+          { scope: "03", resume: true, cap: 4, now: "2026-09-08T10:00:04.000Z" },
+          { ...fx.ctx, agentSessionDriverOptions: driver.options, report: (line) => lines.push(line) },
+        );
+        assert.ok(lines.some((line) => line.startsWith("Resumed 03/01 — attempt 4 of 4")), lines.join("\n"));
+        assert.ok(driver.spawnCalls.length >= 1, "the fourth attempt is driven");
+        assert.ok((await readRuns(item)).some((run) => run.attempt === 4 && run.retryOf === prior.runId));
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
 ];
