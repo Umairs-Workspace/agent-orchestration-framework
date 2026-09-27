@@ -43,7 +43,12 @@ const workDir = path.join(repoRoot, "wiki", "work");
 // The prohibition's own glob, spelled as the predicate the runners use. A file whose
 // NAME carries `.test.` or `.spec.` before its extension is inside a runner's glob;
 // anything else is not, which is exactly what the retirement convention exploits.
-const STAGED = /\.(?:test|spec)\.[A-Za-z0-9]+$/;
+// A .NET test CLASS (`FooTests.cs` / `FooTest.cs`, `.fs`/`.vb` alike) is the same
+// question in an ecosystem with no filename glob, so the gate's spelling widens in
+// lockstep with `isControlFileName` — a strict superset of ADR-004 §4's glob, never a
+// relaxation of it. aof's own tree holds no `.cs`, so the agreement loop below cannot
+// see that branch; the enumerated shapes in the next test assert it for both spellings.
+const STAGED = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$/;
 
 async function walk(dir, out = []) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -99,8 +104,17 @@ export const archTests = [
         ["acd-lease-write-scope.mjs", false],
         ["memory-spike.mjs", false],
         ["00_a-task.feature", false],
+        // the .NET test-class spelling, and the ordinary sources it must leave admitted
+        ["ContractsBoundaryTests.cs", true],
+        ["FooTest.cs", true],
+        ["Tests.fs", true],
+        ["FooTests.vb", true],
+        ["Program.cs", false],
+        ["TestSupport.cs", false],
+        ["Latest.cs", false],
       ]) {
         assert.equal(isControlFileName(name), staged, name);
+        assert.equal(STAGED.test(name), staged, `the gate's own glob agrees on ${name}`);
       }
     },
   },

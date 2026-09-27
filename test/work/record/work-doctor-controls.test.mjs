@@ -807,6 +807,40 @@ export const workDoctorControlsTests = [
     },
   },
   {
+    name: "control: a .NET test CLASS is a control-shaped name — `<Name>Tests.cs` / `<Name>Test.cs` (and `.fs`/`.vb`) are cited and resolved, ordinary sources and test helpers are not",
+    run: () => {
+      for (const [name, control] of [
+        ["ContractsBoundaryTests.cs", true],
+        ["tests/Acme.Service.Tests/Architecture/ContractsBoundaryTests.cs", true],
+        ["FooTest.cs", true],
+        ["Tests.fs", true],
+        ["FooTests.vb", true],
+        ["src/Acme.Service/Program.cs", false],
+        ["CallMapper.cs", false],
+        ["TestSupport.cs", false],
+        ["IntegrationTestBase.cs", false],
+        ["Latest.cs", false],
+        ["Contest.cs", false],
+        ["footests.cs", false],
+        ["FooTests.csproj", false],
+        ["FooTests.md", false],
+      ]) {
+        assert.equal(isControlFileName(name), control, name);
+      }
+      // the citation half: the dotted project folder is a path component, and a
+      // non-test source in the same cell stays prose
+      const DOTNET = "tests/Acme.Service.Tests/Architecture/ContractsBoundaryTests.cs";
+      assert.deepEqual(controlPathsIn(`\`${DOTNET}\` — pending`), [DOTNET]);
+      assert.deepEqual(controlPathsIn("`src/Acme.Service/Program.cs` maps none directly"), []);
+      // …and the resolution half, through the lane: probed present resolves, absent is leg A's miss
+      const register = { "ARCHITECTURE.md": fitnessRegister(`| **FF-04** | the boundary | \`${DOTNET}\` — pending | ADR-001 |`) };
+      const resolved = controlGroup(snapshotOf([item({ docs: register })], { probes: { [DOTNET]: true } }), {});
+      assert.deepEqual(only(resolved, "control-unresolved"), [], "a landed .NET test class resolves under leg A");
+      const missing = controlGroup(snapshotOf([item({ docs: register })], { probes: { [DOTNET]: false } }), {});
+      assert.match(only(missing, "control-unresolved")[0].message, /FF-04 cites tests\/Acme\.Service\.Tests\/Architecture\/ContractsBoundaryTests\.cs, which is not a file on disk \(declared "pending"\)/);
+    },
+  },
+  {
     name: "66/02 control: a pending control is admitted mid-flight, and its marker is inadmissible at the accept transition (ADR-009/C)",
     run: () => {
       const CITED = "test/arch/not-yet.test.mjs";
