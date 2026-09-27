@@ -3,7 +3,7 @@ type: story
 number: 140
 slug: refine-defaults-to-solo
 title: "Refine runs solo unless told otherwise — continue stays orchestrated by hand and solo under the loop"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
@@ -75,7 +75,7 @@ because a single author sees all of them.**
   refine solo and continue orchestrated; an orchestrated refine gives each story one `aof-qa`
 - [x] `tasks/01_the-loop-drives-both-phases-solo.feature` — an unset `work.loop.agents.<phase>.mode`
   composes `--solo`; the loop never inherits `work.agents.mode`
-- [ ] `tasks/02_every-repo-runs-the-new-defaults.feature` — this repo and every repo the operator
+- [x] `tasks/02_every-repo-runs-the-new-defaults.feature` — this repo and every repo the operator
   names drop their mode pins and re-render (@manual)
 
 ## Decisions taken at refine
