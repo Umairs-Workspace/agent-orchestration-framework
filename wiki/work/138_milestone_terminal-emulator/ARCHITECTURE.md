@@ -244,14 +244,40 @@ in seconds.
    | `login` | captured at build (isolated config, zero-token) | **fail** | Unauthenticated, the Mac-over-SSH class. A retry cannot help. |
    | `usage-limit` | the measured text (129/06 F-58) | **wait** | Provider wait, semantics unchanged (§6). |
 
-4. **A consent is only an answer the operator already gave.** v1 has one: trust. A consent may
-   press Enter only when two things hold:
-   - the highlighted row (the menu's `❯`) is the entry's named option; and
-   - the directive has not been typed yet.
+4. **A consent is only an answer the operator already gave.** v1 has one: trust.
 
-   It fires at most once per entry per session. A dialog that returns after its consent, or whose
-   highlighted option is not the named one, fails with the entry's id. The driver never navigates
-   a menu blind.
+   **AMENDED 2026-09-27, at the operator's decision.** Their words: "Allow down then enter. And make
+   it robust enough where we can detect the order."
+
+   The amendment follows a measurement at 01's capture (RESEARCH Q5). claude 2.1.283 opens the trust
+   dialog on `❯ No, exit`, with `Yes, I trust this folder` as the second, unnumbered option. So the
+   original one-Enter-on-the-highlighted-option rule could never answer it, and its Enter would
+   exit claude.
+
+   The door now NAVIGATES by the screen, one key per settled frame, and never blind:
+   - **The menu is read from the frame.**
+     - The highlighted item is the row under the menu's `❯`.
+     - The option item is the item row whose text is the entry's named option, with any `N. `
+       number ignored.
+     - If either is not on screen, the consent fails with the entry's id, and nothing is written.
+   - **The order is detected, not assumed.**
+     - An option below the highlighted item is reached with Down, and one above it with Up.
+     - Each arrow is spelled for the terminal's cursor-key mode, which the model reports: `ESC [ B`
+       and `ESC [ A`, or `ESC O B` and `ESC O A` under DECCKM.
+     - An option further than `CONSENT_MAX_KEYS` items away fails by id before any key is sent.
+   - **Every key is confirmed on the screen before the next.**
+     - A settled frame whose highlight moved toward the option admits the next step.
+     - A frame on which the highlight has not moved yet is waited through.
+     - A highlight that moved away from the option fails by id. So does one that has not moved
+       within `CONSENT_STEP_MS` of the key.
+   - **Enter only on the named option.** The door sends one Enter only when the highlighted item is
+     the named option, and only while the directive is untyped.
+   - **Once per entry per session.** After the Enter, a repaint before claude takes it is not a
+     return. The entry recognising again after a frame on which it did not is a return, and it fails
+     with the entry's id.
+
+   The driver writes each consent verdict's keys as one write of their own and is not edited
+   (ADR-006). What changed is only the door's reading of the menu.
 5. **A fail is `failed / blocked_screen`, named and not retried.**
    - It is non-retryable by the closed classifier's fail-closed rule, so `RETRYABLE_REASONS` is
      not edited.

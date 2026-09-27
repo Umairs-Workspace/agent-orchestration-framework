@@ -74,22 +74,21 @@ doc: state
   spawn loads that checkout's `src/`, so a half-rewired driver there would have reached their next
   drive, and `npm ci` there would have pulled `node_modules` from under them. The build ran in
   `C:\Source\umami\aof-138` on branch `138-terminal-emulator-00`, cut from `4831f38`.
+- **01's trust contract, decided by the operator, 2026-09-27.**
+  - The finding, at 01/00's capture: claude 2.1.283 opens the trust dialog on `❯ No, exit`, with
+    `Yes, I trust this folder` as the second, unnumbered option. So ADR-003 §4's one-Enter consent
+    could never answer it, and its Enter would EXIT claude.
+  - Also found: the MCP dialog's default is `❯ Continue without using this MCP server`.
+  - Asked to choose between failing trust, allowing Down then Enter, or leaving it always
+    `blocked_screen`, the operator answered: **"Allow down then enter. And make it robust enough
+    where we can detect the order."**
+  - ADR-003 §4 is amended in place: the door navigates by the screen, one confirmed key at a time,
+    and never blind. RESEARCH Q5 records the live arrow probe: Down highlights Yes, Up returns, in
+    order, and nothing is written without an Enter.
+  - `aof:refine 138/01 --solo` re-authored 01's tasks 00, 01, 02 and 04, its STORY and its PLAN to
+    match.
 - **Open, for the operator:**
   - `npm ci` on the Mac worker after it pulls.
-  - **01's contract does not match claude 2.1.283's trust dialog (found at 01/00's capture,
-    2026-09-27). 01 halts here until it is decided.**
-    - What claude draws: the highlighted default is `❯ No, exit`, and `Yes, I trust this folder`
-      is the second, unnumbered option.
-    - ADR-003 §4's consent is one Enter, only on a highlighted named option, and never an arrow
-      key. It therefore can never answer this dialog: an Enter here would EXIT claude.
-    - 01/01's "the highlighted row is the named option in the recording" and 01/02's "trust is
-      answered once" are false against `trust.json`.
-    - The MCP dialog's default is `❯ Continue without using this MCP server`, not "Use this
-      server" as the 2026-09-27 driver comment says.
-    - The choice (an ADR-003 amendment, then `aof:refine 138/01`) is one of three:
-      - trust becomes a `fail`, because the pre-write IS the consent and a dialog means it lost;
-      - the consent may send Down then Enter on this dialog only;
-      - trust stays a consent that in practice always fails as `blocked_screen: trust`.
 
 ## Feedback (for retro)
 

@@ -147,14 +147,30 @@ was typed.
     writes.
   - After the cleanup: 53,037 keys, the same sha256. No prior key was missing and no scratch key
     was left. The scratch folders are deleted.
-- **Three departures from the contract, each forced by what claude 2.1.283 draws.** They are routed
-  to the operator in `STATE.md`.
+- **Three departures from the original contract, each forced by what claude 2.1.283 draws.** The
+  operator decided them, and 01's contract was re-refined to match (STATE, 2026-09-27):
   1. `trust.json`'s highlighted row is `❯ No, exit`. `Yes, I trust this folder` is the second
-     option and is unnumbered, so the scenario's `❯ 1. Yes, I trust this folder` row does not
-     exist.
-  2. ADR-003 §4 admits one Enter and no arrow key, so no key can answer Yes. The MCP folder was
-     therefore trusted through aof's own pre-write, `ensureWorktreeTrusted`, the seam every lane
-     launch uses. No key reached either launch.
+     option and is unnumbered.
+  2. A keyed Enter would have picked `No, exit`, so the MCP folder was trusted through aof's own
+     pre-write, `ensureWorktreeTrusted`, the seam every lane launch uses. No key reached either
+     launch.
   3. `login.json` holds the whole recording, not "the chunks from the Enter on". Replayed alone,
      the two chunks after the Enter render the menu without its item numbers or banner: Ink
      redraws only the cells that changed.
+- **The arrow order, measured live (the re-refine, 2026-09-27; operator told first).**
+  - A third never-trusted scratch cwd, with no Enter sent.
+  - The frame had no application cursor keys (no `CSI ?1h` in any recording), so the arrows were
+    `CSI B` and `CSI A`.
+  - As printed:
+
+    ```
+    dialog up; highlighted: [ '15:❯ No, exit' ]
+    Down (ESC [ B): highlighted ["16:❯ Yes, I trust this folder"]; redraw 81 bytes: "\u001b[m\u001b[16;2H \u001b[1CNo, exit\u001b[38;2;177;185;249m\u001b[17;2H❯\u001b[1CYes, I trust this folder\u001b[m"
+    Up (ESC [ A): highlighted ["15:❯ No, exit"]; redraw 78 bytes: "\u001b[38;2;177;185;249m\u001b[16;2H❯\u001b[1CNo, exit\u001b[m\u001b[17;2H \u001b[1CYes, I trust this folder"
+    Down again: highlighted ["16:❯ Yes, I trust this folder"]; redraw 78 bytes: "\u001b[16;2H \u001b[1CNo, exit\u001b[38;2;177;185;249m\u001b[17;2H❯\u001b[1CYes, I trust this folder\u001b[m"
+    killed without Enter
+    ```
+
+  - Afterwards the `projects` keys were 53,038. The one new key is another live session's lane,
+    `…/.aof/mesh/dispatch-02-01` in another workspace, not the probe's. No key under the scratch
+    root was added, and the scratch cwd is deleted.

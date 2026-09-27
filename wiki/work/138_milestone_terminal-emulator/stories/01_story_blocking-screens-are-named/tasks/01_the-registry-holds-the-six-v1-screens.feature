@@ -53,7 +53,8 @@ Feature: the registry holds the six v1 screens, in order, each recognised from i
       | first-run    |
       | login        |
 
-  Scenario: the trust menu's highlighted row is the named option in the recording
+  Scenario: the trust recording opens on another option, and its named option is an item of the same menu
     Given `trust.json` replayed through a real model
-    When the row holding the menu's `❯` is read
-    Then it contains `Yes, I trust this folder`
+    When its menu is read as the door reads it (the item under `❯`, and the item whose text is `trust`'s `option`)
+    Then the highlighted item is `No, exit`, and `Yes, I trust this folder` is the item directly below it
+    And the recording enables no application cursor keys, so the arrow toward the option is Down, `ESC [ B`

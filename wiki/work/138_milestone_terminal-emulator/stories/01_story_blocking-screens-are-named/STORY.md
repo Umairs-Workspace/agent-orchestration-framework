@@ -2,7 +2,7 @@
 type: story
 number: 01
 slug: blocking-screens-are-named
-title: "Blocking screens are named — trust answered by standing consent, MCP approval, first-run and login failed by name within seconds, and the name carried to the loop's own output"
+title: "Blocking screens are named — trust answered by standing consent, navigated on the screen, MCP approval, first-run and login failed by name within seconds, and the name carried to the loop's own output"
 parent: 138
 depends: ["00"]
 status: in-progress
@@ -29,6 +29,8 @@ reads:
   - src/loop/cycle.mjs
   - test/terminal/index.mjs
   - test/terminal/session-screen-verdicts.test.mjs
+  - test/terminal/session-screen-ready.test.mjs
+  - test/terminal/screen-model.test.mjs
   - test/arch/terminal/index.mjs
   - test/fixtures/claude-screens/first-run.json
   - test/fixtures/claude-screens/ready.json
@@ -42,6 +44,8 @@ reads:
   - test/arch/loop/acd-loop-family-boundary.test.mjs
 files:
   - src/terminal/claude-screens.mjs
+  - src/terminal/session-screen.mjs
+  - src/terminal/screen.mjs
   - src/loop/child-drive.mjs
   - src/loop/wave.mjs
   - src/loop/cycle.mjs
@@ -72,8 +76,10 @@ the halt line which screen stopped it without opening a log**.
 What lands (ADR-003):
 
 - **The registry's four remaining v1 entries.**
-  - `trust`, a consent. It presses Enter only when the highlighted row is
-    `Yes, I trust this folder` and the directive is not yet typed.
+  - `trust`, a consent. claude 2.1.283 opens it on `No, exit`, so the door reads the menu's order
+    from the frame and walks to `Yes, I trust this folder` one arrow at a time, each confirmed on
+    the next frame, then presses Enter, and only while the directive is untyped (ADR-003 §4 as
+    amended 2026-09-27).
   - `mcp-approval`, `first-run` and `login`, each a fail as `blocked_screen`.
 - **Their fixtures.** `trust`, `mcp-approval` and `login` are recorded from a real claude. The
   `first-run` recording already landed with 00.
@@ -84,16 +90,19 @@ What lands (ADR-003):
 
 ## Tasks
 
-- [ ] `tasks/00_three-screens-are-recorded-from-a-real-claude.feature` — `login` isolated; `trust` and `mcp-approval` operator-told, never approved, the projects entries removed (`@manual`)
+- [ ] `tasks/00_three-screens-are-recorded-from-a-real-claude.feature` — `login` isolated; `trust` and `mcp-approval` operator-told, never approved, the projects entries removed; the arrow order measured live (`@manual`)
 - [ ] `tasks/01_the-registry-holds-the-six-v1-screens.feature` — the six in ADR-003's order; each recording claimed by its own entry; a quoted dialog above a live box is not a dialog
-- [ ] `tasks/02_trust-is-answered-and-the-rest-stop-by-name.feature` — one Enter then the directive; not-yes and returns fail; the other three stop within a frame, nothing typed
+- [ ] `tasks/02_trust-is-answered-and-the-rest-stop-by-name.feature` — arrows toward the option, each confirmed, then one Enter; unconfirmable navigation and returns fail; the other three stop within a frame, nothing typed
 - [ ] `tasks/03_the-screen-s-name-reaches-the-loop-s-own-output.feature` — `childDriveOutcome` checks the shape; the settle line; `screen=<id>` on both halt paths
 - [ ] `tasks/04_ff-13802-every-registered-screen-is-recorded.feature` — the control, its plants, its red probe, and `pending` retired
 
 ## Notes
 
-- **No driver edit.** 00 lands every verdict kind (ADR-006). If this story finds it needs one,
-  that is a contract gap in 00, to be reported rather than patched here.
+- **No driver edit.** 00 lands every verdict kind (ADR-006), and the driver writes a consent's keys
+  as they come. The navigation is the door's, and the cursor-key mode is the model's snapshot. That
+  is why 01 writes `session-screen.mjs` and `screen.mjs`. This supersedes 00/04's ruling that a
+  consent is one Enter and never an arrow. Operator's decision, 2026-09-27; 00's cases still hold,
+  because an option absent from the menu is still a failure with no write.
 - **Two captures are operator-told.** `trust` and `mcp-approval` need a configured claude in a
   scratch cwd, and that writes a projects entry into the operator's real `~/.claude.json`. The
   developer says so before capturing, and removes the entry afterwards. Both captures are

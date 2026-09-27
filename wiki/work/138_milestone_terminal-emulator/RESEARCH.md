@@ -129,3 +129,29 @@ This frame is on the **normal** buffer, with the cursor at row 22, column 53.
 - The retry classifier is closed and fails closed (`src/run-store.mjs`,
   `RETRYABLE_REASONS = runtime_offline | timeout | session_limit`). A new failure reason is
   non-retryable with no edit there.
+
+## Q5 · How does claude 2.1.283 draw the trust and MCP dialogs, and does an arrow key move them?
+
+Measured 2026-09-27 at 01's capture and at 01's re-refine, with zero tokens. No prompt was typed,
+and no Enter was sent where it would answer anything. The recordings are in
+`test/fixtures/claude-screens/`.
+
+| fact | value |
+|---|---|
+| trust dialog | normal buffer, a solid rule on top, `Accessing workspace:`, the path, `Quick safety check: …`, then the menu, then `Enter to confirm · Esc to cancel` |
+| trust menu | ` ❯ No, exit` (highlighted, the DEFAULT) above `   Yes, I trust this folder`, both unnumbered |
+| MCP dialog | normal buffer, dashed rules, `New MCP server found in this project: <name>`, three unnumbered options; the highlighted DEFAULT is `❯ Continue without using this MCP server` |
+| login screen | normal buffer, `Select login method:`, `❯ 1. Claude account with subscription …` highlighted |
+| cursor-key mode | no recording enables DECCKM (`CSI ?1h`), so an arrow is `CSI B` / `CSI A` |
+| one Down on the trust menu | highlights `❯ Yes, I trust this folder`, in a 78–81 byte redraw that moves `❯` from row 16 to row 17 (`CSI 16;2H` space, `CSI 17;2H ❯`) |
+| Up, then Down again | back to `❯ No, exit`, then to `❯ Yes, …` again: each arrow moves the highlight one item, in order |
+| with no Enter | nothing is written to `~/.claude.json` (its `projects` keys were unchanged by the probe) |
+
+**Findings that shape ADR-003 §4 (amended).**
+
+1. A one-Enter consent on the highlighted option can never answer trust on 2.1.283. Its Enter
+   would pick `No, exit`.
+2. The order of the options is readable from the frame, and each arrow's effect is visible in the
+   next frame. So a consent can navigate by the screen and confirm every step before it answers.
+3. The MCP dialog's default is not "Use this server", as the 2026-09-27 driver comment assumed. It
+   stays a `fail` either way.
