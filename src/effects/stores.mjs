@@ -115,8 +115,8 @@ export const TABLE_CLASSIFICATION = Object.freeze({
 
   // The effects journal (journal.sqlite, beside the projection): the ledger
   // itself. Its rows ARE facts (past-tense events + the steps they owe).
-  events: Object.freeze({ class: "fact", writers: Object.freeze(["src/effects/journal.mjs"]) }),
-  effect_steps: Object.freeze({ class: "fact", writers: Object.freeze(["src/effects/journal.mjs"]) }),
+  events: Object.freeze({ class: "fact", writers: Object.freeze(["packages/effects/src/journal.mjs"]) }),
+  effect_steps: Object.freeze({ class: "fact", writers: Object.freeze(["packages/effects/src/journal.mjs"]) }),
 });
 
 // The FILE stores the ledger's seams write (declared for the same reason — the

@@ -32,6 +32,7 @@ const SRC_DIR = path.join(repoRoot, "src");
 // src/ may append events.
 const APPEND_EVENT_ALLOWED = new Set([
   "src/effects/journal.mjs",
+  "packages/effects/src/journal.mjs", // extracted definition, never an additional event-raising seam
   "src/effects/run-transitions.mjs",
   // m42 wave (d) leg d3 — the assignment store's transition seam, the second
   // event-raiser. The set is the LIST OF SEAMS, not an amnesty: a command or a
@@ -150,9 +151,11 @@ export const archTests = [
     },
   },
   {
-    name: "arch/m42-d2: appendEvent is called in src/ only by the transition seam (no event append outside transition)",
+    name: "arch/m42-d2: appendEvent is called in runtime source only by the transition seam (no event append outside transition)",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const packageFiles = await listSourceFiles(path.join(repoRoot, "packages/effects/src"));
+      assert.ok(packageFiles.some(file => file.endsWith("journal.mjs")), "extracted storage is scanned");
+      const files = [...await listSourceFiles(SRC_DIR), ...packageFiles];
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");

@@ -110,9 +110,9 @@ complete root-suite or cross-platform release result.
 
 ## Next
 
-Separate application reactor registration from the effects table/transition import cycle; then
-extract generic journal storage through explicit path/diagnostic interfaces. Keep run/assignment
-queries in their domains. Extract foundational utilities and remaining domains in the order described
+Split application reactor handlers into domain-owned contributions to remove the effects
+table/transition import cycle. Generic journal storage and registration are now extracted;
+keep run/assignment queries in their domains. Extract foundational utilities and remaining domains in the order described
 in [MIGRATION.md](MIGRATION.md). The CLI and shipped skills/assets stay in core; feature packages must
 not import the core that assembles them.
 
@@ -153,3 +153,44 @@ Verification:
 
 Local logs: `.tmp/workspace-migration/effects/`. The earlier full-suite and cross-platform limitations
 remain in force; no live installation, WSL worker, or release was deployed.
+
+
+## Journal storage and reactor registration extraction — 2026-09-28
+
+The effects workspace now exports ./journal and ./registry alongside dispatch/outbox. Generic
+SQLite schema initialization, atomic event/step append, replay/conflict handling, pending selection,
+step updates, and diagnostic reads live in the package. Its factory receives an ID generator and
+best-effort diagnostic sink; initialization receives an already opened connection. The application
+adapter retains SQLite loading and its coded refusal, directory creation, the existing database path,
+and the original event-ID format. Run/assignment-specific queries stay outside the generic package.
+
+Reactor registration now accepts explicit ordered contributions. Duplicate event/key pairs name both
+owners; malformed descriptors and invalid loci fail at registration. Applicability and undeclared-event
+refusals retain their behavior. The existing handlers are supplied as one application contribution:
+this extracts registration but does not yet split domain handlers or remove their legacy import cycle.
+A comparison with the previous implementation confirms unchanged names, keys, loci, applicability
+flags, and cascade order across all ten events.
+
+The schema version and on-disk format are unchanged. Table ownership metadata now identifies the
+package journal as the fact writer. Architecture sweeps follow the extracted schema, SQL writers,
+event append definition, and registration refusal, while the package boundary guard continues to scan
+all package runtime modules and reject imports outside the dependency-free kernels.
+
+Verification:
+
+- All 22 effects-package tests pass, including seven new real-SQLite storage cases and five reactor
+  contribution cases. These run through the existing root package-test bridge as well.
+- All 997 unit checks and 127 focused checks pass. The latter cover real journal/mesh delivery,
+  transitions, projection/reindex behavior, Notion, harness rulings, SQLite runtime filtering,
+  command/import-order compatibility, package boundaries, and architecture/test registration.
+- Browser and SEA JavaScript bundling and CLI child-process smoke pass. The new modules are embedded;
+  native node-pty remains external. This is not a complete signed executable release build.
+- The real installer produced a disposable payload outside the checkout. All 117 commands loaded.
+  It reopened a database created by the pre-extraction journal implementation, drained its local
+  step, delivered/acknowledged its remote step, and appended a new event. The pre-extraction code
+  then reopened the same database and read the newly settled steps and event successfully.
+- Logs and compatibility fixtures are local/ignored under .tmp/workspace-migration/journal/.
+
+Full-root-suite and cross-platform release limitations recorded above still apply. No live deployment
+or external publication was performed. Next: domain-owned reactor handlers/contributions and removal
+of the remaining application table/transition cycle, followed by the next domain extraction.

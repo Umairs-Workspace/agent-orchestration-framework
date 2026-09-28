@@ -211,3 +211,21 @@ The original assessment was static. Subsequent implementation and verification a
 - The Notion ledger tests supplied an isolated journal home but loaded their workspace with the
   operator's real global configuration. Passing the same isolated environment into `loadWorkspace`
   fixes that test contamination without changing runtime lock enforcement or Notion behavior.
+
+
+## Journal and registration boundary now implemented — 2026-09-28
+
+The generic storage implementation can operate on an injected SQLite connection without importing
+Node, workspace configuration, mesh paths, or application diagnostics. The existing source adapter
+provides those concerns; hasEventForRun and latestAppliedAssignmentParkEventId remain application
+queries. The outbox now receives readStep from generic storage instead of spelling its own SQL.
+
+Reactor contribution registration is independent of handlers. Multiple owners may add ordered steps
+to one event; duplicate event/key ownership fails deterministically. The existing ten-event table
+currently registers as one explicit application contribution to preserve cascade ordering during
+extraction. Moving its handler implementations to their domains is still necessary before the
+remaining application import cycle can be removed; extracting the registry alone does not do that.
+
+Both directions of on-disk compatibility were exercised against the actual previous journal code
+and an installed payload outside the checkout. Details and remaining platform limits are recorded
+in IMPLEMENTATION.md.

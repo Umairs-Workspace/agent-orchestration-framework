@@ -1,3 +1,5 @@
+import { createReactorRegistry } from "@aof/effects/registry";
+export { EVENT_NOT_DECLARED, UndeclaredEventError } from "@aof/effects/registry";
 // src/effects/table.mjs — THE effects ledger (m42 wave (d) leg d2; PRD-command-spine-
 // effects-ledger). One executable table owning every consequence and its
 // topology: EFFECTS maps each domain event to its reactors, each tagged with the
@@ -571,7 +573,7 @@ async function stampRulingEvidence(event) {
 // Array order IS cascade order within a locus pass — rollback lands before the
 // projection publishes, so the published snapshot carries the rolled-back
 // status (the inline ordering run-complete.mjs relied on, now structural).
-export const EFFECTS = Object.freeze({
+const APPLICATION_REACTORS = Object.freeze({
   // m42 wave (d) leg d4 port 1 — the run MINT, raised by transitionRunStart for
   // every mint site (work:run-start, work:run-retry, the worker's two). It joins
   // the vocabulary now because a real reactor wants it: publish-on-mutate, which
@@ -714,87 +716,12 @@ export const EFFECTS = Object.freeze({
   ]),
 });
 
-// The declared-name refusal's code, and it is a CONSTRUCTION refusal: it is thrown,
-// which means no event was produced at all. It is deliberately disjoint from the
-// journal's storage faults (`invalid-event`, `event-id-conflict`, `sqlite-unavailable`)
-// — "nobody knows that name" and "the event could not be stored" are different answers
-// and a caller must be able to branch on which it got.
-export const EVENT_NOT_DECLARED = "event-not-declared";
+// Ordered application contribution; domain packages can supply their own groups as they move.
+const registry = createReactorRegistry([{ name: 'aof', events: APPLICATION_REACTORS }], { reportDegrade, isKnownLocus });
+export const EFFECTS = registry.table;
 
-export class UndeclaredEventError extends Error {
-  constructor(offered, declared) {
-    const shown = typeof offered === "string"
-      ? JSON.stringify(offered)
-      : `a ${offered === null ? "null" : typeof offered} value`;
-    super(
-      `Refusing to raise ${shown}: the effects vocabulary does not declare that name, so nothing could be owed for it and nothing would ever say so. `
-      + `Declared: ${declared.join(", ")}.`,
-    );
-    this.name = "UndeclaredEventError";
-    this.code = EVENT_NOT_DECLARED;
-    this.status = 400;
-    // The name AS GIVEN, so a caller reporting the refusal can show the misspelling
-    // rather than a normalised guess at what was meant.
-    this.event = offered;
-    this.declared = declared;
-  }
-}
-
-// `Object.hasOwn`, never `in` or a bare index: `EFFECTS["toString"]` inherits a FUNCTION
-// off the prototype, so an index test would read an inherited member as a declaration and
-// hand back something that is not a reactor list at all.
-function isDeclared(effects, name) {
-  return typeof name === "string" && Object.hasOwn(effects, name);
-}
-
-export function effectsFor(name) {
-  return isDeclared(EFFECTS, name) ? EFFECTS[name] : null;
-}
-
-// applicableReactors(name, payload, ctx) — the append-time resolution every
-// transition seam uses (m42 wave (d) leg d4, port 4): the declared reactors,
-// minus any whose applicability predicate says this consequence can never apply
-// to this event's workspace. Evaluated ONCE, before the append — a step that
-// reaches the journal is owed, and the drain never re-litigates it. An
-// unanswerable predicate (the config read threw) resolves NOT OWED, loudly: the
-// alternative — owing a step in a workspace that may never drain its locus — is
-// the permanent-leak class this machinery exists to close, while a wrongly
-// skipped optional sync is recoverable by running the verb.
-//
-// ── AND AN UNDECLARED NAME IS REFUSED HERE (61/ADR-007 §4) ─────────────────
-//
-// The distinction the old silent `?? []` destroyed: "no consequence applies
-// here" and "nobody knows that name" are DIFFERENT ANSWERS. A workspace with no
-// external integration configured genuinely owes nothing for an event only that
-// integration reacts to, and that stays a clean resolution to the empty list — a
-// declared name with nothing to do is not an error. A typo owes nothing for an
-// entirely different reason, and gets a coded refusal its caller can act on.
-//
-// The refusal is against the SUPPLIED table, which is what makes it true of a
-// vocabulary that has moved: a name a past version declared and this one does not
-// is refused by the table it is actually offered to.
-//
-// It comes BEFORE anything is stored, structurally rather than by convention:
-// every seam resolves through here and appends afterwards, so a refused name
-// leaves no event, no partially owed step and nothing for a later pass to find.
+export function effectsFor(name) { return registry.effectsFor(name); }
+export function knownEvents() { return registry.knownEvents(); }
 export async function applicableReactors(name, payload, ctx = {}, effects = EFFECTS) {
-  if (!isDeclared(effects, name)) throw new UndeclaredEventError(name, Object.keys(effects));
-  const declared = effects[name];
-  const owed = [];
-  for (const reactor of declared) {
-    if (typeof reactor.applies !== "function") {
-      owed.push(reactor);
-      continue;
-    }
-    try {
-      if (await reactor.applies(payload, ctx)) owed.push(reactor);
-    } catch (error) {
-      reportDegrade("effect-applies", error, { path: `${name}/${reactor.key}` });
-    }
-  }
-  return owed;
-}
-
-export function knownEvents() {
-  return Object.keys(EFFECTS);
+  return await registry.applicableReactors(name, payload, ctx, effects);
 }

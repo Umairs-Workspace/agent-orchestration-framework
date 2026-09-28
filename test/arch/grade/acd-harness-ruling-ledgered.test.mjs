@@ -461,7 +461,9 @@ export const archTests = [
       const table = await readFile(path.join(SRC_DIR, "effects", "table.mjs"), "utf8");
       assert.equal(/appendEvent refuses a name not declared here/u.test(table), false, "the claim that `appendEvent` does the refusing is retired — it never did");
       assert.ok(/refused by `applicableReactors`|REFUSED — by `applicableReactors`/u.test(table), "…and the vocabulary's own file names the door that does");
-      assert.ok(/throw new UndeclaredEventError/u.test(codeOnly(table)), "…which is executable, not prose");
+      const registry = await readFile(path.join(root, "packages/effects/src/registry.mjs"), "utf8");
+      assert.ok(/registry\.applicableReactors/u.test(codeOnly(table)), "the application delegates to the extracted registry");
+      assert.ok(/throw new UndeclaredEventError/u.test(codeOnly(registry)), "the refusal is executable in the registry implementation");
 
       // DISJOINT FROM THE STORAGE FAULTS. "Nobody knows that name" and "the event could not
       // be stored" are different answers and a caller must be able to branch on which.
@@ -524,9 +526,12 @@ export const archTests = [
         // collapsed onto one home, so the ExperimentalWarning could be filtered there instead
         // of suppressed by a blanket `--no-warnings` nobody could scope. The list stays exact
         // — this is an admission, not a loosening.
-        ["../degrade.mjs", "../sqlite-runtime.mjs", "../workspace.mjs", "node:crypto", "node:fs/promises", "node:path"],
-        "its imports are exactly what they were, plus the one runtime-import home 126/05 admitted",
+        ["../degrade.mjs", "../sqlite-runtime.mjs", "../workspace.mjs", "@aof/effects/journal", "node:crypto", "node:fs/promises", "node:path"],
+        "the application adapter adds only the generic effects journal API",
       );
+      const storage = await readFile(path.join(root, "packages/effects/src/journal.mjs"), "utf8");
+      assert.ok(/function appendEvent\(/u.test(storage), "the extracted implementation is included in the check");
+      assert.deepEqual(importSpecifiers(storage), [], "generic journal storage imports no application vocabulary or providers");
     },
   },
 

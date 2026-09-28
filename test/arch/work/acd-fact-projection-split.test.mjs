@@ -106,7 +106,9 @@ export const archTests = [
     name: "arch/m42-d5: the classification is TOTAL over the real schema — every created table classified, every classified table created (two-way ratchet)",
     run: async () => {
       const created = new Set();
-      for (const file of await listSourceFiles(SRC_DIR)) {
+      const packageFiles = await listSourceFiles(path.join(repoRoot, "packages/effects/src"));
+      assert.ok(packageFiles.some(file => file.endsWith("journal.mjs")), "the extracted schema is scanned");
+      for (const file of [...await listSourceFiles(SRC_DIR), ...packageFiles]) {
         const code = await readFile(file, "utf8");
         for (const match of code.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)) created.add(match[1]);
       }
@@ -253,7 +255,7 @@ export const archTests = [
   {
     name: "arch/m42-d5: SQL that mutates a fact table lives only in that table's declared writer module(s)",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = [...await listSourceFiles(SRC_DIR), ...await listSourceFiles(path.join(repoRoot, "packages/effects/src"))];
       const sources = new Map();
       for (const file of files) {
         sources.set(path.relative(repoRoot, file).replaceAll("\\", "/"), stripComments(await readFile(file, "utf8")));

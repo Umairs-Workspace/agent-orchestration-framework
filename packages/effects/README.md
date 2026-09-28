@@ -1,8 +1,8 @@
 # @aof/effects
 
-Effect execution, at-least-once delivery, and acknowledgement handling over supplied journal
-operations. The runtime package has no imports, filesystem access, application registry, or
-process-global instance. Creating a dispatcher or outbox performs no storage or network work.
+Journal storage, reactor registration, effect execution, and at-least-once delivery over supplied
+runtime services. The package has no imports, file-location policy, application reactor vocabulary,
+or process-global instance. Creating its factories performs no storage or network work.
 
 `@aof/effects/dispatch` exports `createEffectsDispatcher` and `EFFECT_MAX_ATTEMPTS`.
 The factory accepts:
@@ -28,12 +28,27 @@ It returns `remoteSteps`, `drainOutbox`, and `applyEffectAck`. Sending never set
 consumes its retry budget. Acknowledgements distinguish successful application, terminal refusal,
 retryable infrastructure failure, and failed execution; settled steps ignore duplicate receipts.
 
-The existing adapters under `src/effects/` supply SQLite journal access, application reactors,
-diagnostics, and local/control/integration policy. Their composition is initialized on first use
-to preserve loading behavior while the legacy reactor table and transition modules still form
-an import cycle. The journal schema, default database location, and domain transitions remain
-owned by their existing modules. Extracting storage and separating reactor registration are later
-migration steps; this package does not import those modules back through a compatibility path.
+`@aof/effects/journal` exports `createEffectsJournal`, the schema version, and step statuses.
+Supply `mintEventId(timestamp)` and the diagnostic sink; call `initializeJournal({ db, databasePath })`
+with an opened SQLite connection supporting `exec` and `prepare`. The returned operations own the
+schema, atomic event/step append, replay conflicts, pending-step selection, updates, and diagnostic
+reads. Initialization closes the supplied connection if schema setup fails. The caller owns runtime
+loading and directory creation; a successful journal handle owns closing its connection.
+
+`@aof/effects/registry` exports `createReactorRegistry`, `EVENT_NOT_DECLARED`, and
+`UndeclaredEventError`. Pass ordered `{ name, events }` contributions and `{ reportDegrade,
+isKnownLocus? }`. Each event maps to an array of `{ key, locus, apply, applies? }` reactors. Groups
+may contribute to the same event; array/contribution order determines cascade order. Duplicate
+event/key pairs fail with both owners named. The optional locus validator is synchronous.
+The result exposes `table`, `effectsFor`, `knownEvents`, `ownerOf`, and `applicableReactors`.
+Undeclared events are refused; a declared event with no applicable consequences remains valid.
+
+The adapters under `src/effects/` supply runtime loading, file paths, application reactors,
+diagnostics, and local/control/integration policy. Dispatch/outbox composition is initialized on
+first use while the legacy table and domain transitions still form an import cycle. Application
+reactors currently register as one explicit contribution; splitting the handlers into domain-owned
+contributions is the next step. Run/assignment-specific journal queries remain outside this package.
+The schema version, on-disk format, event vocabulary, and default database location are unchanged.
 
 Run `yarn workspace @aof/effects test`. The root command contract suite also runs the package
 tests. Real journal durability and mesh delivery remain covered by the root integration suites.

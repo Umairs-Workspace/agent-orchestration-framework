@@ -375,7 +375,7 @@ export const commandCoreContractTests = [
     name: "command-core/workspace packages pass their package-local suites",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs", "packages/effects/test/effects.test.mjs"], {
+      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs", "packages/effects/test/effects.test.mjs", "packages/effects/test/journal.test.mjs", "packages/effects/test/registry.test.mjs"], {
         cwd: root, encoding: "utf8", timeout: 30_000,
       });
       assert.equal(result.status, 0, result.error?.message ?? result.stdout + result.stderr);

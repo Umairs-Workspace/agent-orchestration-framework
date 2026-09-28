@@ -30,7 +30,7 @@
 //      recorded. Redelivering a fact the control node has REFUSED (an unknown
 //      assignment, a row another writer already settled) would loop forever.
 import { createEffectsOutbox } from "@aof/effects/outbox";
-import { pendingSteps, markStep } from "./journal.mjs";
+import { pendingSteps, markStep, readStep } from "./journal.mjs";
 import { LOCAL_LOCI } from "./dispatch.mjs";
 import { reportDegrade } from "../degrade.mjs";
 
@@ -49,9 +49,7 @@ function getOutbox() {
   return outbox ??= createEffectsOutbox({
     pendingSteps, markStep, reportDegrade, loci: LOCAL_LOCI,
     isRemoteStep: (step, loci) => !loci.includes(step.locus) && !String(step.locus).startsWith("integration:"),
-    readStep: (journal, eventId, reactorKey) => journal.db
-      .prepare("SELECT status FROM effect_steps WHERE event_id = ? AND reactor_key = ?")
-      .get(eventId, reactorKey),
+    readStep,
   });
 }
 

@@ -5,12 +5,14 @@
   "type": "module",
   "exports": {
     "./dispatch": "./src/dispatch.mjs",
-    "./outbox": "./src/outbox.mjs"
+    "./outbox": "./src/outbox.mjs",
+    "./journal": "./src/journal.mjs",
+    "./registry": "./src/registry.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs"
+    "test": "node --test test/effects.test.mjs test/journal.test.mjs test/registry.test.mjs"
   }
 }
