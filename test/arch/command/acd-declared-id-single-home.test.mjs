@@ -57,6 +57,7 @@
 // `test/support/source-slice.mjs`, and the guard below refuses ANY stripper that
 // leaves less code behind than it does.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -68,7 +69,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const srcDir = path.join(repoRoot, "src");
 const workDir = path.join(repoRoot, "wiki", "work");
 
-const THE_ONE_HOME = "src/declared-id.mjs";
+const THE_ONE_HOME = "packages/work/src/declared-id.mjs";
 // The two modules whose reach is the WHOLE DOCUMENT, and which must therefore take the
 // forms and never the register-block predicate (ADR-008 ruling 2). Named, never counted.
 const WHOLE_DOCUMENT_IMPORTERS = ["src/memory/local-indexing.mjs", "src/import/recovery.mjs"];
@@ -225,18 +226,9 @@ function strippedSources(sources, strip = stripComments) {
 }
 
 async function readSources() {
-  const sources = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        sources.push({ file: path.relative(repoRoot, full).replaceAll("\\", "/"), text: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(srcDir);
-  return sources;
+  const files = await readRuntimeFiles(repoRoot);
+  assert.ok(files.length > 0, "runtime grammar sources were enumerated");
+  return Promise.all(files.map(async file => ({ file: file.rel, text: await readFile(file.path, "utf8") })));
 }
 
 async function walkWork(dir = workDir, out = []) {

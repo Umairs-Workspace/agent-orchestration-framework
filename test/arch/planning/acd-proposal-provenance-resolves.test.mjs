@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { productionDependencyDirs } from "../../../scripts/dependency-inventory.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -43,6 +44,18 @@ function copiedReader(mutator) {
   const srcDir = path.join(rootDir, "src");
   const tuneDir = path.join(srcDir, "work-tune");
   fs.cpSync(path.join(repoRoot, "src"), srcDir, { recursive: true });
+  const workCopy = path.join(rootDir, "packages", "work");
+  fs.cpSync(path.join(repoRoot, "packages", "work"), workCopy, {
+    recursive: true, filter: source => path.basename(source) !== "node_modules",
+  });
+  for (const dependency of productionDependencyDirs(repoRoot)) {
+    const rel = path.relative(repoRoot, dependency);
+    if (rel.split(path.sep).slice(1).includes("node_modules")) continue;
+    const destination = path.join(rootDir, rel);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    const target = rel.replaceAll("\\", "/") === "node_modules/@aof/work" ? workCopy : dependency;
+    fs.symlinkSync(target, destination, "junction");
+  }
   mutator?.(rootDir);
   return {
     rootDir,
@@ -133,7 +146,7 @@ export const archTests = [
     name: "acd-proposal-provenance-resolves: changes to each owning grammar move the copied reader",
     run: async () => {
       const idCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "declared-id.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "declared-id.mjs");
         rewrite(file, (source) => source.replace("m?(\\\\d{1,4}", "(\\\\d{1,4}"));
       });
       try {
@@ -145,7 +158,7 @@ export const archTests = [
       }
 
       const nestedCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "declared-id.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "declared-id.mjs");
         rewrite(file, (source) => source
           .replace("(?:/\\\\d{1,3})*", "")
           .replace("(?<![-\\\\w.])", "(?<![-\\\\w./])"));
@@ -158,7 +171,7 @@ export const archTests = [
       }
 
       const formCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "declared-id.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "declared-id.mjs");
         rewrite(file, (source) => source.replace(
           '  Object.freeze({ name: "R", scope: "document", id: "R\\\\d+", terminator: "\\\\b", separator: SEPARATOR_CLASS }),',
           '  Object.freeze({ name: "X", scope: "document", id: "X-\\\\d+", terminator: "", separator: SEPARATOR_CLASS }),\n  Object.freeze({ name: "R", scope: "document", id: "R\\\\d+", terminator: "\\\\b", separator: SEPARATOR_CLASS }),',
@@ -175,7 +188,7 @@ export const archTests = [
       }
 
       const droppedFormCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "declared-id.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "declared-id.mjs");
         rewrite(file, (source) => source.replace(
           '  Object.freeze({ name: "ADR", scope: "document", id: "ADR-\\\\d+", terminator: "", separator: SEPARATOR_CLASS }),',
           "",
@@ -189,7 +202,7 @@ export const archTests = [
       }
 
       const pathCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "work", "doctor-controls.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "audit", "controls.mjs");
         rewrite(file, (source) => source
           .replace("|:\\d+(?:-\\d+)?)?/g", "|:\\d+(?:-\\d+)?|%\\d+)?/g")
           .replace("|:\\d+(?:-\\d+)?)$/", "|:\\d+(?:-\\d+)?|%\\d+)$/"));
@@ -209,7 +222,7 @@ export const archTests = [
       }
 
       const noLocatorCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "work", "doctor-controls.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "audit", "controls.mjs");
         rewrite(file, (source) => source.replace("(?:#L\\d+(?:-L?\\d+)?|:\\d+(?:-\\d+)?)?", ""));
       });
       try {
@@ -224,8 +237,8 @@ export const archTests = [
       }
 
       const bothCopy = copiedReader((copyRoot) => {
-        rewrite(path.join(copyRoot, "src", "declared-id.mjs"), (source) => source.replace("m?(\\\\d{1,4}", "(\\\\d{1,4}"));
-        rewrite(path.join(copyRoot, "src", "work", "doctor-controls.mjs"), (source) => source
+        rewrite(path.join(copyRoot, "packages", "work", "src", "declared-id.mjs"), (source) => source.replace("m?(\\\\d{1,4}", "(\\\\d{1,4}"));
+        rewrite(path.join(copyRoot, "packages", "work", "src", "audit", "controls.mjs"), (source) => source
           .replace("|:\\d+(?:-\\d+)?)?/g", "|:\\d+(?:-\\d+)?|%\\d+)?/g")
           .replace("|:\\d+(?:-\\d+)?)$/", "|:\\d+(?:-\\d+)?|%\\d+)$/"));
       });

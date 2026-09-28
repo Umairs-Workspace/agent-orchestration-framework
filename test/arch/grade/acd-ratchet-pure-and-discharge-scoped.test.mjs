@@ -32,7 +32,7 @@ export const archTests = [
       // arbitrary dependency tree in behind it. `./declared-id.mjs` is admitted because
       // it imports NOTHING and reaches no I/O; this leg is what keeps that true, so a
       // later edit to the leaf reddens the ratchet's purity claim at its own gate.
-      const leaf = await readFile(path.join(root, "src", "declared-id.mjs"), "utf8");
+      const leaf = await readFile(path.join(root, "packages", "work", "src", "declared-id.mjs"), "utf8");
       const executableLeaf = leaf.replace(/\/\/[^\n]*/gu, "").replace(/\/\*[\s\S]*?\*\//gu, "");
       assert.deepEqual(
         importSpecifiers(leaf).map((entry) => entry.specifier),

@@ -42,7 +42,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importClosure, staticImportSpecifiers } from "../audit/acd-audit-never-imports-project-code.test.mjs";
 import { AUDIT_FINDING_CODES } from "../../../src/work-audit/census.mjs";
 import { HARNESS_REFERENCE_ROWS, REFERENCE_ROW_FLOOR, checkReferenceCorpus, referenceCorpusProblems } from "../../../src/harness-reference.mjs";
@@ -52,7 +52,7 @@ import { listCommands } from "../../../src/command-core.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const CORPUS_REL = "src/harness-reference.mjs";
-const LANE_REL = "src/work-audit/declared-bounds.mjs";
+const LANE_REL = "packages/work/src/audit/declared-bounds.mjs";
 const REFRESH_REL = "scripts/refresh-harness-reference.mjs";
 const VIEW_REL = "wiki/reference/harness-baselines.md";
 // The modules THIS STORY ADDS — the subject of the vocabulary and import legs. The refresh is a
@@ -136,13 +136,14 @@ async function familyClosure() {
     }
   }
   await walk(path.join(repoRoot, FAMILY_ROOT), FAMILY_ROOT);
-  const { closure } = await importClosure(roots, async (rel) => {
+  const { closure, unresolved } = await importClosure(roots, async (rel) => {
     try {
       return await readFile(path.join(repoRoot, rel), "utf8");
     } catch {
       return null;
     }
   });
+  assert.deepEqual(unresolved, [], "every audit dependency is readable");
   return closure;
 }
 
@@ -216,11 +217,11 @@ export const archTests = [
   {
     name: "acd-reference-corpus-offline-and-sourced: no module in src/ and no module of the family names the refresh program",
     async run() {
-      const files = await readSrcFiles(repoRoot);
+      const files = await readRuntimeFiles(repoRoot);
       assert.equal(files.length > 50, true, `src/** was walked (${files.length} modules)`);
       const offenders = [];
       for (const file of files) {
-        offenders.push(...pathReaches(`src/${file.rel}`, stripComments(await readFile(file.path, "utf8")), REFRESH_REL));
+        offenders.push(...pathReaches(file.rel, stripComments(await readFile(file.path, "utf8")), REFRESH_REL));
       }
       assert.deepEqual(offenders, [], "no module under src/ imports, spawns or spells the refresh program");
 
@@ -298,10 +299,10 @@ export const archTests = [
       assert.match(view, /do not hand-edit/iu, "…and says it is not to be hand-edited");
       for (const row of HARNESS_REFERENCE_ROWS) assert.equal(view.includes(row.id), true, `it renders the module's rows (${row.id})`);
 
-      const files = await readSrcFiles(repoRoot);
+      const files = await readRuntimeFiles(repoRoot);
       const readers = [];
       for (const file of files) {
-        readers.push(...pathReaches(`src/${file.rel}`, stripComments(await readFile(file.path, "utf8")), VIEW_REL));
+        readers.push(...pathReaches(file.rel, stripComments(await readFile(file.path, "utf8")), VIEW_REL));
       }
       assert.deepEqual(readers, [], "and no module under src/ reads it, parses it, imports it or spells its path");
 
@@ -359,7 +360,7 @@ export const archTests = [
       for (const code of ["audit-baseline-stale", "audit-baseline-unreasoned"]) {
         assert.equal(AUDIT_FINDING_CODES.includes(code), true, `the exemption ledger's ${code} is unchanged`);
       }
-      const census = read("src/work-audit/census.mjs");
+      const census = read("packages/work/src/audit/census.mjs");
       assert.match(census, /UNREGISTERED_BASELINE = Object\.freeze\(\[/u, "…and the ledger still names suites");
       assert.match(census, /suite: "test\//u, "…by suite path");
     },
@@ -375,8 +376,10 @@ export const archTests = [
       assert.deepEqual(reaches, [], "no module the family loads reaches src/work/loops.mjs");
 
       const lane = stripComments(read(LANE_REL));
-      assert.match(lane, /from "\.\.\/loop-bounds\.mjs"/u, "the lane resolves config: pointers through the bounds home");
-      assert.match(lane, /from "\.\.\/harness-reference\.mjs"/u, "…and joins against the corpus by module resolution");
+      const wiring = stripComments(read("src/work-audit/declared-bounds.mjs"));
+      assert.match(lane, /createAuditDeclaredBounds\(/u, "the implementation receives the supplied corpus and resolvers");
+      assert.match(wiring, /from "\.\.\/loop-bounds\.mjs"/u, "the lane resolves config: pointers through the bounds home");
+      assert.match(wiring, /from "\.\.\/harness-reference\.mjs"/u, "…and joins against the corpus by module resolution");
       assert.equal(/from "node:/u.test(lane), false, "…and imports no node builtin, so it touches no filesystem and no clock");
       assert.equal(/Date\.now\(\)|new Date\(\)/u.test(lane), false, "…and reads no clock: the instant arrives on the call");
 

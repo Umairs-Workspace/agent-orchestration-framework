@@ -77,7 +77,7 @@ const PROBED_MODULES = Object.freeze([
   "src/work/test-select.mjs",
   "src/work/test-changed.mjs",
   "src/work-audit/spawn.mjs",
-  "src/work-audit/census.mjs",
+  "packages/work/src/audit/census.mjs",
   "src/graph-normalize.mjs",
   "src/commands/graph/impact.mjs",
 ]);
@@ -90,6 +90,7 @@ const DOOR_ROOTS = Object.freeze([
   "src/work/doctor.mjs",
   "packages/work-loop/src/engine.mjs",
   "src/work-audit",
+  "packages/work/src/audit",
   "src/bundle",
 ]);
 
@@ -387,7 +388,7 @@ export const archTests = [
       // prose both carry the token, and neither is an invocation.
       const raw = rawTokenProblems(sources);
       assert.ok(raw.length > 0, "a raw-token census WOULD red on correct code, which is why this one matches shapes");
-      assert.ok(raw.some((rel) => rel.startsWith("src/work-audit/")), `…and it reds in the audit family first: ${raw.join(", ")}`);
+      assert.ok(raw.some((rel) => rel.startsWith("packages/work/src/audit/")), `…and it reds in the audit family first: ${raw.join(", ")}`);
     },
   },
 

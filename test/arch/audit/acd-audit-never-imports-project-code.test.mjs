@@ -393,7 +393,7 @@ export const archTests = [
       }
 
       // (iii) …and the census does NAME its program, so clause (i) is not passing over silence.
-      const census = modules.find((module) => module.rel === "src/work-audit/census.mjs");
+      const census = modules.find((module) => module.rel === "packages/work/src/audit/census.mjs");
       assert.ok(census != null, "the census ships");
       assert.match(census.code, /work\/audit-probe\.mjs/u, "and it names the probe as a path it hands to a child — a filename, not a module specifier");
     },

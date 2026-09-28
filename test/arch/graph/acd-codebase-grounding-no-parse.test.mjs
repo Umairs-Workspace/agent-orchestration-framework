@@ -20,6 +20,7 @@
 //       11 added NO new such module — the assertion is that NONE beyond this frozen
 //       allow-list appears.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -74,7 +75,8 @@ const GRAPH_READER_ALLOWLIST = new Set([
                                                  // the same beat that made the read legal: an ADR that sanctions a
                                                  // new reader without extending this census leaves the decision and
                                                  // the control disagreeing, which is 96/F-96-A.
-  path.join("src", "work-audit", "seam-liveness.mjs"), // 77/ADR-006 §1: the seam-liveness audit lane READS the
+  path.join("src", "work-audit", "seam-liveness.mjs"), // Core supplies the existing graph adapter.
+  path.join("packages", "work", "src", "audit", "seam-liveness.mjs"), // 77/ADR-006 §1: the seam-liveness audit lane READS the
                                                        // artifact through this same shipped reader and never
                                                        // builds one — a build is minutes even on the unchanged
                                                        // path, and a command an agent must be willing to run
@@ -225,7 +227,7 @@ export const archTests = [
       // that reads graph.json OR imports normalizeGraph/readGraph/graphJsonPath must be
       // in the frozen allow-list (09's readers + 10's backend). 11 adds no module — so
       // the offender set must be empty.
-      const files = await collectMjs(srcDir);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(files.length > 0, "found src/*.mjs files to scan");
 
       const offenders = [];

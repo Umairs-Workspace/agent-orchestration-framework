@@ -944,3 +944,37 @@ Verification in `.tmp/workspace-migration/execution-process/`:
 
 No additional generated citations changed. The old module citation remains a valid exported entry
 point until final adapter removal. Final native/platform and whole-tree checks remain outstanding.
+
+## Work owns audit services and declaration grammar
+
+Nine implementations moved into work: declared-ID grammar, pure doctor controls, hook wiring,
+census, evidence, prompt-layer checks, declared-bound comparison, seam liveness and report assembly.
+Three remain direct exports; six factories receive application collaborators. Core retains toolkit
+root/program resolution, bounded execution composition, runtime/resource vocabulary, reference
+data and graph services. Reports receive work-graph checks rather than importing work-graph, which
+already imports work records. No dependency or lock change was needed.
+
+All nine implementation bodies, legacy export sets, function text and exported values match the
+pre-move baseline after import/port wiring. Template-string whitespace is preserved. Compatibility
+paths remain until final core assembly; existing module citations still identify exported entries.
+No additional generated citations or AOF workflow state changed.
+
+The 72-suite affected run completed 831 cases: 808 passed initially, with 23 source-location or
+copied-fixture assertions requiring migration. The changed-suite rerun passes 151 cases after those
+corrections. Guards inspect the implementations and their core wiring, and grammar, graph-reader,
+audit-program and policy-reader scans now include package sources. The provenance mutation fixture
+has an isolated copy of work; its mutations still change the copied reader. Four new package tests
+cover execution/program-location injection, custom prompt vocabulary with unchanged file bytes,
+supplied bound resolvers and graph-unavailable evidence.
+
+Differential verification reproduces an assembled audit report, real helper-program execution,
+control results and grammar values. The same checks pass in a copied installation against a
+separate subject tree, proving the toolkit root was retained. Previous copied graph, loop, run,
+process, screen, trust, worktree and acceptance checks pass, retaining 117 commands. Standalone
+JavaScript bundling includes all nine implementations. Evidence lives in
+`.tmp/workspace-migration/work-audit/`. Final native/platform and whole-tree checks remain open.
+
+The final 22-suite changed/contract/census run passes 192 cases, including the bridge over all
+110 package tests. Every initially failing suite is included in that rerun. `git diff --check`
+passes. This closes the affected selection after focused corrections, not the outstanding full
+repository suite or platform verification.

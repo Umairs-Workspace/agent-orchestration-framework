@@ -39,7 +39,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { withControlFixtureRepo } from "../../support/evidence-control-fixture.mjs";
 import { spawnRouteProblems } from "./acd-audit-never-imports-project-code.test.mjs";
 import { DEFAULT_DEADLINE_MS, runBounded } from "../../../src/work-audit/spawn.mjs";
@@ -56,10 +56,10 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The modules milestone 77 ADDS. The vocabulary leg's subject, and the reason it is a list rather
 // than a directory sweep: `census.mjs` and `evidence.mjs` are 59's and legitimately spell the word.
 const MILESTONE_MODULES = Object.freeze([
-  "src/work-audit/prompt-layer.mjs",
-  "src/work-audit/hook-wiring.mjs",
-  "src/work-audit/seam-liveness.mjs",
-  "src/work-audit/declared-bounds.mjs",
+  "packages/work/src/audit/prompt-layer.mjs",
+  "packages/work/src/audit/hook-wiring.mjs",
+  "packages/work/src/audit/seam-liveness.mjs",
+  "packages/work/src/audit/declared-bounds.mjs",
   "src/work-audit/toolkit.mjs",
   "src/harness-reference.mjs",
 ]);
@@ -352,16 +352,16 @@ export const archTests = [
   {
     name: "arch/77 FF-7706: the toolkit root has ONE derivation and ONE home, and a second is reported",
     async run() {
-      const files = await readSrcFiles(repoRoot);
+      const files = await readRuntimeFiles(repoRoot);
       assert.equal(files.length > 50, true, `src/** was walked (${files.length} modules)`);
       const derivations = [];
       for (const file of files) {
-        const rel = `src/${file.rel}`;
+        const rel = file.rel;
         if (rel === "src/work-audit/toolkit.mjs") continue;
         const code = stripComments(await readFile(file.path, "utf8"));
         // Only the audit family is in scope: other families derive their own roots for their own
         // purposes, and a census over every module would be a census about the word `..`.
-        if (!rel.startsWith("src/work-audit")) continue;
+        if (!rel.startsWith("src/work-audit/") && !rel.startsWith("packages/work/src/audit/")) continue;
         derivations.push(...toolkitDerivations(rel, code));
       }
       assert.deepEqual(derivations, [], "no module of the family derives a toolkit root of its own");
@@ -372,8 +372,8 @@ export const archTests = [
 
       const plants = [
         ["src/work-audit/other.mjs", 'const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");', "a second module deriving a root from its own module URL"],
-        ["src/work-audit/census.mjs", 'const program = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "work/audit-probe.mjs");', "a family module computing the toolkit root inline"],
-        ["src/work-audit/evidence.mjs", "export const toolkitRoot = () => 1;", "a second exported name for the same root"],
+        ["packages/work/src/audit/census.mjs", 'const program = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "work/audit-probe.mjs");', "a family module computing the toolkit root inline"],
+        ["packages/work/src/audit/evidence.mjs", "export const toolkitRoot = () => 1;", "a second exported name for the same root"],
       ];
       for (const [rel, planted, what] of plants) {
         assert.equal(toolkitDerivations(rel, planted).length > 0, true, `${what} is reported by the file that holds it`);
@@ -383,17 +383,17 @@ export const archTests = [
   {
     name: "arch/77 FF-7706: no module in the family joins a program path onto the subject root",
     async run() {
-      const files = (await readSrcFiles(repoRoot)).filter((file) => `src/${file.rel}`.startsWith("src/work-audit"));
+      const files = (await readRuntimeFiles(repoRoot)).filter((file) => (file.rel.startsWith("src/work-audit/") || file.rel.startsWith("packages/work/src/audit/")));
       assert.equal(files.length >= 6, true, `the family was walked (${files.length} modules)`);
       const joins = [];
       for (const file of files) {
-        joins.push(...subjectRootProgramJoins(`src/${file.rel}`, stripComments(await readFile(file.path, "utf8"))));
+        joins.push(...subjectRootProgramJoins(file.rel, stripComments(await readFile(file.path, "utf8"))));
       }
       assert.deepEqual(joins, [], "no program path is joined onto the subject root");
 
       // …AND THE POSITIVE HALF: each lane names the toolkit resolver at the site that used to join.
-      assert.match(stripComments(read("src/work-audit/census.mjs")), /toolkitProgram\(PROBE_PROGRAM\)/u, "the census resolves its probe through the one home");
-      assert.match(stripComments(read("src/work-audit/evidence.mjs")), /toolkitProgram\(driveProgram\)/u, "the evidence lane resolves its driver through the one home");
+      assert.match(stripComments(read("packages/work/src/audit/census.mjs")), /toolkitProgram\(PROBE_PROGRAM\)/u, "the census resolves its probe through the one home");
+      assert.match(stripComments(read("packages/work/src/audit/evidence.mjs")), /toolkitProgram\(driveProgram\)/u, "the evidence lane resolves its driver through the one home");
 
       const plants = [
         ['const probe = path.join(repoRoot, "src", "work", "audit-probe.mjs");', "a join of the suite probe's path onto the subject root"],
@@ -402,7 +402,7 @@ export const archTests = [
         ['const third = path.join(repoRoot, THIRD_PROGRAM);', "a join of a third program's path onto the subject root"],
       ];
       for (const [planted, what] of plants) {
-        assert.equal(subjectRootProgramJoins("src/work-audit/census.mjs", planted).length > 0, true, `${what} is reported by the file that holds it`);
+        assert.equal(subjectRootProgramJoins("packages/work/src/audit/census.mjs", planted).length > 0, true, `${what} is reported by the file that holds it`);
       }
     },
   },
@@ -459,9 +459,9 @@ export const archTests = [
   {
     name: "arch/77 FF-7706: the change opens no second route to a child process, and the one seam always arms a deadline",
     async run() {
-      const files = (await readSrcFiles(repoRoot)).filter((file) => `src/${file.rel}`.startsWith("src/work-audit"));
+      const files = (await readRuntimeFiles(repoRoot)).filter((file) => (file.rel.startsWith("src/work-audit/") || file.rel.startsWith("packages/work/src/audit/")));
       const modules = [];
-      for (const file of files) modules.push({ rel: `src/${file.rel}`, code: stripComments(await readFile(file.path, "utf8")) });
+      for (const file of files) modules.push({ rel: file.rel, code: stripComments(await readFile(file.path, "utf8")) });
       assert.deepEqual(spawnRouteProblems(modules), [], "every child the family starts comes from the one bounded seam");
 
       const plants = [

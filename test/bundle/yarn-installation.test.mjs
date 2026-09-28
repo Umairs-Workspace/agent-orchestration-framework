@@ -88,6 +88,12 @@ export const yarnInstallationTests = [
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
+        'controls.mjs': ['node:path'],
+        'census.mjs': ['node:path', 'node:fs/promises'],
+        'evidence.mjs': ['node:path', 'node:fs/promises'],
+        'prompt-layer.mjs': ['node:path', 'node:fs/promises'],
+        'seam-liveness.mjs': ['node:path', 'node:fs/promises'],
+        'report.mjs': ['node:path'],
         'criterion.mjs': ['node:path', 'node:crypto', 'node:fs/promises'],
         'store.mjs': ['node:path', 'node:fs/promises'],
         'observations.mjs': ['node:os', 'node:path'],

@@ -46,6 +46,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 // file used to spell was line-bounded (`[^;\n]*?`) and so blind to a multi-line import clause —
 // the defect the home documents and fixed once, for every caller.
 import { importSpecifiers } from "../../support/module-family.mjs";
+import { resolveSpecifier } from "./acd-audit-never-imports-project-code.test.mjs";
 // ─────────────────────────────────────────────────────────────────────────────
 // EXTENDED BY MILESTONE 59 / STORY 02 (FF-5905, 59/ADR-002 §1 + §2).
 //
@@ -133,6 +134,7 @@ const ADMITTED_EXTRACTORS = Object.freeze(["fitnessDeclarations", "citedControlP
 // A relative specifier resolved against the importing module's repo-relative path. `node:` and
 // bare package specifiers are not files of ours to walk.
 function resolveRelative(rel, specifier) {
+  if (specifier.startsWith("@aof/")) return resolveSpecifier(rel, specifier);
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return null;
   const joined = path.posix.normalize(path.posix.join(path.posix.dirname(rel), specifier));
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
@@ -193,12 +195,12 @@ async function walkModules(relDir) {
   return out;
 }
 
-const THE_LANE = "src/work/doctor-controls.mjs";
+const THE_LANE = "packages/work/src/audit/controls.mjs";
 const THE_SPINE = "src/work/doctor.mjs";
 // The two zero-import leaves this lane is allowed to reach, NAMED (never a count —
 // m47/R9). Each one's zero-import property is asserted below, which is what makes the
 // direct rule as strong as the transitive one would have been for this subgraph.
-const LEAF_ALLOWLIST = ["../acceptance-horizon.mjs", "../declared-id.mjs"];
+const LEAF_ALLOWLIST = ["../lifecycle.mjs", "../declared-id.mjs"];
 // `node:path` is admitted and the three named modules are not: `path.join` is a string
 // operation, and the lane's own header forbids `path.resolve`, which reads
 // `process.cwd()` and would be a hidden clock-equivalent impurity.
@@ -242,7 +244,7 @@ const FORBIDDEN_RUNNER_MODULES = ["src/commands/grade.mjs"];
 const DETERMINISTIC_ENGINES = [
   "src/work.mjs",
   "src/work/doctor.mjs",
-  "src/work/doctor-controls.mjs",
+  "packages/work/src/audit/controls.mjs",
   "src/work/doctor-coherence.mjs",
   "src/work/doctor-freshness.mjs",
   "src/work/doctor-identity.mjs",
@@ -532,9 +534,9 @@ export const archTests = [
       // planted RUNNER import is caught for any engine; the pure leaf is admitted for the
       // family and refused for the lane — which is the distinction the two sets exist to draw.
       const resolvedFrom = (module, source) => directImports(source).map((specifier) => resolveRelative(module, specifier)).filter((rel) => rel != null);
-      const plantedRunner = 'import { gradeCommand } from "../commands/grade.mjs";';
+      const plantedRunner = 'import { gradeCommand } from "../../../../src/commands/grade.mjs";';
       assert.ok(resolvedFrom(THE_LANE, plantedRunner).some((rel) => FORBIDDEN_RUNNER_MODULES.includes(rel)), "a planted runner import is detected");
-      const plantedLeaf = 'import { normaliseReport } from "./grade.mjs";';
+      const plantedLeaf = 'import { normaliseReport } from "../../../../src/work/grade.mjs";';
       assert.ok(!resolvedFrom(THE_LANE, plantedLeaf).some((rel) => FORBIDDEN_RUNNER_MODULES.includes(rel)), "the pure leaf is admitted to the family…");
       assert.ok(resolvedFrom(THE_LANE, plantedLeaf).some((rel) => FORBIDDEN_MODULES.includes(rel)), "…and still refused to the controls lane");
     },
@@ -655,9 +657,10 @@ export const archTests = [
       const roots = [THE_SPINE, ...registryModules.map((specifier) => resolveRelative(THE_SPINE, specifier))].filter((rel) => rel != null);
       const closure = await importClosureFrom(roots);
       assert.ok(closure.size >= 15, `non-vacuity: the closure walked ${closure.size} modules — a walk that read nothing would make the claim below vacuously true`);
-      assert.ok(closure.has("src/work/doctor-controls.mjs"), "…and it really does contain the controls lane");
+      assert.ok(closure.has("packages/work/src/audit/controls.mjs"), "…and it really does contain the controls lane");
 
-      const offenders = [...closure.keys()].filter((rel) => rel.startsWith(AUDIT_FAMILY));
+      const offenders = [...closure.keys()].filter((rel) => rel.startsWith(AUDIT_FAMILY)
+        || /^packages\/work\/src\/audit\/(?!controls\.mjs$|reads\.mjs$)/u.test(rel));
       assert.deepEqual(offenders, [], `doctor reaches the audit family: ${offenders.join(", ")}. The boundary between reading and executing is the COMMAND (ADR-002 §2); an import makes it a convention.`);
       for (const [rel, code] of closure) {
         assert.equal(code.includes(AUDIT_FAMILY), false, `${rel} names ${AUDIT_FAMILY} — even as a path handed to something else, that is doctor acquiring a route to an executor`);
@@ -672,7 +675,7 @@ export const archTests = [
   {
     name: "arch/59 FF-5905: the ONE edge the other way is to ADR-002 §2's pure register extractors — the audit reads the register through one home and imports nothing else out of the doctor family",
     run: async () => {
-      const family = await walkModules("src/work-audit");
+      const family = [...await walkModules("src/work-audit"), ...await walkModules("packages/work/src/audit")];
       assert.ok(family.length >= 2, `non-vacuity: ${family.length} modules under src/work-audit/ were walked`);
 
       let edges = 0;
@@ -681,9 +684,9 @@ export const archTests = [
         for (const specifier of directImports(code)) {
           const resolved = resolveRelative(rel, specifier);
           if (resolved == null) continue;
-          if (!resolved.startsWith(DOCTOR_FAMILY)) continue;
+          if (!resolved.startsWith(DOCTOR_FAMILY) && resolved !== THE_LANE) continue;
           edges += 1;
-          assert.equal(resolved, "src/work/doctor-controls.mjs", `${rel} imports ${resolved} — the only admitted edge from the audit into the doctor family is the pure register extractors (ADR-002 §2)`);
+          assert.equal(resolved, "packages/work/src/audit/controls.mjs", `${rel} imports ${resolved} — the only admitted edge from the audit into the doctor family is the pure register extractors (ADR-002 §2)`);
           const bindings = namedBindingsFrom(code, specifier);
           assert.ok(bindings.length > 0, `${rel} imports named bindings from the extractors, never the whole module`);
           assert.deepEqual(

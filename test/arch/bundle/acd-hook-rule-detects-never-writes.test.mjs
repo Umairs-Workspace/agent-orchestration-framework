@@ -134,7 +134,7 @@ export const archTests = [
       for (const module of modules) {
         assert.equal(module.code.trim().length > 0, true, `${module.rel} was read and stripped to nonempty code, including forwarding modules`);
       }
-      assert.equal(modules.some((module) => module.rel === "src/work-audit/hook-wiring.mjs"), true, "…and the module this story adds is among them");
+      assert.equal(modules.some((module) => module.rel === "packages/work/src/audit/hook-wiring.mjs"), true, "…and the module this story adds is among them");
 
       // BY IMPORT SHAPE: no static import in the family resolves to either module.
       for (const module of modules) {

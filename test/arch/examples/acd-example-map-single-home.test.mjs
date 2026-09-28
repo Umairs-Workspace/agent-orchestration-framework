@@ -20,6 +20,7 @@
 // grammar entirely (measured at 134's feasibility, 2026-09-24). Admitting that module is narrower
 // than widening the pattern until it no longer sees a rule id at all.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,20 +36,13 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_ONE_HOME = "src/work-examples/map.mjs";
 const ADMITTED = new Map([
-  ["src/declared-id.mjs", "the retrospective heading grammar (`## R<n>`), another grammar sharing the rule heading's shape"],
+  ["packages/work/src/declared-id.mjs", "the retrospective heading grammar (`## R<n>`), another grammar sharing the rule heading's shape"],
 ]);
 
-async function modules(dir = path.join(repoRoot, "src")) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name !== "bundle") out.push(...await modules(full));
-    } else if (entry.name.endsWith(".mjs")) {
-      out.push(full);
-    }
-  }
-  return out;
+async function modules() {
+  const files = await readRuntimeFiles(repoRoot);
+  assert.ok(files.length > 0, "runtime grammar sources were enumerated");
+  return files.map(file => file.path);
 }
 
 // A digit where an id's number goes: a literal one, a regex digit class in either a regex literal
@@ -141,7 +135,7 @@ export const archTests = [
       assert.deepEqual(mapSpellings("src/x.mjs", "const t = /ADR-\\d{3}/;"), [], "an ADR id is not a map id");
       assert.deepEqual(mapSpellings("src/cited-path-resolve.mjs", "const m = /^R\\d*\\t([^\\t]+)$/u.exec(line);"), [], "git's rename status is not a map id");
       assert.deepEqual(mapSpellings("src/x.mjs", "// - E1 · a → b [proposed]\nconst a = 1;"), [], "a comment is not code");
-      assert.deepEqual(mapSpellings("src/declared-id.mjs", "{ name: \"R\", id: \"R\\\\d+\" }"), [], "the admitted module");
+      assert.deepEqual(mapSpellings("packages/work/src/declared-id.mjs", "{ name: \"R\", id: \"R\\\\d+\" }"), [], "the admitted module");
       assert.ok(mapSpellings("src/x.mjs", "{ name: \"R\", id: \"R\\\\d+\" }").length > 0, "the same line anywhere else fires");
     },
   },

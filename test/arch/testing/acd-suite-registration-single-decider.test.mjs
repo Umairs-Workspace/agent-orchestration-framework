@@ -35,7 +35,7 @@ import { IMPORT_OF, SPREAD_ROW, bindingsOf, directoryCensus, readIndexes, regist
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
-const CENSUS = "src/work-audit/census.mjs";
+const CENSUS = "packages/work/src/audit/census.mjs";
 const REPORTER = "src/work/test-select.mjs";
 const STORY_MODULES = Object.freeze([REPORTER, "src/graph-impact.mjs", "src/work/test-changed.mjs"]);
 

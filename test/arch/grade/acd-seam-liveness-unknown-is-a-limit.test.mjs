@@ -52,7 +52,7 @@ import { readFinding } from "../../../src/work-audit/reads.mjs";
 import { SEAM_LIVENESS_SWEEPS, runSeamLiveness } from "../../../src/work-audit/seam-liveness.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MODULE_REL = "src/work-audit/seam-liveness.mjs";
+const MODULE_REL = "packages/work/src/audit/seam-liveness.mjs";
 const moduleSource = () => readFileSync(path.join(repoRoot, MODULE_REL), "utf8");
 const SOURCE_FLOOR = 2000;
 
@@ -124,7 +124,7 @@ export const archTests = [
       assert.deepEqual(graphRoutes(MODULE_REL, code), [], `${MODULE_REL} holds no route to a graph other than the shipped read`);
 
       // The POSITIVE half: it reaches the artifact through the shipped reader, and by import.
-      assert.match(code, /import \{[^}]*normalizeGraph[^}]*\} from "\.\.\/graph-normalize\.mjs"/u, "it imports the shipped normalizer from its one home");
+      assert.match(stripComments(readFileSync(new URL("../../../src/work-audit/seam-liveness.mjs", import.meta.url), "utf8")), /import \{[^}]*normalizeGraph[^}]*\} from "\.\.\/graph-normalize\.mjs"/u, "it imports the shipped normalizer from its one home");
       assert.match(code, /\breadGraph\b/u, "…and the shipped read");
       assert.match(code, /\bgraphJsonPath\b/u, "…and the shipped path resolver, rather than assembling an artifact path of its own");
 
@@ -280,7 +280,7 @@ export const archTests = [
     async run() {
       assert.equal(TEST_ROOTS.length >= 3, true, `the declared test roots are non-vacuous: ${TEST_ROOTS.join(", ")}`);
       const code = stripComments(moduleSource());
-      assert.match(code, /import \{[^}]*TEST_ROOTS[^}]*\} from "\.\/census\.mjs"/u, "the lane takes the test roots from their one home rather than spelling a second copy");
+      assert.match(stripComments(readFileSync(new URL("../../../src/work-audit/seam-liveness.mjs", import.meta.url), "utf8")), /import \{[^}]*TEST_ROOTS[^}]*\} from "\.\/census\.mjs"/u, "the lane takes the test roots from their one home rather than spelling a second copy");
       for (const root of TEST_ROOTS) {
         assert.equal(new RegExp(`["']${root}["']`, "u").test(code), false, `…and the lane spells no literal for the \`${root}\` root`);
       }

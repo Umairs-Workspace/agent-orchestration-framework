@@ -265,7 +265,7 @@ export const archTests = [
       assert.equal(censusReadFinding, reads.readFinding, "the census's readFinding IS the shared one");
       assert.equal(censusReadRecord, reads.readRecord, "…and so is its readRecord");
       assert.equal(sweepDeclarationProblems, reads.sweepDeclarationProblems, "…and its sweep-declaration validator");
-      const evidenceSource = await readFile(path.join(root, "src", "work-audit", "evidence.mjs"), "utf8");
+      const evidenceSource = await readFile(path.join(root, "packages", "work", "src", "audit", "evidence.mjs"), "utf8");
       assert.match(evidenceSource, /from "\.\/reads\.mjs"/u, "the evidence lane imports the one definition");
       assert.equal(
         /^\s*(?:export\s+)?function\s+read(?:Record|Finding)\s*\(/mu.test(evidenceSource), false,

@@ -53,7 +53,7 @@ import {
 } from "../../../src/work-audit/prompt-layer.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MODULE_REL = "src/work-audit/prompt-layer.mjs";
+const MODULE_REL = "packages/work/src/audit/prompt-layer.mjs";
 const moduleSource = () => readFileSync(path.join(repoRoot, MODULE_REL), "utf8");
 
 const SOURCE_FLOOR = 2000;
@@ -108,7 +108,7 @@ function censusableSource() {
   const code = stripComments(moduleSource());
   assert.equal(code.length > SOURCE_FLOOR, true, `${MODULE_REL} was read and stripped to something real (${code.length} chars, floor ${SOURCE_FLOOR})`);
 
-  const at = code.indexOf("export const PROMPT_LAYER_SWEEPS");
+  const at = code.indexOf("const PROMPT_LAYER_SWEEPS");
   assert.notEqual(at, -1, "the sweep registry is declared — a renamed export would make every claim below vacuous");
   const registry = matchedParenSpan(code, at);
   assert.notEqual(registry, null, "the sweep registry was cut by matching parens, never by a byte window");
@@ -143,7 +143,7 @@ export const archTests = [
 
       // The numeral exists ONCE, in its own declaration. 21 groups at 120 / 12 at 200 / 0 at 300 is
       // a gradient steep enough that a second copy would decide the output somewhere unread.
-      const declaration = `export const SENTENCE_FLOOR = ${SENTENCE_FLOOR};`;
+      const declaration = `const SENTENCE_FLOOR = ${SENTENCE_FLOOR};`;
       assert.equal(rest.includes(declaration), true, `${MODULE_REL} declares the floor as \`${declaration}\``);
       const occurrences = rest.split(String(SENTENCE_FLOOR)).length - 1;
       assert.equal(occurrences, 1, `the numeral ${SENTENCE_FLOOR} appears exactly once in the implementation (found ${occurrences})`);
@@ -255,8 +255,9 @@ export const archTests = [
     async run() {
       const { code, rest } = censusableSource();
 
-      assert.match(code, /import \{[^}]*RESOURCE_KINDS[^}]*RUNTIMES[^}]*\} from "\.\.\/model\.mjs"/u, `${MODULE_REL} takes the runtimes and the resource kinds from the model, which is their one home`);
+      assert.match(stripComments(readFileSync(new URL("../../../src/work-audit/prompt-layer.mjs", import.meta.url), "utf8")), /import \{[^}]*RESOURCE_KINDS[^}]*RUNTIMES[^}]*\} from "\.\.\/model\.mjs"/u, `${MODULE_REL} takes the runtimes and the resource kinds from the model, which is their one home`);
 
+      assert.match(code, /createAuditPromptLayer\(\{ RESOURCE_KINDS, RUNTIMES \}\)/u, "the implementation receives the model vocabulary");
       // NO SECOND SPELLING. The forbidden literals are derived FROM the model rather than typed
       // here, so a fourth runtime or a fifth kind is covered on arrival.
       for (const runtime of Object.values(RUNTIMES)) {

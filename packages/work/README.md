@@ -19,6 +19,13 @@ Private workspace for work-domain behavior.
 | `@aof/work/acceptor/store` | `createAcceptorStore` owns ledger persistence and surgical configuration writes using the supplied ledger path. |
 | `@aof/work/acceptor/observations` | `createAcceptorObservations` owns observation classification and census, using supplied journal reads and dispatch-path policy. |
 | `@aof/work/audit/reads` | Pure audit read/limit records and declaration checks. |
+| `@aof/work/declared-id`, `audit/controls` | Declaration grammar, fitness-register readers and pure doctor controls. |
+| `@aof/work/audit/hook-wiring` | Read-only hook duplication checks. |
+| `@aof/work/audit/census`, `audit/evidence` | Audit census and evidence factories with supplied bounded execution and installed-program locations. |
+| `@aof/work/audit/prompt-layer` | Prompt audit factory using supplied runtime/resource vocabulary. |
+| `@aof/work/audit/declared-bounds` | Bounds comparison factory using supplied reference data and configuration resolvers. |
+| `@aof/work/audit/seam-liveness` | Seam audit factory using supplied graph readers and test-root declarations. |
+| `@aof/work/audit/report` | Report assembly factory using supplied lane services and work-graph checks. |
 
 Records take concrete item descriptors (`ref`, `dir`, `type`) and use
 `@aof/foundation/fs` for atomic writes. They do not discover workspaces, load
@@ -60,5 +67,14 @@ They do not import core, mesh or the journal singleton. Observation composition 
 the supplied pure slug function to derive its prefix; journal reads happen on demand.
 Core's digest adapter supplies the shipped template and product version. The CLI
 remains part of core.
+
+Audit composition performs no I/O. `createAuditCensus` and `createAuditEvidence` receive
+`runBounded`, its default deadline and the installed-program locator; evidence also receives
+attempted-command formatting. Programs resolve from the installed toolkit while their subjects
+and working directories resolve from the audited project. `createAuditPromptLayer`,
+`createAuditDeclaredBounds` and `createAuditSeamLiveness` receive their vocabulary, reference/bounds
+and graph collaborators. `createAuditReport` joins the supplied lanes and graph checks. Work owns
+the audit algorithms without importing core, execution or work-graph. In particular, injecting
+graph checks avoids a cycle with work-graph's existing dependency on work records.
 
 Run `yarn workspace @aof/work test` for the package tests.

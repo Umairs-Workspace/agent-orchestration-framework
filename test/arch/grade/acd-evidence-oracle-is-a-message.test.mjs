@@ -58,7 +58,7 @@ import {
 import { EXECUTED_CASES, withControlFixtureRepo as withFixtureRepo } from "../../support/evidence-control-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_LANE = "src/work-audit/evidence.mjs";
+const THE_LANE = "packages/work/src/audit/evidence.mjs";
 const THE_DRIVER = DRIVE_PROGRAM;
 
 // ── THE COUNT-ORACLE DETECTORS ───────────────────────────────────────────────────────────────
@@ -288,7 +288,7 @@ export const archTests = [
       const body = strippedBody(THE_LANE, raw);
 
       // The single route: the seam, imported by name, and no second door.
-      assert.match(body, /import\s*\{[^}]*\brunBounded\b[^}]*\}\s*from\s*"\.\/spawn\.mjs"/u, "execution comes from 59/01's bounded seam");
+      assert.match(stripComments(await read("src/work-audit/evidence.mjs")), /import\s*\{[^}]*\brunBounded\b[^}]*\}\s*from\s*"\.\/spawn\.mjs"/u, "execution comes from 59/01's bounded seam");
       assert.doesNotMatch(body, /node:child_process/u, "…and not from a second import of the spawn door");
       assert.doesNotMatch(body, /\bimport\s*\(/u, "…nor from a dynamic import(), which would execute a cited module's scope inside this process (66/ADR-004 §2)");
       for (const door of ["execSync", "execFileSync", "spawnSync", "fork("]) {
@@ -304,7 +304,7 @@ export const archTests = [
       // THE CUT IS THE LANGUAGE'S OWN, from the one home (`test/support/source-slice.mjs`). An
       // `indexOf` sentinel end would assume a declaration order nothing pins, and F-47-04-ARCH-2
       // records six instruments in this repo made confidently wrong about the tree that way.
-      const verdictSource = functionBody(body, "export function verdictFor");
+      const verdictSource = functionBody(body, "function verdictFor");
       assert.ok(verdictSource != null && verdictSource.length > 200, "the verdict function's body was cut and read");
       assert.doesNotMatch(verdictSource, /exitCode/u, "the VERDICT never reads an exit code — 'it ran' and 'it passed' are two questions");
       assert.doesNotMatch(verdictSource, /\.cases\b/u, "…and never a case count");
@@ -467,7 +467,7 @@ export const archTests = [
       // the program), and an unimportable export is the one shape 77/02's seam rule would report as
       // a stranded seam. The claim here is the BYTES, not the syntax, and it is unweakened.
       const driverLiteral = /(?:export )?const DRIVE_RESULT_SENTINEL = "([^"]*)";/u.exec(driverSource);
-      const laneLiteral = /export const DRIVE_RESULT_SENTINEL = "([^"]*)";/u.exec(laneSource);
+      const laneLiteral = /(?:export )?const DRIVE_RESULT_SENTINEL = "([^"]*)";/u.exec(laneSource);
       assert.ok(driverLiteral != null && laneLiteral != null, "both sides declare the sentinel");
       assert.equal(driverLiteral[1], laneLiteral[1], "the two copies are byte-identical — nothing else can hold them equal across a boundary neither may import");
       assert.equal(DRIVE_RESULT_SENTINEL, driverLiteral[1].replaceAll("\\\\", "\\"));
@@ -534,10 +534,10 @@ export const archTests = [
     run: async () => {
       // Structural: `sizeFor` and `verdictFor` are two functions and neither calls the other.
       const body = strippedBody(THE_LANE, await read(THE_LANE));
-      const sizeSource = functionBody(body, "export function sizeFor");
+      const sizeSource = functionBody(body, "function sizeFor");
       assert.ok(sizeSource != null && sizeSource.length > 200, "the size function's body was cut and read");
       assert.doesNotMatch(sizeSource, /verdictFor|dispositionOf|messagesAgree/u, "the size claim does not reach the verdict");
-      const verdictSource = functionBody(body, "export function verdictFor");
+      const verdictSource = functionBody(body, "function verdictFor");
       assert.ok(verdictSource != null, "the verdict function's body was cut and read");
       assert.doesNotMatch(verdictSource, /sizeFor|\.cases\b/u, "…and the verdict does not reach the size");
 

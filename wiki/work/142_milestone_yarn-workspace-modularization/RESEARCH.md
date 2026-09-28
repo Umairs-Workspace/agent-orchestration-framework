@@ -559,3 +559,18 @@ and resource-kind vocabulary. Seam liveness needs supplied knowledge-graph reads
 Declared-bound comparisons need the shipped reference corpus and bounds resolvers. Audit reports
 consume work-graph checks through an explicit port, avoiding a work-to-work-graph dependency cycle
 (work-graph already imports work records). Keep filesystem/program location in core composition.
+
+The audit extraction implements those seams. Work owns census, evidence, prompt/hook checks,
+declared-bound comparison, seam liveness and report assembly, plus declared-ID grammar and pure
+controls. Toolkit derivation stays in core; both the source differential and copied-installation
+probe execute real helper programs from the toolkit against a separate subject. No dependency
+edge was needed: execution, model vocabulary, reference/bounds and graph services are explicit
+factory inputs. Function bodies, constants, legacy export sets and assembled report data retain
+their pre-move values.
+
+Source guards now inspect both the moved implementations and core wiring. Repository-wide grammar,
+graph-reader, audit-program and policy-reader scans include runtime packages. The copied provenance
+fixture gets its own work-package copy and alias, so mutating a grammar exercises the copied reader
+and cannot mutate the checkout's package. Other installed dependencies are read through fixture
+aliases. The graph-reader allowlist identifies core composition and the existing supplied-reader
+implementation separately; no new graph reader or build path was introduced.

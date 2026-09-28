@@ -33,7 +33,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import {
   REPORT_LANES,
   assertLaneLimits,
@@ -53,10 +53,10 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The modules milestone 77 adds. A list rather than a directory sweep, because `census.mjs`,
 // `evidence.mjs` and `spawn.mjs` are 59's and legitimately start children.
 const MILESTONE_MODULES = Object.freeze([
-  "src/work-audit/prompt-layer.mjs",
-  "src/work-audit/hook-wiring.mjs",
-  "src/work-audit/seam-liveness.mjs",
-  "src/work-audit/declared-bounds.mjs",
+  "packages/work/src/audit/prompt-layer.mjs",
+  "packages/work/src/audit/hook-wiring.mjs",
+  "packages/work/src/audit/seam-liveness.mjs",
+  "packages/work/src/audit/declared-bounds.mjs",
   "src/work-audit/toolkit.mjs",
   "src/harness-reference.mjs",
 ]);
@@ -261,7 +261,7 @@ export const archTests = [
         ["const result = await runBounded({ command, args });", "a child started through the family's own bounded seam"],
       ];
       for (const [planted, what] of plants) {
-        assert.ok(childProcessRoutes("src/work-audit/declared-bounds.mjs", planted).length > 0, `${what} is reported by the file that holds it`);
+        assert.ok(childProcessRoutes("packages/work/src/audit/declared-bounds.mjs", planted).length > 0, `${what} is reported by the file that holds it`);
       }
     },
   },
@@ -275,10 +275,10 @@ export const archTests = [
       assert.deepEqual(found, [], "no module this milestone adds holds a second route to a fact the face supplies");
 
       // …AND NO OTHER MODULE OF THE FAMILY GREW ONE EITHER.
-      const family = (await readSrcFiles(repoRoot)).filter((file) => `src/${file.rel}`.startsWith("src/work-audit/"));
+      const family = (await readRuntimeFiles(repoRoot)).filter((file) => (file.rel.startsWith("src/work-audit/") || file.rel.startsWith("packages/work/src/audit/")));
       assert.ok(family.length >= 8, `the family was walked (${family.length} modules)`);
       for (const file of family) {
-        const rel = `src/${file.rel}`;
+        const rel = file.rel;
         const code = stripComments(await readFile(file.path, "utf8"));
         assert.equal(/from\s+"[^"]*claude-settings\.mjs"/u.test(code), false, `${rel} does not import the settings module`);
         assert.equal(/work\.agents/u.test(code), false, `${rel} does not read the role-routing configuration key`);
@@ -302,7 +302,7 @@ export const archTests = [
         ["const root = path.dirname(import.meta.url);", "a subject root derived from the module's own location"],
       ];
       for (const [planted, what] of plants) {
-        assert.ok(injectionBypasses("src/work-audit/declared-bounds.mjs", planted).length > 0, `${what} is reported by the file that holds it`);
+        assert.ok(injectionBypasses("packages/work/src/audit/declared-bounds.mjs", planted).length > 0, `${what} is reported by the file that holds it`);
       }
     },
   },

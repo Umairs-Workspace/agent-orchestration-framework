@@ -20,7 +20,16 @@
     "./acceptor/criterion": "./src/acceptor/criterion.mjs",
     "./acceptor/store": "./src/acceptor/store.mjs",
     "./acceptor/observations": "./src/acceptor/observations.mjs",
-    "./audit/reads": "./src/audit/reads.mjs"
+    "./audit/reads": "./src/audit/reads.mjs",
+    "./declared-id": "./src/declared-id.mjs",
+    "./audit/controls": "./src/audit/controls.mjs",
+    "./audit/hook-wiring": "./src/audit/hook-wiring.mjs",
+    "./audit/census": "./src/audit/census.mjs",
+    "./audit/evidence": "./src/audit/evidence.mjs",
+    "./audit/prompt-layer": "./src/audit/prompt-layer.mjs",
+    "./audit/declared-bounds": "./src/audit/declared-bounds.mjs",
+    "./audit/seam-liveness": "./src/audit/seam-liveness.mjs",
+    "./audit/report": "./src/audit/report.mjs"
   },
   "files": [
     "src"

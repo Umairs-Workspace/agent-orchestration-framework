@@ -61,7 +61,7 @@ import {
 } from "../../../src/work-audit/prompt-layer.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MODULE_REL = "src/work-audit/prompt-layer.mjs";
+const MODULE_REL = "packages/work/src/audit/prompt-layer.mjs";
 const moduleSource = () => readFileSync(path.join(repoRoot, MODULE_REL), "utf8");
 
 // The floors. Below these the census is not reading the module, and every absence claim under it
@@ -143,8 +143,8 @@ export const archTests = [
       // DECLARED IN ONE PLACE. Each token is asserted to sit inside its own declaration and to
       // appear NOWHERE ELSE in the module's code as a string literal — which is the structural
       // form of "not a literal at a comparison site".
-      const programBody = declarationBody(code, "export const CAPABILITY_PROGRAMS");
-      const roleBody = declarationBody(code, "export const ROLE_WORDS");
+      const programBody = declarationBody(code, "const CAPABILITY_PROGRAMS");
+      const roleBody = declarationBody(code, "const ROLE_WORDS");
       const elsewhere = code.split(programBody).join(" ").split(roleBody).join(" ");
       assert.equal(elsewhere.length > SOURCE_FLOOR / 2, true, "the module outside the two declarations is still substantial, so the claim below is not cut away");
 

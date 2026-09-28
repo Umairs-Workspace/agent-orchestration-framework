@@ -23,6 +23,8 @@
   @aof/work-graph now owns registry loading/checks, execution projections, diagram/document rendering
   and all six graph-related commands. Core supplies asset locations, run reads and shared invocation.
   Shared bounds and errors live in contracts below work-graph and execution.
+  Work now also owns acceptance and audit services, declaration grammar and pure doctor controls.
+  Core supplies audit execution, installed-program paths, vocabulary/reference data and graph checks.
   @aof/work-loop now owns the zero-import engine and ask/stop/resume/child-drive services;
   core supplies runtime paths, diagnostics, CLI location and bounded process execution.
   It also owns cycle/wave/ask/stop orchestration, progress/diagnostics, argv composition and
@@ -201,3 +203,13 @@ were corrected; the final 35-case guard/import-reach/census run passes. Source a
 process-result parity and standalone JavaScript bundling pass, retaining 117 commands. No dependency
 or generated-output changes were needed. Continue with remaining audit services and their explicit
 core/graph collaborators, then the outstanding domains and final application layout.
+
+Audit services are now extracted: nine modules covering audit lanes/report assembly, declaration
+grammar and pure controls. Core supplies installed-program location, execution, vocabulary,
+reference/bounds and graph collaborators. The 831-case affected selection is covered after source
+and copied-fixture corrections; the final 192-case changed/contract/census run passes, including
+all 110 package tests. Old/new reports, real helper execution and grammar values match in source
+and in a copied installation; standalone JavaScript bundling passes and 117 commands remain.
+No dependencies or generated citations changed. Next: remaining doctor/tuning services, work
+mutations and command implementations; other domains, core/apps layout and final verification
+remain outstanding as recorded in COMPLETION.md.

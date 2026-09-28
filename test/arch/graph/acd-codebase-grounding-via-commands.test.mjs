@@ -20,6 +20,7 @@
 //       binary spawn — the seams reach the graph via the command, never a second
 //       integration.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -63,7 +64,8 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
                                                       // build and never a spawn, for 72/ADR-002 §1's reasons
                                                       // carried over intact. Its own control (FF-9602) asserts
                                                       // the absence of the build and the spawn directly.
-  path.join("src", "work-audit", "seam-liveness.mjs"), // imports the normalizer (77/ADR-006 §1): the seam-liveness
+  path.join("src", "work-audit", "seam-liveness.mjs"), // Core supplies the existing graph adapter.
+  path.join("packages", "work", "src", "audit", "seam-liveness.mjs"), // imports the normalizer (77/ADR-006 §1): the seam-liveness
                                                        // audit lane reaches the graph by the pure read — never a
                                                        // build and never a spawn, for 72/ADR-002 §1's reasons
                                                        // carried over intact.
@@ -136,7 +138,7 @@ export const archTests = [
   {
     name: "arch/codebase-grounding-via-commands: the ONLY graphify-binary spawn in src/ remains src/graphify.mjs (11 adds no new spawn site — the 09 regression guard, re-asserted)",
     run: async () => {
-      const files = await collectMjs(srcDir);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(files.length > 0, "found src/*.mjs files to scan");
       const offenders = [];
       let driverHasSpawn = false;
@@ -173,14 +175,20 @@ export const archTests = [
       // modules must be the frozen allow-list — 11 adds none. (The bundle seams are
       // PROMPT text, not modules; they reach the graph by instructing the agent to run
       // the CLI command, which is not a module-level import.)
-      const files = await collectMjs(srcDir);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const reachers = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file);
-        const specs = importSpecifiers(stripCommentsOnly(await readFile(file, "utf8"))).map((entry) => entry.specifier);
+        const source = stripCommentsOnly(await readFile(file, "utf8"));
+        const specs = importSpecifiers(source).map((entry) => entry.specifier);
         const importsDriver = specs.some((s) => /(^|\/)graphify\.mjs$/.test(s));
         const importsNormalizer = specs.some((s) => /(^|\/)graph-normalize\.mjs$/.test(s));
-        if (importsDriver || importsNormalizer) reachers.push(rel);
+        const suppliedReader = rel === path.join("packages", "work", "src", "audit", "seam-liveness.mjs");
+        if (suppliedReader) {
+          assert.match(source, /createAuditSeamLiveness\(\{[^}]*normalizeGraph[^}]*readGraph/u, "the moved reader receives the existing graph services");
+          assert.match(source, /normalizeGraph\(readGraph\(artifact\)\)/u, "and it still uses the supplied reader");
+        }
+        if (importsDriver || importsNormalizer || suppliedReader) reachers.push(rel);
       }
       const offenders = reachers.filter((rel) => !GRAPH_REACHING_ALLOWLIST.has(rel));
       assert.deepEqual(
