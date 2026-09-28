@@ -10,6 +10,8 @@
   domain source extraction remains incremental. Work, mesh, and Notion now own their effect handlers
   in three additional workspaces; core assembles them with explicit deferred service providers.
   Effect registration has no static transition/domain import cycle.
+  Notion now owns its synchronization, sidecar, launcher, and both command implementations;
+  core registers its CLI contribution and supplies services through compatibility adapters.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
@@ -56,11 +58,16 @@
   cases pass (the package cases also run through the focused bridge). Immutable install, audit,
   browser/SEA JavaScript bundles, CLI smoke, and an external installed-payload status cycle pass.
 
+- Notion extraction: 306 focused checks, all 997 unit checks, and the 43 internal package cases
+  pass. Installed-payload command workflows and old/new sidecar compatibility pass with fake
+  Notion egress. All 117 command IDs retain their order.
+
 ## Next
 
 Continue extracting domain service implementations and their command contributions behind the new
-package interfaces. The work, mesh, and Notion handler packages are implemented; their injected
-service implementations still live under src/. Core registration is now statically acyclic,
+package interfaces. The work and mesh handler packages are implemented; their injected
+service implementations still live under src/. Notion owns its services and CLI descriptors;
+shared work/routing services, diagnostics, provisioning and journal policy remain injected. Core registration is now statically acyclic,
 while deferred runtime service composition remains a transitional adapter. Separate the
 foundation/diagnostics dependency before moving filesystem utilities. Core still owns the CLI
 and will move to packages/core with its assets. Keep the outstanding full-suite and platform

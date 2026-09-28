@@ -86,6 +86,7 @@ import { importMilestoneCommand } from "./commands/import-milestone.mjs";
 // migrate:folder — see ./commands/migrate-folder.mjs's header.
 import { migrateFolderCommand } from "./commands/migrate-folder.mjs";
 // notion:sync-work — 17/ADR-002, 08/ADR-004 — see ./commands/notion-sync-work.mjs's header.
+import { createNotionContribution } from '@aof/integration-notion/commands';
 import { notionSyncWorkCommand } from "./commands/notion-sync-work.mjs";
 // notion:associate — 18/ADR-003, 08/ADR-004 — see ./commands/notion-associate.mjs's header.
 import { notionAssociateCommand } from "./commands/notion-associate.mjs";
@@ -206,8 +207,9 @@ const CONTRIBUTIONS = [
     projectProvisionCommand,
     importMilestoneCommand,
     migrateFolderCommand,
-    notionSyncWorkCommand,
-    notionAssociateCommand,
+  ] },
+  createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
+  { name: "aof", commands: [
     runStartCommand,
     runCompleteCommand,
     runStatusCommand,

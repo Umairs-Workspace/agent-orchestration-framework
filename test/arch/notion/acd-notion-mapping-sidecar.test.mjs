@@ -23,7 +23,8 @@
 //       property write — the only page-property writes name title / status / relation.
 //       Self-checked non-vacuous: the forbidden-form matchers fire on a planted form.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, readFile, readdir } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,7 +32,7 @@ import { readMapping, resolvePageId, recordPageId, NOTION_WORK_MAP_FILE } from "
 import { AOF_GITIGNORE_ENTRIES } from "../../../src/aof-gitignore.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_NOTION_DIR = path.join(repoRoot, "src", "notion");
+const SRC_NOTION_DIR = path.join(repoRoot, "packages", "integration-notion", "src");
 
 // Strip line + block comments AND string/template literals so a documented mention
 // (a `filter` in prose, or a token name inside an error MESSAGE) does not trip a
@@ -74,11 +75,8 @@ function stripCommentsOnly(source) {
 const RESOLVE_BY_QUERY = /\bfilter\s*:\s*\{[^}]*\bproperty\s*:/;
 
 async function notionSourceFiles() {
-  const files = [];
-  for (const entry of await readdir(SRC_NOTION_DIR)) {
-    if (entry.endsWith(".mjs")) files.push(path.join(SRC_NOTION_DIR, entry));
-  }
-  return files;
+  const files = await readRuntimeFiles(repoRoot);
+  return files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('src/notion/') || rel.startsWith('src/commands/notion-')).map(file => file.path);
 }
 
 export const archTests = [

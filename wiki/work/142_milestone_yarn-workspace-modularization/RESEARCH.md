@@ -248,3 +248,20 @@ construction is now safe, proven from each of six entry modules and by an acycli
 a planted-cycle negative check. Runtime service dependencies remain explicit deferred composition,
 not an exemption from the final package dependency rules. Architecture scans must follow workspace
 source/exports; a root-only import count would incorrectly hide the new package code.
+
+## Notion service and command extraction — 2026-09-28
+
+Notion is now a substantive feature package: five service modules plus both CLI descriptors have
+moved behind explicit factory inputs. Core retains its installed identity, command assembly, and
+small old-path adapters. Shared integration routing was deliberately left outside Notion because
+it is the extensible routing/configuration contract, not a Notion-owned storage backend.
+
+The package can own Node filesystem/crypto/process APIs without depending on application core.
+The boundary check therefore permits exact native imports per implementation module, while
+continuing to reject core, sibling-private, undeclared package and computed imports. Browser
+compatibility applies to the effects contribution entry, not to the native service or command entries.
+
+Source guards must follow both the implementation and its supplied services: checking only the old
+adapter would make no-write/no-read scans vacuous; checking only the package would miss a wrong
+cache-reader binding in core. The cache-first checks now pin both ends. Sidecar compatibility and
+both commands were exercised from a copied installation outside the checkout, with fake egress.

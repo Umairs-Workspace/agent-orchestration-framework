@@ -31,18 +31,26 @@ export const yarnInstallationTests = [
     for (const name of ['contracts', 'effects', 'work', 'mesh', 'integration-notion']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
-      assert.deepEqual(report.violations, [], `${name}: only package-local imports are allowed`);
+      const nativePorts = name === 'integration-notion' ? {
+        'mapping.mjs': ['node:path', 'node:crypto', 'node:fs/promises'],
+        'cli.mjs': ['node:child_process', 'node:path', 'node:os', 'node:fs'],
+        'sync-work.mjs': ['node:path', 'node:fs/promises'],
+        'notion-sync-work.mjs': ['node:fs'],
+      } : {};
+      const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[path.basename(file)] ?? []).includes(specifier);
+      const external = report.violations.filter(forbidden);
+      assert.deepEqual(external, [], name + ': only package-local imports and explicitly owned Node APIs are allowed');
       assert.deepEqual(report.computed, [], `${name}: computed imports cannot bypass the boundary`);
       const from = report.family.files[0];
       for (const code of [
         'import { invoke } from "../../../src/command-core.mjs";',
         `export { x } from "../../${name === 'contracts' ? 'effects/src/dispatch' : 'contracts/src/commands'}.mjs";`,
-        'const provider = await import("node:fs");',
+        'const provider = await import("node:net");',
         'const core = await import(`aof`);',
       ]) {
         const specs = importSpecifiers(code);
         assert.equal(specs.length, 1, 'the planted import is detected');
-        assert.equal(classifySpecifier(specs[0].specifier, from, report.family), 'violation');
+        assert.equal(forbidden({ file: from, specifier: specs[0].specifier }), true);
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));

@@ -16,8 +16,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ASSOCIATE = path.join(repoRoot, "src", "commands", "notion-associate.mjs");
-const PROJECTION = path.join(repoRoot, "src", "notion", "projection.mjs");
+const ASSOCIATE = path.join(repoRoot, "packages", "integration-notion", "src", "notion-associate.mjs");
+const PROJECTION = path.join(repoRoot, "packages", "integration-notion", "src", "projection.mjs");
 const ONE_WAY = path.join(repoRoot, "test", "arch", "notion", "acd-notion-one-way.test.mjs");
 
 function stripComments(source) {

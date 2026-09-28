@@ -159,8 +159,8 @@ const CONTROL_SIDE = [
   // its two structural neighbours in `promotion.mjs`. The category is a property of the READ, not of
   // the module or the family: one function here makes all three, and they are classified apart.
   { file: path.join("src", "commands", "promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore" },
-  { file: path.join("src", "commands", "notion-associate.mjs"), subject: "notionAssociateCommand" },
-  { file: path.join("src", "notion", "sync-work.mjs"), subject: "syncMilestoneWork" },
+  { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "src/commands/notion-associate.mjs" },
+  { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "src/notion/sync-work.mjs" },
   { file: path.join("src", "memory", "local-indexing.mjs"), subject: "buildRecords" },
   { file: path.join("src", "mesh", "assignment.mjs"), subject: "assignWork" },
   { file: path.join("src", "mesh", "assignment.mjs"), subject: "withdrawWork" },
@@ -243,7 +243,7 @@ export const archTests = [
       );
 
       const stragglers = [];
-      for (const { file, subject } of CONTROL_SIDE) {
+      for (const { file, subject, adapter } of CONTROL_SIDE) {
         const full = path.join(repoRoot, file);
         // A MISSING module is a re-point signal, not a skip. The positive pins have always treated
         // it as one (`assertPinned` just reads the file), and a `continue` here would let a deleted
@@ -261,6 +261,13 @@ export const archTests = [
           continue;
         }
         const bindings = workImportBindings(source);
+        if (adapter) {
+          const composition = stripComments(await readFile(path.join(repoRoot, adapter), "utf8"));
+          assert.match(source, /\blistItemsCacheFirst\s*\(/u, `${file}: the relocated reader uses the cache-first service`);
+          assert.match(composition, /import\s*\{[^}]*\blistItemsCacheFirst\b[^}]*\}\s*from\s*["']\.\.\/work\/read\.mjs["']/u);
+          assert.match(composition, /createNotion\w+\(\{[^}]*\blistItemsCacheFirst\b/u, `${adapter}: inject the shared cache-first reader`);
+          for (const symbol of workImportBindings(composition)) bindings.add(symbol);
+        }
         const still = DISK_READERS.filter((symbol) => bindings.has(symbol));
         if (still.length > 0) stragglers.push(`${file} still imports ${still.join("/")} from work.mjs (${subject})`);
       }

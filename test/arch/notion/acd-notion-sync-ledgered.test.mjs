@@ -50,12 +50,12 @@ import { invoke } from "../../../src/command-core.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // The one sync body: its definition, and its two sanctioned callers.
-const SYNC_CORE = "src/notion/sync-work.mjs";
-const SYNC_CORE_CALLERS = new Set([SYNC_CORE, "src/commands/notion-sync-work.mjs", "packages/integration-notion/src/effects.mjs"]);
+const SYNC_CORE = "packages/integration-notion/src/sync-work.mjs";
+const SYNC_CORE_CALLERS = new Set([SYNC_CORE, "packages/integration-notion/src/notion-sync-work.mjs", "packages/integration-notion/src/effects.mjs"]);
 // The apply layer + the spawn-seam constructor: reachable only from the core
 // (applyPlan's definition lives in sync.mjs; makeNotionSpawn's in notion/cli.mjs).
-const APPLY_CALLERS = new Set(["src/notion/sync.mjs", SYNC_CORE]);
-const SPAWN_SEAM_CALLERS = new Set(["src/notion/cli.mjs", SYNC_CORE]);
+const APPLY_CALLERS = new Set(["packages/integration-notion/src/sync.mjs", SYNC_CORE]);
+const SPAWN_SEAM_CALLERS = new Set(["packages/integration-notion/src/cli.mjs", SYNC_CORE]);
 // Every transition seam resolves reactors through the append-time applicability
 // evaluation — the uniform rule the predicate machinery rides on.
 const TRANSITION_SEAMS = [

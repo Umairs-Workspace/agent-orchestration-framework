@@ -22,9 +22,9 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const ROUTING = path.join(repoRoot, "src", "integrations", "routing.mjs");
-const PROJECTION = path.join(repoRoot, "src", "notion", "projection.mjs");
-const MAPPING = path.join(repoRoot, "src", "notion", "mapping.mjs");
-const ASSOCIATE = path.join(repoRoot, "src", "commands", "notion-associate.mjs");
+const PROJECTION = path.join(repoRoot, "packages", "integration-notion", "src", "projection.mjs");
+const MAPPING = path.join(repoRoot, "packages", "integration-notion", "src", "mapping.mjs");
+const ASSOCIATE = path.join(repoRoot, "packages", "integration-notion", "src", "notion-associate.mjs");
 
 // Drop comments (keep string literals so an argv/key in a real expression survives) — a
 // `board` in a comment is discounted; a real `entry.board` access survives.

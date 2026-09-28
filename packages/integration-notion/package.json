@@ -4,12 +4,20 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./effects": "./src/effects.mjs"
+    "./effects": "./src/effects.mjs",
+    "./mapping": "./src/mapping.mjs",
+    "./projection": "./src/projection.mjs",
+    "./sync": "./src/sync.mjs",
+    "./cli": "./src/cli.mjs",
+    "./sync-work": "./src/sync-work.mjs",
+    "./notion-associate": "./src/notion-associate.mjs",
+    "./notion-sync-work": "./src/notion-sync-work.mjs",
+    "./commands": "./src/commands.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs"
+    "test": "node --test test/effects.test.mjs test/services.test.mjs"
   }
 }

@@ -18,8 +18,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SYNC = path.join(repoRoot, "src", "notion", "sync.mjs");
-const PROJECTION = path.join(repoRoot, "src", "notion", "projection.mjs");
+const SYNC = path.join(repoRoot, "packages", "integration-notion", "src", "sync.mjs");
+const PROJECTION = path.join(repoRoot, "packages", "integration-notion", "src", "projection.mjs");
 
 // Keep STRING literals (so we read argv-token strings) but drop comments — a `pages`
 // in a comment is discounted while a real `["pages", "create", …]` argv survives.

@@ -15,13 +15,13 @@
 //   Self-checked non-vacuous: the MCP-import matcher fires on a planted
 //   `@modelcontextprotocol` import.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_NOTION_DIR = path.join(repoRoot, "src", "notion");
-const SYNC_COMMAND = path.join(repoRoot, "src", "commands", "notion-sync-work.mjs");
+const SRC_NOTION_DIR = path.join(repoRoot, "packages", "integration-notion", "src");
 const pkgPath = path.join(repoRoot, "package.json");
 
 function stripComments(source) {
@@ -43,11 +43,8 @@ const MCP_REQUIRE =
 const MCP_SERVER_STANDUP = /\b(?:McpServer|MCPServer|StdioServerTransport|createMcpServer|mcp\.createServer)\b/;
 
 async function notionSurfaceFiles() {
-  const files = [SYNC_COMMAND];
-  for (const entry of await readdir(SRC_NOTION_DIR)) {
-    if (entry.endsWith(".mjs")) files.push(path.join(SRC_NOTION_DIR, entry));
-  }
-  return files;
+  const files = await readRuntimeFiles(repoRoot);
+  return files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('src/notion/') || rel.startsWith('src/commands/notion-')).map(file => file.path);
 }
 
 export const archTests = [
@@ -72,8 +69,8 @@ export const archTests = [
   {
     name: "arch/notion-cli-not-mcp: package.json carries no MCP dependency (the integration pulls in no MCP package)",
     async run() {
-      const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
-      const names = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})];
+      const packages = await Promise.all([pkgPath, path.join(repoRoot, "packages/integration-notion/package.json")].map(async file => JSON.parse(await readFile(file, "utf8"))));
+      const names = packages.flatMap(pkg => [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})]);
       const offenders = names.filter((name) => /@modelcontextprotocol|(^|[-/])mcp([-/]|$)|notion-mcp/i.test(name));
       assert.deepEqual(offenders, [], `no MCP dependency in package.json: ${offenders.join(", ")}`);
     },

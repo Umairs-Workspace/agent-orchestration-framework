@@ -240,3 +240,48 @@ Verification:
 
 Logs: .tmp/workspace-migration/domain-effects/ (local, ignored). The earlier full-root-suite and
 cross-platform limits remain; no live installation, AOF lifecycle operation, push, or deployment.
+
+## Notion services and CLI contribution — 2026-09-28
+
+The five Notion service implementations (mapping, projection, apply, CLI launcher, and milestone
+synchronization) and both command implementations now live in @aof/integration-notion. Core's old
+source paths retain thin compatibility adapters. These bind workspace path policy, work metadata
+and cache-first readers, shared routing, command errors, tool provisioning, diagnostics, and journal
+services into package factories. The package imports no legacy source, assembled core, or other
+workspace's private files. Its explicitly allowed Node APIs are pinned per module; it adds no npm
+dependencies or lockfile changes.
+
+The package owns the two command schemas, argv validation, run behavior and rendering. Core
+registers its named command contribution between the same neighboring commands as before. All 117
+command IDs retain their ordering, and the two descriptor/argv/error snapshots match the actual
+pre-extraction modules. CLI host ownership and skill availability are unchanged.
+
+The sidecar format stays at version 2, with existing v1 reads, per-board identity, reindex replay,
+and sync deduplication preserved. Auth remains an environment reference and the launcher keeps
+shell-free argv spawning. Architecture guards now follow the package implementation and core
+adapters; cache-first reader pins check both the relocated call and its supplied service.
+
+Verification:
+
+- All 997 unit checks and 306 focused checks pass. The focused run includes the complete Notion
+  behavior/architecture suites plus effects, commands, startup, projection, reindexing, package
+  boundaries, and test-registration checks. The final 142 Notion checks also pass after source-scan
+  and documentation cleanup.
+- Four new independent package cases cover injected storage paths and instance isolation,
+  cross-board/reindex replay, projection/apply failure and dry-run behavior, per-instance launcher
+  descriptors with synthetic environment auth, and command contribution/no-op behavior. All 43
+  internal package cases run through the existing root bridge.
+- Immutable Yarn installation and the supply-chain audit pass (zero audit warnings; existing Yarn
+  peer warning unchanged). Browser-safe contributions and the SEA JavaScript bundle pass; every
+  one of the nine Notion runtime modules is included in the latter. CLI --help passes.
+- A real installer payload outside the checkout resolves all nine Notion exports locally as real
+  files and loads all 117 commands. Both commands execute: associate writes its descriptor; dry-run
+  issues no calls; first sync creates a page through a fake spawn; repeated sync makes no second
+  call. No live Notion request was made.
+- The pre-extraction mapping implementation wrote an existing board into that fixture. The payload
+  preserved it while adding a new board binding, which the old implementation then read back.
+  Temporary payload/fixture directories were removed. Logs: .tmp/workspace-migration/notion-services/.
+
+The full-root-suite and cross-platform/native-release limitations from previous slices remain.
+Next: continue work/mesh service and command extraction; separate foundational diagnostics from
+mesh logging before moving shared filesystem utilities. Work remains outside AOF's workflow.

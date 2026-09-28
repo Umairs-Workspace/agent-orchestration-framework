@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import { projectMilestone } from "../../../src/notion/projection.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SYNC = path.join(repoRoot, "src", "notion", "sync.mjs");
+const SYNC = path.join(repoRoot, "packages", "integration-notion", "src", "sync.mjs");
 
 const DATA_SOURCE_ID = "ds-fixture";
 

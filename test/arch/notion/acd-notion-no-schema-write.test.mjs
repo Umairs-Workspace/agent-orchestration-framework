@@ -12,12 +12,13 @@
 // Self-checked non-vacuous: the schema-create matcher fires on a planted
 // `databases create` / `update-data-source-properties` form.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_NOTION_DIR = path.join(repoRoot, "src", "notion");
+const SRC_NOTION_DIR = path.join(repoRoot, "packages", "integration-notion", "src");
 
 function stripCommentsOnly(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -54,11 +55,8 @@ function apiCall(tokens) {
 }
 
 async function notionSourceFiles() {
-  const files = [];
-  for (const entry of await readdir(SRC_NOTION_DIR)) {
-    if (entry.endsWith(".mjs")) files.push(path.join(SRC_NOTION_DIR, entry));
-  }
-  return files;
+  const files = await readRuntimeFiles(repoRoot);
+  return files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('src/notion/') || rel.startsWith('src/commands/notion-')).map(file => file.path);
 }
 
 export const archTests = [

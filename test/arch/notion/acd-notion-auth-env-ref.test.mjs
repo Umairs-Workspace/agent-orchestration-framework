@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SCHEMA = path.join(repoRoot, "schemas", "aof.schema.json");
-const CLI = path.join(repoRoot, "src", "notion", "cli.mjs");
+const CLI = path.join(repoRoot, "packages", "integration-notion", "src", "cli.mjs");
 
 function stripCommentsAndStrings(source) {
   let out = "";
