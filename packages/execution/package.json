@@ -7,13 +7,15 @@
     "./runs": "./src/runs.mjs",
     "./spend": "./src/spend.mjs",
     "./heartbeats": "./src/heartbeats.mjs",
-    "./session-capture": "./src/session-capture.mjs"
+    "./session-capture": "./src/session-capture.mjs",
+    "./providers": "./src/providers.mjs",
+    "./terminal-sessions": "./src/terminal-sessions.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/runs.test.mjs"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",

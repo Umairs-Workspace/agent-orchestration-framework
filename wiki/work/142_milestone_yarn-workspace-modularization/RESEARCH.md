@@ -456,3 +456,10 @@ The next execution boundary includes the local session driver and terminal servi
 dependency on terminal-ws mixes reusable PTY launching with transport/application assembly; separate
 the spawn service before assigning WebSocket routing to server. Observation, screen recognition and
 provider launch policy must keep their existing behavior and test injection seams.
+
+Provider resolution and terminal session records have now moved into execution as independent
+factories with diagnostic ports. Provider PATH lookup remains injectable, returned argv/env values
+retain their copying behavior, and registry writes retain their best-effort reporting. The moved
+provider code retains its MIT attribution and the NOTICE index follows the implementation.
+This removes two service implementations from the root without introducing an execution dependency
+on WebSocket transport. The native loader and local driver still require the next boundary change.

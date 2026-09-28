@@ -704,3 +704,32 @@ Verification (ignored evidence in `.tmp/workspace-migration/execution-runs/`):
 
 Local drivers, terminals/worktrees, remaining domains, final core/apps moves and adapter removal
 are still outstanding. Full-root-suite and native/platform verification remain outstanding.
+
+## Terminal provider and session services — 2026-09-28
+
+Moved provider resolution and live terminal-session storage into `@aof/execution` factories.
+Root modules preserve all existing exports and supply diagnostics. Comparing implementation
+bodies after removing only the factory/export wrapper proves both are unchanged. No dependency
+or lockfile change was required. The provider's per-file MIT attribution moved with its code;
+NOTICE and its architecture check now name that implementation.
+
+Verification (ignored evidence in `.tmp/workspace-migration/execution-terminals/`):
+
+- All 906 selected session, terminal, native-loader, architecture and package-contract checks
+  pass. This includes the root bridge over all 94 internal package cases.
+- Two new package cases cover provider launch values, independent argv/env copies, injected
+  binary lookup, cross-instance registry visibility, inspection without writes and best-effort
+  diagnostic reporting when persistence cannot write. No real agent or PTY was launched.
+- Compatibility export sets and implementation bodies match the saved pre-move source exactly.
+- Immutable pinned Yarn installation and supply-chain audit pass with zero audit warnings;
+  the existing Yarn peer warning remains.
+- The standalone JavaScript bundle contains both moved modules and keeps native node-pty
+  external. This is not evidence of a built native executable.
+- A copied installation resolves both public APIs inside its payload, preserves provider launch
+  values and shares session records between public and compatibility interfaces. Existing run-byte,
+  loop, graph and work parity checks also pass there. A duplicate variable in the temporary payload
+  test script was corrected before this successful run.
+
+The existing four generated-citation updates remain pending separately. No repository `.aof`
+files or workflow state changed in this extraction. Full migration and platform verification
+remain outstanding.

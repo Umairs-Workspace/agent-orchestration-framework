@@ -50,6 +50,8 @@ export const yarnInstallationTests = [
         'runs.mjs': ['node:path', 'node:fs/promises', 'node:fs', '@aof/foundation/fs', '@aof/contracts/claim-provenance'],
         'spend.mjs': ['node:fs/promises', 'node:path'],
         'heartbeats.mjs': ['node:fs/promises', 'node:path'],
+        'providers.mjs': ['node:path', 'node:fs'],
+        'terminal-sessions.mjs': ['node:fs/promises', 'node:path'],
       } : name === 'work-loop' ? {
         'progress.mjs': ['node:child_process', 'node:fs/promises', 'node:path', 'node:util', '@aof/contracts/loop-bounds'],
         'diagnostics.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path'],

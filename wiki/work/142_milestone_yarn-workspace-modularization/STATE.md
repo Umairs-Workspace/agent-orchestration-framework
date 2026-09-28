@@ -145,3 +145,9 @@ and persisted bytes match, including in a copied installation. Immutable install
 bundles and temporary three-runtime rendering pass. The unit selection covers 996 of 997 cases;
 the remaining generated-output synchronization check awaits approval for four additional citation-only
 refreshes, separate from the three already approved and committed. See IMPLEMENTATION.md.
+
+Terminal provider resolution and the live-session registry also now belong to execution.
+Their implementation bodies and legacy export sets are unchanged; 906 affected checks pass,
+including all 94 internal package cases. Immutable install/audit and standalone JavaScript
+bundle checks pass. Driver, PTY/screen and worktree ownership remain next; the four pending
+generated citation refreshes are unchanged by this slice.

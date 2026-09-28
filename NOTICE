@@ -20,7 +20,7 @@ replaced with a WebSocket (`ws@8`) at /ws/terminal (ADR-003).
 Files in this repository that carry the corresponding per-file vibeyard MIT
 attribution notice:
   - src/terminal-ws.mjs
-  - src/terminal-providers.mjs
+  - packages/execution/src/providers.mjs
   - ui/src/terminal/TerminalControl.tsx
   - ui/src/terminal/state-ramp.mjs
   - ui/src/terminal/geometry.mjs

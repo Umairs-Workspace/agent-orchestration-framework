@@ -122,7 +122,9 @@ export const archTests = [
       // modules net (31 -> 38); direct package imports bypass two old forwards.
       // Shared loop bounds add one package leaf (38 -> 39), with no execution or mesh edge.
       // These nodes relocate existing code; the entire mesh family remains denied.
-      assert.ok(graph.seen.size <= 39, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 relocation census of 39`);
+      // 142 adds the two implementation homes for provider resolution and session records;
+      // the adapters retain their previous imports and no additional domain is reachable.
+      assert.ok(graph.seen.size <= 41, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 relocation census of 41`);
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(srcRoot, "terminal-ws.mjs");
@@ -247,7 +249,7 @@ export const archTests = [
       // 142 moves registration to inert package contributions. Count local workspace
       // imports too: the static sink closure was 73, including all seven package
       // modules. Deferred domain-service imports are deliberately outside this census.
-      assert.equal(sinkGraph.seen.size, 90, "run services add store, spend, capture and provenance package modules to the prior 86-module closure");
+      assert.equal(sinkGraph.seen.size, 92, "terminal provider and session implementations add two package modules to the prior 90-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

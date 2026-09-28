@@ -13,7 +13,7 @@ final tree. Historical passing checks alone do not prove the final layout works.
 | Work owns lifecycle, records, discovery, readiness, validation and acceptance | Lifecycle/read/discovery/readiness/validation extracted. Acceptance, audit, mutations, run ownership and command contributions remain. |
 | Work graph is separate from executing the loop | Work-graph mechanisms and six command implementations/contribution extracted; final removal of compatibility paths and full-distribution checks remain. |
 | Work loop owns pure decisions and orchestration | Engine, cycle/wave/ask/stop orchestration, progress/diagnostics, argv and all four command descriptors/contribution extracted with explicit application ports. Final application composition and compatibility-adapter removal remain. |
-| Execution owns local sessions, runs, PTYs and reusable worktree mechanisms | Run storage, transcript spend settlement, heartbeat queues and session attribution extracted. Local driver, terminal/PTY and reusable worktree ownership remain outstanding. |
+| Execution owns local sessions, runs, PTYs and reusable worktree mechanisms | Run storage, transcript spend settlement, heartbeat queues, session attribution, terminal provider resolution and live-session registry extracted. Local driver, PTY/screen and reusable worktree ownership remain outstanding. |
 | Mesh owns coordination, projections and package commands | Effects and contribution declaration extracted; most implementations remain in root source. |
 | Messaging owns Discord and notification behavior | Contribution seam exists; package extraction outstanding. |
 | Knowledge owns memory/Graphify operations | Outstanding. |
