@@ -15,7 +15,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { readdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadBundle, renderBundleOutputsWithConfig } from "../../src/work/bundle.mjs";
+import { loadBundle, renderBundleOutputs, renderBundleOutputsWithConfig } from "../../src/work/bundle.mjs";
 import { validateConfig } from "../../src/config-inspect.mjs";
 
 // The shipped defaults, READ FROM THE BUNDLE rather than copied from it.
@@ -250,5 +250,112 @@ export const agentModelOverrideTests = [
       });
       assert.equal(hasError(diagnostics), false, "a well-formed override map yields no error diagnostic");
     }
+  },
+
+  // ════════ story 141 task 02 — a role can pin its own effort; an unpinned role thinks at its session's ════════
+  {
+    name: "141/02 a pinned role renders its effort directly after model:, and an unpinned role renders none",
+    run: async () => {
+      const outputs = renderBundleOutputsWithConfig(loadBundle(), { work: { agents: { effort: { "aof-architect": "extra-high", "aof-qa": "medium" } } } }, { runtimes: ["claude"] });
+      const byPath = new Map(outputs.filter((o) => o.resource?.kind === "agent").map((o) => [String(o.path).replaceAll("\\", "/"), o]));
+      for (const [role, level] of [["aof-architect", "xhigh"], ["aof-qa", "medium"], ["aof-developer", null]]) {
+        const lines = frontmatterLines(agentContent(byPath, role));
+        const at = lines.findIndex((line) => line.startsWith("effort:"));
+        if (level == null) {
+          assert.equal(at, -1, `${role} carries no effort: line`);
+          continue;
+        }
+        assert.equal(lines[at], `effort: ${level}`, `${role} carries effort: ${level}`);
+        assert.ok(lines[at - 1].startsWith("model:"), `${role}: the effort line sits directly after model:`);
+        assert.equal(lines.filter((line) => line.startsWith("effort:")).length, 1);
+      }
+    }
+  },
+  {
+    name: "141/02 with no effort map, every rendered agent is byte-identical to the bundle render and carries no effort: line",
+    run: async () => {
+      const bundle = loadBundle();
+      const plain = renderBundleOutputs(bundle, { runtimes: ["claude"] }).filter((o) => o.resource?.kind === "agent");
+      const configured = renderBundleOutputsWithConfig(bundle, { work: { agents: {} } }, { runtimes: ["claude"] }).filter((o) => o.resource?.kind === "agent");
+      assert.equal(configured.length, 8);
+      assert.deepEqual(configured.map((o) => o.content), plain.map((o) => o.content), "an unset map changes no agent file");
+      for (const output of configured) assert.equal(frontmatterLines(output.content).some((line) => line.startsWith("effort:")), false, output.path);
+    }
+  },
+  {
+    name: "141/02 the codex and opencode agent renders carry no effort key even for a pinned role",
+    run: async () => {
+      const bundle = loadBundle();
+      const config = { work: { agents: { effort: { "aof-architect": "extra-high" } } } };
+      for (const runtime of ["codex", "opencode"]) {
+        const pinned = renderBundleOutputsWithConfig(bundle, config, { runtimes: [runtime] }).filter((o) => o.resource?.kind === "agent" && o.resource.id === "aof-architect");
+        const plain = renderBundleOutputsWithConfig(bundle, {}, { runtimes: [runtime] }).filter((o) => o.resource?.kind === "agent" && o.resource.id === "aof-architect");
+        assert.equal(pinned.length, 1, runtime);
+        assert.doesNotMatch(pinned[0].content, /^effort:/mu, `${runtime}: no effort line`);
+        assert.equal(pinned[0].content, plain[0].content, `${runtime}: the render is unchanged`);
+      }
+    }
+  },
+  // Scenario Outline: project validate checks the role map as it checks the model map
+  ...[
+    [{ "aof-qa": "extra-high" }, undefined, []],
+    [{ "aof-tester": "high" }, undefined, [["error", "effort-map-unknown-role", "work.agents.effort.aof-tester"]]],
+    [{ "aof-qa": "turbo" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"]]],
+    [{ "aof-qa": "" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"]]],
+    [[], undefined, [["error", null, "work.agents.effort"]]],
+    [{ "aof-qa": "high" }, "solo", [["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
+  ].map(([map, mode, expected]) => ({
+    name: `141/02 validate — work.agents.effort ${JSON.stringify(map)}${mode ? ` under ${mode}` : ""} reports ${expected.length === 0 ? "nothing" : expected.map((e) => e[1] ?? e[0]).join(", ")}`,
+    run: async () => {
+      const diagnostics = await diagnosticsForConfig({ work: { agents: { effort: map, ...(mode ? { mode } : {}) } } });
+      const effortDiagnostics = diagnostics.filter((d) => String(d.path ?? "").startsWith("work.agents.effort"));
+      assert.equal(effortDiagnostics.length, expected.length, JSON.stringify(effortDiagnostics));
+      for (const [severity, code, at] of expected) {
+        const hit = effortDiagnostics.find((d) => d.path === at && d.severity === severity);
+        assert.ok(hit, `${severity} at ${at}`);
+        if (code != null) assert.equal(hit.code, code);
+      }
+    }
+  })),
+  // 141/00 Scenario Outline: a configured session effort is checked by project validate
+  ...[
+    ["continue", "extra-high", false],
+    ["refine", "turbo", true],
+    ["verify", "", true],
+    ["continue", 3, true],
+  ].map(([phase, value, errors]) => ({
+    name: `141/00 validate — work.agents.session.effort.${phase} = ${JSON.stringify(value)} reports ${errors ? "effort-bad-value" : "nothing"}`,
+    run: async () => {
+      const diagnostics = await diagnosticsForConfig({ work: { agents: { session: { effort: { [phase]: value } } } } });
+      const at = diagnostics.filter((d) => d.path === `work.agents.session.effort.${phase}`);
+      if (!errors) {
+        assert.deepEqual(at, []);
+        return;
+      }
+      assert.equal(at.length, 1);
+      assert.equal(at[0].severity, "error");
+      assert.equal(at[0].code, "effort-bad-value");
+    }
+  })),
+  {
+    name: "141/00 and 02 the schema describes work.agents.session (models and effort by phase) and the role effort map",
+    run: async () => {
+      const schema = JSON.parse(readFileSync(new URL("../../schemas/aof.schema.json", import.meta.url), "utf8"));
+      const agents = schema.$defs.work.properties.agents.properties;
+      assert.deepEqual(Object.keys(agents.session.properties), ["models", "effort"]);
+      const spellings = ["low", "medium", "high", "xhigh", "extra-high", "max"];
+      assert.deepEqual(agents.session.properties.effort.additionalProperties.enum, spellings);
+      for (const spelling of spellings) assert.ok(agents.session.properties.effort.description.includes(spelling), spelling);
+      assert.match(agents.session.properties.effort.description, /launches at high, the default/u);
+      assert.equal(agents.effort.type, "object");
+      assert.equal(agents.effort.additionalProperties.type, "string");
+      assert.match(agents.effort.description, /inherits its session's effort/u);
+      assert.match(agents.effort.description, /[Ii]nert[^.]*under mode "solo"/u);
+    }
   }
 ];
+
+function frontmatterLines(content) {
+  const end = content.indexOf("\n---", 3);
+  return (end === -1 ? content : content.slice(0, end)).split(/\r?\n/u);
+}

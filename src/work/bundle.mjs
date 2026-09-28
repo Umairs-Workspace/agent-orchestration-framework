@@ -20,6 +20,7 @@ import path from "node:path";
 import { hashContent } from "../lock.mjs";
 import { renderConfigOutputs } from "../adapters.mjs";
 import { installableBundleResources } from "./bundle-runtime.mjs";
+import { normalizeEffort } from "../session-model.mjs";
 import { assetBase, readAssetText, listAssetMembers } from "../asset-base.mjs";
 import { applyFrozenAgentScopes, bundledFrozenSet, compileFrozenSet } from "../frozen-set.mjs";
 
@@ -257,6 +258,21 @@ export function agentModelMap(projectConfig) {
   return map;
 }
 
+// --- per-role effort map (story 141) -----------------------------------------
+// The model map's twin, on the same role path (70/ADR-005: never the session path
+// `work.agents.session`). `role -> effort level`; the level is normalised at render
+// (`extra-high` -> `xhigh`) and a level the vocabulary does not know renders nothing —
+// `aof project validate` is where it is reported. Only a PINNED role gets an `effort:`
+// line: an unpinned role inherits its session's effort, which is what lets the loop's
+// `--thinking` and an operator's `/effort` reach a subagent at all.
+export const AGENT_EFFORT_MAP_PATH = "work.agents.effort";
+
+export function agentEffortMap(projectConfig) {
+  const map = projectConfig?.work?.agents?.effort;
+  if (!map || typeof map !== "object" || Array.isArray(map)) return {};
+  return map;
+}
+
 // --- config-aware bundle render (story 30, task 02a) ------------------------
 // renderBundleOutputs is bundle-only: it ignores the project's aof.config.json,
 // so the shipped default (task 01) always wins. This variant layers a project's
@@ -267,12 +283,22 @@ export function agentModelMap(projectConfig) {
 // equal to the default simply sets the same value, so the render still emits a
 // single clean `model:` line (renderResource emits exactly one). The override
 // value is rendered VERBATIM (an "inherit" or a pinned id is not reinterpreted).
+//
+// story 141 — `work.agents.effort` is merged on the same pass as `resource.effort`, which
+// only the claude agent render emits.
 export function renderBundleOutputsWithConfig(bundle, projectConfig, options = {}) {
   const overrides = agentModelMap(projectConfig);
+  const efforts = agentEffortMap(projectConfig);
+  const own = (map, id) => Object.prototype.hasOwnProperty.call(map, id);
   const resources = bundle.resources.map((resource) => {
     if (resource.kind !== "agent") return resource;
-    if (!Object.prototype.hasOwnProperty.call(overrides, resource.id)) return resource;
-    return { ...resource, model: overrides[resource.id] };
+    const effort = own(efforts, resource.id) ? normalizeEffort(efforts[resource.id]) : null;
+    if (!own(overrides, resource.id) && effort == null) return resource;
+    return {
+      ...resource,
+      ...(own(overrides, resource.id) ? { model: overrides[resource.id] } : {}),
+      ...(effort == null ? {} : { effort }),
+    };
   });
   return renderBundleOutputs({ ...bundle, resources }, options);
 }

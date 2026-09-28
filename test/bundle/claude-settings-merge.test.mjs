@@ -67,6 +67,9 @@ const ISOLATED = { bundleHooks: [] };
 // The operator's measured top-level set. PR #1 (`28bbce2`) added `deniedMcpServers` and
 // `disableClaudeAiConnectors` to the tracked file; re-measured at 138's door (m138/F-17).
 const OPERATOR_TOP_LEVEL = ["hooks", "enabledPlugins", "extraKnownMarketplaces", "permissions", "sandbox", "deniedMcpServers", "disableClaudeAiConnectors"];
+// 141 — the one key aof fills in only when a document has none (`claudeSettingsPatch().defaults`).
+// The tracked file carries it since 141's own install, so the measured key set includes it.
+const AOF_DEFAULT_KEYS = ["effortLevel"];
 const HAND_WIRED_EVENTS = ["SessionStart", "UserPromptSubmit", "SessionEnd", "PreToolUse"];
 
 async function operatorFixtureText() {
@@ -142,7 +145,7 @@ export const claudeSettingsMergeTests = [
       const before = await readSettings(settingsPath);
       // Non-vacuous: the fixture really is the operator's file, with all seven top-level
       // keys and all five hand-wired hook events.
-      assert.deepEqual(Object.keys(before).sort(), [...OPERATOR_TOP_LEVEL].sort(), "the fixture carries the operator's measured top-level key set");
+      assert.deepEqual(Object.keys(before).sort(), [...OPERATOR_TOP_LEVEL, ...AOF_DEFAULT_KEYS].sort(), "the fixture carries the operator's measured top-level key set, and the effort default aof filled");
       assert.deepEqual(Object.keys(before.hooks).sort(), [...HAND_WIRED_EVENTS, "PostToolUse"].sort(), "…and its five hook events");
       assert.deepEqual(before.hooks.PostToolUse, [], "…with PostToolUse present-but-empty");
       assert.ok(before.permissions.deny.length > 0 && before.sandbox.filesystem.denyRead.length > 0, "…and a real permissions/sandbox body");
@@ -320,9 +323,11 @@ export const claudeSettingsMergeTests = [
     run: async () => {
       const rows = [
         { name: "absent + declares", settings: "absent", declares: true, expect: "created" },
-        { name: "absent + omits", settings: "absent", declares: false, expect: "absent" },
+        // 141 — a file with nothing ELSE to splice still receives the effort default, and nothing more.
+        { name: "absent + omits", settings: "absent", declares: false, expect: "default-only" },
         { name: "zero bytes + declares", settings: "", declares: true, expect: "created-from-empty" },
-        { name: "exactly {} + omits", settings: "{}", declares: false, expect: "unchanged" },
+        { name: "exactly {} + omits", settings: "{}", declares: false, expect: "default-only" },
+        { name: "only the default + omits", settings: '{ "effortLevel": "medium" }', declares: false, expect: "unchanged" },
         { name: "torn + declares", settings: '{ "hooks": { "PostToolUse": [ ', declares: true, expect: "refused", reason: /not parseable JSON/ },
         { name: "torn + omits", settings: '{ "hooks": { "PostToolUse": [ ', declares: false, expect: "refused", reason: /not parseable JSON/ },
         // VALID JSON that cannot hold settings. Telling an operator their file "is not
@@ -341,10 +346,15 @@ export const claudeSettingsMergeTests = [
 
           if (row.expect === "created" || row.expect === "created-from-empty") {
             const after = await readSettings(settingsPath);
-            assert.deepEqual(Object.keys(after), ["hooks"], `${row.name}: exactly hooks.PostToolUse with aof's entry — no key the merge did not author or find`);
+            assert.deepEqual(Object.keys(after), ["hooks", "effortLevel"], `${row.name}: exactly hooks.PostToolUse with aof's entry and the effort default — no key the merge did not author or find`);
+            assert.equal(after.effortLevel, "high");
             assert.deepEqual(Object.keys(after.hooks), ["PostToolUse"]);
             assert.equal(aofEntries(after).length, 1, `${row.name}: aof's entry`);
             assert.equal(result.action, row.expect === "created" ? "created" : "updated");
+          }
+          if (row.expect === "default-only") {
+            assert.deepEqual(await readSettings(settingsPath), { effortLevel: "high" }, `${row.name}: exactly the effort default aof authors`);
+            assert.equal(result.written, true);
           }
           if (row.expect === "absent") {
             assert.equal(existsSync(settingsPath), false, `${row.name}: still absent — no empty file is created`);

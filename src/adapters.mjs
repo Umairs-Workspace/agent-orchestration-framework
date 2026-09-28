@@ -474,6 +474,9 @@ function renderResource(runtime, adapter, resource, workflowIndex = new Map(), a
     `name: ${resource.name ?? resource.id}`,
     `description: ${resource.description ?? ""}`,
     resource.model ? `model: ${resource.model}` : null,
+    // story 141 — a role pinned by `work.agents.effort` overrides its session's effort; an
+    // unpinned role carries no line and inherits it. Claude only.
+    resource.effort ? `effort: ${resource.effort}` : null,
     Array.isArray(resource.tools) ? `tools: ${resource.tools.join(", ")}` : null,
     `aof-runtime: ${runtime}`,
     "---",

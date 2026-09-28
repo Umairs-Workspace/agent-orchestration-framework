@@ -514,6 +514,8 @@ export async function runWaveBuild(shell) {
             runId: driveRecord.runId,
             lane: open.worktree,
             ...(reply != null ? { answerFile: askFileFor(driveRecord.runId, askEnvFor(ctx)) } : fixFile == null ? {} : { fixFile }),
+            // 141 — the loop's `--thinking`, to every lane's child; absent passes nothing.
+            ...(typeof resolved.thinking === "string" && resolved.thinking.length > 0 ? { thinking: resolved.thinking } : {}),
             // The isolated home rides EXPLICITLY (ADR-005 §1): `AOF_GLOBAL_HOME` from this process or
             // the injected store env, so a child's stores are the parent's, never the real home.
             env: {

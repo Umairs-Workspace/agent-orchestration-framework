@@ -1420,8 +1420,14 @@ export function buildLoopDeclaration(input = {}) {
     // absences. `SPEC §Out of scope` says why the default is off — auto-resume without an opt-in
     // means every login silently spends tokens re-entering whatever was open when the lid closed.
     supervised: input.supervised === true,
+    // THE TENTH KEY, APPENDED LAST (141), by the same discipline. The effort every drive of this
+    // run thinks at, as the caller's already-canonical `--thinking` level (this module imports
+    // nothing, so the vocabulary is applied before the value arrives), or `null` for no override.
+    thinking: declaredThinking(input.thinking),
   };
 }
+
+const declaredThinking = (value) => (typeof value === "string" && value.length > 0 ? value : null);
 
 function usableDeclaration(loop) {
   if (loop === null || typeof loop !== "object") return false;
@@ -1452,6 +1458,9 @@ function recoverableDeclaration(loop) {
     // FIVE: widening it to six would make every declaration already on disk unusable, and none of
     // them carries this key. The projection fails closed for the same reason the mint does.
     supervised: loop.supervised === true,
+    // THE SEVENTH PROJECTED KEY (141), for the same reason. A declaration written before 141 has no
+    // `thinking` and stays usable at five keys; its absence reads as no override.
+    thinking: declaredThinking(loop.thinking),
   };
 }
 
@@ -1624,9 +1633,13 @@ export function resolveLoopResume(input = {}) {
   // is never read) and `--no-supervised` is a coded `unknown-flag` refusal. Both are facts about
   // the one flag parser rather than choices made here.
   const supervised = input.supervised === true || recovered?.supervised === true;
+  // 141 — the effort override follows the same rule: an explicit `--thinking` wins, an absent one
+  // inherits the declaration's (`null` when it carried none).
+  const thinking = declaredThinking(input.thinking) ?? declaredThinking(recovered?.thinking);
   return {
     resumed: recovered !== null && recovered !== undefined,
     supervised,
+    thinking,
     loopRunId: copyPlain(recovered?.loopRunId ?? null),
     scope: scope.scope,
     priorScope: copyPlain(recovered?.scope ?? null),

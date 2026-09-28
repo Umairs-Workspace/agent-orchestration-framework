@@ -98,7 +98,8 @@ function parseTranscriptText(text) {
       }
     }
     if (typeof o.message.model === "string" && o.message.model.length > 0) models.add(o.message.model);
-    if (typeof o.message.effort === "string" && o.message.effort.length > 0) efforts.add(o.message.effort);
+    // Claude Code writes the turn's effort on the record itself, beside `message` — not inside it.
+    if (typeof o.effort === "string" && o.effort.length > 0) efforts.add(o.effort);
     const content = o.message.content;
     if (Array.isArray(content)) {
       for (const block of content) {

@@ -11,8 +11,8 @@
 //
 // The transcript fixtures mirror the live Claude Code JSONL shape the ingest is a
 // straight copy of (ADR-003): an `assistant` record carrying `message.usage` with
-// the four vendor keys, `message.model` / `message.effort`, and `message.content`
-// holding `tool_use` blocks. Subagent transcripts live under
+// the four vendor keys, `message.model`, `message.content` holding `tool_use`
+// blocks, and `effort` on the record itself (beside `message`, not inside it). Subagent transcripts live under
 // `<projectsDir>/<sessionId>/` and are walked recursively.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
@@ -44,7 +44,8 @@ function assistantLine({ model = "claude-sonnet", effort = "high", usage = null,
   return JSON.stringify({
     type: "assistant",
     sessionId: "sess",
-    message: { model, effort, usage, content },
+    effort,
+    message: { model, usage, content },
     timestamp: "2026-08-20T10:00:00.000Z",
   });
 }

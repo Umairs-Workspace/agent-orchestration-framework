@@ -162,9 +162,10 @@ export const archTests = [
         assert.ok(recovered != null, `${rel}: still usable — the five-key requirement was not widened`);
         assert.deepEqual(
           Object.keys(recovered),
-          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised"],
-          `${rel}: six projected keys`,
+          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking"],
+          `${rel}: seven projected keys (141 appended thinking)`,
         );
+        if (loop.thinking == null) assert.equal(recovered.thinking, null, `${rel}: a record naming no thinking recovers with no override`);
         if (loop.supervised !== true) {
           assert.equal(recovered.supervised, false, `${rel}: a record naming no supervision recovers unsupervised`);
         }

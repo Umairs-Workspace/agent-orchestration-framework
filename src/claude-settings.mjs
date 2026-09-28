@@ -46,6 +46,7 @@ import { writeText } from "./fs.mjs";
 // milestone keeps paying for. (A narrow read: the descriptor plus the hook members,
 // never the 40-odd agent/command/skill bodies.)
 import { loadBundleHooks } from "./work/bundle.mjs";
+import { DEFAULT_EFFORT } from "./session-model.mjs";
 import {
   bundledFrozenSet,
   compileFrozenSet,
@@ -91,7 +92,10 @@ export function claudeHookDeclarations(config, { bundleHooks, frozenHooks = [] }
 // `hooks` are the resolved claude-runtime declarations (each becoming one marked entry
 // inside one event group); `settings` are the `settings.claude` top-level keys the
 // whole-file render used to project (the orchestrator model lives there) — spliced now
-// instead of rendered.
+// instead of rendered. `defaults` (story 141) are keys aof fills in only when the document has
+// none: `effortLevel`, so an operator's session in an aof project starts at `high` rather than
+// the model's own default. Claude Code reads it once, at session start, and a level the operator
+// saved for a model (`modelSettings`) still wins over it.
 export function claudeSettingsPatch(config, { targetDir, bundleHooks, frozenSet } = {}) {
   const declaration = frozenSet ?? (bundleHooks !== undefined ? { version: 1, members: [] } : bundledFrozenSet());
   const compiledFrozenSet = compileFrozenSet(declaration);
@@ -111,6 +115,7 @@ export function claudeSettingsPatch(config, { targetDir, bundleHooks, frozenSet 
   return {
     hooks,
     settings,
+    defaults: { effortLevel: DEFAULT_EFFORT },
     permissions: compiledFrozenSet.permissions,
     permissionCatalogue: bundledCatalogue,
     escapedPermissions: compiledFrozenSet.permissionCatalogue.filter((entry) => entry.owned === false),
@@ -200,7 +205,8 @@ export async function mergeClaudeSettings(settingsPath, patch = {}) {
 
   const hookPatches = Array.isArray(patch?.hooks) ? patch.hooks : [];
   const settingsPatch = patch?.settings != null && typeof patch.settings === "object" ? patch.settings : {};
-  const nothingToSplice = hookPatches.length === 0 && Object.keys(settingsPatch).length === 0;
+  const defaultsPatch = patch?.defaults != null && typeof patch.defaults === "object" && !Array.isArray(patch.defaults) ? patch.defaults : {};
+  const nothingToSplice = hookPatches.length === 0 && Object.keys(settingsPatch).length === 0 && Object.keys(defaultsPatch).length === 0;
 
   if (read.absent) {
     // A missing file with nothing to splice STAYS missing — no empty artefact is
@@ -216,6 +222,11 @@ export async function mergeClaudeSettings(settingsPath, patch = {}) {
     catalogue: Array.isArray(patch?.permissionCatalogue) ? patch.permissionCatalogue : [],
     escaped: Array.isArray(patch?.escapedPermissions) ? patch.escapedPermissions : [],
   });
+  // A default only fills a gap: never over a value already in the document (the file has other
+  // authors) and never over a `settings.claude` key, which the splice above already placed.
+  for (const [key, value] of Object.entries(defaultsPatch)) {
+    if (!Object.prototype.hasOwnProperty.call(merged, key)) merged[key] = value;
+  }
   if (stableEqual(merged, current) && !read.absent) {
     return { path: settingsPath, action: "skipped", written: false, code: null, message: null, drift, tamper, installed: patch?.frozenSet?.installed ?? [] };
   }

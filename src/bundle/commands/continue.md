@@ -1,6 +1,6 @@
 ---
 description: Execute/resume a work item — build its tasks to green, then structural + behavioural review. For a milestone, walks every story to built-and-reviewed; refining stays with `aof:refine`, accepting with `aof:verify`.
-argument-hint: "<item ref, or a NN/MM-PP story span> [--solo | --orchestrated]"
+argument-hint: "<item ref, or a NN/MM-PP story span> [--solo | --orchestrated] [--thinking <level>]"
 allowed-tools: [Read, Grep, Glob, Bash, Edit, Write, Task]
 ---
 <objective>
@@ -38,7 +38,8 @@ where the operator is and is never dispatched to a worker.)
 </config>
 
 <config>
-Parse `$ARGUMENTS` into the item **ref** and an optional **`--solo`** or **`--orchestrated`** flag.
+Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`** or **`--orchestrated`** flag and an
+optional **`--thinking <level>`**.
 
 **Execution mode.** Resolve from `work.agents.mode`, which governs the continue an operator types:
 `work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents), and
@@ -59,6 +60,18 @@ rediscover from cold: a well-trodden change, a small story, or a fix round on wo
 The trade is real in both directions — inline keeps the context and pays no hand-off, but loses
 the parallelism across independent stories and the independent perspective a separate reviewer
 brings. On a milestone with genuinely independent stories, orchestrated is usually still faster.
+
+**`--thinking <level>` is a STOP, never a setting.** This session's effort was fixed when it started:
+the Agent tool takes a model but no effort, and only `/effort` changes a running session's, which
+this command cannot type for the operator. So when `$ARGUMENTS` carries `--thinking <level>`, STOP
+before the run is minted and before any role runs, and print what to do: run `/effort <level>`
+(spelling `extra-high` as `xhigh`; `low`, `medium`, `high`, `xhigh` and `max` are typed as
+given), then re-run `aof:continue` without `--thinking`. Say plainly that the session's effort was NOT
+changed, and that the subagents this command spawns inherit the session's effort unless
+`work.agents.effort` pins their role. A level outside the six accepted spellings — `low`, `medium`,
+`high`, `xhigh`, `extra-high`, `max` — is named as unknown, with those six listed. Never report
+an effort as set when it was not. (A loop-driven session is launched at its effort by
+`aof work loop --thinking`, and is never handed this flag.)
 </config>
 
 <process>

@@ -34,7 +34,7 @@ import {
 } from "../support/loop/lane-fixture.mjs";
 
 const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
-const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised"]);
+const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
 const NOW = "2026-09-14T12:00:00.000Z";
 // A grade record as `compileGrade` writes one — the provenance stamp is what the store's writer
 // demands of every claim a brief carries.
@@ -418,6 +418,28 @@ export const loopCommandWaveTests = [
           assert.equal(call.env.AOF_GLOBAL_HOME, process.env.AOF_GLOBAL_HOME, "the child inherits the isolated home");
         }
       }, { config: { loop: { startToCloseMs: 1000, startupGraceMs: 100 } } });
+    },
+  },
+  {
+    // 141/01 — a wave lane's child drive argv carries the loop's --thinking (the lane seam turns
+    // `thinking` into `--thinking <level>`, pinned in the drive suite); none when the loop has none.
+    name: "141/01 every wave lane's child is handed the loop's --thinking, and nothing when the loop has none",
+    run: async () => {
+      for (const [input, expected] of [[{ thinking: "extra-high" }, "xhigh"], [{}, null]]) {
+        await withLaneRepo(async (fx) => {
+          const child = fakeLaneChild(fx);
+          const { state } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), input });
+          assert.equal(state.state, "done");
+          assert.equal(child.calls.length, 2);
+          for (const call of child.calls) {
+            if (expected == null) assert.equal("thinking" in call, false, `${call.ref}: no flag, nothing handed on`);
+            else assert.equal(call.thinking, expected, `${call.ref}: the lane child thinks at the loop's level`);
+          }
+          for (const ref of ["07/01", "07/03"]) {
+            for (const run of await laneRunsOf(fx, ref)) assert.equal(run.brief.loop.thinking, expected, `${ref}: the lane's declaration carries it`);
+          }
+        });
+      }
     },
   },
   {

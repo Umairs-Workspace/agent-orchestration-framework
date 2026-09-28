@@ -111,13 +111,14 @@ export const loopFixTransportShapeTests = [
       // exactly the two strings a CHILD drive needs across the process boundary: `run`, the
       // lent id, and `fix`, the PATH of a file holding this transport — the transport itself
       // still never enters the input. 131/03 (ADR-003 §7) adds `answer`, the PATH of an answered ask
-      // file, by the same rule: a path across the boundary, never a payload.
+      // file, by the same rule: a path across the boundary, never a payload. 141 adds `thinking`, a
+      // level string — a scalar, not a transport.
       assert.deepEqual(createPhaseDriverCommand("continue").input, {
         type: "object",
-        properties: { ref: { type: "string" }, dryRun: { type: "boolean" }, run: { type: "string" }, fix: { type: "string" }, answer: { type: "string" } },
+        properties: { ref: { type: "string" }, dryRun: { type: "boolean" }, run: { type: "string" }, fix: { type: "string" }, answer: { type: "string" }, thinking: { type: "string" } },
         required: ["ref"],
         additionalProperties: false,
-      }, "the driver's registered input schema is 129/02's four keys plus 131/03's answer path, and holds no transport");
+      }, "the driver's registered input schema is 129/02's four keys plus 131/03's answer path and 141's thinking level, and holds no transport");
     },
   },
 

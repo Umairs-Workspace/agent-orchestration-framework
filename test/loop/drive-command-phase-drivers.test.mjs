@@ -280,7 +280,7 @@ async function assertDriveComposes(phase, work, command) {
     const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, ...work } } };
     const byPhase = { refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand };
     const result = await byPhase[phase].run({ ref: "03/01", dryRun: true }, { workspace, agentSessionDriverOptions: driver.options });
-    assert.deepEqual(result, { ref: "03/01", phase, command });
+    assert.deepEqual(result, { ref: "03/01", phase, command, effort: DEFAULT_DRY_EFFORT });
     assert.equal(driver.spawnCalls.length, 0);
     await mkdir(path.dirname(fx.workspace.configPath), { recursive: true });
     await writeFile(fx.workspace.configPath, `${JSON.stringify({ name: "drive-fixture", work: workspace.config.work }, null, 2)}\n`, "utf8");
@@ -345,7 +345,7 @@ export const driveCommandPhaseDriverTests = [
           { ref: "03/01", dryRun: true },
           { workspace: fx.workspace, agentSessionDriverOptions: driver.options },
         );
-        assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo" });
+        assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo", effort: DEFAULT_DRY_EFFORT });
         assert.equal(driver.spawnCalls.length, 0);
       } finally {
         await fx.cleanup();
@@ -1029,7 +1029,7 @@ export const driveCommandPhaseDriverTests = [
     run() {
       for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
         // 131/03 (ADR-003 §7) appended the fifth, `answer`, in the same three homes.
-        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer"], `${command.id}: the schema's properties are exactly the five`);
+        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking"], `${command.id}: the schema's properties are exactly the six (141 added thinking)`);
         assert.deepEqual(command.input.properties.answer, { type: "string" }, `${command.id}: answer is a string`);
         assert.equal(command.cli.spec.flags.answer.type, "string", `${command.id}: --answer is a string flag`);
         assert.deepEqual(command.input.properties.run, { type: "string" }, `${command.id}: run is a string`);
@@ -1082,7 +1082,7 @@ export const driveCommandPhaseDriverTests = [
             { ref: "03/01", dryRun: true, ...extra },
             { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() },
           );
-          assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo" }, `dry-run ${JSON.stringify(extra)}`);
+          assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo", effort: DEFAULT_DRY_EFFORT }, `dry-run ${JSON.stringify(extra)}`);
           assert.equal(driver.spawnCalls.length, 0, `dry-run ${JSON.stringify(extra)}: never launched`);
           const item = await resolveItemExact({ workspace: fx.workspace }, "03/01");
           assert.deepEqual(await readRuns(item), [], `dry-run ${JSON.stringify(extra)}: no record`);
@@ -1719,7 +1719,163 @@ export const driveCommandPhaseDriverTests = [
     },
   },
   ...driveAnswerTests(),
+  ...driveThinkingTests(),
 ];
+
+// The dry-run's effort when nothing is configured and no --thinking is given (141/00).
+const DEFAULT_DRY_EFFORT = Object.freeze({ level: "high", source: "default" });
+
+// ── story 141, tasks 00 and 01 — THE DRIVE TAKES --thinking. The flag wins over the phase's
+// configured effort, is refused before anything is minted when the vocabulary does not know it,
+// reaches the spawned claude as `--effort`, and rides a lane child's argv only when the loop set it.
+function driveThinkingTests() {
+  const argsOf = (driver) => driver.spawnCalls[0].args;
+  const effortArg = (args) => {
+    const at = args.indexOf("--effort");
+    return at === -1 ? null : args[at + 1];
+  };
+  return [
+    {
+      name: "141/00 the drive's dry run shows the effort it would launch at — --thinking extra-high is xhigh, none is high by default",
+      async run() {
+        const fx = await fixture();
+        try {
+          const flagged = await continueDriverCommand.run({ ref: "03/01", dryRun: true, thinking: "extra-high" }, { workspace: fx.workspace });
+          assert.deepEqual(flagged.effort, { level: "xhigh", source: "--thinking" });
+          assert.equal(flagged.command.includes("--thinking"), false, "the directive carries no --thinking token");
+          const plain = await continueDriverCommand.run({ ref: "03/01", dryRun: true }, { workspace: fx.workspace });
+          assert.deepEqual(plain.effort, DEFAULT_DRY_EFFORT);
+          const configured = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, agents: { session: { effort: { continue: "medium" } } } } } };
+          assert.deepEqual((await continueDriverCommand.run({ ref: "03/01", dryRun: true }, { workspace: configured })).effort, { level: "medium", source: "config" });
+          assert.deepEqual((await continueDriverCommand.run({ ref: "03/01", dryRun: true, thinking: "low" }, { workspace: configured })).effort, { level: "low", source: "--thinking" }, "the flag wins over the phase's config");
+        } finally {
+          await fx.cleanup();
+        }
+      },
+    },
+    {
+      name: "141/00 an unknown --thinking refuses thinking-unknown-level at the door — naming the six spellings, minting and spawning nothing",
+      async run() {
+        const fx = await fixture();
+        try {
+          const driver = scriptedDriver();
+          let refusal = null;
+          try {
+            await continueDriverCommand.run({ ref: "03/01", thinking: "turbo" }, { workspace: fx.workspace, agentSessionDriverOptions: driver.options });
+          } catch (error) {
+            refusal = error;
+          }
+          assert.equal(refusal?.code, "thinking-unknown-level");
+          for (const spelling of ["low", "medium", "high", "xhigh", "extra-high", "max"]) {
+            assert.ok(refusal.message.includes(spelling), `the refusal names ${spelling}`);
+          }
+          assert.equal(driver.spawnCalls.length, 0, "no session is spawned");
+          const item = await resolveItemExact({ workspace: fx.workspace }, "03/01");
+          assert.deepEqual(await readRuns(item), [], "no run record is written");
+        } finally {
+          await fx.cleanup();
+        }
+      },
+    },
+    {
+      name: "141/00 a real drive launches claude at the resolved effort — --effort high by default, the flag's level when given, the loop's lend in process",
+      async run() {
+        const fx = await fixture();
+        try {
+          for (const [input, loopDrive, expected] of [
+            [{}, undefined, "high"],
+            [{ thinking: "extra-high" }, undefined, "xhigh"],
+            [{}, { thinking: "xhigh" }, "xhigh"],
+            [{ thinking: "medium" }, { thinking: "xhigh" }, "medium"],
+          ]) {
+            const driver = scriptedDriver();
+            await continueDriverCommand.run(
+              { ref: "03/01", ...input },
+              { workspace: fx.workspace, agentSessionDriverOptions: driver.options, ...(loopDrive == null ? {} : { loopDrive }) },
+            );
+            assert.equal(effortArg(argsOf(driver)), expected, `${JSON.stringify(input)} / ${JSON.stringify(loopDrive)}`);
+            assert.equal(argsOf(driver).includes("--thinking"), false, "claude is never handed --thinking");
+            assert.equal(driver.typed.some((chunk) => chunk.includes("--thinking")), false, "no directive carries a --thinking token");
+          }
+        } finally {
+          await fx.cleanup();
+        }
+      },
+    },
+    {
+      name: "141/01 each phase resolves its own effort when the loop passes none — a refine configured medium launches at medium, continue and verify at high — and the loop's lend wins over all three",
+      async run() {
+        const fx = await fixture();
+        try {
+          const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, agents: { session: { effort: { refine: "medium" } } } } } };
+          for (const [command, loopDrive, expected] of [
+            [refineDriverCommand, undefined, "medium"],
+            [continueDriverCommand, undefined, "high"],
+            [verifyDriverCommand, undefined, "high"],
+            [refineDriverCommand, { thinking: "xhigh" }, "xhigh"],
+            [verifyDriverCommand, { thinking: "xhigh" }, "xhigh"],
+          ]) {
+            const driver = scriptedDriver();
+            await command.run({ ref: "03/01" }, { workspace, agentSessionDriverOptions: driver.options, ...(loopDrive == null ? {} : { loopDrive }) });
+            assert.equal(effortArg(argsOf(driver)), expected, `${command.id} / ${JSON.stringify(loopDrive)}`);
+          }
+        } finally {
+          await fx.cleanup();
+        }
+      },
+    },
+    {
+      name: "141/01 the lane child's argv carries --thinking only when the loop set one",
+      async run() {
+        const ending = (double) => double.calls[0].args.slice(double.calls[0].args.indexOf("--run"));
+        for (const [thinking, expected] of [
+          ["xhigh", ["--run", "r1", "--thinking", "xhigh", "--json"]],
+          [undefined, ["--run", "r1", "--json"]],
+          [null, ["--run", "r1", "--json"]],
+          ["", ["--run", "r1", "--json"]],
+        ]) {
+          const { double } = await lane({ ...(thinking === undefined ? {} : { thinking }), script: { stdout: JSON.stringify(DOC) } });
+          assert.deepEqual(ending(double), expected, String(thinking));
+        }
+        const { double } = await lane({ thinking: "medium", fixFile: "F", script: { stdout: JSON.stringify(DOC) } });
+        assert.deepEqual(ending(double), ["--run", "r1", "--fix", "F", "--thinking", "medium", "--json"], "beside a fix");
+      },
+    },
+    {
+      name: "141/00 the CLI face carries --thinking into the input, and the usage names it",
+      async run() {
+        for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
+          assert.deepEqual(command.input.properties.thinking, { type: "string" });
+          assert.equal(command.cli.spec.flags.thinking.type, "string");
+          assert.ok(command.cli.spec.usage.includes("[--thinking LEVEL]"), `${command.id}: the usage names the flag`);
+          assert.deepEqual(command.cli.argv(["03/01"], { thinking: "extra-high" }), { ref: "03/01", thinking: "extra-high" });
+        }
+      },
+    },
+    {
+      name: "141/00 the real CLI answers the dry run's effort and refuses an unknown level with its code",
+      async run() {
+        const fx = await fixture();
+        try {
+          await mkdir(path.dirname(fx.workspace.configPath), { recursive: true });
+          await writeFile(fx.workspace.configPath, `${JSON.stringify({ name: "drive-fixture", work: fx.workspace.config.work }, null, 2)}\n`, "utf8");
+          const env = { ...process.env, AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME ?? await mkdtemp(path.join(tmpdir(), "aof-drive-home-")) };
+          const drive = (...extra) => spawnSyncHardened(process.execPath, [ENTRY, "work", "drive", "continue", "03/01", ...extra, "--json"], { cwd: fx.projectRoot, encoding: "utf8", env });
+          const flagged = drive("--thinking", "extra-high", "--dry-run");
+          assert.equal(flagged.status, 0, flagged.stderr);
+          assert.deepEqual(JSON.parse(flagged.stdout).effort, { level: "xhigh", source: "--thinking" });
+          const plain = drive("--dry-run");
+          assert.deepEqual(JSON.parse(plain.stdout).effort, DEFAULT_DRY_EFFORT);
+          const refused = drive("--thinking", "turbo");
+          assert.notEqual(refused.status, 0);
+          assert.equal(JSON.parse(refused.stdout).code, "thinking-unknown-level");
+        } finally {
+          await fx.cleanup();
+        }
+      },
+    },
+  ];
+}
 
 // ── milestone 131 / story 03, task 03 — THE ANSWER RIDES THE DRIVE AS A RESUMED COMMAND (ADR-001 §1,
 // §6; ADR-003 §7). `--answer <file>` is judged after the dry run and before the fix file, the mint,
@@ -1942,7 +2098,7 @@ function driveAnswerTests() {
           const badFix = await writeFixFile(fx, "bad.json", "{ not json");
           const goodFix = await writeFixFile(fx, "good.json", fixBag());
           const dry = await continueDriverCommand.run({ ref: "03/01", run: runId, dryRun: true, answer: missing }, { workspace: fx.workspace });
-          assert.deepEqual(Object.keys(dry).sort(), ["command", "phase", "ref"]);
+          assert.deepEqual(Object.keys(dry).sort(), ["command", "effort", "phase", "ref"]);
           const driver = scriptedDriver("done", undefined, "S1");
           const ctx = { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() };
           assert.equal((await refusalOf(continueDriverCommand.run({ ref: "03/01", run: runId, answer: missing, fix: badFix }, ctx)))?.code, "drive-answer-unreadable");

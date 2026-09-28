@@ -386,7 +386,7 @@ export const loopCommandResumeTests = [
         const probe = await loopCommand.run({ scope: "03", resume: true }, fx.ctx);
         assert.deepEqual(
           Object.keys(probe.resumable.lastDeclaration),
-          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised"],
+          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking"],
         );
         assert.equal(probe.resumable.lastDeclaration.supervised, true);
       } finally {
@@ -739,6 +739,50 @@ export const loopCommandResumeTests = [
         assert.ok((await readRuns(item)).some((run) => run.attempt === 4 && run.retryOf === prior.runId));
       } finally {
         await fx.cleanup();
+      }
+    },
+  },
+  {
+    // 141/01 Scenario Outline: the declaration carries the level, and a resume inherits it unless
+    // told otherwise — driven through the real shell, so the minted record and the launched sessions
+    // are the evidence. "nine-key" seeds a declaration written before 141: no `thinking` at all.
+    name: "141/01 --thinking is a launch flag --resume inherits, and every drive after the resume launches at it",
+    async run() {
+      const rows = [
+        ["xhigh", { resume: true }, "xhigh", "xhigh"],
+        ["xhigh", { resume: true, thinking: "medium" }, "medium", "medium"],
+        [null, { resume: true }, null, "high"],
+        [null, { resume: true, thinking: "high" }, "high", "high"],
+        ["nine-key", { resume: true }, null, "high"],
+      ];
+      for (const [prior, flags, declared, effort] of rows) {
+        const fx = await loopFixture({ cap: 3 });
+        try {
+          const item = await resolveItemExact(fx.ctx, "03/01");
+          const envelope = { ...capThree, startedAt: "2026-09-08T10:00:00.000Z", supervised: false };
+          if (prior !== "nine-key") envelope.thinking = prior;
+          const seeded = await startRun(item, { brief: { loop: envelope }, now: "2026-09-08T10:00:00.000Z" });
+          await completeRun(item, { runId: seeded.runId, outcome: "failed", failureReason: "timeout", now: "2026-09-08T10:00:01.000Z" });
+          const driver = completingDriver(fx, {
+            onCommand(command) {
+              if (command === "/aof:verify 03/01") replaceStatus(path.join(fx.storyDir, "STORY.md"), "done");
+              if (command === "/aof:verify 03") replaceStatus(path.join(fx.milestoneDir, "SPEC.md"), "done");
+            },
+          });
+          await runLoopBody(
+            { scope: "03", now: "2026-09-08T11:00:00.000Z", ...flags },
+            { ...fx.ctx, agentSessionDriverOptions: driver.options, report: () => {} },
+          );
+          const minted = (await readRuns(item)).filter((run) => run.runId !== seeded.runId);
+          assert.ok(minted.length >= 1, `${prior}: the resume drove`);
+          for (const run of minted) assert.equal(run.brief.loop.thinking, declared, `${prior} ${JSON.stringify(flags)}: the resumed declaration`);
+          assert.ok(driver.spawnCalls.length >= 1);
+          for (const call of driver.spawnCalls) {
+            assert.equal(call.args[call.args.indexOf("--effort") + 1], effort, `${prior} ${JSON.stringify(flags)}: each drive after the resume`);
+          }
+        } finally {
+          await fx.cleanup();
+        }
       }
     },
   },

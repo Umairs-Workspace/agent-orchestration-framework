@@ -351,8 +351,9 @@ export const loopCommandProbeTests = [
       assert.ok(typeof command.cli.spec.flags.stop.description === "string" && command.cli.spec.flags.stop.description.length > 0);
       assert.match(command.cli.spec.usage, /\[--stop\]/u);
       // 131/11 (ADR-009 §6) adds `handOff` by the same three-homes rule: the tenth property, the ninth flag.
-      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised"], "ten properties");
-      assert.equal(Object.keys(command.cli.spec.flags).length, 9, "nine flags");
+      // 141 adds `thinking` by the same rule: the eleventh property, the tenth flag.
+      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"], "eleven properties");
+      assert.equal(Object.keys(command.cli.spec.flags).length, 10, "ten flags");
       assert.equal(command.cli.launch({ dryRun: true }), null);
       assert.equal(command.cli.launch({ stop: true }), null);
     },
@@ -748,6 +749,44 @@ export const loopCommandProbeTests = [
           await fx.cleanup();
         }
       }
+    },
+  },
+  // ═══════════ 141 task 01 — the loop's --thinking door ═══════════
+  {
+    name: "141/01 an unknown --thinking refuses thinking-unknown-level at the loop's door — no declaration, no run record",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        for (const run of [
+          () => runLoopBody({ scope: "03", thinking: "turbo" }, { ...fx.ctx, report: () => {} }),
+          () => loopCommand.run({ scope: "03", thinking: "turbo" }, fx.ctx),
+        ]) {
+          let refusal = null;
+          try {
+            await run();
+          } catch (error) {
+            refusal = error;
+          }
+          assert.equal(refusal?.code, "thinking-unknown-level");
+          assert.ok(refusal.message.includes("extra-high"), "the refusal names the accepted spellings");
+        }
+        const item = await resolveItemExact(fx.ctx, "03/01");
+        assert.deepEqual(await readRuns(item), [], "no run record and so no declaration is written");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "141/01 the usage line names [--thinking LEVEL], and the flag says extra-high is xhigh and it overrides every phase for this run",
+    run() {
+      assert.ok(loopCommand.cli.spec.usage.includes("[--thinking LEVEL]"));
+      const { description, type } = loopCommand.cli.spec.flags.thinking;
+      assert.equal(type, "string");
+      assert.match(description, /extra-high is xhigh/u);
+      assert.match(description, /overrides every phase for this run/u);
+      assert.deepEqual(loopCommand.input.properties.thinking, { type: "string" });
+      assert.deepEqual(loopCommand.cli.argv(["03"], { thinking: "extra-high" }), { scope: "03", thinking: "extra-high" });
     },
   },
 ];

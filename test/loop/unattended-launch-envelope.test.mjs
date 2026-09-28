@@ -330,9 +330,31 @@ const KNOWN_FLAGS = Object.freeze([
 ]);
 
 const EDITOR_ATTACHMENT_KEYS = Object.freeze(["VSCODE_PID", "TERM_PROGRAM", "TERM_PROGRAM_VERSION"]);
+// 141/00 — the two effort variables a parent may carry; either would override the chosen `--effort`.
+const EFFORT_ENV_KEYS = Object.freeze(["CLAUDE_EFFORT", "CLAUDE_CODE_EFFORT_LEVEL"]);
 const PARENT_SESSION_KEYS = Object.freeze(["CLAUDECODE", "CLAUDE_CODE_SSE_PORT", "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CLAUDE_AGENT_SDK_VERSION"]);
 
 export const unattendedLaunchEnvelopeTests = [
+  // 141/00 Scenario: the spawned claude carries the resolved effort, and no inherited effort variable
+  {
+    name: "141/00 the attended launch carries --effort xhigh and neither effort variable the parent set",
+    run: () => {
+      const launch = resolveInteractiveDriverLaunch("claude", {
+        which,
+        env: { ...launchEnv(), CLAUDE_EFFORT: "low", CLAUDE_CODE_EFFORT_LEVEL: "low" },
+        terminalSessionId: "fixed-terminal-session",
+        session: { effort: "xhigh" },
+      });
+      const at = launch.args.indexOf("--effort");
+      assert.notEqual(at, -1, "the argv carries --effort");
+      assert.equal(launch.args[at + 1], "xhigh", "…at the resolved level");
+      assert.equal(launch.args.filter((token) => token === "--effort").length, 1, "exactly once");
+      for (const key of EFFORT_ENV_KEYS) {
+        assert.equal(Object.hasOwn(launch.env, key), false, `${key} does not ride into the session`);
+      }
+      assert.equal(launch.env.ORDINARY_INHERITED, "rides-through", "every other inherited key rides through untouched");
+    },
+  },
   // ------------------------------------------------------------------- task 00 ----
   {
     name: "63/02 task00 — the shipped declaration compiles with nothing left deferred, and every member lands in exactly one report",

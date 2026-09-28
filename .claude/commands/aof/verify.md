@@ -12,10 +12,10 @@ checks; pull the human in ONLY when a scenario genuinely needs one (`@uat`).
 
 <config>
 Read `.aof/aof.config.json` → `work.dir`, `work.agents`, `work.ui.baseUrl`. Parse `$ARGUMENTS` into the
-**ref** and an optional **`--url <baseUrl>`**. Resolve the ref by running `aof work find "<ref>" --json`
-(never glob `**/*.md`), then detect which verification lanes are in scope — `@executable`, `@manual`,
-`@uat`. The **design-review base URL** = `--url` if given, else `work.ui.baseUrl` (may be absent — ACD
-never boots the app; the project serves it).
+**ref**, an optional **`--url <baseUrl>`** and an optional **`--thinking <level>`**. Resolve the ref by
+running `aof work find "<ref>" --json` (never glob `**/*.md`), then detect which verification lanes
+are in scope — `@executable`, `@manual`, `@uat`. The **design-review base URL** = `--url` if given,
+else `work.ui.baseUrl` (may be absent — ACD never boots the app; the project serves it).
 
 The ref may be a **milestone**, a **story**, a **uat session**, a **spike**, or a **chore**. A uat
 session (`type: uat`) is a cross-milestone acceptance gate: its record doc is its own `SESSION.md` (not
@@ -29,6 +29,18 @@ verified on its **own per-type criterion**, never through the `<process>` steps 
 `@executable` suite, no `@manual` scenario run, no design conformance, no human `@uat` step — neither
 type carries a behavioural contract, and a chore/spike folder legitimately has no `tasks/`/`.feature`
 to run). Detect the type from `aof work find` and branch there first.
+
+**`--thinking <level>` is a STOP, never a setting.** This session's effort was fixed when it started:
+the Agent tool takes a model but no effort, and only `/effort` changes a running session's, which
+this command cannot type for the operator. So when `$ARGUMENTS` carries `--thinking <level>`, STOP
+before the run is minted and before any role runs, and print what to do: run `/effort <level>`
+(spelling `extra-high` as `xhigh`; `low`, `medium`, `high`, `xhigh` and `max` are typed as
+given), then re-run `aof:verify` without `--thinking`. Say plainly that the session's effort was NOT
+changed, and that the subagents this command spawns inherit the session's effort unless
+`work.agents.effort` pins their role. A level outside the six accepted spellings — `low`, `medium`,
+`high`, `xhigh`, `extra-high`, `max` — is named as unknown, with those six listed. Never report
+an effort as set when it was not. (A loop-driven session is launched at its effort by
+`aof work loop --thinking`, and is never handed this flag.)
 </config>
 
 <spike-chore>

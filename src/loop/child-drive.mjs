@@ -124,7 +124,7 @@ function stderrTail(stderr) {
   return lines.slice(-STDERR_TAIL_LINES);
 }
 
-// spawnLaneDrive({ ref, phase, runId, lane, fixFile, env, deadlineMs, signal, graceMs, spawnChild })
+// spawnLaneDrive({ ref, phase, runId, lane, fixFile, answerFile, thinking, env, deadlineMs, signal, graceMs, spawnChild })
 // → { outcome, document, exitCode, stderrTail, spawn }
 //
 //   outcome   "document" | "refused" | "died" | "timeout" | "aborted"
@@ -145,6 +145,7 @@ export async function spawnLaneDrive({
   lane,
   fixFile,
   answerFile,
+  thinking,
   env,
   deadlineMs,
   signal,
@@ -168,6 +169,8 @@ export async function spawnLaneDrive({
     "--run", runId,
     ...(withAnswer ? ["--answer", answerFile] : []),
     ...(withFix ? ["--fix", fixFile] : []),
+    // 141 — the loop's effort override; the child's own door validates it.
+    ...(typeof thinking === "string" && thinking.length > 0 ? ["--thinking", thinking] : []),
     "--json",
   ];
   const args = isPackaged() ? verb : [cliEntry(), ...verb];

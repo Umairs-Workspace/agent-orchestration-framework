@@ -819,7 +819,8 @@ export function resolveInteractiveDriverLaunch(driver, options = {}) {
   // (sessionId -> spend -> the phase ratio) is therefore silently blind: the run has
   // no session id, `spend` is never stamped, and the report says `unmeasured`.
   // `CLAUDE_EFFORT` rides in the same set for a second reason — it would override the
-  // per-phase `--effort` ADR-005 resolves, making the cache key an accident again.
+  // per-phase `--effort` ADR-005 resolves, making the cache key an accident again. The documented
+  // `CLAUDE_CODE_EFFORT_LEVEL` (story 141) is covered by the `CLAUDE_CODE_` prefix for the same reason.
   // Everything aof itself sets is set AFTER this loop, so the scrub can never eat it.
   for (const key of Object.keys(sessionEnv)) {
     if (isSessionAttachmentKey(key)) delete sessionEnv[key];

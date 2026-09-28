@@ -9,8 +9,8 @@ author a story's task `.feature` files via Three Amigos.
 
 <config>
 Read `.aof/aof.config.json` → `work.dir`, `work.agents`, `work.tags`. Parse `$ARGUMENTS` into the item
-**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag and an optional **`--solo`** or
-**`--orchestrated`** flag. Resolve the ref by running `aof work find "<ref>" --json` (folder-name
+**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag, an optional **`--solo`** or
+**`--orchestrated`** flag and an optional **`--thinking <level>`**. Resolve the ref by running `aof work find "<ref>" --json` (folder-name
 lookup — never glob `**/*.md`).
 
 **Step 0 — a BACKLOG ref is promoted first, here, before anything else.** When that `aof work find`
@@ -45,6 +45,18 @@ re-read. Inline pays none of that, at the cost of the parallelism and the indepe
 separate agent brings — reach for `--orchestrated` when that perspective is worth the cold starts.
 In solo mode the roles are still played in full and their outputs still land in the same files —
 you are the architect, the QA and the developer in turn.
+
+**`--thinking <level>` is a STOP, never a setting.** This session's effort was fixed when it started:
+the Agent tool takes a model but no effort, and only `/effort` changes a running session's, which
+this command cannot type for the operator. So when `$ARGUMENTS` carries `--thinking <level>`, STOP
+before the run is minted and before any role runs, and print what to do: run `/effort <level>`
+(spelling `extra-high` as `xhigh`; `low`, `medium`, `high`, `xhigh` and `max` are typed as
+given), then re-run `aof:refine` without `--thinking`. Say plainly that the session's effort was NOT
+changed, and that the subagents this command spawns inherit the session's effort unless
+`work.agents.effort` pins their role. A level outside the six accepted spellings — `low`, `medium`,
+`high`, `xhigh`, `extra-high`, `max` — is named as unknown, with those six listed. Never report
+an effort as set when it was not. (A loop-driven session is launched at its effort by
+`aof work loop --thinking`, and is never handed this flag.)
 </config>
 
 <process>

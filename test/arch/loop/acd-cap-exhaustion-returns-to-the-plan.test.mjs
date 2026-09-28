@@ -217,7 +217,9 @@ export const archTests = [
       const declaration = /export function buildLoopDeclaration[\s\S]*?\n  return \{([\s\S]*?)\n  \};/u.exec(engine)?.[1];
       assert.ok(declaration != null, "guard: the declaration's return shape was found");
       const declared = [...declaration.matchAll(/^\s{4}([a-zA-Z]+):/gmu)].map((match) => match[1]);
-      assert.equal(declared.length, 9, `the loop declaration written to each run record has exactly 9 keys (found ${declared.join(", ")})`);
+      // 141 appended the tenth, `thinking`, in its own contract — an expected succession, not a counter.
+      assert.equal(declared.length, 10, `the loop declaration written to each run record has exactly 10 keys (found ${declared.join(", ")})`);
+      assert.equal(declared.at(-1), "thinking", "the tenth is 141's effort override");
 
       // THE SHELL HOLDS ONE CYCLE COUNTER, RECONSTRUCTED IN ONE PLACE. A second Map — or a Set of
       // "already handed off" refs persisted beside the runs — is the shape ADR-005 §5 refuses.

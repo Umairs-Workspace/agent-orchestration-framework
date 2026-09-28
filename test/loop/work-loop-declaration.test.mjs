@@ -43,19 +43,22 @@ export const workLoopDeclarationTests = [
     // SUPERSEDED IN ITS COUNT by 126/02 (ADR-004 §5): the ninth key, `supervised`, is appended
     // last by the same additive-supersession discipline 102/00 used for the eighth. The eight
     // before it keep their names, order and values, which is what the slice below still asserts.
-    name: "loop declaration — envelope has exactly nine ordered input-owned keys, supervision last",
+    // 141 — SUPERSEDED IN ITS COUNT AGAIN: the tenth key, `thinking`, appended last. The nine before
+    // it keep their names, order and values.
+    name: "loop declaration — envelope has exactly ten ordered input-owned keys, thinking last",
     run() {
       const input = { ...loop(), ref: "53/01", path: "x", cursor: 2, index: 4, lastRef: "52" };
       const result = buildLoopDeclaration(input);
-      assert.deepEqual(Object.keys(result), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised"]);
+      assert.deepEqual(Object.keys(result), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
       // The original seven, in their original order and holding their original values - read off
       // THIS result rather than restated, so a reorder or a value change is what fails.
       assert.deepEqual(Object.keys(result).slice(0, 7), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt"]);
-      assert.deepEqual(result, { ...loop(), supervised: false });
+      assert.deepEqual(result, { ...loop(), supervised: false, thinking: null });
       assert.deepEqual(Object.keys(result).slice(0, 8), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id"]);
-      assert.equal(Object.keys(result).at(-1), "supervised");
-      // No TENTH key for any input, including inputs the engine is handed and must ignore.
-      assert.equal(Object.keys(result).length, 9);
+      assert.deepEqual(Object.keys(result).slice(0, 9), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised"]);
+      assert.equal(Object.keys(result).at(-1), "thinking");
+      // No ELEVENTH key for any input, including inputs the engine is handed and must ignore.
+      assert.equal(Object.keys(result).length, 10);
       for (const key of ["ref", "path", "cursor", "index", "lastRef"]) assert.equal(key in result, false);
       assert.equal(buildLoopDeclaration({ ...input, scope: "53/02" }).code, "loop-scope-unsupported");
       assert.equal(buildLoopDeclaration({ ...input, level: "L3" }).code, "loop-level-gate");
@@ -72,7 +75,7 @@ export const workLoopDeclarationTests = [
       const first = JSON.stringify(buildLoopDeclaration(loop()));
       const second = JSON.stringify(buildLoopDeclaration(loop()));
       assert.equal(first, second);
-      assert.equal(first.endsWith('"id":"loop:autonomous-cascade","supervised":false}'), true, first);
+      assert.equal(first.endsWith('"id":"loop:autonomous-cascade","supervised":false,"thinking":null}'), true, first);
     },
   },
   {
@@ -148,10 +151,12 @@ export const workLoopDeclarationTests = [
     // 126/02 (ADR-004 §5): the projection gains a SIXTH key. The usability requirement stays at
     // FIVE, which is what keeps every record already on disk readable — and each of them
     // recovers with `supervised` false, the opt-in failing closed.
-    name: "loop declaration — resume recovers the same six keys from a nine-key and a legacy seven-key record",
+    // 141: and a SEVENTH, `thinking`, recovered as `null` from every record that predates it.
+    name: "loop declaration — resume recovers the same seven keys from a nine-key and a legacy seven-key record",
     run() {
       const eight = readLoopDeclaration([run("run-a", "2026-08-15T01:00:00.000Z", loop())]);
-      assert.deepEqual(Object.keys(eight), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised"]);
+      assert.deepEqual(Object.keys(eight), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking"]);
+      assert.equal(eight.thinking, null, "a record that names no thinking recovers as no override");
       assert.equal(eight.supervised, false, "a record that names no supervision recovers as unsupervised");
       assert.equal("id" in eight, false, "the recovered declaration carries no id");
       assert.equal("phase" in eight, false);
@@ -180,7 +185,7 @@ export const workLoopDeclarationTests = [
         run("run-b", "2026-08-15T03:00:00.000Z", loop({ loopRunId: "lr-b" })),
       ];
       assert.deepEqual(readLoopDeclaration(runs), {
-        loopRunId: "lr-b", scope: "53", level: "L2", cap: 3, startedAt: "2026-08-15T00:52:42.569Z", supervised: false,
+        loopRunId: "lr-b", scope: "53", level: "L2", cap: 3, startedAt: "2026-08-15T00:52:42.569Z", supervised: false, thinking: null,
       });
       assert.deepEqual(readLoopDeclaration([...runs].reverse()), readLoopDeclaration(runs));
     },
@@ -200,7 +205,7 @@ export const workLoopDeclarationTests = [
       ];
       assert.equal(readLoopDeclaration(fragments), null);
       assert.deepEqual(readLoopDeclaration([complete, partial, malformed]), {
-        loopRunId: "lr-7", scope: "53", level: "L2", cap: 3, startedAt: "2026-08-15T00:52:42.569Z", supervised: false,
+        loopRunId: "lr-7", scope: "53", level: "L2", cap: 3, startedAt: "2026-08-15T00:52:42.569Z", supervised: false, thinking: null,
       });
     },
   },
@@ -233,6 +238,7 @@ export const workLoopDeclarationTests = [
         // 126/02: supervision resolves like level and cap — explicit wins, absent inherits — and
         // with nothing to inherit from it is the default, which is off.
         supervised: false,
+        thinking: null,
         loopRunId: null,
         scope: "53",
         priorScope: null,
@@ -273,6 +279,45 @@ export const workLoopDeclarationTests = [
       assert.deepEqual(second.lastDeclaration.loopRunId, { id: ["lr-7"] });
       assert.equal("phase" in first.lastDeclaration, false);
       assert.equal("cycle" in first.lastDeclaration, false);
+    },
+  },
+  // ═══════════ 141 task 01 — the declaration carries the loop's --thinking ═══════════
+  {
+    name: "141/01 the tenth key carries the canonical level, and anything that is not a level string is null",
+    run() {
+      assert.equal(buildLoopDeclaration(loop({ thinking: "xhigh" })).thinking, "xhigh");
+      for (const thinking of [undefined, null, "", 42]) {
+        assert.equal(buildLoopDeclaration(loop({ thinking })).thinking, null, JSON.stringify(thinking));
+      }
+      const recovered = readLoopDeclaration([run("run-a", "2026-08-15T01:00:00.000Z", buildLoopDeclaration(loop({ thinking: "xhigh" })))]);
+      assert.equal(recovered.thinking, "xhigh", "the projection carries it back");
+    },
+  },
+  // Scenario Outline: the declaration carries the level, and a resume inherits it unless told otherwise
+  ...[
+    ["xhigh", undefined, "xhigh"],
+    ["xhigh", "medium", "medium"],
+    [null, undefined, null],
+    [null, "high", "high"],
+  ].map(([launched, resumed, declared]) => ({
+    name: `141/01 launched --thinking ${launched ?? "absent"}, resumed ${resumed == null ? "with --resume alone" : "with --thinking " + resumed} → thinking ${declared}`,
+    run() {
+      const declaration = readLoopDeclaration([run("run-a", "2026-08-15T01:00:00.000Z", buildLoopDeclaration(loop({ thinking: launched })))]);
+      const inherited = resolveLoopResume({ scope: "53", declaration, ...(resumed == null ? {} : { thinking: resumed }) });
+      assert.equal(inherited.thinking, declared);
+      assert.equal(buildLoopDeclaration(loop({ thinking: inherited.thinking })).thinking, declared, "the resumed declaration carries it on");
+    },
+  })),
+  // Scenario: a declaration written before this story resumes with no override
+  {
+    name: "141/01 a stored nine-key declaration with no thinking is usable and recovers thinking null",
+    run() {
+      const nine = { ...loop(), supervised: false };
+      assert.equal("thinking" in nine, false);
+      const recovered = readLoopDeclaration([run("run-a", "2026-08-15T01:00:00.000Z", nine)]);
+      assert.notEqual(recovered, null, "the declaration is usable");
+      assert.equal(recovered.thinking, null);
+      assert.equal(resolveLoopResume({ scope: "53", declaration: recovered }).thinking, null);
     },
   },
 ];
