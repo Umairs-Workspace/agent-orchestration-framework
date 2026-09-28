@@ -44,7 +44,8 @@
 // verbatim rather than being a path to one. Leg 4 enforces that, from the registry's own
 // declaration of which keys are knobs, so it stays true as the tunable set moves.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -116,18 +117,9 @@ const THE_SEVEN = Object.freeze([
 const WRITE_CALLS = Object.freeze(["writeFile", "writeFileSync", "appendFile", "appendFileSync", "writeText", "createWriteStream", "copyFile", "cp", "rename"]);
 
 async function srcModules() {
-  const modules = [];
-  const walk = async (dir) => {
-    for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        modules.push({ rel: path.relative(root, full).replaceAll("\\", "/"), code: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(SRC_DIR);
-  return modules;
+  return await Promise.all((await readRuntimeFiles(root)).map(async file => ({
+    rel: file.rel, code: await readFile(file.path, "utf8"),
+  })));
 }
 
 // ── PURE DETECTORS ───────────────────────────────────────────────────────────────────
@@ -196,7 +188,7 @@ export function importersOf(modules, suffix, binding = null) {
     ? new RegExp(`import\\s*\\{[^}]*\\b${escape(binding)}\\b[^}]*\\}\\s*from\\s*["'][^"']*${escape(suffix)}["']`, "u")
     : new RegExp(`from\\s*["'][^"']*${escape(suffix)}["']`, "u");
   return modules
-    .filter(({ code }) => pattern.test(withoutComments(code)))
+    .filter(({ code }) => binding ? pattern.test(withoutComments(code)) : importSpecifiers(code).some(({ specifier }) => specifier.endsWith(suffix)))
     .map(({ rel }) => rel)
     .sort();
 }
@@ -504,7 +496,7 @@ export const archTests = [
     run: async () => {
       const modules = await srcModules();
       const callers = modules
-        .filter(({ rel, code }) => rel !== "src/effects/journal.mjs" && /\bappendEvent\s*\(/u.test(codeOnly(code)))
+        .filter(({ rel, code }) => !["src/effects/journal.mjs", "packages/effects/src/journal.mjs"].includes(rel) && /\bappendEvent\s*\(/u.test(codeOnly(code)))
         .map(({ rel }) => rel)
         .sort();
       assert.deepEqual(callers, [...APPEND_EVENT_SEAMS], "the appending seams are the admitted set, and it gained exactly the harness seam");

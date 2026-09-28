@@ -7,7 +7,9 @@
   `@aof/contracts` supplies command composition and routing (`5be0e23`).
   `@aof/effects` owns dispatch/outbox algorithms (`ba8c557`), generic SQLite journal storage,
   and reactor registration through injected runtime/diagnostic/policy interfaces. Mesh and messaging own their command contributions;
-  domain source extraction remains incremental.
+  domain source extraction remains incremental. Work, mesh, and Notion now own their effect handlers
+  in three additional workspaces; core assembles them with explicit deferred service providers.
+  Effect registration has no static transition/domain import cycle.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
@@ -50,12 +52,16 @@
 - Linux/macOS native builds, actual WSL deployment, release artifacts, and the unexecuted remainder
   of the root suite remain unverified. Details: [IMPLEMENTATION.md](IMPLEMENTATION.md).
 
+- Domain-effect extraction: all 997 unit checks, 164 focused checks, and 39 package-local
+  cases pass (the package cases also run through the focused bridge). Immutable install, audit,
+  browser/SEA JavaScript bundles, CLI smoke, and an external installed-payload status cycle pass.
+
 ## Next
 
-Extract foundational utilities and domain packages behind the new contribution boundary.
-Split application reactor handlers into domain-owned contributions and remove the remaining
-table/transition cycle. Generic journal storage and registration are extracted; file-location
-policy and run/assignment-specific queries remain with the application. Mesh and messaging
-still live under `src/`; core still owns the CLI and will move to `packages/core` with its assets.
-`yarn.lock` is now authoritative. Carry the outstanding full-suite and platform checks into the
-next verification round. Continue direct development without AOF workflow commands.
+Continue extracting domain service implementations and their command contributions behind the new
+package interfaces. The work, mesh, and Notion handler packages are implemented; their injected
+service implementations still live under src/. Core registration is now statically acyclic,
+while deferred runtime service composition remains a transitional adapter. Separate the
+foundation/diagnostics dependency before moving filesystem utilities. Core still owns the CLI
+and will move to packages/core with its assets. Keep the outstanding full-suite and platform
+checks explicit. Continue direct development without AOF workflow commands.

@@ -101,7 +101,7 @@ const STRUCTURAL = [
   // could mint a number an archived row already holds, or rename onto a folder that is there.
   { file: path.join("src", "commands", "promote.mjs"), symbols: ["listItems"], subject: "promoteRow" },
   { file: path.join("src", "work", "upgrade.mjs"), symbols: ["listItems"], subject: "planUpgrade" },
-  { file: path.join("src", "effects", "table.mjs"), symbols: ["listItems"], subject: "remapRunRecordRefs" },
+  { file: path.join("packages", "work", "src", "effects.mjs"), symbols: ["listItems"], subject: "remapRunRecordRefs", injected: true },
   { file: path.join("src", "effects", "reconcile.mjs"), symbols: ["listItems"], subject: "reconcileRunRecords" },
   // work-doctor keeps ONE disk snapshot; ADR-005 overlays cache facts onto it in the
   // snapshot BUILDER (per-fact, ADR-010/R6.1) rather than splitting the snapshot's
@@ -187,7 +187,7 @@ function workImportBindings(commentStrippedSource) {
 
 async function assertPinned(group, label) {
   const problems = [];
-  for (const { file, symbols, subject } of group) {
+  for (const { file, symbols, subject, injected } of group) {
     const source = stripComments(await readFile(path.join(repoRoot, file), "utf8"));
     // THE SUBJECT ANCHOR first: if the pinned read has left this module, the symbol pin
     // below is measuring something else and must be re-pointed rather than trusted.
@@ -196,6 +196,17 @@ async function assertPinned(group, label) {
       continue;
     }
     const bindings = workImportBindings(source);
+    if (injected) {
+      // The package reads through a port; core must still bind that port to the
+      // disk enumerator. Check both ends so moving the read cannot hide a cache switch.
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/effects/table.mjs"), "utf8"));
+      assert.match(composition, /import\("\.\.\/work\.mjs"\)/u);
+      for (const symbol of symbols) {
+        assert.match(source, new RegExp(`const\\s*\\{[^}]*\\b${symbol}\\b[^}]*\\}\\s*=\\s*await getServices\\(\\)`, "u"));
+        assert.match(composition, new RegExp(`\\b${symbol}:\\s*items\\.${symbol}\\b`, "u"));
+        bindings.add(symbol);
+      }
+    }
     for (const symbol of symbols) {
       if (!bindings.has(symbol)) {
         problems.push(`${file} no longer imports ${symbol} from work.mjs — ${label} reads (${subject}) must stay on DISK (ADR-005)`);

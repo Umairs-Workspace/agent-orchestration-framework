@@ -25,6 +25,20 @@ export async function readSrcFiles(repoRoot) {
   return out;
 }
 
+// Runtime ownership now spans src/ and packages/*/src/. Keep package tests and
+// node_modules outside the scan; paths here are relative to the repository.
+export async function readRuntimeFiles(repoRoot) {
+  const files = (await readSrcFiles(repoRoot)).map(file => ({ ...file, rel: `src/${file.rel}` }));
+  for (const entry of await readdir(path.join(repoRoot, "packages"), { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const packageRoot = path.join(repoRoot, "packages", entry.name);
+    for (const file of await readSrcFiles(packageRoot)) {
+      files.push({ ...file, rel: `packages/${entry.name}/src/${file.rel}` });
+    }
+  }
+  return files;
+}
+
 // ONE READ OF src/**, SHARED (milestone 70 / story 05). Three suites assert the same fact —
 // "no second ceiling literal exists outside the compiler" — and each was globbing and
 // reading every src file to do it, ~113 ms a copy. The invariant is FF-7003's; the WALK is

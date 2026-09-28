@@ -1,0 +1,15 @@
+{
+  "name": "@aof/mesh",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./effects": "./src/effects.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/effects.test.mjs"
+  }
+}

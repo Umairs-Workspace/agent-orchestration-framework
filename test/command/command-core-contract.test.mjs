@@ -17,6 +17,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import { importSpecifiers } from "../support/module-family.mjs";
 import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.mjs";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
@@ -356,6 +358,40 @@ async function assertRejectsWithCode(fn, code) {
 
 export const commandCoreContractTests = [
   {
+    name: "command-core/effect registration has no static domain or transition cycle",
+    async run() {
+      const root = fileURLToPath(new URL("../../", import.meta.url));
+      const entry = path.join(root, "src/effects/table.mjs");
+      async function closure(planted = false) {
+        const seen = new Set(), visiting = new Set();
+        async function visit(file) {
+          assert.ok(!visiting.has(file), `Static effect registration cycle at ${file}`);
+          if (seen.has(file)) return;
+          visiting.add(file);
+          let source = await readFile(file, "utf8");
+          if (planted && file === entry) source += '\nimport "./dispatch.mjs";';
+          for (const { specifier, dynamic } of importSpecifiers(source)) {
+            if (dynamic || specifier.startsWith("node:")) continue;
+            const target = createRequire(file).resolve(specifier);
+            await visit(target);
+          }
+          visiting.delete(file);
+          seen.add(file);
+        }
+        await visit(entry);
+        return [...seen].map(file => path.relative(root, file).replaceAll("\\", "/"));
+      }
+      const files = await closure();
+      for (const name of ["work", "mesh", "integration-notion"]) {
+        assert.ok(files.includes(`packages/${name}/src/effects.mjs`), `${name}: its contribution is in the startup closure`);
+      }
+      for (const forbidden of ["src/work.mjs", "src/global-work-store.mjs", "src/notion/sync-work.mjs", "src/effects/assignment-transitions.mjs", "src/effects/dispatch.mjs"]) {
+        assert.ok(!files.includes(forbidden), `registration must not load ${forbidden}`);
+      }
+      await assert.rejects(closure(true), /Static effect registration cycle/);
+    },
+  },
+  {
     name: "command-core/effects adapters load from every application entry without eager cyclic initialization",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
@@ -375,7 +411,7 @@ export const commandCoreContractTests = [
     name: "command-core/workspace packages pass their package-local suites",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs", "packages/effects/test/effects.test.mjs", "packages/effects/test/journal.test.mjs", "packages/effects/test/registry.test.mjs"], {
+      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs", "packages/effects/test/effects.test.mjs", "packages/effects/test/journal.test.mjs", "packages/effects/test/registry.test.mjs", "packages/work/test/effects.test.mjs", "packages/mesh/test/effects.test.mjs", "packages/integration-notion/test/effects.test.mjs"], {
         cwd: root, encoding: "utf8", timeout: 30_000,
       });
       assert.equal(result.status, 0, result.error?.message ?? result.stdout + result.stderr);

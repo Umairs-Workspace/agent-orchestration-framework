@@ -34,7 +34,8 @@
 //       scoped, not node-scoped), and the unscoped crash-recovery sweep does not
 //       let a deferred integration backlog consume its fetch window.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, readdir, readFile } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -47,11 +48,10 @@ import { loadWorkspace } from "../../../src/work.mjs";
 import { invoke } from "../../../src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 
 // The one sync body: its definition, and its two sanctioned callers.
 const SYNC_CORE = "src/notion/sync-work.mjs";
-const SYNC_CORE_CALLERS = new Set([SYNC_CORE, "src/commands/notion-sync-work.mjs", "src/effects/table.mjs"]);
+const SYNC_CORE_CALLERS = new Set([SYNC_CORE, "src/commands/notion-sync-work.mjs", "packages/integration-notion/src/effects.mjs"]);
 // The apply layer + the spawn-seam constructor: reachable only from the core
 // (applyPlan's definition lives in sync.mjs; makeNotionSpawn's in notion/cli.mjs).
 const APPLY_CALLERS = new Set(["src/notion/sync.mjs", SYNC_CORE]);
@@ -69,16 +69,6 @@ function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
-}
 
 function frontmatter(fields) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n\n`;
@@ -172,7 +162,7 @@ export const archTests = [
         "rollback-status is declared before notion-status-sync",
       );
 
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const offenders = { core: [], apply: [], spawn: [] };
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");

@@ -229,3 +229,22 @@ remaining application import cycle can be removed; extracting the registry alone
 Both directions of on-disk compatibility were exercised against the actual previous journal code
 and an installed payload outside the checkout. Details and remaining platform limits are recorded
 in IMPLEMENTATION.md.
+
+## Domain contribution boundary implemented — 2026-09-28
+
+Handler ownership can move without migrating every storage/configuration service at once. Work,
+mesh, and Notion now export inert contribution factories; core supplies explicit service providers.
+Package tests inject narrow collaborators, while existing integration tests exercise the actual core
+adapters. The providers still delegate to src/ and should shrink as those service implementations
+move. This is an intermediate boundary, not a claim that the whole domains are extracted.
+
+Cascade ordering is a composition concern: work remapping, Notion sidecar remapping, mesh remapping,
+then publication; on completion, rollback precedes publication and Notion synchronization. Registering
+all of one domain contiguously would change that order. Two contribution groups from the same Notion
+package preserve it without making mesh import Notion or putting handlers back into core.
+
+No domain implementations are imported statically by the registration table. Eager dispatcher/outbox
+construction is now safe, proven from each of six entry modules and by an acyclic static graph with
+a planted-cycle negative check. Runtime service dependencies remain explicit deferred composition,
+not an exemption from the final package dependency rules. Architecture scans must follow workspace
+source/exports; a root-only import count would incorrectly hide the new package code.

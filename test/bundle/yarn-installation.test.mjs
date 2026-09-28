@@ -28,7 +28,7 @@ function locked(dir, name, version) {
 
 export const yarnInstallationTests = [
   { name: 'yarn-installation/extracted kernels cannot import core, legacy source, providers or sibling internals', run: async () => {
-    for (const name of ['contracts', 'effects']) {
+    for (const name of ['contracts', 'effects', 'work', 'mesh', 'integration-notion']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
       assert.deepEqual(report.violations, [], `${name}: only package-local imports are allowed`);

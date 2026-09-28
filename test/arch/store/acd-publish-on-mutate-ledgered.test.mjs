@@ -30,7 +30,8 @@
 //       retired wrapper made it. Proven end-to-end through invoke() for BOTH
 //       ported verbs, with the publish injected to fail.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, readdir, readFile } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -41,14 +42,13 @@ import { invoke } from "../../../src/command-core.mjs";
 import { settleLaneProjectionEffects } from "../../../src/commands/dispatch.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 
 // The sanctioned publishGlobalWorkSnapshot callers (repo-relative, forward-slashed).
 const PUBLISH_ALLOWED = new Set([
   // The definition.
   "src/global-work-publisher.mjs",
   // The LEDGER's reactor — the one door for publish-as-a-consequence.
-  "src/effects/table.mjs",
+  "packages/mesh/src/effects.mjs",
   // `aof mesh repo publish`: publishing IS this verb's deliverable (it writes the
   // repo marker and publishes the snapshot that marker unlocks), not a cascade it
   // remembers after some other mutation.
@@ -65,16 +65,6 @@ function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
-}
 
 function frontmatter(fields) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n\n`;
@@ -111,7 +101,7 @@ export const archTests = [
   {
     name: "arch/m42-d4-port1: withGlobalWorkPropagation is gone from src/ — publishing is not a per-command wrapper (ratchet)",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const offenders = [];
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
@@ -125,7 +115,7 @@ export const archTests = [
   {
     name: "arch/m42-d4-port1: publishGlobalWorkSnapshot is reachable only from the ledger's reactor + the two sanctioned non-cascade publishers",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");

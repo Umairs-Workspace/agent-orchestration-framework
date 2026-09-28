@@ -237,7 +237,7 @@ export const archTests = [
         // NO run-* command reaches the frontmatter writer directly any more. Both
         // paths that roll a status back — a completion (m42 wave (d) leg d2) and a
         // RECLAIM (leg d4, port 2) — raise `run.completed` through a transition
-        // seam, and the ledger's checkout-locus reactor (src/effects/table.mjs)
+        // seam, and the ledger's checkout-locus reactor (packages/work/src/effects.mjs)
         // performs the one bounded rollback: declared, not remembered. run-start's
         // inline reclaim loop was the last direct caller and the reason the two
         // reclaim halves disagreed (the control tick never had that loop at all).
@@ -251,10 +251,10 @@ export const archTests = [
             new RegExp(`${seamFor}\\s*\\(`).test(code),
             `${name} reaches the run fact through the transition seam (${seamFor})`,
           );
-          const effectsCode = stripComments(await readFile(new URL("../../../src/effects/table.mjs", import.meta.url), "utf8"));
+          const effectsCode = stripComments(await readFile(new URL("../../../packages/work/src/effects.mjs", import.meta.url), "utf8"));
           assert.ok(
             /rollbackItemStatus\s*\(/.test(effectsCode),
-            "src/effects/table.mjs's run.completed cascade calls rollbackItemStatus (the declared rollback reactor)",
+            "packages/work/src/effects.mjs's run.completed cascade calls rollbackItemStatus (the declared rollback reactor)",
           );
         }
       }

@@ -26,7 +26,7 @@ const RUN_STORE = path.join(repoRoot, "src", "run-store.mjs");
 const MESH_GATE = path.join(repoRoot, "src", "commands", "mesh", "gate.mjs");
 // m42 wave (d) leg d4 (port 2) — the reclaim's status rollback is now DECLARED here
 // rather than looped at the command's call site.
-const EFFECTS_TABLE = path.join(repoRoot, "src", "effects", "table.mjs");
+const EFFECTS_TABLE = path.join(repoRoot, "packages", "work", "src", "effects.mjs");
 const TEST_SUITE = path.join(repoRoot, "scripts", "test.mjs");
 
 function stripComments(source) {

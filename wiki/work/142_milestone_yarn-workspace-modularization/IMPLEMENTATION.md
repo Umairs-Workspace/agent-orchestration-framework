@@ -110,11 +110,9 @@ complete root-suite or cross-platform release result.
 
 ## Next
 
-Split application reactor handlers into domain-owned contributions to remove the effects
-table/transition import cycle. Generic journal storage and registration are now extracted;
-keep run/assignment queries in their domains. Extract foundational utilities and remaining domains in the order described
-in [MIGRATION.md](MIGRATION.md). The CLI and shipped skills/assets stay in core; feature packages must
-not import the core that assembles them.
+Extract remaining domain services and command contributions through the new package boundaries.
+Split foundational diagnostics from mesh logging before lowering filesystem utilities. The CLI
+and shipped skills/assets stay in core; feature packages must not import their assembling core.
 
 ## Effects execution and delivery extraction — 2026-09-28
 
@@ -194,3 +192,51 @@ Verification:
 Full-root-suite and cross-platform release limitations recorded above still apply. No live deployment
 or external publication was performed. Next: domain-owned reactor handlers/contributions and removal
 of the remaining application table/transition cycle, followed by the next domain extraction.
+
+## Domain effect contributions — 2026-09-28
+
+Three new private workspaces own the handlers previously embedded in src/effects/table.mjs:
+
+- @aof/work: status advance/rollback, run-reference remapping, and ruling evidence.
+- @aof/mesh: projection publication/remapping, assignment settlement, parked-resume restoration,
+  and branch recording.
+- @aof/integration-notion: sidecar remapping and conditional status synchronization.
+
+Each exposes a ./effects factory taking a service provider, with no imports or dependency on
+assembled core. Core explicitly registers ordered contributions and supplies the existing domain
+services through deferred imports. Notion supplies separate local/integration groups so sidecar
+remapping precedes mesh projection and external synchronization follows it. All ten event cascades
+preserve their keys, loci, applicability, and ordering; storage schema and CLI behavior are unchanged.
+
+The static registration cycle is removed. Dispatcher/outbox adapters now construct normally at
+module initialization rather than using lazy singleton workarounds. A source-graph test follows
+workspace exports, rejects static domain/transition loading, and catches a planted cycle. Six
+entry-order subprocess checks remain. This does not claim that the domain services have migrated:
+work readers/writers, mesh stores/transitions, Notion sync, and command handlers still live in src/.
+The CLI and its required skill commands remain core-owned.
+
+Architecture scans now include packages/*/src/ for publication, synchronization, notification,
+harness writes, and append ownership. Status/disk-read pins follow their package handlers and
+check core's injected disk binding. The session import census follows @aof exports as well:
+its driver remains within 28 modules; the assignment sink is now 73 including seven package modules.
+The worker-ask guard covers both the mesh handler and core's single deferred service forwarder.
+
+Verification:
+
+- Nine new package cases cover inert registration, bounded status writes, remapping, evidence
+  refusals, projection scope/faults, park-edge deduplication, store ownership, and Notion policy.
+  All 39 internal package cases pass through the root test bridge.
+- All 997 unit checks and 164 focused checks pass. Focused coverage includes real journal delivery,
+  assignment transitions, run rollback, reindexing, projection, Notion, harness, notification,
+  session startup, registry compatibility, workspace boundaries, and architecture/test registration.
+- Immutable Yarn installation succeeds with the existing peer warning; supply-chain audit has
+  zero warnings. Only local workspace dependencies were added; no external dependency changed.
+- Browser bundles of all eight package runtime modules and the SEA JavaScript bundle pass, as
+  does CLI --help. This is not a complete native executable/signing/release build.
+- The actual installer copied a disposable payload outside the checkout. All 117 commands loaded;
+  all five internal packages resolved to real payload files, with no esbuild development tooling.
+  A real journal event advanced a story, and a failed completion rolled it back through the
+  extracted work handlers. The fixture and payload were removed afterward.
+
+Logs: .tmp/workspace-migration/domain-effects/ (local, ignored). The earlier full-root-suite and
+cross-platform limits remain; no live installation, AOF lifecycle operation, push, or deployment.

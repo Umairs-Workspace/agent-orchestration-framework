@@ -42,25 +42,20 @@ export const EFFECT_ACK_FRAME_KIND = "effect-ack";
 
 // Integration writes stay on the checkout holding their configuration and credentials.
 // The package only knows the eligibility rule supplied here.
-// Composition is delayed until invocation because the application table and transition
-// modules form an existing import cycle. The package itself has no imports or global instance.
-let outbox;
-function getOutbox() {
-  return outbox ??= createEffectsOutbox({
-    pendingSteps, markStep, reportDegrade, loci: LOCAL_LOCI,
-    isRemoteStep: (step, loci) => !loci.includes(step.locus) && !String(step.locus).startsWith("integration:"),
-    readStep,
-  });
-}
+const outbox = createEffectsOutbox({
+  pendingSteps, markStep, reportDegrade, loci: LOCAL_LOCI,
+  isRemoteStep: (step, loci) => !loci.includes(step.locus) && !String(step.locus).startsWith("integration:"),
+  readStep,
+});
 
 export function remoteSteps(journal, options) {
-  return getOutbox().remoteSteps(journal, options);
+  return outbox.remoteSteps(journal, options);
 }
 
 export async function drainOutbox(options) {
-  return await getOutbox().drainOutbox(options);
+  return await outbox.drainOutbox(options);
 }
 
 export function applyEffectAck(journal, ack, options) {
-  return getOutbox().applyEffectAck(journal, ack, options);
+  return outbox.applyEffectAck(journal, ack, options);
 }

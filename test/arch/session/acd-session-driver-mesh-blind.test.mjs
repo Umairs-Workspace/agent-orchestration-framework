@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -54,8 +55,8 @@ async function walkImports(entry) {
     seen.add(resolved);
     const source = await readFile(resolved, "utf8");
     for (const specifier of specifiers(source)) {
-      if (!specifier.startsWith(".")) continue;
-      const target = path.resolve(path.dirname(resolved), specifier);
+      if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) continue;
+      const target = createRequire(resolved).resolve(specifier);
       edges.push([resolved, target]);
       if (!paths.has(target)) paths.set(target, [...paths.get(resolved), target]);
       await visit(target);
@@ -74,6 +75,8 @@ function directSourceImports(source) {
 
 function isDeniedTransitive(rel) {
   if (DENIED_TRANSITIVE.includes(rel)) return true;
+  if (/^\.\.\/packages\/(?:mesh|effects|integration-notion)\//u.test(rel)) return true;
+  if (rel === "../packages/work/src/effects.mjs") return true;
   if (rel.startsWith("effects/") || rel.startsWith("commands/")) return true;
   return /^board-.*\.mjs$/u.test(rel);
 }
@@ -234,7 +237,10 @@ export const archTests = [
       // `src/terminal/` family (138/ADR-001 §7), the same three modules that raise the driver's
       // ceiling to 28 above. Their other imports were already here, so they reach nothing behind
       // them. MEASURED with this file's own walker at 138/00's build: 79.
-      assert.equal(sinkGraph.seen.size, 79, "the assignment sink reach is exactly 79: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, 130/03 adds the stop request's one home loop/stop-request.mjs behind the presence read, 137 adds the digest template's reader work/digest-template.mjs behind work.mjs, 138/00 adds the driver's terminal family (session-screen, screen, claude-screens), and none reaches anything new behind it");
+      // 142 moves registration to inert package contributions. Count local workspace
+      // imports too: the static sink closure is now 73, including all seven package
+      // modules. Deferred domain-service imports are deliberately outside this census.
+      assert.equal(sinkGraph.seen.size, 73, "the assignment sink static reach, including workspace modules, stays at 73 after domain-effect extraction");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

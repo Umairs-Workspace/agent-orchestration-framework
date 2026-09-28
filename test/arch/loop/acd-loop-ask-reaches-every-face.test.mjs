@@ -73,7 +73,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { computedDynamicImports, importSpecifiers } from "../../support/module-family.mjs";
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import { withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
@@ -109,7 +109,7 @@ const DOOR = "src/notify/discord.mjs";
 const API_HOST = "discord.com/api";
 const BOT_FAMILY = "src/discord/";
 // FF-13114 — a worker's ask rides the park fact (131/12, ADR-010).
-const REACTOR_TABLE = "src/effects/table.mjs";
+const REACTOR_TABLE = "packages/mesh/src/effects.mjs";
 const REPORT_KEYS = Object.freeze(["assignmentId", "state", "runId", "sessionId", "branch", "code"]);
 const WORKER_ASK = Object.freeze({ question: "Decision needed: split 35/00?", phase: "build", askedAt: "2026-09-25T11:48:00.000Z" });
 const NOW_ISO = "2026-09-25T12:00:00.000Z";
@@ -154,9 +154,9 @@ function resolved(fromRel, specifier) {
 
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
+  for (const file of await readRuntimeFiles(repoRoot)) {
     const raw = await readFile(file.path, "utf8");
-    units.push({ rel: `src/${toPosix(file.rel)}`, raw, code: stripComments(raw) });
+    units.push({ rel: toPosix(file.rel), raw, code: stripComments(raw) });
   }
   return units;
 }
@@ -715,6 +715,11 @@ export const archTests = [
       const reactor = functionBody(unitOf(units, REACTOR_TABLE).code, "async function settleAssignment(");
       assert.ok(reactor != null && /\bannounceWorkerAsk\s*\(/u.test(reactor), "…from inside settleAssignment");
       assert.match(reactor, /if\s*\(\s*park\s*&&\s*!wasWaiting\b/u, "…and only behind the edge: the row was not already waiting (ADR-010 §4)");
+      // The application forwards this service through a deferred module import.
+      // Count member calls as well, so a second face cannot bypass the package port.
+      const forwards = units.flatMap(({ rel, code }) => [...code.matchAll(/\.announceWorkerAsk\s*\(/gu)].map(() => rel));
+      assert.deepEqual(forwards, ["src/effects/table.mjs"], "only core's service adapter forwards to the notification implementation");
+      assert.match(unitOf(units, "src/effects/table.mjs").code, /announceWorkerAsk:\s*async\s*\(\.\.\.args\)\s*=>\s*\(await import\("\.\.\/mesh\/park-resume\.mjs"\)\)\.announceWorkerAsk\(\.\.\.args\)/u);
     },
   },
   {

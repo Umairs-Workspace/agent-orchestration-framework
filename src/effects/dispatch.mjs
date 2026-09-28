@@ -41,19 +41,15 @@ export function reachableLoci(workspace, base = LOCAL_LOCI) {
   return extra.length > 0 ? [...base, ...extra] : base;
 }
 
-// The existing application table reaches transition modules which import this adapter.
-// Read that table on invocation, preserving the former function-default timing during ESM loading.
-let dispatcher;
-function getDispatcher() {
-  return dispatcher ??= createEffectsDispatcher({
-    effects: EFFECTS, loci: LOCAL_LOCI, pendingSteps, markStep, reportDegrade,
-  });
-}
+// The contribution table now loads without importing domain implementations or transitions.
+const dispatcher = createEffectsDispatcher({
+  effects: EFFECTS, loci: LOCAL_LOCI, pendingSteps, markStep, reportDegrade,
+});
 
 export async function drainEffects(options) {
-  return await getDispatcher().drainEffects(options);
+  return await dispatcher.drainEffects(options);
 }
 
 export async function runEffectsEphemeral(name, payload, options) {
-  return await getDispatcher().runEffectsEphemeral(name, payload, options);
+  return await dispatcher.runEffectsEphemeral(name, payload, options);
 }
