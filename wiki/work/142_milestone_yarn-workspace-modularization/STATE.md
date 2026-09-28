@@ -20,6 +20,9 @@
   Validation, feature parsing and digest mechanics are extracted; core supplies the shipped digest contract.
   Core retains workspace configuration/identity loading, command
   gates and effect publication.
+  @aof/work-graph now owns registry loading/checks, execution projections, diagram/document rendering
+  and all six graph-related commands. Core supplies asset locations, run reads and shared invocation.
+  Shared bounds and errors live in contracts below work-graph and execution.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
@@ -95,6 +98,10 @@
   validation/digest parity pass. Four stale source assertions and one overly broad corpus assertion
   were corrected. The full migration remains in progress; see COMPLETION.md.
 
+- Work-graph extraction: all 997 unit checks, 820 selected checks and 81 internal package
+  cases pass. Immutable install, audit, browser/SEA JavaScript bundles and copied-install
+  graph/model/command parity pass. Native/platform and full-root-suite checks remain outstanding.
+
 ## Next
 
 Continue extracting domain service implementations and their command contributions behind the new
@@ -103,8 +110,8 @@ service implementations are being extracted from src/. Work owns record/lifecycl
 workspace configuration/identity loading, run persistence and acceptor
 services remain in core. Enumeration/lookup/listing, readiness and their shared identity/dependency
 rules are extracted. Validation now consumes an explicit core-supplied digest contract. Next,
-extract the work-graph package and contributions, with shared bound vocabulary below the graph
-and executing loop. Notion owns
+extract work-loop decisions and orchestration. Its pure decision engine has no imports, while
+cycle/wave/ask/stop and drive commands need explicit execution, work, notification and mesh services. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
 Foundation filesystem and diagnostic mechanisms are extracted; core retains their application

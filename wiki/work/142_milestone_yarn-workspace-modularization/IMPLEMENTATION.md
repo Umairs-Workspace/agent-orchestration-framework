@@ -502,3 +502,52 @@ Verification:
 
 Evidence is in .tmp/workspace-migration/work-validation/ (ignored). Full migration completion is
 tracked in COMPLETION.md; full-root-suite and cross-platform/native gates remain outstanding.
+
+## Work-graph package and command contributions — 2026-09-28
+
+Created @aof/work-graph with registry/checks, execution projection, record rendering, shared graph
+shapes, document composition and six package-owned command factories. Core assembles the contribution
+in the existing command order and supplies asset-root policy, run reads, item resolution and registry
+invocation. The package imports only declared lower-level contracts/foundation/work APIs and Node
+builtins; it has no core, mesh or executing-loop dependency. Registration/help metadata are inert.
+Shared loop bounds and the error constructor moved unchanged into contracts. Old paths forward or
+compose supplied services temporarily; removing these is still a completion requirement.
+
+The groundedness command now receives framework location from core's asset locator instead of
+counting parent directories from its own file. Its stale architecture exception was removed.
+Registry/module pointers continue resolving named compatibility exports in a copied installation.
+Pure checks/shapes/document and bounds/error files match their pre-extraction implementations exactly.
+
+Architecture changes follow the actual implementations: read-only registry discovery includes the
+package, while the two opt-in writers remain separately constrained. Bounds, document-reader and
+execution-fact consumer scans cover workspace source. Guards follow public package imports and
+ignore forwarding declarations when counting readers. No new mesh edge enters the local session
+closure (39 modules; assignment sink 84). The contribution-era ordering check now measures declared
+group order through contracts instead of requiring the retired flat COMMANDS array. Core's registry
+comment census is 44 after contribution extraction; its non-empty floor follows that surface.
+
+One historical test froze its source against git status, which would forbid every relocation. Its
+replacement freezes the public glyph bytes, alongside the existing Mermaid output oracles. Another
+historical test hashes the finding-envelope suite outside narrowly permitted regions: five exact
+read-subject/child-import path lines changed for 142, were reviewed, and its residue was re-pinned;
+fixtures, assertions, mask regions and line positions remain unchanged.
+
+Verification:
+
+- All 997 unit checks pass. Four new package cases verify inert six-command registration, ordered
+  routes/completeness, format refusal before service access, supplied-loader behavior and shared
+  contract usability. The root bridge now runs 81 package cases.
+- Immutable Yarn install with build scripts skipped passes; only the new internal workspace and
+  root edge change the lockfile. Supply-chain audit has zero warnings; existing peer warning remains.
+- Browser bundles for checks, projection and record rendering contain only the graph package and
+  shared pure bounds. SEA JavaScript includes the graph package; no native executable was built.
+- A real copied installer payload outside the checkout matches the old registry model and Mermaid
+  output over shipped loop records and invokes all five graph read/document commands. All 117
+  command IDs remain available; validation/digest, readiness and list/find parity also pass.
+- Initial graph/command checks exposed stale source paths, scan roots and historical guards, plus
+  one mechanical path rewrite that incorrectly changed a fixture's own source file. Those were
+  corrected and rerun. No production behavior failure was found by those runs.
+
+The final deduplicated selection passes all 820 checks with zero failures.
+Evidence is in .tmp/workspace-migration/work-graph/ (ignored).
+Full migration, full-root-suite and native/platform checks remain outstanding.

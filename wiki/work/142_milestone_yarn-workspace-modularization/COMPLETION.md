@@ -11,7 +11,7 @@ final tree. Historical passing checks alone do not prove the final layout works.
 | Core owns configuration, rendering, assistant assets, templates and hooks | Ownership retained; physical move and final asset-path/manifest verification outstanding. |
 | Contracts and foundation have explicit APIs | Implemented kernels; remaining shared primitives must be assigned without becoming a second monolith. |
 | Work owns lifecycle, records, discovery, readiness, validation and acceptance | Lifecycle/read/discovery/readiness/validation extracted. Acceptance, audit, mutations, run ownership and command contributions remain. |
-| Work graph is separate from executing the loop | Outstanding package and contribution extraction. |
+| Work graph is separate from executing the loop | Work-graph mechanisms and six command implementations/contribution extracted; final removal of compatibility paths and full-distribution checks remain. |
 | Work loop owns pure decisions and orchestration | Outstanding package and injected orchestration collaborators. |
 | Execution owns local sessions, runs, PTYs and reusable worktree mechanisms | Outstanding. Local session driver no longer imports mesh. |
 | Mesh owns coordination, projections and package commands | Effects and contribution declaration extracted; most implementations remain in root source. |

@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-7805 (78/ADR-002) — THE RECORD IS A FACE, NEVER A SECOND TRUTH.
 //
 // `SPEC.md` binds this record to the milestone-08 spine: it is derived from a registered `work:*`
@@ -49,7 +50,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // SIGN-OFF, and it may not recover an execution FACT from the document. That is why widening this
 // list is safe only alongside the per-module assertion in the next entry — the list is not the claim.
 const ALLOWED_READERS = [
-  "src/commands/loop-record.mjs",
+  "packages/work-graph/src/commands/loop-record.mjs",
   "src/work/doctor-loop-record.mjs",
 ];
 
@@ -71,11 +72,11 @@ export const archTests = [
   {
     name: "arch/78/02 FF-7805 only the writer and the checker name the record, and neither reads a fact out of it",
     run: async () => {
-      const files = await sourceFiles(path.join(repoRoot, "src"));
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(files.length > 100, "the src/ sweep is non-vacuous");
       const naming = [];
       for (const file of files) {
-        if (stripComments(await readFile(file, "utf8")).includes(EXECUTION_RECORD_BASENAME)) {
+        if (stripComments(await readFile(file, "utf8")).replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, "").includes(EXECUTION_RECORD_BASENAME)) {
           naming.push(path.relative(repoRoot, file).split(path.sep).join("/"));
         }
       }
@@ -95,7 +96,7 @@ export const archTests = [
   {
     name: "arch/78/02 FF-7805 the writer parses the sign-off and nothing else out of the document",
     run: async () => {
-      const source = stripComments(await readFile(path.join(repoRoot, "src/commands/loop-record.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loop-record.mjs"), "utf8"));
 
       // ONE read of the file, and its result goes straight into the sign-off parse. A second
       // `readFile` of the record, or a use of `existing` for anything but the parse and the
@@ -122,17 +123,17 @@ export const archTests = [
   {
     name: "arch/78/02 FF-7805 every consumer of an execution fact computes the model; the renderer is written to, never parsed",
     run: async () => {
-      const files = await sourceFiles(path.join(repoRoot, "src"));
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const importers = { projection: [], renderer: [] };
       for (const file of files) {
         const rel = path.relative(repoRoot, file).split(path.sep).join("/");
-        const source = stripComments(await readFile(file, "utf8"));
+        const source = stripComments(await readFile(file, "utf8")).replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, "");
         // The SPECIFIERS, resolved against the importing file, so `./commands/loop-record.mjs` (the
         // command core's import of the COMMAND) is never mistaken for an import of the projection.
         const specifiers = [...source.matchAll(/from\s+["'](\.[^"']+)["']/g)]
           .map((match) => path.relative(repoRoot, path.resolve(path.dirname(file), match[1])).split(path.sep).join("/"));
-        if (specifiers.includes("src/loop-record.mjs")) importers.projection.push(rel);
-        if (specifiers.includes("src/loop-record-render.mjs")) importers.renderer.push(rel);
+        if (specifiers.includes("packages/work-graph/src/record.mjs") || specifiers.includes("src/loop-record.mjs")) importers.projection.push(rel);
+        if (specifiers.includes("packages/work-graph/src/record-render.mjs") || specifiers.includes("src/loop-record-render.mjs")) importers.renderer.push(rel);
       }
       // THE DEPENDENCY DIRECTION IS THE CLAIM. Both consumers of an execution fact COMPUTE it through
       // 78/00's projection, from the run records — neither reads it back out of the document:
@@ -143,12 +144,12 @@ export const archTests = [
       // the authority on what ran. It projects instead.
       assert.deepEqual(
         importers.projection.sort(),
-        ["src/commands/loop-record.mjs", "src/work/doctor.mjs"],
+        ["packages/work-graph/src/commands/loop-record.mjs", "src/work/doctor.mjs"],
         "the execution model is COMPUTED from the run records by every consumer that has one",
       );
       // The RENDERER has exactly one consumer, and it only ever composes bytes — nothing imports it to
       // parse a document back into facts.
-      assert.deepEqual(importers.renderer, ["src/commands/loop-record.mjs"], "and the renderer's bytes are composed in one place");
+      assert.deepEqual(importers.renderer, ["packages/work-graph/src/commands/loop-record.mjs"], "and the renderer's bytes are composed in one place");
 
       // The stable contract is the command's `--json`, so the model reaches a consumer through the
       // registry. Asserted on the command itself rather than on prose about it.

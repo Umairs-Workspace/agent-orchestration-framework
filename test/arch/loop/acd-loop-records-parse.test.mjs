@@ -1,3 +1,5 @@
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -16,6 +18,17 @@ function declaredHere(source, symbol) {
   if (!declaration) return false;
   return [...source.matchAll(/export\s*\{([^}]*)\}\s*;/g)].some((match) =>
     match[1].split(",").some((part) => part.trim().split(/\s+as\s+/).at(-1) === symbol));
+}
+
+// A migration forward may name a public package export. Follow that explicit API
+// without executing the target; ordinary imported bindings still are not declarations.
+async function declaresPublicSymbol(source, symbol) {
+  if (declaredHere(source, symbol)) return true;
+  for (const match of source.matchAll(/export\s*\{([^}]*)\}\s*from\s*["'](@aof\/[^"']+)["']/g)) {
+    const entry = match[1].split(",").map(part => part.trim().split(/\s+as\s+/)).find(parts => (parts[1] ?? parts[0]) === symbol);
+    if (entry && declaredHere(await readFile(require.resolve(match[2]), "utf8"), entry[0])) return true;
+  }
+  return false;
 }
 
 function fieldEntries(node) {
@@ -86,7 +99,7 @@ export const archTests = [
         if (entry.pointer.scheme === "command") assert.ok(commands.has(entry.pointer.operand), entry.raw);
         if (entry.pointer.scheme === "module") {
           const source = await readFile(path.join(root, entry.pointer.operand), "utf8");
-          assert.ok(declaredHere(source, entry.pointer.symbol), `${entry.raw}: target declares symbol`);
+          assert.ok(await declaresPublicSymbol(source, entry.pointer.symbol), `${entry.raw}: target declares symbol`);
         }
       }
       assert.ok(pointers > 10, "real pointer sweep is non-vacuous");

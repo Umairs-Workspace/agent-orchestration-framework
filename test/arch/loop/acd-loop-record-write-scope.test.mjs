@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-7810 (78/ADR-001, ADR-009, m52/FF-5201) — THE WRITE SCOPE, AND THE NAME THE GATE FORCES.
 //
 // Three claims, and they are one claim seen from three sides: this milestone adds a WRITER to a
@@ -40,7 +41,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 
 // The modules milestone 78 adds. Named here so claim 2 is about THIS MILESTONE's files rather than
 // about whatever happens to be on disk.
-const ADDED_MODULES = ["src/loop-record.mjs", "src/loop-record-render.mjs", "src/commands/loop-record.mjs"];
+const ADDED_MODULES = ["packages/work-graph/src/record.mjs", "packages/work-graph/src/record-render.mjs", "packages/work-graph/src/commands/loop-record.mjs"];
 
 // FF-5201's two discovery patterns and its expected set, restated here ON PURPOSE. Reading them out
 // of that gate's source would make this gate green whenever that one was edited, which is the
@@ -48,23 +49,16 @@ const ADDED_MODULES = ["src/loop-record.mjs", "src/loop-record-render.mjs", "src
 // 119/01 — the first pattern was `^src/work-loops.*\.mjs$` and the family now lives in
 // `src/work/`. Restated here on purpose, as the comment above says, so the re-point is an
 // independent edit rather than one this gate inherits from the gate it is checking.
-const REGISTRY_FAMILY_PATTERNS = [/^src\/work\/loops.*\.mjs$/, /^src\/commands\/loops-.*\.mjs$/];
+const REGISTRY_FAMILY_PATTERNS = [/^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/, /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/];
 const FF_5201_EXPECTED = [
-  "src/work/loops.mjs", "src/work/loops-checks.mjs", "src/commands/loops-show.mjs",
-  "src/commands/loops-graph.mjs", "src/commands/loops-groundedness.mjs", "src/commands/loops-validate.mjs",
+  "packages/work-graph/src/registry.mjs", "packages/work-graph/src/checks.mjs", "packages/work-graph/src/commands/loops-show.mjs",
+  "packages/work-graph/src/commands/loops-graph.mjs", "packages/work-graph/src/commands/loops-groundedness.mjs", "packages/work-graph/src/commands/loops-validate.mjs",
 ];
 
 const WRITE_CALL_FORM = /\b(?:writeFile|appendFile|mkdir|rm|rename)\s*\(|\bopen\s*\([^,\n]+,\s*["']w/;
 
 async function discoverRegistryFamily() {
-  const found = [];
-  for (const name of await readdir(path.join(repoRoot, "src/work"))) {
-    if (REGISTRY_FAMILY_PATTERNS[0].test(`src/work/${name}`)) found.push(`src/work/${name}`);
-  }
-  for (const name of await readdir(path.join(repoRoot, "src/commands"))) {
-    if (REGISTRY_FAMILY_PATTERNS[1].test(`src/commands/${name}`)) found.push(`src/commands/${name}`);
-  }
-  return found.sort();
+  return (await readRuntimeFiles(repoRoot)).map(file => file.rel).filter(rel => /^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/.test(rel) || /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/.test(rel)).sort();
 }
 
 const write = async (repo) => await loopRecordCommand.run({ ref: ITEM_REF, write: true }, await ctxFor(repo));
@@ -100,7 +94,7 @@ export const archTests = [
       // than a convention: there is no `--out`, no path input, and a schema that admits neither.
       assert.deepEqual(Object.keys(loopRecordCommand.input.properties).sort(), ["ref", "write"]);
       assert.equal(loopRecordCommand.input.additionalProperties, false);
-      const source = stripComments(await readFile(path.join(repoRoot, "src/commands/loop-record.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loop-record.mjs"), "utf8"));
       assert.match(source, /path\.join\(item\.dir, EXECUTION_RECORD_BASENAME\)/, "the target is derived from the item's own folder");
       assert.equal((source.match(/writeText\(/g) ?? []).length, 1, "and there is exactly one write, to exactly that target");
 
@@ -177,8 +171,8 @@ export const archTests = [
   {
     name: "arch/78/02 FF-7810 the filesystem is reached through the ONE shared atomic writer",
     run: async () => {
-      const source = stripComments(await readFile(path.join(repoRoot, "src/commands/loop-record.mjs"), "utf8"));
-      assert.match(source, /import\s*\{\s*writeText\s*\}\s*from\s*["']\.\.\/fs\.mjs["']/, "the command writes through the shared atomic writer");
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loop-record.mjs"), "utf8"));
+      assert.match(source, /import\s*\{\s*writeText\s*\}\s*from\s*["']@aof\/foundation\/fs["']/, "the command writes through the shared atomic writer");
       // `writeText` is temp + rename with the temp reclaimed on the failure path (m42/F26), so a
       // write that cannot complete leaves the previous record — signature and all — intact. A second
       // spelling here would be a second atomicity story with a worse failure mode.
@@ -186,7 +180,7 @@ export const archTests = [
 
       // The two pure leaves stay pure — belt and braces beside FF-7801/FF-7802, and the reason the
       // naming above is not a way to hold a writer somewhere no sweep can see it.
-      for (const rel of ["src/loop-record.mjs", "src/loop-record-render.mjs"]) {
+      for (const rel of ["packages/work-graph/src/record.mjs", "packages/work-graph/src/record-render.mjs"]) {
         assert.doesNotMatch(stripComments(await readFile(path.join(repoRoot, rel), "utf8")), WRITE_CALL_FORM, `${rel}: no write call form`);
       }
     },

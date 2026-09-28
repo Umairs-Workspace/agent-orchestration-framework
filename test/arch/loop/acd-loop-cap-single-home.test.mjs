@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -170,7 +171,7 @@ function keyProblems(units) {
   return problems;
 }
 
-const LOOP_BOUND_HOME = "src/loop-bounds.mjs";
+const LOOP_BOUND_HOME = "packages/contracts/src/loop-bounds.mjs";
 const LOOP_BOUND_DEFAULTS = Object.freeze([
   "DEFAULT_START_TO_CLOSE_MS",
   "DEFAULT_HEARTBEAT_MS",
@@ -274,7 +275,7 @@ function manifestProblems(commandIds) {
 }
 
 async function sourceUnits() {
-  const files = await modules();
+  const files = (await readRuntimeFiles(root)).map(file => file.path);
   const units = [];
   for (const file of files) {
     units.push({ rel: path.relative(root, file).replaceAll("\\", "/"), code: stripComments(await readFile(file, "utf8")) });

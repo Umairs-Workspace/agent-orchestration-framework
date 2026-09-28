@@ -158,7 +158,7 @@ export const archTests = [
   {
     name: "arch/58 FF-5801: the fifth kind widens the vocabulary additively and admits nothing that could act",
     run: async () => {
-      const loaderSource = await readFile(path.join(root, "src", "work", "loops.mjs"), "utf8");
+      const loaderSource = await readFile(path.join(root, "packages/work-graph/src/registry.mjs"), "utf8");
 
       // ——— the frozen literals ———————————————————————————————————————————————————————
       assert.deepEqual([...NODE_KINDS], [...PRIOR_KINDS, "arbiter", ...LATER_KINDS],
@@ -234,7 +234,7 @@ export const archTests = [
       // hand-listed corpus that missed a sentinel would agree with a loader that missed the same
       // one. Reserved prefixes are the three pointer schemes plus `prose:`, cross-checked against
       // the loader's own line so the derivation cannot drift from the constant it mirrors.
-      const loaderSource = await readFile(path.join(root, "src", "work", "loops.mjs"), "utf8");
+      const loaderSource = await readFile(path.join(root, "packages/work-graph/src/registry.mjs"), "utf8");
       const reserved = [...[...POINTER_SCHEMES].map((scheme) => `${scheme}:`), "prose:"];
       assert.match(
         loaderSource,

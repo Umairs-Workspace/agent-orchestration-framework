@@ -24,6 +24,7 @@
 // to process.cwd() (path.relative, OS separators). Basis-neutral results let each
 // face project losslessly — the keystone that makes byte-for-byte on both faces
 // achievable on Windows separators (ADR-002).
+import { createWorkGraphContribution } from "@aof/work-graph/commands";
 import { createCommandRegistry } from "@aof/contracts/commands";
 import { meshContribution } from "./commands/mesh/contribution.mjs";
 import { loadWorkspace } from "./work.mjs";
@@ -178,12 +179,9 @@ const loopsGroundednessCommand = createLoopsGroundednessCommand({
 const CONTRIBUTIONS = [
   { name: "aof", commands: [
     listCommand,
-    loopsShowCommand,
-    loopsGraphCommand,
-    loopsValidateCommand,
-    loopsGroundednessCommand,
-    loopDocumentCommand,
-    loopRecordCommand,
+  ] },
+  createWorkGraphContribution({ show: loopsShowCommand, graph: loopsGraphCommand, validate: loopsValidateCommand, groundedness: loopsGroundednessCommand, document: loopDocumentCommand, record: loopRecordCommand }),
+  { name: "aof", commands: [
     debtCommand,
     docCommand,
     tasksCommand,

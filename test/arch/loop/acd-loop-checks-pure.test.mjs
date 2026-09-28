@@ -25,9 +25,9 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const runFile = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const checksPath = path.join(root, "src/work/loops-checks.mjs");
-const loaderPath = path.join(root, "src/work/loops.mjs");
-const commandPath = path.join(root, "src/commands/loops-groundedness.mjs");
+const checksPath = path.join(root, "packages/work-graph/src/checks.mjs");
+const loaderPath = path.join(root, "packages/work-graph/src/registry.mjs");
+const commandPath = path.join(root, "packages/work-graph/src/commands/loops-groundedness.mjs");
 const CHECK_NAMES = Object.freeze({
   grounding: "checkGrounding",
   "anchor-grounding": "checkAnchorGrounding",
@@ -152,7 +152,7 @@ export const archTests = [
     name: "arch/57 FF-5702: watcher independence is model-only and no node may declare independence or its own watcher",
     run: async () => {
       const checksSource = stripComments(await readFile(checksPath, "utf8"));
-      await assertFamilyPurity(assert, root, "src/work/loops-checks");
+      await assertFamilyPurity(assert, root, "packages/work-graph/src/checks");
       assert.doesNotMatch(checksSource, /node:fs|readFile|readdir|access\s*\(|stat\s*\(|process\.cwd|Date\.now|\bfetch\s*\(|\bimport\s*\(/);
       assert.equal(ADMITTED_KEYS.watcher.has("independence"), false, "a watcher cannot assert its own independence");
       assert.equal(ADMITTED_KEYS.loop.has("independence"), false, "a loop cannot assert watcher independence");
@@ -200,7 +200,7 @@ export const archTests = [
     name: "arch/58 FF-5804: supervision is computed rather than self-declared, and the checks leaf still imports nothing",
     run: async () => {
       const checksSource = stripComments(await readFile(checksPath, "utf8"));
-      await assertFamilyPurity(assert, root, "src/work/loops-checks");
+      await assertFamilyPurity(assert, root, "packages/work-graph/src/checks");
       assert.doesNotMatch(checksSource, /node:fs|readFile|readdir|access\s*\(|stat\s*\(|process\.cwd|Date\.now|\bfetch\s*\(|\bimport\s*\(/u);
 
       for (const key of ["supervised-by", "arbitrated-by", "dead-band", "independence", "layer-authority"]) {
@@ -259,7 +259,7 @@ export const archTests = [
     run: async () => {
       const source = await readFile(checksPath, "utf8");
       const checksSource = stripComments(source);
-      await assertFamilyPurity(assert, root, "src/work/loops-checks");
+      await assertFamilyPurity(assert, root, "packages/work-graph/src/checks");
       assert.doesNotMatch(checksSource, /node:fs|readFile|readdir|access\s*\(|stat\s*\(|process\.cwd|\bfetch\s*\(|\bimport\s*\(/u);
 
       // (a) NO DATE AND NO CLOCK, IN ANY SPELLING. `performance.now()` is the one that matters here:

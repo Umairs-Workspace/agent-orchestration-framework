@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./commands": "./src/commands.mjs"
+    "./commands": "./src/commands.mjs",
+    "./loop-bounds": "./src/loop-bounds.mjs",
+    "./error": "./src/error.mjs"
   },
   "files": [
     "src"

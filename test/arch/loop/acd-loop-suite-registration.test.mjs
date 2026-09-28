@@ -596,7 +596,9 @@ const ACCEPTED_CEILINGS = Object.freeze([
     // so the widened census is frozen again at its new value, which is this ceiling's own rule
     // and the reason the next unattributed byte still fails. Verified by planting one: a trailing
     // comment appended to the accepted suite reds REG-MUT-15 against this pin.
-    residue: "0afed223e0386b9174bffa734ab7811ec195a72d13794da638057a599579525f",
+    // 142: five read-subject/child-import path lines now name work-graph source.
+    // Assertions, fixtures, pinned regions and line positions are unchanged.
+    residue: "0d0e46af0c12403b1ff161dad841e374fe0249642c7f8aed4f1a813954a45c92",
     regions: [
       {
         id: "FF-5209 roster",

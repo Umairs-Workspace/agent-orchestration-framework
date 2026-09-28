@@ -46,7 +46,7 @@ import {
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FAMILY_DIR = path.join(REPO_ROOT, "src", "work-trigger");
-const LOADER_PATH = path.join(REPO_ROOT, "src", "work", "loops.mjs");
+const LOADER_PATH = path.join(REPO_ROOT, "packages/work-graph/src/registry.mjs");
 const BUNDLE_DESCRIPTOR = path.join(REPO_ROOT, "src", "bundle", "bundle.json");
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");

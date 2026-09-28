@@ -1,3 +1,6 @@
+import { createRequire } from "node:module";
+import { importSpecifiers } from "../../support/module-family.mjs";
+const require = createRequire(import.meta.url);
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -5,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MODULE = "src/loop-record.mjs";
+const MODULE = "packages/work-graph/src/record.mjs";
 
 // FF-7801 — the projection is PURE. It computes over injected records only: no filesystem, no
 // clock, no spawn. That is what lets the renderer (78/01) and the writer (78/02) be built beside it
@@ -29,8 +32,9 @@ async function sourceOf(rel) {
 }
 
 function importsOf(source, rel) {
-  const dir = path.posix.dirname(rel.split(path.sep).join("/"));
-  return [...source.matchAll(LOCAL_IMPORT)].map((match) => path.posix.normalize(path.posix.join(dir, match[1])));
+  return importSpecifiers(source).map(({ specifier }) => specifier.startsWith(".")
+    ? path.posix.normalize(path.posix.join(path.posix.dirname(rel), specifier))
+    : path.relative(root, require.resolve(specifier)).replaceAll("\\", "/"));
 }
 
 export const archTests = [
@@ -50,7 +54,7 @@ export const archTests = [
       const source = await sourceOf(MODULE);
       const direct = importsOf(source, MODULE);
       assert.ok(direct.length > 0, "the projection has at least one direct local import to follow");
-      assert.deepEqual(direct, ["src/loop-bounds.mjs"],
+      assert.deepEqual(direct, ["packages/contracts/src/loop-bounds.mjs"],
         "the projection's direct import set is the one this gate has checked — a new import re-opens the question");
       for (const rel of direct) {
         const imported = await sourceOf(rel);
@@ -65,7 +69,7 @@ export const archTests = [
     run: async () => {
       const source = await sourceOf(MODULE);
       const bare = [...source.matchAll(/\bfrom\s+["']([^."'][^"']*)["']/g)].map((match) => match[1]);
-      assert.deepEqual(bare, [], "a pure leaf imports nothing it does not own");
+      assert.deepEqual(bare, ["@aof/contracts/loop-bounds"], "a pure leaf imports nothing it does not own");
     },
   },
   {

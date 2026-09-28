@@ -367,3 +367,24 @@ Work-graph is the next cohesive extraction: loops loader/checks, loop records/re
 document composition and their six command descriptors. Loader asset/version-root policy belongs to
 core; run lookup and registry invocation should be supplied. Shared loop-bound vocabulary/resolvers
 must sit below the graph and executing loop so declaring a graph does not import execution.
+
+## Work-graph boundary implemented — 2026-09-28
+
+Work-graph owns the declared registry and its checks, projections over supplied execution records,
+renderers and six CLI descriptors. Core passes getFrameworkRoot for framework-authored module
+pointers and supplies run reads, exact item/local-checkout resolution, command lookup and registry
+invocation. The package depends only on contracts, foundation and work; it never imports core,
+execution, mesh or the running command registry. The declared graph therefore remains separate
+from executing the delivery loop.
+
+The shared loop-bound vocabulary/resolvers and command-error constructor are pure contracts.
+Moving them below both graph and execution avoids a work-graph -> work-loop -> work-graph cycle.
+The graph grounding command no longer guesses the framework root with two parent-directory hops;
+its old admitted path-arithmetic exception was removed. Copied-install module-pointer resolution
+continues to work through named compatibility exports, without importing target code to inspect it.
+
+Next: work-loop. src/work/loop.mjs is a zero-import decision engine. The shell and cycle/wave/ask/stop
+modules combine work lookup, run persistence, notification, scope locks, mesh worktrees and child
+execution. Those services need explicit ports; moving the entire import cycle unchanged would
+violate the package boundary. The process boundary remains important: lanes run as child processes,
+not in-process session drivers, and the wave is read from work:next rather than recomputed.

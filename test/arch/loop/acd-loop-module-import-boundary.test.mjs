@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
@@ -7,14 +8,14 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const expectedLoopModules = [
-  "src/work/loops.mjs", "src/work/loops-checks.mjs", "src/commands/loops-show.mjs",
-  "src/commands/loops-graph.mjs", "src/commands/loops-groundedness.mjs", "src/commands/loops-validate.mjs",
+  "packages/work-graph/src/registry.mjs", "packages/work-graph/src/checks.mjs", "packages/work-graph/src/commands/loops-show.mjs",
+  "packages/work-graph/src/commands/loops-graph.mjs", "packages/work-graph/src/commands/loops-groundedness.mjs", "packages/work-graph/src/commands/loops-validate.mjs",
 ];
 // THE LOOP FAMILY, AS RESOLVED PATHS. The six modules `expectedLoopModules` names are the same
 // six this set holds; it is spelled separately because THIS one is compared against a resolved
 // specifier and that one against a discovered listing, and collapsing them would make one
 // control's answer depend on the other's.
-const LOOP_FAMILY = Object.freeze(new Set(expectedLoopModules));
+const LOOP_FAMILY = Object.freeze(new Set([...expectedLoopModules, "src/work/loops.mjs", "src/work/loops-checks.mjs", ...["loops-show", "loops-graph", "loops-validate", "loops-groundedness"].map(name => `src/commands/${name}.mjs`)]));
 
 // What TEXT carries and no resolver can reach: a `work:loops-*` command id, a bare `"loops-show"`
 // route or id string, a prose citation, and an EXTENSIONLESS `ui/` import (Vite's default
@@ -43,6 +44,10 @@ function reachesLoopFamily(rel, code) {
     // A query or fragment suffix is not part of the path Node resolves, and a `//` is not an
     // empty directory — both were spellings the walk carried through and then failed to match.
     const specifier = entry.specifier.replace(/[?#].*$/u, "");
+    if (/^@aof\/work-graph\/(?:registry|checks|commands\/loops-)/.test(specifier)) {
+      found.push(rel + " imports the graph package at " + specifier);
+      continue;
+    }
     if (!specifier.startsWith(".")) continue;
     const from = rel.split("/").slice(0, -1);
     for (const segment of specifier.split("/")) {
@@ -66,18 +71,7 @@ function reachesLoopFamily(rel, code) {
 // sixth loop module would then be exempt from the `parseFrontmatter`-only seam below, which is
 // the one seam ADR-011 §1 leaves open between the god-node and this family.
 async function discoverLoopModules() {
-  const found = [];
-  // 119/01 — the family moved to `src/work/`, so the sweep walks its new home and matches the
-  // leaf as it now reads. It was `src/` + /^work-loops.*\.mjs$/, which after the move swept a
-  // directory the family had left and would have gone empty; the `deepEqual` against the
-  // expected set below is what turned that into a RED rather than a silent pass (ADR-003 §4).
-  for (const name of await readdir(path.join(root, "src/work"))) {
-    if (/^loops.*\.mjs$/.test(name)) found.push(`src/work/${name}`);
-  }
-  for (const name of await readdir(path.join(root, "src/commands"))) {
-    if (/^loops-.*\.mjs$/.test(name)) found.push(`src/commands/${name}`);
-  }
-  return found.sort();
+  return (await readRuntimeFiles(root)).map(file => file.rel).filter(rel => /^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/.test(rel) || /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/.test(rel)).sort();
 }
 
 // FF-5208 means `ui/` SOURCE. `ui/dist/assets/*.js` is minified onto single lines — a false-
@@ -107,13 +101,13 @@ export const archTests = [
       const discovered = [];
       for (const rel of loopModules) {
         const source = stripComments(await readFile(path.join(root, rel), "utf8"));
-        for (const match of source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']([^"']*work\.mjs)["']/g)) {
+        for (const match of source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'](@aof\/work\/records)["']/g)) {
           discovered.push({ rel, source: match[2], bindings: match[1].split(",").map((value) => value.trim()).filter(Boolean) });
         }
         assert.doesNotMatch(source, /import\s+(?:\*\s+as|[A-Za-z_$])[^;]*from\s+["'][^"']*work\.mjs["']/);
       }
       assert.deepEqual(discovered, [
-        { rel: "src/work/loops.mjs", source: "../work.mjs", bindings: ["parseFrontmatter"] },
+        { rel: "packages/work-graph/src/registry.mjs", source: "@aof/work/records", bindings: ["parseFrontmatter"] },
       ], "the loader has exactly one work.mjs import and the other loop modules cannot widen or erase that seam");
     },
   },

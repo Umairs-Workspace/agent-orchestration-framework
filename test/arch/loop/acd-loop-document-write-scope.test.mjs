@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for story 79 — THE WRITE SCOPE, THE NAME THE GATE FORCES, AND THE PURE LEAF.
 //
 // Three claims, and they are one claim seen from three sides: this story adds a WRITER to a family
@@ -35,7 +36,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 
 // The modules story 79 adds. Named here so claim 2 below is about THIS STORY's files rather than
 // about whatever happens to be on disk.
-const ADDED_MODULES = ["src/loop-document.mjs", "src/commands/loop-document.mjs"];
+const ADDED_MODULES = ["packages/work-graph/src/document.mjs", "packages/work-graph/src/commands/loop-document.mjs"];
 
 // FF-5201's two discovery patterns, restated here ON PURPOSE. Reading them out of that gate's
 // source would make this gate green whenever that one was edited, which is the opposite of an
@@ -43,23 +44,16 @@ const ADDED_MODULES = ["src/loop-document.mjs", "src/commands/loop-document.mjs"
 // 119/01 — the first pattern was `^src/work-loops.*\.mjs$` and the family now lives in
 // `src/work/`. Restated here on purpose, as the comment above says, so the re-point is an
 // independent edit rather than one this gate inherits from the gate it is checking.
-const REGISTRY_FAMILY_PATTERNS = [/^src\/work\/loops.*\.mjs$/, /^src\/commands\/loops-.*\.mjs$/];
+const REGISTRY_FAMILY_PATTERNS = [/^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/, /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/];
 const FF_5201_EXPECTED = [
-  "src/work/loops.mjs", "src/work/loops-checks.mjs", "src/commands/loops-show.mjs",
-  "src/commands/loops-graph.mjs", "src/commands/loops-groundedness.mjs", "src/commands/loops-validate.mjs",
+  "packages/work-graph/src/registry.mjs", "packages/work-graph/src/checks.mjs", "packages/work-graph/src/commands/loops-show.mjs",
+  "packages/work-graph/src/commands/loops-graph.mjs", "packages/work-graph/src/commands/loops-groundedness.mjs", "packages/work-graph/src/commands/loops-validate.mjs",
 ];
 
 const WRITE_CALL_FORM = /\b(?:writeFile|appendFile|mkdir|rm|rename)\s*\(|\bopen\s*\([^,\n]+,\s*["']w/;
 
 async function discoverRegistryFamily() {
-  const found = [];
-  for (const name of await readdir(path.join(repoRoot, "src/work"))) {
-    if (REGISTRY_FAMILY_PATTERNS[0].test(`src/work/${name}`)) found.push(`src/work/${name}`);
-  }
-  for (const name of await readdir(path.join(repoRoot, "src/commands"))) {
-    if (REGISTRY_FAMILY_PATTERNS[1].test(`src/commands/${name}`)) found.push(`src/commands/${name}`);
-  }
-  return found.sort();
+  return (await readRuntimeFiles(repoRoot)).map(file => file.rel).filter(rel => /^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/.test(rel) || /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/.test(rel)).sort();
 }
 
 export const archTests = [
@@ -116,7 +110,7 @@ export const archTests = [
       // And the frozen renderer in particular: no write form, and no output-path input. `--out` on
       // `work:loops-graph` would have been red twice over — once for writing, once for changing
       // the shape of a frozen command — which is exactly why the writer is a separate module.
-      const graph = stripComments(await readFile(path.join(repoRoot, "src/commands/loops-graph.mjs"), "utf8"));
+      const graph = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loops-graph.mjs"), "utf8"));
       assert.doesNotMatch(graph, WRITE_CALL_FORM, "src/commands/loops-graph.mjs: no write call form");
       assert.deepEqual(Object.keys(loopsGraphCommand.input.properties), ["format"], "and it declares no output-path input");
       assert.equal(loopsGraphCommand.input.additionalProperties, false);
@@ -125,7 +119,7 @@ export const archTests = [
   {
     name: "arch/79/01 the composer is a pure leaf — no filesystem, no clock, no environment through its direct imports",
     run: async () => {
-      const source = stripComments(await readFile(path.join(repoRoot, "src/loop-document.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/document.mjs"), "utf8"));
       const imports = importSpecifiers(source).map((entry) => entry.specifier);
       assert.deepEqual(imports, ["node:path"], "its direct imports are exactly node:path");
       for (const forbidden of [/\bnode:fs\b/, /\bnode:os\b/, /\bnode:child_process\b/, /\bDate\b/, /\bprocess\.env\b/, /\bprocess\.cwd\b/]) {
@@ -135,8 +129,8 @@ export const archTests = [
 
       // The command is where the filesystem lives, and it reaches it through ONE door: the shared
       // atomic `writeText`. A second spelling of a write here would be a second atomicity story.
-      const command = stripComments(await readFile(path.join(repoRoot, "src/commands/loop-document.mjs"), "utf8"));
-      assert.match(command, /import\s*\{\s*writeText\s*\}\s*from\s*["']\.\.\/fs\.mjs["']/, "the command writes through the shared atomic writer");
+      const command = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loop-document.mjs"), "utf8"));
+      assert.match(command, /import\s*\{\s*writeText\s*\}\s*from\s*["']@aof\/foundation\/fs["']/, "the command writes through the shared atomic writer");
       assert.doesNotMatch(command, /\b(?:appendFile|rm|rename)\s*\(/, "and reaches no other write form of its own");
       assert.equal((command.match(/\bwriteFile\s*\(/g) ?? []).length, 0, "it never calls writeFile directly");
     },

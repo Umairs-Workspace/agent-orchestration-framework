@@ -99,7 +99,7 @@ export const loopDocumentTests = [
 
       // No glyph, node ordering or edge ordering is restated OUTSIDE the renderer: the composer's
       // own source carries none of the shapes 52/FF-5208 froze, and no ordering of its own.
-      const composer = stripComments(await readFile(path.join(repoRoot, "src/loop-document.mjs"), "utf8"));
+      const composer = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/document.mjs"), "utf8"));
       for (const glyph of ['(["', '(("', '{{"', '[/"', '-->|', "flowchart LR"]) {
         assert.ok(!composer.includes(glyph), `src/loop-document.mjs restates no renderer glyph or edge form (${glyph})`);
       }
@@ -112,7 +112,7 @@ export const loopDocumentTests = [
       // This story IMPORTS `renderLoopGraph` and restates none of it, so the only ways it could
       // have moved `src/commands/loops-graph.mjs` are the two the contract names: an output-path
       // input, or a write call form. Both are asserted here, on the file as it stands.
-      const source = stripComments(await readFile(path.join(repoRoot, "src/commands/loops-graph.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loops-graph.mjs"), "utf8"));
       assert.doesNotMatch(
         source,
         /\b(?:writeFile|appendFile|mkdir|rm|rename)\s*\(/,
@@ -231,7 +231,7 @@ export const loopDocumentTests = [
   {
     name: "loop-document/00 composition reaches no clock, no filesystem and no environment",
     async run() {
-      const composer = stripComments(await readFile(path.join(repoRoot, "src/loop-document.mjs"), "utf8"));
+      const composer = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/document.mjs"), "utf8"));
       const imports = [...composer.matchAll(/^import\s[^;]*?from\s+["']([^"']+)["']/gm)].map((match) => match[1]);
       assert.deepEqual(imports, ["node:path"], "the composer's DIRECT imports are exactly node:path — no fs, no os, no child_process");
       for (const reach of [/\bDate\b/, /\bprocess\.env\b/, /\bprocess\.cwd\b/, /\bhostname\b/, /\bnode:fs\b/]) {

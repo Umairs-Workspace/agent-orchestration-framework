@@ -99,7 +99,7 @@ export const archTests = [
         assert.equal(commandResult.text.split("\n").filter((line) => line && line !== "flowchart LR" && !line.includes(" -->|")).length, 7);
       } finally { await rm(temp, { recursive: true, force: true }); }
 
-      const url = pathToFileURL(path.join(root, "src/commands/loops-graph.mjs")).href;
+      const url = pathToFileURL(path.join(root, "packages/work-graph/src/commands/loops-graph.mjs")).href;
       const script = `import {renderLoopGraph} from ${JSON.stringify(url)}; console.log(JSON.stringify(renderLoopGraph(${JSON.stringify(shuffledModel(model))})));`;
       const { stdout } = await runFile(process.execPath, ["--input-type=module", "--eval", script]);
       assert.equal(stdout.trim(), JSON.stringify({ text: expectedText, edgeCount: 6 }));

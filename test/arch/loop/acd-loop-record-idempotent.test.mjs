@@ -106,7 +106,7 @@ export const archTests = [
       // pass all three and then move the bytes at midnight, on somebody else's machine, months
       // later. The composition path is held free of the three inputs that do that.
       const { functionBody, stripComments } = await import("../../support/source-slice.mjs");
-      const command = stripComments(await readFile(path.join(repoRoot, "src/commands/loop-record.mjs"), "utf8"));
+      const command = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loop-record.mjs"), "utf8"));
       // `displayPath` is cwd-relative and is DELIBERATELY still allowed: it feeds the human render
       // and the malformed refusal, never the composed document. So the assertion is scoped to the
       // composition — the text is `renderExecutionDocument(...)` plus the sign-off block, and

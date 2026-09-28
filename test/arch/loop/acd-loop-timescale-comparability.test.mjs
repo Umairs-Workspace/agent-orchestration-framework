@@ -8,8 +8,8 @@ import { MIN_SEPARATION_RATIO, checkReferenceOwnership, checkTimescale } from ".
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const checksPath = path.join(root, "src/work/loops-checks.mjs");
-const loaderPath = path.join(root, "src/work/loops.mjs");
+const checksPath = path.join(root, "packages/work-graph/src/checks.mjs");
+const loaderPath = path.join(root, "packages/work-graph/src/registry.mjs");
 const endpoint = (raw, resolved = true) => ({ raw, scheme: "loop", operand: raw.slice(5), resolved });
 function loop(id, cadence, edges = {}, layer = null) {
   const fields = { cadence };
@@ -94,7 +94,7 @@ export const archTests = [
         });
         assert.deepEqual(checkTimescale({ source: root, nodes: [external] }), [], `${scheme} endpoint is outside the loop timescale domain`);
       }
-      const source = stripComments(await readFile(path.join(root, "src/work/loops-checks.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(root, "packages/work-graph/src/checks.mjs"), "utf8"));
       for (const trigger of EVENT_TRIGGERS) assert.equal(source.includes(trigger), false, `${trigger} has no duration mapping in checks`);
     },
   },

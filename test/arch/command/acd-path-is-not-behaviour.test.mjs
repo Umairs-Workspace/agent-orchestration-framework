@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function: FF-11905 (119/ADR-008) —
 //
 //   "No path in this tree is load-bearing for behaviour."
@@ -63,10 +64,7 @@ export const ADMITTED_SELF_LOCATED = Object.freeze([
     module: "src/work-audit/toolkit.mjs",
     why: "THE TOOLKIT ROOT IS THIS MODULE'S SUBJECT (m77/ADR-002). It answers 'where was aof itself installed', which is a question about this file's own location and nothing else — deriving it from anywhere but here is the second root TECH_DEBT 72 is made of. It is admitted because the derivation IS the module, and it is safe because `src/work-audit/` is a sub-family directory ADR-005 §3 rules is never nested.",
   }),
-  Object.freeze({
-    module: "src/commands/loops-groundedness.mjs",
-    why: "the SAME latent defect `src/work-loops.mjs` carried, in a file this story does not own: `src/commands/` is 119/02's layer and this module is not in its moving set, so a behavioural fix here would be scope this story cannot verify. Named rather than left invisible — it is wrong the day the file moves, and this row is what makes that a table edit somebody reads.",
-  }),
+
 ]);
 
 // A path expression that produces a NAME. `path.basename(...)`, `path.dirname(...)`,
@@ -156,17 +154,8 @@ async function read(rel) {
 // Every `.mjs` under `src/`, recursively. `src/bundle/` is skipped: it is shipped PROSE and
 // template assets rather than modules this tree loads, and a template is allowed to spell
 // whatever a rendered file will need.
-async function sourceModules(rel = "src") {
-  const out = [];
-  for (const entry of await readdir(path.join(repoRoot, rel), { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      if (entry.name === "bundle") continue;
-      out.push(...(await sourceModules(`${rel}/${entry.name}`)));
-    } else if (entry.name.endsWith(".mjs")) {
-      out.push(`${rel}/${entry.name}`);
-    }
-  }
-  return out;
+async function sourceModules() {
+  return (await readRuntimeFiles(repoRoot)).map(file => file.rel);
 }
 
 export const archTests = [
@@ -200,7 +189,7 @@ export const archTests = [
   {
     name: "arch/119 FF-11905: the route table is built from each command's DECLARED route words, and the registered order is a declared array order rather than a directory listing",
     run: async () => {
-      const face = stripComments(await read(FACE));
+      const face = stripComments(await read("packages/contracts/src/commands.mjs"));
       const registry = stripComments(await read(REGISTRY));
 
       // The face reads `cli.route` off the command and joins its words into the table key. That
@@ -210,19 +199,17 @@ export const archTests = [
       assert.match(face, /route\s*\.\s*join\s*\(\s*["'` ]/u, "…and the table key is those declared words joined, not a filename");
       assert.equal(DIRECTORY_LISTING.test(face), false, "the face performs no directory listing — a route table derived from a listing is one no diff can review");
 
-      // `COMMANDS` is an ARRAY LITERAL of imported bindings. Its order is the registered order,
-      // and it is declared: no sort, no listing, no filename comparison produces it.
-      const commands = registry.match(/const\s+COMMANDS\s*=\s*\[([\s\S]*?)\n\];/u);
-      assert.ok(commands != null, "the registry declares COMMANDS as an array literal");
-      const members = commands[1]
-        .split(/\r?\n/u)
-        .map((line) => line.trim().replace(/,$/u, ""))
-        .filter((line) => line.length > 0);
-      assert.ok(members.length >= 40, `non-vacuity: the COMMANDS literal holds ${members.length} entries`);
-      for (const member of members) {
-        assert.match(member, /^[A-Za-z_$][\w$]*$/u, `${member} is a bare imported binding — an array of identifiers is a declaration; anything computed here would be an ordering derived from something`);
-      }
-      assert.equal(/COMMANDS\s*\.\s*sort\s*\(/u.test(registry), false, "the registered order is the literal's order — nothing re-sorts it");
+      // Ordered contribution groups replace the old flat array; order remains explicit.
+      assert.match(registry, /const\s+CONTRIBUTIONS\s*=\s*\[/u);
+      assert.match(registry, /createCommandRegistry\(CONTRIBUTIONS\)/u);
+      const { createCommandRegistry } = await import("@aof/contracts/commands");
+      const command = id => ({ id, run() {} });
+      const declared = createCommandRegistry([
+        { name: "first", commands: [command("z:last"), command("a:first")] },
+        { name: "second", commands: [command("m:middle")] },
+      ]);
+      assert.deepEqual(declared.listCommands().map(entry => entry.id), ["z:last", "a:first", "m:middle"]);
+      assert.doesNotMatch(registry, /CONTRIBUTIONS\s*\.\s*sort\s*\(/u);
       assert.equal(DIRECTORY_LISTING.test(registry), false, "the registry performs no directory listing");
     },
   },

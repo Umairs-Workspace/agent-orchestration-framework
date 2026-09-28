@@ -160,7 +160,7 @@ export const loopBoundsTests = [
   {
     name: "69/00 bounds/00 dispatch concurrency and maxAttempts keep their existing homes",
     async run() {
-      const source = stripComments(await readFile(path.join(root, "src", "loop-bounds.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(root, "packages/contracts/src/loop-bounds.mjs"), "utf8"));
       // The POOL bound (`work.dispatch.concurrency`) and maxAttempts keep their homes; the home's
       // OWN `work.loop.dispatch.concurrency` (129/07) is read here and is not the pool's key.
       assert.doesNotMatch(source, /work\??\.dispatch\??\.concurrency|autonomous\??\.maxAttempts/u);
@@ -383,7 +383,7 @@ export const clampTests = [
       // And nothing has to be edited anywhere for the refusal to stop applying:
       // the production leaf holds no fact about the key's name, so there is no
       // record of it to remember to delete on the day it means one thing.
-      const source = await readFile(path.join(root, "src", "loop-bounds.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages/contracts/src/loop-bounds.mjs"), "utf8");
       assert.doesNotMatch(source, /maxAttempts/u, "the leaf never spells the key");
     },
   },
@@ -790,7 +790,7 @@ export const clampTests = [
   {
     name: "140/01 the loop never reads the workspace twin — neither the bounds home nor the drive reads work.agents.mode",
     async run() {
-      for (const file of ["src/loop-bounds.mjs", "src/commands/drive.mjs"]) {
+      for (const file of ["packages/contracts/src/loop-bounds.mjs", "src/commands/drive.mjs"]) {
         const code = stripComments(await readFile(new URL(`../../${file}`, import.meta.url), "utf8"));
         assert.doesNotMatch(code, /agents\??\.mode\b/u, `${file}: work.agents.mode is not read`);
         assert.doesNotMatch(code, /work\??\.agents\??\.mode/u, `${file}: nor spelled as a key`);
@@ -821,7 +821,7 @@ export const clampTests = [
     async run() {
       const workspace = { config: { work: { loop: { dispatch: { concurrency: 1 }, agents: { refine: { mode: "solo" } } } } } };
       assert.deepEqual(Object.keys(loopBoundsFromConfig(workspace)), Object.keys(defaults), "the eight of HEAD, no more");
-      const home = stripComments(await readFile(new URL("../../src/loop-bounds.mjs", import.meta.url), "utf8"));
+      const home = stripComments(await readFile(new URL("../../packages/contracts/src/loop-bounds.mjs", import.meta.url), "utf8"));
       assert.doesNotMatch(home, /work\??\.dispatch\??\.concurrency/u, "the pool bound is not read here");
       assert.doesNotMatch(home, /agents\??\.mode\b/u, "work.agents.mode is not read here");
       assert.doesNotMatch(home, /work\??\.agents\b/u, "work.agents is not read here");

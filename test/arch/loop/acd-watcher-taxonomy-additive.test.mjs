@@ -81,7 +81,7 @@ export const archTests = [
   {
     name: "arch/57 FF-5701: watcher taxonomy widens additively and admits no actuator",
     run: async () => {
-      const loaderSource = await readFile(path.join(root, "src", "work", "loops.mjs"), "utf8");
+      const loaderSource = await readFile(path.join(root, "packages/work-graph/src/registry.mjs"), "utf8");
       // `watcher` stays where 57 put it, with 58's `arbiter` and 59's `auditor` appended after it —
       // the ORDER is asserted, so a widening that re-sorted the enum would fail here too.
       assert.deepEqual([...NODE_KINDS], [...priorKinds, "watcher", "arbiter", "auditor"]);

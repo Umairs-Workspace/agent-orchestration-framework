@@ -66,6 +66,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/work-graph@workspace:*, @aof/work-graph@workspace:packages/work-graph":
+  version: 0.0.0-use.local
+  resolution: "@aof/work-graph@workspace:packages/work-graph"
+  dependencies:
+    "@aof/contracts": "workspace:*"
+    "@aof/foundation": "workspace:*"
+    "@aof/work": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@aof/work@workspace:*, @aof/work@workspace:packages/work":
   version: 0.0.0-use.local
   resolution: "@aof/work@workspace:packages/work"
@@ -1793,6 +1803,7 @@ __metadata:
     "@aof/integration-notion": "workspace:*"
     "@aof/mesh": "workspace:*"
     "@aof/work": "workspace:*"
+    "@aof/work-graph": "workspace:*"
     "@inquirer/prompts": "npm:^8.4.2"
     "@xterm/headless": "npm:6.0.0"
     "@yarnpkg/parsers": "npm:3.1.0"

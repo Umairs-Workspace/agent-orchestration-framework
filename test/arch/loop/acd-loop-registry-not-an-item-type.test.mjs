@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -14,8 +15,8 @@ import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const six = ["milestone", "story", "task", "uat", "spike", "chore"];
 const expectedLoopModules = [
-  "src/work/loops.mjs", "src/work/loops-checks.mjs", "src/commands/loops-show.mjs",
-  "src/commands/loops-graph.mjs", "src/commands/loops-groundedness.mjs", "src/commands/loops-validate.mjs",
+  "packages/work-graph/src/registry.mjs", "packages/work-graph/src/checks.mjs", "packages/work-graph/src/commands/loops-show.mjs",
+  "packages/work-graph/src/commands/loops-graph.mjs", "packages/work-graph/src/commands/loops-groundedness.mjs", "packages/work-graph/src/commands/loops-validate.mjs",
 ];
 
 // DISCOVERED FROM DISK, then compared with the expected five — never iterated as a literal.
@@ -25,18 +26,7 @@ const expectedLoopModules = [
 // The equality is what makes a new module a RED here (add it to the list, deliberately) instead
 // of a silent hole in the read-only sweep below.
 async function discoverLoopModules() {
-  const found = [];
-  // 119/01 — the family moved to `src/work/`, so the sweep walks its new home and matches the
-  // leaf as it now reads. It was `src/` + /^work-loops.*\.mjs$/, which after the move swept a
-  // directory the family had left and would have gone empty; the `deepEqual` against the
-  // expected set below is what turned that into a RED rather than a silent pass (ADR-003 §4).
-  for (const name of await readdir(path.join(root, "src/work"))) {
-    if (/^loops.*\.mjs$/.test(name)) found.push(`src/work/${name}`);
-  }
-  for (const name of await readdir(path.join(root, "src/commands"))) {
-    if (/^loops-.*\.mjs$/.test(name)) found.push(`src/commands/${name}`);
-  }
-  return found.sort();
+  return (await readRuntimeFiles(root)).map(file => file.rel).filter(rel => /^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/.test(rel) || /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/.test(rel)).sort();
 }
 
 function itemTypes(source, label) {
@@ -60,7 +50,7 @@ export const archTests = [
       // vocabulary had to be edited three times for. Both copies now import `ITEM_RE` from
       // `src/work.mjs` (FF-12701 holds that a second definition cannot return), so the closed
       // six-type vocabulary is read where it is defined and nowhere else.
-      for (const rel of ["src/work.mjs"]) {
+      for (const rel of ["packages/work/src/identity.mjs"]) {
         assert.deepEqual(itemTypes(await readFile(path.join(root, rel), "utf8"), rel), six, `${rel}: closed six-type item vocabulary`);
       }
       // The union is matched INSIDE the `WorkItem` declaration, cut on the language's own braces

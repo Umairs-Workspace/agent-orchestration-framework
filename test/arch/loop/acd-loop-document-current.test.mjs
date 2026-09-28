@@ -227,7 +227,7 @@ export const archTests = [
             const full = path.join(dir, entry.name);
             if (entry.isDirectory()) await walk(full);
             else if (entry.name.endsWith(".mjs")) {
-              const source = stripComments(await readFile(full, "utf8"));
+              const source = stripComments(await readFile(full, "utf8")).replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, "");
               if (/loopDocumentPath|LOOP_DOCUMENT_BASENAME|["'`]loops\.md["'`]/.test(source)) {
                 readers.push(path.relative(repoRoot, full).split(path.sep).join("/"));
               }
@@ -235,9 +235,10 @@ export const archTests = [
           }
         }
         await walk(path.join(repoRoot, "src"));
+        await walk(path.join(repoRoot, "packages"));
         assert.deepEqual(
           readers.sort(),
-          ["src/commands/loop-document.mjs", "src/loop-document.mjs"],
+          ["packages/work-graph/src/commands/loop-document.mjs", "packages/work-graph/src/document.mjs"],
           "the document is read by its own two modules and by no lifecycle, doctor or acceptor door"
         );
       });

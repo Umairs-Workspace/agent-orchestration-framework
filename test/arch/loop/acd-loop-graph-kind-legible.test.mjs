@@ -206,7 +206,7 @@ export const archTests = [
       ], "five declared kinds, five shapes, the fallback untouched, lexicographic by id");
       assert.equal(first.edgeCount, 5);
 
-      const url = pathToFileURL(path.join(root, "src/commands/loops-graph.mjs")).href;
+      const url = pathToFileURL(path.join(root, "packages/work-graph/src/commands/loops-graph.mjs")).href;
       const script = `import {renderLoopGraph} from ${JSON.stringify(url)}; console.log(JSON.stringify(renderLoopGraph(${JSON.stringify(model([...nodes].reverse()))})));`;
       const { stdout } = await runFile(process.execPath, ["--input-type=module", "--eval", script]);
       assert.equal(stdout.trim(), JSON.stringify(first), "…and a SEPARATE process renders the same bytes");

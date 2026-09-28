@@ -36,10 +36,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOUNDS_HOME = "src/loop-bounds.mjs";
+const BOUNDS_HOME = "packages/contracts/src/loop-bounds.mjs";
 const ENGINE = "src/work/loop.mjs";
 const DISPATCH_HOME = "src/work/dispatch.mjs";
 const KEY = "work.loop.concurrency";
@@ -156,8 +156,8 @@ export function sweepFamilyKeys(units) {
 
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
-    units.push({ rel: `src/${toPosix(file.rel)}`, code: stripComments(await readFile(file.path, "utf8")) });
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    units.push({ rel: file.rel, code: stripComments(await readFile(file.path, "utf8")) });
   }
   return units;
 }
