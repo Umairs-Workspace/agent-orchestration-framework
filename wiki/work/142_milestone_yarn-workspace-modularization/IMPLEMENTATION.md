@@ -111,7 +111,7 @@ complete root-suite or cross-platform release result.
 ## Next
 
 Extract remaining domain services and command contributions through the new package boundaries.
-Split foundational diagnostics from mesh logging before lowering filesystem utilities. The CLI
+Foundation filesystem and diagnostic services are now available for those moves. The CLI
 and shipped skills/assets stay in core; feature packages must not import their assembling core.
 
 ## Effects execution and delivery extraction — 2026-09-28
@@ -285,3 +285,46 @@ Verification:
 The full-root-suite and cross-platform/native-release limitations from previous slices remain.
 Next: continue work/mesh service and command extraction; separate foundational diagnostics from
 mesh logging before moving shared filesystem utilities. Work remains outside AOF's workflow.
+
+## Foundation filesystem and diagnostic extraction — 2026-09-28
+
+@aof/foundation now owns readJson, atomic writeText, normalizeId, an injected-diagnostic temp-file
+sweeper, an instance-scoped throttled degrade reporter, and generic JSONL log storage/reading.
+The package has no npm dependencies and no application, configuration, mesh, or feature imports.
+Its reporter is browser-safe; the filesystem and log entries use explicit native Node imports.
+
+Core retains the application path rule in src/diagnostics/log.mjs: the existing global mesh/logs
+location, environment override, process filenames, and log options remain unchanged. src/fs.mjs,
+src/degrade.mjs, and src/mesh/log.mjs preserve their existing exports through adapters. The reporter
+no longer imports a mesh module. The original test-reset API still resets the application reporter's
+sink and throttle state without exposing a process-global singleton inside foundation.
+
+The module census now follows workspace exports. The session driver reaches 31 modules, including
+three newly separated foundation modules, and NO mesh module; the prior mesh-log node is replaced
+by the core path adapter. The assignment sink reaches 76. These are module relocations, not new
+runtime services. The driver guard now denies all mesh/ imports. Trigger timer tracing follows
+workspace exports and still finds exactly one bounded rename-retry timer. The silent-catch guard
+scans core and all package runtime code; its two diagnostic-floor allowances moved to foundation
+without increasing their counts. The new one-file core diagnostics directory is explicitly metered.
+
+Verification:
+
+- Nine new package tests cover inert/isolated reporters, keyed throttling, contained sink/input/clock
+  faults, JSON error codes, dry-run and concurrent atomic writes, failed-write temp cleanup, age-gated
+  sweep diagnostics, log rotation/tailing/torn lines, recovery after serialization failure, and IDs.
+  All 52 internal package cases run through the root test bridge.
+- All 997 unit checks and 468 focused checks pass, including existing daemon/remote log commands,
+  terminal screen evidence, orphan cleanup, filesystem hygiene, trigger purity, import closures,
+  run persistence, effects, Notion, package boundaries, and architecture/test registration.
+- Immutable Yarn installation and supply-chain audit pass (zero audit warnings; existing peer
+  warning unchanged). The reporter bundles for browsers, all three foundation modules are embedded
+  in the SEA JavaScript bundle, and CLI --help passes. No complete native release was built.
+- An actual installer payload outside the checkout resolves foundation to local real files and loads
+  all 117 commands. It reads a file/log written by the pre-extraction implementations, writes back,
+  emits a real throttled diagnostic, and serves the log through mesh:logs. The old implementations
+  then read the new file/log data successfully. Temporary directories were removed.
+
+Logs and compatibility fixtures: .tmp/workspace-migration/foundation/ (local, ignored). The earlier
+full-root-suite and cross-platform limitations remain. No live install, push, deployment, or AOF
+workflow operation was performed. Next: use the lower-level APIs for work/mesh service extraction
+and their package-owned command contributions, then complete core/application layout moves.

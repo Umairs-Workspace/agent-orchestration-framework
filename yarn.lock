@@ -17,6 +17,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/foundation@workspace:*, @aof/foundation@workspace:packages/foundation":
+  version: 0.0.0-use.local
+  resolution: "@aof/foundation@workspace:packages/foundation"
+  languageName: unknown
+  linkType: soft
+
 "@aof/integration-notion@workspace:*, @aof/integration-notion@workspace:packages/integration-notion":
   version: 0.0.0-use.local
   resolution: "@aof/integration-notion@workspace:packages/integration-notion"
@@ -1781,6 +1787,7 @@ __metadata:
   dependencies:
     "@aof/contracts": "workspace:*"
     "@aof/effects": "workspace:*"
+    "@aof/foundation": "workspace:*"
     "@aof/integration-notion": "workspace:*"
     "@aof/mesh": "workspace:*"
     "@aof/work": "workspace:*"

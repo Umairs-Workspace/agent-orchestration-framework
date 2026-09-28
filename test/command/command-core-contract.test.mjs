@@ -385,7 +385,7 @@ export const commandCoreContractTests = [
       for (const name of ["work", "mesh", "integration-notion"]) {
         assert.ok(files.includes(`packages/${name}/src/effects.mjs`), `${name}: its contribution is in the startup closure`);
       }
-      for (const forbidden of ["src/work.mjs", "src/global-work-store.mjs", "src/notion/sync-work.mjs", "src/effects/assignment-transitions.mjs", "src/effects/dispatch.mjs"]) {
+      for (const forbidden of ["src/work.mjs", "src/global-work-store.mjs", "src/notion/sync-work.mjs", "src/effects/assignment-transitions.mjs", "src/effects/dispatch.mjs", "src/mesh/log.mjs"]) {
         assert.ok(!files.includes(forbidden), `registration must not load ${forbidden}`);
       }
       await assert.rejects(closure(true), /Static effect registration cycle/);
@@ -411,7 +411,7 @@ export const commandCoreContractTests = [
     name: "command-core/workspace packages pass their package-local suites",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs", "packages/effects/test/effects.test.mjs", "packages/effects/test/journal.test.mjs", "packages/effects/test/registry.test.mjs", "packages/work/test/effects.test.mjs", "packages/mesh/test/effects.test.mjs", "packages/integration-notion/test/effects.test.mjs", "packages/integration-notion/test/services.test.mjs"], {
+      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs", "packages/effects/test/effects.test.mjs", "packages/effects/test/journal.test.mjs", "packages/effects/test/registry.test.mjs", "packages/work/test/effects.test.mjs", "packages/mesh/test/effects.test.mjs", "packages/integration-notion/test/effects.test.mjs", "packages/integration-notion/test/services.test.mjs", "packages/foundation/test/foundation.test.mjs"], {
         cwd: root, encoding: "utf8", timeout: 30_000,
       });
       assert.equal(result.status, 0, result.error?.message ?? result.stdout + result.stderr);

@@ -17,9 +17,10 @@
 // THE CLOCK CLAIM IS ASSERTED OVER THE WHOLE IMPORT CLOSURE, not just over the family's own four
 // files, so a timer reached through a helper is caught. That walk turns up exactly one timer in
 // the whole closure and it is not a scheduler — `renameWithRetry`'s bounded backoff in
-// `src/fs.mjs` — so the leg is written as a RATCHET rather than as an exemption: the closure holds
+// `packages/foundation/src/fs.mjs` — so the leg is written as a RATCHET rather than as an exemption: the closure holds
 // that one, at that one site, and any second timer anywhere in it fails.
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -64,8 +65,8 @@ function importClosure(entries) {
     const absolute = path.join(root, relative);
     if (!existsSync(absolute)) continue;
     for (const { specifier } of importSpecifiers(sourceOf(relative)).filter((entry) => !entry.dynamic)) {
-      if (!specifier.startsWith(".")) continue;
-      queue.push(path.relative(root, path.resolve(path.dirname(absolute), specifier)).split(path.sep).join("/"));
+      if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) continue;
+      queue.push(path.relative(root, createRequire(absolute).resolve(specifier)).split(path.sep).join("/"));
     }
   }
   return [...seen].sort();
@@ -175,14 +176,14 @@ export const archTests = [
       // a RATCHET rather than as an exemption — a second timer anywhere in the closure fails here,
       // and so does a change to this one, so the closure can never quietly acquire a scheduler.
       const sites = CLOSURE.flatMap((file) => [...sourceOf(file).matchAll(/\bsetTimeout\b/gu)].map(() => file));
-      assert.deepEqual(sites, ["src/fs.mjs"], `the closure holds exactly one setTimeout, in src/fs.mjs (got ${sites.join(", ") || "none"})`);
-      // ASSERTED AS A SHAPE, NEVER AS ITS ARITHMETIC. `src/fs.mjs` has 52 `src/` dependents and
+      assert.deepEqual(sites, ["packages/foundation/src/fs.mjs"], `the closure holds exactly one setTimeout, in packages/foundation/src/fs.mjs (got ${sites.join(", ") || "none"})`);
+      // ASSERTED AS A SHAPE, NEVER AS ITS ARITHMETIC. `packages/foundation/src/fs.mjs` has 52 `src/` dependents and
       // none of them is ours; pinning `25 * (attempt + 1)` byte-for-byte would red this control
       // the day someone tunes that constant for the Windows rename contention the retry exists
       // for — sending its reader to hunt a defect in a family that did not change, which is the
       // failure FF-6308's own row forbids by name. What this row actually claims is that the one
       // timer in the closure SCHEDULES NOTHING, and that is a property of its shape and its site.
-      const fs = sourceOf("src/fs.mjs");
+      const fs = sourceOf("packages/foundation/src/fs.mjs");
       const body = functionBody(fs, "function renameWithRetry(");
       assert.ok(body != null, "renameWithRetry is where it lives, and its body was found");
       assert.equal((body.match(/\bsetTimeout\b/gu) ?? []).length, 1, "the file's one timer is inside that function");

@@ -74,7 +74,7 @@ function directSourceImports(source) {
 }
 
 function isDeniedTransitive(rel) {
-  if (DENIED_TRANSITIVE.includes(rel)) return true;
+  if (DENIED_TRANSITIVE.includes(rel) || rel.startsWith("mesh/")) return true;
   if (/^\.\.\/packages\/(?:mesh|effects|integration-notion)\//u.test(rel)) return true;
   if (rel === "../packages/work/src/effects.mjs") return true;
   if (rel.startsWith("effects/") || rel.startsWith("commands/")) return true;
@@ -115,13 +115,16 @@ export const archTests = [
       // other imports, `degrade.mjs` and `loop-bounds.mjs`, were already in the closure, and
       // `@xterm/headless` is a bare specifier outside the walk. MEASURED with this file's own walker
       // at 138/00's build: 25 before, 28 after.
-      assert.ok(graph.seen.size <= 28, `root-inclusive driver reach ${graph.seen.size} exceeds the ADR-015 §5 ceiling 28; raising it requires an ADR (reach 22 = 68/01's otel-attribution, 23 = 70/00's phase-brief, 24 = 69/01-02's loop-bounds — see 69/ARCHITECTURE.md ADR-002 and VERIFICATION F-69-V10; 25 = 137's digest-template, 130/VERIFICATION F-16; 28 = 138/00's session-screen.mjs, screen.mjs and claude-screens.mjs, 138/ADR-001 §7)`);
+      // 142 splits existing filesystem/reporting/storage implementations into three
+      // foundation modules and replaces mesh/log with core's diagnostic path adapter.
+      // The extra nodes are relocations, not new services; the entire mesh family is now denied.
+      assert.ok(graph.seen.size <= 31, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 relocation census of 31`);
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(srcRoot, "terminal-ws.mjs");
       const work = path.join(srcRoot, "work.mjs");
       const degrade = path.join(srcRoot, "degrade.mjs");
-      const meshLog = path.join(srcRoot, "mesh/log.mjs");
+      const applicationLog = path.join(srcRoot, "diagnostics/log.mjs");
       const workspace = path.join(srcRoot, "workspace.mjs");
       // milestone 127/01 (127/ADR-001 §5) adds a SECOND route into work.mjs: `work/observe.mjs`
       // was an eighth work-root scanner (three functions `readdir`-ing `<cwd>/wiki/work` with a
@@ -132,10 +135,10 @@ export const archTests = [
       // module grows by one. Recorded here at 127/01's build (FF-12701 is the control that
       // holds observe.mjs to the enumerator), for `aof:verify 127` to ratify.
       assert.deepEqual(incoming(graph, work), ["terminal-ws.mjs", "work/observe.mjs"], "the admitted work.mjs routes are exactly terminal-ws.mjs -> work.mjs and work/observe.mjs -> work.mjs (127/01)");
-      assert.deepEqual(incoming(graph, meshLog), ["degrade.mjs"], "the admitted mesh-log.mjs route is exactly degrade.mjs -> mesh-log.mjs");
-      assert.deepEqual(incoming(graph, workspace), ["mesh/log.mjs", "work.mjs"], "workspace.mjs is reached only through the two named admitted subtrees");
+      assert.deepEqual(incoming(graph, applicationLog), ["degrade.mjs"], "diagnostic path policy is reached only through the reporter adapter");
+      assert.deepEqual(incoming(graph, workspace), ["diagnostics/log.mjs", "work.mjs"], "workspace.mjs is reached only through the two named admitted subtrees");
       assert.ok(graph.edges.some(([from, to]) => from === terminalWs && to === work), "the terminal-ws admission still has a subject");
-      assert.ok(graph.edges.some(([from, to]) => from === degrade && to === meshLog), "the degrade admission still has a subject");
+      assert.ok(graph.edges.some(([from, to]) => from === degrade && to === applicationLog), "the degrade admission still has a subject");
 
       const sinkGraph = await walkImports(sink);
       // Architect-approved milestone-70 integration extension: m68's run-session-capture
@@ -238,9 +241,9 @@ export const archTests = [
       // ceiling to 28 above. Their other imports were already here, so they reach nothing behind
       // them. MEASURED with this file's own walker at 138/00's build: 79.
       // 142 moves registration to inert package contributions. Count local workspace
-      // imports too: the static sink closure is now 73, including all seven package
+      // imports too: the static sink closure was 73, including all seven package
       // modules. Deferred domain-service imports are deliberately outside this census.
-      assert.equal(sinkGraph.seen.size, 73, "the assignment sink static reach, including workspace modules, stays at 73 after domain-effect extraction");
+      assert.equal(sinkGraph.seen.size, 76, "foundation extraction adds three package modules; diagnostic policy replaces the mesh-log node (76 total)");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

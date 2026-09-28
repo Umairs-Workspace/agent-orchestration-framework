@@ -28,7 +28,7 @@ function locked(dir, name, version) {
 
 export const yarnInstallationTests = [
   { name: 'yarn-installation/extracted kernels cannot import core, legacy source, providers or sibling internals', run: async () => {
-    for (const name of ['contracts', 'effects', 'work', 'mesh', 'integration-notion']) {
+    for (const name of ['contracts', 'effects', 'foundation', 'work', 'mesh', 'integration-notion']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
       const nativePorts = name === 'integration-notion' ? {
@@ -36,6 +36,9 @@ export const yarnInstallationTests = [
         'cli.mjs': ['node:child_process', 'node:path', 'node:os', 'node:fs'],
         'sync-work.mjs': ['node:path', 'node:fs/promises'],
         'notion-sync-work.mjs': ['node:fs'],
+      } : name === 'foundation' ? {
+        'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
+        'log.mjs': ['node:fs', 'node:path'],
       } : {};
       const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[path.basename(file)] ?? []).includes(specifier);
       const external = report.violations.filter(forbidden);

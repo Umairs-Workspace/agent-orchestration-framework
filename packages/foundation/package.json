@@ -1,0 +1,17 @@
+{
+  "name": "@aof/foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./fs": "./src/fs.mjs",
+    "./degrade": "./src/degrade.mjs",
+    "./log": "./src/log.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/foundation.test.mjs"
+  }
+}

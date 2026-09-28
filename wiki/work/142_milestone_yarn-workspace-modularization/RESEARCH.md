@@ -265,3 +265,20 @@ Source guards must follow both the implementation and its supplied services: che
 adapter would make no-write/no-read scans vacuous; checking only the package would miss a wrong
 cache-reader binding in core. The cache-first checks now pin both ends. Sidecar compatibility and
 both commands were exercised from a copied installation outside the checkout, with fake egress.
+
+## Foundation boundary implemented — 2026-09-28
+
+The filesystem/diagnostic coupling is now separated into mechanism and application policy.
+Foundation's file operations import only Node; its temp sweeper accepts the diagnostic callback.
+The reporter accepts a sink factory and has independent throttle state per instance. JSONL storage
+accepts a concrete file path, leaving environment/configuration and destination policy in core.
+
+Moving the default log-path adapter into core's diagnostics directory removes the session driver's
+last mesh-module import while preserving the existing mesh/logs destination. src/mesh/log.mjs is
+now a compatibility facade. Optional mesh behavior is no longer a prerequisite of the reporter.
+
+Import-count controls must count the three extracted modules and replace the old mesh-log node
+with core's path adapter; ignoring bare workspace imports would hide the actual dependency graph.
+The session and trigger controls now follow workspace exports. The diagnostic silent-catch floor
+also follows the implementation into foundation, with the same allowance and a non-empty runtime
+scan rather than an exemption that silently leaves the new package unexamined.

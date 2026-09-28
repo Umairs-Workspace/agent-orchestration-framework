@@ -12,6 +12,8 @@
   Effect registration has no static transition/domain import cycle.
   Notion now owns its synchronization, sidecar, launcher, and both command implementations;
   core registers its CLI contribution and supplies services through compatibility adapters.
+  @aof/foundation now owns atomic filesystem helpers, the throttled reporter, and JSONL storage.
+  Core owns the existing log-path policy; the session driver no longer imports any mesh module.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
@@ -62,13 +64,18 @@
   pass. Installed-payload command workflows and old/new sidecar compatibility pass with fake
   Notion egress. All 117 command IDs retain their order.
 
+- Foundation extraction: 997 unit checks, 468 focused checks, and all 52 internal package cases
+  pass. Immutable install, audit, browser/SEA JavaScript bundles, and an external payload with
+  old/new filesystem and log compatibility pass.
+
 ## Next
 
 Continue extracting domain service implementations and their command contributions behind the new
 package interfaces. The work and mesh handler packages are implemented; their injected
 service implementations still live under src/. Notion owns its services and CLI descriptors;
-shared work/routing services, diagnostics, provisioning and journal policy remain injected. Core registration is now statically acyclic,
-while deferred runtime service composition remains a transitional adapter. Separate the
-foundation/diagnostics dependency before moving filesystem utilities. Core still owns the CLI
+shared work/routing services, diagnostics, provisioning and journal policy remain injected.
+Foundation filesystem and diagnostic mechanisms are extracted; core retains their application
+policy through compatibility adapters. Core registration is statically acyclic, while deferred
+runtime service composition remains transitional. Core still owns the CLI
 and will move to packages/core with its assets. Keep the outstanding full-suite and platform
 checks explicit. Continue direct development without AOF workflow commands.
