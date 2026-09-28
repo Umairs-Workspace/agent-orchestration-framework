@@ -51,6 +51,7 @@ import {
 } from "../../../src/mesh/worktree.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 const SPAWN_HANDLER = path.join(repoRoot, "src", "mesh", "session-spawn-handler.mjs");
 const GITIGNORE = path.join(repoRoot, ".gitignore");
 
@@ -91,7 +92,11 @@ export function siblingBoundaryProblems(code) {
 export const ASSIGNMENT_KEYSPACE_CALLERS = Object.freeze([
   Object.freeze({
     file: "src/mesh/worktree.mjs",
-    why: "THE HOME — it defines the root and the seam. The session lane's own root (meshSessionWorktreesRoot) is defined here too, as a deliberate SIBLING of it.",
+    why: "TRANSITIONAL COMPOSITION — forwards the mesh-owned lane services without defining paths.",
+  }),
+  Object.freeze({
+    file: "packages/mesh/src/worktrees.mjs",
+    why: "THE HOME — defines the assignment, session and dispatch path seams and their policies.",
   }),
   Object.freeze({
     file: "src/mesh/worker-execution.mjs",
@@ -148,22 +153,11 @@ export function sessionLaneProblems(code) {
 }
 
 async function readSrcListing() {
-  const { readdir } = await import("node:fs/promises");
-  const dir = path.join(repoRoot, "src");
   const listing = [];
-  const walk = async (current) => {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.name.endsWith(".mjs")) {
-        listing.push({
-          path: path.relative(repoRoot, full).split(path.sep).join("/"),
-          source: await readFile(full, "utf8"),
-        });
-      }
-    }
-  };
-  await walk(dir);
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    listing.push({ path: file.rel, source: await readFile(file.path, "utf8") });
+  }
+  assert.ok(listing.length > 0, "runtime source census is non-empty");
   return listing;
 }
 
@@ -262,6 +256,7 @@ export const archTests = [
       // is allowlisted with a reason.
       const planted = [
         { path: "src/mesh/worktree.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
+        { path: "packages/mesh/src/worktrees.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
         { path: "src/mesh/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
         { path: "src/work/read.mjs", source: "import { isUnderMeshWorktreesRoot } from './worktree.mjs';" },
         { path: "src/mesh-brand-new-lane.mjs", source: "import { meshWorktreePath } from './worktree.mjs';\nconst p = meshWorktreePath(root, `preview-${ref}`);" },

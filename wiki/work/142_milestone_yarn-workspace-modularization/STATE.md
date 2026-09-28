@@ -130,7 +130,7 @@ rules are extracted. Validation now consumes an explicit core-supplied digest co
 Work-loop orchestration and commands now consume explicit execution, work, notification and mesh
 services. Execution now owns run persistence, transcript settlement, heartbeat queues and
 session attribution. The local driver and shared PTY loader/spawner are also extracted.
-Continue with reusable worktrees and remaining work acceptance/audit services,
+Continue with remaining work acceptance/audit services and mesh coordination,
 then replace their transitional adapters in final core assembly. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
@@ -168,3 +168,19 @@ covered after correcting one manifest-order assertion; a final 48-case rerun inc
 package cases. Immutable install/audit, standalone JavaScript bundling and copied-installation
 checks pass. The four previously pending generated citations remain untouched. Reusable worktrees,
 remaining domain packages, final core/apps layout and final verification remain outstanding.
+
+Worktree extraction: execution owns reusable Git execution, materialization, branch advancement,
+availability and porcelain parsing. Mesh owns lane paths, naming, preparation, reuse, retention and
+scoped commit policy. Core supplies workspace loading, diagnostics and the existing lazy toolchain
+port. All 37 legacy exports and 44 function bodies retain behavior after explicit port wiring.
+The final changed-suite/census run passes 94 cases, including the bridge over 103 package cases;
+immutable installation, audit, standalone JavaScript bundling and copied-payload parity also pass.
+The broader affected selection additionally exercises real Git worktrees and loop/mesh consumers;
+its final result and the Pages correction are recorded in IMPLEMENTATION.md.
+
+The broader selection finished 1,720 cases: 1,704 initially passed; 13 source/setup assertions are
+covered by focused corrections, leaving three repository-state failures (ungoverned 142, a backlog
+context contract, and done story 141 at the root). Pages now installs/audits workspaces before staging
+and includes package sources in its gate fixture; all 20 Pages cases are covered after one focused
+mutation-test correction. No AOF item lifecycle or generated citations changed. The full migration
+and final whole-tree/platform verification remain outstanding.

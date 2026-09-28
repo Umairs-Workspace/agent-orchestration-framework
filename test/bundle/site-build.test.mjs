@@ -162,6 +162,12 @@ export function lintPagesWorkflow(rawText) {
 
   const deployBody = deploy ? jobs.get(deploy) : "";
   const gateBody = gate ? jobs.get(gate) : "";
+  for (const [name, body, command] of [[gate, gateBody, "node scripts/test.mjs"], [deploy, deployBody, `node ${BUILDER}`]]) {
+    const install = body.indexOf("run: node scripts/prepare-worktree.mjs");
+    const audit = body.indexOf("run: node scripts/supply-chain-audit.mjs");
+    const execute = body.indexOf(command);
+    if (install < 0 || audit <= install || execute <= audit) problems.push(`job "${name}" must install locked workspaces and audit dependencies before running project code`);
+  }
   const needs = deploy ? needsOf(deployBody) : [];
   if (deploy && gate && !needs.includes(gate)) {
     problems.push(`job "${deploy}" deploys without waiting for the gate: its needs [${needs.join(", ")}] do not include "${gate}"`);
@@ -329,12 +335,13 @@ function gitCheckIgnore(target) {
 
 // The builder's STATIC import closure: every module reached by a literal `import … from`,
 // `import "…"` or `import("…")` from the builder, transitively, through the shared extractor
-// (`test/support/module-family.mjs`). Bare specifiers are collected, not followed; a computed
-// dynamic import is reported, because a closure that cannot be read is not a closure.
+// (`test/support/module-family.mjs`). Public workspace exports are followed through their
+// manifests; external and computed imports are reported rather than silently skipping edges.
 async function staticImportClosure(entry) {
   const seen = new Map();
   const bare = [];
   const computed = [];
+  const workspaces = new Set();
   async function walk(file) {
     if (seen.has(file)) return;
     const code = await readFile(file, "utf8");
@@ -342,6 +349,17 @@ async function staticImportClosure(entry) {
     for (const expression of computedDynamicImports(code)) computed.push(`${path.relative(repoRoot, file)}: import(${expression})`);
     for (const { specifier } of importSpecifiers(code)) {
       if (specifier.startsWith("node:")) continue;
+      if (specifier.startsWith("@aof/")) {
+        const [scope, name, ...subpath] = specifier.split("/");
+        const root = path.join(repoRoot, "packages", name);
+        const manifest = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+        assert.equal(manifest.name, `${scope}/${name}`, "workspace identity matches its import");
+        const target = manifest.exports[subpath.length ? `./${subpath.join("/")}` : "."];
+        assert.ok(typeof target === "string" && target.startsWith("./src/") && !target.includes("..", 2), `${specifier}: public workspace source export`);
+        workspaces.add(manifest.name);
+        await walk(path.resolve(root, target));
+        continue;
+      }
       if (!specifier.startsWith(".")) {
         bare.push(`${specifier} <- ${path.relative(repoRoot, file).split(path.sep).join("/")}`);
         continue;
@@ -350,7 +368,7 @@ async function staticImportClosure(entry) {
     }
   }
   await walk(path.resolve(repoRoot, entry));
-  return { modules: [...seen.keys()].map((file) => path.relative(repoRoot, file).split(path.sep).join("/")), bare, computed };
+  return { modules: [...seen.keys()].map((file) => path.relative(repoRoot, file).split(path.sep).join("/")), bare, computed, workspaces: [...workspaces] };
 }
 
 // A copy of this repository's runnable tree — everything `scripts/test.mjs` reaches at LOAD (the
@@ -368,10 +386,10 @@ async function makeGateFixture() {
   // `graphify-reranking`). The fixture's OWN document is written over the copy below, from the
   // fixture's own registry, before the gate is first run. Run records and observability snapshots
   // are left out: nothing loads them, and they are the bulk of the tree.
-  for (const tree of ["src", "test", "scripts", "ui/src", ".claude/hooks", "wiki"]) {
+  for (const tree of ["src", "packages", "test", "scripts", "ui/src", ".claude/hooks", "wiki"]) {
     await cp(path.join(repoRoot, ...tree.split("/")), path.join(root, ...tree.split("/")), {
       recursive: true,
-      filter: (source) => !/[\\/](?:runs|observability)(?:[\\/]|$)/.test(path.relative(repoRoot, source)),
+      filter: (source) => !/[\\/](?:runs|observability|node_modules)(?:[\\/]|$)/.test(path.relative(repoRoot, source)),
     });
   }
   await cp(path.join(repoRoot, "package.json"), path.join(root, "package.json"));
@@ -398,6 +416,7 @@ function runGate(root) {
 // edge removal itself. Every one must produce at least one problem.
 const REACHABILITY_MUTATIONS = [
   { name: "the gate's needs edge removed", apply: (raw) => raw.replace(/^ {4}needs:.*$/m, "") },
+  { name: "the deploy's workspace install removed", apply: (raw) => raw.replace(/(  deploy:[\s\S]*?)run: node scripts\/prepare-worktree\.mjs/, "$1run: node --version") },
   { name: "continue-on-error on the gate job", apply: (raw) => raw.replace(/^( {4})runs-on: ubuntu-latest$/m, (line, pad) => `${line}\n${pad}continue-on-error: true`) },
   { name: "continue-on-error on the gate's check step", apply: (raw) => raw.replace(/^( {6})- name: Run story 79's drift control.*$/m, (line, pad) => `${line}\n${pad}  continue-on-error: true`) },
   { name: "`|| true` appended to the gate's run line", apply: (raw) => raw.replace(/(node scripts\/test\.mjs --only [^\n]*)$/m, "$1 || true") },
@@ -856,18 +875,19 @@ export const siteBuildTests = [
     },
   },
 
-  // ══════ 01 (review round 1, finding 2): the deploy job's no-`npm ci` premise, held ══════
+  // ══════ Workspace migration: follow public exports and install before staging ══════
   {
-    name: "site-build/01 the builder's static import closure holds node built-ins only — no bare specifier and no computed dynamic import anywhere it reaches — which is the premise on which the deploy job stages without `npm ci`",
+    name: "site-build/01 the builder reaches only Node built-ins and public workspace APIs, and deploy installs and audits the locked workspaces before staging",
     run: async () => {
       const closure = await staticImportClosure(BUILDER);
       assert.ok(closure.modules.includes(BUILDER), "the walk started at the builder");
       assert.ok(closure.modules.length >= 5, `the closure was actually walked (${closure.modules.length} modules): ${closure.modules.join(", ")}`);
-      assert.deepEqual(closure.bare, [], `no module the builder reaches imports a bare specifier — a dependency would need \`npm ci\` in the deploy job:\n  ${closure.bare.join("\n  ")}`);
+      assert.ok(closure.workspaces.length > 0, "the closure follows workspace exports, not only relative imports");
+      assert.deepEqual(closure.bare, [], `the builder reaches no unexpected external dependency:\n  ${closure.bare.join("\n  ")}`);
       assert.deepEqual(closure.computed, [], `and no module the builder reaches carries a computed dynamic import, which the walk could not follow:\n  ${closure.computed.join("\n  ")}`);
-      // And the workflow really does stage without installing — the premise this row holds.
+      // Both jobs need the workspace links supplied by the immutable installation.
       const verdict = lintPagesWorkflow(readWorkflow());
-      assert.doesNotMatch(verdict.deployBody, /npm ci|npm install|yarn(?:-\S+\.cjs)?\s+install|prepare-worktree\.mjs/, "the deploy job runs no package install");
+      assert.deepEqual(verdict.problems, []);
       assert.match(verdict.deployBody, new RegExp(BUILDER.replace(/[./]/g, "\\$&")), "and it runs the builder");
     },
   },

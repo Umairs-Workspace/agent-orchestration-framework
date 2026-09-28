@@ -27,7 +27,7 @@ import { addWorktree, meshWorktreePath, isUnderMeshWorktreesRoot, removeWorktree
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const worktreeSourcePath = path.join(repoRoot, "src", "mesh", "worktree.mjs");
+const worktreeSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worktrees.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

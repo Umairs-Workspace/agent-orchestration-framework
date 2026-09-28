@@ -498,3 +498,30 @@ commit identity and preparation policy in mesh/application composition. Git exec
 parsing and worktree operations can move behind explicit policy ports without moving mesh rules
 into execution. The loop-family source guard must cover package API names as well as old basenames;
 otherwise an exported driver would bypass the prohibition on loading a PTY inside a loop child.
+
+## Reusable worktrees and mesh policy
+
+The former mesh/worktree module mixed three responsibilities: shell-free Git operations, mesh
+lane/branch/retention rules, and application workspace/toolchain composition. These are now separate.
+Execution accepts preparation, diagnostics, merge identity and merge-message functions; mesh supplies
+its policy through those ports. The core adapter supplies workspace loading and the existing lazy
+toolchain resolver. Neither extracted package imports application source or hides it behind a
+dynamic import. The only new dependency is the declared mesh-to-execution workspace edge.
+
+The historical refusal codes remain compatible, even where they contain assignment terminology.
+No force-update/reset/rebase path was added. Dirty-tree checks and conflict aborts remain beside
+the merge implementation, and materialization still invokes preparation through one shared door.
+Exact comparisons cover 44 function bodies, preserving template whitespace and default merge text.
+
+Repository-wide guards must inspect packages as well as src. This extraction expands the branch
+mint, materialization, lane-keyspace, link/deletion and observation-classification scans. A generic
+`worktree add` text match also matched a diagnostic message after the split; the materialization
+detector now recognizes argv or an executable shell call rather than arbitrary message prose.
+
+Next work-service extraction constraints: acceptance rule/ledger/admissibility are pure kernels;
+criterion loading also depends on acceptance-horizon and frozen-set assets. Observation classification
+uses mesh path policy and the effects journal, which should remain supplied collaborators rather
+than introduce a work-to-mesh dependency. Audit tooling must retain the installed toolkit root:
+`work-audit/toolkit.mjs` currently derives it by walking two parents from its own source path and
+declares runnable targets under `src/`. Moving that file unchanged would resolve the wrong root.
+Assign asset/program location before moving audit evidence/launch consumers.

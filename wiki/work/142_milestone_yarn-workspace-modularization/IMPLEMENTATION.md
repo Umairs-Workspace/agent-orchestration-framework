@@ -821,3 +821,73 @@ Verification (ignored evidence in `.tmp/workspace-migration/execution-screen/`):
 The four separately pending generated citation refreshes remain untouched. Reusable worktree
 mechanisms, remaining domain packages, final core/apps layout and adapter removal remain, followed
 by final full-suite, installer and native/platform verification.
+
+## Execution worktree mechanisms and mesh worktree policy
+
+The former `src/mesh/worktree.mjs` implementation is split between two explicit public APIs.
+Execution owns the shell-free Git runner, commit/branch availability, remote adoption, worktree
+materialization, porcelain parsing/listing and safe branch advancement. Mesh owns assignment,
+session and dispatch paths, branch naming, reuse/retention, scoped staging/commits and preparation
+policy. The root adapter preserves all 37 exports and supplies diagnostics, workspace loading and
+the existing lazy toolchain resolver. Mesh declares execution as a workspace dependency; neither
+package imports core, legacy source or the application's work/toolchain modules.
+
+The execution factory receives preparation, diagnostic, identity and merge-message functions.
+Historical refusal codes, including assignment-prefixed codes, remain unchanged. No persistence
+format, branch name, timeout, argv shape, error message or preparation cleanup behavior changed.
+
+Verification (ignored evidence in `.tmp/workspace-migration/execution-worktrees/`):
+
+- All 44 moved function bodies match the baseline after the explicit port substitutions. The
+  default merge message remains byte-identical in mesh. Legacy export sets match. Differential
+  calls compare results, refusal values, paths and complete argv/options across materialization,
+  reuse, availability, branch adoption, listing, advancement, removal and malformed preparation.
+- Four package cases verify inert composition, supplied preparation/runner identity, propagation of
+  the original preparation error, merge identity/message policy, conflict aborts, lazy preparation,
+  lane separation and cleanup through Git after malformed preparation. The final root bridge runs
+  all 103 internal package cases.
+- All 94 cases across the changed suites and architecture census audit pass in `final.log`.
+  The final materialization-detector rerun also passes all four cases, including executable-shell
+  and diagnostic-message controls. Runtime scans now cover package implementations for branch
+  naming, lane keyspaces, materialization, link/deletion rules and observation classification.
+  Merge safety checks inspect both implementation owners and retain their planted violations.
+- Immutable Yarn installation with builds skipped and supply-chain audit pass, zero audit warnings.
+  Only the mesh-to-execution lock edge changed; no external version changed. The existing Yarn peer
+  warning remains. Standalone JavaScript bundling contains both worktree implementations and keeps
+  native PTY external.
+- The copied installer resolves both new public APIs within its own payload and reproduces the
+  baseline worktree results/argv/refusals. Previous screen, trust, driver, run-persistence, loop and
+  work/graph checks pass, retaining all 117 commands. These checks do not claim a native executable
+  build or a real agent launch.
+
+The composed mesh-worker static closure grows from 89 to 91 modules (the two implementation
+owners); the local-driver closure remains 37 and its package implementation remains three.
+The four pending generated citation refreshes are unchanged by this move. Final application
+composition, remaining domain extractions, core/apps layout and full/platform checks remain.
+
+The broader selection completed all 123 suites: 1,704 passes and 16 failures across 1,720 cases.
+Ten failures were source-location assertions corrected by the changed-suite rerun. One asserted
+that every non-merge Git attribute was text/eol-only; it now admits exactly the existing pinned
+Yarn executable's `-text -diff` row and still rejects another merge driver. Its focused rerun passes.
+Two Pages failures are corrected below. Three repository-state checks remain red: milestone 142
+is intentionally an ordinary engineering folder rather than a governed record, backlog story
+`story_a-running-loop-is-visible-in-the-ui` lacks its context contract, and done story 141 remains
+at the work root. No item was archived/refined or given lifecycle state to satisfy those checks.
+Thus 1,717 selected cases are covered after the focused corrections, with three explicit remaining
+repository-state failures. This is not a fully green suite claim.
+
+## Pages follows workspace installation
+
+The broader selection exposed two earlier migration gaps: Pages deployment still skipped package
+installation, and its copied gate fixture omitted package implementations. The deploy job now uses
+the same immutable workspace preparation and dependency audit as the gate, before staging. The
+builder's source-closure check follows public workspace exports and still rejects unexpected
+external/computed imports. The fixture includes package sources, excluding node_modules.
+
+All 20 Pages cases are covered: the complete run passed 19, and one mutation test initially assumed
+the missing-needs mutation was first. Preserving that order fixed it; its focused rerun passes.
+The new missing-install mutation is rejected. The copied gate passes on a current graph document,
+fails after registry drift, and passes again after fixture-only regeneration. Local site projection,
+byte stability, permissions, gate ordering and refusal checks pass. No workflow was dispatched,
+no site was published and no remote CI result is claimed. Workflow step syntax was checked against
+the official GitHub Actions reference; existing action versions were not changed.

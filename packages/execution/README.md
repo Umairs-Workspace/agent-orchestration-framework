@@ -30,6 +30,11 @@ Core assembles these services and supplies application policy.
   frozen completion evidence and consent-menu reading; `CLAUDE_SCREENS` supplies recognition rules.
 - `createClaudeTrust({ reportDegrade })` supplies canonical project keys and conservative trust
   updates, preserving unrelated settings and retaining the injectable home directory.
+- `createWorktreeOperations({ reportDegrade, prepareWorktree, identityArgs, mergeMessage })`
+  supplies commit availability, branch lookup/adoption, materialization, safe branch advancement
+  and worktree listing. Callers supply paths and preparation/merge policy. `defaultGitExec`,
+  `resolveExec` and `parsePorcelainStatus` expose the shared runner and status parser.
+  Existing error codes remain compatible, including the historical assignment-prefixed refusals.
 
 Factories perform no I/O. The package imports public contracts and foundation APIs, Node
 builtins and its own modules, and lazily loads its pinned `node-pty` and `@xterm/headless`
@@ -38,7 +43,7 @@ core, work, mesh, WebSocket transport or command registry code.
 Record shapes, paths, refusal behavior and spending calculations remain unchanged.
 
 Legacy root modules currently compose these services for existing consumers.
-Reusable worktree mechanisms still need to move here;
-final application composition will remove the transitional adapters.
+Mesh composes worktree operations with its naming, preparation, commit and retention policies.
+Final application composition will remove the transitional adapters.
 
 Run package checks with `yarn workspace @aof/execution test`.

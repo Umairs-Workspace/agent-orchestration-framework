@@ -25,16 +25,18 @@
 //   (5) THE DERIVATION IS PURE AND STABLE: same ref → same valid `aof/mesh/`
 //       ref, no assignment id anywhere in it.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { meshItemBranchName } from "../../../src/mesh/worktree.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC_DIR = path.join(repoRoot, "src");
 
 const MINT_ALLOWED = new Set([
   "src/mesh/worktree.mjs",
+  "packages/mesh/src/worktrees.mjs",
   "src/mesh/worker-execution.mjs",
   "src/mesh/recovery-push.mjs",
   // story 65 / task 02 — THE LOCAL DISPATCH LANE, and it is here for exactly the reason
@@ -52,31 +54,24 @@ function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
-}
-
 export const archTests = [
   {
     name: "arch/m42-branch-cure: the per-assignment mint is retired (ratchet) and the one derivable mint has exactly its known callers",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 0, "runtime source census is non-empty");
       const retired = [];
       const minters = [];
+      const definitions = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
         const code = stripComments(await readFile(file, "utf8"));
+        if (/\bfunction\s+meshItemBranchName\s*\(/.test(code)) definitions.push(rel);
         if (/meshWorkerBranchName/.test(code)) retired.push(rel);
         if (/\bmeshItemBranchName\s*\(/.test(code) && !MINT_ALLOWED.has(rel)) minters.push(rel);
       }
       assert.deepEqual(retired, [], `the per-assignment mint exists nowhere in src/ (offenders: ${retired.join(", ")})`);
+      assert.deepEqual(definitions, ["packages/mesh/src/worktrees.mjs"], "the branch derivation has exactly one implementation");
       assert.deepEqual(minters, [], `meshItemBranchName is called only by its known callers (offenders: ${minters.join(", ")})`);
     },
   },

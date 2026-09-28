@@ -4,12 +4,16 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./effects": "./src/effects.mjs"
+    "./effects": "./src/effects.mjs",
+    "./worktrees": "./src/worktrees.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs"
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@aof/execution": "workspace:*"
   }
 }

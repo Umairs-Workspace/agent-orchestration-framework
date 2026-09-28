@@ -253,7 +253,7 @@ export const archTests = [
       // 142 moves registration to inert package contributions. Count local workspace
       // imports too: the static sink closure was 73, including all seven package
       // modules. Deferred domain-service imports are deliberately outside this census.
-      assert.equal(sinkGraph.seen.size, 89, "screen/trust extraction adds three net implementation homes to the prior 86-module closure");
+      assert.equal(sinkGraph.seen.size, 91, "worktree extraction adds mesh policy and execution mechanism homes to the prior 89-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

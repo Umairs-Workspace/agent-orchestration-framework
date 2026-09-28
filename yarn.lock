@@ -43,6 +43,8 @@ __metadata:
 "@aof/mesh@workspace:*, @aof/mesh@workspace:packages/mesh":
   version: 0.0.0-use.local
   resolution: "@aof/mesh@workspace:packages/mesh"
+  dependencies:
+    "@aof/execution": "workspace:*"
   languageName: unknown
   linkType: soft
 

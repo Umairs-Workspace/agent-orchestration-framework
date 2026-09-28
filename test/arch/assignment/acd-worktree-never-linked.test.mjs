@@ -36,11 +36,12 @@
 // own exported predicates, so a renamed root cannot evade it — which a `.aof/mesh/worktrees` string
 // in this file would let it do the day the rename lands.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { enclosingParenGroup, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import {
   isInsideMeshWorktree,
   meshDispatchWorktreePath,
@@ -146,14 +147,8 @@ export function deleteProblems(sources, projectRoot = PROBE_ROOT) {
 
 async function sourceModules() {
   const out = [];
-  const stack = ["src"];
-  while (stack.length > 0) {
-    const rel = stack.pop();
-    for (const entry of await readdir(path.join(repoRoot, rel), { withFileTypes: true })) {
-      const child = `${rel}/${entry.name}`;
-      if (entry.isDirectory()) stack.push(child);
-      else if (entry.name.endsWith(".mjs")) out.push({ rel: child, code: await readFile(path.join(repoRoot, child), "utf8") });
-    }
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    out.push({ rel: file.rel, code: await readFile(file.path, "utf8") });
   }
   return out;
 }
@@ -281,9 +276,11 @@ export const archTests = [
       // AND NO FILESYSTEM DELETE IS REACHED — asserted over the module's own source rather than
       // over this call, because "this path did not delete anything" is a weaker claim than "there
       // is nothing here that could".
-      const module = await readFile(path.join(repoRoot, "src", "mesh", "worktree.mjs"), "utf8");
-      const deletes = callsOf(stripComments(module), DELETE_CALLS);
-      assert.deepEqual(deletes.map((call) => call.name), [], `the worktree module reaches no filesystem delete at all: ${deletes.map((call) => call.name).join(", ")}`);
+      for (const file of ["src/mesh/worktree.mjs", "packages/mesh/src/worktrees.mjs", "packages/execution/src/worktrees.mjs"]) {
+        const module = await readFile(path.join(repoRoot, file), "utf8");
+        const deletes = callsOf(stripComments(module), DELETE_CALLS);
+        assert.deepEqual(deletes.map((call) => call.name), [], `${file} reaches no filesystem delete at all: ${deletes.map((call) => call.name).join(", ")}`);
+      }
     },
   },
 ];

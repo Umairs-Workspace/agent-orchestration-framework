@@ -1170,8 +1170,12 @@ export const workDispatchLaneTests = [
       for (const line of mergeLines) assert.equal(line, UNION_LINE, `only the union line carries merge= — found ${line}`);
       for (const line of lines) {
         if (line === "wiki/work/**/STATE.md merge=union") continue;
-        const [, ...attrs] = line.split(/\s+/u);
+        const [pattern, ...attrs] = line.split(/\s+/u);
         assert.ok(attrs.length > 0, `${line} names an attribute`);
+        if (pattern === ".yarn/releases/*.cjs") {
+          assert.deepEqual(attrs, ["-text", "-diff"], "the pinned Yarn executable stays byte-preserved and acquires no merge driver");
+          continue;
+        }
         for (const attr of attrs) assert.match(attr, /^-?text$|^eol=/u, `${line}: "${attr}" is a text/eol attribute, as before this story`);
       }
     },

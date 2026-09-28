@@ -33,7 +33,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { srcFilesContaining } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import * as reads from "../../../src/work-audit/reads.mjs";
 import {
   dispatchWorktreeSlug,
@@ -42,7 +42,7 @@ import {
 import * as observations from "../../../src/work-acceptor/observations.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CENSUS_MODULE = "work-acceptor/observations.mjs";
+const CENSUS_MODULE = "src/work-acceptor/observations.mjs";
 const CENSUS_PATH = path.join(repoRoot, "src", "work-acceptor", "observations.mjs");
 const WORKSPACE = path.resolve("/aof-ff6107-workspace");
 
@@ -64,13 +64,14 @@ const censusSource = async () => codeLines(await readFile(CENSUS_PATH, "utf8"));
 
 // `srcFilesContaining` reads every src file once, shared with the other guards that need the
 // same walk; this narrows its hits to the ones whose CODE carries the needle.
-async function codeFilesContaining(needle, options = {}) {
-  const hits = await srcFilesContaining(repoRoot, needle, options);
-  const out = [];
-  for (const file of hits) {
-    if (codeLines(await readFile(path.join(repoRoot, "src", file), "utf8")).includes(needle)) out.push(file);
+async function codeFilesContaining(needle) {
+  const files = await readRuntimeFiles(repoRoot);
+  assert.ok(files.length > 0, "runtime source census is non-empty");
+  const hits = [];
+  for (const file of files) {
+    if (codeLines(await readFile(file.path, "utf8")).includes(needle)) hits.push(file.rel);
   }
-  return out;
+  return hits;
 }
 
 const event = (workspaceRoot, itemDir = workspaceRoot) => ({ payload: { workspaceRoot, itemDir } });
@@ -82,16 +83,16 @@ export const archTests = [
       // (b) THE DISPATCH LITERAL. `mesh-worktree.mjs` is the only module in `src/` that spells
       // the convention, and this milestone does not make it two.
       const spellsIt = await codeFilesContaining("dispatch-worktrees");
-      assert.deepEqual(spellsIt, ["mesh/worktree.mjs"], "`dispatch-worktrees` is spelled in exactly one module under src/");
+      assert.deepEqual(spellsIt, ["packages/mesh/src/worktrees.mjs"], "`dispatch-worktrees` is spelled in exactly one runtime module");
 
       // (a) THE FIXTURE DECISION. A module that derives the machine's temp roots AND reads an
       // event payload's `itemDir` is classifying an observation as a fixture. Exactly one does.
-      const tempDerivers = await srcFilesContaining(repoRoot, "tmpdir(");
-      const itemDirReaders = new Set(await srcFilesContaining(repoRoot, "itemDir"));
+      const tempDerivers = await codeFilesContaining("tmpdir(");
+      const itemDirReaders = new Set(await codeFilesContaining("itemDir"));
       const classifiers = [];
       for (const file of tempDerivers) {
         if (!itemDirReaders.has(file)) continue;
-        const source = codeLines(await readFile(path.join(repoRoot, "src", file), "utf8"));
+        const source = codeLines(await readFile(path.join(repoRoot, file), "utf8"));
         if (source.includes("tmpdir(") && source.includes("itemDir")) classifiers.push(file);
       }
       assert.deepEqual(classifiers, [CENSUS_MODULE], "exactly one module under src/ decides that an observation's itemDir is a fixture");
