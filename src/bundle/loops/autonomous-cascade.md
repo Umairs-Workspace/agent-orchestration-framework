@@ -21,7 +21,7 @@ Framework record source: `src/bundle/loops/autonomous-cascade.md`; installed by 
 The loop controls items reaching done over an operator-selected range (`src/bundle/commands/autonomous.md:3-10`).
 Both reference and measurement are the dependency-aware result of `work:next`, invoked repeatedly by
 the loop shell at `src/commands/loop.mjs:754`. The per-ready-item phase dispatch at
-`src/work/loop.mjs:596-611` establishes `event:per-item`, not a clock.
+`packages/work-loop/src/engine.mjs:596-611` establishes `event:per-item`, not a clock.
 
 Those same lines dispatch refine, continue, and verify. Their narrowest acting artifacts are the
 product-owner, developer, and QA agent definitions listed in `actuator`, rather than the autonomous
@@ -42,7 +42,7 @@ the one that scope implies. Nothing here is a duration: the layer is an ordinal 
 axis, compared with the layers of the loops it sets, and no interval is derived from it.
 
 **Two AUTHORED target-setting edges, and no citation is offered for either relation.** What is
-*discovered* is that `src/work/loop.mjs:596-611` dispatches refine, continue and verify
+*discovered* is that `packages/work-loop/src/engine.mjs:596-611` dispatches refine, continue and verify
 per ready item, and that `work:next` determines **which** item. What is *authored* is the claim that
 this dispatch **is** target-setting — that the cascade's output, the selected item, is what determines
 the two inner loops' setpoints:

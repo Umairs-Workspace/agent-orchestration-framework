@@ -98,7 +98,7 @@ const ABSENCES = [
 // SPAWNING NEEDS A DOOR, and over the CLOSURE the door is what is banned rather than the word.
 // The family's own four files carry the broad ban above — `\\bexec\\b` and every sibling spelling —
 // because none of them holds a regex. The closure cannot: `src/feature-parse.mjs:183` and
-// `src/work/loop.mjs:388` legitimately call `RegExp.prototype.exec`, so a word ban over eighteen
+// `packages/work-loop/src/engine.mjs:388` legitimately call `RegExp.prototype.exec`, so a word ban over eighteen
 // files would red two modules that spawn nothing. What no spawn can do without is the IMPORT, and
 // a bare call is the other half; both are asserted, and each is driven against a plant.
 const CLOSURE_SPAWN = [

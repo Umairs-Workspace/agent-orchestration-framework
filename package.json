@@ -38,6 +38,7 @@
     "@aof/mesh": "workspace:*",
     "@aof/work": "workspace:*",
     "@aof/work-graph": "workspace:*",
+    "@aof/work-loop": "workspace:*",
     "@inquirer/prompts": "^8.4.2",
     "@xterm/headless": "6.0.0",
     "node-pty": "1.1.0",

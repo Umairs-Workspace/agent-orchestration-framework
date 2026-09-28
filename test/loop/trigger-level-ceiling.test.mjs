@@ -4,7 +4,7 @@
 // driven against the real leaf (`resolveTriggerLevel`), the real gate (`resolveLoopLevelGate`,
 // which is the SAME function `src/commands/loop.mjs` gates with at fire time) and the real
 // compiler (`compileTriggerDeclaration`). Nothing here re-implements a rule it asserts — the
-// threshold, the ladder and the default are all imported from `src/work/loop.mjs`, so a test that
+// threshold, the ladder and the default are all imported from `packages/work-loop/src/engine.mjs`, so a test that
 // passed by agreeing with a copy of the gate is not available.
 //
 //   00_the-level-is-resolved-at-every-fire-never-cached  — one trigger, two fires, two readings,
@@ -41,7 +41,7 @@ import {
   LOOP_LEVELS,
   resolveLoopLevel,
   resolveLoopLevelGate,
-} from "../../src/work/loop.mjs";
+} from "../../packages/work-loop/src/engine.mjs";
 
 // ─── the ladder, read from the ladder ──────────────────────────────────────────────────
 const GATED_RUNG = "L3";

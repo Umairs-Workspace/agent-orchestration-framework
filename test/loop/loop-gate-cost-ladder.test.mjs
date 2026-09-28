@@ -19,7 +19,7 @@ import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { GATE_ORDER } from "../../src/work/loop.mjs";
+import { GATE_ORDER } from "../../packages/work-loop/src/engine.mjs";
 import { runLoopBody } from "../../src/commands/loop.mjs";
 import { listCommands } from "../../src/command-core.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";

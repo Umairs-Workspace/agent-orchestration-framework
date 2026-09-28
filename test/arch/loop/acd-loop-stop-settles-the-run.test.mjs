@@ -25,7 +25,7 @@
 // FF-13004, engine fixture. `decideSupervisedDeclarations` over one supervised lineage whose
 // latest run is `failed/timeout` (retryable) answers one row; the same input plus `stopped: new
 // Set([loopRunId])` answers none; `stopped: new Set()` and no `stopped` at all answer deep-equal
-// rows (the DEFAULT-ABSENT discipline); `src/work/loop.mjs` has zero import statements (cited:
+// rows (the DEFAULT-ABSENT discipline); `packages/work-loop/src/engine.mjs` has zero import statements (cited:
 // `acd-clock-counts-attempts`). Producer fixture: `supervisedDeclarations` over a fixture home
 // holding a `honoured` request for that `loopRunId` answers no row, and a `requested` one still
 // answers the row. Structural: `src/mesh/declarations.mjs` imports `readStopRequest` from
@@ -43,7 +43,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runLoopBody } from "../../../src/commands/loop.mjs";
-import { decideSupervisedDeclarations } from "../../../src/work/loop.mjs";
+import { decideSupervisedDeclarations } from "../../../packages/work-loop/src/engine.mjs";
 import { supervisedDeclarations } from "../../../src/mesh/declarations.mjs";
 import { isRunning, isStale, readRuns, retryReadiness } from "../../../src/run-store.mjs";
 import { loadWorkspace, listItems } from "../../../src/work.mjs";
@@ -70,9 +70,9 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHELL = "src/commands/loop.mjs";
 const LADDER = "src/loop/cycle.mjs";
-const ENGINE = "src/work/loop.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
 const PRODUCER = "src/mesh/declarations.mjs";
-const HOME = "src/loop/stop-request.mjs";
+const HOME = "packages/work-loop/src/stop-request.mjs";
 // THE DRIVE SITES, as FF-12602 counts them: `await drivePhase(` in either file, and the ladder's
 // `await drive(retried.record)` seam (the shell hands it `drivePhase`, the wave a child spawn).
 // The binding each assigns is what must reach `settleDriven(`.
@@ -89,8 +89,10 @@ function assertRead(what, count, floor, unit = "file(s)") {
 }
 
 function resolved(fromRel, specifier) {
+  if (specifier === "@aof/work-loop/stop-request") return "packages/work-loop/src/stop-request.mjs";
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
-  const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  if (joined === "src/loop/stop-request.mjs") joined = "packages/work-loop/src/stop-request.mjs";
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
@@ -398,7 +400,7 @@ export const archTests = [
       // THE ENGINE IMPORTS NOTHING (cited: acd-clock-counts-attempts keeps its zero).
       const engine = await source(ENGINE);
       assertRead("the engine", engine.length, 10_000, "bytes");
-      assert.deepEqual(importSpecifiers(engine), [], "src/work/loop.mjs has zero import statements — Set is a global, and the stopped input adds no dependency");
+      assert.deepEqual(importSpecifiers(engine), [], "packages/work-loop/src/engine.mjs has zero import statements — Set is a global, and the stopped input adds no dependency");
       assert.deepEqual(computedDynamicImports(engine), [], "…and no computed dynamic import either");
       assert.match(engine, /stopped instanceof Set \? stopped : EMPTY_STOPPED/u, "the default-absent discipline is spelled once: an absent or ill-typed input drops nothing");
     },

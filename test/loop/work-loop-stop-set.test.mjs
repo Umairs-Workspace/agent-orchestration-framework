@@ -5,7 +5,7 @@ import {
   decideLoop,
   decideLoopAction,
   mapStoreRefusal,
-} from "../../src/work/loop.mjs";
+} from "../../packages/work-loop/src/engine.mjs";
 import { workLoopStoryFixturesFor } from "../support/work-loop-story-fixtures.mjs";
 
 const base = {

@@ -11,7 +11,7 @@ import {
   isReviewBlockerClaim,
   reviewBlockerFromFinding,
   reviewFindingDisposition,
-} from "../../src/work/loop.mjs";
+} from "../../packages/work-loop/src/engine.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const defaultCap = reviewRoundsFromConfig({ config: {} });
@@ -136,7 +136,7 @@ export const workLoopReviewBoundTests = [
     async run() {
       const cap = reviewRoundsFromConfig({ config: { work: { loop: { reviewRounds: 2 } } } });
       assert.equal(decideReviewRound({ completedRounds: 1, cap }).admitted, true);
-      const source = await readFile(path.join(root, "src", "work", "loop.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8");
       const body = source.slice(source.indexOf("export function decideReviewRound"), source.indexOf("function taskFacts"));
       assert.doesNotMatch(body, /\bcap\s*=\s*1\b|DEFAULT_REVIEW_ROUNDS/u);
     },

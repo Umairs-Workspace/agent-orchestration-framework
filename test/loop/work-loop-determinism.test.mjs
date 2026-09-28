@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import * as loopEngine from "../../src/work/loop.mjs";
+import * as loopEngine from "../../packages/work-loop/src/engine.mjs";
 import {
   WORK_LOOP_STORY_FIXTURE_FAMILIES,
   WORK_LOOP_STORY_FIXTURES,
@@ -15,7 +15,7 @@ const { LOOP_STOPS, decideLoop } = loopEngine;
 
 const execFileAsync = promisify(execFile);
 const here = path.dirname(fileURLToPath(import.meta.url));
-const modulePath = path.join(here, "..", "..", "src", "work", "loop.mjs");
+const modulePath = path.join(here, "..", "..", "packages", "work-loop", "src", "engine.mjs");
 const fixture = {
   scope: "53",
   level: "L2",
@@ -124,7 +124,7 @@ export const workLoopDeterminismTests = [
       const temp = await mkdtemp(path.join(tmpdir(), "aof-loop-alone-"));
       try {
         const src = path.join(temp, "src");
-        // 119/01 — the module lives at `src/work/loop.mjs`, so the lone copy needs its family
+        // 119/01 — the module lives at `packages/work-loop/src/engine.mjs`, so the lone copy needs its family
         // directory. The point of the fixture is unchanged: one module, no source dependency.
         await mkdir(path.join(src, "work"), { recursive: true });
         const copied = path.join(src, "work/loop.mjs");

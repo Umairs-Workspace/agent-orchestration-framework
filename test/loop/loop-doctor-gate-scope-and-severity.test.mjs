@@ -324,7 +324,7 @@ export const loopDoctorGateScopeAndSeverityTests = [
         // A CYCLE COUNT THAT HAS REACHED THE CAP HALTS ON `cap-exhausted` INSTEAD…
         assert.equal(state.act.stop, "cap-exhausted", "a cycle count that has reached the cap halts on cap-exhausted");
         // …AND NO NEW STOP ID WAS MINTED FOR THIS RUNG.
-        const { LOOP_STOPS } = await import("../../src/work/loop.mjs");
+        const { LOOP_STOPS } = await import("../../packages/work-loop/src/engine.mjs");
         assert.ok(!LOOP_STOPS.includes("doctor-gate"), "no new stop id was minted for this rung");
         assert.ok(!LOOP_STOPS.some((stop) => stop.includes("doctor")), "…under any spelling");
       } finally {

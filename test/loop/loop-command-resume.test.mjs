@@ -5,7 +5,7 @@ import path from "node:path";
 import { completeRun, heartbeat, isStale, retryRun, startRun, readRuns } from "../../src/run-store.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
-import { lineageElapsedMs } from "../../src/work/loop.mjs";
+import { lineageElapsedMs } from "../../packages/work-loop/src/engine.mjs";
 import { loopResumesDir, loopStopsDir, markStopHonoured, readResumeRequest, readStopRequest, requestLoopResume, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
 import {
   DECLARATION_L1,

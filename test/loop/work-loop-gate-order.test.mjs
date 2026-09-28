@@ -4,7 +4,7 @@ import {
   decideLoop,
   decideLoopAction,
   resolveLoopBound,
-} from "../../src/work/loop.mjs";
+} from "../../packages/work-loop/src/engine.mjs";
 import { workLoopStoryFixturesFor } from "../support/work-loop-story-fixtures.mjs";
 
 const story = { state: "ready", ref: "53/01", type: "story" };

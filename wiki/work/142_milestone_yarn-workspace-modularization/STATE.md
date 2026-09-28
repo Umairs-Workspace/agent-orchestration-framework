@@ -23,6 +23,8 @@
   @aof/work-graph now owns registry loading/checks, execution projections, diagram/document rendering
   and all six graph-related commands. Core supplies asset locations, run reads and shared invocation.
   Shared bounds and errors live in contracts below work-graph and execution.
+  @aof/work-loop now owns the zero-import engine and ask/stop/resume/child-drive services;
+  core supplies runtime paths, diagnostics, CLI location and bounded process execution.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
@@ -102,6 +104,12 @@
   cases pass. Immutable install, audit, browser/SEA JavaScript bundles and copied-install
   graph/model/command parity pass. Native/platform and full-root-suite checks remain outstanding.
 
+- Work-loop engine/control extraction: all 997 unit cases and 2,030 selected cases are covered
+  after focused reruns; all 85 package cases pass. Immutable install, audit, browser/SEA JavaScript
+  bundles, persisted-record parity and final copied-installation checks pass. A shared-process
+  wave run stalled; all 49 wave cases pass in separate bounded processes. Full-root-suite and
+  native/platform checks remain outstanding. See IMPLEMENTATION.md for exact run evidence.
+
 ## Next
 
 Continue extracting domain service implementations and their command contributions behind the new
@@ -110,7 +118,8 @@ service implementations are being extracted from src/. Work owns record/lifecycl
 workspace configuration/identity loading, run persistence and acceptor
 services remain in core. Enumeration/lookup/listing, readiness and their shared identity/dependency
 rules are extracted. Validation now consumes an explicit core-supplied digest contract. Next,
-extract work-loop decisions and orchestration. Its pure decision engine has no imports, while
+extract the remaining work-loop orchestration and commands. The pure engine and request/child-drive
+services are extracted, while
 cycle/wave/ask/stop and drive commands need explicit execution, work, notification and mesh services. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.

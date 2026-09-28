@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { LOCKED_LOOP_LEVELS, LOOP_LEVELS, decideLoop, resolveLoopLevel } from "../../src/work/loop.mjs";
+import { LOCKED_LOOP_LEVELS, LOOP_LEVELS, decideLoop, resolveLoopLevel } from "../../packages/work-loop/src/engine.mjs";
 import { loopCommand } from "../../src/commands/loop.mjs";
 import { cleanL3Gate, makeQualifiedL3Repo } from "../support/l3-gate-fixture.mjs";
 

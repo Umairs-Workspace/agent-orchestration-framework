@@ -36,7 +36,7 @@ import { Readable } from "node:stream";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../../support/mesh-worker-terminal-fixture.mjs";
@@ -63,13 +63,13 @@ import { meshDispatchWorktreePath } from "../../../src/mesh/worktree.mjs";
 import { readRuns, recordSessionId } from "../../../src/run-store.mjs";
 import { claudeProjectsDir } from "../../../src/work/observe.mjs";
 import { resolveRefInWorktree } from "../../../src/work/dispatch.mjs";
-import { LOOP_STOPS } from "../../../src/work/loop.mjs";
+import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-const ASK_HOME = "src/loop/ask-request.mjs";
+const ASK_HOME = "packages/work-loop/src/ask-request.mjs";
 const ASK = "src/loop/ask.mjs";
 const DRIVER = "src/agent-session-driver.mjs";
 const RESUME = "src/commands/resume.mjs";
@@ -98,16 +98,19 @@ function assertRead(what, count, floor, unit = "file(s)") {
 }
 
 function resolved(fromRel, specifier) {
+  const service = /^(?:@aof\/work-loop\/)(ask-request|stop-request|child-drive)$/.exec(specifier);
+  if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
-  const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  if (/^src\/loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace("src/loop/", "packages/work-loop/src/");
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
+  for (const file of await readRuntimeFiles(repoRoot)) {
     const raw = await readFile(file.path, "utf8");
-    units.push({ rel: `src/${toPosix(file.rel)}`, raw, code: stripComments(raw) });
+    units.push({ rel: toPosix(file.rel), raw, code: stripComments(raw) });
   }
   return units;
 }

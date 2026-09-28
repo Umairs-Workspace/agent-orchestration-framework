@@ -9,7 +9,7 @@ import {
   LOCKED_LOOP_LEVELS,
   LOOP_LEVELS,
   resolveLoopLevelGate,
-} from "../../../src/work/loop.mjs";
+} from "../../../packages/work-loop/src/engine.mjs";
 import { loopCommand } from "../../../src/commands/loop.mjs";
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 import { cleanL3Gate, makeQualifiedL3Repo } from "../../support/l3-gate-fixture.mjs";
@@ -33,7 +33,7 @@ export const archTests = [
   {
     name: "arch/55 FF-5508 extension (acd-loop-level-l3-gated): admission reads only injected score and groundedness facts",
     run: async () => {
-      const engine = stripComments(await readFile(path.join(root, "src", "work", "loop.mjs"), "utf8"));
+      const engine = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8"));
       const gateBody = functionBody(engine, "resolveLoopLevelGate");
       assert.ok(gateBody.length > 200, "the real gate body was read");
       assert.doesNotMatch(gateBody, /\bconfig\b|process\.env|\benv\b|\bflag\b/u);

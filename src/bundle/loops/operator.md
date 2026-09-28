@@ -26,7 +26,7 @@ read off the repository and cites it.
 
 **`loop:mesh-assignment-reclaim` — AUTHORED, and no citation is offered for the relation.** What is
 *discovered* is that this loop's reference is two genuinely config-settable numbers — `work.loop.heartbeatMs`
-(resolved at `src/loop-bounds.mjs:48-50`) and `mesh.presence.stalenessSeconds` (resolved in
+(resolved at `packages/contracts/src/loop-bounds.mjs:48-50`) and `mesh.presence.stalenessSeconds` (resolved in
 `src/mesh/presence.mjs`) — and that **nothing but a hand edit of `.aof/aof.config.json` changes
 either**: RESEARCH §Q3 grepped for a programmatic writer of any loop-bound key across the command
 surface and found none. What is *authored* is the claim that hand-editing those keys is an operator

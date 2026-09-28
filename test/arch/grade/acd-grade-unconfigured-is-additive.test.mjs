@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 
 import { invoke } from "../../../src/command-core.mjs";
 import { GRADE_VERDICTS } from "../../../src/work/grade.mjs";
-import { LOOP_STOPS } from "../../../src/work/loop.mjs";
+import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
 import { makeGradeRepo, ctxFor, countingSpawn } from "../../support/grade-fixture.mjs";
 
@@ -76,7 +76,7 @@ export const archTests = [
       // 54/02 — recording that boundary is what keeps a reader from taking this suite for
       // proof of a property it does not yet cover (`m08/R2`: "green verbatim" and "guarantee
       // preserved" are different claims).
-      const loop = await readFile(path.join(repoRoot, "src", "work", "loop.mjs"), "utf8");
+      const loop = await readFile(path.join(repoRoot, "packages", "work-loop", "src", "engine.mjs"), "utf8");
       // Stated as a property that holds on BOTH sides of 54/02, so this guard never has to
       // be edited when the gate row lands: whatever `GATE_ORDER` comes to name, the loop
       // shell must never branch on the unconfigured CODE. The leg's no-op is a consequence

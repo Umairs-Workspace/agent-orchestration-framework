@@ -31,7 +31,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 
 import { GRADE_CODES } from "../../src/work/grade.mjs";
-import { LOOP_REFUSALS, LOOP_STOPS } from "../../src/work/loop.mjs";
+import { LOOP_REFUSALS, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
 import { getCommand, invoke } from "../../src/command-core.mjs";
 import { runLoopBody } from "../../src/commands/loop.mjs";
 import { completingDriver, replaceStatus } from "./loop-command-probe.test.mjs";

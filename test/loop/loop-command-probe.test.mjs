@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { invoke } from "../../src/command-core.mjs";
-import { LOOP_STOPS, decideLoopScope } from "../../src/work/loop.mjs";
+import { LOOP_STOPS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { immediatePark } from "../support/loop/lane-fixture.mjs";
 import { completeRun, heartbeat, readRuns, retryRun, runNodeRecordPath, runRecordPath, startRun } from "../../src/run-store.mjs";

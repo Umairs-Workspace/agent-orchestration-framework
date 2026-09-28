@@ -38,7 +38,7 @@ export const yarnInstallationTests = [
     assert.deepEqual(importSpecifiers(dependencyRules).map(entry => entry.specifier), ['./identity.mjs'],
       'dependency rules use only the zero-import identity grammar');
     assert.deepEqual(computedDynamicImports(dependencyRules), [], 'dependency rules cannot hide an impure import');
-    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'mesh', 'integration-notion']) {
+    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'mesh', 'integration-notion']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
       const nativePorts = name === 'integration-notion' ? {
@@ -46,7 +46,11 @@ export const yarnInstallationTests = [
         'cli.mjs': ['node:child_process', 'node:path', 'node:os', 'node:fs'],
         'sync-work.mjs': ['node:path', 'node:fs/promises'],
         'notion-sync-work.mjs': ['node:fs'],
-       } : name === 'work-graph' ? {
+       } : name === 'work-loop' ? {
+        'ask-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
+        'stop-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
+        'child-drive.mjs': ['node:path'],
+      } : name === 'work-graph' ? {
         'registry.mjs': ['node:fs/promises', 'node:path', '@aof/work/records', '@aof/contracts/loop-bounds'],
         'record.mjs': ['@aof/contracts/loop-bounds'],
         'document.mjs': ['node:path'],
@@ -81,7 +85,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'work' ? ['@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), ['work', 'work-loop'].includes(name) ? ['@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');

@@ -12,7 +12,7 @@ import { resolvePhaseResumeTarget } from "../../src/commands/drive.mjs";
 import { readRuns } from "../../src/run-store.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { claudeProjectsDir } from "../../src/work/observe.mjs";
-import { reviewBlockerClaim } from "../../src/work/loop.mjs";
+import { reviewBlockerClaim } from "../../packages/work-loop/src/engine.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 

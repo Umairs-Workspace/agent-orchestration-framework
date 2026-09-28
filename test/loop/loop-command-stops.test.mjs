@@ -20,7 +20,7 @@ import {
   writeDeclarationRun,
 } from "./loop-command-probe.test.mjs";
 import { answerRunAsk, completeRun, openRunAsk, parkRunAsk, readRuns, recordSessionId, retryReadiness } from "../../src/run-store.mjs";
-import { LOOP_STOPS, attemptElapsedMs } from "../../src/work/loop.mjs";
+import { LOOP_STOPS, attemptElapsedMs } from "../../packages/work-loop/src/engine.mjs";
 import { PHASE_WORDS, askBlockLines, awaitAnswer, defaultAskWait, parkedHalt, phaseWord } from "../../src/loop/ask.mjs";
 import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
 import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../src/loop/ask-request.mjs";

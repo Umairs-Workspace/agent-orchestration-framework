@@ -17,12 +17,12 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { decideSupervisedDeclarations, readLoopDeclaration } from "../../../src/work/loop.mjs";
+import { decideSupervisedDeclarations, readLoopDeclaration } from "../../../packages/work-loop/src/engine.mjs";
 import { isRunning, isStale, retryReadiness } from "../../../src/run-store.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ENGINE = "src/work/loop.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
 
@@ -79,7 +79,7 @@ export const archTests = [
       assert.equal(
         raw.split("\n").filter((line) => /^import\b/u.test(line.trim())).length,
         0,
-        "src/work/loop.mjs carries no `import` statement of any kind",
+        "packages/work-loop/src/engine.mjs carries no `import` statement of any kind",
       );
       const engine = stripComments(raw);
       assert.doesNotMatch(engine, /\bimport\s*\(/u, "and no dynamic import either");

@@ -68,7 +68,7 @@ loop that received it** before a reversion is considered. The unit is cycles and
 because six of this registry's seven loops have no clock at all, and converting a per-item or
 per-phase trigger into a duration is the fabrication ADR-002 exists to refuse. Two is not arbitrary:
 `DEFAULT_BUILD_NO_PROGRESS_ROUNDS` and `DEFAULT_PROGRESS_MAX_RESETS` are both `2`
-(`src/loop-bounds.mjs:12-13`), so the dwell matches the no-change tolerance this system already
+(`packages/contracts/src/loop-bounds.mjs:12-13`), so the dwell matches the no-change tolerance this system already
 applies before it acts.
 
 **Nothing executes this record today, and that is stated rather than implied.** No code path reads

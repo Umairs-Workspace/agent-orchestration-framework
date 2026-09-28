@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../support/read-src-files.mjs";
 // test/loop/loop-diag.test.mjs — the loop's HOME-SIDE files: the exit-reason recorder
 // (src/loop-diag.mjs, 2026-09-11) and, since 130/01, the stop request (src/loop/stop-request.mjs).
 //
@@ -463,11 +464,8 @@ const stopRequestTests = [
     name: "130/01 stop-request/00 the home-side literals have one home — `loop-stops` and the state words are spelled in stop-request.mjs and in no other module under src/",
     async run() {
       const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-      const own = "src/loop/stop-request.mjs";
-      const modules = (await readdir(path.join(root, "src"), { withFileTypes: true, recursive: true }))
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".mjs"))
-        .map((entry) => path.relative(root, path.join(entry.parentPath ?? entry.path, entry.name)).split(path.sep).join("/"))
-        .sort();
+      const own = "packages/work-loop/src/stop-request.mjs";
+      const modules = (await readRuntimeFiles(root)).map(file => file.rel).sort();
       assert.ok(modules.includes(own), "the module is on disk");
       assert.ok(modules.length > 50, "the sweep is non-vacuous");
       // A module that speaks of a stop request at all: the token set the shell, the verb and the
@@ -480,9 +478,9 @@ const stopRequestTests = [
         if (rel === own) {
           assert.ok(code.includes("loop-stops"), "the home spells the segment");
           assert.ok(code.includes('"honoured"') && code.includes('"requested"'), "the home spells both state words");
-          assert.match(code, /import \{ globalMeshPaths \} from "\.\.\/workspace\.mjs"/, "the resolver is imported, never re-spelled");
-          assert.match(code, /import \{[^}]*\bwriteText\b[^}]*\} from "\.\.\/fs\.mjs"/, "every write goes through writeText");
-          assert.match(code, /import \{ reportDegrade \} from "\.\.\/degrade\.mjs"/, "a corrupt file reports through the one degrade emitter");
+          assert.match(code, /getRuntimeRoot\(env\)/u, "core supplies the runtime path policy");
+          assert.match(code, /import \{[^}]*\bwriteText\b[^}]*\} from "@aof\/foundation\/fs"/, "every write goes through writeText");
+          assert.match(code, /createStopRequests\(\{ getRuntimeRoot, reportDegrade \}\)/u, "the diagnostic policy is supplied explicitly");
           continue;
         }
         assert.ok(!code.includes("loop-stops"), `${rel} spells the loop-stops segment — the one home is ${own}`);
@@ -1271,17 +1269,18 @@ const askRequestTests = [
   {
     name: "131/01 ask-request/02 the ask's words have one home: no other src module spells loop-asks, and the module imports its three leaves",
     async run() {
-      const srcRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src");
-      const files = (await readdir(srcRoot, { recursive: true })).filter((f) => f.endsWith(".mjs"));
-      assert.ok(files.length > 100, `the sweep read src/ — ${files.length} modules`);
-      for (const rel of files) {
-        if (rel.split(path.sep).join("/") === "loop/ask-request.mjs") continue;
-        assert.ok(!stripComments(await readFile(path.join(srcRoot, rel), "utf8")).includes("loop-asks"), `${rel} spells loop-asks`);
+      const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+      const files = await readRuntimeFiles(root);
+      const home = "packages/work-loop/src/ask-request.mjs";
+      assert.ok(files.length > 100 && files.some(file => file.rel === home), "the runtime sweep includes the request implementation");
+      for (const file of files) {
+        if (file.rel === home) continue;
+        assert.ok(!stripComments(await readFile(file.path, "utf8")).includes("loop-asks"), file.rel + " spells loop-asks");
       }
-      const own = await readFile(path.join(srcRoot, "loop", "ask-request.mjs"), "utf8");
-      assert.match(own, /import\s*\{[^}]*\bglobalMeshPaths\b[^}]*\}\s*from\s*"\.\.\/workspace\.mjs"/u);
-      assert.match(own, /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*"\.\.\/fs\.mjs"/u);
-      assert.match(own, /import\s*\{[^}]*\breportDegrade\b[^}]*\}\s*from\s*"\.\.\/degrade\.mjs"/u);
+      const own = await readFile(path.join(root, home), "utf8");
+      assert.match(own, /getRuntimeRoot\(env\)/u);
+      assert.match(own, /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*"@aof\/foundation\/fs"/u);
+      assert.match(own, /createAskRequests\(\{ getRuntimeRoot, reportDegrade \}\)/u);
     },
   },
 

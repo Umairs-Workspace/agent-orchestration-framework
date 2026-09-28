@@ -19,7 +19,7 @@ import {
 } from "../../src/loop-progress.mjs";
 import { readRuns } from "../../src/run-store.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { decideLoopProgress, LOOP_STOPS } from "../../src/work/loop.mjs";
+import { decideLoopProgress, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
 import { completingDriver, loopFixture } from "./loop-command-probe.test.mjs";
 
 const execFileAsync = promisify(execFile);

@@ -388,3 +388,25 @@ modules combine work lookup, run persistence, notification, scope locks, mesh wo
 execution. Those services need explicit ports; moving the entire import cycle unchanged would
 violate the package boundary. The process boundary remains important: lanes run as child processes,
 not in-process session drivers, and the wave is read from work:next rather than recomputed.
+
+## Work-loop decisions and control services — 2026-09-28
+
+The decision engine is a zero-import module and moves byte-for-byte. Ask and stop/resume
+records were coupled to core only through global runtime-path policy, diagnostics and atomic
+filesystem helpers. The package now imports the public foundation filesystem API and accepts
+getRuntimeRoot(env) and reportDegrade. No singleton setter or core import is needed. Factories
+create independent service instances without filesystem access.
+
+Child-drive mechanics belong with loop orchestration; executable discovery and bounded process
+execution are application/execution services supplied by core. Node receives core's own CLI path;
+SEA receives only verb arguments. The subprocess, console and cancellation boundaries remain.
+Cycle/wave/ask/stop orchestration still needs execution/work/notification/mesh ports. Those
+implementations and CLI contribution ownership are not satisfied by this first package slice.
+
+Moving source invalidated three shipped line citations, including two shared-bounds references
+left over from work-graph extraction. Canonical bundle documents and their derived manifest are
+updated. Automatic approval review rejected updating the repository's generated .aof documents
+and lock because the user required work outside AOF. The user then explicitly authorized only
+those three generated documents and their three lock hashes. They were refreshed after verifying the existing files matched their recorded hashes
+and that the new renders differed only in source citations. Fresh rendering, lock hashes and
+idempotent updates also pass in a temporary installation. No workflow state was changed.

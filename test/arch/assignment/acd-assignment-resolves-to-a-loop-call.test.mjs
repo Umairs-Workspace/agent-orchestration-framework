@@ -36,7 +36,7 @@ import {
   assignmentDirectiveLaunch,
 } from "../../../src/mesh/assignment-directive.mjs";
 import { assembleAssignmentRecord } from "../../../src/assignment-record.mjs";
-import { LOOP_STOPS } from "../../../src/work/loop.mjs";
+import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 // The launch seam is reached through the door the WORKER itself re-exports, not through the
 // driver's own module. That is the honest door for this leg — the claim is about the
 // caller-side obligation, and the caller reaches the seam here — and it leaves the driver's

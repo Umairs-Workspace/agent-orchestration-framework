@@ -505,7 +505,7 @@ export const archTests = [
         // (a) every `<path>:<line>` or `<path>:<line>-<line>` the record writes.
         for (const match of text.matchAll(/([\w./-]+\.(?:mjs|md|json|js|ts)):(\d+)(?:-(\d+))?/g)) {
           const [, rel, startText, endText] = match;
-          if (!rel.startsWith("src/") && !rel.startsWith("scripts/") && !rel.startsWith("ui/")) continue;
+          if (!rel.startsWith("src/") && !rel.startsWith("scripts/") && !rel.startsWith("ui/") && !rel.startsWith("packages/")) continue;
           citations += 1;
           const total = await lineCountOf(rel);
           const start = Number(startText);

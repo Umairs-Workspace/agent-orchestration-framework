@@ -16,7 +16,7 @@ import {
   buildLoopDeclaration,
   decideSupervisedDeclarations,
   readLoopDeclaration,
-} from "../../src/work/loop.mjs";
+} from "../../packages/work-loop/src/engine.mjs";
 import { isRunning, isStale, retryReadiness } from "../../src/run-store.mjs";
 import { meshStatusCommand } from "../../src/commands/mesh/identity.mjs";
 import { loadWorkspace } from "../../src/work.mjs";
@@ -474,7 +474,7 @@ export const workLoopDeclarationsTests = [
     name: "130/04 task03 — the engine imports nothing: no import statement, no require(, no dynamic import(",
     async run() {
       const here = path.dirname(fileURLToPath(import.meta.url));
-      const source = await readFile(path.join(here, "..", "..", "src", "work", "loop.mjs"), "utf8");
+      const source = await readFile(path.join(here, "..", "..", "packages", "work-loop", "src", "engine.mjs"), "utf8");
       const stripped = stripComments(source);
       assert.doesNotMatch(stripped, /(^|\n)\s*import\s/, "no import statement");
       assert.doesNotMatch(stripped, /\brequire\s*\(/, "no require(");

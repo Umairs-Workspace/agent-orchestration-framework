@@ -551,3 +551,60 @@ Verification:
 The final deduplicated selection passes all 820 checks with zero failures.
 Evidence is in .tmp/workspace-migration/work-graph/ (ignored).
 Full migration, full-root-suite and native/platform checks remain outstanding.
+
+## Work-loop engine and control services — 2026-09-28
+
+Created @aof/work-loop with the unchanged zero-import decision engine, ask records/polling,
+stop/resume records and signal source, and child-drive argument/result mechanics. Factories
+accept explicit runtime-path, diagnostic, executable-location and process-execution services;
+they perform no I/O during construction. The package depends only on @aof/foundation's public
+filesystem API. Core's temporary adapters preserve every existing export and inject the same
+application policy as before. Cycle/wave orchestration and CLI contribution extraction remain.
+
+The child process still owns its console and receives the same stdin/cancel options. Its Node
+entry is supplied lazily by core; the SEA branch never evaluates an import.meta URL. Ask answer
+sanitation, record keys, unknown-field preservation, stop escalation and signal teardown are
+unchanged. Old/new behavioral outputs and serialized ask/stop/resume bytes match in fixtures.
+
+Architecture sweeps now include package source and follow both compatibility and public imports.
+The trigger's closure scanner follows declared workspace exports: its three-file leaf closure
+includes the temporary forwarding module and the pure engine, with no filesystem builtin. The
+local session driver remains mesh-blind; the assignment sink closure rises from 84 to 86 because
+the two control-service implementations now sit behind their adapters. The strict import denylist
+is unchanged. Source fixtures copy the actual engine so isolation assertions still test purity.
+
+Shipped source citations were updated in three loop records, including two bounds references
+left stale by the prior extraction. The manifest was regenerated. Automatic approval review
+initially rejected refreshing repository .aof copies under the outside-AOF constraint. The user
+then explicitly approved only the three generated documents and their three lock hashes. The
+refresh checked the old hashes and proved the renders changed only source citations before
+writing. No workflow commands, run tracking, work-item state or configuration were changed.
+
+Verification:
+
+- Four new package tests pass; they exercise independent service instances, persisted fields,
+  answer sanitation, corruption reporting, escalation/listener cleanup and both child argv forms.
+- Immutable pinned Yarn install (build scripts skipped) and supply-chain audit pass, zero audit
+  warnings. Only the internal workspace and root dependency change in yarn.lock.
+- The engine is byte-identical to its pre-move source and bundles for the browser. The SEA
+  JavaScript bundle passes with the native PTY external; no native executable was built.
+- A copied installer payload resolves all new APIs internally, loads all 117 commands, writes
+  request records and passes Node/SEA child argv checks. Previous graph/readiness/discovery/
+  validation compatibility checks also pass in that payload.
+- Fresh Claude/Codex/OpenCode rendering, every rendered byte/hash and a no-op update pass in a
+  temporary installation. Three approved checked-in asset/lock refreshes pass synchronization.
+- The unit run passed 996 checks initially; its sole failure was generated-asset synchronization.
+  That exact check passes after the approved refresh, covering all 997 unit cases.
+- An initial ad-hoc broad runner omitted scripts/test.mjs's per-case AOF_GLOBAL_HOME isolation
+  and was stopped; its shared ask/stop failures are not production evidence. The corrected runner
+  uses a fresh runtime home per case. A lane-interrupt case reported lane-open-failed in the broad
+  selection but passed unchanged on isolated rerun; retain that intermittent result explicitly.
+- Eight targeted reruns pass after source-scan/citation corrections and the approved asset refresh.
+- All 2,030 distinct selected checks are covered: 550 completed before a shared-process wave
+  stall (the three failures pass targeted reruns), 1,431 remaining cases pass with zero failures,
+  and all 49 wave cases pass in separate processes with two-minute case limits. The stalled
+  shared-process run is not a full-suite green result. The root bridge includes 85 package cases.
+- The copied-installation check was repeated successfully against the final source manifest.
+
+Evidence is in .tmp/workspace-migration/work-loop/ (ignored). Full migration, full-root-suite
+and native/platform verification remain outstanding.

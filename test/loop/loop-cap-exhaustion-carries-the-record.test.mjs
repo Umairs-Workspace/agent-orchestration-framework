@@ -21,7 +21,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
-import { LOOP_REFUSALS, LOOP_STOPS } from "../../src/work/loop.mjs";
+import { LOOP_REFUSALS, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
 import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { completingDriver } from "./loop-command-probe.test.mjs";
@@ -121,7 +121,7 @@ export const loopCapExhaustionCarriesTheRecordTests = [
           "guard: the loop drove the build, crossed to verify, came back to a story still in-progress, and handed it to its plan",
         );
         // THE STOP IS UNCHANGED AND ITS PRODUCER IS THE ENGINE'S — no module outside
-        // `src/work/loop.mjs` mints this stop any more (124/01 task 00).
+        // `packages/work-loop/src/engine.mjs` mints this stop any more (124/01 task 00).
         assert.equal(state.act.stop, "cap-exhausted");
         assert.equal(state.act.producer, "engine:ready-set-exhausted", "the walk ran out of members to offer, and the engine named the stop");
         assert.equal(state.act.ref, "03/01", "…naming the unit that exhausted");

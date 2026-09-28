@@ -39,13 +39,13 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import { answerAsk, openAsk } from "../../../src/loop/ask-request.mjs";
 import { answerRunAsk, readRuns, runRecordPath, startRun } from "../../../src/run-store.mjs";
 import { transitionStaleRunsReclaimed } from "../../../src/effects/run-transitions.mjs";
-import { attemptElapsedMs } from "../../../src/work/loop.mjs";
+import { attemptElapsedMs } from "../../../packages/work-loop/src/engine.mjs";
 import { claudeProjectsDir, readAskQuestion, NEEDS_INPUT_SENTINEL } from "../../../src/work/observe.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -54,7 +54,7 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 // THE HOME and the three readers ADR-003 names. The needle is the module's repo-relative path as a
 // resolved specifier lands on it — misspell it and zero importers resolve, which the non-vacuity leg
 // reds on rather than passing over.
-const HOME = "src/loop/ask-request.mjs";
+const HOME = "packages/work-loop/src/ask-request.mjs";
 const SEGMENT = "loop-asks";
 const READERS = Object.freeze(["src/loop/ask.mjs", "src/commands/resume.mjs", "src/commands/list.mjs"]);
 const STORE = "src/run-store.mjs";
@@ -84,17 +84,20 @@ function assertRead(what, count, floor, unit = "file(s)") {
 // A specifier resolved against its importer, as a repo-relative posix path; a package or a builtin
 // stays as spelled. `.mjs` is appended when the specifier omits it.
 function resolved(fromRel, specifier) {
+  const service = /^(?:@aof\/work-loop\/)(ask-request|stop-request|child-drive)$/.exec(specifier);
+  if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
-  const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  if (/^src\/loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace("src/loop/", "packages/work-loop/src/");
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
 // ONE read of `src/**`, comment-stripped: `[{ rel, code, raw }]` with `rel` repo-relative posix.
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
+  for (const file of await readRuntimeFiles(repoRoot)) {
     const raw = await readFile(file.path, "utf8");
-    units.push({ rel: `src/${toPosix(file.rel)}`, raw, code: stripComments(raw) });
+    units.push({ rel: toPosix(file.rel), raw, code: stripComments(raw) });
   }
   return units;
 }

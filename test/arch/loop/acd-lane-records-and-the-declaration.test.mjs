@@ -295,7 +295,7 @@ export const archTests = [
   {
     name: "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
     run: async () => {
-      const { decideSupervisedDeclarations } = await import("../../../src/work/loop.mjs");
+      const { decideSupervisedDeclarations } = await import("../../../packages/work-loop/src/engine.mjs");
       const { isRunning, isStale, retryReadiness } = await import("../../../src/run-store.mjs");
       const wave = await driveTwoMemberWave();
       assert.equal(wave.state.state, "done");

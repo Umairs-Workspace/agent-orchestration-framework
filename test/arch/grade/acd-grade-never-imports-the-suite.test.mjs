@@ -11,7 +11,7 @@
 // `m15/R3` (surfaced at recall) is why the scan is over the WHOLE module family rather than
 // over the grade path alone: *a determinism (or any invariant) fitness grep must scan the
 // whole module family it governs*. A guard that only read `src/commands/grade.mjs` would
-// pass on the day someone put the import in `src/work/loop.mjs` instead.
+// pass on the day someone put the import in `packages/work-loop/src/engine.mjs` instead.
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

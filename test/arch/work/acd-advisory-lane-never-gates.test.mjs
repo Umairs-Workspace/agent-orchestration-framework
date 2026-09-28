@@ -329,7 +329,7 @@ export const archTests = [
       assert.deepEqual(loud.validateFindings, [], "…both green, so the ladder crosses to the next step");
 
       // AND NO HALT NAMES A DEPENDS CODE. The shell mints the halts; the decider names the stops.
-      const decider = stripComments(await readFile(path.join(repoRoot, "src", "work", "loop.mjs"), "utf8"));
+      const decider = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "engine.mjs"), "utf8"));
       for (const code of DEPENDS_FINDING_CODES) {
         assert.equal(shell.includes(code), false, `the loop shell names no ${code}`);
         assert.equal(decider.includes(code), false, `and neither does the decider`);

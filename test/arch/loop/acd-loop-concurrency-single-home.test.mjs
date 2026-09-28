@@ -15,7 +15,7 @@
 // `stepProbe` refuses a notch on a string.
 //
 // LEG 2 — THE SWEEP. Over a comment-stripped read of `src/**`: the literals `"refine_first"` /
-// `"sequential"` live in exactly two modules — the bounds home and the engine (`src/work/loop.mjs`,
+// `"sequential"` live in exactly two modules — the bounds home and the engine (`packages/work-loop/src/engine.mjs`,
 // whose `decideLoopPhase` branches on the mode it is HANDED, ADR-001 §4) — so a third spelling
 // (a `"refine_first"` in `src/loop/wave.mjs`) is a second home wearing a branch's shape; the
 // pool bound `work.dispatch.concurrency` is read by `src/work/dispatch.mjs` and by nothing else;
@@ -40,7 +40,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BOUNDS_HOME = "packages/contracts/src/loop-bounds.mjs";
-const ENGINE = "src/work/loop.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
 const DISPATCH_HOME = "src/work/dispatch.mjs";
 const KEY = "work.loop.concurrency";
 

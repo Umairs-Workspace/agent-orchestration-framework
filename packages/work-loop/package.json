@@ -1,0 +1,21 @@
+{
+  "name": "@aof/work-loop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./engine": "./src/engine.mjs",
+    "./ask-request": "./src/ask-request.mjs",
+    "./stop-request": "./src/stop-request.mjs",
+    "./child-drive": "./src/child-drive.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/services.test.mjs"
+  },
+  "dependencies": {
+    "@aof/foundation": "workspace:*"
+  }
+}

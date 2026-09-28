@@ -29,7 +29,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS } from "../../../src/commands/trigger.mjs";
 import { TRIGGER_SOURCES, bundledTriggerDeclaration, readTriggerDeclaration, triggerDeclarationPath } from "../../../src/work-trigger/declaration.mjs";
 import { resolveTriggerLevel } from "../../../src/work-trigger/level.mjs";
-import { LOOP_LEVELS, decideLoopScope } from "../../../src/work/loop.mjs";
+import { LOOP_LEVELS, decideLoopScope } from "../../../packages/work-loop/src/engine.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const LOOP_ID = "work:loop";

@@ -19,7 +19,7 @@ import { readFile, rm } from "node:fs/promises";
 
 import { runLoopBody, admittedDoctorFindings } from "../../src/commands/loop.mjs";
 import { readGradeBaseline, settleStoryCycle } from "../../src/loop/cycle.mjs";
-import { decideSupervisedDeclarations, LOOP_STOPS } from "../../src/work/loop.mjs";
+import { decideSupervisedDeclarations, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
 import { completeRun, isRunning, isStale, readRuns, retryReadiness, startRun, heartbeat } from "../../src/run-store.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { resolveRefInWorktree } from "../../src/work/dispatch.mjs";
@@ -1595,7 +1595,7 @@ export const loopCommandWaveTests = [
   {
     name: "129/07 task01 the family spells neither key and holds no literal; the shell reads the lane bound once through the home",
     run: async () => {
-      for (const rel of ["src/loop/wave.mjs", "src/loop/cycle.mjs", "src/loop/child-drive.mjs", "src/commands/loop.mjs"]) {
+      for (const rel of ["src/loop/wave.mjs", "src/loop/cycle.mjs", "packages/work-loop/src/child-drive.mjs", "src/commands/loop.mjs"]) {
         const code = (await readFile(new URL(`../../${rel}`, import.meta.url), "utf8")).replace(/\/\/[^\n]*/gu, "");
         assert.doesNotMatch(code, /work\.loop\.dispatch|work\.dispatch|dispatch\??\.concurrency/u, `${rel} spells neither key`);
       }

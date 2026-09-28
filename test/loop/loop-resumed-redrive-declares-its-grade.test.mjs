@@ -24,7 +24,7 @@ import path from "node:path";
 import { writeFileSync } from "node:fs";
 
 import { invoke } from "../../src/command-core.mjs";
-import { LOOP_STOPS } from "../../src/work/loop.mjs";
+import { LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
 import { runLoopBody, SHELL_LOOP_ID } from "../../src/commands/loop.mjs";
 import { resolveItemExact } from "../../src/commands/resolve.mjs";
 import { startRun, completeRun } from "../../src/run-store.mjs";

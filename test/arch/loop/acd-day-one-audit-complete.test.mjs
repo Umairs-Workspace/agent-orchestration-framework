@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url";
 
 import { getCommand, listCommands } from "../../../src/command-core.mjs";
 import { deriveRouteTable } from "../../../src/spine/face.mjs";
-import { GATE_ORDER } from "../../../src/work/loop.mjs";
+import { GATE_ORDER } from "../../../packages/work-loop/src/engine.mjs";
 import { loadLoops } from "../../../src/work/loops.mjs";
 import {
   GATING_CODES,

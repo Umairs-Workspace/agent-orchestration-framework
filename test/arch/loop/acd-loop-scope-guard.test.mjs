@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { LOOP_SCOPE_FORMS } from "../../../src/work/loop.mjs";
+import { LOOP_SCOPE_FORMS } from "../../../packages/work-loop/src/engine.mjs";
 import { loopCommand } from "../../../src/commands/loop.mjs";
 import { nextWork } from "../../../src/work.mjs";
 import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-command-probe.test.mjs";
@@ -290,8 +290,8 @@ export const archTests = [
   {
     name: "arch/53 FF-5308 (acd-loop-scope-guard): the god-node scope implementation remains byte-identical to the milestone base, and a widened inRange fails NAMING inRange",
     run: async () => {
-      const source = (await readFile(path.join(root, "src", "work.mjs"), "utf8")).replace(/\r\n/gu, "\n");
-      assert.ok(source.length > 30_000, "src/work.mjs was actually read");
+      const source = (await readFile(path.join(root, "packages", "work", "src", "readiness.mjs"), "utf8")).replace(/\r\n/gu, "\n");
+      assert.ok(source.length > 1_000, "the readiness implementation was actually read");
       // THE FUNCTION PIN IS ASSERTED FIRST, and the ordering is the fix rather than a nicety. The
       // whole-file sha cannot name a function — it reds as "src/work.mjs changed" — and task 04 :178
       // (with its Examples row "`inRange` widened in `src/work.mjs`" → "the changed function")

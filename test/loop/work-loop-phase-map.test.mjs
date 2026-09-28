@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { decideLoop, decideLoopAction, decideLoopPhase, decideWave } from "../../src/work/loop.mjs";
+import { decideLoop, decideLoopAction, decideLoopPhase, decideWave } from "../../packages/work-loop/src/engine.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { workLoopStoryFixturesFor } from "../support/work-loop-story-fixtures.mjs";
 
@@ -122,7 +122,7 @@ const loopConcurrencyTests = [
   {
     name: "129/01/01 the engine imports nothing",
     async run() {
-      const source = stripComments(await readFile(path.join(root, "src", "work", "loop.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8"));
       assert.doesNotMatch(source, /^\s*import\b/mu, "no import statement");
       assert.doesNotMatch(source, /\bfrom\s+["'`]/u, "no re-export from a module either");
       assert.doesNotMatch(source, /\brequire\s*\(/u);

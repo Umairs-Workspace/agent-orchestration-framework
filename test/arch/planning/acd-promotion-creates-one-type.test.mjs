@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url";
 import { markedRegion, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 import { promoteFindingToChoreCommand } from "../../../src/commands/promote-finding-to-chore.mjs";
 import { PROMOTED_TYPE } from "../../../src/work-promote/promotion.mjs";
-import { FINDING_ROUTINGS, LOOP_CREATED_ITEM_TYPE } from "../../../src/work/loop.mjs";
+import { FINDING_ROUTINGS, LOOP_CREATED_ITEM_TYPE } from "../../../packages/work-loop/src/engine.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const INSERT_ENGINE = "src/commands/insert-shared.mjs";
@@ -274,7 +274,7 @@ export const archTests = [
       );
       assert.deepEqual(depthRefusalProblems(findingFace), [], "leg (c), 118/01 — the loop's face refuses a chore's own review, before the idempotence scan");
 
-      // THE JOIN 118/01's write set could not make with an import. `src/work/loop.mjs` imports
+      // THE JOIN 118/01's write set could not make with an import. `packages/work-loop/src/engine.mjs` imports
       // nothing (53/ADR `work-loop-determinism`), so the decider spells the type it may create — and
       // may not be promoted FROM — in its own module. Two spellings of one fact is the drift FF-7103
       // exists to refuse, so the two are pinned HERE, where both are readable.
@@ -481,7 +481,7 @@ export const archTests = [
       // milestone and a story and the bound answered correctly for all three. The claim that holds
       // is not "the loop creates one type" — it is "the loop creates nothing" — and that one is
       // provable over the whole input space rather than over the rows someone thought to write.
-      const { routeFinding, routeFindings, FINDING_SEVERITIES } = await import("../../../src/work/loop.mjs");
+      const { routeFinding, routeFindings, FINDING_SEVERITIES } = await import("../../../packages/work-loop/src/engine.mjs");
 
       // Every declared input of the decider, at every value that changes its answer. `reviewedType`
       // carries the stream's item types plus `undefined` — the no-context default every existing

@@ -12,7 +12,7 @@ import {
   decideReviewGate,
   isReviewBlockerClaim,
   reviewBlockerClaim,
-} from "../../src/work/loop.mjs";
+} from "../../packages/work-loop/src/engine.mjs";
 import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { completingDriver, loopFixture } from "./loop-command-probe.test.mjs";
 

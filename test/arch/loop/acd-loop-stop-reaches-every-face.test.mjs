@@ -40,7 +40,7 @@ import { fileURLToPath } from "node:url";
 import { assemblePresenceRecord, readActiveLoops } from "../../../src/mesh/presence.mjs";
 import { loopStopsDir, requestLoopStop } from "../../../src/loop/stop-request.mjs";
 import { fleetCurrentWorkLines, loopStopAffordance, rememberStopRung } from "../../../ui/src/fleet/runs.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 import { loopFixture, resetLoopStops, writeDeclarationRun } from "../../loop/loop-command-probe.test.mjs";
 
@@ -78,8 +78,8 @@ async function source(rel) {
 
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
-    units.push({ rel: `src/${toPosix(file.rel)}`, code: stripComments(await readFile(file.path, "utf8")) });
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    units.push({ rel: toPosix(file.rel), code: stripComments(await readFile(file.path, "utf8")) });
   }
   return units;
 }

@@ -28,14 +28,14 @@ import {
   decideScheduleToClose,
   lineageElapsedMs,
   retryLineage,
-} from "../../../src/work/loop.mjs";
+} from "../../../packages/work-loop/src/engine.mjs";
 import { isStale, startRun } from "../../../src/run-store.mjs";
 // THE COMMENT STRIPPER, FROM ITS ONE HOME (chore 106 / TECH_DEBT item 24) — a hand-rolled one is
 // what `acd-comment-stripper-order` refuses, and every absence sweep below depends on it.
 import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ENGINE = "src/work/loop.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
 const SHELL = "src/commands/loop.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
@@ -191,7 +191,7 @@ export const archTests = [
       assert.equal(
         (await read(ENGINE)).split("\n").filter((line) => /^import /u.test(line)).length,
         0,
-        "src/work/loop.mjs imports nothing, exactly as it does today",
+        "packages/work-loop/src/engine.mjs imports nothing, exactly as it does today",
       );
       assert.doesNotMatch(
         engine,

@@ -62,7 +62,7 @@ import {
   resolveTriggerLevels,
 } from "../../../src/work-trigger/level.mjs";
 import { bundledTriggerDeclaration, compileTriggerDeclaration } from "../../../src/work-trigger/declaration.mjs";
-import { L3_SCORE_THRESHOLD, LOOP_LEVELS, resolveLoopLevelGate } from "../../../src/work/loop.mjs";
+import { L3_SCORE_THRESHOLD, LOOP_LEVELS, resolveLoopLevelGate } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — and that ORDER is the whole reason this is imported rather
 // than written here. The first cut of this control cloned the three-line function with the two
 // passes INVERTED, which is TECH_DEBT item 24's measured defect: a `//` comment containing `/*`
@@ -236,15 +236,15 @@ export const archTests = [
       assert.match(loopCommand, /^\s*resolveLoopLevelGate,\s*$/m, "the loop command imports the same gate");
       assert.match(loopCommand, /requireDecision\(resolveLoopLevelGate\(/, "…and gates the level through it at fire time");
 
-      // THE WHOLE IMPORT CLOSURE, not just the leaf's own line. `src/work/loop.mjs` imports
+      // THE WHOLE IMPORT CLOSURE, not just the leaf's own line. `packages/work-loop/src/engine.mjs` imports
       // nothing at all — its own contract, pinned by `acd-loop-module-import-boundary` — so the
       // closure is two files and NEITHER can reach a filesystem, a registry or a clock. That is
       // "no file is read" proven statically and completely rather than spot-checked.
-      const engine = stripComments(read(path.join(REPO_ROOT, "src", "work", "loop.mjs")));
+      const engine = stripComments(read(path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs")));
       // PURITY IS EXTERNAL (119/ADR-002): the closure ends here because the gate home depends on
       // nothing outside itself, which is a claim about its specifiers rather than about its file
       // count. Splitting the gate home stays legal; reaching out of it does not.
-      await assertFamilyPurity(assert, REPO_ROOT, "src/work/loop");
+      await assertFamilyPurity(assert, REPO_ROOT, "packages/work-loop/src/engine.mjs");
       assert.match(engine, /export function resolveLoopLevelGate\(/, "…and it really is the gate home");
     },
   },

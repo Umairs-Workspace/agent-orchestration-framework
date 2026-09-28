@@ -43,7 +43,8 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHELL = "src/commands/loop.mjs";
 const FAMILY_DIR = "src/loop";
-const SPAWN_SEAM = "src/loop/child-drive.mjs";
+const SPAWN_SEAM = "packages/work-loop/src/child-drive.mjs";
+const PACKAGE_FAMILY = "packages/work-loop/src";
 const WAVE = "src/loop/wave.mjs";
 
 // The modules a lane drive must never run inside the loop's process (ADR-005 §5).
@@ -142,12 +143,13 @@ async function familyUnits() {
   for (const entry of (await readdir(path.join(repoRoot, FAMILY_DIR), { withFileTypes: true })).sort((a, b) => (a.name < b.name ? -1 : 1))) {
     if (entry.isFile() && entry.name.endsWith(".mjs")) rels.push(`${FAMILY_DIR}/${entry.name}`);
   }
+  for (const name of ["ask-request.mjs", "stop-request.mjs", "child-drive.mjs"]) rels.push(`${PACKAGE_FAMILY}/${name}`);
   const units = [];
   for (const rel of rels) units.push({ rel, code: await readFile(path.join(repoRoot, toPosix(rel)), "utf8") });
   return units;
 }
 
-const familyOnly = (units) => units.filter((unit) => unit.rel.startsWith(`${FAMILY_DIR}/`));
+const familyOnly = (units) => units.filter((unit) => (unit.rel.startsWith(`${FAMILY_DIR}/`) || unit.rel.startsWith(`${PACKAGE_FAMILY}/`)));
 
 export const archTests = [
   {
@@ -169,7 +171,9 @@ export const archTests = [
       const facts = seamSpawnFacts(seam.code);
       assert.ok(facts.found, `${SPAWN_SEAM}: NOT FOUND — no runBounded( call; the seam spawns nothing this leg can judge`);
       assert.ok(facts.execPath, `${SPAWN_SEAM}: runBounded is given \`command: process.execPath\` — the drive is this interpreter's own CLI (129/ADR-005 §1)`);
-      assert.match(stripComments(seam.code), /new URL\(\s*"\.\.\/cli\.mjs"\s*,\s*import\.meta\.url\s*\)/u, `${SPAWN_SEAM}: the Node branch resolves the entry from this module's own location`);
+      assert.match(stripComments(seam.code), /getCliEntry\(\)/u, "the package consumes the supplied CLI location");
+      const adapter = units.find(unit => unit.rel === "src/loop/child-drive.mjs");
+      assert.match(stripComments(adapter.code), /new URL\(\s*"\.\.\/cli\.mjs"\s*,\s*import\.meta\.url\s*\)/u, "core resolves its own CLI location");
       assert.match(stripComments(seam.code), /\bisPackaged\(\)/u, `${SPAWN_SEAM}: the branch is decided by interpreter identity (isPackaged), never by file presence`);
 
       const route = spawnRouteProblems(units);

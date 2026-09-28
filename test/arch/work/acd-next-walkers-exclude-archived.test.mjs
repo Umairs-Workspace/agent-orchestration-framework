@@ -9,7 +9,7 @@
 //   · the readers that answer "what is this ref" — `findWork`, `validateWork`, `src/work/doctor.mjs`
 //     — contain NO `archived` filter, and driven over the same fixture `findWork("05")` answers
 //     the archived row with `archived: true`.
-// The loop has no walk of its own: `src/commands/loop.mjs` and `src/work/loop.mjs` import none
+// The loop has no walk of its own: `src/commands/loop.mjs` and `packages/work-loop/src/engine.mjs` import none
 // of the four disk readers from `src/work.mjs`, so its only views of the stream are the
 // registered `work:next` and `work:list`, which filter.
 //
@@ -135,7 +135,7 @@ export const archTests = [
   {
     name: "arch/FF-12706 (acd-next-walkers-exclude-archived): the loop has no walk of its own — src/commands/loop.mjs and src/work/loop.mjs import none of the four disk readers from src/work.mjs",
     run: async () => {
-      for (const rel of ["src/commands/loop.mjs", "src/work/loop.mjs"]) {
+      for (const rel of ["src/commands/loop.mjs", "packages/work-loop/src/engine.mjs"]) {
         const stripped = stripComments(await readFile(path.join(repoRoot, ...rel.split("/")), "utf8"));
         assert.deepEqual(importsDiskReaderFromWork(stripped, rel), [], `${rel} imports no disk reader from src/work.mjs — the loop reaches the stream only through the registered work:next and work:list`);
       }

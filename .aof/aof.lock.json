@@ -1415,7 +1415,7 @@
           "id": "loop-autonomous-cascade",
           "kind": "asset"
         },
-        "hash": "sha256:e0610101d11c5efd7cfbb13177e7cbe50f6f2c464406fa1da6da344cecca831f",
+        "hash": "sha256:a609f47603f494c7875acb700278e4cb550d1af600ff601765fcf0bf1ea5ea52",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1485,7 +1485,7 @@
           "id": "actor-operator",
           "kind": "asset"
         },
-        "hash": "sha256:9676899c9c3d385b9616f2fe129bb047a0e21cfadddcd7333e81934d9b259810",
+        "hash": "sha256:e9997ae8c3f2563e10e44ac0edbf7538a430efe2155e456f1efa71324d7c4bd6",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1565,7 +1565,7 @@
           "id": "arbiter-speed-thoroughness-autonomy",
           "kind": "asset"
         },
-        "hash": "sha256:6df02f00d46b15ff35a816e7969a9fea4b4b377b92baa8c85e3b65b9a1c9921f",
+        "hash": "sha256:690c9df34c5ccca0de7fd51077fe206bf591fdfe9f5af44986b96c0aaaa1c921",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {

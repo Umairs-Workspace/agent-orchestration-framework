@@ -52,7 +52,7 @@ import {
   resolveTriggerSignals,
 } from "../../src/work-trigger/sources.mjs";
 import { TRIGGER_SOURCES } from "../../src/work-trigger/declaration.mjs";
-import { LOOP_LEVELS, decideLoopScope } from "../../src/work/loop.mjs";
+import { LOOP_LEVELS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 // The two vocabularies the "a refusal carries no more than a resolution does" sweep recognises a
 // level and a cadence BY, rather than by the key they arrive under: `runAt: "L3"` is a level and
 // `every: "1h"` is a cadence, and a name-exact guard sees neither.
@@ -986,7 +986,7 @@ const ONE_GRAMMAR = [
           }],
       ];
 
-      const loopSource = await readFile(path.join(REPO_ROOT, "src", "work", "loop.mjs"), "utf8");
+      const loopSource = await readFile(path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs"), "utf8");
       const familySource = await readFile(path.join(REPO_ROOT, "src", "work-trigger", "sources.mjs"), "utf8");
 
       for (const [change, scope, expected, patches, probe] of rows) {
@@ -999,8 +999,8 @@ const ONE_GRAMMAR = [
         await scratch(async (root) => {
           const src = path.join(root, "src");
           await mkdir(path.join(src, "work-trigger"), { recursive: true });
-          // 119/01 — the loop module lives at `src/work/loop.mjs` now, so the copy needs the
-          // family directory as well as the sub-family one.
+          // Copy the actual package engine into the consumer's legacy fixture path;
+          // this tests changed grammar without bringing any source dependencies along.
           await mkdir(path.join(src, "work"), { recursive: true });
 
           let patched = loopSource;
@@ -1042,7 +1042,7 @@ const ONE_GRAMMAR = [
         "in this tree, where a single digit is a driver, 7/04 is refused with 7 named");
 
       // The tree this test read is unchanged by it.
-      assert.equal(readFileSync(path.join(REPO_ROOT, "src", "work", "loop.mjs"), "utf8"), loopSource,
+      assert.equal(readFileSync(path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs"), "utf8"), loopSource,
         "the repository's own loop module was not edited");
     },
   },

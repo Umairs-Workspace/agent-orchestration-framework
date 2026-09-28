@@ -12,7 +12,7 @@ final tree. Historical passing checks alone do not prove the final layout works.
 | Contracts and foundation have explicit APIs | Implemented kernels; remaining shared primitives must be assigned without becoming a second monolith. |
 | Work owns lifecycle, records, discovery, readiness, validation and acceptance | Lifecycle/read/discovery/readiness/validation extracted. Acceptance, audit, mutations, run ownership and command contributions remain. |
 | Work graph is separate from executing the loop | Work-graph mechanisms and six command implementations/contribution extracted; final removal of compatibility paths and full-distribution checks remain. |
-| Work loop owns pure decisions and orchestration | Outstanding package and injected orchestration collaborators. |
+| Work loop owns pure decisions and orchestration | Zero-import engine and ask/stop/resume/child-drive services extracted with explicit application ports. Cycle/wave orchestration and command contribution remain. |
 | Execution owns local sessions, runs, PTYs and reusable worktree mechanisms | Outstanding. Local session driver no longer imports mesh. |
 | Mesh owns coordination, projections and package commands | Effects and contribution declaration extracted; most implementations remain in root source. |
 | Messaging owns Discord and notification behavior | Contribution seam exists; package extraction outstanding. |
@@ -29,7 +29,7 @@ final tree. Historical passing checks alone do not prove the final layout works.
 | Source, copied payload and standalone/native installation work | JS bundles and copied payloads pass on Windows so far; final installer, standalone, native sidecar and platform checks outstanding. |
 | Worktree preparation, Windows/WSL, CI and release paths follow final layout | Yarn cutover changes implemented; final path migration and platform verification outstanding. |
 | Package tests plus cross-package, architecture and release verification | Incremental checks recorded in IMPLEMENTATION.md; final full suite and build/release gates outstanding. |
-| Behavior, persisted state and generated output remain compatible | Differential checks per extraction; final asset/output/persistence comparisons outstanding. |
+| Behavior, persisted state and generated output remain compatible | Differential checks per extraction; final asset/output/persistence comparisons outstanding. Three shipped citation updates render correctly in a temporary installation; the user explicitly approved refreshing only the corresponding checked-in copies and lock hashes. |
 
 No row with outstanding work is satisfied by an empty workspace, a forwarding shell, a passing
 unrelated test, or moving an import cycle behind dynamic imports. The goal remains active until

@@ -76,6 +76,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/work-loop@workspace:*, @aof/work-loop@workspace:packages/work-loop":
+  version: 0.0.0-use.local
+  resolution: "@aof/work-loop@workspace:packages/work-loop"
+  dependencies:
+    "@aof/foundation": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@aof/work@workspace:*, @aof/work@workspace:packages/work":
   version: 0.0.0-use.local
   resolution: "@aof/work@workspace:packages/work"
@@ -1804,6 +1812,7 @@ __metadata:
     "@aof/mesh": "workspace:*"
     "@aof/work": "workspace:*"
     "@aof/work-graph": "workspace:*"
+    "@aof/work-loop": "workspace:*"
     "@inquirer/prompts": "npm:^8.4.2"
     "@xterm/headless": "npm:6.0.0"
     "@yarnpkg/parsers": "npm:3.1.0"

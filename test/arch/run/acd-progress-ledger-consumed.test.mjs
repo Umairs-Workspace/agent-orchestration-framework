@@ -210,7 +210,7 @@ export const archTests = [
       // protects is therefore read off the LADDER, and the shell is held to reaching the ladder.
       const shell = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
       const command = await readFile(path.join(root, "src", "loop", "cycle.mjs"), "utf8");
-      const engine = await readFile(path.join(root, "src", "work", "loop.mjs"), "utf8");
+      const engine = await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8");
       assert.match(shell, /settleStoryCycle\(phaseRun, bookkeeping, ctx, \{/u, "the shell reaches the producer through the ladder");
       assert.doesNotMatch(shell, /recordBuildProgress\(/u, "…and holds no producer call of its own");
       assert.match(command, /sampleWorktreeProgress/u);

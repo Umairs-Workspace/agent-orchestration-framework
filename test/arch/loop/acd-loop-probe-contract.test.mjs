@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getCommand, listCommands } from "../../../src/command-core.mjs";
 import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
-import { GATE_ORDER, LOOP_REFUSALS, LOOP_STOPS } from "../../../src/work/loop.mjs";
+import { GATE_ORDER, LOOP_REFUSALS, LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS } from "../../../src/work/grade.mjs";
 import { gradeRoute, gradeStopCode, gradeStopProducer, runLoopBody } from "../../../src/commands/loop.mjs";
 import { invoke } from "../../../src/command-core.mjs";

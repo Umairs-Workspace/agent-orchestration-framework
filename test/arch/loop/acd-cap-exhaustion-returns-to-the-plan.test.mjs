@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-12404 — "Cap exhaustion asks the engine, returns the EXISTING refine act aimed at a
 // derived plan ref, and is bounded twice by counters that already exist."
 //
@@ -25,7 +26,7 @@ import {
   decideReadySetExhausted,
   loopPlanRef,
   loopScopeIncludes,
-} from "../../../src/work/loop.mjs";
+} from "../../../packages/work-loop/src/engine.mjs";
 import { LOOP_FIX_TRANSPORT_KEYS, loopCommand } from "../../../src/commands/loop.mjs";
 // THE COMMENT STRIPPER, FROM ITS ONE HOME (chore 106 / TECH_DEBT item 24). A hand-rolled one is
 // what `acd-comment-stripper-order` exists to refuse: strip block comments first and a line
@@ -36,18 +37,13 @@ import { LOOP_FIX_TRANSPORT_KEYS, loopCommand } from "../../../src/commands/loop
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ENGINE = "src/work/loop.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
 const SHELL = "src/commands/loop.mjs";
 const DRIVER = "src/commands/drive.mjs";
 
 /** Every `.mjs` under `src/`, relative and forward-slashed. */
 async function sourceModules() {
-  const dir = path.join(root, "src");
-  const entries = await readdir(dir, { recursive: true });
-  return entries
-    .map((entry) => `src/${String(entry).replaceAll("\\", "/")}`)
-    .filter((rel) => rel.endsWith(".mjs"))
-    .sort();
+  return (await readRuntimeFiles(root)).map(file => file.rel).sort();
 }
 
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
@@ -249,7 +245,7 @@ export const archTests = [
       }
 
       // THE SEVENTH ENTRY IS NOT `nextDecision` AND DOES PASS ONE — the direct `decideLoop` call
-      // that keeps `src/work/loop.mjs:910` LIVE. 124/ADR-006's "four dead branches" is three, and
+      // that keeps `packages/work-loop/src/engine.mjs:910` LIVE. 124/ADR-006's "four dead branches" is three, and
       // this story must not assert otherwise: `test/loop/loop-only-fail-redrives.test.mjs` drives
       // that branch green today.
       const direct = /requireDecision\(decideLoop\(\{[\s\S]*?\}\)\);/gu;

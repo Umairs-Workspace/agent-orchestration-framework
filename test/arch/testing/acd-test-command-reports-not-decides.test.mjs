@@ -88,7 +88,7 @@ const PROBE_FLOOR = 4;
 const DOOR_ROOTS = Object.freeze([
   "src/commands/item-status.mjs",
   "src/work/doctor.mjs",
-  "src/work/loop.mjs",
+  "packages/work-loop/src/engine.mjs",
   "src/work-audit",
   "src/bundle",
 ]);
@@ -377,9 +377,9 @@ export const archTests = [
         `cli: { route: ["${TEST_COMMAND_ID}"] }`,
         `if (command === "${TEST_COMMAND_ID}") return gateOn(result);`,
       ]) {
-        const planted = doorInvocationProblems([{ rel: "src/work/loop.mjs", code: shape }]);
+        const planted = doorInvocationProblems([{ rel: "packages/work-loop/src/engine.mjs", code: shape }]);
         assert.equal(planted.length, 1, `a planted \`${shape}\` is caught`);
-        assert.ok(planted[0].startsWith("src/work/loop.mjs"), "…and the module is named");
+        assert.ok(planted[0].startsWith("packages/work-loop/src/engine.mjs"), "…and the module is named");
       }
 
       // THE SHAPE CENSUS IS NECESSARY, AND THE ROW PROVES IT RATHER THAN CLAIMING IT: a raw-token

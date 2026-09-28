@@ -196,7 +196,7 @@ export const archTests = [
   {
     name: "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): the pure engine has no effect source and no loop store or command-side file write exists",
     run: async () => {
-      const engine = stripComments(await readFile(path.join(root, "src", "work", "loop.mjs"), "utf8"));
+      const engine = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8"));
       assert.doesNotMatch(engine, /node:(?:fs|fs\/promises|child_process|process|os)|Date\.now\s*\(|new\s+Date\s*\(|\bimport\s*\(/u);
       const command = stripComments(await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8"));
       assert.doesNotMatch(command, /\b(?:writeFile|mkdir|rename)\s*\(/u);

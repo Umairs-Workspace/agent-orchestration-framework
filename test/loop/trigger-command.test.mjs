@@ -27,7 +27,7 @@ import { loadWorkspace } from "../../src/work.mjs";
 import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS, LOOP_INPUT_KEYS as LOOP_INPUT_KEYS_UNDER_TEST } from "../../src/commands/trigger.mjs";
 import { TRIGGER_SOURCES, compileTriggerDeclaration } from "../../src/work-trigger/declaration.mjs";
 import { resolveTriggerLevel } from "../../src/work-trigger/level.mjs";
-import { LOOP_LEVELS, LOOP_REFUSALS, decideLoopScope } from "../../src/work/loop.mjs";
+import { LOOP_LEVELS, LOOP_REFUSALS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

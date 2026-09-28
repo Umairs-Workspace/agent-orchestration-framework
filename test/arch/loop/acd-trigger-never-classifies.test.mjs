@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 // Fitness function: FF-6307 — A TRIGGERED WAKE NEVER CLASSIFIES, AND NEVER INVENTS A SCOPE
 // (63/ADR-007, ADR-010 §9, §10).
 //
@@ -75,7 +76,7 @@ import {
   resolveTriggerSignals,
 } from "../../../src/work-trigger/sources.mjs";
 import { RAW_FEEDBACK_KEYS, FEEDBACK_CLASSIFICATION_KEYS } from "../../../src/feedback-records.mjs";
-import { LOOP_SCOPE_FORMS, decideLoopScope } from "../../../src/work/loop.mjs";
+import { LOOP_SCOPE_FORMS, decideLoopScope } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — TECH_DEBT items 24 and 57. A `//` comment containing `/*`
 // opens a block-comment run for a block-first stripper, and everything to the next `*/` is
 // deleted; the bans below would then sweep a truncated string and report green over a region they
@@ -87,7 +88,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const FAMILY_DIR = path.join(REPO_ROOT, "src", "work-trigger");
 const LEAF_PATH = path.join(FAMILY_DIR, "sources.mjs");
 const FEEDBACK_COMMAND_PATH = path.join(REPO_ROOT, "src", "commands", "feedback.mjs");
-const LOOP_PATH = path.join(REPO_ROOT, "src", "work", "loop.mjs");
+const LOOP_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs");
 
 const read = (file) => readFileSync(file, "utf8");
 
@@ -120,8 +121,10 @@ function closureOf(file) {
     if (files.has(current)) continue;
     files.add(current);
     for (const specifier of moduleSpecifiers(stripComments(read(current)))) {
-      if (!specifier.startsWith(".")) { builtins.add(specifier); continue; }
-      const resolved = path.resolve(path.dirname(current), specifier);
+      if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) { builtins.add(specifier); continue; }
+      const resolved = specifier.startsWith("@aof/")
+        ? createRequire(current).resolve(specifier)
+        : path.resolve(path.dirname(current), specifier);
       if (existsSync(resolved)) queue.push(resolved);
       else unresolved.push(specifier);
     }
@@ -351,7 +354,7 @@ export const archTests = [
       // vocabulary from the compiler: its closure is TWO FILES and NO BUILTINS, which is what
       // makes leg 8's "reads no file" a structural equality rather than a runtime spy.
       const leafClosure = closureOf(LEAF_PATH);
-      assert.equal(leafClosure.files.length, 2, "the leaf's closure is two source files (ADR-014)");
+      assert.equal(leafClosure.files.length, 3, "the leaf reaches the compatibility export and the zero-import package engine");
       assert.deepEqual(leafClosure.builtins, [], "…and no builtin at all, node:fs least of all");
 
       const patternBans = [
