@@ -72,7 +72,7 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 
 const ASK_HOME = "packages/work-loop/src/ask-request.mjs";
 const ASK = "packages/work-loop/src/ask.mjs";
-const DRIVER = "src/agent-session-driver.mjs";
+const DRIVER = "packages/execution/src/session-driver.mjs";
 const RESUME = "src/commands/resume.mjs";
 const TERMINAL_FACES = Object.freeze(["src/mesh/terminal-input.mjs", "src/terminal-ws.mjs", DRIVER]);
 const TERMINAL_INPUT_RE = /(?:^|\/)terminal-input(?:[-.][^/]*)?\.mjs$/u;

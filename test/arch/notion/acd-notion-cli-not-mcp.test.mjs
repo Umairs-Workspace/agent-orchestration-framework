@@ -44,7 +44,9 @@ const MCP_SERVER_STANDUP = /\b(?:McpServer|MCPServer|StdioServerTransport|create
 
 async function notionSurfaceFiles() {
   const files = await readRuntimeFiles(repoRoot);
-  return files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('src/notion/') || rel.startsWith('src/commands/notion-')).map(file => file.path);
+  const selected = files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('src/notion/') || rel.startsWith('src/commands/notion-')).map(file => file.path);
+  assert.ok(selected.length > 0, 'the Notion runtime source sweep is non-empty');
+  return selected;
 }
 
 export const archTests = [

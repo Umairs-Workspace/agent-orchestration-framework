@@ -17,14 +17,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const EMULATOR = "@xterm/headless";
-const MODEL = "terminal/screen.mjs";
-const DOOR = "terminal/session-screen.mjs";
-const DRIVER = "agent-session-driver.mjs";
+const MODEL = "src/terminal/screen.mjs";
+const DOOR = "src/terminal/session-screen.mjs";
+const DRIVER = "packages/execution/src/session-driver.mjs";
 const DRIVER_SPELLINGS = Object.freeze(["ANSI_ESCAPE_RE", "TUI_READY_MARKER", "2004h", "PARKED_PASTE_RE", "PROVIDER_WAIT_RE", "hasVisibleText", "screenTail"]);
 const MARKERS = Object.freeze(["?2004h", "?2004l"]);
 
@@ -38,7 +38,7 @@ function stripComments(source) {
 export function screenReaderViolations(files) {
   const violations = [];
   for (const { rel, source } of files) {
-    const file = `src/${rel}`;
+    const file = rel;
     if (rel !== MODEL && importSpecifiers(source).some((entry) => entry.specifier === EMULATOR)) {
       violations.push({ file, spelling: EMULATOR });
     }
@@ -55,7 +55,7 @@ export function screenReaderViolations(files) {
 
 async function liveSources() {
   const files = [];
-  for (const { rel, path: full } of await readSrcFiles(repoRoot)) files.push({ rel, source: await readFile(full, "utf8") });
+  for (const { rel, path: full } of await readRuntimeFiles(repoRoot)) files.push({ rel, source: await readFile(full, "utf8") });
   return files;
 }
 
@@ -86,15 +86,15 @@ export const archTests = [
     },
   },
   ...[
-    { plant: "`import(\"@xterm/headless\")` added to `src/loop-bounds.mjs`", rel: "loop-bounds.mjs", edit: (source) => `${source}\nexport const loadScreen = () => import("@xterm/headless");\n`, spelling: EMULATOR },
+    { plant: "`import(\"@xterm/headless\")` added to `src/loop-bounds.mjs`", rel: "src/loop-bounds.mjs", edit: (source) => `${source}\nexport const loadScreen = () => import("@xterm/headless");\n`, spelling: EMULATOR },
     { plant: "`const hasVisibleText = 0;` added to the driver", rel: DRIVER, edit: (source) => `${source}\nconst hasVisibleText = 0;\n`, spelling: "hasVisibleText" },
-    { plant: "`PROVIDER_WAIT_RE` added to the driver's import from `loop-bounds.mjs`", rel: DRIVER, edit: (source) => source.replace('import { DEFAULT_HEARTBEAT_MS } from "./loop-bounds.mjs";', 'import { DEFAULT_HEARTBEAT_MS, PROVIDER_WAIT_RE } from "./loop-bounds.mjs";'), spelling: "PROVIDER_WAIT_RE" },
+    { plant: "`PROVIDER_WAIT_RE` added to the driver's import from `loop-bounds.mjs`", rel: DRIVER, edit: (source) => source.replace('import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";', 'import { DEFAULT_HEARTBEAT_MS, PROVIDER_WAIT_RE } from "@aof/contracts/loop-bounds";'), spelling: "PROVIDER_WAIT_RE" },
     { plant: "the string `\"\\u001b[?2004h\"` added to `src/terminal/screen.mjs`", rel: MODEL, edit: (source) => `${source}\nexport const PASTE_ON = "\\u001b[?2004h";\n`, spelling: "?2004h" },
   ].map(({ plant: label, rel, edit, spelling }) => ({
     name: `arch/138 FF-13801 outline — each plant turns the control red, naming the file and the spelling [${label}]`,
     run: async () => {
       const violations = screenReaderViolations(plant(await liveSources(), rel, edit));
-      assert.deepEqual(violations, [{ file: `src/${rel}`, spelling }], `one violation naming src/${rel} and ${spelling}`);
+      assert.deepEqual(violations, [{ file: rel, spelling }], `one violation naming src/${rel} and ${spelling}`);
     },
   })),
   {

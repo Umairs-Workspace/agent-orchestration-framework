@@ -15,37 +15,20 @@
 // `import ptyModule from "node-pty"` and does NOT flag the in-defaultSpawn
 // dynamic load.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(repoRoot, "src");
 const terminalWsPath = path.join(srcRoot, "terminal-ws.mjs");
+const ptyPath = path.join(repoRoot, "packages/execution/src/pty.mjs");
 
 function stripComments(source) {
   return source
     .replace(/(^|[^:])\/\/[^\n]*/g, "$1")
     .replace(/\/\*[\s\S]*?\*\//g, "");
-}
-
-async function collectMjsFiles(dir) {
-  const out = [];
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return out;
-  }
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      out.push(...(await collectMjsFiles(full)));
-    } else if (entry.name.endsWith(".mjs")) {
-      out.push(full);
-    }
-  }
-  return out;
 }
 
 // A top-level (static) import of node-pty or a *.node file — the banned shape.
@@ -93,7 +76,8 @@ export const archTests = [
   {
     name: "arch/ADR-002: no src/**.mjs module top-level-imports \"node-pty\" or a *.node file",
     run: async () => {
-      const files = await collectMjsFiles(srcRoot);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 100 && files.includes(ptyPath), "the runtime sweep includes the native loader");
       const offenders = [];
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
@@ -107,15 +91,16 @@ export const archTests = [
   {
     name: "arch/ADR-002: the only node-pty reference lives inside terminal-ws.mjs's defaultSpawn (createRequire under SEA / dynamic import in dev)",
     run: async () => {
-      const files = await collectMjsFiles(srcRoot);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 100 && files.includes(ptyPath), "the runtime sweep includes the native loader");
       const referencing = [];
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
         if (/node-pty/.test(code)) referencing.push(path.relative(repoRoot, file).split(path.sep).join("/"));
       }
-      assert.deepEqual(referencing, ["src/terminal-ws.mjs"], "only terminal-ws.mjs references node-pty anywhere in src/");
+      assert.deepEqual(referencing, ["packages/execution/src/pty.mjs"], "only the execution loader references node-pty across runtime sources");
 
-      const code = stripComments(await readFile(terminalWsPath, "utf8"));
+      const code = stripComments(await readFile(ptyPath, "utf8"));
       // Both branches present: the SEA createRequire path and the dev dynamic
       // import — both live inside loadNodePty(), the loader defaultSpawn (and
       // the injectable createTerminalSpawn factory) calls; neither is hoisted
@@ -129,7 +114,8 @@ export const archTests = [
       assert.ok(/node-pty/.test(fnBody), "the node-pty reference is inside loadNodePty's body");
       // defaultSpawn (and the injectable factory) call the loader; the addon
       // reference is reached only through that call, never a top-level import.
-      assert.ok(/loadNodePty\s*\(\s*\)/.test(code), "defaultSpawn calls loadNodePty()");
+      const transport = stripComments(await readFile(terminalWsPath, "utf8"));
+      assert.match(transport, /const defaultSpawn = createTerminalSpawn\(loadNodePty\)/, "transport uses the shared loader and spawn factory");
 
       // F12 (craft-review, POLARITY): structurally assert WHICH branch is
       // which, not merely that both strings exist — an inverted ternary
@@ -188,7 +174,7 @@ export const archTests = [
       assert.notEqual(invertedPolarity.trueBranch, "createRequire", "self-check: the inverted form FAILS the real assertion's expectation (trueBranch !== createRequire)");
 
       // The real, correctly-polarized source passes.
-      const realCode = stripComments(await readFile(terminalWsPath, "utf8"));
+      const realCode = stripComments(await readFile(ptyPath, "utf8"));
       const fnStart = realCode.indexOf("function loadNodePty");
       const fnEnd = realCode.indexOf("\n}", fnStart);
       const realBody = realCode.slice(fnStart, fnEnd === -1 ? undefined : fnEnd + 2);

@@ -463,3 +463,23 @@ retain their copying behavior, and registry writes retain their best-effort repo
 provider code retains its MIT attribution and the NOTICE index follows the implementation.
 This removes two service implementations from the root without introducing an execution dependency
 on WebSocket transport. The native loader and local driver still require the next boundary change.
+
+## Local driver and PTY ownership
+
+The local driver and lazy native PTY loading/spawning now belong to execution. Its factory takes
+named transcript and launch service groups plus diagnostics. The old driver adapter composes those
+services directly and no longer imports terminal-ws. Both the WebSocket route and driver use the
+same exported spawn factory. Core supplies the packaged-executable sentinel; execution owns the
+createRequire-versus-dynamic-import choice and declares the existing pinned node-pty dependency.
+
+Measured static closure: the composed local driver falls from 41 modules to 35; the mesh worker
+falls from 92 to 86. The driver implementation itself reaches three modules: itself, the shared
+PTY service and the contracts bounds leaf. No dynamic application import was introduced. The
+remaining work/observe reach is through the supplied transcript service, whose later separation
+still belongs in final composition. Screen observation and reusable worktree mechanisms remain
+to extract.
+
+The body is copied without indentation changes, so multiline instruction whitespace is preserved.
+An exact body comparison after import/export wrapping, runtime constant comparison and differential
+launch-envelope comparison all pass. Source guards now distinguish adapter wiring from implementation
+ownership and inspect runtime packages for native loads, screen reads and competing launch builders.

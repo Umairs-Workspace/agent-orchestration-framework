@@ -9,7 +9,9 @@
     "./heartbeats": "./src/heartbeats.mjs",
     "./session-capture": "./src/session-capture.mjs",
     "./providers": "./src/providers.mjs",
-    "./terminal-sessions": "./src/terminal-sessions.mjs"
+    "./terminal-sessions": "./src/terminal-sessions.mjs",
+    "./pty": "./src/pty.mjs",
+    "./session-driver": "./src/session-driver.mjs"
   },
   "files": [
     "src"
@@ -19,6 +21,7 @@
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",
-    "@aof/foundation": "workspace:*"
+    "@aof/foundation": "workspace:*",
+    "node-pty": "1.1.0"
   }
 }

@@ -733,3 +733,55 @@ Verification (ignored evidence in `.tmp/workspace-migration/execution-terminals/
 The existing four generated-citation updates remain pending separately. No repository `.aof`
 files or workflow state changed in this extraction. Full migration and platform verification
 remain outstanding.
+
+## Local session driver and shared PTY service — 2026-09-28
+
+Moved the local session driver into `@aof/execution/session-driver`, constructed with explicit
+transcript, launch and diagnostic services. The core compatibility adapter preserves all 17
+exports. It now composes native loading directly through `@aof/execution/pty`, removing its import
+of terminal-ws. The WebSocket adapter uses the same exported spawn factory. Native loading remains
+deferred until a spawn and retains createRequire beside the executable for packaged builds and a
+dynamic import for development. Execution declares the existing pinned node-pty 1.1.0 dependency;
+the lockfile adds only that workspace edge. No library version or lifecycle allowance changed.
+
+The static composed-driver closure shrank from 41 modules to 35; the mesh-worker closure shrank
+from 92 to 86. The package driver reaches only itself, the PTY module and the contracts bounds
+leaf. It imports no core, work, mesh or transport module. Screen observation, transcript reading,
+trust, phase-brief compilation and attribution remain supplied services to finish assigning during
+the remaining migration. There is no new deferred application import hiding a cycle.
+
+Source guards now read the actual driver, distinguish supplied ports from adapter imports and
+sweep runtime packages for native loads, competing launch builders and screen/transcript reads.
+Planted violations remain exercised. Broader architecture checks also exposed three earlier Notion
+scan helpers without non-empty assertions; those assertions were added without narrowing their
+subjects. The PTY module carries the required MIT attribution and NOTICE includes its new path.
+
+Verification (ignored evidence in `.tmp/workspace-migration/execution-driver/`):
+
+- The complete original driver body is byte-identical after only import/export wrapping; copied
+  lines were not indented, preserving multiline instruction strings. All 17 compatibility exports,
+  non-function values and five launch-envelope scenarios match the old implementation.
+- The 1,180-case affected selection initially passed 1,148 cases with 32 source-location/guard
+  failures. Those are covered by focused reruns after correction; the final 14-case check also
+  exercises expanded runtime scans and the bridge over all 96 internal package cases.
+- All 217 cases across the complete changed test suites and the architecture census audit pass
+  in `changed.log`. This final run catches interactions beyond the initially failing cases;
+  its counts overlap the preceding selections.
+- Two new package tests cover inert driver composition, supplied transcript/launch services,
+  deferred native loading, argument identity and preserving the native-load error itself.
+- The unit run reports 997 passes and one failure: the four generated citation copies whose
+  refresh remains separately pending. The extra unit case is the added PTY attribution check.
+  This is not a fully green unit-suite claim.
+- Pinned Yarn immutable installation with builds skipped and supply-chain audit pass, zero audit
+  warnings. The existing Yarn peer warning remains. Standalone JavaScript bundling includes both
+  new modules and keeps node-pty external; no native executable was built.
+- A copied installer payload preserves driver instructions and launch envelopes, uses the same
+  public spawn factory through the WebSocket compatibility export and preserves simulated native
+  load failures. Its prior work, graph, loop, driver-dry-run, terminal-registry and persisted-run
+  parity checks also pass, with all 117 commands retained. Temporary harness issues involving a
+  randomly generated session ID and nested JSON escaping were corrected before the successful run.
+
+The four previously pending generated citation changes remain untouched; this driver move does
+not add any shipped loop citation changes. Screen services, reusable worktree mechanisms, remaining
+domain packages, final core/apps layout and adapter removal still remain. Full-root-suite and
+native/platform verification are outstanding.

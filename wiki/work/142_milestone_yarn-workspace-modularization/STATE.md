@@ -129,7 +129,8 @@ services remain in core. Enumeration/lookup/listing, readiness and their shared 
 rules are extracted. Validation now consumes an explicit core-supplied digest contract.
 Work-loop orchestration and commands now consume explicit execution, work, notification and mesh
 services. Execution now owns run persistence, transcript settlement, heartbeat queues and
-session attribution. Continue with local session/terminal execution and remaining work acceptance/audit services,
+session attribution. The local driver and shared PTY loader/spawner are also extracted.
+Continue with screen services, reusable worktrees and remaining work acceptance/audit services,
 then replace their transitional adapters in final core assembly. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
@@ -151,3 +152,11 @@ Their implementation bodies and legacy export sets are unchanged; 906 affected c
 including all 94 internal package cases. Immutable install/audit and standalone JavaScript
 bundle checks pass. Driver, PTY/screen and worktree ownership remain next; the four pending
 generated citation refreshes are unchanged by this slice.
+
+Local driver/PTY extraction: static local-driver reach shrank from 41 to 35 modules, and the
+package driver reaches only itself, PTY and contracts bounds. The copied body, instruction values
+and launch envelopes match the old implementation. The affected 1,180-case selection is covered
+after source-guard corrections; the final bridge passes all 96 package cases. The unit run reports
+997 passes and one pending generated-citation synchronization failure. Immutable install/audit,
+standalone JavaScript build and copied-installation launch/native-refusal checks pass. No native
+executable or real agent-session launch is claimed by these checks.

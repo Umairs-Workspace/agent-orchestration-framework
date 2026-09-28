@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { assertFamilyPurity, importSpecifiers } from "../../support/module-family.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -340,8 +340,10 @@ export const archTests = [
       // The launch seam's signature tokens. `--permission-mode` + the append form + the
       // stable-prefix flag are built in exactly one place; a second module carrying any
       // of them is a second (unmanaged) claude launch builder.
-      const realFiles = await readSrcFiles(root);
-      const offenders = findOffenders(realFiles, driverPath);
+      const realFiles = await readRuntimeFiles(root);
+      const implementationPath = path.join(root, "packages/execution/src/session-driver.mjs");
+      assert.ok(realFiles.some(file => file.path === implementationPath), "the launch implementation is scanned");
+      const offenders = findOffenders(realFiles, implementationPath);
       assert.deepEqual(offenders, [], "no module outside resolveInteractiveDriverLaunch's home assembles a claude launch argv (permission-mode / append-system-prompt / stable-prefix)");
 
       // Red probe: a SECOND module constructs a claude launch argv → the detector trips.
@@ -349,7 +351,7 @@ export const archTests = [
         ...realFiles,
         { rel: "commands/rogue.mjs", path: path.join(root, "src", "commands", "rogue.mjs"), body: 'function rogue() { return ["--permission-mode", "auto"]; }\n' },
       ];
-      assert.deepEqual(findOffenders(probe, driverPath), ["commands/rogue.mjs builds --permission-mode"], "a second claude launch builder trips the detector");
+      assert.deepEqual(findOffenders(probe, implementationPath), ["commands/rogue.mjs builds --permission-mode"], "a second claude launch builder trips the detector");
     },
   },
   {

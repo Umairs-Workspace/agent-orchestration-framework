@@ -12,7 +12,8 @@
 //   - control    : client→server JSON { type:'resize', cols, rows } → pty.resize;
 //                  server→client JSON { type:'exit', exitCode }     (clean/failed exit)
 //                  server→client JSON { type:'error', message }     (spawn failure).
-import { createRequire } from "node:module";
+import { createNodePtyLoader, createTerminalSpawn } from "@aof/execution/pty";
+export { createTerminalSpawn } from "@aof/execution/pty";
 import { WebSocketServer } from "ws";
 import { loadWorkspace } from "./work.mjs";
 // The SAME folder-trust pre-write the mesh worker's spawn uses (a leaf module, so this
@@ -103,9 +104,7 @@ export const SOCKET_ERROR_CODE = "terminal-ws-socket-error";
 // (its distinct failure/success signature in a dev environment), rather than
 // only asserting on the source text. This does not change production
 // behaviour: defaultSpawn (below) still calls this exact function.
-export function loadNodePty() {
-  return isPackaged() ? createRequire(process.execPath)("node-pty") : import("node-pty");
-}
+export const loadNodePty = createNodePtyLoader({ isPackaged });
 
 // The default PTY spawner: loads node-pty INSIDE the call (via the injectable
 // ptyLoader) so that importing this module never requires the native addon at
@@ -115,10 +114,7 @@ export function loadNodePty() {
 // The load stays INSIDE this function, never hoisted to a top-level import
 // (fitness #3 — a missing/unloadable sidecar must never crash startup;
 // importing terminal-ws.mjs must never need the addon).
-async function defaultSpawn(bin, args, options) {
-  const pty = await loadNodePty();
-  return pty.spawn(bin, args, options);
-}
+const defaultSpawn = createTerminalSpawn(loadNodePty);
 
 // A defaultSpawn FACTORY, parameterised on the ptyLoader — the injectable seam
 // an @executable test uses to model "sidecar resolves" / "ENOENT" / "throws on
@@ -128,12 +124,6 @@ async function defaultSpawn(bin, args, options) {
 // defaultSpawn above is EXACTLY createTerminalSpawn(loadNodePty)'s behaviour —
 // this factory does not change the production default, it only exposes the
 // same shape for a test-supplied loader.
-export function createTerminalSpawn(ptyLoader) {
-  return async function spawnWithLoader(bin, args, options) {
-    const pty = await ptyLoader();
-    return pty.spawn(bin, args, options);
-  };
-}
 
 // Attach the terminal WebSocket to an existing http.Server (ADR-001: the SAME
 // server serveSetupUi returns — no second server, no second port). The `spawn`

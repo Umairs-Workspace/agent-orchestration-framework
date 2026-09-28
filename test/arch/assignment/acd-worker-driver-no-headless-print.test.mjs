@@ -60,7 +60,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // test carries BOTH halves, so it is the one site that reads both files — six read
 // sites, seven reads. The behavioural legs are untouched: the import at :47 still
 // resolves through the sink's verbatim re-export, which is the whole point of it.
-const DRIVER_SOURCE = path.join(repoRoot, "src", "agent-session-driver.mjs");
+const DRIVER_SOURCE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
 const HANDLER_SOURCE = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
 
 function stripComments(source) {
@@ -106,7 +106,7 @@ function hasDriverLaunchShape(code) {
 // The interactive launch resolves through terminal-providers.mjs's resolveProvider,
 // genuinely called (not merely imported-and-unused).
 function resolvesThroughTerminalProviders(rawCode, strippedCode) {
-  const importsIt = /import\s*\{\s*resolveProvider\s*\}\s*from\s*["']\.\/terminal-providers\.mjs["']/.test(rawCode);
+  const importsIt = /const\s*\{\s*resolveProvider\s*,[^}]*\}\s*=\s*launch/.test(rawCode);
   const callsIt = /resolveProvider\s*\(/.test(strippedCode);
   return importsIt && callsIt;
 }
@@ -143,7 +143,7 @@ function typesCommandIntoPtyStdin(strippedCode) {
 // ./work-observe.mjs (imported AND called), the `defaultWatchTranscriptSessionId` seam
 // is defined, and the injected `options.watchTranscriptSessionId` is wired to it.
 function capturesSessionIdViaTranscriptWatch(rawCode, strippedCode) {
-  const importsProjectsDir = /import\s*\{[^}]*\bclaudeProjectsDir\b[^}]*\}\s*from\s*["']\.\/work\/observe\.mjs["']/.test(rawCode);
+  const importsProjectsDir = /const\s*\{[^}]*\bclaudeProjectsDir\b[^}]*\}\s*=\s*transcripts/.test(rawCode);
   const callsProjectsDir = /claudeProjectsDir\s*\(/.test(strippedCode);
   const definesWatchSeam = /function\s+defaultWatchTranscriptSessionId/.test(strippedCode);
   const wiresWatchSeam = /options\.watchTranscriptSessionId\s*\?\?\s*defaultWatchTranscriptSessionId/.test(strippedCode);
@@ -236,7 +236,7 @@ export const archTests = [
       // but the detector's import-half must independently trip. CRLF-safe: matches
       // the import statement itself without anchoring on a literal "\n" (this tree
       // is CRLF; a raw "\n"-anchored regex would silently no-op the plant).
-      const plantedNoImport = raw.replace(/import \{ resolveProvider \} from "\.\/terminal-providers\.mjs";\r?\n/, "");
+      const plantedNoImport = raw.replace("resolveProvider, loadNodePty", "missingProvider, loadNodePty");
       assert.notEqual(plantedNoImport, raw, "the plant actually changed the source text");
       assert.equal(resolvesThroughTerminalProviders(plantedNoImport, stripComments(plantedNoImport)), false, "a stripped resolveProvider import trips the detector");
 

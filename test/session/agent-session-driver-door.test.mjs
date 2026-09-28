@@ -795,7 +795,7 @@ export const agentSessionDriverDoorTests = [
       const naming = [];
       for (const rel of testFiles) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
-        if (source.includes("agent-session-driver")) naming.push(rel);
+        if (source.includes("agent-session-driver") || source.includes("packages/execution/src/session-driver") || source.includes('"packages", "execution", "src", "session-driver.mjs"')) naming.push(rel);
       }
       assert.ok(testFiles.length > 300, `the test tree was actually walked (non-vacuous): ${testFiles.length} files`);
       assert.deepEqual(naming.sort(), NAMES_THE_NEW_MODULE, "the closed ADR-015 §2 allowlist includes every later driver consumer by name and reason");
@@ -808,7 +808,7 @@ export const agentSessionDriverDoorTests = [
       const named = [];
       for (const member of suites) {
         const source = await readFile(path.join(repoRoot, member.rel), "utf8");
-        const hits = (source.match(/agent-session-driver/g) ?? []).length;
+        const hits = (source.match(/agent-session-driver|packages\/execution\/src\/session-driver|"packages", "execution", "src", "session-driver\.mjs"/g) ?? []).length;
         (hits === 0 ? zeroMention : named).push(member.rel);
       }
       // DERIVED, WITH A FLOOR. The property is per member — each suite in the zero-mention class
@@ -816,7 +816,7 @@ export const agentSessionDriverDoorTests = [
       // census the same walk produced, which is what the retyped 44 and 48 were standing in for.
       for (const rel of zeroMention) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
-        assert.equal((source.match(/agent-session-driver/g) ?? []).length, 0, `${rel} names the driver zero times`);
+        assert.equal((source.match(/agent-session-driver|packages\/execution\/src\/session-driver|"packages", "execution", "src", "session-driver\.mjs"/g) ?? []).length, 0, `${rel} names the driver zero times`);
       }
       assert.equal(zeroMention.length + named.length, suites.length, "the two classes partition the census exhaustively");
       assert.ok(zeroMention.length >= 44, `at least 44 census suites name the new module zero times (got ${zeroMention.length})`);

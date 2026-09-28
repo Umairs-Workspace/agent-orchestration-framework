@@ -33,6 +33,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // obligation being repaired, not housekeeping.
 const ADAPTED_FILES = [
   "src/terminal-ws.mjs",
+  "packages/execution/src/pty.mjs",
   "packages/execution/src/providers.mjs",
   "ui/src/terminal/TerminalControl.tsx",
   "ui/src/terminal/state-ramp.mjs",

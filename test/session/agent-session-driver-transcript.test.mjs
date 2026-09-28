@@ -136,7 +136,7 @@ function bumpMtimeSync(file) {
 // family; the driver's outcome is a mapping over it, and the rows at the foot of this block are
 // the delivered mapping read through the driver's own watch, unchanged.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const DRIVER_SOURCE = path.join(repoRoot, "src", "agent-session-driver.mjs");
+const DRIVER_SOURCE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
 
 const textBlock = (text) => ({ type: "text", text });
 const toolBlock = (name, input = {}) => ({ type: "tool_use", name, input });
@@ -376,18 +376,17 @@ function readerAndProducerTests() {
       name: "131/01 task00 — the driver's scan is a mapping over the one reader: it imports readLastAssistantTurn, walks no transcript, and keeps the frozen seventeen",
       run: async () => {
         const driver = stripLikeTheDriverControl(await readFile(DRIVER_SOURCE, "utf8"));
-        assert.match(driver, /import\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*from\s*"\.\/work\/observe\.mjs"/u);
-        const spawnRuntime = driver.slice(driver.indexOf("export function defaultSpawnRuntime("));
+        assert.match(driver, /const\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*=\s*transcripts/u);
+        const spawnRuntime = driver.slice(driver.indexOf("function defaultSpawnRuntime("));
         assert.equal(occurrences(driver, "JSON.parse("), occurrences(spawnRuntime, "JSON.parse("), "the one JSON.parse left is the codex stdout parse in defaultSpawnRuntime");
         assert.equal(occurrences(driver, "stop_reason"), 1, "one stop_reason read is left in the driver");
         assert.equal(occurrences(spawnRuntime, "stop_reason"), 1, "…and it is defaultSpawnRuntime's, which is not a transcript scan");
 
-        const srcRoot = path.join(repoRoot, "src");
-        const { readdir } = await import("node:fs/promises");
-        const walk = async (d) => (await Promise.all((await readdir(d, { withFileTypes: true })).map((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : e.name.endsWith(".mjs") ? [path.join(d, e.name)] : [])))).flat();
-        for (const file of await walk(srcRoot)) {
-          const rel = path.relative(srcRoot, file).split(path.sep).join("/");
-          if (rel === "work/observe.mjs" || rel === "agent-session-driver.mjs") continue;
+        const { readRuntimeFiles } = await import("../support/read-src-files.mjs");
+        const files = await readRuntimeFiles(repoRoot);
+        assert.ok(files.length > 100 && files.some(file => file.path === DRIVER_SOURCE), "the runtime sweep includes the driver implementation");
+        for (const { path: file, rel } of files) {
+          if (rel === "src/work/observe.mjs" || rel === "packages/execution/src/session-driver.mjs") continue;
           assert.equal(occurrences(stripLikeTheDriverControl(await readFile(file, "utf8")), "stop_reason"), 0, `${rel} reads no stop_reason`);
         }
         assert.equal(Object.keys(driverModule).length, 17, "the driver's export set is still the frozen seventeen");

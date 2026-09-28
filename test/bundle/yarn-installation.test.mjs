@@ -52,6 +52,8 @@ export const yarnInstallationTests = [
         'heartbeats.mjs': ['node:fs/promises', 'node:path'],
         'providers.mjs': ['node:path', 'node:fs'],
         'terminal-sessions.mjs': ['node:fs/promises', 'node:path'],
+        'pty.mjs': ['node:module', 'node-pty'],
+        'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds'],
       } : name === 'work-loop' ? {
         'progress.mjs': ['node:child_process', 'node:fs/promises', 'node:path', 'node:util', '@aof/contracts/loop-bounds'],
         'diagnostics.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path'],
@@ -99,7 +101,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'work' ? ['@aof/foundation'] : ['work-loop', 'execution'].includes(name) ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'execution' ? ['@aof/contracts', '@aof/foundation', 'node-pty'] : name === 'work' ? ['@aof/foundation'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');

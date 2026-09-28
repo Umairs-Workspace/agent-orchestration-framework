@@ -69,10 +69,10 @@ const STATE_WORDS = Object.freeze(["waiting", "parked", "answered"]);
 const ASK_READS_RE = /\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?(?:readAsk|readAsks|answerAsk|openAsk|parkAsk)\s*\(/gu;
 
 const OBSERVE = "src/work/observe.mjs";
-const DRIVER = "src/agent-session-driver.mjs";
+const DRIVER = "packages/execution/src/session-driver.mjs";
 const ASK = "src/loop/ask.mjs";
 // The driver's one non-transcript parse: the headless runtime's stdout document (a codex run).
-const STDOUT_PARSER = "export function defaultSpawnRuntime(";
+const STDOUT_PARSER = "function defaultSpawnRuntime(";
 const DRIVER_EXPORTS = 17; // 53/FF-5302
 const FOUR_LABELS = Object.freeze(["Decision needed:", "Options:", "I would pick:", "What the answer changes:"]);
 const THRESHOLD = "genuine judgment call";
@@ -319,8 +319,9 @@ export const archTests = [
       const definers = units.filter(({ code }) => /\bfunction\s+readLastAssistantTurn\s*\(/u.test(code)).map(({ rel }) => rel);
       assert.deepEqual(definers, [OBSERVE], `readLastAssistantTurn is defined once — in: ${definers.join(", ")}`);
 
-      const driver = unitOf(units, DRIVER);
-      assert.ok(importSpecifiers(driver.code).some(({ specifier }) => resolved(DRIVER, specifier) === OBSERVE), "the driver imports src/work/observe.mjs by resolved specifier");
+      const adapterPath = "src/agent-session-driver.mjs";
+      const driver = unitOf(units, adapterPath);
+      assert.ok(importSpecifiers(driver.code).some(({ specifier }) => resolved(adapterPath, specifier) === OBSERVE), "the adapter imports src/work/observe.mjs by resolved specifier");
       assert.match(driver.code, /import\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*from\s*["']\.\/work\/observe\.mjs["']/u, "the driver imports readLastAssistantTurn by name");
 
       const ask = unitOf(units, ASK);

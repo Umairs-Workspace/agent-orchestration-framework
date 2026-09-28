@@ -133,7 +133,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7001 (acd-phase-brief-single-bag): the driver still takes (brief, options) and reads the additive brief.context — no rival context/payload/digest parameter",
     run: async () => {
-      const driver = await readFile(path.join(srcRoot, "agent-session-driver.mjs"), "utf8");
+      const driver = await readFile(path.join(root, "packages/execution/src/session-driver.mjs"), "utf8");
       assert.match(driver, /driveInteractiveClaudeSession\s*\(\s*brief\s*,\s*options\s*=\s*\{\s*\}\)/u, "the driver's signature stays (brief, options) — the brief bag is the one context carrier");
       assert.match(driver, /brief\.context/u, "the driver reads the additive brief.context key");
       assert.doesNotMatch(driver, /driveInteractiveClaudeSession\s*\(\s*(?:context|payload|digest)\b/u, "no rival-named first parameter was introduced");
@@ -142,7 +142,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7001 (acd-phase-brief-single-bag): both callers construct the brief bag with the four existing keys and add context additively, never replacing any",
     run: async () => {
-      const drive = await readFile(path.join(srcRoot, "commands", "drive.mjs"), "utf8");
+      const drive = await readFile(path.join(root, "packages/work-loop/src/commands/drive.mjs"), "utf8");
       const mesh = await readFile(path.join(srcRoot, "mesh/worker-execution.mjs"), "utf8");
       for (const [name, src] of [["drive.mjs", drive], ["mesh/worker-execution.mjs", mesh]]) {
         for (const key of FOUR_KEYS) {
@@ -155,7 +155,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7001 (acd-phase-brief-single-bag): the four existing brief keys keep their meaning — the context is a sibling spread, not a replacement (drive.mjs's additive spread is present)",
     run: async () => {
-      const drive = await readFile(path.join(srcRoot, "commands", "drive.mjs"), "utf8");
+      const drive = await readFile(path.join(root, "packages/work-loop/src/commands/drive.mjs"), "utf8");
       // drive.mjs adds context as a conditional sibling spread on the SAME bag that carries
       // the four keys — never a standalone argument, never replacing a key.
       assert.match(drive, /\{\s*context:\s*phaseContext\s*\}/u, "context is a sibling key on the brief bag");

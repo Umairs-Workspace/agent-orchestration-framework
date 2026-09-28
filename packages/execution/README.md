@@ -17,13 +17,20 @@ Core assembles these services and supplies application policy.
   launch arguments/environment, preserving the injectable PATH resolver.
 - `createTerminalSessions({ reportDegrade })` owns live-session records and best-effort
   pruning. It inspects process liveness without signalling or terminating sessions.
+- `createSessionDriver({ transcripts, launch, reportDegrade })` owns local agent-session
+  execution, transcript watching, completion detection, launch arguments and PTY lifecycle.
+  Core supplies transcript readers, screen observation, attribution, phase-brief and trust policy.
+- `createNodePtyLoader({ isPackaged })` owns lazy native loading: the packaged branch resolves
+  beside the executable, while development uses a dynamic import. `createTerminalSpawn(loader)`
+  is the shared spawn factory used by local sessions and the terminal WebSocket adapter.
 
 Factories perform no I/O. The package imports public contracts and foundation APIs, Node
-builtins and its own modules. It imports no core, work, mesh or command registry code.
+builtins and its own modules, and lazily loads its pinned `node-pty` dependency. It imports no
+core, work, mesh, WebSocket transport or command registry code.
 Record shapes, paths, refusal behavior and spending calculations remain unchanged.
 
-Legacy `src/run-*.mjs` files currently compose these services for existing consumers.
-Local session drivers, PTY/screen services and worktree mechanisms still need to move here;
+Legacy root modules currently compose these services for existing consumers.
+Screen services and reusable worktree mechanisms still need to move here;
 final application composition will remove the transitional adapters.
 
 Run package checks with `yarn workspace @aof/execution test`.

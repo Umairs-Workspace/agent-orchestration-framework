@@ -45,7 +45,7 @@ import { resolveInteractiveDriverLaunch } from "../../../src/agent-session-drive
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COMPILER_SOURCE = path.join(repoRoot, "src", "frozen-set.mjs");
-const SEAM_SOURCE = path.join(repoRoot, "src", "agent-session-driver.mjs");
+const SEAM_SOURCE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
 const DELIVERED_PIN_SOURCE = path.join(repoRoot, "test", "arch", "bundle", "acd-frozen-set-compiled.test.mjs");
 
 const ENVELOPE_POINT = "the worker launch envelope";

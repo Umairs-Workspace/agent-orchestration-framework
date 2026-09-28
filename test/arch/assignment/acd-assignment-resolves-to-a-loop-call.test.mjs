@@ -386,7 +386,7 @@ export const archTests = [
   {
     name: "arch/63 FF-6306 (ADR-006 §4): the out-of-scope fence — the module that OWNS the PTY, streaming, completion and NEEDS_INPUT machinery holds none of this story's identifiers, and the worker still forwards each concern as a bare shorthand key",
     run: async () => {
-      const driver = stripComments(await readFile(path.join(repoRoot, "src", "agent-session-driver.mjs"), "utf8"));
+      const driver = stripComments(await readFile(path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs"), "utf8"));
       // Non-vacuity first: the four concerns really do live in that module.
       for (const concern of ["ptySpawn(", "onOutputChunk", "watchTranscriptCompletion", "containsNeedsInputSentinel"]) {
         assert.ok(driver.includes(concern), `the driver is the home of ${concern} — this leg is reading the right file`);
