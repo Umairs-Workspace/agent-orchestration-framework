@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { auditSupplyChain } from '../../scripts/supply-chain-audit.mjs';
 import { readYarnPackages, productionDependencyDirs } from '../../scripts/dependency-inventory.mjs';
+import { familyPurity, importSpecifiers, classifySpecifier, computedDynamicImports } from '../support/module-family.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 function write(dir, file, body) {
@@ -26,6 +27,32 @@ function locked(dir, name, version) {
 }
 
 export const yarnInstallationTests = [
+  { name: 'yarn-installation/extracted kernels cannot import core, legacy source, providers or sibling internals', run: async () => {
+    for (const name of ['contracts', 'effects']) {
+      const report = await familyPurity(root, `packages/${name}/src`);
+      assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
+      assert.deepEqual(report.violations, [], `${name}: only package-local imports are allowed`);
+      assert.deepEqual(report.computed, [], `${name}: computed imports cannot bypass the boundary`);
+      const from = report.family.files[0];
+      for (const code of [
+        'import { invoke } from "../../../src/command-core.mjs";',
+        `export { x } from "../../${name === 'contracts' ? 'effects/src/dispatch' : 'contracts/src/commands'}.mjs";`,
+        'const provider = await import("node:fs");',
+        'const core = await import(`aof`);',
+      ]) {
+        const specs = importSpecifiers(code);
+        assert.equal(specs.length, 1, 'the planted import is detected');
+        assert.equal(classifySpecifier(specs[0].specifier, from, report.family), 'violation');
+      }
+      assert.ok(computedDynamicImports('await import(variableName)').length > 0);
+      const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), [], `${name}: remains dependency-free`);
+      for (const target of Object.values(manifest.exports)) {
+        assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
+        assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');
+      }
+    }
+  } },
   { name: 'yarn-installation/production packaging preserves the dependency name of an installed link', run: () => fixture(async dir => {
     write(dir, 'package.json', { name: 'fixture', dependencies: { alias: 'npm:shared@1' } });
     write(dir, 'node_modules/shared/package.json', { name: 'shared', version: '1' });

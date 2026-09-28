@@ -4,8 +4,10 @@
 
 - 2026-09-28: Milestone captured from the repository assessment and subsequent design discussion.
 - Status: Yarn cutover committed as `a66dd8d` on `refactor/yarn-workspace-modularization`.
-  The first extracted workspace, `@aof/contracts`, now supplies command composition and routing.
-  Mesh and messaging own their contributions; domain source extraction remains incremental.
+  `@aof/contracts` supplies command composition and routing (`5be0e23`).
+  `@aof/effects` now owns dispatch, outbox delivery, and acknowledgement algorithms through
+  injected journal/diagnostic/policy interfaces. Mesh and messaging own their command contributions;
+  domain source extraction remains incremental.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
@@ -51,7 +53,9 @@
 ## Next
 
 Extract foundational utilities and domain packages behind the new contribution boundary.
-Define narrow service interfaces where the domain import graph needs them. Mesh and messaging
+Separate the application reactor registrations from the existing effects table/transition cycle.
+Extract generic journal storage through explicit location and diagnostic interfaces, keeping
+run/assignment-specific queries with their domains. Mesh and messaging
 still live under `src/`; core still owns the CLI and will move to `packages/core` with its assets.
 `yarn.lock` is now authoritative. Carry the outstanding full-suite and platform checks into the
 next verification round. Continue direct development without AOF workflow commands.

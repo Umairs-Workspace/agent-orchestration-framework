@@ -200,7 +200,7 @@ export const archTests = [
       await withIsolation(async ({ journalOptions, publisherBase }) => {
         const { repo, story } = await buildFixture();
         try {
-          const workspace = await loadWorkspace(repo);
+          const workspace = await loadWorkspace(repo, undefined, { env: journalOptions.env });
           const opts = { workspace, publisherOptions: publisherBase, journalOptions };
           const started = await transitionRunStart(story, {}, opts);
           const completed = await transitionRunComplete(story, { runId: started.record.runId, outcome: "done" }, opts);
@@ -220,7 +220,7 @@ export const archTests = [
       await withIsolation(async ({ journalOptions, publisherBase }) => {
         const { repo, story } = await buildFixture({ notion: NOTION_BLOCK });
         try {
-          const workspace = await loadWorkspace(repo);
+          const workspace = await loadWorkspace(repo, undefined, { env: journalOptions.env });
           const { spy, calls } = makeSpy();
           const opts = { workspace, publisherOptions: { ...publisherBase, notionSpawn: spy }, journalOptions };
           const started = await transitionRunStart(story, {}, opts);
@@ -244,7 +244,7 @@ export const archTests = [
       await withIsolation(async ({ env, journalOptions, publisherBase }) => {
         const { repo, story } = await buildFixture({ notion: NOTION_BLOCK });
         try {
-          const workspace = await loadWorkspace(repo);
+          const workspace = await loadWorkspace(repo, undefined, { env: journalOptions.env });
           const { spy, calls } = makeSpy();
           const opts = { workspace, publisherOptions: { ...publisherBase, notionSpawn: spy }, journalOptions };
           const started = await transitionRunStart(story, {}, opts);
@@ -283,7 +283,7 @@ export const archTests = [
       await withIsolation(async ({ journalOptions, publisherBase }) => {
         const { repo, story } = await buildFixture({ notion: { ...NOTION_BLOCK, autoSync: true } });
         try {
-          const workspace = await loadWorkspace(repo);
+          const workspace = await loadWorkspace(repo, undefined, { env: journalOptions.env });
           assert.deepEqual(
             reachableLoci(workspace),
             [...LOCAL_LOCI, "integration:notion"],

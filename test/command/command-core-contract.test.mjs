@@ -356,10 +356,26 @@ async function assertRejectsWithCode(fn, code) {
 
 export const commandCoreContractTests = [
   {
-    name: "command-core/workspace contribution contracts pass their package-local suite",
+    name: "command-core/effects adapters load from every application entry without eager cyclic initialization",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs"], {
+      for (const entry of ["effects/dispatch", "effects/outbox", "effects/table", "effects/assignment-transitions", "effects/run-transitions", "command-core"]) {
+        const script = `import './src/${entry}.mjs';
+          import assert from 'node:assert/strict';
+          import {runEffectsEphemeral} from './src/effects/dispatch.mjs';
+          import {applyEffectAck} from './src/effects/outbox.mjs';
+          assert.deepEqual(await runEffectsEphemeral('empty', {}, {effects:{}}), []);
+          assert.equal(applyEffectAck(null, {}).code, 'effect-ack-invalid');`;
+        const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], { cwd: root, encoding: "utf8", timeout: 30_000 });
+        assert.equal(result.status, 0, `${entry}: ${result.error?.message ?? result.stderr}`);
+      }
+    },
+  },
+  {
+    name: "command-core/workspace packages pass their package-local suites",
+    async run() {
+      const root = fileURLToPath(new URL("../../", import.meta.url));
+      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs", "packages/effects/test/effects.test.mjs"], {
         cwd: root, encoding: "utf8", timeout: 30_000,
       });
       assert.equal(result.status, 0, result.error?.message ?? result.stdout + result.stderr);

@@ -29,6 +29,7 @@
 //   4. An ACK carrying a coded refusal ends the step: `skipped`, with the code
 //      recorded. Redelivering a fact the control node has REFUSED (an unknown
 //      assignment, a row another writer already settled) would loop forever.
+import { createEffectsOutbox } from "@aof/effects/outbox";
 import { pendingSteps, markStep } from "./journal.mjs";
 import { LOCAL_LOCI } from "./dispatch.mjs";
 import { reportDegrade } from "../degrade.mjs";
@@ -39,92 +40,29 @@ import { reportDegrade } from "../degrade.mjs";
 export const EFFECT_STEP_FRAME_KIND = "effect-step";
 export const EFFECT_ACK_FRAME_KIND = "effect-ack";
 
-// remoteSteps(journal, { loci, limit }) — the outbox's work-list: owed steps this
-// process cannot run itself. The complement of what drainEffects will execute, so
-// a step is never both drained locally and shipped. `integration:*` is EXCLUDED
-// from the complement (m42 wave (d) leg d4, port 4): an integration step is
-// WORKSPACE-scoped — it drains where its workspace's config and credentials are
-// (autoSync's completion drain, or the integration's own verb) — never at the
-// control node's store; shipping one would burn it into the bridge door's
-// vocabulary refusal.
-export function remoteSteps(journal, { loci = LOCAL_LOCI, limit = 100, maxAttempts = 5, eventId = null } = {}) {
-  return pendingSteps(journal, { limit, maxAttempts, eventId }).filter(
-    (step) => !loci.includes(step.locus) && !String(step.locus).startsWith("integration:"),
-  );
+// Integration writes stay on the checkout holding their configuration and credentials.
+// The package only knows the eligibility rule supplied here.
+// Composition is delayed until invocation because the application table and transition
+// modules form an existing import cycle. The package itself has no imports or global instance.
+let outbox;
+function getOutbox() {
+  return outbox ??= createEffectsOutbox({
+    pendingSteps, markStep, reportDegrade, loci: LOCAL_LOCI,
+    isRemoteStep: (step, loci) => !loci.includes(step.locus) && !String(step.locus).startsWith("integration:"),
+    readStep: (journal, eventId, reactorKey) => journal.db
+      .prepare("SELECT status FROM effect_steps WHERE event_id = ? AND reactor_key = ?")
+      .get(eventId, reactorKey),
+  });
 }
 
-// drainOutbox({ journal, send, loci, now }) — deliver what is owed elsewhere.
-// `send(envelope)` returns the sendFrame shape ({ sent, code? }); anything falsy
-// leaves the step pending for the next drain. Returns one outcome per step:
-// { eventId, key, locus, status } with status sent|unsent.
-export async function drainOutbox({ journal, send, loci = LOCAL_LOCI, limit = 100, now, eventId = null } = {}) {
-  const steps = remoteSteps(journal, { loci, limit, eventId });
-  const outcomes = [];
-  for (const step of steps) {
-    const envelope = {
-      eventId: step.eventId,
-      reactorKey: step.key,
-      locus: step.locus,
-      name: step.name,
-      payload: step.payload,
-      at: now ?? new Date().toISOString(),
-    };
-    let result;
-    try {
-      result = await send(envelope);
-    } catch (error) {
-      // A transport fault is a degrade, never a throw into the tick — and never
-      // an attempt: the step is still owed, and the next drain will try again.
-      reportDegrade("effect-outbox-send", error, { path: `${step.name}/${step.key}` });
-      result = { sent: false, code: "send-threw" };
-    }
-    outcomes.push({
-      eventId: step.eventId,
-      key: step.key,
-      locus: step.locus,
-      status: result?.sent ? "sent" : "unsent",
-      ...(result?.code ? { code: result.code } : {}),
-    });
-  }
-  return outcomes;
+export function remoteSteps(journal, options) {
+  return getOutbox().remoteSteps(journal, options);
 }
 
-// applyEffectAck(journal, { eventId, reactorKey, ok, code, error }, { now }) — the
-// DURABLE RECEIPT. Called by the worker's ack handler with the control node's
-// verdict for one (eventId, reactorKey):
-//   ok            -> done. The fact landed; the step is paid.
-//   coded refusal -> skipped, code recorded. The control node has DECIDED; a
-//                    redelivery would loop forever against the same verdict.
-//   retryable fault -> remains pending without consuming an attempt. Control
-//                      infrastructure can be unavailable indefinitely; a retry
-//                      budget would turn an outage into permanent fact loss.
-//   other fault   -> failed. Retryable while under the attempts ceiling.
-// Unknown ids are ignored (an ack for a step this journal never owed — a stale
-// reconnect echo, or another node's) rather than fabricating a row.
-export function applyEffectAck(journal, { eventId, reactorKey, ok = false, code = null, error = null, retryable = false } = {}, { now } = {}) {
-  if (!eventId || !reactorKey) return { applied: false, code: "effect-ack-invalid" };
-  const owed = journal.db
-    .prepare("SELECT status FROM effect_steps WHERE event_id = ? AND reactor_key = ?")
-    .get(eventId, reactorKey);
-  if (!owed) return { applied: false, code: "effect-ack-unknown-step" };
-  if (owed.status === "done" || owed.status === "skipped") {
-    // A duplicate ack for a settled step: the at-least-once tax, paid silently.
-    return { applied: false, code: "effect-ack-already-settled" };
-  }
-  if (ok) {
-    markStep(journal, eventId, reactorKey, { status: "done", now });
-    return { applied: true, status: "done" };
-  }
-  if (code) {
-    markStep(journal, eventId, reactorKey, { status: "skipped", error: code, now });
-    return { applied: true, status: "skipped", code };
-  }
-  if (retryable === true) {
-    // A transport delivery occurred, but control could not durably receive/apply
-    // it. The step was already pending and remains so; importantly, no call to
-    // markStep means no attempts-budget increment.
-    return { applied: true, status: "pending", retryable: true };
-  }
-  markStep(journal, eventId, reactorKey, { status: "failed", error: error ?? "effect-step-refused", now });
-  return { applied: true, status: "failed" };
+export async function drainOutbox(options) {
+  return await getOutbox().drainOutbox(options);
+}
+
+export function applyEffectAck(journal, ack, options) {
+  return getOutbox().applyEffectAck(journal, ack, options);
 }

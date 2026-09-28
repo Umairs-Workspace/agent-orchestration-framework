@@ -110,7 +110,46 @@ complete root-suite or cross-platform release result.
 
 ## Next
 
-Extract foundational utilities and domain packages in the order described in [MIGRATION.md](MIGRATION.md),
-introducing narrow service interfaces where needed. Keep the CLI and shipped skills/assets in core;
-feature packages must not import the core that assembles them. The contribution owners added here
-provide the composition boundary for subsequent domain moves.
+Separate application reactor registration from the effects table/transition import cycle; then
+extract generic journal storage through explicit path/diagnostic interfaces. Keep run/assignment
+queries in their domains. Extract foundational utilities and remaining domains in the order described
+in [MIGRATION.md](MIGRATION.md). The CLI and shipped skills/assets stay in core; feature packages must
+not import the core that assembles them.
+
+## Effects execution and delivery extraction — 2026-09-28
+
+`packages/effects` (`@aof/effects`) now owns dispatcher execution, ephemeral fallback, outbox
+delivery, and acknowledgement handling. Its explicit `./dispatch` and `./outbox` exports provide
+factories receiving journal operations, diagnostic reporting, and application policy. There are no
+runtime dependencies, legacy source imports, filesystem accesses, or application-global instances
+in this package. Core supplies the same reactor table and policy through the existing source adapters.
+
+The journal schema, persisted event/step vocabulary, default storage location, domain transitions,
+and public source APIs remain unchanged. The adapters compose on first invocation to retain safe
+initialization within the existing application import cycle. Core still owns CLI assembly and the
+required skill commands. Generic packaging/WSL support from the preceding slice accommodates this
+workspace without adding another package-specific staging path.
+
+Verification:
+
+- Ten package-local tests cover factory isolation, retry/scope forwarding, failed/sibling/deferred
+  execution, ephemeral applicability, repeated delivery, acknowledgement classes, and duplicate receipts.
+  The root command contract suite runs these together with the eight contracts-package tests.
+- All 997 unit checks pass on the final adapters (`effects/unit-final.log`). Immutable installation
+  and the supply-chain audit pass with zero audit warnings; the existing Yarn peer warning remains.
+- 105 focused checks pass, including real SQLite effects/mesh delivery, domain transitions, Notion
+  synchronization, stream reindexing, projection propagation, commands, import order, architecture
+  budgets, test registration, and installation/package boundaries.
+- Package boundary checks scan all runtime modules in both extracted packages, including literal
+  dynamic imports and re-exports. They reject outside imports and computed dynamic imports; planted
+  core, sibling-private, provider, and computed imports prove the detector fails.
+- CLI child-process smoke and browser/SEA JavaScript bundle checks pass. Both workspaces are embedded
+  in the SEA JavaScript bundle; node-pty remains external. No complete executable release was built.
+- The real installer produced a disposable payload outside the checkout. All 117 commands loaded;
+  a real journal event executed locally, remote delivery remained pending without consuming attempts,
+  and an acknowledgement durably settled its step. Both workspaces were real payload directories.
+- The Notion fixture now uses its isolated environment for workspace loading as well as journal and
+  projection storage. All five Notion ledger cases pass with the actual global configuration excluded.
+
+Local logs: `.tmp/workspace-migration/effects/`. The earlier full-suite and cross-platform limitations
+remain in force; no live installation, WSL worker, or release was deployed.

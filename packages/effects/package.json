@@ -1,0 +1,16 @@
+{
+  "name": "@aof/effects",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./dispatch": "./src/dispatch.mjs",
+    "./outbox": "./src/outbox.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/effects.test.mjs"
+  }
+}

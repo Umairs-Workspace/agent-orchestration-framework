@@ -186,5 +186,28 @@ builds under Yarn. Pin and verify a specific supported Yarn version during imple
 | Do session-presence commands remain lightweight? | Compare cold-start timings/import closure against a fresh baseline; do not reuse old comment measurements as current results. |
 | Does test selection preserve acceptance traceability after moving suites? | Compare registered test identities and audit discovery before/after; include non-vacuity checks. |
 
-The original assessment was static. Subsequent baseline checks and isolated dependency experiments
-are recorded in [STATE.md](STATE.md); they do not yet establish a working Yarn cutover.
+The original assessment was static. Subsequent implementation and verification are recorded in
+[IMPLEMENTATION.md](IMPLEMENTATION.md), including the Yarn cutover and extracted workspaces.
+
+## Effects extraction findings — 2026-09-28
+
+- `src/effects/dispatch.mjs` combined generic execution/retry behavior with an import of the
+  application-wide `EFFECTS` table. That table reaches domain transition modules which import the
+  dispatcher/outbox again. Eager factory initialization exposed this existing ESM cycle when the
+  outbox was loaded first. The compatibility adapters now compose on invocation; the extracted
+  package has no imports or process-global instance. Six entry-order regression cases cover loading
+  from dispatch, outbox, table, assignment transitions, run transitions, and command core.
+- Journal operations can be supplied as a small interface: `pendingSteps`, `markStep`, and
+  `readStep`. `@aof/effects` uses these without importing SQLite or choosing a database path.
+  Application reactor tables, reachability, integration exclusions, and diagnostics are supplied
+  separately. Retry/acknowledgement behavior is verified against the existing SQLite journal.
+- Moving `src/fs.mjs` directly to foundation would pull `degrade.mjs`, which imports
+  `mesh/log.mjs`. That diagnostic dependency should be separated deliberately; a folder move alone
+  would carry a mesh dependency into a supposedly lower-level package.
+- Journal extraction remains separate: `effectsJournalPath` currently derives its location through
+  `globalMeshPaths`, while `hasEventForRun` and `latestAppliedAssignmentParkEventId` are domain-specific
+  queries. Extract generic storage with explicit path/diagnostic inputs and keep those queries with
+  their owning domains. Do not move the application reactor table into the generic effects package.
+- The Notion ledger tests supplied an isolated journal home but loaded their workspace with the
+  operator's real global configuration. Passing the same isolated environment into `loadWorkspace`
+  fixes that test contamination without changing runtime lock enforcement or Notion behavior.
