@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const RUN_STORE = path.join(repoRoot, "src", "run-store.mjs");
+const RUN_STORE = path.join(repoRoot, "packages", "execution", "src", "runs.mjs");
 
 function stripCommentsOnly(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

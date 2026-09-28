@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { isRetryable, shouldRetry } from "../../../src/run-store.mjs";
 
-const RUN_STORE = new URL("../../../src/run-store.mjs", import.meta.url);
+const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 
 export const archTests = [
   {

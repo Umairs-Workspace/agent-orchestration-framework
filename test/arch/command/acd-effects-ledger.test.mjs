@@ -79,7 +79,7 @@ const APPEND_EVENT_ALLOWED = new Set([
 // other caller — the 8 sites the PRD measured, 7 of them in
 // mesh-worker-execution.mjs — now settles through transitionRunComplete, so the
 // fact can never again land without its event.
-const COMPLETE_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-transitions.mjs"]);
+const COMPLETE_RUN_ALLOWED = new Set(["packages/execution/src/runs.mjs", "src/effects/run-transitions.mjs"]);
 
 // The sanctioned run-MINT callers (m42 wave (d) leg d4, port 1 — the same
 // discipline applied to the second run-store fact). `startRun`/`retryRun` were
@@ -87,7 +87,7 @@ const COMPLETE_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-tran
 // per-call-site import decision; now every mint goes through transitionRunStart,
 // which raises `run.started` and lets the ledger own the consequence. The store
 // itself is exempt (definition + its internal reclaim/retry composition).
-const MINT_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-transitions.mjs"]);
+const MINT_RUN_ALLOWED = new Set(["packages/execution/src/runs.mjs", "src/effects/run-transitions.mjs"]);
 
 // The sanctioned RECLAIM callers (m42 wave (d) leg d4, port 2 — the two reclaim
 // halves unified). A reclaim IS a run completion (failed/runtime_offline), but
@@ -97,7 +97,7 @@ const MINT_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-transiti
 // `transitionRunReclaimed` the one door to it, so both halves inherit the SAME
 // declared cascade. `reclaimStaleRuns` (the store's own scan over that edge) is
 // listed with it: reachable from the store and the seam, never a command.
-const RECLAIM_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-transitions.mjs"]);
+const RECLAIM_RUN_ALLOWED = new Set(["packages/execution/src/runs.mjs", "src/effects/run-transitions.mjs"]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

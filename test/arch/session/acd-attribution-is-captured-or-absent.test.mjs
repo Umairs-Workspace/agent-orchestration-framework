@@ -202,7 +202,7 @@ export const archTests = [
 
       // The rung's name never reaches the persisted record: it is spread onto the RESULT and
       // nowhere else, and the store module has never heard of it.
-      const store = await source("src/run-store.mjs");
+      const store = await source("packages/execution/src/runs.mjs");
       assert.ok(!store.includes("sessionSource"), "src/run-store.mjs does not know the rung's name, so it cannot persist it");
       const edges = runStart.match(/sessionSource/g) ?? [];
       assert.ok(edges.length > 0, "the command does name the rung — on the envelope");

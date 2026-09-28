@@ -46,7 +46,7 @@ import { registeredSuitePaths, registrationSurface } from "../../support/registr
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const runStoreSourcePath = path.join(repoRoot, "src", "run-store.mjs");
+const runStoreSourcePath = path.join(repoRoot, "packages", "execution", "src", "runs.mjs");
 const executionSourcePath = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
 const testSuitePath = path.join(repoRoot, "scripts", "test.mjs");
 

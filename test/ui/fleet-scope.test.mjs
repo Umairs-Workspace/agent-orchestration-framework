@@ -2087,13 +2087,10 @@ export const fleetScopeTests = [
       }
       assert.match(rePin[0], /nothing under `ui\/src\/board\/`/i, "…says nothing under ui/src/board/ moved");
       assert.match(rePin[0], /src\/board-ui\.mjs/, "…and that src/board-ui.mjs's digest is unchanged");
-      // 130/06 re-pins run-store AFTER this story, with its own reason stacked above the entry
-      // (the same shape as 133's board-ui re-pin below), so this leg reads the pin as present
-      // and moved only by 130/06's stated reason rather than freezing a digest it does not own.
-      assert.match(gate, /\["src\/run-store\.mjs", "[0-9a-f]{64}"\]/, "the run-store pin is present");
-      // 131/01 then stacks its own reason (the seventeenth key, `asks`) between the two, so the
-      // window widens by that comment's length.
-      assert.match(gate, /RE-PINNED by 130\/06[\s\S]{0,1800}\["src\/run-store\.mjs"/, "the run-store pin moved after this story only with 130/06's stated reason");
+      // 142 moves the unchanged run implementation into execution and records the source-body
+      // and persisted-byte parity evidence above its replacement pin.
+      assert.match(gate, /\["packages\/execution\/src\/runs\.mjs", "[0-9a-f]{64}"\]/, "the run-store pin is present");
+      assert.match(gate, /RE-PINNED by 142:[\s\S]*?\["packages\/execution\/src\/runs\.mjs"/, "the run-store pin moved with 142's documented extraction");
       // 133/04 and `aof:verify 133` re-pin board-ui AFTER this story, each with its own reason
       // stacked above the entry (read by FF-12603 leg 6), so this leg reads it as present and
       // re-pinned by 133 rather than freezing a digest this story does not own.

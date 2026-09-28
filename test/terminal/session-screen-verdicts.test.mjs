@@ -175,7 +175,7 @@ export const sessionScreenVerdictsTests = [
     run: async () => {
       assert.equal(isRetryable("blocked_screen"), false);
       for (const reason of ["runtime_offline", "timeout", "session_limit"]) assert.equal(isRetryable(reason), true, reason);
-      const source = await readFile(path.join(repoRoot, "src", "run-store.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "execution", "src", "runs.mjs"), "utf8");
       const declared = /const RETRYABLE_REASONS = new Set\(\[([^\]]*)\]\);/u.exec(source);
       assert.ok(declared != null, "RETRYABLE_REASONS is declared where it always was");
       assert.deepEqual(declared[1].split(",").map((token) => token.trim().replace(/^"|"$/gu, "")), ["runtime_offline", "timeout", "session_limit"]);

@@ -9,7 +9,7 @@ import { mkdtemp, rm, mkdir, readdir, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-const RUN_STORE = new URL("../../../src/run-store.mjs", import.meta.url);
+const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 
 export const archTests = [
   {

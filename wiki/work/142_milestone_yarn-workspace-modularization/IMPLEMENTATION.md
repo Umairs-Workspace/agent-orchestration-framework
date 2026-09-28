@@ -660,3 +660,47 @@ Verification (evidence under `.tmp/workspace-migration/work-loop-orchestration/`
 The full migration remains active. Execution/run storage, remaining work services, mesh,
 messaging, knowledge, server, final core/apps moves and adapter removal are still required.
 Full-root-suite, native executable and platform verification remain outstanding.
+
+## Execution run services — 2026-09-28
+
+Added `@aof/execution` with run storage, transcript spend ingestion, heartbeat queues and session
+attribution. Core's four original modules are composition adapters with unchanged export sets.
+The pure provenance compiler moved unchanged to contracts. Internal workspace dependencies only;
+no external library was added. Store-local spend composition removes the previous module cycle.
+Answer vocabulary and session-answer reading are supplied application services; their core adapters
+still defer work-layer access and remain temporary.
+
+Source guards now inspect package implementations and sweep all runtime modules for provenance
+and run-ask writes. Exact service-wiring objects are distinguished from persisted records. Frozen
+source pins name the relocated implementation and document the extraction evidence. The canonical
+bundle's four affected citations and manifest were corrected, including a formerly stale record-shape
+line range. The matching checked-in `.aof` copies and hashes have not been changed: the earlier
+approval covered three different files. A separate citation-only approval question is pending.
+
+Verification (ignored evidence in `.tmp/workspace-migration/execution-runs/`):
+
+- All five new package tests pass: inert composition, transition refusal bytes, node partitioning,
+  live-only heartbeat consumption, spend/answer settlement, answer-reader degradation and capture
+  ordering. The root bridge passes all 92 internal package cases.
+- Original and extracted run-store statements match after only the declared composition changes.
+  All five compatibility export sets and all 117 command IDs/order match their baselines.
+- Differential API and complete persisted-JSON comparisons pass for lifecycle, node partitions,
+  asks, provenance, session capture, answers, retries, illegal transitions, spend and ref rewriting.
+- The selected 724 cases initially had 18 source/fixture guard failures; all 18 pass on focused
+  rerun. No production behavior failure remains in that selection.
+- The 997-case unit run had two failures. The relocated source-pin assertion now passes; the
+  generated-output synchronization case remains pending the four additional citation refreshes.
+  Thus 996 unit cases are covered, not a full unit green result.
+- Final focused checks pass 38 cases, including the package bridge, fleet source pin and every
+  shipped loop citation's path/range/export assertion. These overlap earlier selections.
+- Immutable pinned Yarn installation with builds skipped and supply-chain audit pass. Browser
+  provenance and standalone JavaScript bundles pass; the native PTY remains external.
+- A copied installer payload resolves the execution APIs internally and preserves run-record bytes
+  against the baseline. Loop probing, three phase-driver dry runs and previous work/graph checks
+  pass there. An initial harness log collision on Windows was fixed by separating parent and child
+  log paths; the rerun passes.
+- Fresh Claude/Codex/OpenCode rendering, every output byte/hash and a no-op update pass in an
+  isolated temporary installation. No AOF workflow commands were run against this repository.
+
+Local drivers, terminals/worktrees, remaining domains, final core/apps moves and adapter removal
+are still outstanding. Full-root-suite and native/platform verification remain outstanding.

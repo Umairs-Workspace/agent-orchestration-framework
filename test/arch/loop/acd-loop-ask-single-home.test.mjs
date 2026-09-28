@@ -57,7 +57,7 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 const HOME = "packages/work-loop/src/ask-request.mjs";
 const SEGMENT = "loop-asks";
 const READERS = Object.freeze(["src/loop/ask.mjs", "src/commands/resume.mjs", "src/commands/list.mjs"]);
-const STORE = "src/run-store.mjs";
+const STORE = "packages/execution/src/runs.mjs";
 const ASK_WRITERS = Object.freeze(["openRunAsk", "parkRunAsk", "answerRunAsk"]);
 // Task 00 ruling 6: the two `asks:` keys that are the record's SHAPE, not a write of an ask.
 const SHAPE_KEYS = Object.freeze([
@@ -161,7 +161,7 @@ function lineAt(code, at) {
 
 // Every `asks:` object key in `code`, with the name of the top-level function it sits in.
 function asksKeysByFunction(code) {
-  const functions = [...code.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gmu)].map((match) => ({ name: match[1], at: match.index }));
+  const functions = [...code.matchAll(/^\s*(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gmu)].map((match) => ({ name: match[1], at: match.index }));
   const keys = [];
   for (const match of code.matchAll(/(?<![\w$.])asks\s*:/gu)) {
     const owner = functions.filter((fn) => fn.at < match.index).at(-1)?.name ?? "<module>";

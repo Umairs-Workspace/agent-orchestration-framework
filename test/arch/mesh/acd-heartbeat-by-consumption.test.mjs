@@ -13,7 +13,7 @@ export const archTests = [
     run: async () => {
       const [hook, consumer, driver, reclaim] = await Promise.all([
         readFile(path.join(root, "src/bundle/hooks/run-heartbeat-enqueue.mjs"), "utf8"),
-        readFile(path.join(root, "src/run-heartbeat-consumption.mjs"), "utf8"),
+        readFile(path.join(root, "packages/execution/src/heartbeats.mjs"), "utf8"),
         readFile(path.join(root, "src/agent-session-driver.mjs"), "utf8"),
         readFile(path.join(root, "src/mesh/assignment-reclaim.mjs"), "utf8"),
       ]);
@@ -73,8 +73,8 @@ export const archTests = [
       assert.match(stripped, /enqueueHeartbeat\(waveRun\.item, waveRun\.record\.runId, at\)/u, "the wave beats through the one enqueue");
       assert.doesNotMatch(stripped, /JSON\.stringify\(\{ runId, at \}\)/u, "…and spells no copy of the hook's bytes");
       assert.doesNotMatch(stripped, /setTimeout\(/u, "no self-ping by timeout either");
-      const home = (await readFile(path.join(root, "src/run-heartbeat-consumption.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
-      assert.match(home, /export async function enqueueHeartbeat\(item, runId, at\)/u, "the one enqueue");
+      const home = (await readFile(path.join(root, "packages/execution/src/heartbeats.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
+      assert.match(home, /async function enqueueHeartbeat\(item, runId, at\)/u, "the one enqueue");
       assert.match(home, /HEARTBEAT_QUEUE/u, "…appends to the hook's queue");
       assert.match(home, /\$\{JSON\.stringify\(\{ runId, at \}\)\}\\n/u, "…the hook's exact bytes");
       assert.match(home, /enqueueHeartbeat[\s\S]*consumeHeartbeatQueue\(item\)/u, "…consumed through the one consumer");
@@ -87,7 +87,7 @@ export const archTests = [
       // The hook and the consumer are untouched by the extension.
       const [hook, consumer] = await Promise.all([
         readFile(path.join(root, "src/bundle/hooks/run-heartbeat-enqueue.mjs"), "utf8"),
-        readFile(path.join(root, "src/run-heartbeat-consumption.mjs"), "utf8"),
+        readFile(path.join(root, "packages/execution/src/heartbeats.mjs"), "utf8"),
       ]);
       assert.doesNotMatch(hook, /setInterval|setTimeout/u);
       assert.match(consumer, /consumeHeartbeatQueue\(item\)[\s\S]*heartbeat\(item, runId, \{ now: at \}\)/u);

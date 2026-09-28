@@ -76,7 +76,7 @@ const model = (nodes) => ({ source: SOURCE, present: true, findings: [], nodes }
 function anchorNode(id, { checkedAt = null, ground = "process-exit", edges = {} } = {}) {
   const fields = {
     ground: { key: "ground", raw: ground, kind: "enum", value: ground },
-    observes: { key: "observes", raw: "module:src/run-store.mjs#attempts", kind: "pointer", pointer: { scheme: "module", operand: "src/run-store.mjs", symbol: "attempts" } },
+    observes: { key: "observes", raw: "module:src/run-store.mjs#attempts", kind: "pointer", pointer: { scheme: "module", operand: "packages/execution/src/runs.mjs", symbol: "attempts" } },
   };
   if (checkedAt !== null) {
     fields.checked = { key: "checked", raw: iso(checkedAt), kind: "date", value: iso(checkedAt), ms: checkedAt };

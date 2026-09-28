@@ -60,7 +60,7 @@ const REPLIES = "src/discord/replies.mjs";
 const BOT = "src/discord/bot.mjs";
 const LAUNCHER = "src/mesh/launcher.mjs";
 const ASK_REQUEST = "packages/work-loop/src/ask-request.mjs";
-const RUN_STORE = "src/run-store.mjs";
+const RUN_STORE = "packages/execution/src/runs.mjs";
 const INDEX = "src/notify/ask-messages.mjs";
 // `ask-request.mjs`'s exports that write an ask file. A reader (`readAsk`, `readAsks`, `loopAsksDir`)
 // is not one of them.

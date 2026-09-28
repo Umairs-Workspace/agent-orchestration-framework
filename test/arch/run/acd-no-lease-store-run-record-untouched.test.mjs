@@ -73,7 +73,7 @@ export const archTests = [
   {
     name: "arch/69 FF-6908: the run record's top-level schema is milestone 68's plus 131's asks, appended last; later claims ride brief",
     run: async () => {
-      const source = (await readFile(path.join(root, "src", "run-store.mjs"), "utf8")).replaceAll("\r\n", "\n");
+      const source = (await readFile(path.join(root, "packages", "execution", "src", "runs.mjs"), "utf8")).replaceAll("\r\n", "\n");
       const body = functionBody(stripComments(source), "function buildRecord");
       assert.ok(body != null, "the record constructor remains structurally readable");
       const keys = [...body.matchAll(/^\s+([A-Za-z][A-Za-z0-9]*)(?=[:,])/gm)].map((match) => match[1]);

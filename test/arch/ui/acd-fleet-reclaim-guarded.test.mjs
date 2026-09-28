@@ -22,7 +22,7 @@ import { registeredSuitePaths, registrationSurface } from "../../support/registr
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const RUN_START = path.join(repoRoot, "src", "commands", "run-start.mjs");
-const RUN_STORE = path.join(repoRoot, "src", "run-store.mjs");
+const RUN_STORE = path.join(repoRoot, "packages", "execution", "src", "runs.mjs");
 const MESH_GATE = path.join(repoRoot, "src", "commands", "mesh", "gate.mjs");
 // m42 wave (d) leg d4 (port 2) — the reclaim's status rollback is now DECLARED here
 // rather than looped at the command's call site.

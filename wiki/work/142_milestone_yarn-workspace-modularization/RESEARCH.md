@@ -437,3 +437,22 @@ Next, run persistence can move into execution without a mesh dependency: run-sto
 imports atomic filesystem writes, diagnostics and the zero-import claim-provenance helper.
 Its item paths and node identity already arrive as data. Execution ownership should retain the
 existing run-record shape and keep work-item status changes in the command/effects layer.
+
+## Execution run services extracted
+
+`@aof/execution` now owns run storage, spend ingestion, heartbeat consumption and session-id
+capture. The pure claim-provenance compiler belongs in contracts and moved byte-for-byte.
+Run paths and node identity remain input data; this package has no mesh/configuration/registry
+imports. It depends only on contracts, foundation and Node builtins.
+
+The old run-store/spend dynamic-import cycle is removed: the store constructs its local spend
+service with its own reader and writer functions. Work answer tokens and session answer reading
+are explicit ports. Core still defers those work-owned collaborators in its compatibility adapter;
+final composition must resolve that transitional relationship. The package itself has no dynamic
+imports. Comparing implementation statements after the mechanical factory/import changes and
+comparing persisted bytes against the old implementation both passed.
+
+The next execution boundary includes the local session driver and terminal services. Its existing
+dependency on terminal-ws mixes reusable PTY launching with transport/application assembly; separate
+the spawn service before assigning WebSocket routing to server. Observation, screen recognition and
+provider launch policy must keep their existing behavior and test injection seams.

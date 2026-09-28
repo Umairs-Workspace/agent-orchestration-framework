@@ -6,7 +6,8 @@
   "exports": {
     "./commands": "./src/commands.mjs",
     "./loop-bounds": "./src/loop-bounds.mjs",
-    "./error": "./src/error.mjs"
+    "./error": "./src/error.mjs",
+    "./claim-provenance": "./src/claim-provenance.mjs"
   },
   "files": [
     "src"

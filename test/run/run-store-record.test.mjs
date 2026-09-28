@@ -525,21 +525,27 @@ function runAskTests() {
       name: "131/01 task04 — asks is assigned on a run record only by run-store.mjs, and only in its five homes",
       async run() {
         const { stripComments } = await import("../support/source-slice.mjs");
-        const srcRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src");
-        const files = (await readdir(srcRoot, { recursive: true })).filter((f) => f.endsWith(".mjs"));
+        const { readRuntimeFiles } = await import("../support/read-src-files.mjs");
+        const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+        const files = await readRuntimeFiles(root);
         assert.ok(files.length > 100, `the sweep read src/ — ${files.length} modules`);
         // An object-literal `asks:` key — never a member read like `record.asks : []` in a ternary.
         const assigns = /(?<![.\w])asks\s*:/u;
         // Not a run record: 131/05's `applyAskOverlay(rows, { asks, workspaceId })` options argument,
         // exempted by its exact spelling so any other `asks:` in list.mjs still reds.
-        const notARecord = { "commands/list.mjs": "{ asks: await readWorkspaceAsks(ctx)," };
-        for (const rel of files) {
-          const posix = rel.split(path.sep).join("/");
-          if (posix === "run-store.mjs") continue;
-          const source = stripComments(await readFile(path.join(srcRoot, rel), "utf8")).replace(notARecord[posix] ?? "\0", "");
+        const notARecord = {
+          "src/commands/list.mjs": "{ asks: await readWorkspaceAsks(ctx),",
+          // Exact service objects in the 142 composition adapters, never persisted records.
+          "src/commands/loop.mjs": "asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },",
+          "src/loop/cycle.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks },",
+          "src/loop/wave.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, standingAsk },",
+        };
+        for (const { rel, path: file } of files) {
+          if (rel === "packages/execution/src/runs.mjs") continue;
+          const source = stripComments(await readFile(file, "utf8")).replace(notARecord[rel] ?? "\0", "");
           assert.ok(!assigns.test(source), `${rel} assigns an asks key`);
         }
-        const store = stripComments(await readFile(path.join(srcRoot, "run-store.mjs"), "utf8"));
+        const store = stripComments(await readFile(path.join(root, "packages/execution/src/runs.mjs"), "utf8"));
         const homes = ["function buildRecord", "function normalizeRecord", "async function openRunAsk", "async function parkRunAsk", "async function answerRunAsk"];
         const starts = [...store.matchAll(/(?:async\s+)?function\s+\w+/gu)].map((m) => ({ at: m.index, name: m[0] }));
         for (const line of store.split("\n").map((text, i) => ({ text, i })).filter(({ text }) => assigns.test(text))) {

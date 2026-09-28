@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const RUN_STORE = new URL("../../../src/run-store.mjs", import.meta.url);
+const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 const RECORD_DOCS = ["SPEC.md", "STORY.md", "STATE.md", "SESSION.md"];
 const WRITE_VERBS = ["writeFile", "appendFile", "mkdir"];
 

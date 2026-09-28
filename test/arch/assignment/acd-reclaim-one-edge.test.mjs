@@ -190,7 +190,7 @@ export const archTests = [
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
-        if (rel === "src/run-store.mjs") continue; // the edge's one home
+        if (rel === "packages/execution/src/runs.mjs") continue; // the edge's one home
         const code = stripComments(await readFile(file, "utf8"));
         // The signature of a hand-rolled reclaim: the retryable failure reason and
         // the reclaim stamp written together at one call site.

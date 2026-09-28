@@ -11,7 +11,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 
-const RUN_STORE = new URL("../../../src/run-store.mjs", import.meta.url);
+const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 
 async function makeItem(slug = "20_milestone_autonomous-run-resilience", ref = "20") {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-reclaim-stale-"));

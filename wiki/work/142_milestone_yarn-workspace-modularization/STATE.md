@@ -124,11 +124,12 @@ verification remains outstanding. See IMPLEMENTATION.md for the exact overlappin
 Continue extracting domain service implementations and their command contributions behind the new
 package interfaces. The work and mesh handler packages are implemented; their injected
 service implementations are being extracted from src/. Work owns record/lifecycle services;
-workspace configuration/identity loading, run persistence and acceptor
+workspace configuration/identity loading and acceptor
 services remain in core. Enumeration/lookup/listing, readiness and their shared identity/dependency
 rules are extracted. Validation now consumes an explicit core-supplied digest contract.
 Work-loop orchestration and commands now consume explicit execution, work, notification and mesh
-services. Continue with execution/run ownership and remaining work acceptance/audit services,
+services. Execution now owns run persistence, transcript settlement, heartbeat queues and
+session attribution. Continue with local session/terminal execution and remaining work acceptance/audit services,
 then replace their transitional adapters in final core assembly. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
@@ -137,3 +138,10 @@ policy through compatibility adapters. Core registration is statically acyclic, 
 runtime service composition remains transitional. Core still owns the CLI
 and will move to packages/core with its assets. Keep the outstanding full-suite and platform
 checks explicit. Continue direct development without AOF workflow commands.
+
+Execution run extraction verification: 724 selected checks are covered after 18 focused source-guard
+corrections; five new package cases and the final 92-package-case bridge pass. Old/new API results
+and persisted bytes match, including in a copied installation. Immutable install, audit, JavaScript
+bundles and temporary three-runtime rendering pass. The unit selection covers 996 of 997 cases;
+the remaining generated-output synchronization check awaits approval for four additional citation-only
+refreshes, separate from the three already approved and committed. See IMPLEMENTATION.md.

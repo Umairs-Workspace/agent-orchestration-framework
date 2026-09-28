@@ -66,7 +66,7 @@
         "id": "loop-mesh-assignment-reclaim",
         "kind": "asset"
       },
-      "hash": "sha256:b7d16585478de7b8e8b287ed34c5412c191109a573e21b2d31cad76528320916"
+      "hash": "sha256:16bc9b913f98914ebe5954468f881faebfe2e184a973e5ef4bbf076409ea3d6d"
     },
     {
       "path": ".aof/loops/operator.md",
@@ -129,7 +129,7 @@
         "id": "anchor-run-lifecycle-policy",
         "kind": "asset"
       },
-      "hash": "sha256:d5ea351dcfe0bd4881e4d259c340277be2e3b1fc9b259856e6bcf13c77e6bef4"
+      "hash": "sha256:99c2f4ae4041dc3c28d1874b7c02a1be9308431e630dae90c28181eb73069409"
     },
     {
       "path": ".aof/loops/run-liveness.md",
@@ -138,7 +138,7 @@
         "id": "anchor-run-liveness",
         "kind": "asset"
       },
-      "hash": "sha256:380f9da73850a0a3e33269cdb37f4e1dc2a083c9625c9d44521bf9817f7ec0c2"
+      "hash": "sha256:d9abf654806a8ee115fea74444a58ecbb425ee51f15ade4bbe727e8f80f44895"
     },
     {
       "path": ".aof/loops/run-resilience.md",
@@ -147,7 +147,7 @@
         "id": "loop-run-resilience",
         "kind": "asset"
       },
-      "hash": "sha256:26115147c48f7ab840d391e023881a1eff4a3371a55b5836d1eaa7c4d66a1849"
+      "hash": "sha256:9af1d86f041f7d50431f9fa636c099e366822cd2988fec45927f01ba3b855f59"
     },
     {
       "path": ".aof/loops/speed-thoroughness-autonomy.md",

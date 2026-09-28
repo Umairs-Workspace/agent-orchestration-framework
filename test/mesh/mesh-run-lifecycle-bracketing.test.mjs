@@ -134,7 +134,7 @@ export const meshRunLifecycleBracketingTests = [
       // The store stays mesh-blind: it imports no mesh module (asserted structurally
       // by the fitness function; here we assert the OBSERVABLE data-as-option shape —
       // the run record carries node as plain DATA, not a re-derived mesh concept).
-      const source = await readFile(new URL("../../src/run-store.mjs", import.meta.url), "utf8");
+      const source = await readFile(new URL("../../packages/execution/src/runs.mjs", import.meta.url), "utf8");
       assert.ok(!/from\s+["'][^"']*mesh-[^"']*["']/.test(source), "run-store.mjs imports no mesh module");
     }),
   },

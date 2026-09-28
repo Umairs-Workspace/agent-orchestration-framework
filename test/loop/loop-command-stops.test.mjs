@@ -1045,9 +1045,9 @@ aofVersion: 0.1.0
         assert.equal(run.state, "cancelled");
         assert.deepEqual(Object.keys(run), ["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks"]);
         const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-        const pin = /\["src\/run-store\.mjs", "([0-9a-f]{64})"\]/u.exec(await readFile(path.join(root, "test", "arch", "loop", "acd-loop-state-rides-the-run-record.test.mjs"), "utf8"));
+        const pin = /\["packages\/execution\/src\/runs\.mjs", "([0-9a-f]{64})"\]/u.exec(await readFile(path.join(root, "test", "arch", "loop", "acd-loop-state-rides-the-run-record.test.mjs"), "utf8"));
         assert.ok(pin, "FF-5307 pins the store");
-        const digest = createHash("sha256").update((await readFile(path.join(root, "src", "run-store.mjs"), "utf8")).replace(/\r\n/gu, "\n")).digest("hex");
+        const digest = createHash("sha256").update((await readFile(path.join(root, "packages", "execution", "src", "runs.mjs"), "utf8")).replace(/\r\n/gu, "\n")).digest("hex");
         assert.equal(digest, pin[1], "src/run-store.mjs is untouched");
       } finally {
         await fx.cleanup();

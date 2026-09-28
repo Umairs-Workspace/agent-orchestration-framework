@@ -240,7 +240,10 @@ export const archTests = [
         // forward as `[]`); three owner-side writers, `openRunAsk`, `parkRunAsk` and `answerRunAsk`,
         // each a no-state-change persist shaped like `heartbeat`; and `staleRunningRuns` skipping a
         // running run whose last ask is unanswered. No state edge moved and no existing signature changed.
-        ["src/run-store.mjs", "a2862115f737bfa229460d542302c8bc8922e39afd12ffdfe110f7700fcd22b3"],
+        // RE-PINNED by 142: the same store body is factory-wrapped in execution; diagnostics and
+        // work-answer readers are supplied, spend is composed locally without a module cycle.
+        // Source-body comparison and persisted-byte parity accompany the unchanged schema/edge checks.
+        ["packages/execution/src/runs.mjs", "a077a79c9c10b305384e60bb1dc95a4318933114bd1c4350ca61b68be879d643"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

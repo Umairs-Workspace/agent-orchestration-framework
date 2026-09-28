@@ -76,6 +76,7 @@ function directSourceImports(source) {
 function isDeniedTransitive(rel) {
   if (DENIED_TRANSITIVE.includes(rel) || rel.startsWith("mesh/")) return true;
   if (/^\.\.\/packages\/(?:mesh|effects|integration-notion)\//u.test(rel)) return true;
+  if (/^\.\.\/packages\/execution\/src\/(?:runs|spend|heartbeats|session-capture)\.mjs$/u.test(rel)) return true;
   if (rel === "../packages/work/src/effects.mjs") return true;
   if (rel.startsWith("effects/") || rel.startsWith("commands/")) return true;
   return /^board-.*\.mjs$/u.test(rel);
@@ -246,7 +247,7 @@ export const archTests = [
       // 142 moves registration to inert package contributions. Count local workspace
       // imports too: the static sink closure was 73, including all seven package
       // modules. Deferred domain-service imports are deliberately outside this census.
-      assert.equal(sinkGraph.seen.size, 86, "loop control service extraction adds two reachable modules to the previously measured 84 (86 total)");
+      assert.equal(sinkGraph.seen.size, 90, "run services add store, spend, capture and provenance package modules to the prior 86-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

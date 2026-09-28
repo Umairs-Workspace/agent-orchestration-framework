@@ -23,9 +23,9 @@ Inventing a supervising loop or a "code maintainer" actor for this reference wou
 fabrication the registry has refused since it shipped.
 
 **The rule itself is a fact, and it is the one thing here that is cited.** The authority this anchor
-observes is the defining export `isLegalTransition` at `src/run-store.mjs:281`, whose sibling
-`isRetryable` at `src/run-store.mjs:312` closes the retry half of the same policy; `shouldRetry` at
-`src/run-store.mjs:325` combines that classification with the attempt ceiling. Those sets are
+observes is the defining export `isLegalTransition` at `src/run-store.mjs:24`, whose sibling
+`isRetryable` at `src/run-store.mjs:25` closes the retry half of the same policy; `shouldRetry` at
+`src/run-store.mjs:48` combines that classification with the attempt ceiling. Those sets are
 literals in source. The record points at the authority and restates none of its members, exactly as
 `loop:run-resilience` does on its own reference axis. The distinction this record turns on is
 therefore narrow and deliberate: *what the reference is* is discovered and cited; *that this anchor

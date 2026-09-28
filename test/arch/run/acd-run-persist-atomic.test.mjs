@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const RUN_STORE = new URL("../../../src/run-store.mjs", import.meta.url);
+const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 
 export const archTests = [
   {
@@ -15,8 +15,8 @@ export const archTests = [
     async run() {
       const code = stripComments(await readFile(RUN_STORE, "utf8"));
       assert.ok(
-        /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*["']\.\/fs\.mjs["']/.test(code),
-        "run-store.mjs imports writeText from ./fs.mjs"
+        /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*["']@aof\/foundation\/fs["']/.test(code),
+        "run-store.mjs imports the public atomic filesystem seam"
       );
     },
   },

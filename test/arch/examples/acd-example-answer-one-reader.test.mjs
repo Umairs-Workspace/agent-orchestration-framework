@@ -22,7 +22,7 @@ import { functionBody, matchedBraceBody, stripComments } from "../../support/sou
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_READER = "src/work-examples/answers.mjs";
-const THE_WRITER = "src/run-store.mjs";
+const THE_WRITER = "packages/execution/src/runs.mjs";
 const WRITER_HEADER = "export async function recordAnswers(";
 
 async function modules(dir = path.join(repoRoot, "src")) {
