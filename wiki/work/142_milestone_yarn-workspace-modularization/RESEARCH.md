@@ -304,3 +304,28 @@ the assignment sink increases from 76 to 78. Neither adds a new domain service o
 The next substantial work boundary is enumeration/resolution/readiness, separated from workspace
 configuration and identity hydration. Effect publication stays in the transition layer; extracting
 record writes does not transfer command orchestration or durable journals into the record package.
+
+## Work discovery boundary implemented — 2026-09-28
+
+Discovery requires a concrete work directory and optional plain-data view, not a configured AOF
+workspace. @aof/work/discovery now owns the one directory enumerator, ref/slug resolution, live-row
+predicate and ordered listing. Supplied views replace directory enumeration and overlay metadata
+through the existing record API; no projection store or node-identity service enters the package.
+The shared tolerant directory reader is exposed as readWorkDirectory for the transitional validator's
+item-task scan. It preserves the original empty-result behavior for absent, invalid and file paths.
+
+The folder grammars, root names, numeric comparison and story-span parser are independently pure
+in @aof/work/identity. Keeping these apart from the disk readers gives later graph/readiness
+extractions a grammar API that does not import filesystem or configuration code. The old core
+surface forwards the same exports; readWorkDirectory and sameNumber are new package APIs only.
+
+The single-enumerator guard now distinguishes grammar ownership (identity) from scanning ownership
+(discovery). Both are checked across core and all workspace source. Archived-row, null-number and
+intake-read guards also follow the moved implementation; direct package imports count as disk-reader
+imports at the cache and loop boundaries. This avoids declaring a relocation successful while its
+old path-specific tests merely stop inspecting the implementation.
+
+The remaining root work module still owns workspace configuration/identity hydration, validation,
+dependency rules and readiness. Its loader is unchanged. Validation/readiness are the next domain
+candidates; configuration composition can remain core policy while those operations take explicit
+inputs. Core still owns the CLI and effect publication.

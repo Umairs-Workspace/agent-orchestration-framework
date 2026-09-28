@@ -30,6 +30,7 @@
 // stripper over prose would eat a `//` inside a URL or a fenced block. The bundle prompts are
 // allow-listed wholesale anyway (they ARE the scaffold path), so the distinction costs nothing.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,6 +57,8 @@ const MUST_CARRY = Object.freeze(["src/work/init.mjs", "src/commands/promote.mjs
 // are nine of them, and a tenth must be covered the day it lands.
 const NAMED_READERS = Object.freeze([
   "src/work.mjs",
+  "packages/work/src/discovery.mjs",
+  "packages/work/src/identity.mjs",
   "src/work/loops.mjs",
   "src/work/read.mjs",
   "src/commands/list.mjs",
@@ -92,7 +95,8 @@ export const archTests = [
   {
     name: "arch/FF-12704 (acd-intake-write-side-only): the token `intake` appears in src/** only in init.mjs, init-update.mjs, promote.mjs and the bundle prompts",
     run: async () => {
-      const files = (await walkSrc()).map(toPosix).sort();
+      const packages = (await readRuntimeFiles(repoRoot)).map(file => file.rel).filter(rel => rel.startsWith("packages/"));
+      const files = [...await walkSrc(), ...packages].map(toPosix).sort();
       assert.ok(files.length > 200, `non-vacuity: the src sweep read ${files.length} files`);
 
       const carriers = [];

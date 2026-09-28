@@ -379,3 +379,49 @@ Verification:
 Logs, the selected-check runner and compatibility harness are in
 .tmp/workspace-migration/work-records/ (local, ignored). Full-root-suite and cross-platform/native
 release limitations from previous slices remain. This work stays outside AOF's workflow.
+
+## Work discovery and identity extraction — 2026-09-28
+
+@aof/work/discovery owns listItems, findWork, listStream, isLiveStreamRow and the shared tolerant
+readWorkDirectory helper. It takes an explicit directory and optional view, uses record metadata
+through the package's records API and imports only Node path/directory APIs outside the package.
+@aof/work/identity owns ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT, sameNumber and
+parseStorySpan. It is a zero-import browser-safe leaf. No external dependency or lockfile change
+was required; the two entries are explicit package exports.
+
+src/work.mjs forwards its existing discovery/grammar API and imports the shared helpers needed by
+its remaining validator/readiness code. Its public export set is unchanged and it drops another
+332 lines (1,491 -> 1,159). Workspace configuration and identity hydration are byte-identical to the
+pre-extraction source. The extracted discovery bodies also match apart from the named helper export.
+
+Architecture checks follow implementation ownership across core and package runtime source:
+
+- The one grammar definition lives in identity and the one enumerator in discovery. Existing raw
+  directory-scanner exceptions retain their exact reasons and must still have a scanned subject.
+- Archived-row, null-number and intake-read guards scan the package files as well as core.
+- Direct @aof/work/discovery imports are recognized by the loop and cache read-boundary guards,
+  including a planted package import; the directory helper is also treated as a disk reader.
+- Identity and lifecycle are explicitly held to zero external/computed imports in the package
+  boundary test. The discovery entry admits only its exact native Node APIs.
+- Session-driver reach is 35 and assignment-sink reach is 80, each two modules above the previous
+  census because discovery and identity relocated existing code. The driver still rejects mesh.
+
+Verification:
+
+- Six new package cases cover all three roots, recursive backlog grouping/leaf stopping, corrupt
+  or absent record documents, numeric/story/span/slug lookup, deterministic listing and archive
+  inclusion, remote-view replacement/overlays, invalid roots and pure identity parsing.
+- All 2,096 selected checks pass with zero failures (selection deduplicated by test name), covering
+  work/grade behavior and architecture, terminal, Notion, effects, command and packaging boundaries.
+  The root bridge passes all 66 internal package cases, including the six new discovery cases.
+- All 997 unit checks pass. Immutable Yarn install, supply-chain audit (zero warnings), CLI help,
+  browser identity bundle and SEA JavaScript inclusion checks pass. Native node-pty stays external.
+  The existing Yarn peer warning is unchanged.
+- An actual installer payload outside the checkout loads all 117 commands and resolves the new
+  exports locally as real files. Enumeration, default/all listings, seven lookup forms, a remote
+  view and readiness match pre-extraction results from the same fixture. work:list (default/all)
+  and work:find also pass through the real command layer. Temporary directories were removed.
+
+Logs and the compatibility harness are under .tmp/workspace-migration/work-discovery/ (ignored).
+The complete root-suite and native/cross-platform release limitations from prior slices remain.
+No AOF workflow operation, live installation, deployment or push was performed.

@@ -3,16 +3,17 @@
 // Before this milestone `ITEM_RE` had three homes and seven modules paired a `readdir` of a work
 // root with an item-name match of their own — so a new root (the backlog, the archive) would
 // have had to be taught to eight scanners, and would have been taught to some. This control
-// holds the cut in two sweeps over a comment-stripped read of every file under `src/**`:
+// holds the cut over core and workspace runtime source. Migration 142 moves the grammar
+// into identity.mjs and the enumerator into discovery.mjs; src/work.mjs forwards both APIs.
 //
 //   1. THE REGEX HOME. `ITEM_RE` and `BACKLOG_ITEM_RE` are each bound to a regex literal
-//      (`const … = /…/`) in exactly one src file, `src/work.mjs`; every other src reference to
+//      (`const … = /…/`) in exactly one file, `packages/work/src/identity.mjs`; every other reference to
 //      either name is an import from it (or a re-export of that import). The two root names are
 //      spelled as string literals in that file alone.
 //   2. THE PAIRING. A file that holds a `readdir`/`readdirSync` AND an item-name match — the
 //      identifiers `ITEM_RE`/`BACKLOG_ITEM_RE`, a regex literal containing
 //      `_(milestone|story|task|uat|spike|chore)_` or `_milestone_`, or a numbered-folder regex
-//      literal beginning `/^(\d+)` — is a scanner. Exactly one is the enumerator (`src/work.mjs`,
+//      literal beginning `/^(\d+)` — is a scanner. Exactly one is the enumerator (discovery.mjs,
 //      whose pairing the sweep MUST find, or the control is vacuous); every other is one of six
 //      allow-listed keepers, each carrying the reason it may keep its listing. An allow-listed
 //      path whose pairing the sweep no longer finds is itself a failure — a stale keeper cannot
@@ -23,14 +24,17 @@
 // shape lives only in its comments — which the strip removes. The assertion is what keeps it
 // from becoming a keeper silently.
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+import { importSpecifiers } from "../../support/module-family.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ENUMERATOR = "src/work.mjs";
+const ENUMERATOR = "packages/work/src/discovery.mjs";
+const IDENTITY = "packages/work/src/identity.mjs";
 
 // The six keepers, by path and reason (task 01's table; ADR-001 §5 as corrected there).
 export const KEEPERS = Object.freeze([
@@ -76,9 +80,9 @@ export function sweepFile(strippedSource) {
 
 async function sweepSrc() {
   const files = new Map();
-  for (const file of await readSrcFiles(repoRoot)) {
+  for (const file of await readRuntimeFiles(repoRoot)) {
     const source = await readFile(file.path, "utf8");
-    files.set(`src/${file.rel}`, { source, stripped: stripComments(source) });
+    files.set(file.rel, { source, stripped: stripComments(source) });
   }
   return files;
 }
@@ -89,13 +93,16 @@ async function sweepSrc() {
 // (FF-11901 · 121: `importSpecifiers` in test/support/module-family.mjs is the one home for
 // that, and it answers specifiers, not the bindings a clause names).
 function importsFromWork(rel, stripped, name) {
-  const dir = path.posix.dirname(rel);
-  const specifierIsWork = (from) => path.posix.normalize(path.posix.join(dir, from)) === ENUMERATOR;
-  for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*\bwork\.mjs["']/g)) {
-    const from = match[0].slice(match[0].lastIndexOf("from") + 4).trim().replace(/^["']|["']$/g, "");
-    if (!specifierIsWork(from)) continue;
-    const names = match[1].split(",").map((entry) => entry.trim().split(/\s+as\s+/)[0]).filter(Boolean);
-    if (names.includes(name)) return true;
+  const resolve = createRequire(path.join(repoRoot, rel));
+  for (const { specifier, dynamic } of importSpecifiers(stripped)) {
+    if (dynamic || (!specifier.startsWith('.') && !specifier.startsWith('@aof/'))) continue;
+    const target = path.relative(repoRoot, resolve.resolve(specifier)).split(path.sep).join('/');
+    if (!['src/work.mjs', IDENTITY, ENUMERATOR].includes(target)) continue;
+    const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp('(?:import|export)\\s*\\{([^}]*)\\}\\s*from\\s*["\']' + escaped + '["\']', 'g');
+    for (const match of stripped.matchAll(pattern)) {
+      if (match[1].split(',').some(entry => entry.trim().split(/\s+as\s+/)[0] === name)) return true;
+    }
   }
   return false;
 }
@@ -109,9 +116,9 @@ export const archTests = [
       for (const [rel, { stripped }] of files) {
         for (const match of stripped.matchAll(REGEX_BINDING_RE)) definitions.push(`${rel}:${match[1]}`);
       }
-      assert.deepEqual(definitions.sort(), ["src/work.mjs:BACKLOG_ITEM_RE", "src/work.mjs:ITEM_RE"], "one definition of each, both in src/work.mjs");
+      assert.deepEqual(definitions.sort(), [`${IDENTITY}:BACKLOG_ITEM_RE`, `${IDENTITY}:ITEM_RE`], "one definition of each, both in the identity module");
       for (const [rel, { stripped }] of files) {
-        if (rel === ENUMERATOR) continue;
+        if (rel === IDENTITY) continue;
         for (const name of ["ITEM_RE", "BACKLOG_ITEM_RE"]) {
           if (!new RegExp(`\\b${name}\\b`).test(stripped)) continue;
           assert.ok(importsFromWork(rel, stripped, name), `${rel} references ${name} without importing it from src/work.mjs`);
@@ -120,10 +127,10 @@ export const archTests = [
       // The two root names are spelled once, in the enumerator's file: no other module NAMES a
       // root with the literal (a path-builder argument or a path segment — ROOT_NAMING_LITERAL_RE).
       for (const [rel, { stripped }] of files) {
-        if (rel === ENUMERATOR) continue;
+        if (rel === IDENTITY) continue;
         assert.ok(!ROOT_NAMING_LITERAL_RE.test(stripped), `${rel} names a root with a string literal — import BACKLOG_ROOT / ARCHIVE_ROOT from src/work.mjs instead`);
       }
-      const work = files.get(ENUMERATOR).stripped;
+      const work = files.get(IDENTITY).stripped;
       assert.equal((work.match(/"backlog"/g) ?? []).length, 1);
       assert.equal((work.match(/"archive"/g) ?? []).length, 1);
       // Self-check: the shape catches a root NAMED and admits the bare word in another vocabulary.
@@ -181,7 +188,7 @@ export const archTests = [
       for (const [rel, { stripped }] of files) {
         if (sweepFile(stripped).paired) paired.push(rel);
       }
-      assert.ok(paired.includes(ENUMERATOR), "non-vacuous: the sweep finds src/work.mjs's own readdir + ITEM_RE pairing");
+      assert.ok(paired.includes(ENUMERATOR), "non-vacuous: the sweep finds discovery.mjs's readdir + ITEM_RE pairing");
       const keeperPaths = KEEPERS.map((keeper) => keeper.file);
       const undeclared = paired.filter((rel) => rel !== ENUMERATOR && !keeperPaths.includes(rel));
       assert.deepEqual(undeclared, [], `undeclared work-root scanners (a readdir paired with an item-name match): ${undeclared.join(", ")} — retire onto listItems, or add a keeper row WITH its reason`);

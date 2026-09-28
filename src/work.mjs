@@ -14,7 +14,7 @@
 //   work/archive/NN_type_slug/           (milestone 127 — numbered, out; name verbatim, `archived: true`)
 import path from "node:path";
 import os from "node:os";
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { findProjectConfig, globalMeshPaths, globalWorkspacePaths } from "./workspace.mjs";
 import { readJson } from "./fs.mjs";
 // milestone 33 / story 00 (ADR-004, F-3203) — the per-install identity hydration
@@ -36,6 +36,10 @@ export {
   recordDoc, typeHasRecordDoc, parseFrontmatter, WORK_ITEM_SCHEMA_VERSION,
   readItemSchema, readItemVersion, rollbackItemStatus, setItemStatus, applyItemFrontmatter,
 } from "@aof/work/records";
+import { ITEM_RE, BACKLOG_ROOT, parseStorySpan, sameNumber as sameNum } from "@aof/work/identity";
+export { ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT, parseStorySpan } from "@aof/work/identity";
+import { listItems, isLiveStreamRow, readWorkDirectory as readDirSafe } from "@aof/work/discovery";
+export { listItems, isLiveStreamRow, findWork, listStream } from "@aof/work/discovery";
 import { digestFindings } from "./work/digest-template.mjs";
 
 // Preserve the declared lifecycle order without spelling a second vocabulary.
@@ -50,74 +54,9 @@ function workError(message, code, status = 400) {
   return error;
 }
 
-// `uat` is a top-level acceptance session: like a milestone it sits in the
-// stream, carries `depends`, and gates downstream work — but it groups no
-// stories (it references existing scenarios, it delivers no new behaviour).
-// `spike` and `chore` (milestone 37 / ADR-001) are two more top-level DRIVERS,
-// admitted the SAME way: they sit at the stream root, carry `depends`, group
-// no stories, and are themselves the actionable unit — see `isDriver` and the
-// `nextWork` item-is-the-work branch below.
-// Exported (milestone 41 / ADR-001) — the ONE minimal touch of this god-node
-// the whole 41 milestone requires: src/work/reindex.mjs consumes this SAME
-// identity regex (never a re-derived copy) so a renamed folder it produces is
-// guaranteed parseable by every one of work.mjs's 36 dependents. The value is
-// unchanged; only the export keyword is added.
-export const ITEM_RE = /^(\d+)_(milestone|story|task|uat|spike|chore)_([a-z0-9-]+)$/;
-// milestone 127 / ADR-001 §2 — THE BACKLOG LEAF GRAMMAR, the second shape beside the item
-// grammar and in the same home. An un-numbered driver under `backlog/**`: `<type>_<slug>`,
-// identified by its slug (`findWork`'s free-text branch already admits it). `task` is
-// deliberately absent — a task is never a backlog driver — and there is no number group, which
-// is what keeps a numbered folder under `backlog/` a GROUP rather than an item (the walk below
-// never consults ITEM_RE there). Exported for the same reason ITEM_RE is: doctor's orphan lane
-// and the promote verb match against this binding, never a re-derived copy.
-export const BACKLOG_ITEM_RE = /^(milestone|story|chore|spike|uat)_([a-z0-9-]+)$/;
-// The two extra roots (127/ADR-001 §1), spelled ONCE. Neither name matches ITEM_RE, which is the
-// whole of the compat story (§6): a pre-127 reader ignores both exactly as it ignores
-// `TECH_DEBT.md` at the root today. Every other module that needs a root's name imports it —
-// doctor's orphan lane, provenance's synchronous resolver — so a rename is one edit and the
-// sweep in FF-12701 can hold "no other module carries the string".
-export const BACKLOG_ROOT = "backlog";
-export const ARCHIVE_ROOT = "archive";
 const UNIVERSAL_TAGS = new Set(["@executable", "@manual", "@uat", "@bug", "@wip"]);
 const FINDING_TAG_RE = /^@finding-[A-Za-z0-9-]+$/;
 const MILESTONE_TAG_RE = /^@milestone-\d+$/i;
-
-const sameNum = (a, b) => Number.parseInt(a, 10) === Number.parseInt(b, 10);
-
-// THE STORY-GRAINED SCOPE — `NN/MM-PP`, the stories MM..PP (inclusive) of driver NN, and
-// `NN/SS`, the one-story span `NN/SS-SS`. One parser, shared by the three surfaces that admit
-// it: `findWork` (the ref an operator typed — which resolves `NN/SS` through its own earlier
-// pair branch, so this parser never sees it there), `inRange`/`inSpan` (scoping `nextWork`'s
-// walk) and `skippedEntries` (`src/commands/next.mjs`, resolving a scope to the ONE driver it
-// names). Returns `{ driver, lo, hi }`, else null; a descending span parses and admits
-// nothing, as `decideLoopScope` treats `53-52`.
-//
-// EXPORTED (story 86) so the command face shares this predicate rather than growing a fifth
-// scope vocabulary of its own. An export costs `work.mjs` no new import, so the ADR-015 §5
-// reach ceiling the module already sits at is untouched, and `parseStorySpan` is none of the
-// four DISK READER symbols `acd-cache-read-surface-boundary` keeps off the control side.
-//
-// `NN/SS` IS A SPAN, admitted here at story 86: before it, `inRange` could not parse it and
-// fell through to "no scope at all", so `aof work next 44/01` walked the WHOLE STREAM and
-// answered with another milestone's stories. A bare story ref is the span of exactly itself —
-// one rule, not a second narrowing beside the span's.
-//
-// NOT in `work-ref-scope.mjs` (the subtree-scope leaf) for two reasons: this module cannot
-// import it — see `validateWork`'s comment on the ADR-015 §5 reach ceiling, which currently
-// MEASURES its maximum — and that leaf serves validate/doctor/memory, whose scope vocabulary
-// is deliberately not this one. A span is an EXECUTION scope; `work loop`'s own frozen guard
-// (`LOOP_SCOPE_FORMS`) refuses story refs outright for the matching reason. The full argument
-// is in `test/work/record/work-story-span-scope.test.mjs`.
-export function parseStorySpan(ref) {
-  const span = String(ref ?? "").trim().match(/^(\d+)\/(\d+)(?:-(\d+))?$/);
-  if (!span) return null;
-  const lo = Number.parseInt(span[2], 10);
-  return {
-    driver: Number.parseInt(span[1], 10),
-    lo,
-    hi: span[3] === undefined ? lo : Number.parseInt(span[3], 10),
-  };
-}
 
 // STORY_GRAINED_RE — the shape that CLAIMS to be story-grained: a leading `NN/`. It is the
 // refusal's reach in `inRange`, and it is deliberately narrower than "anything unparsed".
@@ -372,126 +311,6 @@ export async function loadWorkspace(cwd = process.cwd(), explicitConfig, { hostn
   return { configPath, config, configFault, projectRoot, workDir, aofDir, identityPath: globalIdentityPath, globalMeshRoot: globalMesh.meshRoot };
 }
 
-async function readDirSafe(dir) {
-  try {
-    return await readdir(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-}
-
-// ------------------------------------------------------------ discovery ----
-
-// THE OPTIONAL STREAM VIEW (milestone 43 / ADR-005) — the ONE seam through which the
-// cache-first read module (`src/work/read.mjs`) reuses the four readers below instead of
-// re-deriving their rules.
-//
-// `view` is PLAIN DATA built OUTSIDE this module — `{ items, meta }`, where `items` is a
-// pre-built `listItems` set (the disk's items plus any the cache alone knows) and `meta` is
-// a `Map<ref, { status?, title? }>` OVERLAY applied on top of each item's own frontmatter.
-// This module imports NO cache module, opens no store and learns no wire vocabulary: the
-// seam needs the readers, not the reverse (m41/ADR-001, reused verbatim — `work.mjs` is the
-// 37-importer god-node and its blast radius must not grow). The `candidacyView` parameter
-// on `nextWork` is the same device from milestone 26/ADR-005, and this is deliberately its
-// twin rather than a second mechanism.
-//
-// ABSENT ⇒ BYTE-IDENTICAL. Every reader below behaves exactly as it did before this
-// milestone when no view is passed, which is what the 37 unmigrated importers rely on and
-// what 43/06 task 03 asserts behaviourally.
-
-// ONE NUMBERED ROOT, walked flat with ITEM_RE — the stream root and (127/ADR-001 §4) the
-// archive share this walk verbatim: a milestone's `stories/` is descended one level, nothing
-// else is, and the row is `{ number, type, slug, name, dir, ref, parent }` in that order.
-// `stamp` is the only thing the two roots differ by: `{}` at the root, so the row is
-// byte-identical to what every reader froze before milestone 127, and `{ archived: true }`
-// under the archive, where the location adds one flag and changes nothing else.
-async function walkNumberedRoot(root, items, stamp) {
-  for (const entry of await readDirSafe(root)) {
-    if (!entry.isDirectory()) continue;
-    const match = entry.name.match(ITEM_RE);
-    if (!match) continue;
-    const [, number, type, slug] = match;
-    const dir = path.join(root, entry.name);
-    items.push({ number, type, slug, name: entry.name, dir, ref: number, parent: null, ...stamp });
-
-    if (type === "milestone") {
-      const storiesDir = path.join(dir, "stories");
-      for (const child of await readDirSafe(storiesDir)) {
-        if (!child.isDirectory()) continue;
-        const sub = child.name.match(ITEM_RE);
-        if (!sub) continue;
-        const [, sNumber, sType, sSlug] = sub;
-        items.push({
-          number: sNumber,
-          type: sType,
-          slug: sSlug,
-          name: child.name,
-          dir: path.join(storiesDir, child.name),
-          ref: `${number}/${sNumber}`,
-          parent: number,
-          ...stamp,
-        });
-      }
-    }
-  }
-}
-
-// THE BACKLOG WALK (127/ADR-001 §2) — recursive, and the type is in the folder name so no
-// record doc is ever opened to classify. A directory that does NOT match the leaf grammar is
-// a GROUP and is descended into; one that matches is a LEAF and is not (a backlog driver has
-// no `stories/`, ADR-005 §4 — `promote` is the door into the stream, and a `stories/` under a
-// leaf is doctor's orphan lane's to report). A group carries no semantics: it is the path
-// shown in listings, forward-slashed on every platform so `--json` is byte-stable, `""` at
-// the top. The row keeps the enumerator's seven keys — `number: null`, `ref: slug`,
-// `parent: null` — and adds `backlog` and nothing else.
-async function walkBacklogGroup(dir, group, items) {
-  for (const entry of await readDirSafe(dir)) {
-    if (!entry.isDirectory()) continue;
-    const leaf = entry.name.match(BACKLOG_ITEM_RE);
-    const child = path.join(dir, entry.name);
-    if (!leaf) {
-      await walkBacklogGroup(child, group === "" ? entry.name : `${group}/${entry.name}`, items);
-      continue;
-    }
-    const [, type, slug] = leaf;
-    items.push({ number: null, type, slug, name: entry.name, dir: child, ref: slug, parent: null, backlog: group });
-  }
-}
-
-// Enumerate items by folder name only — no file reads. With a `view`, the pre-built item
-// set REPLACES the disk scan (the view's builder has already done it, plus the merge).
-//
-// milestone 127 / ADR-001 §1 — THREE ROOTS, ONE FUNCTION, in this order: `<workDir>` (the
-// live stream, rows byte-identical to before), `<workDir>/backlog/**` (un-numbered, grouped),
-// `<workDir>/archive/` (numbered, out — flat, `ITEM_RE`, every row `archived: true`). Each root
-// is walked only when it is a directory (`readDirSafe` answers `[]` for anything else), so a
-// project with neither is byte-identical to today. This is the ONLY enumerator: a
-// `listBacklog` beside it would be the third scanner ADR-001 exists to retire.
-export async function listItems(workDir, { view } = {}) {
-  if (Array.isArray(view?.items)) return view.items;
-  const items = [];
-  await walkNumberedRoot(workDir, items, {});
-  // The root walk is total over whatever `readdir` refuses (a non-path, an absent dir — both
-  // enumerate nothing), and the two sub-roots keep that contract: `path.join` throws on a
-  // non-string where the walk used to answer `[]`, so the join is skipped rather than risked.
-  const subRoot = (name) => (typeof workDir === "string" ? path.join(workDir, name) : null);
-  await walkBacklogGroup(subRoot(BACKLOG_ROOT), "", items);
-  await walkNumberedRoot(subRoot(ARCHIVE_ROOT), items, { archived: true });
-  return items;
-}
-
-// THE ONE LIVE-ROW PREDICATE (127/ADR-002 §1) — the only place `number` and `archived` are
-// read together as a SCHEDULING question. Defined over ENUMERATOR rows, which always carry
-// `number` (null for a backlog row): a row is live when it has a number and is not archived.
-// The walkers that answer "what is next" (`nextWork`, `listStream`'s default, `recent`
-// through `work:list`) filter through it; the readers that answer "what is this ref"
-// (`findWork`, validate, doctor, memory, depends resolution) do NOT — an archived item is
-// still resolvable, still a `depends:` target, still validated. `!= null` is loose on
-// purpose: `"00"` is a string and row 00 exists, so a truthiness test would drop it.
-export function isLiveStreamRow(row) {
-  return row.number != null && row.archived !== true;
-}
-
 // Top-level "drivers" of the stream — items that sit at the root, carry
 // `depends`, and participate in ordering/gating (milestones and uat sessions,
 // and — milestone 37 / ADR-001 — spike and chore: same shape, they group no
@@ -640,157 +459,6 @@ export function rewriteDependsEntries(text, map) {
   });
   if (rewritten === block[2]) return text;
   return block[1] + rewritten + block[3] + text.slice(block[0].length);
-}
-
-// ----------------------------------------------------------------- find ----
-
-// `query` is a structured ref (`NN`, `NN/SS`) or a free-text slug match.
-// Semantic matching slots in at the lexical branch below.
-export async function findWork(workDir, query, { view } = {}) {
-  const items = await listItems(workDir, { view });
-  const ref = (query ?? "").trim();
-  let matches;
-
-  if (/^\d+$/.test(ref)) {
-    // A bare number is the top-level item at that slot — a milestone, a uat
-    // session, or an adhoc story/task (numbers are unique among top-level items).
-    matches = items.filter((item) => item.parent == null && sameNum(item.number, ref));
-  } else {
-    const pair = ref.match(/^(\d+)\/(\d+)$/);
-    const span = pair ? null : parseStorySpan(ref);
-    if (pair) {
-      matches = items.filter(
-        (item) => item.type === "story" && item.parent && sameNum(item.parent, pair[1]) && sameNum(item.number, pair[2]),
-      );
-    } else if (span) {
-      // Sorted because a span is the one ref form resolving to MANY rows, and the caller
-      // driving them needs the milestone walk's order, not the directory listing's.
-      matches = items
-        .filter((item) => item.type === "story"
-          && item.parent
-          && sameNum(item.parent, span.driver)
-          && Number.parseInt(item.number, 10) >= span.lo
-          && Number.parseInt(item.number, 10) <= span.hi)
-        .sort((a, b) => Number.parseInt(a.number, 10) - Number.parseInt(b.number, 10));
-    } else {
-      const needle = ref.toLowerCase();
-      // `name` is the on-disk FOLDER basename, so a ref only the cache knows has none —
-      // and none is fabricated (ADR-010/R6.4). Its `slug` still matches free text.
-      matches = items.filter(
-        (item) => item.slug.toLowerCase().includes(needle) || (item.name ?? "").toLowerCase().includes(needle),
-      );
-    }
-  }
-
-  const rows = [];
-  for (const item of matches) {
-    const meta = await readMeta(item, view);
-    const row = {
-      ref: item.ref,
-      type: item.type,
-      slug: item.slug,
-      status: meta.status ?? null,
-      title: meta.title ?? null,
-      parent: item.parent,
-      dir: item.dir,
-    };
-    // 127/ADR-002 §3 — a resolving reader does NOT filter on the root: an archived ref still
-    // answers, a backlog slug answers through the free-text branch above. The frozen seven
-    // keys are widened ONLY on a row from a new root (DESIGN §facts): a live row is
-    // byte-identical to before, so no consumer learns a second field name.
-    if (item.number == null) {
-      row.number = null;
-      row.backlog = item.backlog ?? "";
-    }
-    if (item.archived === true) row.archived = true;
-    rows.push(row);
-  }
-  return rows;
-}
-
-// ----------------------------------------------------------------- list ----
-
-// The board's read model: the WHOLE stream serialised as a flat array, one
-// element per `listItems` item, each carrying exactly the seven frozen contract
-// fields `{ ref, type, slug, status, title, parent, dir }` (ARCHITECTURE
-// ADR-002). Flat-with-`parent` — `parent` is the only tree edge (null at
-// depth 0); the consumer (the board) derives the hierarchy from it.
-//
-// Order is deterministic depth-first preorder: top-level items sorted by number
-// ascending, each milestone immediately followed by its stories sorted by
-// number. `dir` is the absolute item directory, forward-slashed (the
-// lock-manifest path convention) so the JSON is byte-stable across OSes.
-//
-// This is the single source of the `aof work list --json` contract; the board
-// API (story 01) reuses it. Keep it a thin pass over `listItems` — no new
-// traversal, no convenience fields.
-//
-// milestone 127 / ADR-002 §2, §5 — THE DEFAULT LISTING IS THE LIVE ROWS PLUS THE BACKLOG,
-// and `all: true` appends the archive. "What is live" includes what is waiting, so a
-// backlog row is in the default view; an archived row is not, and `--all` is the one door
-// to it. The order is deterministic so `--json` is byte-stable: live rows as before (by
-// number, a milestone followed by its stories), then backlog rows by group path then slug,
-// then archived rows by number exactly as the live ones. The live path filters through
-// `isLiveStreamRow` — the ONE predicate — rather than re-spelling the rule here.
-export async function listStream(workDir, { view, all = false } = {}) {
-  const items = await listItems(workDir, { view });
-
-  const live = orderByNumber(items.filter(isLiveStreamRow));
-  const backlog = items.filter((item) => item.number == null).sort(byGroupThenSlug);
-  // An archived row is a NUMBERED row the predicate refuses — read that way round so the
-  // flag is consulted in one place, and the listing cannot drift from the walkers' rule.
-  const archived = all ? orderByNumber(items.filter((item) => item.number != null && !isLiveStreamRow(item))) : [];
-
-  const rows = [];
-  for (const item of [...live, ...backlog, ...archived]) {
-    const meta = await readMeta(item, view);
-    const row = {
-      ref: item.ref,
-      type: item.type,
-      slug: item.slug,
-      status: meta.status ?? null,
-      title: meta.title ?? null,
-      parent: item.parent,
-      // A ref only the cache knows names a folder that is NOT on this node, so its `dir`
-      // is null rather than a plausible-looking path nothing would resolve (ADR-010/R6.4).
-      dir: item.dir == null ? null : item.dir.replaceAll("\\", "/"),
-    };
-    // The frozen seven keys, widened ONLY where the root is new (DESIGN §facts, ADR-006 §1):
-    // `number: null` + `backlog` on a backlog row, `archived: true` on an archived one.
-    if (item.number == null) {
-      row.number = null;
-      row.backlog = item.backlog ?? "";
-    }
-    if (item.archived === true) row.archived = true;
-    rows.push(row);
-  }
-  return rows;
-}
-
-// The depth-first preorder over one NUMBERED root's rows: top-level items by number, each
-// milestone immediately followed by its stories by number. Applied per root — the live rows
-// and the archived rows separately — so a story never attaches to a same-numbered milestone
-// across the archive line. Guards its own input: a row with no number is not in this order.
-function orderByNumber(rows) {
-  const numbered = rows.filter((row) => row.number != null);
-  const byNum = (a, b) => Number.parseInt(a.number, 10) - Number.parseInt(b.number, 10);
-  const ordered = [];
-  for (const item of numbered.filter((row) => row.parent == null).sort(byNum)) {
-    ordered.push(item);
-    if (item.type === "milestone") {
-      ordered.push(...numbered.filter((child) => child.parent === item.number).sort(byNum));
-    }
-  }
-  return ordered;
-}
-
-// Backlog order (127/ADR-002 §5): group path, then slug — compared as PLAIN STRINGS in
-// code-point order (`<`, never `localeCompare`), so the listing is byte-identical on every
-// OS and locale. `""` (the top of the backlog) sorts before every named group.
-function byGroupThenSlug(a, b) {
-  if (a.backlog !== b.backlog) return a.backlog < b.backlog ? -1 : 1;
-  if (a.slug !== b.slug) return a.slug < b.slug ? -1 : 1;
-  return 0;
 }
 
 // ------------------------------------------------------------- validate ----

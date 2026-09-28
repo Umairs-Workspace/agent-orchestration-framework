@@ -6,13 +6,15 @@
   "exports": {
     "./effects": "./src/effects.mjs",
     "./records": "./src/records.mjs",
-    "./lifecycle": "./src/lifecycle.mjs"
+    "./lifecycle": "./src/lifecycle.mjs",
+    "./identity": "./src/identity.mjs",
+    "./discovery": "./src/discovery.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs test/records.test.mjs"
+    "test": "node --test test/effects.test.mjs test/records.test.mjs test/discovery.test.mjs"
   },
   "dependencies": {
     "@aof/foundation": "workspace:*"

@@ -31,16 +31,18 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody, blankStringLiterals } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { findWork, listStream, nextWork } from "../../../src/work.mjs";
 import { withThreeRoots } from "../../work/stream/work-backlog-archive-enumerate.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORK = path.join(repoRoot, "src", "work.mjs");
+const DISCOVERY = "packages/work/src/discovery.mjs";
+const WORK = path.join(repoRoot, DISCOVERY);
+const CORE = path.join(repoRoot, "src", "work.mjs");
 
-const DISK_READERS = ["listItems", "listStream", "findWork", "nextWork"];
+const DISK_READERS = ["listItems", "listStream", "findWork", "nextWork", "readWorkDirectory"];
 // A member access, not a spread: `...archived` is a spread of a local, `row.archived` a read.
 const ARCHIVED_MEMBER_RE = /(?<!\.)\.archived\b/g;
 // A `.filter(…)` whose argument reads `archived` — the callback's own parameter list is one nested
@@ -62,10 +64,10 @@ const CARRIERS = Object.freeze({
 // the bindings a clause names). `importSpecifiers` is what proves the file reaches work.mjs at all.
 function importsDiskReaderFromWork(stripped, rel) {
   const dir = path.posix.dirname(rel);
-  const reachesWork = importSpecifiers(stripped).some((entry) => path.posix.normalize(path.posix.join(dir, entry.specifier)) === "src/work.mjs");
+  const reachesWork = importSpecifiers(stripped).some((entry) => (entry.specifier === "@aof/work/discovery" || path.posix.normalize(path.posix.join(dir, entry.specifier)) === "src/work.mjs"));
   if (!reachesWork) return [];
   const hits = [];
-  for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*\bwork\.mjs["']/g)) {
+  for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/discovery)["']/g)) {
     for (const name of match[1].split(",").map((entry) => entry.trim().split(/\s+as\s+/)[0])) {
       if (DISK_READERS.includes(name)) hits.push(name);
     }
@@ -82,12 +84,12 @@ export const archTests = [
       const predicate = bodyOf(work, "isLiveStreamRow");
       assert.match(predicate, /row\.number != null && row\.archived !== true/, "⇔ number != null && archived !== true");
       for (const walker of ["nextWork", "listStream"]) {
-        const body = bodyOf(work, walker);
+        const body = bodyOf(walker === "nextWork" ? stripComments(await readFile(CORE, "utf8")) : work, walker);
         assert.ok(body, `${walker} is declared`);
         assert.ok(/\bisLiveStreamRow\b/.test(body), `${walker} references isLiveStreamRow — a walker that stops filtering through the one predicate fails here`);
       }
       for (const reader of ["findWork", "validateWork"]) {
-        const body = bodyOf(work, reader);
+        const body = bodyOf(reader === "validateWork" ? stripComments(await readFile(CORE, "utf8")) : work, reader);
         assert.ok(body, `${reader} is declared`);
         assert.ok(!ARCHIVED_FILTER_RE.test(body), `${reader} is a resolving reader and filters on neither \`archived\` nor a status standing in for it`);
         assert.ok(!/\bisLiveStreamRow\b/.test(body), `${reader} does not filter through the scheduling predicate either`);
@@ -101,9 +103,9 @@ export const archTests = [
     run: async () => {
       const outside = [];
       const carriersSeen = [];
-      for (const file of await readSrcFiles(repoRoot)) {
-        const rel = `src/${file.rel}`;
-        if (rel === "src/work.mjs") continue;
+      for (const file of await readRuntimeFiles(repoRoot)) {
+        const rel = file.rel;
+        if (rel === DISCOVERY) continue;
         // A member READ, never a string: the stream's own event name `stream.archived`
         // (127/ADR-004, story 03) is a literal the seam and the ledger spell, not a read of a
         // row's flag — so string literals are blanked before the token is looked for, exactly
@@ -136,6 +138,7 @@ export const archTests = [
         const stripped = stripComments(await readFile(path.join(repoRoot, ...rel.split("/")), "utf8"));
         assert.deepEqual(importsDiskReaderFromWork(stripped, rel), [], `${rel} imports no disk reader from src/work.mjs — the loop reaches the stream only through the registered work:next and work:list`);
       }
+      assert.deepEqual(importsDiskReaderFromWork('import { listItems as scan } from "@aof/work/discovery";', "src/commands/loop.mjs"), ["listItems"], "a package import is still a disk-reader dependency");
       const loopShell = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
       assert.ok(/"work:next"/.test(loopShell) && /"work:list"/.test(loopShell), "…and those two are the legs it does use");
     },

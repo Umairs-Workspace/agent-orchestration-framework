@@ -31,7 +31,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, classifySites } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -40,6 +40,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // one 127/02 added.
 export const NUMBER_CONSUMER_FILES = Object.freeze([
   "src/work.mjs",
+  "packages/work/src/discovery.mjs",
   "src/work/reindex.mjs",
   "src/commands/migrate-folder.mjs",
   "src/commands/insert-shared.mjs",
@@ -88,8 +89,8 @@ export function classifyNumberSites(source) {
 
 export async function sweepNumberSites() {
   const perFile = new Map();
-  for (const file of await readSrcFiles(repoRoot)) {
-    const rel = `src/${file.rel}`;
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    const rel = file.rel;
     const source = await readFile(file.path, "utf8");
     // A fresh, non-global test: the sweep regex is `g` for matchAll, and `.test` on a `g` regex
     // carries `lastIndex` across calls, which is how a second sweep would silently see nothing.

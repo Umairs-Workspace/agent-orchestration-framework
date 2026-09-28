@@ -41,7 +41,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const WORK = path.join(repoRoot, "src", "work.mjs");
 const READ_SEAM = path.join(repoRoot, "src", "work", "read.mjs");
 
-const DISK_READERS = ["listItems", "findWork", "nextWork", "listStream"];
+const DISK_READERS = ["listItems", "findWork", "nextWork", "listStream", "readWorkDirectory"];
 
 // EVERY PIN CARRIES ITS SUBJECT (m43/ADR-016/G2 — the RELOCATION hole, measured).
 //
@@ -174,7 +174,7 @@ function stripComments(source) {
 // The named bindings a module imports FROM work.mjs (any relative depth).
 function workImportBindings(commentStrippedSource) {
   const bindings = new Set();
-  const re = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*\bwork\.mjs["']/g;
+  const re = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/discovery)["']/g;
   let m;
   while ((m = re.exec(commentStrippedSource)) !== null) {
     for (const raw of m[1].split(",")) {
@@ -284,6 +284,9 @@ export const archTests = [
 
       const renamed = workImportBindings('import { listItems as diskListItems } from "../work.mjs";');
       assert.ok(renamed.has("listItems"), "the detector follows a renamed import back to its exported name");
+
+      const directPackage = workImportBindings('import { findWork as find, readWorkDirectory } from "@aof/work/discovery";');
+      assert.ok(directPackage.has("findWork") && directPackage.has("readWorkDirectory"), "package APIs cannot bypass the disk-reader boundary");
 
       const unrelated = workImportBindings('import { listItems } from "./catalog.mjs";');
       assert.equal(unrelated.size, 0, "the detector does NOT flag an unrelated module's listItems (catalog.mjs — a verified false positive)");
