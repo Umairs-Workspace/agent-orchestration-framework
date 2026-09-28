@@ -4,12 +4,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./effects": "./src/effects.mjs"
+    "./effects": "./src/effects.mjs",
+    "./records": "./src/records.mjs",
+    "./lifecycle": "./src/lifecycle.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs"
+    "test": "node --test test/effects.test.mjs test/records.test.mjs"
+  },
+  "dependencies": {
+    "@aof/foundation": "workspace:*"
   }
 }

@@ -58,7 +58,8 @@
 //     on somebody else's.
 // ════════════════════════════════════════════════════════════════════════════════════
 import assert from "node:assert/strict";
-import { readdir, readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -74,7 +75,7 @@ import { stripComments, functionBody, matchedBraceBody, matchedParenSpan, blockO
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "src");
 
-const THE_ONE_HOME = "src/acceptance-horizon.mjs";
+const THE_ONE_HOME = "packages/work/src/lifecycle.mjs";
 // 61/FF-6104's subjects. The acceptor's directory, and the face that has not landed yet —
 // named rather than globbed, so the day it arrives it is already inside the sweep.
 const ACCEPTOR_DIR = "src/work-acceptor";
@@ -231,18 +232,9 @@ export function featureWriteSites(sources) {
 }
 
 async function readSources() {
-  const sources = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        sources.push({ file: path.relative(repoRoot, full).replaceAll("\\", "/"), text: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(srcDir);
-  return sources;
+  const files = await readRuntimeFiles(repoRoot);
+  assert.ok(files.some(file => file.rel === THE_ONE_HOME), 'the lifecycle implementation is scanned');
+  return Promise.all(files.map(async file => ({ file: file.rel, text: await readFile(file.path, 'utf8') })));
 }
 
 // The horizon's severity ruling (ADR-002 §2/§3) is IMPORTED from the one home

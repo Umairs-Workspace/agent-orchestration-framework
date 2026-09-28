@@ -328,3 +328,54 @@ Logs and compatibility fixtures: .tmp/workspace-migration/foundation/ (local, ig
 full-root-suite and cross-platform limitations remain. No live install, push, deployment, or AOF
 workflow operation was performed. Next: use the lower-level APIs for work/mesh service extraction
 and their package-owned command contributions, then complete core/application layout moves.
+
+## Work record and lifecycle extraction — 2026-09-28
+
+@aof/work now owns item record selection, frontmatter parsing, metadata overlays, schema/version
+reads and coercion, guarded lifecycle moves, bounded rollback, and body-preserving frontmatter
+transforms. Its records export accepts concrete item descriptors and uses the explicit workspace
+dependency @aof/foundation for atomic writes. No workspace discovery, node identity, mesh, effects
+journal or core import is present. The lifecycle export owns the vocabulary, legal edges, acceptance
+horizon and epoch predicate and remains a zero-import browser-safe leaf.
+
+src/work.mjs retains its public API through re-exports; src/acceptance-horizon.mjs forwards to the
+lifecycle leaf. The command and transition layers retain publication/gate responsibilities. Core's
+effects service provider remains deferred and now reaches the extracted writers through the same
+compatibility API. Workspace loading/enumeration, run persistence and acceptor services remain
+transitional core dependencies. The root work module loses roughly 360 lines in this slice.
+
+The boundary guard admits only records.mjs's exact native APIs and @aof/foundation/fs; the manifest
+records that sole dependency. Status/rollback and frontmatter-parser guards follow the relocated
+implementations. The single-horizon scan covers core and all workspace runtime source. The pure
+controls guard checks both the compatibility forward and the zero-import implementation. Static
+session reach is 33 and assignment-sink reach is 78: the two new nodes relocate existing code.
+The session driver continues to reject every mesh module.
+
+Verification:
+
+- Eight package tests cover document/type selection, local/remote metadata overlays, parser shape,
+  LF/CRLF preservation, illegal edges, rollback bounds, unusable-document faults, and digest-based
+  transforms. These are registered in the existing root package-test bridge (60 internal cases).
+- All 997 unit checks pass. The first regression pass found the validation call to the relocated
+  schema-coercion helper; importing the shared implementation fixed it before this final run.
+- The expanded selection completed 2,121 check executions: 2,115 passed and six test failures
+  surfaced. One export-shape test ignored re-exports; it now checks the runtime namespace and types.
+  Five legacy identity tests consulted the machine's global identity; they now supply isolated
+  fixture homes. loadWorkspace's production implementation is byte-identical to the baseline.
+  All 44 cases in those two corrected suites pass on rerun. The selection includes work/grade,
+  their architecture families, terminal, Notion, effects, command/bundle and import-boundary checks.
+  All 60 internal package cases pass through the root bridge. No unresolved failure remains in
+  this selection; the complete root suite was not rerun.
+- Immutable Yarn installation and the supply-chain audit pass (zero warnings in the audit; the
+  existing peer warning is unchanged). No external dependencies changed.
+- Browser lifecycle and SEA JavaScript bundle checks pass. The latter includes records, lifecycle
+  and foundation filesystem code and keeps node-pty external. No complete native release was built.
+- A real installer payload outside the checkout loads all 117 commands and resolves both work
+  exports and foundation from local real files. A pre-extraction writer seeds a CRLF record; the
+  payload exercises work:status reads/moves through the real transition/effects path, rollback,
+  and a schema transform. The old reader reads it back. Only the expected status/date/schema fields
+  differ; the body/line endings and old public export set are preserved. Temporary files are removed.
+
+Logs, the selected-check runner and compatibility harness are in
+.tmp/workspace-migration/work-records/ (local, ignored). Full-root-suite and cross-platform/native
+release limitations from previous slices remain. This work stays outside AOF's workflow.

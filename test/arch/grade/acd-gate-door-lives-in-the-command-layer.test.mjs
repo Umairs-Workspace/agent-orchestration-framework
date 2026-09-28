@@ -51,7 +51,7 @@ import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../../src/c
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const HORIZON = "src/acceptance-horizon.mjs";
+const HORIZON = "packages/work/src/lifecycle.mjs";
 const DOOR = "src/commands/item-status.mjs";
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));

@@ -14,6 +14,8 @@
   core registers its CLI contribution and supplies services through compatibility adapters.
   @aof/foundation now owns atomic filesystem helpers, the throttled reporter, and JSONL storage.
   Core owns the existing log-path policy; the session driver no longer imports any mesh module.
+  @aof/work now owns record selection/parsing, metadata/schema reads, guarded writes and lifecycle
+  predicates; core retains workspace discovery, enumeration, command gates and effect publication.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
@@ -68,11 +70,19 @@
   pass. Immutable install, audit, browser/SEA JavaScript bundles, and an external payload with
   old/new filesystem and log compatibility pass.
 
+- Work record extraction: all 997 unit checks and eight new package cases pass. Immutable install,
+  audit, browser/SEA JavaScript bundles, and an external payload status/rollback/transform cycle
+  with pre-extraction reader compatibility pass. The expanded selection completed 2,121 checks:
+  2,115 passed initially; six test issues were corrected and all 44 cases in their two suites pass
+  on rerun. All 60 internal package cases pass. Details are in IMPLEMENTATION.md.
+
 ## Next
 
 Continue extracting domain service implementations and their command contributions behind the new
 package interfaces. The work and mesh handler packages are implemented; their injected
-service implementations still live under src/. Notion owns its services and CLI descriptors;
+service implementations are being extracted from src/. Work owns record/lifecycle services;
+workspace discovery/enumeration, run persistence and acceptor services remain in core. Notion owns
+its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
 Foundation filesystem and diagnostic mechanisms are extracted; core retains their application
 policy through compatibility adapters. Core registration is statically acyclic, while deferred

@@ -282,3 +282,25 @@ with core's path adapter; ignoring bare workspace imports would hide the actual 
 The session and trigger controls now follow workspace exports. The diagnostic silent-catch floor
 also follows the implementation into foundation, with the same allowance and a non-empty runtime
 scan rather than an exemption that silently leaves the new package unexamined.
+
+## Work record boundary implemented — 2026-09-28
+
+Item document selection, metadata parsing/overlays, schema/version reads, status transitions,
+bounded rollback, and migration transforms now belong to @aof/work/records. They accept concrete
+item descriptors; workspace discovery, node identity, projection reads and effect publication are
+not prerequisites of this API. Atomic persistence is the declared @aof/foundation/fs dependency.
+
+The lifecycle vocabulary and acceptance/epoch predicates move together to @aof/work/lifecycle.
+It remains a zero-import browser-safe leaf, so controls can consult it without acquiring record
+I/O. The existing acceptance-horizon and work modules preserve their public exports. Validation
+also needs the shared schema-coercion function; moving only the public readers would leave its
+private call unresolved. This dependency was caught and corrected by regression checks.
+
+Source guards now inspect the actual record writer and parser. The single-horizon scan includes
+all workspace runtime source, and the controls guard follows the exact compatibility re-export
+to the pure leaf. The session-driver closure increases from 31 to 33 modules (records/lifecycle);
+the assignment sink increases from 76 to 78. Neither adds a new domain service or mesh dependency.
+
+The next substantial work boundary is enumeration/resolution/readiness, separated from workspace
+configuration and identity hydration. Effect publication stays in the transition layer; extracting
+record writes does not transfer command orchestration or durable journals into the record package.

@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseFeature } from "../../src/feature-parse.mjs";
 import { validateWork } from "../../src/work.mjs";
 
@@ -498,10 +498,9 @@ export const featureParseStrictTests = [
   {
     name: "66/00 parse: no exported signature of `src/work.mjs` is added, removed, renamed or re-typed (243 dependents)",
     run: async () => {
-      const source = await readFile(srcWork, "utf8");
-      const exported = [...source.matchAll(/^export\s+(?:async\s+)?(?:function|const|class|let)\s+([A-Za-z0-9_$]+)/gm)].map(
-        (m) => m[1],
-      );
+      // Runtime exports include compatibility forwards; source declarations alone hide them.
+      const surface = await import(pathToFileURL(srcWork).href);
+      const exported = Object.keys(surface);
       // The exported surface measured at HEAD before 66/00 (`git show HEAD:src/work.mjs`).
       const AT_HEAD = [
         "ITEM_RE",
@@ -532,6 +531,10 @@ export const featureParseStrictTests = [
       // (8167486) and this gate has been red since, naming a "net deletion" claim that
       // was true of 66/00 and was never a claim about the future.
       const missing = AT_HEAD.filter((name) => !exported.includes(name));
+      for (const name of AT_HEAD.filter(name => exported.includes(name))) {
+        const expected = name === "ITEM_RE" ? "object" : name === "WORK_ITEM_SCHEMA_VERSION" ? "number" : "function";
+        assert.equal(typeof surface[name], expected, `${name}: public export type is preserved`);
+      }
       assert.deepEqual(
         missing,
         [],

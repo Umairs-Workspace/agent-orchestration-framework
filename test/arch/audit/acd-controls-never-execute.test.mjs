@@ -357,13 +357,20 @@ export const archTests = [
         assert.equal(laneTargets.includes(forbidden), false, `the lane must not import ${forbidden} — the grade's SHAPE is copied into this lane's idiom; the FILE is not (FF-5407)`);
       }
 
-      // THE ALLOWLIST IS CLOSED: each named leaf has ZERO imports of its own, so the
-      // direct rule reaches as far as a transitive one would over this subgraph.
+      // The lifecycle compatibility surface forwards only to the package's pure leaf.
+      // Include re-exports and dynamic imports so forwarding cannot hide an I/O dependency.
       for (const leaf of LEAF_ALLOWLIST) {
         const relative = resolveRelative(THE_LANE, leaf);
         const source = await read(relative);
         const leafBody = strippedBody(source.file, source.text);
-        assert.deepEqual(directImports(leafBody), [], `${relative} is a zero-import leaf — that is the property the allowlist rests on`);
+        const edges = importSpecifiers(leafBody);
+        if (relative === "src/acceptance-horizon.mjs") {
+          assert.deepEqual(edges, [{ specifier: "@aof/work/lifecycle", dynamic: false }]);
+          const implementation = await read("packages/work/src/lifecycle.mjs");
+          assert.deepEqual(importSpecifiers(implementation.text), [], "the lifecycle implementation remains a zero-import leaf");
+        } else {
+          assert.deepEqual(edges, [], `${relative} remains a zero-import leaf`);
+        }
       }
     },
   },

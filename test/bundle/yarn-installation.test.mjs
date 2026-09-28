@@ -39,10 +39,12 @@ export const yarnInstallationTests = [
       } : name === 'foundation' ? {
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
+      } : name === 'work' ? {
+        'records.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
       } : {};
       const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[path.basename(file)] ?? []).includes(specifier);
       const external = report.violations.filter(forbidden);
-      assert.deepEqual(external, [], name + ': only package-local imports and explicitly owned Node APIs are allowed');
+      assert.deepEqual(external, [], name + ': only local imports and explicitly allowed platform/package APIs are allowed');
       assert.deepEqual(report.computed, [], `${name}: computed imports cannot bypass the boundary`);
       const from = report.family.files[0];
       for (const code of [
@@ -57,7 +59,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), [], `${name}: remains dependency-free`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'work' ? ['@aof/foundation'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');

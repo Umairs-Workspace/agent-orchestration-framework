@@ -22,7 +22,7 @@
 //     (only the status line changes); → done and a from-state ≠ in-progress are
 //     rejected (forbidden-rollback / rollback-not-applicable) writing nothing.
 // (b) SOURCE-GREP (per 15/R3 + 10/R2, following the function): over the module family
-//     that could write item frontmatter (src/work.mjs + src/commands/run-*.mjs) —
+//     that could write item frontmatter (packages/work/src/records.mjs + src/commands/run-*.mjs) —
 //     rollbackItemStatus's allowed targets are exactly not-started|blocked, the forward
 //     face takes its permission from the lifecycle table (never from an argument), both
 //     write through writeText, and the run-* command modules contain NO writeText/
@@ -36,8 +36,8 @@ import path from "node:path";
 import { rollbackItemStatus } from "../../../src/work.mjs";
 import { ITEM_STATUS_EDGES } from "../../../src/acceptance-horizon.mjs";
 
-const WORK = new URL("../../../src/work.mjs", import.meta.url);
-const HORIZON = new URL("../../../src/acceptance-horizon.mjs", import.meta.url);
+const WORK = new URL("../../../packages/work/src/records.mjs", import.meta.url);
+const HORIZON = new URL("../../../packages/work/src/lifecycle.mjs", import.meta.url);
 const RUN_COMMANDS = ["run-start.mjs", "run-complete.mjs", "run-status.mjs", "run-retry.mjs"].map(
   (name) => new URL(`../../../src/commands/${name}`, import.meta.url),
 );
@@ -142,7 +142,7 @@ export const archTests = [
       // rollbackItemStatus is defined in work.mjs (the item-frontmatter authority).
       assert.ok(
         /(?:export\s+)?async\s+function\s+rollbackItemStatus\s*\(/.test(code),
-        "rollbackItemStatus is defined in src/work.mjs",
+        "rollbackItemStatus is defined in packages/work/src/records.mjs",
       );
 
       // …and so is its forward twin, whose permission comes from the DECLARED lifecycle
@@ -150,7 +150,7 @@ export const archTests = [
       // a caller can pass wrong).
       assert.ok(
         /(?:export\s+)?async\s+function\s+setItemStatus\s*\(/.test(code),
-        "setItemStatus — the lifecycle face — is defined in src/work.mjs",
+        "setItemStatus — the lifecycle face — is defined in packages/work/src/records.mjs",
       );
       // The table is DECLARED (frozen) and lives in the VOCABULARY leaf, not here: work.mjs
       // imports its permission rather than spelling the five words a second time — the
@@ -160,7 +160,7 @@ export const archTests = [
         "work.mjs does not re-declare the lifecycle table (that would be a second spelling of the five words)",
       );
       assert.ok(
-        /import\s*\{[^}]*\bitemStatusEdges\b[^}]*\}\s*from\s*"\.\/acceptance-horizon\.mjs"/.test(code),
+        /import\s*\{[^}]*\bitemStatusEdges\b[^}]*\}\s*from\s*"\.\/lifecycle\.mjs"/.test(code),
         "work.mjs takes its permission from the imported lifecycle table",
       );
       assert.ok(
