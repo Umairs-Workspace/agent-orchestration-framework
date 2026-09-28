@@ -84,9 +84,13 @@ export const archTests = [
       );
 
       // ── The server half: the worker's own PTY spawn, wherever the driver now lives.
+      // The pair may be spelled through a named constant in the same source (138/00 sizes the
+      // screen model from the one constant the spawn uses), so a name is followed to its literal.
       const workerText = await workerDriverSource();
-      const spawn = /ptySpawn\([\s\S]{0,400}?cols:\s*(\d+),\s*rows:\s*(\d+),/.exec(workerText);
-      assert.ok(spawn, `${WORKER_EXECUTION} (and the modules it re-exports its driver from) spawns the interactive PTY with a literal cols/rows pair`);
+      const spawnAt = /ptySpawn\([\s\S]{0,400}?cols:\s*(\d+|[A-Z][A-Z0-9_]*),\s*rows:\s*(\d+|[A-Z][A-Z0-9_]*),/.exec(workerText);
+      const literal = (value) => (/^\d+$/.test(value) ? value : new RegExp(`const\\s+${value}\\s*=\\s*(\\d+)\\s*;`).exec(workerText)?.[1]);
+      const spawn = spawnAt && [spawnAt[0], literal(spawnAt[1]), literal(spawnAt[2])];
+      assert.ok(spawn && spawn[1] && spawn[2], `${WORKER_EXECUTION} (and the modules it re-exports its driver from) spawns the interactive PTY with a literal cols/rows pair, or constants declared as literals`);
 
       // ── The tie itself.
       assert.equal(

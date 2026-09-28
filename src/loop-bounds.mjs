@@ -156,18 +156,25 @@ export function loopConcurrencyFromConfig(workspace) {
 // `work.loop.agents.<phase>.mode` for the two driven phases that resolve a role mode
 // (`refine`, `continue`; `verify` reads none). Each answers its member VERBATIM and
 // `null` for anything else — no clamp, no trim, no case-fold, never a throw — and `null`
-// means UNSET: inherit the workspace twin. The twin is NOT read here. This leaf declares
-// `work.loop.*` keys and nothing else (69/ADR-001; FF-6901 holds the line), so the fallback
-// to `work.dispatch.concurrency` and `work.agents.mode` belongs to the consumer that already
-// reads the twin: `work:dispatch`'s one resolution site narrows the pool's bound by the
-// number the loop hands it (129/ADR-006, amended), and the command prompts resolve
-// `work.agents.mode` themselves when the drive composes no flag (129/ADR-001 §5, amended).
+// means UNSET. This leaf declares `work.loop.*` keys and nothing else (69/ADR-001; FF-6901
+// holds the line), so no workspace twin is read here. An unset lane bound inherits
+// `work.dispatch.concurrency` at `work:dispatch`'s one resolution site, which narrows the
+// pool's bound by the number the loop hands it (129/ADR-006, amended). An unset phase mode
+// does NOT inherit: the loop has its own default per phase, `LOOP_AGENT_MODE_DEFAULTS` below,
+// applied at the phase level, so every refine and continue the loop drives carries a flag and
+// `work.agents.mode` governs hand-run sessions only (140, superseding 129/ADR-001 §5's fallback).
 //
 // The range probe (`resolve(p) === p`) therefore admits exactly the members: a positive
 // integer for the bound, `solo` / `orchestrated` for a mode. A step on an UNSET key steps
-// from `null` — there is no value in effect to step from, and no loop record declares one of
-// these as a ceiling, so the tuner never meets that case.
+// from `null` — the per-key resolvers keep answering `null` for it, the default being the
+// phase's rather than the key's — and no loop record declares one of these as a ceiling, so
+// the tuner never meets that case.
 export const LOOP_AGENT_MODES = Object.freeze(["solo", "orchestrated"]);
+
+// The mode each driven phase runs in when its `work.loop.agents.<phase>.mode` is unset (140).
+// Both are solo: a driven session holds the whole contract in one context, and a cold-start
+// agent per role re-reads it at a cost the operator measured.
+export const LOOP_AGENT_MODE_DEFAULTS = Object.freeze({ refine: "solo", continue: "solo" });
 
 export const resolveLoopDispatchConcurrency = (value) => positiveInteger(value, null);
 export const resolveLoopAgentMode = (value) => (LOOP_AGENT_MODES.includes(value) ? value : null);
@@ -194,11 +201,11 @@ export const LOOP_AGENT_MODE_RESOLVERS = Object.freeze({
   continue: loopAgentContinueModeFromConfig,
 });
 
+// The key's value when it is set, the phase's default when it is unset (140), `null` for a
+// phase that resolves no mode.
 export function loopAgentModeFromConfig(workspace, phase) {
-  const resolve = Object.prototype.hasOwnProperty.call(LOOP_AGENT_MODE_RESOLVERS, phase)
-    ? LOOP_AGENT_MODE_RESOLVERS[phase]
-    : null;
-  return typeof resolve === "function" ? resolve(workspace) : null;
+  if (!Object.prototype.hasOwnProperty.call(LOOP_AGENT_MODE_RESOLVERS, phase)) return null;
+  return LOOP_AGENT_MODE_RESOLVERS[phase](workspace) ?? LOOP_AGENT_MODE_DEFAULTS[phase];
 }
 
 // The registry's config-pointer authority is derived from callable resolvers,

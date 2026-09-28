@@ -19,7 +19,8 @@
 //   - EMBEDDED mode (the release single-file artefact, or AOF_SEA_EMBEDDED=1):
 //     the esbuild bundle compiled into this binary runs, exactly as before.
 //
-// The selection consults ONLY payload presence + AOF_SEA_EMBEDDED — never argv
+// The selection consults ONLY payload presence (cli.mjs, and the BUILD_ID.json stamp
+// that says a payload install exists) + AOF_SEA_EMBEDDED — never argv
 // (the acd-single-entry-command-core invariant: no command-mode fork ahead of
 // run()). A payload that is present but BROKEN fails LOUDLY with the payload
 // path and the recovery steps — never a silent fallback to the embedded build,
@@ -39,9 +40,47 @@ import { run } from "../src/cli.mjs";
 // anchored beside the exe).
 const dynamicImport = new Function("specifier", "return import(specifier)");
 
+// The build this binary's bundle was made from, compiled in by scripts/build-sea.mjs (esbuild
+// `define`); null in a binary that predates the stamp. build-info reports it in embedded mode,
+// where the payload's BUILD_ID.json describes some OTHER build.
+const EMBEDDED_BUILD_ID = typeof __AOF_EMBEDDED_BUILD_ID__ === "string" ? __AOF_EMBEDDED_BUILD_ID__ : null;
+
+// 2026-09-27 — A PAYLOAD INSTALL IS NEVER STOOD IN FOR BY THE EMBEDDED BUILD. "Payload absent"
+// used to mean "run the embedded bundle", and a payload install passes through absent while it
+// replaces src/. The desktop app's 3-second `mesh status` poll landed in that window and ran a
+// two-month-old bundle, whose identity self-heal re-minted the control node's id (16:02:47Z,
+// 4 s after an `install-local`). So when a payload install is on disk (its BUILD_ID.json stamp beside
+// the exe) but src/cli.mjs is missing, this waits for it to come back and, if it never does, FAILS
+// LOUDLY. Embedded runs only for a binary with no payload install, or on AOF_SEA_EMBEDDED=1.
+const PAYLOAD_WAIT_MS = 15000;
+const PAYLOAD_POLL_MS = 100;
+
+function payloadReappears(file) {
+  const cell = new Int32Array(new SharedArrayBuffer(4));
+  const until = Date.now() + PAYLOAD_WAIT_MS;
+  while (Date.now() < until) {
+    Atomics.wait(cell, 0, 0, PAYLOAD_POLL_MS);
+    if (existsSync(file)) return true;
+  }
+  return false;
+}
+
 const payloadCliPath = path.join(path.dirname(process.execPath), "src", "cli.mjs");
-const payloadPresent = process.env.AOF_SEA_EMBEDDED !== "1" && existsSync(payloadCliPath);
+const payloadStampPath = path.join(path.dirname(process.execPath), "BUILD_ID.json");
+let payloadPresent = process.env.AOF_SEA_EMBEDDED !== "1" && existsSync(payloadCliPath);
+if (process.env.AOF_SEA_EMBEDDED !== "1" && !payloadPresent && existsSync(payloadStampPath)) {
+  payloadPresent = payloadReappears(payloadCliPath);
+  if (!payloadPresent) {
+    console.error(
+      `aof: the installed CLI payload is missing (${payloadCliPath}), but this is a payload install (BUILD_ID.json beside the exe).\n` +
+      `Refusing to run this binary's embedded build (${EMBEDDED_BUILD_ID ?? "unstamped"}) in its place. ` +
+      "Re-run the payload install (node scripts/install-local.mjs), or set AOF_SEA_EMBEDDED=1 to run the embedded build deliberately.",
+    );
+    process.exit(1);
+  }
+}
 process.env.AOF_RUNTIME_MODE = payloadPresent ? "payload" : "embedded";
+if (EMBEDDED_BUILD_ID != null) process.env.AOF_EMBEDDED_BUILD_ID = EMBEDDED_BUILD_ID;
 
 const resolveRun = payloadPresent
   ? dynamicImport(pathToFileURL(payloadCliPath).href)

@@ -529,7 +529,7 @@ export const archTests = [
         phase: "continue", cycle: 1, startedAt: at("10:00:00.000"), id: "id",
       });
       const declarationKeys = Object.keys(declaration);
-      assert.equal(declarationKeys.length, 9, "126/02 appended the ninth, `supervised`, in its own contract — the expected succession this line anticipated");
+      assert.equal(declarationKeys.length, 10, "126/02 appended the ninth, `supervised`, and 141 the tenth, `thinking`, each in its own contract — the expected succession this line anticipated");
       assert.deepEqual(declarationKeys.slice(0, 8).at(-1), "id", "…the first eight in the same order, ending `id`");
 
       const dir = await mkdtemp(path.join(tmpdir(), "aof-126-clock-"));

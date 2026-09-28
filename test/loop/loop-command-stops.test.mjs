@@ -50,6 +50,30 @@ function fakePhaseChild(answers, { onSpawn } = {}) {
 }
 const childDocument = (document) => ({ outcome: "document", document: { ok: true, ...document }, exitCode: 0, stderrTail: [], spawn: {} });
 
+// 138/01 task 03 — a real in-process driver over a scripted PTY that draws a recorded claude screen
+// the moment the directive is pasted, so the real door stops the session by that screen's name.
+async function screenDrawingDriver(id) {
+  const recording = JSON.parse(await readFile(path.join(repoRoot, "test", "fixtures", "claude-screens", `${id}.json`), "utf8"));
+  let drawn = false;
+  const fake = createFakePtySpawn({
+    onWrite: ({ emitData }) => {
+      if (drawn) return;
+      drawn = true;
+      for (const chunk of recording.chunks) emitData(chunk.d);
+    },
+  });
+  return {
+    spawnCalls: fake.spawnCalls,
+    options: {
+      ptySpawn: fake.spawn,
+      which: createFakeWhich(["claude"]),
+      watchTranscriptSessionId: async () => `blocked-${id}`,
+      watchTranscriptCompletion: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
+      commandDelayMs: 0,
+    },
+  };
+}
+
 // 130/02 — the closing commands: a verify drive moves its item to done (the shape the narration
 // suite's `closingCommands` has), so a walk under a level-0 source reaches `done`.
 const closing = (fx) => (command) => {
@@ -358,7 +382,7 @@ depends: []
         const driver = completingDriver(taskUatFx);
         const result = await runReported({ scope: "03" }, taskUatFx, { agentSessionDriverOptions: driver.options });
         record("s02", "p02", result, { stop: "uat-gate", producer: "work:tasks:counts.uat", ref: "03/01" }, /uatCount=1/u);
-        assert.deepEqual(driver.typed.map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01", "/aof:verify 03/01"]);
+        assert.deepEqual(driver.typed.map((t) => t.split("\n\n")[0]), ["/aof:continue 03/01 --solo", "/aof:verify 03/01"]);
       } finally { await taskUatFx.cleanup(); }
 
       const blockedFx = await loopFixture();
@@ -387,6 +411,7 @@ depends: []
         const driver = completingDriver(gateFx);
         const result = await runReported({ scope: "03" }, gateFx, { agentSessionDriverOptions: driver.options });
         record("s05", "p05", result, { stop: "cap-exhausted", producer: "engine:cycle>=cap", ref: "03/01" }, /cap=2; findings=\[/u);
+        assert.doesNotMatch(result.report, /--cap/u, "an engine cap-exhausted halt keeps the bare resume line");
       } finally { await gateFx.cleanup(); }
 
       const exhaustedFx = await loopFixture({ cap: 3 });
@@ -395,6 +420,9 @@ depends: []
         const result = await runReported({ scope: "03" }, exhaustedFx, { agentSessionDriverOptions: driver.options });
         record("s06", "p06", result, { stop: "cap-exhausted", producer: "run-store:attempts-exhausted", ref: "03/01" }, /attempt=3/u);
         assert.equal(driver.spawnCalls.length, 3);
+        // 2026-09-27 — a bare --resume re-reads the three spent attempts and halts again at once;
+        // the line names the one override that admits a fourth.
+        assert.match(result.report, /Resume with: aof work loop 03 --resume --cap 4 /u);
       } finally { await exhaustedFx.cleanup(); }
 
       const needsFx = await loopFixture();
@@ -603,7 +631,7 @@ aofVersion: 0.1.0
         });
         const completed = await runReported({ scope: "03" }, fx, { agentSessionDriverOptions: resumed.options });
         assert.equal(completed.state.state, "done");
-        assert.deepEqual(resumed.typed.slice(0, 2).map((t) => t.split("\n\n")[0]), ["/aof:continue 03/02", "/aof:verify 03/02"]);
+        assert.deepEqual(resumed.typed.slice(0, 2).map((t) => t.split("\n\n")[0]), ["/aof:continue 03/02 --solo", "/aof:verify 03/02"]);
         assert.ok((await readRuns({ ref: "03/02", dir: secondDir })).length > 0, "the cleared rerun starts at the next stream item");
       } finally { await fx.cleanup(); }
     },
@@ -1188,9 +1216,51 @@ aofVersion: 0.1.0
       assert.deepEqual(childDriveOutcome({ outcome: "timeout" }), { outcome: "failed", failureReason: "timeout" });
       assert.deepEqual(childDriveOutcome({ outcome: "aborted" }), { outcome: "cancelled" });
       assert.deepEqual(childDriveOutcome({ outcome: "refused", document: { ok: false, code: "x" } }), { outcome: "failed", failureReason: "agent_error", refusal: "x" });
+      // 138/01 task 03 — the screen crosses the process boundary checked, as `{ id }` and nothing else.
+      for (const [document, expected] of [
+        [{ outcome: "failed", failureReason: "blocked_screen", screen: { id: "mcp-approval" }, sessionId: "s" }, { outcome: "failed", failureReason: "blocked_screen", sessionId: "s", screen: { id: "mcp-approval" } }],
+        [{ outcome: "failed", failureReason: "blocked_screen", screen: { id: "login", rows: ["x"] } }, { outcome: "failed", failureReason: "blocked_screen", screen: { id: "login" } }],
+        [{ outcome: "failed", failureReason: "blocked_screen", screen: "login" }, { outcome: "failed", failureReason: "blocked_screen" }],
+        [{ outcome: "failed", failureReason: "blocked_screen", screen: { id: "Login\nx" } }, { outcome: "failed", failureReason: "blocked_screen" }],
+        [{ outcome: "done", sessionId: "s" }, { outcome: "done", sessionId: "s" }],
+      ]) {
+        assert.deepEqual(childDriveOutcome(childDocument(document)), expected, JSON.stringify(document));
+      }
+      assert.deepEqual(childDriveOutcome({ outcome: "died" }), { outcome: "failed", failureReason: "runtime_offline" }, "a non-document answer carries no screen");
       const shell = stripComments(await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8"));
       // 131/03 (task 06, ruling 7) — the launch hands the body to `runLoopLaunch`, which announces a halt.
       assert.match(shell, /return runLoopLaunch\(input, \{[^}]*spawnPhaseDrive: spawnLaneDrive/u,"the foreground launch drives the sequential phases in a child");
+    },
+  },
+  {
+    name: "138/01 task03 — the sequential shell's halt line names the screen a blocked session stopped on, and the item was driven once",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const driver = await screenDrawingDriver("login");
+        const { state, report } = await runReported({ scope: "03" }, fx, { agentSessionDriverOptions: driver.options });
+        assert.equal(state.act.stop, "run-not-retryable");
+        assert.equal(state.act.producer, "run-store:not-retryable");
+        assert.match(report, /failureReason=blocked_screen/u);
+        assert.match(report, /screen=login/u);
+        assert.equal(driver.spawnCalls.length, 1, "driven once: a blocked screen is not retried");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "138/01 task03 — a halt with no screen prints no screen",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const driver = watcherDriver([{ outcome: "failed", failureReason: "agent_error" }]);
+        const { report } = await runReported({ scope: "03" }, fx, { agentSessionDriverOptions: driver.options });
+        assert.match(report, /failureReason=agent_error/u);
+        assert.doesNotMatch(report, /screen=/u);
+      } finally {
+        await fx.cleanup();
+      }
     },
   },
   ...composerTests(),

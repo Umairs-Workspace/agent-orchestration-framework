@@ -144,10 +144,12 @@ export const archTests = [
       // lines and the refine-phase line arrived); `cycle.mjs` holds the two that moved plus the
       // cross-to-verify act line and the grade rung; `wave.mjs` narrates every lane step. None is
       // on `report`. 130/02 — eleven in the shell: the resume's `Cleared stop request` line. 131/11 —
-      // twelve: the resume's `Cleared the resume request` line beside it.
+      // twelve: the resume's `Cleared the resume request` line beside it. 141 — thirteen: the
+      // `Thinking:` line that says what effort the loop drives at, before its first drive.
       const inFlight = calls.filter((call) => call.seam === "narrate");
       assert.equal(calls.filter((call) => call.seam === "report" && /^`(?:Gate |Driving |Retrying |Resumed |Reclaimed |Lane |Wave |Baseline |Cleared )/u.test(call.text)).length, 0, "no in-flight line is on report anywhere in the family");
-      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 12, "twelve in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request and the cleared resume request");
+      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 13, "thirteen in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request, the cleared resume request and the Thinking line");
+      assert.equal(seamOf("thinkingNarration(resolved.thinking"), "narrate", "the Thinking line is in flight (141)");
       assert.equal(printCalls(await source("src/loop/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
       assert.ok(inFlight.length >= 17, `the family narrates at least the seventeen the shell and the ladder hold (${inFlight.length})`);
     },
@@ -238,16 +240,17 @@ export const archTests = [
       assert.deepEqual(schema.required, ["scope"], "required is still exactly [scope]");
       // 130/02 (ADR-002 §1) — the NINTH property and the EIGHTH flag, `stop`, by the same
       // three-homes rule this leg pins: an expected succession of the pin, not a drift. 131/11
-      // (ADR-009 §6) — the TENTH and the NINTH, `handOff`, by the same rule.
+      // (ADR-009 §6) — the TENTH and the NINTH, `handOff`, by the same rule. 141 — the ELEVENTH and
+      // the TENTH, `thinking`, by the same rule.
       assert.deepEqual(
         Object.keys(schema.properties).sort(),
-        ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised"],
+        ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"],
         "properties gained exactly one key",
       );
       assert.ok(!("verbose" in schema.properties), "`verbose` is an additional key on a closed schema");
 
       const flags = loopCommand.cli.spec.flags;
-      assert.equal(Object.keys(flags).length, 9, "nine flags: --quiet here, --supervised from 126/02, --stop from 130/02 and --hand-off from 131/11");
+      assert.equal(Object.keys(flags).length, 10, "ten flags: --quiet here, --supervised from 126/02, --stop from 130/02, --hand-off from 131/11 and --thinking from 141");
       assert.equal(flags.quiet.type, "boolean");
       assert.ok(typeof flags.quiet.description === "string" && flags.quiet.description.length > 0);
       assert.match(loopCommand.cli.spec.usage, /\[--quiet\]/u);

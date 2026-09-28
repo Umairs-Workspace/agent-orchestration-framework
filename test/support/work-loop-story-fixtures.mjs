@@ -134,7 +134,8 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
     // executable rather than argued.
     // 126/02 — and the NINTH, `supervised`, appended last by the same discipline. The eight
     // before it keep their values byte-identical, which is the additive claim made executable.
-    name: "the declaration carries the seven-key envelope, the appended loop id and the supervision key",
+    // 141 — and the TENTH, `thinking`, `null` when the loop was given no `--thinking`.
+    name: "the declaration carries the seven-key envelope, the appended loop id, the supervision key and the thinking key",
     fn: "buildLoopDeclaration",
     args: [{
       loopRunId: "lr-7",
@@ -156,6 +157,7 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
       startedAt: "2026-08-15T00:52:42.569Z",
       id: "loop:autonomous-cascade",
       supervised: false,
+      thinking: null,
     },
   },
   {
@@ -166,6 +168,7 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
     expected: {
       resumed: false,
       supervised: false,
+      thinking: null,
       loopRunId: null,
       scope: "53",
       priorScope: null,

@@ -117,6 +117,12 @@ export {
   recordBuildProgress,
 };
 import { commandError } from "../command-error.mjs";
+import {
+  normalizeEffort,
+  resolveSessionLaunch,
+  THINKING_UNKNOWN_LEVEL,
+  thinkingUnknownLevelMessage,
+} from "../session-model.mjs";
 import { resolveItemExact } from "./resolve.mjs";
 // 54/03 review finding D3 — "was a rubric DECLARED" is `work:grade`'s own predicate, and it
 // is read here rather than re-derived, so a declared-but-unrunnable grade cannot be mistaken
@@ -466,8 +472,30 @@ function requestedSettings(input, ctx) {
   };
 }
 
+// 141 — `--thinking` read through the one effort vocabulary: the canonical level, `null` when the
+// flag is absent, and the coded refusal for a level the vocabulary does not know.
+function requestedThinking(input) {
+  if (typeof input?.thinking !== "string" || input.thinking.length === 0) return null;
+  const level = normalizeEffort(input.thinking);
+  if (level == null) throw commandError(thinkingUnknownLevelMessage(input.thinking), THINKING_UNKNOWN_LEVEL, 400);
+  return level;
+}
+
+// 141 — the one line that says what effort the loop drives at, before its first drive.
+const LOOP_PHASES = Object.freeze(["refine", "continue", "verify"]);
+export function thinkingNarration(thinking, config) {
+  if (typeof thinking === "string" && thinking.length > 0) return `Thinking: ${thinking} for every phase (--thinking).`;
+  const phases = LOOP_PHASES.map((phase) => {
+    const { effort, effortSource } = resolveSessionLaunch(config, phase);
+    return `${phase} ${effort} (${effortSource})`;
+  });
+  return `Thinking: ${phases.join(", ")}.`;
+}
+
 async function resolveInvocation(input, ctx) {
   const requested = requestedSettings(input, ctx);
+  // 141 — refused with the other vocabulary guards, before any registered read.
+  const thinking = requestedThinking(input);
 
   // Reject malformed settings before paying for any registered read. L3's
   // workspace facts are gathered only after these vocabulary guards pass.
@@ -481,6 +509,7 @@ async function resolveInvocation(input, ctx) {
     level: requestedLevel.level,
     cap: requestedCap.cap,
     supervised: input?.supervised === true,
+    thinking,
   };
   let resume = { items: [], runs: [], stranded: [], lastDeclaration: null };
 
@@ -491,6 +520,7 @@ async function resolveInvocation(input, ctx) {
       level: input.level ?? (resume.lastDeclaration ? undefined : resolved.level),
       cap: input.cap ?? (resume.lastDeclaration ? undefined : resolved.cap),
       supervised: input.supervised,
+      thinking,
       declaration: resume.lastDeclaration,
     });
     if (inherited?.refusal) throwRefusal(inherited.refusal);
@@ -500,6 +530,7 @@ async function resolveInvocation(input, ctx) {
         level: inherited.level ?? resolved.level,
         cap: inherited.cap ?? resolved.cap,
         supervised: inherited.supervised === true,
+        thinking: inherited.thinking ?? null,
       };
     }
   } else {
@@ -638,14 +669,15 @@ async function handOffLoopCommand(input, ctx) {
 // of the same string: one literal, one home, the hand-copied-glyph species F-78-E records.
 export const SHELL_LOOP_ID = "loop:autonomous-cascade";
 
-function declarationFor({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised }) {
+function declarationFor({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking }) {
   // The id is an INPUT to the engine, exactly as `loopRunId` and `startedAt` are. Nothing here
   // opens `.aof/loops/` to obtain or validate it: whether it resolves to a declared node is the
   // reader's question, answered as a `ran-undeclared` gap and never as a run-time refusal.
   //
   // `supervised` arrives the same way, already resolved by `resolveLoopResume`'s explicit-wins /
-  // absent-inherits rule (126/02) — this seam carries it, it does not decide it.
-  return buildLoopDeclaration({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, id: SHELL_LOOP_ID });
+  // absent-inherits rule (126/02) — this seam carries it, it does not decide it. `thinking` (141)
+  // arrives the same way, already a canonical level or `null`.
+  return buildLoopDeclaration({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking, id: SHELL_LOOP_ID });
 }
 
 function haltDecision(stop, ref, producer) {
@@ -960,7 +992,7 @@ export async function runLoopLaunch(input, ctx = {}) {
     const envelope = buildNotifyEnvelope("loop-halted", {
       ref: state.scope,
       elapsedMs: Math.max(0, at.getTime() - Date.parse(ended.startedAt)) || 0,
-      stop: { id: act.stop ?? null, producer: act.producer ?? null, remedy: act.remedy ?? null, ref: act.ref ?? null },
+      stop: { id: act.stop ?? null, producer: act.producer ?? null, remedy: act.remedy ?? loopHaltRemedy(state), ref: act.ref ?? null },
     }, { config: ended.workspace.config, now: () => at });
     await notify(ended.workspace, envelope, ctx.notifyOptions ?? {});
   }
@@ -1332,6 +1364,15 @@ export async function runLoopBody(input, suppliedCtx = {}) {
     if (resolved.level === "L1") {
       return await runL1({ ...resolved, loopRunId, startedAt }, ctx, report);
     }
+    // 141 — THE EFFORT LINE, narrated ONCE, just before this invocation's first drive (the wave's
+    // or the sequential walk's). A walk that stops before driving anything prints none, so its
+    // loud and quiet output stay byte-identical.
+    let thinkingNarrated = false;
+    const narrateThinking = async () => {
+      if (thinkingNarrated) return;
+      thinkingNarrated = true;
+      await narrate(thinkingNarration(resolved.thinking, ctx.workspace?.config));
+    };
 
     // milestone 124 / story 01 (ADR-005 §5) — THE UNITS HANDED BACK TO THEIR PLAN, set aside for
     // the remainder of THIS invocation. In-process on purpose: the bound that survives a resume is
@@ -1447,6 +1488,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       await source.poll();
       // ---- BUILD: the wave, in lanes (ADR-001 §3, ADR-008 §1) ----
       if (phase === "build") {
+        await narrateThinking();
         const built = await runWaveBuild({
           ctx,
           resolved,
@@ -1783,6 +1825,7 @@ export async function runLoopBody(input, suppliedCtx = {}) {
       }
       // THE ACT LINE — printed at the one place a multi-hour wait begins. `drivePhase` mints the
       // run and then awaits the PTY session; every fact worth reading is already in scope here.
+      await narrateThinking();
       await narrate(`Driving ${act.ref} — ${act.phase}, cycle ${cycle} of ${resolved.cap}, ${resolved.level}.`);
       let phaseRun = await drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord, fix, gradeAbsent, changeBaseline, progressBaseCommit, now: input.now }, ctx);
       // 130/02 (ADR-003 §3, §7) — THE INTERRUPT PATH ALWAYS SETTLES. The order after a drive is
@@ -1894,14 +1937,31 @@ export function renderLoopState(state) {
   if (typeof state?.request === "string") {
     return `${state.scope} — stop requested (${state.request}) for loop ${state.loopRunId}, ${state.live === true ? "live" : "not live"}. ${state.path}`;
   }
-  const resume = `aof work loop ${state.scope} --resume`;
   if (state.act.act === "done") return `${state.scope} — loop done.`;
   if (state.act.act === "halt") {
-    return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer ?? "unknown"}). Resume with: ${resume}`;
+    return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer ?? "unknown"}). Resume with: ${loopResumeCommand(state)}`;
   }
   const target = state.act.ref ? ` ${state.act.ref}` : "";
   const phase = state.act.phase ? ` ${state.act.phase}` : "";
   return `${state.scope} — ${state.level}, cap ${state.cap}: ${state.act.act}${phase}${target}.`;
+}
+
+// loopResumeCommand(state) — the command a halt tells the operator to run next. A run that has
+// spent its attempts halts `run-store:attempts-exhausted`, and a bare `--resume` re-reads the
+// same exhausted run and halts again at once (language-tutor 03, 2026-09-27: twice, 12 seconds
+// apart). Only a raised ceiling admits another attempt, and an explicit `--cap` wins on resume and
+// becomes the retry's `maxAttempts`, so that halt names the one-more override.
+function loopResumeCommand(state) {
+  const resume = `aof work loop ${state.scope} --resume`;
+  const exhausted = state.act?.producer === "run-store:attempts-exhausted" && Number.isSafeInteger(state.cap);
+  return exhausted ? `${resume} --cap ${state.cap + 1}` : resume;
+}
+
+// The halt's remedy for the announcement: an attempts-exhausted halt names the raised ceiling,
+// because the announcement's own resume line is the bare `--resume` that cannot clear it.
+function loopHaltRemedy(state) {
+  if (state.act?.producer !== "run-store:attempts-exhausted" || !Number.isSafeInteger(state.cap)) return null;
+  return `The run spent all ${state.cap} attempts, so a bare --resume halts again. Run: ${loopResumeCommand(state)}`;
 }
 
 export const loopCommand = {
@@ -1925,6 +1985,8 @@ export const loopCommand = {
       stop: { type: "boolean" },
       // 131/11 ADR-009 §6 — the hand-off to the supervisor, in the same three homes.
       handOff: { type: "boolean" },
+      // 141 — the effort every driven session thinks at, in the same three homes.
+      thinking: { type: "string" },
     },
     required: ["scope"],
     additionalProperties: false,
@@ -1939,7 +2001,7 @@ export const loopCommand = {
   cli: {
     route: ["work", "loop"],
     spec: {
-      usage: "aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--json]",
+      usage: "aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--thinking LEVEL] [--json]",
       flags: {
         level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
         cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
@@ -1950,6 +2012,7 @@ export const loopCommand = {
         dryRun: { type: "boolean", description: "render the read-only probe instead of entering the loop" },
         quiet: { type: "boolean", description: "silence the in-flight progress lines; the terminal account is printed unchanged" },
         supervised: { type: "boolean", description: "declare this loop supervised, so a restarted node relaunches it; off by default" },
+        thinking: { type: "string", description: "the effort every session this run drives thinks at (low, medium, high, xhigh, max; extra-high is xhigh); overrides every phase for this run, and a resume inherits it" },
       },
     },
     argv: (positionals, options) => ({
@@ -1963,6 +2026,7 @@ export const loopCommand = {
       ...(options.dryRun === true ? { dryRun: true } : {}),
       ...(options.quiet === true ? { quiet: true } : {}),
       ...(options.supervised === true ? { supervised: true } : {}),
+      ...(typeof options.thinking === "string" ? { thinking: options.thinking } : {}),
     }),
     // 130/02 (ADR-002 §1) — a `--stop` stays on the probe side exactly as `--dry-run` does: it
     // never enters the foreground body, never installs the diag recorder, never reaches a PTY.

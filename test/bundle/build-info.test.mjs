@@ -109,4 +109,26 @@ export const buildInfoTests = [
       });
     },
   },
+  {
+    name: "build-info 2026-09-27 an embedded run names the bundle it runs, never the payload's stamp beside it",
+    async run() {
+      await withPackagedAnchor(async (anchor) => {
+        // A July bundle beside a September payload: the exact pair that hid for two months.
+        await writeFile(
+          path.join(anchor, BUILD_ID_FILENAME),
+          JSON.stringify({ buildId: "d8d2230+dirty.20260927T173721", installedAt: "2026-09-27T16:37:21.566Z" }),
+          "utf8",
+        );
+        const stamped = readBuildInfo({ env: { AOF_EMBEDDED_BUILD_ID: "b3319d6.20260726T134012" } });
+        assert.deepEqual(stamped, { mode: "embedded", buildId: "b3319d6.20260726T134012", installedAt: null });
+        assert.equal(buildInfoString(stamped), "embedded b3319d6.20260726T134012");
+
+        const unstamped = readBuildInfo({ env: {} });
+        assert.equal(unstamped.buildId, null, "a bundle that predates the stamp says so, rather than borrowing the payload's id");
+        assert.equal(buildInfoString(unstamped), "embedded, no build stamp");
+
+        assert.equal(readBuildInfo({ env: { AOF_RUNTIME_MODE: "payload", AOF_EMBEDDED_BUILD_ID: "b3319d6.20260726T134012" } }).buildId, "d8d2230+dirty.20260927T173721", "a payload run still reads its own stamp");
+      });
+    },
+  },
 ];

@@ -157,7 +157,7 @@ export const loopRecordReachesTheRedriveTests = [
         // the loop id last), carrying this loop's own run id and the cycle it re-drove.
         assert.deepEqual(
           Object.keys(redriven.brief.loop),
-          ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised"],
+          ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"],
           "brief.loop's seven original keys are untouched and the loop id is appended last",
         );
         assert.equal(redriven.brief.loop.phase, "continue");
@@ -289,7 +289,7 @@ export const loopRecordReachesTheRedriveTests = [
         // AND THE LOOP CROSSES TO `verify`.
         assert.deepEqual(
           driver.typed.map((input) => input.split("\n\n")[0]),
-          ["/aof:continue 03/01", "/aof:verify 03/01", "/aof:verify 03"],
+          ["/aof:continue 03/01 --solo", "/aof:verify 03/01", "/aof:verify 03"],
           "the continue is followed straight by the verify for the same story",
         );
         assert.equal(state.state, "done");

@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { applyConfig } from "../../src/adapters.mjs";
 import { resolveConfig } from "../../src/dsl.mjs";
 // m43 / ADR-002 — the door the claude runtime's hooks/settings take now that the
 // whole-file render is closed for the co-authored file.
-import { claudeSettingsPatch } from "../../src/claude-settings.mjs";
+import { applyClaudeSettingsMerge, claudeSettingsPatch } from "../../src/claude-settings.mjs";
+// story 141 task 03 — the operator's session default, the phase commands' --thinking stop, and the
+// renders agreeing with the source.
+import { fileURLToPath } from "node:url";
+import { generateBundleManifest, serializeBundleManifest } from "../../src/work/bundle-manifest.mjs";
+import { spawnCliSync } from "../support/cli-spawn.mjs";
 
 export const adapterTests = [
   {
@@ -53,8 +58,149 @@ export const adapterTests = [
   {
     name: "renders opencode hooks into .opencode/plugins as whole-file plugins",
     run: rendersOpenCodeHooks
+  },
+  {
+    name: "141/03 the settings merge fills effortLevel high only where the document has none, and settings.claude wins (5 rows)",
+    run: settingsMergeFillsTheEffortDefault
+  },
+  {
+    name: "141/03 a second merge writes nothing",
+    run: secondMergeWritesNothing
+  },
+  {
+    name: "141/03 every other operator key survives the fill byte-identical",
+    run: operatorKeysSurviveTheFill
+  },
+  {
+    name: "141/03 each phase command's config block stops on --thinking before any work and names /effort (continue, refine, verify)",
+    run: phaseCommandsStopOnThinking
+  },
+  {
+    name: "141/03 the renders, the manifest and the lock agree with the source",
+    run: rendersManifestAndLockAgree
   }
 ];
+
+// ── story 141 task 03 ────────────────────────────────────────────────────────────────────
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+async function withSettings(before, body) {
+  const targetDir = await mkdtemp(path.join(os.tmpdir(), "aof-141-settings-"));
+  try {
+    const file = path.join(targetDir, ".claude", "settings.json");
+    if (before !== undefined) {
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, `${JSON.stringify(before, null, 2)}\n`, "utf8");
+    }
+    return await body({ targetDir, file, read: async () => JSON.parse(await readFile(file, "utf8")) });
+  } finally {
+    await rm(targetDir, { recursive: true, force: true });
+  }
+}
+
+const configWith = (effortLevel) => (effortLevel === undefined ? {} : { settings: { claude: { effortLevel } } });
+
+async function settingsMergeFillsTheEffortDefault() {
+  for (const [configured, before, after] of [
+    [undefined, undefined, "high"],
+    [undefined, { theme: "dark" }, "high"],
+    [undefined, { effortLevel: "medium" }, "medium"],
+    ["xhigh", { theme: "dark" }, "xhigh"],
+    ["xhigh", { effortLevel: "medium" }, "xhigh"],
+  ]) {
+    await withSettings(before, async ({ targetDir, read }) => {
+      const result = await applyClaudeSettingsMerge(targetDir, configWith(configured), { bundleHooks: [] });
+      assert.equal(result.code, null, JSON.stringify(result));
+      assert.equal((await read()).effortLevel, after, `${configured ?? "unset"} / ${JSON.stringify(before ?? "no file")}`);
+    });
+  }
+}
+
+async function secondMergeWritesNothing() {
+  await withSettings({ theme: "dark" }, async ({ targetDir, file }) => {
+    const first = await applyClaudeSettingsMerge(targetDir, {}, { bundleHooks: [] });
+    assert.equal(first.written, true, "the first merge fills the default");
+    const bytes = await readFile(file, "utf8");
+    const second = await applyClaudeSettingsMerge(targetDir, {}, { bundleHooks: [] });
+    assert.equal(second.action, "skipped", "the second merge reports the file unchanged");
+    assert.equal(second.written, false);
+    assert.equal(await readFile(file, "utf8"), bytes, "nothing is written");
+  });
+}
+
+async function operatorKeysSurviveTheFill() {
+  const operator = {
+    permissions: { allow: ["Bash(npm test)"], deny: ["Read(./.env)"] },
+    hooks: { Stop: [{ hooks: [{ type: "command", command: "echo operator" }] }] },
+    enabledPlugins: { "tool@market": true },
+  };
+  await withSettings(operator, async ({ targetDir, read }) => {
+    await applyClaudeSettingsMerge(targetDir, {}, { bundleHooks: [] });
+    const merged = await read();
+    assert.equal(merged.effortLevel, "high");
+    for (const key of ["permissions", "hooks", "enabledPlugins"]) {
+      assert.equal(JSON.stringify(merged[key]), JSON.stringify(operator[key]), `${key} is byte-identical`);
+    }
+  });
+}
+
+function configBlocks(markdown) {
+  return [...markdown.matchAll(/<config>([\s\S]*?)<\/config>/gu)].map((match) => match[1]).join("\n");
+}
+
+async function phaseCommandsStopOnThinking() {
+  for (const command of ["continue", "refine", "verify"]) {
+    const config = configBlocks(await readFile(path.join(REPO_ROOT, "src", "bundle", "commands", `${command}.md`), "utf8"));
+    const flat = config.replace(/\s+/gu, " ");
+    assert.match(flat, /--thinking <level>/u, `${command}: names the flag`);
+    assert.match(flat, /STOP before the run is minted and before any role runs/u, `${command}: stops before the mint and any role`);
+    assert.match(flat, /run `\/effort <level>`/u, `${command}: prints /effort <level>`);
+    assert.match(flat, /spelling `extra-high` as `xhigh`/u, `${command}: spells extra-high as xhigh`);
+    assert.match(flat, new RegExp(`re-run \`aof:${command}\` without \`--thinking\``, "u"), `${command}: says to re-run without --thinking`);
+    assert.match(flat, /session's effort was NOT changed/u, `${command}: says the effort was not changed`);
+    assert.match(flat, /subagents this command spawns inherit the session's effort unless `work\.agents\.effort` pins their role/u, `${command}: subagents inherit unless pinned`);
+    assert.match(flat, /named as unknown/u, `${command}: an unknown level is named as unknown`);
+    for (const spelling of ["low", "medium", "high", "xhigh", "extra-high", "max"]) {
+      assert.ok(flat.includes(`\`${spelling}\``), `${command}: lists ${spelling}`);
+    }
+  }
+}
+
+async function rendersManifestAndLockAgree() {
+  assert.equal(
+    serializeBundleManifest(generateBundleManifest()),
+    await readFile(path.join(REPO_ROOT, "src", "bundle", "manifest.json"), "utf8"),
+    "the shipped manifest is the regenerated one",
+  );
+  const home = await mkdtemp(path.join(os.tmpdir(), "aof-141-home-"));
+  try {
+    const dry = spawnCliSync(process.execPath, [path.join(REPO_ROOT, "bin", "aof.mjs"), "work", "update", "--dry-run", "--json"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      env: { ...process.env, AOF_GLOBAL_HOME: home },
+    });
+    assert.equal(dry.status, 0, dry.stderr);
+    const { summary } = JSON.parse(dry.stdout);
+    for (const key of ["created", "updated", "deleted", "drift-warning"]) assert.equal(summary[key], 0, `summary.${key}`);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+  const stop = "**`--thinking <level>` is a STOP, never a setting.**";
+  const renders = {
+    continue: [".claude/commands/aof/continue.md", ".codex/skills/aof-continue/SKILL.md", ".opencode/commands/aof/continue.md"],
+    refine: [".claude/commands/aof/refine.md", ".codex/skills/aof-refine/SKILL.md", ".opencode/commands/aof/refine.md"],
+    verify: [".claude/commands/aof/verify.md", ".codex/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"],
+  };
+  for (const [command, files] of Object.entries(renders)) {
+    const source = await readFile(path.join(REPO_ROOT, "src", "bundle", "commands", `${command}.md`), "utf8");
+    const paragraph = source.slice(source.indexOf(stop), source.indexOf("</config>", source.indexOf(stop))).trim();
+    assert.ok(paragraph.length > stop.length, `${command}: the source carries the stop`);
+    for (const file of files) {
+      const rendered = (await readFile(path.join(REPO_ROOT, file), "utf8")).replace(/\r\n/gu, "\n");
+      assert.ok(rendered.includes(paragraph), `${file} carries the --thinking stop as the source does`);
+    }
+  }
+}
 
 async function rendersPortableResources() {
   const targetDir = await mkdtemp(path.join(os.tmpdir(), "aof-"));

@@ -5,7 +5,7 @@ description: Execute/resume a work item — build its tasks to green, then struc
 
 <!-- aof-generated: true; aof-runtime: codex -->
 
-Use this skill when the user asks for `$aof-continue <item ref, or a NN/MM-PP story span> [--solo | --orchestrated]`, or asks to run the AOF `aof:continue` procedure in Codex.
+Use this skill when the user asks for `$aof-continue <item ref, or a NN/MM-PP story span> [--solo | --orchestrated] [--thinking <level>]`, or asks to run the AOF `aof:continue` procedure in Codex.
 
 Where this procedure mentions `$ARGUMENTS`, use the text the user supplied after the skill name.
 Where it mentions Claude slash command `/aof:continue`, treat that as this Codex skill invocation.
@@ -45,24 +45,40 @@ where the operator is and is never dispatched to a worker.)
 </config>
 
 <config>
-Parse `$ARGUMENTS` into the item **ref** and an optional **`--solo`** or **`--orchestrated`** flag.
+Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`** or **`--orchestrated`** flag and an
+optional **`--thinking <level>`**.
 
-**Execution mode.** Resolve from `work.agents.mode`: `"solo"` → play every role inline in this
-session; any other value → orchestrated (spawn the role agents). **`--solo` OVERRIDES an
+**Execution mode.** Resolve from `work.agents.mode`, which governs the continue an operator types:
+`work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents), and
+`work.agents.mode: "solo"` resolves to solo (play every role inline in this session). **An unset
+`work.agents.mode` resolves to orchestrated** — this command's own default, because a spawned
+reviewer did not write the code and cannot be talked into liking it. **`--solo` OVERRIDES an
 orchestrated config to solo for this run**, and **`--orchestrated` OVERRIDES a solo config to
 orchestrated for this run** — its twin in the other direction. The two together are contradictory:
-STOP before any role runs and report it. The loop composes one of the two when
-`work.loop.agents.continue.mode` is set in `.aof/aof.config.json` (its home is `src/loop-bounds.mjs`),
-and composes nothing when it is unset, so a loop-driven continue falls back to `work.agents.mode`
-exactly as a hand-run one does. This command delegates to no other command, so the flag governs
-exactly one thing: which roles this session plays inline and which it spawns. It changes only WHO
-does the work, never WHAT is produced — the same build, the same review lanes, the same gates.
+STOP before any role runs and report it. The loop composes a flag on every continue it drives:
+`work.loop.agents.continue.mode` when set, `--solo` when unset — the loop's own default, whose home
+is `src/loop-bounds.mjs`. A loop-driven continue therefore never reads `work.agents.mode`. This
+command delegates to no other command, so the flag governs exactly one thing: which roles this
+session plays inline and which it spawns. It changes only WHO does the work, never WHAT is
+produced — the same build, the same review lanes, the same gates.
 
 Reach for it when the main session already holds the context a spawned agent would have to
 rediscover from cold: a well-trodden change, a small story, or a fix round on work you just did.
 The trade is real in both directions — inline keeps the context and pays no hand-off, but loses
 the parallelism across independent stories and the independent perspective a separate reviewer
 brings. On a milestone with genuinely independent stories, orchestrated is usually still faster.
+
+**`--thinking <level>` is a STOP, never a setting.** This session's effort was fixed when it started:
+the Agent tool takes a model but no effort, and only `/effort` changes a running session's, which
+this command cannot type for the operator. So when `$ARGUMENTS` carries `--thinking <level>`, STOP
+before the run is minted and before any role runs, and print what to do: run `/effort <level>`
+(spelling `extra-high` as `xhigh`; `low`, `medium`, `high`, `xhigh` and `max` are typed as
+given), then re-run `aof:continue` without `--thinking`. Say plainly that the session's effort was NOT
+changed, and that the subagents this command spawns inherit the session's effort unless
+`work.agents.effort` pins their role. A level outside the six accepted spellings — `low`, `medium`,
+`high`, `xhigh`, `extra-high`, `max` — is named as unknown, with those six listed. Never report
+an effort as set when it was not. (A loop-driven session is launched at its effort by
+`aof work loop --thinking`, and is never handed this flag.)
 </config>
 
 <process>

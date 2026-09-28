@@ -113,7 +113,14 @@ export const archTests = [
           const driver = getCommand(`work:drive-${phase}`);
           assert.deepEqual(driver.cli.route, ["work", "drive", phase]);
           const dry = await driver.run({ ref: "03/01", dryRun: true }, ctx);
-          assert.deepEqual(dry, { ref: "03/01", phase, command: `/aof:${phase} 03/01` });
+          // 140/01 — the drive composes the loop's default mode onto refine and continue; verify resolves none.
+          // 141/00 — the answer also names the effort the session would launch at (unset → the high default).
+          assert.deepEqual(dry, {
+            ref: "03/01",
+            phase,
+            command: phase === "verify" ? "/aof:verify 03/01" : `/aof:${phase} 03/01 --solo`,
+            effort: { level: "high", source: "default" },
+          });
         }
         assert.equal(fake.spawnCalls.length, 0, "all three dry-run driver probes make zero spawn calls through the declared seam");
       } finally {

@@ -362,7 +362,7 @@
           "properties": {
             "mode": {
               "enum": ["orchestrated", "solo"],
-              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline."
+              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline. An unset key resolves to each command's own default: refine runs solo, and every other role-spawning command runs orchestrated. Governs the sessions an operator types only: a loop-driven session reads work.loop.agents.<phase>.mode, never this key."
             },
             "productOwner": {
               "enum": ["inline", "agent"],
@@ -386,6 +386,52 @@
                 "minLength": 1,
                 "pattern": "\\S"
               }
+            },
+            "effort": {
+              "type": "object",
+              "description": "Per-role effort map: an ACD role id (one of the 8 frozen roles, e.g. aof-architect) -> an effort level: low, medium, high, xhigh, extra-high (another name for xhigh) or max. A pinned role's rendered Claude agent file carries an effort: line that overrides its session's effort; an unpinned role renders none and inherits its session's effort (high by default, or whatever --thinking or /effort set). Inert (surfaced, not enforced) under mode \"solo\", where no sub-agent is spawned. Claude runtime only. Authoritative validation is `aof project validate`.",
+              "additionalProperties": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "extra-high",
+                  "max"
+                ]
+              }
+            },
+            "session": {
+              "type": "object",
+              "description": "The model and effort of the claude session aof itself spawns for a loop-driven phase (refine / continue / verify). Distinct from the per-role maps work.agents.models and work.agents.effort, which render into the agent files.",
+              "properties": {
+                "models": {
+                  "type": "object",
+                  "description": "Phase -> model. An unset phase passes no --model, so the session runs on claude's own default.",
+                  "additionalProperties": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S"
+                  }
+                },
+                "effort": {
+                  "type": "object",
+                  "description": "Phase -> effort level: low, medium, high, xhigh, extra-high (another name for xhigh) or max. An unset phase launches at high, the default. aof work loop --thinking and aof work drive --thinking override it for one run. Authoritative validation is `aof project validate`.",
+                  "additionalProperties": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "xhigh",
+                      "extra-high",
+                      "max"
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false

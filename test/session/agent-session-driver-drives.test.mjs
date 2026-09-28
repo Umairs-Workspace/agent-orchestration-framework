@@ -45,12 +45,19 @@ import {
   OTEL_TELEMETRY_ENV_KEY,
 } from "../../src/otel-attribution.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
+import { openSessionScreen } from "../../src/terminal/session-screen.mjs";
 
 const BRIEF = { itemRef: "53/00", worktreeCwd: "/tmp/wt", task: "the session driver gets a home", command: "/aof:verify 53/00" };
 
 // 2026-09-24 — the TUI's readiness marker (CSI ?2004h, bracketed paste on), spelled from char
 // codes as the paste frame is below: the driver keeps it private (FF-5302 freezes its exports).
 const TUI_READY_MARKER = `${String.fromCharCode(27)}[?2004h`;
+
+// 138/00 task 03 (QA 3) — the 2026-09-24 and 2026-09-27 readiness cases below drive the BYTE path:
+// the real door with a `load` that throws, so no screen model exists and the door is the byte gate
+// they were written against. Their assertions are unchanged.
+const noScreenModel = () => { throw Object.assign(new Error("Cannot find package '@xterm/headless'"), { code: "ERR_MODULE_NOT_FOUND" }); };
+const BYTE_PATH = { openSessionScreen: (options) => openSessionScreen({ ...options, load: noScreenModel }) };
 
 // A PTY double the TEST drives: `emit(data)` plays the TUI's output at a moment the test
 // chooses (the shared scripted PTY only answers writes), and `kill()` confirms exit.
@@ -858,7 +865,7 @@ export const agentSessionDriverDrivesTests = [
     run: async () => {
       const { pty, spawn } = emittingPty();
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
         observeReadiness: true, commandDelayMs: 20, submitDelayMs: 0, readyCapMs: 5000,
       });
       await sleep(80);
@@ -879,7 +886,7 @@ export const agentSessionDriverDrivesTests = [
       const { pty, spawn } = emittingPty();
       const stops = [];
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 60,
         onSessionStop: (event) => stops.push(event),
       });
@@ -896,7 +903,7 @@ export const agentSessionDriverDrivesTests = [
       const { pty, spawn } = emittingPty();
       const stops = [];
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]),
         watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 80,
         onSessionStop: (event) => stops.push(event),
@@ -908,7 +915,8 @@ export const agentSessionDriverDrivesTests = [
       assert.equal(result.failureReason, "timeout", "retryable — the store's vocabulary is unchanged");
       const notAccepted = stops.find((event) => event.phase === "directive-not-accepted");
       assert.ok(notAccepted, stops.map((event) => event.phase).join(","));
-      assert.match(notAccepted.screen, /New MCP server found in \.mcp\.json: example-mcp/u, "the screen tail, escapes stripped");
+      // 138/00 task 05 (QA 3): the screen is the evidence object now; on the byte path its text is `tail`.
+      assert.match(notAccepted.screen.tail, /New MCP server found in \.mcp\.json: example-mcp/u, "the screen tail, escapes stripped");
       assert.equal(pty.killed, true);
     },
   },
@@ -917,11 +925,11 @@ export const agentSessionDriverDrivesTests = [
     run: async () => {
       const { pty, spawn } = emittingPty();
       const pending = driveInteractiveClaudeSession(BRIEF, {
-        ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => "sess-accepted",
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => "sess-accepted",
         observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 40,
       });
       await waitUntil(() => pty.subscribed);
-      pty.emit(TUI_READY_MARKER);
+      pty.emit(`${TUI_READY_MARKER}❯ prompt`);
       await waitUntil(() => pty.writes.length >= 2);
       await sleep(120);
       assert.equal(pty.killed, false, "a session that started is left alone");
@@ -929,6 +937,117 @@ export const agentSessionDriverDrivesTests = [
       const result = await pending;
       assert.equal(result.outcome, "done");
       assert.equal(result.sessionId, "sess-accepted");
+    },
+  },
+  {
+    name: "2026-09-27 the first marker is not the prompt — a pre-REPL ON…OFF that draws nothing is not ready, and neither are escapes alone; the REPL's ON plus its drawn frame is",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => null,
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000,
+      });
+      await waitUntil(() => pty.subscribed);
+      // claude 2.1.283's capability probe, as measured: ON, keyboard modes and two queries, OFF.
+      pty.emit(`Permission deny rule (.claude\\settings.json): Write(x) is not matched\r\n${ESC}[m${ESC}[?25l`);
+      pty.emit(`${TUI_READY_MARKER}${ESC}[?2031h${ESC}[?1004h${ESC}[<u${ESC}[>5u${ESC}[>4;2m`);
+      pty.emit(`${ESC}[>0q${ESC}[?u`);
+      await sleep(60);
+      assert.deepEqual(pty.writes, [], "the probe's ON drew nothing — not ready, though the floor has passed");
+      pty.emit(`${ESC}[>4m${ESC}[<u${ESC}[?2031l${ESC}[?2004l`);
+      await sleep(30);
+      assert.deepEqual(pty.writes, [], "the mode is OFF again");
+      // The REPL's own ON, then the window title (an OSC) — still nothing a person would see.
+      pty.emit(`${TUI_READY_MARKER}${ESC}[<u${ESC}[>5u${ESC}[>4;2m${ESC}]0;✳ Claude Code${String.fromCharCode(7)}`);
+      await sleep(30);
+      assert.deepEqual(pty.writes, [], "a title and keyboard modes are not a drawn frame");
+      pty.emit(`${ESC}[?1049h${ESC}[2J${ESC}[H ▐▛███▛█ Claude Code v2.1.283`);
+      await waitUntil(() => pty.writes.length >= 1);
+      assert.deepEqual(pty.writes[0], pasted(BRIEF.command)[0], "typed once the REPL has drawn while listening");
+      pty.exit(0);
+      assert.equal((await pending).outcome, "done");
+    },
+  },
+  {
+    name: "2026-09-27 a paste still parked in the input box gets ONE more Enter, and the run is otherwise unchanged",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const stops = [];
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 400, resubmitAfterMs: 60,
+        onSessionStop: (event) => stops.push(event),
+      });
+      await waitUntil(() => pty.subscribed);
+      pty.emit(`${TUI_READY_MARKER}❯ Try "fix lint errors"`);
+      await waitUntil(() => pty.writes.length >= 2);
+      pty.emit(`${ESC}[22;3H${ESC}[38;2;153;153;153m[Pasted text #1 +1 lines]${ESC}[m`);
+      await waitUntil(() => pty.writes.length >= 3);
+      assert.equal(pty.writes[2], SUBMIT_KEY, "the Enter, sent once more");
+      assert.ok(stops.some((event) => event.phase === "directive-resubmitted"), stops.map((event) => event.phase).join(","));
+      const result = await pending;
+      assert.equal(result.failureReason, "timeout", "still no session: the acceptance watch settles it as before");
+      assert.equal(pty.writes.length, 3, "one resubmit, never a second");
+    },
+  },
+  {
+    name: "2026-09-27 no parked paste on the screen, no extra Enter — a dialog is never answered for the operator, and the body's own echo is not a parked paste",
+    run: async () => {
+      const { pty, spawn } = emittingPty();
+      const stops = [];
+      const pending = driveInteractiveClaudeSession(BRIEF, {
+        ...BYTE_PATH, ptySpawn: spawn, which: createFakeWhich(["claude"]),
+        watchTranscriptSessionId: ({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null))),
+        observeReadiness: true, commandDelayMs: 10, submitDelayMs: 0, readyCapMs: 5000, acceptTimeoutMs: 300, resubmitAfterMs: 60,
+        onSessionStop: (event) => stops.push(event),
+      });
+      await waitUntil(() => pty.subscribed);
+      pty.emit(`${TUI_READY_MARKER}❯ Try "fix lint errors"`);
+      await waitUntil(() => pty.writes.length >= 2);
+      pty.emit(`${BRIEF.command}\r\n`);
+      pty.emit("New MCP server found in .mcp.json: example-mcp 1. Use this server 2. Continue without");
+      const result = await pending;
+      assert.equal(result.failureReason, "timeout");
+      assert.equal(pty.writes.length, 2, "the paste and its one Enter, nothing more");
+      assert.equal(stops.some((event) => event.phase === "directive-resubmitted"), false);
+    },
+  },
+
+  // 138/00 task 06 (ADR-001 §3, QA 2) — THE SENTINEL SCAN KEEPS ONE LINE, proved by its cost: a
+  // session of 40,000 one-line chunks settles within 10 s, where a scan that re-reads the whole
+  // output on every chunk does 800 million line reads and cannot. The bound is ten times what the
+  // linear scan needs on this machine, so contention cannot fake a red.
+  {
+    name: "138/00 task06 — a long session is scanned once: 40,000 one-line chunks and an exit settle `done` within 10 s",
+    run: async () => {
+      const { spawn } = createFakePtySpawn({
+        onWrite: ({ chunk, emitData, emitExit }) => {
+          if (chunk === SUBMIT_KEY) return;
+          for (let n = 1; n <= 40_000; n += 1) emitData(`line ${n}\r\n`);
+          emitExit(0);
+        },
+      });
+      const startedAt = Date.now();
+      const settled = await drive({ ptySpawn: spawn });
+      assert.equal(settled.value.outcome, "done");
+      assert.ok(Date.now() - startedAt < 10_000, `settled in ${Date.now() - startedAt} ms`);
+    },
+  },
+  {
+    name: "138/00 task06 — a sentinel after a long session is still found at once: 40,000 lines, then `NEEDS_INPUT`, resolve `needs-input` within 10 s",
+    run: async () => {
+      const { spawn } = createFakePtySpawn({
+        onWrite: ({ chunk, emitData }) => {
+          if (chunk === SUBMIT_KEY) return;
+          for (let n = 1; n <= 40_000; n += 1) emitData(`line ${n}\r\n`);
+          emitData(`${NEEDS_INPUT_SENTINEL}\r\n`);
+        },
+      });
+      const startedAt = Date.now();
+      const settled = await drive({ ptySpawn: spawn });
+      assert.equal(settled.value.outcome, "needs-input");
+      assert.ok(Date.now() - startedAt < 10_000, `found in ${Date.now() - startedAt} ms`);
     },
   },
 ];

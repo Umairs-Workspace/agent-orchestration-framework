@@ -47,6 +47,10 @@ STAMP="$DST/$3"
 rm -rf "$DST/src"
 cp -r "$SRC/src" "$DST/src"
 cp "$SRC/package.json" "$DST/package.json"
+# The lock travels WITH the manifest: `npm ci` refuses a package.json its lock does not
+# match, so syncing one without the other fails the reinstall on the first new dependency
+# (measured 2026-09-27, 138/02: `Missing: @xterm/headless@6.0.0 from lock file`).
+cp "$SRC/package-lock.json" "$DST/package-lock.json"
 echo "  synced src/ ($(find "$DST/src" -name '*.mjs' | wc -l) modules)"
 
 # The WORKSPACE config travels too. It is machine-neutral (no paths), and it carries
@@ -74,7 +78,12 @@ if [ "$HASH" != "$PREV" ] || [ ! -f "$PTY" ]; then
   cd "$DST" || exit 1
   # --workspaces=false: the worker needs the ROOT runtime closure only; the ui workspace
   # is build-time frontend tooling a worker never uses (~200 MB avoided).
-  npm ci --omit=dev --workspaces=false 2>&1 | tail -3
+  # A failed install writes NO stamp: stamping it would report "lockfile unchanged" on every
+  # later deploy, over a tree that never received the new dependency.
+  if ! npm ci --omit=dev --workspaces=false 2>&1 | tail -3; then
+    echo "  npm ci failed — the stamp is left as it was, so the next deploy retries" >&2
+    exit 1
+  fi
   if [ ! -f "$PTY" ]; then
     echo "  building node-pty from source (no linux-x64 prebuild ships)"
     ( cd node_modules/node-pty && npx --yes node-gyp rebuild 2>&1 | tail -3 )

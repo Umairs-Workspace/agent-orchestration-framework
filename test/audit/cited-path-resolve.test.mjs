@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url";
 import {
   RENAME_LEDGER_PATH,
   RENAME_LOG_ARGS,
+  archivedCitationOf,
   buildRenameMap,
   parseRenameRecords,
   resolveCitedPath,
@@ -223,6 +224,26 @@ export const citedPathResolveTests = [
       assert.deepEqual(splitLocator("src/a.mjs"), { path: "src/a.mjs", locator: null });
       assert.deepEqual(splitLocator("  src/a.mjs  "), { path: "src/a.mjs", locator: null }, "surrounding whitespace is not part of the path");
       assert.deepEqual(splitLocator(null), { path: "", locator: null });
+    },
+  },
+  {
+    name: "138 verify (m138/F-16) — the archive rule names an item path's one archived twin, and nothing it cannot be",
+    run: () => {
+      const rows = [
+        ["wiki/work/127_milestone_x/stories/03_story_y/tasks/01_z.feature", "wiki/work/archive/127_milestone_x/stories/03_story_y/tasks/01_z.feature", "an item path gains the archive root after the work dir, its folder name kept"],
+        ["wiki/work/137_story_x/PLAN.md", "wiki/work/archive/137_story_x/PLAN.md", "a top-level story's own document"],
+        ["wiki\\work\\132_milestone_x\\PLAN.md", "wiki/work/archive/132_milestone_x/PLAN.md", "a backslashed citation is read forward-slashed"],
+        ["./wiki/work/129_milestone_x/VERIFICATION.md", "wiki/work/archive/129_milestone_x/VERIFICATION.md", "a leading ./ is dropped"],
+        ["wiki/work/archive/127_milestone_x/SPEC.md", null, "an archived path has no further twin"],
+        ["wiki/work/archive", null, "the archive root itself is not an item"],
+        ["src/work.mjs", null, "a path outside the work dir is never archived"],
+        ["wiki/workshop/x.md", null, "a sibling that merely shares the prefix is not under the work dir"],
+        ["wiki/work", null, "the work dir itself names no item"],
+      ];
+      for (const [cited, expected, label] of rows) assert.equal(archivedCitationOf(cited, "wiki/work", "archive"), expected, label);
+      assert.equal(archivedCitationOf("wiki/work/1_x/a.md", "./wiki/work/", "archive"), "wiki/work/archive/1_x/a.md", "the caller's work dir is normalised the same way");
+      assert.equal(archivedCitationOf("wiki/work/1_x/a.md", "", "archive"), null, "no work dir, no rule");
+      assert.equal(archivedCitationOf("wiki/work/1_x/a.md", "wiki/work", ""), null, "no archive root, no rule");
     },
   },
 ];

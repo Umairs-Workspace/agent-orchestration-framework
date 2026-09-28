@@ -24,38 +24,69 @@
 // the resolver returns; the caller (drive.mjs) hands in the already-read config and the
 // phase by value.
 //
-// ABSENCE IS SILENCE. A project with no `work.agents.session` config, a phase with no
-// routing entry, an empty model string, or a config value that is not an object at all —
-// every one of those resolves to `{}`, i.e. the launch passes no `--model`/`--effort` and
-// is byte-identical to today's spawn. A spawn must never be blocked (or guessed at) by a
-// routing entry it cannot apply.
+// ABSENCE IS SILENCE — for the MODEL. A project with no `work.agents.session.models`, a phase
+// with no routing entry, an empty model string, or a config value that is not an object at all —
+// every one of those resolves no model, i.e. the launch passes no `--model`. A spawn must never be
+// blocked (or guessed at) by a routing entry it cannot apply.
+//
+// THE EFFORT IS ALWAYS CHOSEN (story 141). An unset effort used to be silence too, which left a
+// driven session thinking at the model's own default (`medium` on Opus 5.5) — the same work could
+// come out thorough on one run and shallow on the next. The effort now resolves from the
+// `--thinking` flag, then the phase's configured effort, then `DEFAULT_EFFORT`. A configured level
+// the vocabulary does not know is not applied (the default is), for the same never-blocked reason;
+// `aof project validate` is where it is reported.
 
 // The one config path this resolver may read. Kept as a single constant so FF-7006 can
 // pin it and so a future rename is one token, never a scatter.
 export const SESSION_MODEL_CONFIG_PATH = "work.agents.session";
 
-// resolveSessionLaunch(config, phase) -> { model?, effort? }
+// ── THE EFFORT VOCABULARY (story 141) — its one home ──
 //
-// Resolves the phase session's chosen model and effort from the project config. Both are
-// OPTIONAL and INDEPENDENT: a config may route a model for one phase and an effort for
-// another, either without the other, or neither. `phase` is one of the loop's phase names
-// (refine / continue / verify); an unknown phase name (or a phase the config does not
-// route) contributes nothing. A route whose value is not a non-empty string is ignored —
-// an empty model string passes no `--model`, exactly as if it were absent.
-export function resolveSessionLaunch(config, phase) {
+// Claude Code's five `--effort` levels, plus `extra-high` as the operator's name for `xhigh`. Every
+// door that takes a level (the drive's and the loop's `--thinking`, `work.agents.session.effort` and
+// the role map `work.agents.effort`) reads it through `normalizeEffort`. It lives in this leaf rather
+// than a new `src/` root file because the root is at its budget; importing a VOCABULARY is not
+// reading another surface's config path, which is all FF-7006 forbids.
+export const EFFORT_LEVELS = Object.freeze(["low", "medium", "high", "xhigh", "max"]);
+export const EFFORT_ALIASES = Object.freeze({ "extra-high": "xhigh" });
+export const DEFAULT_EFFORT = "high";
+// The six spellings a door accepts, in the order a refusal names them.
+export const EFFORT_SPELLINGS = Object.freeze(["low", "medium", "high", "xhigh", "extra-high", "max"]);
+
+// normalizeEffort(value) -> a canonical level, or null for a refusal. Exact spellings only: a
+// case variant (`Extra-High`) or a near miss (`x-high`) is refused rather than guessed at.
+export function normalizeEffort(value) {
+  if (typeof value !== "string") return null;
+  if (EFFORT_LEVELS.includes(value)) return value;
+  return Object.prototype.hasOwnProperty.call(EFFORT_ALIASES, value) ? EFFORT_ALIASES[value] : null;
+}
+
+// The refusal every door that takes `--thinking` answers for a level it does not know.
+export const THINKING_UNKNOWN_LEVEL = "thinking-unknown-level";
+export const thinkingUnknownLevelMessage = (value) =>
+  `--thinking "${value}" is not a known effort level. Use one of: ${EFFORT_SPELLINGS.join(", ")}.`;
+
+// resolveSessionLaunch(config, phase, { thinking }) -> { model?, effort, effortSource }
+//
+// Resolves the phase session's chosen model and effort. `phase` is one of the loop's phase names
+// (refine / continue / verify); an unknown phase name contributes no configured route. A model
+// route whose value is not a non-empty string is ignored. `thinking` is the caller's
+// already-validated `--thinking` level (or absent); `effortSource` names which rung answered —
+// `--thinking`, `config` or `default`.
+export function resolveSessionLaunch(config, phase, { thinking } = {}) {
   const session = config?.work?.agents?.session;
-  if (!session || typeof session !== "object" || Array.isArray(session)) {
-    return {};
-  }
+  const routed = session && typeof session === "object" && !Array.isArray(session) ? session : {};
   const pick = (map) => {
     if (!map || typeof map !== "object" || Array.isArray(map)) return undefined;
-    const value = map[phase];
-    return typeof value === "string" && value.trim() !== "" ? value : undefined;
+    return Object.prototype.hasOwnProperty.call(map, phase) ? map[phase] : undefined;
   };
-  const model = pick(session.models);
-  const effort = pick(session.effort);
+  const model = pick(routed.models);
   const out = {};
-  if (model !== undefined) out.model = model;
-  if (effort !== undefined) out.effort = effort;
+  if (typeof model === "string" && model.trim() !== "") out.model = model;
+  const flagged = normalizeEffort(thinking);
+  const configured = normalizeEffort(pick(routed.effort));
+  if (flagged != null) Object.assign(out, { effort: flagged, effortSource: "--thinking" });
+  else if (configured != null) Object.assign(out, { effort: configured, effortSource: "config" });
+  else Object.assign(out, { effort: DEFAULT_EFFORT, effortSource: "default" });
   return out;
 }

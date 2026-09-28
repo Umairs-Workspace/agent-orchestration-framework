@@ -32,7 +32,10 @@ import { globalWorkspacePaths } from "./workspace.mjs";
 // frozen ACD roles) from the bundle descriptor rather than a 4th hardcoded copy,
 // and reads the override map through the shared accessor so validate + render
 // never diverge on the config path.
-import { readDescriptor, agentModelMap, AGENT_MODEL_MAP_PATH } from "./work/bundle.mjs";
+import { readDescriptor, agentModelMap, AGENT_MODEL_MAP_PATH, AGENT_EFFORT_MAP_PATH } from "./work/bundle.mjs";
+// story 141 — both effort surfaces (the session map and the role map) are checked through the
+// one effort vocabulary.
+import { EFFORT_SPELLINGS, normalizeEffort } from "./session-model.mjs";
 // milestone 12 (ADR-003) — the store-first managed-tool resolver + the frozen
 // tool descriptors the three new doctor checks consult (SUPERSEDING the 09
 // graphify-binary check in place with the store-aware managed-tool check).
@@ -1407,6 +1410,12 @@ function validateWorkAgents(agents, diagnostics) {
     ));
   }
 
+  validateAgentModelMap(agents, diagnostics);
+  validateAgentEffortMap(agents, diagnostics);
+  validateSessionEffort(agents, diagnostics);
+}
+
+function validateAgentModelMap(agents, diagnostics) {
   const rawMap = agents.models;
   if (rawMap === undefined) return;
   if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) {
@@ -1461,6 +1470,80 @@ function validateWorkAgents(agents, diagnostics) {
       AGENT_MODEL_MAP_PATH,
       "Per-role model selection has no effect under work.agents.mode \"solo\": the main session plays every role inline, so no sub-agent is spawned to carry a per-role model. The map is ignored under solo mode.",
       "model-map-inert-under-solo"
+    ));
+  }
+}
+
+const effortSpellings = () => EFFORT_SPELLINGS.join(", ");
+
+// story 141 — the per-role effort map, checked as the model map is: the key is one of the 8
+// ACD roles, the value is a level the one vocabulary knows, and a non-empty map under solo is
+// surfaced as inert. Codes mirror the model map's.
+function validateAgentEffortMap(agents, diagnostics) {
+  const rawMap = agents.effort;
+  if (rawMap === undefined) return;
+  if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) {
+    diagnostics.push(diagnostic(
+      "error",
+      AGENT_EFFORT_MAP_PATH,
+      `${AGENT_EFFORT_MAP_PATH} must be an object mapping an ACD role to an effort level when provided.`
+    ));
+    return;
+  }
+  const validRoles = acdRoleSet();
+  for (const [key, value] of Object.entries(rawMap)) {
+    const keyPath = `${AGENT_EFFORT_MAP_PATH}.${key}`;
+    if (!validRoles.has(key)) {
+      diagnostics.push(diagnostic(
+        "error",
+        keyPath,
+        `"${key}" is not an ACD role. A per-role effort key must be one of the 8 ACD roles: ${[...validRoles].sort().join(", ")}.`,
+        "effort-map-unknown-role"
+      ));
+    }
+    if (normalizeEffort(value) == null) {
+      diagnostics.push(diagnostic(
+        "error",
+        keyPath,
+        `The effort for "${key}" must be one of: ${effortSpellings()}.`,
+        "effort-map-bad-value"
+      ));
+    }
+  }
+  if (agents.mode === "solo" && Object.keys(rawMap).length > 0) {
+    diagnostics.push(diagnostic(
+      "info",
+      AGENT_EFFORT_MAP_PATH,
+      "Per-role effort has no effect under work.agents.mode \"solo\": the main session plays every role inline, so no sub-agent is spawned to carry a per-role effort. The map is ignored under solo mode.",
+      "effort-map-inert-under-solo"
+    ));
+  }
+}
+
+// story 141 — `work.agents.session.effort.<phase>`: each configured level is one the vocabulary
+// knows. The resolver never blocks a spawn on a bad value (it launches at the default); this is
+// where the value is reported.
+function validateSessionEffort(agents, diagnostics) {
+  const session = agents.session;
+  if (!session || typeof session !== "object" || Array.isArray(session)) return;
+  const effort = session.effort;
+  if (effort === undefined) return;
+  if (!effort || typeof effort !== "object" || Array.isArray(effort)) {
+    diagnostics.push(diagnostic(
+      "error",
+      "work.agents.session.effort",
+      "work.agents.session.effort must be an object mapping a phase to an effort level when provided.",
+      "effort-bad-value"
+    ));
+    return;
+  }
+  for (const [phase, value] of Object.entries(effort)) {
+    if (normalizeEffort(value) != null) continue;
+    diagnostics.push(diagnostic(
+      "error",
+      `work.agents.session.effort.${phase}`,
+      `The session effort for "${phase}" must be one of: ${effortSpellings()}.`,
+      "effort-bad-value"
     ));
   }
 }

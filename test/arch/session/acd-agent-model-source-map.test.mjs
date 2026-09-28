@@ -124,4 +124,32 @@ export const archTests = [
       assert.match(plantedBundle, /work\.agents\.session/, "a role resolver that reads the session path trips the role-surface assertion");
     },
   },
+  // story 141 — FF-7006 grows to hold for EFFORT both ways. The role effort map
+  // `work.agents.effort` is the model map's twin on the role path; the session effort stays on
+  // `work.agents.session`. The session resolver reads neither role map, and the bundle reads the
+  // role effort map and never the session path. Sharing the effort VOCABULARY (an import of
+  // `normalizeEffort`) is not reading another surface's path, so it is not what this guards.
+  {
+    name: "arch/141 FF-7006 (extended): the session resolver never reads work.agents.effort or work.agents.models, and the bundle reads work.agents.effort and never work.agents.session",
+    run: async () => {
+      const sessionCode = stripComments(readFileSync(SESSION_MODEL_SOURCE, "utf8"));
+      const bundleCode = stripComments(readFileSync(BUNDLE_SOURCE, "utf8"));
+      const readsRoleMaps = (code) => /work\.agents\.(?:effort|models)\b/u.test(code) || /agents\?\.(?:effort|models)\b/u.test(code);
+      const readsSession = (code) => /work\.agents\.session\b/u.test(code) || /agents\?\.session\b/u.test(code);
+
+      assert.equal(readsRoleMaps(sessionCode), false, "the session resolver never reads work.agents.effort or work.agents.models");
+      assert.match(bundleCode, /work\.agents\.effort/u, "the bundle reads work.agents.effort (the role effort path)");
+      assert.equal(readsSession(bundleCode), false, "the bundle never reads work.agents.session");
+
+      // Red probe 1: plant the role effort path in the session resolver → it trips.
+      const plantedSession = `${sessionCode}\nconst planted = config?.work?.agents?.effort;\n`;
+      assert.equal(readsRoleMaps(plantedSession), true, "a session resolver that reads work.agents.effort trips");
+      assert.equal(readsRoleMaps(`${sessionCode}\nconst p = "work.agents.effort";\n`), true, "…spelled as a path constant too");
+
+      // Red probe 2: plant the session path in the bundle → it trips.
+      const plantedBundle = `${bundleCode}\nconst planted = projectConfig?.work?.agents?.session;\n`;
+      assert.equal(readsSession(plantedBundle), true, "a bundle that reads work.agents.session trips");
+      assert.equal(readsSession(`${bundleCode}\nconst p = "work.agents.session";\n`), true, "…spelled as a path constant too");
+    },
+  },
 ];

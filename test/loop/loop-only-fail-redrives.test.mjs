@@ -99,10 +99,10 @@ export const loopOnlyFailRedrivesTests = [
 
           if (row.expect === "verify") {
             assert.ok(directives.includes("/aof:verify 03/01"), `${label} an inherited red does not hold the story: it crosses to verify`);
-            assert.equal(directives.filter((directive) => directive === "/aof:continue 03/01").length, 1, `${label} …and never re-drives`);
+            assert.equal(directives.filter((directive) => directive === "/aof:continue 03/01 --solo").length, 1, `${label} …and never re-drives`);
             assert.equal(state.state, "done", `${label} …and the loop completes`);
           } else {
-            assert.equal(directives.filter((directive) => directive === "/aof:continue 03/01").length, 2, `${label} the story's own red re-drives continue`);
+            assert.equal(directives.filter((directive) => directive === "/aof:continue 03/01 --solo").length, 2, `${label} the story's own red re-drives continue`);
             assert.equal(directives.includes("/aof:verify 03/01"), false, `${label} …and never crosses to verify`);
           }
 
@@ -181,7 +181,7 @@ export const loopOnlyFailRedrivesTests = [
             assert.equal(state.act.stop, undefined, `${label} no halt was produced`);
           } else if (row.act === "drive continue") {
             assert.deepEqual(
-              directives.filter((directive) => directive === "/aof:continue 03/01").length,
+              directives.filter((directive) => directive === "/aof:continue 03/01 --solo").length,
               2,
               `${label} the loop re-drives continue`,
             );
@@ -189,7 +189,7 @@ export const loopOnlyFailRedrivesTests = [
           } else {
             assert.equal(state.act.stop, "grade-indeterminate", `${label} the loop halts on grade-indeterminate`);
             assert.equal(state.act.producer, `work:grade:${row.code}`, `${label} …attributed to the code it returned`);
-            assert.equal(directives.filter((directive) => directive === "/aof:continue 03/01").length, 1, `${label} …without re-driving`);
+            assert.equal(directives.filter((directive) => directive === "/aof:continue 03/01 --solo").length, 1, `${label} …without re-driving`);
           }
 
           // AND THE LOOP STATE RECORDS THE VERDICT AS <verdict> — for every row where a
@@ -372,7 +372,7 @@ export const loopOnlyFailRedrivesTests = [
         assert.equal(state.act.stop, "grade-indeterminate");
         assert.equal(state.state, "halted");
         // AND IT DOES NOT RE-DRIVE THE BUILD.
-        assert.deepEqual(driver.typed.map((input) => input.split("\n\n")[0]), ["/aof:continue 03/01"], "one build, and no second");
+        assert.deepEqual(driver.typed.map((input) => input.split("\n\n")[0]), ["/aof:continue 03/01 --solo"], "one build, and no second");
         assert.equal(spawn.calls.length, 1 + 1, `${BASELINE_NOTE} one grade`);
         // AND THE CYCLE COUNT WAS NOT CONSUMED BY A RETRY: one continue row, at cycle 1, of
         // three the cap would have allowed.
@@ -506,7 +506,7 @@ export const loopOnlyFailRedrivesTests = [
         // AND IT DOES SO WITHOUT ASKING `work:next` FOR A FRESH DECISION — read off the
         // ORDER of the real invocations, not inferred from the sequence of driver inputs: no
         // `work:next` call falls between the continue and the verify for the same story.
-        const between = trace.slice(trace.indexOf("/aof:continue 03/01") + 1, trace.indexOf("/aof:verify 03/01"));
+        const between = trace.slice(trace.indexOf("/aof:continue 03/01 --solo") + 1, trace.indexOf("/aof:verify 03/01"));
         assert.deepEqual(between, [], `work:next was not asked between the continue and the verify (saw: ${between.join(", ")})`);
 
         // AND THE GRADE IS RECORDED ON THE RUN THAT PRODUCED IT.

@@ -70,6 +70,8 @@ const declarationFor = (cap) => ({
   // check rather than an eight-against-nine mismatch. A genuinely pre-126 eight-key record still
   // resumes — that is pinned in `work-loop-declaration.test.mjs`.
   supervised: false,
+  // 141 — the tenth key, seeded for the same reason.
+  thinking: null,
 });
 
 /** A clean baseline of this rule's era: measured before the story's first drive, nothing inherited. */
@@ -101,7 +103,7 @@ async function seedInterrupted(fx, { cap = 3, grade = null, baseline = CLEAN_BAS
 function resumingDriver(fx, spawn, seen) {
   return completingDriver(fx, {
     onCommand(command) {
-      if (command === "/aof:continue 03/01") {
+      if (command === "/aof:continue 03/01 --solo") {
         seen.launchesWhenRedriveStarted ??= spawn.calls.length;
         writeFileSync(featurePath(fx), VALID_FEATURE);
       }

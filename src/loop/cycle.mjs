@@ -523,11 +523,15 @@ export async function drivePhase({ ref, phase, cycle, declaration, brief = runBr
     )
     : { record: retryRecord };
 
+  // 141 — the loop's `--thinking` rides every drive from its declaration; `null` passes nothing and
+  // the drive resolves its own phase's effort.
+  const thinking = typeof declaration?.thinking === "string" && declaration.thinking.length > 0 ? declaration.thinking : null;
   if (typeof ctx.spawnPhaseDrive === "function") {
     const { outcome, settlementContext } = await drivePhaseInChild(ctx, {
       ref,
       phase,
       runId: record.runId,
+      thinking,
       fix: answer == null ? fix : null,
       answerFile: answer == null ? null : askFileFor(record.runId, askEnvFor(ctx)),
     });
@@ -542,6 +546,7 @@ export async function drivePhase({ ref, phase, cycle, declaration, brief = runBr
       ...ctx,
       loopDrive: {
         runId: record.runId,
+        ...(thinking == null ? {} : { thinking }),
         ...(answer != null ? { answer } : fix == null ? {} : { fix }),
         recordSettlementContext(value) {
           settlementContext = value;
@@ -561,6 +566,7 @@ async function drivePhaseInChild(ctx, {
   phase,
   runId,
   fix,
+  thinking = null,
   answerFile = null,
   worktreePath = ctx.workspace.projectRoot,
 }) {
@@ -580,6 +586,7 @@ async function drivePhaseInChild(ctx, {
       lane: worktreePath,
       ...(fixFile == null ? {} : { fixFile }),
       ...(answerFile == null ? {} : { answerFile }),
+      ...(thinking == null ? {} : { thinking }),
       env: {
         ...(typeof process.env.AOF_GLOBAL_HOME === "string" ? { AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME } : {}),
         ...(env ?? {}),
@@ -805,6 +812,9 @@ export async function retryUntilTerminal(phaseRun, { drive, ref, phase, brief, i
               readyAt: error.readyAt,
               attempt: phaseRun.record.attempt,
               failureReason: phaseRun.record.failureReason,
+              // 138/01 (ADR-003 §5) — the screen a blocked session was stopped on, as its id string,
+              // so the halt line reads `screen=<id>`. Absent for every other failure.
+              ...(phaseRun.outcome?.screen?.id != null ? { screen: phaseRun.outcome.screen.id } : {}),
             },
           },
         };

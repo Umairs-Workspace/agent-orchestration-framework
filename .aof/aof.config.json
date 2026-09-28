@@ -5,8 +5,14 @@
     "dir": "./wiki/work",
     "intake": "backlog",
     "agents": {
-      "mode": "orchestrated",
-      "productOwner": "inline"
+      "productOwner": "inline",
+      "session": {
+        "effort": {
+          "refine": "high",
+          "continue": "high",
+          "verify": "high"
+        }
+      }
     },
     "codeReview": {
       "autoComplete": false
@@ -95,14 +101,6 @@
     },
     "loop": {
       "concurrency": "refine_first",
-      "agents": {
-        "refine": {
-          "mode": "orchestrated"
-        },
-        "continue": {
-          "mode": "solo"
-        }
-      },
       "startToCloseMs": 14400000,
       "scheduleToCloseMs": 43200000
     },
@@ -135,6 +133,11 @@
       "published": true,
       "publishedAt": "2026-08-31T17:47:25.361Z",
       "workspaceId": "9db1fd84f5895e38"
+    }
+  },
+  "settings": {
+    "claude": {
+      "effortLevel": "high"
     }
   }
 }

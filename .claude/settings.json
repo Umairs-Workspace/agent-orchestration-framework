@@ -78,7 +78,9 @@
   },
   "disableClaudeAiConnectors": true,
   "deniedMcpServers": [
-      { "serverName": "claude_design" }
+    {
+      "serverName": "claude_design"
+    }
   ],
   "enabledPlugins": {
     "cloudflare@cloudflare": false,
@@ -114,5 +116,6 @@
         "**/*.key"
       ]
     }
-  }
+  },
+  "effortLevel": "high"
 }

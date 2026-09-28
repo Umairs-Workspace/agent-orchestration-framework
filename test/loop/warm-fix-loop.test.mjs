@@ -60,7 +60,7 @@ function fixDriver(fx, {
       const input = chunk.replace(/[\r\n]+$/u, "");
       typed.push(input);
       const directive = input.split("\n\n")[0];
-      if (directive === "/aof:continue 03/01") {
+      if (directive === "/aof:continue 03/01 --solo") {
         const continueCount = typed.filter((value) => value.startsWith(directive)).length;
         if (continueCount === 1) writeFileSync(path.join(fx.storyDir, "tasks", "00_ready.feature"), `${INVALID}# build delta\n`);
         if (continueCount === 2 && !keepInvalid && repairOnFix) writeFileSync(path.join(fx.storyDir, "tasks", "00_ready.feature"), VALID);
@@ -80,7 +80,7 @@ function fixDriver(fx, {
       } else {
         emitExit(0);
       }
-      if (directive === "/aof:continue 03/01") {
+      if (directive === "/aof:continue 03/01 --solo") {
         const continueCount = typed.filter((value) => value.startsWith(directive)).length;
         if (continueCount === interruptContinueCount) process.emit("SIGINT");
       }
@@ -404,7 +404,7 @@ export const warmFixLoopTests = [
         const resumed = await runLoopBody({ scope: "03", resume: true }, runCtx);
         assert.equal(resumed.act.producer, "review:rounds>=cap", "the next unclaimed gate halts only after the admitted retry ran");
         assert.equal(
-          driver.typed.filter((input) => input.startsWith("/aof:continue 03/01")).length,
+          driver.typed.filter((input) => input.startsWith("/aof:continue 03/01 --solo")).length,
           3,
           "ordinary resume launched the already-admitted third continue without reviewClaims",
         );
@@ -428,11 +428,11 @@ export const warmFixLoopTests = [
         assert.equal(state.act.stop, "operator-interrupt");
         const firstResume = await runLoopBody({ scope: "03", resume: true }, runCtx);
         assert.equal(firstResume.act.stop, "operator-interrupt", "the successful cycle-two fix drive was interrupted before settlement");
-        assert.equal(driver.typed.filter((input) => input.startsWith("/aof:continue 03/01")).length, 2, "the build and one fix drove successfully");
+        assert.equal(driver.typed.filter((input) => input.startsWith("/aof:continue 03/01 --solo")).length, 2, "the build and one fix drove successfully");
 
         const secondResume = await runLoopBody({ scope: "03", resume: true, now: "2099-01-01T00:00:00.000Z" }, runCtx);
         assert.equal(secondResume.act.stop, "cap-exhausted");
-        assert.equal(driver.typed.filter((input) => input.startsWith("/aof:continue 03/01")).length, 2, "resume did not reset the lane and launch a third continue/fix");
+        assert.equal(driver.typed.filter((input) => input.startsWith("/aof:continue 03/01 --solo")).length, 2, "resume did not reset the lane and launch a third continue/fix");
         const item = await resolveItemExact(fx.ctx, "03/01");
         const cycles = (await readRuns(item))
           .filter((run) => run.brief?.loop?.phase === "continue")

@@ -18,7 +18,8 @@ const RECORD_KEYS = Object.freeze(["runId", "itemRef", "state", "attempt", "outc
 // 126/02 (ADR-004 §5) appends the NINTH key, `supervised`, by the same additive-supersession
 // discipline 102/00 used for the eighth (`id`). The eight before it keep their names, order and
 // meanings; 126/01's contract anticipated this move and left it to this story.
-const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised"]);
+// 141 appended the tenth, `thinking`, by the same additive discipline.
+const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
 const STATES = Object.freeze(["queued", "running", "done", "failed", "cancelled"]);
 const EDGES = Object.freeze(["queued>running", "queued>cancelled", "running>done", "running>failed", "running>cancelled"]);
 
@@ -145,7 +146,7 @@ function assertUiFrozen(pairs) {
 
 export const archTests = [
   {
-    name: "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): brief.loop round-trips unchanged through work:run-status with exactly nine keys",
+    name: "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): brief.loop round-trips unchanged through work:run-status with exactly ten keys",
     run: async () => {
       const fx = await loopFixture();
       try {

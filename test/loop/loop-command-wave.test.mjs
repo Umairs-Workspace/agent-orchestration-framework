@@ -34,7 +34,7 @@ import {
 } from "../support/loop/lane-fixture.mjs";
 
 const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
-const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised"]);
+const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
 const NOW = "2026-09-14T12:00:00.000Z";
 // A grade record as `compileGrade` writes one — the provenance stamp is what the store's writer
 // demands of every claim a brief carries.
@@ -421,6 +421,28 @@ export const loopCommandWaveTests = [
     },
   },
   {
+    // 141/01 — a wave lane's child drive argv carries the loop's --thinking (the lane seam turns
+    // `thinking` into `--thinking <level>`, pinned in the drive suite); none when the loop has none.
+    name: "141/01 every wave lane's child is handed the loop's --thinking, and nothing when the loop has none",
+    run: async () => {
+      for (const [input, expected] of [[{ thinking: "extra-high" }, "xhigh"], [{}, null]]) {
+        await withLaneRepo(async (fx) => {
+          const child = fakeLaneChild(fx);
+          const { state } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), input });
+          assert.equal(state.state, "done");
+          assert.equal(child.calls.length, 2);
+          for (const call of child.calls) {
+            if (expected == null) assert.equal("thinking" in call, false, `${call.ref}: no flag, nothing handed on`);
+            else assert.equal(call.thinking, expected, `${call.ref}: the lane child thinks at the loop's level`);
+          }
+          for (const ref of ["07/01", "07/03"]) {
+            for (const run of await laneRunsOf(fx, ref)) assert.equal(run.brief.loop.thinking, expected, `${ref}: the lane's declaration carries it`);
+          }
+        });
+      }
+    },
+  },
+  {
     name: "129/04 task02 the ladder runs in the lane workspace — every grade, validate and doctor recorded a lane path, never the primary's",
     run: async () => {
       await withLaneRepo(async (fx) => {
@@ -514,6 +536,31 @@ export const loopCommandWaveTests = [
             if (row.producer) assert.equal(state.act.producer, row.producer, `${label}: producer`);
             if (row.stop === "retry-parked") assert.match(report.lines.at(-1), /readyAt=/u, `${label}: readyAt in the account`);
           }
+        }, { stories: [{ number: "01" }] });
+      }
+    },
+  },
+  {
+    name: "138/01 task03 [outline] the lane's settle line names the screen, and the lane's halt line carries it (3 rows)",
+    run: async () => {
+      const rows = [
+        { document: { outcome: "failed", failureReason: "blocked_screen", screen: { id: "mcp-approval" } }, line: "failed (blocked_screen: mcp-approval).", screen: "mcp-approval" },
+        { document: { outcome: "failed", failureReason: "blocked_screen" }, line: "failed (blocked_screen).", screen: null },
+        { document: { outcome: "failed", failureReason: "agent_error" }, line: "failed (agent_error).", screen: null },
+      ];
+      for (const row of rows) {
+        await withLaneRepo(async (fx) => {
+          const child = fakeLaneChild(fx, { answers: { "07/01": [{ outcome: "document", document: row.document }] } });
+          const { state, report } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())) });
+          const label = row.line;
+          assert.ok(report.lines.includes(`Lane 07/01 — settle: ${row.line}`), `${label}: ${report.lines.filter((printed) => printed.includes("settle:")).join(" | ")}`);
+          assert.equal(state.act.stop, "run-not-retryable", `${label}: halt`);
+          assert.equal(state.act.producer, "run-store:not-retryable", `${label}: producer`);
+          assert.equal(child.calls.filter((call) => call.ref === "07/01").length, 1, `${label}: driven once`);
+          const halt = report.lines.at(-1);
+          assert.match(halt, new RegExp(`failureReason=${row.document.failureReason}`, "u"), `${label}: ${halt}`);
+          if (row.screen == null) assert.doesNotMatch(halt, /screen=/u, `${label}: no screen`);
+          else assert.match(halt, new RegExp(`screen=${row.screen}`, "u"), `${label}: ${halt}`);
         }, { stories: [{ number: "01" }] });
       }
     },

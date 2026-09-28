@@ -69,9 +69,11 @@ export const cacheStableLaunchTests = [
       }
     },
   },
-  // Scenario: an unconfigured phase launches exactly as it does today (drive path)
+  // Scenario: an unconfigured phase launches exactly as it does today (drive path).
+  // Story 141/00 moved the effort half: an unset effort now resolves to the `high` default,
+  // so the model half is what stays absent.
   {
-    name: "70/01 task01 an unconfigured drive launches exactly as it does today — no session config → the drive passes neither --model nor --effort",
+    name: "70/01 task01 an unconfigured drive launches exactly as it does today — no session config → the drive passes no --model, and the default --effort high (141/00)",
     run: async () => {
       const fx = await driveFixture({});
       try {
@@ -82,7 +84,7 @@ export const cacheStableLaunchTests = [
         );
         const args = driver.spawnCalls[0].args;
         assert.equal(args.includes("--model"), false, "no --model is passed");
-        assert.equal(args.includes("--effort"), false, "no --effort is passed");
+        assert.equal(args[args.indexOf("--effort") + 1], "high", "the unset effort launches at the high default (141/00)");
       } finally {
         await fx.cleanup();
       }
@@ -106,9 +108,9 @@ export const cacheStableLaunchTests = [
         const assistant = JSON.stringify({
           type: "assistant",
           sessionId: "sess-csl",
+          effort: passed.effort,
           message: {
             model: passed.model,
-            effort: passed.effort,
             usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 50, cache_creation_input_tokens: 500 },
             content: [{ type: "text", text: "ok" }],
           },

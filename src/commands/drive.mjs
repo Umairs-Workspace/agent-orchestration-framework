@@ -13,7 +13,12 @@
 import { driveInteractiveClaudeSession, INTERACTIVE_COMMAND_READY_DELAY_MS } from "../agent-session-driver.mjs";
 import { ensureWorktreeTrusted } from "../claude-trust.mjs";
 import { compileBriefForItem } from "../phase-brief-read.mjs";
-import { resolveSessionLaunch } from "../session-model.mjs";
+import {
+  normalizeEffort,
+  resolveSessionLaunch,
+  THINKING_UNKNOWN_LEVEL,
+  thinkingUnknownLevelMessage,
+} from "../session-model.mjs";
 import { commandError } from "../command-error.mjs";
 import { reportDegrade } from "../degrade.mjs";
 // F-09 (`VERIFICATION.md`, blocker — 2026-08-21) — the run fact is reached through the
@@ -95,9 +100,10 @@ export function composeFixInput(command, { findings = [], changeUnderReview = ""
 
 // 129/07 (ADR-001 §5, amended) — the phase's role mode, composed from the loop's OWN key
 // `work.loop.agents.<phase>.mode` through the bounds home: `solo` → `--solo`, `orchestrated` →
-// `--orchestrated` (the twin the prompts gained in the same story), and `null` (unset, or a
-// phase that resolves no mode — `verify`) → no flag, byte-identical to HEAD, so the prompt's own
-// read of `work.agents.mode` is the fallback. The drive never reads the workspace twin.
+// `--orchestrated` (the twin the prompts gained in the same story). An unset key answers the
+// phase's own default from the bounds home (140: `solo` for refine and continue), so every
+// refine and continue the loop drives carries a flag; only `null` — a phase that resolves no
+// mode, `verify` — composes none. The drive never reads the workspace twin `work.agents.mode`.
 export const PHASE_MODE_FLAGS = Object.freeze({ solo: "--solo", orchestrated: "--orchestrated" });
 
 export function phaseCommand(phase, ref, mode = null) {
@@ -231,6 +237,8 @@ export function createPhaseDriverCommand(phase) {
         fix: { type: "string" },
         // 131/03 (ADR-003 §7) — the answer to a run's standing ask: the path of its ask file.
         answer: { type: "string" },
+        // 141 — the effort this one drive's session thinks at, over the phase's configured one.
+        thinking: { type: "string" },
       },
       required: ["ref"],
       additionalProperties: false,
@@ -246,6 +254,19 @@ export function createPhaseDriverCommand(phase) {
         );
       }
 
+      // 141 — an unknown level is refused at the door, before the item is read or a run minted.
+      // `--thinking` wins over `ctx.loopDrive.thinking` (the in-process loop's lend), as `--fix`
+      // wins over `ctx.loopDrive.fix`; `thinking: ""` is absent.
+      const thinkingGiven = typeof input.thinking === "string" && input.thinking.length > 0
+        ? input.thinking
+        : typeof ctx.loopDrive?.thinking === "string" && ctx.loopDrive.thinking.length > 0
+          ? ctx.loopDrive.thinking
+          : null;
+      const thinking = thinkingGiven == null ? undefined : normalizeEffort(thinkingGiven);
+      if (thinking === null) {
+        throw commandError(thinkingUnknownLevelMessage(thinkingGiven), THINKING_UNKNOWN_LEVEL, 400);
+      }
+
       const item = await resolveItemExact(ctx, ref);
       if (!item) {
         throw commandError(`No item resolves to ref "${ref}".`, "ref-not-found", 404);
@@ -253,8 +274,14 @@ export function createPhaseDriverCommand(phase) {
       requireLocalCheckout(item, ref);
 
       const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase));
+      // milestone 70 / story 01 (ADR-005), story 141 — the SESSION model and effort, resolved per
+      // phase from `work.agents.session` (distinct from the render-time role maps
+      // `work.agents.models` / `work.agents.effort`; see src/session-model.mjs), with `--thinking`
+      // over the configured effort and `high` under both. The dry run says what it would launch at.
+      const session = resolveSessionLaunch(ctx.workspace?.config, phase, { thinking });
+      const effort = { level: session.effort, source: session.effortSource };
       if (input.dryRun === true) {
-        return { ref: item.ref, phase, command };
+        return { ref: item.ref, phase, command, effort };
       }
 
       // 129/02 (ADR-005 §2) — the two flags that carry a loop drive across the process
@@ -377,11 +404,8 @@ export function createPhaseDriverCommand(phase) {
         // fact. The local drive was the caller that never wired it. Best-effort by
         // design (a fault degrades to claude's own blocking dialog, never a throw).
         trustWorktree: baseOptions.trustWorktree ?? ensureWorktreeTrusted,
-        // milestone 70 / story 01 (ADR-005) — the SESSION model and effort, resolved
-        // per phase from `work.agents.session` (distinct from the m30 render-time role
-        // map `work.agents.models`; see src/session-model.mjs). Absent config → {} → no
-        // --model/--effort, byte-identical to today's launch.
-        session: resolveSessionLaunch(ctx.workspace?.config, phase),
+        // The session resolved above: `--model` only when routed, `--effort` always (story 141).
+        session: { ...(session.model == null ? {} : { model: session.model }), effort: session.effort },
         // The spawn env's OTel resource attributes (68/ADR-005 §2). `phase` is read
         // from the loop's declaration (ADR-002) — a bare local drive declares none, so
         // no phase attribute is fabricated here.
@@ -514,12 +538,13 @@ export function createPhaseDriverCommand(phase) {
     cli: {
       route: ["work", "drive", phase],
       spec: {
-        usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--dry-run] [--json]`,
+        usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--dry-run] [--json]`,
         flags: {
           dryRun: { type: "boolean", description: "report the phase directive without starting an agent session" },
           run: { type: "string", description: "the lent run id: mint and settle nothing, heartbeat this record, and take stdin's end as the stop (a loop's child drive)" },
           fix: { type: "string", description: "a JSON file holding the fix transport; honoured by continue only" },
           answer: { type: "string", description: "an answered ask file: resume the lent run's own session with the answer typed as its first input" },
+          thinking: { type: "string", description: "the effort this session thinks at (low, medium, high, xhigh, max; extra-high is xhigh), over the phase's configured effort" },
         },
       },
       argv: (positionals, options) => ({
@@ -528,10 +553,11 @@ export function createPhaseDriverCommand(phase) {
         ...(typeof options.run === "string" ? { run: options.run } : {}),
         ...(typeof options.fix === "string" ? { fix: options.fix } : {}),
         ...(typeof options.answer === "string" ? { answer: options.answer } : {}),
+        ...(typeof options.thinking === "string" ? { thinking: options.thinking } : {}),
       }),
       render(result) {
         if (result.outcome == null) {
-          return `${result.ref} — drive ${result.phase}: ${result.command} (dry run; no session started).`;
+          return `${result.ref} — drive ${result.phase}: ${result.command} at effort ${result.effort.level} (${result.effort.source}; dry run, no session started).`;
         }
         const session = result.sessionId == null ? "no session id" : `session ${result.sessionId}`;
         const failure = result.failureReason == null ? "" : ` (${result.failureReason})`;

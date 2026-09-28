@@ -75,9 +75,9 @@ function resolveInstallDir(o) {
   return path.join(os.homedir(), ".aof", "bin");
 }
 
-function run(label, cmd, args) {
+function run(label, cmd, args, { env } = {}) {
   console.log(`\n=== ${label} ===\n$ ${cmd} ${args.join(" ")}`);
-  execFileSync(cmd, args, { cwd: repoRoot, stdio: "inherit" });
+  execFileSync(cmd, args, { cwd: repoRoot, stdio: "inherit", ...(env ? { env } : {}) });
 }
 
 // Filename-safe local timestamp for the .bak suffix (e.g. 20260724T110455).
@@ -229,38 +229,88 @@ function copyModuleDir(srcDir, destDir) {
   return true;
 }
 
+// ═══ A PAYLOAD DIRECTORY IS NEVER ABSENT, NOT EVEN FOR A MOMENT (2026-09-27) ══════════════════
+// `src/` used to be `rmSync` then `cpSync`, so for as long as the copy took there was no
+// `src/cli.mjs` beside the exe, and scripts/sea-entry.mjs, seeing no payload, ran its EMBEDDED
+// bundle instead. The desktop app spawns `aof.exe mesh status --json` every 3 s, so an install
+// during a working session had a fair chance of running that bundle, which was two months old.
+// Measured: an `install-local --wsl` at 16:02:43.4Z, and ~/.aof/mesh/identity.json re-minted by
+// the old code's identity self-heal at 16:02:47.5Z, which is how the control node lost its id
+// and the fleet stopped offering Stop on its own loops. So each payload directory is filled
+// BESIDE the live one and swapped in by two renames: the gap shrinks from the copy's length to
+// the time between two renames, and the launcher waits out even that (sea-entry.mjs). Windows
+// can refuse a rename while a scanner holds a file, so each rename is retried briefly. If the
+// live directory still will not move, it is deleted and the staged one renamed into its place:
+// the old gap, but only as a last resort, and never a half-copied tree.
+const RENAME_ATTEMPTS = 20;
+const RENAME_RETRY_MS = 100;
+
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function renameWithRetry(from, to) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      renameSync(from, to);
+      return;
+    } catch (error) {
+      if (attempt >= RENAME_ATTEMPTS || !LOCKED.test(`${error.code ?? ""} ${error.message}`)) throw error;
+      sleepSync(RENAME_RETRY_MS);
+    }
+  }
+}
+
+function replaceDirectory(destDir, fill) {
+  const staging = `${destDir}.staging`;
+  const retired = `${destDir}.retired`;
+  rmSync(staging, { recursive: true, force: true });
+  rmSync(retired, { recursive: true, force: true });
+  mkdirSync(staging, { recursive: true });
+  fill(staging);
+  if (existsSync(destDir)) {
+    try {
+      renameWithRetry(destDir, retired);
+    } catch (error) {
+      console.log(`  (${path.basename(destDir)}: the live directory would not move aside — ${error.code ?? error.message}; replacing it in place)`);
+      rmSync(destDir, { recursive: true, force: true });
+    }
+  }
+  renameWithRetry(staging, destDir);
+  try {
+    rmSync(retired, { recursive: true, force: true });
+  } catch (error) {
+    // Nothing reads the retired tree; the next install removes it before it stages.
+    console.log(`  (${path.basename(destDir)}: left ${path.basename(retired)} behind — ${error.code ?? error.message})`);
+  }
+}
+
 // --- the payload install (the default, restart-not-rebuild path) -------------
 function installPayload(installDir) {
   console.log(`\n=== payload install into ${installDir} ===`);
   mkdirSync(installDir, { recursive: true });
 
   // 1. src/ — the program itself, replaced wholesale so deleted source files
-  // never linger as stale payload modules. Import holds no file locks after
-  // load, so this is safe under a running daemon (it keeps its in-memory graph
-  // until restart — which is the point: restart picks this up).
-  const srcDest = path.join(installDir, "src");
-  rmSync(srcDest, { recursive: true, force: true });
-  cpSync(path.join(repoRoot, "src"), srcDest, { recursive: true });
+  // never linger as stale payload modules, and swapped in whole so it is never
+  // absent (replaceDirectory). Import holds no file locks after load, so this is
+  // safe under a running daemon (it keeps its in-memory graph until restart —
+  // which is the point: restart picks this up).
+  replaceDirectory(path.join(installDir, "src"), (staging) => cpSync(path.join(repoRoot, "src"), staging, { recursive: true }));
   console.log("  synced src/");
 
   // 2. the asset sidecars, same layout the SEA build ships (asset-base.mjs's
   // packaged branch resolves these beside the exe in payload mode too).
   const manifest = generateAssetManifest(repoRoot);
-  const bundleDest = path.join(installDir, "bundle");
-  rmSync(bundleDest, { recursive: true, force: true });
-  for (const rel of manifest.bundle) {
-    const dest = path.join(bundleDest, rel);
-    mkdirSync(path.dirname(dest), { recursive: true });
-    copyFileSync(path.join(repoRoot, "src", "bundle", rel), dest);
-  }
+  const copyManifest = (files, fromRoot) => (staging) => {
+    for (const rel of files) {
+      const dest = path.join(staging, rel);
+      mkdirSync(path.dirname(dest), { recursive: true });
+      copyFileSync(path.join(fromRoot, rel), dest);
+    }
+  };
+  replaceDirectory(path.join(installDir, "bundle"), copyManifest(manifest.bundle, path.join(repoRoot, "src", "bundle")));
   console.log(`  synced bundle/ (${manifest.bundle.length} files)`);
-  const uiDest = path.join(installDir, "ui", "dist");
-  rmSync(uiDest, { recursive: true, force: true });
-  for (const rel of manifest.ui) {
-    const dest = path.join(uiDest, rel);
-    mkdirSync(path.dirname(dest), { recursive: true });
-    copyFileSync(path.join(repoRoot, "ui", "dist", rel), dest);
-  }
+  replaceDirectory(path.join(installDir, "ui", "dist"), copyManifest(manifest.ui, path.join(repoRoot, "ui", "dist")));
   console.log(`  synced ui/dist (${manifest.ui.length} files)`);
 
   // 3. node_modules — the prod closure, entry-by-entry with lock tolerance.
@@ -411,11 +461,13 @@ function main() {
   else run("build the web UI (ui/dist)", process.execPath, [path.join("scripts", "ui-build.mjs")]);
 
   // --- 2. the payload (always — this IS the deploy) ---
-  installPayload(installDir);
+  const buildId = installPayload(installDir);
 
   // --- 3. the SEA launcher exe (only when it must change) ---
+  // The embedded bundle is stamped with the SAME build id as the payload it ships beside
+  // (AOF_BUILD_ID → build-sea's `define`), so `--version` in embedded mode names the code it runs.
   if (buildSea) {
-    run("build the SEA launcher (dist-sea/)", process.execPath, [path.join("scripts", "build-sea.mjs")]);
+    run("build the SEA launcher (dist-sea/)", process.execPath, [path.join("scripts", "build-sea.mjs")], { env: { ...process.env, AOF_BUILD_ID: buildId } });
     const builtExe = path.join(distSea, exeName);
     if (!existsSync(builtExe)) throw new Error(`build-sea did not produce ${builtExe}`);
     console.log(`\n=== install the launcher into ${installDir} ===`);

@@ -12,8 +12,8 @@ author a story's task `.feature` files via Three Amigos.
 
 <config>
 Read `.aof/aof.config.json` → `work.dir`, `work.agents`, `work.tags`. Parse `$ARGUMENTS` into the item
-**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag and an optional **`--solo`** or
-**`--orchestrated`** flag. Resolve the ref by running `aof work find "<ref>" --json` (folder-name
+**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag, an optional **`--solo`** or
+**`--orchestrated`** flag and an optional **`--thinking <level>`**. Resolve the ref by running `aof work find "<ref>" --json` (folder-name
 lookup — never glob `**/*.md`).
 
 **Step 0 — a BACKLOG ref is promoted first, here, before anything else.** When that `aof work find`
@@ -27,23 +27,39 @@ ways out are promoting that one first or dropping the entry. (`aof work refine <
 refuses a backlog ref outright as `phase-backlog-ref`, for the same reason this step is local: a mint
 belongs where the operator is and is never dispatched to a worker.)
 
-**Execution mode.** Resolve from `work.agents.mode`: `"solo"` → play every role inline in this
-session; any other value → orchestrated (spawn the role agents). **`--solo` OVERRIDES an
-orchestrated config to solo for this run** — the same effect as `work.agents.mode: "solo"`, without
-editing config — and **`--orchestrated` OVERRIDES a solo config to orchestrated for this run**, its
-twin in the other direction. The two together are contradictory: STOP before any role runs and
-report it. The loop composes one of the two when `work.loop.agents.refine.mode` is set in
-`.aof/aof.config.json` (its home is `src/loop-bounds.mjs`), and composes nothing when it is unset,
-so a loop-driven refine falls back to `work.agents.mode` exactly as a hand-run one does. Either flag
-changes only WHO does the work, never WHAT is produced: the same documents, the same contracts, the
-same gates.
+**Execution mode.** Resolve from `work.agents.mode`, which governs the refine an operator types:
+`work.agents.mode: "solo"` resolves to solo (play every role inline in this session), and
+`work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents). **An unset
+`work.agents.mode` resolves to solo** — this command's own default, because a contract is cheapest
+written in one context that already holds the story, its ADRs and the code, and a single author
+keeps sibling tasks consistent. **`--solo` OVERRIDES an orchestrated config to solo for this run**
+— the same effect as `work.agents.mode: "solo"`, without editing config — and **`--orchestrated`
+OVERRIDES a solo config to orchestrated for this run**, its twin in the other direction. The two
+together are contradictory: STOP before any role runs and report it. The loop composes a flag on
+every refine it drives: `work.loop.agents.refine.mode` when set, `--solo` when unset — the loop's
+own default, whose home is `src/loop-bounds.mjs`. A loop-driven refine therefore never reads
+`work.agents.mode`. Either flag changes only WHO does the work, never WHAT is produced: the same
+documents, the same contracts, the same gates.
 
-Use it when the orchestration is costing more than it buys — a well-trodden change where the
-main session already holds the context a fresh sub-agent would have to rediscover. A spawned agent
-starts cold: it re-reads the codebase, re-derives what you already know, and hands back a summary
-you then re-read. Inline pays none of that, at the cost of the parallelism and the independent
-perspective a separate agent brings. In solo mode the roles are still played in full and their
-outputs still land in the same files — you are the architect, the QA and the developer in turn.
+Solo is the default because the orchestration usually costs more than it buys: the main session
+already holds the context a fresh sub-agent would have to rediscover. A spawned agent starts cold:
+it re-reads the codebase, re-derives what you already know, and hands back a summary you then
+re-read. Inline pays none of that, at the cost of the parallelism and the independent perspective a
+separate agent brings — reach for `--orchestrated` when that perspective is worth the cold starts.
+In solo mode the roles are still played in full and their outputs still land in the same files —
+you are the architect, the QA and the developer in turn.
+
+**`--thinking <level>` is a STOP, never a setting.** This session's effort was fixed when it started:
+the Agent tool takes a model but no effort, and only `/effort` changes a running session's, which
+this command cannot type for the operator. So when `$ARGUMENTS` carries `--thinking <level>`, STOP
+before the run is minted and before any role runs, and print what to do: run `/effort <level>`
+(spelling `extra-high` as `xhigh`; `low`, `medium`, `high`, `xhigh` and `max` are typed as
+given), then re-run `aof:refine` without `--thinking`. Say plainly that the session's effort was NOT
+changed, and that the subagents this command spawns inherit the session's effort unless
+`work.agents.effort` pins their role. A level outside the six accepted spellings — `low`, `medium`,
+`high`, `xhigh`, `extra-high`, `max` — is named as unknown, with those six listed. Never report
+an effort as set when it was not. (A loop-driven session is launched at its effort by
+`aof work loop --thinking`, and is never handed this flag.)
 </config>
 
 <process>
@@ -213,6 +229,10 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
 
 - **story — Contract (Three Amigos):** author the task `.feature` files under `tasks/`: PO writes the
   headline Scenarios; `aof-qa` writes the Examples tables; `aof-developer` checks feasibility.
+  **Under orchestrated mode, one `aof-qa` writes the Examples tables for all of the story's tasks**
+  — a single pass that sees every task at once. **The QA pass is never split into one agent per
+  task**: each such agent re-reads the same story, ADRs and code at full cost, and none of them sees
+  its siblings (measured 2026-09-27: about eleven `aof-qa` agents in flight on one story's refine).
   **In solo mode you play all three yourself, in that order, in this session — no agent is
   spawned.** The three passes still happen and the contract is the same; what disappears is three
   cold starts and three hand-back summaries. **Litmus**

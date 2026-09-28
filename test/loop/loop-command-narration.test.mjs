@@ -16,7 +16,8 @@ import { loopStopsDir, markStopHonoured, requestLoopStop } from "../../src/loop/
 
 // 130/02 (ADR-003 §6) — `Cleared` joins the in-flight class: the resume's clear of a standing
 // stop request rides `narrate` by the same role rule, FF-12602's eleventh line.
-const IN_FLIGHT = /^(Driving|Retrying|Resumed|Reclaimed|Gate|Cleared) /u;
+// 141 — `Thinking:` joins it: the effort line is printed before the first drive, on `narrate`.
+const IN_FLIGHT = /^(Driving|Retrying|Resumed|Reclaimed|Gate|Cleared|Thinking:) /u;
 const isInFlight = (line) => IN_FLIGHT.test(line);
 
 /** Drive the fixture, collecting every line the ONE injected printer receives. */
@@ -125,7 +126,7 @@ export const loopCommandNarrationTests = [
         const lines = [];
         const driver = actingDriver(fx, {
           onCommand: async (command) => {
-            if (command === "/aof:continue 03/01") {
+            if (command === "/aof:continue 03/01 --solo") {
               // The agent's closing act, as the store received it: the item's single running run.
               // Taken only once the driver's session-id capture has LANDED on the record (live:
               // the capture at ~2s, the act twenty minutes later). `recordSessionId` is a
@@ -188,10 +189,12 @@ export const loopCommandNarrationTests = [
       const fx = await loopFixture();
       try {
         const { lines } = await collect(fx, { now: "2026-09-08T10:00:00.000Z" }, { onCommand: closingCommands(fx) });
+        // 141 — the effort line comes first, then the act line, both before the drive.
+        assert.equal(lines[0], "Thinking: refine high (default), continue high (default), verify high (default).");
         assert.equal(
-          lines[0],
+          lines[1],
           "Driving 03/01 — continue, cycle 1 of 3, L2.",
-          "the collector's FIRST line announces the drive",
+          "the collector's first line after the effort line announces the drive",
         );
         const firstDriven = lines.findIndex((line) => line.startsWith("Driven "));
         assert.ok(firstDriven > 0, "and it precedes every Driven row");
@@ -547,6 +550,67 @@ export const loopCommandNarrationTests = [
       const from = (lines) => lines.slice(lines.findIndex((line) => line.startsWith("Driven ")));
       assert.deepEqual(from(quiet), from(loud), "the account is byte-identical from the first Driven row");
       assert.deepEqual(quiet, loud.filter((line) => !isInFlight(line)), "quiet removes exactly the in-flight class, the Cleared line among it");
+    },
+  },
+  // ═══════════ 141 task 01 — aof work loop --thinking sets the effort of every session it drives ═══════════
+  {
+    name: "141/01 --thinking extra-high reaches every in-process drive: each session launches at --effort xhigh, and no directive carries --thinking",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const { lines, state, driver } = await collect(fx, { now: "2026-09-08T10:00:00.000Z", thinking: "extra-high" }, { onCommand: closingCommands(fx) });
+        assert.equal(state.state, "done");
+        assert.ok(driver.spawnCalls.length >= 2, "a continue and a verify were driven");
+        for (const call of driver.spawnCalls) {
+          const at = call.args.indexOf("--effort");
+          assert.equal(call.args[at + 1], "xhigh", `every session thinks at xhigh: ${call.args.join(" ")}`);
+          assert.equal(call.args.includes("--thinking"), false);
+        }
+        assert.equal(driver.typed.some((input) => input.includes("--thinking")), false, "no directive typed into a session carries --thinking");
+        assert.equal(lines[0], "Thinking: xhigh for every phase (--thinking).", "the effort line is narrated before the first drive");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "141/01 with no flag the loop passes nothing — each phase resolves its own effort, and the line says where each came from",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        fx.ctx.workspace.config.work.agents = { session: { effort: { refine: "medium" } } };
+        const { lines, driver } = await collect(fx, { now: "2026-09-08T10:00:00.000Z" }, { onCommand: closingCommands(fx) });
+        for (const call of driver.spawnCalls) {
+          const at = call.args.indexOf("--effort");
+          assert.equal(call.args[at + 1], "high", "a continue and a verify with nothing configured launch at high");
+        }
+        assert.equal(lines[0], "Thinking: refine medium (config), continue high (default), verify high (default).");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "141/01 the sequential child drive is handed the loop's level, and nothing when the loop has none",
+    async run() {
+      for (const [thinking, expected] of [["extra-high", "xhigh"], [undefined, null]]) {
+        const fx = await loopFixture();
+        try {
+          const calls = [];
+          const spawnPhaseDrive = async (args) => {
+            calls.push(args);
+            return { outcome: "document", document: { ok: true, outcome: "needs-input", sessionId: "child-session" }, exitCode: 0, stderrTail: [], spawn: {} };
+          };
+          await runLoopBody({ scope: "03", ...(thinking == null ? {} : { thinking }) }, { ...fx.ctx, spawnPhaseDrive, report: () => {} });
+          assert.equal(calls.length, 1);
+          if (expected == null) assert.equal("thinking" in calls[0], false, "no flag, nothing handed on");
+          else assert.equal(calls[0].thinking, expected);
+          const [run] = await readRuns(await resolveItemExact(fx.ctx, "03/01"));
+          assert.equal(run.brief.loop.thinking, expected, "the declaration carries it");
+        } finally {
+          await fx.cleanup();
+        }
+      }
     },
   },
 ];
