@@ -69,7 +69,7 @@ const ASK_WRITES = Object.freeze(["openAsk", "parkAsk", "clearAsk", "answerAsk"]
 const COMMANDS_MODULE = "src/discord/commands.mjs";
 const ALLOWED_VERBS = Object.freeze(["work:list", "work:loop"]);
 const STOP_HOME = "packages/work-loop/src/stop-request.mjs";
-const STOP_CORE = "src/loop/stop.mjs";
+const STOP_CORE = "packages/work-loop/src/stop.mjs";
 const RESUME_SEGMENT = "loop-resumes";
 
 function assertRead(what, count, floor, unit = "file(s)") {
@@ -326,7 +326,7 @@ export const archTests = [
       assert.deepEqual(resumeSpellers, [STOP_HOME], `the literal "${RESUME_SEGMENT}" is spelled only in ${STOP_HOME} — spelled in ${resumeSpellers.join(", ")}. Read the path through loopResumesDir() (ADR-009 §6)`);
       const core = units.find(({ rel }) => rel === STOP_CORE);
       assert.ok(core != null && !importSpecifiers(core.code).some(({ specifier }) => /child_process/u.test(specifier)), `${STOP_CORE} imports no child_process`);
-      const handOff = functionBody(core.code, "export async function handOffLoop(");
+      const handOff = functionBody(core.code, "async function handOffLoop(");
       assert.ok(handOff != null && /\brequestLoopResume\s*\(/u.test(handOff), "handOffLoop writes the resume request through requestLoopResume(");
 
       // The red probes run the SHIPPED detectors over patched units.

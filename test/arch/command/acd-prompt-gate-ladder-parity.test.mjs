@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import { markedRegion, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SHELL = "src/commands/loop.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PROMPT = "src/bundle/commands/continue.md";
 const LADDER_OPEN = "<gate_ladder>";
 const LADDER_CLOSE = "</gate_ladder>";

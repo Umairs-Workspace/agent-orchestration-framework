@@ -22,7 +22,7 @@ import { loopCommand } from "../../../src/commands/loop.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SHELL = "src/commands/loop.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
 // 129/04 (ADR-008 §3) — THE NEEDLE SCAN IS EXTENDED OVER THE FAMILY. The per-story ladder, the
 // retry ladder and the drive/settle trio moved from the shell into `src/loop/cycle.mjs`, and the
 // wave tick lives in `src/loop/wave.mjs`; `narrate` and `report` are PARAMETERS of every
@@ -31,7 +31,7 @@ const SHELL = "src/commands/loop.mjs";
 // was read before.
 // 131/03 (task 05, ruling 7) — `src/loop/ask.mjs` joins the family: the waiting, answered and
 // parked rows and the stale-ask line are narrated there, through the parameter it is handed.
-const FAMILY = Object.freeze([SHELL, "src/loop/cycle.mjs", "src/loop/wave.mjs", "src/loop/ask.mjs"]);
+const FAMILY = Object.freeze([SHELL, "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/work-loop/src/ask.mjs"]);
 const PRINTERS_CONTROL = "test/arch/command/acd-console-log-confined.test.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
@@ -67,7 +67,7 @@ export const archTests = [
       const printers = await read(PRINTERS_CONTROL);
       assert.match(printers, /\b12\b/u, "the roster's ceiling is still 12");
       assert.equal(
-        (printers.match(/^\s*"commands\/loop\.mjs":/gmu) ?? []).length,
+        (printers.match(/^\s*"\.\.\/packages\/work-loop\/src\/commands\/loop\.mjs":/gmu) ?? []).length,
         1,
         "the roster carries one row for this module, not a second one for progress",
       );
@@ -150,14 +150,14 @@ export const archTests = [
       assert.equal(calls.filter((call) => call.seam === "report" && /^`(?:Gate |Driving |Retrying |Resumed |Reclaimed |Lane |Wave |Baseline |Cleared )/u.test(call.text)).length, 0, "no in-flight line is on report anywhere in the family");
       assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 13, "thirteen in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request, the cleared resume request and the Thinking line");
       assert.equal(seamOf("thinkingNarration(resolved.thinking"), "narrate", "the Thinking line is in flight (141)");
-      assert.equal(printCalls(await source("src/loop/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
+      assert.equal(printCalls(await source("packages/work-loop/src/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
       assert.ok(inFlight.length >= 17, `the family narrates at least the seventeen the shell and the ladder hold (${inFlight.length})`);
     },
   },
   {
     name: "arch/131/03 FF-12602 (extended): the ask's rows are in flight — six narrate lines in ask.mjs, and every accountLine row is on narrate, never on report",
     run: async () => {
-      const ask = await source("src/loop/ask.mjs");
+      const ask = await source("packages/work-loop/src/ask.mjs");
       const calls = printCalls(ask);
       // The waiting row at the ask, at a re-entry and on each heartbeatMs; the parked row; the
       // answered row; and the stale-ask line of the --resume sweep (task 04, ruling 5).
@@ -173,7 +173,7 @@ export const archTests = [
     name: "arch/126/00 FF-12602 leg 3: every drive announces itself once — `Driving` before the main site, `Retrying` after the store admits the retry",
     run: async () => {
       const shell = await source(SHELL);
-      const cycle = await source("src/loop/cycle.mjs");
+      const cycle = await source("packages/work-loop/src/cycle.mjs");
       // 129/04 — the three drive sites are now spread over the shell and the ladder: the main
       // site stays in the shell, the cross to verify moved to `cycle.mjs` with the ladder, and the
       // in-process retry is the ladder's `drive(retried.record)` seam (the shell hands it

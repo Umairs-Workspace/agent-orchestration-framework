@@ -36,6 +36,7 @@ import { Readable } from "node:stream";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { declaredFunctions, ownerOf } from "./acd-lane-records-and-the-declaration.test.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
@@ -70,7 +71,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
 const ASK_HOME = "packages/work-loop/src/ask-request.mjs";
-const ASK = "src/loop/ask.mjs";
+const ASK = "packages/work-loop/src/ask.mjs";
 const DRIVER = "src/agent-session-driver.mjs";
 const RESUME = "src/commands/resume.mjs";
 const TERMINAL_FACES = Object.freeze(["src/mesh/terminal-input.mjs", "src/terminal-ws.mjs", DRIVER]);
@@ -78,14 +79,14 @@ const TERMINAL_INPUT_RE = /(?:^|\/)terminal-input(?:[-.][^/]*)?\.mjs$/u;
 const TRANSCRIPT_MAPPING = "async function readTranscriptTerminalOutcome(";
 // Task 00 ruling 5: the sites that compose the wait, by file and enclosing top-level function.
 const WAIT_SITES = Object.freeze([
-  { file: "src/commands/loop.mjs", fn: "runLoopBody", what: "the shell" },
-  { file: "src/loop/cycle.mjs", fn: "retryUntilTerminal", what: "cycle.mjs's retry ladder" },
-  { file: "src/loop/cycle.mjs", fn: "settleStoryCycle", what: "cycle.mjs's verify branch" },
-  { file: "src/loop/wave.mjs", fn: "runWaveBuild", what: "wave.mjs's lane branch" },
+  { file: "packages/work-loop/src/commands/loop.mjs", fn: "runLoopBody", what: "the shell" },
+  { file: "packages/work-loop/src/cycle.mjs", fn: "retryUntilTerminal", what: "cycle.mjs's retry ladder" },
+  { file: "packages/work-loop/src/cycle.mjs", fn: "settleStoryCycle", what: "cycle.mjs's verify branch" },
+  { file: "packages/work-loop/src/wave.mjs", fn: "runLane", what: "wave.mjs's lane branch" },
 ]);
-const REENTRY_SITE = Object.freeze({ file: "src/loop/cycle.mjs", fn: "reenterPrimaryAsks", what: "the --resume re-entry" });
+const REENTRY_SITE = Object.freeze({ file: "packages/work-loop/src/cycle.mjs", fn: "reenterPrimaryAsks", what: "the --resume re-entry" });
 const HALT_SPELLING = 'haltDecision("session-needs-input"';
-const PARKED_HALT = "export function parkedHalt(";
+const PARKED_HALT = "function parkedHalt(";
 // The stop set as 130 delivered it — 131 adds none (ADR-004).
 const LOOP_STOPS_AT_130 = Object.freeze([
   "uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress",
@@ -125,12 +126,7 @@ const resolvedImports = (unit) => importSpecifiers(unit.code).map(({ specifier }
 
 // The top-level function each index sits in (the last top-level declaration before it).
 function enclosingTopLevel(code, index) {
-  let owner = "<module>";
-  for (const match of code.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gmu)) {
-    if (match.index > index) break;
-    owner = match[1];
-  }
-  return owner;
+  return ownerOf(declaredFunctions(code), index)?.name ?? "<module>";
 }
 
 // Every call of `name(` that is not its own declaration: `{ rel, fn, at }`.

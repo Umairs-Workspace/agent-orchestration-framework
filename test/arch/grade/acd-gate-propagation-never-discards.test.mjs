@@ -56,8 +56,8 @@ export const BRANCH_PATH_MODULES = Object.freeze([
   "src/mesh/recovery-push.mjs",
   // 129/ADR-002 — the merge-home path.
   "src/work/dispatch.mjs",
-  "src/loop/wave.mjs",
-  "src/loop/cycle.mjs",
+  "packages/work-loop/src/wave.mjs",
+  "packages/work-loop/src/cycle.mjs",
 ]);
 const WORKTREE = "src/mesh/worktree.mjs";
 export const DIRTY_POLICIES = Object.freeze(["strict", "touched-paths"]);
@@ -261,7 +261,7 @@ export const archTests = [
     run: async () => {
       assert.deepEqual(
         [...BRANCH_PATH_MODULES].sort(),
-        ["src/loop/cycle.mjs", "src/loop/wave.mjs", "src/mesh/recovery-push.mjs", "src/mesh/worker-execution.mjs", "src/mesh/worktree.mjs", "src/work/dispatch.mjs"],
+        ["packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "src/mesh/recovery-push.mjs", "src/mesh/worker-execution.mjs", "src/mesh/worktree.mjs", "src/work/dispatch.mjs"],
         "BRANCH_PATH_MODULES as a set",
       );
       for (const rel of BRANCH_PATH_MODULES) assert.ok((await readModule(rel)).length > 0, `${rel} was read`);
@@ -299,12 +299,12 @@ export const archTests = [
         ["src/work/dispatch.mjs", '"reset", "--hard", base', "src/work/dispatch.mjs — reset --hard: reset --hard"],
         ["src/work/dispatch.mjs", '"checkout", "-B", branch, base', "src/work/dispatch.mjs — checkout -B: checkout -B"],
         ["src/work/dispatch.mjs", '"push", "-f", "origin", branch', "src/work/dispatch.mjs — force push: push -f origin"],
-        ["src/loop/wave.mjs", '"rebase", "main"', "src/loop/wave.mjs — rebase: rebase main"],
-        ["src/loop/wave.mjs", '"branch", "-f", branch, tip', "src/loop/wave.mjs — branch -f: branch -f"],
-        ["src/loop/wave.mjs", '"update-ref", "refs/heads/main", tip', "src/loop/wave.mjs — update-ref: update-ref refs/heads/main"],
-        ["src/loop/cycle.mjs", '"push", "--force-with-lease", "origin"', "src/loop/cycle.mjs — force push: push --force-with-lease origin"],
-        ["src/loop/cycle.mjs", '"push", "--force", "origin", branch', "src/loop/cycle.mjs — force push: push --force origin"],
-        ["src/loop/cycle.mjs", '"branch", "--force", branch, tip', "src/loop/cycle.mjs — branch -f: branch --force"],
+        ["packages/work-loop/src/wave.mjs", '"rebase", "main"', "packages/work-loop/src/wave.mjs — rebase: rebase main"],
+        ["packages/work-loop/src/wave.mjs", '"branch", "-f", branch, tip', "packages/work-loop/src/wave.mjs — branch -f: branch -f"],
+        ["packages/work-loop/src/wave.mjs", '"update-ref", "refs/heads/main", tip', "packages/work-loop/src/wave.mjs — update-ref: update-ref refs/heads/main"],
+        ["packages/work-loop/src/cycle.mjs", '"push", "--force-with-lease", "origin"', "packages/work-loop/src/cycle.mjs — force push: push --force-with-lease origin"],
+        ["packages/work-loop/src/cycle.mjs", '"push", "--force", "origin", branch', "packages/work-loop/src/cycle.mjs — force push: push --force origin"],
+        ["packages/work-loop/src/cycle.mjs", '"branch", "--force", branch, tip', "packages/work-loop/src/cycle.mjs — branch -f: branch --force"],
       ];
       for (const [rel, argv, expected] of rows) {
         const offenders = await forbiddenFormOffenders(plant(rel, argv));

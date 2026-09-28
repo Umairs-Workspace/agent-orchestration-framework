@@ -40,7 +40,7 @@ import {
   harnessRefusal,
   tunableSet,
 } from "../../../src/work-acceptor/admissibility.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedParenSpan } from "../../support/source-slice.mjs";
 
 const root = process.cwd();
@@ -94,7 +94,7 @@ function readsBound(unit, key) {
   if (new RegExp(`\\b${leaf}FromConfig\\b`, "u").test(code)) return true;
   if (new RegExp(`\\bresolve${capitalised}\\b`, "u").test(code)) return true;
   if (new RegExp(`\\b${parent}\\s*\\??\\.\\s*${leaf}\\b`, "u").test(code)) return true;
-  const importsHome = home !== null && new RegExp(`from\\s+"[^"]*${home}"`, "u").test(unit.code);
+  const importsHome = /from\s+["']@aof\/contracts\/loop-bounds["']/u.test(unit.code) || home !== null && new RegExp(`from\\s+"[^"]*${home}"`, "u").test(unit.code);
   return importsHome && new RegExp(`\\b${leaf}\\b`, "u").test(code);
 }
 
@@ -150,8 +150,8 @@ function withoutReadsOf(code, key) {
 }
 
 async function productionUnits() {
-  const files = await readSrcFiles(root);
-  return Promise.all(files.map(async (file) => ({ rel: file.rel, code: await readFile(file.path, "utf8") })));
+  const files = await readRuntimeFiles(root);
+  return Promise.all(files.map(async (file) => ({ rel: file.rel.replace(/^src\//u, ""), code: await readFile(file.path, "utf8") })));
 }
 
 // ── 61/FF-6109 — THE SECOND PREDICATE, BESIDE THE FIRST (61/ADR-008 §1) ───────────────────
@@ -208,8 +208,8 @@ export const archTests = [
       // rung-3 grade, moved from the shell to `src/loop/cycle.mjs`; the shell reaches both
       // through `settleStoryCycle` and holds no producer of its own. The reach this control
       // protects is therefore read off the LADDER, and the shell is held to reaching the ladder.
-      const shell = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
-      const command = await readFile(path.join(root, "src", "loop", "cycle.mjs"), "utf8");
+      const shell = await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8");
+      const command = await readFile(path.join(root, "packages", "work-loop", "src", "cycle.mjs"), "utf8");
       const engine = await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8");
       assert.match(shell, /settleStoryCycle\(phaseRun, bookkeeping, ctx, \{/u, "the shell reaches the producer through the ladder");
       assert.doesNotMatch(shell, /recordBuildProgress\(/u, "…and holds no producer call of its own");
@@ -246,8 +246,8 @@ export const archTests = [
   {
     name: "arch/69 F-69-V7 the command creates no second progress measurement home",
     run: async () => {
-      const command = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
-      for (const rel of ["src/commands/loop.mjs", "src/loop/cycle.mjs", "src/loop/wave.mjs"]) {
+      const command = await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8");
+      for (const rel of ["packages/work-loop/src/commands/loop.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs"]) {
         const member = await readFile(path.join(root, rel), "utf8");
         assert.doesNotMatch(member, /\["status",\s*"--porcelain"\]/u, `${rel} measures no porcelain of its own`);
         assert.doesNotMatch(member, /\["diff",\s*"--numstat"/u, `${rel} measures no numstat of its own`);

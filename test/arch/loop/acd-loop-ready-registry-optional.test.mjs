@@ -71,7 +71,7 @@ export const archTests = [
       assert.doesNotMatch(doctor, /^import[^\n]+command-core\.mjs/mu, "a static command-core import closes the registry ring");
       assert.match(doctor, /await\s+import\s*\(\s*["'](?:\.\.?\/)+command-core\.mjs["']\s*\)/u);
       assert.match(doctor, /invoke\s*\(\s*["']work:loops-validate["']/u);
-      const command = stripComments(await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8"));
+      const command = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.match(command, /invokeRegistered\(\s*["']work:doctor["']/u);
       assert.match(command, /resolveLoopLevelGate\(resolved\.level, l3Gate\)/u);
     },

@@ -198,7 +198,7 @@ export const archTests = [
     run: async () => {
       const engine = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8"));
       assert.doesNotMatch(engine, /node:(?:fs|fs\/promises|child_process|process|os)|Date\.now\s*\(|new\s+Date\s*\(|\bimport\s*\(/u);
-      const command = stripComments(await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8"));
+      const command = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.doesNotMatch(command, /\b(?:writeFile|mkdir|rename)\s*\(/u);
       const modules = await modulesUnder(path.join(root, "src"));
       assert.ok(modules.length > 150, `src was actually walked: ${modules.length} modules`);

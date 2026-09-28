@@ -40,8 +40,8 @@ import { fileURLToPath } from "node:url";
 import { matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_DIR = "src/loop";
-const WAVE = "src/loop/wave.mjs";
+const FAMILY_DIR = "packages/work-loop/src";
+const WAVE = "packages/work-loop/src/wave.mjs";
 const WAVE_RUN_MINT = "mintWaveRun";
 
 const TRANSITION_RE = /\btransitionRun(?:Start|Complete)\s*\(/gu;

@@ -135,13 +135,13 @@ export const archTests = [
   {
     name: "arch/FF-12706 (acd-next-walkers-exclude-archived): the loop has no walk of its own — src/commands/loop.mjs and src/work/loop.mjs import none of the four disk readers from src/work.mjs",
     run: async () => {
-      for (const rel of ["src/commands/loop.mjs", "packages/work-loop/src/engine.mjs"]) {
+      for (const rel of ["packages/work-loop/src/commands/loop.mjs", "packages/work-loop/src/engine.mjs"]) {
         const stripped = stripComments(await readFile(path.join(repoRoot, ...rel.split("/")), "utf8"));
         assert.deepEqual(importsDiskReaderFromWork(stripped, rel), [], `${rel} imports no disk reader from src/work.mjs — the loop reaches the stream only through the registered work:next and work:list`);
       }
-      assert.deepEqual(importsDiskReaderFromWork('import { listItems as scan } from "@aof/work/discovery";', "src/commands/loop.mjs"), ["listItems"], "a package import is still a disk-reader dependency");
-      assert.deepEqual(importsDiskReaderFromWork('import { nextWork as next } from "@aof/work/readiness";', "src/commands/loop.mjs"), ["nextWork"], "package readiness remains a disk reader");
-      const loopShell = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+      assert.deepEqual(importsDiskReaderFromWork('import { listItems as scan } from "@aof/work/discovery";', "packages/work-loop/src/commands/loop.mjs"), ["listItems"], "a package import is still a disk-reader dependency");
+      assert.deepEqual(importsDiskReaderFromWork('import { nextWork as next } from "@aof/work/readiness";', "packages/work-loop/src/commands/loop.mjs"), ["nextWork"], "package readiness remains a disk reader");
+      const loopShell = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.ok(/"work:next"/.test(loopShell) && /"work:list"/.test(loopShell), "…and those two are the legs it does use");
     },
   },

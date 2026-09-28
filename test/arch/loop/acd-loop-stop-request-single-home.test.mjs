@@ -67,7 +67,7 @@ const SEGMENT = "loop-stops";
 // (131/ADR-009 §6).
 const RESUME_SEGMENT = "loop-resumes";
 const READERS = Object.freeze(["src/loop/stop.mjs", "src/commands/loop.mjs", "src/mesh/declarations.mjs", "src/mesh/presence.mjs"]);
-const SHELL = "src/commands/loop.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const CORE = "src/loop/stop.mjs";
 const CORE_IMPORTERS = Object.freeze(["src/commands/loop.mjs", "src/mesh/ui-serve.mjs"]);
 const STATE_WORDS = Object.freeze(['"requested"', '"honoured"', "'requested'", "'honoured'"]);
@@ -319,7 +319,7 @@ export const archTests = [
       assertRead("the src/** sweep", units.length, 150);
       const core = units.find(({ rel }) => rel === CORE);
       assert.ok(core != null, `NOT FOUND: ${CORE}`);
-      assert.match(core.code, /\bexport\s+async\s+function\s+stopLoop\s*\(/u, "stopLoop is defined in src/loop/stop.mjs — the one core below the command layer (ADR-002 §3)");
+      assert.match(core.code, /\bexport\s+const\s+stopLoop\s*=\s*implementation\.stopLoop/u, "stopLoop is defined in src/loop/stop.mjs — the one core below the command layer (ADR-002 §3)");
       // THE IMPORTERS, by resolved specifier, each naming the binding: the command and the route.
       const importers = importersOf(units, CORE).filter((rel) => /\bstopLoop\b/u.test(units.find((unit) => unit.rel === rel).code)).sort();
       assert.deepEqual(

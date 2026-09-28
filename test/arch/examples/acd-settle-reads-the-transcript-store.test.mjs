@@ -19,8 +19,8 @@ import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SEAM = "src/effects/run-transitions.mjs";
 const DRIVEN = [
-  ["src/loop/cycle.mjs", "export async function settleDriven("],
-  ["src/commands/drive.mjs", null],
+  ["packages/work-loop/src/cycle.mjs", "async function settleDriven("],
+  ["packages/work-loop/src/commands/drive.mjs", null],
 ];
 
 const source = async (file) => stripComments(await readFile(path.join(repoRoot, file), "utf8"));

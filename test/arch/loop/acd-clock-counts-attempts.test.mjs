@@ -36,7 +36,7 @@ import { functionBody, matchedParenSpan, stripComments } from "../../support/sou
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const ENGINE = "packages/work-loop/src/engine.mjs";
-const SHELL = "src/commands/loop.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
 
@@ -223,10 +223,10 @@ export const archTests = [
       // 129/04 (ADR-008 §3) — the summer's callers moved with the ladder into `src/loop/cycle.mjs`
       // (`budgetElapsedMs`, the one budget home); the shell and the wave reach the walk through it.
       // No member of the family traverses `retryOf` itself.
-      for (const rel of [SHELL, "src/loop/cycle.mjs", "src/loop/wave.mjs"]) {
+      for (const rel of [SHELL, "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs"]) {
         assert.doesNotMatch(await source(rel), /\.retryOf/u, `${rel} declares no \`retryOf\` traversal of its own: the one walk is the engine's`);
       }
-      assert.match(await source("src/loop/cycle.mjs"), /retryLineage\(/u, "…and the ladder's budget home calls it");
+      assert.match(await source("packages/work-loop/src/cycle.mjs"), /retryLineage\(/u, "…and the ladder's budget home calls it");
     },
   },
   {
@@ -357,7 +357,7 @@ export const archTests = [
       // ladder's in-process retry site (`src/loop/cycle.mjs`, moved with the retry ladder) and the
       // wave's lane-resume site (`src/loop/wave.mjs`). Every one obtains its elapsed from the ONE
       // budget home (`budgetElapsedMs`, in the ladder module) and the summer is called exactly once.
-      const shell = [await source(SHELL), await source("src/loop/cycle.mjs"), await source("src/loop/wave.mjs")].join("\n");
+      const shell = [await source(SHELL), await source("packages/work-loop/src/cycle.mjs"), await source("packages/work-loop/src/wave.mjs")].join("\n");
       const shellOnly = await source(SHELL);
       // The call's arguments are cut by MATCHING PARENS, not by a regex looking for the next
       // `})` — the elapsed argument is itself a call with a bag, so a non-greedy pattern would

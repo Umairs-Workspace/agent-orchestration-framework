@@ -608,3 +608,55 @@ Verification:
 
 Evidence is in .tmp/workspace-migration/work-loop/ (ignored). Full migration, full-root-suite
 and native/platform verification remain outstanding.
+
+## Work-loop orchestration and command contribution — 2026-09-28
+
+Moved cycle, wave, ask and stop orchestration, progress sampling, diagnostics, argv composition,
+the loop command and all three phase drivers into `@aof/work-loop`. Core modules now only compose
+named service groups and preserve their existing exports. The package owns a four-command
+contribution; registry order and all 117 command IDs are unchanged. Its dependencies are contracts
+and foundation, with no external dependency added.
+
+The package receives work/run services, grading, execution, worktree operations, notifications
+and command invocation. It contains no import of core, mesh or the assembled registry. The
+per-call invocation override still takes precedence over the supplied registry callback. Core's
+adapters defer registry access, which remains transitional composition to remove in the final
+core assembly; this change does not claim that all application runtime cycles are resolved.
+Diagnostic installation state remains module-scoped for process-wide idempotency.
+
+Source checks now inspect package implementations, follow public bounds imports and check adapter
+wiring separately. The ask-call classifier uses the innermost function inside a factory. The
+printer and bound-consumer censuses include runtime packages. Planted-violation checks remain.
+The relocated loop-shell citation was refreshed in the canonical bundle, its manifest and the
+previously approved `.aof/loops/autonomous-cascade.md` copy plus its single existing lock hash.
+No other generated configuration, work state or AOF workflow action was changed.
+
+Verification (evidence under `.tmp/workspace-migration/work-loop-orchestration/`, ignored):
+
+- All 997 unit checks pass. The final root command bridge passes all 87 internal package cases,
+  including two new tests for inert composition, contribution completeness, injected invocation
+  and per-call override precedence.
+- The 1,981-case loop/architecture selection completed with seven stale source/citation assertions;
+  all seven pass in `behavior-final-rerun.log` after correction. No behavioral failure remained.
+- All 49 wave cases are covered in isolated, bounded processes: 48 initially passed and the sole
+  stale bounds-import assertion passes after correction. Thus all 2,030 cases in this selection
+  are covered; this is not a full-root-suite result.
+- The initial 520-case architecture selection's 49 failures all pass on focused rerun. The final
+  supplemental selection passes 114 checks, and the final ask/command contract selection passes
+  41 checks. These selections overlap the broad loop run; their counts are not additive.
+- All eight legacy adapter export sets match captured baselines; all 117 command IDs retain
+  their order. The argv leaf is byte-identical to its pre-move source.
+- Immutable pinned Yarn installation with scripts skipped and the supply-chain audit pass
+  (zero audit warnings; the existing Yarn peer warning remains). The only lockfile change is
+  work-loop's internal dependency on contracts.
+- Browser bundles for the zero-import engine and argv pass. The standalone JavaScript bundle
+  includes all moved implementations and keeps native node-pty external.
+- A real copied installation resolves every new package API internally and passes the loop
+  probe plus all three driver dry runs. Request records, Node/SEA child argv, graph commands
+  and prior work discovery/readiness/validation parity checks also pass in that payload.
+- Fresh Claude/Codex/OpenCode rendering, output bytes/hashes and a no-op update pass in a
+  temporary installation; the repository's approved generated citation and hash are synchronized.
+
+The full migration remains active. Execution/run storage, remaining work services, mesh,
+messaging, knowledge, server, final core/apps moves and adapter removal are still required.
+Full-root-suite, native executable and platform verification remain outstanding.

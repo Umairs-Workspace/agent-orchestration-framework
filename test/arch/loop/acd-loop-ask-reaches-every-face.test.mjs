@@ -117,11 +117,11 @@ const NOW_ISO = "2026-09-25T12:00:00.000Z";
 // is built for. The death site builds one envelope whose event is `loop-relaunched` or `loop-died`.
 const FIRING_SITES = Object.freeze([
   "src/commands/item-status.mjs milestone-accepted",
-  "src/commands/loop.mjs loop-died/loop-relaunched",
-  "src/commands/loop.mjs loop-halted",
+  "packages/work-loop/src/commands/loop.mjs loop-died/loop-relaunched",
+  "packages/work-loop/src/commands/loop.mjs loop-halted",
   "src/commands/resume.mjs session-answered",
-  "src/loop/ask.mjs session-needs-input",
-  "src/loop/ask.mjs session-parked-unanswered",
+  "packages/work-loop/src/ask.mjs session-needs-input",
+  "packages/work-loop/src/ask.mjs session-parked-unanswered",
   // 131/12 (ADR-010 §4) — the control's post of a worker's ask, on the edge into needs-input.
   "src/mesh/park-resume.mjs session-needs-input",
 ]);
@@ -130,7 +130,7 @@ const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "ela
 // Task 00 ruling 3: the form's direct importers — and, as amended at 131/11 (ADR-009 §5), the slash
 // commands' renders, which read a waiting row exactly as the terminal and the posted message do.
 const FORM_IMPORTERS = Object.freeze(["src/discord/commands.mjs", "src/loop/ask.mjs", "src/notify/discord.mjs", "ui/src/board/action.mjs"]);
-const SHELL = "src/commands/loop.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
 const UI_OUTSIDE = Object.freeze([{ file: "ui/src/board/action.mjs", specifier: "../../../src/notify/form.mjs" }]);
@@ -550,8 +550,13 @@ export const archTests = [
       const sites = notifySites(units).sort();
       const strays = sites.filter((site) => !FIRING_SITES.includes(site));
       assert.deepEqual(strays, [], `every notify( call under src/ is one of the seven sites (ADR-005 §4, ADR-010 §4) — not one: ${strays.join(", ")}`);
-      assert.deepEqual(sites, [...FIRING_SITES], `the seven sites each fire once, by file and event literal — found ${sites.join(", ")}`);
-      for (const rel of new Set(FIRING_SITES.map((site) => site.split(" ")[0]))) {
+      assert.deepEqual(sites, [...FIRING_SITES].sort(), `the seven sites each fire once, by file and event literal — found ${sites.join(", ")}`);
+      for (const owner of new Set(FIRING_SITES.map((site) => site.split(" ")[0]))) {
+        const rel = ({ "packages/work-loop/src/commands/loop.mjs": "src/commands/loop.mjs", "packages/work-loop/src/ask.mjs": "src/loop/ask.mjs" })[owner] ?? owner;
+        if (rel !== owner) {
+          assert.match(unitOf(units, owner).code, /const\s*\{\s*buildNotifyEnvelope,\s*notify\s*\}\s*=\s*notifications/u, `${owner}: receives notification services`);
+          assert.match(unitOf(units, rel).code, /notifications:\s*\{\s*buildNotifyEnvelope,\s*notify/u, `${rel}: supplies the shared notification services`);
+        }
         assert.ok(importSpecifiers(unitOf(units, rel).code).some(({ specifier }) => resolved(rel, specifier) === NOTIFY), `${rel} imports buildNotifyEnvelope and notify from ${NOTIFY}`);
       }
       const covered = [...new Set(FIRING_SITES.flatMap((site) => site.split(" ")[1].split("/")))].sort();

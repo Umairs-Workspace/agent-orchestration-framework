@@ -80,6 +80,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aof/work-loop@workspace:packages/work-loop"
   dependencies:
+    "@aof/contracts": "workspace:*"
     "@aof/foundation": "workspace:*"
   languageName: unknown
   linkType: soft

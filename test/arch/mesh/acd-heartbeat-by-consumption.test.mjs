@@ -58,7 +58,7 @@ export const archTests = [
     // threshold, no second consumer, no `heartbeat()` written directly.
     name: "arch/129/04 FF-6903 (extended): the wave run's interval is the one admitted timer — one setInterval in wave.mjs, appending the hook's bytes and consuming through the one writer",
     run: async () => {
-      const wave = await readFile(path.join(root, "src/loop/wave.mjs"), "utf8");
+      const wave = await readFile(path.join(root, "packages/work-loop/src/wave.mjs"), "utf8");
       const stripped = wave.replace(/\/\/[^\n]*/gu, "");
       const timers = [...stripped.matchAll(/\bsetInterval\(/gu)];
       // Two spellings of ONE timer: the default seam (`timers.setInterval` resolving to the
@@ -80,7 +80,7 @@ export const archTests = [
       assert.match(home, /enqueueHeartbeat[\s\S]*consumeHeartbeatQueue\(item\)/u, "…consumed through the one consumer");
       // The composer's beat is admitted BY NAME (ADR-001 §3): it calls the one enqueue at its checks and
       // arms no timer of its own.
-      const ask = (await readFile(path.join(root, "src/loop/ask.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
+      const ask = (await readFile(path.join(root, "packages/work-loop/src/ask.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
       assert.match(ask, /enqueueHeartbeat\(item, runId, iso\(at\)\)/u, "the ask's owner beats through the one enqueue");
       assert.doesNotMatch(ask, /\bsetInterval\(/u, "…and arms no interval");
       assert.doesNotMatch(ask, /JSON\.stringify\(\{ runId, at \}\)/u, "…and spells no copy of the bytes");

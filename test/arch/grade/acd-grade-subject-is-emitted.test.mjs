@@ -142,7 +142,7 @@ export const archTests = [
         assert.doesNotMatch(body, /message\.(?:includes|match)\s*\(/u, `${module} attributes nothing by matching rendered prose`);
       }
       // …AND THE SHELL ITSELF STILL HOLDS IT, over the rungs 54/02 added.
-      const shell = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+      const shell = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.doesNotMatch(shell, /message\.(?:includes|match)\s*\(/u, "the loop shell's own property is unchanged by the new gate rungs");
     },
   },

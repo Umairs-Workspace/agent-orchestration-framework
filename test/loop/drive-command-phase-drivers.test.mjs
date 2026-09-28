@@ -1647,7 +1647,7 @@ export const driveCommandPhaseDriverTests = [
   {
     name: "140/01 the drive spells no mode of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS",
     async run() {
-      const drive = stripComments(await readFile(new URL("../../src/commands/drive.mjs", import.meta.url), "utf8"));
+      const drive = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/drive.mjs", import.meta.url), "utf8"));
       const flagsLine = drive.split(/\r?\n/u).filter((line) => line.includes("PHASE_MODE_FLAGS = Object.freeze("));
       assert.equal(flagsLine.length, 1, "the flag map is declared on one line");
       const outside = drive.split(flagsLine[0]).join("");
@@ -2014,7 +2014,7 @@ function driveAnswerTests() {
             if (file !== "record done") assert.equal(JSON.stringify(await readRuns(item)), before, `${label}: the runs are byte-unchanged`);
           }, { sessionOnRecord: file === "no session on record" ? null : "S1" });
         }
-        const drive = await readFile(fileURLToPath(new URL("../../src/commands/drive.mjs", import.meta.url)), "utf8");
+        const drive = await readFile(fileURLToPath(new URL("../../packages/work-loop/src/commands/drive.mjs", import.meta.url)), "utf8");
         const stripped = drive.replace(/\/\/[^\n]*/gu, "");
         const answerRead = stripped.indexOf("await readAnswerFile(input.answer)");
         assert.ok(answerRead > 0, "the answer is read in run()");

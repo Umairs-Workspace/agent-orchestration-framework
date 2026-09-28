@@ -243,7 +243,10 @@ export const archTests = [
 
       const carriers = importersOf(units, HOME).filter((rel) => rel !== HOME);
       assertRead("the modules that carry an ask", carriers.length, READERS.length, "importer(s)");
-      const spelled = carriers.flatMap((rel) => spelledAskStates(unitOf(units, rel).code).map((hit) => `${rel}: ${hit}`));
+      // Include implementations receiving the ask reader through a port as well as direct importers.
+      const implementations = units.filter(({ code }) => /const\s*\{[^}]*\}\s*=\s*askRequests/u.test(code)).map(({ rel }) => rel);
+      assert.ok(implementations.includes("packages/work-loop/src/ask.mjs"), "the package ask reader is included");
+      const spelled = [...new Set([...carriers, ...implementations])].flatMap((rel) => spelledAskStates(unitOf(units, rel).code).map((hit) => `${rel}: ${hit}`));
       assert.deepEqual(spelled, [], `an ask record's state is read through ASK_STATES, never compared against a spelled "waiting"/"parked"/"answered" — found: ${spelled.join(" | ")}`);
       // SELF-CHECK — the detector sees an ask record's spelled state and leaves another vocabulary alone.
       assert.equal(spelledAskStates('const file = await readAsk(dir, id);\nif (file.state === "parked") x();').length, 1, "self-check: a bound ask record's spelled state is seen");
@@ -323,8 +326,12 @@ export const archTests = [
       const ask = unitOf(units, ASK);
       assert.ok(importSpecifiers(ask.code).some(({ specifier }) => resolved(ASK, specifier) === OBSERVE), "src/loop/ask.mjs imports its reader from src/work/observe.mjs by resolved specifier (ruling 2)");
       assert.match(ask.code, /import\s*\{[^}]*\breadAskQuestion\b[^}]*\}\s*from\s*["']\.\.\/work\/observe\.mjs["']/u, "…and the reader is readAskQuestion");
+      const implementation = unitOf(units, "packages/work-loop/src/ask.mjs");
+      assert.match(ask.code, /transcripts:\s*\{\s*readAskQuestion/u, "the adapter supplies the shared transcript reader");
+      assert.match(implementation.code, /const\s*\{\s*readAskQuestion\s*\}\s*=\s*transcripts/u, "the implementation receives that reader");
       for (const [needle, what] of [[/\bJSON\s*\.\s*parse\s*\(/u, "JSON.parse("], [/stop_reason/u, "stop_reason"], [/\.jsonl\b/u, ".jsonl"], [/\breadFile\s*\(/u, "readFile("]]) {
         assert.doesNotMatch(ask.code, needle, `src/loop/ask.mjs walks no transcript itself — it spells ${what}`);
+        assert.doesNotMatch(implementation.code, needle, `the ask package walks no transcript itself — it spells ${what}`);
       }
     },
   },

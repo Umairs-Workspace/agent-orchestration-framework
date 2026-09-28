@@ -179,8 +179,8 @@ export const loopCommandBoardStateTests = [
         // …and neither `scope` nor `level` appears in the id, because the id is a LITERAL: the
         // constant's initialiser is a plain string with no interpolation and no expression, which
         // is what makes "not derived" structural rather than a property of these two rows.
-        const source = stripComments(await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8"));
-        assert.match(source, /export const SHELL_LOOP_ID = "loop:autonomous-cascade";/u);
+        const source = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8"));
+        assert.match(source, /const SHELL_LOOP_ID = "loop:autonomous-cascade";/u);
         for (const run of [...runsA, ...runsB]) {
           assert.equal(run.brief.loop.id.includes(run.brief.loop.scope), false);
           assert.equal(run.brief.loop.id.includes(run.brief.loop.level), false);

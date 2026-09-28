@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function: acd-console-log-confined (milestone 42 wave (d) leg d1;
 // PRD-command-spine-effects-ledger §command-spine-faces — "`console.log` confined to
 // the face", the third of d1's owed items).
@@ -49,7 +50,7 @@ const PRINTERS = {
   // read-only probe, which never launches (`--json`/`dryRun` is resolved before
   // cli.launch is consulted, FF-5304), so the one-document discipline is preserved.
   // The core itself defaults to NO_PRINT — this row licenses the launch body alone.
-  "commands/loop.mjs": "cli.launch body — the loop shell's per-act report lines while it drives a range",
+  "../packages/work-loop/src/commands/loop.mjs": "cli.launch body — the loop shell's per-act report lines while it drives a range",
 
   // (3) Interactive + long-lived-server prints that are not a command document.
   "prompt.mjs": "interactive prompting — the question IS the output, and it is not a document",
@@ -83,14 +84,8 @@ function printsToConsole(source) {
 
 // Every .mjs under src/, repo-relative to src/ (one level of subdirectory is enough —
 // spine/, commands/, effects/, import/).
-async function srcModules(dir = SRC, prefix = "") {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) out.push(...(await srcModules(path.join(dir, entry.name), rel)));
-    else if (entry.name.endsWith(".mjs")) out.push(rel);
-  }
-  return out;
+async function srcModules() {
+  return (await readRuntimeFiles(repoRoot)).map(file => path.relative(SRC, file.path).replaceAll("\\", "/"));
 }
 
 export const archTests = [

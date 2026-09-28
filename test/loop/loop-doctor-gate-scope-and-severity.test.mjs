@@ -229,7 +229,7 @@ export const loopDoctorGateScopeAndSeverityTests = [
       // A CODE ADDED TO THE FROZEN ARRAY IS EITHER ADMITTED OR EXCLUDED BY THE SAME FILTER,
       // WITH NO SECOND LIST TO EDIT — proven on the source, because the property is about
       // there being no literal to fall out of step.
-      const source = await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8");
       const code = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
       assert.match(code, /DOCTOR_GATE_CODES\s*=\s*Object\.freeze\(\s*CONTROL_FINDING_CODES\.filter/u, "the set is derived from the frozen array by filter");
       for (const admitted of expected) {
@@ -259,7 +259,7 @@ export const loopDoctorGateScopeAndSeverityTests = [
         // Cut STRUCTURALLY through the one home (`test/support/source-slice.mjs`), never by a
         // positional window or an `indexOf` sentinel end — `acd-test-suite-registration`'s
         // ledger records six instruments this repo got wrong that way.
-        const source = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+        const source = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
         const body = functionBody(source, "async function invokeGateLadder(");
         assert.ok(body != null, "the ladder's body was found structurally");
         assert.ok(!/\bloopReady\b/u.test(body), "the ladder reads loopReady nowhere");
@@ -278,7 +278,7 @@ export const loopDoctorGateScopeAndSeverityTests = [
       assert.deepEqual(admittedDoctorFindings([{ code: "control-unresolved", severity: "warn" }]), [], "a reported warn is not re-graded up");
       assert.equal(admittedDoctorFindings([{ code: "control-unresolved", severity: "error" }]).length, 1, "a reported error is not re-graded down");
 
-      const source = await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8");
       const code = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
       assert.ok(!code.includes("severityFor"), "it computes no severity of its own — `severityFor` is neither re-derived nor called here");
 

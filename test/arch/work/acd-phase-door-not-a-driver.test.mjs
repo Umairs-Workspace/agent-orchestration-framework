@@ -9,7 +9,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const DOOR = "src/commands/continue.mjs";
-const DRIVER = "src/commands/drive.mjs";
+const DRIVER = "packages/work-loop/src/commands/drive.mjs";
 
 // THE TOKENS ARE MATCHED BARE, not with their call parens: task 04 :35 names `ptySpawn`,
 // `term.write` and `driveInteractiveClaudeSession`, and the Examples rows plant the `(` forms, which

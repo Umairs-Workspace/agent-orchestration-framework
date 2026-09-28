@@ -76,7 +76,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const LEAF_PATH = path.join(REPO_ROOT, "src", "work-trigger", "level.mjs");
-const LOOP_COMMAND_PATH = path.join(REPO_ROOT, "src", "commands", "loop.mjs");
+const LOOP_COMMAND_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "commands", "loop.mjs");
 
 const read = (file) => readFileSync(file, "utf8");
 

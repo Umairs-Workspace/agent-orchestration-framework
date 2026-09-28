@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-12605 — "The argv has ONE home, and the declarations answer rides the ONE data command."
 //
 // milestone 126 / story 02, ADR-005 (tasks 02 and 03). The STRUCTURAL half; the driven halves are
@@ -21,7 +22,7 @@ import { listCommands } from "../../../src/command-core.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LEAF = "src/loop-argv.mjs";
+const LEAF = "packages/work-loop/src/argv.mjs";
 const PRODUCER = "src/mesh/declarations.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
@@ -30,10 +31,7 @@ const flagKey = (token) => token.replace(/^--/u, "");
 
 async function sourceModules() {
   const dir = path.join(root, "src");
-  const modules = (await readdir(dir, { recursive: true }))
-    .map((entry) => `src/${String(entry).replaceAll("\\", "/")}`)
-    .filter((rel) => rel.endsWith(".mjs"))
-    .sort();
+  const modules = (await readRuntimeFiles(root)).map(file => file.rel).sort();
   assert.ok(modules.length > 0, `the sweep of ${dir} found no .mjs module — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)`);
   return modules;
 }
@@ -97,7 +95,7 @@ export const archTests = [
         const body = stripComments(await read(rel));
         if (/\[\s*"work"\s*,\s*"loop"/u.test(body)) spellers.push(rel);
       }
-      assert.deepEqual(spellers, ["src/commands/loop.mjs"], "only the command's own cli.route spells it");
+      assert.deepEqual(spellers, ["packages/work-loop/src/commands/loop.mjs"], "only the command's own cli.route spells it");
 
       // Neither the producer nor the command that carries it spells a flag literal.
       const producer = await source(PRODUCER);

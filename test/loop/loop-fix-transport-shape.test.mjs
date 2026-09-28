@@ -35,11 +35,11 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const strip = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-const loopSource = async () => strip(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+const loopSource = async () => strip(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
 // 129/04 (ADR-008 §3) — the sites that prepare a re-drive are split between the shell (the resume
 // path's two and the fresh gate's) and the ladder (`src/loop/cycle.mjs`: the gate re-drive, the
 // progress reset and the progress continue). The four causes are asserted over BOTH.
-const familySource = async () => [await loopSource(), strip(await readFile(path.join(repoRoot, "src", "loop", "cycle.mjs"), "utf8"))].join("\n");
+const familySource = async () => [await loopSource(), strip(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "cycle.mjs"), "utf8"))].join("\n");
 
 const INVALID_FEATURE = "Feature: Invalid\n  Scenario: missing lane\n    Given a fixture\n";
 const seedInvalid = (fx) => writeFileSync(path.join(fx.storyDir, "tasks", "00_ready.feature"), INVALID_FEATURE);

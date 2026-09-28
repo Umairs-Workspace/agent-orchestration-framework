@@ -7,7 +7,17 @@
     "./engine": "./src/engine.mjs",
     "./ask-request": "./src/ask-request.mjs",
     "./stop-request": "./src/stop-request.mjs",
-    "./child-drive": "./src/child-drive.mjs"
+    "./child-drive": "./src/child-drive.mjs",
+    "./progress": "./src/progress.mjs",
+    "./diagnostics": "./src/diagnostics.mjs",
+    "./ask": "./src/ask.mjs",
+    "./stop": "./src/stop.mjs",
+    "./cycle": "./src/cycle.mjs",
+    "./wave": "./src/wave.mjs",
+    "./commands/drive": "./src/commands/drive.mjs",
+    "./commands/loop": "./src/commands/loop.mjs",
+    "./argv": "./src/argv.mjs",
+    "./commands": "./src/commands.mjs"
   },
   "files": [
     "src"
@@ -16,6 +26,7 @@
     "test": "node --test test/services.test.mjs"
   },
   "dependencies": {
+    "@aof/contracts": "workspace:*",
     "@aof/foundation": "workspace:*"
   }
 }

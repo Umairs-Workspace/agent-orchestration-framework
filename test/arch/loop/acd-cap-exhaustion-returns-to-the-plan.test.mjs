@@ -38,8 +38,8 @@ import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const ENGINE = "packages/work-loop/src/engine.mjs";
-const SHELL = "src/commands/loop.mjs";
-const DRIVER = "src/commands/drive.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
+const DRIVER = "packages/work-loop/src/commands/drive.mjs";
 
 /** Every `.mjs` under `src/`, relative and forward-slashed. */
 async function sourceModules() {
@@ -301,7 +301,7 @@ export const archTests = [
       // (Eleven when 124 wrote this; 129/01 appended three lane stops, which end the range the
       // same way — 129/ADR-002 §3's "a lane that cannot be merged home is a named stop".)
       const shell = stripComments(await read(SHELL));
-      const walk = /for \(;;\) \{[\s\S]*?\n {2}\} finally \{/u.exec(shell)?.[0];
+      const walk = /for \(;;\) \{[\s\S]*?\n +\} finally \{/u.exec(shell)?.[0];
       assert.ok(walk != null, "guard: the walk's body was found");
 
       // THE ONE SITE. Every stop the engine raises arrives as `act.act === "halt"` and is

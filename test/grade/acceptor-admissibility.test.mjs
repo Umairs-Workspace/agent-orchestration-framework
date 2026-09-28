@@ -182,7 +182,7 @@ const namesTheKey = (key = KEY) => ({
   ...prose(),
   text: `${prose().text}Read \`${key}\` and stop when the completed rounds reach it.\n`,
 });
-const readableCodePath = () => ({ kind: HARNESS_KINDS.code, document: "src/commands/loop.mjs" });
+const readableCodePath = () => ({ kind: HARNESS_KINDS.code, document: "packages/work-loop/src/commands/loop.mjs" });
 const unreadable = () => ({ kind: HARNESS_KINDS.prompt, document: "src/bundle/commands/continue.md", text: null });
 
 // The context the outline rows share: the knob IS declared tunable and the harness is one

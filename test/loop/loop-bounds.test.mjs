@@ -790,7 +790,7 @@ export const clampTests = [
   {
     name: "140/01 the loop never reads the workspace twin — neither the bounds home nor the drive reads work.agents.mode",
     async run() {
-      for (const file of ["packages/contracts/src/loop-bounds.mjs", "src/commands/drive.mjs"]) {
+      for (const file of ["packages/contracts/src/loop-bounds.mjs", "packages/work-loop/src/commands/drive.mjs"]) {
         const code = stripComments(await readFile(new URL(`../../${file}`, import.meta.url), "utf8"));
         assert.doesNotMatch(code, /agents\??\.mode\b/u, `${file}: work.agents.mode is not read`);
         assert.doesNotMatch(code, /work\??\.agents\??\.mode/u, `${file}: nor spelled as a key`);

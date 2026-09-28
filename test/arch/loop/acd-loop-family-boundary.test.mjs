@@ -41,11 +41,11 @@ import { NESTED_FUNCTION_DECLARATION_RE, classifySites, matchedParenSpan, stripC
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SHELL = "src/commands/loop.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const FAMILY_DIR = "src/loop";
 const SPAWN_SEAM = "packages/work-loop/src/child-drive.mjs";
 const PACKAGE_FAMILY = "packages/work-loop/src";
-const WAVE = "src/loop/wave.mjs";
+const WAVE = "packages/work-loop/src/wave.mjs";
 
 // The modules a lane drive must never run inside the loop's process (ADR-005 §5).
 export const DRIVER_MODULES = Object.freeze(["agent-session-driver.mjs", "claude-trust.mjs"]);
@@ -143,13 +143,13 @@ async function familyUnits() {
   for (const entry of (await readdir(path.join(repoRoot, FAMILY_DIR), { withFileTypes: true })).sort((a, b) => (a.name < b.name ? -1 : 1))) {
     if (entry.isFile() && entry.name.endsWith(".mjs")) rels.push(`${FAMILY_DIR}/${entry.name}`);
   }
-  for (const name of ["ask-request.mjs", "stop-request.mjs", "child-drive.mjs"]) rels.push(`${PACKAGE_FAMILY}/${name}`);
+  for (const name of ["ask-request.mjs", "stop-request.mjs", "child-drive.mjs", "ask.mjs", "stop.mjs", "cycle.mjs", "wave.mjs"]) rels.push(`${PACKAGE_FAMILY}/${name}`);
   const units = [];
   for (const rel of rels) units.push({ rel, code: await readFile(path.join(repoRoot, toPosix(rel)), "utf8") });
   return units;
 }
 
-const familyOnly = (units) => units.filter((unit) => (unit.rel.startsWith(`${FAMILY_DIR}/`) || unit.rel.startsWith(`${PACKAGE_FAMILY}/`)));
+const familyOnly = (units) => units.filter((unit) => (unit.rel.startsWith(`${FAMILY_DIR}/`) || (unit.rel.startsWith(`${PACKAGE_FAMILY}/`) && unit.rel !== SHELL)));
 
 export const archTests = [
   {

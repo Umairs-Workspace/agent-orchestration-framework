@@ -78,7 +78,7 @@ export const loopCommandWaveTests = [
     run: async () => {
       const cycle = await import("../../src/loop/cycle.mjs");
       assert.equal(typeof cycle.settleStoryCycle, "function");
-      const shell = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       assert.equal(shell.includes('invokeRegistered("work:grade", { ref: act.ref, run: true'), false, "no rubric run of its own");
       assert.equal(/recordBuildProgress\(/u.test(shell), false, "no sampler call of its own");
       assert.match(shell, /settleStoryCycle\(phaseRun, bookkeeping, ctx, \{/u, "…both reached through settleStoryCycle");
@@ -297,7 +297,7 @@ export const loopCommandWaveTests = [
   {
     name: "129/04 task00 narration rides the parameter — cycle.mjs and wave.mjs own no printer, and the needle scan finds the Gate lines at the narrate seam",
     run: async () => {
-      for (const rel of ["../../src/loop/cycle.mjs", "../../src/loop/wave.mjs"]) {
+      for (const rel of ["../../packages/work-loop/src/cycle.mjs", "../../packages/work-loop/src/wave.mjs"]) {
         const text = await readFile(new URL(rel, import.meta.url), "utf8");
         assert.doesNotMatch(text, /console\.(?:log|error)\(|process\.stdout\.write\(/u, `${rel} prints through no printer of its own`);
       }
@@ -327,7 +327,7 @@ export const loopCommandWaveTests = [
   {
     name: "129/04 task00 the shell is measured smaller",
     run: async () => {
-      const shell = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       const lines = shell.split(/\r?\n/u).length;
       assert.ok(lines < 2311, `src/commands/loop.mjs is ${lines} lines, below the 2311 it was before 129/04`);
     },
@@ -1515,7 +1515,7 @@ export const loopCommandWaveTests = [
         assert.ok(bounds.length > 0);
         assert.ok(bounds.every((b) => b === "7"), `every narrated bound is 7: ${bounds}`);
       }, { stories: ["01"], config: { dispatch: { concurrency: 2 } } });
-      const wave = await readFile(new URL("../../src/loop/wave.mjs", import.meta.url), "utf8");
+      const wave = await readFile(new URL("../../packages/work-loop/src/wave.mjs", import.meta.url), "utf8");
       assert.doesNotMatch(wave, /config\.work\.dispatch|config\.work\.loop|dispatchConcurrencyFromConfig|DEFAULT_DISPATCH_CONCURRENCY/u);
       const stripped = wave.replace(/\/\/[^\n]*/gu, "");
       assert.doesNotMatch(stripped, /\b(?:bound|concurrency)\s*[:=]\s*\d/u, "no numeric concurrency literal");
@@ -1595,15 +1595,15 @@ export const loopCommandWaveTests = [
   {
     name: "129/07 task01 the family spells neither key and holds no literal; the shell reads the lane bound once through the home",
     run: async () => {
-      for (const rel of ["src/loop/wave.mjs", "src/loop/cycle.mjs", "packages/work-loop/src/child-drive.mjs", "src/commands/loop.mjs"]) {
+      for (const rel of ["packages/work-loop/src/wave.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/child-drive.mjs", "packages/work-loop/src/commands/loop.mjs"]) {
         const code = (await readFile(new URL(`../../${rel}`, import.meta.url), "utf8")).replace(/\/\/[^\n]*/gu, "");
         assert.doesNotMatch(code, /work\.loop\.dispatch|work\.dispatch|dispatch\??\.concurrency/u, `${rel} spells neither key`);
       }
-      const shell = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       assert.equal((shell.match(/\bloopDispatchConcurrencyFromConfig\(/gu) ?? []).length, 1, "the shell calls the home's resolver exactly once");
-      assert.match(shell, /import \{[^}]*\bloopDispatchConcurrencyFromConfig\b[^}]*\} from "\.\.\/loop-bounds\.mjs"/u, "…imported from the bounds home");
-      const wave = await readFile(new URL("../../src/loop/wave.mjs", import.meta.url), "utf8");
-      assert.doesNotMatch(wave, /loop-bounds\.mjs/u, "the wave module imports nothing from the home; the number arrives on `bounds`");
+      assert.match(shell, /import \{[^}]*\bloopDispatchConcurrencyFromConfig\b[^}]*\} from "@aof\/contracts\/loop-bounds"/u, "…imported from the bounds home's public API");
+      const wave = await readFile(new URL("../../packages/work-loop/src/wave.mjs", import.meta.url), "utf8");
+      assert.doesNotMatch(wave, /loop-bounds(?:\.mjs)?["']/u, "the wave module imports nothing from the home; the number arrives on `bounds`");
     },
   },
   ...waitingLaneTests(),

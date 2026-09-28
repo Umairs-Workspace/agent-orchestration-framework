@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourcePath = path.join(root, "src", "loop-progress.mjs");
+const sourcePath = path.join(root, "packages", "work-loop", "src", "progress.mjs");
 
 function stripComments(source) {
   return source.replace(/^\s*\/\/.*$/gmu, "").replace(/\/\*[\s\S]*?\*\//gu, "");

@@ -58,7 +58,7 @@ function executableCallCount(source, name) {
 // the file is declared HERE with its reason — a second supplier is a decision this table records,
 // never a reuse the scan waves through. Each leg is one named finding when it fails.
 export const SUPPLIED_DISPATCH_OPENERS = new Map([
-  ["src/loop/wave.mjs", "129/04 — the wave's lanes open at HEAD (`advanceTo`, ADR-002 §7) and reclaim first; the door's default opener does neither"],
+  ["packages/work-loop/src/wave.mjs", "129/04 — the wave's lanes open at HEAD (`advanceTo`, ADR-002 §7) and reclaim first; the door's default opener does neither"],
 ]);
 
 // The extent of an object-literal property's VALUE, from just after its `:` to the `,` or `}` that
@@ -249,20 +249,20 @@ export const archTests = [
       ];
       // the wave's real shape: the opener is a declaration, the binding is a ternary whose arrow calls it, the ask is invokeRegistered
       const wave = "async function openLane(ref, base) {\n  if (stale(ref)) { return null; }\n  return await resolveDispatchLane(primaryRoot, ref, { advanceTo: base, exec });\n}\nconst dispatchCtx = { ...ctx, runDispatchLane: typeof ctx.runDispatchLane === \"function\" ? ctx.runDispatchLane : (member) => openLane(member.ref, baseCommit), other: 1 };\nawait invokeRegistered(\"work:dispatch\", { refs }, dispatchCtx);\n";
-      assert.deepEqual(productionAdmissionPathProblems([...homes, { path: "src/loop/wave.mjs", source: wave }]), [], "the declared supplier, behind the door, is not a finding");
+      assert.deepEqual(productionAdmissionPathProblems([...homes, { path: "packages/work-loop/src/wave.mjs", source: wave }]), [], "the declared supplier, behind the door, is not a finding");
       // leg 1: a call outside the bound opener's body is the bypass, even in the declared file
       const outside = wave + "resolveDispatchLane(primaryRoot, other);\n";
-      assert.ok(productionAdmissionPathProblems([...homes, { path: "src/loop/wave.mjs", source: outside }]).some((p) => p.includes("wave.mjs opens a local dispatch lane outside")), "a call outside the opener is named");
+      assert.ok(productionAdmissionPathProblems([...homes, { path: "packages/work-loop/src/wave.mjs", source: outside }]).some((p) => p.includes("wave.mjs opens a local dispatch lane outside")), "a call outside the opener is named");
       // leg 1b: an opener bound to a name the file never declares as a function is no opener
       const arrowOnly = "const openLane = (ref) => resolveDispatchLane(root, ref);\nconst c = { runDispatchLane: (m) => openLane(m.ref) };\nawait invokeRegistered(\"work:dispatch\", {}, c);\n";
-      assert.ok(productionAdmissionPathProblems([...homes, { path: "src/loop/wave.mjs", source: arrowOnly }]).some((p) => p.includes("wave.mjs opens a local dispatch lane outside")), "an arrow opener's call site is not inside a declaration the scan can cut");
+      assert.ok(productionAdmissionPathProblems([...homes, { path: "packages/work-loop/src/wave.mjs", source: arrowOnly }]).some((p) => p.includes("wave.mjs opens a local dispatch lane outside")), "an arrow opener's call site is not inside a declaration the scan can cut");
       // leg 2: an opener with no work:dispatch ask has no door to run behind
       const noAsk = wave.replace(/await invokeRegistered\("work:dispatch"[^\n]*\n/, "");
-      assert.ok(productionAdmissionPathProblems([...homes, { path: "src/loop/wave.mjs", source: noAsk }]).some((p) => p.includes("never asks work:dispatch")), "an opener without the ask is named");
+      assert.ok(productionAdmissionPathProblems([...homes, { path: "packages/work-loop/src/wave.mjs", source: noAsk }]).some((p) => p.includes("never asks work:dispatch")), "an opener without the ask is named");
       // leg 3: an undeclared supplier is named even when it is behind the door
       assert.ok(productionAdmissionPathProblems([...homes, { path: "src/loop/other.mjs", source: wave }]).some((p) => p.includes("other.mjs supplies a dispatch opener without a declared reason")), "an undeclared supplier is named");
       // and the door count is the door's alone: the supplier's call never makes it two
-      assert.ok(!productionAdmissionPathProblems([...homes, { path: "src/loop/wave.mjs", source: wave }]).some((p) => p.includes("expected exactly one")), "the supplier does not count against the door");
+      assert.ok(!productionAdmissionPathProblems([...homes, { path: "packages/work-loop/src/wave.mjs", source: wave }]).some((p) => p.includes("expected exactly one")), "the supplier does not count against the door");
       assert.ok(productionAdmissionPathProblems([{ ...homes[0], source: homes[0].source + " resolveDispatchLane(root, again);" }, ...homes.slice(1)]).some((p) => p.includes("expected exactly one production resolveDispatchLane call at the door, found 2")), "a second door-side call is still counted");
     },
   },

@@ -7,6 +7,54 @@ import { EventEmitter } from "node:events";
 import { createAskRequests, ASK_STATES } from "@aof/work-loop/ask-request";
 import { createStopRequests, STOP_LEVELS } from "@aof/work-loop/stop-request";
 import { createChildDrive } from "@aof/work-loop/child-drive";
+import { createStoryCycle } from "@aof/work-loop/cycle";
+import { createWaveOrchestration } from "@aof/work-loop/wave";
+import { createLoopShell } from "@aof/work-loop/commands/loop";
+import { createPhaseDrivers } from "@aof/work-loop/commands/drive";
+import { createWorkLoopContribution } from "@aof/work-loop/commands";
+
+// A port may be read during composition, but calling one must wait for execution.
+function orchestrationServices() {
+  const unexpected = () => assert.fail("composition executed an application service");
+  const port = new Proxy({}, { get: () => unexpected });
+  const groups = ["items", "childDrive", "asks", "askRequests", "dispatch", "worktrees", "progress", "grading", "briefs", "gradeCommand", "locks", "placement", "runs", "transitions", "diagnostics", "spend", "work", "doctor", "cycle", "sessions", "wave", "loopDiagnostics", "notifications", "stops", "stopRequests", "sessionDriver", "trust", "briefCompiler", "heartbeats", "attribution", "sessionCapture", "transcripts"];
+  return {
+    ...Object.fromEntries(groups.map(name => [name, port])),
+    doctor: { CONTROL_FINDING_CODES: [] },
+    grading: { GRADE_VERDICTS: ["pass", "fail"], GRADE_CODES: [], ADVISORY_CODES: [] },
+    invoke: unexpected,
+  };
+}
+
+test("orchestration composition is inert and the package contributes all four command descriptors", () => {
+  const services = orchestrationServices();
+  const cycle = createStoryCycle(services);
+  const wave = createWaveOrchestration({ ...services, cycle });
+  const shell = createLoopShell({ ...services, cycle, wave });
+  const drivers = createPhaseDrivers(services);
+  const input = { loop: shell.loopCommand, refine: drivers.refineDriverCommand, continue: drivers.continueDriverCommand, verify: drivers.verifyDriverCommand };
+  const contribution = createWorkLoopContribution(input);
+  assert.deepEqual(contribution.commands.map(command => command.id), ["work:loop", "work:drive-refine", "work:drive-continue", "work:drive-verify"]);
+  assert.equal(contribution.commands[0], shell.loopCommand);
+  assert.equal(contribution.commands[2], drivers.continueDriverCommand);
+  for (const value of [cycle, wave, shell, drivers, contribution, contribution.commands]) assert.ok(Object.isFrozen(value));
+  assert.throws(() => createWorkLoopContribution({ ...input, verify: input.refine }), /all three phase drivers/);
+});
+
+test("cycle invocation uses the supplied registry and preserves the per-call override", async () => {
+  const calls = [];
+  const services = orchestrationServices();
+  const cycle = createStoryCycle({ ...services, invoke: async (...args) => { calls.push(args); return { configured: true, grade: { verdict: "pass" } }; } });
+  const ctx = { workspace: { sentinel: true } };
+  const measured = await cycle.measureGradeBaseline("42/01", ctx, { now: "2026-09-28T00:00:00Z", priorDrives: 2 });
+  assert.deepEqual(calls[0].slice(0, 2), ["work:grade", { ref: "42/01", run: true }]);
+  assert.equal(calls[0][2], ctx);
+  assert.equal(measured.baseline.priorDrives, 2);
+  const overridden = await cycle.measureGradeBaseline("42/02", { ...ctx, invokeRegistered: async () => ({ configured: true, grade: { verdict: "fail", failures: [{ case: "existing failure" }] } }) });
+  assert.deepEqual(overridden.baseline.failures, ["existing failure"]);
+  assert.equal(calls.length, 1);
+  for (const create of [createStoryCycle, createWaveOrchestration, createLoopShell]) assert.throws(() => create({ ...services, invoke: undefined }), /invoke is required/);
+});
 
 async function fixture(run) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-loop-package-"));

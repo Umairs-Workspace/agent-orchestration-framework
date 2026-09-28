@@ -46,7 +46,7 @@ export const archTests = [
   {
     name: "arch/55 FF-5508 extension (acd-loop-level-l3-gated): the command gathers both halves through registered commands before any drive",
     run: async () => {
-      const source = stripComments(await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       const body = functionBody(source, "resolveInvocation");
       assert.match(body, /invokeRegistered\(\s*["']work:doctor["']/u);
       assert.match(body, /invokeRegistered\(\s*["']work:loops-groundedness["']/u);

@@ -299,7 +299,7 @@ export const loopCommandReconcileTests = [
       // A `gate` act arriving with a status other than in-review is still the unexpected act: the
       // engine emits a fresh `gate` only for an in-review head, so the divergence cannot be driven
       // through `work:next`; the shell's guard and the halt that follows it are read at the source.
-      const shell = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       const gateAt = shell.indexOf('if (act.act === "gate" && next?.status === "in-review") {');
       const unmappedAt = shell.indexOf('act = haltDecision("unmapped-item-type", next?.ref ?? resolved.scope, "unexpected-engine-act");', gateAt);
       assert.ok(gateAt >= 0 && unmappedAt > gateAt, "a gate act is honoured only for an in-review head; any other reaches the unmapped-item-type halt with producer unexpected-engine-act");

@@ -15,6 +15,7 @@ import {
 } from "../../packages/work-loop/src/engine.mjs";
 import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
 import { completingDriver, loopFixture } from "./loop-command-probe.test.mjs";
+import { functionBody } from "../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -24,11 +25,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 // on the exact six-name statement would red on the seventh name without protecting anything more).
 const LOOP_BOUND_IMPORTS = Object.freeze(["MAX_REVIEW_ROUNDS", "buildNoProgressRoundsFromConfig", "heartbeatFromConfig", "progressMaxResetsFromConfig", "reviewRoundsFromConfig", "scheduleToCloseFromConfig"]);
 function assertLoopBoundsImport(source) {
-  const statement = /import \{([^}]+)\} from "\.\.\/loop-bounds\.mjs"/u.exec(source);
-  assert.ok(statement, "the shell imports its bounds from ../loop-bounds.mjs");
+  const statement = /import \{([^}]+)\} from "@aof\/contracts\/loop-bounds"/u.exec(source);
+  assert.ok(statement, "the shell imports its bounds through @aof/contracts/loop-bounds");
   const names = statement[1].split(",").map((name) => name.replace(/\/\/[^\n]*/gu, "").trim()).filter(Boolean);
   for (const name of LOOP_BOUND_IMPORTS) assert.ok(names.includes(name), `${name} is resolved through loop-bounds`);
-  assert.equal((source.match(/from "\.\.\/loop-bounds\.mjs"/gu) ?? []).length, 1, "one import statement from the bounds home");
+  assert.equal((source.match(/from "@aof\/contracts\/loop-bounds"/gu) ?? []).length, 1, "one import statement from the bounds home");
 }
 const plainFinding = (problem = "the locked contract is still red") => ({ path: "tasks/00.feature", problem });
 const claimedFinding = (blockerClass, problem = "the blocker remains") => ({
@@ -154,8 +155,9 @@ export const workLoopProductionReviewBoundTests = [
   {
     name: "69/00 task03 the production command resolves the number from loop-bounds once and declares no literal",
     async run() {
-      const source = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
-      const body = source.slice(source.indexOf("export async function runLoopBody"), source.indexOf("export function renderLoopState"));
+      const source = await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8");
+      const body = functionBody(source, "async function runLoopBody(");
+      assert.ok(body != null, "the production loop body was found");
       assertLoopBoundsImport(source);
       assert.equal((body.match(/reviewRoundsFromConfig\(/gu) ?? []).length, 1);
       assert.doesNotMatch(body, /reviewCap\s*=\s*1\b|DEFAULT_REVIEW_ROUNDS/u);
@@ -164,7 +166,7 @@ export const workLoopProductionReviewBoundTests = [
   {
     name: "69/00 blocker fix the production command resolves heartbeat staleness only through loop-bounds",
     async run() {
-      const source = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8");
       assertLoopBoundsImport(source);
       assert.equal((source.match(/heartbeatFromConfig\(/gu) ?? []).length, 2);
       assert.doesNotMatch(source, /heartbeatStaleMs|DEFAULT_HEARTBEAT_STALE_MS/u);

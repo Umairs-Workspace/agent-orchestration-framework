@@ -25,6 +25,9 @@
   Shared bounds and errors live in contracts below work-graph and execution.
   @aof/work-loop now owns the zero-import engine and ask/stop/resume/child-drive services;
   core supplies runtime paths, diagnostics, CLI location and bounded process execution.
+  It also owns cycle/wave/ask/stop orchestration, progress/diagnostics, argv composition and
+  the loop plus three phase-driver commands. Core adapters supply named application services
+  and registry invocation; final application assembly and adapter removal remain.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
@@ -112,15 +115,21 @@
 
 ## Next
 
+Work-loop orchestration verification: 997 unit checks and all 2,030 selected loop/architecture
+cases are covered after focused source/citation reruns; 114 supplemental checks and the final
+87-package-case bridge pass. Immutable install/audit, browser/standalone JavaScript bundles,
+copied-install loop/driver checks and three-runtime rendering pass. Full-root/native/platform
+verification remains outstanding. See IMPLEMENTATION.md for the exact overlapping selections.
+
 Continue extracting domain service implementations and their command contributions behind the new
 package interfaces. The work and mesh handler packages are implemented; their injected
 service implementations are being extracted from src/. Work owns record/lifecycle services;
 workspace configuration/identity loading, run persistence and acceptor
 services remain in core. Enumeration/lookup/listing, readiness and their shared identity/dependency
-rules are extracted. Validation now consumes an explicit core-supplied digest contract. Next,
-extract the remaining work-loop orchestration and commands. The pure engine and request/child-drive
-services are extracted, while
-cycle/wave/ask/stop and drive commands need explicit execution, work, notification and mesh services. Notion owns
+rules are extracted. Validation now consumes an explicit core-supplied digest contract.
+Work-loop orchestration and commands now consume explicit execution, work, notification and mesh
+services. Continue with execution/run ownership and remaining work acceptance/audit services,
+then replace their transitional adapters in final core assembly. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
 Foundation filesystem and diagnostic mechanisms are extracted; core retains their application

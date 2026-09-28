@@ -46,7 +46,15 @@ export const yarnInstallationTests = [
         'cli.mjs': ['node:child_process', 'node:path', 'node:os', 'node:fs'],
         'sync-work.mjs': ['node:path', 'node:fs/promises'],
         'notion-sync-work.mjs': ['node:fs'],
-       } : name === 'work-loop' ? {
+        } : name === 'work-loop' ? {
+        'progress.mjs': ['node:child_process', 'node:fs/promises', 'node:path', 'node:util', '@aof/contracts/loop-bounds'],
+        'diagnostics.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path'],
+        'ask.mjs': ['@aof/contracts/loop-bounds'],
+        'stop.mjs': ['@aof/contracts/loop-bounds'],
+        'cycle.mjs': ['node:fs/promises', 'node:path', 'node:fs', '@aof/contracts/loop-bounds'],
+        'wave.mjs': ['node:fs/promises', 'node:fs', 'node:path'],
+        'drive.mjs': ['node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds'],
+        'loop.mjs': ['node:crypto', 'node:child_process', 'node:fs/promises', 'node:os', 'node:path', 'node:util', '@aof/contracts/loop-bounds', '@aof/contracts/error'],
         'ask-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'stop-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'child-drive.mjs': ['node:path'],
@@ -85,7 +93,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), ['work', 'work-loop'].includes(name) ? ['@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'work' ? ['@aof/foundation'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');

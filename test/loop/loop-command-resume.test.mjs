@@ -696,14 +696,22 @@ export const loopCommandResumeTests = [
   {
     name: "130/02 task04 the shell spells no path and calls no fs — every write goes through stop-request.mjs's exports",
     async run() {
-      const raw = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const raw = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       const shell = stripComments(raw);
       assert.doesNotMatch(shell, /loop-stops/u, "the segment literal lives in stop-request.mjs and nowhere else");
       assert.doesNotMatch(shell, /\b(?:writeFile|mkdir|rename)\s*\(/u);
-      const imported = /import \{([^}]*)\} from "\.\.\/loop\/stop-request\.mjs";/u.exec(raw);
-      assert.ok(imported, "the shell imports the request's one home");
+      const adapter = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const imported = /import \{([^}]*)\} from "\.\.\/loop\/stop-request\.mjs";/u.exec(adapter);
+      assert.ok(imported, "the shell adapter imports the request's one home");
       const names = imported[1].split(",").map((name) => name.trim()).filter(Boolean);
-      for (const name of ["createStopSource", "loopStopsDir", "markStopHonoured", "clearStopRequest", "readStopRequest"]) assert.ok(names.includes(name), name);
+      const supplied = /stopRequests:\s*\{([^}]*)\}/u.exec(adapter);
+      const received = /const\s*\{([^}]*)\}\s*=\s*stopRequests/u.exec(raw);
+      assert.ok(supplied && received, "the adapter supplies and the implementation receives the request services");
+      for (const name of ["createStopSource", "loopStopsDir", "markStopHonoured", "clearStopRequest", "readStopRequest"]) {
+        assert.ok(names.includes(name), name);
+        assert.ok(supplied[1].split(",").map(value => value.trim()).includes(name), `${name} supplied`);
+        assert.ok(received[1].split(",").map(value => value.trim()).includes(name), `${name} received`);
+      }
     },
   },
   {

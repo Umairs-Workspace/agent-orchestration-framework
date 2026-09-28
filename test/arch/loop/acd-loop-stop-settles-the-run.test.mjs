@@ -68,8 +68,8 @@ import {
 } from "../../loop/loop-command-probe.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SHELL = "src/commands/loop.mjs";
-const LADDER = "src/loop/cycle.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
+const LADDER = "packages/work-loop/src/cycle.mjs";
 const ENGINE = "packages/work-loop/src/engine.mjs";
 const PRODUCER = "src/mesh/declarations.mjs";
 const HOME = "packages/work-loop/src/stop-request.mjs";

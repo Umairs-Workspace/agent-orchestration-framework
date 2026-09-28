@@ -301,7 +301,7 @@ export const archTests = [
       // THE RUNG, NOT A RE-IMPLEMENTATION OF IT. `invokeGateLadder` is module-private, and its
       // doctor rung is exactly `admittedDoctorFindings(doctor?.findings)` — pinned below — so the
       // honest drive is the real doctor run through the real filter.
-      const shell = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+      const shell = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.match(shell, /const admitted = admittedDoctorFindings\(doctor\?\.findings\);/u, "the doctor rung filters through the exported predicate");
 
       const measure = async (stories) => withStream(stories, async ({ ctx }) => {

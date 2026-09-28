@@ -410,3 +410,30 @@ and lock because the user required work outside AOF. The user then explicitly au
 those three generated documents and their three lock hashes. They were refreshed after verifying the existing files matched their recorded hashes
 and that the new renders differed only in source citations. Fresh rendering, lock hashes and
 idempotent updates also pass in a temporary installation. No workflow state was changed.
+
+## Work-loop orchestration and CLI ownership — 2026-09-28
+
+Cycle/wave orchestration depended on application services rather than on a reason to own those
+services: run persistence, work lookup, grade execution, worktree operations, session execution,
+notifications and shared command invocation. Their implementations now live in work-loop factories
+with named service groups. The old modules only assemble those groups and expose the existing API.
+The package's only workspace dependencies are contracts and foundation. It never imports mesh,
+the assembled registry, or legacy core source.
+
+The loop and three phase-driver descriptors are package-owned and supplied by one contribution.
+The core registry still assembles contributions and resolves their shared work namespace. Both
+default injected invocation and the existing per-call override remain supported. Core adapters
+currently defer registry access to avoid initialization cycles; that is transitional application
+composition, not evidence that all runtime cycles have been removed.
+
+Progress sampling, diagnostic recording and declaration argv composition moved with their owner.
+The diagnostic installation WeakMap stays at module scope so two factory instances cannot register
+duplicate process listeners. The engine and argv remain zero-import leaves. Source guards must
+scan actual package implementations, inspect adapter wiring separately, and attribute calls to
+the innermost function now that implementations are enclosed in factories. Their planted-failure
+checks remain in place.
+
+Next, run persistence can move into execution without a mesh dependency: run-store currently
+imports atomic filesystem writes, diagnostics and the zero-import claim-provenance helper.
+Its item paths and node identity already arrive as data. Execution ownership should retain the
+existing run-record shape and keep work-item status changes in the command/effects layer.

@@ -24,6 +24,7 @@
 // to process.cwd() (path.relative, OS separators). Basis-neutral results let each
 // face project losslessly — the keystone that makes byte-for-byte on both faces
 // achievable on Windows separators (ADR-002).
+import { createWorkLoopContribution } from "@aof/work-loop/commands";
 import { createWorkGraphContribution } from "@aof/work-graph/commands";
 import { createCommandRegistry } from "@aof/contracts/commands";
 import { meshContribution } from "./commands/mesh/contribution.mjs";
@@ -255,11 +256,9 @@ const CONTRIBUTIONS = [
     // work:refine — m42 — see ./commands/continue.mjs's header.
     refineDoorCommand,
     verifyDoorCommand,
-    // work:loop — see ./commands/loop.mjs's header.
-    loopCommand,
-    refineDriverCommand,
-    continueDriverCommand,
-    verifyDriverCommand,
+  ] },
+  createWorkLoopContribution({ loop: loopCommand, refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand }),
+  { name: "aof", commands: [
     resyncCommand,
     assetsListCommand,
     packagesListCommand,

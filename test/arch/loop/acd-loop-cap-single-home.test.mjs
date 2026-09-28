@@ -13,7 +13,7 @@ const EXPECTED_READERS = Object.freeze([
   "src/commands/run-retry.mjs",
   "src/commands/resume.mjs",
   "src/commands/run-start.mjs",
-  "src/commands/loop.mjs",
+  "packages/work-loop/src/commands/loop.mjs",
 ]);
 const DECLARATION_INSPECTORS = Object.freeze(["src/work/doctor-loop-ready.mjs"]);
 const SHELL_TOKENS = Object.freeze(["Loop until", "aof work next", "aof work run-start", "run-retry", "maxAttempts", "heartbeatStaleMs", "stop_conditions"]);
@@ -486,13 +486,13 @@ export const archTests = [
       // (`src/commands/loop.mjs:136`, `:375` wrap `heartbeatStaleMs` exactly this way).
       const wrapped = "    const cap = ctx.workspace.config?.work?.autonomous?.maxAttempts\n      ?? 3;\n";
       assert.deepEqual(capSites(wrapped, "synthetic/wrapped.mjs"), [{ kind: "resolver", fallback: "3", line: 1 }], "CAP-PC-01: adjacency spans a wrap placed BEFORE the `??` — it is still a resolver");
-      assert.deepEqual(capProblems(replacing(units, "src/commands/loop.mjs", wrapped)), [], "CAP-PC-01: a wrapped resolver raises no problem at all");
+      assert.deepEqual(capProblems(replacing(units, "packages/work-loop/src/commands/loop.mjs", wrapped)), [], "CAP-PC-01: a wrapped resolver raises no problem at all");
 
       // …and the reach recorded honestly: a wrap placed BETWEEN the `??` and its literal is NOT
       // spanned. It reads as an inspector, which is LOUD on both closed sets rather than silent.
       const wrappedAfter = "    const cap = ctx.workspace.config?.work?.autonomous?.maxAttempts ??\n      3;\n";
       assert.deepEqual(capSites(wrappedAfter, "synthetic/wrapped-after.mjs").map((site) => site.kind), ["inspector"], "measured: a wrap between `??` and its literal is not spanned");
-      const loud = capProblems(replacing(units, "src/commands/loop.mjs", wrappedAfter));
+      const loud = capProblems(replacing(units, "packages/work-loop/src/commands/loop.mjs", wrappedAfter));
       assert.ok(loud.some((problem) => problem.includes("CAP-MUT-03")) && loud.some((problem) => problem.includes("CAP-MUT-04")), `a wrap after the \`??\` fails loudly on BOTH closed sets, never silently:\n${loud.join("\n")}`);
 
       // CAP-PC-02 — an unrelated `??` PRECEDING the cap access is ignored; classification follows
@@ -522,7 +522,7 @@ export const archTests = [
       const units = await sourceUnits();
       assert.ok(units.length > 150, `src/**/*.mjs was actually walked: ${units.length} modules`);
       assert.deepEqual(keyProblems(units), [], "control: work.autonomous retains maxAttempts and no retired heartbeat reader");
-      const loopRel = "src/commands/loop.mjs";
+      const loopRel = "packages/work-loop/src/commands/loop.mjs";
       const loop = units.find((unit) => unit.rel === loopRel);
       assert.ok(loop != null, `${loopRel}: was read`);
       assert.deepEqual(privateDefaultProblems(loopRel, loop.code), [], "control: the loop reads the existing fallback literal");
@@ -773,7 +773,7 @@ export const archTests = [
       // site comes to resolve the attempt ceiling like its three siblings, the
       // count falls to one, and the refusal lifts on its own with nothing edited
       // anywhere and no fact about the key's name to remember to delete.
-      const single = resolvedAttemptBounds(replacing(units, "src/commands/loop.mjs", "  const maxAttempts = ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 3;\n"));
+      const single = resolvedAttemptBounds(replacing(units, "packages/work-loop/src/commands/loop.mjs", "  const maxAttempts = ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 3;\n"));
       assert.deepEqual(single.problems, []);
       assert.equal(single.bounds.length, 1, `CLAMP-MUT-01: one bound remains — ${single.bounds.map((entry) => entry.bound).join(", ")}`);
       assert.equal(loopBounds.compoundStepRefusal({ key: CAP_KEY, bounds: single.bounds.map((entry) => entry.bound) }), null, "CLAMP-MUT-01: and the refusal stops applying, computed from the count rather than recorded against the name");

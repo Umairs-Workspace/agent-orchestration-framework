@@ -20,7 +20,7 @@ Framework record source: `src/bundle/loops/autonomous-cascade.md`; installed by 
 
 The loop controls items reaching done over an operator-selected range (`src/bundle/commands/autonomous.md:3-10`).
 Both reference and measurement are the dependency-aware result of `work:next`, invoked repeatedly by
-the loop shell at `src/commands/loop.mjs:754`. The per-ready-item phase dispatch at
+the loop shell at `packages/work-loop/src/commands/loop.mjs:970`. The per-ready-item phase dispatch at
 `packages/work-loop/src/engine.mjs:596-611` establishes `event:per-item`, not a clock.
 
 Those same lines dispatch refine, continue, and verify. Their narrowest acting artifacts are the

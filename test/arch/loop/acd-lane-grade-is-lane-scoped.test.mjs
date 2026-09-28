@@ -36,8 +36,8 @@ import { fileURLToPath } from "node:url";
 import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CYCLE = "src/loop/cycle.mjs";
-const WAVE = "src/loop/wave.mjs";
+const CYCLE = "packages/work-loop/src/cycle.mjs";
+const WAVE = "packages/work-loop/src/wave.mjs";
 const LANE_PATH_FUNCTION = "runLane";
 // The sequential call site: `settleStoryCycle`'s `worktreePath` default is the one place the
 // ladder names `ctx.workspace.projectRoot`, and there `ctx` is whatever workspace the caller
