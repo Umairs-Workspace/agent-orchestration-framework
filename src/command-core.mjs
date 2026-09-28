@@ -24,6 +24,8 @@
 // to process.cwd() (path.relative, OS separators). Basis-neutral results let each
 // face project losslessly — the keystone that makes byte-for-byte on both faces
 // achievable on Windows separators (ADR-002).
+import { createCommandRegistry } from "@aof/contracts/commands";
+import { meshContribution } from "./commands/mesh/contribution.mjs";
 import { loadWorkspace } from "./work.mjs";
 import { listCommand } from "./commands/list.mjs";
 import { loopsShowCommand } from "./commands/loops-show.mjs";
@@ -99,30 +101,6 @@ import { regressionGateCommand } from "./commands/regression-gate.mjs";
 import { runRetryCommand } from "./commands/run-retry.mjs";
 // work:resume — see ./commands/resume.mjs's header.
 import { resumeCommand, answerCommand } from "./commands/resume.mjs";
-// mesh:identity / mesh:status — see ./commands/mesh/identity.mjs's header.
-import { meshIdentityCommand, meshStatusCommand } from "./commands/mesh/identity.mjs";
-// mesh:heartbeat — see ./commands/mesh/heartbeat.mjs's header.
-import { meshHeartbeatCommand } from "./commands/mesh/heartbeat.mjs";
-// mesh:relay — see ./commands/mesh/relay.mjs's header.
-import { meshRelayCommand } from "./commands/mesh/relay.mjs";
-// mesh:invite — see ./commands/mesh/invite.mjs's header.
-import { meshInviteCommand } from "./commands/mesh/invite.mjs";
-import { meshJoinCommand } from "./commands/mesh/join.mjs";
-// mesh:revoke — see ./commands/mesh/revoke.mjs's header.
-import { meshRevokeCommand } from "./commands/mesh/revoke.mjs";
-// mesh:serve — see ./commands/mesh/serve.mjs's header.
-import { meshServeCommand } from "./commands/mesh/serve.mjs";
-// mesh:logs — m42, TECH_DEBT item 2 — see ./commands/mesh/logs.mjs's header.
-import { meshLogsCommand } from "./commands/mesh/logs.mjs";
-// mesh:terminal-resume — m42 — see ./commands/mesh/terminal-resume.mjs's header.
-import { meshTerminalResumeCommand } from "./commands/mesh/terminal-resume.mjs";
-// mesh:assign — m42 — see ./commands/mesh/assign.mjs's header.
-import { meshAssignCommand } from "./commands/mesh/assign.mjs";
-import { meshRecoverPushCommand } from "./commands/mesh/recover-push.mjs";
-import { meshRepoPublishCommand } from "./commands/mesh/repo.mjs";
-// mesh:ui — m42 — see ./commands/mesh/ui.mjs's header.
-import { meshUiCommand } from "./commands/mesh/ui.mjs";
-import { meshDesktopInstallCommand, meshDesktopRunCommand, meshDesktopStopCommand } from "./commands/mesh/desktop.mjs";
 // graph:serve — m42 — see ./commands/graph/serve.mjs's header.
 import { graphServeCommand } from "./commands/graph/serve.mjs";
 // diagram:plan — milestone 133 — see ./commands/diagram/plan.mjs's header.
@@ -132,7 +110,7 @@ import { diagramExportCommand } from "./commands/diagram/export.mjs";
 // diagram:file — milestone 133 — see ./commands/diagram/file.mjs's header.
 import { diagramFileCommand } from "./commands/diagram/file.mjs";
 // messaging:init / messaging:enable / messaging:disable / messaging:status / messaging:test — 131/08 — see ./commands/messaging/messaging.mjs's header.
-import { messagingInitCommand, messagingEnableCommand, messagingDisableCommand, messagingStatusCommand, messagingTestCommand } from "./commands/messaging/messaging.mjs";
+import { messagingContribution } from "./commands/messaging/messaging.mjs";
 import { workUiCommand } from "./commands/work-ui.mjs";
 import { assetsUiCommand } from "./commands/assets/ui.mjs";
 // work:find — m42, m12 — see ./commands/find.mjs's header.
@@ -191,148 +169,133 @@ import { projectMigrateCommand } from "./commands/project-migrate.mjs";
 export { loadWorkspace };
 
 const loopsGroundednessCommand = createLoopsGroundednessCommand({
-  hasCommand: (id) => REGISTRY.has(id),
+  hasCommand: (id) => REGISTRY.hasCommand(id),
 });
 
-// The six work-surface commands (08/ADR-002) PLUS the three graph commands
-// (09/ADR-001), all in the SAME registry — so listCommands() returns the six
-// work + three graph commands, and every face couples through this one core.
-const COMMANDS = [
-  listCommand,
-  loopsShowCommand,
-  loopsGraphCommand,
-  loopsValidateCommand,
-  loopsGroundednessCommand,
-  loopDocumentCommand,
-  loopRecordCommand,
-  debtCommand,
-  docCommand,
-  tasksCommand,
-  validateCommand,
-  nextCommand,
-  dispatchCommand,
-  feedbackCommand,
-  doctorCommand,
-  auditCommand,
-  acceptorCommand,
-  tuneCommand,
-  triggerCommand,
-  gradeCommand,
-  ratchetCommand,
-  countersCommand,
-  graphBuildCommand,
-  graphQueryCommand,
-  graphTriageCommand,
-  graphImpactCommand,
-  testCommand,
-  projectProvisionCommand,
-  importMilestoneCommand,
-  migrateFolderCommand,
-  notionSyncWorkCommand,
-  notionAssociateCommand,
-  runStartCommand,
-  runCompleteCommand,
-  runStatusCommand,
-  itemStatusCommand,
-  regressionGateCommand,
-  runRetryCommand,
-  resumeCommand,
-  answerCommand,
-  meshIdentityCommand,
-  meshStatusCommand,
-  meshHeartbeatCommand,
-  meshRelayCommand,
-  meshInviteCommand,
-  meshJoinCommand,
-  meshRevokeCommand,
-  meshServeCommand,
-  meshLogsCommand,
-  meshTerminalResumeCommand,
-  meshAssignCommand,
-  meshRecoverPushCommand,
-  meshRepoPublishCommand,
-  meshUiCommand,
-  meshDesktopInstallCommand,
-  meshDesktopRunCommand,
-  meshDesktopStopCommand,
-  graphServeCommand,
-  diagramPlanCommand,
-  diagramExportCommand,
-  diagramFileCommand,
-  messagingInitCommand,
-  messagingEnableCommand,
-  messagingDisableCommand,
-  messagingStatusCommand,
-  messagingTestCommand,
-  workUiCommand,
-  assetsUiCommand,
-  findCommand,
-  observeCommand,
-  memoryCommand,
-  useHeadroomCommand,
-  unuseHeadroomCommand,
-  workInitCommand,
-  workInitConfigCommand,
-  workUpdateCommand,
-  workOrchestratorCommand,
-  workDelegationCommand,
-  workDelegationModelCommand,
-  planningInitCommand,
-  projectInitCommand,
-  insertMilestoneCommand,
-  insertUatCommand,
-  insertStoryCommand,
-  insertChoreCommand,
-  promoteCommand,
-  archiveCommand,
-  promoteGapToChoreCommand,
-  promoteFindingToChoreCommand,
-  upgradeCommand,
-  // work:continue — see ./commands/continue.mjs's header.
-  continueCommand,
-  // work:refine — m42 — see ./commands/continue.mjs's header.
-  refineDoorCommand,
-  verifyDoorCommand,
-  // work:loop — see ./commands/loop.mjs's header.
-  loopCommand,
-  refineDriverCommand,
-  continueDriverCommand,
-  verifyDriverCommand,
-  resyncCommand,
-  assetsListCommand,
-  packagesListCommand,
-  projectShowCommand,
-  assetsShowCommand,
-  assetsAddCommand,
-  assetsRemoveCommand,
-  assetsUseCommand,
-  assetsUnuseCommand,
-  assetsCleanCommand,
-  assetsValidateCommand,
-  assetsApplyCommand,
-  packagesShowCommand,
-  packagesAddCommand,
-  packagesRemoveCommand,
-  packagesValidateCommand,
-  packagesInstallCommand,
-  projectValidateCommand,
-  projectDoctorCommand,
-  projectMigrateCommand,
+// Core assembles feature-owned contributions. Ordered groups retain the existing
+// command/help order while the remaining domains are extracted incrementally.
+const CONTRIBUTIONS = [
+  { name: "aof", commands: [
+    listCommand,
+    loopsShowCommand,
+    loopsGraphCommand,
+    loopsValidateCommand,
+    loopsGroundednessCommand,
+    loopDocumentCommand,
+    loopRecordCommand,
+    debtCommand,
+    docCommand,
+    tasksCommand,
+    validateCommand,
+    nextCommand,
+    dispatchCommand,
+    feedbackCommand,
+    doctorCommand,
+    auditCommand,
+    acceptorCommand,
+    tuneCommand,
+    triggerCommand,
+    gradeCommand,
+    ratchetCommand,
+    countersCommand,
+    graphBuildCommand,
+    graphQueryCommand,
+    graphTriageCommand,
+    graphImpactCommand,
+    testCommand,
+    projectProvisionCommand,
+    importMilestoneCommand,
+    migrateFolderCommand,
+    notionSyncWorkCommand,
+    notionAssociateCommand,
+    runStartCommand,
+    runCompleteCommand,
+    runStatusCommand,
+    itemStatusCommand,
+    regressionGateCommand,
+    runRetryCommand,
+    resumeCommand,
+    answerCommand,
+  ] },
+  meshContribution,
+  { name: "aof", commands: [
+    graphServeCommand,
+    diagramPlanCommand,
+    diagramExportCommand,
+    diagramFileCommand,
+  ] },
+  messagingContribution,
+  { name: "aof", commands: [
+    workUiCommand,
+    assetsUiCommand,
+    findCommand,
+    observeCommand,
+    memoryCommand,
+    useHeadroomCommand,
+    unuseHeadroomCommand,
+    workInitCommand,
+    workInitConfigCommand,
+    workUpdateCommand,
+    workOrchestratorCommand,
+    workDelegationCommand,
+    workDelegationModelCommand,
+    planningInitCommand,
+    projectInitCommand,
+    insertMilestoneCommand,
+    insertUatCommand,
+    insertStoryCommand,
+    insertChoreCommand,
+    promoteCommand,
+    archiveCommand,
+    promoteGapToChoreCommand,
+    promoteFindingToChoreCommand,
+    upgradeCommand,
+    // work:continue — see ./commands/continue.mjs's header.
+    continueCommand,
+    // work:refine — m42 — see ./commands/continue.mjs's header.
+    refineDoorCommand,
+    verifyDoorCommand,
+    // work:loop — see ./commands/loop.mjs's header.
+    loopCommand,
+    refineDriverCommand,
+    continueDriverCommand,
+    verifyDriverCommand,
+    resyncCommand,
+    assetsListCommand,
+    packagesListCommand,
+    projectShowCommand,
+    assetsShowCommand,
+    assetsAddCommand,
+    assetsRemoveCommand,
+    assetsUseCommand,
+    assetsUnuseCommand,
+    assetsCleanCommand,
+    assetsValidateCommand,
+    assetsApplyCommand,
+    packagesShowCommand,
+    packagesAddCommand,
+    packagesRemoveCommand,
+    packagesValidateCommand,
+    packagesInstallCommand,
+    projectValidateCommand,
+    projectDoctorCommand,
+    projectMigrateCommand,
+  ] },
 ];
 
 // Keyed by id for O(1) lookup; insertion order preserved for listCommands().
-const REGISTRY = new Map(COMMANDS.map((command) => [command.id, command]));
+const REGISTRY = createCommandRegistry(CONTRIBUTIONS);
 
 // The registry lookup both faces and the arch-tests use. A known id resolves to
 // its command object; an unknown id resolves to undefined.
 export function getCommand(id) {
-  return REGISTRY.get(id);
+  return REGISTRY.getCommand(id);
 }
 
 // Every registered command (the full objects). The ADR-004 bijection arch-test
 // asserts each carries a `cli` adapter and a reachable CLI dispatch branch.
 export function listCommands() {
-  return [...REGISTRY.values()];
+  return REGISTRY.listCommands();
 }
 
 // The in-process call both faces make: look up the command, await its run with
@@ -340,9 +303,5 @@ export function listCommands() {
 // is the caller/face's job). An unknown id is a programmer error: throw an Error
 // naming the unknown id rather than silently returning undefined.
 export async function invoke(id, input, ctx) {
-  const command = REGISTRY.get(id);
-  if (!command) {
-    throw new Error(`Unknown command id "${id}".`);
-  }
-  return await command.run(input, ctx);
+  return await REGISTRY.invoke(id, input, ctx);
 }

@@ -24,6 +24,7 @@
 // invoke it sweeps the effects journal for locally-reachable steps any process
 // (this one or a crashed predecessor) left pending — a crashed process leaves
 // pending events, not lost cascades.
+import { deriveRouteTable as contributionRoutes, resolveRoute as resolveContributionRoute } from "@aof/contracts/commands";
 import { existsSync } from "node:fs";
 import { invoke, listCommands, loadWorkspace } from "../command-core.mjs";
 import { commandError } from "../command-error.mjs";
@@ -88,38 +89,11 @@ function usageSuffix(spec) {
 // is a programmer error and throws at derivation, so two commands can never
 // silently shadow one another.
 export function deriveRouteTable(commands = listCommands()) {
-  const table = new Map();
-  for (const command of commands) {
-    const route = command.cli?.route;
-    if (!Array.isArray(route) || route.length === 0) continue;
-    const key = route.join(" ");
-    if (table.has(key)) {
-      throw new Error(`Route collision: "${key}" is claimed by both "${table.get(key).id}" and "${command.id}".`);
-    }
-    table.set(key, command);
-  }
-  return table;
+  return contributionRoutes(commands);
 }
 
-// resolveRoute — longest-prefix match of argv words (flags never participate).
-// Returns { command, rest } or null (null ⇒ the caller falls through to the
-// legacy ladder while the migration is in flight).
 export function resolveRoute(argv, commands = listCommands()) {
-  const table = deriveRouteTable(commands);
-  if (table.size === 0) return null;
-  let maxWords = 0;
-  for (const key of table.keys()) maxWords = Math.max(maxWords, key.split(" ").length);
-  const words = [];
-  for (const token of argv) {
-    if (typeof token !== "string" || token.startsWith("--")) break;
-    words.push(token);
-    if (words.length >= maxWords) break;
-  }
-  for (let length = words.length; length > 0; length -= 1) {
-    const command = table.get(words.slice(0, length).join(" "));
-    if (command) return { command, rest: argv.slice(length) };
-  }
-  return null;
+  return resolveContributionRoute(argv, commands);
 }
 
 // runCommandFace — the one door's one face: spec-parse → (loadWorkspace) →

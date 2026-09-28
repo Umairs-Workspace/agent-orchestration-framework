@@ -5,7 +5,8 @@
   "type": "module",
   "bin": "./bin/aof.mjs",
   "workspaces": [
-    "ui"
+    "ui",
+    "packages/*"
   ],
   "scripts": {
     "test": "node ./scripts/test.mjs",
@@ -30,6 +31,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@aof/contracts": "workspace:*",
     "@inquirer/prompts": "^8.4.2",
     "@xterm/headless": "6.0.0",
     "node-pty": "1.1.0",

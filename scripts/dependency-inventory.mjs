@@ -47,11 +47,27 @@ export function installedManifests(root) {
 // Keep installation paths (including nested versions), not just package names.
 export function productionDependencyDirs(root) {
   root = realpathSync(root);
+  const modulesRoot = path.join(root, 'node_modules');
+  const within = (base, target) => {
+    const relative = path.relative(base, target);
+    return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative));
+  };
+  // Only locked, repository-local workspaces may be dereferenced into the payload.
+  // Return their node_modules aliases so existing staging retains Node's directory layout.
+  const workspaces = readYarnPackages(readFileSync(path.join(root, 'yarn.lock'), 'utf8'))
+    .filter(pkg => pkg.workspace && pkg.location !== '.')
+    .map(pkg => {
+      const source = realpathSync(path.resolve(root, pkg.location));
+      if (!within(root, source) || source === root) throw new Error('Production workspace escapes repository');
+      return { ...pkg, source, alias: path.join(modulesRoot, pkg.name) };
+    }).sort((a, b) => b.source.length - a.source.length);
   const found = new Set();
   function visit(owner) {
+    owner = realpathSync(owner);
     const pkg = JSON.parse(readFileSync(path.join(owner, 'package.json'), 'utf8'));
     const dependencies = { ...pkg.peerDependencies, ...pkg.dependencies, ...pkg.optionalDependencies };
     for (const name of Object.keys(dependencies)) {
+      if (!/^(?:@[^/\\.]+\/)?[^/\\.][^/\\]*$/.test(name)) throw new Error(`Invalid dependency name ${name}`);
       let dir = owner, target;
       while (true) {
         // NODE_MODULES_PATHS skips adding node_modules to a directory already named that.
@@ -61,16 +77,27 @@ export function productionDependencyDirs(root) {
         }
         if (dir === root) break;
         const parent = path.dirname(dir);
-        if (parent === dir || !parent.startsWith(root)) break;
+        if (parent === dir || !within(root, parent)) break;
         dir = parent;
       }
       if (!target) {
         if (name in (pkg.optionalDependencies ?? {}) || pkg.peerDependenciesMeta?.[name]?.optional) continue;
         throw new Error(`Missing production dependency ${name} required by ${pkg.name}`);
       }
-      // Workspace payload staging will be introduced with extraction. Refuse to silently omit it.
-      if (!realpathSync(target).startsWith(path.join(root, 'node_modules') + path.sep)) {
-        throw new Error(`Production workspace ${name} needs explicit payload staging`);
+      const resolved = realpathSync(target);
+      if (!within(modulesRoot, resolved)) {
+        const workspace = workspaces.find(pkg => within(pkg.source, resolved));
+        if (!workspace) throw new Error(`Production dependency ${name} escapes installed packages and locked workspaces`);
+        const manifest = JSON.parse(readFileSync(path.join(workspace.source, 'package.json'), 'utf8'));
+        if (manifest.name !== workspace.name) throw new Error(`Workspace name mismatch for ${workspace.name}`);
+      }
+      // Preserve the name/location Node looked up, even when an entry is a link to
+      // another installed version. Only workspace-local paths need translating.
+      if (!within(modulesRoot, target)) {
+        const workspace = workspaces.find(pkg => within(pkg.source, target));
+        if (!workspace) throw new Error(`Unmapped production dependency location for ${name}`);
+        target = path.join(workspace.alias, path.relative(workspace.source, target));
+        if (!existsSync(target) || realpathSync(target) !== resolved) throw new Error(`Missing workspace installation alias for ${name}`);
       }
       if (found.has(target)) continue;
       found.add(target);

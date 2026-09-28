@@ -15,6 +15,8 @@
 //   03_feedback-write-command.feature — one bullet/refs/verbatim-heading/
 //        exact-only/milestone+story+uat/missing-fields/raw-ledger+STATE projection
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.mjs";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
@@ -353,6 +355,16 @@ async function assertRejectsWithCode(fn, code) {
 }
 
 export const commandCoreContractTests = [
+  {
+    name: "command-core/workspace contribution contracts pass their package-local suite",
+    async run() {
+      const root = fileURLToPath(new URL("../../", import.meta.url));
+      const result = spawnSync(process.execPath, ["--test", "packages/contracts/test/commands.test.mjs"], {
+        cwd: root, encoding: "utf8", timeout: 30_000,
+      });
+      assert.equal(result.status, 0, result.error?.message ?? result.stdout + result.stderr);
+    },
+  },
   // ════════════════════════ 00_registry-contract.feature ════════════════════
   {
     name: "command-core/00 the registry exposes exactly the known work commands",

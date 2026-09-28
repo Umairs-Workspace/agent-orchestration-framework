@@ -5,6 +5,12 @@ __metadata:
   version: 10
   cacheKey: 10c0
 
+"@aof/contracts@workspace:*, @aof/contracts@workspace:packages/contracts":
+  version: 0.0.0-use.local
+  resolution: "@aof/contracts@workspace:packages/contracts"
+  languageName: unknown
+  linkType: soft
+
 "@aof/ui@workspace:ui":
   version: 0.0.0-use.local
   resolution: "@aof/ui@workspace:ui"
@@ -1749,6 +1755,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "aof@workspace:."
   dependencies:
+    "@aof/contracts": "workspace:*"
     "@inquirer/prompts": "npm:^8.4.2"
     "@xterm/headless": "npm:6.0.0"
     "@yarnpkg/parsers": "npm:3.1.0"

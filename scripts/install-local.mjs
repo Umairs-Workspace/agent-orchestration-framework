@@ -162,6 +162,9 @@ const LOCKED = /EBUSY|EPERM|locked|being used/i;
 function copyTreeTolerantly(srcDir, destDir, skipped) {
   mkdirSync(destDir, { recursive: true });
   for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+    // Each production dependency is copied separately. In particular a workspace's
+    // local development dependencies must never hitch a ride in its runtime payload.
+    if (entry.name === 'node_modules') continue;
     const from = path.join(srcDir, entry.name);
     const to = path.join(destDir, entry.name);
     if (entry.isDirectory()) {

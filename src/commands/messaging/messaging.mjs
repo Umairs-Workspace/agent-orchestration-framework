@@ -494,3 +494,9 @@ export const messagingTestCommand = {
     json: ({ type, results }) => ({ type, results: results.map(({ channel, channelId, ok, messageId, status, hint }) => ({ channel, channelId, ok, messageId, status, hint })) }),
   },
 };
+
+// Feature-owned registration, shared by every application that assembles these commands.
+export const messagingContribution = Object.freeze({
+  name: '@aof/messaging',
+  commands: Object.freeze([messagingInitCommand, messagingEnableCommand, messagingDisableCommand, messagingStatusCommand, messagingTestCommand]),
+});

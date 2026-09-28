@@ -51,6 +51,8 @@ cp "$SRC/package.json" "$DST/package.json"
 # pinned tool/configuration with the lock; node_modules is installed natively in the distro.
 mkdir -p "$DST/ui" "$DST/.yarn/releases" "$DST/scripts"
 cp "$SRC/ui/package.json" "$DST/ui/package.json"
+# Carry workspace code as real Linux files; never copy Windows dependency trees.
+tar -C "$SRC" --exclude=node_modules --exclude=.git -cf - packages | tar -C "$DST" -xf -
 cp "$SRC/yarn.lock" "$SRC/.yarnrc.yml" "$DST/"
 cp "$SRC/.yarn/releases/yarn-4.18.1.cjs" "$DST/.yarn/releases/"
 cp "$SRC/scripts/prepare-worktree.mjs" "$SRC/scripts/yarn.mjs" "$DST/scripts/"
@@ -73,7 +75,12 @@ fi
 # 2. dependency drift. A src-only sync is fast and almost always right, but a lockfile
 #    change needs a native reinstall + node-pty rebuild — skipping that silently leaves
 #    a stale native binary that fails at daemon start, far from its cause.
-HASH="$(cat "$SRC/yarn.lock" "$SRC/package.json" "$SRC/ui/package.json" "$SRC/.yarnrc.yml" "$SRC/.yarn/releases/yarn-4.18.1.cjs" | sha256sum | cut -d' ' -f1)"
+HASH="$(
+  {
+    cat "$SRC/yarn.lock" "$SRC/package.json" "$SRC/ui/package.json" "$SRC/.yarnrc.yml" "$SRC/.yarn/releases/yarn-4.18.1.cjs"
+    find "$SRC/packages" -name node_modules -prune -o -name package.json -type f -print0 | sort -z | xargs -0 cat
+  } | sha256sum | cut -d' ' -f1
+)"
 PREV="$(cat "$STAMP" 2>/dev/null || echo none)"
 PTY="$DST/node_modules/node-pty/build/Release/pty.node"
 if [ "$HASH" != "$PREV" ] || [ ! -f "$PTY" ]; then

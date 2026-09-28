@@ -1,0 +1,15 @@
+{
+  "name": "@aof/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./commands": "./src/commands.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/commands.test.mjs"
+  }
+}

@@ -66,8 +66,51 @@ WSL deployment and Linux/macOS native builds have not been executed here. Bash s
 checked, and release jobs now use the pinned installer and audit. No release was published or
 existing user installation deployed. Local logs live under `.tmp/workspace-migration/` (ignored).
 
+## Command contribution extraction — 2026-09-28
+
+The Yarn cutover is committed as `a66dd8d` on `refactor/yarn-workspace-modularization`.
+The next slice introduces the first source workspace, `packages/contracts` (`@aof/contracts`).
+Its public `./commands` export contains dependency-free registry composition and routing. Core
+uses the workspace dependency, while its existing command-core and CLI-face exports remain compatible.
+
+Mesh now owns its command inventory in `src/commands/mesh/contribution.mjs`; messaging exports
+its contribution alongside its existing descriptors. Core explicitly composes those contributions
+with the remaining command groups. The flattened order and all 117 command IDs, routes, and option
+specifications match the snapshot taken before extraction. Registry construction rejects ID/route
+collisions with both claimants named. It retains descriptor identity and verbatim invocation results.
+
+Features own their routes, argument adapters, option specifications, and presentation. This supports
+adding commands beneath shared namespaces. Merging flags or actions into another owner's existing
+descriptor is deliberately not implicit; that needs a separate extension contract if required.
+No dynamic package discovery or plugin loading was introduced. Mesh/messaging domain implementations
+remain under `src/` until their lower dependencies and service interfaces can be extracted.
+
+Production staging now recognizes repository-local workspaces from the lockfile, verifies their
+installation aliases, and copies them into the payload as real directories. Runtime dependencies
+retain their nested locations; workspace development dependencies are not copied with the source.
+Unlisted linked source and missing required dependencies fail before the installed source is replaced.
+WSL sync carries workspace code/manifests while excluding Windows `node_modules`, and workspace
+manifests participate in its reinstall fingerprint. Actual WSL execution remains unverified.
+
+Verification for this slice:
+
+- Eight package-local contract tests pass, also wired through the root command contract suite.
+- All 997 unit checks pass; log: `.tmp/workspace-migration/contributions/unit.log` (local, ignored).
+- 88 focused checks pass: installation/audit regressions, command/CLI contracts, session startup,
+  route derivation, dependency direction, route coverage, and directory budgets.
+- Four test-registration checks and the CLI child-process smoke pass.
+- The real installer ran into a disposable directory outside the checkout. All 117 commands loaded;
+  contracts resolved inside that payload as real files, and development tooling was absent.
+- Browser bundling confirms contracts has no Node/core dependency. SEA JavaScript bundling embeds
+  contracts and keeps node-pty external. This is not a full executable/signing/release build.
+- Immutable installation, the supply-chain audit (zero warnings), and WSL Bash syntax pass.
+
+The prior full-suite and platform limitations above still apply; this slice does not claim a
+complete root-suite or cross-platform release result.
+
 ## Next
 
-Implement package-owned CLI contributions and narrow service interfaces, then extract lower-level
-packages and domains in the order described in [MIGRATION.md](MIGRATION.md). Keep the CLI and shipped
-skills/assets in core; feature packages must not import the core that assembles them.
+Extract foundational utilities and domain packages in the order described in [MIGRATION.md](MIGRATION.md),
+introducing narrow service interfaces where needed. Keep the CLI and shipped skills/assets in core;
+feature packages must not import the core that assembles them. The contribution owners added here
+provide the composition boundary for subsequent domain moves.

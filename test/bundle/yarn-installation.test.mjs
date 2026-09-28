@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +26,33 @@ function locked(dir, name, version) {
 }
 
 export const yarnInstallationTests = [
+  { name: 'yarn-installation/production packaging preserves the dependency name of an installed link', run: () => fixture(async dir => {
+    write(dir, 'package.json', { name: 'fixture', dependencies: { alias: 'npm:shared@1' } });
+    write(dir, 'node_modules/shared/package.json', { name: 'shared', version: '1' });
+    symlinkSync(path.join(dir, 'node_modules/shared'), path.join(dir, 'node_modules/alias'), process.platform === 'win32' ? 'junction' : 'dir');
+    assert.deepEqual(productionDependencyDirs(dir).map(p => path.relative(dir, p).replaceAll('\\', '/')), ['node_modules/alias']);
+  }) },
+  { name: 'yarn-installation/production workspaces retain nested runtime versions without development dependencies', run: () => fixture(async dir => {
+    write(dir, 'package.json', { name: 'fixture', dependencies: { '@aof/feature': 'workspace:*', shared: '1' } });
+    write(dir, 'yarn.lock', readFileSync(path.join(dir, 'yarn.lock'), 'utf8') +
+      '"@aof/feature@workspace:packages/feature":\n  version: 1.0.0\n  resolution: "@aof/feature@workspace:packages/feature"\n');
+    write(dir, 'packages/feature/package.json', { name: '@aof/feature', dependencies: { shared: '2' }, devDependencies: { tooling: '1' } });
+    write(dir, 'packages/feature/node_modules/shared/package.json', { name: 'shared', version: '2' });
+    write(dir, 'packages/feature/node_modules/tooling/package.json', { name: 'tooling' });
+    write(dir, 'node_modules/shared/package.json', { name: 'shared', version: '1' });
+    mkdirSync(path.join(dir, 'node_modules/@aof'), { recursive: true });
+    symlinkSync(path.join(dir, 'packages/feature'), path.join(dir, 'node_modules/@aof/feature'), process.platform === 'win32' ? 'junction' : 'dir');
+    assert.deepEqual(productionDependencyDirs(dir).map(p => path.relative(dir, p).replaceAll('\\', '/')), [
+      'node_modules/@aof/feature', 'node_modules/@aof/feature/node_modules/shared', 'node_modules/shared',
+    ]);
+  }) },
+  { name: 'yarn-installation/production packaging refuses undeclared linked source', run: () => fixture(async dir => {
+    write(dir, 'package.json', { name: 'fixture', dependencies: { unexpected: '1' } });
+    write(dir, 'unlisted/package.json', { name: 'unexpected' });
+    mkdirSync(path.join(dir, 'node_modules'), { recursive: true });
+    symlinkSync(path.join(dir, 'unlisted'), path.join(dir, 'node_modules/unexpected'), process.platform === 'win32' ? 'junction' : 'dir');
+    assert.throws(() => productionDependencyDirs(dir), /escapes installed packages and locked workspaces/);
+  }) },
   { name: 'yarn-installation/audit checks compromised optional packages even when not installed', run: () => fixture(async dir => {
     locked(dir, 'chalk', '5.6.1');
     const diagnostics = await auditSupplyChain(dir);
