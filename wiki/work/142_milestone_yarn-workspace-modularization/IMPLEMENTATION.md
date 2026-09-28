@@ -467,3 +467,38 @@ Verification:
 Logs, the selected runner and compatibility harness are in
 .tmp/workspace-migration/work-readiness/ (local, ignored). Full-root-suite and cross-platform/native
 release limitations remain. Work proceeds directly, outside AOF workflow operations.
+
+## Work validation, feature parser and digest extraction — 2026-09-28
+
+@aof/work/validation owns deterministic record, schema, feature and dependency-graph checks.
+@aof/work/feature-parse is the unchanged zero-import Gherkin parser. @aof/work/digest owns pure
+template parsing, digest rendering and digest-shape findings over supplied data. Core's adapter
+retains the cached shipped-template read and product version. Validation receives a lazy
+getDigestContract collaborator, invoked only for digest records; missing it raises explicitly.
+The old work/parser/digest public APIs remain compatible forwards/adapters. No dependencies,
+lockfile, templates or persisted formats changed.
+
+Source guards follow the new implementation and scan workspace source. The feature-parser
+compatibility oracle still synthesizes the pre-examples parser from the actual implementation.
+Driver and assignment-sink closures measure 38 and 83 modules, net one additional module: the
+three extracted implementations replace two direct compatibility dependencies in that closure.
+
+Verification:
+
+- All 997 unit checks pass; all 676 focused validation/parser/digest/work/architecture/command
+  checks pass on the corrected run. The package bridge runs 77 cases, including four new cases
+  proving supplied-contract rendering, lazy contract access/refusal, acceptance-horizon behavior,
+  outline examples and partial malformed parses.
+- The first focused run had five assertion failures. Four source assertions still read old paths
+  (two left over from discovery); these now inspect identity/discovery/validation directly.
+  The parser corpus check was comparing all validation findings to an empty array, including
+  the ordinary non-AOF migration notes' missing metadata. It now checks structural parser
+  findings, as its stated invariant requires. No live work-item metadata was added or changed.
+- Audit passes with zero warnings. The parser and digest browser bundles each contain one module.
+  The SEA JavaScript bundle includes all three new modules. No native release was built.
+- A copied installation outside the checkout resolves all new exports locally, loads 117 commands,
+  and matches pre-extraction validation findings and digest bytes/contracts. Readiness and list/find
+  parity and real work:next also pass. Temporary installation fixtures were removed.
+
+Evidence is in .tmp/workspace-migration/work-validation/ (ignored). Full migration completion is
+tracked in COMPLETION.md; full-root-suite and cross-platform/native gates remain outstanding.

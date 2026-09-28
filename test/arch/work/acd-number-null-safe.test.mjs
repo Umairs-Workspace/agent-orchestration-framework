@@ -39,7 +39,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The ten files, as the contract names them (task 04's preamble, measured at 2321dce8), plus the
 // one 127/02 added.
 export const NUMBER_CONSUMER_FILES = Object.freeze([
-  "src/work.mjs",
+  "packages/work/src/validation.mjs",
   "packages/work/src/discovery.mjs",
   "packages/work/src/dependencies.mjs",
   "packages/work/src/readiness.mjs",

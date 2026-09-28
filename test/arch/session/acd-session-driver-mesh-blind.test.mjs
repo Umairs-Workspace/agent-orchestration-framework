@@ -117,9 +117,10 @@ export const archTests = [
       // at 138/00's build: 25 before, 28 after.
       // 142 splits existing filesystem/reporting/storage implementations into three
       // foundation modules and replaces mesh/log with core's diagnostic path adapter.
-      // Records/lifecycle, discovery/identity and dependencies/readiness add six package modules (31 -> 37).
+      // Work records, discovery, readiness and validation extraction add seven reachable
+      // modules net (31 -> 38); direct package imports bypass two old forwards.
       // These nodes relocate existing code; the entire mesh family remains denied.
-      assert.ok(graph.seen.size <= 37, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 relocation census of 37`);
+      assert.ok(graph.seen.size <= 38, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 relocation census of 38`);
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(srcRoot, "terminal-ws.mjs");
@@ -244,7 +245,7 @@ export const archTests = [
       // 142 moves registration to inert package contributions. Count local workspace
       // imports too: the static sink closure was 73, including all seven package
       // modules. Deferred domain-service imports are deliberately outside this census.
-      assert.equal(sinkGraph.seen.size, 82, "foundation, records, discovery and readiness extractions add nine package modules; diagnostic policy replaces the mesh-log node (82 total)");
+      assert.equal(sinkGraph.seen.size, 83, "foundation and work extractions add ten reachable modules; diagnostic policy replaces the mesh-log node (83 total)");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

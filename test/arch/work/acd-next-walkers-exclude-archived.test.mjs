@@ -41,7 +41,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const DISCOVERY = "packages/work/src/discovery.mjs";
 const WORK = path.join(repoRoot, DISCOVERY);
 const READINESS = path.join(repoRoot, "packages/work/src/readiness.mjs");
-const CORE = path.join(repoRoot, "src", "work.mjs");
+const VALIDATION = path.join(repoRoot, "packages/work/src/validation.mjs");
 
 const DISK_READERS = ["listItems", "listStream", "findWork", "nextWork", "readWorkDirectory"];
 // A member access, not a spread: `...archived` is a spread of a local, `row.archived` a read.
@@ -90,7 +90,7 @@ export const archTests = [
         assert.ok(/\bisLiveStreamRow\b/.test(body), `${walker} references isLiveStreamRow — a walker that stops filtering through the one predicate fails here`);
       }
       for (const reader of ["findWork", "validateWork"]) {
-        const body = bodyOf(reader === "validateWork" ? stripComments(await readFile(CORE, "utf8")) : work, reader);
+        const body = bodyOf(reader === "validateWork" ? stripComments(await readFile(VALIDATION, "utf8")) : work, reader);
         assert.ok(body, `${reader} is declared`);
         assert.ok(!ARCHIVED_FILTER_RE.test(body), `${reader} is a resolving reader and filters on neither \`archived\` nor a status standing in for it`);
         assert.ok(!/\bisLiveStreamRow\b/.test(body), `${reader} does not filter through the scheduling predicate either`);

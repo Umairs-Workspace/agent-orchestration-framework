@@ -315,8 +315,8 @@ export const archTests = [
   {
     name: "arch/FF-6602: every check calls it — validate's lane reaches the decision by import, never by re-deciding it",
     run: async () => {
-      const text = await readFile(path.join(srcDir, "work.mjs"), "utf8");
-      assert.match(text, /import\s*\{[^}]*\bisOpen\b[^}]*\}\s*from\s*"\.\/acceptance-horizon\.mjs"/);
+      const text = await readFile(path.join(repoRoot, "packages/work/src/validation.mjs"), "utf8");
+      assert.match(text, /import\s*\{[^}]*\bisOpen\b[^}]*\}\s*from\s*"\.\/lifecycle\.mjs"/);
       // Cut on the language's structure (the one home), so a moved declaration fails as
       // "not found" rather than as a false claim about the rule.
       const cut = functionBody(stripComments(text), "export async function validateWork");

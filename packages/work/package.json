@@ -10,13 +10,16 @@
     "./identity": "./src/identity.mjs",
     "./discovery": "./src/discovery.mjs",
     "./dependencies": "./src/dependencies.mjs",
-    "./readiness": "./src/readiness.mjs"
+    "./readiness": "./src/readiness.mjs",
+    "./validation": "./src/validation.mjs",
+    "./feature-parse": "./src/feature-parse.mjs",
+    "./digest": "./src/digest.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs test/records.test.mjs test/discovery.test.mjs test/readiness.test.mjs"
+    "test": "node --test test/effects.test.mjs test/records.test.mjs test/discovery.test.mjs test/readiness.test.mjs test/validation.test.mjs"
   },
   "dependencies": {
     "@aof/foundation": "workspace:*"

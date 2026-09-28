@@ -349,3 +349,21 @@ the latter reads the shipped digest template through core's asset locator. Move 
 and validation mechanisms behind explicit package APIs while keeping asset-location policy in core.
 Do not make @aof/work import core assets or assembled core to finish this move. Workspace/node
 identity loading, run persistence, acceptance and command contributions remain later work.
+
+## Validation boundary and remaining graph — 2026-09-28
+
+Validation requires filesystem reads and a digest contract, not workspace hydration or core's asset
+locator. The package now receives getDigestContract explicitly. Core preserves cached/lazy asset
+loading; digest parsing/rendering/checks themselves are pure and use explicit version/contract data.
+The feature parser moved unchanged. This leaves src/work.mjs primarily configuration/identity
+composition and compatibility exports rather than the work-domain implementation.
+
+A static relative-import inventory of the remaining tree finds cycles in adapters/bundle hooks,
+run-store/spend/examples, transitions/mesh publishing, doctor lanes, and command/server/loop/Discord
+composition (including dynamic imports). These require explicit service interfaces as their owners
+move; hiding the same edges behind deferred imports is not the final architecture.
+
+Work-graph is the next cohesive extraction: loops loader/checks, loop records/rendering, graph shapes,
+document composition and their six command descriptors. Loader asset/version-root policy belongs to
+core; run lookup and registry invocation should be supplied. Shared loop-bound vocabulary/resolvers
+must sit below the graph and executing loop so declaring a graph does not import execution.

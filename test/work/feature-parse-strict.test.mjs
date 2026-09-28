@@ -28,7 +28,8 @@ import { validateWork } from "../../src/work.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");
 const srcWork = path.join(repoRoot, "src", "work.mjs");
-const srcParser = path.join(repoRoot, "src", "feature-parse.mjs");
+const srcParser = path.join(repoRoot, "packages/work/src/feature-parse.mjs");
+const validationSource = path.join(repoRoot, "packages/work/src/validation.mjs");
 
 // ---------------------------------------------------------------------------
 // The parser as it stood at HEAD before this story (src/feature-parse.mjs:18-55),
@@ -336,7 +337,7 @@ export const featureParseStrictTests = [
   {
     name: "66/00 parse: `src/work.mjs` reaches the Gherkin grammar only by importing the one parser",
     run: async () => {
-      const source = await readFile(srcWork, "utf8");
+      const source = await readFile(validationSource, "utf8");
       assert.match(
         source,
         /import\s*\{[^}]*\bparseFeature\b[^}]*\}\s*from\s*"\.\/feature-parse\.mjs"/,
@@ -481,7 +482,7 @@ export const featureParseStrictTests = [
       // separate concern, and no gate now owns it. That is a gap this story cannot fill
       // — it can only speak for the scanning it removed — and it is recorded here rather
       // than implied by a mark that measured size and claimed to mean structure.
-      const source = await readFile(srcWork, "utf8");
+      const source = await readFile(validationSource, "utf8");
       assert.match(
         source,
         /import\s*\{[^}]*\bparseFeature\b[^}]*\}\s*from\s*"\.\/feature-parse\.mjs"/u,

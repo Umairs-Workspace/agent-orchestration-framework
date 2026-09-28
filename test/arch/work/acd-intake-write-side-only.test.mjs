@@ -57,6 +57,7 @@ const MUST_CARRY = Object.freeze(["src/work/init.mjs", "src/commands/promote.mjs
 // are nine of them, and a tenth must be covered the day it lands.
 const NAMED_READERS = Object.freeze([
   "src/work.mjs",
+  "packages/work/src/validation.mjs",
   "packages/work/src/discovery.mjs",
   "packages/work/src/dependencies.mjs",
   "packages/work/src/readiness.mjs",

@@ -17,13 +17,15 @@
   @aof/work now owns record selection/parsing, metadata/schema reads, guarded writes and lifecycle
   predicates. Its discovery and identity APIs now own enumeration, lookup, listing and folder/ref
   grammar. Readiness and shared dependency rules now live in the work package too.
-  Core retains workspace configuration/identity loading, validation, command
+  Validation, feature parsing and digest mechanics are extracted; core supplies the shipped digest contract.
+  Core retains workspace configuration/identity loading, command
   gates and effect publication.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
 - Source findings and unresolved questions: [RESEARCH.md](RESEARCH.md).
 - Proposed package map and migration stages: [MIGRATION.md](MIGRATION.md).
 - Delivered changes and verification details: [IMPLEMENTATION.md](IMPLEMENTATION.md).
+- Full migration completion audit: [COMPLETION.md](COMPLETION.md).
 
 ## Notes & decisions
 
@@ -88,15 +90,21 @@
   pass. No external dependency change or install was needed. Full-root-suite and native/platform
   limitations remain; see IMPLEMENTATION.md.
 
+- Work validation extraction: all 997 unit checks, 676 selected checks and 77 internal package
+  cases pass. Audit, browser parser/digest bundles, CLI JavaScript build and copied-install old/new
+  validation/digest parity pass. Four stale source assertions and one overly broad corpus assertion
+  were corrected. The full migration remains in progress; see COMPLETION.md.
+
 ## Next
 
 Continue extracting domain service implementations and their command contributions behind the new
 package interfaces. The work and mesh handler packages are implemented; their injected
 service implementations are being extracted from src/. Work owns record/lifecycle services;
-workspace configuration/identity loading, validation, run persistence and acceptor
+workspace configuration/identity loading, run persistence and acceptor
 services remain in core. Enumeration/lookup/listing, readiness and their shared identity/dependency
-rules are extracted. Next, separate validation's feature parser and digest-template asset access
-before moving its implementation. Notion owns
+rules are extracted. Validation now consumes an explicit core-supplied digest contract. Next,
+extract the work-graph package and contributions, with shared bound vocabulary below the graph
+and executing loop. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
 Foundation filesystem and diagnostic mechanisms are extracted; core retains their application

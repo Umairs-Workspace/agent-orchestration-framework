@@ -5,7 +5,7 @@ const BEGIN = "// BEGIN ADR-005 examples";
 const END = "// END ADR-005 examples";
 
 export async function loadPreExamplesParser() {
-  const source = await readFile(path.resolve("src/feature-parse.mjs"), "utf8");
+  const source = await readFile(path.resolve("packages/work/src/feature-parse.mjs"), "utf8");
   const lines = source.split(/\r?\n/);
   let skipping = false;
   let blocks = 0;

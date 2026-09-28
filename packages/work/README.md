@@ -10,6 +10,9 @@ Private workspace for work-domain behavior.
 | `@aof/work/discovery` | Directory enumeration, ref/slug lookup, live-row classification and ordered listing. |
 | `@aof/work/dependencies` | Dependency target rules, sibling gates/grouping and formatting-preserving dependency rewrites. Browser-safe; imports only identity. |
 | `@aof/work/readiness` | Ordered next-work/ready-set selection, dependency blockers and supplied candidacy handling. |
+| `@aof/work/validation` | Record, dependency-graph and feature-contract validation with a caller-supplied digest contract. |
+| `@aof/work/feature-parse` | Pure Gherkin parser, including partial parse findings and example tables. |
+| `@aof/work/digest` | Pure template parsing, digest rendering and shape validation over an explicit contract. |
 | `@aof/work/effects` | `createWorkEffects(getServices)` contributes status advancement, bounded rollback, run-reference remapping and ruling evidence. |
 
 Records take concrete item descriptors (`ref`, `dir`, `type`) and use
@@ -33,6 +36,12 @@ pathless rows. Without a view it uses the package's discovery and record readers
 Dependency rules share the same numeric grammar with validation and rewriting;
 their text transforms return strings and perform no writes.
 
+`validateWork(workDir, config, scope, { getDigestContract })` uses configuration as
+data and reads records without loading a workspace. Digest records require the
+supplied contract getter; other records never call it. Missing a getter fails
+explicitly instead of skipping digest checks. Core owns template location and
+version policy; `renderDigestDocument` takes `{ contract, schemaVersion, aofVersion }`.
+
 The existing `src/work.mjs` and `src/acceptance-horizon.mjs` exports forward to these
 implementations. Record formats, error codes and the existing status/rollback
 write bounds are unchanged.
@@ -40,8 +49,8 @@ write bounds are unchanged.
 Registration is inert. Handlers await the supplied service provider when invoked;
 the package imports neither core nor a journal singleton. Core currently supplies
 workspace configuration/identity loading, run-record writing and acceptor writing from
-`src/`, alongside the extracted record, discovery and readiness APIs. Validation
-remains in core until its feature parser and digest-template asset dependencies
-have explicit package boundaries. The CLI remains part of core.
+`src/`, alongside the extracted record, discovery, readiness and validation APIs.
+Core's digest adapter supplies the shipped template and product version. The CLI
+remains part of core.
 
 Run `yarn workspace @aof/work test` for the package tests.

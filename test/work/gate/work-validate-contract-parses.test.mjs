@@ -252,7 +252,9 @@ export const contractParsesTests = [
   {
     name: "66/00 refuse: over the whole real stream the ONLY new finding is the one live file, and no file that parses gains one",
     run: async () => {
-      const { findings, files, unparseable } = await realStream();
+      const { findings: allFindings, files, unparseable } = await realStream();
+      // This corpus gate concerns parser findings; plain project notes need no AOF metadata.
+      const findings = allFindings.filter(isStructural);
       assert.ok(files.length > 600, `non-vacuity: the real corpus was walked (${files.length} .feature files)`);
       // RE-MEASURED 2026-08-28. The one live file was REPAIRED, which is the outcome
       // this gate was built to produce, so the stream now reports NOTHING: every

@@ -28,7 +28,7 @@ function locked(dir, name, version) {
 
 export const yarnInstallationTests = [
   { name: 'yarn-installation/extracted kernels cannot import core, legacy source, providers or sibling internals', run: async () => {
-    for (const leaf of ['identity', 'lifecycle']) {
+    for (const leaf of ['identity', 'lifecycle', 'feature-parse', 'digest']) {
       const pure = await familyPurity(root, 'packages/work/src/' + leaf + '.mjs');
       assert.equal(pure.scanned, 1, leaf + ': the pure source is present');
       assert.deepEqual(pure.violations, [], leaf + ': cannot acquire an impure dependency');
@@ -52,6 +52,7 @@ export const yarnInstallationTests = [
       } : name === 'work' ? {
         'records.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
         'discovery.mjs': ['node:path', 'node:fs/promises'],
+        'validation.mjs': ['node:path', 'node:fs/promises'],
       } : {};
       const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[path.basename(file)] ?? []).includes(specifier);
       const external = report.violations.filter(forbidden);

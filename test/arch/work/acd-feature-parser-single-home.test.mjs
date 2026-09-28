@@ -50,19 +50,20 @@
 // arise here: comments are consumed character by character, in order, by the same pass
 // that reads the literals.
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 // The one home for structural cuts (milestone 47 / F-47-04-ARCH-2). Used here for the
 // outward cut — the call a keyword string is an argument of — so this gate never
 // measures the LENGTH of what sits before a literal, which is a quantity no rule about
 // the Gherkin grammar mentions.
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { enclosingParenGroup } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "src");
 
-const THE_ONE_PARSER = "src/feature-parse.mjs";
+const THE_ONE_PARSER = "packages/work/src/feature-parse.mjs";
 const THE_NAMED_RENDERER = "src/commands/migrate-folder.mjs";
 
 // THE_FORBIDDEN_IMPORTER — the one module that carries a headline recogniser and may
@@ -269,18 +270,7 @@ export function classify(sources) {
 }
 
 async function readSources() {
-  const sources = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        sources.push({ file: path.relative(repoRoot, full).replaceAll("\\", "/"), text: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(srcDir);
-  return sources;
+  return Promise.all((await readRuntimeFiles(repoRoot)).map(async file => ({ file: file.rel, text: await readFile(file.path, "utf8") })));
 }
 
 export const archTests = [
@@ -333,7 +323,7 @@ export const archTests = [
   {
     name: "arch/FF-6601: src/work.mjs carries no keyword regex and reaches the grammar only by importing the leaf",
     run: async () => {
-      const text = await readFile(path.join(srcDir, "work.mjs"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages/work/src/validation.mjs"), "utf8");
       const { recognisers, renderers } = classify([{ file: "src/work.mjs", text }]);
       assert.deepEqual(recognisers, [], `work.mjs carries no Gherkin recogniser: ${JSON.stringify(recognisers)}`);
       assert.deepEqual(renderers, [], `and emits no Gherkin either: ${JSON.stringify(renderers)}`);
@@ -354,7 +344,7 @@ export const archTests = [
       const { recognisers } = classify(planted);
       assert.deepEqual(
         recognisers.map((entry) => entry.file).sort(),
-        ["src/feature-parse.mjs", "src/pretend-second-home.mjs"],
+        [THE_ONE_PARSER, "src/pretend-second-home.mjs"].sort(),
         "a second hand-rolled parse must be visible to this gate — the whole point of FF-6601",
       );
     },

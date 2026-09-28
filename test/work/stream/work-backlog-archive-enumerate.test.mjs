@@ -360,7 +360,7 @@ export const workBacklogArchiveEnumerateTests = [
       assert.equal(ITEM_RE.source, "^(\\d+)_(milestone|story|task|uat|spike|chore)_([a-z0-9-]+)$", "ITEM_RE's value is unchanged");
       assert.equal(BACKLOG_ROOT, "backlog");
       assert.equal(ARCHIVE_ROOT, "archive");
-      const source = await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages/work/src/identity.mjs"), "utf8");
       assert.equal((source.match(/const BACKLOG_ITEM_RE = \//g) ?? []).length, 1, "BACKLOG_ITEM_RE is defined once");
       assert.equal((source.match(/const ITEM_RE = \//g) ?? []).length, 1, "ITEM_RE is defined once");
       assert.equal((source.match(/"backlog"/g) ?? []).length, 1, "the backlog root name is spelled once");
@@ -514,7 +514,7 @@ export const workBacklogArchiveEnumerateTests = [
   {
     name: "work/backlog-archive-enumerate: 02 the backlog sort compares group path and slug as plain strings (`<`), never localeCompare",
     run: async () => {
-      const source = await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages/work/src/discovery.mjs"), "utf8");
       const start = source.indexOf("function byGroupThenSlug");
       assert.ok(start > 0, "the backlog comparator is named");
       const body = source.slice(start, source.indexOf("\n}", start));
