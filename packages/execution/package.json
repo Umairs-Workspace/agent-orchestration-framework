@@ -16,7 +16,8 @@
     "./terminal/session-screen": "./src/terminal/session-screen.mjs",
     "./claude-trust": "./src/claude-trust.mjs",
     "./terminal/claude-screens": "./src/terminal/claude-screens.mjs",
-    "./worktrees": "./src/worktrees.mjs"
+    "./worktrees": "./src/worktrees.mjs",
+    "./bounded-process": "./src/bounded-process.mjs"
   },
   "files": [
     "src"

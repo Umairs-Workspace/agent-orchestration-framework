@@ -36,11 +36,11 @@
 //
 //   (A) NOTHING IN THE CLOSURE REACHES PROJECT CODE. No dynamic `import()`, no `require`, no
 //       `createRequire`, and every static import is either a `node:` builtin or a relative path
-//       that resolves INSIDE `src/` — and, because the closure follows those imports, the
+//       inside runtime source, or a public workspace export. The closure follows those imports; the
 //       resolved module is then swept by this same clause.
 //
 //   (B) EVERY CHILD PROCESS IN THE FAMILY COMES FROM ONE SEAM. `node:child_process` is imported
-//       by `src/work-audit/spawn.mjs` and by nothing else in the closure, and no module in it
+//       by `packages/execution/src/bounded-process.mjs` and by nothing else in the closure, and no module in it
 //       names any other process-starting API — `exec`, `execFile`, `execSync`, `spawnSync`,
 //       `fork`. A bound one caller can route around is not a bound, which is the same argument
 //       `acd-grade-bounded-single-spawn` makes for `work:grade`.
@@ -80,7 +80,22 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const FAMILY_ROOT = "src/work-audit";
 // The seam is named by PATH, not by basename: a nested `lanes/spawn.mjs` would otherwise
 // inherit the one exemption this gate grants.
-const SEAM = "src/work-audit/spawn.mjs";
+const SEAM = "packages/execution/src/bounded-process.mjs";
+
+// Follow public workspace exports without evaluating the modules under examination.
+// Unknown packages/private subpaths are refused, never silently omitted from the closure.
+const WORKSPACE_EXPORTS = new Map();
+for (const entry of await readdir(path.join(repoRoot, "packages"), { withFileTypes: true })) {
+  if (!entry.isDirectory()) continue;
+  const pkg = JSON.parse(await readFile(path.join(repoRoot, "packages", entry.name, "package.json"), "utf8"));
+  for (const [subpath, target] of Object.entries(pkg.exports ?? {})) {
+    if (typeof target !== "string") continue;
+    const resolved = path.posix.normalize(`packages/${entry.name}/${target}`);
+    assert.ok(resolved.startsWith(`packages/${entry.name}/src/`), `${pkg.name}: export stays in its runtime source`);
+    WORKSPACE_EXPORTS.set(pkg.name + (subpath === "." ? "" : subpath.slice(1)), resolved);
+  }
+}
+assert.ok(WORKSPACE_EXPORTS.size > 0, "the workspace export census is nonempty");
 
 // The programs the family SPAWNS rather than imports. Shrink-or-justify: a member is added only
 // with the reason it cannot be a module, and clause (E) refuses any `src/` program the closure
@@ -120,10 +135,10 @@ export function staticImportSpecifiers(code) {
   return importSpecifiers(String(code)).filter((entry) => !entry.dynamic).map((entry) => entry.specifier);
 }
 
-// A relative specifier resolved against the importing module's repo-relative path. `node:` and
-// bare package specifiers return null: they are not files of ours to sweep, and clause (A)
-// refuses the package case separately rather than silently skipping it.
+// Resolve relative imports and public workspace exports to repository-relative paths.
+// Node builtins have no source to sweep; clause (A) refuses unknown/private package paths.
 export function resolveSpecifier(rel, specifier) {
+  if (WORKSPACE_EXPORTS.has(specifier)) return WORKSPACE_EXPORTS.get(specifier);
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return null;
   return path.posix.normalize(path.posix.join(path.posix.dirname(rel), specifier));
 }
@@ -163,12 +178,12 @@ export function projectCodeReaches(rel, code) {
   }
   for (const specifier of staticImportSpecifiers(code)) {
     if (specifier.startsWith("node:")) continue;
-    if (!specifier.startsWith(".")) {
+    if (!specifier.startsWith(".") && !WORKSPACE_EXPORTS.has(specifier)) {
       problems.push(`${rel} statically imports the package "${specifier}" — the audit family imports node builtins and its own siblings, nothing else.`);
       continue;
     }
     const resolved = resolveSpecifier(rel, specifier);
-    if (!resolved.startsWith("src/")) {
+    if (!resolved.startsWith("src/") && !/^packages\/[^/]+\/src\//u.test(resolved)) {
       problems.push(`${rel} statically imports "${specifier}", which resolves to ${resolved} — outside src/. A static import of project code executes its module scope exactly as a dynamic one does.`);
     }
   }
@@ -265,7 +280,7 @@ export const archTests = [
       assert.ok(modules.length >= roots.length, `the closure covers at least the directory it started from: ${modules.length} module(s) reachable from ${roots.length} root(s)`);
       assert.deepEqual(unresolved, [], `every relative import in the family resolves to a file this gate could read: ${unresolved.join(", ")} — a specifier the sweep cannot load is a hole in the freeze, not a detail`);
       for (const module of modules) {
-        assert.ok(module.code.length > 200, `${module.rel} was read and stripped to something real (${module.code.length} chars) — a stripper that ate the file would make every claim below vacuous`);
+        assert.ok(module.code.trim().length > 0, `${module.rel} was read and stripped to nonempty code; small forwarding modules remain in the closure`);
       }
 
       const problems = modules.flatMap((module) => projectCodeReaches(module.rel, module.code));
@@ -407,6 +422,21 @@ export const archTests = [
       assert.ok(nestedProblems.some((problem) => problem.includes("node:child_process directly")), "…and its second door");
       assert.ok(nestedProblems.some((problem) => problem.includes("execSync")), "…and its second process API");
       assert.ok(nestedProblems.some((problem) => problem.includes("shell:")), "…and its shell");
+
+      const exported = {
+        "src/work-audit/spawn.mjs": 'export { runBounded } from "@aof/execution/bounded-process";',
+        [SEAM]: 'import { unsafe } from "./planted.mjs";',
+        "packages/execution/src/planted.mjs": 'const suite = import(projectSuite);',
+      };
+      const workspaceClosure = await importClosure(["src/work-audit/spawn.mjs"], async rel => exported[rel] ?? null);
+      assert.deepEqual(workspaceClosure.unresolved, []);
+      assert.equal(workspaceClosure.closure.size, 3, "workspace export-from and its local dependencies are traversed");
+      assert.ok(projectCodeReaches("packages/execution/src/planted.mjs", workspaceClosure.closure.get("packages/execution/src/planted.mjs"))[0].includes("dynamic"));
+      assert.deepEqual(projectCodeReaches("src/work-audit/spawn.mjs", exported["src/work-audit/spawn.mjs"]), []);
+      for (const specifier of ["@aof/missing/module", "@aof/execution/src/bounded-process.mjs"]) {
+        assert.equal(projectCodeReaches("src/work-audit/spawn.mjs", `export * from "${specifier}";`).length, 1, "unknown/private workspace paths are refused");
+      }
+      assert.equal(projectCodeReaches(SEAM, 'import suite from "../../../test/suite.mjs";').length, 1, "a package cannot import the project suite either");
 
       // (b) THE OUT-OF-DIRECTORY PLANT — the architect's `../work-audit-loader.mjs`. A
       // directory-scoped freeze never swept it; a closure does, because it followed the import

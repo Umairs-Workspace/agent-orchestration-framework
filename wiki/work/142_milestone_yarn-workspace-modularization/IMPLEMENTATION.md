@@ -915,3 +915,32 @@ execution and worktree checks. Standalone JavaScript bundling includes all seven
 Evidence is in `.tmp/workspace-migration/work-acceptance/`. Native executable and whole-tree suite
 verification remain outstanding; previous repository-state and generated-citation failures are
 not claimed fixed by this slice. No AOF workflow or additional generated-output changes were made.
+
+## Execution owns bounded child processes
+
+`@aof/execution/bounded-process` now owns the former audit spawn implementation byte-for-byte,
+including its seven public exports, defaults, cancellation, output capture and Windows console
+isolation. The old audit path forwards explicitly to it. No dependency or lock changes were needed.
+Application callers still decide which programs to run and how to resolve their policy bounds.
+
+The audit import-closure guard now follows public workspace exports from manifests and checks their
+implementations without evaluating them. It rejects unknown/private package paths and project-code
+imports. Planted violations behind export-from and a package-local dependency are detected. The
+hook settings-write guard shares that closure; its one process exception names the new execution
+implementation. The declared-toolchain guard also inspects the real bounded-process source.
+
+Verification in `.tmp/workspace-migration/execution-process/`:
+
+- The 17-suite selection ran 334 cases: 332 passed, with two old-source assertions corrected.
+  The changed guards pass all 20 cases; the final guard/import-reach/census run passes all 35.
+  The selection includes the bridge over 106 package tests and real bounded-child audit tests.
+- Old/new exit/output envelopes, literal argument preservation, startup refusal, deadline expiry
+  and pre-aborted cancellation match. The same comparison passes inside a copied installer,
+  whose legacy path and public API resolve to the same function. All 117 commands and prior
+  acceptance/execution/graph/loop checks still pass there.
+- Standalone JavaScript bundling contains the new implementation and keeps native PTY external.
+  The first harness invocation collided with its own log file on Windows; using a separate harness
+  output log fixed the harness issue, and the copied-payload check then completed successfully.
+
+No additional generated citations changed. The old module citation remains a valid exported entry
+point until final adapter removal. Final native/platform and whole-tree checks remain outstanding.

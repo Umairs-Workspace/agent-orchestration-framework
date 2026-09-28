@@ -538,3 +538,24 @@ The acceptance ledger single-writer check scans runtime sources carrying the dec
 constant/port, so an unrelated work-loop progress ledger is not mistaken for the acceptance writer.
 Its planted second-writer checks remain in place. Remaining audit launch services must still retain
 the installed program-root contract before their physical move.
+
+The audit spawn module is a reusable execution mechanism: no audit-specific imports, assets or
+workspace state. Its entire implementation now belongs to `@aof/execution/bounded-process`,
+retaining the exported API through a compatibility path. Audit, loop and toolchain callers still
+choose commands and deadlines. No dependency was added.
+
+The audit safety closure now resolves public exports from workspace manifests without evaluating
+those modules. It follows export-from into package source and continues down relative imports;
+unknown/private package specifiers and project test imports remain refused. Synthetic violations
+behind a workspace export demonstrate that the closure sees implementation code. The hook settings
+write guard now uses this closure too. Small adapters are required to contain nonempty code, while
+the bounded-process implementation and hook detector still have positive structural assertions.
+
+Remaining audit composition: census and evidence need the core-owned toolkit/program locator and
+the extracted bounded-process API. Evidence also uses the fitness-register grammar from
+`work/doctor-controls.mjs`; that grammar depends only on lifecycle and pure declared-ID parsing,
+so those mechanisms can move together into work. Prompt-layer checks need the supplied runtime
+and resource-kind vocabulary. Seam liveness needs supplied knowledge-graph reads/normalization.
+Declared-bound comparisons need the shipped reference corpus and bounds resolvers. Audit reports
+consume work-graph checks through an explicit port, avoiding a work-to-work-graph dependency cycle
+(work-graph already imports work records). Keep filesystem/program location in core composition.

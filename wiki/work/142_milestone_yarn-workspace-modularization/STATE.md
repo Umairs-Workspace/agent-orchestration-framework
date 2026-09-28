@@ -193,3 +193,11 @@ changed-suite/census run passes, including all 106 package cases. Copied-install
 persisted-byte parity and standalone JavaScript bundling pass. Remaining audit services, domain
 extractions, core/apps layout and final verification remain outstanding. The four pending generated
 citation updates remain separate from the three already approved and committed.
+
+Bounded child-process execution now belongs to execution with the original seven exports and
+unchanged implementation. The audit safety guards follow public workspace exports and inspect
+their implementations. The 334-case affected selection is covered after two source assertions
+were corrected; the final 35-case guard/import-reach/census run passes. Source and copied-payload
+process-result parity and standalone JavaScript bundling pass, retaining 117 commands. No dependency
+or generated-output changes were needed. Continue with remaining audit services and their explicit
+core/graph collaborators, then the outstanding domains and final application layout.

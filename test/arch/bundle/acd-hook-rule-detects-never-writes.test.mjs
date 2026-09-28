@@ -39,6 +39,7 @@
 // instead is prove the DETECTOR has teeth on a planted child process, which is the half a control
 // asserting an absence can never get from the absence itself.
 import assert from "node:assert/strict";
+import { importClosure } from "../audit/acd-audit-never-imports-project-code.test.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,7 +55,7 @@ const FAMILY_FLOOR = 6;
 // The one child-process seam the family is allowed, named by PATH rather than by basename so a
 // nested `lanes/spawn.mjs` could not inherit the exemption. Its own boundedness is 59/FF-5904's
 // claim and is not restated here.
-const SPAWN_SEAM = "src/work-audit/spawn.mjs";
+const SPAWN_SEAM = "packages/execution/src/bounded-process.mjs";
 
 // Spelled locally rather than imported — a control that imported the module it asserts the family
 // does not reach would be proving the isolation through a dependency. That second spelling is the
@@ -96,7 +97,12 @@ async function familyModules() {
     }
   }
   await walk(path.join(repoRoot, FAMILY_ROOT), FAMILY_ROOT);
-  return out;
+  const { closure, unresolved } = await importClosure(out.map(module => module.rel), async rel => {
+    try { return stripComments(await readFile(path.join(repoRoot, rel), "utf8")); }
+    catch { return null; }
+  });
+  assert.deepEqual(unresolved, [], "the audit implementation closure resolves in full");
+  return [...closure].map(([rel, code]) => ({ rel, code }));
 }
 
 // ── FIXTURES ─────────────────────────────────────────────────────────────────────────────────
@@ -126,7 +132,7 @@ export const archTests = [
       const modules = await familyModules();
       assert.equal(modules.length >= FAMILY_FLOOR, true, `the family was walked recursively and is non-vacuous: ${modules.length} module(s) under ${FAMILY_ROOT}, floor ${FAMILY_FLOOR}`);
       for (const module of modules) {
-        assert.equal(module.code.length > 200, true, `${module.rel} was read and stripped to something real (${module.code.length} chars) — a stripper that ate the file would make every claim below vacuous`);
+        assert.equal(module.code.trim().length > 0, true, `${module.rel} was read and stripped to nonempty code, including forwarding modules`);
       }
       assert.equal(modules.some((module) => module.rel === "src/work-audit/hook-wiring.mjs"), true, "…and the module this story adds is among them");
 

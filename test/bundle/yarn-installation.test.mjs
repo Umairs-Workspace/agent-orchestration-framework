@@ -59,6 +59,7 @@ export const yarnInstallationTests = [
         'claude-screens.mjs': ['@aof/contracts/loop-bounds'],
         'claude-trust.mjs': ['node:os', 'node:path', 'node:fs/promises', 'node:crypto'],
         'worktrees.mjs': ['node:child_process'],
+        'bounded-process.mjs': ['node:child_process', 'node:fs'],
       } : name === 'mesh' ? {
         'worktrees.mjs': ['node:path', '@aof/execution/worktrees'],
       } : name === 'work-loop' ? {

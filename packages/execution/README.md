@@ -35,6 +35,10 @@ Core assembles these services and supplies application policy.
   and worktree listing. Callers supply paths and preparation/merge policy. `defaultGitExec`,
   `resolveExec` and `parsePorcelainStatus` expose the shared runner and status parser.
   Existing error codes remain compatible, including the historical assignment-prefixed refusals.
+- `@aof/execution/bounded-process` exports `runBounded`, argument-vector validation,
+  attempted-command formatting and the existing result/outcome constants. It captures both streams,
+  enforces deadlines and preserves stdin cancellation, grace periods and Windows console isolation.
+  Audit, loop and declared-toolchain callers retain their own command and policy decisions.
 
 Factories perform no I/O. The package imports public contracts and foundation APIs, Node
 builtins and its own modules, and lazily loads its pinned `node-pty` and `@xterm/headless`

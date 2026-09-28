@@ -338,7 +338,7 @@ export const archTests = [
 
       // THE SEAM IS NOT THE FINDING. Its own import of the process module is exactly what is
       // expected of it, and it is not a module this story adds…
-      const seam = await readIfPresent("src/work-audit/spawn.mjs");
+      const seam = await readIfPresent("packages/execution/src/bounded-process.mjs");
       assert.ok(seam != null, "the shared seam is on disk");
       assert.match(seam.code, /from\s+"node:child_process"/u, "…and it does import the process module, which is its whole job");
       assert.deepEqual(processRouteProblems([seam]), [], "the seam's own import is not reported, because that seam is not a module this story adds");
