@@ -287,21 +287,23 @@ export const archTests = [
       // never as a one-member census (FF-11902): the module is named AMONG what the sweep found.
       assert.ok(spells.length >= 1, "the sweep of src/ found no module spelling the ledger path");
       assert.ok(spells.length <= 1, `the ledger path is spelled in exactly one module — found: ${spells.join(", ")}`);
-      assert.equal(spells[0], "src/work-acceptor/criterion.mjs", "…and it is the acceptor's criterion module");
+      assert.equal(spells[0], "packages/work/src/acceptor/criterion.mjs", "…and it is the acceptor's criterion module");
 
       // (b) AND EXACTLY ONE MODULE REACHES IT. Knowing where the ledger is, is what it
       // takes to write it — so with (a) this closes the set: no other module in `src/` can
       // name the acceptor's ledger at all, by literal or by import.
       const reachers = importersOf(modules, "criterion.mjs", "LEDGER_RELPATH");
-      assert.deepEqual(reachers, ["src/work-acceptor/store.mjs"], "exactly one module reaches the ledger's path");
+      assert.deepEqual(reachers, ["src/work-acceptor/store.mjs"], "only the composition adapter imports the declared ledger path");
+      const adapter = modules.find(({ rel }) => rel === reachers[0]);
+      assert.match(adapter.code, /createAcceptorStore\(\{ LEDGER_RELPATH \}\)/u, "the adapter supplies that path to the work-owned writer");
 
       // (c) AND THAT MODULE IS THE ONE THAT WRITES IT — the claim made positively, so the
       // chain is "one home, one reacher, and the reacher really does the write" rather than
       // an absence nobody checked.
-      const sites = ledgerWriteSites(modules.filter(({ rel }) => reachers.includes(rel) || rel === spells[0]));
+      const sites = ledgerWriteSites(modules.filter(({ code }) => /\bLEDGER_RELPATH\b/u.test(withoutComments(code))));
       assert.deepEqual(
         [...new Set(sites.map((site) => site.rel))],
-        ["src/work-acceptor/store.mjs"],
+        ["packages/work/src/acceptor/store.mjs"],
         `the ledger is written from one place only, and the module that DECLARES its path does not write it (found: ${JSON.stringify(sites)})`,
       );
       assert.ok(sites.length >= 1, "…and the sweep really found the write it is about");

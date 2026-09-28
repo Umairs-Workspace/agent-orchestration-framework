@@ -35,7 +35,7 @@ import {
 } from "../../../src/work-acceptor/rule.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const RULE_MODULE = "src/work-acceptor/rule.mjs";
+const RULE_MODULE = "packages/work/src/acceptor/rule.mjs";
 
 const shipped = defaultCriterion();
 const { N: _derived, ...shippedFields } = shipped;

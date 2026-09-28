@@ -376,7 +376,7 @@ export const archTests = [
       // ASSERTED rather than derived (58/FF-5807's move), and the byte-identity leg above is that
       // assertion. What this leg adds is the REASON: the leaf really does import nothing, so a
       // shared import was never available to it.
-      const source = await readFile(path.join(root, "src", "work", "loops-checks.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work-graph", "src", "checks.mjs"), "utf8");
       assert.ok(source.length > 0, "the checks leaf was read");
       const imports = source.split(/\r?\n/).filter((line) => /^\s*import[\s{"']/u.test(line));
       assert.deepEqual(imports, [], "the checks leaf imports nothing — which is why its read record is a copy and not a call");

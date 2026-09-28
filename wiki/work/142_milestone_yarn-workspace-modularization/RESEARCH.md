@@ -525,3 +525,16 @@ than introduce a work-to-mesh dependency. Audit tooling must retain the installe
 `work-audit/toolkit.mjs` currently derives it by walking two parents from its own source path and
 declares runnable targets under `src/`. Moving that file unchanged would resolve the wrong root.
 Assign asset/program location before moving audit evidence/launch consumers.
+
+Acceptance extraction resolves the preceding constraints through three explicit factories. The
+criterion receives frozen-set readers; the store receives the criterion-owned ledger path; the
+observation service receives journal reads and pure mesh path policy. Observation composition
+derives its prefix through the supplied slug function but performs no journal I/O. Arithmetic
+and audit read contracts remain direct exports. Package tests and copied-payload differential
+checks verify these seams without adding work-to-core or work-to-mesh dependencies.
+
+Source guards need to follow implementation ownership, including pure families now under packages.
+The acceptance ledger single-writer check scans runtime sources carrying the declared ledger-path
+constant/port, so an unrelated work-loop progress ledger is not mistaken for the acceptance writer.
+Its planted second-writer checks remain in place. Remaining audit launch services must still retain
+the installed program-root contract before their physical move.

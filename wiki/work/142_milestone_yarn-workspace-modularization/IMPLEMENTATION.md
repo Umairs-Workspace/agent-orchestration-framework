@@ -891,3 +891,27 @@ fails after registry drift, and passes again after fixture-only regeneration. Lo
 byte stability, permissions, gate ordering and refusal checks pass. No workflow was dispatched,
 no site was published and no remote CI result is claimed. Workflow step syntax was checked against
 the official GitHub Actions reference; existing action versions were not changed.
+
+## Work acceptance and audit read contracts
+
+Work now owns seven implementations: acceptance rule, ledger arithmetic, admissibility, criterion,
+store, observations, and audit read contracts. The four pure implementations are byte-identical;
+criterion/store/observations retain their bodies inside factories with explicit application ports.
+Core supplies frozen assets, the ledger path, journal reads and mesh dispatch-path policy. Work
+imports neither mesh nor core. Legacy paths retain explicit exports and composition until final
+assembly removes the adapters. No dependency or lock changes were needed.
+
+The 41-suite affected selection ran 610 cases: 594 passed initially and 16 source-location failures
+are covered by corrected guards. Guards now inspect the owning package and use the shared runtime
+census where repository-wide coverage is required. Two older guards also now inspect the previously
+extracted graph checks, bounds and claim provenance implementations. The final changed-suite and
+census check passes 146 cases, including the bridge over all 106 package cases. Three new package
+tests exercise lazy asset access, supplied ledger/config writes and journal/path-policy injection.
+
+All seven legacy export sets match. Differential checks preserve criteria, revision windows,
+ruling redelivery/conflict results, ledger/config bytes and observation results. Those checks also
+pass inside a copied installer payload, which retains 117 commands and previous graph, loop,
+execution and worktree checks. Standalone JavaScript bundling includes all seven implementations.
+Evidence is in `.tmp/workspace-migration/work-acceptance/`. Native executable and whole-tree suite
+verification remain outstanding; previous repository-state and generated-citation failures are
+not claimed fixed by this slice. No AOF workflow or additional generated-output changes were made.

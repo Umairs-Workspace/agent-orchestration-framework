@@ -52,11 +52,11 @@ const FORBIDDEN_FAMILIES = Object.freeze(["work.loop.", "work.autonomous."]);
 // renders them when it lands. Read from disk rather than listed, so a module added by a
 // later story is swept the day it appears.
 async function acceptorModules() {
-  const dir = path.join(root, "src", "work-acceptor");
+  const dir = path.join(root, "packages", "work", "src", "acceptor");
   const modules = [];
   for (const name of (await readdir(dir)).sort()) {
     if (!name.endsWith(".mjs")) continue;
-    modules.push({ rel: `src/work-acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
+    modules.push({ rel: `packages/work/src/acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
   }
   const face = path.join(root, "src", "commands", "acceptor.mjs");
   if (existsSync(face)) modules.push({ rel: "src/commands/acceptor.mjs", code: await readFile(face, "utf8") });
@@ -96,10 +96,10 @@ export const archTests = [
       // reported; the same key quoted in a message or written in a comment is not — which is
       // exactly the line 69's guard already draws, drawn here by the same stripper.
       const [key] = declared;
-      const holds = [{ rel: "src/work-acceptor/planted.mjs", code: `const KNOBS = ["x"];\nconst tuned = config?.${key};\n` }];
+      const holds = [{ rel: "packages/work/src/acceptor/planted.mjs", code: `const KNOBS = ["x"];\nconst tuned = config?.${key};\n` }];
       assert.equal(spelledKnobKeys(holds, declared).length > 0, true, "a key carried in code is a second home");
       const quotes = [{
-        rel: "src/work-acceptor/planted.mjs",
+        rel: "packages/work/src/acceptor/planted.mjs",
         code: `// tomorrow this file might mention ${key}\nthrow new Error(\`${key} is not admissible\`);\n`,
       }];
       assert.deepEqual(spelledKnobKeys(quotes, declared), [], "a key quoted in a diagnostic is not a claim of membership");
@@ -207,7 +207,7 @@ export const archTests = [
       // module that decides membership, so the cleanest form of "the set is not here" is that
       // no knob is spelled in it under any reading. The sweep above stays code-only, because
       // ADR-008 §4 explicitly allows a later story to quote a key inside a diagnostic.
-      const source = await readFile(path.join(root, "src", "work-acceptor", "admissibility.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work", "src", "acceptor", "admissibility.mjs"), "utf8");
       const model = await loadLoops(path.join(root, "src", "bundle"));
       for (const needle of [...FORBIDDEN_FAMILIES, ...tunableSet(model).keys]) {
         assert.equal(source.includes(needle), false, `the module that decides membership never spells ${needle}`);

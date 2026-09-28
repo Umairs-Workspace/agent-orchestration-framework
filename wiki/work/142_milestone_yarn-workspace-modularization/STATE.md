@@ -124,8 +124,8 @@ verification remains outstanding. See IMPLEMENTATION.md for the exact overlappin
 Continue extracting domain service implementations and their command contributions behind the new
 package interfaces. The work and mesh handler packages are implemented; their injected
 service implementations are being extracted from src/. Work owns record/lifecycle services;
-workspace configuration/identity loading and acceptor
-services remain in core. Enumeration/lookup/listing, readiness and their shared identity/dependency
+workspace configuration/identity loading and acceptance composition
+remain in core. Acceptance implementations belong to work. Enumeration/lookup/listing, readiness and their shared identity/dependency
 rules are extracted. Validation now consumes an explicit core-supplied digest contract.
 Work-loop orchestration and commands now consume explicit execution, work, notification and mesh
 services. Execution now owns run persistence, transcript settlement, heartbeat queues and
@@ -184,3 +184,12 @@ context contract, and done story 141 at the root). Pages now installs/audits wor
 and includes package sources in its gate fixture; all 20 Pages cases are covered after one focused
 mutation-test correction. No AOF item lifecycle or generated citations changed. The full migration
 and final whole-tree/platform verification remain outstanding.
+
+Work acceptance extraction: work now owns the rules, ledger arithmetic, admissibility, criterion,
+persistence, observations and audit read contracts. Core supplies assets, journal reads and mesh
+path policy. Seven legacy export sets and all implementation bodies match after port wiring.
+The 610-case affected selection is covered after source-guard corrections; the final 146-case
+changed-suite/census run passes, including all 106 package cases. Copied-installation API and
+persisted-byte parity and standalone JavaScript bundling pass. Remaining audit services, domain
+extractions, core/apps layout and final verification remain outstanding. The four pending generated
+citation updates remain separate from the three already approved and committed.

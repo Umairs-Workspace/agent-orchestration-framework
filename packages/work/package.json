@@ -13,13 +13,20 @@
     "./readiness": "./src/readiness.mjs",
     "./validation": "./src/validation.mjs",
     "./feature-parse": "./src/feature-parse.mjs",
-    "./digest": "./src/digest.mjs"
+    "./digest": "./src/digest.mjs",
+    "./acceptor/rule": "./src/acceptor/rule.mjs",
+    "./acceptor/ledger": "./src/acceptor/ledger.mjs",
+    "./acceptor/admissibility": "./src/acceptor/admissibility.mjs",
+    "./acceptor/criterion": "./src/acceptor/criterion.mjs",
+    "./acceptor/store": "./src/acceptor/store.mjs",
+    "./acceptor/observations": "./src/acceptor/observations.mjs",
+    "./audit/reads": "./src/audit/reads.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs test/records.test.mjs test/discovery.test.mjs test/readiness.test.mjs test/validation.test.mjs"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@aof/foundation": "workspace:*"

@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6101 (milestone 61 / ADR-001) — THE RULE IS ONE OBJECT AND ITS NUMBERS ARE DERIVED,
 // NEVER TYPED.
 //
@@ -45,7 +46,7 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-export const ENGINE_MODULES = Object.freeze(["src/work-acceptor/rule.mjs", "src/work-acceptor/ledger.mjs"]);
+export const ENGINE_MODULES = Object.freeze(["packages/work/src/acceptor/rule.mjs", "packages/work/src/acceptor/ledger.mjs"]);
 
 const engineSources = async () => Promise.all(
   ENGINE_MODULES.map(async (rel) => ({ rel, code: await readFile(path.join(root, ...rel.split("/")), "utf8") })),
@@ -115,9 +116,9 @@ export const archTests = [
 
       // NON-VACUITY, and the distinction. A typed threshold is reported; the same number
       // in a comment or a diagnostic message is not.
-      const typed = [{ rel: "src/work-acceptor/planted.mjs", code: "const N = 8;\nif (wins >= N) commit();\n" }];
+      const typed = [{ rel: "packages/work/src/acceptor/planted.mjs", code: "const N = 8;\nif (wins >= N) commit();\n" }];
       assert.equal(typedQuantities(typed, forbidden).length, 1, "a typed pair count is a second home for a derived number");
-      const quoted = [{ rel: "src/work-acceptor/planted.mjs", code: "// eight pairs, at 1.5 each\nthrow new Error(`8 pairs at 20`);\n" }];
+      const quoted = [{ rel: "packages/work/src/acceptor/planted.mjs", code: "// eight pairs, at 1.5 each\nthrow new Error(`8 pairs at 20`);\n" }];
       assert.deepEqual(typedQuantities(quoted, forbidden), [], "a number quoted in a diagnostic is not a claim");
     },
   },
@@ -264,7 +265,7 @@ export const archTests = [
       // engine modules sit inside `src/work-acceptor/`, and the token ban forbade the edge between
       // them. The family is the containment boundary and the two engine modules are the scope — the
       // directory's other four members open files, and no ADR ever claimed they were pure.
-      await assertFamilyPurity(assert, root, "src/work-acceptor", { members: [...ENGINE_MODULES] });
+      await assertFamilyPurity(assert, root, "packages/work/src/acceptor", { members: [...ENGINE_MODULES] });
       for (const { rel, code } of modules) {
         assert.doesNotMatch(code, /\brequire\s*\(/u, `${rel} requires nothing`);
         assert.doesNotMatch(codeOnly(code), /\bDate\.now\b|\bnew Date\b|\bperformance\.now\b|\bprocess\.hrtime\b/u, `${rel} reads no clock`);
@@ -273,24 +274,15 @@ export const archTests = [
       // ONE HOME FOR THE E-VALUE. A wealth product is an exponentiation over a win and a
       // loss count; the only module in `src/` that forms one is the arithmetic leaf.
       const derivers = [];
-      for (const rel of await walk(path.join(root, "src"))) {
+      for (const rel of (await readRuntimeFiles(root)).map(file => file.rel)) {
         const code = codeOnly(await readFile(path.join(root, rel), "utf8"));
         const exponentiates = /\bMath\.pow\s*\(/u.test(code) || /\*\*/u.test(code);
         const overPairs = /\b(?:wins|losses|favourable|unfavourable)\b/u.test(code);
         if (exponentiates && overPairs) derivers.push(rel);
       }
-      assert.deepEqual(derivers, ["src/work-acceptor/ledger.mjs"], "no second module derives an e-value");
+      assert.deepEqual(derivers, ["packages/work/src/acceptor/ledger.mjs"], "no second module derives an e-value");
       // The sequence vocabulary is real, so the sweep above is not vacuous.
       assert.equal(PAIR_OUTCOMES.UNFAVOURABLE, "unfavourable");
     },
   },
 ];
-
-async function walk(dir, prefix = "src") {
-  const found = [];
-  for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.isDirectory()) found.push(...await walk(path.join(dir, entry.name), `${prefix}/${entry.name}`));
-    else if (entry.name.endsWith(".mjs")) found.push(`${prefix}/${entry.name}`);
-  }
-  return found;
-}

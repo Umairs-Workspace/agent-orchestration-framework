@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6106 (milestone 61 / ADR-006 §1–§4a) — THE LEDGER ACCRUES ACROSS EPOCHS AND
 // REFUSES AN INCOMPLETE RULING AT CONSTRUCTION.
 //
@@ -36,7 +37,7 @@ import {
 } from "../../../src/work-acceptor/ledger.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LEDGER_MODULE = "src/work-acceptor/ledger.mjs";
+const LEDGER_MODULE = "packages/work/src/acceptor/ledger.mjs";
 
 // ADR-006 §3's frozen key set, restated here so the control compares two independent
 // statements of it. `dwell` and `dwellFrom` are in; a computed `dwellExpiry` is not, and
@@ -70,14 +71,6 @@ const ruling = ({ underCriterion = shipped, ...overrides } = {}) => makeRuling({
   ...overrides,
 });
 
-async function walk(dir, prefix = "src") {
-  const found = [];
-  for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.isDirectory()) found.push(...await walk(path.join(dir, entry.name), `${prefix}/${entry.name}`));
-    else if (entry.name.endsWith(".mjs")) found.push(`${prefix}/${entry.name}`);
-  }
-  return found;
-}
 
 // PURE — source in, findings out. A digest REACHES the arithmetic when the code reads a
 // `criterion` member, compares a digest, or binds either as an identifier. A key name
@@ -183,7 +176,7 @@ export const archTests = [
       // members, which is exactly the decomposition a growing leaf needs. The family is the
       // containment boundary; the claim stays scoped to the leaf, because the four other members of
       // `src/work-acceptor/` legitimately open files and no ADR ever made them pure.
-      await assertFamilyPurity(assert, root, "src/work-acceptor", { members: [LEDGER_MODULE] });
+      await assertFamilyPurity(assert, root, "packages/work/src/acceptor", { members: [LEDGER_MODULE] });
       assert.doesNotMatch(source, /\brequire\s*\(/u);
       const code = codeOnly(source);
       assert.doesNotMatch(code, /\bDate\b|\bperformance\.now\b|\bprocess\.hrtime\b/u, "it reads no clock");
@@ -223,7 +216,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6106 no second module in src/ derives W/L/T totals or an e-value",
     run: async () => {
-      const walked = await walk(path.join(root, "src"));
+      const walked = (await readRuntimeFiles(root)).map(file => file.rel);
       const derivers = [];
       const talliers = [];
       for (const rel of walked) {

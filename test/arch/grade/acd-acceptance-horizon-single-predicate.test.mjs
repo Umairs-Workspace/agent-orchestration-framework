@@ -78,7 +78,7 @@ const srcDir = path.join(repoRoot, "src");
 const THE_ONE_HOME = "packages/work/src/lifecycle.mjs";
 // 61/FF-6104's subjects. The acceptor's directory, and the face that has not landed yet —
 // named rather than globbed, so the day it arrives it is already inside the sweep.
-const ACCEPTOR_DIR = "src/work-acceptor";
+const ACCEPTOR_DIR = "packages/work/src/acceptor";
 const ACCEPTOR_FACE = "src/commands/acceptor.mjs";
 // The lifecycle's five words, spelled ONCE here so the two 61 legs below and the 66 lane
 // above ask the same question of the tree.
@@ -532,7 +532,7 @@ export const archTests = [
       // fact rather than a coincidence.
       const criterion = acceptorSources.find((entry) => entry.file === `${ACCEPTOR_DIR}/criterion.mjs`);
       assert.ok(criterion != null, "the criterion module is in the sweep");
-      assert.match(criterion.body, /import\s*\{[^}]*\bclosesEpoch\b[^}]*\}\s*from\s*"\.\.\/acceptance-horizon\.mjs"/);
+      assert.match(criterion.body, /import\s*\{[^}]*\bclosesEpoch\b[^}]*\}\s*from\s*"\.\.\/lifecycle\.mjs"/);
     },
   },
 
@@ -558,8 +558,8 @@ export const archTests = [
 
       // AND THE OPEN MILESTONES CANNOT REACH THE ANSWER AT ALL: the function takes one
       // options object naming the two record sources, and its body asks nothing else.
-      const acceptor = stripComments(await readFile(path.join(srcDir, "work-acceptor", "criterion.mjs"), "utf8"));
-      const body = functionBody(acceptor, "export function criterionRevisionWindow");
+      const acceptor = stripComments(await readFile(path.join(repoRoot, "packages/work/src/acceptor", "criterion.mjs"), "utf8"));
+      const body = functionBody(acceptor, "function criterionRevisionWindow");
       assert.ok(body != null, "the window's body was found");
       assert.equal(/\bisOpen\b|milestones|VALID_STATUS|ITEM_STATUS_EDGES/.test(body), false, "it derives nothing from the set of open milestones");
       assert.match(body, /rulings/, "it reads the ledger…");
@@ -580,7 +580,7 @@ export const archTests = [
       assert.equal(declared[1], "event:per-milestone", "the auditor's record says what ADR-004 §3 cites");
       assert.equal(ACCEPTOR_EPOCH_CADENCE, declared[1], "and the acceptor's declared epoch equals it");
 
-      const acceptor = await readFile(path.join(srcDir, "work-acceptor", "criterion.mjs"), "utf8");
+      const acceptor = await readFile(path.join(repoRoot, "packages/work/src/acceptor", "criterion.mjs"), "utf8");
       assert.equal(
         /readFile\([^)]*instrument-audit/.test(stripComments(acceptor)),
         false,

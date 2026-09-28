@@ -32,7 +32,7 @@ export const archTests = [
       assert.ok(dwellBody.includes("fields?.dwell?.raw"), "the recorded value comes from the arbiter declaration");
       assert.ok(!source.includes('"cycles:2"') && !source.includes('"cycles:10"'), "the acceptor production module spells no dwell value literal");
 
-      const acceptorDir = new URL("../../../src/work-acceptor/", import.meta.url);
+      const acceptorDir = new URL("../../../packages/work/src/acceptor/", import.meta.url);
       const production = [source];
       for (const name of await readdir(acceptorDir)) {
         if (name.endsWith(".mjs")) production.push(await readFile(new URL(name, acceptorDir), "utf8"));

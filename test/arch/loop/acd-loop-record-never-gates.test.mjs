@@ -41,8 +41,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const DOORS = [
   "src/commands/item-status.mjs",
   "src/commands/validate.mjs",
-  "src/work-acceptor/admissibility.mjs",
-  "src/work-acceptor/rule.mjs",
+  "packages/work/src/acceptor/admissibility.mjs",
+  "packages/work/src/acceptor/rule.mjs",
 ];
 
 const SIGNATURE_VOCABULARY = ["EXECUTION.md", "Sign-off", "SIGNOFF", "signoff", "isSignedRow", "loop-record-unsigned", "loopEngagements"];
@@ -129,7 +129,7 @@ export const archTests = [
       }
       // AND THE ACCEPTOR FAMILY WHOLESALE, not just its two named leaves — a door added later would
       // otherwise be outside the sweep.
-      const acceptorDir = path.join(repoRoot, "src/work-acceptor");
+      const acceptorDir = path.join(repoRoot, "packages/work/src/acceptor");
       const leaves = (await readdir(acceptorDir)).filter((name) => name.endsWith(".mjs"));
       assert.ok(leaves.length >= 2, "the acceptor sweep is non-vacuous");
       for (const name of leaves) {

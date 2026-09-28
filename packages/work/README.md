@@ -14,6 +14,11 @@ Private workspace for work-domain behavior.
 | `@aof/work/feature-parse` | Pure Gherkin parser, including partial parse findings and example tables. |
 | `@aof/work/digest` | Pure template parsing, digest rendering and shape validation over an explicit contract. |
 | `@aof/work/effects` | `createWorkEffects(getServices)` contributes status advancement, bounded rollback, run-reference remapping and ruling evidence. |
+| `@aof/work/acceptor/rule`, `ledger`, `admissibility` | Pure acceptance rules, evidence arithmetic and admissibility decisions. |
+| `@aof/work/acceptor/criterion` | `createAcceptorCriterion` owns criterion identity, epoch selection and guarded revisions with supplied frozen-asset readers. |
+| `@aof/work/acceptor/store` | `createAcceptorStore` owns ledger persistence and surgical configuration writes using the supplied ledger path. |
+| `@aof/work/acceptor/observations` | `createAcceptorObservations` owns observation classification and census, using supplied journal reads and dispatch-path policy. |
+| `@aof/work/audit/reads` | Pure audit read/limit records and declaration checks. |
 
 Records take concrete item descriptors (`ref`, `dir`, `type`) and use
 `@aof/foundation/fs` for atomic writes. They do not discover workspaces, load
@@ -48,8 +53,11 @@ write bounds are unchanged.
 
 Registration is inert. Handlers await the supplied service provider when invoked;
 the package imports neither core nor a journal singleton. Core currently supplies
-workspace configuration/identity loading, run-record writing and acceptor writing from
-`src/`, alongside the extracted record, discovery, readiness and validation APIs.
+workspace configuration/identity loading and application composition from `src/`,
+alongside the extracted execution and work APIs. Acceptance services receive frozen
+asset readers, the ledger path, journal reads and mesh dispatch-path policy explicitly.
+They do not import core, mesh or the journal singleton. Observation composition calls
+the supplied pure slug function to derive its prefix; journal reads happen on demand.
 Core's digest adapter supplies the shipped template and product version. The CLI
 remains part of core.
 

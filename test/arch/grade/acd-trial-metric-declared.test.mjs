@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6102 (milestone 61 / ADR-002) — THE TRIAL METRIC IS DECLARED, RESOLVABLE AND
 // SWAPPABLE, AND THE ENGINE NAMES NONE OF IT.
 //
@@ -44,7 +45,7 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COUNTERS_LEAF = "src/work/counters.mjs";
-const ENGINE_MODULES = Object.freeze(["src/work-acceptor/rule.mjs", "src/work-acceptor/ledger.mjs"]);
+const ENGINE_MODULES = Object.freeze(["packages/work/src/acceptor/rule.mjs", "packages/work/src/acceptor/ledger.mjs"]);
 
 const shipped = defaultCriterion();
 const { N: _derived, ...shippedFields } = shipped;
@@ -54,11 +55,11 @@ const registry = deriveMetricRegistry({ [COUNTERS_LEAF]: workCounters });
 // Every module under `src/work-acceptor/`, read from disk rather than listed, so a
 // module a later story adds is swept the day it appears.
 async function acceptorModules() {
-  const dir = path.join(root, "src", "work-acceptor");
+  const dir = path.join(root, "packages", "work", "src", "acceptor");
   const modules = [];
   for (const name of (await readdir(dir)).sort()) {
     if (!name.endsWith(".mjs")) continue;
-    modules.push({ rel: `src/work-acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
+    modules.push({ rel: `packages/work/src/acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
   }
   return modules;
 }
@@ -74,14 +75,6 @@ export function spelledMetricNames(modules, symbols) {
   });
 }
 
-async function walk(dir, prefix = "src") {
-  const found = [];
-  for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.isDirectory()) found.push(...await walk(path.join(dir, entry.name), `${prefix}/${entry.name}`));
-    else if (entry.name.endsWith(".mjs")) found.push(`${prefix}/${entry.name}`);
-  }
-  return found;
-}
 
 function refusalFrom(body) {
   try {
@@ -150,9 +143,9 @@ export const archTests = [
       assert.deepEqual(spelledMetricNames(modules, symbols), []);
       // NON-VACUITY, and the distinction itself: a name HELD in code is reported; the
       // same name inside the declared pointer string is not.
-      const held = [{ rel: "src/work-acceptor/planted.mjs", code: `const reading = counters.${symbols[0]}(items);\n` }];
+      const held = [{ rel: "packages/work/src/acceptor/planted.mjs", code: `const reading = counters.${symbols[0]}(items);\n` }];
       assert.equal(spelledMetricNames(held, symbols).length, 1, "a metric named in code is the engine knowing its metric");
-      const declared = [{ rel: "src/work-acceptor/planted.mjs", code: `metric: "module:${COUNTERS_LEAF}#${symbols[0]}",\n` }];
+      const declared = [{ rel: "packages/work/src/acceptor/planted.mjs", code: `metric: "module:${COUNTERS_LEAF}#${symbols[0]}",\n` }];
       assert.deepEqual(spelledMetricNames(declared, symbols), [], "a pointer is data an operator edits, not a name the engine holds");
 
       // NO TIE-RATE LITERAL IN THE ENGINE. The rate is DECLARED on the criterion as a
@@ -186,7 +179,7 @@ export const archTests = [
 
       // NO SECOND HOME: the modules exporting either pointed-at symbol are exactly one.
       const homes = [];
-      for (const rel of await walk(path.join(root, "src"))) {
+      for (const rel of (await readRuntimeFiles(root)).map(file => file.rel)) {
         const code = await readFile(path.join(root, rel), "utf8");
         if ([metric.symbol, counter.symbol].some((symbol) => new RegExp(`export\\s+(?:async\\s+)?(?:function|const|let)\\s+${symbol}\\b`, "u").test(code))) homes.push(rel);
       }

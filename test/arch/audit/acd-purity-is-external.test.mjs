@@ -54,11 +54,11 @@ const STRIPPER_HOME = "test/support/source-slice.mjs";
 const CONVERTED = Object.freeze([
   ["acd-session-driver-single-home.test.mjs", "src/phase-brief"],
   ["acd-phase-brief-single-bag.test.mjs", "src/phase-brief"],
-  ["acd-loop-checks-pure.test.mjs", "src/work/loops-checks"],
-  ["acd-acceptor-ledger-accrues-across-epochs.test.mjs", "src/work-acceptor"],
-  ["acd-acceptor-rule-is-one-object.test.mjs", "src/work-acceptor"],
-  ["acd-loop-cap-single-home.test.mjs", "src/loop-bounds"],
-  ["acd-provenance-stamped-at-write.test.mjs", "src/claim-provenance"],
+  ["acd-loop-checks-pure.test.mjs", "packages/work-graph/src/checks"],
+  ["acd-acceptor-ledger-accrues-across-epochs.test.mjs", "packages/work/src/acceptor"],
+  ["acd-acceptor-rule-is-one-object.test.mjs", "packages/work/src/acceptor"],
+  ["acd-loop-cap-single-home.test.mjs", "packages/contracts/src/loop-bounds"],
+  ["acd-provenance-stamped-at-write.test.mjs", "packages/contracts/src/claim-provenance"],
   ["acd-trial-metric-declared.test.mjs", "src/work/counters"],
   ["acd-work-counters-read-only.test.mjs", "src/work/counters"],
 ]);
@@ -380,10 +380,10 @@ export const archTests = [
       );
       // `src/work-acceptor/` as it stands today: the one family directory this ruling's own case
       // lives in. Derived from the tree rather than counted here, with a floor for non-vacuity.
-      const acceptor = await resolveFamily(root, "src/work-acceptor");
-      assert.equal(acceptor.isDirectory, true, "src/work-acceptor/ is a directory family");
+      const acceptor = await resolveFamily(root, "packages/work/src/acceptor");
+      assert.equal(acceptor.isDirectory, true, "packages/work/src/acceptor/ is a directory family");
       assert.ok(acceptor.files.length >= 6, `src/work-acceptor/ resolves to its .mjs files (${acceptor.files.length})`);
-      for (const rel of acceptor.files) assert.match(rel, /^src\/work-acceptor\/.+\.mjs$/u, `${rel} is inside the family`);
+      for (const rel of acceptor.files) assert.match(rel, /^packages\/work\/src\/acceptor\/.+\.mjs$/u, `${rel} is inside the family`);
       // Neither the file nor the directory: no members, and the guard FAILS naming the subject.
       await withTempFamily({ "src/other.mjs": "" }, async (dir) => {
         const family = await resolveFamily(dir, "src/absent");
@@ -617,11 +617,11 @@ export const archTests = [
     run: async () => {
       const subjects = [
         ["src/phase-brief", null],
-        ["src/work/loops-checks", null],
-        ["src/loop-bounds", null],
-        ["src/claim-provenance", null],
+        ["packages/work-graph/src/checks", null],
+        ["packages/contracts/src/loop-bounds", null],
+        ["packages/contracts/src/claim-provenance", null],
         ["src/work/counters", null],
-        ["src/work-acceptor", ["src/work-acceptor/rule.mjs", "src/work-acceptor/ledger.mjs"]],
+        ["packages/work/src/acceptor", ["packages/work/src/acceptor/rule.mjs", "packages/work/src/acceptor/ledger.mjs"]],
       ];
       for (const [subject, members] of subjects) {
         const report = await assertFamilyPurity(assert, root, subject, members == null ? {} : { members });

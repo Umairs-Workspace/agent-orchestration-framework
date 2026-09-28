@@ -42,8 +42,8 @@ import {
 import * as observations from "../../../src/work-acceptor/observations.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CENSUS_MODULE = "src/work-acceptor/observations.mjs";
-const CENSUS_PATH = path.join(repoRoot, "src", "work-acceptor", "observations.mjs");
+const CENSUS_MODULE = "packages/work/src/acceptor/observations.mjs";
+const CENSUS_PATH = path.join(repoRoot, "packages", "work", "src", "acceptor", "observations.mjs");
 const WORKSPACE = path.resolve("/aof-ff6107-workspace");
 
 // EVERY SCAN BELOW MEASURES CODE, NOT PROSE, and that is a decision rather than a
@@ -111,8 +111,11 @@ export const archTests = [
       // TEXTUAL: it does not spell the literal, and it takes BOTH the predicate and the slug
       // from the module that owns the convention.
       assert.equal(source.includes("dispatch-worktrees"), false, "the census spells no dispatch-worktrees literal of its own");
-      assert.match(source, /import \{[^}]*isUnderMeshDispatchWorktreesRoot[^}]*\} from "\.\.\/mesh\/worktree\.mjs"/su, "it imports the lane's own predicate");
-      assert.match(source, /import \{[^}]*dispatchWorktreeSlug[^}]*\} from "\.\.\/mesh\/worktree\.mjs"/su, "…and the lane's own slug");
+      const adapter = await readFile(path.join(repoRoot, "src/work-acceptor/observations.mjs"), "utf8");
+      assert.match(adapter, /import \{[^}]*isUnderMeshDispatchWorktreesRoot[^}]*\} from "\.\.\/mesh\/worktree\.mjs"/su, "composition imports the lane's own predicate");
+      assert.match(adapter, /import \{[^}]*dispatchWorktreeSlug[^}]*\} from "\.\.\/mesh\/worktree\.mjs"/su, "…and the lane's own slug");
+      assert.match(adapter, /createAcceptorObservations\(\{ dispatchWorktreeSlug, isUnderMeshDispatchWorktreesRoot, meshDispatchWorktreesRoot, readEvents \}\)/u, "composition supplies the actual lane services");
+      assert.match(source, /createAcceptorObservations\(\{ dispatchWorktreeSlug, isUnderMeshDispatchWorktreesRoot, meshDispatchWorktreesRoot, readEvents \}\)/u, "the implementation receives these explicit ports");
 
       // BEHAVIOURAL, because a textual import proves only that the name is present: a path
       // composed by the framework's OWN dispatch seam folds into its parent, and the fold names
@@ -154,7 +157,7 @@ export const archTests = [
       const source = await censusSource();
       assert.match(
         source,
-        /import \{ SWEEP_BASES, readRecord, sweepDeclarationProblems \} from "\.\.\/work-audit\/reads\.mjs"/u,
+        /import \{ SWEEP_BASES, readRecord, sweepDeclarationProblems \} from "\.\.\/audit\/reads\.mjs"/u,
         "the three shape-owning exports are imported from their one home",
       );
       // NO SECOND COPY. A local definition of any of the three would re-open exactly the
