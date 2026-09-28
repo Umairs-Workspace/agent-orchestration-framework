@@ -133,7 +133,7 @@ export const archTests = [
       }
       assert.deepEqual(mapSpellings("src/import/materialize.mjs", "const id = outcome.id ?? \"R1\";"), [], "a bare id is not a map shape");
       assert.deepEqual(mapSpellings("src/x.mjs", "const t = /ADR-\\d{3}/;"), [], "an ADR id is not a map id");
-      assert.deepEqual(mapSpellings("src/cited-path-resolve.mjs", "const m = /^R\\d*\\t([^\\t]+)$/u.exec(line);"), [], "git's rename status is not a map id");
+      assert.deepEqual(mapSpellings("packages/work/src/cited-path-resolve.mjs", "const m = /^R\\d*\\t([^\\t]+)$/u.exec(line);"), [], "git's rename status is not a map id");
       assert.deepEqual(mapSpellings("src/x.mjs", "// - E1 · a → b [proposed]\nconst a = 1;"), [], "a comment is not code");
       assert.deepEqual(mapSpellings("packages/work/src/declared-id.mjs", "{ name: \"R\", id: \"R\\\\d+\" }"), [], "the admitted module");
       assert.ok(mapSpellings("src/x.mjs", "{ name: \"R\", id: \"R\\\\d+\" }").length > 0, "the same line anywhere else fires");

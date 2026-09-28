@@ -213,3 +213,13 @@ and in a copied installation; standalone JavaScript bundling passes and 117 comm
 No dependencies or generated citations changed. Next: remaining doctor/tuning services, work
 mutations and command implementations; other domains, core/apps layout and final verification
 remain outstanding as recorded in COMPLETION.md.
+
+Doctor extraction: work now owns the snapshot engine, check lanes, grades, scope, story contracts,
+citation resolution and diagram layout. Core supplies execution/run reads and diagram policy;
+check lanes import shared predicates directly, removing imports back into the snapshot engine.
+The new work-to-contracts edge passes immutable installation and supply-chain checks. Legacy API,
+source/copy behavior and standalone JavaScript checks pass; the 177-case focused run includes all
+112 package cases, with later scan-coverage corrections passing 23 cases. The broader affected
+selection and final census are still running. No additional generated citations or workflow state
+changed. Continue with tuning and remaining work mutations/commands, other domains, core/apps
+layout and final whole-tree/platform verification.

@@ -23,7 +23,7 @@ export const archTests = [
       }
       assert.ok(files.length > 600 && scenarios > 1000 && blocks > 0, "fitness scan reaches real files, scenarios, and Examples blocks");
 
-      for (const file of ["src/work.mjs", "src/commands/tasks.mjs", "src/work/doctor-rubric.mjs"]) {
+      for (const file of ["src/work.mjs", "src/commands/tasks.mjs", "packages/work/src/doctor/rubric.mjs"]) {
         const source = await readFile(file, "utf8");
         assert.doesNotMatch(source, /(?:\.examples\b|\[\s*["']examples["']\s*\])/, `${file} remains unaware of the additive key`);
       }

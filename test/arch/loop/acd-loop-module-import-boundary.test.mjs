@@ -115,12 +115,13 @@ export const archTests = [
     name: "arch/52 FF-5202: god-node, doctor, CLI and UI do not reference the loop family",
     run: async () => {
       const targets = [path.join(root, "src/work.mjs"), path.join(root, "src/cli.mjs")];
-      // 119/01 — the doctor family moved to `src/work/` and reads `doctor*.mjs` there. The old
-      // `readdir(src)` + `^work-doctor` filter returned NOTHING after the move, and the
-      // non-vacuity leg below could not see that because `ui/` alone cleared it.
-      const doctorModules = (await readdir(path.join(root, "src/work")))
-        .filter((name) => /^doctor.*\.mjs$/.test(name))
-        .map((name) => path.join(root, "src/work", name));
+      // Inspect implementations and transitional composition together. Counting adapters
+      // alone would leave the package free to acquire a forbidden dependency unnoticed.
+      const doctorFiles = (await readRuntimeFiles(root)).filter(file =>
+        /^packages\/work\/src\/doctor\//u.test(file.rel) || /^src\/work\/doctor.*\.mjs$/u.test(file.rel));
+      const implementations = doctorFiles.filter(file => file.rel.startsWith("packages/"));
+      assert.ok(implementations.length >= 10, "all ten doctor implementation modules are inspected");
+      const doctorModules = doctorFiles.map(file => file.path);
       // The floor is the DELIVERED count, not a round number below it: at `>= 7` two doctor modules
       // could leave the sweep with `ui/` keeping the target leg satisfied, which is the shape this
       // control was just repaired for. It may be lowered by a story that removes a lane, which is
@@ -144,20 +145,22 @@ export const archTests = [
       // NON-VACUITY on the resolver itself: it must catch the sibling spelling a doctor module
       // would actually use, and it must not fire on a neighbour that merely looks like one.
       assert.deepEqual(
-        reachesLoopFamily("src/work/doctor-loop-ready.mjs", 'import { loadLoops } from "./loops.mjs";').length,
+        reachesLoopFamily("packages/work/src/doctor/loop-ready.mjs", 'import { loadLoops } from "../../../../src/work/loops.mjs";').length,
         1,
-        "self-check: a SIBLING import of the loader is caught — the spelling the move made reachable, and the one a token-only rule missed",
+        "self-check: a package import of the core loader is caught",
       );
-      assert.deepEqual(reachesLoopFamily("src/work/doctor.mjs", 'import { x } from "./doctor-budget.mjs";'), [], "self-check: a lane import inside the doctor family is not a loop-family edge");
+      assert.deepEqual(reachesLoopFamily("packages/work/src/doctor/index.mjs", 'import { x } from "./budget.mjs";'), [], "self-check: a lane import inside the doctor family is not a loop-family edge");
+      assert.equal(reachesLoopFamily("packages/work/src/doctor/index.mjs", 'import { loadLoops } from "@aof/work-graph/registry";').length, 1,
+        "self-check: the public package route into the registry is also forbidden");
       assert.deepEqual(reachesLoopFamily("src/cli.mjs", 'import { x } from "./work/loops.mjs";').length, 1, "self-check: the CLI reaching the loader is caught at its own depth");
       // The four spellings the review measured loading under Node while this control read green.
       for (const [what, source] of [
-        ["a side-effect import", 'import "./loops.mjs";'],
-        ["a template-literal dynamic import", "const m = await import(`./loops.mjs`);"],
-        ["a query-suffixed specifier", 'import { loadLoops } from "./loops.mjs?v=1";'],
-        ["a doubled slash", 'import { loadLoops } from ".//loops.mjs";'],
+        ["a side-effect import", 'import "../../../../src/work/loops.mjs";'],
+        ["a template-literal dynamic import", "const m = await import(`../../../../src/work/loops.mjs`);"],
+        ["a query-suffixed specifier", 'import { loadLoops } from "../../../../src/work/loops.mjs?v=1";'],
+        ["a doubled slash", 'import { loadLoops } from "../../../../src/work//loops.mjs";'],
       ]) {
-        assert.equal(reachesLoopFamily("src/work/doctor-loop-ready.mjs", source).length, 1, `self-check: ${what} is an edge and is caught`);
+        assert.equal(reachesLoopFamily("packages/work/src/doctor/loop-ready.mjs", source).length, 1, `self-check: ${what} is an edge and is caught`);
       }
       assert.deepEqual(reachesLoopFamily("ui/src/pages/Page.tsx", 'import { x } from "../../../src/commands/loops-graph";').length, 1, "self-check: an EXTENSIONLESS ui/ import is the bundler edge it would be at build time");
     },

@@ -25,8 +25,8 @@ import { validateCommand } from "../../src/commands/validate.mjs";
 import { doctorCommand } from "../../src/commands/doctor.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const srcWork = path.join(repoRoot, "src", "work.mjs");
-const srcHorizon = path.join(repoRoot, "src", "acceptance-horizon.mjs");
+const srcWork = path.join(repoRoot, "packages", "work", "src", "validation.mjs");
+const srcHorizon = path.join(repoRoot, "packages", "work", "src", "lifecycle.mjs");
 const srcMigrate = path.join(repoRoot, "src", "commands", "migrate-folder.mjs");
 
 const CONFIG = { name: "fixture", work: { dir: "./wiki/work", tags: { domains: ["@validate"] } } };
@@ -130,12 +130,12 @@ export const acceptanceHorizonTests = [
       const work = await readFile(srcWork, "utf8");
       assert.match(
         work,
-        /import\s*\{[^}]*\bisOpen\b[^}]*\}\s*from\s*"\.\/acceptance-horizon\.mjs"/,
+        /import\s*\{[^}]*\bisOpen\b[^}]*\}\s*from\s*"\.\/lifecycle\.mjs"/,
         "validate's home imports the predicate rather than re-deciding it",
       );
       // The leaf also took `VALID_STATUS`, so the five lifecycle words have ONE home
       // (it was a private const at src/work.mjs:49).
-      assert.match(work, /import\s*\{[^}]*\bVALID_STATUS\b[^}]*\}\s*from\s*"\.\/acceptance-horizon\.mjs"/);
+      assert.match(work, /import\s*\{[^}]*\bVALID_STATUS\b[^}]*\}\s*from\s*"\.\/lifecycle\.mjs"/);
       assert.equal(
         /const\s+VALID_STATUS\s*=/.test(work),
         false,

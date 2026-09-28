@@ -46,7 +46,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");
-const LANE = "src/work/doctor-depends.mjs";
+const LANE = "packages/work/src/doctor/depends.mjs";
 
 // THE STREAM, READ ONCE. Four of the five cases below are claims about this repository's own work
 // stream, and building the snapshot five times would pay for the same traversal five times over.

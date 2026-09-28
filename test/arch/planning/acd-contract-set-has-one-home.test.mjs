@@ -53,7 +53,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const LEAF = "src/story-contract.mjs";
+const LEAF = "packages/work/src/story-contract.mjs";
 const CONSUMER = "src/ready-wave.mjs";
 
 // Comment-stripped, always. Every leg below is a claim about what the module DOES, and a comment

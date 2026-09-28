@@ -9,7 +9,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const scorerPath = path.join(root, "src", "work", "doctor-loop-ready.mjs");
+const scorerPath = path.join(root, "packages", "work", "src", "doctor", "loop-ready.mjs");
 const COMPOSED = Object.freeze(["grounding", "anchor-grounding", "pairing", "reference-ownership", "actuator-arbitration", "timescale"]);
 
 function specifiers(source) {
@@ -50,7 +50,7 @@ export const archTests = [
   {
     name: "arch/53 FF-5309 (acd-loop-ready-registry-optional): scorer stays in the doctor determinism family but outside CHECK_GROUPS and the loop import graph",
     run: async () => {
-      assert.match(scorerPath.split(path.sep).join("/"), /src\/work\/doctor.*\.mjs$/u);
+      assert.match(scorerPath.split(path.sep).join("/"), /packages\/work\/src\/doctor\/loop-ready\.mjs$/u);
       assert.ok(CHECK_GROUPS.length > 5, `CHECK_GROUPS was actually read: ${CHECK_GROUPS.length} groups`);
       assert.equal(CHECK_GROUPS.some((group) => group.name === "computeLoopReady"), false);
       const graph = await importGraph(scorerPath);

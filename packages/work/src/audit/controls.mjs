@@ -11,18 +11,15 @@
 // THIS MODULE IS A TRUE LEAF, AND THE DEPENDENCY DIRECTION IS INVERTED ON PURPOSE
 // (66/ARCHITECTURE ROUND 3/3, FF-6605).
 //
-// Both existing lanes import the spine (`work-doctor-coherence.mjs:17`,
-// `work-doctor-freshness.mjs:19`) and the spine imports `node:fs/promises` — so
-// following the house idiom would put `node:fs` one hop away and fail FF-6605 on
-// arrival. This lane therefore takes item identity from the SNAPSHOT ROWS rather than
-// importing `ITEM_RE`/`isDriver`, and **`work-doctor.mjs` imports THIS module** — it
-// calls the pure extractors below to learn which paths to probe and which files are
-// control-shaped. There is no edge back.
+// This lane takes item identity from snapshot rows. The doctor snapshot reader
+// imports its pure extractors to learn which paths to probe and which files are
+// control-shaped; there is no edge back into that filesystem reader. Other doctor
+// lanes now import shared predicates directly from the pure dependency module.
 //
 // The only direct imports admitted are `node:path` (join/basename only — never
 // `path.resolve`, which reads `process.cwd()` and would make a group impure) and the
-// milestone's two zero-import leaves, `./acceptance-horizon.mjs` (66/00) and
-// `./declared-id.mjs` (66/01).
+// milestone's two zero-import leaves, `../lifecycle.mjs` (66/00) and
+// `../declared-id.mjs` (66/01).
 //
 // ACD NEVER EXECUTES ANYTHING, AND IT IS HELD STRUCTURALLY (ADR-004 §2). Leg A is a
 // `stat` taken by the spine; leg B is a text read taken by the spine. Nothing here

@@ -16,7 +16,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile } from "node:fs/promises";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -33,7 +33,7 @@ export const archTests = [
     name: "arch/FF-5401 no module in src/** imports a runner script or anything under test/**",
     run: async () => {
       const offenders = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const text = await readFile(file.path, "utf8");
         // Comments cite these paths constantly (this milestone's own modules do), so a
         // comment naming `scripts/test.mjs` must not be counted as an import of it.

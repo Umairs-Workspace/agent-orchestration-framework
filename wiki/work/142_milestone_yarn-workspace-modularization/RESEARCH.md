@@ -574,3 +574,19 @@ fixture gets its own work-package copy and alias, so mutating a grammar exercise
 and cannot mutate the checkout's package. Other installed dependencies are read through fixture
 aliases. The graph-reader allowlist identifies core composition and the existing supplied-reader
 implementation separately; no new graph reader or build path was introduced.
+
+Doctor extraction moves fifteen implementations into work: scope, story contracts, citation
+resolution, grade normalization/compilation, diagram layout, the snapshot engine and nine check
+modules. Coherence, freshness and dependency checks import the shared dependency predicates
+directly, removing their former imports back into the snapshot engine. The diagram policy and
+execution projection/run readers remain core-supplied ports. The only new manifest edge is
+work to contracts, for the existing pure error and claim-provenance APIs; no registry dependency
+or work-to-work-graph cycle is introduced.
+
+The next tuning extraction has five services. Formation has no imports. Provenance can use
+work-owned declaration, identity and citation APIs directly. Proposal needs a supplied core asset
+map; distance needs the counter policy alongside work's acceptance rules. Corpus joins work
+discovery, scope, observations and audit read contracts with supplied retrospective parsing,
+execution record readers and loop-pointer parsing. Keep these cross-domain readers explicit,
+especially the graph reader: work-graph already depends on work. The tune command should move
+with those services when its remaining core configuration and registry collaborators are explicit.

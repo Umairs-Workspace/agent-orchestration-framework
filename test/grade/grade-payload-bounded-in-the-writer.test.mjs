@@ -30,7 +30,7 @@ import { PHASE_BRIEF_MAX_CHARS } from "../../src/phase-brief.mjs";
 import {
   GRADE_FAILURE_MAX_ENTRIES, GRADE_TRUNCATION_KEY, boundGradeFailures, compileGrade,
 } from "../../src/work/grade.mjs";
-import { readSrcFiles } from "../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../loop/loop-command-probe.test.mjs";
 import {
   capturingReport, emitsFailing, emitsPassing, failingTap, findingsFrom, gradingCtx,
@@ -317,18 +317,18 @@ export const gradePayloadBoundedInTheWriterTests = [
       // happened to edit (`m15/R3`).
       const declaring = [];
       const bounding = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const code = strip(await readFile(file.path, "utf8"));
         if (/export function boundGradeFailures\b/.test(code)) bounding.push(file.rel);
         if (/GRADE_FAILURE_MAX_ENTRIES\s*=/.test(code)) declaring.push(file.rel);
       }
-      assert.deepEqual(bounding, ["work/grade.mjs"], "exactly one function bounds a grade payload");
-      assert.deepEqual(declaring, ["work/grade.mjs"], "…and exactly one module declares its ceiling");
+      assert.deepEqual(bounding, ["packages/work/src/grade.mjs"], "exactly one function bounds a grade payload");
+      assert.deepEqual(declaring, ["packages/work/src/grade.mjs"], "…and exactly one module declares its ceiling");
 
       // IT LIVES IN THE PURE LEAF AND IMPORTS NOTHING FROM `src/` (FF-5406, unchanged).
-      const leaf = strip(await readFile(path.join(repoRoot, "src", "work", "grade.mjs"), "utf8"));
+      const leaf = strip(await readFile(path.join(repoRoot, "packages", "work", "src", "grade.mjs"), "utf8"));
       const imports = [...leaf.matchAll(/\bfrom\s+["']([^"']+)["']/g)].map((match) => match[1]);
-      assert.deepEqual(imports, ["../claim-provenance.mjs"], "the bound lives in the pure leaf, which still imports only the pure provenance compiler");
+      assert.deepEqual(imports, ["@aof/contracts/claim-provenance"], "the bound lives in the pure leaf, which still imports only the pure provenance compiler");
       assert.ok(!leaf.includes("PHASE_BRIEF_MAX_CHARS"), "…so the character ceiling is HANDED IN rather than reached for");
 
       // THE OPERATOR RENDER CALLS IT INSTEAD OF SLICING TO A LITERAL OF ITS OWN.
@@ -338,7 +338,7 @@ export const gradePayloadBoundedInTheWriterTests = [
 
       // AND NO MODULE HARD-CODES A SECOND FAILURE CEILING.
       const second = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const code = strip(await readFile(file.path, "utf8"));
         if (/failures\s*\.\s*slice\s*\(\s*0\s*,\s*\d/.test(code)) second.push(file.rel);
       }

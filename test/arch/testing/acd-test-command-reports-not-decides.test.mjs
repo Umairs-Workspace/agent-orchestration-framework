@@ -87,7 +87,7 @@ const PROBE_FLOOR = 4;
 // The doors where a selection must never be readable as a verdict.
 const DOOR_ROOTS = Object.freeze([
   "src/commands/item-status.mjs",
-  "src/work/doctor.mjs",
+  "packages/work/src/doctor/index.mjs",
   "packages/work-loop/src/engine.mjs",
   "src/work-audit",
   "packages/work/src/audit",

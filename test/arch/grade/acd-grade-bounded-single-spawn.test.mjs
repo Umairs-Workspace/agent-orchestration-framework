@@ -16,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { rubricSpawnOptions, rubricChildEnv, GRADE_REENTRANCY_ENV } from "../../../src/commands/grade.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -27,11 +27,11 @@ export const archTests = [
   {
     name: "arch/FF-5406 src/work/grade.mjs is a pure leaf — only the pure provenance leaf, no child_process, no fs, no clock",
     run: async () => {
-      const text = await readFile(path.join(repoRoot, "src", "work", "grade.mjs"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "work", "src", "grade.mjs"), "utf8");
       const code = stripComments(text);
 
       const imports = importSpecifiers(code).map((entry) => entry.specifier);
-      assert.deepEqual(imports, ["../claim-provenance.mjs"], `the pure leaf imports only the pure provenance compiler (found: ${imports.join(", ")})`);
+      assert.deepEqual(imports, ["@aof/contracts/claim-provenance"], `the pure leaf imports only the pure provenance compiler (found: ${imports.join(", ")})`);
       assert.ok(!/\bimport\s*\(/.test(code), "…and performs no dynamic import either");
 
       // NO CLOCK. `gradedAt` is INJECTED — a module that read one could not be asserted
@@ -50,7 +50,7 @@ export const archTests = [
     name: "arch/FF-5406 exactly one module in src/** spawns the declared rubric argv",
     run: async () => {
       const spawners = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const code = stripComments(await readFile(file.path, "utf8"));
         // The declared rubric is reached through the `work.rubric` KEY — that, and nothing
         // looser, is what makes a module the rubric's reader. (`plan.command` is deliberately
@@ -61,7 +61,7 @@ export const archTests = [
         const spawns = /\bspawnSync\s*\(|\bspawn\s*\(|\bexecFile|\bexec\s*\(/.test(code);
         if (readsTheRubric && spawns) spawners.push(file.rel);
       }
-      assert.deepEqual(spawners, ["commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
+      assert.deepEqual(spawners, ["src/commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
     },
   },
 

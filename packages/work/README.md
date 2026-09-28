@@ -26,6 +26,16 @@ Private workspace for work-domain behavior.
 | `@aof/work/audit/declared-bounds` | Bounds comparison factory using supplied reference data and configuration resolvers. |
 | `@aof/work/audit/seam-liveness` | Seam audit factory using supplied graph readers and test-root declarations. |
 | `@aof/work/audit/report` | Report assembly factory using supplied lane services and work-graph checks. |
+| `@aof/work/ref-scope`, `story-contract`, `cited-path-resolve` | Shared work scope, declared contract paths and citation/rename resolution. |
+| `@aof/work/grade` | Pure report normalization, grade compilation and bounded failure payloads. |
+| `@aof/work/diagrams/layout` | Diagram names, paths and link grammar. |
+| `@aof/work/doctor` | `createWorkDoctor` owns snapshot reads and check orchestration; core supplies execution projection, run reads and the configured diagram check. |
+| `@aof/work/doctor/*` | Coherence, freshness, budgets, identity, rubric, execution-record, dependency and loop-ready checks. `createDoctorDiagrams` receives diagram configuration policy. |
+
+Doctor checks import pure shared predicates directly rather than importing the snapshot reader.
+The work package depends on contracts for error envelopes and claim provenance; it does not import
+work-graph or execution. Core composes those collaborators, avoiding a cycle with work-graph's
+dependency on work records. Legacy source paths remain transitional adapters.
 
 Records take concrete item descriptors (`ref`, `dir`, `type`) and use
 `@aof/foundation/fs` for atomic writes. They do not discover workspaces, load

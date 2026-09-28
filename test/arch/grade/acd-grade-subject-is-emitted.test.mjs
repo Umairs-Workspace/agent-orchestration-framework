@@ -38,9 +38,9 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // family it governs) — a classifier added to the command instead of the compiler would
 // otherwise walk straight past.
 const GRADE_PATH = Object.freeze([
-  "src/work/grade.mjs",
+  "packages/work/src/grade.mjs",
   "src/commands/grade.mjs",
-  "src/work/doctor-rubric.mjs",
+  "packages/work/src/doctor/rubric.mjs",
 ]);
 
 // Deriving a STATUS from a case's free text. The shapes a classifier actually takes: a

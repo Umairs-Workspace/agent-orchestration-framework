@@ -149,7 +149,7 @@ export const archTests = [
   {
     name: "arch/78/02+03 FF-7809 the checker holds its own copy and imports neither the writer nor the registry family",
     run: async () => {
-      const source = stripComments(await readFile(path.join(repoRoot, "src/work/doctor-loop-record.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/loop-record.mjs"), "utf8"));
 
       // THE INDEPENDENCE IS STRUCTURAL, not a comment: the checker imports `node:path` and nothing
       // else. An import of the writer would put the writer's opinion of the shape into the instrument

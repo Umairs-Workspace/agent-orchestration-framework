@@ -94,7 +94,7 @@ export const archTests = [
 
       // …and structurally: the module holds exactly ONE severity literal, so no future caller can
       // harden one code without this gate reding.
-      const code = stripComments(await readFile(path.join(repoRoot, "src/work/doctor-loop-record.mjs"), "utf8"));
+      const code = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/loop-record.mjs"), "utf8"));
       assert.equal((code.match(/"error"/g) ?? []).length, 0, "the lane names no error severity anywhere");
       assert.equal((code.match(/ADVISORY_SEVERITY\s*=\s*"warn"/g) ?? []).length, 1, "its severity is one constant");
       assert.doesNotMatch(code, /severityFor|acceptance|horizon\b/, "and it consults no acceptance horizon");
@@ -140,7 +140,7 @@ export const archTests = [
       }
       // `src/work/doctor.mjs` IS permitted to name the record — it performs the snapshot read at the
       // engine's one impure edge — but it must not judge it: no severity decision, no signed test.
-      const engine = stripComments(await readFile(path.join(repoRoot, "src/work/doctor.mjs"), "utf8"));
+      const engine = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/index.mjs"), "utf8"));
       assert.ok(engine.includes("EXECUTION_RECORD_BASENAME"), "the engine reads the record (the impure edge)");
       for (const token of ["isSignedRow", "readSignoff", "Sign-off", "loop-record-unsigned"]) {
         assert.ok(!engine.includes(token), `but it renders no verdict about it (${token})`);

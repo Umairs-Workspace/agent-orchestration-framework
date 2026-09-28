@@ -102,6 +102,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aof/work@workspace:packages/work"
   dependencies:
+    "@aof/contracts": "workspace:*"
     "@aof/foundation": "workspace:*"
   languageName: unknown
   linkType: soft

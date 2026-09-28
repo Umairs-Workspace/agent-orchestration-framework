@@ -46,10 +46,10 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   "src/work/reindex.mjs",
   "src/commands/migrate-folder.mjs",
   "src/commands/insert-shared.mjs",
-  "src/work/doctor-depends.mjs",
-  "src/work/doctor-freshness.mjs",
-  "src/work/doctor.mjs",
-  "src/work/doctor-coherence.mjs",
+  "packages/work/src/doctor/depends.mjs",
+  "packages/work/src/doctor/freshness.mjs",
+  "packages/work/src/doctor/index.mjs",
+  "packages/work/src/doctor/coherence.mjs",
   "src/memory/local-indexing.mjs",
   "src/work-promote/promotion.mjs",
   // 127/02 — the eleventh: the one mint (127/ADR-003) reads the stream's width (`streamWidth`)
@@ -68,7 +68,7 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
 export const ALLOWED_UNCLASSIFIED = Object.freeze([
   { file: "src/commands/migrate-folder.mjs", fn: "recoverSourceStories", reason: "source-scan units (a foreign tree's story folders), not enumerator rows" },
   { file: "src/commands/migrate-folder.mjs", fn: "recoverSourceTasks", reason: "source-scan units (a foreign tree's task features), not enumerator rows" },
-  { file: "src/work/doctor-freshness.mjs", fn: "roadmapFolderMismatch", reason: "a ROADMAP index entry (`entry?.number`, config data), not a row" },
+  { file: "packages/work/src/doctor/freshness.mjs", fn: "roadmapFolderMismatch", reason: "a ROADMAP index entry (`entry?.number`, config data), not a row" },
   { file: "src/work/reindex.mjs", fn: "reindexForInsert", reason: "its rows are `selectAffected`'s output, filtered through isLiveStreamRow there" },
 ]);
 

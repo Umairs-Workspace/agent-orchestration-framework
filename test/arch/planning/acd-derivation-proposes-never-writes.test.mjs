@@ -39,7 +39,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const DERIVE = "src/story-contract-derive.mjs";
-const PARSER = "src/story-contract.mjs";
+const PARSER = "packages/work/src/story-contract.mjs";
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 

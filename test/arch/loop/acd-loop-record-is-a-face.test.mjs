@@ -51,7 +51,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // list is safe only alongside the per-module assertion in the next entry — the list is not the claim.
 const ALLOWED_READERS = [
   "packages/work-graph/src/commands/loop-record.mjs",
-  "src/work/doctor-loop-record.mjs",
+  "packages/work/src/doctor/loop-record.mjs",
 ];
 
 // The derived section headings the renderer emits. A module that named one of them would be locating
@@ -147,6 +147,10 @@ export const archTests = [
         ["packages/work-graph/src/commands/loop-record.mjs", "src/work/doctor.mjs"],
         "the execution model is COMPUTED from the run records by every consumer that has one",
       );
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/work/doctor.mjs"), "utf8"));
+      assert.match(composition, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
+      const doctor = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/index.mjs"), "utf8"));
+      assert.match(doctor, /projectExecution\(/u, "the injected projection is called by the snapshot reader");
       // The RENDERER has exactly one consumer, and it only ever composes bytes — nothing imports it to
       // parse a document back into facts.
       assert.deepEqual(importers.renderer, ["packages/work-graph/src/commands/loop-record.mjs"], "and the renderer's bytes are composed in one place");

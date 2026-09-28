@@ -23,6 +23,7 @@
 // it without evidence. So lane (d) drives the real compiler over the FULL CROSS PRODUCT of
 // the four pieces and asserts that `pass` is unreachable while any one of them is missing —
 // `m47/R8`'s rule that a gate's non-vacuity proof must be self-contained and reachable.
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -37,21 +38,10 @@ import { stripComments, functionBody } from "../../support/source-slice.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "src");
 
-const THE_ONE_HOME = "src/work/grade.mjs";
+const THE_ONE_HOME = "packages/work/src/grade.mjs";
 
 async function readSources() {
-  const sources = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        sources.push({ file: path.relative(repoRoot, full).replaceAll("\\", "/"), text: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(srcDir);
-  return sources;
+  return Promise.all((await readRuntimeFiles(repoRoot)).map(async file => ({ file: file.rel, text: await readFile(file.path, "utf8") })));
 }
 
 // Every sweep reads bodies stripped through the ONE HOME, and refuses a body that carries

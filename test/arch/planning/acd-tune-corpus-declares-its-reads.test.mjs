@@ -5,7 +5,8 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyWorkRuntime } from "../../support/copied-work-runtime.mjs";
 
 import * as reads from "../../../src/work-audit/reads.mjs";
 import {
@@ -108,12 +109,12 @@ export const archTests = [
     run: async () => {
       const temp = await mkdtemp(path.join(os.tmpdir(), "aof-tune-scope-copy-"));
       try {
-        await cp(path.join(root, "src"), path.join(temp, "src"), { recursive: true });
+        copyWorkRuntime(root, temp);
         const workDir = path.join(temp, "wiki", "work");
         await mkdir(path.join(workDir, "01_milestone_one"), { recursive: true });
         await mkdir(path.join(workDir, "02_milestone_two"), { recursive: true });
 
-        const copiedScope = path.join(temp, "src", "work", "ref-scope.mjs");
+        const copiedScope = path.join(temp, "packages", "work", "src", "ref-scope.mjs");
         const before = await readFile(copiedScope, "utf8");
         const needle = "  const byRef = refInScope(item.ref, scope);";
         assert.ok(before.includes(needle), "the copied scope seam has the expected insertion anchor");
@@ -131,7 +132,7 @@ export const archTests = [
         const result = await copied.assembleCorpus({ cwd: temp, scope: "01-02" });
         assert.equal(result.matched, true);
         assert.deepEqual(result.items, ["01", "02"], "the copied corpus inherits whatever the copied shared rule admits");
-        assert.equal(await readFile(path.join(root, "src", "work", "ref-scope.mjs"), "utf8") === before, true, "the working tree's rule was not edited");
+        assert.equal(await readFile(path.join(root, "packages", "work", "src", "ref-scope.mjs"), "utf8") === before, true, "the working tree's rule was not edited");
       } finally {
         await rm(temp, { recursive: true, force: true });
       }

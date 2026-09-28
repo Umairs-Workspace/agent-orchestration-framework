@@ -21,25 +21,20 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { parseDiagramLinks, renderDiagramBlock } from "../../../src/diagrams/layout.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_ONE_HOME = "src/diagrams/layout.mjs";
+const THE_ONE_HOME = "packages/work/src/diagrams/layout.mjs";
 // The manifest's own entry (story 04). Named, never counted; it may spell the segment exactly once.
 const MANIFEST = "src/work/artifacts.mjs";
 const SEGMENT = ["dia", "grams"].join("");
 
-async function modules(dir = path.join(repoRoot, "src")) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name !== "bundle") out.push(...await modules(full));
-    } else if (entry.name.endsWith(".mjs")) {
-      out.push(full);
-    }
-  }
-  return out;
+async function modules() {
+  const files = await readRuntimeFiles(repoRoot);
+  assert.ok(files.length > 100, "the runtime implementation census is non-empty");
+  assert.ok(files.some(file => file.rel === THE_ONE_HOME), "the owner is included");
+  return files.map(file => file.path);
 }
 
 // Every string/template literal's content in comment-stripped code, import specifiers excepted: a
@@ -72,7 +67,8 @@ const LAYOUT_IMPORT = /from\s*["']([^"']*diagrams\/layout\.mjs)["']/g;
 function importsTheLayout(file, text) {
   const code = stripComments(text);
   return [...code.matchAll(LAYOUT_IMPORT)].some((match) =>
-    path.resolve(repoRoot, path.dirname(file), match[1]) === path.join(repoRoot, THE_ONE_HOME));
+    [THE_ONE_HOME, "src/diagrams/layout.mjs"].some(owner =>
+      path.resolve(repoRoot, path.dirname(file), match[1]) === path.join(repoRoot, owner)));
 }
 
 const BLOCK = { adrId: "ADR-002", title: "the generator seam", stem: "ADR-002-generator-seam", sourceExt: ".html", formats: ["svg", "png"] };
@@ -93,12 +89,15 @@ export const archTests = [
   {
     name: "arch/133 FF-13302: every module that handles a diagram path imports the layout by resolved specifier",
     run: async () => {
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/diagrams/layout.mjs"), "utf8"));
+      assert.match(adapter, /^\s*export\s*\{[^}]+\}\s*from "@aof\/work\/diagrams\/layout";\s*$/u,
+        "the admitted legacy path only forwards to the package owner");
       const handlers = [];
       const family = path.join(repoRoot, "src", "commands", "diagram");
       if (existsSync(family)) {
         for (const name of await readdir(family)) if (name.endsWith(".mjs")) handlers.push(`src/commands/diagram/${name}`);
       }
-      if (existsSync(path.join(repoRoot, "src", "work", "doctor-diagrams.mjs"))) handlers.push("src/work/doctor-diagrams.mjs");
+      if (existsSync(path.join(repoRoot, "packages", "work", "src", "doctor", "diagrams.mjs"))) handlers.push("packages/work/src/doctor/diagrams.mjs");
       assert.ok(handlers.includes("src/commands/diagram/plan.mjs"), "the plan verb exists and is checked");
       for (const file of handlers) {
         assert.ok(importsTheLayout(file, await readFile(path.join(repoRoot, file), "utf8")), `${file} imports ${THE_ONE_HOME}`);
@@ -120,7 +119,7 @@ export const archTests = [
   {
     name: "arch/133 FF-13302 red probe: the detector fires on a planted folder path and a planted stem, and allows the manifest's one entry",
     run: () => {
-      assert.deepEqual(layoutSpellings("src/work/doctor-diagrams.mjs", `const dir = path.join(item, "${SEGMENT}");`), [`builds a folder path from "${SEGMENT}"`]);
+      assert.deepEqual(layoutSpellings("packages/work/src/doctor/diagrams.mjs", `const dir = path.join(item, "${SEGMENT}");`), [`builds a folder path from "${SEGMENT}"`]);
       assert.deepEqual(layoutSpellings("src/x.mjs", `const p = \`${SEGMENT}/\${stem}.svg\`;`).length, 1);
       assert.deepEqual(layoutSpellings("src/x.mjs", "const stem = `ADR-${n}-${slug}`;"), ["builds an ADR-<NNN>- stem"]);
       assert.deepEqual(layoutSpellings("src/x.mjs", "const id = `ADR-${String(n).padStart(3, \"0\")}`;"), [], "an ADR id alone is not a stem");

@@ -95,7 +95,7 @@ export const archTests = [
         assert.ok(!ARCHIVED_FILTER_RE.test(body), `${reader} is a resolving reader and filters on neither \`archived\` nor a status standing in for it`);
         assert.ok(!/\bisLiveStreamRow\b/.test(body), `${reader} does not filter through the scheduling predicate either`);
       }
-      const doctor = stripComments(await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8"));
+      const doctor = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", "index.mjs"), "utf8"));
       assert.ok(!ARCHIVED_MEMBER_RE.test(doctor) && !/\bisLiveStreamRow\b/.test(doctor), "src/work/doctor.mjs reads no `.archived` and applies no live-row filter — doctor sees all three roots");
     },
   },

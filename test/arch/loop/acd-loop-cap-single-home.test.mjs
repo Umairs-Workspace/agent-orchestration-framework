@@ -15,7 +15,7 @@ const EXPECTED_READERS = Object.freeze([
   "src/commands/run-start.mjs",
   "packages/work-loop/src/commands/loop.mjs",
 ]);
-const DECLARATION_INSPECTORS = Object.freeze(["src/work/doctor-loop-ready.mjs"]);
+const DECLARATION_INSPECTORS = Object.freeze(["packages/work/src/doctor/loop-ready.mjs"]);
 const SHELL_TOKENS = Object.freeze(["Loop until", "aof work next", "aof work run-start", "run-retry", "maxAttempts", "heartbeatStaleMs", "stop_conditions"]);
 // THE CLOSED COLLECTION OF RANGE DRIVERS (ADR-008 §1; ADR-010 §21; task 05's `CAP-MUT-14`/`15`).
 // The seven-token denylist above names SEVEN LITERALS and can therefore only ever reject the seven

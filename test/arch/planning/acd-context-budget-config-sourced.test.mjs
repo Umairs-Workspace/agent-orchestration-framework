@@ -15,7 +15,7 @@ import { doctorWork } from "../../../src/work/doctor.mjs";
 import { budgetGroup } from "../../../src/work/doctor-budget.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUDGET_MODULE = path.join(repoRoot, "src", "work", "doctor-budget.mjs");
+const BUDGET_MODULE = path.join(repoRoot, "packages", "work", "src", "doctor", "budget.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

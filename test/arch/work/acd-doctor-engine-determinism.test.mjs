@@ -9,6 +9,7 @@
 // source-grep the engine module (comments stripped) → assert no Date.now( /
 // new Date( call form. The engine's only FS time read is the snapshot's stat pass
 // (data handed to the groups, not a clock the checks call).
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
@@ -27,13 +28,11 @@ const SRC_DIR = path.join(repoRoot, "src");
 // 119/01 — the family lives in `src/work/` and its members read `doctor*.mjs`. The glob follows
 // it; the non-vacuity leg in the wall-clock test below is what caught the move.
 async function doctorModules() {
-  const dir = path.join(SRC_DIR, "work");
-  const names = await readdir(dir);
-  const modules = names
-    .filter((name) => /^doctor.*\.mjs$/.test(name))
-    .map((name) => path.join(dir, name));
-  assert.ok(modules.length > 0, `the sweep of ${dir} found no doctor*.mjs module — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)`);
-  return modules;
+  const files = (await readRuntimeFiles(repoRoot)).filter(file =>
+    /^packages\/work\/src\/doctor\//u.test(file.rel) || /^src\/work\/doctor.*\.mjs$/u.test(file.rel) || file.rel === "packages/work/src/audit/controls.mjs");
+  assert.ok(files.filter(file => file.rel.startsWith("packages/work/src/doctor/")).length >= 10,
+    "the complete implementation family is inspected, not only the compatibility adapters");
+  return files.map(file => file.path);
 }
 
 function frontmatter(fields) {
@@ -100,9 +99,9 @@ export const archTests = [
     run: async () => {
       const modules = await doctorModules();
       assert.ok(
-        modules.some((m) => /work[\\/]doctor-freshness\.mjs$/.test(m)) &&
-          modules.some((m) => /work[\\/]doctor-coherence\.mjs$/.test(m)) &&
-          modules.some((m) => /work[\\/]doctor\.mjs$/.test(m)),
+        modules.some((m) => /doctor[\\/]freshness\.mjs$/.test(m)) &&
+          modules.some((m) => /doctor[\\/]coherence\.mjs$/.test(m)) &&
+          modules.some((m) => /doctor[\\/]index\.mjs$/.test(m)),
         "the grep spans the spine + the freshness/coherence group modules",
       );
       for (const module of modules) {

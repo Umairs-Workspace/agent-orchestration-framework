@@ -88,6 +88,17 @@ export const yarnInstallationTests = [
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
+        'story-contract.mjs': ['node:path'],
+        'grade.mjs': ['@aof/contracts/claim-provenance'],
+        'layout.mjs': ['@aof/contracts/error'],
+        'index.mjs': ['node:path', 'node:fs/promises'],
+        'coherence.mjs': ['node:path'],
+        'freshness.mjs': ['node:path'],
+        'budget.mjs': ['node:path'],
+        'rubric.mjs': ['node:path'],
+        'loop-record.mjs': ['node:path'],
+        'depends.mjs': ['node:path'],
+        'diagrams.mjs': ['node:path'],
         'controls.mjs': ['node:path'],
         'census.mjs': ['node:path', 'node:fs/promises'],
         'evidence.mjs': ['node:path', 'node:fs/promises'],
@@ -118,7 +129,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/execution'] : name === 'work' ? ['@aof/foundation'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/execution'] : name === 'work' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');

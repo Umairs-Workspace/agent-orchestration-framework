@@ -107,7 +107,7 @@ const STRUCTURAL = [
   // snapshot BUILDER (per-fact, ADR-010/R6.1) rather than splitting the snapshot's
   // source per check-group. The ITEM SET stays the disk's — that is what makes doctor's
   // findings claims about folders that are actually here.
-  { file: path.join("src", "work", "doctor.mjs"), symbols: ["listItems"], subject: "buildSnapshot" },
+  { file: path.join("packages", "work", "src", "doctor", "index.mjs"), symbols: ["listItems"], subject: "buildSnapshot" },
   // ADR-010/R6.3 — RECLASSIFIED from control-side (a) to structural (c) at Three Amigos.
   // The read scans top-level items to choose the append position for a folder it then creates
   // on disk through the m41 reindex engine. A cache-derived answer would land the insert past
@@ -196,6 +196,10 @@ async function assertPinned(group, label) {
       continue;
     }
     const bindings = workImportBindings(source);
+    if (file.replaceAll("\\", "/") === "packages/work/src/doctor/index.mjs") {
+      assert.match(source, /import\s*\{\s*listItems\s*\}\s*from\s*"\.\.\/discovery\.mjs"/u);
+      bindings.add("listItems");
+    }
     if (injected) {
       // The package reads through a port; core must still bind that port to the
       // disk enumerator. Check both ends so moving the read cannot hide a cache switch.

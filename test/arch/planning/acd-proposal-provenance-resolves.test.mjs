@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { productionDependencyDirs } from "../../../scripts/dependency-inventory.mjs";
+import { copyWorkRuntime } from "../../support/copied-work-runtime.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -43,19 +43,7 @@ function copiedReader(mutator) {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "aof-grammar-copy-"));
   const srcDir = path.join(rootDir, "src");
   const tuneDir = path.join(srcDir, "work-tune");
-  fs.cpSync(path.join(repoRoot, "src"), srcDir, { recursive: true });
-  const workCopy = path.join(rootDir, "packages", "work");
-  fs.cpSync(path.join(repoRoot, "packages", "work"), workCopy, {
-    recursive: true, filter: source => path.basename(source) !== "node_modules",
-  });
-  for (const dependency of productionDependencyDirs(repoRoot)) {
-    const rel = path.relative(repoRoot, dependency);
-    if (rel.split(path.sep).slice(1).includes("node_modules")) continue;
-    const destination = path.join(rootDir, rel);
-    fs.mkdirSync(path.dirname(destination), { recursive: true });
-    const target = rel.replaceAll("\\", "/") === "node_modules/@aof/work" ? workCopy : dependency;
-    fs.symlinkSync(target, destination, "junction");
-  }
+  copyWorkRuntime(repoRoot, rootDir);
   mutator?.(rootDir);
   return {
     rootDir,

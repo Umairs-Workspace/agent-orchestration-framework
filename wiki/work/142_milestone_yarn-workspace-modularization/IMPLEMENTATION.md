@@ -978,3 +978,41 @@ The final 22-suite changed/contract/census run passes 192 cases, including the b
 110 package tests. Every initially failing suite is included in that rerun. `git diff --check`
 passes. This closes the affected selection after focused corrections, not the outstanding full
 repository suite or platform verification.
+
+## Work owns doctor, grade and contract helpers
+
+Fifteen implementations now live in work: the snapshot/check engine, nine doctor check modules,
+scope, story contracts, citation resolution, grade compilation and diagram layout. The engine
+receives execution projection, run reads and the configured diagram group from core. The diagram
+factory receives configuration policy. Other modules are direct exports. Coherence, freshness and
+dependency lanes now import the shared dependency leaf, removing their imports back into the
+snapshot engine. Legacy paths explicitly forward or compose those public APIs.
+
+The sole dependency change is `@aof/work` to the existing `@aof/contracts` workspace, for error
+envelopes and claim provenance. No external version changed. Immutable installation and the
+supply-chain audit pass, retaining the pre-existing peer warning. All fifteen legacy export sets,
+exported values and function bodies match the pre-move baseline after port wiring.
+
+Two package tests cover inert construction, absent/present execution records, projection arguments,
+shared predicate identity, registry member identity and supplied diagram configuration. The root
+bridge includes them, bringing the package suite to 112 cases. Source guards inspect implementations
+and core wiring. Doctor determinism and reverse loop imports cover the package directory, while
+grade, diagram and planning scans cover runtime packages. Copied mutation fixtures share an isolated
+work package copy so grammar/scope changes exercise the copied reader without changing the checkout.
+
+Evidence in `.tmp/workspace-migration/work-doctor/`:
+
+- The 28-suite focused run passes 177 cases, including the package bridge. A subsequent six-suite
+  coverage run passes 23 cases after extending scans to package implementations. Four additional
+  suites ran 45 cases; their one old rubric-source assertion is corrected and passes in that
+  coverage run. The broader 162-suite selection and final census are still running at this entry.
+- Differential fixtures reproduce snapshot data, all registered doctor lanes, scoped findings,
+  loop-ready scores, declared contract resolution, citations and grades. The same comparison passes
+  in a copied installation, whose fifteen public exports resolve inside the payload. Previous
+  execution, graph, loop, acceptance, audit and command checks retain all 117 commands there.
+- Standalone JavaScript bundling includes all fifteen implementations and keeps native PTY external.
+  This is not native executable or cross-platform release verification. `git diff --check` passes.
+
+The three previously approved generated citation updates were already committed. This extraction
+changes no generated citations or AOF workflow state. Full migration and final verification remain
+open; the current ordinary-engineering checklist is in COMPLETION.md.

@@ -38,7 +38,7 @@ const IDENTITY = "packages/work/src/identity.mjs";
 
 // The six keepers, by path and reason (task 01's table; ADR-001 §5 as corrected there).
 export const KEEPERS = Object.freeze([
-  { file: "src/work/doctor.mjs", reason: "the orphan lane's raw listing — it exists to see what the enumerator DROPS, so it cannot ask the enumerator; it learns the roots through the exported names" },
+  { file: "packages/work/src/doctor/index.mjs", reason: "the orphan lane's raw listing — it exists to see what the enumerator DROPS, so it cannot ask the enumerator; it learns the roots through the exported names" },
   { file: "src/integrations/routing.mjs", reason: "matches a FOREIGN `NN-slug`/`NN_slug` form (NUMBERED_FOLDER_RE) the shared grammar does not admit" },
   { file: "src/import/recovery.mjs", reason: "scans a FOREIGN source tree (AOF_MILESTONE_RE + loose forms); not a work-root scanner" },
   { file: "src/commands/migrate-folder.mjs", reason: "scans a FOREIGN source tree's stories/tasks with STORY_FOLDER_RE, read-only; its work-root scan (nextFreeSlot) is retired onto appendPosition" },
@@ -146,10 +146,10 @@ export const archTests = [
     name: "arch/FF-12701 (acd-work-root-one-enumerator): doctor's family reaches the regex through one import — doctor.mjs imports ITEM_RE from ../work.mjs and defines none; doctor-freshness.mjs imports no item regex at all",
     run: async () => {
       const files = await sweepSrc();
-      const doctor = files.get("src/work/doctor.mjs").stripped;
-      assert.ok(importsFromWork("src/work/doctor.mjs", doctor, "ITEM_RE"), "doctor.mjs imports ITEM_RE from ../work.mjs");
+      const doctor = files.get("packages/work/src/doctor/index.mjs").stripped;
+      assert.ok(importsFromWork("packages/work/src/doctor/index.mjs", doctor, "ITEM_RE"), "doctor.mjs imports ITEM_RE from ../work.mjs");
       assert.ok(!/\b(?:const|let|var)\s+ITEM_RE\b/.test(doctor), "…and defines none");
-      const freshness = files.get("src/work/doctor-freshness.mjs").stripped;
+      const freshness = files.get("packages/work/src/doctor/freshness.mjs").stripped;
       assert.ok(!IDENTIFIER_RE.test(freshness), "doctor-freshness.mjs imports no ITEM_RE — roadmapFolderMismatch reads milestone numbers off snapshot.items");
       assert.ok(!READDIR_RE.test(freshness), "…and lists nothing of its own");
       const migrate = files.get("src/commands/migrate-folder.mjs").stripped;

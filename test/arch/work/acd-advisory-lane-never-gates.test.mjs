@@ -47,12 +47,12 @@ import { resolveDeclaredSet } from "../../../src/story-contract.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const laneDir = path.join(repoRoot, "src", "work");
+const laneDir = path.join(repoRoot, "packages", "work", "src", "doctor");
 
 // THE ONE NAMED EXEMPTION. Named as a constant rather than skipped inline, because "the module we
 // happen not to check" and "the module we have decided not to check, and why" are different
 // documents to the next reader — and only the second one makes a SECOND exemption visible.
-const GATE_SOURCE_MODULE = "doctor-controls.mjs";
+const GATE_SOURCE_MODULE = "../audit/controls.mjs";
 
 const sourceOf = async (leaf) => stripComments(await readFile(path.join(laneDir, leaf), "utf8"));
 const byCode = (findings, code) => findings.filter((entry) => entry.code === code);
@@ -61,7 +61,7 @@ const byCode = (findings, code) => findings.filter((entry) => entry.code === cod
 // to its module by FUNCTION IDENTITY against the registry — not by name, which would let a rename
 // quietly empty this control instead of reding it.
 async function laneModules() {
-  const leaves = (await readdir(laneDir)).filter((name) => /^doctor-.*\.mjs$/u.test(name));
+  const leaves = [...(await readdir(laneDir)).filter(name => name.endsWith(".mjs") && name !== "index.mjs"), GATE_SOURCE_MODULE];
   const rows = [];
   for (const leaf of leaves) {
     const module = await import(pathToFileURL(path.join(laneDir, leaf)).href);
@@ -249,16 +249,16 @@ export const archTests = [
       // claim about a live gate rather than about an empty one.
       assert.ok(advisory.length >= 3, `the class has at least three members (${advisory.map((row) => row.leaf).join(", ")})`);
       assert.equal(exemptions, 1, "exactly one exemption, and it is the named one");
-      assert.ok(advisory.some((row) => row.leaf === "doctor-depends.mjs"), "…and this milestone's lane is one of them");
+      assert.ok(advisory.some((row) => row.leaf === "depends.mjs"), "…and this milestone's lane is one of them");
       assert.ok(DOCTOR_GATE_CODES.length > 0 && CONTROL_FINDING_CODES.length > 0, "the gate ladder admits something");
       assert.ok(DOCTOR_GATE_CODES.every((code) => CONTROL_FINDING_CODES.includes(code)), "and its set is derived from the controls' by filter");
 
       // RED PROBE (a) — the census lane given one `"error"` finding.
-      const laneSource = await sourceOf("doctor-depends.mjs");
+      const laneSource = await sourceOf("depends.mjs");
       const withError = laneSource.replace('const ADVISORY_SEVERITY = "warn"', 'const ADVISORY_SEVERITY = "warn";\nconst HARD = "error"');
       assert.notEqual(withError, laneSource, "the probe really did change the source it plants into");
       assert.ok(
-        advisoryFaults({ leaf: "doctor-depends.mjs", source: withError, codes: DEPENDS_FINDING_CODES, controlCodes: CONTROL_FINDING_CODES })
+        advisoryFaults({ leaf: "depends.mjs", source: withError, codes: DEPENDS_FINDING_CODES, controlCodes: CONTROL_FINDING_CODES })
           .some((fault) => fault.includes('names an "error" severity literal')),
         "the class check reds on a planted error severity",
       );
@@ -267,7 +267,7 @@ export const archTests = [
       // derived-by-filter set silently gains a member.
       assert.ok(
         advisoryFaults({
-          leaf: "doctor-depends.mjs",
+          leaf: "depends.mjs",
           source: laneSource,
           codes: DEPENDS_FINDING_CODES,
           controlCodes: [...CONTROL_FINDING_CODES, "depends-edge-unwitnessed"],
@@ -392,9 +392,9 @@ export const archTests = [
       assert.equal(new Set(rendered.values()).size, 1, "the lane's answer does not move with the item's status");
 
       // …and structurally: ONE severity constant, no `error` literal, no horizon.
-      const source = await sourceOf("doctor-depends.mjs");
+      const source = await sourceOf("depends.mjs");
       assert.deepEqual(
-        advisoryFaults({ leaf: "doctor-depends.mjs", source, codes: DEPENDS_FINDING_CODES, controlCodes: CONTROL_FINDING_CODES }),
+        advisoryFaults({ leaf: "depends.mjs", source, codes: DEPENDS_FINDING_CODES, controlCodes: CONTROL_FINDING_CODES }),
         [],
       );
       assert.equal((source.match(/ADVISORY_SEVERITY/gu) ?? []).length >= 2, true, "the constant is declared once and used, never passed in");

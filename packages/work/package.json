@@ -29,7 +29,22 @@
     "./audit/prompt-layer": "./src/audit/prompt-layer.mjs",
     "./audit/declared-bounds": "./src/audit/declared-bounds.mjs",
     "./audit/seam-liveness": "./src/audit/seam-liveness.mjs",
-    "./audit/report": "./src/audit/report.mjs"
+    "./audit/report": "./src/audit/report.mjs",
+    "./ref-scope": "./src/ref-scope.mjs",
+    "./story-contract": "./src/story-contract.mjs",
+    "./cited-path-resolve": "./src/cited-path-resolve.mjs",
+    "./grade": "./src/grade.mjs",
+    "./diagrams/layout": "./src/diagrams/layout.mjs",
+    "./doctor/coherence": "./src/doctor/coherence.mjs",
+    "./doctor/freshness": "./src/doctor/freshness.mjs",
+    "./doctor/budget": "./src/doctor/budget.mjs",
+    "./doctor/identity": "./src/doctor/identity.mjs",
+    "./doctor/rubric": "./src/doctor/rubric.mjs",
+    "./doctor/loop-record": "./src/doctor/loop-record.mjs",
+    "./doctor/depends": "./src/doctor/depends.mjs",
+    "./doctor/loop-ready": "./src/doctor/loop-ready.mjs",
+    "./doctor/diagrams": "./src/doctor/diagrams.mjs",
+    "./doctor": "./src/doctor/index.mjs"
   },
   "files": [
     "src"
@@ -38,6 +53,7 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
+    "@aof/contracts": "workspace:*",
     "@aof/foundation": "workspace:*"
   }
 }

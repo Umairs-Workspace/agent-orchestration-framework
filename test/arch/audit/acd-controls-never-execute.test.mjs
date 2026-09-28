@@ -10,16 +10,9 @@
 //  leaf to learn which paths to probe (ROUND 3/3)."
 //
 // ─────────────────────────────────────────────────────────────────────────────
-// WHY THE RULE IS DIRECT-PLUS-ALLOWLIST AND NOT TRANSITIVE, MEASURED AT HEAD.
-// ROUND 3/4 ruled the transitive wording UNSATISFIABLE alongside the house idiom, and
-// this file re-measures that rather than repeating it: both existing doctor lanes
-// import the spine (`work-doctor-coherence.mjs`, `work-doctor-freshness.mjs`) and the
-// spine imports `node:fs/promises`, so every lane in the family reaches `node:fs` in
-// ONE hop. A transitive rule would therefore have been RED ON ARRIVAL — a control
-// whose first run fails for a reason that has nothing to do with the thing it guards.
-// The lane below is held to the strictly stronger practical rule instead: its DIRECT
-// imports are exactly `node:path` plus TWO named leaves, and each leaf's own zero-import
-// property is asserted HERE, so the allowlist is closed rather than assumed.
+// The controls lane admits only node:path and two named pure leaves. The workspace
+// migration also removed coherence/freshness imports back into the snapshot reader:
+// their transitive closures are checked below for filesystem and dynamic-import edges.
 //
 // AND THE INVERSION IS ASSERTED IN BOTH DIRECTIONS. "The lane does not import the
 // spine" is only half the claim; the other half — "the spine imports the lane" — is
@@ -99,33 +92,43 @@ const AUDIT_FAMILY = "src/work-audit/";
 // family moved into `src/work/`, and the `edges >= 1` leg below is what turned that into a RED
 // rather than a silent pass. `src/work/doctor` covers the spine and its eight lanes exactly as
 // `work-doctor` did, and it is a prefix of the path the resolver already returns.
-const DOCTOR_FAMILY = "src/work/doctor";
+const DOCTOR_FAMILY = "packages/work/src/doctor/";
 
 // The doctor lane modules, NAMED. A ninth arriving is an edit here; a member from
 // `src/work-audit/` arriving is the failure this clause exists for.
 const DOCTOR_LANE_MODULES = Object.freeze([
-  "./doctor-coherence.mjs",
-  "./doctor-freshness.mjs",
-  "./doctor-budget.mjs",
-  "./doctor-identity.mjs",
-  "./doctor-controls.mjs",
-  "./doctor-rubric.mjs",
+  "./coherence.mjs",
+  "./freshness.mjs",
+  "./budget.mjs",
+  "./identity.mjs",
+  "../audit/controls.mjs",
+  "./rubric.mjs",
   // THE SEVENTH, and it arrived exactly as this comment says one would — as an edit here. Milestone
   // 78 landed `loopRecordLane` in the spine and nothing updated the roster, so this control read RED
   // from that day until 96's milestone gate ran the whole tree and named it (chore 114). It is a
   // doctor lane and not an audit one: it READS a record and reports findings, which is the side of
   // ADR-002's boundary this clause exists to keep it on.
-  "./doctor-loop-record.mjs",
+  "./loop-record.mjs",
   // THE EIGHTH — milestone 124 / story 00's depends census, arriving as the edit this comment says
   // one arrives as, in the same change that lands it rather than in the audit that finds it later.
   // It is a doctor lane on the same reading as the seventh: it reports findings about the work
   // stream and executes nothing, which is the side of ADR-002's boundary it belongs on.
-  "./doctor-depends.mjs",
+  "./depends.mjs",
   // THE NINTH — milestone 133 / story 03's diagrams lane, named in the change that lands it. A
   // doctor lane on the same reading as the eighth: it reports on the work stream's own records
   // (an ADR's diagram links against the item's `diagrams/` listing) and executes nothing.
-  "./doctor-diagrams.mjs",
+  "./diagrams.mjs",
 ]);
+
+async function assertDiagramsPort(spineBody) {
+  assert.match(spineBody, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
+  const core = stripComments(await readFile(path.join(repoRoot, "src/work/doctor.mjs"), "utf8"));
+  assert.match(core, /import\s*\{ diagramsGroup \}\s*from "\.\/doctor-diagrams\.mjs"/u);
+  assert.match(core, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
+  const adapter = stripComments(await readFile(path.join(repoRoot, "src/work/doctor-diagrams.mjs"), "utf8"));
+  assert.match(adapter, /from "@aof\/work\/doctor\/diagrams"/u);
+  assert.match(adapter, /createDoctorDiagrams\(\{ resolveWorkDiagrams \}\)/u);
+}
 
 // ADR-002 §2's named extractors — the ONE edge from the audit into the doctor family. They are
 // pure functions of text, which is what makes the edge safe in the direction it runs.
@@ -196,7 +199,7 @@ async function walkModules(relDir) {
 }
 
 const THE_LANE = "packages/work/src/audit/controls.mjs";
-const THE_SPINE = "src/work/doctor.mjs";
+const THE_SPINE = "packages/work/src/doctor/index.mjs";
 // The two zero-import leaves this lane is allowed to reach, NAMED (never a count —
 // m47/R9). Each one's zero-import property is asserted below, which is what makes the
 // direct rule as strong as the transitive one would have been for this subgraph.
@@ -223,7 +226,7 @@ const FORBIDDEN_BUILTINS = ["node:child_process", "node:fs", "node:fs/promises",
 // already carried meaning a DIFFERENT module, so the rule would have been vacuous and wrong at
 // once. The forbidden set is now the RESOLVED module each spelling was reaching for, which is
 // ADR-003 exactly: the decision is WHICH modules are forbidden; where they sit is derived.
-const FORBIDDEN_MODULES = ["src/work/grade.mjs", "src/commands/grade.mjs"];
+const FORBIDDEN_MODULES = ["packages/work/src/grade.mjs", "src/commands/grade.mjs"];
 
 // THE FAMILY'S set is NARROWER than the lane's, and the difference is deliberate — corrected
 // at 54/04's build, where the first reading of FF-5407 would have forced a SECOND report
@@ -243,16 +246,16 @@ const FORBIDDEN_RUNNER_MODULES = ["src/commands/grade.mjs"];
 // must scan the whole module family it governs).
 const DETERMINISTIC_ENGINES = [
   "src/work.mjs",
-  "src/work/doctor.mjs",
+  "packages/work/src/doctor/index.mjs",
   "packages/work/src/audit/controls.mjs",
-  "src/work/doctor-coherence.mjs",
-  "src/work/doctor-freshness.mjs",
-  "src/work/doctor-identity.mjs",
-  "src/work/doctor-budget.mjs",
-  "src/work/doctor-loop-ready.mjs",
+  "packages/work/src/doctor/coherence.mjs",
+  "packages/work/src/doctor/freshness.mjs",
+  "packages/work/src/doctor/identity.mjs",
+  "packages/work/src/doctor/budget.mjs",
+  "packages/work/src/doctor/loop-ready.mjs",
   // milestone 54 / story 04 — the traceability lane joins the family the day it is written,
   // because a guard that scans the family as it was is a guard that stops covering it.
-  "src/work/doctor-rubric.mjs",
+  "packages/work/src/doctor/rubric.mjs",
 ];
 
 // Every DIRECT import specifier in a module — the static forms plus `export … from`. A dynamic
@@ -407,22 +410,21 @@ export const archTests = [
 
       // (b) …and the spine imports the LANE, which is the half that makes the leaf
       //     reachable. Asserting only (a) would pass on a lane nothing calls.
-      assert.match(spineBody, /import\s*\{[^}]*\bcontrolsLane\b[^}]*\}\s*from\s*"\.\/doctor-controls\.mjs"/, "the spine imports the lane's registry entry");
-      assert.match(spineBody, /import\s*\{[^}]*\bcitedControlPathsIn\b[^}]*\}\s*from\s*"\.\/doctor-controls\.mjs"/, "…and its pure extractor, to learn which paths to probe (ROUND 3/3)");
-      assert.match(spineBody, /import\s*\{[^}]*\bisControlFileName\b[^}]*\}\s*from\s*"\.\/doctor-controls\.mjs"/, "…and the one spelling of a control-shaped filename");
+      assert.match(spineBody, /import\s*\{[^}]*\bcontrolsLane\b[^}]*\}\s*from\s*"\.\.\/audit\/controls\.mjs"/, "the spine imports the lane's registry entry");
+      assert.match(spineBody, /import\s*\{[^}]*\bcitedControlPathsIn\b[^}]*\}\s*from\s*"\.\.\/audit\/controls\.mjs"/, "…and its pure extractor, to learn which paths to probe (ROUND 3/3)");
+      assert.match(spineBody, /import\s*\{[^}]*\bisControlFileName\b[^}]*\}\s*from\s*"\.\.\/audit\/controls\.mjs"/, "…and the one spelling of a control-shaped filename");
       assert.equal(spineBody.includes("controlsLane,"), true, "and the lane is in CHECK_GROUPS");
 
-      // (c) THE MEASUREMENT ROUND 3/4 RESTS ON, re-run rather than narrated: a
-      //     TRANSITIVE rule would be red on arrival, because BOTH existing lanes reach
-      //     `node:fs` in one hop through the spine.
-      const spineImports = directImports(spineBody);
-      assert.ok(spineImports.some((specifier) => specifier.startsWith("node:fs")), "the spine imports node:fs — the fact that makes a transitive rule unsatisfiable");
-      for (const sibling of ["src/work/doctor-coherence.mjs", "src/work/doctor-freshness.mjs"]) {
-        const source = await read(sibling);
-        assert.ok(
-          directImports(strippedBody(source.file, source.text)).some((specifier) => resolveRelative(sibling, specifier) === THE_SPINE),
-          `${sibling} imports the spine, so under a transitive rule it reaches node:fs in one hop — the house idiom this lane deliberately departs from`,
-        );
+      // Shared predicates now live in a pure dependency leaf: neither lane reaches the snapshot reader.
+      assert.ok(directImports(spineBody).some(specifier => specifier.startsWith("node:fs")));
+      for (const sibling of ["packages/work/src/doctor/coherence.mjs", "packages/work/src/doctor/freshness.mjs"]) {
+        const closure = await importClosureFrom([sibling]);
+        assert.ok(closure.size > 1, "the pure dependencies were inspected");
+        assert.equal(closure.has(THE_SPINE), false, "the lane does not import the snapshot reader");
+        for (const [rel, code] of closure) {
+          assert.equal(directImports(code).some(specifier => specifier.startsWith("node:fs")), false, rel);
+          assert.equal(DYNAMIC_IMPORT.test(code), false, rel);
+        }
       }
     },
   },
@@ -536,7 +538,7 @@ export const archTests = [
       const resolvedFrom = (module, source) => directImports(source).map((specifier) => resolveRelative(module, specifier)).filter((rel) => rel != null);
       const plantedRunner = 'import { gradeCommand } from "../../../../src/commands/grade.mjs";';
       assert.ok(resolvedFrom(THE_LANE, plantedRunner).some((rel) => FORBIDDEN_RUNNER_MODULES.includes(rel)), "a planted runner import is detected");
-      const plantedLeaf = 'import { normaliseReport } from "../../../../src/work/grade.mjs";';
+      const plantedLeaf = 'import { normaliseReport } from "../grade.mjs";';
       assert.ok(!resolvedFrom(THE_LANE, plantedLeaf).some((rel) => FORBIDDEN_RUNNER_MODULES.includes(rel)), "the pure leaf is admitted to the family…");
       assert.ok(resolvedFrom(THE_LANE, plantedLeaf).some((rel) => FORBIDDEN_MODULES.includes(rel)), "…and still refused to the controls lane");
     },
@@ -631,7 +633,7 @@ export const archTests = [
       //     the spine's source and mapped back to the modules they were imported from.
       const spine = await read(THE_SPINE);
       const spineBody = strippedBody(spine.file, spine.text);
-      const opened = spineBody.indexOf("export const CHECK_GROUPS = [");
+      const opened = spineBody.indexOf("const CHECK_GROUPS = [");
       assert.ok(opened >= 0, "the registry array was located in the spine");
       const closed = spineBody.indexOf("\n];", opened);
       assert.ok(closed > opened, "…and its end");
@@ -644,12 +646,14 @@ export const archTests = [
 
       const laneModuleFor = new Map();
       for (const specifier of directImports(spineBody)) {
-        if (!specifier.startsWith("./")) continue;
+        if (!specifier.startsWith(".")) continue;
         for (const binding of namedBindingsFrom(spineBody, specifier)) laneModuleFor.set(binding, specifier);
       }
+      await assertDiagramsPort(spineBody);
+      laneModuleFor.set("diagramsGroup", "./diagrams.mjs");
       const registryModules = [...new Set(entries.map((entry) => laneModuleFor.get(entry)).filter((specifier) => specifier != null))];
       assert.ok(registryModules.length >= 5, `the registry's entries resolve to their modules: ${registryModules.join(", ")}`);
-      assert.equal(laneModuleFor.get("controlsLane"), "./doctor-controls.mjs", "…and the controls lane is one of them, so the mapping is real");
+      assert.equal(laneModuleFor.get("controlsLane"), "../audit/controls.mjs", "…and the controls lane is one of them, so the mapping is real");
 
       // (b) THE CLOSURE. Every module reachable from the spine and from each registry module, by
       //     any depth of relative import. A one-hop rule would pass on the day the edge is added
@@ -667,8 +671,8 @@ export const archTests = [
       }
 
       // (c) NON-VACUITY: the closure's detector fires on a planted edge.
-      assert.equal(resolveRelative(THE_SPINE, "../work-audit/evidence.mjs"), "src/work-audit/evidence.mjs");
-      assert.ok(resolveRelative(THE_SPINE, "../work-audit/evidence.mjs").startsWith(AUDIT_FAMILY), "a planted edge would resolve into the family and be caught");
+      assert.equal(resolveRelative(THE_SPINE, "../../../../src/work-audit/evidence.mjs"), "src/work-audit/evidence.mjs");
+      assert.ok(resolveRelative(THE_SPINE, "../../../../src/work-audit/evidence.mjs").startsWith(AUDIT_FAMILY), "a planted edge would resolve into the family and be caught");
     },
   },
 
@@ -710,7 +714,8 @@ export const archTests = [
     run: async () => {
       const spine = await read(THE_SPINE);
       const spineBody = strippedBody(spine.file, spine.text);
-      const laneModules = directImports(spineBody).filter((specifier) => /^\.\/doctor-[a-z-]+\.mjs$/u.test(specifier));
+      await assertDiagramsPort(spineBody);
+      const laneModules = [...directImports(spineBody).filter(specifier => specifier.startsWith("./") || specifier === "../audit/controls.mjs"), "./diagrams.mjs"];
       assert.equal(laneModules.length, DOCTOR_LANE_MODULES.length, `non-vacuity: the spine's body yielded ${laneModules.length} lane specifiers against a roster of ${DOCTOR_LANE_MODULES.length} — a rename must RED this row, never empty it (119/01, ADR-003 §4)`);
       assert.deepEqual([...new Set(laneModules)].sort(), [...DOCTOR_LANE_MODULES].sort(), "the doctor lane modules are named, not counted (m47/R9) — a ninth is an edit here and an ADR act there");
       // THE LOAD-BEARING HALF: none of them is 59's, and the registry holds no audit lane.

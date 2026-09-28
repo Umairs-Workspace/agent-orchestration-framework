@@ -97,7 +97,7 @@ export const rubricJoinIsDeclaredTests = [
 
       // NO STATUS WAS DERIVED FROM THE CASE'S FREE TEXT — the lane never reads a name for
       // meaning, only for containment.
-      const source = await readFile(path.join(repoRoot, "src", "work", "doctor-rubric.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", "rubric.mjs"), "utf8");
       assert.ok(!/\b(?:passed|failed|skipped)\b\s*(?:=|===)/.test(source), "no status is assigned from text anywhere in the lane");
     },
   },
@@ -189,7 +189,7 @@ export const rubricJoinIsDeclaredTests = [
 
       // NO SECOND PARSER WAS WRITTEN. The lane reads the repository's single recogniser and
       // holds no copy of the Gherkin grammar — the property `66/ADR-003` pins by name.
-      const source = await readFile(path.join(repoRoot, "src", "work", "doctor-rubric.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", "rubric.mjs"), "utf8");
       assert.match(source, /import \{ parseFeature \} from "(?:\.\.?\/)+feature-parse\.mjs"/, "it reads them through the repository's single feature parser");
       for (const grammar of ["Scenario:", "Scenario Outline", "Feature:", "Background:"]) {
         assert.ok(!source.includes(`"${grammar}`) && !source.includes(`^${grammar}`), `the lane holds no copy of the grammar token ${grammar}`);
