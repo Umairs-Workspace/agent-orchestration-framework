@@ -34,6 +34,10 @@ export const yarnInstallationTests = [
       assert.deepEqual(pure.violations, [], leaf + ': cannot acquire an impure dependency');
       assert.deepEqual(pure.computed, [], leaf + ': cannot hide a computed dependency');
     }
+    const dependencyRules = readFileSync(path.join(root, 'packages/work/src/dependencies.mjs'), 'utf8');
+    assert.deepEqual(importSpecifiers(dependencyRules).map(entry => entry.specifier), ['./identity.mjs'],
+      'dependency rules use only the zero-import identity grammar');
+    assert.deepEqual(computedDynamicImports(dependencyRules), [], 'dependency rules cannot hide an impure import');
     for (const name of ['contracts', 'effects', 'foundation', 'work', 'mesh', 'integration-notion']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);

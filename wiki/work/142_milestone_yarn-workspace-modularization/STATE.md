@@ -16,7 +16,8 @@
   Core owns the existing log-path policy; the session driver no longer imports any mesh module.
   @aof/work now owns record selection/parsing, metadata/schema reads, guarded writes and lifecycle
   predicates. Its discovery and identity APIs now own enumeration, lookup, listing and folder/ref
-  grammar. Core retains workspace configuration/identity loading, validation/readiness, command
+  grammar. Readiness and shared dependency rules now live in the work package too.
+  Core retains workspace configuration/identity loading, validation, command
   gates and effect publication.
   The earlier full root suite was stopped before completion; its limitations remain recorded below.
 - Objectives: [SPEC.md](SPEC.md).
@@ -82,13 +83,20 @@
   Immutable install, audit, browser/SEA JavaScript bundles, CLI help and copied-install old/new
   read-model parity pass. Full-root-suite and native/platform limitations remain.
 
+- Work readiness extraction: all 997 unit checks, 2,104 selected checks and 73 internal package
+  cases pass. Supply-chain audit, browser/SEA JavaScript builds and copied-install readiness parity
+  pass. No external dependency change or install was needed. Full-root-suite and native/platform
+  limitations remain; see IMPLEMENTATION.md.
+
 ## Next
 
 Continue extracting domain service implementations and their command contributions behind the new
 package interfaces. The work and mesh handler packages are implemented; their injected
 service implementations are being extracted from src/. Work owns record/lifecycle services;
-workspace configuration/identity loading, validation/readiness, run persistence and acceptor
-services remain in core. Enumeration/lookup/listing and their pure identity grammar are extracted. Notion owns
+workspace configuration/identity loading, validation, run persistence and acceptor
+services remain in core. Enumeration/lookup/listing, readiness and their shared identity/dependency
+rules are extracted. Next, separate validation's feature parser and digest-template asset access
+before moving its implementation. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
 Foundation filesystem and diagnostic mechanisms are extracted; core retains their application

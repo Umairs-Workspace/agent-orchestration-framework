@@ -174,7 +174,7 @@ function stripComments(source) {
 // The named bindings a module imports FROM work.mjs (any relative depth).
 function workImportBindings(commentStrippedSource) {
   const bindings = new Set();
-  const re = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/discovery)["']/g;
+  const re = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/(?:discovery|readiness))["']/g;
   let m;
   while ((m = re.exec(commentStrippedSource)) !== null) {
     for (const raw of m[1].split(",")) {
@@ -288,6 +288,7 @@ export const archTests = [
       const directPackage = workImportBindings('import { findWork as find, readWorkDirectory } from "@aof/work/discovery";');
       assert.ok(directPackage.has("findWork") && directPackage.has("readWorkDirectory"), "package APIs cannot bypass the disk-reader boundary");
 
+      assert.ok(workImportBindings('import { nextWork as next } from "@aof/work/readiness";').has("nextWork"), "package readiness remains a disk reader");
       const unrelated = workImportBindings('import { listItems } from "./catalog.mjs";');
       assert.equal(unrelated.size, 0, "the detector does NOT flag an unrelated module's listItems (catalog.mjs — a verified false positive)");
 

@@ -329,3 +329,23 @@ The remaining root work module still owns workspace configuration/identity hydra
 dependency rules and readiness. Its loader is unchanged. Validation/readiness are the next domain
 candidates; configuration composition can remain core policy while those operations take explicit
 inputs. Core still owns the CLI and effect publication.
+
+## Work readiness boundary implemented — 2026-09-28
+
+Readiness uses the same explicit directory/view contract as discovery. @aof/work/readiness owns
+nextWork, ready-set ordering, dependency blocking, story scopes, through-review behavior and
+candidacy handling. Routing/lease information is caller-supplied data; the package imports no mesh,
+cache store, configuration or command assembly. With a complete pathless view, readiness operates
+on supplied data; without a view it still reads directories/records and is not a browser-safe leaf.
+
+@aof/work/dependencies owns the shared driver/target classification, numeric and sibling rules,
+parent grouping, and formatting-preserving dependency-text transforms. Its only import is the
+zero-import identity grammar. Validation and readiness share these rules through one implementation.
+The legacy core export set is unchanged; helpers newly exposed by the package are not added to it.
+Core's cache-first adapter and command layer retain provenance, item-lock and ready-wave policy.
+
+The next extraction is validation. src/work.mjs still imports the feature parser and digest validator;
+the latter reads the shipped digest template through core's asset locator. Move the reusable parsing
+and validation mechanisms behind explicit package APIs while keeping asset-location policy in core.
+Do not make @aof/work import core assets or assembled core to finish this move. Workspace/node
+identity loading, run persistence, acceptance and command contributions remain later work.

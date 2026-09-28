@@ -8,6 +8,8 @@ Private workspace for work-domain behavior.
 | `@aof/work/records` | Record document selection, frontmatter parsing, metadata overlays, schema/version reads, guarded status writes and frontmatter transforms. |
 | `@aof/work/identity` | Folder grammars, backlog/archive root names, numeric identity comparison and story-span parsing. Zero imports; browser-safe. |
 | `@aof/work/discovery` | Directory enumeration, ref/slug lookup, live-row classification and ordered listing. |
+| `@aof/work/dependencies` | Dependency target rules, sibling gates/grouping and formatting-preserving dependency rewrites. Browser-safe; imports only identity. |
+| `@aof/work/readiness` | Ordered next-work/ready-set selection, dependency blockers and supplied candidacy handling. |
 | `@aof/work/effects` | `createWorkEffects(getServices)` contributes status advancement, bounded rollback, run-reference remapping and ruling evidence. |
 
 Records take concrete item descriptors (`ref`, `dir`, `type`) and use
@@ -24,6 +26,13 @@ directory scan and can carry remote rows with no local path. Discovery owns no c
 store or workspace configuration. `readWorkDirectory` is the tolerant directory reader
 also used by the transitional core validator when inspecting an item's task folder.
 
+Readiness takes an explicit work directory and optional `{ view, candidacyView,
+throughReview }` options. The caller supplies routing/lease decisions as a map;
+the package neither reads mesh state nor claims work. A complete view can supply
+pathless rows. Without a view it uses the package's discovery and record readers.
+Dependency rules share the same numeric grammar with validation and rewriting;
+their text transforms return strings and perform no writes.
+
 The existing `src/work.mjs` and `src/acceptance-horizon.mjs` exports forward to these
 implementations. Record formats, error codes and the existing status/rollback
 write bounds are unchanged.
@@ -31,7 +40,8 @@ write bounds are unchanged.
 Registration is inert. Handlers await the supplied service provider when invoked;
 the package imports neither core nor a journal singleton. Core currently supplies
 workspace configuration/identity loading, run-record writing and acceptor writing from
-`src/`, alongside the extracted record and discovery APIs. Validation and readiness
-also remain in core for now. The CLI remains part of core.
+`src/`, alongside the extracted record, discovery and readiness APIs. Validation
+remains in core until its feature parser and digest-template asset dependencies
+have explicit package boundaries. The CLI remains part of core.
 
 Run `yarn workspace @aof/work test` for the package tests.

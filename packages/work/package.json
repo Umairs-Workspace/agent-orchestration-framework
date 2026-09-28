@@ -8,13 +8,15 @@
     "./records": "./src/records.mjs",
     "./lifecycle": "./src/lifecycle.mjs",
     "./identity": "./src/identity.mjs",
-    "./discovery": "./src/discovery.mjs"
+    "./discovery": "./src/discovery.mjs",
+    "./dependencies": "./src/dependencies.mjs",
+    "./readiness": "./src/readiness.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs test/records.test.mjs test/discovery.test.mjs"
+    "test": "node --test test/effects.test.mjs test/records.test.mjs test/discovery.test.mjs test/readiness.test.mjs"
   },
   "dependencies": {
     "@aof/foundation": "workspace:*"

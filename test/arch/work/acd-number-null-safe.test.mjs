@@ -41,6 +41,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 export const NUMBER_CONSUMER_FILES = Object.freeze([
   "src/work.mjs",
   "packages/work/src/discovery.mjs",
+  "packages/work/src/dependencies.mjs",
+  "packages/work/src/readiness.mjs",
   "src/work/reindex.mjs",
   "src/commands/migrate-folder.mjs",
   "src/commands/insert-shared.mjs",

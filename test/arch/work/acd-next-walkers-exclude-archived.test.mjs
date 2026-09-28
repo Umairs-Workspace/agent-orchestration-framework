@@ -40,6 +40,7 @@ import { withThreeRoots } from "../../work/stream/work-backlog-archive-enumerate
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const DISCOVERY = "packages/work/src/discovery.mjs";
 const WORK = path.join(repoRoot, DISCOVERY);
+const READINESS = path.join(repoRoot, "packages/work/src/readiness.mjs");
 const CORE = path.join(repoRoot, "src", "work.mjs");
 
 const DISK_READERS = ["listItems", "listStream", "findWork", "nextWork", "readWorkDirectory"];
@@ -64,10 +65,10 @@ const CARRIERS = Object.freeze({
 // the bindings a clause names). `importSpecifiers` is what proves the file reaches work.mjs at all.
 function importsDiskReaderFromWork(stripped, rel) {
   const dir = path.posix.dirname(rel);
-  const reachesWork = importSpecifiers(stripped).some((entry) => (entry.specifier === "@aof/work/discovery" || path.posix.normalize(path.posix.join(dir, entry.specifier)) === "src/work.mjs"));
+  const reachesWork = importSpecifiers(stripped).some((entry) => (["@aof/work/discovery", "@aof/work/readiness"].includes(entry.specifier) || path.posix.normalize(path.posix.join(dir, entry.specifier)) === "src/work.mjs"));
   if (!reachesWork) return [];
   const hits = [];
-  for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/discovery)["']/g)) {
+  for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/(?:discovery|readiness))["']/g)) {
     for (const name of match[1].split(",").map((entry) => entry.trim().split(/\s+as\s+/)[0])) {
       if (DISK_READERS.includes(name)) hits.push(name);
     }
@@ -84,7 +85,7 @@ export const archTests = [
       const predicate = bodyOf(work, "isLiveStreamRow");
       assert.match(predicate, /row\.number != null && row\.archived !== true/, "⇔ number != null && archived !== true");
       for (const walker of ["nextWork", "listStream"]) {
-        const body = bodyOf(walker === "nextWork" ? stripComments(await readFile(CORE, "utf8")) : work, walker);
+        const body = bodyOf(walker === "nextWork" ? stripComments(await readFile(READINESS, "utf8")) : work, walker);
         assert.ok(body, `${walker} is declared`);
         assert.ok(/\bisLiveStreamRow\b/.test(body), `${walker} references isLiveStreamRow — a walker that stops filtering through the one predicate fails here`);
       }
@@ -139,6 +140,7 @@ export const archTests = [
         assert.deepEqual(importsDiskReaderFromWork(stripped, rel), [], `${rel} imports no disk reader from src/work.mjs — the loop reaches the stream only through the registered work:next and work:list`);
       }
       assert.deepEqual(importsDiskReaderFromWork('import { listItems as scan } from "@aof/work/discovery";', "src/commands/loop.mjs"), ["listItems"], "a package import is still a disk-reader dependency");
+      assert.deepEqual(importsDiskReaderFromWork('import { nextWork as next } from "@aof/work/readiness";', "src/commands/loop.mjs"), ["nextWork"], "package readiness remains a disk reader");
       const loopShell = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
       assert.ok(/"work:next"/.test(loopShell) && /"work:list"/.test(loopShell), "…and those two are the legs it does use");
     },

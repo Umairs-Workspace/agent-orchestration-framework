@@ -23,10 +23,11 @@ import { fileURLToPath } from "node:url";
 import { nextWork } from "../../../src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "src", "work.mjs");
+const workSrc = path.join(repoRoot, "packages/work/src/readiness.mjs");
+const identitySrc = path.join(repoRoot, "packages/work/src/identity.mjs");
 
 async function itemTypeAlternation() {
-  const src = await readFile(workSrc, "utf8");
+  const src = await readFile(identitySrc, "utf8");
   const m = src.match(/const\s+ITEM_RE\s*=\s*\/\^\(\\d\+\)_\(([^)]+)\)_/);
   if (!m) return null;
   return new Set(m[1].split("|").map((t) => t.trim()));

@@ -425,3 +425,45 @@ Verification:
 Logs and the compatibility harness are under .tmp/workspace-migration/work-discovery/ (ignored).
 The complete root-suite and native/cross-platform release limitations from prior slices remain.
 No AOF workflow operation, live installation, deployment or push was performed.
+
+## Work readiness and dependency rules extraction — 2026-09-28
+
+@aof/work/readiness now owns nextWork and its scope/ready-set helpers. It imports the work
+package's discovery, record, lifecycle, identity and dependency APIs. @aof/work/dependencies owns
+shared target classification, sibling resolution/gating, parent grouping and text-only dependency
+rewrites. That module is browser-safe and imports only identity. Neither imports core or mesh.
+
+src/work.mjs forwards the existing public API and consumes the shared rules in validation. The
+workspace loader, validator and readiness implementation bodies match their pre-extraction source.
+No external dependencies, lockfile, persistence formats or CLI routes changed. Core retains command
+composition, cache provenance, held-scope policy and the conservative execution-wave partition.
+
+Architecture guards now follow readiness's source and recognize its package export as a disk-reader
+dependency at the loop/cache boundaries. Runtime null-number and intake scans include both new
+modules. The spike/chore source check now reads vocabulary from identity, repairing a silently inert
+check left by the earlier move. Measured session-driver/assignment-sink reach grows from 35/80 to
+37/82 modules because two implementations have their own files; the mesh denylist is unchanged.
+The dependency-rules guard permits only identity and rejects computed imports.
+
+Verification:
+
+- Seven new package cases pass: ordered independent candidates, archived/parentless dependency
+  targets, route/lease precedence and stale annotations, sibling cycles, story scopes and malformed
+  scope errors, through-review/acceptance separation, numeric dependency rules and CRLF rewrites.
+- All 2,104 selected checks pass with zero failures (deduplicated by test name), including work,
+  grade, mesh candidacy, terminal, Notion, effects, commands, packaging and architecture checks.
+  The root bridge runs all 73 internal package cases, including the seven new cases.
+- All 997 unit checks pass. Supply-chain audit passes with zero warnings. No install was needed
+  for the two new exports; dependencies and lockfile remain unchanged.
+- Browser dependency-rule bundle contains only dependencies and identity. SEA JavaScript includes
+  both extracted modules with node-pty external; no full native executable was built.
+- An actual copied installer payload outside the checkout loads all 117 commands and resolves the
+  new exports locally as real files. Eight old/new readiness scenarios, malformed-scope refusal,
+  enumeration/list/find compatibility and real work:next (including scoped through-review) pass.
+  The harness initially omitted existing disk-provenance fields and assumed all ready candidates
+  could run together; corrected expectations match the existing conservative unknown-write-set
+  behavior. No production fix was needed. Temporary payload files were removed.
+
+Logs, the selected runner and compatibility harness are in
+.tmp/workspace-migration/work-readiness/ (local, ignored). Full-root-suite and cross-platform/native
+release limitations remain. Work proceeds directly, outside AOF workflow operations.

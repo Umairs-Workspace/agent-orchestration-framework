@@ -58,6 +58,8 @@ const MUST_CARRY = Object.freeze(["src/work/init.mjs", "src/commands/promote.mjs
 const NAMED_READERS = Object.freeze([
   "src/work.mjs",
   "packages/work/src/discovery.mjs",
+  "packages/work/src/dependencies.mjs",
+  "packages/work/src/readiness.mjs",
   "packages/work/src/identity.mjs",
   "src/work/loops.mjs",
   "src/work/read.mjs",
