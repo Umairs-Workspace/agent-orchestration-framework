@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "description": "Portable agent orchestration framework for installing skills, commands, agents, and framework packs across coding assistants.",
   "type": "module",
-  "bin": {
-    "aof": "./bin/aof.mjs"
-  },
+  "bin": "./bin/aof.mjs",
   "workspaces": [
     "ui"
   ],
@@ -16,7 +14,7 @@
     "test:smoke:cli": "node ./test/integration/cli-child-process.test.mjs",
     "test:all": "node ./scripts/test.mjs",
     "security:supply-chain": "node ./scripts/supply-chain-audit.mjs",
-    "ui:dev": "npm --workspace @aof/ui run dev",
+    "ui:dev": "yarn workspace @aof/ui dev",
     "ui:build": "node ./scripts/ui-build.mjs",
     "check": "node ./scripts/check.mjs"
   },
@@ -38,8 +36,27 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@yarnpkg/parsers": "3.1.0",
     "ajv": "^8.20.0",
     "esbuild": "0.28.1",
     "postject": "1.0.0-alpha.6"
+  },
+  "packageManager": "yarn@4.18.1",
+  "resolutions": {
+    "node-gyp": "11.5.0"
+  },
+  "dependenciesMeta": {
+    "esbuild@0.25.12": {
+      "built": true
+    },
+    "esbuild@0.28.1": {
+      "built": true
+    },
+    "fsevents@2.3.3": {
+      "built": true
+    },
+    "node-pty@1.1.0": {
+      "built": true
+    }
   }
 }

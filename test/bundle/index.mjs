@@ -12,6 +12,7 @@
 // milestone 55 / story 04 â€” declaration compilation, surgical permissions,
 // coded tamper, and the human ownership-marker escape hatch (FF-5505/FF-5506).
 import { frozenSetCompiledTests } from "./frozen-set-compiled.test.mjs";
+import { yarnInstallationTests } from "./yarn-installation.test.mjs";
 import { opencodeHookTests } from "./opencode-hooks.test.mjs";
 import { adapterWarningTests } from "./adapter-warnings.test.mjs";
 import { packageTests } from "./packages.test.mjs";
@@ -163,4 +164,5 @@ export const tests = [
   ...bundleArchitectDrawsTests,
   // story 137 — the AOF.md digest template ships with the record-doc set (task 00).
   ...digestTemplateShipsTests,
+  ...yarnInstallationTests,
 ];

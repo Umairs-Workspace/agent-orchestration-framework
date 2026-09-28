@@ -26,21 +26,28 @@ This is a separate, greenfield distribution path from the local dev setup below 
 
 ## Local setup
 
-There is **no published package or installer yet for local development** — the CLI is wired up locally with `npm link`. Requires **Node ≥ 20**.
+Local development uses the checked-in Yarn 4.18.1 executable and a single root `yarn.lock`.
+Requires **Node ≥ 20**; release builds use Node 22.
 
 ```sh
 # from the repo root
-npm install        # install dependencies
-npm link           # register `aof` globally → this repo's ./bin/aof.mjs
+node scripts/prepare-worktree.mjs  # immutable install with the checked-in Yarn version
 
 # verify
-aof --help
-aof project doctor
+node bin/aof.mjs --help
+node bin/aof.mjs project doctor
 ```
 
-`npm link` makes the `aof` command available from any directory, always pointing at **this working copy** (`which aof` resolves to the global node bin, which symlinks to `./bin/aof.mjs` here). Because it is a symlink, edits under `src/` take effect immediately — there is no build/rebuild step for the CLI. To use it inside another repo, just run `aof …` there; the same global `aof` resolves. To remove the link later: `npm rm -g aof`.
+CLI source edits take effect immediately. From another repository, invoke
+`node /path/to/aof/bin/aof.mjs …` with that repository as the working directory.
+For an installed `aof` executable, use `node scripts/install-local.mjs`.
 
-The setup UI (`aof assets ui`) and the work board (`aof work ui`) serve a built front-end — build it once with `npm run ui:build` (see [Tests](#tests)).
+Use `yarn` through Corepack, or invoke `node .yarn/releases/yarn-4.18.1.cjs` directly.
+Lifecycle scripts are disabled by default; version-pinned exceptions in `package.json` permit the
+reviewed esbuild, node-pty, and fsevents builds. Linux native builds require Python and a C++ toolchain.
+Run `node scripts/supply-chain-audit.mjs` after dependency changes. npm lockfiles are no longer used.
+
+The setup UI (`aof assets ui`) and the work board (`aof work ui`) serve a built front-end — build it once with `yarn ui:build` (see [Tests](#tests)).
 
 ---
 
@@ -271,18 +278,18 @@ aof packages add gsd                  # declare a managed framework pack (e.g. G
 Run the full suite — the canonical entry point:
 
 ```sh
-npm test            # = node ./scripts/test.mjs
+yarn test            # = node ./scripts/test.mjs
 ```
 
-This runs the unit + arch (fitness-function) + BDD-traceability tests, including the `work`, `graph`, and memory suites. `scripts/test-unit.mjs` is an older **partial** subset that omits the graph/work tests, so prefer `npm test`.
+This runs the unit + arch (fitness-function) + BDD-traceability tests, including the `work`, `graph`, and memory suites. `scripts/test-unit.mjs` is an older **partial** subset that omits the graph/work tests, so prefer `yarn test`.
 
 Other entry points:
 
 ```sh
 node ./test/integration/cli.mjs      # BDD feature tests — launch the CLI as an external process
-npm run test:smoke:cli               # focused process-boundary smoke test
-npm run ui:build                     # build the setup UI / board front-end (cross-platform wrapper)
-npm run check                        # full closeout check
+yarn test:smoke:cli               # focused process-boundary smoke test
+yarn ui:build                     # build the setup UI / board front-end (cross-platform wrapper)
+yarn check                        # full closeout check
 ```
 
 Integration feature files live in `test/integration/features/` and are intentionally black-box (reusable if the CLI ever moves off Node). New user-facing functionality should include BDD coverage in the relevant domain feature file.

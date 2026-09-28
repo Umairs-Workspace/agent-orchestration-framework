@@ -1,11 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { parseSyml } from '@yarnpkg/parsers';
+import { readYarnPackages, installedManifests } from './dependency-inventory.mjs';
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const lockPath = path.join(repoRoot, "package-lock.json");
-const nodeModulesPath = path.join(repoRoot, "node_modules");
 
 const allowedInstallScripts = new Set([
   "esbuild",
@@ -70,78 +69,96 @@ const suspiciousPayloadFiles = new Set([
   "bun_environment.js"
 ]);
 
-const diagnostics = [];
+export async function auditSupplyChain(repoRoot) {
+  const lockPath = path.join(repoRoot, 'yarn.lock');
+  const nodeModulesPath = path.join(repoRoot, 'node_modules');
+  const diagnostics = [];
 
-if (!existsSync(lockPath)) {
-  diagnostics.push(error("LOCKFILE_MISSING", "package-lock.json", "package-lock.json is required for dependency safety checks."));
-} else {
-  const lock = JSON.parse(readFileSync(lockPath, "utf8"));
-  const packages = lock.packages && typeof lock.packages === "object" ? lock.packages : {};
-  for (const [entryPath, entry] of Object.entries(packages)) {
-    if (!entryPath || !entry || typeof entry !== "object") continue;
-    const name = packageNameFromLockEntry(entryPath, entry);
-    if (!name) continue;
-
-    const version = String(entry.version ?? "");
-    if (isKnownCompromisedVersion(name, version)) {
-      diagnostics.push(error("KNOWN_COMPROMISED_VERSION", entryPath, `${name}@${version} is on the known compromised package/version blocklist.`));
-    }
-
-    if (blockedPackageFamilies.some((blocked) => name === blocked || name.startsWith(blocked))) {
-      diagnostics.push(error("BLOCKED_PACKAGE_FAMILY", entryPath, `${name} matches a currently blocked high-risk supply-chain family.`));
-    }
-
-    if (entry.hasInstallScript && !allowedInstallScripts.has(name)) {
-      diagnostics.push(error("UNAPPROVED_INSTALL_SCRIPT", entryPath, `${name}@${version} has an install lifecycle script and is not allowlisted.`));
-    }
-
-    if (entry.resolved && !entry.link && !String(entry.resolved).startsWith("https://registry.npmjs.org/")) {
-      diagnostics.push(warning("NON_NPM_REGISTRY_SOURCE", entryPath, `${name}@${version} resolves outside registry.npmjs.org: ${entry.resolved}`));
+  function auditScripts(pkg, location, workspace = false) {
+    const hasScripts = ['preinstall', 'install', 'postinstall'].some(key => pkg.scripts?.[key]) ||
+      existsSync(path.join(repoRoot, location, 'binding.gyp'));
+    if (hasScripts && (workspace || !allowedInstallScripts.has(pkg.name))) {
+      diagnostics.push(error('UNAPPROVED_INSTALL_SCRIPT', location, `${pkg.name}@${pkg.version} has an unapproved install lifecycle script.`));
     }
   }
-}
 
-if (existsSync(nodeModulesPath)) {
-  for (const filePath of await findSuspiciousPayloads(nodeModulesPath)) {
-    diagnostics.push(error("SUSPICIOUS_PAYLOAD_FILE", path.relative(repoRoot, filePath).replaceAll("\\", "/"), "Known npm malware payload filename found in node_modules."));
-  }
-}
+  if (!existsSync(lockPath)) {
+    diagnostics.push(error("LOCKFILE_MISSING", "yarn.lock", "yarn.lock is required for dependency safety checks."));
+  } else {
+    const packages = readYarnPackages(readFileSync(lockPath, "utf8"));
+    for (const entry of packages) {
+      const { name } = entry;
+      const entryPath = `yarn.lock:${name}`;
 
-const workflowPath = path.join(repoRoot, ".github", "workflows");
-if (existsSync(workflowPath)) {
-  for (const filePath of await findWorkflowFiles(workflowPath)) {
-    const body = readFileSync(filePath, "utf8");
-    if (/\bpull_request_target\b/.test(body)) {
-      diagnostics.push(error("UNSAFE_PULL_REQUEST_TARGET_WORKFLOW", path.relative(repoRoot, filePath).replaceAll("\\", "/"), "pull_request_target workflows must be reviewed before they can access repository secrets or publish tokens."));
+      const version = String(entry.version ?? "");
+      if (isKnownCompromisedVersion(name, version)) {
+        diagnostics.push(error("KNOWN_COMPROMISED_VERSION", entryPath, `${name}@${version} is on the known compromised package/version blocklist.`));
+      }
+
+      if (blockedPackageFamilies.some((blocked) => name === blocked || name.startsWith(blocked))) {
+        diagnostics.push(error("BLOCKED_PACKAGE_FAMILY", entryPath, `${name} matches a currently blocked high-risk supply-chain family.`));
+      }
+
+      if (!entry.workspace && !entry.registry) {
+        diagnostics.push(warning("NON_NPM_REGISTRY_SOURCE", entryPath, `${name}@${version} resolves outside the configured npm registry.`));
+      }
+    }
+    for (const entry of packages.filter(entry => entry.workspace)) {
+      const relative = path.relative(repoRoot, path.resolve(repoRoot, entry.location));
+      if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) {
+        throw new Error('Workspace lock entry escapes repository');
+      }
+      auditScripts(JSON.parse(readFileSync(path.join(repoRoot, entry.location, 'package.json'), 'utf8')), entry.location, true);
     }
   }
-}
 
-const errors = diagnostics.filter((item) => item.severity === "error");
-for (const item of diagnostics) {
-  console.log(`${item.severity}: ${item.code} ${item.path} ${item.message}`);
-}
-
-if (errors.length > 0) {
-  console.error(`supply-chain audit failed: ${errors.length} error(s)`);
-  process.exitCode = 1;
-} else {
-  console.log(`supply-chain audit passed: ${diagnostics.length} warning(s)`);
-}
-
-function packageNameFromLockEntry(entryPath, entry) {
-  if (entry.name) return entry.name;
-  const normalized = entryPath.replaceAll("\\", "/");
-  const marker = "node_modules/";
-  const index = normalized.lastIndexOf(marker);
-  if (index === -1) return null;
-  const suffix = normalized.slice(index + marker.length);
-  if (!suffix) return null;
-  if (suffix.startsWith("@")) {
-    const parts = suffix.split("/");
-    return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : suffix;
+  const settings = parseSyml(readFileSync(path.join(repoRoot, '.yarnrc.yml'), 'utf8'));
+  if (settings.enableScripts !== 'false' || settings.npmRegistryServer !== 'https://registry.npmjs.org') {
+    diagnostics.push(error('UNSAFE_YARN_CONFIGURATION', '.yarnrc.yml', 'Disable lifecycle scripts by default and use registry.npmjs.org.'));
   }
-  return suffix.split("/")[0];
+  const manifest = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+  const approvedBuilds = new Set(['esbuild@0.28.1', 'esbuild@0.25.12', 'node-pty@1.1.0', 'fsevents@2.3.3']);
+  for (const [descriptor, metadata] of Object.entries(manifest.dependenciesMeta ?? {})) {
+    if (metadata.built === true && !approvedBuilds.has(descriptor)) {
+      diagnostics.push(error('UNAPPROVED_BUILD_EXCEPTION', 'package.json', 'An install-script exception is not version-pinned and reviewed.'));
+    }
+  }
+  if (existsSync(nodeModulesPath)) {
+    // Yarn locks omit hasInstallScript. Inspect actual manifests; disabled scripts and
+    // versioned exceptions above protect dependencies absent on this platform.
+    for (const { location, manifest } of installedManifests(repoRoot)) auditScripts(manifest, location);
+    for (const filePath of await findSuspiciousPayloads(nodeModulesPath)) {
+      diagnostics.push(error("SUSPICIOUS_PAYLOAD_FILE", path.relative(repoRoot, filePath).replaceAll("\\", "/"), "Known npm malware payload filename found in node_modules."));
+    }
+  }
+
+  const workflowPath = path.join(repoRoot, ".github", "workflows");
+  if (existsSync(workflowPath)) {
+    for (const filePath of await findWorkflowFiles(workflowPath)) {
+      const body = readFileSync(filePath, "utf8");
+      if (/\bpull_request_target\b/.test(body)) {
+        diagnostics.push(error("UNSAFE_PULL_REQUEST_TARGET_WORKFLOW", path.relative(repoRoot, filePath).replaceAll("\\", "/"), "pull_request_target workflows must be reviewed before they can access repository secrets or publish tokens."));
+      }
+    }
+  }
+
+  return diagnostics;
+}
+
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const diagnostics = await auditSupplyChain(repoRoot);
+  const errors = diagnostics.filter((item) => item.severity === "error");
+  for (const item of diagnostics) {
+    console.log(`${item.severity}: ${item.code} ${item.path} ${item.message}`);
+  }
+
+  if (errors.length > 0) {
+    console.error(`supply-chain audit failed: ${errors.length} error(s)`);
+    process.exitCode = 1;
+  } else {
+    console.log(`supply-chain audit passed: ${diagnostics.length} warning(s)`);
+  }
 }
 
 function isKnownCompromisedVersion(name, version) {
@@ -150,6 +167,7 @@ function isKnownCompromisedVersion(name, version) {
   if ((name === "nx" || name.startsWith("@nx/")) && knownBadNxVersions.has(version)) return true;
   return false;
 }
+
 
 async function findSuspiciousPayloads(root) {
   const found = [];

@@ -20,7 +20,7 @@
 #
 # $1 = this repo, as a distro-visible path (/mnt/c/…)   $2 = distro-side repo dir
 # $3 = the deploy-stamp filename (holds the sha256 of the lockfile last installed from)
-set -uo pipefail
+set -euo pipefail
 
 export NVM_DIR="$HOME/.nvm"
 # nvm defines `node`/`npm` as shell FUNCTIONS from ~/.bashrc, which a non-login shell
@@ -47,10 +47,14 @@ STAMP="$DST/$3"
 rm -rf "$DST/src"
 cp -r "$SRC/src" "$DST/src"
 cp "$SRC/package.json" "$DST/package.json"
-# The lock travels WITH the manifest: `npm ci` refuses a package.json its lock does not
-# match, so syncing one without the other fails the reinstall on the first new dependency
-# (measured 2026-09-27, 138/02: `Missing: @xterm/headless@6.0.0 from lock file`).
-cp "$SRC/package-lock.json" "$DST/package-lock.json"
+# Focus still resolves the complete workspace graph. Carry all current manifests and the
+# pinned tool/configuration with the lock; node_modules is installed natively in the distro.
+mkdir -p "$DST/ui" "$DST/.yarn/releases" "$DST/scripts"
+cp "$SRC/ui/package.json" "$DST/ui/package.json"
+cp "$SRC/yarn.lock" "$SRC/.yarnrc.yml" "$DST/"
+cp "$SRC/.yarn/releases/yarn-4.18.1.cjs" "$DST/.yarn/releases/"
+cp "$SRC/scripts/prepare-worktree.mjs" "$SRC/scripts/yarn.mjs" "$DST/scripts/"
+rm -f "$DST/package-lock.json" "$DST/ui/package-lock.json"
 echo "  synced src/ ($(find "$DST/src" -name '*.mjs' | wc -l) modules)"
 
 # The WORKSPACE config travels too. It is machine-neutral (no paths), and it carries
@@ -69,24 +73,22 @@ fi
 # 2. dependency drift. A src-only sync is fast and almost always right, but a lockfile
 #    change needs a native reinstall + node-pty rebuild — skipping that silently leaves
 #    a stale native binary that fails at daemon start, far from its cause.
-LOCK="$SRC/package-lock.json"
-HASH="$(sha256sum "$LOCK" 2>/dev/null | cut -d' ' -f1)"
+HASH="$(cat "$SRC/yarn.lock" "$SRC/package.json" "$SRC/ui/package.json" "$SRC/.yarnrc.yml" "$SRC/.yarn/releases/yarn-4.18.1.cjs" | sha256sum | cut -d' ' -f1)"
 PREV="$(cat "$STAMP" 2>/dev/null || echo none)"
 PTY="$DST/node_modules/node-pty/build/Release/pty.node"
 if [ "$HASH" != "$PREV" ] || [ ! -f "$PTY" ]; then
   echo "  lockfile changed (or node-pty absent) — reinstalling natively"
   cd "$DST" || exit 1
-  # --workspaces=false: the worker needs the ROOT runtime closure only; the ui workspace
-  # is build-time frontend tooling a worker never uses (~200 MB avoided).
+  # Install only the root runtime closure; the worker does not need UI build tools.
   # A failed install writes NO stamp: stamping it would report "lockfile unchanged" on every
   # later deploy, over a tree that never received the new dependency.
-  if ! npm ci --omit=dev --workspaces=false 2>&1 | tail -3; then
-    echo "  npm ci failed — the stamp is left as it was, so the next deploy retries" >&2
+  if ! YARN_ENABLE_IMMUTABLE_INSTALLS=true node .yarn/releases/yarn-4.18.1.cjs workspaces focus aof --production 2>&1 | tail -3; then
+    echo "  Yarn install failed — the stamp is left as it was, so the next deploy retries" >&2
     exit 1
   fi
   if [ ! -f "$PTY" ]; then
     echo "  building node-pty from source (no linux-x64 prebuild ships)"
-    ( cd node_modules/node-pty && npx --yes node-gyp rebuild 2>&1 | tail -3 )
+    node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty
   fi
   [ -f "$PTY" ] || { echo "  node-pty did not build — the worker cannot run PTY sessions" >&2; exit 1; }
   printf '%s' "$HASH" > "$STAMP"

@@ -81,13 +81,13 @@ export const releaseWorkflowLintTests = [
 
   // ══════ 00_ci-build-matrix.feature: "the Linux runner compiles the node-pty .node from source; mac/win use the shipped prebuilts" ══════
   {
-    name: "release-workflow-lint/04 the Linux leg compiles node-pty from source (npm ci, no prebuild) and stages + verifies the compiled .node",
+    name: "release-workflow-lint/04 the Linux leg compiles node-pty from source (Yarn immutable install, no prebuild) and stages + verifies the compiled .node",
     run: async () => {
       const text = stripYamlComments(readWorkflow());
       const linuxJobMatch = text.match(/build-linux:[\s\S]*?(?=\n {2}\S|\Z)/);
       assert.ok(linuxJobMatch, "a build-linux job is declared");
       const linuxJob = linuxJobMatch[0];
-      assert.ok(/npm ci/.test(linuxJob), "the Linux job runs npm ci (which compiles node-pty from source — no linux-* prebuild is shipped)");
+      assert.ok(/run: node scripts\/prepare-worktree\.mjs/.test(linuxJob), "the Linux job runs Yarn immutable install (which compiles node-pty from source — no linux-* prebuild is shipped)");
       assert.ok(/stage-linux-node-pty-prebuild\.mjs/.test(linuxJob), "the Linux job stages the compiled .node into the prebuilds/linux-<arch>/ shape build-sea.mjs expects");
     },
   },

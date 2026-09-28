@@ -9,6 +9,9 @@
 # happened to break first.
 *.sh text eol=lf
 
+# Preserve the upstream Yarn executable byte-for-byte, including literal whitespace.
+.yarn/releases/*.cjs -text -diff
+
 .aof/**/*.json text eol=lf
 # 63/ADR-010 §4 — the `.json` pin above does NOT match `.jsonc`, so an installed
 # `.aof/*.jsonc` declaration checked out CRLF against its LF-pinned `src/bundle/`

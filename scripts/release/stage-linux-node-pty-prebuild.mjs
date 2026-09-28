@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // milestone 28 / story 01 (ADR-002, task 00_ci-build-matrix.feature) — stages
-// the Linux node-pty `.node`, compiled from source by `npm ci` (node-pty
-// ships NO linux-* prebuild — RESEARCH §2 — so a normal `npm install` on a
+// the Linux node-pty `.node`, compiled from source by `yarn install --immutable` (node-pty
+// ships NO linux-* prebuild — RESEARCH §2 — so a normal `yarn install` on a
 // Linux runner naturally falls through to `node-gyp rebuild`, landing the
 // compiled addon at node_modules/node-pty/build/Release/pty.node).
 //
@@ -40,7 +40,7 @@ function main() {
   if (!existsSync(compiledPath)) {
     throw new Error(
       `Compiled pty.node not found at ${compiledPath}. ` +
-      `Expected 'npm ci' to have compiled node-pty from source (no linux-* prebuild is shipped, RESEARCH §2) — ` +
+      `Expected 'yarn install --immutable' to have compiled node-pty from source (no linux-* prebuild is shipped, RESEARCH §2) — ` +
       `check that a C++ toolchain (build-essential/python3) is available on this runner.`
     );
   }

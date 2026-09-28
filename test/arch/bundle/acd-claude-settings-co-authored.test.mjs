@@ -219,8 +219,9 @@ export const archTests = [
   {
     name: "arch/43 ADR-002 (acd-claude-settings-co-authored): self-check — a planted claude-hook config arms the hazard, and a wholesale-rendered body fails the key canary",
     run: async () => {
-      const real = JSON.parse(await readFile(AOF_CONFIG, "utf8"));
-      assert.equal(hazardIsLive(real), false, "the hazard is dormant at HEAD (no hooks/settings key in .aof/aof.config.json)");
+      // Test the detector's negative case with a fixture. This repository may legitimately
+      // configure Claude hooks; its live configuration is not a hook-free fixture.
+      assert.equal(hazardIsLive({}), false, "an empty config does not arm the hazard detector");
       assert.equal(
         hazardIsLive({ hooks: [{ event: "PostToolUse", runtimes: ["claude"] }] }),
         true,

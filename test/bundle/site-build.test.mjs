@@ -867,7 +867,7 @@ export const siteBuildTests = [
       assert.deepEqual(closure.computed, [], `and no module the builder reaches carries a computed dynamic import, which the walk could not follow:\n  ${closure.computed.join("\n  ")}`);
       // And the workflow really does stage without installing — the premise this row holds.
       const verdict = lintPagesWorkflow(readWorkflow());
-      assert.doesNotMatch(verdict.deployBody, /npm ci|npm install/, "the deploy job runs no package install");
+      assert.doesNotMatch(verdict.deployBody, /npm ci|npm install|yarn(?:-\S+\.cjs)?\s+install|prepare-worktree\.mjs/, "the deploy job runs no package install");
       assert.match(verdict.deployBody, new RegExp(BUILDER.replace(/[./]/g, "\\$&")), "and it runs the builder");
     },
   },

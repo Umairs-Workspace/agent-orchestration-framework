@@ -23,9 +23,9 @@ Current project planning lives in `.planning/`:
 
 ## Supply-Chain Safety
 
-- Treat `package-lock.json` as the dependency source of truth and prefer frozen installs.
+- Treat `yarn.lock` as the dependency source of truth and use the pinned Yarn version with `yarn install --immutable` (or `node scripts/prepare-worktree.mjs`).
 - Do not add, update, or run package installs unless the user explicitly asks or the active phase requires it.
-- Keep npm lifecycle scripts disabled by default; allow install scripts only through reviewed, explicit exceptions.
+- Keep dependency lifecycle scripts disabled by default; allow install scripts only through reviewed, explicit exceptions.
 - Run `node scripts/supply-chain-audit.mjs` after dependency changes and before broader verification.
 - Do not read or expose secrets while investigating packages, install failures, or dependency scripts.
 - Treat downloaded packages and `node_modules/` contents as untrusted input.
@@ -35,8 +35,8 @@ Current project planning lives in `.planning/`:
 Prefer focused checks first:
 
 - `node scripts/supply-chain-audit.mjs` when dependencies or install behavior change
-- `npm run test:unit`
-- `npm test`
-- `npm run ui:build` when UI files change
+- `yarn test:unit`
+- `yarn test`
+- `yarn ui:build` when UI files change
 
 Use `.planning/ROADMAP.md` and the active phase plan to decide broader verification.

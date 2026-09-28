@@ -40,6 +40,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateAssetManifest } from "./sea-asset-manifest.mjs";
+import { productionDependencyDirs } from './dependency-inventory.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const KEEP_BAKS = 3;
@@ -131,35 +132,9 @@ function computeBuildId() {
   }
 }
 
-// The production dependency closure (package names -> node_modules paths) via
-// npm's own resolver — the payload's src/ imports bare specifiers (ws,
-// @inquirer/prompts, node-pty) that must resolve beside the exe. Falls back to
-// the full node_modules tree if npm ls fails (correct, just bigger).
+// Resolve the installed production graph directly; a missing dependency must fail packaging.
 function prodDependencyDirs() {
-  try {
-    // --workspaces=false: the ROOT project's prod closure only — without it npm
-    // includes the ui workspace's (hoisted) dependency tree, ballooning the
-    // payload by ~200 MB of build-time-only frontend packages (measured 2026-07-26).
-    // shell:true on Windows — npm is npm.cmd, and Node refuses a shell-less
-    // .cmd spawn (the CVE-2024-27980 guard). Fixed-string args only, no
-    // interpolation, so the shell adds no injection surface here.
-    const out = execFileSync("npm", ["ls", "--omit=dev", "--all", "--parseable", "--workspaces=false"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      shell: process.platform === "win32",
-      // npm ls exits non-zero on peer warnings while still printing the tree —
-      // tolerate that by reading stdout regardless.
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    const dirs = out.split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line.includes(`node_modules${path.sep}`))
-      .filter((line) => !line.includes(`${path.sep}ui${path.sep}`));
-    if (dirs.length === 0) throw new Error("npm ls returned no dependency paths");
-    return { mode: "closure", dirs: [...new Set(dirs)] };
-  } catch {
-    return { mode: "full-tree", dirs: [path.join(repoRoot, "node_modules")] };
-  }
+  return { mode: 'closure', dirs: productionDependencyDirs(repoRoot) };
 }
 
 const LOCKED = /EBUSY|EPERM|locked|being used/i;
@@ -287,6 +262,8 @@ function replaceDirectory(destDir, fill) {
 
 // --- the payload install (the default, restart-not-rebuild path) -------------
 function installPayload(installDir) {
+  // Validate the complete dependency closure before replacing any installed source or assets.
+  const deps = prodDependencyDirs();
   console.log(`\n=== payload install into ${installDir} ===`);
   mkdirSync(installDir, { recursive: true });
 
@@ -322,8 +299,7 @@ function installPayload(installDir) {
   // had just gutted. An entry that IS in the closure is now replaced by `copyModuleDir`, which
   // prunes when it can and overlays when it cannot; nothing else is deleted out from under it.
   const nmDest = path.join(installDir, "node_modules");
-  const deps = prodDependencyDirs();
-  if (existsSync(nmDest) && deps.mode !== "full-tree") {
+  if (existsSync(nmDest)) {
     const keep = new Set(
       deps.dirs
         .map((dir) => path.relative(path.join(repoRoot, "node_modules"), dir))
@@ -339,20 +315,13 @@ function installPayload(installDir) {
       }
     }
   }
-  if (deps.mode === "full-tree") {
-    console.log("  (npm ls unavailable — copying the full node_modules tree)");
-    copyModuleDir(deps.dirs[0], path.join(installDir, "node_modules"));
-    console.log("  synced node_modules/ (full tree)");
-  } else {
-    const nmRoot = path.join(repoRoot, "node_modules");
-    let copied = 0;
-    for (const dir of deps.dirs) {
-      const rel = path.relative(nmRoot, dir);
-      if (rel.startsWith("..")) continue;
-      if (copyModuleDir(dir, path.join(installDir, "node_modules", rel))) copied += 1;
-    }
-    console.log(`  synced node_modules/ (${copied}/${deps.dirs.length} prod-closure entries)`);
+  const nmRoot = path.join(repoRoot, 'node_modules');
+  let copied = 0;
+  for (const dir of deps.dirs) {
+    const rel = path.relative(nmRoot, dir);
+    if (copyModuleDir(dir, path.join(installDir, 'node_modules', rel))) copied += 1;
   }
+  console.log('  synced node_modules/ (' + copied + '/' + deps.dirs.length + ' prod-closure entries)');
 
   // 4. the trimmed manifest + the build stamp.
   const pkg = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
@@ -384,7 +353,7 @@ function installPayload(installDir) {
 // of a local test node and the one thing the Mac worker's `git pull` flow cannot do.
 const WSL_DEFAULT_DIR = "~/source/aof";
 
-// The deploy stamp: the sha256 of the package-lock.json that the distro's node_modules
+// The deploy stamp: the sha256 of the yarn.lock that the distro's node_modules
 // was last installed from. A src-only sync is fast and almost always right — but a
 // DEPENDENCY change needs a native reinstall + node-pty rebuild, and silently skipping
 // that leaves a stale native binary that fails at daemon start, far from the cause.
@@ -451,7 +420,7 @@ function main() {
     console.log(`  ${n++}. payload install: sync src/, bundle/, ui/dist, node_modules (prod closure), package.json + BUILD_ID.json into ${installDir}`);
     if (buildSea) console.log(`  ${n++}. node scripts/build-sea.mjs -> dist-sea/, then rename ${exeName} -> ${exeName}.bak.<ts> + place the fresh ${exeName} (+ node-pty-sidecar)`);
     if (o.desktop) console.log(`  ${n++}. cargo build --release + place aof-mesh-desktop.exe`);
-    if (o.wsl) console.log(`  ${n++}. sync src/ + package.json into ${o.wslDistro ?? "the default distro"}:${o.wslDir ?? WSL_DEFAULT_DIR}, reinstalling natively only if package-lock.json changed`);
+    if (o.wsl) console.log(`  ${n++}. sync src/ + package.json into ${o.wslDistro ?? "the default distro"}:${o.wslDir ?? WSL_DEFAULT_DIR}, reinstalling natively only if yarn.lock changed`);
     console.log(`  ${n}. prune ${exeName}.bak.* / aof-mesh-desktop.exe.bak.* beyond the newest ${KEEP_BAKS}`);
     return;
   }

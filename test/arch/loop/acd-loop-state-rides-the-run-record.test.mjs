@@ -35,12 +35,17 @@ async function modulesUnder(dir) {
 
 function trackedFilesUnder(dir) {
   const rel = path.relative(root, dir).replaceAll("\\", "/");
+  // Account for unstaged deletions too. Removing a file changes the pinned digest below;
+  // the check must measure that change rather than fail while opening the retired lockfile.
+  const deleted = new Set(execFileSync('git', ['ls-files', '--deleted', '-z', '--', rel], {
+    cwd: root, encoding: 'utf8', windowsHide: true,
+  }).split('\0').filter(Boolean));
   return execFileSync("git", ["ls-files", "-z", "--", rel], {
     cwd: root,
     encoding: "utf8",
     windowsHide: true,
     maxBuffer: 16 * 1024 * 1024,
-  }).split("\0").filter(Boolean).map((file) => path.join(root, file));
+  }).split("\0").filter(Boolean).filter(file => !deleted.has(file)).map((file) => path.join(root, file));
 }
 
 async function normalizedDigest(file) {
@@ -141,7 +146,9 @@ function assertUiFrozen(pairs) {
   // only hits are the ask fact's and the answer document's own `runId` keys and the card's React
   // key: no run-record key, cycle, level or loop state is read, so the loop's state still rides
   // the run record with no face of its own.
-  assert.equal(hash.digest("hex"), "c470fea8c6b284ac7a9677d7c72b6918325e7f429141de4012b8285bb201895e", "ui/ changed despite the zero-board-change contract");
+  // 142: only ui/package-lock.json is retired in favor of the authoritative root yarn.lock.
+  // No UI source, manifest, style, or run/board behavior changed. All remaining bytes stay pinned.
+  assert.equal(hash.digest("hex"), "8cfe881ee68dd2b4950966afa5fd9f8367b6562f8ddc818d45b059ac0f1f81eb", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

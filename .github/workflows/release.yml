@@ -41,7 +41,7 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # One job per OS/arch leg. Each: checkout -> Node 22 -> npm ci -> build ui ->
+  # One job per OS/arch leg. Each: checkout -> Node 22 -> Yarn immutable install -> build ui ->
   # Story 00's build-sea.mjs (esbuild -> blob -> POSTJECT INJECT) -> stage the
   # PINNED asset/sidecar names -> sign (per-OS) -> upload the leg's artifacts.
   # ---------------------------------------------------------------------------
@@ -70,11 +70,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: npm ci
-        run: npm ci
+      - name: Yarn immutable install
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Audit dependencies
+        run: node scripts/supply-chain-audit.mjs
 
       - name: build ui
-        run: npm run ui:build
+        run: node scripts/ui-build.mjs
 
       - name: Build self-contained binary (Story 00 recipe — includes postject injection)
         run: node scripts/build-sea.mjs --out dist-sea
@@ -135,11 +138,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: npm ci
-        run: npm ci
+      - name: Yarn immutable install
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Audit dependencies
+        run: node scripts/supply-chain-audit.mjs
 
       - name: build ui
-        run: npm run ui:build
+        run: node scripts/ui-build.mjs
 
       - name: Build self-contained binary (Story 00 recipe)
         run: node scripts/build-sea.mjs --out dist-sea
@@ -191,7 +197,7 @@ jobs:
           node-version: "22"
 
       # No linux-* node-pty prebuild is shipped (RESEARCH §2) — a plain
-      # `npm ci` falls through node-pty's own install script to `node-gyp
+      # `Yarn immutable install` falls through node-pty's own install script to `node-gyp
       # rebuild`, compiling the .node from source on THIS runner. A C++
       # toolchain (build-essential/python3) ships on ubuntu-latest /
       # ubuntu-24.04-arm images by default; make it explicit rather than
@@ -201,11 +207,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential python3
 
-      - name: npm ci (compiles node-pty from source — no linux-* prebuild is shipped)
-        run: npm ci
+      - name: Yarn immutable install (compiles node-pty from source — no linux-* prebuild is shipped)
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Audit dependencies
+        run: node scripts/supply-chain-audit.mjs
 
       - name: build ui
-        run: npm run ui:build
+        run: node scripts/ui-build.mjs
 
       # Stage the freshly-compiled .node into the prebuilds/linux-<arch>/
       # shape Story 00's build-sea.mjs expects (it does not itself compile —

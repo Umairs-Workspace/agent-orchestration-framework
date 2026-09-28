@@ -1,0 +1,190 @@
+---
+doc: research
+---
+# 142 · Yarn workspace modularization — Research
+
+**Gathered:** 2026-09-27; key source paths and manifests rechecked 2026-09-28.
+**Method:** local source/manifests/build-script inspection, indicative import scanning, and official
+Yarn documentation. This captures the assessment preceding milestone creation.
+**Status:** static findings recorded; install, execution, performance, and release checks remain pending.
+
+## Size and current organization
+
+The 2026-09-27 inventory counted approximately 360 backend JavaScript source files and 115,780
+physical lines, including comments and blank lines. Of these, 92 files sat directly under `src/`.
+The UI inventory contained 83 source/configuration files. The test inventory contained 482
+architecture test files. These are dated observations, not thresholds or a maintained census.
+
+The root [package.json](../../../package.json) already declares `ui` as an npm workspace. Its
+runtime dependencies combine prompting, WebSockets, native PTY support, and headless terminal
+emulation. [ui/package.json](../../../ui/package.json) declares React/Vite and browser terminal
+dependencies. A separate `ui/package-lock.json` also exists alongside the root lockfile.
+
+The desktop application is a Rust/Tauri project under
+[app/desktop](../../../app/desktop/Cargo.toml), with its own frontend and Cargo lockfiles. Its core
+crate and Tauri shell have deliberately different build/test scopes. A Yarn workspace wrapper
+must preserve Cargo's ownership rather than treating desktop as an existing Node application.
+
+The root AGENTS.md still references `.planning/`, which was absent during inspection. Current work
+context is under `wiki/work/`; the root instructions' historical planning paths are not a reliable
+inventory source for this migration.
+
+## The CLI registry is an existing extension seam
+
+[command-core.mjs](../../../src/command-core.mjs) assembles commands across the product. Its documented
+command shape includes an ID, input schema, operation, and CLI adapters. The existing
+[spine face](../../../src/spine/face.mjs) supplies a common invocation path. The CLI already delays
+registry loading on the session-presence path; [cli.mjs](../../../src/cli.mjs) records the startup
+reason for that separation.
+
+**Constraint:** package contributions should evolve this shared invocation model. New package
+barrels or registration side effects must not accidentally restore eager loading of the entire
+product for lightweight commands. Startup implications need fresh measurement.
+
+The user clarified that core includes the CLI because bundled skills rely on it, and that feature
+packages must extend that CLI. These are product requirements in [SPEC.md](SPEC.md), not observations
+that the present source tree already implements the proposed package boundaries.
+
+## Upward imports and mixed responsibilities
+
+| Observed source | Coupling | Extraction constraint |
+|---|---|---|
+| [loop/cycle.mjs](../../../src/loop/cycle.mjs) | Imports item resolution, rubric handling and node identity helpers from `commands/`. | Move reusable operations below command presentation or supply explicit collaborators. |
+| [mesh/declarations.mjs](../../../src/mesh/declarations.mjs) | Imports retry-ceiling resolution from `commands/run-retry.mjs`. | Mesh supervision must not depend on the CLI implementation layer. |
+| [effects/table.mjs](../../../src/effects/table.mjs) | Imports work mutations, projections, assignments, run storage and Notion sync. | Separate generic durable dispatch from domain reactions and application registration. |
+| [memory/graphify-backend.mjs](../../../src/memory/graphify-backend.mjs) | Imports `invoke` and workspace loading from the central command registry. | Extract a graph service API or inject a narrow invocation interface. |
+| [work/read.mjs](../../../src/work/read.mjs) | Combines local work queries, global cache access and mesh worktree classification. | Keep local work mechanics independent of mesh-specific projection/admission policy. |
+| [agent-session-driver.mjs](../../../src/agent-session-driver.mjs) | Combines provider/terminal execution with observation and phase-brief helpers. | Separate session mechanics from work-specific input assembly and policy. |
+| [ui/src/board/action.mjs](../../../ui/src/board/action.mjs) | Imports formatting helpers through `../../../src/notify/form.mjs`. | Browser-safe shared helpers need a public export instead of a sibling-source escape. |
+
+These inspected imports establish boundary leaks, not an exhaustive cycle census. Refinement needs
+a resolver-aware dependency graph covering static imports, re-exports, literal dynamic imports,
+and declared runtime collaborators before finalizing extraction batches.
+
+## Useful existing boundaries
+
+- [work/loop.mjs](../../../src/work/loop.mjs) is a pure decision engine with no imports. Preserve
+  that property while separating the orchestration shell from CLI adapters.
+- [terminal/screen.mjs](../../../src/terminal/screen.mjs) and
+  [terminal/session-screen.mjs](../../../src/terminal/session-screen.mjs) provide existing terminal
+  seams. They are candidates for an execution package, not reasons to rewrite terminal behavior.
+- [work/bundle.mjs](../../../src/work/bundle.mjs),
+  [bundle-runtime.mjs](../../../src/work/bundle-runtime.mjs), and
+  [bundle-synthesis.mjs](../../../src/work/bundle-synthesis.mjs) separate aspects of asset loading,
+  capability selection, and rendering. Their current `work/` location does not decide future ownership.
+- Shared command invocation and durable effect journaling already exist. Migration can preserve
+  those behavioral contracts while relocating ownership.
+
+## Three different graph models
+
+1. Work-item dependencies/readiness live in work mechanics such as [work.mjs](../../../src/work.mjs).
+2. Declared feedback-loop metadata and graph rendering live in
+   [work/loops.mjs](../../../src/work/loops.mjs),
+   [work/loops-checks.mjs](../../../src/work/loops-checks.mjs), and
+   [commands/loops-graph.mjs](../../../src/commands/loops-graph.mjs).
+3. The code/knowledge graph is exposed through [graphify.mjs](../../../src/graphify.mjs),
+   normalization/impact modules, and a graph-backed memory implementation.
+
+**Constraint:** a shared word does not imply shared ownership. Work-graph naming must distinguish
+declaration/documentation tools from execution policy and Graphify's code graph.
+
+## Assets and distribution depend on current layout
+
+- [asset-base.mjs](../../../src/asset-base.mjs) resolves development paths assuming its module is
+  directly in `src/`, and resolves packaged bundle/UI/version assets relative to the executable.
+- [sea-asset-manifest.mjs](../../../scripts/sea-asset-manifest.mjs) enumerates `src/bundle/` and
+  `ui/dist/`. [build-sea.mjs](../../../scripts/build-sea.mjs) copies those assets and externalizes
+  `node-pty` into a platform-specific sidecar.
+- [sea-entry.mjs](../../../scripts/sea-entry.mjs) looks for the installed payload at `src/cli.mjs`
+  beside the executable and otherwise uses the embedded build under its existing rules.
+- [install-local.mjs](../../../scripts/install-local.mjs) copies the root `src/` tree and obtains
+  production dependency locations with `npm ls --omit=dev --all --parseable --workspaces=false`.
+- [ui-build.mjs](../../../scripts/ui-build.mjs) invokes TypeScript and Vite at assumed root
+  `node_modules` paths, so changing dependency hoisting can affect it before source moves occur.
+- [prepare-worktree.mjs](../../../scripts/prepare-worktree.mjs) resolves npm's JavaScript entry to
+  preserve shell-free spawning on Windows. It assumes npm lock/install semantics.
+- [install-local.mjs](../../../scripts/install-local.mjs) and
+  [deploy-wsl.sh](../../../scripts/deploy-wsl.sh) contain source/dependency synchronization assumptions
+  that must follow the lockfile and package-layout changes.
+
+**Constraint:** source checkout, copied payload and standalone executable are distinct verification
+paths. Working Yarn workspace links in a checkout do not prove an installed artifact is complete.
+An installation manifest must include required workspace code and external dependencies without
+retaining links back to the checkout. Native binaries remain platform-specific.
+
+## Supply-chain checks are npm-specific
+
+[supply-chain-audit.mjs](../../../scripts/supply-chain-audit.mjs) reads `package-lock.json`, traverses
+its `packages` entries and checks `hasInstallScript`. It also contains package/version deny rules,
+an install-script allowlist, and installed-content checks. Simply changing the filename to
+`yarn.lock` would lose the expected data model.
+
+**Constraint:** preserve equivalent audit coverage using Yarn's resolved dependency information and
+package metadata. Compare resolution changes during cutover; do not assume regeneration reproduces
+npm's exact dependency graph. Preserve reviewed native-build exceptions and account for workspace
+lifecycle scripts. The authoritative-lockfile instruction changes when implementation switches
+package managers, not during milestone capture.
+
+## Test and documentation coupling
+
+Implementation measurement (2026-09-28): the root runner assembles 11,509 checks after adding the
+nine Yarn-installation cases. The focused installation suite completes in about five seconds on
+this Windows checkout; the root run spends substantial time in unrelated Git-backed worktree and
+wave fixtures. Package-local test ownership should make that narrow verification path standard,
+while keeping explicit cross-package and full-system runs for changes that need them.
+
+Tests frequently import root source paths and some architecture checks inspect literal source
+shapes. Examples include [bundle location](../../../test/arch/bundle/acd-bundle-location.test.mjs),
+[SEA asset resolution](../../../test/arch/bundle/acd-sea-safe-asset-base.test.mjs),
+[command layering](../../../test/arch/command/acd-command-layer-imports-downward.test.mjs), and
+[loop import boundaries](../../../test/arch/loop/acd-loop-module-import-boundary.test.mjs).
+
+The command-layering check distinguishes root modules from family directories and excludes dynamic
+imports from its static-import rule. New workspace checks need an explicit scope and coverage
+contract rather than assuming existing path predicates cover all packages.
+
+[scripts/test.mjs](../../../scripts/test.mjs) aggregates suite registrations and also invokes Rust
+checks. Work audit machinery consumes test metadata. Package-local test ownership must retain
+discoverability, selectors, stable identities, and task/control traceability.
+
+**Constraint:** update scans and registrations alongside source moves. Assert that expected files
+are still inspected, and retain behavioral checks. Update active module references and bundle
+declarations; preserve historical ADRs and append superseding decisions where necessary.
+
+## Yarn documentation consulted
+
+Official documentation reviewed during the 2026-09-27 assessment:
+
+- [Workspaces](https://yarnpkg.com/features/workspaces): workspace declarations, explicit
+  `workspace:` dependencies, focused installation, and workspace script execution.
+- [Install](https://yarnpkg.com/cli/install): `--immutable` rejects lockfile changes.
+- [Settings](https://yarnpkg.com/configuration/yarnrc): `nodeLinker: node-modules` retains conventional
+  installation; `enableTransparentWorkspaces: false` requires explicit workspace references;
+  `enableScripts: false` suppresses third-party build scripts but does not suppress workspace
+  postinstall scripts. Hoisting limits and Windows junction behavior need compatibility checks.
+- [Manifest](https://yarnpkg.com/configuration/manifest): root `dependenciesMeta` supports explicit
+  build exceptions when scripts are disabled.
+- [Constraints](https://yarnpkg.com/features/constraints): manifest/dependency policies are supported;
+  source-import boundaries need a separate checker.
+- [Workspace execution](https://yarnpkg.com/cli/workspaces/foreach): workspace selection and
+  topological script ordering are available without introducing another task orchestrator.
+
+These sources support the proposed tooling choices; they do not establish that AOF currently
+builds under Yarn. Pin and verify a specific supported Yarn version during implementation.
+
+## Questions to resolve during implementation
+
+| Question | Proposed evidence |
+|---|---|
+| What are the actual package cycles and minimum safe extraction batches? | Resolver-aware import graph plus explicit runtime dependencies; enforce the chosen graph in CI. |
+| Which commands and options are required by every shipped skill/hook? | Inventory the bundle's invocations, including constructed calls, and check the assembled registry and installed distribution. |
+| How do packages share `aof work` without overwriting each other's routes/options? | Contribution contract with namespace ownership, collision cases, help and validation parity. |
+| Which current configuration/rendering helpers are foundational versus composition-owned? | API inventory proving features can load without importing assembled core. |
+| Which Node/Yarn/platform combinations are supported? | Reconcile the root Node engine range, native modules and release Node version; run clean installs/builds for the supported matrix. |
+| How is the audit's coverage retained with Yarn? | Known-bad dependency and install-script fixtures against the new adapter, before broader verification. |
+| How does the installed payload resolve internal packages? | Stage an artifact outside the checkout, make source unavailable, and exercise CLI/assets/native execution. |
+| Do session-presence commands remain lightweight? | Compare cold-start timings/import closure against a fresh baseline; do not reuse old comment measurements as current results. |
+| Does test selection preserve acceptance traceability after moving suites? | Compare registered test identities and audit discovery before/after; include non-vacuity checks. |
+
+The original assessment was static. Subsequent baseline checks and isolated dependency experiments
+are recorded in [STATE.md](STATE.md); they do not yet establish a working Yarn cutover.
