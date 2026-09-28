@@ -123,7 +123,9 @@ export const archTests = [
       // These nodes relocate existing code; the entire mesh family remains denied.
       // 142 adds the two implementation homes for provider resolution and session records;
       // the adapters retain their previous imports and no additional domain is reachable.
-      assert.ok(graph.seen.size <= 35, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 transport-free census of 35`);
+      // Screen/trust implementation homes add four nodes; direct package imports bypass
+      // the old screen-registry and bounds forwards, a net increase of two (35 -> 37).
+      assert.ok(graph.seen.size <= 37, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 screen/trust census of 37`);
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/pty", "@aof/execution/session-driver"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
       assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/session-driver.mjs"], "the driver package has no transport, work, mesh or core import");
@@ -251,7 +253,7 @@ export const archTests = [
       // 142 moves registration to inert package contributions. Count local workspace
       // imports too: the static sink closure was 73, including all seven package
       // modules. Deferred domain-service imports are deliberately outside this census.
-      assert.equal(sinkGraph.seen.size, 86, "removing the driver's transport subtree reduces the prior 92-module closure to 86");
+      assert.equal(sinkGraph.seen.size, 89, "screen/trust extraction adds three net implementation homes to the prior 86-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

@@ -22,8 +22,8 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const EMULATOR = "@xterm/headless";
-const MODEL = "src/terminal/screen.mjs";
-const DOOR = "src/terminal/session-screen.mjs";
+const MODEL = "packages/execution/src/terminal/screen.mjs";
+const DOOR = "packages/execution/src/terminal/session-screen.mjs";
 const DRIVER = "packages/execution/src/session-driver.mjs";
 const DRIVER_SPELLINGS = Object.freeze(["ANSI_ESCAPE_RE", "TUI_READY_MARKER", "2004h", "PARKED_PASTE_RE", "PROVIDER_WAIT_RE", "hasVisibleText", "screenTail"]);
 const MARKERS = Object.freeze(["?2004h", "?2004l"]);

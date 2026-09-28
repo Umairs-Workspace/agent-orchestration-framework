@@ -785,3 +785,39 @@ The four previously pending generated citation changes remain untouched; this dr
 not add any shipped loop citation changes. Screen services, reusable worktree mechanisms, remaining
 domain packages, final core/apps layout and adapter removal still remain. Full-root-suite and
 native/platform verification are outstanding.
+
+## Execution screen observation and workspace trust
+
+Execution now owns the headless screen model, queued session-screen observation, Claude screen
+recognition rules and conservative workspace trust updates. Core keeps small composition adapters
+with the same public exports. Diagnostics and the model factory remain explicit supplied services.
+The headless loader and its WeakMap cache remain module-scoped: both successful and failed loads
+are remembered once per loader across service instances. Factory construction performs no I/O.
+The package declares the already pinned @xterm/headless 6.0.0; only its workspace lock edge changed.
+
+Verification (ignored evidence in `.tmp/workspace-migration/execution-screen/`):
+
+- Exact implementation-body and compatibility-export comparisons pass. Seven real screen recordings
+  produce identical full snapshots and recognition results through old and new implementations.
+  Trust updates produce identical bytes in temporary homes; no real user settings were accessed.
+- The 896-case affected selection initially passed 895 cases. Yarn's dependency-key sorting
+  required one manifest-order assertion correction; the final 48-case rerun passes, including the
+  complete corrected suite and the bridge over all 99 package cases. These selections overlap.
+- Three package cases cover cross-instance loader caching, failed-load diagnostics, bounded models,
+  draining pending writes on disposal, queued fallback bytes, frozen evidence, canonical trust keys,
+  preservation of unrelated settings, repeat-write stability and malformed-config degradation.
+- The loop-family guard now rejects direct imports of public execution driver/PTY/trust APIs as
+  well as legacy modules. Planted violations exercise the new checks. Screen guards inspect the
+  actual implementation. Static composed-driver reach is 37 modules and mesh-worker reach is 89;
+  the package driver itself still reaches only three modules.
+- Immutable Yarn installation with builds skipped and supply-chain audit pass with zero audit
+  warnings; the existing Yarn peer warning remains. Standalone JavaScript bundling includes the
+  four new implementations and keeps node-pty external.
+- The copied installer resolves all four public APIs within the payload, replays the seven real
+  recordings using its headless dependency and passes recognition, frozen-fallback and temporary-home
+  trust checks. Prior driver, run-persistence, loop and work/graph checks still pass; all 117 command
+  descriptors remain available. No native executable or live agent session was tested.
+
+The four separately pending generated citation refreshes remain untouched. Reusable worktree
+mechanisms, remaining domain packages, final core/apps layout and adapter removal remain, followed
+by final full-suite, installer and native/platform verification.

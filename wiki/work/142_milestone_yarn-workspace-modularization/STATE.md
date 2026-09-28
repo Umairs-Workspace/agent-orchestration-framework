@@ -130,7 +130,7 @@ rules are extracted. Validation now consumes an explicit core-supplied digest co
 Work-loop orchestration and commands now consume explicit execution, work, notification and mesh
 services. Execution now owns run persistence, transcript settlement, heartbeat queues and
 session attribution. The local driver and shared PTY loader/spawner are also extracted.
-Continue with screen services, reusable worktrees and remaining work acceptance/audit services,
+Continue with reusable worktrees and remaining work acceptance/audit services,
 then replace their transitional adapters in final core assembly. Notion owns
 its services and CLI descriptors;
 shared work/routing services, diagnostics, provisioning and journal policy remain injected.
@@ -160,3 +160,11 @@ after source-guard corrections; the final bridge passes all 96 package cases. Th
 997 passes and one pending generated-citation synchronization failure. Immutable install/audit,
 standalone JavaScript build and copied-installation launch/native-refusal checks pass. No native
 executable or real agent-session launch is claimed by these checks.
+
+Screen/trust extraction: execution now owns screen models, session observation, recognition rules
+and workspace trust updates. Exact implementation/export comparisons, seven recorded-screen
+replays and temporary-home trust-file byte comparisons pass. The 896-case affected selection is
+covered after correcting one manifest-order assertion; a final 48-case rerun includes all 99
+package cases. Immutable install/audit, standalone JavaScript bundling and copied-installation
+checks pass. The four previously pending generated citations remain untouched. Reusable worktrees,
+remaining domain packages, final core/apps layout and final verification remain outstanding.

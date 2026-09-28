@@ -23,6 +23,7 @@ __metadata:
   dependencies:
     "@aof/contracts": "workspace:*"
     "@aof/foundation": "workspace:*"
+    "@xterm/headless": "npm:6.0.0"
     node-pty: "npm:1.1.0"
   languageName: unknown
   linkType: soft

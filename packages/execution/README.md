@@ -2,6 +2,7 @@
 
 Owns run persistence, lifecycle transitions, transcript spend ingestion, heartbeat queues
 and session attribution, terminal provider resolution and the live terminal-session registry.
+It also owns screen observation, consent recognition and workspace trust updates.
 Core assembles these services and supplies application policy.
 
 - `createRunStore({ reportDegrade, getAnswerTokens, readSessionAnswers })` owns run records
@@ -23,14 +24,21 @@ Core assembles these services and supplies application policy.
 - `createNodePtyLoader({ isPackaged })` owns lazy native loading: the packaged branch resolves
   beside the executable, while development uses a dynamic import. `createTerminalSpawn(loader)`
   is the shared spawn factory used by local sessions and the terminal WebSocket adapter.
+- `createScreenModel({ reportDegrade })` supplies bounded screen models. Lazy headless-terminal
+  loads and failures are cached once per loader across service instances.
+- `createSessionScreens({ createScreen, reportDegrade })` supplies queued screen observation,
+  frozen completion evidence and consent-menu reading; `CLAUDE_SCREENS` supplies recognition rules.
+- `createClaudeTrust({ reportDegrade })` supplies canonical project keys and conservative trust
+  updates, preserving unrelated settings and retaining the injectable home directory.
 
 Factories perform no I/O. The package imports public contracts and foundation APIs, Node
-builtins and its own modules, and lazily loads its pinned `node-pty` dependency. It imports no
+builtins and its own modules, and lazily loads its pinned `node-pty` and `@xterm/headless`
+dependencies. It imports no
 core, work, mesh, WebSocket transport or command registry code.
 Record shapes, paths, refusal behavior and spending calculations remain unchanged.
 
 Legacy root modules currently compose these services for existing consumers.
-Screen services and reusable worktree mechanisms still need to move here;
+Reusable worktree mechanisms still need to move here;
 final application composition will remove the transitional adapters.
 
 Run package checks with `yarn workspace @aof/execution test`.

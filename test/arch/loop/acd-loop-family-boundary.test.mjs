@@ -48,8 +48,8 @@ const PACKAGE_FAMILY = "packages/work-loop/src";
 const WAVE = "packages/work-loop/src/wave.mjs";
 
 // The modules a lane drive must never run inside the loop's process (ADR-005 §5).
-export const DRIVER_MODULES = Object.freeze(["agent-session-driver.mjs", "claude-trust.mjs"]);
-export const DRIVER_PACKAGES = Object.freeze(["node-pty"]);
+export const DRIVER_MODULES = Object.freeze(["agent-session-driver.mjs", "session-driver.mjs", "pty.mjs", "claude-trust.mjs"]);
+export const DRIVER_PACKAGES = Object.freeze(["node-pty", "@aof/execution/session-driver", "@aof/execution/pty", "@aof/execution/claude-trust"]);
 // The modules that own the partition (ADR-001 §3, 71/ADR-006).
 export const PARTITION_MODULES = Object.freeze(["ready-wave.mjs", "story-contract.mjs"]);
 
@@ -267,6 +267,10 @@ export const archTests = [
       assert.ok(driver.some((problem) => problem.includes(WAVE) && problem.includes("agent-session-driver")), `the driver import is named:\n${driver.join("\n")}`);
       const pty = driverImportProblems(planted(SHELL, (code) => `${code}\nconst pty = await import("node-pty");\n`));
       assert.ok(pty.some((problem) => problem.includes(SHELL) && problem.includes("node-pty")), "a dynamic node-pty import is named");
+      for (const specifier of DRIVER_PACKAGES.filter(name => name.startsWith("@aof/"))) {
+        const problems = driverImportProblems(planted(WAVE, code => `import * as forbidden from ${JSON.stringify(specifier)};\n${code}`));
+        assert.ok(problems.some(problem => problem.includes(WAVE) && problem.includes(specifier)), `${specifier}: the public package door is also denied`);
+      }
 
       const shell = spawnRouteProblems(familyOnly(planted(SPAWN_SEAM, (code) => code.replace("stdin: \"pipe\",", "stdin: \"pipe\",\n    shell: true,"))));
       assert.ok(shell.problems.some((problem) => problem.includes(SPAWN_SEAM) && problem.includes("shell:")), `shell: true is named:\n${shell.problems.join("\n")}`);

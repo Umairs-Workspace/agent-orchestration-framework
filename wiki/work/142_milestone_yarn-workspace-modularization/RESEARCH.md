@@ -483,3 +483,18 @@ The body is copied without indentation changes, so multiline instruction whitesp
 An exact body comparison after import/export wrapping, runtime constant comparison and differential
 launch-envelope comparison all pass. Source guards now distinguish adapter wiring from implementation
 ownership and inspect runtime packages for native loads, screen reads and competing launch builders.
+
+## Screen and trust boundary
+
+Screen observation and workspace trust are now execution services. The diagnostic callback is
+application policy, while bounded screen state, parsing and trust-file updates are implementation
+mechanisms. Preserve the module-level cache keyed by loader identity when composing screen factories:
+moving it inside a factory would retry previously failed loads and duplicate diagnostics.
+Seven recorded-screen replays and temporary-home trust-byte comparisons demonstrate unchanged behavior.
+The existing @xterm/headless version is now declared by its implementation owner.
+
+Reusable worktree extraction must retain mesh naming, assignment/session/dispatch paths, retention,
+commit identity and preparation policy in mesh/application composition. Git execution, porcelain
+parsing and worktree operations can move behind explicit policy ports without moving mesh rules
+into execution. The loop-family source guard must cover package API names as well as old basenames;
+otherwise an exported driver would bypass the prohibition on loading a PTY inside a loop child.

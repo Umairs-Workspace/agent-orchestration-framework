@@ -11,7 +11,11 @@
     "./providers": "./src/providers.mjs",
     "./terminal-sessions": "./src/terminal-sessions.mjs",
     "./pty": "./src/pty.mjs",
-    "./session-driver": "./src/session-driver.mjs"
+    "./session-driver": "./src/session-driver.mjs",
+    "./terminal/screen": "./src/terminal/screen.mjs",
+    "./terminal/session-screen": "./src/terminal/session-screen.mjs",
+    "./claude-trust": "./src/claude-trust.mjs",
+    "./terminal/claude-screens": "./src/terminal/claude-screens.mjs"
   },
   "files": [
     "src"
@@ -22,6 +26,7 @@
   "dependencies": {
     "@aof/contracts": "workspace:*",
     "@aof/foundation": "workspace:*",
+    "@xterm/headless": "6.0.0",
     "node-pty": "1.1.0"
   }
 }
