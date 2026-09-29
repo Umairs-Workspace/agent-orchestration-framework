@@ -93,19 +93,19 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
 const NOTIFY_DIR = "src/notify/";
-const NOTIFY = "src/notify/notify.mjs";
+const NOTIFY = "packages/messaging/src/notify.mjs";
 // FF-13106 as amended at 131/08: the machine-wide store's one home and the verbs that reach it.
-const SECRET_STORE = "src/notify/secret.mjs";
+const SECRET_STORE = "packages/messaging/src/secret.mjs";
 // 131/10 (ADR-008 §4): the ask-message index reads its own records beside the store, never a secret.
-const ASK_INDEX = "src/notify/ask-messages.mjs";
-const MESSAGING_VERBS = "src/commands/messaging/messaging.mjs";
+const ASK_INDEX = "packages/messaging/src/ask-messages.mjs";
+const MESSAGING_VERBS = "packages/messaging/src/commands.mjs";
 const STORE_SEGMENT = /^(["'`])messaging(?:\1|\/)/u;
-const FORM = "src/notify/form.mjs";
+const FORM = "packages/messaging/src/form.mjs";
 const WEBHOOK_LITERAL = "discord.com/api/webhooks";
 // Compared lowercased: `urlEnv` is the webhook-era override FF-13106 forbids since 131/09.
 const FORBIDDEN_CHANNEL_KEYS = Object.freeze(["url", "webhook", "token", "urlenv"]);
 // FF-13110 — the one authorised door (ADR-007 §4).
-const DOOR = "src/notify/discord.mjs";
+const DOOR = "packages/messaging/src/discord.mjs";
 const API_HOST = "discord.com/api";
 const BOT_FAMILY = "src/discord/";
 // FF-13114 — a worker's ask rides the park fact (131/12, ADR-010).
@@ -129,7 +129,7 @@ const SEVEN = FIRING_SITES.length;
 const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
 // Task 00 ruling 3: the form's direct importers — and, as amended at 131/11 (ADR-009 §5), the slash
 // commands' renders, which read a waiting row exactly as the terminal and the posted message do.
-const FORM_IMPORTERS = Object.freeze(["src/discord/commands.mjs", "src/loop/ask.mjs", "src/notify/discord.mjs", "ui/src/board/action.mjs"]);
+const FORM_IMPORTERS = Object.freeze(["src/notify/form.mjs", "packages/messaging/src/discord-commands.mjs", "src/loop/ask.mjs", "packages/messaging/src/discord.mjs", "ui/src/board/action.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
@@ -146,9 +146,28 @@ function assertRead(what, count, floor, unit = "file(s)") {
   assert.ok(count >= floor, `NOTHING WAS READ: ${what} walked ${count} ${unit}, below its floor of ${floor} — a rename, a moved directory or a truncated read must fail here rather than pass vacuously over an empty sweep`);
 }
 
+function inDiscordFamily(rel) {
+  return rel.startsWith("src/discord/") || rel.startsWith("packages/messaging/src/");
+}
+
 function resolved(fromRel, specifier) {
+  const messaging = /^@aof\/messaging\/(.+)$/.exec(specifier);
+  if (messaging) return `packages/messaging/src/${messaging[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  const moved = {
+    "src/notify/notify.mjs": "packages/messaging/src/notify.mjs",
+    "src/notify/secret.mjs": "packages/messaging/src/secret.mjs",
+    "src/notify/ask-messages.mjs": "packages/messaging/src/ask-messages.mjs",
+    "src/notify/form.mjs": "packages/messaging/src/form.mjs",
+    "src/notify/discord.mjs": "packages/messaging/src/discord.mjs",
+    "src/commands/messaging/messaging.mjs": "packages/messaging/src/commands.mjs",
+    "src/discord/gateway.mjs": "packages/messaging/src/gateway.mjs",
+    "src/discord/replies.mjs": "packages/messaging/src/replies.mjs",
+    "src/discord/bot.mjs": "packages/messaging/src/bot.mjs",
+    "src/discord/commands.mjs": "packages/messaging/src/discord-commands.mjs"
+  };
+  if (moved[joined]) return moved[joined];
   return /\.[cm]?[jt]sx?$/u.test(joined) ? joined : `${joined}.mjs`;
 }
 
@@ -376,7 +395,9 @@ export const archTests = [
       const literal = units.filter(({ raw }) => raw.includes(WEBHOOK_LITERAL)).map(({ rel }) => rel);
       assert.deepEqual(literal, [], `src/** contains no ${WEBHOOK_LITERAL} literal — found in ${literal.join(", ")}`);
 
-      const family = units.filter(({ rel }) => rel.startsWith(NOTIFY_DIR));
+      // The CLI status face separately reports env-override presence. Every other package module
+      // is inside the notification credential guard, including modules added after this migration.
+      const family = units.filter(({ rel }) => rel.startsWith(NOTIFY_DIR) || (rel.startsWith("packages/messaging/src/") && rel !== MESSAGING_VERBS));
       assertRead(`the ${NOTIFY_DIR} family`, family.length, 3);
       const reads = family.flatMap(({ rel, code }) => [...code.matchAll(/\benv\s*(?:\?\.)?\s*\[/gu)].map((match) => {
         const close = code.indexOf("]", match.index);
@@ -416,7 +437,10 @@ export const archTests = [
       assert.deepEqual([...new Set(joins)], [SECRET_STORE], `the messaging store's path is spelled only in ${SECRET_STORE} — a second home joins it in ${joins.filter((rel) => rel !== SECRET_STORE).join(", ")}`);
       const verbs = units.find(({ rel }) => rel === MESSAGING_VERBS);
       assert.ok(verbs != null, `NOT FOUND: ${MESSAGING_VERBS} — the module the leg governs has moved`);
-      const reached = importSpecifiers(verbs.code).map(({ specifier }) => resolved(MESSAGING_VERBS, specifier));
+      const binding = unitOf(units, "src/commands/messaging/messaging.mjs");
+      assert.match(verbs.code, /function createMessagingCommands\(\{[^}]*messagingSecretPath,\s*messagingSecretPresent,\s*writeMessagingSecret/u);
+      assert.match(binding.code, /createMessagingCommands\(\{[^}]*messagingSecretPath,\s*messagingSecretPresent,\s*writeMessagingSecret/u);
+      const reached = importSpecifiers(binding.code).map(({ specifier }) => resolved(binding.rel, specifier));
       assert.ok(reached.includes(SECRET_STORE), `${MESSAGING_VERBS} reaches the store through ${SECRET_STORE} — it imports ${reached.join(", ")}`);
       assert.ok(!/\.secret\b/u.test(verbs.code), `${MESSAGING_VERBS} names no store file of its own`);
       // The red probe runs against the SHIPPED detector: the verbs module joining the segment itself.
@@ -493,7 +517,7 @@ export const archTests = [
         .map(() => rel));
       assertRead("the discordRequest( calls in src/**", calls.length, 1, "call(s)");
 
-      const family = units.filter(({ rel }) => rel.startsWith(BOT_FAMILY));
+      const family = units.filter(({ rel }) => inDiscordFamily(rel) && rel !== DOOR);
       const fetching = family.filter(({ code }) => /(?<![\w$.])fetch\s*\(/u.test(code)).map(({ rel }) => rel);
       assert.deepEqual(fetching, [], `${BOT_FAMILY}** calls fetch nowhere — it reaches Discord through discordRequest: ${fetching.join(", ")}`);
       if (family.length > 0) {

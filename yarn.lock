@@ -48,6 +48,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/messaging@workspace:*, @aof/messaging@workspace:packages/messaging":
+  version: 0.0.0-use.local
+  resolution: "@aof/messaging@workspace:packages/messaging"
+  dependencies:
+    "@aof/contracts": "workspace:*"
+    "@aof/foundation": "workspace:*"
+    "@inquirer/prompts": "npm:^8.4.2"
+    ws: "npm:^8.21.0"
+  languageName: unknown
+  linkType: soft
+
 "@aof/ui@workspace:ui":
   version: 0.0.0-use.local
   resolution: "@aof/ui@workspace:ui"
@@ -1827,6 +1838,7 @@ __metadata:
     "@aof/foundation": "workspace:*"
     "@aof/integration-notion": "workspace:*"
     "@aof/mesh": "workspace:*"
+    "@aof/messaging": "workspace:*"
     "@aof/work": "workspace:*"
     "@aof/work-graph": "workspace:*"
     "@aof/work-loop": "workspace:*"

@@ -28,12 +28,12 @@ export const notifyFormTests = [
   {
     name: "131/02 task01 — form.mjs imports nothing and exports the six; form.d.mts types exactly those six",
     async run() {
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "notify", "form.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "messaging", "src", "form.mjs"), "utf8"));
       assert.doesNotMatch(source, /^\s*import\s/mu, "no import statement");
       assert.doesNotMatch(source, /\bimport\s*\(/u, "no import( call");
       assert.doesNotMatch(source, /\brequire\s*\(/u, "no require( call");
       assert.deepEqual(Object.keys(formModule).sort(), SIX);
-      const types = await readFile(path.join(repoRoot, "src", "notify", "form.d.mts"), "utf8");
+      const types = await readFile(path.join(repoRoot, "packages", "messaging", "src", "form.d.mts"), "utf8");
       const declared = [...types.matchAll(/^export\s+declare\s+function\s+(\w+)/gmu)].map((m) => m[1]).sort();
       assert.deepEqual(declared, SIX, "one exported function declaration for each of the six");
       assert.deepEqual([...types.matchAll(/^export\s/gmu)].length, SIX.length, "and nothing else is exported");

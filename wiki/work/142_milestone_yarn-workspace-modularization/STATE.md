@@ -431,3 +431,16 @@ Thirty source/copied-install/direct-package comparisons match the pre-move progr
 package tests also pass after installation. Standalone JavaScript and supply-chain audit pass.
 No dependency, generated-file or workflow-state changes. Final launcher/application composition,
 other domains, core/apps layout and whole-tree/platform verification remain outstanding.
+
+Messaging extraction: @aof/messaging owns all ten notification/Discord/CLI implementations and the
+shared formatter declarations. Core supplies configuration, global-home policy, identity, loop reads,
+mesh workspace services and command invocation. Five CLI descriptors retain their contribution owner.
+Ten legacy APIs and 54 exported values/functions/descriptors match the pre-move baseline. Four new
+package tests pass both locally and from a copied installation; the bridge now runs 169 cases and the
+installed registry retains 117 commands. The 15-suite run reached 265 passes with one stale red-probe
+import; the corrected guard, source budget and command bridge pass all 45 cases. Registry/source
+census checks pass all 20 cases; the two expanded architecture suites pass all 26. Standalone
+JavaScript includes all ten implementations, and the UI builds against the formatter declaration forward.
+Yarn skip-build and immutable installs pass with existing peer warnings; supply-chain audit is clean.
+No generated asset or workflow-state changes. Final core/apps layout, remaining mesh/knowledge/server
+boundaries, composition/adapter removal and whole-tree/platform verification remain outstanding.

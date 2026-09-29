@@ -1,0 +1,30 @@
+{
+  "name": "@aof/messaging",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./form": "./src/form.mjs",
+    "./discord": "./src/discord.mjs",
+    "./secret": "./src/secret.mjs",
+    "./ask-messages": "./src/ask-messages.mjs",
+    "./notify": "./src/notify.mjs",
+    "./gateway": "./src/gateway.mjs",
+    "./discord-commands": "./src/discord-commands.mjs",
+    "./replies": "./src/replies.mjs",
+    "./bot": "./src/bot.mjs",
+    "./commands": "./src/commands.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@aof/contracts": "workspace:*",
+    "@aof/foundation": "workspace:*",
+    "@inquirer/prompts": "^8.4.2",
+    "ws": "^8.21.0"
+  }
+}

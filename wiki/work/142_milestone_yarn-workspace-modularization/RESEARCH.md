@@ -826,3 +826,23 @@ checks that every child dependency is readable and excluded from the parent clos
 secondary process creation throughout that closure. The package boundary allows exactly the two
 existing computed subject imports. Full launcher removal still depends on final core installation
 and program-path composition; this extraction does not claim that layout work is complete.
+
+## Messaging is a complete feature boundary
+
+The notification and Discord directories form one feature: shared presentation and REST transport,
+credential storage, ask-message indexing, configured notification delivery, gateway lifecycle, reply
+authorization and slash commands. The five messaging CLI descriptors use the same services. All ten
+implementations now live in @aof/messaging; their public factories receive application policy instead
+of importing core. Formatting and REST helpers stay directly importable.
+
+The nonlocal collaborators are global-home resolution, project configuration reads/writes, degradation
+reporting, workspace identity, ask/loop readers, assembled command invocation and served mesh project
+resolution. The bot's old dynamic core imports are now deferred application services in its adapter;
+the package itself has no such imports. Worktree folding accepts an async service to retain lazy core
+loading. Discord replies still enter through work:answer, and slash commands still invoke work:list
+or work:loop. Package ownership does not confer permission to write their records directly.
+
+The package declares contracts/foundation plus the already locked @inquirer/prompts and ws versions.
+The formatter's declaration forward is validated by a full UI build. Architecture scans include the
+package implementations and compatibility callers, with planted violations proving that second
+gateway connections, direct ask writes, process spawning and unauthorized HTTP paths remain detected.

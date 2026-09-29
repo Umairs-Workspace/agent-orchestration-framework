@@ -341,7 +341,7 @@ export const notifyMessagingTests = [
           const result = await invoke("messaging:init", input, {});
           assert.equal(await readMessagingSecret("discord"), TOKEN_A);
           await assertNothingLeaked([messagingInitCommand.cli.render(result), JSON.stringify(messagingInitCommand.cli.json(result)), JSON.stringify(events)]);
-          const source = stripComments(await readFile(path.join(repoRoot, "src", "commands", "messaging", "messaging.mjs"), "utf8"));
+          const source = stripComments(await readFile(path.join(repoRoot, "packages", "messaging", "src", "commands.mjs"), "utf8"));
           assert.match(source, /const\s*\{\s*password\s*\}\s*=\s*await\s+import\("@inquirer\/prompts"\)/u, "the default seam is @inquirer/prompts' password");
           assert.doesNotMatch(source, /\bmask\s*:/u, "and it sets no mask, so nothing is echoed");
         } finally {

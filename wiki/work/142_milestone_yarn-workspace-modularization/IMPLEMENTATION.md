@@ -1589,3 +1589,36 @@ Evidence in `.tmp/workspace-migration/audit-programs/`:
 No dependency, shipped/generated asset or workflow-state changes. The three previously authorized
 generated loop citation refreshes were already committed; no wider generated refresh was performed.
 Final core/apps layout, remaining domains, compatibility removal and full/platform checks remain open.
+
+## Messaging and Discord package
+
+Created @aof/messaging with ten implementation modules, shared formatter types, explicit public APIs
+and a package test script. It owns credential persistence, reply indexing, notifications, shared
+formatting/Discord REST, gateway lifecycle, replies, bot/slash-command handlers, and the five messaging
+CLI descriptors with their existing contribution. Core supplies configured application services;
+compatibility paths point into package APIs. No package imports root src/ or a sibling's private files.
+
+Evidence in `.tmp/workspace-migration/messaging/`:
+
+- The initial affected selection passed 255 cases with 11 ownership assertion failures. Updated
+  source guards read the actual implementations, preserve compatibility callers in their scans and
+  verify the configuration/secret-service bindings. The next run passed 265 cases with one stale
+  planted import; correcting that import yields 45 passing guard/source-budget/command-bridge cases.
+  A final 20-case runtime census/registry run passes. The two messaging architecture suites pass all
+  26 cases after widening their scans to future package files, with a new-module socket red probe.
+- Four new package contracts cover inert construction/registration, credential and ask persistence,
+  injected notification delivery/indexing, and configuration-only enable/disable with idempotence.
+  They also pass in a copied installation. The root bridge runs 169 package cases.
+- Ten legacy export surfaces and 54 exported values/functions/descriptors match pre-move baselines.
+  The copied installation retains 117 commands and resolves all ten public messaging APIs within
+  its own node_modules. No installed API resolves back to this checkout.
+- Standalone JavaScript includes all ten implementations. UI type checking/bundling succeeds through
+  the formatter/type compatibility export, with the existing large-chunk warning. Native executable
+  and supported-platform release verification remain outstanding.
+- The lockfile adds only the messaging workspace and its already locked dependencies; no third-party
+  version changes. Skip-build then immutable skip-build installs pass with existing peer warnings.
+  Supply-chain audit reports zero warnings.
+
+All transport tests use fakes and synthetic credentials. No external messages, generated assets or
+AOF workflow state were changed. Remaining domains, final core/apps layout and adapter removal still
+prevent claiming migration completion.

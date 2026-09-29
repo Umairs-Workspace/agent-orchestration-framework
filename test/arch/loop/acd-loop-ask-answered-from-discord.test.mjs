@@ -55,18 +55,18 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
 const FAMILY = "src/discord/";
-const GATEWAY = "src/discord/gateway.mjs";
-const REPLIES = "src/discord/replies.mjs";
-const BOT = "src/discord/bot.mjs";
+const GATEWAY = "packages/messaging/src/gateway.mjs";
+const REPLIES = "packages/messaging/src/replies.mjs";
+const BOT = "packages/messaging/src/bot.mjs";
 const LAUNCHER = "src/mesh/launcher.mjs";
 const ASK_REQUEST = "packages/work-loop/src/ask-request.mjs";
 const RUN_STORE = "packages/execution/src/runs.mjs";
-const INDEX = "src/notify/ask-messages.mjs";
+const INDEX = "packages/messaging/src/ask-messages.mjs";
 // `ask-request.mjs`'s exports that write an ask file. A reader (`readAsk`, `readAsks`, `loopAsksDir`)
 // is not one of them.
 const ASK_WRITES = Object.freeze(["openAsk", "parkAsk", "clearAsk", "answerAsk"]);
 // FF-13113 (131/11, ADR-009).
-const COMMANDS_MODULE = "src/discord/commands.mjs";
+const COMMANDS_MODULE = "packages/messaging/src/discord-commands.mjs";
 const ALLOWED_VERBS = Object.freeze(["work:list", "work:loop"]);
 const STOP_HOME = "packages/work-loop/src/stop-request.mjs";
 const STOP_CORE = "packages/work-loop/src/stop.mjs";
@@ -76,7 +76,14 @@ function assertRead(what, count, floor, unit = "file(s)") {
   assert.ok(count >= floor, `NOTHING WAS READ: ${what} walked ${count} ${unit}, below its floor of ${floor} — a rename, a moved directory or a truncated read must fail here rather than pass vacuously over an empty sweep`);
 }
 
+function inDiscordFamily(rel) {
+  // Include the entire package so adding a new module cannot escape the old directory-wide rules.
+  return rel.startsWith("src/discord/") || rel.startsWith("packages/messaging/src/");
+}
+
 function resolved(fromRel, specifier) {
+  const messaging = /^@aof\/messaging\/(.+)$/.exec(specifier);
+  if (messaging) return `packages/messaging/src/${messaging[1]}.mjs`;
   const service = /^(?:@aof\/work-loop\/)(ask-request|stop-request|child-drive)$/.exec(specifier);
   if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
@@ -99,7 +106,7 @@ async function srcUnits() {
 // route. PURE, so the red probe runs this shipped detector over a patched unit.
 export function gatewaySocketBuilders(units) {
   return units.filter(({ rel, code }) => {
-    const inFamily = rel.startsWith(FAMILY) && (importSpecifiers(code).some(({ specifier }) => specifier === "ws") || /\bnew\s+WebSocket\s*\(/u.test(code));
+    const inFamily = inDiscordFamily(rel) && (importSpecifiers(code).some(({ specifier }) => specifier === "ws") || /\bnew\s+WebSocket\s*\(/u.test(code));
     return inFamily || code.includes("/gateway/bot");
   }).map(({ rel }) => rel);
 }
@@ -108,7 +115,7 @@ export function gatewaySocketBuilders(units) {
 // `"work:answer"`, as `{ rel, via }`, `via` the literal its input carries (or null).
 export function answerCalls(units) {
   const calls = [];
-  for (const { rel, code } of units.filter((unit) => unit.rel.startsWith(FAMILY))) {
+  for (const { rel, code } of units.filter((unit) => inDiscordFamily(unit.rel))) {
     for (const match of code.matchAll(/(?<![\w$.])invoke\s*\(/gu)) {
       const args = topLevelArguments(matchedParenSpan(code, match.index)?.body ?? "");
       if (!/^\s*["']work:answer["']\s*$/u.test(args[0] ?? "")) continue;
@@ -124,7 +131,7 @@ export function answerCalls(units) {
 // imports `ask-request.mjs` is then read for each write export used as an identifier.
 export function forbiddenWrites(units) {
   const found = [];
-  for (const { rel, code } of units.filter((unit) => unit.rel.startsWith(FAMILY))) {
+  for (const { rel, code } of units.filter((unit) => inDiscordFamily(unit.rel))) {
     const targets = importSpecifiers(code).map(({ specifier }) => resolved(rel, specifier));
     if (targets.includes(ASK_REQUEST)) {
       for (const name of ASK_WRITES) if (new RegExp(`(?<![\\w$.])${name}(?![\\w$])`, "u").test(code)) found.push(`${rel}: ${name} from ${ASK_REQUEST}`);
@@ -137,7 +144,7 @@ export function forbiddenWrites(units) {
 // The `src/discord/**` modules that import `child_process`, by the one extractor.
 export function childProcessImporters(units) {
   return units
-    .filter(({ rel, code }) => rel.startsWith(FAMILY) && importSpecifiers(code).some(({ specifier }) => specifier === "child_process" || specifier === "node:child_process"))
+    .filter(({ rel, code }) => inDiscordFamily(rel) && importSpecifiers(code).some(({ specifier }) => specifier === "child_process" || specifier === "node:child_process"))
     .map(({ rel }) => rel);
 }
 
@@ -189,14 +196,14 @@ export const archTests = [
     run: async () => {
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
-      const family = units.filter(({ rel }) => rel.startsWith(FAMILY)).map(({ rel }) => rel);
+      const family = units.filter(({ rel }) => inDiscordFamily(rel)).map(({ rel }) => rel);
       for (const rel of [GATEWAY, REPLIES, BOT]) assert.ok(family.includes(rel), `NOT FOUND: ${rel} — the family the control governs has moved`);
       const builders = gatewaySocketBuilders(units);
       assert.deepEqual(builders, [GATEWAY], `the gateway socket is built only in ${GATEWAY} — built in ${builders.join(", ")}. One connection, one module (ADR-008 §2)`);
 
       const launcher = units.find(({ rel }) => rel === LAUNCHER);
       assert.ok(launcher != null, `NOT FOUND: ${LAUNCHER}`);
-      const reaches = importSpecifiers(launcher.code).filter(({ specifier }) => resolved(LAUNCHER, specifier).startsWith(FAMILY));
+      const reaches = importSpecifiers(launcher.code).filter(({ specifier }) => inDiscordFamily(resolved(LAUNCHER, specifier)));
       assert.deepEqual(reaches.map(({ specifier, dynamic }) => `${specifier}${dynamic ? " (deferred)" : ""}`), ["../discord/bot.mjs (deferred)"], `${LAUNCHER} reaches src/discord/ only by ONE deferred import of bot.mjs`);
       const branch = launcher.code.indexOf("if (issuanceAuthority)");
       assert.ok(branch !== -1, `NOT FOUND: the control-node branch in ${LAUNCHER}`);
@@ -205,6 +212,8 @@ export const archTests = [
       // The red probe runs the SHIPPED detector: replies.mjs constructing its own socket.
       const probe = units.map((unit) => unit.rel === REPLIES ? { ...unit, code: `import { WebSocket } from "ws";\n${unit.code}\nconst own = new WebSocket("wss://gateway.example.test");\n` } : unit);
       assert.deepEqual(gatewaySocketBuilders(probe).sort(), [GATEWAY, REPLIES].sort(), "red probe: a second socket builder is seen, by file");
+      const added = "packages/messaging/src/planted.mjs";
+      assert.deepEqual(gatewaySocketBuilders([...units, { rel: added, code: 'new WebSocket("wss://example.test");' }]).sort(), [GATEWAY, added].sort(), "a new package module is also inside the socket census");
     },
   },
   {
@@ -257,7 +266,7 @@ export const archTests = [
     run: async () => {
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
-      assertRead("the src/discord/** family", units.filter(({ rel }) => rel.startsWith(FAMILY)).length, 3);
+      assertRead("the src/discord/** family", units.filter(({ rel }) => inDiscordFamily(rel)).length, 3);
       const writes = forbiddenWrites(units);
       assert.deepEqual(writes, [], `src/discord/** imports no write export of ${ASK_REQUEST} and nothing from ${RUN_STORE} — found ${writes.join(", ")}. An answer from Discord enters only through work:answer (ADR-008's invariant)`);
       const calls = answerCalls(units);
@@ -270,7 +279,7 @@ export const archTests = [
       assert.match(index.code, /path\.join\(\s*messagingStoreDir\(/u, `${INDEX} joins the index beneath messagingStoreDir(`);
 
       // The red probe runs the SHIPPED detector: replies.mjs answering the ask file itself.
-      const probe = units.map((unit) => unit.rel === REPLIES ? { ...unit, code: `import { answerAsk } from "../loop/ask-request.mjs";\n${unit.code}` } : unit);
+      const probe = units.map((unit) => unit.rel === REPLIES ? { ...unit, code: `import { answerAsk } from "@aof/work-loop/ask-request";\n${unit.code}` } : unit);
       assert.deepEqual(forbiddenWrites(probe), [`${REPLIES}: answerAsk from ${ASK_REQUEST}`], "red probe: a direct write through ask-request.mjs is seen, by name");
     },
   },
