@@ -1425,3 +1425,31 @@ Evidence in `.tmp/workspace-migration/work-status-gate/`:
 
 Remaining command/service and domain extraction, core/apps layout, final composition, compatibility
 removal, generated-citation parity and whole-tree/platform verification remain outstanding.
+
+## Phase routing and re-entry
+
+Work owns the shared continue/refine/verify door and the resume/answer command implementations.
+Execution, mesh, work-loop and notification services enter through core composition. The worker-answer
+registry call remains deferred through loadCommandCore; package source has no reverse registry import.
+
+Evidence in `.tmp/workspace-migration/work-reentry/`:
+
+- Both legacy APIs, values and exported function bodies match their pre-move baseline. The private
+  registry helper's dynamic import is replaced by its loader port. Three new package tests cover
+  milestone autonomous routing, verify's unchanged status, reclaim-before-retry, the configured retry
+  ceiling, lazy registry loading and no notification when worker delivery is refused. The root bridge
+  covers all 149 package cases.
+- The initial 22-suite selection completed 440 cases: 432 passed and eight source guards failed.
+  Corrected guards pass all 144 cases across eight suites. Cap resolution follows the relocated
+  resume implementation; phase-vs-driver separation, ask ownership and notification checks cover both
+  package code and core's service bindings. The answer's single announcement site stays enforced.
+  The final architecture census and registry run passes all 20 cases.
+- Source and copied-installation fixtures compare local milestone/story directives, refine/verify,
+  resume readiness, actual retry lineage, persisted parked answers, CLI output and unchanged record
+  bytes. Only fixture paths are normalized. Both exports resolve inside the copied installation,
+  which retains 117 commands and passes prior extraction comparisons.
+- Standalone JavaScript includes both implementations and earlier extracted domains. Supply-chain
+  audit reports zero warnings. No dependency, asset, generated-copy or workflow-state change.
+
+Remaining work services/commands and final contribution, other domains, core/apps layout, application
+composition, compatibility removal and whole-tree/platform verification remain outstanding.

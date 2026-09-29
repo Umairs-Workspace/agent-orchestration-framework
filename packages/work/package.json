@@ -102,7 +102,9 @@
     "./commands/run-status": "./src/commands/run-status.mjs",
     "./regression-record": "./src/regression-record.mjs",
     "./commands/item-status": "./src/commands/item-status.mjs",
-    "./commands/regression-gate": "./src/commands/regression-gate.mjs"
+    "./commands/regression-gate": "./src/commands/regression-gate.mjs",
+    "./commands/continue": "./src/commands/continue.mjs",
+    "./commands/resume": "./src/commands/resume.mjs"
   },
   "files": [
     "src"

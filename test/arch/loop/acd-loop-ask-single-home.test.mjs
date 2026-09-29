@@ -232,6 +232,8 @@ export const archTests = [
       for (const reader of READERS) {
         assert.ok(importers.includes(reader), `${reader} imports src/loop/ask-request.mjs by RESOLVED specifier (through module-family.mjs) — importers found: ${importers.join(", ") || "none"}`);
       }
+      assert.match(unitOf(units, "src/commands/resume.mjs").code, /createReentryCommands\(\{[^}]*answerAsk,\s*loopAsksDir/u, "core supplies the shared ask API to the work command");
+      assert.match(unitOf(units, "packages/work/src/commands/resume.mjs").code, /function createReentryCommands\(\{[^}]*answerAsk,\s*loopAsksDir/u, "the package receives the shared ask API");
     },
   },
   {

@@ -44,6 +44,9 @@ transitions supplied by core. Final removal of those composition adapters remain
 Item-status, regression-gate and their shared regression record are also work-owned. Configured
 runtime services still enter through transitional core composition; remaining command extraction and
 the work package's final command contribution are not complete.
+Continue/refine/verify routing and resume/answer implementations are now work-owned too, including
+the deferred registry invocation supplied by core. Trigger and dispatch services/commands, other
+domain boundaries and final application composition remain outstanding.
 Generated-output parity is still incomplete: four previously pending loop copies, four additional
 watcher/rubric copies and three pay-debt renders need citation-only refreshes and matching lock hashes.
 

@@ -8,7 +8,7 @@ import { completingDriver, loopFixture } from "../../loop/loop-command-probe.tes
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const DOOR = "src/commands/continue.mjs";
+const DOOR = "packages/work/src/commands/continue.mjs";
 const DRIVER = "packages/work-loop/src/commands/drive.mjs";
 
 // THE TOKENS ARE MATCHED BARE, not with their call parens: task 04 :35 names `ptySpawn`,

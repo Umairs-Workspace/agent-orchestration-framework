@@ -280,6 +280,9 @@ export const archTests = [
       assertRead(`the import specifiers of ${RESUME}`, imports.length, 5, "specifier(s)");
       const terminal = imports.filter((target) => TERMINAL_INPUT_RE.test(target));
       assert.deepEqual(terminal, [], `src/commands/resume.mjs imports no terminal-input module — the verb writes the ask file, it never types into a PTY: ${terminal.join(", ")}`);
+      const implementation = unitOf(units, "packages/work/src/commands/resume.mjs");
+      assert.deepEqual(resolvedImports(implementation).filter(target => TERMINAL_INPUT_RE.test(target)), [], "the package implementation imports no terminal-input module either");
+      assert.match(implementation.code, /await answerAsk\(/u, "the command writes through the supplied ask service");
       assert.ok(TERMINAL_INPUT_RE.test("src/mesh/terminal-input.mjs"), "self-check: the terminal-input module is what the needle matches");
     },
   },

@@ -757,3 +757,15 @@ ownership follows the package call site and checks that core actually supplies t
 The package tests verify missing evidence cannot reach the transition or notifier, and that a permitted
 accept notifies only after the status write. Real-Git comparisons additionally prove that the record's
 own uncommitted append is excluded from the gate's dirty-tree refusal while unrelated dirt is refused.
+
+The continue/refine/verify doors route an operation; they do not execute a session. Work now owns
+their shared decision and command factory, receiving mesh assignment and execution projection services
+through core. Milestone continue still resolves to autonomous, while story continue and refine/verify
+retain their phases. The separate work-loop package remains the execution/orchestration owner.
+
+Resume and answer share work's re-entry command module. Resume consumes the execution store's retry
+and liveness decisions; answer writes through work-loop's ask service or invokes the registered mesh
+resume operation. The latter invocation remains deferred, now through a named core loader port so
+the package cannot import the assembled registry. Package tests exercise the loader's default path
+and the explicit refusal path, including absence of a notification on refused delivery. Ask-reader,
+notification and cap guards now cover package implementations as well as the actual core bindings.

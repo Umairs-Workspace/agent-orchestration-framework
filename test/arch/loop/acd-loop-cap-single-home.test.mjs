@@ -11,7 +11,7 @@ import * as loopBounds from "../../../src/loop-bounds.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const EXPECTED_READERS = Object.freeze([
   "packages/work/src/commands/run-retry.mjs",
-  "src/commands/resume.mjs",
+  "packages/work/src/commands/resume.mjs",
   "packages/work/src/commands/run-start.mjs",
   "packages/work-loop/src/commands/loop.mjs",
 ]);

@@ -372,3 +372,14 @@ acceptance/override, idempotence and record bytes, retaining 117 commands. Stand
 supply-chain audit and all 12 census checks pass. No dependencies, shipped/generated assets or workflow
 state changed. Remaining work commands/services and contribution, other domains, core/apps layout,
 final composition and whole-tree/platform verification remain open.
+
+Phase/re-entry extraction: work owns continue/refine/verify routing and resume/answer implementations.
+Core supplies execution overlays, assignment, run/ask services, transitions, notifications and a deferred
+registry loader. Both legacy APIs, exported values and function bodies match. The 22-suite selection
+finished with 432 passes and eight source-guard failures; the corrected eight-suite run passes all
+144 cases. Three new package tests bring the bridge to 149 cases. Source and copied-installation
+fixtures preserve phase routing, readiness/retry, parked answers and persisted bytes, retaining 117
+commands. Standalone JavaScript bundling and supply-chain audit pass. No dependencies, assets,
+generated copies or workflow state changed. The final census/registry run passes all 20 cases.
+Remaining work services/commands, feature contribution,
+other domains, final core/apps layout and whole-tree/platform verification remain outstanding.

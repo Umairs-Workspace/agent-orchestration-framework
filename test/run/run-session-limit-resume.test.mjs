@@ -1107,7 +1107,7 @@ function answerMeshTests() {
     {
       name: "131/12 task03 — one announcement site: resume.mjs holds exactly one notify( call, which both legs reach",
       run: async () => {
-        const source = stripComments(await readFile(path.join(ANSWER_REPO_ROOT, "src", "commands", "resume.mjs"), "utf8"));
+        const source = stripComments(await readFile(path.join(ANSWER_REPO_ROOT, "packages", "work", "src", "commands", "resume.mjs"), "utf8"));
         const calls = [...source.matchAll(/(?<![\w$.])notify\s*\(/gu)].filter((match) => !/function\s*$/u.test(source.slice(Math.max(0, match.index - 16), match.index)));
         assert.equal(calls.length, 1, "exactly one notify( call");
         const run = source.slice(source.indexOf("async run(input, ctx)"));
