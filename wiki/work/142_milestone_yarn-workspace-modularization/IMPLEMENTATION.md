@@ -1398,3 +1398,30 @@ Evidence in `.tmp/workspace-migration/work-run-faces/`:
 
 Remaining work commands/services and contribution, other domains, core/apps layout, final composition,
 compatibility removal and whole-tree/platform verification remain outstanding.
+
+## Status, regression gate and durable evidence
+
+Work now owns item-status, regression-gate and regression-record. The record API is an unchanged
+direct package export; the commands receive configured runtime services through factory ports.
+Lifecycle and budget-group imports are local to work; atomic writing comes from foundation.
+
+Evidence in `.tmp/workspace-migration/work-status-gate/`:
+
+- Three legacy API/value/function-body comparisons pass. Three new package tests cover dirty-tree
+  refusal before execution, the configured Git/test runner ports and durable green evidence, and
+  acceptance refusal without evidence followed by transition-before-notification ordering. The root
+  bridge covers all 146 package cases.
+- The initial 25-suite run completed 319 cases: 314 passed and five source assertions failed.
+  The final six-suite correction passes all 78 cases. Gate-code and record-shape scans now cover
+  every runtime package; notification checks follow both the call site and core's actual binding.
+  The architecture census passes all 12 cases.
+- Source and copied-installation fixtures use real Git and a declared Node test runner. They compare
+  missing/red gate refusal, dirty-tree refusal, the own-record exclusion, whole-tree execution and
+  append, accepted status, idempotent status reporting, reasoned override, CLI presentation and
+  persisted records. Only fixture paths are normalized; Git commit IDs and record bytes match.
+  Three package exports resolve inside the copied payload, which retains 117 registered commands.
+- Standalone JavaScript bundling includes all three implementations; supply-chain audit has zero
+  warnings. No dependencies, shipped/generated assets or AOF workflow state changed in this slice.
+
+Remaining command/service and domain extraction, core/apps layout, final composition, compatibility
+removal, generated-citation parity and whole-tree/platform verification remain outstanding.

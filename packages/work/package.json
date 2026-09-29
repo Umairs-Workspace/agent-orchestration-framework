@@ -99,7 +99,10 @@
     "./commands/run-start": "./src/commands/run-start.mjs",
     "./commands/run-complete": "./src/commands/run-complete.mjs",
     "./commands/run-retry": "./src/commands/run-retry.mjs",
-    "./commands/run-status": "./src/commands/run-status.mjs"
+    "./commands/run-status": "./src/commands/run-status.mjs",
+    "./regression-record": "./src/regression-record.mjs",
+    "./commands/item-status": "./src/commands/item-status.mjs",
+    "./commands/regression-gate": "./src/commands/regression-gate.mjs"
   },
   "files": [
     "src"

@@ -116,7 +116,7 @@ const NOW_ISO = "2026-09-25T12:00:00.000Z";
 // ADR-005 §4 — the six firing points: each `notify(` call by file, with the event(s) its envelope
 // is built for. The death site builds one envelope whose event is `loop-relaunched` or `loop-died`.
 const FIRING_SITES = Object.freeze([
-  "src/commands/item-status.mjs milestone-accepted",
+  "packages/work/src/commands/item-status.mjs milestone-accepted",
   "packages/work-loop/src/commands/loop.mjs loop-died/loop-relaunched",
   "packages/work-loop/src/commands/loop.mjs loop-halted",
   "src/commands/resume.mjs session-answered",
@@ -552,8 +552,11 @@ export const archTests = [
       assert.deepEqual(strays, [], `every notify( call under src/ is one of the seven sites (ADR-005 §4, ADR-010 §4) — not one: ${strays.join(", ")}`);
       assert.deepEqual(sites, [...FIRING_SITES].sort(), `the seven sites each fire once, by file and event literal — found ${sites.join(", ")}`);
       for (const owner of new Set(FIRING_SITES.map((site) => site.split(" ")[0]))) {
-        const rel = ({ "packages/work-loop/src/commands/loop.mjs": "src/commands/loop.mjs", "packages/work-loop/src/ask.mjs": "src/loop/ask.mjs" })[owner] ?? owner;
-        if (rel !== owner) {
+        const rel = ({ "packages/work-loop/src/commands/loop.mjs": "src/commands/loop.mjs", "packages/work-loop/src/ask.mjs": "src/loop/ask.mjs", "packages/work/src/commands/item-status.mjs": "src/commands/item-status.mjs" })[owner] ?? owner;
+        if (owner === "packages/work/src/commands/item-status.mjs") {
+          assert.match(unitOf(units, owner).code, /function createItemStatusCommand\(\{[^}]*buildNotifyEnvelope,\s*notify/u, `${owner}: receives notification services`);
+          assert.match(unitOf(units, rel).code, /createItemStatusCommand\(\{[^}]*buildNotifyEnvelope,\s*notify/u, `${rel}: supplies the shared notification services`);
+        } else if (rel !== owner) {
           assert.match(unitOf(units, owner).code, /const\s*\{\s*buildNotifyEnvelope,\s*notify\s*\}\s*=\s*notifications/u, `${owner}: receives notification services`);
           assert.match(unitOf(units, rel).code, /notifications:\s*\{\s*buildNotifyEnvelope,\s*notify/u, `${rel}: supplies the shared notification services`);
         }

@@ -340,7 +340,7 @@ export const archTests = [
     name: "arch/124/00 FF-12402 (task 04): acceptance runs one named group, and this is not it",
     run: async () => {
       // THE PREFLIGHT, PINNED AT ITS SOURCE: one named group, one refusing code, one severity.
-      const door = stripComments(await readFile(path.join(repoRoot, "src", "commands", "item-status.mjs"), "utf8"));
+      const door = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "item-status.mjs"), "utf8"));
       assert.match(door, /groups: \[budgetGroup\]/u, "the acceptance preflight runs the budget group and no other");
       assert.match(door, /finding\.code === "doc-over-budget" && finding\.severity === "error"/u, "…and only `doc-over-budget` at `error` can refuse the transition");
       const groupsPassed = door.match(/groups: \[[^\]]*\]/gu) ?? [];

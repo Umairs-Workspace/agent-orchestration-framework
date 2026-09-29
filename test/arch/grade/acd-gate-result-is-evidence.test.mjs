@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-9606 (96/ADR-008 §1, §2) — THE GATE'S RESULT IS EVIDENCE: a record with a frozen shape, in the
 // item's own folder, that a rerun APPENDS to rather than overwrites.
 //
@@ -25,7 +26,7 @@
 //      because "no gate ran" and "a gate ran narrowly" must not be the same absence; refused,
 //      because a partial run wearing a gate's name is what story 03's narrowing would otherwise buy.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, readdir, rm, realpath } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,17 +50,12 @@ import { runRegressionGate } from "../../../src/commands/regression-gate.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const RECORD_MODULE = "src/regression-record.mjs";
+const RECORD_MODULE = "packages/work/src/regression-record.mjs";
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 
-async function srcModules(dir = path.join(repoRoot, "src"), found = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) await srcModules(full, found);
-    else if (entry.name.endsWith(".mjs")) found.push(path.relative(repoRoot, full).split(path.sep).join("/"));
-  }
-  return found;
+async function srcModules() {
+  return (await readRuntimeFiles(repoRoot)).map(file => path.relative(repoRoot, file.path).split(path.sep).join("/"));
 }
 
 const COMMIT = "0123456789abcdef0123456789abcdef01234567";
@@ -118,7 +114,7 @@ export const archTests = [
       // makes this claim assertable at all rather than a property of how it happened to be called.
       const resolver = await source(RECORD_MODULE);
       assert.match(resolver, /export function regressionRecordPath/, "the one resolver is exported from the record module");
-      const gate = await source("src/commands/regression-gate.mjs");
+      const gate = await source("packages/work/src/commands/regression-gate.mjs");
       assert.equal(
         /path\.join\([^)]*REGRESSION/.test(gate),
         false,

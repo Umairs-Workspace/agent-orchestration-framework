@@ -41,6 +41,9 @@ source discovery, with coverage over package implementations and exclusion of in
 is a required remaining task. Legacy counter metric citations need final review with the asset paths.
 Work also owns run start/complete/retry/status commands, with execution persistence and application
 transitions supplied by core. Final removal of those composition adapters remains outstanding.
+Item-status, regression-gate and their shared regression record are also work-owned. Configured
+runtime services still enter through transitional core composition; remaining command extraction and
+the work package's final command contribution are not complete.
 Generated-output parity is still incomplete: four previously pending loop copies, four additional
 watcher/rubric copies and three pay-debt renders need citation-only refreshes and matching lock hashes.
 

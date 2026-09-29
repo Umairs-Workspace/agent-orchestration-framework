@@ -745,3 +745,15 @@ now pins the package implementation. Max-attempt resolution remains at the same 
 the source classifier and its mutation specimens follow the two relocated command files. Shipped
 run-resilience, watcher and rubric citations now point at the relevant implementations. Their pending
 generated-copy refresh is separate from source ownership and does not authorize workflow operations.
+
+Acceptance's command-layer gates belong with work, while the pure lifecycle predicates stay free of
+I/O. The item-status and regression-gate implementations now share the work-owned regression record
+directly. Budget preflight remains the configured doctor service; Git execution, test execution,
+notifications and application transitions are injected by core. The gate keeps its own fail-closed
+Git status adapter rather than reusing a helper that treats a Git error as an empty change list.
+
+The record-format and refusal-code guards now inspect root and workspace runtime source. Notification
+ownership follows the package call site and checks that core actually supplies the shared notifier.
+The package tests verify missing evidence cannot reach the transition or notifier, and that a permitted
+accept notifies only after the status write. Real-Git comparisons additionally prove that the record's
+own uncommitted append is excluded from the gate's dirty-tree refusal while unrelated dirt is refused.

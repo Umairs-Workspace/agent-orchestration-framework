@@ -361,3 +361,14 @@ supply-chain audit and all 12 census checks pass. Five canonical loop citations 
 generated files or workflow state changed. The four additional generated watcher/rubric copies need
 an eventual citation-only refresh alongside the previously pending four loops and three pay-debt
 renders. Final source layout, package composition and remaining domains/verification are still open.
+
+Status/gate extraction: work owns the item-status command, regression-gate command and shared
+regression-record format. Core supplies configured Git/test execution, resolution, budget preflight,
+notification and transition services. Three legacy API/value/function comparisons pass. The 25-suite
+affected run finished with 314 passes and five source-guard failures; the final six-suite correction
+passes all 78 cases. Three new package tests bring the bridge to 146 cases. Source and copied-payload
+fixtures use a real Git repository and declared Node runner to compare refusals, gate append,
+acceptance/override, idempotence and record bytes, retaining 117 commands. Standalone JavaScript,
+supply-chain audit and all 12 census checks pass. No dependencies, shipped/generated assets or workflow
+state changed. Remaining work commands/services and contribution, other domains, core/apps layout,
+final composition and whole-tree/platform verification remain open.

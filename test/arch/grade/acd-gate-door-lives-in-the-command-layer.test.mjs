@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-9605 (96/ADR-008 §3, §4, §5) — THE GATE DOOR LIVES IN THE COMMAND LAYER, AND THE ACCEPTANCE
 // HORIZON STILL IMPORTS NOTHING.
 //
@@ -34,7 +35,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile, realpath } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,17 +53,12 @@ import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../../src/c
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const HORIZON = "packages/work/src/lifecycle.mjs";
-const DOOR = "src/commands/item-status.mjs";
+const DOOR = "packages/work/src/commands/item-status.mjs";
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 
-async function srcModules(dir = path.join(repoRoot, "src"), found = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) await srcModules(full, found);
-    else if (entry.name.endsWith(".mjs")) found.push(path.relative(repoRoot, full).split(path.sep).join("/"));
-  }
-  return found;
+async function srcModules() {
+  return (await readRuntimeFiles(repoRoot)).map(file => path.relative(repoRoot, file.path).split(path.sep).join("/"));
 }
 
 // ── the driven fixture (claims 4 and 5) ──────────────────────────────────────
@@ -226,7 +222,7 @@ export const archTests = [
       // (a) THE DECIDING FUNCTION'S OWN BODY. Read with comments stripped, so a header that PROMISES
       // there is no bypass cannot satisfy a claim about whether one exists.
       const body = functionBody(await source(DOOR), "async function admitThroughRegressionGate(");
-      assert.ok(body.length > 0, "the deciding function was located");
+      assert.ok(body != null && body.length > 0, "the deciding function was located");
       assert.equal(/process\.env/.test(body), false, "no environment variable reaches the decision");
       assert.equal(/\bconfig\b/.test(body), false, "no configuration key reaches the decision");
       assert.equal(/\bargv\b|\boptions\./.test(body), false, "and no second CLI surface either");
