@@ -338,3 +338,14 @@ ratchet output and persisted bytes, retaining 117 commands. Standalone JavaScrip
 supply-chain audit pass; the final census passes all 12 cases. No dependency,
 generated copy or workflow state changed. Remaining work commands/services, other domains and final
 layout/composition/verification remain outstanding.
+
+Audit/acceptor extraction: both command implementations now live in work, with configured audit,
+graph, criterion, journal and transition services supplied by core. Both legacy APIs, values and
+function bodies match. The initial 15-suite selection finished with 176 passes and six source-guard
+failures; the corrected nine-suite run passes all 85 cases. Two new package tests bring the bridge
+to 139 cases. Source and copied-installation comparisons preserve audit findings/limits, report-only
+acceptor behavior and eligible/refused requests against a fixture transition, retaining 117 commands.
+The final census passes all 12 cases; standalone JavaScript bundling and supply-chain audit pass.
+No dependencies, generated copies or workflow state changed. Acceptor still scans only the audited
+project's src/ tree: workspace-aware discovery is explicitly outstanding alongside remaining domain
+extraction, final layout/composition and whole-tree/platform verification.

@@ -285,7 +285,7 @@ export const archTests = [
       }
 
       // THE POSITIVE HALF: the face resolves both and hands them in.
-      const face = source("src/commands/audit.mjs");
+      const face = source("packages/work/src/commands/audit.mjs");
       assert.match(face, /markerKey: AOF_HOOK_MARKER/u, "the face injects the marker key");
       assert.match(face, /roleRouting: resolveRoleRouting\(ctx\.workspace\.config\)/u, "…and the resolved role routing");
       assert.match(face, /declaredBoundValues: declaredBoundValues\(ctx\.workspace\)/u, "…and what this project declares for each reference bound");
@@ -309,7 +309,7 @@ export const archTests = [
   {
     name: "arch/77 FF-7708: --strict changes the EXIT CODE and nothing else",
     run() {
-      const face = source("src/commands/audit.mjs");
+      const face = source("packages/work/src/commands/audit.mjs");
       // CUT ON THE LANGUAGE'S OWN STRUCTURE, never positionally — F-47-04-ARCH-2's rule and the one
       // home it prescribes. A `slice` to the next declaration would assume an order nothing pins.
       const runBody = functionBody(face, "async run(input, ctx)");

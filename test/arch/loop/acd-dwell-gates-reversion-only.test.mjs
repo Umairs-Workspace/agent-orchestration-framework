@@ -15,14 +15,14 @@ export const archTests = [
       const long = withdrawalOnHarm({ ...record, dwell: "cycles:1000", dwellFrom: "01" }, { measured: true, direction: "worse" });
       assert.deepEqual(short, long, "changing dwell cannot change the harm path's answer");
       assert.equal(short.consultedDwell, false);
-      const source = await readFile(new URL("../../../src/commands/acceptor.mjs", import.meta.url), "utf8");
-      const harmBody = functionBody(source, "export function withdrawalOnHarm(");
+      const source = await readFile(new URL("../../../packages/work/src/commands/acceptor.mjs", import.meta.url), "utf8");
+      const harmBody = functionBody(source, "function withdrawalOnHarm(");
       assert.notEqual(harmBody, null, "the withdrawal-on-harm function body is found structurally");
       assert.ok(!harmBody.includes(".dwell"), "the harm path cannot read the dwell declaration");
       assert.ok(!harmBody.includes("expiry"), "the harm path derives no expiry");
       assert.ok(harmBody.includes("movement?.measured") && harmBody.includes('movement?.direction === "worse"'), "only the measured counter-metric degradation drives withdrawal");
 
-      const revertBody = functionBody(source, "export function reversionDecision(");
+      const revertBody = functionBody(source, "function reversionDecision(");
       assert.notEqual(revertBody, null, "the reversion function body is found structurally");
       assert.ok(revertBody.includes("DWELL_UNCOUNTED"));
       assert.ok(revertBody.includes("no counter exists for cycles of the receiving loop"), "the refusal names the missing counter rather than fabricating an expiry");

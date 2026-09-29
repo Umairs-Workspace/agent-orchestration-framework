@@ -94,6 +94,8 @@ export const yarnInstallationTests = [
         'commands/feedback.mjs': ['node:crypto', '@aof/contracts/error'],
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'commands/ratchet.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
+        'commands/audit.mjs': ['node:path', 'node:fs/promises'],
+        'commands/acceptor.mjs': ['node:path', 'node:os', 'node:fs/promises', '@aof/contracts/loop-bounds'],
         'commands/grade.mjs': ['node:fs', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/claim-provenance'],
         'commands/archive.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
         'commands/doctor.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs', '@aof/contracts/error'],

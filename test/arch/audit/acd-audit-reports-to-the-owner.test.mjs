@@ -331,7 +331,7 @@ export const archTests = [
       assert.ok(names.length >= 4, `non-vacuous: ${names.length} modules in the audit family were swept`);
       const swept = [
         ...names.map((name) => ["src/work-audit/" + name, path.join(FAMILY, name)]),
-        ["src/commands/audit.mjs", path.join(root, "src", "commands", "audit.mjs")],
+        ["packages/work/src/commands/audit.mjs", path.join(root, "packages", "work", "src", "commands", "audit.mjs")],
       ];
       // The kind prefixes a node id can carry. A string literal spelling one of them inside a
       // finding-construction site is exactly the hand-written addressee ADR-006 §1 refuses.

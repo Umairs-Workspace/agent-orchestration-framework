@@ -718,3 +718,16 @@ In particular, the raw-writer scan now covers all runtime packages, board-write 
 injected transition and its actual binding, and the ratchet remains an item-subtree walker rather
 than becoming a second work-root enumerator. A real temporary Git repository exercises both supplied
 and history-derived bases in source and copied-installation comparisons.
+
+Audit and acceptor command implementations now belong to work. Their core adapters supply configured
+services rather than importing unconfigured package factories: audit receives its report, prompt-layer
+and bound services; acceptor receives criterion and observation services plus journal and transition
+ports. Journal snapshots and report-only behavior remain unchanged. Package tests verify that a report
+opens and cleans up a private journal copy and that an ineligible request never reaches the transition.
+
+One discovery gap remains deliberately visible: acceptor's sourceUnits(root) walks only root/src.
+After package extraction that population omits workspace implementations. The final migration must
+define the audited project's source roots and cover package implementations without treating installed
+dependencies as project source. Tune already delegates this population to acceptor; it must not gain
+a second source enumerator. Legacy counter metric citations also remain pending the final citation
+and composition audit. Moving the command alone does not satisfy either requirement.

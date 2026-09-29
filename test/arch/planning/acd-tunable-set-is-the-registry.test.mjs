@@ -26,7 +26,6 @@
 // any acceptor module that resolved the cap; duplicating that classifier to reach it from
 // here would be the species this milestone indicts everywhere else.
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,8 +57,8 @@ async function acceptorModules() {
     if (!name.endsWith(".mjs")) continue;
     modules.push({ rel: `packages/work/src/acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
   }
-  const face = path.join(root, "src", "commands", "acceptor.mjs");
-  if (existsSync(face)) modules.push({ rel: "src/commands/acceptor.mjs", code: await readFile(face, "utf8") });
+  const face = path.join(root, "packages", "work", "src", "commands", "acceptor.mjs");
+  modules.push({ rel: "packages/work/src/commands/acceptor.mjs", code: await readFile(face, "utf8") });
   return modules;
 }
 

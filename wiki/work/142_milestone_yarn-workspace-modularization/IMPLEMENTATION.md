@@ -1340,3 +1340,29 @@ Evidence in `.tmp/workspace-migration/work-feedback/`:
 
 Audit/acceptor and remaining work commands/services, other domains, core/apps layout, final composition,
 compatibility removal and full-tree/platform verification remain outstanding.
+
+## Audit and acceptor command ownership
+
+Work now owns both command implementations. Core supplies configured graph, audit, criterion,
+observation, journal and transition services through explicit factory ports. The existing command
+exports and their behavior remain available through transitional core adapters.
+
+Evidence in `.tmp/workspace-migration/work-audit-faces/`:
+
+- Both legacy API/value/function-body comparisons pass. Two package tests cover audit inputs and
+  all/offered populations, private journal snapshot cleanup, unchanged original evidence and refusal
+  before transition. The root bridge covers all 139 package cases.
+- The initial 15-suite selection completed with 176 passes and six source-location failures.
+  Corrected guards pass all 85 cases across nine suites. The final census passes all 12 cases.
+  Tunable-set inspection now requires the package command file instead of silently skipping it.
+- Source and copied-installation fixtures compare audit settings, findings, limits, rendering and
+  strict exit behavior; acceptor report-only behavior, an eligible request against a fixture
+  transition, insufficient-evidence refusal, transition arguments and unchanged configuration bytes.
+  Fixture roots and the installed audit-probe path in diagnostics are normalized. Both package
+  exports resolve inside the copied payload, which retains 117 commands and passes earlier checks.
+- Standalone JavaScript bundling includes both implementations; supply-chain audit has zero warnings.
+  No dependency declaration, generated copy or AOF workflow state changed.
+
+Acceptor source discovery still walks only the audited project's src/ tree. Workspace-aware discovery
+and final citation review remain required, as do remaining command/domain extractions, core/apps
+layout, composition, compatibility removal and whole-tree/platform verification.

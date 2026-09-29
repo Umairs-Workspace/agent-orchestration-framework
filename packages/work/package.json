@@ -93,7 +93,9 @@
     "./ratchet": "./src/ratchet.mjs",
     "./commands/feedback": "./src/commands/feedback.mjs",
     "./commands/counters": "./src/commands/counters.mjs",
-    "./commands/ratchet": "./src/commands/ratchet.mjs"
+    "./commands/ratchet": "./src/commands/ratchet.mjs",
+    "./commands/audit": "./src/commands/audit.mjs",
+    "./commands/acceptor": "./src/commands/acceptor.mjs"
   },
   "files": [
     "src"

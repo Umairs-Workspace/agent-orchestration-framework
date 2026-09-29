@@ -35,6 +35,10 @@ Grading is also extracted: work owns the command and execution owns the asynchro
 Core still composes its resolver/history/provenance services; final adapter removal remains open.
 Work also owns feedback records, the pure contract-integrity ratchet and feedback/counters/ratchet
 commands. Application transition and runtime service composition remain in core pending final layout.
+Audit and acceptor command implementations are also extracted with configured core services injected.
+Acceptor's sourceUnits(root) still scans only the audited project's src/ directory. Workspace-aware
+source discovery, with coverage over package implementations and exclusion of installed dependencies,
+is a required remaining task. Legacy counter metric citations need final review with the asset paths.
 
 No row with outstanding work is satisfied by an empty workspace, a forwarding shell, a passing
 unrelated test, or moving an import cycle behind dynamic imports. The goal remains active until

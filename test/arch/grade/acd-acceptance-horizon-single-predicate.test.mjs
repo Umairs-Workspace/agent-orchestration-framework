@@ -79,7 +79,7 @@ const THE_ONE_HOME = "packages/work/src/lifecycle.mjs";
 // 61/FF-6104's subjects. The acceptor's directory, and the face that has not landed yet —
 // named rather than globbed, so the day it arrives it is already inside the sweep.
 const ACCEPTOR_DIR = "packages/work/src/acceptor";
-const ACCEPTOR_FACE = "src/commands/acceptor.mjs";
+const ACCEPTOR_FACE = "packages/work/src/commands/acceptor.mjs";
 // The lifecycle's five words, spelled ONCE here so the two 61 legs below and the 66 lane
 // above ask the same question of the tree.
 const THE_FROZEN_FIVE = ["not-started", "in-progress", "blocked", "in-review", "done"];

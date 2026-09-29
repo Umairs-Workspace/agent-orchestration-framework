@@ -96,7 +96,7 @@ export const archTests = [
         "basket", "metric", "admissibility", "refusals", "constructionRefusals",
       ], "each proposal has one stable machine shape");
 
-      const source = await readFile(new URL("../../../src/commands/acceptor.mjs", import.meta.url), "utf8");
+      const source = await readFile(new URL("../../../packages/work/src/commands/acceptor.mjs", import.meta.url), "utf8");
       assert.ok(source.includes("commitRequiresExplicitRequest: true"));
       assert.ok(source.includes("if (typeof requested === \"string\" && requested.length > 0)"), "the transition is behind the explicit request branch");
       assert.ok(!/flags\s*:\s*\{[^}]*strict/us.test(source), "the face declares no strictness option");

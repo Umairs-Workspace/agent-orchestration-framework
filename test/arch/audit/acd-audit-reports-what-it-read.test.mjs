@@ -317,7 +317,7 @@ export const archTests = [
       // (3) THE BIND THAT CATCHES D-59-3. Every `limit.<key>` the human face reads is a key every
       // declared limit above carries. Before the fix `question` and `consequence` were read here
       // and absent from the census's two, which is precisely how a real limit rendered blank.
-      const face = await readFile(path.join(root, "src", "commands", "audit.mjs"), "utf8");
+      const face = await readFile(path.join(root, "packages", "work", "src", "commands", "audit.mjs"), "utf8");
       const renderedKeys = [...new Set([...face.matchAll(/\blimit\.([A-Za-z_$][\w$]*)/gu)].map((match) => match[1]))];
       assert.ok(renderedKeys.length >= 2, `non-vacuity: the face reads ${renderedKeys.length} keys off a limit`);
       const rendersLane = renderedKeys.includes("lane");
