@@ -19,7 +19,7 @@ import { openGlobalWorkProjectionStore, publishWorkspaceSnapshot } from "../../.
 import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../src/assignment-record.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const storeSourcePath = path.join(repoRoot, "src", "global-work-store.mjs");
+const storeSourcePath = path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs");
 
 function extractFunctionBody(source, signature, nextSignature) {
   const start = source.indexOf(signature);
@@ -44,7 +44,7 @@ export const archTests = [
       const source = await readFile(storeSourcePath, "utf8");
       const body = extractFunctionBody(
         source,
-        "export async function publishWorkspaceSnapshot",
+        "async function publishWorkspaceSnapshot",
         "\nexport function recordWorkspaceProjectionError",
       );
       assert.ok(body.length > 200, "publishWorkspaceSnapshot body located (non-vacuous)");
@@ -101,7 +101,7 @@ export const archTests = [
       const source = await readFile(storeSourcePath, "utf8");
       const cleanBody = extractFunctionBody(
         source,
-        "export async function publishWorkspaceSnapshot",
+        "async function publishWorkspaceSnapshot",
         "\nexport function recordWorkspaceProjectionError",
       );
       assert.deepEqual(assertNoAssignmentStatement(cleanBody), [], "the real source is clean");

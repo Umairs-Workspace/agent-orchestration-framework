@@ -9,7 +9,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-005: global node/workspace descriptor assembly redacts secret-looking fields before persistence",
     async run() {
-      const source = await readFile(path.join(repoRoot, "src", "global-node-registry.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "global-node-registry.mjs"), "utf8");
       assert.ok(source.includes("SECRET_KEY_PATTERN"), "descriptor redaction is centralized behind a key pattern");
       assert.ok(/token\|secret\|credential\|auth\|invite\|hash/.test(source), "secret-looking key families are covered");
       assert.ok(source.includes("redactDescriptor(descriptor)"), "JSON descriptor writes pass through redaction");

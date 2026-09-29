@@ -49,7 +49,23 @@ Storage uses `@aof/foundation/fs` for atomic writes. Factories perform no I/O at
 callers explicitly start persistence, discovery or lock acquisition. Run-path compatibility exports
 stay in core and refer to execution's implementation; mesh defines no second run-path builder.
 
-Projections, coordination, launcher orchestration and most command implementations still live under `src/`.
+Mesh owns the shared SQLite projection store and assignment-record schema as well as presence,
+descriptor publication, work publication and the fleet query:
+
+| API | Composition |
+| --- | --- |
+| `projection-store` / `createGlobalWorkProjectionStore` | SQLite loading, global paths, disk work reads, identity, diagnostics, table classification and provenance mapping. Work row/artifact contracts come from `@aof/work`. |
+| `assignment-record` | Direct assignment lifecycle vocabulary, SQL writers/readers and scope helpers. |
+| `presence` / `createMeshPresence` | Configured mesh storage, execution runs, loop stop requests, sessions and projection access; loop declarations use work-loop's public engine. |
+| `global-node-registry` / `createGlobalNodeRegistry` | Node/presence storage, identity, clone-URL resolution and diagnostics; fabric discovery is local to mesh. |
+| `publisher` / `createGlobalWorkPublisher` | Configured store and registry services, content reads, identity and diagnostics. |
+| `global-query` / `createGlobalMeshQuery` | Configured global paths, projection and registry reads, stable refusal code and cache freshness policy. |
+
+The database schema is unchanged. Projection refreshes preserve assignment facts, absent SQLite
+retains its coded refusal, and query callers can supply a borrowed store without transferring its
+ownership. These services import no assembled core application and do no work at construction.
+
+Coordination, launcher orchestration and most command implementations still live under `src/`.
 Root adapters currently compose the extracted services; final package/application assembly will
 remove them. The presence cadence helper has no production callers and remains available as a
 public API, preserving its existing contract. Run `yarn workspace @aof/mesh test`.

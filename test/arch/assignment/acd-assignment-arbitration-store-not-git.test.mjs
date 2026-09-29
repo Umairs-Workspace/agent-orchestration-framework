@@ -22,7 +22,7 @@ import { withMeshAssignFixture, seedTargetNode, seedAssignment, readAssignmentRo
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const assignSourcePath = path.join(repoRoot, "src", "mesh", "assignment.mjs");
-const recordSourcePath = path.join(repoRoot, "src", "assignment-record.mjs");
+const recordSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment-record.mjs");
 
 function assertStructural(source) {
   const problems = [];

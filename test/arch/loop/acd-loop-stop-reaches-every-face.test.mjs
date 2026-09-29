@@ -47,7 +47,7 @@ import { loopFixture, resetLoopStops, writeDeclarationRun } from "../../loop/loo
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-const PRESENCE = "src/mesh/presence.mjs";
+const PRESENCE = "packages/mesh/src/presence.mjs";
 const READERS_OF_RUNS = Object.freeze(["src/commands/mesh/heartbeat.mjs", "src/mesh/launcher.mjs"]);
 const RUNS_CALL = /(?<!function\s)\breadActiveRuns\s*\(/u;
 const LOOPS_CALL = /(?<!function\s)\breadActiveLoops\s*\(/u;
@@ -161,7 +161,7 @@ export const archTests = [
       assert.deepEqual(missing, [], `every src/** module that calls readActiveRuns( also calls readActiveLoops( (ADR-005 §2 — both producers, or the next tick erases the key): ${missing.join(", ")}`);
       // The home defines both and calls neither — the definitions are not counted as calls.
       const presence = units.find(({ rel }) => rel === PRESENCE);
-      assert.ok(presence != null && /\bexport\s+async\s+function\s+readActiveLoops\s*\(/u.test(presence.code), `NOT FOUND: readActiveLoops is defined in ${PRESENCE}`);
+      assert.ok(presence != null && /\basync\s+function\s+readActiveLoops\s*\(/u.test(presence.code), `NOT FOUND: readActiveLoops is defined in ${PRESENCE}`);
       assert.deepEqual(activeRunsCallers([{ rel: "planted.mjs", code: "const ids = await readActiveRuns(items);" }]), [{ rel: "planted.mjs", callsLoops: false }], "self-check: a caller without the loops read is reported");
     },
   },

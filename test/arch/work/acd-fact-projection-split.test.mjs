@@ -154,7 +154,7 @@ export const archTests = [
     //        what this now catches.
     name: "arch/m42-d5 (+m43 ADR-004): wholesale deletes are class-gated — work_items is a FACT the guard refuses, projection_errors is still swept through it, and the only raw cache-table DELETEs are the named retraction and the named removal path",
     run: async () => {
-      const source = await readFile(path.join(SRC_DIR, "global-work-store.mjs"), "utf8");
+      const source = await readFile(path.join(SRC_DIR, "..", "packages/mesh/src/projection-store.mjs"), "utf8");
       const code = stripComments(source);
       assert.ok(/function wholesaleDelete\s*\(/.test(code), "the one guard exists");
       assert.ok(/tableClass\(table\)/.test(code), "…and consults the classification");
@@ -162,7 +162,7 @@ export const archTests = [
 
       // (1) THE CUT: no wholesale sweep of work_items survives anywhere in src/.
       const sweepers = [];
-      for (const file of await listSourceFiles(SRC_DIR)) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         if (/wholesaleDelete\s*\([^)]*["']work_items["']/.test(stripComments(await readFile(file, "utf8")))) {
           sweepers.push(path.relative(repoRoot, file));
         }
@@ -172,11 +172,11 @@ export const archTests = [
 
       // (2) THE RAW-SWEEP RULE, with its two named doors. Every raw workspace-scoped
       // DELETE is located, attributed to the function it sits in, and judged there.
-      const removalStart = code.indexOf("export function removeWorkspaceFromCache");
+      const removalStart = code.indexOf("function removeWorkspaceFromCache");
       assert.ok(removalStart > 0, "the named removal path exists (the sweep it replaces is gone, so this door must be there)");
-      const removalEnd = code.indexOf("\nexport ", removalStart + 1);
+      const removalEnd = code.indexOf("\n}", removalStart) + 2;
       const removalBody = code.slice(removalStart, removalEnd === -1 ? undefined : removalEnd);
-      const guardStart = code.indexOf("export function wholesaleDelete");
+      const guardStart = code.indexOf("function wholesaleDelete");
       const guardBody = code.slice(guardStart, code.indexOf("\n}", guardStart));
 
       const offenders = [];
@@ -256,7 +256,7 @@ export const archTests = [
   {
     name: "arch/m42-d5: SQL that mutates a fact table lives only in that table's declared writer module(s)",
     run: async () => {
-      const files = [...await listSourceFiles(SRC_DIR), ...await listSourceFiles(path.join(repoRoot, "packages/effects/src"))];
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const sources = new Map();
       for (const file of files) {
         sources.set(path.relative(repoRoot, file).replaceAll("\\", "/"), stripComments(await readFile(file, "utf8")));

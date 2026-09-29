@@ -73,7 +73,7 @@ const WORKER_SIDE = [
   // state"). Not a reader that must migrate, and not a worker-side read either — it is the
   // publish path's own disk scan, and a cache-first version of it would make a node report
   // someone else's opinion as its own observation.
-  { file: path.join("src", "global-work-store.mjs"), symbols: ["listItems"], subject: "readWorkspaceProjectionItems" },
+  { file: path.join("packages", "mesh", "src", "projection-store.mjs"), symbols: ["listItems"], subject: "readWorkspaceProjectionItems", factory: "createGlobalWorkProjectionStore", adapter: "src/global-work-store.mjs" },
   // FOUND at 43/06's review (ADR-016/G2): the launcher's stream tick reads the ACTIVE
   // WORKTREE's own items (`mesh-launcher.mjs:1532`) to build the frame it pushes. The
   // module's own comment already says the import "must stay" — a rule living in a comment
@@ -187,7 +187,7 @@ function workImportBindings(commentStrippedSource) {
 
 async function assertPinned(group, label) {
   const problems = [];
-  for (const { file, symbols, subject, injected, diskSource } of group) {
+  for (const { file, symbols, subject, injected, diskSource, factory, adapter } of group) {
     const source = stripComments(await readFile(path.join(repoRoot, file), "utf8"));
     // THE SUBJECT ANCHOR first: if the pinned read has left this module, the symbol pin
     // below is measuring something else and must be re-pointed rather than trusted.
@@ -196,6 +196,16 @@ async function assertPinned(group, label) {
       continue;
     }
     const bindings = workImportBindings(source);
+    if (factory) {
+      const composition = stripComments(await readFile(path.join(repoRoot, adapter), "utf8"));
+      const supplied = workImportBindings(composition);
+      for (const symbol of symbols) {
+        assert.ok(supplied.has(symbol), `${adapter} imports the disk ${symbol}`);
+        assert.match(source, new RegExp(`function ${factory}\\(\\{[^}]*\\b${symbol}\\b`));
+        assert.match(composition, new RegExp(`${factory}\\(\\{[^}]*\\b${symbol}\\b`));
+        bindings.add(symbol);
+      }
+    }
     if (diskSource) {
       // Read named bindings from the declared disk source only; this is a clause
       // assertion, not another general module-specifier extractor.

@@ -9,8 +9,8 @@ export const archTests = [
   {
     name: "arch/34 ADR-005: global registry query reads projection rows and descriptors, not every workspace",
     async run() {
-      const source = await readFile(path.join(repoRoot, "src", "global-node-registry.mjs"), "utf8");
-      const queryStart = source.indexOf("export async function queryGlobalRegistry");
+      const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "global-node-registry.mjs"), "utf8");
+      const queryStart = source.indexOf("async function queryGlobalRegistry");
       assert.ok(queryStart >= 0, "queryGlobalRegistry is the global registry query surface");
       const querySource = source.slice(queryStart);
       assert.ok(querySource.includes("global_nodes"), "query reads the global node projection");

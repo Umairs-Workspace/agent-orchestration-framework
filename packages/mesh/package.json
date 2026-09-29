@@ -22,7 +22,13 @@
     "./session": "./src/session.mjs",
     "./launcher-lock": "./src/launcher-lock.mjs",
     "./fabric": "./src/fabric.mjs",
-    "./repo-marker": "./src/repo-marker.mjs"
+    "./repo-marker": "./src/repo-marker.mjs",
+    "./presence": "./src/presence.mjs",
+    "./global-node-registry": "./src/global-node-registry.mjs",
+    "./global-query": "./src/global-query.mjs",
+    "./publisher": "./src/publisher.mjs",
+    "./projection-store": "./src/projection-store.mjs",
+    "./assignment-record": "./src/assignment-record.mjs"
   },
   "files": [
     "src"
@@ -33,6 +39,7 @@
   "dependencies": {
     "@aof/execution": "workspace:*",
     "@aof/foundation": "workspace:*",
+    "@aof/work": "workspace:*",
     "@aof/work-loop": "workspace:*",
     "ws": "^8.21.0"
   }

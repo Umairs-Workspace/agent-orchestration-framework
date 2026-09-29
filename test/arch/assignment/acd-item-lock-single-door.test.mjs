@@ -43,6 +43,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -81,7 +82,7 @@ export const archTests = [
   {
     name: "arch/43 ADR-003 (acd-item-lock-single-door): `executionScopeRef` is DEFINED in exactly ONE module in src/ — one scope rule, never a second derivation",
     run: async () => {
-      const files = await mjsFilesUnder(SRC);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const definers = [];
       for (const file of files) {
         if (DEFINITION.test(stripComments(await readFile(file, "utf8")))) definers.push(path.relative(repoRoot, file));
@@ -155,7 +156,7 @@ export const archTests = [
     // owns the file), which is not reading whose scope is held.
     name: "arch/43 ADR-003 + ADR-011/A1 (acd-item-lock-single-door): the global work store's publish path reads NO global_assignments state — the lock's answer arrives as data, never as a query inside the shared row-writer",
     run: async () => {
-      const store = stripComments(await readFile(path.join(SRC, "global-work-store.mjs"), "utf8"));
+      const store = stripComments(await readFile(path.join(SRC, "..", "packages/mesh/src/projection-store.mjs"), "utf8"));
 
       const reads = [...store.matchAll(/FROM\s+global_assignments\b/gi)].map((match) => match[0]);
       assert.deepEqual(reads, [], `the row-writer must not query global_assignments (found: ${reads.join(", ")})`);

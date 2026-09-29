@@ -59,7 +59,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 
-const PROJECTION_FILE = "src/mesh/presence.mjs";
+const PROJECTION_FILE = "packages/mesh/src/presence.mjs";
 const CONTROL_FILE = "src/control-stream-server.mjs";
 const LAUNCHER_FILE = "src/mesh/launcher.mjs";
 const WIRE_TYPE_FILE = "ui/src/fleet/api.ts";
@@ -126,7 +126,7 @@ function balancedSlice(source, openIndex, open = "{", close = "}") {
 
 // The object literal `readLiveSessions` pushes onto its result — the projection itself.
 function projectionLiteral(source) {
-  const fn = source.indexOf("export async function readLiveSessions");
+  const fn = source.indexOf("async function readLiveSessions");
   if (fn < 0) return null;
   const push = source.indexOf("live.push({", fn);
   if (push < 0) return null;

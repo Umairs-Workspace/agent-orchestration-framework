@@ -24,6 +24,7 @@
 //       closed vocabulary with its `control-store` reactor, so the branch record
 //       that used to be an inline line at the apply seam is now a ledger entry.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,34 +36,21 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const SRC = path.join(repoRoot, "src");
 
 // The ONLY modules that may name the guard-free store writer.
-const SANCTIONED_WRITERS = new Set(["assignment-record.mjs", "effects/assignment-transitions.mjs"]);
+const SANCTIONED_WRITERS = new Set(["packages/mesh/src/assignment-record.mjs", "src/effects/assignment-transitions.mjs"]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function sourcesUnderSrc() {
-  const { readdir } = await import("node:fs/promises");
-  const out = [];
-  const walk = async (dir, prefix) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) await walk(path.join(dir, entry.name), rel);
-      else if (entry.name.endsWith(".mjs")) out.push(rel);
-    }
-  };
-  await walk(SRC, "");
-  return out;
-}
 
 export const archTests = [
   {
     name: "arch/42 wave (d) d3 (acd-assignment-transition-seam): updateAssignmentState( is called only from its own store module and the transition seam",
     run: async () => {
       const offenders = [];
-      for (const rel of await sourcesUnderSrc()) {
+      for (const { rel, path: file } of await readRuntimeFiles(repoRoot)) {
         if (SANCTIONED_WRITERS.has(rel)) continue;
-        const source = stripComments(await readFile(path.join(SRC, rel), "utf8"));
+        const source = stripComments(await readFile(file, "utf8"));
         if (/\bupdateAssignmentState\s*\(/.test(source)) offenders.push(rel);
       }
       assert.deepEqual(

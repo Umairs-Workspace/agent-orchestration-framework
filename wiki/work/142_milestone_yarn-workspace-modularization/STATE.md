@@ -515,3 +515,15 @@ workspace dependency. No generated assets or workflow state changed. Mesh projec
 launchers/workers/commands, final core/apps layout/composition, adapter removal and full native/
 platform verification remain outstanding.
 The final persistence/fabric census and registry architecture selection passes all 20 checks.
+
+Mesh global projections: presence, registry descriptors, fleet query, publication, SQLite projection
+storage and assignment records now belong to mesh. All six legacy APIs/84 exports and 117 command
+descriptors/order match. The 161-suite run passed 1,656 cases with 33 source-guard failures. Corrections
+passed 161 with 12 failures, then 184 with one stripper self-check; the final eight index-guard checks
+pass after covering factory-owned declarations. The corrected selection includes all 20 passing
+census/registry checks and the bridge to 195 package cases. Five new package tests pass locally and
+in a copied installation; all six modules bundle into standalone JS. Immutable linking and audit pass.
+All 20 distribution checks pass. Canonical presence citations and shipped hashes were refreshed,
+along with only the explicitly approved generated operator citation/hash. Other pending generated
+copies remain unchanged. Mesh coordination/recovery, launchers/workers/commands, core/apps layout,
+final composition/adapter removal and full native/platform verification remain outstanding.

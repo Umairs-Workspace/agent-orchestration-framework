@@ -915,3 +915,16 @@ introduce a second TTL implementation. Core supplies the configured predicate an
 Launcher lock ownership, fabric discovery and repository publication belong with mesh behavior.
 The repository-marker API retains its read/merge/write contract and injectable Git remote lookup.
 Run-path builders remain execution-owned, despite their historical re-export through the mesh store.
+
+## Mesh projections and assignment records
+
+The global projection store is also the persistence home for assignment facts, so moving only fleet
+shaping would leave the main mesh data boundary in core. Mesh now owns that schema, the assignment
+record API and global presence/descriptor/publication/query behavior together. The work package keeps
+its row and artifact contracts. Configured disk enumeration, SQLite loading, workspace/node identity,
+table classification and provenance policy enter through application ports.
+
+Core's table classification remains shared composition data. Its writer paths must name the package
+implementations, and writer-isolation scans must cover every runtime workspace: leaving either at
+the old root would turn the extraction into an unguarded second writer. The existing database schema,
+authority checks, author-scoped retractions and fact-preserving projection refreshes are unchanged.

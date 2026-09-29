@@ -58,7 +58,7 @@ export const TABLE_CLASSIFICATION = Object.freeze({
   // back even by accident (`acd-work-items-single-writer` arms on this line).
   work_items: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/global-work-store.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/projection-store.mjs"]),
   }),
   projection_errors: Object.freeze({ class: "projection", rebuiltBy: "publishWorkspaceSnapshot" }),
   global_nodes: Object.freeze({ class: "projection", rebuiltBy: "node descriptor publish" }),
@@ -67,16 +67,16 @@ export const TABLE_CLASSIFICATION = Object.freeze({
 
   global_assignments: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/assignment-record.mjs", "src/global-work-store.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/assignment-record.mjs", "packages/mesh/src/projection-store.mjs"]),
     refRemap: Object.freeze({ column: "item_ref", locus: "control-store" }),
   }),
   global_assignment_directives: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/mesh/assignment-directive.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/assignment-directive.mjs"]),
   }),
   global_item_branches: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/mesh/assignment-directive.mjs", "src/global-work-store.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/assignment-directive.mjs", "packages/mesh/src/projection-store.mjs"]),
     refRemap: Object.freeze({ column: "item_ref", locus: "control-store" }),
   }),
   global_recovery_pushes: Object.freeze({
@@ -100,17 +100,17 @@ export const TABLE_CLASSIFICATION = Object.freeze({
   // origin is remote. Their ref-remap is this node's own row rewrite (`local`).
   work_item_docs: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/global-work-store.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/projection-store.mjs"]),
     refRemap: Object.freeze({ column: "ref", locus: "local" }),
   }),
   work_item_runs: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/global-work-store.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/projection-store.mjs"]),
     refRemap: Object.freeze({ column: "ref", locus: "local" }),
   }),
   node_logs: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/global-work-store.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/projection-store.mjs"]),
   }),
 
   // The effects journal (journal.sqlite, beside the projection): the ledger

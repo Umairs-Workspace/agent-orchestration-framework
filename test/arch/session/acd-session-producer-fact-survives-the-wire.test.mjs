@@ -44,9 +44,9 @@ import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER } from "../../../ui/
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SESSION = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
-const PRESENCE = path.join(repoRoot, "src", "mesh", "presence.mjs");
+const PRESENCE = path.join(repoRoot, "packages", "mesh", "src", "presence.mjs");
 const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
-const QUERY = path.join(repoRoot, "src", "global-mesh-query.mjs");
+const QUERY = path.join(repoRoot, "packages", "mesh", "src", "global-query.mjs");
 const FEED_AXIS = path.join(repoRoot, "ui", "src", "home", "feed-axis.mjs");
 
 // LINE COMMENTS FIRST, BLOCK COMMENTS SECOND (TECH_DEBT item 24) — and it matters here more

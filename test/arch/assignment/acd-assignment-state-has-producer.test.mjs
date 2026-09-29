@@ -52,7 +52,7 @@ export const archTests = [
     name: "arch/35 ADR-001 (acd-assignment-state-has-producer): every state literal the dedicated writers actually SET is mapped in the enum (no orphan state)",
     run: async () => {
       const source = await readFile(path.join(repoRoot, "src", "commands", "mesh", "assign.mjs"), "utf8");
-      const recordSource = await readFile(path.join(repoRoot, "src", "assignment-record.mjs"), "utf8");
+      const recordSource = await readFile(path.join(repoRoot, "packages", "mesh", "src", "assignment-record.mjs"), "utf8");
       const combined = `${source}\n${recordSource}`;
 
       // Every quoted state literal appearing as a value passed to updateAssignmentState(

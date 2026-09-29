@@ -319,7 +319,7 @@ export const meshAssignmentRecordTests = [
       const { readFile } = await import("node:fs/promises");
       const { fileURLToPath } = await import("node:url");
       const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-      const source = await readFile(path.join(repoRoot, "src", "global-work-store.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs"), "utf8");
       const start = source.indexOf("export async function publishWorkspaceSnapshot");
       const nextFn = source.indexOf("\nexport function recordWorkspaceProjectionError");
       const body = source.slice(start, nextFn === -1 ? undefined : nextFn);

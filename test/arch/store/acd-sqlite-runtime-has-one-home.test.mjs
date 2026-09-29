@@ -29,6 +29,7 @@
 // ONLY. Prose outside every fence is not swept, which is what lets a bundled command
 // FORBID a flag in words without becoming an offender for naming it.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -99,7 +100,7 @@ export const archTests = [
   {
     name: "arch/126 FF-12608: `node:sqlite` is imported in EXACTLY ONE module under src/, and both callers reach it BY IMPORT rather than by absence",
     run: async () => {
-      const files = await sourceFilesUnder(path.join(repoRoot, "src"));
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(files.length > 0, "src/ was scanned (non-vacuous)");
 
       const importers = [];
@@ -120,12 +121,18 @@ export const archTests = [
       for (const caller of ["src/effects/journal.mjs", "src/global-work-store.mjs"]) {
         const source = stripComments(await readFile(path.join(repoRoot, caller), "utf8"));
         assert.match(source, /import \{ importSqliteRuntime \} from "[^"]*sqlite-runtime\.mjs"/, `${caller} imports the leaf`);
-        assert.match(source, /await importSqliteRuntime\(options\)/, `${caller} resolves the runtime through it, forwarding the options it was handed`);
+        const implementation = caller === "src/global-work-store.mjs"
+          ? stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8")) : source;
+        if (caller === "src/global-work-store.mjs") {
+          assert.match(source, /createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
+          assert.match(implementation, /function createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
+        }
+        assert.match(implementation, /await importSqliteRuntime\(options\)/, `${caller} resolves the runtime through it, forwarding the options it was handed`);
       }
 
       // Each caller keeps its OWN refusal and its OWN DatabaseSync check — the leaf decides
       // no policy, so neither caller's behaviour moves (ADR-008 §2).
-      const store = stripComments(await readFile(path.join(repoRoot, "src", "global-work-store.mjs"), "utf8"));
+      const store = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs"), "utf8"));
       const journal = stripComments(await readFile(path.join(repoRoot, "src", "effects", "journal.mjs"), "utf8"));
       for (const [name, source] of [["global-work-store", store], ["journal", journal]]) {
         const body = functionBody(source, "async function resolveSqlite");

@@ -46,7 +46,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The sanctioned publishGlobalWorkSnapshot callers (repo-relative, forward-slashed).
 const PUBLISH_ALLOWED = new Set([
   // The definition.
-  "src/global-work-publisher.mjs",
+  "packages/mesh/src/publisher.mjs",
   // The LEDGER's reactor — the one door for publish-as-a-consequence.
   "packages/mesh/src/effects.mjs",
   // `aof mesh repo publish`: publishing IS this verb's deliverable (it writes the

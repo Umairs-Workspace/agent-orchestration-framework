@@ -67,6 +67,7 @@
 //     source first (the tree is mixed CRLF/LF, so every mutation is built from lines
 //     split OUT of the real source and rejoined with that source's own line ending).
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -75,7 +76,7 @@ import { shapeGlobalStatus, buildSessionIndex } from "../../../src/global-mesh-q
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 
-const QUERY_FILE = "src/global-mesh-query.mjs";
+const QUERY_FILE = "packages/mesh/src/global-query.mjs";
 const WIRE_TYPE_FILE = "ui/src/fleet/api.ts";
 
 // The ADR-007 entry, in its exact order: nodeId, then ADR-005's frozen six verbatim,
@@ -166,11 +167,14 @@ function stripComments(source) {
 // path, over the REAL corpus, and show the difference rather than assert it.
 function strippedCorpusViolations(entries, strip = stripComments) {
   const violations = [];
-  const anchors = /^export\s+(?:default\s+)?(?:async\s+)?(?:function\s*\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/gm;
+  // Factory-owned functions are no longer top-level exports. Check declarations
+  // themselves: a returned API name must not conceal a body deleted by the stripper.
+  const anchors = /^[ \t]*(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s*\*?\s+([A-Za-z_$][\w$]*)\s*\(|^export\s+(?:const|let|class)\s+([A-Za-z_$][\w$]*)/gm;
   for (const [file, source] of entries) {
     const stripped = strip(source);
-    for (const [, name] of source.matchAll(anchors)) {
-      if (!new RegExp(`\\b${name}\\b`).test(stripped)) {
+    for (const [declaration, functionName, valueName] of source.matchAll(anchors)) {
+      const name = functionName ?? valueName;
+      if (!stripped.includes(declaration)) {
         violations.push(`${file}: the exported symbol \`${name}\` does NOT survive stripComments() — this whole-src/ absence sweep ruled on code the STRIPPER had already deleted (TECH_DEBT item 24: a \`/*\` inside a line comment opens a phantom block that runs to the next \`*/\`). Fix the stripper, not this assertion.`);
       }
     }
@@ -281,7 +285,11 @@ function indexPathViolations(source) {
   const violations = [];
   const code = stripComments(source);
 
-  if (!/export\s+function\s+buildSessionIndex\s*\(/.test(code)) {
+  const exportedDirectly = /export\s+function\s+buildSessionIndex\s*\(/.test(code);
+  const exportedByFactory = /export function createGlobalMeshQuery\(/.test(code)
+    && /function buildSessionIndex\(/.test(code)
+    && /return \{[^}]*\bbuildSessionIndex\b[^}]*\};/.test(code);
+  if (!exportedDirectly && !exportedByFactory) {
     violations.push(`${QUERY_FILE}: no exported \`buildSessionIndex\` — ADR-007 puts the index in THIS module, as a named export the shaper calls and a caller can reach in-process`);
     return violations;
   }
@@ -530,20 +538,9 @@ function shape(nodes, assignments = [], now = "2026-08-10T12:00:00.000Z") {
 }
 
 async function srcSources() {
-  const entries = [];
-  async function walk(dir, rel) {
-    for (const name of await readdir(dir, { withFileTypes: true })) {
-      const relPath = rel ? `${rel}/${name.name}` : name.name;
-      if (name.isDirectory()) {
-        await walk(path.join(dir, name.name), relPath);
-        continue;
-      }
-      if (!name.name.endsWith(".mjs")) continue;
-      entries.push([`src/${relPath}`, await readFile(path.join(dir, name.name), "utf8")]);
-    }
-  }
-  await walk(path.join(REPO, "src"), "");
-  return entries;
+  const sources = [];
+  for (const { rel, path: file } of await readRuntimeFiles(REPO)) sources.push([rel, await readFile(file, "utf8")]);
+  return sources;
 }
 
 export const archTests = [
@@ -759,7 +756,7 @@ export const archTests = [
       // ── planted: a PERSISTED index table ────────────────────────────────────
       const sources = await srcSources();
       assert.deepEqual(persistedIndexViolations(sources), [], "the real tree persists no session index");
-      const [victimFile, victimSource] = sources.find(([file]) => file === "src/global-work-store.mjs");
+      const [victimFile, victimSource] = sources.find(([file]) => file === "packages/mesh/src/projection-store.mjs");
       const withTable = `${victimSource}${eolOf(victimSource)}db.exec("CREATE TABLE IF NOT EXISTS global_session_index (node_id TEXT, session_id TEXT, PRIMARY KEY (node_id, session_id))");${eolOf(victimSource)}`;
       assert.notEqual(withTable, victimSource, "the planted TABLE genuinely landed in the source");
       const tableViolations = persistedIndexViolations([[victimFile, withTable]]);

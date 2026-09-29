@@ -266,7 +266,10 @@ export const archTests = [
       for (const name of ["store", "session", "launcher-lock", "fabric", "repo-marker"]) {
         assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)), name);
       }
-      assert.equal(sinkGraph.seen.size, 101, "mesh persistence adds five homes to the prior 96-module closure");
+      for (const name of ["presence", "assignment-record", "projection-store"]) {
+        assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)), name);
+      }
+      assert.equal(sinkGraph.seen.size, 104, "mesh projections add three homes to the prior 101-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

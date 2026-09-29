@@ -16,7 +16,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-004: global propagation enablement is decided by one shared predicate",
     async run() {
-      const predicateSource = await readFile(path.join(repoRoot, "src", "global-work-publisher.mjs"), "utf8");
+      const predicateSource = await readFile(path.join(repoRoot, "packages", "mesh", "src", "publisher.mjs"), "utf8");
       assert.ok(predicateSource.includes("mesh?.enabled === true"), "the shared predicate requires config.mesh.enabled === true");
       assert.ok(predicateSource.includes("mesh-global-disabled"), "the disabled result has the stable skipped code");
 

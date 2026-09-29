@@ -1814,3 +1814,39 @@ Evidence in `.tmp/workspace-migration/mesh-persistence/`:
 No generated assets, lock hashes or AOF workflow state changed. Remaining mesh work includes
 presence/global projections, coordination/recovery, launchers, worker orchestration and command
 ownership. Final core/apps layout, application assembly, adapter removal and full verification remain.
+
+## Mesh global projections and assignment persistence
+
+Mesh now owns presence, global node/workspace descriptors, fleet query shaping, work publication,
+the global SQLite projection schema and assignment-record writers/readers. Core supplies configured
+paths, SQLite loading, work disk reads, identity, table classification and provenance/diagnostics.
+The package uses work's public row/artifact contracts, work-loop's declaration reader, its own fabric
+and assignment APIs, and foundation's atomic writes. The schema and all function bodies are preserved.
+
+Evidence in `.tmp/workspace-migration/mesh-projections/`:
+
+- Six legacy APIs and 84 exported values/functions match. All 117 command descriptors/order match.
+- The 161-suite selection passed 1,656 cases with 33 source-guard failures. The first corrected
+  selection passed 161 with 12 failures; the next 31-suite selection passed 184 with one remaining
+  comment-stripper self-check. Updating that detector to preserve function declarations inside
+  factories, rather than only top-level export names, makes all eight index-guard checks pass,
+  including the real-corpus and planted-blinding checks. The 31-suite run includes the 20 passing
+  runtime census/registry checks and the command bridge to 195 package cases.
+- Five new package tests pass locally and in the actual installer's copied payload. They exercise
+  real SQLite initialization, fact-preserving snapshot publication, the forbidden fact-table sweep,
+  descriptor/presence/membership joins, borrowed-store ownership, opted-out publication and coded
+  open failures. All six APIs resolve inside the payload, which retains 117 commands.
+- Standalone JavaScript includes all six modules. Yarn skip-build and immutable installations pass;
+  only the existing work workspace was added as a dependency. Supply-chain audit has zero warnings.
+- Table-writer metadata now names package implementations. Writer, deletion, SQLite-runtime,
+  session-index and scope-definition scans cover runtime workspaces. Configured disk readers and
+  SQLite loading assert both package ports and core bindings. The worker sink's static closure
+  grows from 101 to 104 modules through the three measured implementation homes; the session
+  driver's forbidden dependencies remain excluded.
+- All 20 distribution checks pass after canonical presence citations and shipped hashes were
+  refreshed. Under the user's existing explicit approval, only the generated operator citation and
+  its lock hash were refreshed. The generated mesh-assignment-reclaim copy remains pending its
+  separate approval; no workflow runs, work-item transitions or configuration changes were made.
+
+Mesh coordination/recovery, launchers/workers and command ownership remain. Final core/apps layout,
+application composition, compatibility removal and full native/platform verification are still open.

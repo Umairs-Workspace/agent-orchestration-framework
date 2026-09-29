@@ -4,8 +4,8 @@ id: loop:mesh-assignment-reclaim
 kind: loop
 title: Reclaim assignments only after dual staleness
 controlled: module:src/mesh/assignment-reclaim.mjs#reclaimStaleAssignments
-reference: [module:src/mesh/assignment-reclaim.mjs#dualStalenessDecision, module:src/mesh/presence.mjs#isNodeStale, module:src/run-store.mjs#isStale]
-measurement: [module:src/mesh/assignment-reclaim.mjs#dualStalenessDecision, module:src/mesh/presence.mjs#isNodeStale, module:src/run-store.mjs#isStale]
+reference: [module:src/mesh/assignment-reclaim.mjs#dualStalenessDecision, module:packages/mesh/src/presence.mjs#isNodeStale, module:src/run-store.mjs#isStale]
+measurement: [module:src/mesh/assignment-reclaim.mjs#dualStalenessDecision, module:packages/mesh/src/presence.mjs#isNodeStale, module:src/run-store.mjs#isStale]
 actuator: [module:src/effects/assignment-transitions.mjs#transitionAssignmentState, module:src/effects/run-transitions.mjs#transitionRunReclaimed]
 cadence: periodic:15s
 ceiling: none
@@ -20,7 +20,7 @@ Framework record source: `src/bundle/loops/mesh-assignment-reclaim.md`; installe
 The defining `reclaimStaleAssignments` scan at `src/mesh/assignment-reclaim.mjs:163` controls non-terminal
 assignment state. Its reference and measurement are the same complete gate: the defining exported AND
 `dualStalenessDecision` at `src/mesh/assignment-reclaim.mjs:136`, plus its two separately visible halves,
-`isNodeStale` at its defining site `src/mesh/presence.mjs:550` and `isStale` at its defining site
+`isNodeStale` at its defining site `packages/mesh/src/presence.mjs:548` and `isStale` at its defining site
 `src/run-store.mjs:27`. Both predicates are imported and shared rather than re-derived
 (`src/mesh/assignment-reclaim.mjs:17-21`).
 

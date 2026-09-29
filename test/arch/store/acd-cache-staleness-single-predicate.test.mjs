@@ -59,6 +59,7 @@
 //  literal, a `>=` predicate, a planted hand-rolled mapping AND a renamed second evaluator
 //  all trip the SAME detectors.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -86,7 +87,7 @@ const STORAGE_SPELLINGS = /\b(node_id|nodeId|updated_at|updatedAt)\b/;
 // on the writer's own return value, not a row or an artifact on any wire, and 43/02's
 // `authored-elsewhere` reason contract. It is listed here so a SECOND one cannot hide
 // behind it.
-const HAND_ROLLED_BASELINE = ["src/global-work-store.mjs — reportedBy: existing.node_id"];
+const HAND_ROLLED_BASELINE = ["packages/mesh/src/projection-store.mjs — reportedBy: existing.node_id"];
 
 // ADR-015/F1 — the SUBJECT of a freshness verdict. A module cannot judge how old a copy is
 // without reading the copy's INSTANT, so "who reads `syncedAt`" is the rename-proof spelling
@@ -183,7 +184,7 @@ export const archTests = [
     name: "arch/43 ADR-006 (acd-cache-staleness-single-predicate): NEVER EVICT — no DELETE against work_items / work_item_docs / work_item_runs in src/ is predicated on a time column",
     run: async () => {
       const offenders = [];
-      for (const file of await filesUnder(SRC, [".mjs"])) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         const found = timePredicatedDeletes(stripComments(await readFile(file, "utf8")));
         for (const hit of found) offenders.push(`${path.relative(repoRoot, file)} — ${hit}`);
       }
@@ -267,7 +268,7 @@ export const archTests = [
     name: "arch/43 ADR-006 (acd-cache-staleness-single-predicate): ONE MAPPER — only src/cache-provenance.mjs turns a STORAGE provenance spelling into a `reportedBy`/`syncedAt` wire key",
     run: async () => {
       const offenders = [];
-      for (const file of await filesUnder(SRC, [".mjs"])) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
         if (rel === MAPPER_MODULE) continue;
         for (const hit of handRolledProvenanceMappings(stripComments(await readFile(file, "utf8")))) {

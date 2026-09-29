@@ -41,16 +41,19 @@ export const archTests = [
     // are checked, which is strictly stronger than the one line this replaces.
     name: "arch/34 ADR-003 (AMENDED by 126/ADR-008): the global work store loads node:sqlite DYNAMICALLY — through the one runtime home — and imports no SQLite package",
     run: async () => {
-      const source = await readFile(path.join(repoRoot, "src", "global-work-store.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs"), "utf8");
       const leaf = await readFile(path.join(repoRoot, "src", "sqlite-runtime.mjs"), "utf8");
+      const composition = await readFile(path.join(repoRoot, "src/global-work-store.mjs"), "utf8");
 
       // The store's half: it reaches the runtime through the one home, and it still resolves
       // it lazily — an `await` inside `resolveSqlite`, never a module-load-time dependency.
       assert.ok(
-        /import \{ importSqliteRuntime \} from "\.\/sqlite-runtime\.mjs"/.test(source),
+        /import \{ importSqliteRuntime \} from "\.\/sqlite-runtime\.mjs"/.test(composition),
         "the store reaches the runtime through the one home",
       );
       assert.ok(/await importSqliteRuntime\(/.test(source), "and resolves it lazily, at open time");
+      assert.match(source, /function createGlobalWorkProjectionStore\(\{[^}]*\bimportSqliteRuntime\b/);
+      assert.match(composition, /createGlobalWorkProjectionStore\(\{[^}]*\bimportSqliteRuntime\b/);
 
       // The home's half: the load is a DYNAMIC import of the Node builtin. This is the line
       // that used to live in the store, asserted where it now lives.

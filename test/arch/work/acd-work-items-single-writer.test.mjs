@@ -132,7 +132,7 @@ export const archTests = [
     name: "arch/43 ADR-012/B4 (acd-work-items-single-writer): the single-writer module does not become the next god-file — src/global-work-store.mjs stays under its ratchet",
     run: async () => {
       const CEILING = 1280;
-      const source = await readFile(path.join(SRC, "global-work-store.mjs"), "utf8");
+      const source = await readFile(path.join(SRC, "..", "packages/mesh/src/projection-store.mjs"), "utf8");
       const lines = source.split(/\r?\n/).length;
       assert.ok(
         lines <= CEILING,
@@ -157,7 +157,7 @@ export const archTests = [
     // value passed with the screen disabled.
     name: "arch/43 ADR-012/B5 (acd-work-items-single-writer): every row-derived value the work_items upsert BINDS is covered by the row screen — the next column cannot ship unscreened",
     run: async () => {
-      const source = stripComments(await readFile(path.join(SRC, "global-work-store.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(SRC, "..", "packages/mesh/src/projection-store.mjs"), "utf8"));
       const call = source.slice(source.indexOf("upsert.run("), source.indexOf(");", source.indexOf("upsert.run(")));
       assert.ok(call.length > 40, "the upsert's bind list was located (non-vacuous)");
 
@@ -199,7 +199,7 @@ export const archTests = [
     // widened surface with no named caller set is how a one-off becomes a habit.
     name: "arch/43 ADR-012/B3 (acd-work-items-single-writer): the newly-exported wholesaleDelete keeps a NAMED caller set in src/ — the projection sweep is not an open door",
     run: async () => {
-      const SANCTIONED = ["src/global-work-store.mjs"];
+      const SANCTIONED = ["packages/mesh/src/projection-store.mjs"];
       const callers = [];
       for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         const code = stripComments(await readFile(file, "utf8"));
