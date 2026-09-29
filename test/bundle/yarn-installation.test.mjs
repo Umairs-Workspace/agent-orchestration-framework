@@ -47,6 +47,7 @@ export const yarnInstallationTests = [
         'sync-work.mjs': ['node:path', 'node:fs/promises'],
         'notion-sync-work.mjs': ['node:fs'],
         } : name === 'execution' ? {
+        'rubric-process.mjs': ['node:child_process'],
         'runs.mjs': ['node:path', 'node:fs/promises', 'node:fs', '@aof/foundation/fs', '@aof/contracts/claim-provenance'],
         'spend.mjs': ['node:fs/promises', 'node:path'],
         'heartbeats.mjs': ['node:fs/promises', 'node:path'],
@@ -89,6 +90,7 @@ export const yarnInstallationTests = [
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
         'toolchain.mjs': ['node:path', 'node:fs'],
+        'commands/grade.mjs': ['node:fs', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/claim-provenance'],
         'commands/archive.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
         'commands/doctor.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs', '@aof/contracts/error'],
         'commands/validate.mjs': ['node:path', 'node:fs/promises'],

@@ -693,3 +693,15 @@ registry cycle explanation beside the actual deferred import. Git history uses a
 execFileAsync binding; the work package imports no child-process API for this command. Source and
 copied-payload fixtures include both a legacy identity sidecar and a discriminating loop registry so
 neither optional read can degrade silently and make the comparison pass.
+
+Grading has two owners: work chooses the declared rubric, resolves its deadline, guards the read/run
+door and reentrancy, collects provenance and compiles evidence; execution owns the asynchronous child
+and its timeout, byte ceiling and stream draining. The process mechanism now lives in
+`packages/execution/src/rubric-process.mjs`, supplied to the work command by core. It retains the
+existing result shape and termination distinctions instead of being replaced by the different audit
+runner contract during a packaging migration. The work package gains no execution-package dependency.
+
+The single-rubric-launch guards now scan all runtime packages, assert the work-owned invocation and
+the single execution-owned implementation, and verify core connects them. Deadline-home scans also
+include contracts rather than passing over the old root forwarding file. The public command and
+process APIs, including every function body, remain unchanged.

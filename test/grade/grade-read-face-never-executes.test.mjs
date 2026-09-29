@@ -167,7 +167,7 @@ export const gradeReadFaceNeverExecutesTests = [
         assert.deepEqual(command.cli.argv(["03"], { run: true }), { ref: "03", run: true }, "…and only --run sets it");
         // An environment variable cannot open the door either: no read of process.env
         // decides whether to spawn.
-        const source = await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8");
+        const source = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8");
         assert.ok(!/if\s*\([^)]*process\.env[^)]*\)\s*\{[^}]*spawn/s.test(source), "no environment variable gates the spawn");
       } finally {
         await rm(repo, { recursive: true, force: true });

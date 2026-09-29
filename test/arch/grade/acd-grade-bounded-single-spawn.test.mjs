@@ -61,7 +61,19 @@ export const archTests = [
         const spawns = /\bspawnSync\s*\(|\bspawn\s*\(|\bexecFile|\bexec\s*\(/.test(code);
         if (readsTheRubric && spawns) spawners.push(file.rel);
       }
-      assert.deepEqual(spawners, ["src/commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
+      assert.deepEqual(spawners, ["packages/work/src/commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/commands/grade.mjs"), "utf8"));
+      assert.match(composition, /import \{ spawnRubricAsync \} from "@aof\/execution\/rubric-process"/);
+      assert.match(composition, /createGradeCommand\(\{ spawnRubricAsync,/);
+      const command = stripComments(await readFile(path.join(repoRoot, spawners[0]), "utf8"));
+      assert.doesNotMatch(command, /node:child_process/);
+      assert.match(command, /ctx\.spawnRubric \?\? spawnRubricAsync/);
+      const implementations = [];
+      for (const file of await readRuntimeFiles(repoRoot)) {
+        const code = stripComments(await readFile(file.path, "utf8"));
+        if (/function\s+spawnRubricAsync\s*\(/.test(code)) implementations.push(file.rel);
+      }
+      assert.deepEqual(implementations, ["packages/execution/src/rubric-process.mjs"]);
     },
   },
 
@@ -98,11 +110,11 @@ export const archTests = [
       // 54 ENFORCES A BOUND AND CHOOSES NONE (`53/ADR-009` §1). A literal here would be a
       // rival home for `69/ADR-002`'s `startToClose`, and `acd-loop-cap-single-home` plus
       // 69/ADR-001's non-annexation rule are the authority it would be breaking.
-      const code = stripComments(await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8"));
+      const code = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8"));
       // 81/00 — THE GUARD THAT PINNED THE OLD RESOLVER BY NAME NOW PINS THE NEW ONE. The
       // deadline is `min(startToClose, heartbeat)`, DERIVED in the same single home, so the
       // property this rung protects is unchanged and only the name it protects moved.
-      assert.match(code, /import \{ gradeDeadlineFromConfig \} from "(?:\.\.?\/)+loop-bounds\.mjs"/, "the deadline is resolved through 69/ADR-001's home");
+      assert.match(code, /import \{ gradeDeadlineFromConfig \} from "@aof\/contracts\/loop-bounds"/, "the deadline is resolved through 69/ADR-001's home");
       assert.ok(!code.includes("startToCloseFromConfig"), "…and the grade path no longer resolves the unclamped bound it used to");
       assert.ok(!/\btimeout\s*[:=]\s*\d/.test(code), "the grade path hard-codes no timeout value");
       assert.ok(!/\b\d{5,}\b/.test(code.replace(/MAX_CAPTURE_BYTES[\s\S]{0,60}/, "")), "…and carries no bare millisecond literal");

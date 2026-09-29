@@ -332,7 +332,7 @@ export const gradePayloadBoundedInTheWriterTests = [
       assert.ok(!leaf.includes("PHASE_BRIEF_MAX_CHARS"), "…so the character ceiling is HANDED IN rather than reached for");
 
       // THE OPERATOR RENDER CALLS IT INSTEAD OF SLICING TO A LITERAL OF ITS OWN.
-      const grade = strip(await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8"));
+      const grade = strip(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8"));
       assert.match(grade, /boundGradeFailures\(/u, "the operator render calls the bound");
       assert.ok(!/failures\.slice\(/u.test(grade), "…instead of slicing to a literal of its own");
 

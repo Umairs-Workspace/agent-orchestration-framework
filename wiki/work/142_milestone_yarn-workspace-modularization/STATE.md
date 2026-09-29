@@ -316,3 +316,14 @@ and copied-payload comparisons preserve reports, registry composition, archive r
 record bytes, retaining 117 commands. Standalone JavaScript and supply-chain checks pass. No dependency,
 generated copy or workflow state changed. Remaining services/commands, other domains, final layout,
 composition, adapter removal and whole-tree/platform verification remain open.
+
+Grading extraction: the grade command now lives in work, with asynchronous rubric spawning in
+execution. Core supplies execution, item resolution, run history and provenance services. All legacy
+APIs, exported values and function bodies match. The 41-suite affected run finished with 314 passes
+and 11 source-guard failures; the corrected 11-suite run passes all 108 cases. Four new package tests
+bring the bridge to 133 cases, covering real process argv/capture/timeout/overflow and grading ports.
+Source and copied-installation fixtures match grading, read/refusal paths, provenance, termination
+outcomes and record bytes; the payload retains 117 commands. Standalone JavaScript bundling and
+supply-chain audit pass; the final census passes all 12 cases. No dependencies,
+generated copies or workflow state changed. Remaining work commands/services, other domains and
+final layout/composition/verification are still outstanding.

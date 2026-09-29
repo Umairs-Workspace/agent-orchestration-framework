@@ -56,7 +56,7 @@ export const archTests = [
       // One module holds the declared-rubric spawn, and that spawn's program comes from the
       // DECLARATION rather than from a literal aof wrote. A grade path naming a runner
       // script by name would be aof choosing the runner — precisely what ADR-004 §2 forbids.
-      const grade = await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8");
+      const grade = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8");
       const code = grade.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
       assert.ok(!code.includes("scripts/test.mjs"), "the grade path names no runner script of its own");
       assert.ok(!code.includes("node --test"), "…and no runner invocation of its own");

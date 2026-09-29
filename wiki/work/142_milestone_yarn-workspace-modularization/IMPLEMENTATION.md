@@ -1284,3 +1284,30 @@ Evidence in `.tmp/workspace-migration/work-command-faces/`:
 
 Remaining work services/commands and contributions, other domains, core/apps layout, final composition,
 compatibility-adapter removal and whole-tree/platform verification remain outstanding.
+
+## Work grading and execution-owned rubric process
+
+`@aof/work/commands/grade` now owns rubric declaration/planning, read/run and reentrancy guards,
+report observations, history, provenance assembly and the grade command descriptor. Core supplies
+item resolution, execution, run reads, node identity and Git HEAD. `@aof/execution/rubric-process`
+owns the original asynchronous child implementation, including stream capture, the byte ceiling,
+timeout and termination result. The work package does not depend on execution.
+
+Evidence in `.tmp/workspace-migration/work-grade/`:
+
+- All legacy exports, values and function bodies compare equal to their pre-move baseline.
+  Four new package cases exercise grading ports and real child argv, both streams, nonzero exit,
+  multibyte overflow, timeout and launch failure. The root bridge covers all 133 package cases.
+- The affected 41-suite run finished with 314 passes and 11 source-guard failures. The corrected
+  11-suite run passes all 108 cases. Guards inspect the work command, execution implementation and
+  core binding separately; bounds and single-launch scans now cover every runtime package.
+  The final architecture census passes all 12 cases.
+- Source and copied-installation fixtures run a real declared Node rubric and compare grading,
+  bare/read and refusal paths, provenance, timeout/overflow distinctions, rendering and unchanged
+  item bytes. Only measured elapsed duration and fixture root paths are normalized. Both exports
+  resolve inside the copied installation; it retains 117 commands and passes earlier comparisons.
+- Standalone JavaScript bundling includes both implementations. Supply-chain audit reports zero
+  warnings. No dependency declaration, generated output or AOF workflow state changed.
+
+The remaining work command/service extractions and contribution, other domains, final core/apps
+layout, composition, compatibility removal and whole-tree/platform verification remain outstanding.

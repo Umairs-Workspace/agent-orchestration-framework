@@ -40,6 +40,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const GRADE_PATH = Object.freeze([
   "packages/work/src/grade.mjs",
   "src/commands/grade.mjs",
+  "packages/work/src/commands/grade.mjs",
+  "packages/execution/src/rubric-process.mjs",
   "packages/work/src/doctor/rubric.mjs",
 ]);
 

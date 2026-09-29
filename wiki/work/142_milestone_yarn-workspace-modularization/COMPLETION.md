@@ -31,6 +31,9 @@ final tree. Historical passing checks alone do not prove the final layout works.
 | Package tests plus cross-package, architecture and release verification | Incremental checks recorded in IMPLEMENTATION.md; final full suite and build/release gates outstanding. |
 | Behavior, persisted state and generated output remain compatible | Differential checks per extraction; final asset/output/persistence comparisons outstanding. Three shipped citation updates render correctly in a temporary installation; the user explicitly approved refreshing only the corresponding checked-in copies and lock hashes. |
 
+Grading is also extracted: work owns the command and execution owns the asynchronous rubric process.
+Core still composes its resolver/history/provenance services; final adapter removal remains open.
+
 No row with outstanding work is satisfied by an empty workspace, a forwarding shell, a passing
 unrelated test, or moving an import cycle behind dynamic imports. The goal remains active until
 the final source tree and matching verification prove the requested boundaries and installation modes.

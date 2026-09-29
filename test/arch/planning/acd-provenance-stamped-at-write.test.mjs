@@ -40,7 +40,7 @@ export const archTests = [
     name: "arch/FF-5504 durable grade and reading writes are guarded and no back-fill source exists",
     async run() {
       const runStore = stripComments(await readFile(path.join(root, "packages", "execution", "src", "runs.mjs"), "utf8"));
-      const grade = stripComments(await readFile(path.join(root, "src", "commands", "grade.mjs"), "utf8"));
+      const grade = stripComments(await readFile(path.join(root, "packages", "work", "src", "commands", "grade.mjs"), "utf8"));
       assert.match(runStore, /brief\?\.grade\s*!=\s*null\)\s*assertStampedClaim\(brief\.grade\)/);
       assert.match(runStore, /async function recordAnchorReading[\s\S]*compileProvenance\(provenance\)[\s\S]*await persist\(item, updated\)/);
       assert.match(grade, /gatherClaimProvenance[\s\S]*compileGrade\(\{/);

@@ -226,7 +226,7 @@ const FORBIDDEN_BUILTINS = ["node:child_process", "node:fs", "node:fs/promises",
 // already carried meaning a DIFFERENT module, so the rule would have been vacuous and wrong at
 // once. The forbidden set is now the RESOLVED module each spelling was reaching for, which is
 // ADR-003 exactly: the decision is WHICH modules are forbidden; where they sit is derived.
-const FORBIDDEN_MODULES = ["packages/work/src/grade.mjs", "src/commands/grade.mjs"];
+const FORBIDDEN_MODULES = ["packages/work/src/grade.mjs", "src/commands/grade.mjs", "packages/work/src/commands/grade.mjs", "packages/execution/src/rubric-process.mjs"];
 
 // THE FAMILY'S set is NARROWER than the lane's, and the difference is deliberate — corrected
 // at 54/04's build, where the first reading of FF-5407 would have forced a SECOND report
@@ -238,7 +238,7 @@ const FORBIDDEN_MODULES = ["packages/work/src/grade.mjs", "src/commands/grade.mj
 // Forbidding it to the whole family would have made 54/04's traceability lane write its own
 // copy of the TAP normaliser — a second parser, which is the defect `66/ADR-003` and this
 // milestone both refuse by name.
-const FORBIDDEN_RUNNER_MODULES = ["src/commands/grade.mjs"];
+const FORBIDDEN_RUNNER_MODULES = ["src/commands/grade.mjs", "packages/work/src/commands/grade.mjs", "packages/execution/src/rubric-process.mjs"];
 
 // The deterministic engines FF-5407 covers beyond the lane itself: `work.mjs`'s
 // `validateWork` and the whole `work-doctor*` family. A guard that read only the one lane

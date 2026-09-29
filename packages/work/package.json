@@ -87,7 +87,8 @@
     "./commands/doctor": "./src/commands/doctor.mjs",
     "./commands/validate": "./src/commands/validate.mjs",
     "./commands/archive": "./src/commands/archive.mjs",
-    "./commands/upgrade": "./src/commands/upgrade.mjs"
+    "./commands/upgrade": "./src/commands/upgrade.mjs",
+    "./commands/grade": "./src/commands/grade.mjs"
   },
   "files": [
     "src"

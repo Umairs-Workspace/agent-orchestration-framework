@@ -17,7 +17,8 @@
     "./claude-trust": "./src/claude-trust.mjs",
     "./terminal/claude-screens": "./src/terminal/claude-screens.mjs",
     "./worktrees": "./src/worktrees.mjs",
-    "./bounded-process": "./src/bounded-process.mjs"
+    "./bounded-process": "./src/bounded-process.mjs",
+    "./rubric-process": "./src/rubric-process.mjs"
   },
   "files": [
     "src"
