@@ -24,6 +24,7 @@
 // to process.cwd() (path.relative, OS separators). Basis-neutral results let each
 // face project losslessly — the keystone that makes byte-for-byte on both faces
 // achievable on Windows separators (ADR-002).
+import { createWorkContribution } from "@aof/work/commands";
 import { createWorkLoopContribution, createTriggerContribution, createDispatchContribution } from "@aof/work-loop/commands";
 import { createWorkGraphContribution } from "@aof/work-graph/commands";
 import { createCommandRegistry } from "@aof/contracts/commands";
@@ -178,41 +179,47 @@ const loopsGroundednessCommand = createLoopsGroundednessCommand({
 // Core assembles feature-owned contributions. Ordered groups retain the existing
 // command/help order while the remaining domains are extracted incrementally.
 const CONTRIBUTIONS = [
-  { name: "aof", commands: [
+  createWorkContribution([
     listCommand,
-  ] },
+  ]),
   createWorkGraphContribution({ show: loopsShowCommand, graph: loopsGraphCommand, validate: loopsValidateCommand, groundedness: loopsGroundednessCommand, document: loopDocumentCommand, record: loopRecordCommand }),
-  { name: "aof", commands: [
+  createWorkContribution([
     debtCommand,
     docCommand,
     tasksCommand,
     validateCommand,
     nextCommand,
-  ] },
+  ]),
   createDispatchContribution(dispatchCommand),
-  { name: "aof", commands: [
+  createWorkContribution([
     feedbackCommand,
     doctorCommand,
     auditCommand,
     acceptorCommand,
     tuneCommand,
-  ] },
+  ]),
   createTriggerContribution(triggerCommand),
-  { name: "aof", commands: [
+  createWorkContribution([
     gradeCommand,
     ratchetCommand,
     countersCommand,
+  ]),
+  { name: "aof", commands: [
     graphBuildCommand,
     graphQueryCommand,
     graphTriageCommand,
     graphImpactCommand,
+  ] },
+  createWorkContribution([
     testCommand,
+  ]),
+  { name: "aof", commands: [
     projectProvisionCommand,
     importMilestoneCommand,
     migrateFolderCommand,
   ] },
   createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
-  { name: "aof", commands: [
+  createWorkContribution([
     runStartCommand,
     runCompleteCommand,
     runStatusCommand,
@@ -221,7 +228,7 @@ const CONTRIBUTIONS = [
     runRetryCommand,
     resumeCommand,
     answerCommand,
-  ] },
+  ]),
   meshContribution,
   { name: "aof", commands: [
     graphServeCommand,
@@ -233,8 +240,12 @@ const CONTRIBUTIONS = [
   { name: "aof", commands: [
     workUiCommand,
     assetsUiCommand,
+  ] },
+  createWorkContribution([
     findCommand,
     observeCommand,
+  ]),
+  { name: "aof", commands: [
     memoryCommand,
     useHeadroomCommand,
     unuseHeadroomCommand,
@@ -246,6 +257,8 @@ const CONTRIBUTIONS = [
     workDelegationModelCommand,
     planningInitCommand,
     projectInitCommand,
+  ] },
+  createWorkContribution([
     insertMilestoneCommand,
     insertUatCommand,
     insertStoryCommand,
@@ -260,7 +273,7 @@ const CONTRIBUTIONS = [
     // work:refine — m42 — see ./commands/continue.mjs's header.
     refineDoorCommand,
     verifyDoorCommand,
-  ] },
+  ]),
   createWorkLoopContribution({ loop: loopCommand, refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand }),
   { name: "aof", commands: [
     resyncCommand,

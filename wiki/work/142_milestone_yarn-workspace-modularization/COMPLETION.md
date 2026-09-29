@@ -42,8 +42,9 @@ is a required remaining task. Legacy counter metric citations need final review 
 Work also owns run start/complete/retry/status commands, with execution persistence and application
 transitions supplied by core. Final removal of those composition adapters remains outstanding.
 Item-status, regression-gate and their shared regression record are also work-owned. Configured
-runtime services still enter through transitional core composition; remaining command extraction and
-the work package's final command contribution are not complete.
+runtime services still enter through transitional core composition. All 37 extracted work/testing
+commands now register through the work package's contribution, preserving their descriptor contents
+and order. Final application composition and compatibility-adapter removal remain outstanding.
 Continue/refine/verify routing and resume/answer implementations are now work-owned too, including
 the deferred registry invocation supplied by core. Work-loop owns trigger compilation, signal and
 level resolution, its command and CLI contribution. Core still supplies assets, cadence grammar and

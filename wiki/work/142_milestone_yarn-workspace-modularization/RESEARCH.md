@@ -792,3 +792,10 @@ bound as well as its consumers. The guard still requires exactly one reader at t
 rejects reads elsewhere; the loop-family rule acknowledges that owner. Admission and default-bound
 scans now cover all runtime workspace sources instead of only root src/. The worker sink closure adds
 one implementation module behind its existing adapter; the session driver's denied reach is unchanged.
+
+Work's command contribution owns the existing 37 lifecycle, read, acceptance, grading and testing
+operations. The `work` namespace also contains core installation/configuration operations, graph
+operations and loop execution; a namespace is therefore not a package boundary. Core composes ordered
+groups to preserve enumeration while work validates its own command IDs. Duplicate IDs and routes
+remain the shared registry's responsibility across all packages. Registration preserves descriptor
+identity, including input schemas, options, conversion, handlers and presentation.

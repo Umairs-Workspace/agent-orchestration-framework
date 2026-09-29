@@ -1511,3 +1511,28 @@ Evidence in `.tmp/workspace-migration/loop-dispatch/`:
 
 Remaining work/core command composition, mesh/messaging/knowledge/server boundaries, final apps/core
 layout, compatibility removal and whole-tree/platform verification remain outstanding.
+
+### Work-owned command registration
+
+Core now assembles all 37 extracted work/testing commands through `@aof/work/commands`. The package
+declares its command IDs and supplies inert, immutable ordered contributions. Other packages retain
+their commands in the shared `work` namespace. Core's configured service bindings remain transitional.
+
+Evidence in `.tmp/workspace-migration/work-contribution/`:
+
+- All 117 registered descriptors and their order match the prior assembly. Instrumenting a temporary
+  copy of the real assembly proves that exactly the 37 declared work IDs have @aof/work ownership;
+  loop, trigger, dispatch and graph commands retain their own package owners.
+- Three new package tests cover descriptor identity, input-array isolation, inert registration,
+  invocation context, namespace extension, foreign/malformed rejection and cross-package collisions.
+  The root bridge passes all 158 package cases. All 58 selected package/registry/CLI/served-route
+  checks pass.
+- The copied installation resolves the public contribution export, contributes all 37 descriptors,
+  retains 117 commands and passes prior extraction behavior comparisons. The standalone JavaScript
+  bundle includes the contribution; supply-chain audit reports zero warnings.
+- The first copied-installation attempt was not executed because approval review temporarily reported
+  an account usage-limit failure. Subsequent review requests succeeded; the same verification was
+  retried through approval review and passed. No approval check was bypassed.
+
+No dependency, generated-copy or workflow-state changes. Remaining application composition, domain
+extraction, physical layout, compatibility removal and final verification remain outstanding.

@@ -403,3 +403,12 @@ bring the bridge to 155 cases. Real-Git source and copied-installation compariso
 open/reuse, capacity refusal, dirty protection, merge and cleanup. Standalone JavaScript and supply-chain
 audit pass. No dependency, asset, generated-copy or workflow-state changes. Final work/core composition,
 other domain extraction, apps/core layout, adapter removal and whole-tree/platform checks remain open.
+
+Work contribution: all 37 extracted work/testing command descriptors register under @aof/work.
+Ordered groups retain all 117 descriptors and their enumeration order. The actual assembled registry's
+ownership was checked against the package's declared command set, including the separate work-loop and
+work-graph owners of commands in the shared namespace. Three new contract tests bring the bridge to
+158 cases; all 58 selected integration, CLI and served-route checks pass. The copied installation exposes
+the contribution and retains earlier behavior comparisons; standalone JavaScript and supply-chain
+audit pass. No dependency or generated-file changes. Final core composition/layout, remaining domain
+boundaries, adapter removal and whole-tree/platform verification remain outstanding.

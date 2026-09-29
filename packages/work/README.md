@@ -124,3 +124,8 @@ Insertion reads templates from the explicit workspace's asset directory and obta
 policy from core. It validates and counts before calling the supplied stream transition; that transition
 retains locking, ref remapping and effect publication. Work owns the subsequent scaffold, move, number
 stamp and dependency rewrite. The four insert descriptors remain thin callers of those shared services.
+
+`createWorkContribution(commands)` registers the package's 37 work and testing operations under
+`@aof/work`. Core supplies configured descriptors in ordered groups, preserving the existing command
+list. The contribution preserves descriptor identity and rejects operations owned by other packages;
+the shared registry detects duplicate IDs and routes. Other packages can extend the `work` namespace.

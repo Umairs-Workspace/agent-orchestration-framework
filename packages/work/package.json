@@ -104,7 +104,8 @@
     "./commands/item-status": "./src/commands/item-status.mjs",
     "./commands/regression-gate": "./src/commands/regression-gate.mjs",
     "./commands/continue": "./src/commands/continue.mjs",
-    "./commands/resume": "./src/commands/resume.mjs"
+    "./commands/resume": "./src/commands/resume.mjs",
+    "./commands": "./src/commands.mjs"
   },
   "files": [
     "src"
