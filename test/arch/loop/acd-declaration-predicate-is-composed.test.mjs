@@ -185,7 +185,7 @@ export const archTests = [
   {
     name: "arch/126/02 FF-12604 leg 6: the fresh-mint retry test is not collapsed into the predicate",
     run: async () => {
-      const runStart = await source("src/commands/run-start.mjs");
+      const runStart = await source("packages/work/src/commands/run-start.mjs");
       const engine = await source(ENGINE);
       const body = functionBody(engine, "export function decideSupervisedDeclarations(");
       // Both route their retry classification through the store rather than restating it…

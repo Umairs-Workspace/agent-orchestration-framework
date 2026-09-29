@@ -26,9 +26,11 @@ export const archTests = [
         assert.ok(!source.includes("mesh.enabled"), `${rel} does not make its own mesh.enabled decision`);
         assert.ok(!source.includes("config?.mesh?.enabled"), `${rel} does not duplicate the optional-chain predicate`);
       }
-      const feedback = await readFile(path.join(repoRoot, "packages/work/src/commands/feedback.mjs"), "utf8");
-      assert.ok(!feedback.includes("mesh.enabled") && !feedback.includes("config?.mesh?.enabled"), "the package command also delegates propagation policy");
-      assert.match(feedback, /threadPropagationWarnings\(/);
+      for (const name of ["feedback", "run-start", "run-complete"]) {
+        const implementation = await readFile(path.join(repoRoot, `packages/work/src/commands/${name}.mjs`), "utf8");
+        assert.ok(!implementation.includes("mesh.enabled") && !implementation.includes("config?.mesh?.enabled"), `${name}: the package command also delegates propagation policy`);
+        assert.match(implementation, /threadPropagationWarnings\(/);
+      }
     },
   },
 ];

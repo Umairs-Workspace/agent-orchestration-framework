@@ -95,7 +95,11 @@
     "./commands/counters": "./src/commands/counters.mjs",
     "./commands/ratchet": "./src/commands/ratchet.mjs",
     "./commands/audit": "./src/commands/audit.mjs",
-    "./commands/acceptor": "./src/commands/acceptor.mjs"
+    "./commands/acceptor": "./src/commands/acceptor.mjs",
+    "./commands/run-start": "./src/commands/run-start.mjs",
+    "./commands/run-complete": "./src/commands/run-complete.mjs",
+    "./commands/run-retry": "./src/commands/run-retry.mjs",
+    "./commands/run-status": "./src/commands/run-status.mjs"
   },
   "files": [
     "src"

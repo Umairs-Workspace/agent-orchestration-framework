@@ -23,9 +23,13 @@ export const archTests = [
         assert.ok(!source.includes("openGlobalWorkProjectionStore"), `${rel} does not open the global store directly`);
         assert.ok(!source.includes("publishWorkspaceSnapshot"), `${rel} does not call the projection writer directly`);
       }
-      const feedback = await readFile(path.join(repoRoot, "packages/work/src/commands/feedback.mjs"), "utf8");
-      for (const forbidden of ["global-work-store.mjs", "openGlobalWorkProjectionStore", "publishWorkspaceSnapshot"]) {
-        assert.ok(!feedback.includes(forbidden), `the package command does not access ${forbidden}`);
+      for (const name of ["feedback", "run-start", "run-complete"]) {
+        const implementation = await readFile(path.join(repoRoot, `packages/work/src/commands/${name}.mjs`), "utf8");
+        for (const forbidden of ["global-work-store.mjs", "openGlobalWorkProjectionStore", "publishWorkspaceSnapshot"]) {
+          assert.ok(!implementation.includes(forbidden), `${name}: the package command does not access ${forbidden}`);
+        }
+        const binding = await readFile(path.join(repoRoot, `src/commands/${name}.mjs`), "utf8");
+        assert.match(binding, /Command\(\{[^}]*threadPropagationWarnings/);
       }
       const composition = await readFile(path.join(repoRoot, "src/commands/feedback.mjs"), "utf8");
       assert.match(composition, /createFeedbackCommand\(\{[^}]*threadPropagationWarnings/);

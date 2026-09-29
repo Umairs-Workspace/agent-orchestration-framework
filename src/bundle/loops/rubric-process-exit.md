@@ -12,9 +12,9 @@ data-feed: [loop:build-to-green]
 Framework record source: `src/bundle/loops/rubric-process-exit.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 `reportObservation` is the exported command-boundary seam that reads a completed rubric subprocess
-capture and retains its exit status (`src/commands/grade.mjs:179-183`, `:253`). `compileGrade` then
+capture and retains its exit status (`packages/work/src/commands/grade.mjs:202-206`). `compileGrade` then
 treats a non-zero status as a veto even when the report text looks green
-(`src/work/grade.mjs:456-462`). That is direct evidence for `ground: process-exit` rather than a
+(`packages/work/src/grade.mjs:461-467`). That is direct evidence for `ground: process-exit` rather than a
 claim inferred from prose.
 
 The `data-feed` edge to `loop:build-to-green` is supported by that loop's controlled value —

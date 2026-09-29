@@ -45,7 +45,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The module set milestone 96 / story 00 touches. The absence is asserted over these and not
 // over `src/**` at large: a control that swept everything would be measuring other milestones'
 // modules and would fail for their reasons, not this one's.
-const MODULE_SET = ["packages/work/src/observe.mjs", "src/mesh/session.mjs", "src/commands/run-start.mjs"];
+const MODULE_SET = ["packages/work/src/observe.mjs", "src/mesh/session.mjs", "packages/work/src/commands/run-start.mjs"];
 
 // The retired path's own vocabulary. `agentMatchesMilestone` is FF-6805's subject by name; the
 // rest are the shapes a widened join would have to wear — a ref matched against a directory
@@ -196,7 +196,7 @@ export const archTests = [
       // The flag heads the ladder, structurally: the store is consulted only under the
       // absent-flag branch, so no future edit can make the store answer over an explicit id
       // without deleting the guard.
-      const runStart = await source("src/commands/run-start.mjs");
+      const runStart = await source("packages/work/src/commands/run-start.mjs");
       const guard = /if\s*\(\s*sessionId\s*==\s*null\s*\)\s*\{[\s\S]{0,400}?resolveSessionIdFromLiveStore/;
       assert.match(runStart, guard, "the live-store rung is consulted only when the --session flag supplied nothing");
 

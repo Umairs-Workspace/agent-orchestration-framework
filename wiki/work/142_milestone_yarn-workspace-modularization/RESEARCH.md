@@ -731,3 +731,17 @@ define the audited project's source roots and cover package implementations with
 dependencies as project source. Tune already delegates this population to acceptor; it must not gain
 a second source enumerator. Legacy counter metric citations also remain pending the final citation
 and composition audit. Moving the command alone does not satisfy either requirement.
+
+Run command ownership follows the work-item operation rather than the storage mechanism. Start,
+complete, retry and status now live in work; execution owns the records they consume. Configured
+item resolution, local-checkout requirements, driven-session resolution, mesh presence/session/cache
+reads and application transitions enter through core ports. This preserves the retry command's
+deliberate distinction between lock context and publication context: supplying a workspace there
+would introduce a new publish side effect. The package's retry test explicitly rejects that change.
+
+The run-status render still receives the work-loop elapsed-time calculation through composition.
+Architecture guards follow both that core binding and its package call site, and its document freeze
+now pins the package implementation. Max-attempt resolution remains at the same four logical sites;
+the source classifier and its mutation specimens follow the two relocated command files. Shipped
+run-resilience, watcher and rubric citations now point at the relevant implementations. Their pending
+generated-copy refresh is separate from source ownership and does not authorize workflow operations.

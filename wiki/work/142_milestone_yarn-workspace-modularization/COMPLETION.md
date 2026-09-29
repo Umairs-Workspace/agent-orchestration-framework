@@ -39,6 +39,10 @@ Audit and acceptor command implementations are also extracted with configured co
 Acceptor's sourceUnits(root) still scans only the audited project's src/ directory. Workspace-aware
 source discovery, with coverage over package implementations and exclusion of installed dependencies,
 is a required remaining task. Legacy counter metric citations need final review with the asset paths.
+Work also owns run start/complete/retry/status commands, with execution persistence and application
+transitions supplied by core. Final removal of those composition adapters remains outstanding.
+Generated-output parity is still incomplete: four previously pending loop copies, four additional
+watcher/rubric copies and three pay-debt renders need citation-only refreshes and matching lock hashes.
 
 No row with outstanding work is satisfied by an empty workspace, a forwarding shell, a passing
 unrelated test, or moving an import cycle behind dynamic imports. The goal remains active until

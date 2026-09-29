@@ -253,7 +253,8 @@ export const archTests = [
         // helpers beneath it; `run()`, the input schema and `json: (result) => result` are
         // byte-identical. Re-pinned rather than dropped, per 55/VERIFICATION F-55-02-1 — an
         // unpinned file is covered by no byte-freeze at all.
-        ["src/commands/run-status.mjs", "fbf7f25f6c9f32383043044a3a1448eab040ff3d6c7f47aec70655e2dc027ee3"],
+        // RE-PINNED by 142: work owns the unchanged command body; core supplies execution and cache services.
+        ["packages/work/src/commands/run-status.mjs", "7d2f994f5eaf1469e0c1e04da364a265d25cf958d0c59bd9f73b1ac714773ebe"],
         // RE-PINNED by 127/04 (ADR-006 §2, task 02): `/api/work/list` threads `includeArchived=1`
         // through to `work:list`'s own `all` — the ONE parameter that story adds. The run/board seam
         // is otherwise untouched: no run key, no loop-state read, the envelope's shape unchanged.

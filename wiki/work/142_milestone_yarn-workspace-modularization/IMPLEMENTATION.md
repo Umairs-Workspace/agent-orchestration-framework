@@ -1366,3 +1366,35 @@ Evidence in `.tmp/workspace-migration/work-audit-faces/`:
 Acceptor source discovery still walks only the audited project's src/ tree. Workspace-aware discovery
 and final citation review remain required, as do remaining command/domain extractions, core/apps
 layout, composition, compatibility removal and whole-tree/platform verification.
+
+## Work run command implementations
+
+Start, complete, retry and status now live in work with explicit core service ports. Run persistence
+stays in execution. The commands retain exact write resolution, driven-run ownership, mesh reclaim
+gates, retry policy, park provenance, worker-cache reads and publication behavior.
+
+Evidence in `.tmp/workspace-migration/work-run-faces/`:
+
+- Four legacy API/value/function-body comparisons pass. Four new package tests cover driven-run
+  echo before reclaim/mint, invalid-outcome rejection before resolution, one terminal transition,
+  retry ceiling/node/lock binding without publication context and remote scope reads without disk
+  reach-through. The root bridge includes all 143 package cases.
+- The 82-suite affected selection completed 1,144 cases: 1,125 passed and 19 failed. Source-location,
+  frozen-source and citation corrections are covered by the final 255-case run across 13 suites
+  and eight shipped-citation checks. Two pre-existing generated-output checks remain unresolved;
+  this is not a claim that the complete selection is green. The final census passes all 12 cases.
+- Source and copied-installation fixtures compare exact-ref refusal, fresh mint, duplicate refusal,
+  driven start/complete echoes, session-limit parking, early-retry refusal, forced retry lineage,
+  completion, slug-based history, render/JSON output and persisted run/record bytes. Fixture roots
+  and generated event IDs are normalized; run IDs and record contents are compared unchanged.
+  All four exports resolve inside the copied payload, which retains 117 commands.
+- Standalone JavaScript bundling includes all four implementations and passes earlier extraction
+  assertions. Supply-chain audit has zero warnings. No dependency change or workflow operation.
+- Corrected canonical citations in run-resilience and four watcher/rubric records. Generated copies
+  remain untouched. Prepared citation-only data records the proposed content and before/after hashes;
+  the pending run-resilience preparation now reflects the new command paths. Four additional generated
+  files (autonomous-cascade-watcher, review-fix-rereview-watcher, build-to-green-watcher and
+  rubric-process-exit) need inclusion in the eventual authorized refresh, with their lock hashes.
+
+Remaining work commands/services and contribution, other domains, core/apps layout, final composition,
+compatibility removal and whole-tree/platform verification remain outstanding.

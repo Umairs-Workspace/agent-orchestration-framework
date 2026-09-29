@@ -349,3 +349,15 @@ The final census passes all 12 cases; standalone JavaScript bundling and supply-
 No dependencies, generated copies or workflow state changed. Acceptor still scans only the audited
 project's src/ tree: workspace-aware discovery is explicitly outstanding alongside remaining domain
 extraction, final layout/composition and whole-tree/platform verification.
+
+Run-command extraction: work owns start, complete, retry and status command implementations; execution
+retains run persistence, and core supplies resolution, mesh/cache, transition and publication services.
+Four legacy API/value/function comparisons pass. The 82-suite affected run finished with 1,125 passes
+and 19 failures. Corrected guards pass 255 cases across 13 suites, and all eight shipped-citation checks
+pass; two existing generated-output checks remain unresolved. Four new package tests bring the bridge
+to 143 cases. Source and copied-installation fixtures preserve minting, driven echoes, park/refusal,
+retry lineage, completion, history and persisted bytes, retaining 117 commands. Standalone JavaScript,
+supply-chain audit and all 12 census checks pass. Five canonical loop citations were corrected; no
+generated files or workflow state changed. The four additional generated watcher/rubric copies need
+an eventual citation-only refresh alongside the previously pending four loops and three pay-debt
+renders. Final source layout, package composition and remaining domains/verification are still open.

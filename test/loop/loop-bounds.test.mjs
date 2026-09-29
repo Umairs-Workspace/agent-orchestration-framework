@@ -165,7 +165,7 @@ export const loopBoundsTests = [
       // OWN `work.loop.dispatch.concurrency` (129/07) is read here and is not the pool's key.
       assert.doesNotMatch(source, /work\??\.dispatch\??\.concurrency|autonomous\??\.maxAttempts/u);
       assert.equal(dispatchConcurrencyFromConfig({ config: { work: { dispatch: { concurrency: 7 } } } }), 7);
-      const retry = await readFile(path.join(root, "src", "commands", "run-retry.mjs"), "utf8");
+      const retry = await readFile(path.join(root, "packages", "work", "src", "commands", "run-retry.mjs"), "utf8");
       assert.match(retry, /config\?\.work\?\.autonomous\?\.maxAttempts\s*\?\?\s*3/u);
     },
   },

@@ -148,7 +148,7 @@ const CONTROL_SIDE = [
   { file: path.join("packages", "work", "src", "commands", "resolve.mjs"), subject: "resolveItem", adapter: "src/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
   { file: path.join("packages", "work", "src", "commands", "resolve.mjs"), subject: "resolveItemExact", adapter: "src/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
   { file: path.join("packages", "work", "src", "commands", "list.mjs"), subject: "listCommand", adapter: "src/commands/list.mjs", cacheSymbols: ["listStreamCacheFirst"], factory: "createListCommand" },
-  { file: path.join("src", "commands", "run-start.mjs"), subject: "runStartCommand" },
+  { file: path.join("packages", "work", "src", "commands", "run-start.mjs"), subject: "runStartCommand" },
   { file: path.join("src", "commands", "mesh", "heartbeat.mjs"), subject: "meshHeartbeatCommand" },
   // (promote-gap-to-chore.mjs moved to STRUCTURAL — ADR-010/R6.3)
   //

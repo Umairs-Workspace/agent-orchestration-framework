@@ -10,9 +10,9 @@ import * as loopBounds from "../../../src/loop-bounds.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const EXPECTED_READERS = Object.freeze([
-  "src/commands/run-retry.mjs",
+  "packages/work/src/commands/run-retry.mjs",
   "src/commands/resume.mjs",
-  "src/commands/run-start.mjs",
+  "packages/work/src/commands/run-start.mjs",
   "packages/work-loop/src/commands/loop.mjs",
 ]);
 const DECLARATION_INSPECTORS = Object.freeze(["packages/work/src/doctor/loop-ready.mjs"]);
@@ -459,8 +459,8 @@ export const archTests = [
         },
         {
           id: "CAP-MUT-04",
-          units: without(units, "src/commands/run-start.mjs"),
-          reports: ["CAP-MUT-04", "src/commands/run-start.mjs", "may now be REDUCED"],
+          units: without(units, "packages/work/src/commands/run-start.mjs"),
+          reports: ["CAP-MUT-04", "packages/work/src/commands/run-start.mjs", "may now be REDUCED"],
         },
         {
           id: "CAP-MUT-05",
@@ -469,8 +469,8 @@ export const archTests = [
         },
         {
           id: "CAP-MUT-06",
-          units: replacing(units, "src/commands/run-retry.mjs", "const maxAttempts = input.maxAttempts ?? ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 5;\n"),
-          reports: ["CAP-MUT-06", "src/commands/run-retry.mjs", "?? 5"],
+          units: replacing(units, "packages/work/src/commands/run-retry.mjs", "const maxAttempts = input.maxAttempts ?? ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 5;\n"),
+          reports: ["CAP-MUT-06", "packages/work/src/commands/run-retry.mjs", "?? 5"],
         },
       ];
       for (const plant of plants) {

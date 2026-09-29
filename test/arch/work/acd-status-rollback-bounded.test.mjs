@@ -39,7 +39,7 @@ import { ITEM_STATUS_EDGES } from "../../../src/acceptance-horizon.mjs";
 const WORK = new URL("../../../packages/work/src/records.mjs", import.meta.url);
 const HORIZON = new URL("../../../packages/work/src/lifecycle.mjs", import.meta.url);
 const RUN_COMMANDS = ["run-start.mjs", "run-complete.mjs", "run-status.mjs", "run-retry.mjs"].map(
-  (name) => new URL(`../../../src/commands/${name}`, import.meta.url),
+  (name) => new URL(`../../../packages/work/src/commands/${name}`, import.meta.url),
 );
 const WRITE_VERBS = ["writeText", "writeFile", "appendFile"];
 
