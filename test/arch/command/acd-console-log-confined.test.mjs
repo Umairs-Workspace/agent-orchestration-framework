@@ -54,7 +54,7 @@ const PRINTERS = {
 
   // (3) Interactive + long-lived-server prints that are not a command document.
   "prompt.mjs": "interactive prompting — the question IS the output, and it is not a document",
-  "terminal-ws.mjs": "the board server's terminal socket: the spawned-PTY pid line, traceability for a running process",
+  "../packages/server/src/terminal-ws.mjs": "the board server's terminal socket: the spawned-PTY pid line, traceability for a running process",
 
   // (4) The ONE DELIBERATELY unrouted ladder door left (WAVE-D-MIGRATION d1 wave 2:
   // "work memory and session stay laddered by design — they delegate wholesale").

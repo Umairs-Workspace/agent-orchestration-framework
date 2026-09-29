@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(repoRoot, "src");
-const terminalWsPath = path.join(srcRoot, "terminal-ws.mjs");
+const terminalWsPath = path.join(repoRoot, "packages/server/src/terminal-ws.mjs");
 const ptyPath = path.join(repoRoot, "packages/execution/src/pty.mjs");
 
 function stripComments(source) {

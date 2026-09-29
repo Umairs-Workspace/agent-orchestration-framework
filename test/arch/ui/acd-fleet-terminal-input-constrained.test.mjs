@@ -185,7 +185,7 @@ const SOURCE_TABLE = path.join(repoRoot, "ui", "src", "terminal", "source-table.
 const FLEET_TERMINAL_MOUNT = path.join(repoRoot, "ui", "src", "fleet", "terminal-mount.mjs");
 // The worker's own local /ws/terminal (scanned, never modified): its
 // bidirectional input direction predates and outlives this feature.
-const TERMINAL_WS = path.join(repoRoot, "src", "terminal-ws.mjs");
+const TERMINAL_WS = path.join(repoRoot, "packages", "server", "src", "terminal-ws.mjs");
 
 // LINE COMMENTS FIRST, BLOCK COMMENTS SECOND — the order is load-bearing (TECH_DEBT item 24):
 // strip blocks first and a line comment containing `/*` deletes the rest of the file before any

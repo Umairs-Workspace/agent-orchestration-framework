@@ -223,6 +223,24 @@ async function withTempFamily(layout, run) {
 }
 
 export const archTests = [
+  {
+    name: "arch/142 import declarations ignore quoted CLI vocabulary but retain real static and template-expression imports",
+    run() {
+      const source = [
+        'const route = ["import", "milestone"];',
+        'const verb = preview ? "Would import" : "Imported";',
+        'const prose = "import x from \'fake-package\'";',
+        'import "./side-effect.mjs";',
+        'import {',
+        '  actual',
+        '} from "./actual.mjs";',
+        'export { actual } from "./public.mjs";',
+        'const lazy = `${await import("./lazy.mjs")}`;',
+      ].join('\n');
+      assert.deepEqual(importSpecifiers(source).map(entry => entry.specifier).sort(),
+        ['./actual.mjs', './lazy.mjs', './public.mjs', './side-effect.mjs']);
+    },
+  },
   // ── leg 1: the class ───────────────────────────────────────────────────────────────────────────
   {
     name: "arch/119 FF-11901: NO control under test/arch/ asserts purity by banning an import statement with no specifier",
@@ -319,7 +337,7 @@ export const archTests = [
       // The classifier's home strips comments through the stripper's home, and nowhere else. That
       // is TECH_DEBT item 24's ratchet reaching the new module on arrival rather than after it
       // grows its own.
-      assert.match(home, /import \{ stripComments \} from "\.\/source-slice\.mjs";/u, `${ONE_HOME} strips comments through ${STRIPPER_HOME}`);
+      assert.match(home, /import \{[^}]*\bstripComments\b[^}]*\} from "\.\/source-slice\.mjs";/u, `${ONE_HOME} strips comments through ${STRIPPER_HOME}`);
       assert.doesNotMatch(
         stripComments(home).replace(/import \{ stripComments \}[^\n]*\n/u, ""),
         /function\s+strip\w*Comments|replace\([^)]*\/\\\/\\\//u,

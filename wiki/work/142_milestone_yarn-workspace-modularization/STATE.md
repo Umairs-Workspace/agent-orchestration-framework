@@ -471,3 +471,18 @@ The final census/registry selection passes all 20 checks, and the command suite 
 including its bridge to 176 package tests.
 Conversion into managed work, mesh/server, final core/apps layout/composition, adapter removal and
 whole-tree/platform verification remain outstanding.
+
+Server extraction: @aof/server owns six HTTP/WebSocket/MCP/static implementations. Core supplies
+command invocation, config editing, workspace/provider/session services and asset resolution.
+Six legacy APIs and 23 exported values/function bodies match; all 117 descriptors/order match.
+Four public transport tests pass locally and in a copied installation; the command bridge now runs
+180 package cases. The 60-suite selection passed 738 cases with 24 failures. Source ownership and
+factory-aware corrections pass 394 cases with four failures, followed by 27 passing final guard
+checks with one import-scanner defect. Correcting quoted-import detection and remaining cache-reader
+pins yields 48 passing checks across the final eight suites. The broader run also exposes known
+repository work-tree validation failures, including ordinary milestone 142 and a backlog context
+contract; those records remain unchanged. All six public server APIs resolve inside the copied
+installation and bundle into standalone JavaScript. Yarn skip-build/immutable installs and audit
+pass with no third-party version changes. Final mesh transport/domain separation, core/apps layout,
+composition, adapter removal and whole-tree/native/platform verification remain open.
+The final runtime census/registry selection passes all 20 checks.

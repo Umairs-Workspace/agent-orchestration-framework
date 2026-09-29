@@ -1,0 +1,24 @@
+{
+  "name": "@aof/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./static-serve": "./src/static-serve.mjs",
+    "./board-ui": "./src/board-ui.mjs",
+    "./setup-ui": "./src/setup-ui.mjs",
+    "./board-serve": "./src/board-serve.mjs",
+    "./terminal-ws": "./src/terminal-ws.mjs",
+    "./graph-mcp-server": "./src/graph-mcp-server.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@aof/execution": "workspace:*",
+    "ws": "^8.21.0"
+  }
+}

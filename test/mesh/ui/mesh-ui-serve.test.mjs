@@ -924,11 +924,11 @@ function loopbackHostTests() {
       name: "131/04 task02 — the predicate is one export in the shared leaf, called by both admissions",
       async run() {
         const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => stripComments(text));
-        const leaf = await read("src/static-serve.mjs");
+        const leaf = await read("packages/server/src/static-serve.mjs");
         assert.deepEqual(importSpecifiers(leaf).map((entry) => entry.specifier), ["node:path"], "static-serve.mjs imports only node:path");
         const exported = [...leaf.matchAll(/^export function (\w+)/gmu)].map((match) => match[1]).sort();
         assert.deepEqual(exported, ["contentType", "isLoopbackHost", "safeStaticPath", "shouldServeAppShell"]);
-        for (const rel of ["src/board-ui.mjs", "src/mesh/ui-serve.mjs"]) {
+        for (const rel of ["packages/server/src/board-ui.mjs", "src/mesh/ui-serve.mjs"]) {
           const source = await read(rel);
           const at = source.indexOf("function admitWriteRequest(");
           assert.ok(at >= 0, `${rel} defines admitWriteRequest`);

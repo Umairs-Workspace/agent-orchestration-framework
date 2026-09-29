@@ -71,8 +71,8 @@ export const archTests = [
   {
     name: "arch/ADR-001: exactly ONE http.createServer across the UI-server surface",
     run: async () => {
-      const setupUi = await readFile(path.join(repoRoot, "src", "setup-ui.mjs"), "utf8");
-      const terminalWs = await readFile(path.join(repoRoot, "src", "terminal-ws.mjs"), "utf8");
+      const setupUi = await readFile(path.join(repoRoot, "packages", "server", "src", "setup-ui.mjs"), "utf8");
+      const terminalWs = await readFile(path.join(repoRoot, "packages", "server", "src", "terminal-ws.mjs"), "utf8");
       const combined = setupUi + "\n" + terminalWs;
       // Count the CALL form `http.createServer(` — the structural invariant — so a
       // comment that merely names the invariant ("one http.createServer") is fine.
@@ -86,7 +86,7 @@ export const archTests = [
   {
     name: "arch/ADR-001: the terminal is wired via server.on('upgrade') + noServer, routing only /ws/terminal",
     run: async () => {
-      const terminalWs = await readFile(path.join(repoRoot, "src", "terminal-ws.mjs"), "utf8");
+      const terminalWs = await readFile(path.join(repoRoot, "packages", "server", "src", "terminal-ws.mjs"), "utf8");
       assert.ok(/server\.on\(\s*["']upgrade["']/.test(terminalWs), "wires the HTTP upgrade event");
       assert.ok(/new WebSocketServer\(\s*\{\s*noServer:\s*true/.test(terminalWs), "uses a noServer WebSocketServer");
       assert.ok(/handleUpgrade\(/.test(terminalWs), "completes the upgrade via handleUpgrade");
@@ -101,8 +101,8 @@ export const archTests = [
   {
     name: "arch/ADR-001: no board HTTP route begins with /ws/ (the namespaces are disjoint)",
     run: async () => {
-      const boardUi = await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8");
-      const setupUi = await readFile(path.join(repoRoot, "src", "setup-ui.mjs"), "utf8");
+      const boardUi = await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8");
+      const setupUi = await readFile(path.join(repoRoot, "packages", "server", "src", "setup-ui.mjs"), "utf8");
       // Board HTTP routes live under /api/work*; none is a /ws/ string.
       for (const [label, text] of [["board-ui.mjs", boardUi], ["setup-ui.mjs", setupUi]]) {
         const wsRoutes = [...text.matchAll(/pathname\s*===\s*["'](\/ws\/[^"']*)["']/g)];

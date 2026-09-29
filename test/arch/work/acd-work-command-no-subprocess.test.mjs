@@ -17,7 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOARD_UI = path.join(repoRoot, "src", "board-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages", "server", "src", "board-ui.mjs");
 
 // Strip `// …` line comments and `/* … */` block comments so a comment that merely
 // names a verb ("never a spawn shell-out") does not trip the call-form grep. This

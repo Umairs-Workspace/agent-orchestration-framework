@@ -53,9 +53,9 @@ import { fileURLToPath } from "node:url";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOARD_SERVE = path.join(repoRoot, "src", "board-serve.mjs");
-const SETUP_UI = path.join(repoRoot, "src", "setup-ui.mjs");
-const BOARD_UI = path.join(repoRoot, "src", "board-ui.mjs");
+const BOARD_SERVE = path.join(repoRoot, "packages", "server", "src", "board-serve.mjs");
+const SETUP_UI = path.join(repoRoot, "packages", "server", "src", "setup-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages", "server", "src", "board-ui.mjs");
 const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
 const WORK_UI_COMMAND = path.join(repoRoot, "src", "commands", "work-ui.mjs");
 
@@ -73,9 +73,9 @@ const WORK_UI_COMMAND = path.join(repoRoot, "src", "commands", "work-ui.mjs");
 // defeatable (a block comment whose closing `*/` sits on a line containing a `//` URL
 // swallows everything after it). TECH_DEBT 24 recommendation (b).
 const BOARD_SERVER_SURFACE = [
-  ["board-serve.mjs", BOARD_SERVE, "export async function serveBoard"],
-  ["setup-ui.mjs", SETUP_UI, "export async function serveSetupUi"],
-  ["board-ui.mjs", BOARD_UI, "export async function handleWorkApi"],
+  ["board-serve.mjs", BOARD_SERVE, "async function serveBoard"],
+  ["setup-ui.mjs", SETUP_UI, "async function serveSetupUi"],
+  ["board-ui.mjs", BOARD_UI, "async function handleWorkApi"],
 ];
 
 // Discount `// …` and `/* … */` so a comment NAMING the forbidden module (all three
@@ -189,7 +189,7 @@ export const archTests = [
       const eaten = stripComments(defeated);
       assert.ok(!eaten.includes("mesh-ui-serve"), "the stripper IS defeatable — the forbidden import vanishes from the stripped source");
       assert.ok(
-        !eaten.includes("export async function serveBoard"),
+        !eaten.includes("async function serveBoard"),
         "…and it takes the canary with it, which is exactly what makes the canary a guard rather than decoration"
       );
     },
@@ -259,9 +259,9 @@ export const archTests = [
     run: async () => {
       const entryPoints = [
         "src/mesh/ui-serve.mjs",
-        "src/board-serve.mjs",
-        "src/setup-ui.mjs",
-        "src/board-ui.mjs",
+        "packages/server/src/board-serve.mjs",
+        "packages/server/src/setup-ui.mjs",
+        "packages/server/src/board-ui.mjs",
         "src/command-core.mjs",
         "src/cli.mjs",
       ];

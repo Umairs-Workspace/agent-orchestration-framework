@@ -548,7 +548,7 @@ export const invariant4AmendedTests = [
       const identity = lf(stripComments(await readFile(path.join(repoRoot, "ui", "src", "terminal", "pane-identity.mjs"), "utf8")));
       assert.match(identity, /→\s*\$\{far\}|\$\{owner\}\s*→/, "the identity line still names the far end in WORDS");
 
-      const terminalWs = lf(stripComments(await readFile(path.join(repoRoot, "src", "terminal-ws.mjs"), "utf8")));
+      const terminalWs = lf(stripComments(await readFile(path.join(repoRoot, "packages", "server", "src", "terminal-ws.mjs"), "utf8")));
       assert.match(terminalWs, /term\.write\s*\(/, "and `src/terminal-ws.mjs` still writes its own PTY, untouched by this feature");
     },
   },

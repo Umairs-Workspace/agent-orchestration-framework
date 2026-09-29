@@ -878,3 +878,16 @@ work's public lifecycle, heading and record contracts.
 Import services use explicit configured ports for workspace paths, the shipped digest renderer and
 schema version. Package tests can therefore exercise real temporary source/storage directories
 without loading the application registry or locating assets relative to the repository root.
+
+## Server ownership follow-up
+
+Board HTTP, config-editor HTTP, terminal WebSocket and graph MCP are transport adapters. Their
+services now enter through factory ports in `@aof/server`, keeping command execution shared without
+an upward dependency on core. Static path/MIME/fallback/loopback rules stay a directly importable
+pure module. The board launcher retains explicit asset and trust collaborators, and native PTY
+loading remains execution-owned and deferred.
+
+`control-stream-server.mjs` and `mesh/ui-serve.mjs` contain mesh coordination decisions as well as
+network I/O. Moving those whole files into server would assign domain policy to the wrong owner.
+Their next extraction must preserve mesh ownership of assignment, presence, credentials and
+terminal relay behavior while identifying any reusable transport portion.

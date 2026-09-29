@@ -19,7 +19,7 @@ final tree. Historical passing checks alone do not prove the final layout works.
 | Knowledge owns memory/Graphify operations | Implemented in @aof/knowledge: Graphify integration, normalization/impact, memory seam/backends/indexing/retrieval, source recovery, import storage/materialization and seven command descriptors/contribution. Final composition and compatibility removal remain open; MCP transport remains for server extraction. |
 | Notion owns integration behavior and CLI contribution | Implemented with injected core/work collaborators; replace transitional services as their owners move. |
 | Effects kernel is separate from domain handlers/registration | Implemented; remaining transitional domain services and runtime cycles must be resolved. |
-| Server owns transport adapters with injected application services | Outstanding. |
+| Server owns transport adapters with injected application services | @aof/server owns board routes, setup HTTP, board launching, terminal WebSocket, static serving and graph MCP, with explicit application ports. Mesh fleet/control transport remains mixed with coordination policy; final assembly and compatibility removal remain open. |
 | UI and desktop are separate applications with package scripts | UI workspace exists at `ui/`; final `apps/` layout, desktop wrapper, asset paths and Cargo checks outstanding. |
 | Feature-owned CLI definitions; shared namespaces; deterministic conflict detection | Contracts/registry seams implemented; remaining feature commands must move with their domains. |
 | Shared invocation for CLI/UI/MCP; lightweight registration/help | Existing behavior preserved by checks to date; verify final assembly and optional integration isolation. |

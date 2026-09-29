@@ -25,7 +25,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const ROUTE_COVERAGE = path.join(repoRoot, "test/arch/work/acd-work-command-route-coverage.test.mjs");
-const BOARD_UI = path.join(repoRoot, "src/board-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages/server/src/board-ui.mjs");
 const ID = "work:loop-document";
 const OP = "loop-document";
 

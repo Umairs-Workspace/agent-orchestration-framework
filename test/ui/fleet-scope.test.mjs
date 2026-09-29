@@ -2094,10 +2094,10 @@ export const fleetScopeTests = [
       // 133/04 and `aof:verify 133` re-pin board-ui AFTER this story, each with its own reason
       // stacked above the entry (read by FF-12603 leg 6), so this leg reads it as present and
       // re-pinned by 133 rather than freezing a digest this story does not own.
-      assert.match(gate, /\["src\/board-ui\.mjs", "[0-9a-f]{64}"\]/, "the board-ui pin is present");
+      assert.match(gate, /\["packages\/server\/src\/board-ui\.mjs", "[0-9a-f]{64}"\]/, "the board-ui pin is present");
       // 131/04 stacks a third board-ui mover (one hoisted admission and one route onto
       // `work:answer`), so this window widens by its comment's length too.
-      assert.match(gate, /RE-PINNED by 133\/04[\s\S]{0,1800}\["src\/board-ui\.mjs"/, "the board-ui pin moved after this story only with 133's stated reason");
+      assert.match(gate, /RE-PINNED by 133\/04[\s\S]{0,1800}\["packages\/server\/src\/board-ui\.mjs"/, "the board-ui pin moved after this story only with 133's stated reason");
       const { archTests } = await import("../arch/loop/acd-loop-state-rides-the-run-record.test.mjs");
       const control = archTests.find((test) => /frozen store and board read surfaces/.test(test.name));
       assert.ok(control, "the FF-5307 digest control exists");

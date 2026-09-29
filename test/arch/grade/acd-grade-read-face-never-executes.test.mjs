@@ -97,7 +97,7 @@ export const archTests = [
         await new Promise((resolve) => server.close(resolve));
       }
 
-      const boardUi = await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8");
+      const boardUi = await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8");
       assert.ok(!boardUi.includes("work:grade"), "src/board-ui.mjs never reaches the grade command");
     },
   },

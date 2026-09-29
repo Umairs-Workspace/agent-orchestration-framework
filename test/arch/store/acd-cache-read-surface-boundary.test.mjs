@@ -161,7 +161,7 @@ const CONTROL_SIDE = [
   { file: path.join("packages", "work", "src", "commands", "promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore", adapter: "src/commands/promote-finding-to-chore.mjs" },
   { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "src/commands/notion-associate.mjs" },
   { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "src/notion/sync-work.mjs" },
-  { file: path.join("src", "memory", "local-indexing.mjs"), subject: "buildRecords" },
+  { file: path.join("packages", "knowledge", "src", "memory", "local-indexing.mjs"), subject: "buildRecords", adapter: "src/memory/local-indexing.mjs", cacheSymbols: ["listItemsCacheFirst"], factory: "createLocalIndexing" },
   { file: path.join("src", "mesh", "assignment.mjs"), subject: "assignWork" },
   { file: path.join("src", "mesh", "assignment.mjs"), subject: "withdrawWork" },
   { file: path.join("src", "mesh", "assignment-reclaim.mjs"), subject: "reclaimStaleAssignments" },
@@ -197,8 +197,11 @@ async function assertPinned(group, label) {
     }
     const bindings = workImportBindings(source);
     if (diskSource) {
-      const imports = [...source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/gu)];
-      for (const match of imports.filter(match => match[2] === diskSource)) {
+      // Read named bindings from the declared disk source only; this is a clause
+      // assertion, not another general module-specifier extractor.
+      const escaped = diskSource.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const clause = new RegExp(`import\\s*\\{([^}]*)\\}\\s*from\\s*["']${escaped}["']`, "gu");
+      for (const match of source.matchAll(clause)) {
         for (const raw of match[1].split(",")) bindings.add(raw.trim().split(/\s+as\s+/)[0]);
       }
     }

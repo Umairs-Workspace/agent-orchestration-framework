@@ -1694,3 +1694,47 @@ Evidence in `.tmp/workspace-migration/imports/`:
 
 Generated runtime citation parity, remaining feature extraction, final core/apps layout, assembly,
 adapter removal and whole-tree/platform verification remain open.
+
+## Server transport ownership
+
+`@aof/server` now owns the six implementations for shared static serving, board HTTP routes,
+configuration/setup HTTP, board launching, local terminal WebSocket and graph MCP stdio. Core
+composes command lookup/invocation, workspace/configuration editing, provider/session services,
+trust, headroom and asset resolution. Server imports only Node APIs, `ws` and execution's public
+lazy PTY API. No native addon loads on transport import. Mesh fleet/control streaming still mixes
+transport with coordination policy and remains part of the remaining domain extraction.
+
+Evidence in `.tmp/workspace-migration/server/`:
+
+- All six legacy APIs and 23 exported values/function bodies match their saved originals. All
+  117 command descriptors and enumeration order remain unchanged.
+- The 60-suite affected run passed 738 cases with 24 failures. Path-sensitive source checks,
+  factory wiring assertions, the board hash pin and attribution listing were updated to follow
+  actual implementation. The corrected 31-suite selection passed 394 cases with four failures;
+  the final four-suite correction passed 27 checks with one import-scanner failure. After the
+  scanner and stale cache-reader guard corrections, eight final suites pass all 48 checks.
+  Known repository work-tree validation failures also appeared in the broad run: this ordinary
+  milestone is intentionally outside AOF, and an existing backlog story lacks a context contract.
+  No workflow state was changed to silence those checks.
+- Four new public package contracts exercise an ephemeral HTTP server, supplied command/config
+  services, static refusal/fallback, board launch/probe ports, MCP framing/error recovery and
+  bounded terminal input/close handling. All four pass locally and after the actual local installer
+  copies the payload. All six server APIs resolve inside that payload; its registry has 117 commands.
+  The existing root bridge now runs 180 package cases.
+- Standalone JavaScript contains all six server implementations. Native executable and supported
+  platform proof remains outstanding. Yarn skip-build and immutable installs pass with existing
+  peer warnings; supply-chain audit reports zero warnings. Only the new workspace and its declared
+  dependencies were added to the lockfile; no third-party version changed.
+- Final runtime source census/registry verification passes all 20 checks.
+
+The package-boundary sweep now includes server and the preceding knowledge/import extraction.
+Its shared import scanner previously mistook quoted CLI text such as `"import", "milestone"`
+for a side-effect import. Static declaration keywords must now survive the existing literal masker;
+dynamic calls retain template-substitution coverage. A registered regression test exercises both.
+The broader purity check also exposed a duplicated specifier extractor in a disk-reader guard;
+that guard now reads bindings only from its explicitly named disk source. Its knowledge indexer
+pin follows the package factory and verifies the configured cache-first port at both ends.
+
+The existing NOTICE attribution follows the relocated terminal transport. No assistant assets,
+checked-in generated files or lock hashes changed. Final core/apps layout, remaining mesh/work
+composition, adapter removal and whole-tree/native/platform checks remain open.

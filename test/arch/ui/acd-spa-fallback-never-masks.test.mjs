@@ -85,9 +85,9 @@ import { serveSetupUi } from "../../../src/setup-ui.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const STATIC_SERVE_MODULE = "src/static-serve.mjs";
+const STATIC_SERVE_MODULE = "packages/server/src/static-serve.mjs";
 const SERVERS = [
-  { file: "src/setup-ui.mjs", what: "the setup/board/config origin (board-serve.mjs:20 delegates here, so ONE fix covers both)" },
+  { file: "packages/server/src/setup-ui.mjs", what: "the setup/board/config origin (board-serve.mjs:20 delegates here, so ONE fix covers both)" },
   { file: "src/mesh/ui-serve.mjs", what: "the fleet origin — TIGHTENED by the same predicate, not pinned as-is (its :558-568 fallback is unconditional today)" },
 ];
 
@@ -181,7 +181,7 @@ export const archTests = [
       const found = [];
       for (const helper of HELPERS) {
         const definitions = [];
-        for (const rel of [STATIC_SERVE_MODULE, "src/setup-ui.mjs", "src/mesh/ui-serve.mjs"]) {
+        for (const rel of [STATIC_SERVE_MODULE, "packages/server/src/setup-ui.mjs", "src/mesh/ui-serve.mjs"]) {
           let source;
           try {
             source = await readFile(path.join(repoRoot, rel), "utf8");

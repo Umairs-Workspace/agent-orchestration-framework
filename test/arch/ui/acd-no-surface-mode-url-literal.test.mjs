@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function: acd-no-surface-mode-url-literal (m45 / ADR-002 + ADR-003) —
 //
 //   "No production module anywhere advertises a `?mode=` surface URL. The legacy
@@ -75,7 +76,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const SCAN_ROOTS = ["src", path.join("ui", "src"), path.join("app", "desktop")];
+const SCAN_ROOTS = [ path.join("ui", "src"), path.join("app", "desktop")];
 const SCANNED_EXT = new Set([".mjs", ".js", ".ts", ".tsx", ".mts", ".rs"]);
 // The ONE module allowed to name the legacy vocabulary: it owns the translation (ADR-003).
 const LEGACY_ALLOWED = new Set(["ui/src/app/routes.mjs", "ui/src/app/routes.d.mts"]);
@@ -102,7 +103,7 @@ const ROUTE_PATH_LITERAL = /(?<=["'`}\d])\/(fleet|board|config)(?=["'`?#\s,);]|$
 // ADR-002's enumeration checkable — `grep -rn "/fleet" src/` then finds every producer, and
 // assertion 3 below is what turns that from a habit into a gate.
 const PRODUCERS = [
-  { file: "src/board-serve.mjs", path: "/board", what: "the board launcher's `boardUrl` (:41 probe, :62 serve)" },
+  { file: "packages/server/src/board-serve.mjs", path: "/board", what: "the board launcher's `boardUrl` (:41 probe, :62 serve)" },
   { file: "src/mesh/ui-serve.mjs", path: "/fleet", what: "the fleet launcher's `fleetUrl` (:143 probe, :736 serve)" },
   { file: "src/commands/assets/ui.mjs", path: "/config", what: "the config editor's `uiUrl` (:45 serve, :117 probe) — `/config`, NOT `/assets`, because `/assets` is the built bundle's own asset directory (ui/dist/assets/index-*.js)" },
   { file: "app/desktop/crates/app/src/supervisor.rs", path: "/fleet", what: "the desktop tray's COMPILED `MESH_UI_URL` (:44) — a binary constant, which is also why ADR-003 sets no expiry on the legacy translation" },
@@ -186,7 +187,7 @@ export const archTests = [
   {
     name: "arch/45 ADR-003 (acd-no-surface-mode-url-literal): no production module in src/ · ui/src/ · app/desktop/ mints a `?mode=` surface URL — the legacy vocabulary is READ-ONLY, and only the translator reads it",
     run: async () => {
-      const files = [];
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.rel);
       for (const root of SCAN_ROOTS) await sourceFiles(path.join(repoRoot, root), files);
       // Non-vacuity: the walker genuinely reached all three trees.
       assert.ok(files.length > 200, `the production trees were actually walked (non-vacuous): ${files.length} files`);
@@ -241,7 +242,7 @@ export const archTests = [
   {
     name: "arch/45 ADR-002 (acd-no-surface-mode-url-literal): the route-path vocabulary is a CLOSED set of eight declared files — a FIFTH producer minting `/fleet` · `/board` · `/config` cannot appear unseen",
     run: async () => {
-      const files = [];
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.rel);
       for (const root of SCAN_ROOTS) await sourceFiles(path.join(repoRoot, root), files);
       assert.ok(files.length > 200, `the production trees were actually walked (non-vacuous): ${files.length} files`);
 

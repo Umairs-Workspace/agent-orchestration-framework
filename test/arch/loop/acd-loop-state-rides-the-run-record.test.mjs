@@ -272,7 +272,9 @@ export const archTests = [
         // `/api/work/answer` branch, `admitWriteRequest` + `sendMethodNotAllowed`, the
         // `./static-serve.mjs` import of `isLoopbackHost`, and `readJsonBody` refusing a non-object
         // body `invalid-body`. Re-pinned rather than dropped, per 55/VERIFICATION F-55-02-1.
-        ["src/board-ui.mjs", "50dea4d4563319fd8af398a5daf541f271e012e3020982d68db6730682a1d627"],
+        // RE-PINNED by 142: transport factory relocation only; all exported function bodies
+        // match the prior source and HTTP integration tests retain routing/persistence coverage.
+        ["packages/server/src/board-ui.mjs", "d0a2383b3a210b6ce6d23e2d2757bde1cdfaf3725ca1c869e8f20100d228d9a1"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

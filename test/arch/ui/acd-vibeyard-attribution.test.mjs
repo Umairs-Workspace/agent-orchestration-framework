@@ -32,7 +32,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // the code but the header did not. 46/04 adds both headers and both entries. That is a licence
 // obligation being repaired, not housekeeping.
 const ADAPTED_FILES = [
-  "src/terminal-ws.mjs",
+  "packages/server/src/terminal-ws.mjs",
   "packages/execution/src/pty.mjs",
   "packages/execution/src/providers.mjs",
   "ui/src/terminal/TerminalControl.tsx",

@@ -23,8 +23,8 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOARD_UI = path.join(repoRoot, "src", "board-ui.mjs");
-const SETUP_UI = path.join(repoRoot, "src", "setup-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages", "server", "src", "board-ui.mjs");
+const SETUP_UI = path.join(repoRoot, "packages", "server", "src", "setup-ui.mjs");
 
 // Discount `// …` and `/* … */` so a comment naming a verb/module is not a match.
 function stripComments(source) {
@@ -69,7 +69,11 @@ export const archTests = [
     name: "arch/ADR-004 inv.3: the command registry (./command-core.mjs) is the ONLY operation-bearing import",
     run: async () => {
       const source = stripComments(await readFile(BOARD_UI, "utf8"));
-      const specifiers = importSpecifiers(source).map((i) => i.specifier);
+      const binding = stripComments(await readFile(path.join(repoRoot, "src/board-ui.mjs"), "utf8"));
+      const specifiers = importSpecifiers(binding).map((i) => i.specifier);
+      assert.match(source, /export function createBoardApi\(\{[^}]*\binvoke\b[^}]*\bloadWorkspace\b/);
+      assert.match(binding, /createBoardApi\(\{[^}]*\binvoke\b[^}]*\bloadWorkspace\b/);
+      assert.deepEqual(importSpecifiers(source).map(i => i.specifier).sort(), ["./static-serve.mjs", "node:path"], "the transport imports only presentation helpers and receives command execution through ports");
       // The registry IS imported — the door is present (positive assertion the
       // ADR notes a deny-list lint could not make).
       assert.ok(
@@ -128,10 +132,11 @@ export const archTests = [
         "setup-ui.mjs imports no ./work.mjs, ./feature-parse.mjs, ./command-core.mjs, or ./commands/* directly"
       );
       // The one work door it DOES hold is handleWorkApi from ./board-ui.mjs.
-      assert.ok(
-        /import\s*\{[^}]*\bhandleWorkApi\b[^}]*\}\s*from\s*["']\.\/board-ui\.mjs["']/.test(source),
-        "setup-ui.mjs reaches the work surface via handleWorkApi from ./board-ui.mjs"
-      );
+      const binding = stripComments(await readFile(path.join(repoRoot, "src/setup-ui.mjs"), "utf8"));
+      assert.match(binding, /import\s*\{[^}]*\bhandleWorkApi\b[^}]*\}\s*from\s*["']\.\/board-ui\.mjs["']/);
+      assert.match(binding, /createSetupServer\(\{[^}]*\bhandleWorkApi\b/);
+      assert.match(source, /export function createSetupServer\(\{[^}]*\bhandleWorkApi\b/);
+      assert.match(source, /await handleWorkApi\(/, "the supplied route is actually called");
     },
   },
 ];

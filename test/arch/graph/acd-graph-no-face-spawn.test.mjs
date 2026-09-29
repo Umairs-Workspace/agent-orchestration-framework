@@ -178,7 +178,7 @@ export const archTests = [
       // invoke()/the driver's pure helpers.
       const faceFiles = [
         path.join(srcDir, "graph-faces.mjs"),
-        path.join(srcDir, "graph-mcp-server.mjs"),
+        path.join(repoRoot, "packages/server/src/graph-mcp-server.mjs"),
       ];
       const commandFiles = (await graphCommandModules(path.join(srcDir, "commands")))
         .map((rel) => path.join(srcDir, "commands", rel));

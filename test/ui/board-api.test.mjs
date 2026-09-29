@@ -877,7 +877,7 @@ export const boardApiTests = [
   {
     name: "board-api/127-04-02 the face threads the flag and adds no predicate of its own — the module invokes work:list with mesh + all, reads no row's flag, filters nothing, imports no enumerator, spells `intake` nowhere; and `aof work list --json` is untouched by the route's parameter",
     async run() {
-      const stripped = (await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8"))
+      const stripped = (await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8"))
         .replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
       assert.match(stripped, /invoke\("work:list", \{ mesh: true, \.\.\.\(all \? \{ all: true \} : \{\}\) \}, ctx\)/, "the list route invokes work:list with mesh: true and, under the parameter, all: true");
       assert.doesNotMatch(stripped, /\.archived\b/, "the module reads no row's `archived`");
@@ -885,7 +885,8 @@ export const boardApiTests = [
       assert.doesNotMatch(stripped, /\blistItems\b|\blistStream\b/, "…and imports no enumerator");
       const imports = [...stripped.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]).filter((spec) => spec.startsWith("."));
       // 131/04 — `./static-serve.mjs` is the pure leaf holding the write admission's loopback predicate.
-      assert.deepEqual(imports.filter((spec) => spec !== "./cache-provenance.mjs" && spec !== "./static-serve.mjs"), ["./command-core.mjs"], "its only operation-bearing import is ./command-core.mjs (the window resolver and the loopback predicate are pure)");
+      assert.deepEqual(imports, ["./static-serve.mjs"], "the transport imports only its presentation helper; command invocation is supplied");
+      assert.match(stripped, /createBoardApi\(\{[^}]*\binvoke\b[^}]*\bloadWorkspace\b/, "the registry services enter through explicit ports");
       assert.equal((stripped.match(/intake/g) ?? []).length, 0, "the face contains the token `intake` zero times (FF-12704)");
 
       const listSource = await readFile(path.join(repoRoot, "src", "commands", "list.mjs"), "utf8");
@@ -1329,7 +1330,7 @@ function boardAnswerTests() {
         assert.equal(response.status, 200);
         assert.deepEqual(response.body.by, { actor: "umami", via: "board", node: null });
         assert.notEqual(response.body.answeredAt, "1999-01-01T00:00:00.000Z");
-        const source = (await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8")).replace(/^\s*\/\/[^\n]*$/gmu, "");
+        const source = (await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8")).replace(/^\s*\/\/[^\n]*$/gmu, "");
         const branch = matchedBraceBody(source, source.indexOf('pathname === "/api/work/answer"')) ?? "";
         assert.deepEqual([...new Set(branch.match(/\bbody\.[a-zA-Z]+/gu))].sort(), ["body.actor", "body.ref", "body.text"]);
       }),
@@ -1338,7 +1339,7 @@ function boardAnswerTests() {
       name: "131/04 task01 — every board write passes one admission, in the source",
       run: async () => {
         // Whole-line comments only: a trailing-`//` strip would cut `http://${…}` in half.
-        const source = (await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8")).replace(/^\s*\/\/[^\n]*$/gmu, "");
+        const source = (await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8")).replace(/^\s*\/\/[^\n]*$/gmu, "");
         assert.equal((source.match(/function admitWriteRequest\(/gu) ?? []).length, 1, "defined exactly once");
         assert.ok(source.includes('pathname === "/api/work/answer"'));
         assert.equal((source.match(/(?<!function )\badmitWriteRequest\(/gu) ?? []).length, 4, "four call sites");

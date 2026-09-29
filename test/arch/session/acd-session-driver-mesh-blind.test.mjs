@@ -133,7 +133,7 @@ export const archTests = [
       assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/session-driver.mjs"], "the driver package has no transport, work, mesh or core import");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
-      const terminalWs = path.join(srcRoot, "terminal-ws.mjs");
+      const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
       const work = path.join(srcRoot, "work.mjs");
       const degrade = path.join(srcRoot, "degrade.mjs");
       const applicationLog = path.join(srcRoot, "diagnostics/log.mjs");

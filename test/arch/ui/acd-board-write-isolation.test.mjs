@@ -21,7 +21,7 @@ import path from "node:path";
 import { serveSetupUi } from "../../../src/setup-ui.mjs";
 import { matchedBraceBody } from "../../support/source-slice.mjs";
 
-const BOARD_UI = new URL("../../../src/board-ui.mjs", import.meta.url);
+const BOARD_UI = new URL("../../../packages/server/src/board-ui.mjs", import.meta.url);
 const FEEDBACK_COMMAND = new URL("../../../packages/work/src/commands/feedback.mjs", import.meta.url);
 // m42 wave (d) leg d4 (port 1): the sole feedback write moved AGAIN — out of the
 // command and into the record-doc TRANSITION SEAM, which appends the bullet and
@@ -143,10 +143,11 @@ export const archTests = [
       const source = await readFile(BOARD_UI, "utf8");
       // The board face invokes operations in-process THROUGH the command registry
       // (the only door, ADR-004 inv. 3) — never a per-request subprocess.
-      assert.ok(
-        /import\s*\{[^}]*\binvoke\b[^}]*\}\s*from\s*["']\.\/command-core\.mjs["']/.test(source),
-        "board-ui.mjs invokes operations in-process through ./command-core.mjs"
-      );
+      const binding = await readFile(new URL("../../../src/board-ui.mjs", import.meta.url), "utf8");
+      assert.match(binding, /import\s*\{[^}]*\binvoke\b[^}]*\}\s*from\s*["']\.\/command-core\.mjs["']/);
+      assert.match(binding, /createBoardApi\(\{[^}]*\binvoke\b/);
+      assert.match(source, /export function createBoardApi\(\{[^}]*\binvoke\b/);
+      assert.match(source, /await invoke\(/, "the transport uses supplied in-process command invocation");
       // No child_process / spawn / exec of a CLI.
       assert.ok(!/child_process/.test(source), "no child_process import");
       for (const verb of ["spawn", "spawnSync", "exec", "execSync", "execFile"]) {

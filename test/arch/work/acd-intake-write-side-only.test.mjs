@@ -68,7 +68,7 @@ const NAMED_READERS = Object.freeze([
   "src/commands/next.mjs",
   "src/commands/find.mjs",
   "src/commands/doc.mjs",
-  "src/board-ui.mjs",
+  "packages/server/src/board-ui.mjs",
   "src/global-work-store.mjs",
   // The aliases pass THROUGH the backlog under either setting and read nothing (task 04).
   "packages/work/src/insertion/scaffold.mjs",

@@ -25,7 +25,7 @@ import { getCommand, listCommands } from "../../../src/command-core.mjs";
 import { serveSetupUi } from "../../../src/setup-ui.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOARD_UI = path.join(repoRoot, "src", "board-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages", "server", "src", "board-ui.mjs");
 
 // Commands whose BOARD face is deliberately deferred — registered into the core
 // (so the CLI bijection covers them, acd-work-command-cli-bijection) but NOT

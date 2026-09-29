@@ -32,7 +32,7 @@ import { ITEM_REF, withRepo } from "../../loop/loop-record-command.test.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const ROUTE_COVERAGE = path.join(repoRoot, "test/arch/work/acd-work-command-route-coverage.test.mjs");
 const CORE_CONTRACT = path.join(repoRoot, "test/command/command-core-contract.test.mjs");
-const BOARD_UI = path.join(repoRoot, "src/board-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages/server/src/board-ui.mjs");
 const ID = "work:loop-record";
 const OP = "loop-record";
 

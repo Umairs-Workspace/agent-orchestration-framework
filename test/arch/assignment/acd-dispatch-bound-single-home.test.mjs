@@ -105,7 +105,7 @@ export const archTests = [
       for (const [label, planted] of [
         ["a second reader of the configured key", { path: "src/mesh/launcher.mjs", source: "const bound = config?.work?.dispatch?.concurrency ?? 3;" }],
         ["a second default constant", { path: "src/work/loops.mjs", source: "const DEFAULT_DISPATCH_CONCURRENCY = 6;" }],
-        ["a second resolver", { path: "src/board-ui.mjs", source: "function resolveDispatchConcurrency(value) { return value ?? 3; }" }],
+        ["a second resolver", { path: "packages/server/src/board-ui.mjs", source: "function resolveDispatchConcurrency(value) { return value ?? 3; }" }],
       ]) {
         const offenders = boundSiteOffenders([home, consumer, planted]);
         assert.equal(offenders.length, 1, `self-check: ${label} is reported exactly once (got ${JSON.stringify(offenders)})`);

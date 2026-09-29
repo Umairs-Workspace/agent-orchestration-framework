@@ -25,7 +25,7 @@
 import path from "node:path";
 import { readFile, readdir, stat } from "node:fs/promises";
 
-import { stripComments } from "./source-slice.mjs";
+import { blankStringLiterals, stripComments } from "./source-slice.mjs";
 
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
@@ -103,10 +103,15 @@ const isLiteralSpecifier = (text) => !text.includes("${");
 
 export function importSpecifiers(code) {
   const clean = stripComments(code);
+  // Static declarations cannot occur inside literals. Keep their specifier text from
+  // clean, but require the keyword itself to survive the shared literal masker.
+  // Dynamic imports remain scanned separately, including template substitutions.
+  const staticCode = blankStringLiterals(code);
+  const isDeclaration = (match) => /^(?:import|export)\b/u.test(staticCode.slice(match.index));
   const found = [];
   const push = (specifier, dynamic) => found.push({ specifier, dynamic });
-  for (const match of clean.matchAll(/\b(?:import|export)\b[^;()]*?\bfrom\s*["']([^"']+)["']/gu)) push(match[1], false);
-  for (const match of clean.matchAll(/\bimport\s*["']([^"']+)["']/gu)) push(match[1], false);
+  for (const match of clean.matchAll(/\b(?:import|export)\b[^;()]*?\bfrom\s*["']([^"']+)["']/gu)) if (isDeclaration(match)) push(match[1], false);
+  for (const match of clean.matchAll(/\bimport\s*["']([^"']+)["']/gu)) if (isDeclaration(match)) push(match[1], false);
   for (const match of clean.matchAll(/\brequire\s*\(\s*(["'`])([^"'`]+)\1/gu)) if (isLiteralSpecifier(match[2])) push(match[2], false);
   for (const match of clean.matchAll(/\bimport\s*\(\s*(["'`])([^"'`]+)\1/gu)) if (isLiteralSpecifier(match[2])) push(match[2], true);
   return found;

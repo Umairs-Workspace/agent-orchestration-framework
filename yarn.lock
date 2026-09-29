@@ -69,6 +69,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/server@workspace:*, @aof/server@workspace:packages/server":
+  version: 0.0.0-use.local
+  resolution: "@aof/server@workspace:packages/server"
+  dependencies:
+    "@aof/execution": "workspace:*"
+    ws: "npm:^8.21.0"
+  languageName: unknown
+  linkType: soft
+
 "@aof/ui@workspace:ui":
   version: 0.0.0-use.local
   resolution: "@aof/ui@workspace:ui"
@@ -1850,6 +1859,7 @@ __metadata:
     "@aof/knowledge": "workspace:*"
     "@aof/mesh": "workspace:*"
     "@aof/messaging": "workspace:*"
+    "@aof/server": "workspace:*"
     "@aof/work": "workspace:*"
     "@aof/work-graph": "workspace:*"
     "@aof/work-loop": "workspace:*"

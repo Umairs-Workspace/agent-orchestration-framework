@@ -264,7 +264,7 @@ export const graphMcpServerTests = [
         // checks are CALL-FORM / IMPORT-FORM (the house arch-test discipline — the
         // module's own prose deliberately says "spawns nothing", so the word in a
         // comment must not trip the guard; only an actual import / call form does).
-        const source = await readFile(new URL("../../src/graph-mcp-server.mjs", import.meta.url), "utf8");
+        const source = await readFile(new URL("../../packages/server/src/graph-mcp-server.mjs", import.meta.url), "utf8");
         assert.ok(!/from\s+["'][^"']*graphify\.mjs["']/.test(source), "the server does not import the graphify driver");
         assert.ok(!/from\s+["']node:child_process["']/.test(source), "the server does not import child_process");
         assert.ok(!/\bspawn(Sync)?\s*\(/.test(source), "the server invokes no spawn() call form");
