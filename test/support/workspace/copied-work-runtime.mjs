@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { productionDependencyDirs } from "../../scripts/dependency-inventory.mjs";
+import { productionDependencyDirs } from "../../../scripts/dependency-inventory.mjs";
 
 // Mutation fixtures need an independent work package as well as the core adapters.
 // Other production dependencies are read-only aliases; never mutate those targets.

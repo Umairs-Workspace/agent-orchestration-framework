@@ -830,9 +830,9 @@ export const workBacklogArchiveEnumerateTests = [
         assert.equal(moved.message, `folder "ideas/52_milestone_moved" is a numbered item under the backlog — a backlog item carries no number; 'aof work promote' is the door into the stream`);
         const stories = orphans.find((finding) => finding.path.replace(/\\/g, "/").endsWith("backlog/chore_gamma/stories"));
         assert.equal(stories.message, `folder "chore_gamma/stories" — a backlog driver has no stories; promote it first`);
-        const doctorSource = await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8");
+        const doctorSource = await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", "index.mjs"), "utf8");
         assert.ok(!/"backlog"|"archive"/.test(doctorSource), "doctor.mjs spells neither root name as a quoted literal");
-        assert.match(doctorSource, /BACKLOG_ROOT,\s*\r?\n\s*ARCHIVE_ROOT,[\s\S]*from "\.\.\/work\.mjs"/, "both root names are imported from work.mjs");
+        assert.match(doctorSource, /import \{[^}]*BACKLOG_ROOT,\s*ARCHIVE_ROOT[^}]*\} from "\.\.\/identity\.mjs"/, "both root names are imported from work.mjs");
       }),
   },
 
@@ -1060,9 +1060,9 @@ export const workBacklogArchiveEnumerateTests = [
         await writeFile(path.join(work, "archive", "05_milestone_zeta", "ARCHITECTURE.md"), "## ADR-001: an archived decision\n", "utf8");
         const answer = resolveCitationAtEmit("m05/ADR-001", { rootDir: root });
         assert.equal(answer.ok, true, JSON.stringify(answer));
-        const source = await readFile(path.join(repoRoot, "src", "work-tune", "provenance.mjs"), "utf8");
-        assert.match(source, /import \{ ITEM_RE \} from "\.\.\/work\.mjs"/);
-        assert.match(source, /import \{ ARCHIVE_ROOT \} from "\.\.\/work\.mjs"/);
+        const source = await readFile(path.join(repoRoot, "packages", "work", "src", "tune", "provenance.mjs"), "utf8");
+        assert.match(source, /import \{ ITEM_RE \} from "\.\.\/identity\.mjs"/);
+        assert.match(source, /import \{ ARCHIVE_ROOT \} from "\.\.\/identity\.mjs"/);
         assert.ok(!/"archive"|"backlog"/.test(source), "spells neither root name itself");
       }),
   },

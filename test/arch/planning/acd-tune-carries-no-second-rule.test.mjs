@@ -10,15 +10,16 @@ import { RULING_REFUSAL_ORDER } from "../../../src/commands/acceptor.mjs";
 import { findWork } from "../../../src/work.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const facePath = fileURLToPath(new URL("../../../src/commands/tune.mjs", import.meta.url));
+const facePath = fileURLToPath(new URL("../../../packages/work/src/commands/tune.mjs", import.meta.url));
 const face = readFileSync(facePath, "utf8");
 const family = [
+  "packages/work/src/commands/tune.mjs",
   "src/commands/tune.mjs",
-  "src/work-tune/corpus.mjs",
-  "src/work-tune/formation.mjs",
-  "src/work-tune/proposal.mjs",
-  "src/work-tune/provenance.mjs",
-  "src/work-tune/distance.mjs",
+  "packages/work/src/tune/corpus.mjs",
+  "packages/work/src/tune/formation.mjs",
+  "packages/work/src/tune/proposal.mjs",
+  "packages/work/src/tune/provenance.mjs",
+  "packages/work/src/tune/distance.mjs",
 ];
 const familyText = family.map((file) => readFileSync(`${root}/${file}`, "utf8")).join("\n");
 // milestone 127 / ADR-004 §3 — the story this control reads is resolved BY REF at run time, never
@@ -35,7 +36,10 @@ export const archTests = [
     name: "architecture: FF-6201 the acceptor id has one home and the registry edge is deferred",
     run: () => {
       assert.equal((face.match(/work:acceptor/gu) ?? []).length, 1);
-      assert.match(face, /await import\("\.\.\/command-core\.mjs"\)/u);
+      assert.match(face, /return await getRegistry\(\)/u);
+      const composition = readFileSync(path.join(root, "src/commands/tune.mjs"), "utf8");
+      assert.match(composition, /const getRegistry = \(\) => import\("\.\.\/command-core\.mjs"\)/u);
+      assert.match(composition, /createTuneCommand\(\{[^}]*getRegistry \}\)/u);
       assert.doesNotMatch(face, /^import .*command-core\.mjs/mu);
       assert.match(face, /resolveCommand/u);
       assert.match(face, /invokeCommand/u);

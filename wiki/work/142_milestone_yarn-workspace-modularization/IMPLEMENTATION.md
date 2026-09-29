@@ -1005,7 +1005,14 @@ Evidence in `.tmp/workspace-migration/work-doctor/`:
 - The 28-suite focused run passes 177 cases, including the package bridge. A subsequent six-suite
   coverage run passes 23 cases after extending scans to package implementations. Four additional
   suites ran 45 cases; their one old rubric-source assertion is corrected and passes in that
-  coverage run. The broader 162-suite selection and final census are still running at this entry.
+  coverage run. The broader 162-suite selection finished with 1,931 passes and 32 failures; the
+  final census passes all 12 cases. Focused corrections cover 27 source/fixture assertions,
+  including the subsequent 69-case doctor follow-up and tuning changed-suite runs. Four failures
+  remain tied to the pending generated citation and repository state (ordinary milestone 142,
+  the existing backlog context contract and done story 141 at the root). The fifth was a fixture
+  date captured when importing the suite, before a long run crossed midnight; fixture creation
+  now computes that date at write time. No real work-item record was changed to satisfy a test.
+  The corrected add/promote pair and four tuning architecture cases pass (six cases total).
 - Differential fixtures reproduce snapshot data, all registered doctor lanes, scoped findings,
   loop-ready scores, declared contract resolution, citations and grades. The same comparison passes
   in a copied installation, whose fifteen public exports resolve inside the payload. Previous
@@ -1016,3 +1023,36 @@ Evidence in `.tmp/workspace-migration/work-doctor/`:
 The three previously approved generated citation updates were already committed. This extraction
 changes no generated citations or AOF workflow state. Full migration and final verification remain
 open; the current ordinary-engineering checklist is in COMPLETION.md.
+
+## Work owns tuning services, counters and the tune command
+
+Seven implementations now live in work: corpus assembly, candidate formation, proposal shaping,
+provenance, distance, counters and the tune command descriptor/report builder. Corpus receives
+retrospective parsing, execution/run-path readers, observation snapshots and loop-pointer grammar.
+Proposal receives the model asset path and resolver. Command assembly receives those services,
+the loop loader and an on-demand registry provider. Core retains asset policy and cross-domain
+composition; work imports neither core nor work-graph. No manifest dependency or lockfile changed.
+
+All seven legacy export sets and exported values/function bodies match the baseline after port
+wiring. Three package tests cover reader injection and source locators, model-map policy supplied
+at use, inert construction and deferred report-only acceptor invocation. The package bridge now
+runs 115 cases. Architecture checks inspect implementations rather than forwarding modules;
+source enumeration includes runtime packages and keeps negative scans non-vacuous. The copied
+work-runtime helper moved into test/support/workspace, preserving the support directory budget.
+
+Evidence in `.tmp/workspace-migration/work-tune/`:
+
+- The 31-suite affected run completed 545 cases: 525 passed initially and all 20 source/helper-path
+  failures are covered by corrections. The 13 changed suites pass 278 cases, including the package
+  bridge; five additional scan-coverage suites pass 17 cases. The final census passes 12 cases.
+- Differential fixtures compare real corpus lanes, source locators, formation, proposal policy,
+  provenance, distances, counters, command results/rendering and acceptor invocation. The same
+  comparison passes from a copied installation; all seven public exports resolve inside it.
+  Earlier graph, loop, execution, acceptance, audit and doctor payload checks remain green, with
+  all 117 commands registered.
+- Standalone JavaScript bundling includes all seven implementations. The supply-chain audit
+  passes with zero warnings. These checks do not claim native or cross-platform release proof.
+
+Remaining work mutations and command implementations, other domain packages, the final core/apps
+layout and whole-tree/platform verification remain outstanding. No generated citations, lock hashes
+or AOF workflow state changed in this extraction.

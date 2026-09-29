@@ -22,6 +22,7 @@
 // module qualifies as a rival only if it BOTH seeds a Definition of Done AND writes a chore record
 // doc, and leg 3 asserts those two files are NOT reported — which is the assertion that proves the
 // signature is doing the narrowing rather than the luck.
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -49,16 +50,8 @@ const MECHANICS = Object.freeze([
   { name: "the idempotence scan", home: ENGINE, signature: /function findPromotedChore\s*\(/u },
 ]);
 
-async function sourceUnits(dir = path.join(root, "src"), prefix = "src") {
-  const units = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const rel = `${prefix}/${entry.name}`;
-    if (entry.isDirectory()) units.push(...await sourceUnits(path.join(dir, entry.name), rel));
-    else if (entry.name.endsWith(".mjs")) {
-      units.push({ rel, code: stripComments(await readFile(path.join(dir, entry.name), "utf8")) });
-    }
-  }
-  return units;
+async function sourceUnits() {
+  return Promise.all((await readRuntimeFiles(root)).map(async file => ({ rel: file.rel, code: stripComments(await readFile(file.path, "utf8")) })));
 }
 
 // Leg 1 + 2 — one home each, and the faces hold no copy.
@@ -119,7 +112,7 @@ export const archTests = [
 
       // The three in-tree siblings this family is modelled on carry the same layering property, so
       // the leg is a house rule rather than a rule invented for one directory.
-      for (const family of ["src/work-tune/", "src/work-audit/", "src/work-acceptor/"]) {
+      for (const family of ["packages/work/src/tune/", "packages/work/src/audit/", "packages/work/src/acceptor/"]) {
         const siblings = units.filter((unit) => unit.rel.startsWith(family));
         assert.ok(siblings.length > 0, `${family} exists`);
         for (const sibling of siblings) {

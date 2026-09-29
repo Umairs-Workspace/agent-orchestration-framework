@@ -185,11 +185,11 @@ export const doctorDiagramsLaneTests = [
       const spine = await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8");
       assert.match(spine, /from\s*["']\.\/doctor-diagrams\.mjs["']/);
       const roster = await readFile(path.join(repoRoot, "test", "arch", "audit", "acd-controls-never-execute.test.mjs"), "utf8");
-      assert.match(roster, /"\.\/doctor-diagrams\.mjs"/, "DOCTOR_LANE_MODULES names the lane");
-      const others = (await readdir(path.join(repoRoot, "src", "work"))).filter((name) => /^doctor(-.*)?\.mjs$/.test(name) && name !== "doctor-diagrams.mjs");
+      assert.match(roster, /"\.\/diagrams\.mjs"/, "DOCTOR_LANE_MODULES names the lane implementation");
+      const others = (await readdir(path.join(repoRoot, "packages", "work", "src", "doctor"))).filter((name) => name.endsWith(".mjs") && name !== "diagrams.mjs");
       assert.ok(others.length >= 8, "the other lanes and the spine are swept");
       for (const name of others) {
-        const source = await readFile(path.join(repoRoot, "src", "work", name), "utf8");
+        const source = await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", name), "utf8");
         for (const code of DIAGRAM_LANE_CODES) assert.equal(source.includes(`"${code}"`), false, `${name} emits ${code}`);
       }
     },

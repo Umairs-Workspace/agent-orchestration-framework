@@ -88,6 +88,9 @@ export const yarnInstallationTests = [
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
+        'provenance.mjs': ['node:fs', 'node:path'],
+        'corpus.mjs': ['node:fs', 'node:fs/promises', 'node:path'],
+        'tune.mjs': ['@aof/contracts/error'],
         'story-contract.mjs': ['node:path'],
         'grade.mjs': ['@aof/contracts/claim-provenance'],
         'layout.mjs': ['@aof/contracts/error'],

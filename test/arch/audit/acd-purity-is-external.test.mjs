@@ -59,8 +59,8 @@ const CONVERTED = Object.freeze([
   ["acd-acceptor-rule-is-one-object.test.mjs", "packages/work/src/acceptor"],
   ["acd-loop-cap-single-home.test.mjs", "packages/contracts/src/loop-bounds"],
   ["acd-provenance-stamped-at-write.test.mjs", "packages/contracts/src/claim-provenance"],
-  ["acd-trial-metric-declared.test.mjs", "src/work/counters"],
-  ["acd-work-counters-read-only.test.mjs", "src/work/counters"],
+  ["acd-trial-metric-declared.test.mjs", "packages/work/src/counters"],
+  ["acd-work-counters-read-only.test.mjs", "packages/work/src/counters"],
 ]);
 
 // ── the class detector ───────────────────────────────────────────────────────────────────────────
@@ -620,7 +620,7 @@ export const archTests = [
         ["packages/work-graph/src/checks", null],
         ["packages/contracts/src/loop-bounds", null],
         ["packages/contracts/src/claim-provenance", null],
-        ["src/work/counters", null],
+        ["packages/work/src/counters", null],
         ["packages/work/src/acceptor", ["packages/work/src/acceptor/rule.mjs", "packages/work/src/acceptor/ledger.mjs"]],
       ];
       for (const [subject, members] of subjects) {

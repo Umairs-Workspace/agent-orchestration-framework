@@ -12,7 +12,7 @@ import {
 } from "../../../src/work-tune/distance.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const familyDir = path.join(root, "src", "work-tune");
+const familyDir = path.join(root, "packages", "work", "src", "tune");
 
 async function familySources() {
   const names = (await readdir(familyDir)).filter((name) => name.endsWith(".mjs")).sort();

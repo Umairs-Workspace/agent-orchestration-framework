@@ -45,6 +45,7 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COUNTERS_LEAF = "src/work/counters.mjs";
+const COUNTERS_IMPLEMENTATION = "packages/work/src/counters.mjs";
 const ENGINE_MODULES = Object.freeze(["packages/work/src/acceptor/rule.mjs", "packages/work/src/acceptor/ledger.mjs"]);
 
 const shipped = defaultCriterion();
@@ -167,13 +168,15 @@ export const archTests = [
       assert.equal(metric.module, COUNTERS_LEAF, "the trial metric resolves into the counters leaf");
       assert.equal(counter.module, metric.module, "…and so does its paired counter-metric");
 
+      const implementation = await import("@aof/work/counters");
+      for (const symbol of [metric.symbol, counter.symbol]) assert.equal(workCounters[symbol], implementation[symbol], "the historical metric pointer forwards to the implementation");
       // THE LEAF STILL IMPORTS NOTHING AND WRITES NOTHING (57/04's own discipline,
       // re-asserted from this milestone's side because 61/04 added a function to it).
-      const leaf = await readFile(path.join(root, ...COUNTERS_LEAF.split("/")), "utf8");
+      const leaf = await readFile(path.join(root, ...COUNTERS_IMPLEMENTATION.split("/")), "utf8");
       // The leaf depends on nothing outside itself, asserted over its FAMILY (119/ADR-002) so the
       // decomposition a growing leaf needs stays legal while every external dependency stays a
       // violation naming the file and the specifier.
-      await assertFamilyPurity(assert, root, COUNTERS_LEAF);
+      await assertFamilyPurity(assert, root, COUNTERS_IMPLEMENTATION);
       assert.doesNotMatch(leaf, /\b(?:readFile|writeFile|appendFile|execFile|spawn|process\.|Date\.now)\b/u, "…and writes nothing and reads no clock");
       assert.match(leaf, new RegExp(`export function ${metric.symbol}\\b`, "u"), "…and it is where the trial metric lives");
 
@@ -183,7 +186,7 @@ export const archTests = [
         const code = await readFile(path.join(root, rel), "utf8");
         if ([metric.symbol, counter.symbol].some((symbol) => new RegExp(`export\\s+(?:async\\s+)?(?:function|const|let)\\s+${symbol}\\b`, "u").test(code))) homes.push(rel);
       }
-      assert.deepEqual(homes, [COUNTERS_LEAF], "one deterministic-counter home, not two");
+      assert.deepEqual(homes, [COUNTERS_IMPLEMENTATION], "one deterministic-counter home, not two");
     },
   },
   {

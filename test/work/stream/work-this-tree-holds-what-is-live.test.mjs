@@ -213,17 +213,17 @@ export async function buildShapeCopy() {
 // The `aof:add-milestone` prompt's write under `"backlog"` (02/05): `SPEC.md` + `STATE.md`,
 // frontmatter with `type`, `slug`, `title`, `status: not-started`, `depends: []` and NO `number:`.
 const ADDED_SLUG = "search-across-the-fleet";
-const ADDED_SPEC = [
+const addedSpec = (today) => [
   "---",
   "type: milestone",
   `slug: ${ADDED_SLUG}`,
   'title: "Search across the fleet"',
   "status: not-started",
   "owner: product-owner",
-  // Today's date, as `aof:add-milestone` writes it: a fixed date reds doctor's `mtime-ahead-of-updated`
-  // lane the morning after (measured 2026-09-17 at aof:verify 127).
-  `created: ${new Date().toISOString().slice(0, 10)}`,
-  `updated: ${new Date().toISOString().slice(0, 10)}`,
+  // Capture the date when writing the fixture, not when loading this suite: a long
+  // run can cross midnight before reaching the add/promote cases.
+  `created: ${today}`,
+  `updated: ${today}`,
   "depends: []",
   "schema: 1",
   "aofVersion: 0.1.0",
@@ -244,7 +244,7 @@ const ADDED_STATE = "---\ndoc: state\n---\n# Search across the fleet — State\n
 async function addToBacklog(work) {
   const leaf = path.join(work, BACKLOG_ROOT, `milestone_${ADDED_SLUG}`);
   await mkdir(leaf, { recursive: true });
-  await writeFile(path.join(leaf, "SPEC.md"), ADDED_SPEC, "utf8");
+  await writeFile(path.join(leaf, "SPEC.md"), addedSpec(new Date().toISOString().slice(0, 10)), "utf8");
   await writeFile(path.join(leaf, "STATE.md"), ADDED_STATE, "utf8");
   return leaf;
 }

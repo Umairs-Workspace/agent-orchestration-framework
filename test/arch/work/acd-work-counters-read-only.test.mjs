@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const engineUrl = new URL("../../../src/work/counters.mjs", import.meta.url);
+const engineUrl = new URL("../../../packages/work/src/counters.mjs", import.meta.url);
 const commandUrl = new URL("../../../src/commands/counters.mjs", import.meta.url);
 const coreUrl = new URL("../../../src/command-core.mjs", import.meta.url);
 
@@ -18,7 +18,7 @@ export const archTests = [
       const [engine, command] = await Promise.all([readFile(engineUrl, "utf8"), readFile(commandUrl, "utf8")]);
       // The arithmetic leaf depends on nothing outside itself, asserted over its FAMILY
       // (119/ADR-002) — the unit is the module, not the file, so splitting the leaf stays legal.
-      await assertFamilyPurity(assert, root, "src/work/counters");
+      await assertFamilyPurity(assert, root, "packages/work/src/counters");
       assert.doesNotMatch(engine, /\b(?:readFile|writeFile|appendFile|execFile|spawn|process\.|Date\.now)\b/u);
       assert.match(command, /import\s*\{\s*readFile\s*\}\s*from\s*"node:fs\/promises"/u);
       assert.doesNotMatch(command, /\b(?:writeFile|appendFile|unlink|rename|mkdir|execFile|spawn)\b/u);

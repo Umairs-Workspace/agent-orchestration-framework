@@ -35,7 +35,7 @@ export const archTests = [
         assert.ok(proposal.distance != null);
         assert.ok(proposal.distance.standing.length + proposal.distance.unknown.length > 0);
       }
-      const source = await readFile(new URL("../../../src/commands/tune.mjs", import.meta.url), "utf8");
+      const source = await readFile(new URL("../../../packages/work/src/commands/tune.mjs", import.meta.url), "utf8");
       assert.doesNotMatch(source, /recordTarget|keyTerms|keyWords/u);
       assert.ok(report.headline.obstacles.length > 0);
     },

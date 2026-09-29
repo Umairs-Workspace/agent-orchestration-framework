@@ -51,7 +51,7 @@ export const archTests = [
   {
     name: "arch/62 FF-6202 the proposer contains no shipped tunable-key literal or command-core import",
     run: async () => {
-      const source = await readFile(path.join(root, "src", "work-tune", "proposal.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work", "src", "tune", "proposal.mjs"), "utf8");
       for (const forbidden of [
         "work.loop.reviewRounds",
         "work.loop.buildNoProgressRounds",

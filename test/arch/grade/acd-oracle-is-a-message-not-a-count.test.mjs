@@ -40,7 +40,7 @@ const loopsDir = path.join(root, "src", "bundle", "loops");
 const ADDED_MODULES = Object.freeze([
   "src/work/ratchet.mjs",
   "src/commands/ratchet.mjs",
-  "src/work/counters.mjs",
+  "packages/work/src/counters.mjs",
   "src/commands/counters.mjs",
 ]);
 

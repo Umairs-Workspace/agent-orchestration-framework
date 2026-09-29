@@ -220,6 +220,19 @@ check lanes import shared predicates directly, removing imports back into the sn
 The new work-to-contracts edge passes immutable installation and supply-chain checks. Legacy API,
 source/copy behavior and standalone JavaScript checks pass; the 177-case focused run includes all
 112 package cases, with later scan-coverage corrections passing 23 cases. The broader affected
-selection and final census are still running. No additional generated citations or workflow state
+selection finished at 1,931 passes and 32 failures; 27 source/fixture assertions are covered by
+focused corrections, and the census passes all 12 cases. Four failures concern existing generated
+citations/repository state; the fifth exposed a fixture date captured before midnight and written
+afterward. Its timestamp now comes from fixture creation; the add/promote pair and four tuning
+architecture checks pass (six cases). No additional generated citations or workflow state
 changed. Continue with tuning and remaining work mutations/commands, other domains, core/apps
 layout and final whole-tree/platform verification.
+
+Tuning extraction: work now owns five tuning services, counters and the tune command descriptor.
+Core supplies model assets, cross-domain readers and registry access. The 545-case affected selection
+is covered after 20 source/helper-path corrections; the changed suites pass 278 cases, including all
+115 package cases. Another 17 coverage checks, 69 doctor follow-up checks and the 12-case census pass.
+Source and copied-installation comparisons preserve corpus/proposal/counter results, rendered output
+and acceptor invocation; the copied payload retains 117 commands. Standalone JavaScript bundling and
+the supply-chain audit pass. No dependencies or generated citations changed. Remaining work mutations,
+commands, domain extractions, core/apps layout and final verification remain open in COMPLETION.md.

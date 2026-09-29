@@ -84,8 +84,10 @@ export const archTests = [
   {
     name: "arch/62 FF-6203 work-tune contains no process execution or static command-core dependency",
     run: async () => {
-      const dir = path.join(root, "src", "work-tune");
-      for (const name of await readdir(dir)) {
+      const dir = path.join(root, "packages", "work", "src", "tune");
+      const names = await readdir(dir);
+      assert.ok(names.filter(name => name.endsWith(".mjs")).length >= 5, "all tuning services are inspected");
+      for (const name of names) {
         if (!name.endsWith(".mjs")) continue;
         const source = await readFile(path.join(dir, name), "utf8");
         assert.doesNotMatch(source, CHILD_PROCESS_LOAD, `${name} must not load child_process`);

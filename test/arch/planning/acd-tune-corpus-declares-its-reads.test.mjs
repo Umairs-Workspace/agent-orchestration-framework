@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { copyWorkRuntime } from "../../support/copied-work-runtime.mjs";
+import { copyWorkRuntime } from "../../support/workspace/copied-work-runtime.mjs";
 
 import * as reads from "../../../src/work-audit/reads.mjs";
 import {
@@ -17,7 +17,8 @@ import {
 } from "../../../src/work-tune/corpus.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const modulePath = path.join(root, "src", "work-tune", "corpus.mjs");
+const modulePath = path.join(root, "packages", "work", "src", "tune", "corpus.mjs");
+const compositionPath = path.join(root, "src", "work-tune", "corpus.mjs");
 
 const codeLines = (source) => source.split(/\r?\n/u)
   .filter((line) => {
@@ -71,7 +72,7 @@ export const archTests = [
       const source = codeLines(await readFile(modulePath, "utf8"));
       assert.match(
         source,
-        /import \{ SWEEP_BASES, readRecord, sweepDeclarationProblems \} from "\.\.\/work-audit\/reads\.mjs"/u,
+        /import \{ SWEEP_BASES, readRecord, sweepDeclarationProblems \} from "\.\.\/audit\/reads\.mjs"/u,
       );
       for (const symbol of ["readRecord", "sweepDeclarationProblems", "SWEEP_BASES"]) {
         assert.equal(new RegExp(`(?:function|const|let|class)\\s+${symbol}\\b`, "u").test(source), false, `${symbol}: no local copy`);
@@ -94,11 +95,14 @@ export const archTests = [
     name: "arch/62 FF-6205: each source reader and the stream scope rule are imported, with no raw run or snapshot path grammar",
     run: async () => {
       const source = codeLines(await readFile(modulePath, "utf8"));
-      assert.match(source, /import \{ parseRetrospective \} from "\.\.\/memory\/local-indexing\.mjs"/u);
-      assert.match(source, /import \{ readRuns, runNodeRecordPath, runRecordPath \} from "\.\.\/run-store\.mjs"/u);
+      const composition = codeLines(await readFile(compositionPath, "utf8"));
+      assert.match(source, /createTuneCorpus\(\{ parseRetrospective, readRuns, runNodeRecordPath, runRecordPath, readLatestSnapshot, loopPointersIn \}\)/u);
+      assert.match(composition, /createTuneCorpus\(\{ parseRetrospective, readRuns, runNodeRecordPath, runRecordPath, readLatestSnapshot, loopPointersIn \}\)/u);
+      assert.match(composition, /import \{ parseRetrospective \} from "\.\.\/memory\/local-indexing\.mjs"/u);
+      assert.match(composition, /import \{ readRuns, runNodeRecordPath, runRecordPath \} from "\.\.\/run-store\.mjs"/u);
       assert.match(source, /run\.node == null\s*\? runRecordPath\(item, run\.runId\)\s*: runNodeRecordPath\(item, run\.node, run\.runId\)/u);
-      assert.match(source, /import \{ readLatestSnapshot \} from "\.\.\/work\/observe\.mjs"/u);
-      assert.match(source, /import \{ itemInScope \} from "\.\.\/work\/ref-scope\.mjs"/u);
+      assert.match(composition, /import \{ readLatestSnapshot \} from "\.\.\/work\/observe\.mjs"/u);
+      assert.match(source, /import \{ itemInScope \} from "\.\.\/ref-scope\.mjs"/u);
       assert.doesNotMatch(source, /agents\.json|snapshots[\\/]|runs[\\/].*\.json/iu);
       assert.doesNotMatch(source, /new RegExp|\/\^\\d/u, "the tune family authors no scope grammar");
       assert.doesNotMatch(source, /##\\s+R|R\\d/u, "the retrospective heading grammar is not restated");

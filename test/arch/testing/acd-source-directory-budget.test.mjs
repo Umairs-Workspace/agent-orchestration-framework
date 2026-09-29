@@ -638,6 +638,7 @@ export const SOURCE_DIRECTORY_EXEMPTIONS = Object.freeze([
   // directory rather than beside the other 68. Two helpers answer one question — where a suite
   // lives, and whether it is registered — so they are that directory. Exempt on SIZE, and leg 6
   // re-checks the claim: a third file here is admissible, a ninth is a row.
+  Object.freeze({ directory: "test/support/workspace", why: "142 workspace migration: copied-work-runtime.mjs owns isolated source/workspace mutation fixtures; one member below the flat-layer threshold." }),
   Object.freeze({ directory: "test/support/registration", why: "the two suite-location helpers — `registration-surface.mjs` (where a suite may be registered) and `cited-suite-path.mjs` (where a cited suite resolves). One question, two readers, well under the threshold." }),
   // 129/04 — the third subject directory under `test/support/`, born for the same reason the two
   // above were: `test/support` is at its ceiling and its row asks that the next helper land by

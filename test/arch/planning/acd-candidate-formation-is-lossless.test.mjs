@@ -13,7 +13,7 @@ import {
   measureFormationCriteria,
 } from "../../../src/work-tune/formation.mjs";
 
-const modulePath = fileURLToPath(new URL("../../../src/work-tune/formation.mjs", import.meta.url));
+const modulePath = fileURLToPath(new URL("../../../packages/work/src/tune/formation.mjs", import.meta.url));
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const moduleText = readFileSync(modulePath, "utf8");
 const source = (lane, id, overrides = {}) => ({

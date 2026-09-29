@@ -590,3 +590,17 @@ discovery, scope, observations and audit read contracts with supplied retrospect
 execution record readers and loop-pointer parsing. Keep these cross-domain readers explicit,
 especially the graph reader: work-graph already depends on work. The tune command should move
 with those services when its remaining core configuration and registry collaborators are explicit.
+
+The tuning extraction now implements these seams: five tuning services, counters and the command
+descriptor live in work. Corpus receives six cross-domain readers; proposal receives the model-map
+path and resolver; command assembly receives the corpus/proposal APIs, loop loader and an on-demand
+registry provider. Formation, provenance, distance and counters use their existing pure/work-owned
+dependencies. No new dependency edge is required. In particular, work does not import work-graph
+or the registry, and the acceptor remains the sole verdict owner.
+
+Copied-installation comparisons cover both structured data and rendered output, including source
+locators embedded as JSON in human-readable text. The comparison normalizes only fixture-root paths;
+all corpus reads, proposals, counters and acceptor arguments match the pre-move behavior. Source
+guards inspect the actual package implementations, and copied mutation tests use a separate work
+package instance. Counter metric pointers keep their stable legacy paths while source checks follow
+the implementation through the public export.

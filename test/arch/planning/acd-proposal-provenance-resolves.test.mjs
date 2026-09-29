@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { copyWorkRuntime } from "../../support/copied-work-runtime.mjs";
+import { copyWorkRuntime } from "../../support/workspace/copied-work-runtime.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -66,10 +66,10 @@ export const archTests = [
       assert.equal(typeof splitPathLocator, "function");
       assert.equal(typeof qualifiedRefsIn, "function");
       assert.equal(QUALIFIED_REF instanceof RegExp, true);
-      const source = fs.readFileSync(path.join(repoRoot, "src", "work-tune", "provenance.mjs"), "utf8");
-      assert.match(source, /import[\s\S]*pathCitationsIn[\s\S]*splitPathLocator[\s\S]*from "\.\.\/work\/doctor-controls\.mjs"/);
+      const source = fs.readFileSync(path.join(repoRoot, "packages", "work", "src", "tune", "provenance.mjs"), "utf8");
+      assert.match(source, /import[\s\S]*pathCitationsIn[\s\S]*splitPathLocator[\s\S]*from "\.\.\/audit\/controls\.mjs"/);
       assert.match(source, /import[\s\S]*QUALIFIED_REF[\s\S]*qualifiedRefsIn[\s\S]*from "\.\.\/declared-id\.mjs"/);
-      assert.match(source, /import \{ ITEM_RE \} from "\.\.\/work\.mjs"/);
+      assert.match(source, /import \{ ITEM_RE \} from "\.\.\/identity\.mjs"/);
       assert.doesNotMatch(source, /CITED_PATH|LOCATOR_SUFFIX|\\d\{1,4\}.*item|#L\\d|A-Za-z0-9_@\.\*-/);
       assert.doesNotMatch(source, /bareId|bareRefsIn|declaredIdOn\(.*provenance/i);
       assert.doesNotMatch(source, /ACCEPTANCE_EVIDENCE_TO_COMMIT|options\.proposalEvidenceFloor/);

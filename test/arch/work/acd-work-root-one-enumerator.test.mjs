@@ -42,7 +42,7 @@ export const KEEPERS = Object.freeze([
   { file: "src/integrations/routing.mjs", reason: "matches a FOREIGN `NN-slug`/`NN_slug` form (NUMBERED_FOLDER_RE) the shared grammar does not admit" },
   { file: "src/import/recovery.mjs", reason: "scans a FOREIGN source tree (AOF_MILESTONE_RE + loose forms); not a work-root scanner" },
   { file: "src/commands/migrate-folder.mjs", reason: "scans a FOREIGN source tree's stories/tasks with STORY_FOLDER_RE, read-only; its work-root scan (nextFreeSlot) is retired onto appendPosition" },
-  { file: "src/work-tune/provenance.mjs", reason: "a SYNCHRONOUS resolver (resolveCitationAtEmit → emitProposals) that cannot take the async enumerator; a second readdirSync over the SHARED regex, walking root + archive, never a second regex home" },
+  { file: "packages/work/src/tune/provenance.mjs", reason: "a SYNCHRONOUS resolver (resolveCitationAtEmit → emitProposals) that cannot take the async enumerator; a second readdirSync over the SHARED regex, walking root + archive, never a second regex home" },
   { file: "src/commands/ratchet.mjs", reason: "walks an ITEM subtree for files and parses path SEGMENTS with /^(\\d+)_/, never a listing" },
 ]);
 
@@ -155,7 +155,7 @@ export const archTests = [
       const migrate = files.get("src/commands/migrate-folder.mjs").stripped;
       assert.ok(!IDENTIFIER_RE.test(migrate), "migrate-folder.mjs no longer references ITEM_RE (its only use was nextFreeSlot)");
       assert.ok(!/nextFreeSlot/.test(migrate), "nextFreeSlot is gone");
-      assert.ok(importsFromWork("src/work-tune/provenance.mjs", files.get("src/work-tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from src/work.mjs");
+      assert.ok(importsFromWork("packages/work/src/tune/provenance.mjs", files.get("packages/work/src/tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from src/work.mjs");
       const observe = files.get("src/work/observe.mjs").stripped;
       assert.ok(importsFromWork("src/work/observe.mjs", observe, "listItems"), "observe.mjs takes its items from listItems");
       assert.ok(!/\/\^\(\\d\+\)_/.test(observe), "observe.mjs holds no regex literal beginning /^(\\d+)_");

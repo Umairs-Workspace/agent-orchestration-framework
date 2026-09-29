@@ -31,6 +31,11 @@ Private workspace for work-domain behavior.
 | `@aof/work/diagrams/layout` | Diagram names, paths and link grammar. |
 | `@aof/work/doctor` | `createWorkDoctor` owns snapshot reads and check orchestration; core supplies execution projection, run reads and the configured diagram check. |
 | `@aof/work/doctor/*` | Coherence, freshness, budgets, identity, rubric, execution-record, dependency and loop-ready checks. `createDoctorDiagrams` receives diagram configuration policy. |
+| `@aof/work/counters` | Pure work and execution counters over supplied records. |
+| `@aof/work/tune/formation`, `provenance`, `distance` | Candidate formation, citation resolution and distance calculations. |
+| `@aof/work/tune/proposal` | `createTuneProposals` shapes proposals using the supplied model-map policy and asset path. |
+| `@aof/work/tune/corpus` | `createTuneCorpus` joins work records with supplied retrospective, execution, observation and graph readers. |
+| `@aof/work/commands/tune` | `createTuneCommand` contributes the tune descriptor and report builder; core supplies corpus, proposal, graph and registry collaborators. |
 
 Doctor checks import pure shared predicates directly rather than importing the snapshot reader.
 The work package depends on contracts for error envelopes and claim provenance; it does not import
@@ -88,3 +93,9 @@ the audit algorithms without importing core, execution or work-graph. In particu
 graph checks avoids a cycle with work-graph's existing dependency on work records.
 
 Run `yarn workspace @aof/work test` for the package tests.
+
+Tuning construction performs no reads. Corpus assembly preserves each source's locator and
+declared read contract. Proposal policy is supplied explicitly, keeping assistant assets in core.
+The tune command requests the registry only when proposals need an acceptor verdict; it invokes
+the shared acceptor in report-only mode. Work neither imports the application registry nor owns
+a second acceptance rule. Core's legacy paths remain composition adapters during migration.

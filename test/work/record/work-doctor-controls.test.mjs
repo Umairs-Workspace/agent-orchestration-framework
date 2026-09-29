@@ -318,7 +318,7 @@ export const workDoctorControlsTests = [
       // and that the only genuinely new I/O is one existence probe per cited control
       // path and one read per declared runner file. Asserted over the SHIPPED spine's
       // own read sites, because a fixture cannot say how many times a file is opened.
-      const spine = await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8");
+      const spine = await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", "index.mjs"), "utf8");
       // Each site cut to the END OF ITS LINE rather than to the first `)`, because the
       // argument itself contains parens — the positional-slice trap `test/support/`
       // exists to keep out of gates (F-47-04-ARCH-2).

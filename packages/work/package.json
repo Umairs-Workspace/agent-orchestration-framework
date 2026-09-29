@@ -44,7 +44,14 @@
     "./doctor/depends": "./src/doctor/depends.mjs",
     "./doctor/loop-ready": "./src/doctor/loop-ready.mjs",
     "./doctor/diagrams": "./src/doctor/diagrams.mjs",
-    "./doctor": "./src/doctor/index.mjs"
+    "./doctor": "./src/doctor/index.mjs",
+    "./counters": "./src/counters.mjs",
+    "./tune/formation": "./src/tune/formation.mjs",
+    "./tune/provenance": "./src/tune/provenance.mjs",
+    "./tune/distance": "./src/tune/distance.mjs",
+    "./tune/proposal": "./src/tune/proposal.mjs",
+    "./tune/corpus": "./src/tune/corpus.mjs",
+    "./commands/tune": "./src/commands/tune.mjs"
   },
   "files": [
     "src"

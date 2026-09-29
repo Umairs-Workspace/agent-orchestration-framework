@@ -1194,7 +1194,7 @@ export const storyContextContractTests = [
       assert.doesNotMatch(wave, /\.startsWith\(|\.includes\(/u, "no re-implemented containment rule");
       assert.doesNotMatch(wave, /function\s+\w*[Cc]overs|\w*[Cc]overs\s*=\s*(?:\(|function)/u, "and no second coverage helper");
       // The census's side of the same claim: it imports the predicate rather than re-deriving one.
-      const lane = stripComments(await readFile(path.join(root, "src", "work", "doctor-depends.mjs"), "utf8"));
+      const lane = stripComments(await readFile(path.join(root, "packages", "work", "src", "doctor", "depends.mjs"), "utf8"));
       assert.match(lane, /import \{[^}]*\bcontractSetCovers\b[^}]*\} from "\.\.\/story-contract\.mjs"/u, "one home, two consumers");
       assert.doesNotMatch(lane, /\.startsWith\(/u, "and the lane holds no containment rule of its own");
       // `work:next` projects the wave off THIS partition, so the rows above are that command's answer.
