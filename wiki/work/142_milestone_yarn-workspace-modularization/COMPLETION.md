@@ -12,7 +12,7 @@ final tree. Historical passing checks alone do not prove the final layout works.
 | Contracts and foundation have explicit APIs | Implemented kernels; remaining shared primitives must be assigned without becoming a second monolith. |
 | Work owns lifecycle, records, discovery, readiness, validation and acceptance | Lifecycle/read/discovery/readiness/validation, acceptance, audit, doctor and tuning services extracted, including counters and the tune command descriptor. Archive, reindex, schema upgrade, scaffolding and backlog/gap/finding promotion are extracted, with promotion and four insertion command implementations. Row/artifact contracts, worker content reads, cache-first readers, resolvers and five read commands are extracted, along with observation, debt and their commands. Test selection, changed sets, the declared toolchain and the test command are extracted. Doctor, validate, archive and upgrade command faces are extracted with explicit runtime/configuration ports. Remaining work services and command implementations/contributions remain. Run persistence belongs to execution. |
 | Work graph is separate from executing the loop | Work-graph mechanisms and six command implementations/contribution extracted; final removal of compatibility paths and full-distribution checks remain. |
-| Work loop owns pure decisions and orchestration | Engine, cycle/wave/ask/stop orchestration, progress/diagnostics, argv and all four command descriptors/contribution extracted with explicit application ports. Final application composition and compatibility-adapter removal remain. |
+| Work loop owns pure decisions and orchestration | Engine, cycle/wave/ask/stop orchestration, progress/diagnostics, argv, trigger resolution and local dispatch extracted with explicit application ports. Package contributions register loop, three phase drivers, trigger and dispatch. Final application composition and compatibility-adapter removal remain. |
 | Execution owns local sessions, runs, PTYs and reusable worktree mechanisms | Run storage, transcript spend settlement, heartbeat queues, session attribution, terminal provider resolution, live-session registry, local driver, shared lazy PTY loader/spawner, screen observation/recognition, workspace trust, reusable Git worktree mechanisms and bounded child-process execution extracted. Final application composition and adapter removal remain. |
 | Mesh owns coordination, projections and package commands | Effects, contribution declaration and worktree lane/naming/preparation/retention policy extracted; most coordination implementations remain in root source. |
 | Messaging owns Discord and notification behavior | Contribution seam exists; package extraction outstanding. |
@@ -47,8 +47,10 @@ the work package's final command contribution are not complete.
 Continue/refine/verify routing and resume/answer implementations are now work-owned too, including
 the deferred registry invocation supplied by core. Work-loop owns trigger compilation, signal and
 level resolution, its command and CLI contribution. Core still supplies assets, cadence grammar and
-deferred registry access. Dispatch services/commands, other domain boundaries and final application
-composition remain outstanding.
+deferred registry access. Work-loop also owns local dispatch lane admission, concurrency, inspection,
+merge/cleanup policy and its command contribution; core still supplies configured worktrees, locks,
+work discovery and effect delivery. Other domain boundaries and final application composition remain
+outstanding.
 Generated-output parity is still incomplete: four previously pending loop copies, four additional
 watcher/rubric copies and three pay-debt renders need citation-only refreshes and matching lock hashes.
 

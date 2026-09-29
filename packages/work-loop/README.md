@@ -15,6 +15,10 @@ belong to `@aof/work-graph`; core assembles the executable and supplies applicat
   `trigger/level` and `trigger/sources` resolve levels and signals through the local loop engine.
   `createTriggerCommand` supplies the read-only trigger command; `createTriggerContribution`
   registers it as a separate ordered group, preserving command enumeration during migration.
+- `createDispatchLanes` owns local lane admission, concurrency, inspection, cleanup and merge policy.
+  Core supplies configured worktree operations, work discovery, locks and degradation reporting.
+  `createDispatchCommand` receives these services plus effect delivery; `createDispatchContribution`
+  registers its descriptor without changing the command list order.
 - `createLoopProgress` and `createLoopDiagnostics` own progress sampling and launch diagnostics.
   `argv` is the zero-import declaration-to-arguments composer.
 

@@ -47,7 +47,7 @@ const MINT_ALLOWED = new Set([
   // ONE derivation instead means a locally-dispatched build, a mesh assignment and an
   // operator's session all converge on the item's own line, and `findItemWorktree` locates
   // that line for all three without a lookup.
-  "src/work/dispatch.mjs",
+  "packages/work-loop/src/dispatch.mjs",
 ]);
 
 function stripComments(source) {

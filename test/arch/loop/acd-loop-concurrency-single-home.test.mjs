@@ -41,7 +41,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BOUNDS_HOME = "packages/contracts/src/loop-bounds.mjs";
 const ENGINE = "packages/work-loop/src/engine.mjs";
-const DISPATCH_HOME = "src/work/dispatch.mjs";
+const DISPATCH_HOME = "packages/work-loop/src/dispatch.mjs";
 const KEY = "work.loop.concurrency";
 
 // THE EIGHT FF-6901 KEYS, spelled here so the pin is a pin: a ninth number appended to the leaf
@@ -147,7 +147,8 @@ export function sweepFamilyKeys(units) {
       const key = match[0];
       if (!pinned.has(key)) problems.push(`${rel} names \`${key}\`, which neither resolver map carries — the family reads its bounds through src/loop-bounds.mjs's twelve keys and holds no number of its own`);
     }
-    if ([...code.matchAll(DISPATCH_BOUND_READ_RE)].length > 0) {
+    // Dispatch now shares this package; its one pool-bound read is checked by sweepDispatchBoundReads.
+    if (rel !== DISPATCH_HOME && [...code.matchAll(DISPATCH_BOUND_READ_RE)].length > 0) {
       problems.push(`${rel} reads \`dispatch.concurrency\` — the family never reads the dispatch bound (129/ADR-006)`);
     }
   }

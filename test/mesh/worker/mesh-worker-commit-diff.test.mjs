@@ -458,9 +458,9 @@ export const meshWorkerCommitDiffTests = [
       assert.doesNotMatch(sink, /function\s+resolveRefInWorktree\b/u, "worker-execution.mjs contains no `function resolveRefInWorktree` definition");
       assert.doesNotMatch(sink, /function\s+worktreeWorkDir\b/u, "…and no `function worktreeWorkDir` definition");
       assert.match(sink, /export\s*\{[^}]*\bresolveRefInWorktree\b[^}]*\}\s*from\s*["']\.\.\/work\/dispatch\.mjs["']/u, "…and re-exports resolveRefInWorktree from ../work/dispatch.mjs");
-      const home = stripComments(await readFile(path.join(repoRoot, "src", "work", "dispatch.mjs"), "utf8"));
-      assert.match(home, /export\s+async\s+function\s+resolveRefInWorktree\b/u, "dispatch.mjs defines resolveRefInWorktree");
-      assert.match(home, /export\s+function\s+worktreeWorkDir\b/u, "…and worktreeWorkDir");
+      const home = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "dispatch.mjs"), "utf8"));
+      assert.match(home, /async\s+function\s+resolveRefInWorktree\b/u, "dispatch.mjs defines resolveRefInWorktree");
+      assert.match(home, /function\s+worktreeWorkDir\b/u, "…and worktreeWorkDir");
       // worktree.mjs GAINS no import of ../work.mjs: its one pre-existing `loadWorkspace` import
       // line is the only one, and it takes no `findWork` — the resolver's edge is dispatch.mjs's.
       const worktreeSource = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worktree.mjs"), "utf8"));

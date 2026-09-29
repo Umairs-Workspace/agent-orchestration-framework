@@ -40,7 +40,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // DEFINITION to its new home; the behavioural leg keeps importing the name from
 // `worker-execution.mjs`, which is now a re-export, so the same test also proves the god-node still
 // hands out the SAME reference every existing importer expects.
-const executionSourcePath = path.join(repoRoot, "src", "work", "dispatch.mjs");
+const executionSourcePath = path.join(repoRoot, "packages", "work-loop", "src", "dispatch.mjs");
 const testSuitePath = path.join(repoRoot, "scripts", "test.mjs");
 
 function stripCommentsAndStrings(source) {

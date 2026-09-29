@@ -781,3 +781,14 @@ enumeration stays unchanged. Source guards discover the actual package family an
 as an additional closure root. This retains checks for clocks and process execution across injected
 services while pure signal/level leaves now reach the local engine directly. Generated-citation parity
 remains a separate known failure, not an exemption added to those checks.
+
+Local dispatch belongs with loop orchestration: it admits lanes into the existing pool, resolves the
+lane's item, runs the bounded set and coordinates merge/cleanup. It delegates worktree mechanics and
+branch policy to the existing execution/mesh services. Keeping those operations injected preserves
+the direction of package dependencies; local dispatch does not acquire mesh's assembled runtime.
+
+Moving dispatch into work-loop means that the package now contains the legitimate owner of the pool
+bound as well as its consumers. The guard still requires exactly one reader at the dispatch home and
+rejects reads elsewhere; the loop-family rule acknowledges that owner. Admission and default-bound
+scans now cover all runtime workspace sources instead of only root src/. The worker sink closure adds
+one implementation module behind its existing adapter; the session driver's denied reach is unchanged.

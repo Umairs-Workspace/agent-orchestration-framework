@@ -16,3 +16,10 @@ export function createTriggerContribution(trigger) {
   }
   return Object.freeze({ name: "@aof/work-loop", commands: Object.freeze([trigger]) });
 }
+
+export function createDispatchContribution(dispatch) {
+  if (dispatch?.id !== "work:dispatch") {
+    throw new TypeError("Work-loop dispatch contribution requires work:dispatch.");
+  }
+  return Object.freeze({ name: "@aof/work-loop", commands: Object.freeze([dispatch]) });
+}

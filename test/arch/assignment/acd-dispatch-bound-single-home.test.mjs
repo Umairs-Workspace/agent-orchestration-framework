@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function: acd-dispatch-bound-single-home (story 65 / task 02) —
 //
 //   "the concurrency bound is READ, never invented: ONE configured key, ONE default, ONE
@@ -40,7 +41,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 
 // THE ONE HOME. Named, so the gate reports WHICH file may hold the bound rather than only
 // that some file holds it twice.
-const BOUND_HOME = "src/work/dispatch.mjs";
+const BOUND_HOME = "packages/work-loop/src/dispatch.mjs";
 
 // The three shapes a second site takes, each keyed on what it would actually look like:
 //   · reading the configured key directly (`config.work.dispatch.concurrency`);
@@ -79,19 +80,7 @@ export function boundSiteOffenders(listing, home = BOUND_HOME) {
 }
 
 async function readSrcListing() {
-  const dir = path.join(repoRoot, "src");
-  const listing = [];
-  const walk = async (current) => {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.name.endsWith(".mjs")) {
-        listing.push({ path: path.relative(repoRoot, full).split(path.sep).join("/"), source: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(dir);
-  return listing;
+  return Promise.all((await readRuntimeFiles(repoRoot)).map(async file => ({ path: file.rel, source: await readFile(file.path, "utf8") })));
 }
 
 export const archTests = [
@@ -110,7 +99,7 @@ export const archTests = [
     run: async () => {
       const home = { path: BOUND_HOME, source: "export const DEFAULT_DISPATCH_CONCURRENCY = 3;\nexport function dispatchConcurrencyFromConfig(ws) { return resolveDispatchConcurrency(ws?.config?.work?.dispatch?.concurrency); }" };
       // A CONSUMER, done correctly: it imports the resolver and never names the key.
-      const consumer = { path: "src/commands/dispatch.mjs", source: 'import { dispatchConcurrencyFromConfig } from "../work/dispatch.mjs";\nconst bound = dispatchConcurrencyFromConfig(ws);' };
+      const consumer = { path: "packages/work-loop/src/commands/dispatch.mjs", source: 'import { dispatchConcurrencyFromConfig } from "../work/dispatch.mjs";\nconst bound = dispatchConcurrencyFromConfig(ws);' };
       assert.deepEqual(boundSiteOffenders([home, consumer]), [], "a consumer that imports the resolver is not a second site");
 
       for (const [label, planted] of [

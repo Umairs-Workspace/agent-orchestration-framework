@@ -64,6 +64,8 @@ export const yarnInstallationTests = [
       } : name === 'mesh' ? {
         'worktrees.mjs': ['node:path', '@aof/execution/worktrees'],
       } : name === 'work-loop' ? {
+        'dispatch.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
+        'commands/dispatch.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
         'trigger/declaration.mjs': ['node:path', 'node:fs/promises'],
         'commands/trigger.mjs': ['@aof/contracts/error'],
         'progress.mjs': ['node:child_process', 'node:fs/promises', 'node:path', 'node:util', '@aof/contracts/loop-bounds'],

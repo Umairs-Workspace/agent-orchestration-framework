@@ -259,7 +259,8 @@ export const archTests = [
       // modules. Deferred domain-service imports are deliberately outside this census.
       // The read extraction adds three implementation homes behind existing forwards:
       // item-row, artifacts and content-read. The other 91 nodes are unchanged.
-      assert.equal(sinkGraph.seen.size, 95, "observation adds its implementation home to the prior 94-module closure");
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/work-loop/src/dispatch.mjs")), "the sink reaches dispatch's implementation through its core binding");
+      assert.equal(sinkGraph.seen.size, 96, "dispatch adds one implementation home to the prior 95-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

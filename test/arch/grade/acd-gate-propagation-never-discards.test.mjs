@@ -21,7 +21,7 @@
 //
 // 129/ADR-002 (FF-12904) — MERGE-HOME NEVER DISCARDS. The loop merges each lane home in the
 // PRIMARY through the same verb (`advanceBranchToBase`), and three more modules now run git
-// against a branch that carries commits: `src/work/dispatch.mjs` (the composed lane verbs),
+// against a branch that carries commits: `packages/work-loop/src/dispatch.mjs` (the composed lane verbs),
 // `src/loop/wave.mjs` and `src/loop/cycle.mjs`. They JOIN `BRANCH_PATH_MODULES` — an extension
 // of this control, never a twin, so the ONE detector (`discardingOps`) judges all six; the
 // sanctioned forms stay sanctioned (`worktree remove --force`, the path-scoped `reset -q -- .aof`
@@ -57,7 +57,7 @@ export const BRANCH_PATH_MODULES = Object.freeze([
   "src/mesh/worker-execution.mjs",
   "src/mesh/recovery-push.mjs",
   // 129/ADR-002 — the merge-home path.
-  "src/work/dispatch.mjs",
+  "packages/work-loop/src/dispatch.mjs",
   "packages/work-loop/src/wave.mjs",
   "packages/work-loop/src/cycle.mjs",
 ]);
@@ -263,7 +263,7 @@ export const archTests = [
     run: async () => {
       assert.deepEqual(
         [...BRANCH_PATH_MODULES].sort(),
-        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "src/mesh/recovery-push.mjs", "src/mesh/worker-execution.mjs", "src/mesh/worktree.mjs", "src/work/dispatch.mjs"],
+        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "src/mesh/recovery-push.mjs", "src/mesh/worker-execution.mjs", "src/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
         "BRANCH_PATH_MODULES as a set",
       );
       for (const rel of BRANCH_PATH_MODULES) assert.ok((await readModule(rel)).length > 0, `${rel} was read`);
@@ -281,7 +281,7 @@ export const archTests = [
       const { problems, armed } = await armedMergeProblems();
       assert.ok(armed.includes(WORKTREE), `${WORKTREE}: NOT FOUND — the one merge verb's home holds no merge argv; the armed leg is reading the wrong tree`);
       assert.deepEqual(problems, [], `every merge is armed in its own module:\n${problems.join("\n")}`);
-      assert.equal(armed.includes("src/work/dispatch.mjs"), false, "dispatch.mjs spells no merge argv of its own — it composes the verb (129/03)");
+      assert.equal(armed.includes("packages/work-loop/src/dispatch.mjs"), false, "dispatch.mjs spells no merge argv of its own — it composes the verb (129/03)");
     },
   },
   {
@@ -298,9 +298,9 @@ export const archTests = [
     run: async () => {
       const plant = (rel, argv) => plantedLoader(rel, (source) => `${source}\nexport const plant = (exec) => exec([${argv}]);\n`);
       const rows = [
-        ["src/work/dispatch.mjs", '"reset", "--hard", base', "src/work/dispatch.mjs — reset --hard: reset --hard"],
-        ["src/work/dispatch.mjs", '"checkout", "-B", branch, base', "src/work/dispatch.mjs — checkout -B: checkout -B"],
-        ["src/work/dispatch.mjs", '"push", "-f", "origin", branch', "src/work/dispatch.mjs — force push: push -f origin"],
+        ["packages/work-loop/src/dispatch.mjs", '"reset", "--hard", base', "packages/work-loop/src/dispatch.mjs — reset --hard: reset --hard"],
+        ["packages/work-loop/src/dispatch.mjs", '"checkout", "-B", branch, base', "packages/work-loop/src/dispatch.mjs — checkout -B: checkout -B"],
+        ["packages/work-loop/src/dispatch.mjs", '"push", "-f", "origin", branch', "packages/work-loop/src/dispatch.mjs — force push: push -f origin"],
         ["packages/work-loop/src/wave.mjs", '"rebase", "main"', "packages/work-loop/src/wave.mjs — rebase: rebase main"],
         ["packages/work-loop/src/wave.mjs", '"branch", "-f", branch, tip', "packages/work-loop/src/wave.mjs — branch -f: branch -f"],
         ["packages/work-loop/src/wave.mjs", '"update-ref", "refs/heads/main", tip', "packages/work-loop/src/wave.mjs — update-ref: update-ref refs/heads/main"],
@@ -313,10 +313,10 @@ export const archTests = [
         assert.deepEqual(offenders, [expected], `[${argv}] in ${rel} is the one offender`);
       }
       for (const [rel, argv] of [
-        ["src/work/dispatch.mjs", '"worktree", "remove", "--force", lanePath'],
-        ["src/work/dispatch.mjs", '"reset", "-q", "--", ".aof"'],
-        ["src/work/dispatch.mjs", '"add", "--", milestoneDir'],
-        ["src/work/dispatch.mjs", '"commit", "--no-verify", "-m", message'],
+        ["packages/work-loop/src/dispatch.mjs", '"worktree", "remove", "--force", lanePath'],
+        ["packages/work-loop/src/dispatch.mjs", '"reset", "-q", "--", ".aof"'],
+        ["packages/work-loop/src/dispatch.mjs", '"add", "--", milestoneDir'],
+        ["packages/work-loop/src/dispatch.mjs", '"commit", "--no-verify", "-m", message'],
         ["src/mesh/worker-execution.mjs", '"-c", "credential.helper=", "push", "origin", branch'],
       ]) {
         assert.deepEqual(await forbiddenFormOffenders(plant(rel, argv)), [], `[${argv}] in ${rel} is sanctioned`);
@@ -324,12 +324,12 @@ export const archTests = [
 
       // ARMED, per module: a merge in dispatch.mjs with no abort of its own — even while
       // worktree.mjs holds one — is named; an abort removed from worktree.mjs is named.
-      const unarmed = await armedMergeProblems(plant("src/work/dispatch.mjs", '"merge", "--no-ff", tip'));
-      assert.ok(unarmed.armed.includes("src/work/dispatch.mjs"), "the planted merge was found");
-      assert.ok(unarmed.problems.some((problem) => problem.includes("src/work/dispatch.mjs") && problem.includes("--abort")), `an unarmed merge in dispatch.mjs is named:\n${unarmed.problems.join("\n")}`);
+      const unarmed = await armedMergeProblems(plant("packages/work-loop/src/dispatch.mjs", '"merge", "--no-ff", tip'));
+      assert.ok(unarmed.armed.includes("packages/work-loop/src/dispatch.mjs"), "the planted merge was found");
+      assert.ok(unarmed.problems.some((problem) => problem.includes("packages/work-loop/src/dispatch.mjs") && problem.includes("--abort")), `an unarmed merge in dispatch.mjs is named:\n${unarmed.problems.join("\n")}`);
       const disarmed = await armedMergeProblems(plantedLoader(WORKTREE, (source) => source.replace('["merge", "--abort"]', '["merge-base", "HEAD"]')));
       assert.ok(disarmed.problems.some((problem) => problem.includes(WORKTREE) && problem.includes("--abort")), `worktree.mjs with its abort removed is named:\n${disarmed.problems.join("\n")}`);
-      const armedBoth = await armedMergeProblems(plant("src/work/dispatch.mjs", '"merge", "--no-ff", tip], ["merge", "--abort"'));
+      const armedBoth = await armedMergeProblems(plant("packages/work-loop/src/dispatch.mjs", '"merge", "--no-ff", tip], ["merge", "--abort"'));
       assert.deepEqual(armedBoth.problems, [], "a merge with an abort beside it in the same module is armed");
 
       // PINNED: a third comparison is named; no comparison is NOT FOUND.

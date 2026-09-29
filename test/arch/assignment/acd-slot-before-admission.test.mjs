@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6907 / ADR-006 — every local/mesh work-admission path acquires the existing
 // concurrency slot first, and work.dispatch.concurrency retains one resolution home.
 import assert from "node:assert/strict";
@@ -8,7 +9,7 @@ import { matchedBraceBody, matchedParenSpan, stripComments } from "../../support
 import { boundSiteOffenders } from "./acd-dispatch-bound-single-home.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const commandPath = path.join(root, "src", "commands", "dispatch.mjs");
+const commandPath = path.join(root, "packages", "work-loop", "src", "commands", "dispatch.mjs");
 const meshPath = path.join(root, "src", "mesh", "assignment-reclaim.mjs");
 const launcherPath = path.join(root, "src", "mesh", "launcher.mjs");
 const resumePath = path.join(root, "src", "commands", "mesh", "terminal-resume.mjs");
@@ -114,7 +115,7 @@ export function productionAdmissionPathProblems(listing, suppliers = SUPPLIED_DI
     const rel = String(file?.path ?? "").replaceAll("\\", "/");
     const code = stripComments(String(file?.source ?? ""));
     const opens = executableCallCount(code, "resolveDispatchLane");
-    if (opens > 0 && rel === "src/commands/dispatch.mjs") {
+    if (opens > 0 && rel === "packages/work-loop/src/commands/dispatch.mjs") {
       localCalls += opens;
     } else if (opens > 0) {
       const spans = suppliedOpenerSpans(code);
@@ -167,19 +168,7 @@ export function sharedOccupancyProblems(listing) {
 }
 
 async function srcListing() {
-  const listing = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.name.endsWith(".mjs")) listing.push({
-        path: path.relative(root, full).split(path.sep).join("/"),
-        source: await readFile(full, "utf8"),
-      });
-    }
-  };
-  await walk(path.join(root, "src"));
-  return listing;
+  return Promise.all((await readRuntimeFiles(root)).map(async file => ({ path: file.rel, source: await readFile(file.path, "utf8") })));
 }
 
 export const archTests = [
@@ -223,7 +212,7 @@ export const archTests = [
       assert.ok(slotBeforeAdmissionProblems(goodCommand, goodMesh, "runControlDispatchReclaimTick(ws, server);").some((p) => p.includes("serialize")));
 
       const homes = [
-        { path: "src/commands/dispatch.mjs", source: goodCommand },
+        { path: "packages/work-loop/src/commands/dispatch.mjs", source: goodCommand },
         { path: "src/mesh/assignment-reclaim.mjs", source: `export async function runControlDispatchReclaimTick() { ${goodMesh} }` },
         { path: "src/mesh/launcher.mjs", source: goodLauncher },
         { path: "src/commands/mesh/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
@@ -242,7 +231,7 @@ export const archTests = [
     name: "arch/69 FF-6907 self-check (129/04): a supplied opener is admitted only inside its runDispatchLane-bound function, behind a work:dispatch ask, and declared — each leg fails on its own",
     run: () => {
       const homes = [
-        { path: "src/commands/dispatch.mjs", source: "dispatchReadySet(rows, (row) => typeof ctx.runDispatchLane === \"function\" ? ctx.runDispatchLane(row) : resolveDispatchLane(root, row.ref));" },
+        { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, (row) => typeof ctx.runDispatchLane === \"function\" ? ctx.runDispatchLane(row) : resolveDispatchLane(root, row.ref));" },
         { path: "src/mesh/assignment-reclaim.mjs", source: "export async function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); if (used >= dispatchBound) continue; dispatchDirective(buildDirectiveFrame(x)); }" },
         { path: "src/mesh/launcher.mjs", source: "controlDispatchReclaimInFlight.then(() => runControlDispatchReclaimTick(ws, server)); controlDispatchReclaimInFlight = dispatchReclaimTick.catch(fail);" },
         { path: "src/commands/mesh/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
@@ -289,7 +278,7 @@ export const archTests = [
       assert.ok(sharedOccupancyProblems([...base, { path: "src/other.mjs", source: 'row.state === "accepted" || row.state === "running" && row.code !== "needs-input";' }]).some((p) => p.includes("re-spells")));
       assert.ok(sharedOccupancyProblems([...base, { path: "src/other.mjs", source: "const occupiedByTarget = dispatchedIds;" }]).some((p) => p.includes("once-guard")));
       const doors = [
-        { path: "src/commands/dispatch.mjs", source: "dispatchReadySet(rows, () => resolveDispatchLane());" },
+        { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, () => resolveDispatchLane());" },
         { path: "src/mesh/assignment-reclaim.mjs", source: "function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); dispatchDirective(buildDirectiveFrame()); }" },
         { path: "src/mesh/launcher.mjs", source: "runControlDispatchReclaimTick();" },
         { path: "src/commands/mesh/terminal-resume.mjs", source: "buildTerminalResumeEnvelope();" },

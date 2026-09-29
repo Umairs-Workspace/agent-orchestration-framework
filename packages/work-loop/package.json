@@ -21,13 +21,15 @@
     "./trigger/declaration": "./src/trigger/declaration.mjs",
     "./trigger/level": "./src/trigger/level.mjs",
     "./trigger/sources": "./src/trigger/sources.mjs",
-    "./commands/trigger": "./src/commands/trigger.mjs"
+    "./commands/trigger": "./src/commands/trigger.mjs",
+    "./dispatch": "./src/dispatch.mjs",
+    "./commands/dispatch": "./src/commands/dispatch.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/services.test.mjs test/trigger.test.mjs"
+    "test": "node --test test/services.test.mjs test/trigger.test.mjs test/dispatch.test.mjs"
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",

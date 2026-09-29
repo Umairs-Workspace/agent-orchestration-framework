@@ -1481,3 +1481,33 @@ Evidence in `.tmp/workspace-migration/loop-trigger/`:
 
 Dispatch and remaining domain extraction, final core/apps layout, adapter removal and full/platform
 verification remain outstanding; this completes the trigger boundary, not the milestone.
+
+### Local dispatch lanes and command contribution
+
+Work-loop owns local dispatch policy and its command. Core supplies work discovery, configured mesh/
+execution worktree operations, launcher locking, degradation reporting and effect-journal delivery.
+The package registers dispatch as an ordered contribution without changing the command list.
+
+Evidence in `.tmp/workspace-migration/loop-dispatch/`:
+
+- Both legacy APIs, exported values and function bodies match. All 117 registry descriptor contents
+  and enumeration order match. Three new package contracts cover lock release after failure,
+  production admission-before-materialisation, capacity refusal and bounded-pool failure isolation.
+  The root bridge passes all 155 package cases.
+- Corrected architecture scans cover workspace runtime sources and the actual implementation homes.
+  The initial 23-suite run completed 532 cases: 521 passed and 11 source-ownership assertions failed.
+  The nine-suite correction passes all 75 cases, preserving pool-bound ownership, admission, item
+  branch derivation, path safety, merge safety and the session driver's dependency restrictions.
+  The final worker resolver suite passes all 29 cases after following the moved definition: 104
+  passing cases across the ten corrected suites.
+- Source and copied-installation comparisons use real Git worktrees to verify open/reuse, at-capacity
+  refusal, dirty cleanup refusal, fast-forward merge and clean removal. Fixture paths, independently
+  minted commit identities and observed activity timestamps are normalized; each merge's reported tip
+  and commit are checked against the actual lane commit before normalization. Both exports resolve
+  inside the copied payload, which retains 117 commands and passes preceding extraction comparisons.
+- Standalone JavaScript includes both dispatch implementations; supply-chain audit reports zero
+  warnings. All 20 final census/registry checks pass. No dependency, shipped/generated asset or
+  workflow-state changes.
+
+Remaining work/core command composition, mesh/messaging/knowledge/server boundaries, final apps/core
+layout, compatibility removal and whole-tree/platform verification remain outstanding.

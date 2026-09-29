@@ -393,3 +393,13 @@ The initial 16-suite selection passed 383 cases with 14 failures; the corrected 
 to 152 cases. Source and copied-installation trigger comparisons, standalone JavaScript bundling and
 supply-chain audit pass. No dependencies, generated copies or workflow state changed. Remaining
 dispatch/work services, other domains, final layout/composition and whole-tree verification remain open.
+
+Dispatch extraction: work-loop owns local lane admission, concurrency, inspection, merge/cleanup policy
+and the dispatch command contribution. Core supplies configured worktree operations, discovery, locking
+and effect delivery. Both legacy APIs/values/functions and all 117 registry descriptors/order match.
+The 23-suite affected run finished with 521 passes and 11 source-ownership failures. Corrected scans
+pass 104 cases across ten suites; all 20 final census/registry checks pass. Three package contracts
+bring the bridge to 155 cases. Real-Git source and copied-installation comparisons preserve lane
+open/reuse, capacity refusal, dirty protection, merge and cleanup. Standalone JavaScript and supply-chain
+audit pass. No dependency, asset, generated-copy or workflow-state changes. Final work/core composition,
+other domain extraction, apps/core layout, adapter removal and whole-tree/platform checks remain open.
