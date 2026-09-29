@@ -1,7 +1,7 @@
 # Plan 01 ownership ledger
 
 This is ordinary development, outside AOF lifecycle management. Baseline: e343d50.
-The machine-readable module ledger is recorded alongside this document at completion.
+The complete machine-readable census is [01-module-ledger.json](01-module-ledger.json).
 
 ## Ownership decisions and public seams
 
@@ -22,9 +22,10 @@ The machine-readable module ledger is recorded alongside this document at comple
 | Delegation/orchestrator/headroom | Core retains work/delegation, work/orchestrator, work/headroom and their commands | These edit product configuration and transform/re-render installed assistant assets or select a managed binary. They do not schedule or execute work items. Retention is deliberate; the work namespace does not determine ownership. |
 | Init/update, bundle and planning setup | Core retains work/init, work/update, work/bundle*, planning-init, planning-prd, project commands | Product installation, rendering, lock state and project configuration remain core. |
 | Frozen set, graph faces and harness reference | Core | Compile/render shipped assistant assets and installed command references; not work-record/domain operations. |
-| Transport launch commands | Server: configured command factories | Core supplies configured board/setup servers and product defaults. |
+| Board launch command | Server: createWorkUiCommand | Core supplies the configured board server, command errors and a lazy fleet-port getter, preserving initialization order. |
+| Asset editor launch | Core retains commands/assets/ui | Product development setup resolves installed assets and spawns the Vite frontend; this is application launch assembly. |
 | Effect stores and journal | Domain packages own their metadata and event-specific queries; effects owns generic journal mechanics | Core aggregates classifications and reactor registration, resolves installation paths and injects configured runtime services. |
-| Notion routing | Notion owns routing/error policy; work owns legacy milestone discovery | Core supplies diagnostics and composes compatibility exports. |
+| Integration routing | Work owns the provider-neutral descriptor and legacy milestone discovery; Notion owns board/parent routing and RoutingError | Core supplies diagnostics and injects the descriptor reader into the Notion resolver. |
 
 ## Temporary compatibility
 
@@ -49,3 +50,25 @@ Bundled hooks remain standalone assets installed by core, with no package import
 Copied mesh installation: four public cases pass; all 117 ordered command descriptors unchanged.
 
 Work batch: six public-package tests pass, including bounded briefs, supplied graph services, transcript filtering, readiness, source-preserving migration and shared diagram invocation. Root behavioral and architecture checks inspect package implementations and their configured ports.
+
+## Completed source census
+
+[01-module-ledger.json](01-module-ledger.json) inventories all 452 remaining source files: 78 deliberate core implementations, 193 configured adapters, 88 compatibility forwards, two executable child wrappers and 91 canonical assets (including the standalone hook). Each row records owner, public seam, production consumers, test-consumer count and disposition. The ledger also lists 69 dynamic-import sites and 58 subprocess/program-path sites, including the CLI child URL, audit driver/probe wrappers, installed Vite and mesh launcher ports. Package APIs own behavior; unresolved/computed import targets remain the explicit injected program or cited-control inputs.
+
+The core implementation rows retain configuration/schema editing, assistant asset compilation/rendering, install/lock/tool selection, project/planning setup, installed generator integration, command/CLI composition and product path policy. Core effect registration and workspace integration eligibility are deliberate application policy. No domain implementation remains deferred. Plan 02 centralizes bindings, Plan 03 relocates core, Plan 05 resolves installed paths, Plan 06 removes compatibility/test paths, and Plan 07 relocates/synchronizes assets.
+
+## Final service boundaries
+
+Execution owns session model/effort policy, telemetry attribution, SVG rasterization and run-event journal queries. Mesh owns assignment park-event queries, effect frame vocabulary and mesh table metadata. Effects owns generic journal opening and classification queries; execution/work/Notion declare their own file stores. The SQLite runtime importer is a foundation primitive shared by both stores. Work owns the provider-neutral integration descriptor and foreign milestone-folder discovery; Notion owns board/parent resolution and one stable RoutingError class. Server owns the board launcher; its fleet default is supplied lazily by core. The asset editor Vite launcher stays core-owned.
+
+85 single-public-module forwards were audited and production imports through them were replaced where present. Remaining aggregate facades and configured services have explicit application responsibilities, not hidden domain implementations. Public manifests use explicit subpaths; no new dependency/version/lock entry was needed. Canonical refine documentation now cites the work-owned contract deriver and its bundle hash is regenerated; installed/generated copies are reserved for the later asset plan.
+
+## Verification and inherited debt
+
+- All 17 newly added public-package cases pass in a fresh copied installation; the 117 ordered command descriptors remain unchanged.
+- Through the composed application, 27 legacy APIs preserve 196 existing bindings, types and constant shapes. RoutingError and the shared freshness predicate have one identity. The node-identity API additionally exports the moved healing operation.
+- The full 482-suite architecture selection completed with 2,081 passes and 26 failures. Corrected public-import/source-home assertions then pass; nine failures are reproduced on baseline e343d50.
+- The retained nine are lane-slot source discovery, two installed-loop parity checks, audit/supervision source citations, installed asset line endings, bundle/installed-lock hash parity, token-bucket writer discovery and item-vocabulary discovery. These predate this plan and belong to Plans 06/07; the canonical citation update adds the corresponding expected installed-copy drift.
+- The isolated baseline archive is linked to its own baseline workspaces and unchanged external dependencies. Its two UI digest failures are archive-without-Git artifacts and are not counted as product failures.
+- The static worker closure changes 108 -> 117 solely through extracted implementation/metadata homes and removed forwards; session-driver isolation and its lifecycle denylist remain intact.
+- The registered package test bridge passes. The combined 157-suite run passed 2,018 checks; its sole missing per-file platform allowance was corrected and the 13-check dependency suite passes. The 58-suite service selection passes all 757 checks. Immutable Yarn linking, audit, bundle inclusion and whitespace verification are recorded in IMPLEMENTATION.md. Local transcripts are under .tmp/workspace-migration/plan01/.

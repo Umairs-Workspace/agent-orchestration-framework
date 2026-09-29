@@ -1,6 +1,6 @@
 # Plan 01 — Finish domain ownership
 
-Status: in progress. Depends on the current baseline. Feeds [Plan 02](02-composition-and-cli-PLAN.md).
+Status: complete (2026-09-29). Depends on the current baseline. Feeds [Plan 02](02-composition-and-cli-PLAN.md).
 
 ## Objective
 
@@ -26,30 +26,35 @@ These are concrete starting points, not instructions to move whole directories b
 
 ## Work
 
-- [ ] Inventory every remaining root production module as implementation, configured adapter,
+- [x] Inventory every remaining root production module as implementation, configured adapter,
   compatibility forward, executable child entry or asset. Include dynamic imports and spawned paths.
   Record owner, consumers, public API and disposition in a small ownership ledger in this folder.
 - [x] Capture current focused failures and command descriptors before changing ownership. Distinguish
   source-path assumptions from behavioral regressions and unrelated existing failures.
 - [x] Complete the mesh cache/artifact/overlay/resync group. Preserve cache-first fallback, provenance,
   publication authority, offline refusals and the distinction between requesting and completing resync.
-- [ ] Complete work briefing/discovery/contract services and remaining feature commands. Inspect mixed
+- [x] Complete work briefing/discovery/contract services and remaining feature commands. Inspect mixed
   migration, delegation and diagram operations individually; document any justified core retention.
-- [ ] Add explicit exports and direct dependency declarations. Remove implementation imports through
+- [x] Add explicit exports and direct dependency declarations. Remove implementation imports through
   old root forwards when an owning package API is available.
-- [ ] Keep only temporary adapters needed by current consumers, with their removal assigned to Plan 06.
+- [x] Keep only temporary adapters needed by current consumers, with their removal assigned to Plan 06.
   Update relevant package READMEs, command contributions and architecture source readers in each batch.
 
 ## Verification and exit
 
-- [ ] Compare legacy and package APIs, including error classes, constants and configured behavior.
+- [x] Compare legacy and package APIs, including error classes, constants and configured behavior.
   Exercise package factories with explicit services and the configured application in fixtures.
-- [ ] Run affected cache/store, mesh assignment, work briefing, command and architecture suites through
+- [x] Run affected cache/store, mesh assignment, work briefing, command and architecture suites through
   the real project runner. Test direct public imports in a copied installation, not just the checkout.
-- [ ] Check command descriptor/order parity and shared CLI/server invocation for moved commands.
-- [ ] Run immutable linking and the supply-chain audit when manifests change.
-- [ ] Every remaining substantial root implementation is either deliberately core-owned or tracked
+- [x] Check command descriptor/order parity and shared CLI/server invocation for moved commands.
+- [x] Run immutable linking and the supply-chain audit when manifests change.
+- [x] Every remaining substantial root implementation is either deliberately core-owned or tracked
   with a concrete destination and follow-up; finish those follow-ups before declaring this plan done.
 
 Commit by domain group. Revert a failing extraction together with its consumers/exports; persistent
 state formats must remain unchanged throughout.
+
+Completion evidence: [ownership decisions and verification](01-OWNERSHIP.md),
+[complete module ledger](01-module-ledger.json), and [implementation notes](../IMPLEMENTATION.md).
+Domain extraction is complete for this plan. Nine unrelated architecture failures were reproduced
+on the starting commit and are listed in the ownership notes for Plans 06/07.

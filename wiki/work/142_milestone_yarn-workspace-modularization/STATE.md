@@ -582,3 +582,5 @@ suites. All 20 census/registry and all 20 distribution checks pass. Canonical re
 manifest and reconciliation metadata follow the package homes; generated copies remain unchanged.
 Remaining root services, core/apps layout, final composition, adapter removal and whole-tree/native/
 platform verification remain open.
+
+Plan 01 completed (2026-09-29): all remaining domain services have owning packages and explicit public seams; the 452-file ownership ledger records deliberate core retention, configured adapters, forwards, child entries and assets. Copied installation/public API, ordered registry, package bridge, focused behavior, dependency-boundary and bundle checks pass after moved-source guard corrections. Nine architecture failures are confirmed on baseline e343d50 and remain later-plan source-reader/installed-asset debt. See plans/01-OWNERSHIP.md and IMPLEMENTATION.md for evidence. Plan 02 is the next engineering plan; this note creates no managed lifecycle state.
