@@ -846,3 +846,23 @@ The package declares contracts/foundation plus the already locked @inquirer/prom
 The formatter's declaration forward is validated by a full UI build. Architecture scans include the
 package implementations and compatibility callers, with planted violations proving that second
 gateway connections, direct ask writes, process spawning and unauthorized HTTP paths remain detected.
+
+## Knowledge operations and their application ports
+
+Graphify integration and the memory stack form one package: graph-backed memory invokes graph:build
+through the assembled registry, while both local and Graphify memory share record parsing and ranking.
+Directly moving the old imports would have made knowledge depend on core. The new factories instead
+receive managed-binary resolution, command invocation, workspace loading and configured work/import
+services. Pure graph normalization/impact and record ranking remain direct exports. Work's public
+ref-scope and declared-heading APIs are lower-level dependencies, not copies of those rules.
+
+The memory seam keeps one backend-selection read and receives deferred loaders. Its none backend and
+help path do not load local indexing or Graphify; the Graphify backend still invokes registered commands
+and never acquires a second subprocess path. The five graph descriptors and work:memory contribute
+under @aof/knowledge without changing command contents or enumeration order.
+
+Rendered Graphify skill/MCP configuration stays in core with assistant assets. The graph:serve command
+receives its transport; moving the generic MCP server belongs to server extraction. Imported-document
+storage/materialization still enters through application ports and needs a final ownership decision.
+Architecture scans now include workspace source and trace configured service bindings through their
+adapters; module actuator validation also recognizes exported destructuring declarations.

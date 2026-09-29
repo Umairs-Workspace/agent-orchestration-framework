@@ -30,7 +30,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "src");
 const bundleDir = path.join(srcDir, "bundle");
-const DRIVER_REL = path.join("src", "graphify.mjs");
+const DRIVER_REL = path.join("packages", "knowledge", "src", "graphify.mjs");
 
 const SEAMS = {
   architect: path.join(bundleDir, "agents", "aof-architect.md"),
@@ -45,11 +45,17 @@ const SEAMS = {
 // graph-mcp-server.mjs reaches the graph via invoke("graph:…"), not by import — it is
 // covered by the no-face-spawn guard, not by this import-grep. Neither is listed.)
 const GRAPH_REACHING_ALLOWLIST = new Set([
-  path.join("src", "graphify.mjs"),                 // imports the normalizer
-  path.join("src", "commands", "graph", "build.mjs"),  // imports the driver
-  path.join("src", "commands", "graph", "query.mjs"),  // imports the driver
-  path.join("src", "commands", "graph", "triage.mjs"), // imports the driver
-  path.join("src", "commands", "graph", "impact.mjs"), // imports the normalizer (11/ADR-007): the
+  // Transitional core adapters supply the configured graph services.
+  path.join("src", "graphify.mjs"),
+  path.join("src", "graph-normalize.mjs"),
+  path.join("src", "commands", "graph", "build.mjs"),
+  path.join("src", "commands", "graph", "query.mjs"),
+  path.join("src", "commands", "graph", "triage.mjs"),
+  path.join("packages", "knowledge", "src", "graphify.mjs"),                 // imports the normalizer
+  path.join("packages", "knowledge", "src", "commands", "graph-build.mjs"),  // imports the driver
+  path.join("packages", "knowledge", "src", "commands", "graph-query.mjs"),  // imports the driver
+  path.join("packages", "knowledge", "src", "commands", "graph-triage.mjs"), // imports the driver
+  path.join("packages", "knowledge", "src", "commands", "graph-impact.mjs"), // imports the normalizer (11/ADR-007): the
                                                     // deterministic edge-based coupling command — reaches
                                                     // the graph via the pure read (NOT a spawn), exactly
                                                     // as 10's backend does.
@@ -58,7 +64,7 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
                                                       // never a spawn. A build is minutes even when nothing
                                                       // changed, and an inner-loop tool that might cost minutes
                                                       // before it costs seconds is not one.
-  path.join("src", "memory", "graphify-backend.mjs"), // imports the normalizer (10)
+  path.join("packages", "knowledge", "src", "memory", "graphify-backend.mjs"), // imports the normalizer (10)
   path.join("src", "story-contract-derive.mjs"),      // imports the normalizer (96/ADR-004): the read/write-set
                                                       // derivation reaches the graph by the pure read — never a
                                                       // build and never a spawn, for 72/ADR-002 §1's reasons
@@ -181,14 +187,17 @@ export const archTests = [
         const rel = path.relative(repoRoot, file);
         const source = stripCommentsOnly(await readFile(file, "utf8"));
         const specs = importSpecifiers(source).map((entry) => entry.specifier);
-        const importsDriver = specs.some((s) => /(^|\/)graphify\.mjs$/.test(s));
-        const importsNormalizer = specs.some((s) => /(^|\/)graph-normalize\.mjs$/.test(s));
+        const importsDriver = specs.some((s) => /(^|\/)graphify(?:\.mjs)?$/.test(s));
+        const importsNormalizer = specs.some((s) => /(^|\/)graph-normalize(?:\.mjs)?$/.test(s));
+        const suppliedKnowledge = rel.startsWith(path.join("packages", "knowledge", "src") + path.sep)
+          && /\b(?:runGraphifyBuild|runGraphifyQuery|runGraphifyTriage)\s*\(/u.test(source)
+          && /function createGraph(?:Build|Query|Triage)Command\(\{[^}]*\brunGraphify(?:Build|Query|Triage)\b/u.test(source);
         const suppliedReader = rel === path.join("packages", "work", "src", "audit", "seam-liveness.mjs");
         if (suppliedReader) {
           assert.match(source, /createAuditSeamLiveness\(\{[^}]*normalizeGraph[^}]*readGraph/u, "the moved reader receives the existing graph services");
           assert.match(source, /normalizeGraph\(readGraph\(artifact\)\)/u, "and it still uses the supplied reader");
         }
-        if (importsDriver || importsNormalizer || suppliedReader) reachers.push(rel);
+        if (importsDriver || importsNormalizer || suppliedReader || suppliedKnowledge) reachers.push(rel);
       }
       const offenders = reachers.filter((rel) => !GRAPH_REACHING_ALLOWLIST.has(rel));
       assert.deepEqual(

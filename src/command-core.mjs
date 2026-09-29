@@ -27,6 +27,7 @@
 import { createWorkContribution } from "@aof/work/commands";
 import { createWorkLoopContribution, createTriggerContribution, createDispatchContribution } from "@aof/work-loop/commands";
 import { createWorkGraphContribution } from "@aof/work-graph/commands";
+import { createKnowledgeContribution } from "@aof/knowledge/commands";
 import { createCommandRegistry } from "@aof/contracts/commands";
 import { meshContribution } from "./commands/mesh/contribution.mjs";
 import { loadWorkspace } from "./work.mjs";
@@ -204,12 +205,12 @@ const CONTRIBUTIONS = [
     ratchetCommand,
     countersCommand,
   ]),
-  { name: "aof", commands: [
+  createKnowledgeContribution([
     graphBuildCommand,
     graphQueryCommand,
     graphTriageCommand,
     graphImpactCommand,
-  ] },
+  ]),
   createWorkContribution([
     testCommand,
   ]),
@@ -230,8 +231,10 @@ const CONTRIBUTIONS = [
     answerCommand,
   ]),
   meshContribution,
-  { name: "aof", commands: [
+  createKnowledgeContribution([
     graphServeCommand,
+  ]),
+  { name: "aof", commands: [
     diagramPlanCommand,
     diagramExportCommand,
     diagramFileCommand,
@@ -245,8 +248,10 @@ const CONTRIBUTIONS = [
     findCommand,
     observeCommand,
   ]),
-  { name: "aof", commands: [
+  createKnowledgeContribution([
     memoryCommand,
+  ]),
+  { name: "aof", commands: [
     useHeadroomCommand,
     unuseHeadroomCommand,
     workInitCommand,

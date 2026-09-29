@@ -260,8 +260,8 @@ export const archTests = [
       // THE SURFACE: the seam module's own exports, plus `parseMemoryArgv`'s own branches. Never
       // `memoryUsage()` and never `--help`, neither of which knows `--block` — the one flag both
       // carriers actually spell.
-      const memory = read("src/work/memory.mjs");
-      const parse = /export function parseMemoryArgv[\s\S]*?\n\}/u.exec(memory)?.[0] ?? "";
+      const memory = read("packages/knowledge/src/memory.mjs");
+      const parse = /function parseMemoryArgv[\s\S]*?\n\}/u.exec(memory)?.[0] ?? "";
       assert.ok(parse.length > 0, "guard: the parse function was located");
       const branchFlags = [...parse.matchAll(/key === "([a-z-]+)"/gu)].map((match) => `--${match[1]}`);
 
@@ -297,8 +297,8 @@ export const archTests = [
   {
     name: "arch/124/02 FF-12405 leg 5 (task 01): EVERY memory invocation in the bundle is read over joined lines, and every token each one spells resolves",
     run: () => {
-      const memory = read("src/work/memory.mjs");
-      const parse = /export function parseMemoryArgv[\s\S]*?\n\}/u.exec(memory)?.[0] ?? "";
+      const memory = read("packages/knowledge/src/memory.mjs");
+      const parse = /function parseMemoryArgv[\s\S]*?\n\}/u.exec(memory)?.[0] ?? "";
       const branchFlags = [...parse.matchAll(/key === "([a-z-]+)"/gu)].map((match) => `--${match[1]}`);
       const known = new Set([...branchFlags, ...SCOPE_FLAGS.map((flag) => `--${flag}`)]);
 

@@ -444,3 +444,16 @@ JavaScript includes all ten implementations, and the UI builds against the forma
 Yarn skip-build and immutable installs pass with existing peer warnings; supply-chain audit is clean.
 No generated asset or workflow-state changes. Final core/apps layout, remaining mesh/knowledge/server
 boundaries, composition/adapter removal and whole-tree/platform verification remain outstanding.
+
+Knowledge extraction: @aof/knowledge owns sixteen graph/memory implementations and six command
+descriptors, registered by its contribution in the existing order. Core supplies managed-tool,
+workspace, invocation, import-storage and configured work services. Memory backend loading remains
+deferred. Sixteen legacy APIs and 96 exported values/functions/descriptors match; all 117 command
+descriptors/order remain unchanged. Four package contracts pass locally and in a copied installation,
+and the package bridge now covers 173 cases. The 86-suite selection passed 885 cases with 32 failures;
+corrected source scans/bindings pass 170 cases with two failures, followed by five passing checks for
+the final graph-reachability correction. The remaining failure is the known generated watcher citation
+parity mismatch. All 17 knowledge modules/contribution bundle into standalone JavaScript.
+Runtime census/registry verification passes all 20 checks. Yarn
+skip-build/immutable installs and supply-chain audit pass. Final import ownership, mesh/server work,
+core/apps layout, composition, adapter removal and whole-tree/platform verification remain open.

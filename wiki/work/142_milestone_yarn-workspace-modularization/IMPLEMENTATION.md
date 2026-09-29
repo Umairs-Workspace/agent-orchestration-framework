@@ -1622,3 +1622,39 @@ Evidence in `.tmp/workspace-migration/messaging/`:
 All transport tests use fakes and synthetic credentials. No external messages, generated assets or
 AOF workflow state were changed. Remaining domains, final core/apps layout and adapter removal still
 prevent claiming migration completion.
+
+## Knowledge package: Graphify and memory
+
+Created @aof/knowledge with sixteen moved implementations, a command contribution, explicit exports
+and package tests. It owns Graphify execution, graph normalization/impact, memory selection/projection,
+none/local/Graphify backends, indexing/retrieval, five graph descriptors and work:memory. Factories
+receive configured core/work/import services; no implementation imports assembled core or private
+sibling source. Core retains assistant assets and MCP transport, and supplies deferred backend loaders.
+Three contribution groups preserve all 117 descriptors and their enumeration order.
+
+Evidence in `.tmp/workspace-migration/knowledge/`:
+
+- The broad 86-suite run passed 885 cases with 32 failures. Ownership paths, workspace scans and
+  factory bindings needed updates; existing generated citation parity and actuator-destructuring
+  limitations also appeared. The 27-suite correction passed 170 cases with two failures. After the
+  final graph reachability correction, both affected graph/actuator suites pass all five checks.
+  The final runtime source census/registry selection passes all 20 checks.
+  The remaining failed check is the previously pending generated autonomous-cascade-watcher citation
+  parity; no generated files or lock hashes were changed in this extraction.
+- Four package contracts cover deferred backend selection/help, local index persistence and recall,
+  graph offline refusal before any binary resolution, and package-owned contributions. They pass
+  locally and from a copied installation. The root package bridge now covers 173 cases.
+- All sixteen legacy APIs and 96 exported values/functions/descriptors match their pre-move baselines.
+  Deferred backend loaders return the same interfaces. The copied installation retains 117 commands
+  and all 17 public knowledge APIs resolve within its node_modules, without checkout resolution.
+- The standalone JavaScript bundle includes all 17 knowledge modules/contribution. This does not
+  establish native executable or supported-platform release behavior.
+- Yarn skip-build and immutable skip-build installations succeed with existing peer warnings. The
+  lockfile adds only the workspace and its internal dependencies, with no third-party version change.
+  Supply-chain audit reports zero warnings.
+
+Source guards now inspect actual owners, cover both legacy and package command modules for process
+creation, include workspace-wide backend-selection/parser censuses, and assert injected graph/record
+services against their core bindings. Live Graphify execution was not needed for package contracts.
+Import storage/materialization ownership, remaining mesh/server extraction, core/apps layout, final
+application composition, adapter removal and whole-tree/platform verification remain outstanding.

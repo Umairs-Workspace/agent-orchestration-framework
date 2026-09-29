@@ -78,8 +78,8 @@ const PROBED_MODULES = Object.freeze([
   "src/work/test-changed.mjs",
   "src/work-audit/spawn.mjs",
   "packages/work/src/audit/census.mjs",
-  "src/graph-normalize.mjs",
-  "src/commands/graph/impact.mjs",
+  "packages/knowledge/src/graph-normalize.mjs",
+  "packages/knowledge/src/commands/graph-impact.mjs",
 ]);
 
 const PROBE_FLOOR = 4;

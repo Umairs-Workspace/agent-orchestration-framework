@@ -46,7 +46,7 @@ export const KEEPERS = Object.freeze([
   { file: "packages/work/src/commands/ratchet.mjs", reason: "walks an ITEM subtree for files and parses path SEGMENTS with /^(\\d+)_/, never a listing" },
 ]);
 
-export const ASSERTED_NO_MATCH = "src/memory/local-indexing.mjs";
+export const ASSERTED_NO_MATCH = "packages/knowledge/src/memory/local-indexing.mjs";
 
 const REGEX_BINDING_RE = /\b(?:const|let|var)\s+(ITEM_RE|BACKLOG_ITEM_RE)\s*=\s*\//g;
 const IDENTIFIER_RE = /\b(?:ITEM_RE|BACKLOG_ITEM_RE)\b/;

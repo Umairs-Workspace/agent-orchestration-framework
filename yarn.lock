@@ -40,6 +40,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/knowledge@workspace:*, @aof/knowledge@workspace:packages/knowledge":
+  version: 0.0.0-use.local
+  resolution: "@aof/knowledge@workspace:packages/knowledge"
+  dependencies:
+    "@aof/contracts": "workspace:*"
+    "@aof/foundation": "workspace:*"
+    "@aof/work": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@aof/mesh@workspace:*, @aof/mesh@workspace:packages/mesh":
   version: 0.0.0-use.local
   resolution: "@aof/mesh@workspace:packages/mesh"
@@ -1837,6 +1847,7 @@ __metadata:
     "@aof/execution": "workspace:*"
     "@aof/foundation": "workspace:*"
     "@aof/integration-notion": "workspace:*"
+    "@aof/knowledge": "workspace:*"
     "@aof/mesh": "workspace:*"
     "@aof/messaging": "workspace:*"
     "@aof/work": "workspace:*"

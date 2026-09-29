@@ -39,7 +39,7 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 // THE CENSUSED SUBJECT — the modules that touch the graph. Named rather than globbed, because the
 // claim is about these two and a glob would quietly acquire a third.
-const GRAPH_FAMILY = Object.freeze(["packages/work/src/testing/select.mjs", "src/graph-impact.mjs"]);
+const GRAPH_FAMILY = Object.freeze(["packages/work/src/testing/select.mjs", "packages/knowledge/src/graph-impact.mjs"]);
 
 // The story's whole new-module set, for the clock claim (which is about anything that could
 // fabricate a build time) and for the one-seam claim over the git reader.
@@ -324,7 +324,7 @@ export const archTests = [
         assert.equal(result.widened[0].reason, "graph-unreadable", "…and the widening says why");
       });
 
-      const clocks = clockProblems(modulesOf([...STORY_MODULES, "src/commands/graph/impact.mjs"]));
+      const clocks = clockProblems(modulesOf([...STORY_MODULES, "packages/knowledge/src/commands/graph-impact.mjs"]));
       assert.deepEqual(clocks, [], `no module in this family fabricates an instant:\n  ${clocks.join("\n  ")}`);
       // …and the detector is not asleep: it fires on the token, and stays silent on the prose that
       // describes it, which is the shape that would have made this row read characters.

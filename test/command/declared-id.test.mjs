@@ -433,8 +433,8 @@ export const declaredIdTests = [
       // …and memory imports the forms WITHOUT the predicate, so the scope cannot leak
       // in later. (The exhaustive binding parse is FF-6604's; this is the behavioural
       // half — the import line itself.)
-      const source = await readFile(path.join(repoRoot, "src", "memory", "local-indexing.mjs"), "utf8");
-      const edge = source.match(/^import\s*\{([^}]*)\}\s*from\s*"\.\.\/declared-id\.mjs";/m);
+      const source = await readFile(path.join(repoRoot, "packages", "knowledge", "src", "memory", "local-indexing.mjs"), "utf8");
+      const edge = source.match(/^import\s*\{([^}]*)\}\s*from\s*"@aof\/work\/declared-id";/m);
       assert.ok(edge, "local-indexing imports the leaf");
       const bound = edge[1].split(",").map((name) => name.trim()).filter(Boolean).sort();
       assert.deepEqual(bound, ["headingCaptureRe", "headingSplitRe"], `memory takes the forms and nothing else; bound: ${bound.join(", ")}`);

@@ -58,8 +58,8 @@ const read = async (...segments) => (await readFile(at(...segments), "utf8")).re
 const cliPath = at("bin", "aof.mjs");
 
 const CLI_MJS = ["src", "cli.mjs"];
-const SEAM = ["src", "work", "memory.mjs"];
-const COMMAND = ["src", "commands", "work", "memory.mjs"];
+const SEAM = ["packages", "knowledge", "src", "memory.mjs"];
+const COMMAND = ["packages", "knowledge", "src", "commands", "memory.mjs"];
 const GATES = {
   workIds: ["test", "command", "command-core-contract.test.mjs"],
   boardDeferred: ["test", "arch", "work", "acd-work-command-route-coverage.test.mjs"],

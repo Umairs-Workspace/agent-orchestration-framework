@@ -48,12 +48,17 @@ const SEAMS = {
 // (the registered command), never by reading graph.json / importing the normalizer
 // (09/ADR-005). Its only `graph.json` mentions are in comments/strings (discounted).
 const GRAPH_READER_ALLOWLIST = new Set([
-  path.join("src", "graphify.mjs"),           // imports + re-exports the normalizer
-  path.join("src", "graph-normalize.mjs"),    // DEFINES readGraph/normalizeGraph; reads graph.json
+  // Transitional core adapters supply the configured graph services.
+  path.join("src", "graphify.mjs"),
   path.join("src", "commands", "graph", "build.mjs"),
   path.join("src", "commands", "graph", "query.mjs"),
   path.join("src", "commands", "graph", "triage.mjs"),
-  path.join("src", "commands", "graph", "impact.mjs"), // ADR-007: the deterministic, edge-based coupling
+  path.join("packages", "knowledge", "src", "graphify.mjs"),           // imports + re-exports the normalizer
+  path.join("packages", "knowledge", "src", "graph-normalize.mjs"),    // DEFINES readGraph/normalizeGraph; reads graph.json
+  path.join("packages", "knowledge", "src", "commands", "graph-build.mjs"),
+  path.join("packages", "knowledge", "src", "commands", "graph-query.mjs"),
+  path.join("packages", "knowledge", "src", "commands", "graph-triage.mjs"),
+  path.join("packages", "knowledge", "src", "commands", "graph-impact.mjs"), // ADR-007: the deterministic, edge-based coupling
                                                     // command the running agents consume — reads the
                                                     // STRUCTURED graph.json via the pure normalizer (the
                                                     // 09/ADR-001 permitted handle, exactly as 10's backend
@@ -65,7 +70,7 @@ const GRAPH_READER_ALLOWLIST = new Set([
                                             // core moved down out of commands/ so a src-level selector could
                                             // legally import it — is deliberately NOT listed: it takes an
                                             // already-normalized graph and names no reader symbol at all.
-  path.join("src", "memory", "graphify-backend.mjs"),
+  path.join("packages", "knowledge", "src", "memory", "graphify-backend.mjs"),
   path.join("src", "story-contract-derive.mjs"), // 96/ADR-004: the read/write-set derivation READS the artifact
                                                  // through the SAME normalizeGraph + computeImpact the shipped
                                                  // command uses, and is asserted by its OWN control (FF-9602) to

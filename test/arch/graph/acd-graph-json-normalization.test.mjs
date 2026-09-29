@@ -172,7 +172,7 @@ export const archTests = [
         // separator it derives across is what changed, and a `-` left here opened a file that is
         // no longer there.
         const [family, verb] = label.split(":");
-        const src = await readFile(path.join(repoRoot, "src", "commands", family, `${verb}.mjs`), "utf8");
+        const src = await readFile(path.join(repoRoot, "packages", "knowledge", "src", "commands", `${family}-${verb}.mjs`), "utf8");
         // The return object must NOT introduce a graph-derived structured field.
         // Grep the source for a returned `nodes:`/`edges:`/`hyperedges:`/`prs:`
         // key — there must be none (the answer is the opaque stdout).

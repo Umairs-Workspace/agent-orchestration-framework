@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for milestone 09 / ADR-006 inv. 2 (the load-bearing no-direct-
 // spawn guard; ADR-002 + ADR-005, amended 2026-06-21 / PO split):
 // "The ONLY spawn/exec of the `graphify` binary anywhere in src/ is in
@@ -31,7 +32,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "src");
-const DRIVER_REL = path.join("src", "graphify.mjs");
+const DRIVER_REL = path.join("packages", "knowledge", "src", "graphify.mjs");
 
 // THE SUBJECT IS DERIVED FROM THE TREE, RECURSIVELY (119/ADR-003 §4). A non-recursive `readdir`
 // filtered by the `graph-` prefix is a claim that survives only while `src/commands/` stays flat:
@@ -149,7 +150,7 @@ export const archTests = [
   {
     name: "arch/ADR-006 inv.2: the ONLY graphify-binary spawn in src/ is in src/graphify.mjs",
     run: async () => {
-      const files = await collectMjs(srcDir);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(files.length > 0, "found src/*.mjs files to scan");
       const offenders = [];
       let driverHasSpawn = false;
@@ -181,7 +182,9 @@ export const archTests = [
       ];
       const commandFiles = (await graphCommandModules(path.join(srcDir, "commands")))
         .map((rel) => path.join(srcDir, "commands", rel));
-      const targets = [...faceFiles, ...commandFiles];
+      const packageCommands = (await readRuntimeFiles(repoRoot)).filter(file => file.rel.startsWith("packages/knowledge/src/commands/")).map(file => file.path);
+      assert.ok(packageCommands.length >= 6, "knowledge command implementations are scanned");
+      const targets = [...faceFiles, ...commandFiles, ...packageCommands];
       assert.ok(commandFiles.length >= 3, `found the graph:* command modules (got ${commandFiles.length})`);
 
       for (const file of targets) {
@@ -211,7 +214,7 @@ export const archTests = [
       // Scan the COMMENT-stripped-but-string-RETAINED source of EVERY src/**/*.mjs
       // except the driver: none may pass a `graphify`/`graphifyy` string literal as
       // a spawn/exec family call's FIRST argument.
-      const files = await collectMjs(srcDir);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(files.length > 0, "found src/*.mjs files to scan");
       const offenders = [];
       for (const file of files) {

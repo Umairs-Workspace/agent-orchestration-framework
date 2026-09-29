@@ -84,7 +84,7 @@ export const archTests = [
     name: "arch/import-digest: the digest is indexed through the EXISTING parseAof; the import side defines no new parser/record shape",
     async run() {
       // The import-store scan reads AOF_FILE and runs the SAME parseAof the work stream uses.
-      const indexing = await readFile(path.join(repoRoot, "src", "memory", "local-indexing.mjs"), "utf8");
+      const indexing = await readFile(path.join(repoRoot, "packages", "knowledge", "src", "memory", "local-indexing.mjs"), "utf8");
       assert.ok(/AOF_FILE/.test(indexing), "local-indexing references AOF_FILE (the digest is a recognised scan artifact)");
       assert.ok(/parseAof\(/.test(indexing), "the digest is indexed through the existing parseAof");
       // The materialize writer RENDERS the digest — it defines no parser and no record shape.

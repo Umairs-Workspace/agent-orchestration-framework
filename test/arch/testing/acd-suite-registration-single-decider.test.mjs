@@ -37,7 +37,7 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 const CENSUS = "packages/work/src/audit/census.mjs";
 const REPORTER = "packages/work/src/testing/select.mjs";
-const STORY_MODULES = Object.freeze([REPORTER, "src/graph-impact.mjs", "packages/work/src/testing/changed.mjs"]);
+const STORY_MODULES = Object.freeze([REPORTER, "packages/knowledge/src/graph-impact.mjs", "packages/work/src/testing/changed.mjs"]);
 
 const sourceOf = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
 const modulesOf = (rels) => rels.map((rel) => ({ rel, code: sourceOf(rel) }));

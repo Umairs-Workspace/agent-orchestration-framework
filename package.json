@@ -36,6 +36,7 @@
     "@aof/execution": "workspace:*",
     "@aof/foundation": "workspace:*",
     "@aof/integration-notion": "workspace:*",
+    "@aof/knowledge": "workspace:*",
     "@aof/mesh": "workspace:*",
     "@aof/messaging": "workspace:*",
     "@aof/work": "workspace:*",

@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BACKEND = path.join(repoRoot, "src", "memory", "graphify-backend.mjs");
+const BACKEND = path.join(repoRoot, "packages", "knowledge", "src", "memory", "graphify-backend.mjs");
 
 // Strip line + block comments AND string/template literals, so a grep sees only live
 // code (the exact scanner the 09 no-face-spawn / privacy-boundary guards use). A
@@ -81,10 +81,10 @@ export const archTests = [
     run: async () => {
       const raw = await readFile(BACKEND, "utf8");
       const specs = importSpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
-      assert.ok(
-        specs.some((s) => /(^|\/)command-core\.mjs$/.test(s)),
-        `the backend imports from command-core.mjs (the only door to graphify); imports: ${specs.join(", ")}`
-      );
+      assert.match(raw, /function createGraphifyBackend\(\{\s*coreInvoke,\s*loadWorkspace/);
+      const binding = await readFile(path.join(repoRoot, "src/memory/graphify-backend.mjs"), "utf8");
+      assert.match(binding, /import\s*\{\s*invoke as coreInvoke,\s*loadWorkspace\s*\}\s*from\s*"\.\.\/command-core\.mjs"/);
+      assert.match(binding, /createGraphifyBackend\(\{\s*coreInvoke,\s*loadWorkspace/);
       // It reads graph.json through the spawn-free normalizer module, NOT the driver.
       assert.ok(
         specs.some((s) => /(^|\/)graph-normalize\.mjs$/.test(s)),

@@ -42,7 +42,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // MemoryRecord field lives in this ONE module (05/ADR-007's 2-importer seam;
 // 39/ADR-002 composes `parseOutcome` into the SAME file, not a new module) — so a
 // single-file read is the whole bounded set, today and once story 02 lands.
-export const PRODUCER_MODULE_PATHS = ["src/memory/local-indexing.mjs"];
+export const PRODUCER_MODULE_PATHS = ["packages/knowledge/src/memory/local-indexing.mjs"];
 
 // The honest scope boundary as DATA (not just prose) — cross-checked against the
 // top-of-file comment above by this file's own self-test, and reused by the

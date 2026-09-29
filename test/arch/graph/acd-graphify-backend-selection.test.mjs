@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for milestone 10 / ADR-003 (05/ADR-002):
 // "`graphify` is a registered memory backend — it is the third value in the
 //  `$defs/memory.backend` enum AND carries a loader in `BACKEND_REGISTRY`; an
@@ -116,7 +117,7 @@ export const archTests = [
       // registered backend: registering it must NOT have added a second read of
       // config.memory?.backend anywhere (e.g. the backend module branching on its
       // own selection). Strip comments so the ADR citations do not count as reads.
-      const files = await listFiles(SRC_DIR, (f) => f.endsWith(".mjs"));
+      const files = (await readRuntimeFiles(path.dirname(SRC_DIR))).map(file => file.path);
       const reads = [];
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
@@ -128,7 +129,7 @@ export const archTests = [
         1,
         `config.memory?.backend is read exactly once (found ${reads.length}: ${reads.map((f) => path.relative(SRC_DIR, f)).join(", ")})`
       );
-      assert.equal(path.relative(SRC_DIR, reads[0]).split(path.sep).join("/"), "work/memory.mjs", "the single read lives in the memory seam (src/work/memory.mjs)");
+      assert.equal(path.relative(path.dirname(SRC_DIR), reads[0]).split(path.sep).join("/"), "packages/knowledge/src/memory.mjs", "the single read lives in the memory seam (src/work/memory.mjs)");
     },
   },
 ];

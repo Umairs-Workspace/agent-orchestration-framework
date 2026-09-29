@@ -72,7 +72,7 @@ const workDir = path.join(repoRoot, "wiki", "work");
 const THE_ONE_HOME = "packages/work/src/declared-id.mjs";
 // The two modules whose reach is the WHOLE DOCUMENT, and which must therefore take the
 // forms and never the register-block predicate (ADR-008 ruling 2). Named, never counted.
-const WHOLE_DOCUMENT_IMPORTERS = ["src/memory/local-indexing.mjs", "src/import/recovery.mjs"];
+const WHOLE_DOCUMENT_IMPORTERS = ["packages/knowledge/src/memory/local-indexing.mjs", "src/import/recovery.mjs"];
 
 // ────────────────────────────────────── the leaf's two halves, partitioned ──
 //
@@ -338,7 +338,7 @@ export const archTests = [
       const sources = strippedSources(await readSources());
       for (const file of WHOLE_DOCUMENT_IMPORTERS) {
         const body = sources.find((entry) => entry.file === file).body;
-        const edge = body.match(/import\s*\{([^}]*)\}\s*from\s*"[^"]*declared-id\.mjs"/);
+        const edge = body.match(/import\s*\{([^}]*)\}\s*from\s*"[^"]*declared-id(?:\.mjs)?"/);
         assert.ok(edge, `${file} reaches the grammar by importing the leaf`);
         const bound = edge[1].split(",").map((name) => name.trim().split(/\s+as\s+/)[0]).filter(Boolean).sort();
         assert.ok(bound.length > 0, `${file} binds at least one name`);
@@ -359,7 +359,7 @@ export const archTests = [
       //     here fails it at review instead. Stays green as 66/02 adds the register half.
       const exported = new Set(Object.keys(leaf));
       for (const entry of sources) {
-        for (const edge of entry.body.matchAll(/import\s*\{([^}]*)\}\s*from\s*"[^"]*declared-id\.mjs"/g)) {
+        for (const edge of entry.body.matchAll(/import\s*\{([^}]*)\}\s*from\s*"[^"]*declared-id(?:\.mjs)?"/g)) {
           for (const name of edge[1].split(",").map((n) => n.trim().split(/\s+as\s+/)[0]).filter(Boolean)) {
             assert.ok(exported.has(name), `${entry.file} imports \`${name}\`, which the leaf does not export`);
           }

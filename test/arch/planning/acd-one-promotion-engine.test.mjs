@@ -35,7 +35,7 @@ const SEED = "packages/work/src/promote/chore-seed.mjs";
 const ENGINE = "packages/work/src/promote/promotion.mjs";
 const FACES = Object.freeze(["packages/work/src/commands/promote-gap-to-chore.mjs", "packages/work/src/commands/promote-finding-to-chore.mjs"]);
 // The two live homes the bare-shape sweep reported, kept as named non-subjects (ADR-009 §2).
-const NOT_PROMOTERS = Object.freeze(["src/phase-brief.mjs", "src/memory/local-indexing.mjs"]);
+const NOT_PROMOTERS = Object.freeze(["src/phase-brief.mjs", "packages/knowledge/src/memory/local-indexing.mjs"]);
 
 // The four mechanics, each as the source signature that identifies its DEFINITION — never a name a
 // caller could also mention, so an importing face does not read as a second home.
@@ -160,7 +160,7 @@ export const archTests = [
         // `extractH2Block(text, (title) => /^notes$/i.test(title))` — the `## Notes` heading matcher.
         "src/phase-brief.mjs": /\^notes\$/iu,
         // `splitSections` — the section-range walk.
-        "src/memory/local-indexing.mjs": /splitSections/u,
+        "packages/knowledge/src/memory/local-indexing.mjs": /splitSections/u,
       };
       for (const rel of NOT_PROMOTERS) {
         const unit = units.find((row) => row.rel === rel);

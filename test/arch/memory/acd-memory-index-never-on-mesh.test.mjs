@@ -165,7 +165,7 @@ function remoteFetchProblems(source) {
     : [];
 }
 
-const MEMORY_INGEST_FILES = ["src/memory/local-indexing.mjs", "src/memory/graphify-backend.mjs"];
+const MEMORY_INGEST_FILES = ["packages/knowledge/src/memory/local-indexing.mjs", "packages/knowledge/src/memory/graphify-backend.mjs"];
 
 // ---------------------------------------------------------------------------------
 // Synthesized plants (self-check) — the THREE attacks ADR-016's own fitness-fn text
@@ -274,7 +274,7 @@ export const archTests = [
       assert.deepEqual(indexLeakProblems("buildDirectiveFrame", functionBodyByName(directiveSource, "buildDirectiveFrame")), [], "sanity: the real buildDirectiveFrame is clean");
       const rootIgnore = await readFile(path.join(repoRoot, ".gitignore"), "utf8");
       assert.deepEqual(gitignoreMissingProblems(rootIgnore), [], "sanity: the real root .gitignore is clean");
-      const localIndexingSource = lf(await readFile(path.join(repoRoot, "src/memory/local-indexing.mjs"), "utf8"));
+      const localIndexingSource = lf(await readFile(path.join(repoRoot, "packages/knowledge/src/memory/local-indexing.mjs"), "utf8"));
       assert.deepEqual(remoteFetchProblems(localIndexingSource), [], "sanity: the real local-indexing.mjs is clean");
 
       // PLANT 1 — an index payload on a mesh frame builder.

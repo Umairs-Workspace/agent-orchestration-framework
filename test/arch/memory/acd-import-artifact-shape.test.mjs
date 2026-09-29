@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for milestone 13 / ADR-001:
 // "Reuse the 05 doc shapes; NO new parser, NO new record shape. Every record an
 //  import contributes is produced by the EXISTING parseArchitecture/parseRetrospective
@@ -191,18 +192,19 @@ export const archTests = [
   {
     name: "arch/import-artifact-shape: parseArchitecture/parseRetrospective are EXPORTED by exactly ONE module on disk (no rival record-shape parser)",
     run: async () => {
-      const files = await allSrcFiles();
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 100, "runtime source census is nonempty");
       const owners = { parseArchitecture: [], parseRetrospective: [] };
       const rel = (file) => path.relative(repoRoot, file).split(path.sep).join("/");
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
-        if (/\bexport\s+function\s+parseArchitecture\b/.test(code)) owners.parseArchitecture.push(rel(file));
-        if (/\bexport\s+function\s+parseRetrospective\b/.test(code)) owners.parseRetrospective.push(rel(file));
+        if (/\bfunction\s+parseArchitecture\b/.test(code)) owners.parseArchitecture.push(rel(file));
+        if (/\bfunction\s+parseRetrospective\b/.test(code)) owners.parseRetrospective.push(rel(file));
       }
       // Exactly one owner each, and it is src/memory/local-indexing.mjs — so no second
       // module emits a record shape (ADR-001: the import reuses the ONE parser set).
-      assert.deepEqual(owners.parseArchitecture, ["src/memory/local-indexing.mjs"], `parseArchitecture exported by exactly local-indexing.mjs (got: ${owners.parseArchitecture.join(", ")})`);
-      assert.deepEqual(owners.parseRetrospective, ["src/memory/local-indexing.mjs"], `parseRetrospective exported by exactly local-indexing.mjs (got: ${owners.parseRetrospective.join(", ")})`);
+      assert.deepEqual(owners.parseArchitecture, ["packages/knowledge/src/memory/local-indexing.mjs"], `parseArchitecture exported by exactly local-indexing.mjs (got: ${owners.parseArchitecture.join(", ")})`);
+      assert.deepEqual(owners.parseRetrospective, ["packages/knowledge/src/memory/local-indexing.mjs"], `parseRetrospective exported by exactly local-indexing.mjs (got: ${owners.parseRetrospective.join(", ")})`);
     },
   },
 ];
