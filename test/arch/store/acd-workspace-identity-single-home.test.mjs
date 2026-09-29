@@ -8,6 +8,7 @@
 //  worker→control stream silently discarded 100% of its frames for days), and the
 //  raw derivation is callable only from the home and the store's compat re-export."
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdirSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -18,7 +19,7 @@ const srcRoot = path.join(repoRoot, "src");
 
 // The raw derivation may be REFERENCED only here: its home, and the compat
 // re-export (global-work-store.mjs, kept so existing imports/tests stay valid).
-const DERIVATION_HOMES = new Set(["workspace-identity.mjs", "global-work-store.mjs"]);
+const DERIVATION_HOMES = new Set(["packages/mesh/src/workspace-identity.mjs", "packages/mesh/src/projection-store.mjs", "src/global-work-store.mjs"]);
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -38,8 +39,8 @@ export const archTests = [
     name: "arch/m42-item-4: no src file hand-spells the identity fallback — `?? workspaceIdFor(` appears nowhere, and the raw derivation is referenced only in its home + the compat re-export",
     async run() {
       const offenders = [];
-      for (const file of walk(srcRoot)) {
-        const rel = path.relative(srcRoot, file).split(path.sep).join("/");
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
+        const rel = path.relative(repoRoot, file).split(path.sep).join("/");
         const code = stripComments(await readFile(file, "utf8"));
         if (/\?\?\s*workspaceIdFor\s*\(/.test(code)) {
           offenders.push(`${rel}: hand-spelled \`?? workspaceIdFor(...)\` fallback — use resolveWorkspaceId (the one precedence)`);
@@ -55,13 +56,13 @@ export const archTests = [
     name: "arch/m42-item-4: the precedence itself lives once — resolveWorkspaceId is defined only in workspace-identity.mjs (non-vacuous: the home defines it and spells the pinned-config arm)",
     async run() {
       const definers = [];
-      for (const file of walk(srcRoot)) {
-        const rel = path.relative(srcRoot, file).split(path.sep).join("/");
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
+        const rel = path.relative(repoRoot, file).split(path.sep).join("/");
         const code = stripComments(await readFile(file, "utf8"));
         if (/function\s+resolveWorkspaceId\s*\(/.test(code)) definers.push(rel);
       }
-      assert.deepEqual(definers, ["workspace-identity.mjs"], "exactly one definition of the precedence");
-      const home = stripComments(await readFile(path.join(srcRoot, "workspace-identity.mjs"), "utf8"));
+      assert.deepEqual(definers, ["packages/mesh/src/workspace-identity.mjs"], "exactly one definition of the precedence");
+      const home = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/workspace-identity.mjs"), "utf8"));
       assert.ok(/config\?\.mesh\?\.workspaceId/.test(home), "the home spells the pinned-config arm (non-vacuous)");
       assert.ok(/workspaceIdFromPath/.test(home), "the home owns the raw derivation");
     },

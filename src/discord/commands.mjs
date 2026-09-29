@@ -3,7 +3,7 @@ import { createDiscordCommands } from "@aof/messaging/discord-commands";
 import { reportDegrade } from "../degrade.mjs";
 import { findAskMessage } from "../notify/ask-messages.mjs";
 import { STOP_STATES } from "../loop/stop-request.mjs";
-import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 async function hasLoopOnDefault(workspace, scope) {
   const { hasLoopOn } = await import("../loop/stop.mjs");

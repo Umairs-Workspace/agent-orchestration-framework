@@ -9,7 +9,7 @@ import { lockContextFor } from "../item-lock.mjs";
 import { answerAsk, loopAsksDir } from "../loop/ask-request.mjs";
 import { askEnvFor } from "../loop/ask.mjs";
 import { readExecutionOverlay, resolveScopedExecution, executionScopeRef, awaitsAnswer } from "../board-mesh-execution.mjs";
-import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { buildNotifyEnvelope, notify } from "../notify/notify.mjs";
 
 // Deferred: command-core registers this command; a static reverse import would close that registry cycle.

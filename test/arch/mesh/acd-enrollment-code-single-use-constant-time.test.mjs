@@ -38,6 +38,7 @@
 // verify surface by a source marker (codeHash/timingSafeEqual/consume), so it covers
 // whatever the story names the module (mesh-enrollment.mjs / mesh-registry.mjs).
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -91,26 +92,10 @@ const RAW_HASH_EQUALITY = /\b\w*(?:[cC]odeHash|[hH]ash|[cC]ode|[dD]igest)\w*\s*(
 
 async function matchSurface() {
   const found = [];
-  // 119/01 — `src/mesh-*.mjs` became `src/mesh/*.mjs`; `src/commands/mesh-*.mjs` did not move
-  // (that is story 119/02). Each directory is scanned by the rule that is true of it.
-  for (const [dir, pattern] of [[MESH_DIR, /^.*\.mjs$/], [COMMANDS, /^mesh-.*\.mjs$/]]) {
-    let entries = [];
-    try {
-      entries = await readdir(dir);
-    } catch {
-      continue;
-    }
-    for (const name of entries) {
-      if (!pattern.test(name)) continue;
-      const file = path.join(dir, name);
-      let raw;
-      try {
-        raw = await readFile(file, "utf8");
-      } catch {
-        continue;
-      }
-      if (MATCH_MARKER.test(stripCommentsAndStrings(raw))) found.push({ file, raw });
-    }
+  for (const { rel, path: file } of await readRuntimeFiles(repoRoot)) {
+    if (!rel.startsWith("src/mesh/") && !rel.startsWith("src/commands/mesh/") && !rel.startsWith("packages/mesh/src/")) continue;
+    const raw = await readFile(file, "utf8");
+    if (MATCH_MARKER.test(stripCommentsAndStrings(raw))) found.push({ file, raw });
   }
   return found;
 }

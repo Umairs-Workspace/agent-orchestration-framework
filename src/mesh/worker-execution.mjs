@@ -9,7 +9,7 @@ import { reportAssignmentSettled, reportTerminalResumeRefused } from "../effects
 import { createMeshParkResume, directivePhase, readWorkerAsk } from "./park-resume.mjs";
 import { addWorktree, reuseWorktreeOnBranch, removeWorktree, meshWorktreesRoot, meshWorktreePath, meshItemBranchName, localBranchExists, remoteBranchExists, adoptRemoteBranch, ensureCommitAvailable, advanceBranchToBase, commitWorktreeChanges } from "./worktree.mjs";
 import { resolveRefInWorktree, worktreeWorkDir } from "../work/dispatch.mjs";
-import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { resolveWorkspaceCloneUrl as defaultResolveWorkspaceCloneUrl } from "./presence.mjs";
 import { defaultSpawnRuntime, driveInteractiveClaudeSession } from "../agent-session-driver.mjs";
 import { compileBriefForItem } from "../phase-brief-read.mjs";

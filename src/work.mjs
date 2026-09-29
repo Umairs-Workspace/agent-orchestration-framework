@@ -22,7 +22,7 @@ import { readJson } from "./fs.mjs";
 // sidecar reader/writer in node-identity.mjs); isSameHost + deriveNodeId are
 // reused so the self-heal re-derive is the IDENTICAL precedence chain deriveNodeId
 // itself uses, not a private re-derivation.
-import { sidecarPathFor, readSidecar, isSameHost, deriveNodeId, isDerivationOf } from "./node-identity.mjs";
+import { sidecarPathFor, readSidecar, healIdentitySidecar } from "@aof/mesh/node-identity";
 export {
   recordDoc, typeHasRecordDoc, parseFrontmatter, WORK_ITEM_SCHEMA_VERSION,
   readItemSchema, readItemVersion, rollbackItemStatus, setItemStatus, applyItemFrontmatter,
@@ -89,49 +89,6 @@ async function readGlobalMeshConfig(env) {
 // { nodeId, derivedFrom }; every other case returns the sidecar UNCHANGED (byte-
 // identical object reference is not guaranteed, but the persisted bytes are, because
 // persistNodeId's own idempotence check short-circuits the write).
-export async function healIdentitySidecar({ sidecar = {}, hostname, sidecarPath, takenIds = [] } = {}) {
-  const isHostnameDerived = sidecar.pinned !== true && typeof sidecar.derivedFrom === "string";
-  if (!isHostnameDerived) return sidecar; // pinned or unknown-origin — never churned.
-  // Trigger 1 (the copied-.aof symptom): the CURRENT machine's sanitized hostname no
-  // longer matches the RECORDED derivation host (compared derivedFrom-vs-hostname, never
-  // the resolved nodeId — a collision-suffixed id never equals its own bare stem).
-  const hostnameChanged = !isSameHost(hostname, sidecar.derivedFrom);
-  // Trigger 2 (F-3302 — a derivation-RULE change self-migrates): the stored id is no
-  // longer a valid derivation of its OWN recorded host under current rules (e.g. a
-  // pre-`.local`-strip `umamis-mac-mini-local`). isDerivationOf recognises the
-  // opaque forms AND the legacy hostname-stem forms (132/01), so neither a legitimate
-  // collision id nor a pre-132 stem id is churned — moving a legacy id to the opaque form
-  // is `aof mesh identity --reidentify`, never a load. Self-terminating: after the heal
-  // the id IS a valid derivation, so a second load is a keep.
-  const staleFormat = !isDerivationOf(sidecar.nodeId, sidecar.derivedFrom, sidecar.salt);
-  if (!hostnameChanged && !staleFormat) {
-    return sidecar; // still on the recorded derivation host with a valid-format id.
-  }
-  const healedId = await deriveNodeId({
-    config: {}, // never a pinned config — a derived sidecar is re-derived fresh
-    hostname,
-    salt: sidecar.salt,
-    takenIds,
-    sidecarPath,
-  });
-  return { ...sidecar, nodeId: healedId, derivedFrom: hostname };
-}
-
-// chore 94 — WHAT A PRESENT-BUT-UNREADABLE CONFIG MEANS, and why it is recorded rather
-// than thrown. `{ config: {} }` is the honest answer for a project with NO config, and it
-// was also the answer for a config with a JSON typo — the two were indistinguishable, so a
-// trailing comma silently disabled every OPTIONAL declaration (work.worktree.prepare,
-// work.test, work.rubric, the loop bounds, the whole `config.x ?? default` family) with no
-// warning anywhere: each reader saw an absent key and took its default, correctly.
-//
-// The fix is NOT to throw. Every daemon, board face and CLI door loads through here, and a
-// door that crashes on a torn config takes the fleet down with it (board-ui maps a
-// loadWorkspace throw to a 500 for exactly this reason) — the degrade to {} is deliberate
-// and stays. What changes is that the DISTINCTION survives the degrade: the returned
-// workspace carries `configFault` (null on the clean and the no-config paths alike), and a
-// caller that cares — `work:doctor`, the health lane — turns it into a finding that names
-// the file and the parse error. Absent is NOT a fault: an unconfigured project is a
-// legitimate state, and warning about it would fire on every repo that never opted in.
 function configFaultFrom(configPath, error, { explicit = false } = {}) {
   // The read leg's own errno reaches us untouched (fs.readJson only codes the parse leg).
   //
@@ -278,3 +235,5 @@ export async function loadWorkspace(cwd = process.cwd(), explicitConfig, { hostn
   // is a read-only fallback here and is migrated up by `work doctor`, not by a mint.
   return { configPath, config, configFault, projectRoot, workDir, aofDir, identityPath: globalIdentityPath, globalMeshRoot: globalMesh.meshRoot };
 }
+
+export { healIdentitySidecar } from "@aof/mesh/node-identity";

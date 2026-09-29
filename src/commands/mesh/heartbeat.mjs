@@ -4,8 +4,8 @@ import { listItemsCacheFirst, localItemsOnly, reportReachThroughSkips } from "..
 import { readCachedActiveRunIds } from "../../cache-read.mjs";
 import { resolveInstallSalt } from "./identity.mjs";
 import { packageVersionString } from "../../asset-base.mjs";
-import { deriveNodeId, sidecarPathFor } from "../../node-identity.mjs";
-import { resolveWorkspaceId } from "../../workspace-identity.mjs";
+import { deriveNodeId, sidecarPathFor } from "@aof/mesh/node-identity";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   assemblePresenceRecord,
   readActiveLoops,

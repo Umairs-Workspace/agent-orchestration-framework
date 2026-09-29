@@ -19,7 +19,7 @@ const MESH_STORE = new URL("../../../packages/mesh/src/store.mjs", import.meta.u
 // milestone 33 / story 00 (ADR-004, F-3203, 22/R2 DRY consolidation): the actual
 // mesh.nodeId/mesh.salt persist moved from an inline writeText(configPath, …) in
 // mesh-identity.mjs to the ONE shared sidecar read-merge-write, writeSidecarPatch
-// (src/node-identity.mjs) — every sidecar writer (persistNodeId, migrateIdentity,
+// (packages/mesh/src/node-identity.mjs) — every sidecar writer (persistNodeId, migrateIdentity,
 // mesh-identity.mjs's resolveInstallSalt) now routes through it, so this is where the
 // write-scope guard's invariant (atomic seam, never a bare writeFile) actually lives
 // for the mesh:identity/mesh:heartbeat persist path. node-identity.mjs is added to the
@@ -28,7 +28,7 @@ const MESH_STORE = new URL("../../../packages/mesh/src/store.mjs", import.meta.u
 const MESH_COMMAND_MODULES = [
   new URL("../../../packages/mesh/src/commands/identity.mjs", import.meta.url),
   new URL("../../../packages/mesh/src/commands/join.mjs", import.meta.url),
-  new URL("../../../src/node-identity.mjs", import.meta.url),
+  new URL("../../../packages/mesh/src/node-identity.mjs", import.meta.url),
 ];
 const RECORD_DOCS = ["SPEC.md", "STORY.md", "STATE.md", "SESSION.md"];
 // The fs write verbs the store could call directly. writeText is the atomic seam;

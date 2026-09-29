@@ -19,7 +19,7 @@ import { drainEffects, reachableLoci } from "../effects/dispatch.mjs";
 import { reconcileRunRecords } from "../effects/reconcile.mjs";
 const execFileAsync = promisify(execFile);
 
-const loadNodeIdentity = () => import("../node-identity.mjs");
+const loadNodeIdentity = () => import("@aof/mesh/node-identity");
 // Deferred by design: command-core imports every command module, including this
 // one. A static import would close the registry ring at module scope.
 const loadCommandCore = () => import("../command-core.mjs");

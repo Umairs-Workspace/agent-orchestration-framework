@@ -9,6 +9,6 @@ import { transitionRunStart, transitionStaleRunsReclaimed } from "../effects/run
 import { renderWithPropagationWarnings, threadPropagationWarnings } from "../global-work-publisher.mjs";
 import { lockContextFor } from "../item-lock.mjs";
 import { resolveSessionIdFromLiveStore } from "../mesh/session.mjs";
-import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 export const { runStartCommand } = createRunStartCommand({ resolveItemExact, requireLocalCheckout, resolveDrivenRun, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readRuns, runsDir, shouldRetry, isNodeStale, resolveStalenessSeconds, readPresenceRecord, meshNodeIdOf, transitionRunStart, transitionStaleRunsReclaimed, renderWithPropagationWarnings, threadPropagationWarnings, lockContextFor, resolveSessionIdFromLiveStore, resolveWorkspaceId });

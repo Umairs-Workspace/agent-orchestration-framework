@@ -32,3 +32,5 @@ route's arguments/options. Extending another feature's existing command or mergi
 requires a separate explicit contract; this initial API does not silently merge descriptors.
 
 Run `yarn workspace @aof/contracts test`. The root command contract suite also runs these tests.
+
+`cache-provenance` supplies the storage-to-wire fact mapping and freshness verdict, including explicit unknowns. `freshness` supplies the shared strict threshold predicate used by execution, presence and cache readers. Configured mesh thresholds remain in `@aof/mesh/cache-policy`.

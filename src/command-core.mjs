@@ -1,3 +1,4 @@
+import { createResyncContribution } from "@aof/mesh/commands";
 // The in-process command registry — the single source of truth for every work
 // operation, the SPINE both faces couple through (ADR-002). The CLI is a thin
 // `argv → invoke → render`/`--json` face; each UI server is a thin
@@ -284,8 +285,8 @@ const CONTRIBUTIONS = [
     verifyDoorCommand,
   ]),
   createWorkLoopContribution({ loop: loopCommand, refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand }),
+  createResyncContribution(resyncCommand),
   { name: "aof", commands: [
-    resyncCommand,
     assetsListCommand,
     packagesListCommand,
     projectShowCommand,

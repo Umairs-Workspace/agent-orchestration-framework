@@ -1,7 +1,7 @@
 // Transitional core composition for mesh-owned commands.
 import { createMeshIdentityCommands } from "@aof/mesh/commands/identity";
 import { publishNodeRecord, readNodeRecord, readNodeRecords, nodeRecordPath } from "../../mesh/store.mjs";
-import { deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, readSidecar, sanitizeHostname } from "../../node-identity.mjs";
+import { deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, readSidecar, sanitizeHostname } from "@aof/mesh/node-identity";
 import { packageVersionString } from "../../asset-base.mjs";
 import {
   readPresenceRecord,

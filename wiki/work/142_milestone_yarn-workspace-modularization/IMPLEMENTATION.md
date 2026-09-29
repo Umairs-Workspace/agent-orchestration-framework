@@ -1991,3 +1991,9 @@ Evidence in `.tmp/workspace-migration/domain-transitions/`:
 
 The core/apps layout, remaining root services, final assembly, compatibility-adapter removal and
 whole-tree/native/platform verification remain outstanding.
+
+## Plan 01 — mesh cache, propagation and identity (2026-09-29)
+
+Mesh now owns cache reads, artifact propagation, execution overlays, node/workspace identity and the work resync command. Contracts owns neutral wire provenance and the shared strict freshness predicate; mesh owns its configuration policy. Work receives the configured cache reader, and board/server invocation remains shared. Root compatibility adapters are assigned to Plans 02/06. Ownership decisions and baseline evidence are in plans/01-OWNERSHIP.md.
+
+The 113-suite baseline completed with 1,524 passes and three enrollment source-guard failures. The initial 27-suite mesh run had 234 passes and six failures; updated package-aware source discovery fixes both the baseline failures and the moved-source failures. The corrected seven-suite run passes all 57 checks. Four new package tests pass locally and in a fresh temporary copied installation; all 117 ordered command descriptors are byte-equivalent as JSON. Pinned Yarn immutable linking and the supply-chain audit pass (zero audit warnings). No dependency versions, lock entries, persisted formats or generated assets changed.

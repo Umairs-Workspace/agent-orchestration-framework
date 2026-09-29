@@ -2,7 +2,7 @@
 import { createMeshLauncher } from "@aof/mesh/launcher";
 import { globalMeshPaths } from "../workspace.mjs";
 import { readNodeRecords } from "./store.mjs";
-import { deriveNodeId, sidecarPathFor, readSidecar } from "../node-identity.mjs";
+import { deriveNodeId, sidecarPathFor, readSidecar } from "@aof/mesh/node-identity";
 import { packageVersionString } from "../asset-base.mjs";
 import { assemblePresenceRecord, readActiveLoops, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot } from "./presence.mjs";
 import { listItems, loadWorkspace } from "../work.mjs";
@@ -14,8 +14,8 @@ import {
   createArtifactSyncState,
   forgetArtifactSyncAssignment,
   prepareArtifactSyncBatch,
-} from "../artifact-sync.mjs";
-import { resolveWorkspaceId } from "../workspace-identity.mjs";
+} from "@aof/mesh/artifact-sync";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { readBuildInfo, buildInfoString } from "../build-info.mjs";
 import { createWorkerStreamClient, createWorkerWsTransport } from "../worker-stream-client.mjs";
 import { startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS } from "../control-stream-server.mjs";

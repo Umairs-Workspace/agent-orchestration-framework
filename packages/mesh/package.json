@@ -65,7 +65,14 @@
     "./control-stream-server": "./src/control-stream-server.mjs",
     "./worker-stream-client": "./src/worker-stream-client.mjs",
     "./ui-serve": "./src/ui-serve.mjs",
-    "./assignment-transitions": "./src/assignment-transitions.mjs"
+    "./assignment-transitions": "./src/assignment-transitions.mjs",
+    "./artifact-sync": "./src/artifact-sync.mjs",
+    "./node-identity": "./src/node-identity.mjs",
+    "./workspace-identity": "./src/workspace-identity.mjs",
+    "./cache-policy": "./src/cache-policy.mjs",
+    "./cache-read": "./src/cache-read.mjs",
+    "./execution-overlay": "./src/execution-overlay.mjs",
+    "./commands/resync": "./src/commands/resync.mjs"
   },
   "files": [
     "src"

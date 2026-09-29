@@ -30,3 +30,8 @@ const meshContribution = Object.freeze({
 
 return { meshContribution };
 }
+
+// Separate slice preserves the established registry order under the shared work namespace.
+export function createResyncContribution(resyncCommand) {
+  return { name: "@aof/mesh", commands: [resyncCommand] };
+}

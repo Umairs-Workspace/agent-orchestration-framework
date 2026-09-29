@@ -121,3 +121,5 @@ admission, assignment settlement, durable worker reports and park/resume reserva
 transitions. Assignment record writes use the package's own authority; journal, reactors, drain,
 outbox and diagnostic services are supplied by core. Report delivery drains only its own event,
 retaining the journal-unavailable fallback and acknowledgement semantics.
+
+Cache and artifact ownership: `cache-read` exposes `createCacheReader` with an explicit projection-store, global-path and diagnostic port; work receives its reader methods. `execution-overlay` composes the board execution projection through the same application services. `artifact-sync`, `node-identity` and `workspace-identity` own propagation and mesh identity. `cache-policy` owns the configured freshness window; neutral wire provenance and the shared strict liveness predicate live in `@aof/contracts`. `commands/resync` contributes the existing `work resync` route through `createResyncContribution`; success acknowledges delivery of the request, never freshness of the copy. Root adapters are temporary (Plans 02/06).

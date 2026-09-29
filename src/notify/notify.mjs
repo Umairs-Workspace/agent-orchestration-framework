@@ -1,7 +1,7 @@
 // Transitional core composition for messaging-owned services.
 import { createNotifier } from "@aof/messaging/notify";
 import { reportDegrade } from "../degrade.mjs";
-import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { recordAskMessage } from "./ask-messages.mjs";
 import { readMessagingSecret } from "./secret.mjs";
 

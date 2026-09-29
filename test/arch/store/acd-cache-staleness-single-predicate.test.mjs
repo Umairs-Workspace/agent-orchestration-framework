@@ -76,7 +76,7 @@ const TIME_COLUMNS = ["updated_at", "synced_at", "last_published_at", "reported_
 
 // ADR-006's mapper home, and the only module allowed to translate between the two
 // vocabularies.
-const MAPPER_MODULE = "src/cache-provenance.mjs";
+const MAPPER_MODULE = "packages/contracts/src/cache-provenance.mjs";
 // The STORAGE spellings of the two provenance facts (the SQLite column names and the store
 // accessors' camelCase view of them). Meeting one of these on the right-hand side of a WIRE
 // key is, by definition, a translation.
@@ -265,7 +265,7 @@ export const archTests = [
     // real offender — `mergeWorkerItems` attributing an inserted child row from the
     // ASSIGNMENT overlay's node under the `reportedBy` key, a DIFFERENT fact ("which node
     // was this assigned to") wearing the wire name for "which node reported this row".
-    name: "arch/43 ADR-006 (acd-cache-staleness-single-predicate): ONE MAPPER — only src/cache-provenance.mjs turns a STORAGE provenance spelling into a `reportedBy`/`syncedAt` wire key",
+    name: "arch/43 ADR-006 (acd-cache-staleness-single-predicate): ONE MAPPER — only packages/contracts/src/cache-provenance.mjs turns a STORAGE provenance spelling into a `reportedBy`/`syncedAt` wire key",
     run: async () => {
       const offenders = [];
       for (const { path: file } of await readRuntimeFiles(repoRoot)) {

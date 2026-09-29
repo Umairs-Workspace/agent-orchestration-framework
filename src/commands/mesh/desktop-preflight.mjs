@@ -2,7 +2,7 @@
 import { createMeshDesktopPreflightCommands } from "@aof/mesh/commands/desktop-preflight";
 import { readBuildInfo } from "../../build-info.mjs";
 import { resolveNodeWorkspaces } from "../../mesh/presence.mjs";
-import { readSidecar } from "../../node-identity.mjs";
+import { readSidecar } from "@aof/mesh/node-identity";
 import { globalMeshPaths, workspacePaths } from "../../workspace.mjs";
 import { AOF_HOOK_MARKER, CLAUDE_SETTINGS_RELPATH, claudeHookDeclarations, claudeSettingsPath } from "../../claude-settings.mjs";
 

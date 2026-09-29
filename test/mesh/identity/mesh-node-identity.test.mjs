@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 22 / story 01 — the node-identity mechanic.
 //
 // Covers EVERY @executable scenario in tasks/00_node-identity-descriptor.feature,
-// exercising src/node-identity.mjs IN-PROCESS with INJECTED hostname / salt / config
+// exercising packages/mesh/src/node-identity.mjs IN-PROCESS with INJECTED hostname / salt / config
 // (the white-box Build-notes requirement — no real-machine coupling), plus a real temp
 // sidecar file for the persist+reuse scenarios. One test object per @executable scenario
 // (Scenario-Outline rows folded into one entry iterating the rows), each name tracing
@@ -37,7 +37,7 @@ import {
   installHash,
   isDerivationOf,
   isOpaqueNodeId,
-} from "../../../src/node-identity.mjs";
+} from "../../../packages/mesh/src/node-identity.mjs";
 import { resolvePeers } from "../../../src/mesh/fabric.mjs";
 import { readRuns } from "../../../src/run-store.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
@@ -182,7 +182,7 @@ export const meshNodeIdentityTests = [
   // ══ Scenario: the capability descriptor carries the complete frozen schema ════
   //
   // REPAIRED 2026-08-29 (milestone 59 / story 01, ADR-003 §3 — the re-arming). `skills` left
-  // the descriptor by OPERATOR DIRECTIVE in milestone 34 / story 02, and `src/node-identity.mjs`
+  // the descriptor by OPERATOR DIRECTIVE in milestone 34 / story 02, and `packages/mesh/src/node-identity.mjs`
   // states the reason in terms: the aof bundle's resource ids were being advertised as node
   // "skills", which says nothing about the node because every node ships the same bundle. The
   // frozen schema is SIX keys, not seven.
@@ -446,8 +446,8 @@ export const runRecordsNodeIdUnitTests = [
           assert.ok(!/os\.hostname\(\)/.test(arg) && !fromHostname.has(arg), `${file.rel}: sanitizeHostname(${arg}) is fed a value derived from os.hostname()`);
         }
       }
-      assert.deepEqual(callers.sort(), ["packages/mesh/src/commands/identity.mjs", "src/node-identity.mjs"]);
-      const source = stripComments(await readFile(path.join(REPO_ROOT, "src", "node-identity.mjs"), "utf8"));
+      assert.deepEqual(callers.sort(), ["packages/mesh/src/commands/identity.mjs", "packages/mesh/src/node-identity.mjs"]);
+      const source = stripComments(await readFile(path.join(REPO_ROOT, "packages", "mesh", "src", "node-identity.mjs"), "utf8"));
       const body = bodyText(source, "export async function deriveNodeId(");
       assert.ok(body != null, "deriveNodeId found");
       assert.ok(!/sanitizeHostname|\bstem\b/.test(body), "deriveNodeId assigns no sanitized hostname stem to the id");
@@ -488,7 +488,7 @@ export const runRecordsNodeIdUnitTests = [
         "node-beef": false,
       });
       // PURE: its declaration reads no hostname, clock or filesystem.
-      const source = stripComments(await readFile(path.join(REPO_ROOT, "src", "node-identity.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(REPO_ROOT, "packages", "mesh", "src", "node-identity.mjs"), "utf8"));
       const body = bodyText(source, "export function isOpaqueNodeId(");
       assert.ok(typeof body === "string" && body.length > 0, "isOpaqueNodeId found");
       assert.ok(!/hostname|Date|readFile|readJson|readSidecar|process\./.test(body), "no hostname, clock or filesystem read");

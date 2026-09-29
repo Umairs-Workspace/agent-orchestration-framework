@@ -3,7 +3,7 @@ import { createMeshUiServer } from "@aof/mesh/ui-serve";
 import { assetPath } from "../asset-base.mjs";
 import { serveBoard } from "../board-serve.mjs";
 import { queryGlobalMeshStatus, workspaceIdForProjectRoot } from "../global-mesh-query.mjs";
-import { resolveCacheStalenessSeconds } from "../cache-provenance.mjs";
+import { resolveCacheStalenessSeconds } from "@aof/mesh/cache-policy";
 import { loadWorkspace } from "../work.mjs";
 import { assignWork } from "./assignment.mjs";
 import { STOP_REFUSALS, stopLoop } from "../loop/stop.mjs";

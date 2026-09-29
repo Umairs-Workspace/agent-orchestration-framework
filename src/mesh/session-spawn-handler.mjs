@@ -4,7 +4,7 @@ import { createTerminalSpawn, loadNodePty } from "../terminal-ws.mjs";
 import { addSessionWorktree, meshSessionWorktreePath, sessionWorktreeSlug, findItemWorktree } from "./worktree.mjs";
 import { startSession, pingSession, endSession } from "./session.mjs";
 import { loadWorkspace } from "../work.mjs";
-import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { reportDegrade } from "../degrade.mjs";
 
 

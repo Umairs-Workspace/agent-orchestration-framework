@@ -3,7 +3,7 @@ import { createGradeCommand } from "@aof/work/commands/grade";
 import { spawnRubricAsync } from "@aof/execution/rubric-process";
 import { resolveItem, requireLocalCheckout } from "./resolve.mjs";
 import { readRuns } from "../run-store.mjs";
-import { deriveNodeId } from "../node-identity.mjs";
+import { deriveNodeId } from "@aof/mesh/node-identity";
 import { headCommit } from "../mesh/worktree.mjs";
 
 export { spawnRubricAsync };

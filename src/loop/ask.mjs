@@ -7,7 +7,7 @@ import { readAskQuestion } from "../work/observe.mjs";
 import { buildNotifyEnvelope, notify } from "../notify/notify.mjs";
 import { accountLine } from "../notify/form.mjs";
 import { reportDegrade } from "../degrade.mjs";
-import { resolveWorkspaceId } from "../workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 const implementation = createAskOrchestration({
   askRequests: { ASK_STATES, askRequestPath, clearAsk, loopAsksDir, openAsk, parkAsk, readAsk, readAsks },

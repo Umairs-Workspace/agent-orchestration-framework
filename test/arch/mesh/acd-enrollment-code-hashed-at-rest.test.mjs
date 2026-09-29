@@ -56,7 +56,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // modules carry the device-code invite/join/registry mechanic. Discovered by a source
 // marker so the gate does not depend on one guessed filename — it covers whatever the
 // owning story names its enrollment module (mesh-enrollment / mesh-registry / mesh-invite).
-const ENROLLMENT_MARKER = /\bdeviceCode\b|\binvite\b|\bpendingInvite\b|\benroll(ment)?\b|\bcodeHash\b/i;
+const ENROLLMENT_MARKER = /\bdeviceCode\b|\bpendingInvite\b|\benroll(ment)?\b|\bcodeHash\b|\binvite\s*(?:[.(,;=:)]|$)/i;
 
 function stripCommentsOnly(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -112,6 +112,8 @@ export const archTests = [
   {
     name: "arch/enrollment-code-hashed-at-rest: the enrollment/registry surface exists and hashes the device code via node:crypto (a hash seam reduces the code before it is durable)",
     run: async () => {
+      assert.ok(ENROLLMENT_MARKER.test("const invite = input;"));
+      assert.ok(!ENROLLMENT_MARKER.test("const redactedKeys = /(token|invite|hash)/i;"));
       const modules = await enrollmentModules();
       assert.ok(
         modules.length > 0,

@@ -1,3 +1,4 @@
+import { isStale } from "@aof/contracts/freshness";
 // src/run-store.mjs — the run-record store, the state-machine validator, the
 // runs/ path seam, and (milestone 20) the RESILIENCE spine: failure
 // classification + attempt ceiling, the retry-lineage mint, the heartbeat +
@@ -1185,11 +1186,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // constraint). The presence record carries a heartbeatAt but no updatedAt, so its
   // caller passes a presence-shaped { heartbeatAt } object (the `?? updatedAt` fallback
   // is inert there — presence always has a heartbeatAt when staleness is computed).
-  function isStale(run, nowMs, stalenessThreshold) {
-    const liveness = run.heartbeatAt ?? run.updatedAt;
-    const age = nowMs - Date.parse(liveness);
-    return age > stalenessThreshold;
-  }
+
 
   // The restart-time orphan-reclaim scan (20/ADR-004). It WALKS RUN RECORDS BY PATH —
   // it takes the LIST of items to scan as an ARGUMENT and iterates each item's runs/
