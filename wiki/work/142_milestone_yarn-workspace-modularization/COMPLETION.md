@@ -36,9 +36,11 @@ Core still composes its resolver/history/provenance services; final adapter remo
 Work also owns feedback records, the pure contract-integrity ratchet and feedback/counters/ratchet
 commands. Application transition and runtime service composition remain in core pending final layout.
 Audit and acceptor command implementations are also extracted with configured core services injected.
-Acceptor's sourceUnits(root) still scans only the audited project's src/ directory. Workspace-aware
-source discovery, with coverage over package implementations and exclusion of installed dependencies,
-is a required remaining task. Legacy counter metric citations need final review with the asset paths.
+Acceptor source discovery now scans the audited project's src/ and declared workspace src/ roots,
+covering moved implementations while excluding installed dependencies and generated directory trees.
+Command-level tests prove a moved consumer remains visible and dependency/fixture copies cannot replace
+it. The existing .mjs language scope is retained. Final source-census checks after the apps/core moves
+and legacy counter metric citations still need review with the asset paths.
 Work also owns run start/complete/retry/status commands, with execution persistence and application
 transitions supplied by core. Final removal of those composition adapters remains outstanding.
 Item-status, regression-gate and their shared regression record are also work-owned. Configured

@@ -799,3 +799,16 @@ operations and loop execution; a namespace is therefore not a package boundary. 
 groups to preserve enumeration while work validates its own command IDs. Duplicate IDs and routes
 remain the shared registry's responsibility across all packages. Registration preserves descriptor
 identity, including input schemas, options, conversion, handlers and presentation.
+
+Acceptor evidence must follow workspace declarations rather than a list of this repository's package
+names. Scanning arbitrary package manifests would count undeclared fixture projects; scanning installed
+dependencies would count code the audited project did not author. The new source reader therefore uses
+the audited root manifest's workspace patterns, requires matched package manifests and reads each src/
+tree once. The previous .mjs scope remains explicit; this is not a new TypeScript or native-code analyzer.
+Malformed declarations fail rather than making the evidence population silently smaller.
+
+The matcher is the already-locked picomatch 4.0.4, now declared directly by work. Its existing
+[pattern matcher API](https://github.com/micromatch/picomatch#api) supports the workspace glob forms
+without introducing a second glob grammar. Directory traversal is bounded to the project, does not
+follow links and excludes installed dependencies, hidden directories and named build-output directories.
+The production reader is tested independently and through acceptor's actual source-loading path.

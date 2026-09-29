@@ -105,7 +105,8 @@
     "./commands/regression-gate": "./src/commands/regression-gate.mjs",
     "./commands/continue": "./src/commands/continue.mjs",
     "./commands/resume": "./src/commands/resume.mjs",
-    "./commands": "./src/commands.mjs"
+    "./commands": "./src/commands.mjs",
+    "./acceptor/source-units": "./src/acceptor/source-units.mjs"
   },
   "files": [
     "src"
@@ -115,6 +116,7 @@
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",
-    "@aof/foundation": "workspace:*"
+    "@aof/foundation": "workspace:*",
+    "picomatch": "4.0.4"
   }
 }

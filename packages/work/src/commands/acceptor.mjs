@@ -1,6 +1,7 @@
 import path from "node:path";
 import os from "node:os";
-import { copyFile, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { copyFile, mkdtemp, readFile, rm } from "node:fs/promises";
+import { readRuntimeSourceUnits } from "../acceptor/source-units.mjs";
 import * as workCounters from "../counters.mjs";
 import {
   HARNESS_OF_RECORD,
@@ -327,28 +328,6 @@ function withdrawalOnHarm(record, movement) {
   });
 }
 
-async function sourceUnits(root) {
-  const units = [];
-  async function walk(directory) {
-    let entries;
-    try {
-      entries = await readdir(directory, { withFileTypes: true });
-    } catch (error) {
-      if (error?.code === "ENOENT") return;
-      throw error;
-    }
-    for (const entry of entries) {
-      const absolute = path.join(directory, entry.name);
-      if (entry.isDirectory()) await walk(absolute);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        units.push({ rel: path.relative(root, absolute).replaceAll("\\", "/"), code: await readFile(absolute, "utf8") });
-      }
-    }
-  }
-  await walk(path.join(root, "src"));
-  return units;
-}
-
 // The journal opener owns migrations and therefore opens a write transaction. A report must
 // not mutate its evidence source, so the face reads a private snapshot — the same discipline
 // Spike 60 used while investigating the live store.
@@ -410,7 +389,7 @@ async function runCommand(input, ctx) {
   const deps = ctx.acceptor ?? {};
   const criterion = deps.criterion ?? await readCriterion(workspace.projectRoot);
   const model = deps.model ?? await loadLoops(workspace);
-  const units = deps.units ?? await sourceUnits(workspace.projectRoot);
+  const units = deps.units ?? await readRuntimeSourceUnits(workspace.projectRoot);
   let harness = deps.harness;
   if (harness == null) {
     let text = null;

@@ -129,3 +129,10 @@ stamp and dependency rewrite. The four insert descriptors remain thin callers of
 `@aof/work`. Core supplies configured descriptors in ordered groups, preserving the existing command
 list. The contribution preserves descriptor identity and rejects operations owned by other packages;
 the shared registry detects duplicate IDs and routes. Other packages can extend the `work` namespace.
+
+`readRuntimeSourceUnits(projectRoot)` reads `.mjs` files under the project's `src/` and declared
+workspace packages' `src/` directories. Workspace arrays and the `workspaces.packages` form support
+glob patterns and exclusions. Results are deduplicated and sorted. Discovery excludes directory links,
+hidden directories, `node_modules`, `dist`, `build`, `coverage` and `target`; undeclared packages and
+files outside `src/` are not evidence. Malformed manifests and filesystem errors are reported rather
+than turned into an empty scan. The acceptor uses this reader unless explicit units are supplied.

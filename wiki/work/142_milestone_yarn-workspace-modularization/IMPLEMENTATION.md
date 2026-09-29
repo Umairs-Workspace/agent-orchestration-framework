@@ -1536,3 +1536,27 @@ Evidence in `.tmp/workspace-migration/work-contribution/`:
 
 No dependency, generated-copy or workflow-state changes. Remaining application composition, domain
 extraction, physical layout, compatibility removal and final verification remain outstanding.
+
+### Workspace-aware acceptance source discovery
+
+Acceptor now uses `@aof/work/acceptor/source-units` to read root src/ and declared workspace src/ trees.
+The source language stays .mjs. Workspace arrays/packages objects, nested globs, brace patterns,
+exclusions, duplicate matches, absent roots and monoliths are covered. Directory links, dependencies,
+hidden/build-output directories and undeclared fixtures are excluded. Invalid manifests and I/O errors
+remain failures rather than empty evidence. Explicit per-call units still override discovery.
+
+Evidence in `.tmp/workspace-migration/acceptor-sources/` (install logs remain under work-contribution/):
+
+- Four new package cases pass both from source and from a copied installation. The command-level case
+  finds the moved consumer, then refuses it after removal even while dependency and fixture copies remain.
+  The package bridge passes all 162 cases. All 109 affected acceptance/registry/dependency checks and
+  all 20 final architecture census/registry checks pass.
+- The real repository scan reads 571 modules, including 173 workspace modules; the work command and
+  loop engine are present and installed-module count is zero. The copied payload retains all 117
+  commands and preceding extraction comparisons. The standalone JavaScript bundle contains the reader.
+- Picomatch 4.0.4 becomes a direct work dependency at its existing locked version/checksum. No new
+  third-party version was introduced. Yarn install with skip-build followed by immutable skip-build
+  succeeds; existing peer warnings remain. Supply-chain audit reports zero warnings.
+
+No shipped/generated asset or workflow-state changes. This resolves the acceptor's root-only scan;
+remaining source censuses must still be verified against the final apps/core layout.

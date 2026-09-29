@@ -412,3 +412,13 @@ work-graph owners of commands in the shared namespace. Three new contract tests 
 the contribution and retains earlier behavior comparisons; standalone JavaScript and supply-chain
 audit pass. No dependency or generated-file changes. Final core composition/layout, remaining domain
 boundaries, adapter removal and whole-tree/platform verification remain outstanding.
+
+Workspace acceptance scan: acceptor now reads root src/ plus declared workspace src/ directories, using
+the existing .mjs scope. It handles workspace glob patterns, exclusions and the packages-object form;
+deduplicates units; excludes links/dependencies/generated directory trees; and reports malformed inputs.
+The source repository yields 571 modules, including 173 workspace modules and no installed dependencies.
+Four new package tests also pass from a copied installation; the bridge now covers 162 package cases.
+All 109 affected checks and 20 census/registry checks pass; standalone JavaScript includes the reader.
+Picomatch 4.0.4, already locked, is now an explicit work runtime dependency. Skip-build and immutable
+installs pass, and supply-chain audit reports zero warnings. No generated files or workflow state changed.
+Final core/apps layout, remaining domain boundaries, adapter removal and full/platform checks remain open.
