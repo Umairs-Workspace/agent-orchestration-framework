@@ -812,3 +812,17 @@ The matcher is the already-locked picomatch 4.0.4, now declared directly by work
 without introducing a second glob grammar. Directory traversal is bounded to the project, does not
 follow links and excludes installed dependencies, hidden directories and named build-output directories.
 The production reader is tested independently and through acceptor's actual source-loading path.
+# Audit child programs and workspace ownership
+
+`src/work/audit-drive.mjs` and `audit-probe.mjs` were the remaining audit execution implementations
+outside the work package. Their special boundary is a process boundary: the driver imports a cited
+control and calls its exported cases, while the probe imports a runner solely to enumerate its array.
+Moving either into the parent audit's import graph would violate that isolation even if imports were
+inert. Both implementations now live under `packages/work/src/programs/`, with public entry points
+used by compatibility launchers. Installed command paths and wire protocols remain unchanged.
+
+The architecture census follows static imports from each launcher to its package implementation,
+checks that every child dependency is readable and excluded from the parent closure, and forbids
+secondary process creation throughout that closure. The package boundary allows exactly the two
+existing computed subject imports. Full launcher removal still depends on final core installation
+and program-path composition; this extraction does not claim that layout work is complete.

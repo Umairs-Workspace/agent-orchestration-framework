@@ -1560,3 +1560,32 @@ Evidence in `.tmp/workspace-migration/acceptor-sources/` (install logs remain un
 
 No shipped/generated asset or workflow-state changes. This resolves the acceptor's root-only scan;
 remaining source censuses must still be verified against the final apps/core layout.
+
+## Audit child program extraction
+
+Work owns both audit child implementations under `src/programs/`: control driving preserves per-case
+global-home isolation and sentinel-prefixed results; runner probing preserves enumeration without
+executing cases. Public exports are inert on import and are callable from the compatibility launchers.
+Both package modules also support direct Node execution. The parent's evidence/census ports and
+existing child command paths are unchanged.
+
+The process-tree guard now walks launcher imports into the work package. It asserts that every
+implementation/dependency is readable, stays outside the parent import closure, and cannot create
+another child. Package import checks admit exactly the two computed subject imports, with no broader
+exception for work modules. The sentinel/message guard reads the moved implementation.
+
+Evidence in `.tmp/workspace-migration/audit-programs/`:
+
+- The initial eight-suite selection passed 155 checks with one boundary assertion failure. The gate
+  still expected zero computed imports; the two isolated child programs necessarily contain them.
+  After recording those exact imports, all 156 checks pass. The package bridge runs 165 cases.
+- Three new package cases pass from source and from a copied installation: inert imports, executed
+  cases and messages, per-case isolation, probe enumeration, empty arrays and input/load refusals.
+- Thirty comparisons against the pre-move programs match exit status, stdout and stderr across
+  source launchers, installed launchers and direct installed package programs.
+- Standalone JavaScript bundling succeeds and supply-chain audit reports zero warnings. Child
+  programs ship as source alongside the standalone bundle; this is not a native executable check.
+
+No dependency, shipped/generated asset or workflow-state changes. The three previously authorized
+generated loop citation refreshes were already committed; no wider generated refresh was performed.
+Final core/apps layout, remaining domains, compatibility removal and full/platform checks remain open.

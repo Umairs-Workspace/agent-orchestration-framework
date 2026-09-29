@@ -422,3 +422,12 @@ All 109 affected checks and 20 census/registry checks pass; standalone JavaScrip
 Picomatch 4.0.4, already locked, is now an explicit work runtime dependency. Skip-build and immutable
 installs pass, and supply-chain audit reports zero warnings. No generated files or workflow state changed.
 Final core/apps layout, remaining domain boundaries, adapter removal and full/platform checks remain open.
+
+Audit child programs: work owns control driving and assembled-runner enumeration behind two public
+entry points. Root launchers preserve existing paths; package imports are inert and both modules also
+run directly. The isolation guard follows the launcher dependency closures and still excludes the
+children from the audit parent. All 156 focused checks pass, including the bridge to 165 package cases.
+Thirty source/copied-install/direct-package comparisons match the pre-move programs; the three new
+package tests also pass after installation. Standalone JavaScript and supply-chain audit pass.
+No dependency, generated-file or workflow-state changes. Final launcher/application composition,
+other domains, core/apps layout and whole-tree/platform verification remain outstanding.

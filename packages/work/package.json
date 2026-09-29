@@ -106,7 +106,9 @@
     "./commands/continue": "./src/commands/continue.mjs",
     "./commands/resume": "./src/commands/resume.mjs",
     "./commands": "./src/commands.mjs",
-    "./acceptor/source-units": "./src/acceptor/source-units.mjs"
+    "./acceptor/source-units": "./src/acceptor/source-units.mjs",
+    "./programs/audit-drive": "./src/programs/audit-drive.mjs",
+    "./programs/audit-probe": "./src/programs/audit-probe.mjs"
   },
   "files": [
     "src"

@@ -36,6 +36,9 @@ Core still composes its resolver/history/provenance services; final adapter remo
 Work also owns feedback records, the pure contract-integrity ratchet and feedback/counters/ratchet
 commands. Application transition and runtime service composition remain in core pending final layout.
 Audit and acceptor command implementations are also extracted with configured core services injected.
+The audit driver and suite probe implementations are work-owned as well, with child-only public
+entry points and compatibility launchers under root src/. Final program-path composition and launcher
+removal remain open; their complete import closures are checked for parent isolation and spawn safety.
 Acceptor source discovery now scans the audited project's src/ and declared workspace src/ roots,
 covering moved implementations while excluding installed dependencies and generated directory trees.
 Command-level tests prove a moved consumer remains visible and dependency/fixture copies cannot replace

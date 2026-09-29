@@ -59,7 +59,7 @@ import { EXECUTED_CASES, withControlFixtureRepo as withFixtureRepo } from "../..
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_LANE = "packages/work/src/audit/evidence.mjs";
-const THE_DRIVER = DRIVE_PROGRAM;
+const THE_DRIVER = "packages/work/src/programs/audit-drive.mjs";
 
 // ── THE COUNT-ORACLE DETECTORS ───────────────────────────────────────────────────────────────
 //

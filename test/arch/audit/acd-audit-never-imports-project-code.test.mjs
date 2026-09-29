@@ -103,6 +103,7 @@ assert.ok(WORKSPACE_EXPORTS.size > 0, "the workspace export census is nonempty")
 const SPAWNED_PROGRAMS = Object.freeze([
   Object.freeze({
     rel: "src/work/audit-probe.mjs",
+    implementation: "packages/work/src/programs/audit-probe.mjs",
     why: "its whole job is a dynamic import() of a runner, which clause (A) refuses inside the closure — so it is a program the family starts, not a module the family loads",
   }),
   // ADDED BY 77/04, AND THE ADDITION IS THE POINT (ADR-002 §3). This program was
@@ -112,6 +113,7 @@ const SPAWNED_PROGRAMS = Object.freeze([
   // inside clause (E)'s discovery, and TECH_DEBT item 70's remaining hole closes with it.
   Object.freeze({
     rel: "src/work/audit-drive.mjs",
+    implementation: "packages/work/src/programs/audit-drive.mjs",
     why: "its whole job is a dynamic import() of a cited control, which clause (A) refuses inside the closure — so it is a program the family starts, not a module the family loads, and it lives under src/ because that is the only directory a payload install carries",
   }),
 ]);
@@ -382,13 +384,22 @@ export const archTests = [
           );
         }
 
-        const raw = await readFile(path.join(repoRoot, program.rel), "utf8");
-        const code = stripComments(raw);
-        assert.ok(code.length > 200, `${program.rel} exists and was read (${code.length} chars)`);
-        assert.match(code, /await import\(/u, `${program.rel} DOES dynamically import — that is why it lives outside the closure rather than inside it with an exemption`);
-        assert.doesNotMatch(code, /node:child_process/u, `${program.rel} starts no child of its own: it is a leaf of the process tree, not a second seam one directory up`);
-        for (const api of [...OTHER_SPAWN_APIS, "spawn"]) {
-          assert.doesNotMatch(code, new RegExp(`\\b${api}\\s*\\(`, "u"), `${program.rel} does not call \`${api}(\``);
+        // Follow the public package export so a small launcher cannot hide a second spawn.
+        const child = await importClosure([program.rel], loadStripped);
+        assert.deepEqual(child.unresolved, [], `${program.rel}: every child dependency is readable`);
+        assert.ok(child.closure.has(program.implementation), `${program.rel} reaches its package implementation`);
+        assert.match(child.closure.get(program.implementation), /await import\(/u, `${program.implementation} loads project code only in the child`);
+        for (const [rel, code] of child.closure) {
+          assert.ok(!closure.has(rel), `${rel} is absent from the audit parent's import closure`);
+          assert.ok(code.trim().length > 0, `${rel} was read`);
+          for (const specifier of staticImportSpecifiers(code)) {
+            assert.ok(specifier.startsWith("node:") || resolveSpecifier(rel, specifier) != null,
+              `${rel}: child dependencies must be builtins or scanned runtime modules (${specifier})`);
+          }
+          assert.doesNotMatch(code, /node:child_process/u, `${rel} starts no child of its own`);
+          for (const api of [...OTHER_SPAWN_APIS, "spawn"]) {
+            assert.doesNotMatch(code, new RegExp(`\\b${api}\\s*\\(`, "u"), `${rel} does not call \`${api}(\``);
+          }
         }
       }
 

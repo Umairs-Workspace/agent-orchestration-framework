@@ -109,6 +109,8 @@ export const yarnInstallationTests = [
         'commands/regression-gate.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error', '@aof/foundation/fs'],
         'regression-record.mjs': ['node:path'],
         'acceptor/source-units.mjs': ['node:path', 'node:fs/promises', 'picomatch'],
+        'programs/audit-drive.mjs': ['node:os', 'node:path', 'node:fs', 'node:url'],
+        'programs/audit-probe.mjs': ['node:path', 'node:url'],
         'commands/acceptor.mjs': ['node:path', 'node:os', 'node:fs/promises', '@aof/contracts/loop-bounds'],
         'commands/grade.mjs': ['node:fs', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/claim-provenance'],
         'commands/archive.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
@@ -164,7 +166,12 @@ export const yarnInstallationTests = [
       const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[file.slice(`packages/${name}/src/`.length)] ?? nativePorts[path.basename(file)] ?? []).includes(specifier);
       const external = report.violations.filter(forbidden);
       assert.deepEqual(external, [], name + ': only local imports and explicitly allowed platform/package APIs are allowed');
-      assert.deepEqual(report.computed, [], `${name}: computed imports cannot bypass the boundary`);
+      // These two child programs load the audited subject by design. The audit isolation gate
+      // proves neither implementation is reachable from the parent's import closure.
+      assert.deepEqual(report.computed, name === 'work' ? [
+        { file: 'packages/work/src/programs/audit-drive.mjs', expression: 'pathToFileURL(control' },
+        { file: 'packages/work/src/programs/audit-probe.mjs', expression: 'pathToFileURL(runner' },
+      ] : [], `${name}: only the declared audit children may compute a subject import`);
       const from = report.family.files[0];
       for (const code of [
         'import { invoke } from "../../../src/command-core.mjs";',

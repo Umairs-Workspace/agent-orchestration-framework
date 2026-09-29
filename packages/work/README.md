@@ -136,3 +136,10 @@ glob patterns and exclusions. Results are deduplicated and sorted. Discovery exc
 hidden directories, `node_modules`, `dist`, `build`, `coverage` and `target`; undeclared packages and
 files outside `src/` are not evidence. Malformed manifests and filesystem errors are reported rather
 than turned into an empty scan. The acceptor uses this reader unless explicit units are supplied.
+
+The child entry points `programs/audit-drive` and `programs/audit-probe` own control execution and
+runner enumeration. Their exports are inert until called, and each module also runs directly under
+Node. They belong only in an audit child process: the parent uses its bounded execution port and
+must not import either entry point. Transitional root launchers preserve existing invocation paths.
+The architecture guard follows each launcher's imports through its public package export, checking
+that the entire child implementation stays outside the parent and starts no further processes.
