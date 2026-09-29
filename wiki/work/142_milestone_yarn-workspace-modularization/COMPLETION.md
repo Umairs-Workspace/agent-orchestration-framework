@@ -45,8 +45,10 @@ Item-status, regression-gate and their shared regression record are also work-ow
 runtime services still enter through transitional core composition; remaining command extraction and
 the work package's final command contribution are not complete.
 Continue/refine/verify routing and resume/answer implementations are now work-owned too, including
-the deferred registry invocation supplied by core. Trigger and dispatch services/commands, other
-domain boundaries and final application composition remain outstanding.
+the deferred registry invocation supplied by core. Work-loop owns trigger compilation, signal and
+level resolution, its command and CLI contribution. Core still supplies assets, cadence grammar and
+deferred registry access. Dispatch services/commands, other domain boundaries and final application
+composition remain outstanding.
 Generated-output parity is still incomplete: four previously pending loop copies, four additional
 watcher/rubric copies and three pay-debt renders need citation-only refreshes and matching lock hashes.
 

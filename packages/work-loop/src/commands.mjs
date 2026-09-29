@@ -8,3 +8,11 @@ export function createWorkLoopContribution({ loop, refine, continue: build, veri
   }
   return Object.freeze({ name: "@aof/work-loop", commands: Object.freeze(commands) });
 }
+
+// A separate ordered group preserves the existing command enumeration during migration.
+export function createTriggerContribution(trigger) {
+  if (trigger?.id !== "work:trigger") {
+    throw new TypeError("Work-loop trigger contribution requires work:trigger.");
+  }
+  return Object.freeze({ name: "@aof/work-loop", commands: Object.freeze([trigger]) });
+}

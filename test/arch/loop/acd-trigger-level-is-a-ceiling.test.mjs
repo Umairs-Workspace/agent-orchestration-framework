@@ -75,7 +75,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LEAF_PATH = path.join(REPO_ROOT, "src", "work-trigger", "level.mjs");
+const LEAF_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger", "level.mjs");
 const LOOP_COMMAND_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "commands", "loop.mjs");
 
 const read = (file) => readFileSync(file, "utf8");
@@ -150,7 +150,7 @@ export const archTests = [
 
       const bans = [
         [/\b100\b/, "a bare score threshold", "if (score >= 100) return true;"],
-        [/L3_SCORE_THRESHOLD/, "the threshold constant", "import { L3_SCORE_THRESHOLD } from '../work/loop.mjs';"],
+        [/L3_SCORE_THRESHOLD/, "the threshold constant", "import { L3_SCORE_THRESHOLD } from '../engine.mjs';"],
         // Relational comparison of a score, or ANY comparison of one against a number — the two
         // shapes a copied threshold has. A nullish check on a reading the gate already refused is
         // neither, and is what rendering a refusal the gate produced actually needs.
@@ -192,10 +192,10 @@ export const archTests = [
 
       // The closure, parsed in EVERY form — this is the list the "no file is read" argument rests
       // on, so a form it cannot see is a hole in the argument rather than a gap in the sweep.
-      assert.deepEqual(moduleSpecifiers(code), ["../work/loop.mjs"],
+      assert.deepEqual(moduleSpecifiers(code), ["../engine.mjs"],
         "the leaf reaches the one gate home and nothing else at all, by any import form");
 
-      const named = /\bimport\s*\{([^}]*)\}\s*from\s*["']\.\.\/work\/loop\.mjs["']/.exec(code);
+      const named = /\bimport\s*\{([^}]*)\}\s*from\s*["']\.\.\/engine\.mjs["']/.exec(code);
       assert.ok(named, "…and it reaches it through a NAMED import, so no namespace binding is in scope");
       assert.deepEqual(
         named[1].split(",").map((name) => name.trim()).filter(Boolean).sort(),
@@ -225,7 +225,7 @@ export const archTests = [
         ['const fs = require("node:fs");', "node:fs"],
         ['export { readFile } from "node:fs/promises";', "node:fs/promises"],
         ['import "node:fs";', "node:fs"],
-        ['import { resolveLoopLevel } from "../work/loop.mjs";', "../work/loop.mjs"],
+        ['import { resolveLoopLevel } from "../engine.mjs";', "../engine.mjs"],
       ]) {
         assert.ok(moduleSpecifiers(planted).includes(expected), `a planted \`${planted}\` is seen`);
       }

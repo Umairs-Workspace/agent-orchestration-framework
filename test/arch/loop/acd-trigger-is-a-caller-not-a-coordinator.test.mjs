@@ -43,11 +43,11 @@ const root = fileURLToPath(new URL("../../../", import.meta.url));
 // directory rather than by a list kept here, so a fifth leaf cannot arrive uncovered.
 const { readdirSync } = await import("node:fs");
 const FAMILY = [
-  "src/commands/trigger.mjs",
-  ...readdirSync(`${root}/src/work-trigger`)
+  "packages/work-loop/src/commands/trigger.mjs",
+  ...readdirSync(`${root}/packages/work-loop/src/trigger`)
     .filter((name) => name.endsWith(".mjs"))
     .sort()
-    .map((name) => `src/work-trigger/${name}`),
+    .map((name) => `packages/work-loop/src/trigger/${name}`),
 ];
 
 const sourceOf = (file) => stripComments(readFileSync(`${root}/${file}`, "utf8"));
@@ -195,8 +195,8 @@ export const archTests = [
       // NON-VACUITY FIRST: every leg below is over `FAMILY_TEXT`, so a control reading an empty
       // or truncated family would pass every ban while holding nothing.
       assert.ok(FAMILY.length >= 4, `the family holds the face and every leaf (got ${FAMILY.join(", ")})`);
-      assert.ok(FAMILY.includes("src/commands/trigger.mjs"), "the face is in the family");
-      assert.ok(FAMILY.some((file) => file.startsWith("src/work-trigger/")), "and so are the leaves");
+      assert.ok(FAMILY.includes("packages/work-loop/src/commands/trigger.mjs"), "the face is in the family");
+      assert.ok(FAMILY.some((file) => file.startsWith("packages/work-loop/src/trigger/")), "and so are the leaves");
       for (const file of FAMILY) assert.ok(sourceOf(file).length > 200, `${file} has real source to assert over`);
     },
   },
@@ -383,7 +383,7 @@ export const archTests = [
       // passed the entire suite when it was planted. The day ADR-010 §11's distinction is taught
       // to the leaf, a face quietly written back to `?? null` sits on the wrong side of the exit
       // boundary with nothing red. So the hand-over is pinned as the statement it must be.
-      const face = sourceOf("src/commands/trigger.mjs");
+      const face = sourceOf("packages/work-loop/src/commands/trigger.mjs");
       const gather = functionBody(face, "async function gatherGateReadings(");
       assert.ok(gather != null, "gatherGateReadings is where the two readings are obtained, and its body was found");
       const normalised = gather.replace(/\s+/gu, " ");
@@ -442,8 +442,9 @@ export const archTests = [
       // is the only probe that sees this class, because every suite in this tree reaches these
       // modules through a warmed cache.
       assert.doesNotMatch(FAMILY_TEXT, /^import[^\n]*command-core\.mjs/mu, "no family module imports the registry at module scope");
-      assert.match(sourceOf("src/commands/trigger.mjs"), /await import\("\.\.\/command-core\.mjs"\)/u, "the face reaches it through a deferred dynamic import");
-      for (const file of [...FAMILY, "src/command-core.mjs"]) {
+      assert.match(sourceOf("src/commands/trigger.mjs"), /\(\) => import\("\.\.\/command-core\.mjs"\)/u, "core supplies a deferred registry loader");
+      assert.match(sourceOf("packages/work-loop/src/commands/trigger.mjs"), /await loadCommandCore\(\)/u, "the face calls the supplied loader lazily");
+      for (const file of [...FAMILY, "src/commands/trigger.mjs", "src/command-core.mjs"]) {
         const url = pathToFileURL(`${root}/${file}`).href;
         const child = spawnSync(process.execPath, ["--input-type=module", "--eval", `await import(${JSON.stringify(url)})`], {
           cwd: root,

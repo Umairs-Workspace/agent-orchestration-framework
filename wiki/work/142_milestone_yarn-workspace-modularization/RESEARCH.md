@@ -769,3 +769,15 @@ resume operation. The latter invocation remains deferred, now through a named co
 the package cannot import the assembled registry. Package tests exercise the loader's default path
 and the explicit refusal path, including absence of a notification on refused delivery. Ask-reader,
 notification and cap guards now cover package implementations as well as the actual core bindings.
+
+Triggers belong with work-loop: their outputs are loop inputs and arguments, and both scope and level
+decisions already live in that package's pure engine. The declaration compiler receives the shared
+cadence grammar and bundled asset reader through core composition, avoiding a reverse import into
+the application's graph loader. Registry access remains a deferred port; invalid declarations refuse
+before it loads, and resolving an ungated trigger never invokes the loop.
+
+The package contributes the trigger in a separate ordered command group so the existing registry's
+enumeration stays unchanged. Source guards discover the actual package family and walk core's binding
+as an additional closure root. This retains checks for clocks and process execution across injected
+services while pure signal/level leaves now reach the local engine directly. Generated-citation parity
+remains a separate known failure, not an exemption added to those checks.

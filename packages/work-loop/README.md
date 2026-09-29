@@ -11,6 +11,10 @@ belong to `@aof/work-graph`; core assembles the executable and supplies applicat
   own grading/retry sequencing, lane orchestration, waiting for answers and stop/hand-off behavior.
 - `createLoopShell` and `createPhaseDrivers` produce the loop and three phase-driver commands.
   `createWorkLoopContribution` supplies those four descriptors to the shared registry.
+- `createTriggerDeclarations` compiles trigger data using core's asset reader and cadence grammar.
+  `trigger/level` and `trigger/sources` resolve levels and signals through the local loop engine.
+  `createTriggerCommand` supplies the read-only trigger command; `createTriggerContribution`
+  registers it as a separate ordered group, preserving command enumeration during migration.
 - `createLoopProgress` and `createLoopDiagnostics` own progress sampling and launch diagnostics.
   `argv` is the zero-import declaration-to-arguments composer.
 

@@ -85,7 +85,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_DIR = path.join(REPO_ROOT, "src", "work-trigger");
+const FAMILY_DIR = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger");
 const LEAF_PATH = path.join(FAMILY_DIR, "sources.mjs");
 const FEEDBACK_COMMAND_PATH = path.join(REPO_ROOT, "packages", "work", "src", "commands", "feedback.mjs");
 const LOOP_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs");
@@ -291,9 +291,9 @@ export const archTests = [
     run: () => {
       // The grammar is reached BY IMPORT, from the module that is the sole home of the forms.
       const [, leaf] = family().find(([name]) => name === "sources.mjs");
-      assert.deepEqual(moduleSpecifiers(leaf), ["../work/loop.mjs"],
+      assert.deepEqual(moduleSpecifiers(leaf), ["../engine.mjs"],
         "the leaf reaches the loop's own decision and nothing else at all, by any import form");
-      const named = /\bimport\s*\{([^}]*)\}\s*from\s*["']\.\.\/work\/loop\.mjs["']/.exec(leaf);
+      const named = /\bimport\s*\{([^}]*)\}\s*from\s*["']\.\.\/engine\.mjs["']/.exec(leaf);
       assert.ok(named, "…through a NAMED import, so no namespace binding is in scope");
       assert.deepEqual(named[1].split(",").map((token) => token.trim()).filter(Boolean), ["decideLoopScope"],
         "…importing exactly the decision, so nothing else could be re-derived from it");
@@ -354,7 +354,7 @@ export const archTests = [
       // vocabulary from the compiler: its closure is TWO FILES and NO BUILTINS, which is what
       // makes leg 8's "reads no file" a structural equality rather than a runtime spy.
       const leafClosure = closureOf(LEAF_PATH);
-      assert.equal(leafClosure.files.length, 3, "the leaf reaches the compatibility export and the zero-import package engine");
+      assert.equal(leafClosure.files.length, 2, "the leaf reaches only the zero-import package engine");
       assert.deepEqual(leafClosure.builtins, [], "…and no builtin at all, node:fs least of all");
 
       const patternBans = [
@@ -535,7 +535,7 @@ export const archTests = [
       // The leaf's whole import closure is one module, and that module imports nothing at all
       // (53's determinism contract), so there is no route from here to a file.
       const leaf = stripComments(read(LEAF_PATH));
-      assert.deepEqual(moduleSpecifiers(leaf), ["../work/loop.mjs"], "the leaf's closure is one module");
+      assert.deepEqual(moduleSpecifiers(leaf), ["../engine.mjs"], "the leaf's closure is one module");
       assert.deepEqual(moduleSpecifiers(stripComments(read(LOOP_PATH))), [], "…and that module imports nothing");
 
       for (const [pattern, what, planted] of [

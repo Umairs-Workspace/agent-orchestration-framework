@@ -383,3 +383,13 @@ commands. Standalone JavaScript bundling and supply-chain audit pass. No depende
 generated copies or workflow state changed. The final census/registry run passes all 20 cases.
 Remaining work services/commands, feature contribution,
 other domains, final core/apps layout and whole-tree/platform verification remain outstanding.
+
+Trigger extraction: work-loop owns the declaration compiler, pure signal/level resolvers and trigger
+command. Its package contribution registers the command without changing enumeration order. Core
+supplies the asset reader, shared cadence grammar and deferred registry loader. Four legacy API/value/
+function comparisons pass, as does comparison of all 117 registered descriptors and their order.
+The initial 16-suite selection passed 383 cases with 14 failures; the corrected seven-suite run passes
+82 cases with one existing generated-citation parity failure. Three new package cases bring the bridge
+to 152 cases. Source and copied-installation trigger comparisons, standalone JavaScript bundling and
+supply-chain audit pass. No dependencies, generated copies or workflow state changed. Remaining
+dispatch/work services, other domains, final layout/composition and whole-tree verification remain open.

@@ -1453,3 +1453,31 @@ Evidence in `.tmp/workspace-migration/work-reentry/`:
 
 Remaining work services/commands and final contribution, other domains, core/apps layout, application
 composition, compatibility removal and whole-tree/platform verification remain outstanding.
+
+### Trigger compilation, resolution and CLI contribution
+
+Work-loop owns all four trigger implementations. Core composes the declaration factory with its asset
+reader and cadence grammar, and the command factory with a deferred registry loader. Pure signal and
+level resolution import the local engine. The package's separate trigger contribution preserves the
+existing command enumeration while assigning registration ownership to work-loop.
+
+Evidence in `.tmp/workspace-migration/loop-trigger/`:
+
+- Four legacy API/value/exported-function comparisons pass. All 117 registered descriptor contents
+  and their order match the prior registry. Three new package contracts cover asset/grammar ports,
+  whole-set refusal, lazy registry loading, no loop invocation and feature-owned registration. The
+  existing root bridge passes all 152 package cases.
+- The initial 16-suite run passed 383 cases with 14 failures. Source guards were updated to discover
+  package implementations and include the configured core binding in closure checks. The corrected
+  seven-suite run passes 82 cases; its sole remaining failure is the already-known generated
+  `.aof/loops/mesh-assignment-reclaim.md` parity check. It was not silenced or refreshed under the
+  narrower three-file citation approval.
+- Source and copied-installation comparisons preserve compilation, cron/CI signal resolution,
+  malformed/unknown/mesh/gated refusals, registry readings and composed argv. All four package exports
+  resolve inside the copied installation, which retains 117 commands and passes earlier comparisons.
+- The standalone JavaScript bundle includes all four implementations. Supply-chain audit reports zero
+  warnings. The final architecture census and registry run passes all 20 cases. No dependency, asset,
+  generated-copy or workflow-state change was required.
+
+Dispatch and remaining domain extraction, final core/apps layout, adapter removal and full/platform
+verification remain outstanding; this completes the trigger boundary, not the milestone.

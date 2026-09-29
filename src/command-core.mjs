@@ -24,7 +24,7 @@
 // to process.cwd() (path.relative, OS separators). Basis-neutral results let each
 // face project losslessly — the keystone that makes byte-for-byte on both faces
 // achievable on Windows separators (ADR-002).
-import { createWorkLoopContribution } from "@aof/work-loop/commands";
+import { createWorkLoopContribution, createTriggerContribution } from "@aof/work-loop/commands";
 import { createWorkGraphContribution } from "@aof/work-graph/commands";
 import { createCommandRegistry } from "@aof/contracts/commands";
 import { meshContribution } from "./commands/mesh/contribution.mjs";
@@ -194,7 +194,9 @@ const CONTRIBUTIONS = [
     auditCommand,
     acceptorCommand,
     tuneCommand,
-    triggerCommand,
+  ] },
+  createTriggerContribution(triggerCommand),
+  { name: "aof", commands: [
     gradeCommand,
     ratchetCommand,
     countersCommand,

@@ -43,11 +43,11 @@ const cliPath = path.join(root, "bin", "aof.mjs");
 // itself; a second brace-and-import walker written beside this one is the species TECH_DEBT 24
 // and 57 have already been paid for twice.
 export const FAMILY = [
-  "src/commands/trigger.mjs",
-  ...readdirSync(path.join(root, "src", "work-trigger"))
+  "packages/work-loop/src/commands/trigger.mjs",
+  ...readdirSync(path.join(root, "packages", "work-loop", "src", "trigger"))
     .filter((name) => name.endsWith(".mjs"))
     .sort()
-    .map((name) => `src/work-trigger/${name}`),
+    .map((name) => `packages/work-loop/src/trigger/${name}`),
 ];
 
 const sourceOf = (file) => stripComments(readFileSync(path.join(root, file), "utf8"));
@@ -72,7 +72,7 @@ function importClosure(entries) {
   return [...seen].sort();
 }
 
-export const CLOSURE = importClosure(FAMILY);
+export const CLOSURE = importClosure([...FAMILY, "src/commands/trigger.mjs"]);
 export const familySource = (file) => sourceOf(file);
 const CLOSURE_TEXT = CLOSURE.map((file) => sourceOf(file)).join("\n");
 const FAMILY_TEXT = FAMILY.map((file) => sourceOf(file)).join("\n");
@@ -342,7 +342,7 @@ export const archTests = [
       const expression = String(triggerCommand.cli.exit).replace(/\s+/gu, " ").trim();
       assert.equal(expression, "(result) => (result.failure == null ? 0 : 1)", "the exit adapter is one expression over whether a failure exists");
       assert.equal(String(getCommand("work:tune").cli.exit).replace(/\s+/gu, " ").trim(), expression, "byte for byte the expression the sibling face already ships");
-      assert.doesNotMatch(sourceOf("src/commands/trigger.mjs"), /exit:\s*\(result\)\s*=>\s*\{/u, "and it is not a per-case table wearing an adapter's name");
+      assert.doesNotMatch(sourceOf("packages/work-loop/src/commands/trigger.mjs"), /exit:\s*\(result\)\s*=>\s*\{/u, "and it is not a per-case table wearing an adapter's name");
     },
   },
 ];

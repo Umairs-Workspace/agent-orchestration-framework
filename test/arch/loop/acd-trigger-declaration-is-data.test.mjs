@@ -45,7 +45,7 @@ import {
 } from "../../../src/work-trigger/declaration.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_DIR = path.join(REPO_ROOT, "src", "work-trigger");
+const FAMILY_DIR = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger");
 const LOADER_PATH = path.join(REPO_ROOT, "packages/work-graph/src/registry.mjs");
 const BUNDLE_DESCRIPTOR = path.join(REPO_ROOT, "src", "bundle", "bundle.json");
 
@@ -104,7 +104,7 @@ export const archTests = [
       const parsers = files.filter((file) => /JSON\s*\.\s*parse/.test(codeOnly(read(file))));
       assert.deepEqual(
         parsers.map((file) => path.relative(REPO_ROOT, file).split(path.sep).join("/")),
-        ["src/work-trigger/declaration.mjs"],
+        ["packages/work-loop/src/trigger/declaration.mjs"],
         "exactly one module in the family turns declaration text into an object",
       );
       // Non-vacuity: the sweep sees a parser where one exists.
@@ -141,7 +141,7 @@ export const archTests = [
     name: "FF-6302/3 the cadence grammar is reached by IMPORT and no equivalent literal is authored in the family",
     run: () => {
       const files = familyFiles();
-      const importers = files.filter((file) => /from\s+["'][^"']*work\/loops\.mjs["']/.test(read(file)) && /\bparseCadence\b/.test(read(file)));
+      const importers = [...files, path.join(REPO_ROOT, "src/work-trigger/declaration.mjs")].filter((file) => /from\s+["'][^"']*work\/loops\.mjs["']/.test(read(file)) && /\bparseCadence\b/.test(read(file)));
       assert.ok(importers.length > 0, "the family reaches the grammar through the imported `parseCadence`");
       assert.equal(typeof loaderModule.parseCadence, "function", "…and it is a real export of the loader");
 

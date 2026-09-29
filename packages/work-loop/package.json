@@ -17,13 +17,17 @@
     "./commands/drive": "./src/commands/drive.mjs",
     "./commands/loop": "./src/commands/loop.mjs",
     "./argv": "./src/argv.mjs",
-    "./commands": "./src/commands.mjs"
+    "./commands": "./src/commands.mjs",
+    "./trigger/declaration": "./src/trigger/declaration.mjs",
+    "./trigger/level": "./src/trigger/level.mjs",
+    "./trigger/sources": "./src/trigger/sources.mjs",
+    "./commands/trigger": "./src/commands/trigger.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test test/services.test.mjs"
+    "test": "node --test test/services.test.mjs test/trigger.test.mjs"
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",
