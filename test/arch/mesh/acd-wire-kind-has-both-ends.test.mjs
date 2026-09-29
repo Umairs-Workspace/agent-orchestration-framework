@@ -154,7 +154,7 @@ export const RESPELT_END_EXEMPTIONS = Object.freeze([
   Object.freeze({
     kind: "WITHDRAW_KIND",
     end: "producing",
-    site: "src/mesh/assignment-reclaim.mjs",
+    site: "packages/mesh/src/assignment-reclaim.mjs",
     reason: "the reclaim driver sends `kind: \"withdraw\"` as a bare literal rather than importing the constant from worker-stream-client.mjs (which declares it and reads it). A genuine producing end, re-spelled — m35's reclaim lane, predating this milestone.",
   }),
 ]);
@@ -402,7 +402,7 @@ export const archTests = [
       // name that no longer appears in the list.
       const staleSweep = asSweep([
         ["src/worker-stream-client.mjs", 'export const WITHDRAW_KIND = "withdraw";\nexport function apply(frame) { if (frame?.kind === WITHDRAW_KIND) return true; return false; }'],
-        ["src/mesh/assignment-reclaim.mjs", 'import { WITHDRAW_KIND } from "./worker-stream-client.mjs";\nsend({ kind: WITHDRAW_KIND, to: nodeId });'],
+        ["packages/mesh/src/assignment-reclaim.mjs", 'import { WITHDRAW_KIND } from "./worker-stream-client.mjs";\nsend({ kind: WITHDRAW_KIND, to: nodeId });'],
       ]);
       const staleProblems = wireKindProblems(staleSweep);
       assert.ok(

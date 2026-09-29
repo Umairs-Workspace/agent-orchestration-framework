@@ -67,6 +67,7 @@ const SEGMENT = "loop-stops";
 // (131/ADR-009 §6).
 const RESUME_SEGMENT = "loop-resumes";
 const READERS = Object.freeze(["src/loop/stop.mjs", "src/commands/loop.mjs", "src/mesh/declarations.mjs", "src/mesh/presence.mjs"]);
+const CONFIGURED_READERS = Object.freeze(["packages/mesh/src/declarations.mjs", "packages/mesh/src/presence.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const CORE = "src/loop/stop.mjs";
 const CORE_IMPORTERS = Object.freeze(["src/commands/loop.mjs", "src/mesh/ui-serve.mjs"]);
@@ -172,8 +173,8 @@ export const archTests = [
       for (const reader of READERS) {
         assert.ok(importers.includes(reader), `${reader} imports src/loop/stop-request.mjs by RESOLVED specifier (through module-family.mjs) — importers found: ${importers.join(", ") || "none"}`);
       }
-      // …and none of the four spells `meshRoot` beside a `loop` literal in a `path.join(`.
-      for (const reader of READERS) {
+      // Core imports the shared reader; configured package consumers must not compose paths either.
+      for (const reader of [...READERS, ...CONFIGURED_READERS]) {
         const unit = units.find(({ rel }) => rel === reader);
         assert.ok(unit != null, `NOT FOUND: ${reader}`);
         const joins = meshRootLoopJoins(unit.code);

@@ -21,7 +21,7 @@ import { assignWork } from "../../../src/mesh/assignment.mjs";
 import { withMeshAssignFixture, seedTargetNode, seedAssignment, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const assignSourcePath = path.join(repoRoot, "src", "mesh", "assignment.mjs");
+const assignSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs");
 const recordSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment-record.mjs");
 
 function assertStructural(source) {

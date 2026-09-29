@@ -65,7 +65,24 @@ The database schema is unchanged. Projection refreshes preserve assignment facts
 retains its coded refusal, and query callers can supply a borrowed store without transferring its
 ownership. These services import no assembled core application and do no work at construction.
 
-Coordination, launcher orchestration and most command implementations still live under `src/`.
+Mesh also owns scope locking, assignment/withdrawal, dual-staleness reclaim, recovery push,
+resync, role resolution, supervised declarations and parked worker resume:
+
+| API | Composition |
+| --- | --- |
+| `item-lock` / `createItemLocks` | Projection access, identity and propagation policy; assignment scope and holder rules stay local to mesh. |
+| `assignment` / `createMeshAssignments` | Cache-first work resolution, lock inspection, configured storage and assignment transition services. |
+| `assignment-reclaim` / `createAssignmentReclaim` | Shared presence/run clocks, heartbeat consumption, cache-first reads, transitions, concurrency policy and diagnostics. |
+| `recovery-push` / `createRecoveryPush`, `resync` / `createMeshResync` | Deferred projection loading; recovery also receives the shared branch-name policy. |
+| `role` | Direct role and fabric-target resolution exports. |
+| `declarations` / `createSupervisedDeclarations` | Workspace/run/stop-request reads and a deferred command-registry loader; argv and decisions use work-loop's public APIs. |
+| `park-resume` / `createMeshParkResumeServices` | Run/assignment transitions, transcript reads and deferred presence/work/notification loaders. |
+
+Factories remain inert. Recovery retries disconnected workers; resync reports the disconnected
+owner immediately. Those policies, assignment authority, scope locks and question bounds are
+unchanged. Shared deadline constants come from `@aof/contracts/loop-bounds`.
+
+Launcher orchestration, worker execution and most command implementations still live under `src/`.
 Root adapters currently compose the extracted services; final package/application assembly will
 remove them. The presence cadence helper has no production callers and remains available as a
 public API, preserving its existing contract. Run `yarn workspace @aof/mesh test`.

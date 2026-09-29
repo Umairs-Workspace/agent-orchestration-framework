@@ -71,7 +71,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const LADDER = "packages/work-loop/src/cycle.mjs";
 const ENGINE = "packages/work-loop/src/engine.mjs";
-const PRODUCER = "src/mesh/declarations.mjs";
+const PRODUCER = "packages/mesh/src/declarations.mjs";
 const HOME = "packages/work-loop/src/stop-request.mjs";
 // THE DRIVE SITES, as FF-12602 counts them: `await drivePhase(` in either file, and the ladder's
 // `await drive(retried.record)` seam (the shell hands it `drivePhase`, the wave a child spawn).
@@ -386,9 +386,13 @@ export const archTests = [
     name: "arch/130 FF-13004 (acd-loop-stop-settles-the-run): structural — the producer imports readStopRequest from the one home by resolved specifier and passes stopped to the engine, and the engine imports nothing",
     run: async () => {
       const producer = await source(PRODUCER);
-      const imports = importSpecifiers(producer);
+      const adapterPath = "src/mesh/declarations.mjs";
+      const adapter = await source(adapterPath);
+      const imports = importSpecifiers(adapter);
       assertRead("the producer's import clauses", imports.length, 3, "specifier(s)");
-      assert.ok(imports.some(({ specifier }) => resolved(PRODUCER, specifier) === HOME), `src/mesh/declarations.mjs imports readStopRequest from src/loop/stop-request.mjs (resolved) — specifiers: ${imports.map((entry) => entry.specifier).join(", ")}`);
+      assert.ok(imports.some(({ specifier }) => resolved(adapterPath, specifier) === HOME), `core imports the shared stop-request reader — specifiers: ${imports.map((entry) => entry.specifier).join(", ")}`);
+      assert.match(adapter, /createSupervisedDeclarations\(\{[^}]*\breadStopRequest\b/u, "core supplies the shared reader");
+      assert.match(producer, /function createSupervisedDeclarations\(\{[^}]*\breadStopRequest\b/u, "the package accepts the shared reader");
       assert.match(producer, /\breadStopRequest\s*\(/u, "…and calls it");
       const callAt = producer.indexOf("decideSupervisedDeclarations(");
       assert.ok(callAt >= 0, `NOT FOUND: ${PRODUCER} — the engine call`);

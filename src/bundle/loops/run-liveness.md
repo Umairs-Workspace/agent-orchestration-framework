@@ -17,5 +17,6 @@ uses `ground: live-soak`; it does not turn the presence of a timer into a strong
 
 Both `data-feed` edges cite direct consumers. `loop:run-resilience` names `isStale` as a measurement
 authority in its own record. `loop:mesh-assignment-reclaim` imports the same predicate and combines
-it with node staleness before reclaiming (`src/mesh/assignment-reclaim.mjs:17-21`, `:96-123`). No
+it with node staleness before reclaiming (the core wiring at `src/mesh/assignment-reclaim.mjs:3-4`
+and the decision at `packages/mesh/src/assignment-reclaim.mjs:129-137`). No
 edge is added to a loop that does not consume this observation.

@@ -105,9 +105,9 @@ async function productionSources() {
   const read = (rel) => readFile(path.join(root, rel), "utf8");
   const [workerSource, effectSource, resumeCommandSource, resumeOrchestrationSource] = await Promise.all([
     read("src/mesh/worker-execution.mjs"),
-    read("src/effects/table.mjs"),
+    read("packages/mesh/src/effects.mjs"),
     read("src/commands/mesh/terminal-resume.mjs"),
-    read("src/mesh/park-resume.mjs"),
+    read("packages/mesh/src/park-resume.mjs"),
   ]);
   return { workerSource, effectSource, resumeCommandSource, resumeOrchestrationSource };
 }

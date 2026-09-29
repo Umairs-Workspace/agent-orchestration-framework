@@ -928,3 +928,18 @@ Core's table classification remains shared composition data. Its writer paths mu
 implementations, and writer-isolation scans must cover every runtime workspace: leaving either at
 the old root would turn the extraction into an unguarded second writer. The existing database schema,
 authority checks, author-scoped retractions and fact-preserving projection refreshes are unchanged.
+
+## Mesh coordination and deferred application services
+
+Scope locks and assignment/reclaim decisions belong beside mesh's assignment records. Recovery
+push and resync share a storage shape but intentionally differ when the owner is disconnected:
+recovery remains requested for retry; resync records a coded failure for the waiting operator.
+Extracting them must preserve that distinction and close each tick's owned store on failure.
+
+Supervised declarations consume work-loop decisions and argv composition, then ask the assembled
+registry for the route. Park/resume needs the assembled notification service only when posting an
+ask. These existing deferred loads are explicit factory ports now; the package imports no core
+application. This does not eliminate the remaining core composition cycles. Eagerly capturing
+`meshGlobalPropagationDecision` during item-lock construction exposed one such initialization
+cycle; the compatibility adapter now supplies a call-through binding. Final composition must
+remove that cycle rather than count deferred access as architectural completion.

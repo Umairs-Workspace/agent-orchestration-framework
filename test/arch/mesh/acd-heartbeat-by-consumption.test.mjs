@@ -15,7 +15,7 @@ export const archTests = [
         readFile(path.join(root, "src/bundle/hooks/run-heartbeat-enqueue.mjs"), "utf8"),
         readFile(path.join(root, "packages/execution/src/heartbeats.mjs"), "utf8"),
         readFile(path.join(root, "packages/execution/src/session-driver.mjs"), "utf8"),
-        readFile(path.join(root, "src/mesh/assignment-reclaim.mjs"), "utf8"),
+        readFile(path.join(root, "packages/mesh/src/assignment-reclaim.mjs"), "utf8"),
       ]);
       assert.doesNotMatch(hook, /from\s+["'][^"']*src\//u);
       assert.doesNotMatch(hook, /setInterval|setTimeout|openGlobalWorkProjectionStore|run-store/u);

@@ -21,7 +21,7 @@ const RUN_RECORD_KEYS_AT_M131 = [...RUN_RECORD_KEYS_AT_M68, "asks"];
 const dispatchFiles = [
   "src/work/dispatch.mjs",
   "src/commands/dispatch.mjs",
-  "src/mesh/assignment-reclaim.mjs",
+  "packages/mesh/src/assignment-reclaim.mjs",
   "src/commands/mesh/terminal-resume.mjs",
   "src/assignment-record.mjs",
 ];
@@ -63,9 +63,9 @@ export const archTests = [
       })));
       assert.deepEqual(persistenceProblems(listing), []);
 
-      const mesh = stripComments(listing.find((entry) => entry.rel.endsWith("mesh/assignment-reclaim.mjs")).source);
+      const mesh = stripComments(listing.find((entry) => entry.rel === "packages/mesh/src/assignment-reclaim.mjs").source);
       assert.match(mesh, /countDispatchSlotsByTarget\(rows\)/, "the slot derives from global assignment rows already read by the tick");
-      const dispatchBody = functionBody(mesh, "export async function runControlDispatchReclaimTick");
+      const dispatchBody = functionBody(mesh, "async function runControlDispatchReclaimTick");
       assert.ok(dispatchBody != null, "the production dispatch/reclaim function is structurally readable");
       assert.doesNotMatch(dispatchBody, /\b(?:INSERT|UPDATE|CREATE|writeFile|appendFile)\b/iu, "admission adds no persistence write");
     },

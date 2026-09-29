@@ -27,7 +27,16 @@ import { reclaimStaleAssignments, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const reclaimSourcePath = path.join(repoRoot, "src", "mesh", "assignment-reclaim.mjs");
+const reclaimSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs");
+async function reclaimSource() {
+  const implementation = stripComments(await readFile(reclaimSourcePath, "utf8"));
+  const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/assignment-reclaim.mjs"), "utf8"));
+  for (const symbol of ["isNodeStale", "isStale"]) {
+    assert.match(implementation, new RegExp('function createAssignmentReclaim\\(\\{[^}]*\\b' + symbol + '\\b'));
+    assert.match(adapter, new RegExp('createAssignmentReclaim\\(\\{[^}]*\\b' + symbol + '\\b'));
+  }
+  return implementation + '\n' + adapter;
+}
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -91,7 +100,7 @@ export const archTests = [
   {
     name: "arch/35 ADR-005 (acd-assignment-reclaim-dual-staleness): the reclaim decision ANDs isNodeStale (imported from mesh-presence) with isStale (imported from run-store) — both predicates imported, never re-derived (structural)",
     run: async () => {
-      const code = stripComments(await readFile(reclaimSourcePath, "utf8"));
+      const code = await reclaimSource();
       const problems = assertStructural(code);
       assert.deepEqual(problems, [], `structural problems: ${JSON.stringify(problems)}`);
     },
@@ -127,7 +136,7 @@ export const archTests = [
   {
     name: "arch/35 ADR-005 (acd-assignment-reclaim-dual-staleness): self-check — a planted single-predicate (heartbeat-only) reclaim, and a missing-presence-as-stale flip, both trip the detector",
     run: async () => {
-      const code = stripComments(await readFile(reclaimSourcePath, "utf8"));
+      const code = await reclaimSource();
       assert.deepEqual(assertStructural(code), [], "the real source is clean");
 
       const plantedSinglePredicate = code.replace(

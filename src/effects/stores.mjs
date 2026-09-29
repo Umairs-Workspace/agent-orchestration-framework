@@ -81,7 +81,7 @@ export const TABLE_CLASSIFICATION = Object.freeze({
   }),
   global_recovery_pushes: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/mesh/recovery-push.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/recovery-push.mjs"]),
   }),
   // m43 / story 04 (ADR-010/R4.2) — the RESYNC request row, the recovery-push table's exact
   // sibling and classified the same way for the same reason: it is OPERATOR-CREATED state
@@ -91,7 +91,7 @@ export const TABLE_CLASSIFICATION = Object.freeze({
   // here, where the two-way ratchet can see it.
   global_resync_requests: Object.freeze({
     class: "fact",
-    writers: Object.freeze(["src/mesh/resync.mjs"]),
+    writers: Object.freeze(["packages/mesh/src/resync.mjs"]),
   }),
   // The worker-STREAMED mirrors (schema v5/v6): facts that ARRIVED here durably —
   // a peer's worktree truth surviving that worktree's cleanup, a worker's log

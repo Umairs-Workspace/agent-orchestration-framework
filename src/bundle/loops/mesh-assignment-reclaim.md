@@ -3,9 +3,9 @@
 id: loop:mesh-assignment-reclaim
 kind: loop
 title: Reclaim assignments only after dual staleness
-controlled: module:src/mesh/assignment-reclaim.mjs#reclaimStaleAssignments
-reference: [module:src/mesh/assignment-reclaim.mjs#dualStalenessDecision, module:packages/mesh/src/presence.mjs#isNodeStale, module:src/run-store.mjs#isStale]
-measurement: [module:src/mesh/assignment-reclaim.mjs#dualStalenessDecision, module:packages/mesh/src/presence.mjs#isNodeStale, module:src/run-store.mjs#isStale]
+controlled: module:packages/mesh/src/assignment-reclaim.mjs#reclaimStaleAssignments
+reference: [module:packages/mesh/src/assignment-reclaim.mjs#dualStalenessDecision, module:packages/mesh/src/presence.mjs#isNodeStale, module:src/run-store.mjs#isStale]
+measurement: [module:packages/mesh/src/assignment-reclaim.mjs#dualStalenessDecision, module:packages/mesh/src/presence.mjs#isNodeStale, module:src/run-store.mjs#isStale]
 actuator: [module:src/effects/assignment-transitions.mjs#transitionAssignmentState, module:src/effects/run-transitions.mjs#transitionRunReclaimed]
 cadence: periodic:15s
 ceiling: none
@@ -17,16 +17,16 @@ layer: operational
 
 Framework record source: `src/bundle/loops/mesh-assignment-reclaim.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
-The defining `reclaimStaleAssignments` scan at `src/mesh/assignment-reclaim.mjs:163` controls non-terminal
+The defining `reclaimStaleAssignments` scan at `packages/mesh/src/assignment-reclaim.mjs:156` controls non-terminal
 assignment state. Its reference and measurement are the same complete gate: the defining exported AND
-`dualStalenessDecision` at `src/mesh/assignment-reclaim.mjs:136`, plus its two separately visible halves,
+`dualStalenessDecision` at `packages/mesh/src/assignment-reclaim.mjs:129`, plus its two separately visible halves,
 `isNodeStale` at its defining site `packages/mesh/src/presence.mjs:548` and `isStale` at its defining site
 `src/run-store.mjs:27`. Both predicates are imported and shared rather than re-derived
-(`src/mesh/assignment-reclaim.mjs:17-21`).
+through the core adapter (`src/mesh/assignment-reclaim.mjs:3-4`) into `createAssignmentReclaim`.
 
 The narrowest actuator exports are `transitionAssignmentState` at
 `src/effects/assignment-transitions.mjs:272` and `transitionRunReclaimed` at
-`src/effects/run-transitions.mjs:177`; `src/mesh/assignment-reclaim.mjs:32-37` imports them rather than
+`src/effects/run-transitions.mjs:177`; `src/mesh/assignment-reclaim.mjs:7-8` imports and supplies them rather than
 defining them. The 15-second default rate is defined at `packages/mesh/src/sync-cadence.mjs:26` and wired only for
 the control role at `src/mesh/launcher.mjs:1513-1533`, making this the registry's sole periodic loop.
 

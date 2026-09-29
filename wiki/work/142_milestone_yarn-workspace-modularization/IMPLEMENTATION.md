@@ -1850,3 +1850,36 @@ Evidence in `.tmp/workspace-migration/mesh-projections/`:
 
 Mesh coordination/recovery, launchers/workers and command ownership remain. Final core/apps layout,
 application composition, compatibility removal and full native/platform verification are still open.
+
+## Mesh coordination, recovery and supervised declarations
+
+Mesh now owns item scope locks, assignment/withdrawal, reclaim/dispatch decisions, recovery push,
+resync, role/fabric-target resolution, supervised declarations and parked worker resume. Core
+supplies configured projection services, cache-first work reads, transition edges, shared clocks,
+diagnostics and deferred registry/notification services. Package imports use local mesh APIs and
+the public work-loop and deadline contracts; there are no imports back into core.
+
+Evidence in `.tmp/workspace-migration/mesh-coordination/`:
+
+- Eight legacy APIs and 65 exported values/function bodies match after normalizing the explicit
+  loader ports. The copied installation retains 117 commands and resolves all eight public APIs.
+- Five new package tests pass locally and in the actual installer's copied payload. They cover
+  role resolution without fabric access, dual-clock precedence, real SQLite recovery/resync state,
+  storage closure, deferred services and Unicode question bounds. The package bridge runs 200 cases.
+- The 51-suite selection passed 870 cases with 28 source-guard failures. Updating ownership paths,
+  factory declaration readers and core service bindings yields 194 passes with four remaining
+  guard failures across 28 suites. Final targeted runs pass all 13 and all 21 checks after following
+  stop-request wiring, the mesh effect reactor and the deferred notification loader. The corrected
+  selection includes all 20 passing census/registry checks and all 20 passing distribution checks.
+- All eight implementations are included in the standalone JavaScript bundle. Immutable Yarn
+  linking and supply-chain audit pass. Only the existing contracts workspace was added to mesh's
+  dependencies; third-party versions are unchanged.
+- SQL writer metadata now names the package recovery/resync implementations. Reclaim scans cover
+  all runtime workspaces. The static worker sink closure grows from 104 to 106 through role and
+  declarations implementation homes; the existing forbidden-dependency constraints remain intact.
+
+Canonical reclaim/liveness citations and their shipped manifest hashes were refreshed. No generated
+runtime copies, lock hashes, repository workflow runs or work-item transitions changed in this slice.
+The previously approved three generated citation refreshes remain the only authorized generated
+scope. Final launcher/worker/command ownership, core/apps layout, composition, compatibility removal
+and whole-tree/native/platform verification remain outstanding.

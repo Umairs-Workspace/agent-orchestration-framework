@@ -28,7 +28,15 @@
     "./global-query": "./src/global-query.mjs",
     "./publisher": "./src/publisher.mjs",
     "./projection-store": "./src/projection-store.mjs",
-    "./assignment-record": "./src/assignment-record.mjs"
+    "./assignment-record": "./src/assignment-record.mjs",
+    "./item-lock": "./src/item-lock.mjs",
+    "./assignment": "./src/assignment.mjs",
+    "./assignment-reclaim": "./src/assignment-reclaim.mjs",
+    "./recovery-push": "./src/recovery-push.mjs",
+    "./resync": "./src/resync.mjs",
+    "./role": "./src/role.mjs",
+    "./declarations": "./src/declarations.mjs",
+    "./park-resume": "./src/park-resume.mjs"
   },
   "files": [
     "src"
@@ -37,6 +45,7 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
+    "@aof/contracts": "workspace:*",
     "@aof/execution": "workspace:*",
     "@aof/foundation": "workspace:*",
     "@aof/work": "workspace:*",

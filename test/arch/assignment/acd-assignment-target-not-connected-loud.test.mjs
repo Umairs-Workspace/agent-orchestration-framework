@@ -31,7 +31,7 @@ import { createDirectiveChannelFixture } from "../../support/mesh-directive-chan
 
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const assignSourcePath = path.join(repoRoot, "src", "mesh", "assignment.mjs");
+const assignSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs");
 const controlStreamServerSourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
 
 // Every `{ ok: false, ... }` object literal in the source must carry a `code` field on

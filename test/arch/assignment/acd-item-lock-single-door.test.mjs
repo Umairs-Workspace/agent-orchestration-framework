@@ -54,7 +54,7 @@ const COMMANDS = path.join(repoRoot, "src", "commands");
 
 // Candidate homes for the ADR-003 lock predicate (a near-leaf beside the record).
 const LOCK_MODULE_CANDIDATES = [
-  path.join(repoRoot, "src", "item-lock.mjs"),
+  path.join(repoRoot, "packages", "mesh", "src", "item-lock.mjs"),
   path.join(repoRoot, "src", "assignment-item-lock.mjs"),
 ];
 

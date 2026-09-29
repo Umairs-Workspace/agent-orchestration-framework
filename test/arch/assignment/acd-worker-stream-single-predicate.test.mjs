@@ -27,7 +27,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-007: worker/control role is decided by the ONE shared mesh-role predicate",
     async run() {
-      const roleSource = await readFile(path.join(repoRoot, "src", "mesh", "role.mjs"), "utf8");
+      const roleSource = await readFile(path.join(repoRoot, "packages", "mesh", "src", "role.mjs"), "utf8");
       assert.ok(roleSource.includes("export function meshRole"), "mesh-role.mjs exports the shared predicate");
       assert.ok(roleSource.includes('"worker"') && roleSource.includes('"control"') && roleSource.includes('"standalone"'), "meshRole returns the 3-value role");
 

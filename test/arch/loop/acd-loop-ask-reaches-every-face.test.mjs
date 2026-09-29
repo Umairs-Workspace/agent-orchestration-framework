@@ -123,7 +123,7 @@ const FIRING_SITES = Object.freeze([
   "packages/work-loop/src/ask.mjs session-needs-input",
   "packages/work-loop/src/ask.mjs session-parked-unanswered",
   // 131/12 (ADR-010 §4) — the control's post of a worker's ask, on the edge into needs-input.
-  "src/mesh/park-resume.mjs session-needs-input",
+  "packages/mesh/src/park-resume.mjs session-needs-input",
 ]);
 const SEVEN = FIRING_SITES.length;
 const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
@@ -584,7 +584,17 @@ export const archTests = [
           assert.match(unitOf(units, owner).code, /const\s*\{\s*buildNotifyEnvelope,\s*notify\s*\}\s*=\s*notifications/u, `${owner}: receives notification services`);
           assert.match(unitOf(units, rel).code, /notifications:\s*\{\s*buildNotifyEnvelope,\s*notify/u, `${rel}: supplies the shared notification services`);
         }
-        assert.ok(importSpecifiers(unitOf(units, rel).code).some(({ specifier }) => resolved(rel, specifier) === NOTIFY), `${rel} imports buildNotifyEnvelope and notify from ${NOTIFY}`);
+        if (rel === "packages/mesh/src/park-resume.mjs") {
+          const code = unitOf(units, rel).code;
+          const adapter = "src/mesh/park-resume.mjs";
+          const composition = unitOf(units, adapter).code;
+          assert.match(code, /function createMeshParkResumeServices\(\{[^}]*\bloadNotifications\b/u, "mesh accepts the notification loader");
+          assert.match(code, /\bloadNotifications\(\)/u, "mesh invokes the notification loader");
+          assert.match(composition, /loadNotifications:\s*\(\)\s*=>\s*import\(/u, "core supplies a deferred loader");
+          assert.ok(importSpecifiers(composition).some(({ specifier }) => resolved(adapter, specifier) === NOTIFY), "core loads the shared notification implementation");
+        } else {
+          assert.ok(importSpecifiers(unitOf(units, rel).code).some(({ specifier }) => resolved(rel, specifier) === NOTIFY), `${rel} imports buildNotifyEnvelope and notify from ${NOTIFY}`);
+        }
       }
       const covered = [...new Set(FIRING_SITES.flatMap((site) => site.split(" ")[1].split("/")))].sort();
       assert.deepEqual(covered, [...EVENTS].sort(), "the seven sites fire the seven events between them — session-needs-input from the owner and, for a worker's ask, the control");

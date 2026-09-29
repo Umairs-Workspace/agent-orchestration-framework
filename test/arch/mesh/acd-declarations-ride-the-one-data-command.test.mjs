@@ -23,7 +23,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const LEAF = "packages/work-loop/src/argv.mjs";
-const PRODUCER = "src/mesh/declarations.mjs";
+const PRODUCER = "packages/mesh/src/declarations.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
 const ROUTE = Object.freeze(["work", "loop"]);

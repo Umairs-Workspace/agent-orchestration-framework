@@ -55,7 +55,7 @@ export const BRANCH_PATH_MODULES = Object.freeze([
   "packages/mesh/src/worktrees.mjs",
   "packages/execution/src/worktrees.mjs",
   "src/mesh/worker-execution.mjs",
-  "src/mesh/recovery-push.mjs",
+  "packages/mesh/src/recovery-push.mjs",
   // 129/ADR-002 — the merge-home path.
   "packages/work-loop/src/dispatch.mjs",
   "packages/work-loop/src/wave.mjs",
@@ -263,7 +263,7 @@ export const archTests = [
     run: async () => {
       assert.deepEqual(
         [...BRANCH_PATH_MODULES].sort(),
-        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "src/mesh/recovery-push.mjs", "src/mesh/worker-execution.mjs", "src/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
+        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/mesh/src/recovery-push.mjs", "src/mesh/worker-execution.mjs", "src/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
         "BRANCH_PATH_MODULES as a set",
       );
       for (const rel of BRANCH_PATH_MODULES) assert.ok((await readModule(rel)).length > 0, `${rel} was read`);

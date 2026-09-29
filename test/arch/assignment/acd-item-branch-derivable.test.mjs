@@ -38,7 +38,7 @@ const MINT_ALLOWED = new Set([
   "src/mesh/worktree.mjs",
   "packages/mesh/src/worktrees.mjs",
   "src/mesh/worker-execution.mjs",
-  "src/mesh/recovery-push.mjs",
+  "packages/mesh/src/recovery-push.mjs",
   // story 65 / task 02 — THE LOCAL DISPATCH LANE, and it is here for exactly the reason
   // this ratchet exists rather than in spite of it. A third lane that builds a story
   // concurrently needs a branch per lane; minting its OWN namespace (`aof/dispatch/<ref>`,
@@ -95,13 +95,13 @@ export const archTests = [
       // The control dispatch tick must NOT derive: a derived-but-never-pushed
       // baseBranch would fail the worker's reuse door. Cache miss ⇒ no baseBranch
       // ⇒ the worker's own converging fallback.
-      const reclaim = stripComments(await readFile(path.join(SRC_DIR, "mesh/assignment-reclaim.mjs"), "utf8"));
+      const reclaim = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/assignment-reclaim.mjs"), "utf8"));
       assert.ok(/readItemBranch\s*\(/.test(reclaim), "the dispatch tick consults the cache");
       assert.ok(!/meshItemBranchName/.test(reclaim), "…and NEVER derives (the worker owns the fallback)");
 
       // The recovery-push tick derives ONLY behind a cache miss — a pre-cure
       // stranded worktree sits on a suffixed name only the cache still knows.
-      const recovery = stripComments(await readFile(path.join(SRC_DIR, "mesh/recovery-push.mjs"), "utf8"));
+      const recovery = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/recovery-push.mjs"), "utf8"));
       assert.ok(
         /readItemBranch\(store, request\.workspaceId, request\.itemRef\) \?\? meshItemBranchName\(request\.itemRef\)/.test(recovery),
         "the recovery dispatch resolves cache-first, derivation as the fallback",
@@ -114,7 +114,7 @@ export const archTests = [
       // The control side: the tick resolves the assigning checkout's HEAD (the
       // injectable seam defaults to the real headCommit) and the frame builder
       // carries it conditionally — never a fabricated value.
-      const reclaim = stripComments(await readFile(path.join(SRC_DIR, "mesh/assignment-reclaim.mjs"), "utf8"));
+      const reclaim = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/assignment-reclaim.mjs"), "utf8"));
       assert.ok(/resolveDispatchCommit/.test(reclaim), "the tick resolves the assigning commit through its injectable seam");
       assert.ok(/headCommit\s*\(/.test(reclaim), "…defaulting to the checkout's real HEAD");
       const server = stripComments(await readFile(path.join(SRC_DIR, "control-stream-server.mjs"), "utf8"));

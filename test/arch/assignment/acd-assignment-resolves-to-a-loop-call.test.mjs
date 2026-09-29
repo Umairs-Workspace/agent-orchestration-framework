@@ -61,7 +61,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // decision about this tree, not a fact readable from it.
 const MESH_FILES = Object.freeze([
   "packages/mesh/src/assignment-directive.mjs",
-  "src/mesh/assignment-reclaim.mjs",
+  "packages/mesh/src/assignment-reclaim.mjs",
   "src/mesh/worker-execution.mjs",
   "src/mesh/worker-launch.mjs",
 ]);
@@ -372,8 +372,8 @@ export const archTests = [
   {
     name: "arch/63 FF-6306 (ADR-010 §3): the assign verb's refusal ladder is UNEDITED — the same four gates in the same order, and no loop-scope gate stole an earlier gate's answer",
     run: async () => {
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "assignment.mjs"), "utf8"));
-      const body = functionBody(source, "export async function assignWork");
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs"), "utf8"));
+      const body = functionBody(source, "async function assignWork");
       assert.ok(body != null, "the assign verb is structurally readable");
       const codes = [...body.matchAll(/code:\s*"([a-z-]+)"/g)].map((m) => m[1]);
       assert.deepEqual(codes, ["ref-not-found", "assignment-already-active"], "the verb's own coded refusals, in order, are the delivered ones");
@@ -415,8 +415,8 @@ export const archTests = [
 
       // The reclaim POLICY — the half of that module 63/SPEC fences off — is untouched by
       // this story's identifiers too. Only the DISPATCH half of the tick changed.
-      const reclaim = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "assignment-reclaim.mjs"), "utf8"));
-      for (const fn of ["export async function reclaimStaleAssignments", "export function dualStalenessDecision"]) {
+      const reclaim = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs"), "utf8"));
+      for (const fn of ["async function reclaimStaleAssignments", "function dualStalenessDecision"]) {
         const body = functionBody(reclaim, fn);
         assert.ok(body != null, `${fn} is structurally readable`);
         assert.deepEqual(storyIdentifiersIn(body), [], `${fn} reads none of this story's identifiers`);

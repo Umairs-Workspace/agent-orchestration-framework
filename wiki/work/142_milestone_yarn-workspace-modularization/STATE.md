@@ -527,3 +527,16 @@ All 20 distribution checks pass. Canonical presence citations and shipped hashes
 along with only the explicitly approved generated operator citation/hash. Other pending generated
 copies remain unchanged. Mesh coordination/recovery, launchers/workers/commands, core/apps layout,
 final composition/adapter removal and full native/platform verification remain outstanding.
+
+Mesh coordination: eight more implementations now belong to mesh: scope locking, assignment,
+reclaim, recovery push, resync, roles, supervised declarations and park/resume. Eight legacy APIs
+and 65 exports match; the copied installation retains 117 commands. Five new public package tests
+pass locally and in the copied payload, bringing the package bridge to 200 cases. All eight modules
+bundle into standalone JavaScript. Immutable linking and supply-chain audit pass, with contracts
+the only added workspace dependency. The 51-suite selection passed 870 checks with 28 source-guard
+failures. The corrected 28-suite selection passed 194 with four failures, including all 20 census/
+registry and all 20 distribution checks passing. Final targeted runs pass 13 and 21 checks with
+zero failures after following configured readers, notification loading and the mesh-owned reactor.
+Canonical reclaim/liveness citations and shipped hashes were refreshed; generated copies remain
+unchanged. Launcher/worker orchestration, remaining commands, core/apps layout, final composition,
+adapter removal and full native/platform verification remain open.

@@ -36,8 +36,8 @@ import { registeredSuitePaths, registrationSurface } from "../../support/registr
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const LAUNCHER_SOURCE = path.join(repoRoot, "src", "mesh", "launcher.mjs");
-const RECLAIM_DRIVER_SOURCE = path.join(repoRoot, "src", "mesh", "assignment-reclaim.mjs");
-const ASSIGN_SOURCE = path.join(repoRoot, "src", "mesh", "assignment.mjs");
+const RECLAIM_DRIVER_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs");
+const ASSIGN_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs");
 const TEST_SUITE = path.join(repoRoot, "scripts", "test.mjs");
 
 function stripComments(source) {
@@ -127,7 +127,7 @@ function assertAssignVerbDoesNotDispatch(code) {
   // Isolate the assignWork function body specifically (a planted dispatch call
   // ELSEWHERE in the file — e.g. in withdrawWork or a comment — must not falsely
   // pass; but equally a call anywhere in assignWork's own body must fail it).
-  const fnMatch = /export\s+async\s+function\s+assignWork\s*\([^)]*\)\s*\{/.exec(code);
+  const fnMatch = /(?:export\s+)?async\s+function\s+assignWork\s*\([^)]*\)\s*\{/.exec(code);
   if (fnMatch == null) {
     problems.push("assignWork function not found");
     return problems;

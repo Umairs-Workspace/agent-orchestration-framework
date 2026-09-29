@@ -162,9 +162,9 @@ const CONTROL_SIDE = [
   { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "src/commands/notion-associate.mjs" },
   { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "src/notion/sync-work.mjs" },
   { file: path.join("packages", "knowledge", "src", "memory", "local-indexing.mjs"), subject: "buildRecords", adapter: "src/memory/local-indexing.mjs", cacheSymbols: ["listItemsCacheFirst"], factory: "createLocalIndexing" },
-  { file: path.join("src", "mesh", "assignment.mjs"), subject: "assignWork" },
-  { file: path.join("src", "mesh", "assignment.mjs"), subject: "withdrawWork" },
-  { file: path.join("src", "mesh", "assignment-reclaim.mjs"), subject: "reclaimStaleAssignments" },
+  { file: path.join("packages", "mesh", "src", "assignment.mjs"), subject: "assignWork", adapter: "src/mesh/assignment.mjs", factory: "createMeshAssignments", cacheSymbols: ["findWorkCacheFirst"] },
+  { file: path.join("packages", "mesh", "src", "assignment.mjs"), subject: "withdrawWork", adapter: "src/mesh/assignment.mjs", factory: "createMeshAssignments", cacheSymbols: ["findWorkCacheFirst"] },
+  { file: path.join("packages", "mesh", "src", "assignment-reclaim.mjs"), subject: "reclaimStaleAssignments", adapter: "src/mesh/assignment-reclaim.mjs", factory: "createAssignmentReclaim", cacheSymbols: ["findWorkCacheFirst"] },
 ];
 
 function stripComments(source) {

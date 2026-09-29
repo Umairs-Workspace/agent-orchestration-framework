@@ -28,7 +28,8 @@
 //   (3) The reclaim edge is stated ONCE (no second literal runtime_offline +
 //       reclaimedAt write anywhere in src/).
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,7 +44,6 @@ import { openEffectsJournal, readEvents } from "../../../src/effects/journal.mjs
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 
 const NOW = "2026-07-09T12:00:00.000Z";
 const TARGET_NODE = "node-b";
@@ -52,17 +52,6 @@ const msBefore = (iso, ms) => new Date(Date.parse(iso) - ms).toISOString();
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-}
-
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
 }
 
 // Flip an item's record doc to in-progress so a rollback is APPLICABLE (the writer
@@ -186,7 +175,8 @@ export const archTests = [
   {
     name: "arch/m42-d4-port2: the reclaim edge is written ONCE — no second inline runtime_offline + reclaimedAt write in src/",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 0, "the runtime source census is non-empty");
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");

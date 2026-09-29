@@ -10,7 +10,7 @@ import { boundSiteOffenders } from "./acd-dispatch-bound-single-home.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const commandPath = path.join(root, "packages", "work-loop", "src", "commands", "dispatch.mjs");
-const meshPath = path.join(root, "src", "mesh", "assignment-reclaim.mjs");
+const meshPath = path.join(root, "packages", "mesh", "src", "assignment-reclaim.mjs");
 const launcherPath = path.join(root, "src", "mesh", "launcher.mjs");
 const resumePath = path.join(root, "src", "commands", "mesh", "terminal-resume.mjs");
 
@@ -129,7 +129,7 @@ export function productionAdmissionPathProblems(listing, suppliers = SUPPLIED_DI
     const admissions = [...code.matchAll(/dispatchDirective\s*\(\s*buildDirectiveFrame\s*\(/g)].length;
     if (admissions > 0) {
       meshAdmissions += admissions;
-      if (rel !== "src/mesh/assignment-reclaim.mjs") problems.push(`${rel} admits assignment work outside the counted control scan`);
+      if (rel !== "packages/mesh/src/assignment-reclaim.mjs") problems.push(`${rel} admits assignment work outside the counted control scan`);
     }
     const scheduledTicks = executableCallCount(code, "runControlDispatchReclaimTick");
     if (scheduledTicks > 0) {
@@ -158,7 +158,7 @@ export function sharedOccupancyProblems(listing) {
     const code = stripComments(String(file?.source ?? ""));
     definitions += [...code.matchAll(/\bfunction\s+assignmentOccupiesDispatchSlot\s*\(/g)].length;
     const respell = /state\s*===\s*["']accepted["'][\s\S]{0,160}state\s*===\s*["']running["'][\s\S]{0,160}needs-input/.test(code);
-    if (respell && rel !== "src/mesh/assignment-reclaim.mjs") problems.push(`${rel} re-spells accepted/running/needs-input occupancy`);
+    if (respell && rel !== "packages/mesh/src/assignment-reclaim.mjs") problems.push(`${rel} re-spells accepted/running/needs-input occupancy`);
     if (/occupiedByTarget\s*=\s*(?:new\s+Map\s*\(\s*dispatchedIds|dispatchedIds)/.test(code)) {
       problems.push(`${rel} treats the unpersisted once-guard as occupancy`);
     }
@@ -213,7 +213,7 @@ export const archTests = [
 
       const homes = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: goodCommand },
-        { path: "src/mesh/assignment-reclaim.mjs", source: `export async function runControlDispatchReclaimTick() { ${goodMesh} }` },
+        { path: "packages/mesh/src/assignment-reclaim.mjs", source: `export async function runControlDispatchReclaimTick() { ${goodMesh} }` },
         { path: "src/mesh/launcher.mjs", source: goodLauncher },
         { path: "src/commands/mesh/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
       ];
@@ -232,7 +232,7 @@ export const archTests = [
     run: () => {
       const homes = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, (row) => typeof ctx.runDispatchLane === \"function\" ? ctx.runDispatchLane(row) : resolveDispatchLane(root, row.ref));" },
-        { path: "src/mesh/assignment-reclaim.mjs", source: "export async function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); if (used >= dispatchBound) continue; dispatchDirective(buildDirectiveFrame(x)); }" },
+        { path: "packages/mesh/src/assignment-reclaim.mjs", source: "export async function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); if (used >= dispatchBound) continue; dispatchDirective(buildDirectiveFrame(x)); }" },
         { path: "src/mesh/launcher.mjs", source: "controlDispatchReclaimInFlight.then(() => runControlDispatchReclaimTick(ws, server)); controlDispatchReclaimInFlight = dispatchReclaimTick.catch(fail);" },
         { path: "src/commands/mesh/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
       ];
@@ -272,14 +272,14 @@ export const archTests = [
   {
     name: "arch/69 FF-6911 self-check: a second occupancy definition, a re-spelled predicate, a once-guard count and an uncounted resume door each fail",
     run: () => {
-      const base = [{ path: "src/mesh/assignment-reclaim.mjs", source: "function assignmentOccupiesDispatchSlot(row) { return true; }" }];
+      const base = [{ path: "packages/mesh/src/assignment-reclaim.mjs", source: "function assignmentOccupiesDispatchSlot(row) { return true; }" }];
       assert.deepEqual(sharedOccupancyProblems(base), []);
       assert.ok(sharedOccupancyProblems([...base, { path: "src/other.mjs", source: "function assignmentOccupiesDispatchSlot(row) {}" }]).some((p) => p.includes("exactly one")));
       assert.ok(sharedOccupancyProblems([...base, { path: "src/other.mjs", source: 'row.state === "accepted" || row.state === "running" && row.code !== "needs-input";' }]).some((p) => p.includes("re-spells")));
       assert.ok(sharedOccupancyProblems([...base, { path: "src/other.mjs", source: "const occupiedByTarget = dispatchedIds;" }]).some((p) => p.includes("once-guard")));
       const doors = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, () => resolveDispatchLane());" },
-        { path: "src/mesh/assignment-reclaim.mjs", source: "function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); dispatchDirective(buildDirectiveFrame()); }" },
+        { path: "packages/mesh/src/assignment-reclaim.mjs", source: "function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); dispatchDirective(buildDirectiveFrame()); }" },
         { path: "src/mesh/launcher.mjs", source: "runControlDispatchReclaimTick();" },
         { path: "src/commands/mesh/terminal-resume.mjs", source: "buildTerminalResumeEnvelope();" },
       ];
