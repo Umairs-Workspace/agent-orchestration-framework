@@ -26,3 +26,5 @@ Shared integration routing, work readers, tool provisioning, diagnostics and the
 journal remain outside this package. The CLI host and shipped skills remain core-owned.
 
 Run `yarn workspace @aof/integration-notion test` for the package tests.
+
+`routing` exports the shared `RoutingError`, board/parent helpers and `createNotionRouting({ readRouting })`. Core supplies the work-owned committed descriptor reader. `store-metadata` declares the Notion sidecar.

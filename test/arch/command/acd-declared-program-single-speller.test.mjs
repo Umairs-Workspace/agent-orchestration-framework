@@ -311,7 +311,7 @@ export const archTests = [
       const composition = stripComments(await readFile(path.join(repoRoot, "src/work/toolchain.mjs"), "utf8"));
       assert.match(owner.code, /createWorkToolchain\(\{\s*runBounded\s*\}\)/u);
       assert.match(composition, /createWorkToolchain\(\{\s*runBounded\s*\}\)/u);
-      assert.match(composition, /from\s+"(?:\.\.?\/)+work-audit\/spawn\.mjs"/u, `${KEY_OWNER} reaches the shared bounded seam by import`);
+      assert.match(composition, /from\s+"@aof\/execution\/bounded-process"/u, `${KEY_OWNER} reaches the shared bounded seam by import`);
       assert.doesNotMatch(stripComments(owner.code), /from\s+"node:child_process"/u, "…and reaches the process module directly nowhere");
     },
   },

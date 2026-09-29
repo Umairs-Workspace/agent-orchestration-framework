@@ -21,7 +21,7 @@ import { readDescriptor, bundleRoot } from "../../../src/work/bundle.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SESSION_MODEL_SOURCE = path.join(root, "src", "session-model.mjs");
+const SESSION_MODEL_SOURCE = path.join(root, "packages", "execution", "src", "session-model.mjs");
 const BUNDLE_SOURCE = path.join(root, "src", "work", "bundle.mjs");
 
 // The two moving family aliases the bundle is allowed to ship. Lowercase and

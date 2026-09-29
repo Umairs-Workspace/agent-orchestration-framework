@@ -39,7 +39,7 @@ const IDENTITY = "packages/work/src/identity.mjs";
 // The six keepers, by path and reason (task 01's table; ADR-001 §5 as corrected there).
 export const KEEPERS = Object.freeze([
   { file: "packages/work/src/doctor/index.mjs", reason: "the orphan lane's raw listing — it exists to see what the enumerator DROPS, so it cannot ask the enumerator; it learns the roots through the exported names" },
-  { file: "src/integrations/routing.mjs", reason: "matches a FOREIGN `NN-slug`/`NN_slug` form (NUMBERED_FOLDER_RE) the shared grammar does not admit" },
+  { file: "packages/work/src/legacy-milestone-discovery.mjs", reason: "matches a FOREIGN `NN-slug`/`NN_slug` form (NUMBERED_FOLDER_RE) the shared grammar does not admit" },
   { file: "packages/knowledge/src/import/recovery.mjs", reason: "scans a FOREIGN source tree (AOF_MILESTONE_RE + loose forms); not a work-root scanner" },
   { file: "packages/work/src/commands/migrate-folder.mjs", reason: "scans a FOREIGN source tree's stories/tasks with STORY_FOLDER_RE, read-only; its work-root scan (nextFreeSlot) is retired onto appendPosition" },
   { file: "packages/work/src/tune/provenance.mjs", reason: "a SYNCHRONOUS resolver (resolveCitationAtEmit → emitProposals) that cannot take the async enumerator; a second readdirSync over the SHARED regex, walking root + archive, never a second regex home" },

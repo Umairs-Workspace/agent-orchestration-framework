@@ -378,7 +378,7 @@ export const archTests = [
       const lane = stripComments(read(LANE_REL));
       const wiring = stripComments(read("src/work-audit/declared-bounds.mjs"));
       assert.match(lane, /createAuditDeclaredBounds\(/u, "the implementation receives the supplied corpus and resolvers");
-      assert.match(wiring, /from "\.\.\/loop-bounds\.mjs"/u, "the lane resolves config: pointers through the bounds home");
+      assert.match(wiring, /from "@aof\/contracts\/loop-bounds"/u, "the lane resolves config: pointers through the bounds home");
       assert.match(wiring, /from "\.\.\/harness-reference\.mjs"/u, "…and joins against the corpus by module resolution");
       assert.equal(/from "node:/u.test(lane), false, "…and imports no node builtin, so it touches no filesystem and no clock");
       assert.equal(/Date\.now\(\)|new Date\(\)/u.test(lane), false, "…and reads no clock: the instant arrives on the call");

@@ -67,8 +67,9 @@ export const archTests = [
       assert.match(pb, /function assemble\(sections\b/u, "the ceiling enforcement is IN the compiler's write path (assemble), not a lint/comment/caller");
       assert.match(pb, /PHASE_BRIEF_CEILING_CHARS/u, "the one ceiling constant is applied inside the writer");
       assert.match(pb, /renderCompleteContext\(text, notice\)/u, "the writer bounds the rendered sections together with the truncation notice actually sent");
-      for (const file of ["commands/drive.mjs", "mesh/worker-execution.mjs"]) {
-        const src = await readFile(path.join(srcRoot, file), "utf8");
+      for (const file of ["packages/work-loop/src/commands/drive.mjs", "packages/mesh/src/worker-execution.mjs"]) {
+        const src = await readFile(path.join(root, file), "utf8");
+        assert.match(stripComments(src), /compileBriefForItem\(/u, `${file} actually compiles a brief`);
         assert.doesNotMatch(src, /\.slice\(0,\s*\d+|\.substring\(0,\s*\d+|\.truncate\(|truncation/u, `${file} applies no size limit or truncation of its own`);
       }
     },
@@ -144,7 +145,6 @@ export const archTests = [
       }
       // One home for the policy (ADR-009 §5): no other src module declares a condenser map
       // or a non-condensable set of its own.
-      const { glob } = await import("node:fs/promises");
       let rivals = 0;
       for (const { path: file } of await readRuntimeFiles(root)) {
         if (file.endsWith("phase-brief.mjs")) continue;

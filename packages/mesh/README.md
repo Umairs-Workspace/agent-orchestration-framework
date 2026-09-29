@@ -123,3 +123,5 @@ outbox and diagnostic services are supplied by core. Report delivery drains only
 retaining the journal-unavailable fallback and acknowledgement semantics.
 
 Cache and artifact ownership: `cache-read` exposes `createCacheReader` with an explicit projection-store, global-path and diagnostic port; work receives its reader methods. `execution-overlay` composes the board execution projection through the same application services. `artifact-sync`, `node-identity` and `workspace-identity` own propagation and mesh identity. `cache-policy` owns the configured freshness window; neutral wire provenance and the shared strict liveness predicate live in `@aof/contracts`. `commands/resync` contributes the existing `work resync` route through `createResyncContribution`; success acknowledges delivery of the request, never freshness of the copy. Root adapters are temporary (Plans 02/06).
+
+`journal-queries` owns assignment park-event identity queries. `effect-frames` owns durable delivery/acknowledgement vocabulary. `store-metadata` declares mesh tables and their actual writers; core aggregates declarations.

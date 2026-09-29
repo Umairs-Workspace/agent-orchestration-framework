@@ -25,3 +25,5 @@ outside this extraction; reusable transport mechanisms can be assigned as mesh i
 Run `yarn workspace @aof/server test`. Package tests use temporary directories, an ephemeral local
 HTTP server, in-memory MCP streams and a simulated terminal socket. Integration tests retain real
 application command/configuration and WebSocket coverage through the existing public entry points.
+
+`commands/work-ui` provides `createWorkUiCommand({ serveBoard, boardUiProbe, getDefaultMeshUiPort, commandError })`. Construction performs no I/O and reads no fleet default; the application supplies the getter to preserve initialization order. `commands` contributes the existing work/ui route.

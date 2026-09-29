@@ -9,7 +9,9 @@
     "./setup-ui": "./src/setup-ui.mjs",
     "./board-serve": "./src/board-serve.mjs",
     "./terminal-ws": "./src/terminal-ws.mjs",
-    "./graph-mcp-server": "./src/graph-mcp-server.mjs"
+    "./graph-mcp-server": "./src/graph-mcp-server.mjs",
+    "./commands/work-ui": "./src/commands/work-ui.mjs",
+    "./commands": "./src/commands.mjs"
   },
   "files": [
     "src"

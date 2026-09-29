@@ -27,7 +27,7 @@
 import { deriveRouteTable as contributionRoutes, resolveRoute as resolveContributionRoute } from "@aof/contracts/commands";
 import { existsSync } from "node:fs";
 import { invoke, listCommands, loadWorkspace } from "../command-core.mjs";
-import { commandError } from "../command-error.mjs";
+import { commandError } from "@aof/contracts/error";
 import { effectsJournalPath, openEffectsJournal } from "../effects/journal.mjs";
 import { drainEffects } from "../effects/dispatch.mjs";
 import { reportDegrade } from "../degrade.mjs";

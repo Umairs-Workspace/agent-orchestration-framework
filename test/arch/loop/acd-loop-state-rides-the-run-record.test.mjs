@@ -243,7 +243,8 @@ export const archTests = [
         // RE-PINNED by 142: the same store body is factory-wrapped in execution; diagnostics and
         // work-answer readers are supplied, spend is composed locally without a module cycle.
         // Source-body comparison and persisted-byte parity accompany the unchanged schema/edge checks.
-        ["packages/execution/src/runs.mjs", "a077a79c9c10b305384e60bb1dc95a4318933114bd1c4350ca61b68be879d643"],
+        // Plan 01 moves only the strict freshness predicate to contracts; the store returns the same function.
+        ["packages/execution/src/runs.mjs", "7375de920e4c8e3a46a875214ea6dcf38e5a23059becaf5240ffd666838059e5"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

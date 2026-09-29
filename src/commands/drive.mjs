@@ -8,13 +8,13 @@ import {
   resolveSessionLaunch,
   THINKING_UNKNOWN_LEVEL,
   thinkingUnknownLevelMessage,
-} from "../session-model.mjs";
+} from "@aof/execution/session-model";
 import { reportDegrade } from "../degrade.mjs";
 import { readRuns, recordSessionId } from "../run-store.mjs";
 import { ASK_STATES, readAsk } from "../loop/ask-request.mjs";
 import { readConsumedHeartbeatAt } from "../run-heartbeat-consumption.mjs";
 import { transitionRunStart, transitionRunComplete } from "../effects/run-transitions.mjs";
-import { buildRunAttribution } from "../otel-attribution.mjs";
+import { buildRunAttribution } from "@aof/execution/otel-attribution";
 import { captureSessionIdOnRecord } from "../run-session-capture.mjs";
 import { resolveItemExact, requireLocalCheckout } from "./resolve.mjs";
 import { claudeProjectsDir } from "../work/observe.mjs";

@@ -523,8 +523,8 @@ export const archTests = [
         // collapsed onto one home, so the ExperimentalWarning could be filtered there instead
         // of suppressed by a blanket `--no-warnings` nobody could scope. The list stays exact
         // — this is an admission, not a loosening.
-        ["../degrade.mjs", "../sqlite-runtime.mjs", "../workspace.mjs", "@aof/effects/journal", "node:crypto", "node:fs/promises", "node:path"],
-        "the application adapter adds only the generic effects journal API",
+        ["../degrade.mjs","../workspace.mjs","@aof/effects/journal","@aof/effects/journal","@aof/effects/journal-open","@aof/execution/journal-queries","@aof/foundation/sqlite-runtime","@aof/mesh/journal-queries","node:path"],
+        "the application adapter configures generic storage and forwards domain-specific queries",
       );
       const storage = await readFile(path.join(root, "packages/effects/src/journal.mjs"), "utf8");
       assert.ok(/function appendEvent\(/u.test(storage), "the extracted implementation is included in the check");

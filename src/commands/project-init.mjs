@@ -20,7 +20,7 @@ import { writeWorkspaceConfig } from "../workspace-writer.mjs";
 import { selectRuntimes } from "../prompt.mjs";
 import { isLegacyConfigOnlyProject, legacyConfigPath, workspacePaths } from "../workspace.mjs";
 import { RUNTIME_FLAGS, hasRuntimeOptions, parseRuntimes } from "../spine/flags.mjs";
-import { commandError } from "../command-error.mjs";
+import { commandError } from "@aof/contracts/error";
 import { mergeLock } from "../lock.mjs";
 
 // init seeds an empty items lock for the selected runtimes (catalog remains null

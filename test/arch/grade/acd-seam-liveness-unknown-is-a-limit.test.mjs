@@ -124,7 +124,7 @@ export const archTests = [
       assert.deepEqual(graphRoutes(MODULE_REL, code), [], `${MODULE_REL} holds no route to a graph other than the shipped read`);
 
       // The POSITIVE half: it reaches the artifact through the shipped reader, and by import.
-      assert.match(stripComments(readFileSync(new URL("../../../src/work-audit/seam-liveness.mjs", import.meta.url), "utf8")), /import \{[^}]*normalizeGraph[^}]*\} from "\.\.\/graph-normalize\.mjs"/u, "it imports the shipped normalizer from its one home");
+      assert.match(stripComments(readFileSync(new URL("../../../src/work-audit/seam-liveness.mjs", import.meta.url), "utf8")), /import \{[^}]*normalizeGraph[^}]*\} from "@aof\/knowledge\/graph-normalize"/u, "it imports the shipped normalizer from its one home");
       assert.match(code, /\breadGraph\b/u, "…and the shipped read");
       assert.match(code, /\bgraphJsonPath\b/u, "…and the shipped path resolver, rather than assembling an artifact path of its own");
 

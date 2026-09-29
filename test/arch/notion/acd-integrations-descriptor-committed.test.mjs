@@ -21,7 +21,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ROUTING = path.join(repoRoot, "src", "integrations", "routing.mjs");
+const ROUTING = path.join(repoRoot, "packages", "integration-notion", "src", "routing.mjs");
 const PROJECTION = path.join(repoRoot, "packages", "integration-notion", "src", "projection.mjs");
 const MAPPING = path.join(repoRoot, "packages", "integration-notion", "src", "mapping.mjs");
 const ASSOCIATE = path.join(repoRoot, "packages", "integration-notion", "src", "notion-associate.mjs");
@@ -54,7 +54,7 @@ export const archTests = [
   {
     name: "arch/18 FF-A: no module reads a sidecar entry's routing field (board/parent/phase) and recordPageId persists none — routing is committed, not derived",
     async run() {
-      for (const file of [ROUTING, PROJECTION, MAPPING, ASSOCIATE]) {
+      for (const file of [path.join(repoRoot, "packages/work/src/integration-routing.mjs"), ROUTING, PROJECTION, MAPPING, ASSOCIATE]) {
         const code = stripComments(await readFile(file, "utf8"));
         const rel = path.relative(repoRoot, file);
         assert.ok(!ENTRY_ROUTING_READ.test(code), `${rel} reads no routing field off a sidecar entry (entries[*].board|parent|phase)`);

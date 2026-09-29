@@ -18,7 +18,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ROUTING = path.join(repoRoot, "src", "integrations", "routing.mjs");
+const ROUTING = path.join(repoRoot, "packages", "work", "src", "integration-routing.mjs");
 const WORK = path.join(repoRoot, "packages", "work", "src", "records.mjs");
 
 function stripComments(source) {

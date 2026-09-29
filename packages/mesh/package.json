@@ -72,7 +72,10 @@
     "./cache-policy": "./src/cache-policy.mjs",
     "./cache-read": "./src/cache-read.mjs",
     "./execution-overlay": "./src/execution-overlay.mjs",
-    "./commands/resync": "./src/commands/resync.mjs"
+    "./commands/resync": "./src/commands/resync.mjs",
+    "./journal-queries": "./src/journal-queries.mjs",
+    "./store-metadata": "./src/store-metadata.mjs",
+    "./effect-frames": "./src/effect-frames.mjs"
   },
   "files": [
     "src"

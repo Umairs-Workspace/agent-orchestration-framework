@@ -52,3 +52,5 @@ The schema version, on-disk format, event vocabulary, and default database locat
 
 Run `yarn workspace @aof/effects test`. The root command contract suite also runs the package
 tests. Real journal durability and mesh delivery remain covered by the root integration suites.
+
+`journal-open` provides `createJournalOpener({ effectsJournalPath, importSqliteRuntime, storage })` and event IDs; path policy remains in core. `stores` provides classification queries over declarations supplied by the application, while `store-metadata` declares journal tables. Domain-specific event queries are outside this package.

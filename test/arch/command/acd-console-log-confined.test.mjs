@@ -42,7 +42,7 @@ const PRINTERS = {
   // matters (`--json` is checked before cli.launch is consulted).
   "../packages/mesh/src/commands/serve.mjs": "cli.launch body — the control/serve daemon's announce + shutdown lines",
   "../packages/mesh/src/commands/ui.mjs": "cli.launch body — the fleet server's announce lines",
-  "commands/work-ui.mjs": "cli.launch body — the board server's announce lines",
+  "../packages/server/src/commands/work-ui.mjs": "cli.launch body — the board server's announce lines",
   "commands/assets/ui.mjs": "cli.launch body — the setup UI's announce + not-started print",
   // m53 — `aof work loop` is the same seam: a long-lived FOREGROUND body that owns
   // its own per-act report lines while it drives. It qualifies on category (2)'s own

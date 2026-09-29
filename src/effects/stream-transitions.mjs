@@ -1,7 +1,7 @@
 // Transitional composition for work-owned domain transitions.
 import { createStreamTransitions } from "@aof/work/stream-transitions";
-import { reindexForInsert, refsTouchedByInsert } from "../work/reindex.mjs";
-import { archiveItems, refsMovedByArchive } from "../work/archive.mjs";
+import { reindexForInsert, refsTouchedByInsert } from "@aof/work/reindex";
+import { archiveItems, refsMovedByArchive } from "@aof/work/archive";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { guardItemLock, lockContextFor } from "../item-lock.mjs";
 import { applicableReactors } from "./table.mjs";

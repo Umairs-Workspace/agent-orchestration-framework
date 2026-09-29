@@ -57,3 +57,5 @@ combine configured run-store operations with the supplied lock and effect servic
 remains mesh-blind. `reconcile` exports `createRunReconciliation`, which heals the latest
 unreported run fact only when it is no older than the ledger's birth. It receives work-item reads
 as a port and imports no work package. Reconciliation appends owed events; its caller owns draining.
+
+Session model/effort resolution and OTel attribution are public pure modules. `svg-rasterizer` exports browser discovery/argv/size helpers and `createSvgRasterizer({ reportDegrade })`; `journal-queries` owns run-event lookups. `store-metadata` declares the run-record file store.

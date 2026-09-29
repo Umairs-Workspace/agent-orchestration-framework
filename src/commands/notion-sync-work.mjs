@@ -1,6 +1,6 @@
 // Compatibility adapter: the Notion package owns this command's schema, argv, behavior, and rendering.
 import { createNotionSyncWorkCommand } from '@aof/integration-notion/notion-sync-work';
-import { commandError } from "../command-error.mjs";
+import { commandError } from "@aof/contracts/error";
 import { syncMilestoneWork, NOTION_SETUP_HINT } from "../notion/sync-work.mjs";
 import { effectsJournalPath, openEffectsJournal, pendingSteps } from "../effects/journal.mjs";
 import { drainEffects, LOCAL_LOCI } from "../effects/dispatch.mjs";

@@ -6,7 +6,7 @@ import {
   evaluateProgressPolicy,
   readProgressSamples,
 } from "../loop-progress.mjs";
-import { CONTROL_FINDING_CODES } from "../work/doctor-controls.mjs";
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import {
   LOOP_FIX_TRANSPORT_KEYS,
   accumulatedRecord,
@@ -39,10 +39,10 @@ import {
   resolveSessionLaunch,
   THINKING_UNKNOWN_LEVEL,
   thinkingUnknownLevelMessage,
-} from "../session-model.mjs";
+} from "@aof/execution/session-model";
 import { resolveItemExact } from "./resolve.mjs";
 import { declaredRubric } from "./grade.mjs";
-import { meshNodeIdOf } from "./mesh/gate.mjs";
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 import { readRuns, staleRunningRuns } from "../run-store.mjs";
 import {
   transitionRunStart,

@@ -37,8 +37,7 @@ import { reportDegrade } from "../degrade.mjs";
 // The frame kind the outbox speaks. One home for the literal (the
 // WORKTREE_CONTENT_FRAME_KIND discipline): the worker's client builds it, the
 // control server branches on it, and neither re-spells it.
-export const EFFECT_STEP_FRAME_KIND = "effect-step";
-export const EFFECT_ACK_FRAME_KIND = "effect-ack";
+export { EFFECT_STEP_FRAME_KIND, EFFECT_ACK_FRAME_KIND } from "@aof/mesh/effect-frames";
 
 // Integration writes stay on the checkout holding their configuration and credentials.
 // The package only knows the eligibility rule supplied here.

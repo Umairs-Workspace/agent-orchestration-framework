@@ -12,6 +12,8 @@ import { partitionReadySetByDeclaredFiles } from '@aof/work/ready-wave';
 import { createMigrateFolderCommand } from '@aof/work/commands/migrate-folder';
 import { createDiagramFileCommand } from '@aof/work/commands/diagram/file';
 import { createWorkContribution } from '@aof/work/commands';
+import { createIntegrationRouting } from '@aof/work/integration-routing';
+import { resolveMilestoneFolderByRef } from '@aof/work/legacy-milestone-discovery';
 import { createCommandRegistry } from '@aof/contracts/commands';
 
 async function fixture(t) {
@@ -103,4 +105,25 @@ test('diagram file commands retain remote absence and validation via shared invo
   assert.equal(result.onThisNode, false);
   assert.equal(result.reportedBy, 'peer');
   await assert.rejects(registry.invoke('diagram:file', { ref: '01', file: '../secret.svg' }, {}), error => error.code === 'diagram-file-invalid');
+});
+
+
+test('integration descriptors preserve provider blocks and foreign milestone discovery', async t => {
+  const root = await fixture(t);
+  const dir = path.join(root, '07-foreign-name');
+  await mkdir(dir);
+  await writeFile(path.join(dir, 'SPEC.md'), '# Foreign milestone\n');
+  const item = resolveMilestoneFolderByRef(root, '07');
+  assert.equal(item.dir, dir);
+  const routing = createIntegrationRouting({ reportDegrade: () => assert.fail('unexpected degrade') });
+  assert.deepEqual(routing.readRouting(item), {});
+  const descriptor = { notion: { board: 'ops' }, another: { value: 1 } };
+  routing.writeRouting(item, descriptor);
+  assert.deepEqual(routing.readRouting(item), descriptor);
+  assert.equal(routing.hasRouting(item), true);
+  await writeFile(path.join(dir, '.integrations.json'), '{broken');
+  assert.deepEqual(routing.readRouting(item), {});
+  routing.writeRouting(item, {});
+  assert.equal(routing.hasRouting(item), false);
+  assert.equal(resolveMilestoneFolderByRef(root, '99'), null);
 });

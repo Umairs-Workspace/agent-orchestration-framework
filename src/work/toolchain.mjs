@@ -1,5 +1,5 @@
 // Transitional core composition for work-owned testing.
 import { createWorkToolchain } from "@aof/work/testing/toolchain";
-import { runBounded } from "../work-audit/spawn.mjs";
+import { runBounded } from "@aof/execution/bounded-process";
 
 export const { DEFAULT_REPORT_FORMAT, FILE_TOKEN, REPORT_FORMATS, SHIM_EXTENSIONS, TEST_RUNNER_DECLARATION_INVALID, TEST_RUNNER_UNDECLARED, TEST_RUNNER_UNRESOLVABLE, TOOLCHAIN_CONFIG_KEYS, TOOLCHAIN_REFUSAL_CODES, TOOLCHAIN_VERDICTS, WORKTREE_PREPARE_DECLARATION_INVALID, WORKTREE_PREPARE_UNRESOLVABLE, argumentVector, launchRunner, launchStep, resolveProgram, resolveTestToolchain, resolveWorktreePrepare, selectionArgs, shimProblem, toolchainReport } = createWorkToolchain({ runBounded });

@@ -20,7 +20,7 @@ import path from "node:path";
 import { hashContent } from "../lock.mjs";
 import { renderConfigOutputs } from "../adapters.mjs";
 import { installableBundleResources } from "./bundle-runtime.mjs";
-import { normalizeEffort } from "../session-model.mjs";
+import { normalizeEffort } from "@aof/execution/session-model";
 import { assetBase, readAssetText, listAssetMembers } from "../asset-base.mjs";
 import { applyFrozenAgentScopes, bundledFrozenSet, compileFrozenSet } from "../frozen-set.mjs";
 

@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-7805 (78/ADR-002) — THE RECORD IS A FACE, NEVER A SECOND TRUTH.
 //
@@ -130,8 +131,8 @@ export const archTests = [
         const source = stripComments(await readFile(file, "utf8")).replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, "");
         // The SPECIFIERS, resolved against the importing file, so `./commands/loop-record.mjs` (the
         // command core's import of the COMMAND) is never mistaken for an import of the projection.
-        const specifiers = [...source.matchAll(/from\s+["'](\.[^"']+)["']/g)]
-          .map((match) => path.relative(repoRoot, path.resolve(path.dirname(file), match[1])).split(path.sep).join("/"));
+        const specifiers = [...source.matchAll(/from\s+["']((?:\.|@aof\/)[^"']+)["']/g)]
+          .map((match) => path.relative(repoRoot, createRequire(file).resolve(match[1])).split(path.sep).join("/"));
         if (specifiers.includes("packages/work-graph/src/record.mjs") || specifiers.includes("src/loop-record.mjs")) importers.projection.push(rel);
         if (specifiers.includes("packages/work-graph/src/record-render.mjs") || specifiers.includes("src/loop-record-render.mjs")) importers.renderer.push(rel);
       }

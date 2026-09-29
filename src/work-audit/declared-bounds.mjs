@@ -1,7 +1,7 @@
 // Transitional core composition for work-owned audit services.
 import { createAuditDeclaredBounds } from "@aof/work/audit/declared-bounds";
 import { HARNESS_REFERENCE_ROWS, parseCheckedDate } from "../harness-reference.mjs";
-import { LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey, LOOP_BOUND_CONFIG_RESOLVERS } from "../loop-bounds.mjs";
+import { LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey, LOOP_BOUND_CONFIG_RESOLVERS } from "@aof/contracts/loop-bounds";
 
 export const {
   BOUND_CONFIG_KEYS,

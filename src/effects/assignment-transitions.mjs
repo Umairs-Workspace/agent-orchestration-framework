@@ -1,7 +1,8 @@
 // Transitional composition for mesh-owned domain transitions.
 import { createAssignmentTransitions } from "@aof/mesh/assignment-transitions";
 import { applicableReactors } from "./table.mjs";
-import { openEffectsJournal, appendEvent, hasEventId, latestAppliedAssignmentParkEventId } from "./journal.mjs";
+import { openEffectsJournal, appendEvent, hasEventId } from "./journal.mjs";
+import { latestAppliedAssignmentParkEventId } from "@aof/mesh/journal-queries";
 import { drainEffects, runEffectsEphemeral, CONTROL_LOCI, LOCAL_LOCI } from "./dispatch.mjs";
 import { drainOutbox } from "./outbox.mjs";
 import { reportDegrade } from "../degrade.mjs";

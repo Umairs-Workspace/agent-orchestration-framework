@@ -4,7 +4,7 @@ import { resolveItemExact, requireLocalCheckout, resolveDrivenRun } from "./reso
 import { listItemsCacheFirst, localItemsOnly, reportReachThroughSkips } from "../work/read.mjs";
 import { readRuns, runsDir, shouldRetry } from "../run-store.mjs";
 import { isNodeStale, resolveStalenessSeconds, readPresenceRecord } from "../mesh/presence.mjs";
-import { meshNodeIdOf } from "./mesh/gate.mjs";
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 import { transitionRunStart, transitionStaleRunsReclaimed } from "../effects/run-transitions.mjs";
 import { renderWithPropagationWarnings, threadPropagationWarnings } from "../global-work-publisher.mjs";
 import { lockContextFor } from "../item-lock.mjs";

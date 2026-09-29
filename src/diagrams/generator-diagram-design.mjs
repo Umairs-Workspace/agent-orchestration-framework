@@ -17,7 +17,7 @@
 //                       exists and holds null so a later item fills it without changing the shape.
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { commandError } from "../command-error.mjs";
+import { commandError } from "@aof/contracts/error";
 
 const ID = "diagram-design";
 const PLUGIN_KEY = `${ID}@${ID}`;

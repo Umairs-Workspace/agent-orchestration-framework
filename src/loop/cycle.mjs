@@ -13,11 +13,11 @@ import {
   readProgressSamples,
   sampleWorktreeProgress,
 } from "../loop-progress.mjs";
-import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS, boundGradeFailures } from "../work/grade.mjs";
+import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS, boundGradeFailures } from "@aof/work/grade";
 import { PHASE_BRIEF_MAX_CHARS } from "@aof/work/phase-brief";
 import { declaredRubric } from "../commands/grade.mjs";
 import { lockContextFor } from "../item-lock.mjs";
-import { meshNodeIdOf } from "../commands/mesh/gate.mjs";
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 import { isStale, parseResumeAfter, readRuns } from "../run-store.mjs";
 import { transitionRunComplete, transitionRunStart } from "../effects/run-transitions.mjs";
 import { reportDegrade } from "../degrade.mjs";

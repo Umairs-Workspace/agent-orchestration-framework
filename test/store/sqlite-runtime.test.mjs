@@ -303,7 +303,7 @@ export const sqliteRuntimeTests = [
       // A FRESH instance of the module (a cache-busting query), so this asserts the load
       // itself rather than the load this suite already performed.
       const captured = process.emitWarning;
-      const fresh = await import(`../../src/sqlite-runtime.mjs?probe=${Date.now()}`);
+      const fresh = await import(`../../packages/foundation/src/sqlite-runtime.mjs?probe=${Date.now()}`);
       assert.equal(typeof fresh.importSqliteRuntime, "function", "the fresh module loaded");
       assert.equal(process.emitWarning, captured, "loading it, and asking no import of it, changes nothing");
     },
@@ -322,7 +322,7 @@ export const sqliteRuntimeTests = [
 
       // A file:// URL, not a bare path: on Windows the ESM loader refuses `C:…` as an
       // unsupported URL scheme.
-      const leafUrl = JSON.stringify(pathToFileURL(path.join(repoRoot, "src", "sqlite-runtime.mjs")).href);
+      const leafUrl = JSON.stringify(pathToFileURL(path.join(repoRoot, "packages", "foundation", "src", "sqlite-runtime.mjs")).href);
       const throughLeaf = await run(
         process.execPath,
         ["-e", `const { importSqliteRuntime } = await import(${leafUrl}); const m = await importSqliteRuntime(); process.stdout.write(typeof m.DatabaseSync);`],

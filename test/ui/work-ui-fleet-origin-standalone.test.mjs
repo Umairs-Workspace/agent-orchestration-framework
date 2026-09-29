@@ -16,7 +16,7 @@
 // no environment variable beside it. The Given "the operator's explicit fleet-origin
 // configuration is X" is therefore composed onto the launch argv by `launchBoard` below;
 // the When names the command, the Given names the configuration, and the harness joins
-// them. See src/commands/work-ui.mjs for the ruling and the condition that overturns it.
+// them. See packages/server/src/commands/work-ui.mjs for the ruling and the condition that overturns it.
 //
 // LITMUS, as the feature states it: every Then is a value read off a real HTTP response
 // from a REAL `serveBoard` on an ephemeral port, or off a real `aof work ui` process's

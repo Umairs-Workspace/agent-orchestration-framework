@@ -2,7 +2,7 @@
 import { createWorkerExecutionServices } from "@aof/mesh/worker-execution";
 import { findWork, listItems, loadWorkspace } from "../work.mjs";
 import { readRuns } from "../run-store.mjs";
-import { buildRunAttribution } from "../otel-attribution.mjs";
+import { buildRunAttribution } from "@aof/execution/otel-attribution";
 import { captureSessionIdOnRecord } from "../run-session-capture.mjs";
 import { transitionRunComplete, transitionRunStart } from "../effects/run-transitions.mjs";
 import { reportAssignmentSettled, reportTerminalResumeRefused } from "../effects/assignment-transitions.mjs";

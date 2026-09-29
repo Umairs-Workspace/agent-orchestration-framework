@@ -41,7 +41,11 @@ export const yarnInstallationTests = [
     for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
-      const nativePorts = name === 'server' ? {
+      // Plan 01 keeps domain I/O in its owner; these are exact file-level ports, never package-wide permissions.
+      const nativePorts = name === 'effects' ? {
+        'journal-open.mjs': ['node:path', 'node:fs/promises', 'node:crypto'],
+      } : name === 'server' ? {
+        'commands/work-ui.mjs': ['node:path'],
         'static-serve.mjs': ['node:path'],
         'board-ui.mjs': ['node:path'],
         'board-serve.mjs': ['node:fs', 'node:path'],
@@ -78,10 +82,11 @@ export const yarnInstallationTests = [
         'sync-work.mjs': ['node:path', 'node:fs/promises'],
         'notion-sync-work.mjs': ['node:fs'],
         } : name === 'execution' ? {
+        "svg-rasterizer.mjs": ["node:child_process","node:fs","node:fs/promises","node:os","node:path","node:url","@aof/contracts/error"],
         'run-transitions.mjs': [],
         'reconcile.mjs': ["node:fs/promises"],
         'rubric-process.mjs': ['node:child_process'],
-        'runs.mjs': ['node:path', 'node:fs/promises', 'node:fs', '@aof/foundation/fs', '@aof/contracts/claim-provenance'],
+        'runs.mjs': ['node:path', 'node:fs/promises', 'node:fs', '@aof/foundation/fs', '@aof/contracts/claim-provenance', '@aof/contracts/freshness'],
         'spend.mjs': ['node:fs/promises', 'node:path'],
         'heartbeats.mjs': ['node:fs/promises', 'node:path'],
         'providers.mjs': ['node:path', 'node:fs'],
@@ -95,6 +100,11 @@ export const yarnInstallationTests = [
         'worktrees.mjs': ['node:child_process'],
         'bounded-process.mjs': ['node:child_process', 'node:fs'],
       } : name === 'mesh' ? {
+        "artifact-sync.mjs": ["node:fs/promises","node:path","@aof/work/artifacts"],
+        "node-identity.mjs": ["node:path","node:crypto","@aof/foundation/fs","node:fs/promises"],
+        "workspace-identity.mjs": ["node:crypto","node:path"],
+        "cache-read.mjs": ["@aof/contracts/cache-provenance","@aof/work/artifacts"],
+        "commands/resync.mjs": ["@aof/contracts/error"],
         'assignment-transitions.mjs': [],
         'worker-launch.mjs': [],
         'worker-repo-admission.mjs': ["node:path","node:child_process","node:fs/promises","node:crypto","@aof/foundation/fs"],
@@ -171,9 +181,20 @@ export const yarnInstallationTests = [
         'loop-document.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'loop-record.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error', '@aof/foundation/fs'],
       } : name === 'foundation' ? {
+        "sqlite-runtime.mjs": ["node:sqlite"],
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
+        "phase-brief-read.mjs": ["node:fs/promises","node:path"],
+        "ready-wave.mjs": ["node:path","node:fs/promises"],
+        "story-contract-derive.mjs": ["node:path","node:fs"],
+        "examples/answers.mjs": ["node:path"],
+        "commands/migrate-folder.mjs": ["node:path","node:fs/promises","@aof/contracts/error"],
+        "commands/diagram/plan.mjs": ["node:fs","node:fs/promises","node:os","node:path","@aof/contracts/error"],
+        "commands/diagram/export.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
+        "commands/diagram/file.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
+        "integration-routing.mjs": ["node:path","node:fs"],
+        "legacy-milestone-discovery.mjs": ["node:path","node:fs"],
         'doc-transitions.mjs': ["node:path","node:fs/promises"],
         'harness-transitions.mjs': ["node:crypto"],
         'item-transitions.mjs': [],

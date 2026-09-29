@@ -36,7 +36,7 @@ export const archTests = [
 
       assert.match(
         await source("src/commands/run-status.mjs"),
-        /import \{ attemptElapsedMs \} from "\.\.\/work\/loop\.mjs"/u,
+        /import \{ attemptElapsedMs \} from "@aof\/work-loop\/engine"/u,
         "the arithmetic has ONE home and this module imports it",
       );
       assert.match(await source("src/commands/run-status.mjs"), /createRunStatusCommand\(\{[^}]*attemptElapsedMs/u,

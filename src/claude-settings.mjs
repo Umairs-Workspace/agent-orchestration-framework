@@ -46,7 +46,7 @@ import { writeText } from "./fs.mjs";
 // milestone keeps paying for. (A narrow read: the descriptor plus the hook members,
 // never the 40-odd agent/command/skill bodies.)
 import { loadBundleHooks } from "./work/bundle.mjs";
-import { DEFAULT_EFFORT } from "./session-model.mjs";
+import { DEFAULT_EFFORT } from "@aof/execution/session-model";
 import {
   bundledFrozenSet,
   compileFrozenSet,

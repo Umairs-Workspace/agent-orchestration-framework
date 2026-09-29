@@ -5,7 +5,7 @@ import { answerRunAsk, isStale, openRunAsk, parkRunAsk, readRuns } from "../run-
 import { enqueueHeartbeat as enqueueHeartbeatDefault } from "../run-heartbeat-consumption.mjs";
 import { readAskQuestion } from "../work/observe.mjs";
 import { buildNotifyEnvelope, notify } from "../notify/notify.mjs";
-import { accountLine } from "../notify/form.mjs";
+import { accountLine } from "@aof/messaging/form";
 import { reportDegrade } from "../degrade.mjs";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 

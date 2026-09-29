@@ -3,7 +3,7 @@ import { createAuditReport } from "@aof/work/audit/report";
 import { AUDIT_FINDING_CODES, runCensus } from "./census.mjs";
 import { EVIDENCE_FINDING_CODES, runEvidence } from "./evidence.mjs";
 import { PROMPT_LAYER_FINDING_CODES, runPromptLayer } from "./prompt-layer.mjs";
-import { HOOK_WIRING_FINDING_CODES, HOOK_WIRING_SWEEPS, runHookWiring } from "./hook-wiring.mjs";
+import { HOOK_WIRING_FINDING_CODES, HOOK_WIRING_SWEEPS, runHookWiring } from "@aof/work/audit/hook-wiring";
 import { SEAM_LIVENESS_FINDING_CODES, runSeamLiveness } from "./seam-liveness.mjs";
 import { DECLARED_BOUNDS_FINDING_CODES, runDeclaredBounds } from "./declared-bounds.mjs";
 import {
@@ -12,7 +12,7 @@ import {
   assessInstrumentSilence,
   assessLoopConsultation,
   assessMetricMovement,
-} from "../work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 
 export const {
   AUDITABLE_CODES,

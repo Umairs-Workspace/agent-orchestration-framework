@@ -5,16 +5,10 @@ import { promisify } from "node:util";
 import { buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS } from "../work/doctor.mjs";
 import { readCachedWorkFacts } from "../cache-read.mjs";
 import { isMeshWorktree } from "../work/read.mjs";
-import { meshNodeIdOf } from "./mesh/gate.mjs";
-import { probeFabric, remediationForReason } from "../mesh/fabric.mjs";
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
+import { probeFabric, remediationForReason } from "@aof/mesh/fabric";
 import { effectsFor, knownEvents } from "../effects/table.mjs";
-import {
-  openEffectsJournal,
-  effectsJournalPath,
-  readEvents,
-  readEventSteps,
-  pendingSteps,
-} from "../effects/journal.mjs";
+import { openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, pendingSteps } from "../effects/journal.mjs";
 import { drainEffects, reachableLoci } from "../effects/dispatch.mjs";
 import { reconcileRunRecords } from "../effects/reconcile.mjs";
 const execFileAsync = promisify(execFile);

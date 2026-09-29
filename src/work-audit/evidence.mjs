@@ -1,6 +1,6 @@
 // Transitional core composition for work-owned audit services.
 import { createAuditEvidence } from "@aof/work/audit/evidence";
-import { runBounded, DEFAULT_DEADLINE_MS, attemptedCommand } from "./spawn.mjs";
+import { runBounded, DEFAULT_DEADLINE_MS, attemptedCommand } from "@aof/execution/bounded-process";
 import { toolkitProgram } from "./toolkit.mjs";
 
 export const {

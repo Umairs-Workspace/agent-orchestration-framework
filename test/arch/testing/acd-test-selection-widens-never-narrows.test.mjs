@@ -167,8 +167,8 @@ export const archTests = [
       for (const name of ["normalizeGraph", "readGraph", "graphJsonPath", "graphArtifactBuiltAt", "computeImpact"]) {
         for (const code of [selector, composition]) assert.match(code, new RegExp("createTestSelector\\(\\{[^}]*\\b" + name + "\\b", "u"), name + ": shared graph service is injected");
       }
-      assert.match(composition, /import\s*\{[^}]*normalizeGraph[^}]*\}\s*from\s+"(?:\.\.?\/)+graph-normalize\.mjs"/u, "the selector reaches the artifact through the shipped normalizer");
-      assert.match(composition, /import\s*\{[^}]*computeImpact[^}]*\}\s*from\s+"(?:\.\.?\/)+graph-impact\.mjs"/u, "…and through the shipped impact core");
+      assert.match(composition, /import\s*\{[^}]*normalizeGraph[^}]*\}\s*from\s+"@aof\/knowledge\/graph-normalize"/u, "the selector reaches the artifact through the shipped normalizer");
+      assert.match(composition, /import\s*\{[^}]*computeImpact[^}]*\}\s*from\s+"@aof\/knowledge\/graph-impact"/u, "…and through the shipped impact core");
       assert.match(selector, /graphJsonPath\s*\(/u, "…at the one artifact path the tree already derives");
     },
   },
@@ -199,7 +199,7 @@ export const archTests = [
       const reader = stripComments(sourceOf("packages/work/src/testing/changed.mjs"));
       const readerComposition = stripComments(sourceOf("src/work/test-changed.mjs"));
       for (const code of [reader, readerComposition]) assert.match(code, /createChangedFilesReader\(\{[^}]*\brunBounded\b/u);
-      assert.match(readerComposition, /import\s*\{\s*runBounded\s*\}\s*from\s+"(?:\.\.?\/)+work-audit\/spawn\.mjs"/u, "the changed-set reader goes through the shared bounded seam");
+      assert.match(readerComposition, /import\s*\{\s*runBounded\s*\}\s*from\s+"@aof\/execution\/bounded-process"/u, "the changed-set reader goes through the shared bounded seam");
       assert.doesNotMatch(reader, /from\s+"node:child_process"/u, "…and reaches the process module directly nowhere");
       assert.doesNotMatch(reader, /\bshell\s*:/u, "…and passes no shell option");
       assert.doesNotMatch(reader, /\b(?:spawnSync|execFile|execFileSync|execSync|fork)\s*\(/u, "…and opens no second way to start a child");

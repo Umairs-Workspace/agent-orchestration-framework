@@ -18,3 +18,5 @@ temp-file age checks, diagnostic throttling and log format/rotation. It introduc
 no new log destination or on-disk migration.
 
 Run `yarn workspace @aof/foundation test` for the package tests.
+
+`sqlite-runtime` owns the targeted dynamic SQLite import and warning filter. Storage packages receive it through configured ports and retain their own refusal behavior.

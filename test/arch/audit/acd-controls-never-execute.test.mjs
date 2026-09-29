@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6605 (milestone 66 / ADR-003, ADR-004 §2, ADR-009 ROUND 3/3 + 3/4) — THE
 // CONTROLS LANE READS, NEVER RUNS, AND IS PURE.
 //
@@ -577,7 +578,7 @@ export const archTests = [
           else if (entry.isFile() && entry.name.endsWith(".mjs")) sources.push({ file: path.relative(repoRoot, full).replaceAll("\\", "/"), text: await readFile(full, "utf8") });
         }
       };
-      await walk(srcDir);
+      for (const file of await readRuntimeFiles(repoRoot)) sources.push({ file: file.rel, text: await readFile(file.path, "utf8") });
       const codeLines = (code) => code.split(/\r?\n/).filter((line) => line.trim() !== "").length;
       const blinded = sources.filter((entry) => codeLines(trapOrder(entry.text)) < codeLines(stripComments(entry.text)));
       assert.ok(blinded.length > 0, "non-vacuity: the trap order really does blind this tree");

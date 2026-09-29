@@ -2,7 +2,7 @@
 import { createLoopStops } from "@aof/work-loop/stop";
 import { listItems } from "../work.mjs";
 import { isRunning, isStale, readRuns } from "../run-store.mjs";
-import { meshNodeIdOf } from "../commands/mesh/gate.mjs";
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 import {
   STOP_LEVELS,
   loopResumesDir,

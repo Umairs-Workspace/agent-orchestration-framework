@@ -20,7 +20,12 @@
     "./bounded-process": "./src/bounded-process.mjs",
     "./rubric-process": "./src/rubric-process.mjs",
     "./run-transitions": "./src/run-transitions.mjs",
-    "./reconcile": "./src/reconcile.mjs"
+    "./reconcile": "./src/reconcile.mjs",
+    "./session-model": "./src/session-model.mjs",
+    "./otel-attribution": "./src/otel-attribution.mjs",
+    "./svg-rasterizer": "./src/svg-rasterizer.mjs",
+    "./journal-queries": "./src/journal-queries.mjs",
+    "./store-metadata": "./src/store-metadata.mjs"
   },
   "files": [
     "src"

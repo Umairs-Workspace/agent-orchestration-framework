@@ -122,7 +122,10 @@
     "./commands/migrate-folder": "./src/commands/migrate-folder.mjs",
     "./commands/diagram/plan": "./src/commands/diagram/plan.mjs",
     "./commands/diagram/export": "./src/commands/diagram/export.mjs",
-    "./commands/diagram/file": "./src/commands/diagram/file.mjs"
+    "./commands/diagram/file": "./src/commands/diagram/file.mjs",
+    "./integration-routing": "./src/integration-routing.mjs",
+    "./legacy-milestone-discovery": "./src/legacy-milestone-discovery.mjs",
+    "./store-metadata": "./src/store-metadata.mjs"
   },
   "files": [
     "src"

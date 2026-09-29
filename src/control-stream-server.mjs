@@ -12,7 +12,7 @@ import { transitionAssignmentState } from "./effects/assignment-transitions.mjs"
 import { effectsFor } from "./effects/table.mjs";
 import { openEffectsJournal, appendEvent, markStep, readEventSteps } from "./effects/journal.mjs";
 import { drainEffects, CONTROL_LOCI } from "./effects/dispatch.mjs";
-import { EFFECT_STEP_FRAME_KIND, EFFECT_ACK_FRAME_KIND } from "./effects/outbox.mjs";
+import { EFFECT_STEP_FRAME_KIND, EFFECT_ACK_FRAME_KIND } from "@aof/mesh/effect-frames";
 import { TERMINAL_FRAME_KIND } from "./mesh/terminal-relay-bridge.mjs";
 import { PRESENCE_SIGNAL_KIND } from "./mesh/relay-client.mjs";
 import { RECOVERY_PUSH_RESULT_KIND, applyRecoveryPushResultFrame } from "./mesh/recovery-push.mjs";

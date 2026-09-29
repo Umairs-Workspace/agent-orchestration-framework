@@ -175,7 +175,7 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      **Declare each story's context and write ownership at the same authoring moment.** Populate the
      story frontmatter's inline lists before the breakdown is reviewable:
 
-     **DERIVE the two sets, then SUBTRACT — never recall them.** `src/story-contract-derive.mjs`
+     **DERIVE the two sets, then SUBTRACT — never recall them.** `packages/work/src/story-contract-derive.mjs`
      proposes both from three sources and says which proposed each entry: the story's own subject
      files, the coupling the codebase graph already holds around them (imports and call sites, read
      from the artifact `aof graph build` wrote — never rebuilt here), and the `file:line` citations

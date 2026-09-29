@@ -30,7 +30,7 @@ const work = createWorkEffects(async () => {
 const mesh = createMeshEffects(async () => {
   const [items, publisher, store, branches, assignments, identity] = await Promise.all([
     import("../work.mjs"), import("../global-work-publisher.mjs"), import("../global-work-store.mjs"),
-    import("../mesh/assignment-directive.mjs"), import("../assignment-record.mjs"), import("@aof/mesh/workspace-identity"),
+    import("@aof/mesh/assignment-directive"), import("@aof/mesh/assignment-record"), import("@aof/mesh/workspace-identity"),
   ]);
   return {
     loadWorkspace: items.loadWorkspace, listItems: items.listItems, isLiveStreamRow: items.isLiveStreamRow,

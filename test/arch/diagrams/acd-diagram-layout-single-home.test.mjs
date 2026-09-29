@@ -93,9 +93,9 @@ export const archTests = [
       assert.match(adapter, /^\s*export\s*\{[^}]+\}\s*from "@aof\/work\/diagrams\/layout";\s*$/u,
         "the admitted legacy path only forwards to the package owner");
       const handlers = [];
-      const family = path.join(repoRoot, "src", "commands", "diagram");
+      const family = path.join(repoRoot, "packages", "work", "src", "commands", "diagram");
       if (existsSync(family)) {
-        for (const name of await readdir(family)) if (name.endsWith(".mjs")) handlers.push(`src/commands/diagram/${name}`);
+        for (const name of await readdir(family)) if (name.endsWith(".mjs")) handlers.push(`packages/work/src/commands/diagram/${name}`);
       }
       if (existsSync(path.join(repoRoot, "packages", "work", "src", "doctor", "diagrams.mjs"))) handlers.push("packages/work/src/doctor/diagrams.mjs");
       assert.ok(handlers.includes("packages/work/src/commands/diagram/plan.mjs"), "the plan verb exists and is checked");

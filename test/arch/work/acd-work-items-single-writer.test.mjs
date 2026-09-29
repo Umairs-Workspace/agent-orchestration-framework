@@ -45,7 +45,7 @@ import { REQUIRED_ITEM_FIELDS, OPTIONAL_ITEM_FIELDS, itemRowFault } from "../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "src");
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-const STORES = path.join(repoRoot, "src", "effects", "stores.mjs");
+const STORES = path.join(repoRoot, "packages", "mesh", "src", "store-metadata.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

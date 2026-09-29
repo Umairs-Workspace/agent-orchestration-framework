@@ -17,7 +17,7 @@ const EXPECTED_DIRECT = Object.freeze([
   // phase-brief compiler (ADR-002). Both are pure leaves imported WITHOUT re-export — the
   // driver's frozen EXPORT set (FF-5302) is untouched. `otel-attribution.mjs` was landed by
   // 68 but never added here — a pre-existing red this file now records, not causes.
-  "otel-attribution.mjs", "phase-brief.mjs",
+
   // milestone 69/01–69/02 add the declared-bound resolver (69/ADR-001, ADR-002): the driver's
   // liveness idle window and its per-attempt deadline both resolve through the ONE bound home
   // rather than a literal of their own, which is what FF-6901 pins. `loop-bounds.mjs` is a
@@ -128,7 +128,7 @@ export const archTests = [
       // Observation now imports discovery directly: one implementation home replaces
       // nine nodes previously reached through the core work facade (37 -> 29).
       assert.ok(graph.seen.size <= 29, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 observation census of 29`);
-      assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/pty", "@aof/execution/session-driver"], "the adapter uses only the two execution APIs");
+      assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
       assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/session-driver.mjs"], "the driver package has no transport, work, mesh or core import");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
@@ -274,7 +274,9 @@ export const archTests = [
       for (const name of ["worker-execution", "worker-repo-admission", "worker-launch"]) assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)));
       // Domain transitions add two implementation homes and remove the assignment-record forward.
       for (const file of ["packages/execution/src/run-transitions.mjs", "packages/mesh/src/assignment-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)));
-      assert.equal(sinkGraph.seen.size, 108, "two transition implementation homes replace one forward in the prior 107-module closure");
+      // Plan 01 splits cache/brief/journal services and domain store declarations; direct public imports remove forwards.
+      // The static closure grows 108 -> 117; the driver isolation and denylist above remain unchanged.
+      assert.equal(sinkGraph.seen.size, 117, "the Plan 01 ownership census is unchanged");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

@@ -180,7 +180,7 @@ export const archTests = [
       );
       // Non-vacuous: the sanctioned path exists and is the one excluded.
       const seamPath = chainThrough(graph, COMPOSITION, REINDEX, SEAM_COMPOSITION);
-      assert.deepEqual(seamPath, [COMPOSITION, SEAM_COMPOSITION, "src/work/reindex.mjs", REINDEX], `the seam and compatibility export lead to the package engine (got ${seamPath?.join(" → ")})`);
+      assert.deepEqual(seamPath, [COMPOSITION, SEAM_COMPOSITION, REINDEX], `the seam and direct public import lead to the package engine (got ${seamPath?.join(" → ")})`);
     },
   },
 

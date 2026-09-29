@@ -12,7 +12,9 @@
     "./sync-work": "./src/sync-work.mjs",
     "./notion-associate": "./src/notion-associate.mjs",
     "./notion-sync-work": "./src/notion-sync-work.mjs",
-    "./commands": "./src/commands.mjs"
+    "./commands": "./src/commands.mjs",
+    "./routing": "./src/routing.mjs",
+    "./store-metadata": "./src/store-metadata.mjs"
   },
   "files": [
     "src"

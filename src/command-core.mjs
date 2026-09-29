@@ -1,4 +1,3 @@
-import { createResyncContribution } from "@aof/mesh/commands";
 // The in-process command registry — the single source of truth for every work
 // operation, the SPINE both faces couple through (ADR-002). The CLI is a thin
 // `argv → invoke → render`/`--json` face; each UI server is a thin
@@ -25,6 +24,8 @@ import { createResyncContribution } from "@aof/mesh/commands";
 // to process.cwd() (path.relative, OS separators). Basis-neutral results let each
 // face project losslessly — the keystone that makes byte-for-byte on both faces
 // achievable on Windows separators (ADR-002).
+import { createServerContribution } from "@aof/server/commands";
+import { createResyncContribution } from "@aof/mesh/commands";
 import { createWorkContribution } from "@aof/work/commands";
 import { createWorkLoopContribution, createTriggerContribution, createDispatchContribution } from "@aof/work-loop/commands";
 import { createWorkGraphContribution } from "@aof/work-graph/commands";
@@ -52,7 +53,7 @@ import { loopCommand } from "./commands/loop.mjs";
 // work:resync — m43 — see ./commands/resync.mjs's header.
 import { resyncCommand } from "./commands/resync.mjs";
 // work:debt — see ./commands/debt.mjs's header.
-import { debtCommand } from "./commands/debt.mjs";
+import { debtCommand } from "@aof/work/commands/debt";
 import { docCommand } from "./commands/doc.mjs";
 import { tasksCommand } from "./commands/tasks.mjs";
 import { validateCommand } from "./commands/validate.mjs";
@@ -81,7 +82,7 @@ import { graphBuildCommand } from "./commands/graph/build.mjs";
 import { graphQueryCommand } from "./commands/graph/query.mjs";
 import { graphTriageCommand } from "./commands/graph/triage.mjs";
 // graph:impact — see ./commands/graph/impact.mjs's header.
-import { graphImpactCommand } from "./commands/graph/impact.mjs";
+import { graphImpactCommand } from "@aof/knowledge/commands/graph-impact";
 // test — 72/ADR-008 §5, TECH_DEBT item 78, 72/ADR-002 §4, FF-7204 — see ./commands/test.mjs's header.
 import { testCommand } from "./commands/test.mjs";
 // project:provision — 12/ADR-003 — see ./commands/project-provision.mjs's header.
@@ -239,10 +240,8 @@ const CONTRIBUTIONS = [
   ]),
   createWorkContribution([diagramPlanCommand, diagramExportCommand, diagramFileCommand]),
   messagingContribution,
-  { name: "aof", commands: [
-    workUiCommand,
-    assetsUiCommand,
-  ] },
+  createServerContribution(workUiCommand),
+  { name: "aof", commands: [assetsUiCommand] },
   createWorkContribution([
     findCommand,
     observeCommand,

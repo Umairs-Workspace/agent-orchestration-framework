@@ -66,7 +66,7 @@ import { cacheReadControlLeavesTests } from "./cache-read-control-leaves.test.mj
 import { cacheReadBoundaryHoldsTests } from "./cache-read-boundary-holds.test.mjs";
 import { cacheReadDoctorOverlayTests } from "./cache-read-doctor-overlay.test.mjs";
 // milestone 126 / story 05 — the SQLite ExperimentalWarning has ONE filtered import home
-// (ADR-008). Both callers collapse onto `src/sqlite-runtime.mjs` and keep their own refusals;
+// (ADR-008). Both callers collapse onto `packages/foundation/src/sqlite-runtime.mjs` and keep their own refusals;
 // the leaf's injected importer is what makes a throwing runtime and a counted import drivable
 // in-process, and the real-runtime leg runs in a fresh child because Node raises the warning
 // once per process.

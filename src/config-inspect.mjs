@@ -35,7 +35,7 @@ import { globalWorkspacePaths } from "./workspace.mjs";
 import { readDescriptor, agentModelMap, AGENT_MODEL_MAP_PATH, AGENT_EFFORT_MAP_PATH } from "./work/bundle.mjs";
 // story 141 — both effort surfaces (the session map and the role map) are checked through the
 // one effort vocabulary.
-import { EFFORT_SPELLINGS, normalizeEffort } from "./session-model.mjs";
+import { EFFORT_SPELLINGS, normalizeEffort } from "@aof/execution/session-model";
 // milestone 12 (ADR-003) — the store-first managed-tool resolver + the frozen
 // tool descriptors the three new doctor checks consult (SUPERSEDING the 09
 // graphify-binary check in place with the store-aware managed-tool check).

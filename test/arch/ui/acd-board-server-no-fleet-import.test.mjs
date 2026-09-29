@@ -1,3 +1,4 @@
+import { stripComments as stripJsComments } from "../../support/source-slice.mjs";
 // Fitness function for milestone 46 / story 02 / ADR-004 (the CYCLE PROHIBITION):
 //
 //   "`src/board-serve.mjs` and `src/setup-ui.mjs` MUST NOT import
@@ -57,7 +58,7 @@ const BOARD_SERVE = path.join(repoRoot, "packages", "server", "src", "board-serv
 const SETUP_UI = path.join(repoRoot, "packages", "server", "src", "setup-ui.mjs");
 const BOARD_UI = path.join(repoRoot, "packages", "server", "src", "board-ui.mjs");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
-const WORK_UI_COMMAND = path.join(repoRoot, "src", "commands", "work-ui.mjs");
+const WORK_UI_COMMAND = path.join(repoRoot, "packages", "server", "src", "commands", "work-ui.mjs");
 
 // The BOARD-SERVER surface. ADR-004 names two modules by hand; `board-ui.mjs` is the
 // THIRD and belongs here for two measured reasons. Structurally, the graph carries
@@ -219,8 +220,12 @@ export const archTests = [
     name: "arch/46 ADR-004 (positive): the standalone fleet origin IS resolved in the command layer, from DEFAULT_MESH_UI_PORT's one home",
     run: async () => {
       const source = stripComments(await readFile(WORK_UI_COMMAND, "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/commands/work-ui.mjs"), "utf8"));
+      assert.match(source, /createWorkUiCommand\(\{[^}]*getDefaultMeshUiPort/u);
+      assert.match(stripJsComments(await readFile(WORK_UI_COMMAND, "utf8")), /getDefaultMeshUiPort\(\)/u);
+      assert.match(adapter, /getDefaultMeshUiPort = \(\) => DEFAULT_MESH_UI_PORT/u);
       assert.ok(
-        /import\s*\{[^}]*\bDEFAULT_MESH_UI_PORT\b[^}]*\}\s*from\s*["']\.\.\/mesh\/ui-serve\.mjs["']/.test(source),
+        /import\s*\{[^}]*\bDEFAULT_MESH_UI_PORT\b[^}]*\}\s*from\s*["']\.\.\/mesh\/ui-serve\.mjs["']/.test(adapter),
         "src/commands/work-ui.mjs imports DEFAULT_MESH_UI_PORT from ../mesh/ui-serve.mjs — the layer allowed to know both faces"
       );
       assert.ok(
@@ -232,7 +237,7 @@ export const archTests = [
   {
     // THE LOAD-ORDER GUARD, and it exists because this exact defect shipped and was
     // MASKED for a whole build. ADR-004 sanctions the command layer knowing both faces,
-    // which puts `src/commands/work-ui.mjs` on a real import ring:
+    // which puts `packages/server/src/commands/work-ui.mjs` on a real import ring:
     //   mesh-ui-serve → board-serve → setup-ui → board-ui → command-core → work-ui →
     //   mesh-ui-serve
     // A ring is legal in ESM; DEREFERENCING ACROSS IT DURING MODULE EVALUATION is not.

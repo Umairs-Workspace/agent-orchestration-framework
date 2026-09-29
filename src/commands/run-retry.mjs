@@ -2,7 +2,7 @@
 import { createRunRetryCommand } from "@aof/work/commands/run-retry";
 import { resolveItemExact, requireLocalCheckout } from "./resolve.mjs";
 import { transitionRunStart } from "../effects/run-transitions.mjs";
-import { meshNodeIdOf } from "./mesh/gate.mjs";
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 import { lockContextFor } from "../item-lock.mjs";
 
 export const { resolveAttemptCeiling, runRetryCommand } = createRunRetryCommand({ resolveItemExact, requireLocalCheckout, transitionRunStart, meshNodeIdOf, lockContextFor });

@@ -323,8 +323,8 @@ export const archTests = [
 
       // NON-VACUITY: the parser really read the registry, and it really found entries — a claim
       // over zero entries is the empty-set pass this control exists to refuse.
-      // Package contributions reduce core-owned entry comments; 44 remain after extraction.
-      assert.ok(report.entries >= 44, `the registry's entries were parsed, not passed over: ${report.entries} entry comment(s) classified`);
+      // Package contributions reduce core-owned entry comments; 42 remain after resync and feature contribution extraction.
+      assert.ok(report.entries >= 42, `the registry's entries were parsed, not passed over: ${report.entries} entry comment(s) classified`);
       assert.equal(report.longest, 1, "no entry comment is longer than one line");
     },
   },

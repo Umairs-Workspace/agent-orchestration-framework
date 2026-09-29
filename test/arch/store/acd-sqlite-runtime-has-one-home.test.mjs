@@ -36,7 +36,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LEAF = path.join(repoRoot, "src", "sqlite-runtime.mjs");
+const LEAF = path.join(repoRoot, "packages", "foundation", "src", "sqlite-runtime.mjs");
 
 // The roots a blanket suppression may not appear in. `test/` is NOT among them, by decision.
 const SWEPT_ROOTS = ["src", "bin", "scripts"];
@@ -120,12 +120,16 @@ export const archTests = [
       // stopped importing it and re-rolled its own body would satisfy an absence check.
       for (const caller of ["src/effects/journal.mjs", "src/global-work-store.mjs"]) {
         const source = stripComments(await readFile(path.join(repoRoot, caller), "utf8"));
-        assert.match(source, /import \{ importSqliteRuntime \} from "[^"]*sqlite-runtime\.mjs"/, `${caller} imports the leaf`);
+        assert.match(source, /import \{ importSqliteRuntime \} from "@aof\/foundation\/sqlite-runtime"/, `${caller} imports the leaf`);
         const implementation = caller === "src/global-work-store.mjs"
-          ? stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8")) : source;
+          ? stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8")) : stripComments(await readFile(path.join(repoRoot, "packages/effects/src/journal-open.mjs"), "utf8"));
         if (caller === "src/global-work-store.mjs") {
           assert.match(source, /createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
           assert.match(implementation, /function createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
+        }
+        if (caller === "src/effects/journal.mjs") {
+          assert.match(source, /createJournalOpener\(\{[^}]*importSqliteRuntime/);
+          assert.match(implementation, /function createJournalOpener\(\{[^}]*importSqliteRuntime/);
         }
         assert.match(implementation, /await importSqliteRuntime\(options\)/, `${caller} resolves the runtime through it, forwarding the options it was handed`);
       }
@@ -133,7 +137,7 @@ export const archTests = [
       // Each caller keeps its OWN refusal and its OWN DatabaseSync check — the leaf decides
       // no policy, so neither caller's behaviour moves (ADR-008 §2).
       const store = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs"), "utf8"));
-      const journal = stripComments(await readFile(path.join(repoRoot, "src", "effects", "journal.mjs"), "utf8"));
+      const journal = stripComments(await readFile(path.join(repoRoot, "packages", "effects", "src", "journal-open.mjs"), "utf8"));
       for (const [name, source] of [["global-work-store", store], ["journal", journal]]) {
         const body = functionBody(source, "async function resolveSqlite");
         assert.notEqual(body, null, `${name}'s resolveSqlite region was found`);

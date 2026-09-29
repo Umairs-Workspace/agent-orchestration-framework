@@ -7,7 +7,7 @@ import { claudeProjectsDir, readLastAssistantTurn, NEEDS_INPUT_SENTINEL as input
 import { resolveProvider } from "./terminal-providers.mjs";
 import { reportDegrade } from "./degrade.mjs";
 import { openSessionScreen } from "./terminal/session-screen.mjs";
-import { buildOtelResourceAttributes, OTEL_RESOURCE_ATTRIBUTES_ENV_KEY, OTEL_TELEMETRY_ENV_KEY } from "./otel-attribution.mjs";
+import { buildOtelResourceAttributes, OTEL_RESOURCE_ATTRIBUTES_ENV_KEY, OTEL_TELEMETRY_ENV_KEY } from "@aof/execution/otel-attribution";
 import { composePhaseBriefInput } from "@aof/work/phase-brief";
 
 const implementation = createSessionDriver({

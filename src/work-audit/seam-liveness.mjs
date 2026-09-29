@@ -1,6 +1,6 @@
 // Transitional core composition for work-owned audit services.
 import { createAuditSeamLiveness } from "@aof/work/audit/seam-liveness";
-import { graphArtifactBuiltAt, graphJsonPath, normalizeGraph, readGraph } from "../graph-normalize.mjs";
+import { graphArtifactBuiltAt, graphJsonPath, normalizeGraph, readGraph } from "@aof/knowledge/graph-normalize";
 import { TEST_ROOTS } from "./census.mjs";
 
 export const {

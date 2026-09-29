@@ -4,7 +4,7 @@ import { resolveItem, resolveItemExact, requireLocalCheckout } from "./resolve.m
 import { readRuns, retryReadiness, isStale } from "../run-store.mjs";
 import { transitionRunStart, transitionStaleRunsReclaimed } from "../effects/run-transitions.mjs";
 import { listStreamCacheFirst } from "../work/read.mjs";
-import { meshNodeIdOf } from "./mesh/gate.mjs";
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 import { lockContextFor } from "../item-lock.mjs";
 import { answerAsk, loopAsksDir } from "../loop/ask-request.mjs";
 import { askEnvFor } from "../loop/ask.mjs";
