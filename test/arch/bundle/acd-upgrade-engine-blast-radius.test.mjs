@@ -22,15 +22,15 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const WORK = path.join(repoRoot, "src", "work.mjs");
-const UPGRADE = path.join(repoRoot, "src", "work", "upgrade.mjs");
+const UPGRADE = path.join(repoRoot, "packages", "work", "src", "upgrade.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
 // The upgrade ENGINE module specifier work.mjs must never pull in.
-const ENGINE_MODULE = /(^|\/)(work-upgrade|upgrade)\.mjs$/;
-const WORK_MODULE = /(^|\/)work\.mjs$/;
+const ENGINE_MODULE = /(^|\/)(work-upgrade|upgrade)(?:\.mjs)?$/;
+const WORK_MODULE = /(^|\/)(discovery|records)\.mjs$/;
 
 export const archTests = [
   {
@@ -46,7 +46,7 @@ export const archTests = [
       );
       // Self-checks (non-vacuous): the matcher catches the engine-module form and does
       // NOT flag work.mjs's legitimate dependencies.
-      for (const bad of ["./work/upgrade.mjs", "../src/work/upgrade.mjs", "./upgrade.mjs"]) {
+      for (const bad of ["./work/upgrade.mjs", "../src/work/upgrade.mjs", "./upgrade.mjs", "@aof/work/upgrade"]) {
         assert.ok(ENGINE_MODULE.test(bad), `the matcher catches a real ${bad} import`);
       }
       for (const ok of ["./fs.mjs", "./node-identity.mjs", "./workspace.mjs"]) {
@@ -62,11 +62,12 @@ export const archTests = [
       const importsWork = specs.some((s) => WORK_MODULE.test(s));
       assert.ok(
         importsWork,
-        `src/work/upgrade.mjs must import ./work.mjs (the engine consumes work.mjs's readers + writer) — imports: ${specs.join(", ")}`,
+        `the upgrade engine consumes work-owned readers and the atomic writer — imports: ${specs.join(", ")}`,
       );
       // Self-check (non-vacuous): the WORK matcher recognises the real specifier and does
       // not confuse the engine module for it.
-      assert.ok(WORK_MODULE.test("./work.mjs"), "the WORK matcher recognises ./work.mjs");
+      assert.ok(WORK_MODULE.test("./discovery.mjs"), "the WORK matcher recognises discovery");
+      assert.ok(WORK_MODULE.test("./records.mjs"), "the WORK matcher recognises records");
       assert.ok(!WORK_MODULE.test("./work/upgrade.mjs"), "the WORK matcher does not confuse work-upgrade.mjs for work.mjs");
     },
   },

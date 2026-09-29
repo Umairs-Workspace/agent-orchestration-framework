@@ -52,7 +52,7 @@ import { readWorkspaceItems } from "../../../src/global-work-store.mjs";
 import { ITEM_LOCKED_CODE } from "../../../src/item-lock.mjs";
 import { readDescriptor } from "../../../src/work/bundle.mjs";
 import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { withItemLockFixture, seedActive, withStore, refuse } from "../../support/item-lock-fixture.mjs";
@@ -983,22 +983,22 @@ export const workArchiveIsAMoveTests = [
     run: () =>
       withFixture(async ({ root, work, workspace }) => {
         const callers = [];
-        for (const file of await readSrcFiles(repoRoot)) {
-          if (file.rel === "work/archive.mjs") continue;
+        for (const file of await readRuntimeFiles(repoRoot)) {
+          if (file.rel === "packages/work/src/archive.mjs") continue;
           const code = stripComments(await readFile(file.path, "utf8"));
-          if (/\barchiveItems\s*\(/.test(code)) callers.push(`src/${file.rel}`);
+          if (/\barchiveItems\s*\(/.test(code)) callers.push(file.rel);
         }
         assert.deepEqual(callers, ["src/effects/stream-transitions.mjs"], "archiveItems( is called from the seam and nowhere else");
         const face = stripComments(await readFile(path.join(repoRoot, "src", "commands", "archive.mjs"), "utf8"));
         assert.match(face, /transitionStreamArchived\(/);
         assert.doesNotMatch(face, /archiveItems\s*\(/);
 
-        const engine = await readFile(path.join(repoRoot, "src", "work", "archive.mjs"), "utf8");
+        const engine = await readFile(path.join(repoRoot, "packages", "work", "src", "archive.mjs"), "utf8");
         const specifiers = importSpecifiers(engine).map((entry) => entry.specifier);
         for (const specifier of specifiers) {
-          assert.ok(specifier.startsWith("node:") || specifier === "../work.mjs", `the engine imports node:* and src/work.mjs at most (${specifier})`);
+          assert.ok(specifier.startsWith("node:") || ["./discovery.mjs", "./identity.mjs"].includes(specifier), `the engine imports node:* and work readers at most (${specifier})`);
         }
-        const fromWork = stripComments(engine).match(/import\s*\{([^}]*)\}\s*from\s*"\.\.\/work\.mjs"/)?.[1] ?? "";
+        const fromWork = [...stripComments(engine).matchAll(/import\s*\{([^}]*)\}\s*from\s*"\.\/(?:discovery|identity)\.mjs"/g)].map(match => match[1]).join(",");
         assert.deepEqual(fromWork.split(",").map((name) => name.trim()).filter(Boolean).sort(), ["ARCHIVE_ROOT", "isLiveStreamRow", "listItems"], "…and from work.mjs only its readers (and the one predicate)");
 
         // An unwritable journal: a FILE where the global home's directory should be.

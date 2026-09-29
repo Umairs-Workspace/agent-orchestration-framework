@@ -604,3 +604,17 @@ all corpus reads, proposals, counters and acceptor arguments match the pre-move 
 guards inspect the actual package implementations, and copied mutation tests use a separate work
 package instance. Counter metric pointers keep their stable legacy paths while source checks follow
 the implementation through the public export.
+
+Archive, reindex and schema upgrade form a self-contained mutation slice. Archive depends only on
+discovery/identity plus Node filesystem operations. Reindex also consumes records, dependency
+rewrites and foundation's atomic writer. Upgrade consumes discovery/records and contracts errors;
+installed-product version is its only core policy and is supplied as a function, called only at
+stamp application. These mechanisms do not publish effects or resolve workspaces. Keeping command
+selection/refusal and stream-effect ordering in their current composition preserves those boundaries.
+
+The three implementations now live in work. Source and copied-installation differential fixtures
+compare reports, ref maps, archive link rewrites and every persisted byte, including a CRLF record.
+The public upgrade factory also has a test proving construction/planning do not consult version
+policy, while applying a pending stamp does and a second application does not. Architecture import
+walks now follow public workspace exports to the actual mutation engines. Positive disk-reader pins
+follow the new implementation paths and explicit discovery imports; legacy forwards remain in place.

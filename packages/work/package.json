@@ -51,7 +51,10 @@
     "./tune/distance": "./src/tune/distance.mjs",
     "./tune/proposal": "./src/tune/proposal.mjs",
     "./tune/corpus": "./src/tune/corpus.mjs",
-    "./commands/tune": "./src/commands/tune.mjs"
+    "./commands/tune": "./src/commands/tune.mjs",
+    "./archive": "./src/archive.mjs",
+    "./reindex": "./src/reindex.mjs",
+    "./upgrade": "./src/upgrade.mjs"
   },
   "files": [
     "src"

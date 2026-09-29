@@ -86,7 +86,7 @@ const WORKER_SIDE = [
 // (c) STRUCTURAL reads — the disk is the SUBJECT of the operation (SPEC's out-of-scope
 // bullet: "work-reindex renames real folders … disk is the subject … not a stale copy").
 const STRUCTURAL = [
-  { file: path.join("src", "work", "reindex.mjs"), symbols: ["listItems"], subject: "rewriteReferences" },
+  { file: path.join("packages", "work", "src", "reindex.mjs"), symbols: ["listItems"], subject: "rewriteReferences", diskSource: "./discovery.mjs" },
   // RE-POINTED at 127/02 (ADR-016/G2 again). The subject was `preflightTopLevelScaffold`, the
   // top-level axis's pre-mutation read of the real stream — DELETED by 127/ADR-003 §4 when the
   // top-level axis left `insert-shared.mjs` (`runInsertTopLevel` now lives in `promote.mjs`, and
@@ -100,14 +100,14 @@ const STRUCTURAL = [
   // the move it is about to make (a rename into the numbered stream); answered from a cache it
   // could mint a number an archived row already holds, or rename onto a folder that is there.
   { file: path.join("src", "commands", "promote.mjs"), symbols: ["listItems"], subject: "promoteRow" },
-  { file: path.join("src", "work", "upgrade.mjs"), symbols: ["listItems"], subject: "planUpgrade" },
+  { file: path.join("packages", "work", "src", "upgrade.mjs"), symbols: ["listItems"], subject: "planUpgrade", diskSource: "./discovery.mjs" },
   { file: path.join("packages", "work", "src", "effects.mjs"), symbols: ["listItems"], subject: "remapRunRecordRefs", injected: true },
   { file: path.join("src", "effects", "reconcile.mjs"), symbols: ["listItems"], subject: "reconcileRunRecords" },
   // work-doctor keeps ONE disk snapshot; ADR-005 overlays cache facts onto it in the
   // snapshot BUILDER (per-fact, ADR-010/R6.1) rather than splitting the snapshot's
   // source per check-group. The ITEM SET stays the disk's — that is what makes doctor's
   // findings claims about folders that are actually here.
-  { file: path.join("packages", "work", "src", "doctor", "index.mjs"), symbols: ["listItems"], subject: "buildSnapshot" },
+  { file: path.join("packages", "work", "src", "doctor", "index.mjs"), symbols: ["listItems"], subject: "buildSnapshot", diskSource: "../discovery.mjs" },
   // ADR-010/R6.3 — RECLASSIFIED from control-side (a) to structural (c) at Three Amigos.
   // The read scans top-level items to choose the append position for a folder it then creates
   // on disk through the m41 reindex engine. A cache-derived answer would land the insert past
@@ -187,7 +187,7 @@ function workImportBindings(commentStrippedSource) {
 
 async function assertPinned(group, label) {
   const problems = [];
-  for (const { file, symbols, subject, injected } of group) {
+  for (const { file, symbols, subject, injected, diskSource } of group) {
     const source = stripComments(await readFile(path.join(repoRoot, file), "utf8"));
     // THE SUBJECT ANCHOR first: if the pinned read has left this module, the symbol pin
     // below is measuring something else and must be re-pointed rather than trusted.
@@ -196,9 +196,11 @@ async function assertPinned(group, label) {
       continue;
     }
     const bindings = workImportBindings(source);
-    if (file.replaceAll("\\", "/") === "packages/work/src/doctor/index.mjs") {
-      assert.match(source, /import\s*\{\s*listItems\s*\}\s*from\s*"\.\.\/discovery\.mjs"/u);
-      bindings.add("listItems");
+    if (diskSource) {
+      const imports = [...source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/gu)];
+      for (const match of imports.filter(match => match[2] === diskSource)) {
+        for (const raw of match[1].split(",")) bindings.add(raw.trim().split(/\s+as\s+/)[0]);
+      }
     }
     if (injected) {
       // The package reads through a port; core must still bind that port to the

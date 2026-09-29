@@ -40,28 +40,26 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
 import { rewriteCrossingLinks, INLINE_LINK_RE } from "../../../src/work/archive.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const FACE = "src/commands/archive.mjs";
-const ENGINE = "src/work/archive.mjs";
+const ENGINE = "packages/work/src/archive.mjs";
 const SEAM = "src/effects/stream-transitions.mjs";
-const REINDEX = "src/work/reindex.mjs";
+const REINDEX = "packages/work/src/reindex.mjs";
 const INSERT_SHARED = "src/commands/insert-shared.mjs";
 const PROMOTION = "src/work-promote/promotion.mjs";
 
 const FACE_ALLOWED = new Set(["src/work.mjs", SEAM, "src/command-error.mjs"]);
-const ENGINE_ALLOWED = new Set(["src/work.mjs"]);
-
-const toPosix = (value) => value.split(path.sep).join("/");
+const ENGINE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs"]);
 
 // resolveSpecifier(specifier, fromRel) — a relative specifier resolved to a repo-relative posix
 // path, or null for a bare / builtin specifier (which the walk never follows).
 function resolveSpecifier(specifier, fromRel) {
-  if (!specifier.startsWith(".")) return null;
-  return path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  return resolveRuntimeSpecifier(fromRel, specifier);
 }
 
 async function readRel(rel) {
@@ -70,12 +68,12 @@ async function readRel(rel) {
 
 async function srcGraph() {
   const graph = new Map();
-  for (const file of await readSrcFiles(repoRoot)) {
-    const rel = `src/${file.rel}`;
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    const rel = file.rel;
     const code = await readFile(file.path, "utf8");
     const edges = importSpecifiers(code)
       .map(({ specifier }) => resolveSpecifier(specifier, rel))
-      .filter((target) => target != null && target.startsWith("src/"));
+      .filter((target) => target != null && /^(src|packages)\//.test(target));
     graph.set(rel, edges);
   }
   return graph;
@@ -178,7 +176,7 @@ export const archTests = [
       );
       // Non-vacuous: the sanctioned path exists and is the one excluded.
       const seamPath = chainThrough(graph, FACE, REINDEX, SEAM);
-      assert.deepEqual(seamPath, [FACE, SEAM, REINDEX], `the seam path ${FACE} → ${SEAM} → ${REINDEX} is found and excluded (got ${seamPath?.join(" → ")})`);
+      assert.deepEqual(seamPath, [FACE, SEAM, "src/work/reindex.mjs", REINDEX], `the seam and compatibility export lead to the package engine (got ${seamPath?.join(" → ")})`);
     },
   },
 
@@ -238,8 +236,8 @@ export const archTests = [
       assert.match(face, /\btransitionStreamArchived\s*\(/, "the face calls the seam");
       assert.doesNotMatch(face, /\barchiveItems\s*\(/, "the face never calls the engine");
       const callers = [];
-      for (const file of await readSrcFiles(repoRoot)) {
-        const rel = `src/${file.rel}`;
+      for (const file of await readRuntimeFiles(repoRoot)) {
+        const rel = file.rel;
         if (rel === ENGINE) continue;
         const code = stripComments(await readFile(file.path, "utf8"));
         if (/\barchiveItems\s*\(/.test(code)) callers.push(rel);

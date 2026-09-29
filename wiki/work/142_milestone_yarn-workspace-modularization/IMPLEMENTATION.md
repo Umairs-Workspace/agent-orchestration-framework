@@ -1056,3 +1056,36 @@ Evidence in `.tmp/workspace-migration/work-tune/`:
 Remaining work mutations and command implementations, other domain packages, the final core/apps
 layout and whole-tree/platform verification remain outstanding. No generated citations, lock hashes
 or AOF workflow state changed in this extraction.
+
+## Work owns archive, reindex and schema-upgrade mechanics
+
+Three mutation implementations now live in work. Archive uses work discovery and identity;
+reindex also uses record/dependency APIs and foundation's atomic writer. Upgrade uses records,
+discovery and contracts errors, with core supplying the installed-product version resolver.
+Construction and planning do not call that resolver; stamp application does. Commands still own
+selection/refusal, and stream transitions still own effect ordering. No dependency edge changed.
+
+All three old export sets, exported values and function bodies match the baseline after port wiring.
+A package test covers deferred version policy, read-only planning, body preservation and idempotent
+application. The root package bridge now runs 116 cases. Archive and mint import-graph guards follow
+public workspace exports and scan runtime packages; numeric-site and positive disk-reader guards
+inspect the new implementations. The core adapters retain the old imports for compatibility.
+
+Evidence in `.tmp/workspace-migration/work-mutations/`:
+
+- The 27-suite affected selection completed 440 cases, with 431 initial passes and nine stale
+  source-path assertions. All nine are covered by the corrected ten-suite run: 126 passes,
+  including the package bridge. The 13-suite final selection completed 138 cases with 137 passes;
+  its cache-reader pin required one more matcher correction for the package-local discovery path.
+  The corrected guard and final census pass all 17 cases, covering the final selection's sole failure.
+- Differential fixtures compare upgrade planning/application, insert selection/remaps, archive
+  moves and crossing-link rewrites, plus every persisted file byte. A CRLF record and nested
+  story are included. The same comparisons pass from the copied installation, with all three
+  public exports resolving inside it and all 117 commands retained. Earlier domain comparisons
+  continue to pass in that payload.
+- Standalone JavaScript bundling includes all three implementations and the supply-chain audit
+  passes with zero warnings. No new install was needed because dependency declarations did not change.
+
+The full migration remains open. Promotion and remaining work services/commands, other domain
+extractions, final core/apps layout, compatibility-adapter removal and whole-tree/platform validation
+remain on COMPLETION.md. No generated citations or AOF lifecycle state changed in this slice.

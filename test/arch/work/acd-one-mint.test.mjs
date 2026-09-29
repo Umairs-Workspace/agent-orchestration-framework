@@ -49,11 +49,11 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const toPosix = (value) => String(value).split(path.sep).join("/");
-
 const HOME = "src/work-promote/promotion.mjs";
 // The promote FAMILY — `appendPosition`'s callers, as the register reads them.
 const APPEND_CALLERS = Object.freeze([
@@ -70,7 +70,7 @@ const INSERT_FACES = Object.freeze([
   "src/commands/insert-uat.mjs",
 ]);
 const ENGINE = "src/work/reindex.mjs";
-const ENGINE_IMPORTERS = Object.freeze(["src/commands/insert-shared.mjs", "src/effects/stream-transitions.mjs"]);
+const ENGINE_IMPORTERS = Object.freeze(["src/commands/insert-shared.mjs", "src/effects/stream-transitions.mjs", "src/work/reindex.mjs"]);
 // The five the prompts' rewrite names (task 05). The glob is the SUBJECT; these are the floor, so a
 // renamed prompt fails as missing rather than quietly shrinking the sweep.
 const NAMED_ADD_PROMPTS = Object.freeze([
@@ -94,7 +94,7 @@ async function walkMjs(rel, out = []) {
 // rel → comment-stripped source, for every module in the sweep. Read once per leg, so a leg's
 // answer is a fact about one snapshot of the tree.
 async function strippedSources(rel = "src") {
-  const files = (await walkMjs(rel)).sort();
+  const files = rel === "src" ? (await readRuntimeFiles(repoRoot)).map(file => file.rel).sort() : (await walkMjs(rel)).sort();
   const sources = new Map();
   for (const file of files) sources.set(file, stripComments(await readFile(path.join(repoRoot, file), "utf8")));
   return sources;
@@ -123,8 +123,8 @@ function definesName(code, name) {
 // Does `specifier`, resolved from `fromRel`, name `targetRel`? Relative specifiers only — a bare or
 // `node:` specifier can never name a file under `src/`.
 function resolvesTo(specifier, fromRel, targetRel) {
-  if (!specifier.startsWith(".")) return false;
-  return toPosix(path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier))) === targetRel;
+  const resolved = resolveRuntimeSpecifier(fromRel, specifier);
+  return resolved === targetRel || (targetRel === ENGINE && resolved === "packages/work/src/reindex.mjs");
 }
 
 export const archTests = [

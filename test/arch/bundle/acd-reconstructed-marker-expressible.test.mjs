@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { isImportRecord, IMPORT_ITEM_PREFIX } from "../../../src/memory/local-indexing.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UPGRADE_MODULE = path.join(repoRoot, "src", "work", "upgrade.mjs");
+const UPGRADE_MODULE = path.join(repoRoot, "packages", "work", "src", "upgrade.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

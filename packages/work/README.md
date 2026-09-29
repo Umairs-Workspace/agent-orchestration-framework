@@ -36,6 +36,9 @@ Private workspace for work-domain behavior.
 | `@aof/work/tune/proposal` | `createTuneProposals` shapes proposals using the supplied model-map policy and asset path. |
 | `@aof/work/tune/corpus` | `createTuneCorpus` joins work records with supplied retrospective, execution, observation and graph readers. |
 | `@aof/work/commands/tune` | `createTuneCommand` contributes the tune descriptor and report builder; core supplies corpus, proposal, graph and registry collaborators. |
+| `@aof/work/archive` | Verbatim archive moves, crossing-link rewrites and moved-ref enumeration. |
+| `@aof/work/reindex` | Insert shift selection, ref remaps and surgical frontmatter updates. |
+| `@aof/work/upgrade` | `createWorkUpgrade` supplies schema migration planning, application and changelog rendering using core's installed-version resolver. |
 
 Doctor checks import pure shared predicates directly rather than importing the snapshot reader.
 The work package depends on contracts for error envelopes and claim provenance; it does not import
@@ -99,3 +102,8 @@ declared read contract. Proposal policy is supplied explicitly, keeping assistan
 The tune command requests the registry only when proposals need an acceptor verdict; it invokes
 the shared acceptor in report-only mode. Work neither imports the application registry nor owns
 a second acceptance rule. Core's legacy paths remain composition adapters during migration.
+
+Mutation engines take an explicit work directory. Archive and reindex import only work-owned
+readers and their filesystem primitives; command policy and effect publication remain outside
+these engines. Upgrade invokes the supplied version resolver only when applying a pending stamp.
+Planning is read-only, current records are unchanged, and newer schemas still refuse the whole run.

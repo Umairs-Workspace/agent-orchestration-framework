@@ -30,10 +30,11 @@
 //       second time. A ref remap is not idempotent, so this is the reactor
 //       contract's other sanctioned option and it must actually hold.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { EFFECTS } from "../../../src/effects/table.mjs";
 import { LOCAL_LOCI } from "../../../src/effects/dispatch.mjs";
 import { reindexForInsert } from "../../../src/work/reindex.mjs";
@@ -43,24 +44,12 @@ import { startRun, readRuns } from "../../../src/run-store.mjs";
 import { recordPageId, readMapping, resolvePageId, remapMappingRefs } from "../../../src/notion/mapping.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 
 // The reindex engine's write door: reachable from its own module and the seam only.
-const REINDEX_ALLOWED = new Set(["src/work/reindex.mjs", "src/effects/stream-transitions.mjs"]);
+const REINDEX_ALLOWED = new Set(["packages/work/src/reindex.mjs", "src/effects/stream-transitions.mjs"]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-}
-
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
 }
 
 function fm(fields) {
@@ -114,7 +103,8 @@ export const archTests = [
   {
     name: "arch/m42-d4-port3: the renumber is reachable only through the transition seam, and every declared remap sits at a locus an ordinary CLI process reaches",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.some(file => file.endsWith(path.join("packages", "work", "src", "reindex.mjs"))), "the scan includes the mutation implementation");
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");

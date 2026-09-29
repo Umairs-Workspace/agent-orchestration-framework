@@ -43,7 +43,7 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   "packages/work/src/discovery.mjs",
   "packages/work/src/dependencies.mjs",
   "packages/work/src/readiness.mjs",
-  "src/work/reindex.mjs",
+  "packages/work/src/reindex.mjs",
   "src/commands/migrate-folder.mjs",
   "src/commands/insert-shared.mjs",
   "packages/work/src/doctor/depends.mjs",
@@ -60,7 +60,7 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   // engine (`liveDrivers`) each order the root's drivers by number for `--done`, and each site sits
   // behind `.filter(isLiveStreamRow)` over the same rows. Guarded; none is allow-listed.
   "src/commands/archive.mjs",
-  "src/work/archive.mjs",
+  "packages/work/src/archive.mjs",
 ]);
 
 // The sites the rule cannot classify, each with the reason it is admitted. Keyed by file +
@@ -69,7 +69,7 @@ export const ALLOWED_UNCLASSIFIED = Object.freeze([
   { file: "src/commands/migrate-folder.mjs", fn: "recoverSourceStories", reason: "source-scan units (a foreign tree's story folders), not enumerator rows" },
   { file: "src/commands/migrate-folder.mjs", fn: "recoverSourceTasks", reason: "source-scan units (a foreign tree's task features), not enumerator rows" },
   { file: "packages/work/src/doctor/freshness.mjs", fn: "roadmapFolderMismatch", reason: "a ROADMAP index entry (`entry?.number`, config data), not a row" },
-  { file: "src/work/reindex.mjs", fn: "reindexForInsert", reason: "its rows are `selectAffected`'s output, filtered through isLiveStreamRow there" },
+  { file: "packages/work/src/reindex.mjs", fn: "reindexForInsert", reason: "its rows are `selectAffected`'s output, filtered through isLiveStreamRow there" },
 ]);
 
 // The site shape — the contract's own grep, `parseInt\([^()]*\.number[^()]*\)`, widened at the

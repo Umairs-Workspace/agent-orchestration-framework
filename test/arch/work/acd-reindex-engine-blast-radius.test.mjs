@@ -25,15 +25,15 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const WORK = path.join(repoRoot, "src", "work.mjs");
-const REINDEX = path.join(repoRoot, "src", "work", "reindex.mjs");
+const REINDEX = path.join(repoRoot, "packages", "work", "src", "reindex.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
 // A reindex/insert ENGINE module specifier (the WRITER work.mjs must never pull in).
-const ENGINE_MODULE = /(^|\/)(work-reindex|reindex|work-insert|insert)\.mjs$/;
-const WORK_MODULE = /(^|\/)work\.mjs$/;
+const ENGINE_MODULE = /(^|\/)(work-reindex|reindex|work-insert|insert)(?:\.mjs)?$/;
+const WORK_MODULE = /(^|\/)(discovery|records)\.mjs$/;
 
 export const archTests = [
   {
@@ -51,7 +51,7 @@ export const archTests = [
       // pure READER hub) — every specifier resolves within src/ (relative) and none
       // is an engine module. Self-checks (non-vacuous): the matcher catches every
       // engine-module form and does NOT flag work.mjs's legitimate dependencies.
-      for (const bad of ["./work/reindex.mjs", "./reindex.mjs", "../src/work-insert.mjs"]) {
+      for (const bad of ["./work/reindex.mjs", "./reindex.mjs", "../src/work-insert.mjs", "@aof/work/reindex"]) {
         assert.ok(ENGINE_MODULE.test(bad), `the matcher catches a real ${bad} import`);
       }
       for (const ok of ["./fs.mjs", "./node-identity.mjs", "./workspace.mjs"]) {
@@ -62,18 +62,16 @@ export const archTests = [
   {
     name: "arch/ADR-001(m41): GUARD-IF-PRESENT — once src/work/reindex.mjs exists it imports ./work.mjs (the engine depends on the readers, never the reverse)",
     run: async () => {
-      if (!existsSync(REINDEX)) {
-        // Clean skip while the engine is unbuilt — arms the moment it lands.
-        return;
-      }
+      assert.ok(existsSync(REINDEX), "the work-owned reindex implementation exists");
       const specs = importSpecifiers(stripComments(await readFile(REINDEX, "utf8"))).map((entry) => entry.specifier);
       const importsWork = specs.some((s) => WORK_MODULE.test(s));
       assert.ok(
         importsWork,
-        `src/work/reindex.mjs must import ./work.mjs (the engine consumes work.mjs's readers) — imports: ${specs.join(", ")}`,
+        `the reindex engine consumes work-owned readers — imports: ${specs.join(", ")}`,
       );
       // Self-check (non-vacuous): the WORK matcher recognises the real specifier.
-      assert.ok(WORK_MODULE.test("./work.mjs"), "the WORK matcher recognises ./work.mjs");
+      assert.ok(WORK_MODULE.test("./discovery.mjs"), "the WORK matcher recognises discovery");
+      assert.ok(WORK_MODULE.test("./records.mjs"), "the WORK matcher recognises records");
       assert.ok(!WORK_MODULE.test("./work/reindex.mjs"), "the WORK matcher does not confuse work-reindex.mjs for work.mjs");
     },
   },

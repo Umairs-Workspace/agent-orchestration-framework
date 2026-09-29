@@ -236,3 +236,14 @@ Source and copied-installation comparisons preserve corpus/proposal/counter resu
 and acceptor invocation; the copied payload retains 117 commands. Standalone JavaScript bundling and
 the supply-chain audit pass. No dependencies or generated citations changed. Remaining work mutations,
 commands, domain extractions, core/apps layout and final verification remain open in COMPLETION.md.
+
+Mutation extraction: work owns archive moves/link rewriting, reindex/ref-remap mechanics and the
+schema-upgrade registry/engine. Upgrade receives installed-version policy from core; the other two
+engines use work-owned readers directly. All three legacy APIs and implementation functions match
+their baseline. Source and copied-payload tests preserve reports and persisted bytes, and the payload
+retains 117 commands. The 440-case selection is covered after nine source-path corrections; the
+changed-suite run passes 126 cases, including the bridge over all 116 package cases. The broader
+138-case final selection needed one cache-import matcher correction; the corrected guard and final
+census pass all 17 cases.
+Standalone JavaScript bundling and supply-chain audit pass. No dependencies, generated citations or
+workflow state changed. Continue with remaining work services/commands, other domains and final layout.
