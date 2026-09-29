@@ -45,7 +45,7 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   "packages/work/src/readiness.mjs",
   "packages/work/src/reindex.mjs",
   "src/commands/migrate-folder.mjs",
-  "src/commands/insert-shared.mjs",
+  "packages/work/src/insertion/scaffold.mjs",
   "packages/work/src/doctor/depends.mjs",
   "packages/work/src/doctor/freshness.mjs",
   "packages/work/src/doctor/index.mjs",
@@ -55,7 +55,7 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   // 127/02 — the eleventh: the one mint (127/ADR-003) reads the stream's width (`streamWidth`)
   // and the archived-collision set (`archivedCollisions`) over rows, and `numbersWritten`
   // filters through `isLiveStreamRow`. All four sites are guarded; none is allow-listed.
-  "src/commands/promote.mjs",
+  "packages/work/src/commands/promote.mjs",
   // 127/03 — the twelfth and thirteenth: the archive face (`selectDoneDrivers`) and the archive
   // engine (`liveDrivers`) each order the root's drivers by number for `--done`, and each site sits
   // behind `.filter(isLiveStreamRow)` over the same rows. Guarded; none is allow-listed.

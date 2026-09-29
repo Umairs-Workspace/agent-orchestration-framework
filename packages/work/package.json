@@ -58,7 +58,13 @@
     "./promote/chore-seed": "./src/promote/chore-seed.mjs",
     "./promote/promotion": "./src/promote/promotion.mjs",
     "./commands/promote-gap-to-chore": "./src/commands/promote-gap-to-chore.mjs",
-    "./commands/promote-finding-to-chore": "./src/commands/promote-finding-to-chore.mjs"
+    "./commands/promote-finding-to-chore": "./src/commands/promote-finding-to-chore.mjs",
+    "./insertion/scaffold": "./src/insertion/scaffold.mjs",
+    "./commands/promote": "./src/commands/promote.mjs",
+    "./commands/insert-chore": "./src/commands/insert-chore.mjs",
+    "./commands/insert-milestone": "./src/commands/insert-milestone.mjs",
+    "./commands/insert-story": "./src/commands/insert-story.mjs",
+    "./commands/insert-uat": "./src/commands/insert-uat.mjs"
   },
   "files": [
     "src"

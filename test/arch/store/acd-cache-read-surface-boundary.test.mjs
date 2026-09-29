@@ -94,12 +94,12 @@ const STRUCTURAL = [
   // `runInsertStory` is its structural read: it enumerates the real top-level folders to resolve
   // `--under` to a LIVE milestone before the slot-open writes into it. The pin moves to the read
   // that remained, and the top-level read is pinned at its new home below — never deleted.
-  { file: path.join("src", "commands", "insert-shared.mjs"), symbols: ["listItems"], subject: "runInsertStory" },
+  { file: path.join("packages", "work", "src", "insertion", "scaffold.mjs"), symbols: ["listItems"], subject: "runInsertStory", diskSource: "../discovery.mjs" },
   // 127/02 — the top-level structural read's NEW home. `promoteRow` reads the stream's width, the
   // destination-exists check and the archived-collision set from the disk that is the subject of
   // the move it is about to make (a rename into the numbered stream); answered from a cache it
   // could mint a number an archived row already holds, or rename onto a folder that is there.
-  { file: path.join("src", "commands", "promote.mjs"), symbols: ["listItems"], subject: "promoteRow" },
+  { file: path.join("packages", "work", "src", "commands", "promote.mjs"), symbols: ["listItems"], subject: "promoteRow", diskSource: "../discovery.mjs" },
   { file: path.join("packages", "work", "src", "upgrade.mjs"), symbols: ["listItems"], subject: "planUpgrade", diskSource: "./discovery.mjs" },
   { file: path.join("packages", "work", "src", "effects.mjs"), symbols: ["listItems"], subject: "remapRunRecordRefs", injected: true },
   { file: path.join("src", "effects", "reconcile.mjs"), symbols: ["listItems"], subject: "reconcileRunRecords" },

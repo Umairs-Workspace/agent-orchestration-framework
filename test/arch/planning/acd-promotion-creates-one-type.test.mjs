@@ -37,7 +37,7 @@ import { PROMOTED_TYPE } from "@aof/work/promote/promotion";
 import { FINDING_ROUTINGS, LOOP_CREATED_ITEM_TYPE } from "../../../packages/work-loop/src/engine.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const INSERT_ENGINE = "src/commands/insert-shared.mjs";
+const INSERT_ENGINE = "packages/work/src/insertion/scaffold.mjs";
 const GAP_FACE = "packages/work/src/commands/promote-gap-to-chore.mjs";
 const FINDING_FACE = "packages/work/src/commands/promote-finding-to-chore.mjs";
 const PROMOTION_PATH = Object.freeze([

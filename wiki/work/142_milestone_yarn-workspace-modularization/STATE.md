@@ -256,3 +256,13 @@ cases. Source and copied-installation comparisons preserve promotion output, ref
 record bytes, retaining 117 registered commands. Standalone JavaScript bundling and supply-chain audit
 pass. The final mint/census guard run passes all 17 cases. No dependency or generated-output change was
 needed. Remaining scaffolding/backlog promotion, work services/commands, domains and final layout remain.
+
+Insertion extraction: work now owns shared scaffolding/nested insertion, backlog promotion and all
+four insertion command implementations. Core supplies installed-version and stream-transition policy.
+Six legacy API/value/function comparisons pass; source and copied-payload fixtures preserve outputs,
+renumbered records, nested parent/dependency rewrites and all 117 commands. The 808-case affected run
+had 793 initial passes and 15 failures: 13 source-location failures are covered by the corrected
+277-case run (including all 118 package cases); two pre-existing generated citation/lock checks remain
+pending the separate four-file approval. Standalone JavaScript bundling and supply-chain audit pass.
+The final census passes all 12 cases. No generated output, dependency or workflow state changed. Remaining
+work services/commands, domain extractions, core/apps layout and final verification remain outstanding.

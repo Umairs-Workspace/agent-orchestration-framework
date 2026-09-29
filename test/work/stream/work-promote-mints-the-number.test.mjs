@@ -673,7 +673,7 @@ export const workPromoteMintsTheNumberTests = [
         "src/commands/migrate-folder.mjs",
         "packages/work/src/commands/promote-finding-to-chore.mjs",
         "packages/work/src/commands/promote-gap-to-chore.mjs",
-        "src/commands/promote.mjs",
+        "packages/work/src/commands/promote.mjs",
       ].sort(), `its callers are exactly the promote family plus migrate-folder (got ${JSON.stringify(callers)})`);
     },
   },

@@ -50,7 +50,7 @@ const FACE = "src/commands/archive.mjs";
 const ENGINE = "packages/work/src/archive.mjs";
 const SEAM = "src/effects/stream-transitions.mjs";
 const REINDEX = "packages/work/src/reindex.mjs";
-const INSERT_SHARED = "src/commands/insert-shared.mjs";
+const INSERT_SHARED = "packages/work/src/insertion/scaffold.mjs";
 const PROMOTION = "src/work-promote/promotion.mjs";
 
 const FACE_ALLOWED = new Set(["src/work.mjs", SEAM, "src/command-error.mjs"]);

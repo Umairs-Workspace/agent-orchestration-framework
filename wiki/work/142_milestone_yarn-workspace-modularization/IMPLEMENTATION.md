@@ -1120,3 +1120,37 @@ Evidence in `.tmp/workspace-migration/work-promotion/`:
 The full migration remains active. Remaining work services/commands, other domains, the core/apps
 layout, adapter removal and whole-tree/platform verification remain outstanding. No generated citation,
 lock hash or AOF workflow state changed in this extraction.
+
+## Work owns shared insertion, backlog promotion and insertion commands
+
+Six implementations now live in work: shared scaffolding/nested insertion, backlog promotion and
+the four insert descriptors. The scaffold factory receives installed-version policy and the stream
+transition. Promotion receives the same transition and the composed scaffold helpers. Descriptor
+factories receive the shared insertion functions/flags. Work owns template reads/rendering, count
+gates, refusals, placement, number stamps and dependency rewrites; core retains version resolution
+and transition composition, preserving locking and effect publication. No dependency edge changed.
+
+All six legacy export sets, values and function bodies match the baseline after port wiring. A new
+package case verifies inert construction and supplied version/transition policy with real disk writes;
+the root bridge now includes 118 package cases. Source checks follow the moved implementations and
+retain non-vacuity. The insertion importer check inspects both core wiring and package callers;
+positive disk-reader pins and intake/numeric-site guards follow scaffold and promotion ownership.
+
+Evidence in `.tmp/workspace-migration/work-insertion/`:
+
+- The 42-suite affected run completed 808 cases: 793 passed initially, 13 source-location assertions
+  required migration, and two existing generated-output checks failed on the four pending citation
+  refreshes. The corrected ten-suite run passes 277 cases, covering all 13 migration failures and
+  the package bridge. The final census passes all 12 cases.
+- Source and copied-installation fixtures run milestone, UAT, story and chore insertion, then
+  scaffold/promote a backlog milestone. They compare results/rendering and every record byte after
+  top-level renumbering, nested parent updates and UAT dependency rewrites. All six public exports
+  resolve inside the payload, which retains all 117 commands and passes prior domain comparisons.
+- Standalone JavaScript bundling includes all six implementations. Supply-chain audit passes with
+  zero warnings. There was no install because dependency declarations did not change.
+
+No generated citation or AOF lifecycle state changed. The two generated-output failures are the
+existing `mesh-assignment-reclaim` hash/manifest assertion and the four-file update-count assertion;
+they do not authorize expanding the user's earlier three-file citation approval. Remaining work
+services/commands, domain extraction, core/apps layout, adapter removal and final whole-tree/platform
+verification remain outstanding.

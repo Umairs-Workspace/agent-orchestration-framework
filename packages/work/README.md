@@ -42,6 +42,9 @@ Private workspace for work-domain behavior.
 | `@aof/work/promote/chore-seed`, `promote/promotion` | Chore content seeding, back-references, append positioning and idempotence scans. |
 | `@aof/work/commands/promote-gap-to-chore` | `createPromoteGapCommand` contributes gap promotion with supplied insertion flags and operation. |
 | `@aof/work/commands/promote-finding-to-chore` | `createPromoteFindingCommand` contributes finding promotion with supplied insertion and cache-read operations. |
+| `@aof/work/insertion/scaffold` | `createWorkInsertion` owns template scaffolding, insertion flags/count gates and nested story insertion with supplied version and stream-transition policies. |
+| `@aof/work/commands/promote` | `createPromoteCommand` owns backlog promotion, number stamping, dependency rewrites and the top-level insertion alias with supplied scaffold/transition services. |
+| `@aof/work/commands/insert-chore`, `insert-milestone`, `insert-story`, `insert-uat` | Command factories contribute the four insertion descriptors using the composed insertion services. |
 
 Doctor checks import pure shared predicates directly rather than importing the snapshot reader.
 The work package depends on contracts for error envelopes and claim provenance; it does not import
@@ -114,5 +117,10 @@ Planning is read-only, current records are unchanged, and newer schemas still re
 Promotion commands share one content seed and one idempotence/append engine. Structural placement
 and existing-chore scans read the local work tree. Finding resolution uses the supplied cache reader;
 core binds it to the existing shared read service. Both commands call the supplied insertion operation,
-which retains scaffold and stream-effect policy during migration. Constructing either command performs
+whose work-owned implementation uses the supplied stream-transition policy. Constructing either command performs
 no reads or writes, and the promotion engine imports no command module.
+
+Insertion reads templates from the explicit workspace's asset directory and obtains installed-version
+policy from core. It validates and counts before calling the supplied stream transition; that transition
+retains locking, ref remapping and effect publication. Work owns the subsequent scaffold, move, number
+stamp and dependency rewrite. The four insert descriptors remain thin callers of those shared services.

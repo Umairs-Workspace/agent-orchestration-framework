@@ -36,7 +36,7 @@ import { scaffoldBacklogDriver } from "../../../src/commands/insert-shared.mjs";
 import { packageVersionString } from "../../../src/asset-base.mjs";
 import { openEffectsJournal, readEvents } from "../../../src/effects/journal.mjs";
 import { withInsertFixture, buildTopLevelMilestones, writeStoryItem, setMilestoneDepends, frontmatter } from "../../support/work-insert-fixture.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { buildThreeRootFixture } from "./work-backlog-archive-enumerate.test.mjs";
@@ -685,7 +685,7 @@ export const workInsertAliasTests = [
   {
     name: "work-insert/alias: 03 the slot-open's callers in src/commands are promote and nothing else",
     run: async () => {
-      const files = (await readSrcFiles(repoRoot)).filter((file) => file.rel.startsWith("commands/"));
+      const files = (await readRuntimeFiles(repoRoot)).filter((file) => file.rel.includes("/commands/") || file.rel === "packages/work/src/insertion/scaffold.mjs");
       assert.ok(files.length > 20, `non-vacuity: ${files.length} modules under src/commands`);
       const sources = new Map();
       for (const file of files) sources.set(file.rel, stripComments(await readFile(file.path, "utf8")));
@@ -694,8 +694,8 @@ export const workInsertAliasTests = [
         specifier.startsWith(".") && path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier)) === target;
 
       // `reindex.mjs` is imported by insert-shared.mjs and by no other module under src/commands/.
-      const engineImporters = [...sources].filter(([relPath, code]) => importSpecifiers(code).some(({ specifier }) => resolvesTo(specifier, relPath, "work/reindex.mjs"))).map(([relPath]) => relPath);
-      assert.deepEqual(engineImporters, ["commands/insert-shared.mjs"], `reindex.mjs's importers under src/commands: ${engineImporters.join(", ") || "none"}`);
+      const engineImporters = [...sources].filter(([relPath, code]) => importSpecifiers(code).some(({ specifier }) => resolvesTo(specifier, relPath, "packages/work/src/reindex.mjs"))).map(([relPath]) => relPath);
+      assert.deepEqual(engineImporters, ["packages/work/src/insertion/scaffold.mjs"], `the scaffold is the only insertion consumer of reindex: ${engineImporters.join(", ") || "none"}`);
 
       // `transitionStreamReindexed` with the top-level space: promote.mjs and nowhere else; the
       // nested call sits in insert-shared.mjs's runInsertStory.
@@ -708,31 +708,37 @@ export const workInsertAliasTests = [
           if (/space\s*:\s*"nested"/u.test(args)) nestedCallers.push(relPath);
         }
       }
-      assert.deepEqual(topLevelCallers, ["commands/promote.mjs"], `the ONE top-level slot-open call: ${topLevelCallers.join(", ") || "none"}`);
-      assert.deepEqual(nestedCallers, ["commands/insert-shared.mjs"], `the ONE nested call: ${nestedCallers.join(", ") || "none"}`);
-      assert.match(sources.get("commands/insert-shared.mjs"), /export\s+async\s+function\s+runInsertStory\b/u, "…inside runInsertStory, which insert-shared.mjs still defines");
+      assert.deepEqual(topLevelCallers, ["packages/work/src/commands/promote.mjs"], `the ONE top-level slot-open call: ${topLevelCallers.join(", ") || "none"}`);
+      assert.deepEqual(nestedCallers, ["packages/work/src/insertion/scaffold.mjs"], `the ONE nested call: ${nestedCallers.join(", ") || "none"}`);
+      assert.match(sources.get("packages/work/src/insertion/scaffold.mjs"), /async\s+function\s+runInsertStory\b/u, "the scaffold factory still defines the nested insertion engine");
 
       // `runInsertTopLevel` is defined in promote.mjs and imported from there by exactly the five.
       const definers = [...sources].filter(([, code]) => /(?:export\s+)?async\s+function\s+runInsertTopLevel\b/u.test(code)).map(([relPath]) => relPath);
-      assert.deepEqual(definers, ["commands/promote.mjs"], `runInsertTopLevel is defined in promote.mjs: ${definers.join(", ") || "none"}`);
+      assert.deepEqual(definers, ["packages/work/src/commands/promote.mjs"], `runInsertTopLevel is defined in promote.mjs: ${definers.join(", ") || "none"}`);
       const importers = [...sources]
         .filter(([, code]) => /import\s*\{[^}]*\brunInsertTopLevel\b[^}]*\}\s*from\s*["']\.\/promote\.mjs["']/u.test(code))
         .map(([relPath]) => relPath)
         .sort();
       assert.deepEqual(
         importers,
-        ["commands/insert-chore.mjs", "commands/insert-milestone.mjs", "commands/insert-uat.mjs", "commands/promote-finding-to-chore.mjs", "commands/promote-gap-to-chore.mjs"],
+        ["src/commands/insert-chore.mjs", "src/commands/insert-milestone.mjs", "src/commands/insert-uat.mjs", "src/commands/promote-finding-to-chore.mjs", "src/commands/promote-gap-to-chore.mjs"],
         `…and imported from ./promote.mjs by exactly the five: ${importers.join(", ")}`,
       );
       const anyImporters = [...sources].filter(([, code]) => /\brunInsertTopLevel\b/u.test(code) && !/function\s+runInsertTopLevel\b/u.test(code)).map(([relPath]) => relPath).sort();
-      assert.deepEqual(anyImporters, importers, "no module reaches runInsertTopLevel by any other route");
+      const packageFaces = importers.map(file => file.replace("src/commands/", "packages/work/src/commands/"));
+      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "src/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
+      for (const face of packageFaces) {
+        assert.match(sources.get(face), /\brunInsertTopLevel\s*\(/u, `${face}: the injected insertion service is called`);
+        const adapter = sources.get(face.replace("packages/work/src/", "src/"));
+        assert.match(adapter, /create\w+\(\{[^}]*\brunInsertTopLevel\b/u, `${face}: core supplies the shared insertion service`);
+      }
 
       // None of the four faces contains parseInt, Math.max or a number: write; the mechanics
       // module keeps parsePosition (non-vacuity: the patterns match there).
-      const faces = ["commands/insert-milestone.mjs", "commands/insert-chore.mjs", "commands/insert-uat.mjs", "commands/insert-story.mjs"];
+      const faces = ["packages/work/src/commands/insert-milestone.mjs", "packages/work/src/commands/insert-chore.mjs", "packages/work/src/commands/insert-uat.mjs", "packages/work/src/commands/insert-story.mjs"];
       const patterns = [["parseInt", /\bparseInt\b/u], ["Math.max", /\bMath\.max\b/u], ["a number: write", /\bnumber\s*:/u]];
-      assert.match(sources.get("commands/insert-shared.mjs"), /\bparseInt\b/u, "non-vacuity: the mechanics module parses (parsePosition)");
-      assert.match(sources.get("commands/promote.mjs"), /\bnumber\s*:/u, "non-vacuity: the number: pattern matches where the mint writes one");
+      assert.match(sources.get("packages/work/src/insertion/scaffold.mjs"), /\bparseInt\b/u, "non-vacuity: the mechanics module parses (parsePosition)");
+      assert.match(sources.get("packages/work/src/commands/promote.mjs"), /\bnumber\s*:/u, "non-vacuity: the number: pattern matches where the mint writes one");
       for (const face of faces) {
         const code = sources.get(face);
         assert.ok(typeof code === "string" && code.trim().length > 0, `non-vacuity: ${face} was read`);
@@ -741,7 +747,7 @@ export const workInsertAliasTests = [
 
       // insert-shared.mjs no longer contains renumberDepends, preflightTopLevelScaffold or
       // writeTopLevelScaffold (comment-stripped — the comments may still name what was deleted).
-      const mechanics = sources.get("commands/insert-shared.mjs");
+      const mechanics = sources.get("packages/work/src/insertion/scaffold.mjs");
       for (const gone of ["renumberDepends", "preflightTopLevelScaffold", "writeTopLevelScaffold"]) {
         assert.doesNotMatch(mechanics, new RegExp(`\\b${gone}\\b`, "u"), `insert-shared.mjs still contains ${gone}`);
       }

@@ -631,3 +631,17 @@ logic have one home, and the engine imports no command. Source and copied-instal
 both real command handlers, compare their output and persisted record bytes, and cover repeat-finding,
 discharged-gap and reviewed-chore refusals. Positive cache/disk pins inspect package source and core
 wiring; mint scans cover all runtime packages, including the top-level insertion-call guard.
+
+Shared insertion is the next completed boundary. The scaffold module owns template reading/rendering,
+confirmation counts and nested-story creation. Its only external policies are the installed version
+and stream transition. Backlog promotion owns resolution, refusal, number stamping, placement and
+dependency rewrites, consuming the shared scaffold functions and the same transition. Four insertion
+descriptors use those composed services. All six implementations now belong to work; core supplies
+the version and transition collaborators and assembles the factories. No dependency edge was added.
+
+The transition port is essential: replacing it with direct reindex calls would bypass locking and
+effect publication. Both nested and top-level paths retain their old call arguments and order. Source
+and copied-payload fixtures exercise all four commands, including a top-level insertion that shifts
+a milestone, its nested story and a UAT dependency, followed by backlog promotion. Every record byte
+and rendered result matches the baseline. The positive disk-reader pins and mint/importer scans now
+inspect package implementations and verify that core adapters supply the shared insertion service.

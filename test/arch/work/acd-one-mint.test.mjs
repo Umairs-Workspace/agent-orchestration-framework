@@ -60,17 +60,17 @@ const APPEND_CALLERS = Object.freeze([
   "src/commands/migrate-folder.mjs",
   "packages/work/src/commands/promote-finding-to-chore.mjs",
   "packages/work/src/commands/promote-gap-to-chore.mjs",
-  "src/commands/promote.mjs",
+  "packages/work/src/commands/promote.mjs",
 ]);
-const VERB = "src/commands/promote.mjs";
+const VERB = "packages/work/src/commands/promote.mjs";
 const INSERT_FACES = Object.freeze([
-  "src/commands/insert-chore.mjs",
-  "src/commands/insert-milestone.mjs",
-  "src/commands/insert-story.mjs",
-  "src/commands/insert-uat.mjs",
+  "packages/work/src/commands/insert-chore.mjs",
+  "packages/work/src/commands/insert-milestone.mjs",
+  "packages/work/src/commands/insert-story.mjs",
+  "packages/work/src/commands/insert-uat.mjs",
 ]);
 const ENGINE = "src/work/reindex.mjs";
-const ENGINE_IMPORTERS = Object.freeze(["src/commands/insert-shared.mjs", "src/effects/stream-transitions.mjs", "src/work/reindex.mjs"]);
+const ENGINE_IMPORTERS = Object.freeze(["packages/work/src/insertion/scaffold.mjs", "src/effects/stream-transitions.mjs", "src/work/reindex.mjs"]);
 // The five the prompts' rewrite names (task 05). The glob is the SUBJECT; these are the floor, so a
 // renamed prompt fails as missing rather than quietly shrinking the sweep.
 const NAMED_ADD_PROMPTS = Object.freeze([
@@ -198,7 +198,7 @@ export const archTests = [
       // anchor is the VERB (`stampNumber` in promote.mjs writes `number: ${padded}`), not the
       // append home — `promotion.mjs` writes no `number:` line at all; its one match was the
       // ternary `? number : max`, which is not a write and would have anchored nothing (127/02).
-      const mechanics = stripComments(await readFile(path.join(repoRoot, "src/commands/insert-shared.mjs"), "utf8"));
+      const mechanics = stripComments(await readFile(path.join(repoRoot, "packages/work/src/insertion/scaffold.mjs"), "utf8"));
       const verb = stripComments(await readFile(path.join(repoRoot, VERB), "utf8"));
       assert.match(mechanics, patterns[0][1], "non-vacuity: the parseInt pattern matches the mechanics module, which legitimately parses");
       assert.match(verb, /\bnumber\s*:/u, "non-vacuity: the `number:` pattern matches where a number IS written — promote.mjs's stampNumber");

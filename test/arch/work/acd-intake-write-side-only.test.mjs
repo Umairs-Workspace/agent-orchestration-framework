@@ -41,10 +41,10 @@ const TOKEN = /intake/iu;
 
 // The WRITE side, by path. `src/bundle/commands/*.md` is a glob because the prompts are the scaffold
 // path as a class — a new `aof:add-*` prompt reads the key the day it ships.
-const ALLOWED_FILES = Object.freeze(["src/work/init.mjs", "src/commands/init-update.mjs", "src/commands/promote.mjs"]);
+const ALLOWED_FILES = Object.freeze(["src/work/init.mjs", "src/commands/init-update.mjs", "packages/work/src/commands/promote.mjs"]);
 const ALLOWED_GLOB = /^src\/bundle\/commands\/[^/]+\.md$/u;
 // The two that must carry it — the writer and the reader (ADR-005 §1).
-const MUST_CARRY = Object.freeze(["src/work/init.mjs", "src/commands/promote.mjs"]);
+const MUST_CARRY = Object.freeze(["src/work/init.mjs", "packages/work/src/commands/promote.mjs"]);
 // The readers the register names one by one, RESOLVED TO THE MODULES THAT EXIST. Two of the names in
 // the register row are spellings of verbs that do not have a module of that path, and both are
 // recorded here rather than silently dropped — a named reader that cannot be read must fail as NOT
@@ -71,7 +71,7 @@ const NAMED_READERS = Object.freeze([
   "src/board-ui.mjs",
   "src/global-work-store.mjs",
   // The aliases pass THROUGH the backlog under either setting and read nothing (task 04).
-  "src/commands/insert-shared.mjs",
+  "packages/work/src/insertion/scaffold.mjs",
 ]);
 const DOCTOR_FAMILY = /^doctor.*\.mjs$/u;
 
