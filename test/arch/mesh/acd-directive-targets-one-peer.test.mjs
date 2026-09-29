@@ -20,7 +20,7 @@ import { sendDirective, buildDirectiveFrame } from "../../../src/control-stream-
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
+const sourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 
 // detectFanOut(source) — a directive send site iterating wss.clients (or any
 // "clients" collection) with a .send(...) call inside the loop body is the
@@ -35,7 +35,7 @@ function detectFanOut(source) {
 function usesTargetedLookup(source) {
   const stripped = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
   // sendDirective must resolve via targets.get(nodeId) — a keyed single-entry lookup.
-  const fn = stripped.match(/export function sendDirective\([^)]*\)\s*\{[\s\S]*?\n\}/);
+  const fn = stripped.match(/function sendDirective\([^)]*\)\s*\{[\s\S]*?\n\}/);
   assert.ok(fn, "sendDirective is defined");
   return /targets\.get\(\s*nodeId\s*\)/.test(fn[0]);
 }

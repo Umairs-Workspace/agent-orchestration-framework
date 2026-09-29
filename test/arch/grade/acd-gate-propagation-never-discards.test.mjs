@@ -54,7 +54,7 @@ export const BRANCH_PATH_MODULES = Object.freeze([
   "src/mesh/worktree.mjs",
   "packages/mesh/src/worktrees.mjs",
   "packages/execution/src/worktrees.mjs",
-  "src/mesh/worker-execution.mjs",
+  "packages/mesh/src/worker-execution.mjs",
   "packages/mesh/src/recovery-push.mjs",
   // 129/ADR-002 — the merge-home path.
   "packages/work-loop/src/dispatch.mjs",
@@ -181,7 +181,7 @@ export const archTests = [
         "src/mesh/worktree.mjs never verifies a ref under refs/remotes/ — the branch-existence question is local-only, so a worker whose checkout has fetched the item's line but has no local head for it will take the create door and orphan the previous phase's commits (VERIFICATION F-05.3)",
       );
 
-      const execution = stripComments(await readModule("src/mesh/worker-execution.mjs"));
+      const execution = stripComments(await readModule("packages/mesh/src/worker-execution.mjs"));
       // The reuse/create decision must be fed by BOTH halves. Keyed on the predicates the
       // decision consumes rather than on the variable's name.
       assert.ok(
@@ -263,7 +263,7 @@ export const archTests = [
     run: async () => {
       assert.deepEqual(
         [...BRANCH_PATH_MODULES].sort(),
-        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/mesh/src/recovery-push.mjs", "src/mesh/worker-execution.mjs", "src/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
+        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/mesh/src/recovery-push.mjs", "packages/mesh/src/worker-execution.mjs", "src/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
         "BRANCH_PATH_MODULES as a set",
       );
       for (const rel of BRANCH_PATH_MODULES) assert.ok((await readModule(rel)).length > 0, `${rel} was read`);
@@ -317,7 +317,7 @@ export const archTests = [
         ["packages/work-loop/src/dispatch.mjs", '"reset", "-q", "--", ".aof"'],
         ["packages/work-loop/src/dispatch.mjs", '"add", "--", milestoneDir'],
         ["packages/work-loop/src/dispatch.mjs", '"commit", "--no-verify", "-m", message'],
-        ["src/mesh/worker-execution.mjs", '"-c", "credential.helper=", "push", "origin", branch'],
+        ["packages/mesh/src/worker-execution.mjs", '"-c", "credential.helper=", "push", "origin", branch'],
       ]) {
         assert.deepEqual(await forbiddenFormOffenders(plant(rel, argv)), [], `[${argv}] in ${rel} is sanctioned`);
       }

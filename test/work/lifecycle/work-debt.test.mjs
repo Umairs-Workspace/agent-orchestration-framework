@@ -246,7 +246,7 @@ export const workDebtTests = [
       ].join("\n");
       const parsed = parseDebtLedger(text);
 
-      const hits = entriesTouching(parsed, ["src/mesh/worker-execution.mjs"]);
+      const hits = entriesTouching(parsed, ["packages/mesh/src/worker-execution.mjs"]);
       assert.deepEqual(
         hits.map((entry) => entry.number),
         [10, 83],
@@ -254,11 +254,11 @@ export const workDebtTests = [
       );
       assert.deepEqual(
         hits[0].matchedPaths,
-        ["src/mesh/worker-execution.mjs"],
+        ["packages/mesh/src/worker-execution.mjs"],
         "item 10 cites three files; only the one asked about comes back"
       );
       // A `:line` locator on the citation must not defeat the match.
-      assert.deepEqual(hits[1].matchedPaths, ["src/mesh/worker-execution.mjs"]);
+      assert.deepEqual(hits[1].matchedPaths, ["packages/mesh/src/worker-execution.mjs"]);
 
       // Separator and prefix tolerance — a caller types what their shell completed.
       for (const spelling of ["src\\mesh\\worker-execution.mjs", "./src/mesh/worker-execution.mjs", "SRC/MESH/WORKER-EXECUTION.MJS"]) {

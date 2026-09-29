@@ -34,8 +34,8 @@ import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mj
 import { globalMeshPaths } from "../../../src/workspace.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workerExecutionSourcePath = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
-const cloneProviderSourcePath = path.join(repoRoot, "src", "mesh", "clone-credential-provider.mjs");
+const workerExecutionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
+const cloneProviderSourcePath = path.join(repoRoot, "packages", "mesh", "src", "clone-credential-provider.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

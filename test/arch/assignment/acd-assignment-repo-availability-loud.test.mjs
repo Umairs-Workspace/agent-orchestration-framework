@@ -36,8 +36,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // reporting (the refusal's code is settled); the module the admission decision moved to owns the
 // JOIN and the coded miss. Reading only the handler after the split would have left the coded-miss
 // legs sweeping a file that no longer decides a miss.
-const executionSourcePath = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
-const admissionSourcePath = path.join(repoRoot, "src", "mesh", "worker-repo-admission.mjs");
+const executionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
+const admissionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-repo-admission.mjs");
 
 // The guard call, as the HANDLER now spells it or as it spelled it before the split. Both are
 // admitted on purpose: the planted violations below spell the pre-split form, and a detector whose

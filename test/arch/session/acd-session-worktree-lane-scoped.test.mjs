@@ -52,7 +52,7 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-const SPAWN_HANDLER = path.join(repoRoot, "src", "mesh", "session-spawn-handler.mjs");
+const SPAWN_HANDLER = path.join(repoRoot, "packages", "mesh", "src", "session-spawn-handler.mjs");
 const GITIGNORE = path.join(repoRoot, ".gitignore");
 
 // lf(source) — normalise CRLF -> LF before every regex probe (this repo's tree is checked
@@ -62,7 +62,11 @@ function lf(source) {
 }
 
 async function realSource(file) {
-  return lf(stripComments(await readFile(file, "utf8")));
+  const source = lf(stripComments(await readFile(file, "utf8")));
+  if (file !== SPAWN_HANDLER) return source;
+  const adapter = lf(stripComments(await readFile(path.join(repoRoot, "src/mesh/session-spawn-handler.mjs"), "utf8")));
+  for (const text of [source, adapter]) assert.match(text, /createSessionSpawnServices\(\{[^}]*createTerminalSpawn[^}]*loadNodePty/su);
+  return adapter + "\n" + source;
 }
 
 // ── DETECTOR 1 — the sibling-module boundary ───────────────────────────────────────────
@@ -90,6 +94,7 @@ export function siblingBoundaryProblems(code) {
 // reasons, not a count: TECH_DEBT 47's whole finding is that the SECOND writer into this
 // root cost a review to notice.
 export const ASSIGNMENT_KEYSPACE_CALLERS = Object.freeze([
+  Object.freeze({ file: "src/mesh/worker-execution.mjs", why: "COMPOSITION — supplies the assignment lane path services to the mesh-owned worker." }),
   Object.freeze({
     file: "src/mesh/worktree.mjs",
     why: "TRANSITIONAL COMPOSITION — forwards the mesh-owned lane services without defining paths.",
@@ -99,7 +104,7 @@ export const ASSIGNMENT_KEYSPACE_CALLERS = Object.freeze([
     why: "THE HOME — defines the assignment, session and dispatch path seams and their policies.",
   }),
   Object.freeze({
-    file: "src/mesh/worker-execution.mjs",
+    file: "packages/mesh/src/worker-execution.mjs",
     why: "THE ASSIGNMENT LANE — the one legitimate materializer, and the module whose startup scan trusts every directory name in the root. KNOWN DEBT, recorded rather than hidden: pushWorktreeBranch also builds its one-shot askpass shim at `<worktreesRoot>/.askpass/<uuid>`, so a crash mid-push leaves a `.askpass` directory that the same scan will report as a stranded assignment. Same species as TECH_DEBT 47; a separate fix, in a file milestone 50 does not touch.",
   }),
   Object.freeze({
@@ -259,9 +264,10 @@ export const archTests = [
       // …and the sweep: a NEW module naming the assignment seam is an offender until it
       // is allowlisted with a reason.
       const planted = [
+        { path: "src/mesh/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
         { path: "src/mesh/worktree.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
         { path: "packages/mesh/src/worktrees.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
-        { path: "src/mesh/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
+        { path: "packages/mesh/src/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
         { path: "packages/work/src/read.mjs", source: "export function createWorkReader({ isUnderMeshWorktreesRoot }) {}" },
         { path: "src/work/read.mjs", source: "import { isUnderMeshWorktreesRoot } from './worktree.mjs';" },
         { path: "src/mesh-brand-new-lane.mjs", source: "import { meshWorktreePath } from './worktree.mjs';\nconst p = meshWorktreePath(root, `preview-${ref}`);" },

@@ -53,7 +53,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments, matchedParenSpan, matchedBraceBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LAUNCHER = path.join(repoRoot, "src", "mesh", "launcher.mjs");
+const LAUNCHER = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 
 function lf(source) {
   return source.replace(/\r\n/g, "\n");

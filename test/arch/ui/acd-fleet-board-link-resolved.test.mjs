@@ -39,7 +39,7 @@ import { stripComments, matchedBraceBody, enclosingParenGroup, blockOrStatementA
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FLEET_DIR = path.join(repoRoot, "ui", "src", "fleet");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 
 // m47/ADR-011's vocabulary for ONE fact — *this row's checkout is not on this machine*.
 // It is the assign route's since m38 and the board-url route's since ADR-011; a second

@@ -49,8 +49,8 @@ import { buildSessionSpawnAckFrame, buildSessionSpawnAckEnvelope, SESSION_SPAWN_
 import { createSpawnOutcomeRegistry } from "../../../src/mesh/session-spawn-outcome.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
-const LAUNCHER = path.join(repoRoot, "src", "mesh", "launcher.mjs");
+const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
+const LAUNCHER = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 
 // LINE COMMENTS FIRST, BLOCK COMMENTS SECOND (TECH_DEBT item 24).
 function stripComments(source) {

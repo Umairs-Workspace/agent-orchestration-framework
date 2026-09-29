@@ -222,8 +222,8 @@ function elementAccessViolations(file, source) {
 // Rust desktop. (The Rust `target/` build dir is NOT source and is excluded.)
 const CONSUMER_FILES = [
   "packages/mesh/src/presence.mjs",
-  "src/mesh/launcher.mjs",
-  "src/control-stream-server.mjs",
+  "packages/mesh/src/launcher.mjs",
+  "packages/mesh/src/control-stream-server.mjs",
   "packages/mesh/src/global-node-registry.mjs",
   "packages/mesh/src/commands/identity.mjs",
   "packages/mesh/src/commands/heartbeat.mjs",
@@ -407,7 +407,7 @@ export const archTests = [
         "counting a bare string array is not a violation",
       );
       assert.deepEqual(
-        elementAccessViolations("src/mesh/launcher.mjs", "const sessions = live.filter((session) => !workspacesWithRuns.has(session.workspaceId));\nconst { activeRuns } = await assemble();\n"),
+        elementAccessViolations("packages/mesh/src/launcher.mjs", "const sessions = live.filter((session) => !workspacesWithRuns.has(session.workspaceId));\nconst { activeRuns } = await assemble();\n"),
         [],
         "reading `workspaceId` off a SESSION (which genuinely carries it) is not a violation — only a run element is forbidden",
       );

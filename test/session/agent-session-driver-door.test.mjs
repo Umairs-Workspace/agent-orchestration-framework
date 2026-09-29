@@ -541,8 +541,10 @@ export const agentSessionDriverDoorTests = [
     name: "53/00 task00 — INTERACTIVE_COMMAND_READY_DELAY_MS still reaches its one production consumer through the sink: src/mesh/launcher.mjs is unedited and wires it as commandDelayMs at both call sites",
     run: async () => {
       assert.equal(sinkInteractiveCommandReadyDelayMs, 5000, "the constant is 5000 at the launcher's own door");
-      const launcher = await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8");
-      const sinkImport = staticImports(launcher).find((entry) => resolvesToSink(LAUNCHER_MODULE, entry.specifier));
+      const launcher = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, LAUNCHER_MODULE), "utf8");
+      assert.match(launcher, /createMeshLauncher\(\{[^}]*INTERACTIVE_COMMAND_READY_DELAY_MS/su, "the package receives the configured driver delay");
+      const sinkImport = staticImports(adapter).find((entry) => resolvesToSink(LAUNCHER_MODULE, entry.specifier));
       assert.ok(sinkImport != null, "the launcher still imports from mesh-worker-execution.mjs");
       const names = importedNames(sinkImport.clause);
       assert.equal(names.length, 14, `the launcher's import still names fourteen bindings: ${names.join(", ")}`);
@@ -659,8 +661,10 @@ export const agentSessionDriverDoorTests = [
       assert.equal(typeof sinkEnsureWorktreeTrusted, "function", "a function at the sink's door");
       assert.ok(Object.is(drvEnsureWorktreeTrusted, sinkEnsureWorktreeTrusted), "the same reference at both");
       assert.ok(FROZEN.some((m) => m.name === "ensureWorktreeTrusted"), "it is a MEMBER of the frozen set the cardinality check counts, not an exception to it");
-      const launcher = await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8");
-      const sinkImport = staticImports(launcher).find((entry) => resolvesToSink(LAUNCHER_MODULE, entry.specifier));
+      const launcher = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, LAUNCHER_MODULE), "utf8");
+      assert.match(launcher, /createMeshLauncher\(\{[^}]*INTERACTIVE_COMMAND_READY_DELAY_MS/su, "the package receives the configured driver delay");
+      const sinkImport = staticImports(adapter).find((entry) => resolvesToSink(LAUNCHER_MODULE, entry.specifier));
       assert.ok(importedNames(sinkImport.clause).includes("ensureWorktreeTrusted"), "the launcher's existing named import of it from the sink is unaffected");
     },
   },
@@ -721,8 +725,9 @@ export const agentSessionDriverDoorTests = [
       // live census, so the pair moves together (49 + 2 + 4 = 55).
       const SUITE_FLOOR = 49;
       const FIXTURE_FLOOR = 2;
-      const SOURCE_SIDE_FLOOR = 4;
-      const CENSUS_FLOOR = 55;
+      // Two URL-only consumers now import the pure repo-admission API directly.
+      const SOURCE_SIDE_FLOOR = 2;
+      const CENSUS_FLOOR = 53;
       const importsTheSink = async (rel) =>
         staticImports(await readFile(path.join(repoRoot, rel), "utf8")).some((entry) => resolvesToSink(rel, entry.specifier));
 
@@ -781,7 +786,7 @@ export const agentSessionDriverDoorTests = [
         "an import inside a template literal is not a static import",
       );
       assert.deepEqual(
-        staticImports('  { path: "src/mesh/worker-execution.mjs", source: "…" },'),
+        staticImports('  { path: "packages/mesh/src/worker-execution.mjs", source: "…" },'),
         [],
         "and a fixture path naming the module is not one either (the shape at :265)",
       );
@@ -885,7 +890,7 @@ export const agentSessionDriverDoorTests = [
       // consumer lands. Every member of it is then linked in one fresh process below, which is the
       // property the count was standing in for.
       assert.equal(importable.length, preExisting.length - 1, "exactly the one named CLI entry point is held out of the fresh-import probe");
-      assert.ok(importable.length >= 53, `the probe links at least 53 members (got ${importable.length})`);
+      assert.ok(importable.length >= 52, `the probe links at least 52 members (got ${importable.length})`);
       const probe = [
         'const sink = await import("file:///" + process.argv[2] + "/src/mesh/worker-execution.mjs");',
         "const rels = JSON.parse(process.argv[3]);",
@@ -933,13 +938,21 @@ export const agentSessionDriverDoorTests = [
   {
     name: "53/00 task01 — the other three source-side importers are untouched, and src/work.mjs is not among this story's edits at any distance",
     run: async () => {
-      for (const rel of ["src/global-node-registry.mjs", "src/mesh/clone-credential-provider.mjs", "scripts/pin-checkout-id.mjs"]) {
+      for (const rel of ["src/mesh/launcher.mjs", "scripts/pin-checkout-id.mjs"]) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
         assert.ok(
           staticImports(source).some((entry) => resolvesToSink(rel, entry.specifier)),
           `${rel} still imports the sink at ${SINK_MODULE}`,
         );
         assert.equal(source.includes("agent-session-driver"), false, `${rel} does not name the new module`);
+      }
+      for (const [rel, symbol, specifier] of [
+        ["src/global-node-registry.mjs", "resolveCloneUrl", "@aof/mesh/worker-repo-admission"],
+        ["packages/mesh/src/clone-credential-provider.mjs", "parseRepoFromCloneUrl", "./worker-repo-admission.mjs"],
+      ]) {
+        const source = await readFile(path.join(repoRoot, rel), "utf8");
+        assert.ok(staticImports(source).some(entry => entry.specifier === specifier && importedNames(entry.clause).includes(symbol)), rel + " uses the pure repo-admission API");
+        assert.ok(!staticImports(source).some(entry => resolvesToSink(rel, entry.specifier)), rel + " does not initialize the configured worker");
       }
       // The milestone's zero-edits-to-the-god-node property: `work.mjs` is neither a
       // subject nor a consequence of the extraction. The new module does not import it

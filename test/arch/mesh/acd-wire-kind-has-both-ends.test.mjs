@@ -289,7 +289,7 @@ export const archTests = [
       // same fact it was written for.
       assert.deepEqual(
         reading.sort(),
-        ["packages/mesh/src/session-spawn-outcome.mjs", "src/control-stream-server.mjs"],
+        ["packages/mesh/src/control-stream-server.mjs", "packages/mesh/src/session-spawn-outcome.mjs"],
         "the ack is branched by the control stream server (before applyStreamFrame) and filtered by the spawn-outcome registry — the two ends the milestone shipped without",
       );
       assert.deepEqual(
@@ -304,12 +304,12 @@ export const archTests = [
       const beforeThisTask = new Map(sources);
       beforeThisTask.delete("packages/mesh/src/session-spawn-outcome.mjs");
       beforeThisTask.set(
-        "src/control-stream-server.mjs",
-        sources.get("src/control-stream-server.mjs").replace(/frame\?\.kind === SESSION_SPAWN_ACK_KIND/g, 'frame?.kind === "__removed__"'),
+        "packages/mesh/src/control-stream-server.mjs",
+        sources.get("packages/mesh/src/control-stream-server.mjs").replace(/frame\?\.kind === SESSION_SPAWN_ACK_KIND/g, 'frame?.kind === "__removed__"'),
       );
       assert.notEqual(
-        beforeThisTask.get("src/control-stream-server.mjs"),
-        sources.get("src/control-stream-server.mjs"),
+        beforeThisTask.get("packages/mesh/src/control-stream-server.mjs"),
+        sources.get("packages/mesh/src/control-stream-server.mjs"),
         "the reconstruction actually removed the control's branch",
       );
       const beforeProblems = wireKindProblems(beforeThisTask);
@@ -401,7 +401,7 @@ export const archTests = [
       // the ONE live entry, so it exercises the entry that is actually standing rather than a
       // name that no longer appears in the list.
       const staleSweep = asSweep([
-        ["src/worker-stream-client.mjs", 'export const WITHDRAW_KIND = "withdraw";\nexport function apply(frame) { if (frame?.kind === WITHDRAW_KIND) return true; return false; }'],
+        ["packages/mesh/src/worker-stream-client.mjs", 'export const WITHDRAW_KIND = "withdraw";\nexport function apply(frame) { if (frame?.kind === WITHDRAW_KIND) return true; return false; }'],
         ["packages/mesh/src/assignment-reclaim.mjs", 'import { WITHDRAW_KIND } from "./worker-stream-client.mjs";\nsend({ kind: WITHDRAW_KIND, to: nodeId });'],
       ]);
       const staleProblems = wireKindProblems(staleSweep);
@@ -422,7 +422,7 @@ export const archTests = [
       );
       assert.deepEqual(
         readingEnds(sources, "PRESENCE_SIGNAL_KIND"),
-        ["src/control-stream-server.mjs"],
+        ["packages/mesh/src/control-stream-server.mjs"],
         "…and the fix is REAL over the live tree: the control's kind table branches the imported constant, so the exemption has nothing left to be about",
       );
     },

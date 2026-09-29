@@ -61,7 +61,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // sites, seven reads. The behavioural legs are untouched: the import at :47 still
 // resolves through the sink's verbatim re-export, which is the whole point of it.
 const DRIVER_SOURCE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
-const HANDLER_SOURCE = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
+const HANDLER_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

@@ -51,6 +51,7 @@
 // each asserts it LANDED (`assert.notEqual(planted, clean)`) before asserting the detector trips
 // on it and stays quiet on the clean baseline.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -329,7 +330,7 @@ export function outputSignalProblems({ bridgeSource, srcSources }) {
 //       axis has two inputs, "just look at whether bytes arrived" becomes the obvious third, and it
 //       is forbidden: the browser writes those bytes straight into xterm, so a worker's own PTY
 //       output could FORGE its pane's state by printing it (SECURITY T14).
-const SPAWN_HANDLER = path.join(repoRoot, "src", "mesh", "session-spawn-handler.mjs");
+const SPAWN_HANDLER = path.join(repoRoot, "packages", "mesh", "src", "session-spawn-handler.mjs");
 const FEED_AXIS = path.join(repoRoot, "ui", "src", "home", "feed-axis.mjs");
 
 // callArgs(source, name) — the paren-balanced ARGUMENT TEXT of every `name(` call, cut on the
@@ -410,7 +411,7 @@ async function listSourceFiles(dir) {
 // gate vacuous (ADR-006).
 async function readSrcSources() {
   const sources = new Map();
-  for (const file of await listSourceFiles(SRC_DIR)) {
+  for (const { path: file } of await readRuntimeFiles(repoRoot)) {
     sources.set(path.relative(repoRoot, file).split(path.sep).join("/"), await realSource(file));
   }
   return sources;
@@ -557,7 +558,7 @@ export const archTests = [
 
       const cleanThree = [
         [
-          "src/mesh/launcher.mjs",
+          "packages/mesh/src/launcher.mjs",
           `const handler = createMeshWorkerExecutionHandler({ nodeId, ${sanctionedArrow} });
            const terminalResumeHandler = createMeshWorkerTerminalResumeHandler({ nodeId, ${sanctionedArrow} });
            const sessionSpawnHandler = createMeshWorkerSessionSpawnHandler({ nodeId, ${sanctionedBridgeKey} });`,
@@ -569,18 +570,18 @@ export const archTests = [
       // THE ENUMERATION IS DOING THE WORK, NOT A WIDENED PATTERN. Drive the bridge key on its own:
       // it is sanctioned by its OWN named shape, and a MALFORMED one still trips. If the fix had
       // been "relax the arrow to a pattern", the second assertion here would be green.
-      const bridgeOnly = [["src/mesh/launcher.mjs", `const h = createMeshWorkerSessionSpawnHandler({ nodeId, ${sanctionedBridgeKey} });`]];
+      const bridgeOnly = [["packages/mesh/src/launcher.mjs", `const h = createMeshWorkerSessionSpawnHandler({ nodeId, ${sanctionedBridgeKey} });`]];
       assert.deepEqual(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(bridgeOnly) }).filter((problem) => !/only 1/.test(problem)),
         [],
         "self-check: the m50 bridge key is sanctioned by its own enumerated shape (the FLOOR still objects to it being alone, which is a different clause)",
       );
-      const foldedBridge = [["src/mesh/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes + process.env.ANTHROPIC_API_KEY) });"]];
+      const foldedBridge = [["packages/mesh/src/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes + process.env.ANTHROPIC_API_KEY) });"]];
       assert.ok(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(foldedBridge) }).some((problem) => /not exactly/.test(problem)),
         "self-check: a credential folded into the BRIDGE KEY's bytes trips the SHAPE clause — the second sanctioned spelling is as exact as the first, never a loosened pattern",
       );
-      const respeltBridge = [["src/mesh/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, redact(bytes)) });"]];
+      const respeltBridge = [["packages/mesh/src/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, redact(bytes)) });"]];
       assert.ok(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(respeltBridge) }).some((problem) => /not exactly/.test(problem)),
         "self-check: a sanitiser inside the bridge key trips too — the lane is content-blind by contract on BOTH sanctioned shapes",
@@ -623,7 +624,7 @@ export const archTests = [
 
       // AND THE TWO REFUSALS ARE DISTINGUISHABLE. Floor and ceiling read the SAME number, so a
       // reviewer who cannot tell which one fired learns nothing from the red line.
-      const oneProducer = [["src/mesh/launcher.mjs", `const handler = createMeshWorkerExecutionHandler({ nodeId, ${sanctionedArrow} });`]];
+      const oneProducer = [["packages/mesh/src/launcher.mjs", `const handler = createMeshWorkerExecutionHandler({ nodeId, ${sanctionedArrow} });`]];
       const floorProblems = outputSignalProblems({ bridgeSource: "", srcSources: asSweep(oneProducer) });
       assert.equal(floorProblems.length, 1, `self-check: one producer still trips the FLOOR. Got: ${JSON.stringify(floorProblems)}`);
       assert.match(floorProblems[0], /production call sites must stream/, "the FLOOR's refusal is m46/ADR-007's — a lane went dark");
@@ -697,12 +698,12 @@ export const archTests = [
         };
       `);
       const movedSweep = new Map([
-        ["src/mesh/launcher.mjs", decoyLeftBehind],
+        ["packages/mesh/src/launcher.mjs", decoyLeftBehind],
         ["src/mesh-worker-producer.mjs", movedProducers],
       ]);
       assert.notEqual(movedProducers, cleanLauncher, "the plant actually differs from the clean synthesized shape");
       assert.deepEqual(
-        outputSignalProblems({ bridgeSource: "", srcSources: new Map([["src/mesh/launcher.mjs", decoyLeftBehind]]) }).map((p) => p.includes("only 1")),
+        outputSignalProblems({ bridgeSource: "", srcSources: new Map([["packages/mesh/src/launcher.mjs", decoyLeftBehind]]) }).map((p) => p.includes("only 1")),
         [true],
         "control: the decoy ALONE is sanctioned-shaped — a path-named detector would have read it and stopped there",
       );

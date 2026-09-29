@@ -285,7 +285,9 @@ export const meshWorkerCommitDiffTests = [
     name: "129/03 task 00 — the definition lives in worktree.mjs and the re-export is the same reference",
     run: async () => {
       assert.strictEqual(commitWorktreeChanges, commitWorktreeChangesFromHome, "both bindings are the same function");
-      const sink = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const sink = adapter + "\n" + implementation;
       assert.doesNotMatch(sink, /function\s+commitWorktreeChanges\b/u, "worker-execution.mjs contains no `function commitWorktreeChanges` definition");
       assert.match(sink, /export\s*\{[^}]*\bcommitWorktreeChanges\b[^}]*\}\s*from\s*["']\.\/worktree\.mjs["']/u, "worker-execution.mjs carries commitWorktreeChanges in an `export { … } from \"./worktree.mjs\"` clause");
     },
@@ -389,7 +391,9 @@ export const meshWorkerCommitDiffTests = [
   {
     name: "129/03 task 00 — the worker's two call sites are unchanged lines",
     run: async () => {
-      const sink = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const sink = adapter + "\n" + implementation;
       const sites = [...sink.matchAll(/\bcommitWorktreeChanges\s*\(/gu)];
       assert.equal(sites.length, 2, "exactly two commitWorktreeChanges( call sites");
       for (const site of sites) {
@@ -454,7 +458,9 @@ export const meshWorkerCommitDiffTests = [
     name: "129/03 task 00 — resolveRefInWorktree is defined in dispatch.mjs and re-exported from the god-node",
     run: async () => {
       assert.strictEqual(resolveRefInWorktree, resolveRefInWorktreeFromHome, "both bindings are the same function");
-      const sink = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const sink = adapter + "\n" + implementation;
       assert.doesNotMatch(sink, /function\s+resolveRefInWorktree\b/u, "worker-execution.mjs contains no `function resolveRefInWorktree` definition");
       assert.doesNotMatch(sink, /function\s+worktreeWorkDir\b/u, "…and no `function worktreeWorkDir` definition");
       assert.match(sink, /export\s*\{[^}]*\bresolveRefInWorktree\b[^}]*\}\s*from\s*["']\.\.\/work\/dispatch\.mjs["']/u, "…and re-exports resolveRefInWorktree from ../work/dispatch.mjs");

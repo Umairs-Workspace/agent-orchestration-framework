@@ -55,7 +55,16 @@
     "./commands/serve": "./src/commands/serve.mjs",
     "./commands/session": "./src/commands/session.mjs",
     "./commands/terminal-resume": "./src/commands/terminal-resume.mjs",
-    "./commands/ui": "./src/commands/ui.mjs"
+    "./commands/ui": "./src/commands/ui.mjs",
+    "./worker-launch": "./src/worker-launch.mjs",
+    "./worker-repo-admission": "./src/worker-repo-admission.mjs",
+    "./clone-credential-provider": "./src/clone-credential-provider.mjs",
+    "./session-spawn-handler": "./src/session-spawn-handler.mjs",
+    "./worker-execution": "./src/worker-execution.mjs",
+    "./launcher": "./src/launcher.mjs",
+    "./control-stream-server": "./src/control-stream-server.mjs",
+    "./worker-stream-client": "./src/worker-stream-client.mjs",
+    "./ui-serve": "./src/ui-serve.mjs"
   },
   "files": [
     "src"
@@ -67,6 +76,7 @@
     "@aof/contracts": "workspace:*",
     "@aof/execution": "workspace:*",
     "@aof/foundation": "workspace:*",
+    "@aof/server": "workspace:*",
     "@aof/work": "workspace:*",
     "@aof/work-loop": "workspace:*",
     "ws": "^8.21.0"

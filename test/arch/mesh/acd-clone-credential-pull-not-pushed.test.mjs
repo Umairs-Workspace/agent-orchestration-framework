@@ -70,9 +70,9 @@ import { fileURLToPath } from "node:url";
 import { buildDirectiveFrame } from "../../../src/control-stream-server.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const controlSourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
-const launcherSourcePath = path.join(repoRoot, "src", "mesh", "launcher.mjs");
-const workerSourcePath = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
+const controlSourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
+const launcherSourcePath = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
+const workerSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
 
 // The FROZEN directive down-frame (35/ADR-002) — "a pure projection, exactly five keys".
 // ADR-009 does NOT break it: the credential rides its own frame kind, pulled on demand.
@@ -172,7 +172,7 @@ function productionHandlerCallEntries(launcherSource) {
 // DESTRUCTURES from its `options` argument (its consumed collaborator set).
 function handlerOptionKeys(workerSource) {
   const code = stripComments(workerSource);
-  const anchor = code.indexOf("export function createMeshWorkerExecutionHandler");
+  const anchor = code.indexOf("function createMeshWorkerExecutionHandler");
   if (anchor === -1) return null;
   const destructure = code.indexOf("const {", anchor);
   if (destructure === -1) return null;
@@ -187,8 +187,8 @@ function handlerOptionKeys(workerSource) {
 // gate") is not a false positive — comments are stripped regardless.
 function directivePathProblems(controlSource) {
   const code = stripComments(controlSource);
-  const start = code.indexOf("export function buildDirectiveFrame");
-  const end = code.indexOf("// ---", start) === -1 ? code.indexOf("export function createStreamRegistry") : code.indexOf("export function createStreamRegistry");
+  const start = code.indexOf("function buildDirectiveFrame");
+  const end = code.indexOf("// ---", start) === -1 ? code.indexOf("function createStreamRegistry") : code.indexOf("function createStreamRegistry");
   const region = code.slice(start, end === -1 ? code.length : end);
   const problems = [];
   if (CREDENTIAL_SHAPED.test(region)) {
@@ -254,8 +254,8 @@ function productionWiringProblems(launcherSource, workerSource) {
 //
 // The fix: build the violating (and clean/negative-control) shapes ourselves, as
 // minimal hand-written snippets carrying only the ANCHOR TEXT the detector functions
-// above actually key on (`export function buildDirectiveFrame`, `createHandler(`,
-// `export function createMeshWorkerExecutionHandler`, …) — never derived from the
+// above actually key on (`function buildDirectiveFrame`, `createHandler(`,
+// `function createMeshWorkerExecutionHandler`, …) — never derived from the
 // real files at all. This is what the coordinator asked for: "build the violating
 // shape yourself and feed it to the detector."
 //
@@ -274,16 +274,16 @@ function productionWiringProblems(launcherSource, workerSource) {
 //       normalising after the fact.
 function synthesizeDirectiveRegion({ returnStatement, dispatchExtra = "" }) {
   return [
-    "export function buildDirectiveFrame(to, { assignmentId, itemRef, workspaceId, at }) {",
+    "function buildDirectiveFrame(to, { assignmentId, itemRef, workspaceId, at }) {",
     `  ${returnStatement}`,
     "}",
     "",
-    "export function dispatchDirectiveOverTargets(targets, directive, { getMeshRegistry = () => null } = {}) {",
+    "function dispatchDirectiveOverTargets(targets, directive, { getMeshRegistry = () => null } = {}) {",
     ...(dispatchExtra ? [`  ${dispatchExtra}`] : []),
     "  return sendDirective(targets, directive?.to, directive);",
     "}",
     "",
-    "export function createStreamRegistry() {",
+    "function createStreamRegistry() {",
     "  return {};",
     "}",
   ].join("\n");
@@ -295,7 +295,7 @@ function synthesizeDirectiveRegion({ returnStatement, dispatchExtra = "" }) {
 // ADR-009 mandates the real resolver line live.
 function synthesizeLauncherCallSite({ extraKey = null } = {}) {
   return [
-    "export async function startLauncher(ws, options = {}) {",
+    "async function startLauncher(ws, options = {}) {",
     "  if (options?.workerExecution !== false) {",
     "    const createHandler = options?.createMeshWorkerExecutionHandler ?? createMeshWorkerExecutionHandler;",
     "    const handler = createHandler({",
@@ -319,7 +319,7 @@ function synthesizeLauncherCallSite({ extraKey = null } = {}) {
 // absence must resolve to `undefined`, never a silently-wrong default).
 function synthesizeWorkerDestructure({ extraKey = null } = {}) {
   return [
-    "export function createMeshWorkerExecutionHandler(options = {}) {",
+    "function createMeshWorkerExecutionHandler(options = {}) {",
     "  const {",
     "    loadWs = () => loadWorkspace(process.cwd()),",
     "    nodeId,",

@@ -56,7 +56,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const BOARD_SERVE = path.join(repoRoot, "packages", "server", "src", "board-serve.mjs");
 const SETUP_UI = path.join(repoRoot, "packages", "server", "src", "setup-ui.mjs");
 const BOARD_UI = path.join(repoRoot, "packages", "server", "src", "board-ui.mjs");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 const WORK_UI_COMMAND = path.join(repoRoot, "src", "commands", "work-ui.mjs");
 
 // The BOARD-SERVER surface. ADR-004 names two modules by hand; `board-ui.mjs` is the
@@ -201,7 +201,10 @@ export const archTests = [
     // re-argued, not silently relaxed.
     name: "arch/46 ADR-004 (non-vacuity): mesh-ui-serve.mjs DOES import board-serve.mjs — the forbidden edge is the reverse of a live one",
     run: async () => {
-      const specifiers = specifiersOf(await readFile(MESH_UI_SERVE, "utf8"));
+      const implementation = await readFile(MESH_UI_SERVE, "utf8");
+      const adapter = await readFile(path.join(repoRoot, "src/mesh/ui-serve.mjs"), "utf8");
+      for (const text of [implementation, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*serveBoard/su);
+      const specifiers = specifiersOf(adapter);
       assert.ok(
         specifiers.some((specifier) => namesModule(specifier, "board-serve.mjs")),
         "mesh-ui-serve.mjs imports board-serve.mjs (the fleet launches the per-workspace board)"
@@ -258,7 +261,7 @@ export const archTests = [
     name: "arch/46 ADR-004: every server/face module on the import ring loads cleanly as its OWN entry point — a legal cycle, never a module-scope dereference across it",
     run: async () => {
       const entryPoints = [
-        "src/mesh/ui-serve.mjs",
+        "packages/mesh/src/ui-serve.mjs",
         "packages/server/src/board-serve.mjs",
         "packages/server/src/setup-ui.mjs",
         "packages/server/src/board-ui.mjs",

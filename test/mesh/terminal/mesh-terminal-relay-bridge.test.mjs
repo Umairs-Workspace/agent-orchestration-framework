@@ -202,12 +202,12 @@ const BUILDER_ROWS = [
 // measurement (the direct-import set under src/), not by belief — and not one of them
 // takes the deleted export.
 const DEPENDENT_ROWS = [
-  { module: "src/worker-stream-client.mjs", bindings: ["buildTerminalFrameEnvelope", "buildTerminalEndEnvelope", "TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
-  { module: "src/mesh/ui-serve.mjs", bindings: ["buildTerminalInputEnvelope"] },
+  { module: "packages/mesh/src/worker-stream-client.mjs", bindings: ["buildTerminalFrameEnvelope", "buildTerminalEndEnvelope", "TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
+  { module: "packages/mesh/src/ui-serve.mjs", bindings: ["buildTerminalInputEnvelope"] },
   { module: "packages/mesh/src/terminal-mirror.mjs", adapter: "src/mesh/terminal-mirror.mjs", factory: "createTerminalMirroring", bindings: ["TERMINAL_FRAME_KIND", "loopbackRelayUrl"] },
   { module: "packages/mesh/src/terminal-input.mjs", adapter: "src/mesh/terminal-input.mjs", factory: "createTerminalInput", bindings: ["TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
-  { module: "src/control-stream-server.mjs", bindings: ["TERMINAL_FRAME_KIND"] },
-  { module: "src/mesh/launcher.mjs", bindings: ["createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/control-stream-server.mjs", bindings: ["TERMINAL_FRAME_KIND"] },
+  { module: "packages/mesh/src/launcher.mjs", bindings: ["createTerminalRelayPushTransport"] },
   { module: "packages/mesh/src/commands/terminal-resume.mjs", adapter: "src/commands/mesh/terminal-resume.mjs", factory: "createMeshTerminalResumeCommands", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
   { module: "packages/mesh/src/commands/ui.mjs", adapter: "src/commands/mesh/ui.mjs", factory: "createMeshUiCommands", bindings: ["createTerminalRelayPushTransport"] },
 ];
@@ -461,11 +461,11 @@ function resumeAnswerEnvelopeTests() {
         assert.equal(input.properties.answer.additionalProperties, false);
         assert.ok(!Object.hasOwn(cli.spec.flags, "answer"), "the CLI face has no answer flag");
         assert.deepEqual(cli.argv(["sess-89d1"], {}), { session: "sess-89d1" });
-        for (const rel of ["packages/mesh/src/terminal-input.mjs", "packages/mesh/src/terminal-relay-bridge.mjs", "src/mesh/worker-execution.mjs", "src/mesh/park-resume.mjs"]) {
+        for (const rel of ["packages/mesh/src/terminal-input.mjs", "packages/mesh/src/terminal-relay-bridge.mjs", "packages/mesh/src/worker-execution.mjs", "src/mesh/park-resume.mjs"]) {
           const source = await readFile(new URL(`../../../${rel}`, import.meta.url), "utf8");
           assert.ok(!/from\s+["'][^"']*loop\/ask(?:-request)?\.mjs["']/u.test(source), `${rel} imports no ask module`);
         }
-        const worker = await readFile(new URL("../../../src/mesh/worker-execution.mjs", import.meta.url), "utf8");
+        const worker = await readFile(new URL("../../../packages/mesh/src/worker-execution.mjs", import.meta.url), "utf8");
         assert.ok(worker.replace(/\r\n/gu, "\n").split("\n").length - 1 <= 1914, "worker-execution.mjs is at most 1,914 lines");
       },
     },

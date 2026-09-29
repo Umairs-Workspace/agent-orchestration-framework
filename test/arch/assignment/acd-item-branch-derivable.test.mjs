@@ -37,7 +37,7 @@ const SRC_DIR = path.join(repoRoot, "src");
 const MINT_ALLOWED = new Set([
   "src/mesh/worktree.mjs",
   "packages/mesh/src/worktrees.mjs",
-  "src/mesh/worker-execution.mjs",
+  "packages/mesh/src/worker-execution.mjs",
   "packages/mesh/src/recovery-push.mjs",
   // story 65 / task 02 — THE LOCAL DISPATCH LANE, and it is here for exactly the reason
   // this ratchet exists rather than in spite of it. A third lane that builds a story
@@ -78,7 +78,7 @@ export const archTests = [
   {
     name: "arch/m42-branch-cure: the worker's fallback converges — baseBranch ?? derivation, with the existence check ahead of the worktree add (reuse, never a fork)",
     run: async () => {
-      const code = stripComments(await readFile(path.join(SRC_DIR, "mesh/worker-execution.mjs"), "utf8"));
+      const code = stripComments(await readFile(path.join(SRC_DIR, "../packages/mesh/src/worker-execution.mjs"), "utf8"));
       assert.ok(
         /const branch = baseBranch \?\? meshItemBranchName\(itemRef\)/.test(code),
         "the dispatch branch is the cache-resolved base, else the item's own derivable name",
@@ -117,7 +117,7 @@ export const archTests = [
       const reclaim = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/assignment-reclaim.mjs"), "utf8"));
       assert.ok(/resolveDispatchCommit/.test(reclaim), "the tick resolves the assigning commit through its injectable seam");
       assert.ok(/headCommit\s*\(/.test(reclaim), "…defaulting to the checkout's real HEAD");
-      const server = stripComments(await readFile(path.join(SRC_DIR, "control-stream-server.mjs"), "utf8"));
+      const server = stripComments(await readFile(path.join(SRC_DIR, "../packages/mesh/src/control-stream-server.mjs"), "utf8"));
       assert.ok(
         /if \(typeof commit === "string" && commit\.length > 0\) frame\.commit = commit;/.test(server),
         "the directive frame carries the commit conditionally",
@@ -126,7 +126,7 @@ export const archTests = [
       // The worker side: availability is verified (fetch-once-on-miss) BEFORE the
       // worktree add, and the miss is the coded refusal — never a silent build
       // from this clone's stale HEAD.
-      const worker = stripComments(await readFile(path.join(SRC_DIR, "mesh/worker-execution.mjs"), "utf8"));
+      const worker = stripComments(await readFile(path.join(SRC_DIR, "../packages/mesh/src/worker-execution.mjs"), "utf8"));
       const ensure = worker.indexOf("ensureCommitAvailable(ws.projectRoot, directive.commit");
       const add = worker.indexOf("await addWorktree(ws.projectRoot, assignmentId");
       assert.ok(ensure !== -1 && add !== -1, "the availability check and the add both exist");

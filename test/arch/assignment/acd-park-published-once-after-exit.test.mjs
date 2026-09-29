@@ -44,7 +44,7 @@ export function parkPublicationProblems({ workerSource, effectSource, resumeComm
     problems.push("a live/best-effort assignment-status path publishes the capacity-releasing needs-input code");
   }
 
-  const firstRun = functionSlice(worker, "export function createMeshWorkerExecutionHandler", "export async function settleStrandedRunRecords");
+  const firstRun = functionSlice(worker, "function createMeshWorkerExecutionHandler", "async function settleStrandedRunRecords");
   const firstSpawn = firstRun.indexOf("const outcome = await spawnRuntime(");
   const firstPark = firstRun.indexOf("if (outcome.outcome === \"needs-input\")");
   const firstParkBranch = needsInputBranch(firstRun);
@@ -57,7 +57,7 @@ export function parkPublicationProblems({ workerSource, effectSource, resumeComm
   }
   if (freshPathPublications !== 1) problems.push(`the containing fresh-run settle path publishes a durable needs-input park ${freshPathPublications} times, not exactly once`);
 
-  const resume = functionSlice(worker, "export function createMeshWorkerTerminalResumeHandler", "export function createMeshRecoveryPushHandler");
+  const resume = functionSlice(worker, "function createMeshWorkerTerminalResumeHandler", "function createMeshRecoveryPushHandler");
   if (!/settleOutcome[\s\S]*outcome\.outcome\s*===\s*["']needs-input["'][\s\S]*await\s+report\(["']running["'][\s\S]*code:\s*["']needs-input["']/u.test(resumeOrchestration)) {
     problems.push("the resumed park is not published from the post-spawn settle path");
   }
@@ -104,7 +104,7 @@ function duplicateParkLine(source, callee, needle = "") {
 async function productionSources() {
   const read = (rel) => readFile(path.join(root, rel), "utf8");
   const [workerSource, effectSource, resumeCommandSource, resumeOrchestrationSource] = await Promise.all([
-    read("src/mesh/worker-execution.mjs"),
+    read("packages/mesh/src/worker-execution.mjs"),
     read("packages/mesh/src/effects.mjs"),
     read("packages/mesh/src/commands/terminal-resume.mjs"),
     read("packages/mesh/src/park-resume.mjs"),

@@ -68,10 +68,10 @@ export const archTests = [
   {
     name: "arch/42 wave (d) d3: applyAssignmentStatusFrame decides neither invariant itself — it hands the edge to the transition",
     run: async () => {
-      const source = stripComments(await readFile(path.join(SRC, "control-stream-server.mjs"), "utf8"));
-      const start = source.indexOf("export async function applyAssignmentStatusFrame");
+      const source = stripComments(await readFile(path.join(SRC, "../packages/mesh/src/control-stream-server.mjs"), "utf8"));
+      const start = source.indexOf("async function applyAssignmentStatusFrame");
       assert.ok(start > -1, "applyAssignmentStatusFrame is still the frame door");
-      const body = source.slice(start, source.indexOf("\nexport ", start + 10));
+      const body = source.slice(start, source.indexOf("\nasync function ", start + 10));
 
       assert.ok(
         /transitionAssignmentState\s*\(/.test(body),

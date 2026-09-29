@@ -58,7 +58,7 @@ const FAMILY = "src/discord/";
 const GATEWAY = "packages/messaging/src/gateway.mjs";
 const REPLIES = "packages/messaging/src/replies.mjs";
 const BOT = "packages/messaging/src/bot.mjs";
-const LAUNCHER = "src/mesh/launcher.mjs";
+const LAUNCHER = "packages/mesh/src/launcher.mjs";
 const ASK_REQUEST = "packages/work-loop/src/ask-request.mjs";
 const RUN_STORE = "packages/execution/src/runs.mjs";
 const INDEX = "packages/messaging/src/ask-messages.mjs";
@@ -203,11 +203,14 @@ export const archTests = [
 
       const launcher = units.find(({ rel }) => rel === LAUNCHER);
       assert.ok(launcher != null, `NOT FOUND: ${LAUNCHER}`);
-      const reaches = importSpecifiers(launcher.code).filter(({ specifier }) => inDiscordFamily(resolved(LAUNCHER, specifier)));
+      const adapter = units.find(({ rel }) => rel === "src/mesh/launcher.mjs");
+      assert.ok(adapter);
+      assert.match(adapter.code, /loadMessagingBot:\s*\(\)\s*=>\s*import\("\.\.\/discord\/bot\.mjs"\)/u);
+      const reaches = importSpecifiers(adapter.code).filter(({ specifier }) => inDiscordFamily(resolved(adapter.rel, specifier)));
       assert.deepEqual(reaches.map(({ specifier, dynamic }) => `${specifier}${dynamic ? " (deferred)" : ""}`), ["../discord/bot.mjs (deferred)"], `${LAUNCHER} reaches src/discord/ only by ONE deferred import of bot.mjs`);
       const branch = launcher.code.indexOf("if (issuanceAuthority)");
       assert.ok(branch !== -1, `NOT FOUND: the control-node branch in ${LAUNCHER}`);
-      assert.ok((matchedBraceBody(launcher.code, branch) ?? "").includes('import("../discord/bot.mjs")'), "the deferred import sits inside the control-node branch");
+      assert.ok((matchedBraceBody(launcher.code, branch) ?? "").includes('loadMessagingBot()'), "the deferred import sits inside the control-node branch");
 
       // The red probe runs the SHIPPED detector: replies.mjs constructing its own socket.
       const probe = units.map((unit) => unit.rel === REPLIES ? { ...unit, code: `import { WebSocket } from "ws";\n${unit.code}\nconst own = new WebSocket("wss://gateway.example.test");\n` } : unit);

@@ -57,6 +57,7 @@ __metadata:
     "@aof/contracts": "workspace:*"
     "@aof/execution": "workspace:*"
     "@aof/foundation": "workspace:*"
+    "@aof/server": "workspace:*"
     "@aof/work": "workspace:*"
     "@aof/work-loop": "workspace:*"
     ws: "npm:^8.21.0"

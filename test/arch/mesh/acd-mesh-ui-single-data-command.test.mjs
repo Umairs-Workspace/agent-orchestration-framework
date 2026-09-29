@@ -41,7 +41,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COMMANDS_DIR = path.join(repoRoot, "src", "commands");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 
 // The mesh:status host, by MODULE rather than by spelling: `mesh-identity.mjs` while the directory
 // was flat, `mesh/identity.mjs` since 119/02 gave it an interior. One pattern, both spellings, so
@@ -132,7 +132,10 @@ export const archTests = [
         assert.ok(true, "src/mesh/ui-serve.mjs not present yet (milestone 25 story 03 authors it) — phase-2 skipped");
         return;
       }
-      const source = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
+      const implementation = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/ui-serve.mjs"), "utf8"));
+      for (const text of [implementation, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*queryGlobalMeshStatus[^}]*assignWork[^}]*stopLoop/su, "the configured fleet doors reach the package");
+      const source = adapter + "\n" + implementation;
       // The door IS present — the face reaches fleet data through the command registry.
       const specifiers = importSpecifiers(source).map((i) => i.specifier);
       assert.ok(

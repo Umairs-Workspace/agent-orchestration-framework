@@ -60,13 +60,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LAUNCHER = path.join(repoRoot, "src", "mesh", "launcher.mjs");
+const LAUNCHER = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 // m42 wave (d) leg d1 (wave-3 tail) — the `aof mesh ui` verb moved onto the
 // launcher seam: the production serveMeshUi call site lives in the registered
 // command's module now, and the gate moved with the shape.
 const CLI = path.join(repoRoot, "packages", "mesh", "src", "commands", "ui.mjs");
-const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
-const WSCLIENT = path.join(repoRoot, "src", "worker-stream-client.mjs");
+const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
+const WSCLIENT = path.join(repoRoot, "packages", "mesh", "src", "worker-stream-client.mjs");
 const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
 const MIRROR = path.join(repoRoot, "packages", "mesh", "src", "terminal-mirror.mjs");
 

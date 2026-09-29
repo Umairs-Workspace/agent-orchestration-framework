@@ -293,7 +293,7 @@ export const archTests = [
       // (c) the `path.resolve(dirname, "..", "..")` spelling of the same defect is caught too —
       //     one derivation, two idioms, and a control that knew only one would meter half of it.
       const plantedResolve = 'const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");';
-      assert.equal(selfLocatedRoots("src/mesh/launcher.mjs", plantedResolve).length, 1, "the resolve-hops spelling fires the same detector");
+      assert.equal(selfLocatedRoots("packages/mesh/src/launcher.mjs", plantedResolve).length, 1, "the resolve-hops spelling fires the same detector");
 
       // Neither probe touched the tree: both are strings in this process.
       assert.equal(typeof plantedRoute, "string", "the probes are synthesized sources, never files");

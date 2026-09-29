@@ -690,7 +690,7 @@ export const sessionSpawnOutcomeLaneTests = [
     // that was never taught the new name is a detector whose green means nothing.
     name: "50/04 task 00 lane A: the fleet face gains a READ route and its write allowlist does not grow with it (two at 50/04; three by name since 130/03's loop-stop)",
     async run() {
-      const face = (await readFile(path.join(repoRoot, "src", "mesh", "ui-serve.mjs"), "utf8"))
+      const face = (await readFile(path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs"), "utf8"))
         .replace(/\r\n/g, "\n")
         .replace(/\/\/[^\n]*/g, "")
         .replace(/\/\*[\s\S]*?\*\//g, "");
@@ -1062,7 +1062,7 @@ export const sessionSpawnOutcomeLaneTests = [
       assert.match(gate, /SANCTIONED_OUTPUT_CHUNK_ARROW\s*=\s*\/\^\\\(\\s\*chunk/, "…and whose first member is m46's arrow, untouched");
 
       // The THIRD SITE, named, at the shape the ADR sanctions.
-      const launcher = (await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8")).replace(/\r\n/g, "\n");
+      const launcher = (await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8")).replace(/\r\n/g, "\n");
       assert.match(
         launcher,
         /sendTerminalFrame: \(sessionId, bytes\) => client\.sendTerminalFrame\(sessionId, bytes\),/,
@@ -1076,7 +1076,7 @@ export const sessionSpawnOutcomeLaneTests = [
       assert.equal(signature[1].trim(), "row, context", "…taking exactly (row, context) — no byte parameter, optional or otherwise");
 
       // …and the handler passes the fact to BOTH write verbs.
-      const handler = (await readFile(path.join(repoRoot, "src", "mesh", "session-spawn-handler.mjs"), "utf8")).replace(/\r\n/g, "\n");
+      const handler = (await readFile(path.join(repoRoot, "packages", "mesh", "src", "session-spawn-handler.mjs"), "utf8")).replace(/\r\n/g, "\n");
       assert.match(handler, /startSession\(ws, \{ \.\.\.sessionKey, repo, relaying: true, now: resolveNow\(\) \}\)/, "mesh-session-spawn-handler passes relaying: true to startSession(");
       assert.match(handler, /pingSession\(ws, \{ \.\.\.sessionKey, repo, relaying: true, now: resolveNow\(\) \}\)/, "…and to pingSession(");
 

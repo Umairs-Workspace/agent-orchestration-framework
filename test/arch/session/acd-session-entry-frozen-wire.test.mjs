@@ -60,8 +60,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 
 const PROJECTION_FILE = "packages/mesh/src/presence.mjs";
-const CONTROL_FILE = "src/control-stream-server.mjs";
-const LAUNCHER_FILE = "src/mesh/launcher.mjs";
+const CONTROL_FILE = "packages/mesh/src/control-stream-server.mjs";
+const LAUNCHER_FILE = "packages/mesh/src/launcher.mjs";
 const WIRE_TYPE_FILE = "ui/src/fleet/api.ts";
 
 // The FROZEN ORDERED SIX (ADR-005) — one spelling, shared by every proof below.

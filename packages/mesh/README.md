@@ -94,7 +94,24 @@ Command registration performs no I/O. The identity command requests supervised d
 behind its existing flag, through the supplied deferred loader. Desktop preflight retains its
 injected process/read seams and does not acquire a new package-manager or shell dependency.
 
-Launcher orchestration and worker execution still live under `src/`.
+Mesh also owns launcher orchestration, worker execution and the fleet/control transports:
+
+| API | Composition |
+| --- | --- |
+| `worker-launch` / `createWorkerLaunch` | Frozen-set reads and compilation; directive presence and refusal semantics stay unchanged. |
+| `worker-repo-admission` / `createWorkerRepoAdmission` | Configured checkout, registry, identity and Git services. Pure clone URL resolvers export directly. |
+| `clone-credential-provider` / `createCloneCredentialProviders` | Global paths, workspace identity and clone URL lookup; per-workspace credential policy remains mesh-owned. |
+| `session-spawn-handler` / `createSessionSpawnServices` | Shared terminal spawn adapter, session persistence and worktree services. |
+| `worker-execution` / `createWorkerExecutionServices` | Work reads, run/assignment transitions, local driver, launch/admission and Git services. Each factory owns its active-worktree registry. |
+| `launcher` / `createMeshLauncher` | Configured mesh/runtime services and deferred notification/messaging loaders. |
+| `control-stream-server` / `createControlStreamServices` | Projection, admission and transition services; connection-bound identity and credential mint guards stay in mesh. |
+| `worker-stream-client` / `createWorkerStreamServices` | Shared freshness policy, projection mapping and diagnostics. |
+| `ui-serve` / `createMeshUiServer` | Fleet queries, board launch and sanctioned assignment/loop-stop services; static HTTP helpers come from `@aof/server`. |
+
+Construction starts no listener, timer, PTY or subprocess. Core retains the configured singleton
+instances and compatibility re-exports. Pure clone URL APIs can be imported without initializing
+the worker service graph. The session factory constructs an inert terminal-spawn adapter; native
+PTY loading occurs only when a session is explicitly spawned.
 Root adapters currently compose the extracted services; final package/application assembly will
 remove them. The presence cadence helper has no production callers and remains available as a
 public API, preserving its existing contract. Run `yarn workspace @aof/mesh test`.

@@ -120,7 +120,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-007/P1.6 (structural): startControlStreamServer never passes \"0.0.0.0\" as a literal bind address in LIVE code, and defaultResolveOrigin reads request.socket.remoteAddress",
     async run() {
-      const raw = await readFile(path.join(repoRoot, "src", "control-stream-server.mjs"), "utf8");
+      const raw = await readFile(path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs"), "utf8");
       // Strip // line comments first (the docstrings legitimately DISCUSS "0.0.0.0"
       // in prose — a naive .includes() on raw source would false-positive there).
       const codeOnly = raw.replace(/\/\/[^\n]*/g, "");

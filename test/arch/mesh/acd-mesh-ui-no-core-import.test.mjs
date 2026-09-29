@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 
 // Discount `// …` and `/* … */` so a comment naming a verb/module is not a match.
 function stripComments(source) {
@@ -32,7 +32,10 @@ export const archTests = [
   {
     name: "arch/34 ADR-006 + 38/ADR-012: global-mesh-query.mjs is the ONLY fleet-data READ import, and ./mesh/assignment.mjs the ONE sanctioned WRITE-verb import, in mesh-ui-serve.mjs",
     run: async () => {
-      const source = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
+      const implementation = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/ui-serve.mjs"), "utf8"));
+      for (const text of [implementation, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*queryGlobalMeshStatus[^}]*assignWork[^}]*stopLoop/su, "the configured fleet doors reach the package");
+      const source = adapter + "\n" + implementation;
       const specifiers = importSpecifiers(source).map((i) => i.specifier);
       // The door IS imported — the positive assertion a deny-list lint cannot make.
       assert.ok(

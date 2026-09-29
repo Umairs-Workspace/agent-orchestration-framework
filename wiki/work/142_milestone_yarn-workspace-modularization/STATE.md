@@ -554,3 +554,19 @@ terminal transport bindings, source coverage and deferred declaration lookup. No
 assets or workflow state changed. Launcher/worker/control-stream orchestration, core/apps layout,
 final composition/adapter removal and whole-tree/native/platform verification remain outstanding.
 The three later-added write-scope/preflight guard suites pass all 26 checks.
+
+Mesh runtime/transport extraction: nine implementations now belong to mesh, covering launcher,
+worker launch/admission/execution, credential providers, session spawn, control/worker streams and
+fleet HTTP serving. All nine legacy APIs/137 exports match. Five package tests pass locally and in
+the copied installer payload, which retains 117 commands and resolves all nine APIs. The package
+bridge passes 210 cases. Standalone bundling, immutable linking and supply-chain audit pass, with
+server the only new workspace dependency. A pure clone-URL import replaces an unnecessary configured
+worker dependency; final composition cycles still require resolution.
+The 190-suite run passed 1,505 checks with 138 source-guard failures before source-reader updates.
+The corrected 102-suite run passed 654 with 53 failures, followed by 324 passes with six failures
+across 38 suites. Final corrections pass all 27 checks across five suites. Distribution checks and
+the corrected census/registry guards pass. Runtime scans cover package roots and configured-service
+guards check both bindings and implementations. The canonical reclaim citation/manifest were
+refreshed. No generated output changed; the three approved generated loop files/hashes already
+match. Core/apps layout, final composition, compatibility removal, remaining root services and
+whole-tree/native/platform verification remain outstanding.

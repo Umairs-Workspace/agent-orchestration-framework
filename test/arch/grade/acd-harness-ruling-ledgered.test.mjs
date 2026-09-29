@@ -88,7 +88,7 @@ const THE_EIGHT = Object.freeze({
 // the harness seam. `control-stream-server.mjs` is the d3 bridge fact door and
 // `reconcile.mjs` the d5 file-store reconciler; both append only what a transition would.
 const APPEND_EVENT_SEAMS = Object.freeze([
-  "src/control-stream-server.mjs",
+  "packages/mesh/src/control-stream-server.mjs",
   "src/effects/assignment-transitions.mjs",
   "src/effects/doc-transitions.mjs",
   "src/effects/harness-transitions.mjs",

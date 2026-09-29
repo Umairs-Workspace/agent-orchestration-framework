@@ -143,7 +143,7 @@ export const archTests = [
     name: "arch/70 FF-7001 (acd-phase-brief-single-bag): both callers construct the brief bag with the four existing keys and add context additively, never replacing any",
     run: async () => {
       const drive = await readFile(path.join(root, "packages/work-loop/src/commands/drive.mjs"), "utf8");
-      const mesh = await readFile(path.join(srcRoot, "mesh/worker-execution.mjs"), "utf8");
+      const mesh = await readFile(path.join(srcRoot, "../packages/mesh/src/worker-execution.mjs"), "utf8");
       for (const [name, src] of [["drive.mjs", drive], ["mesh/worker-execution.mjs", mesh]]) {
         for (const key of FOUR_KEYS) {
           assert.ok(new RegExp(`\\b${key}\\b`, "u").test(src), `${name} still constructs the brief bag with ${key}`);

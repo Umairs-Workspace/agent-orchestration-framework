@@ -275,7 +275,7 @@ export const meshWorkerWithdrawSettleTests = [
   {
     name: "withdraw-settle/3 the PRE-SPAWN withdraw consume is pinned structurally: the bracket checks the mark before spawnRuntime and again after (source order)",
     run: async () => {
-      const source = await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8");
       const preSpawn = source.indexOf("withdrawnByControl.delete(assignmentId)");
       const spawnCall = source.indexOf("await spawnRuntime(");
       const postSettle = source.indexOf("withdrawnByControl.delete(assignmentId)", spawnCall);

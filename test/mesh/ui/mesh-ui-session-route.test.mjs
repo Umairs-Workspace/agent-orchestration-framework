@@ -737,7 +737,7 @@ export const meshUiSessionRouteTests = [
   {
     name: "mesh-ui-session-route/02 the session route's catch-all has its OWN code — `session-dispatch-failed` is spelled exactly once (the relay hand-off), and the catch-all is neither it nor story 03's `session-spawn-failed`",
     async run() {
-      const source = await readFile(new URL("../../../src/mesh/ui-serve.mjs", import.meta.url), "utf8");
+      const source = await readFile(new URL("../../../packages/mesh/src/ui-serve.mjs", import.meta.url), "utf8");
       const code = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
       const dispatchFailedCount = (code.match(/"session-dispatch-failed"/g) ?? []).length;
       assert.equal(dispatchFailedCount, 1, "`session-dispatch-failed` names ONE fact — the relay hand-off that threw — and is spelled once");

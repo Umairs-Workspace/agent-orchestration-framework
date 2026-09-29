@@ -25,7 +25,7 @@ import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mj
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
+const sourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 const NOW = "2026-07-09T10:00:00.000Z";
 
 function extractFunctionBody(source, name) {
@@ -94,7 +94,7 @@ export const archTests = [
       const body = extractFunctionBody(source, "applyAssignmentStatusFrame");
       assert.ok(body, "applyAssignmentStatusFrame is defined");
       const seamSource = await readFile(
-        path.join(path.dirname(sourcePath), "effects", "assignment-transitions.mjs"),
+        path.join(repoRoot, "src", "effects", "assignment-transitions.mjs"),
         "utf8",
       );
       assert.equal(

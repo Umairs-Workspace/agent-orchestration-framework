@@ -28,7 +28,7 @@ The narrowest actuator exports are `transitionAssignmentState` at
 `src/effects/assignment-transitions.mjs:272` and `transitionRunReclaimed` at
 `src/effects/run-transitions.mjs:177`; `src/mesh/assignment-reclaim.mjs:7-8` imports and supplies them rather than
 defining them. The 15-second default rate is defined at `packages/mesh/src/sync-cadence.mjs:26` and wired only for
-the control role at `src/mesh/launcher.mjs:1513-1533`, making this the registry's sole periodic loop.
+the control role at `packages/mesh/src/launcher.mjs:1519-1539`, making this the registry's sole periodic loop.
 
 Each tick is a single-shot reclaim scan that terminates by construction, so `ceiling: none` is the known
 answer: cadence is a rate, not an iterative bound (ADR-012 §6/F1). RESEARCH §Q1's eighth-loop finding

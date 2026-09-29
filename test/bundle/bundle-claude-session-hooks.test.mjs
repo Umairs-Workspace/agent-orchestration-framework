@@ -25,6 +25,7 @@
 // explicitly, and scenario 5 asserts the operator's REAL global mesh store never saw
 // the fixture id. No server is started and no port is bound anywhere in this file.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, rm, readFile, writeFile, stat, readdir } from "node:fs/promises";
@@ -198,18 +199,10 @@ function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function srcModules(dir = path.join(repoRoot, "src"), acc = []) {
-  for (const name of (await readdir(dir, { withFileTypes: true })).sort((a, b) => (a.name < b.name ? -1 : 1))) {
-    const full = path.join(dir, name.name);
-    if (name.isDirectory()) {
-      if (name.name === "bundle") continue; // shipped assets, not src code
-      await srcModules(full, acc);
-    } else if (name.isFile() && full.endsWith(".mjs")) {
-      acc.push(full);
-    }
-  }
-  return acc;
+async function srcModules() {
+  return (await readRuntimeFiles(repoRoot)).map(file => file.path);
 }
+
 
 // Claude Code's SessionStart matcher semantics: an ABSENT or EMPTY matcher admits
 // every source; otherwise the matcher is a regular expression over the source token.
@@ -623,7 +616,7 @@ export const bundleClaudeSessionHookTests = [
         }
         assert.deepEqual(
           producers,
-          ["src/mesh/launcher.mjs", "src/mesh/launcher.mjs", "src/mesh/launcher.mjs"],
+          ["packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs"],
           "the relay has exactly three frame producers in mesh-launcher (fresh execution, terminal bridge, and parked-session resume); this hook story adds none",
         );
       } finally {

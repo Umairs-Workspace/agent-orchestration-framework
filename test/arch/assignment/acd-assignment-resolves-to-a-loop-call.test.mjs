@@ -62,14 +62,14 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const MESH_FILES = Object.freeze([
   "packages/mesh/src/assignment-directive.mjs",
   "packages/mesh/src/assignment-reclaim.mjs",
-  "src/mesh/worker-execution.mjs",
-  "src/mesh/worker-launch.mjs",
+  "packages/mesh/src/worker-execution.mjs",
+  "packages/mesh/src/worker-launch.mjs",
 ]);
 
 // The file that COMPOSES the launch — the subject of the four positive matches below. Pinned
 // as a name rather than found as "the worker", because after 119/04's split those are two
 // files and the positive legs belong to the one that composes.
-const LAUNCH_COMPOSER = "src/mesh/worker-launch.mjs";
+const LAUNCH_COMPOSER = "packages/mesh/src/worker-launch.mjs";
 
 // The ONE module allowed to author a slash command for an assignment phase.
 const DIRECTIVE_HOME = "packages/mesh/src/assignment-directive.mjs";
@@ -393,7 +393,7 @@ export const archTests = [
       }
       assert.deepEqual(storyIdentifiersIn(driver), [], "no identifier this story introduced appears in the driver: it edited nothing above the launch");
 
-      const worker = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const worker = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
       const bag = spawnOptionsBag(worker);
       assert.ok(bag != null, "the worker's spawn options bag is structurally readable");
       for (const key of FENCED_FORWARDS) {

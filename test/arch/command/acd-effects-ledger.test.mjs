@@ -57,7 +57,7 @@ const APPEND_EVENT_ALLOWED = new Set([
   // guard + append into control's own journal"). It appends ONLY a reactor the
   // closed vocabulary declares for the named event, and the work itself still runs
   // through a transition seam.
-  "src/control-stream-server.mjs",
+  "packages/mesh/src/control-stream-server.mjs",
   // m42 wave (d) leg d5 — the FILE-STORE RECONCILER: the deliberate second door
   // for a fact whose event a crash ate (write-then-append's documented window).
   // It appends only what a transition WOULD have appended — the record's own

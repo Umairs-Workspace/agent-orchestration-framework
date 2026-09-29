@@ -32,6 +32,7 @@
 // while the worker still spawns 80x24 — the exact drift that produced the unreadable render in
 // the first place.
 import assert from "node:assert/strict";
+import { importSpecifiers } from "../../support/module-family.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -61,6 +62,12 @@ async function workerDriverSource() {
   // assumed the sink sat at the root, and the driver is one directory up from `src/mesh/`.
   const reExported = [...sink.matchAll(/export\s*\{[\s\S]*?\}\s*from\s*["'](\.\.?\/[^"']+)["']/g)].map((m) => m[1]);
   const parts = await Promise.all(reExported.map((spec) => read(path.join(path.dirname(WORKER_EXECUTION), spec))));
+  for (const part of [...parts]) {
+    for (const { specifier } of importSpecifiers(part).filter(entry => entry.specifier.startsWith("@aof/execution/"))) {
+      parts.push(await readFile(new URL(import.meta.resolve(specifier)), "utf8"));
+    }
+  }
+  assert.ok(parts.some(text => text.includes("function driveInteractiveClaudeSession(")), "the configured worker reaches the driver implementation");
   return [sink, ...parts].join("\n");
 }
 

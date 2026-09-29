@@ -63,7 +63,7 @@ const declares = (name) => new RegExp(`(?:function|const|let|class)\\s+${name}\\
 const WORKER_SIDE = [
   // The worker's five execution reads (`:258`, `:2510`, `:2790`, `:2863`, `:3007`) — the
   // ref it was dispatched, resolved against the worktree it is actually working in.
-  { file: path.join("src", "mesh", "worker-execution.mjs"), symbols: ["findWork", "listItems"], subject: "createMeshWorkerExecutionHandler" },
+  { file: path.join("packages", "mesh", "src", "worker-execution.mjs"), symbols: ["findWork", "listItems"], subject: "createMeshWorkerExecutionHandler", factory: "createWorkerExecutionServices", adapter: "src/mesh/worker-execution.mjs" },
   // ADR-005 (b) names this read as `global-work-store:601`. It MOVED to its own module at
   // 43/03 and is re-pointed here at 43/06's review (ADR-016/G2). It is the read that turns
   // a worker's own worktree into the artifact bodies it streams: it must never be answered
@@ -80,7 +80,7 @@ const WORKER_SIDE = [
   // is not a rule, and this is the assertion that makes it one. The launcher's OTHER read
   // (the control-side presence aggregation) correctly migrated; the two must not be
   // conflated on a later tidy-up.
-  { file: path.join("src", "mesh", "launcher.mjs"), symbols: ["listItems"], subject: "startLauncher" },
+  { file: path.join("packages", "mesh", "src", "launcher.mjs"), symbols: ["listItems"], subject: "startLauncher", factory: "createMeshLauncher", adapter: "src/mesh/launcher.mjs" },
 ];
 
 // (c) STRUCTURAL reads — the disk is the SUBJECT of the operation (SPEC's out-of-scope

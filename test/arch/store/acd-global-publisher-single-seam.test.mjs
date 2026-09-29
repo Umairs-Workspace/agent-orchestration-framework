@@ -23,6 +23,10 @@ export const archTests = [
         assert.ok(!source.includes("openGlobalWorkProjectionStore"), `${rel} does not open the global store directly`);
         assert.ok(!source.includes("publishWorkspaceSnapshot"), `${rel} does not call the projection writer directly`);
       }
+      const launcher = await readFile(path.join(repoRoot, "packages/mesh/src/launcher.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, "src/mesh/launcher.mjs"), "utf8");
+      for (const text of [launcher, adapter]) assert.match(text, /createMeshLauncher\(\{[^}]*publishGlobalWorkSnapshot/su);
+      for (const forbidden of ["mesh.enabled", "config?.mesh?.enabled", "openGlobalWorkProjectionStore", "publishWorkspaceSnapshot"]) assert.ok(!launcher.includes(forbidden), forbidden);
       for (const name of ["feedback", "run-start", "run-complete"]) {
         const implementation = await readFile(path.join(repoRoot, `packages/work/src/commands/${name}.mjs`), "utf8");
         for (const forbidden of ["global-work-store.mjs", "openGlobalWorkProjectionStore", "publishWorkspaceSnapshot"]) {

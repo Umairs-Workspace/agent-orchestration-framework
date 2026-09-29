@@ -100,8 +100,8 @@ function indexLeakProblems(label, source) {
 // full (not scoped to a single function), so a leak hidden in connection/dispatch code
 // OUTSIDE a named "builder" is caught too.
 const MESH_TRANSPORT_FILES = [
-  "src/control-stream-server.mjs",
-  "src/worker-stream-client.mjs",
+  "packages/mesh/src/control-stream-server.mjs",
+  "packages/mesh/src/worker-stream-client.mjs",
   "packages/mesh/src/relay.mjs",
   "packages/mesh/src/relay-client.mjs",
   "packages/mesh/src/terminal-relay-bridge.mjs", // story 06 — the NEW terminal-frame kind
@@ -120,17 +120,17 @@ const MESH_TRANSPORT_FILES = [
 // buildTerminalFrameEnvelope (story 06, built moments before this story) — a stale/
 // incomplete enumeration is exactly this milestone's own recurring F1/F4 failure class.
 const FRAME_BUILDER_SITES = [
-  { file: "src/control-stream-server.mjs", fn: "buildDirectiveFrame" },
-  { file: "src/control-stream-server.mjs", fn: "buildCloneCredentialFrame" },
-  { file: "src/control-stream-server.mjs", fn: "buildCloneUrlFrame" },
-  { file: "src/control-stream-server.mjs", fn: "buildWriteCredentialFrame" }, // story 07
-  { file: "src/worker-stream-client.mjs", fn: "buildSnapshotFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildDeltaFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildPresenceFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildAssignmentStatusFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildCloneCredentialRequestFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildCloneUrlRequestFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildWriteCredentialRequestFrame" }, // story 07
+  { file: "packages/mesh/src/control-stream-server.mjs", fn: "buildDirectiveFrame" },
+  { file: "packages/mesh/src/control-stream-server.mjs", fn: "buildCloneCredentialFrame" },
+  { file: "packages/mesh/src/control-stream-server.mjs", fn: "buildCloneUrlFrame" },
+  { file: "packages/mesh/src/control-stream-server.mjs", fn: "buildWriteCredentialFrame" }, // story 07
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildSnapshotFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildDeltaFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildPresenceFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildAssignmentStatusFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildCloneCredentialRequestFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildCloneUrlRequestFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildWriteCredentialRequestFrame" }, // story 07
   { file: "packages/mesh/src/relay-client.mjs", fn: "relayEnvelope" },
   // leaseRelayEnvelope DELETED (m42 item 0 — the lease era's dead wire kind).
   { file: "packages/mesh/src/terminal-relay-bridge.mjs", fn: "buildTerminalFrameEnvelope" }, // story 06
@@ -270,7 +270,7 @@ export const archTests = [
     name: "arch/38 ADR-016 (acd-memory-index-never-on-mesh): self-check — an index payload on a mesh frame builder, a de-gitignored index, and a remote-index fetch EACH trip their detector; the real source stays clean under every one",
     run: async () => {
       // Sanity — the real tree is clean under every detector first.
-      const directiveSource = lf(await readFile(path.join(repoRoot, "src/control-stream-server.mjs"), "utf8"));
+      const directiveSource = lf(await readFile(path.join(repoRoot, "packages/mesh/src/control-stream-server.mjs"), "utf8"));
       assert.deepEqual(indexLeakProblems("buildDirectiveFrame", functionBodyByName(directiveSource, "buildDirectiveFrame")), [], "sanity: the real buildDirectiveFrame is clean");
       const rootIgnore = await readFile(path.join(repoRoot, ".gitignore"), "utf8");
       assert.deepEqual(gitignoreMissingProblems(rootIgnore), [], "sanity: the real root .gitignore is clean");

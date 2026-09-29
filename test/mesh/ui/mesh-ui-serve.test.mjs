@@ -573,7 +573,7 @@ export const meshUiServeTests = [
   {
     name: "loop-stop-route/02 the two helpers exist exactly once each, every write branch calls admitWriteRequest( before any readJsonBody(, and the assign + session branches call resolveLocalWorkspaceRow( with no inline find of their own",
     async run() {
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "ui-serve.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs"), "utf8"));
       assert.equal((source.match(/function admitWriteRequest\s*\(/g) ?? []).length, 1, "admitWriteRequest is defined exactly once");
       assert.equal((source.match(/function resolveLocalWorkspaceRow\s*\(/g) ?? []).length, 1, "resolveLocalWorkspaceRow is defined exactly once");
       for (const route of ["/api/mesh/assign", "/api/mesh/session", "/api/mesh/loop-stop"]) {
@@ -774,8 +774,10 @@ export const meshUiServeTests = [
   {
     name: "loop-stop-route/02 the face imports the core and nothing from commands — ../loop/stop.mjs is among ui-serve.mjs's specifiers, none is under ../commands/, and acd-mesh-ui-no-core-import's allow-list names it as the second sanctioned write door",
     async run() {
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "ui-serve.mjs"), "utf8"));
-      const specifiers = importSpecifiers(source).map((entry) => entry.specifier);
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/ui-serve.mjs"), "utf8"));
+      for (const text of [source, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*stopLoop/su);
+      const specifiers = importSpecifiers(source + "\n" + adapter).map((entry) => entry.specifier);
       assert.ok(specifiers.includes("../loop/stop.mjs"), `imports ../loop/stop.mjs — got ${JSON.stringify(specifiers)}`);
       assert.deepEqual(specifiers.filter((spec) => spec.startsWith("../commands/") || spec.startsWith("./commands/")), [], "nothing under commands/");
       const gate = await readFile(path.join(repoRoot, "test", "arch", "mesh", "acd-mesh-ui-no-core-import.test.mjs"), "utf8");
@@ -928,7 +930,7 @@ function loopbackHostTests() {
         assert.deepEqual(importSpecifiers(leaf).map((entry) => entry.specifier), ["node:path"], "static-serve.mjs imports only node:path");
         const exported = [...leaf.matchAll(/^export function (\w+)/gmu)].map((match) => match[1]).sort();
         assert.deepEqual(exported, ["contentType", "isLoopbackHost", "safeStaticPath", "shouldServeAppShell"]);
-        for (const rel of ["packages/server/src/board-ui.mjs", "src/mesh/ui-serve.mjs"]) {
+        for (const rel of ["packages/server/src/board-ui.mjs", "packages/mesh/src/ui-serve.mjs"]) {
           const source = await read(rel);
           const at = source.indexOf("function admitWriteRequest(");
           assert.ok(at >= 0, `${rel} defines admitWriteRequest`);
@@ -941,7 +943,7 @@ function loopbackHostTests() {
           assert.equal((source.match(/isLoopbackHost\(/gu) ?? []).length, 1, `${rel}: no second isLoopbackHost( call`);
           assert.ok(!/headers\.host\s*(?:===|!==|==|!=)/u.test(source) && !/(?:===|!==|==|!=)\s*request\.headers\.host/u.test(source), `${rel}: no comparison made on headers.host`);
         }
-        const fleet = await read("src/mesh/ui-serve.mjs");
+        const fleet = await read("packages/mesh/src/ui-serve.mjs");
         assert.equal((fleet.match(/function admitWriteRequest\(/gu) ?? []).length, 1, "the fleet still defines exactly one admitWriteRequest");
       },
     },

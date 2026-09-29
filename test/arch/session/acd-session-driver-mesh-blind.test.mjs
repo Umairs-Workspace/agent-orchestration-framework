@@ -155,6 +155,7 @@ export const archTests = [
       assert.ok(graph.edges.some(([from, to]) => from === degrade && to === applicationLog), "the degrade admission still has a subject");
 
       const sinkGraph = await walkImports(sink);
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/mesh/src/worker-execution.mjs")), "the configured sink reaches its implementation");
       // Architect-approved milestone-70 integration extension: m68's run-session-capture
       // contribution and m70's phase-brief-read + phase-brief path made the exact reach 59.
       // Milestone 69 adds THREE more, all zero- or shallow-dependency leaves reached only
@@ -269,7 +270,9 @@ export const archTests = [
       for (const name of ["presence", "assignment-record", "projection-store"]) {
         assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)), name);
       }
-      assert.equal(sinkGraph.seen.size, 106, "mesh coordination adds role and declaration homes to the prior 104-module closure");
+      // 142: +worker execution/admission/launch implementations, -loop-bounds/repo-marker forwards.
+      for (const name of ["worker-execution", "worker-repo-admission", "worker-launch"]) assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)));
+      assert.equal(sinkGraph.seen.size, 107, "three implementation homes replace two forwarding modules in the prior 106-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

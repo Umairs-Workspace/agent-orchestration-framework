@@ -34,9 +34,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const providerSourcePath = path.join(repoRoot, "src", "mesh", "clone-credential-provider.mjs");
-const launcherSourcePath = path.join(repoRoot, "src", "mesh", "launcher.mjs");
-const controlSourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
+const providerSourcePath = path.join(repoRoot, "packages", "mesh", "src", "clone-credential-provider.mjs");
+const launcherSourcePath = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
+const controlSourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -132,7 +132,7 @@ const RAW_PROVIDER_READ = /config\s*\?\.\s*mesh\s*\?\.\s*repo\s*\?\.\s*credentia
 // `createGithubAppMintProvider(...)` — a body naming only one of the two can never
 // change its outcome no matter what `config` says.
 function selectorConfigDrivenProblems(selectorSource) {
-  const body = functionBody(selectorSource, "export function resolveCloneCredentialProvider");
+  const body = functionBody(selectorSource, "function resolveCloneCredentialProvider");
   const problems = [];
   if (body == null) {
     problems.push("could not locate resolveCloneCredentialProvider's function body");
@@ -154,7 +154,7 @@ function selectorConfigDrivenProblems(selectorSource) {
 // (the T10 fall-through). Detector: a `try { ... createGithubAppMintProvider ... }
 // catch { ... defaultMintCloneCredential ... }` shape anywhere in the selector body.
 function selectorFallThroughProblems(selectorSource) {
-  const body = functionBody(selectorSource, "export function resolveCloneCredentialProvider");
+  const body = functionBody(selectorSource, "function resolveCloneCredentialProvider");
   if (body == null) return [];
   const tryIdx = body.search(/\btry\b/);
   if (tryIdx === -1) return [];
@@ -179,7 +179,7 @@ function selectorFallThroughProblems(selectorSource) {
 // default must stay BYTE-IDENTICAL — it reads `process.env.AOF_MESH_CLONE_TOKEN` and
 // nothing else, never a hard-coded literal.
 function envTokenByteIdentityProblems(controlServerSource) {
-  const body = functionBody(controlServerSource, "export function defaultMintCloneCredential");
+  const body = functionBody(controlServerSource, "function defaultMintCloneCredential");
   const problems = [];
   if (body == null) {
     problems.push("could not locate defaultMintCloneCredential's function body");
@@ -227,20 +227,20 @@ function productionMintKeyProblems(launcherSource) {
 function synthesizeSelector({ hardCoded = null, fallThrough = false } = {}) {
   if (hardCoded === "github-app") {
     return [
-      "export function resolveCloneCredentialProvider(config, deps = {}) {",
+      "function resolveCloneCredentialProvider(config, deps = {}) {",
       "  return { mintCloneCredential: createGithubAppMintProvider({ ...deps }), provider: \"github-app\" };",
       "}",
     ].join("\n");
   }
   if (hardCoded === "env-token") {
     return [
-      "export function resolveCloneCredentialProvider(config, deps = {}) {",
+      "function resolveCloneCredentialProvider(config, deps = {}) {",
       "  return { mintCloneCredential: defaultMintCloneCredential, provider: \"env-token\" };",
       "}",
     ].join("\n");
   }
   return [
-    "export function resolveCloneCredentialProvider(config, deps = {}) {",
+    "function resolveCloneCredentialProvider(config, deps = {}) {",
     "  const provider = config?.mesh?.repo?.credential?.provider;",
     "  if (provider === undefined || provider === \"env-token\") {",
     "    return { mintCloneCredential: defaultMintCloneCredential, provider: \"env-token\" };",
@@ -265,13 +265,13 @@ function synthesizeSelector({ hardCoded = null, fallThrough = false } = {}) {
 function synthesizeDefaultMintCloneCredential({ envVar = "AOF_MESH_CLONE_TOKEN", hardCodedLiteral = null } = {}) {
   if (hardCodedLiteral != null) {
     return [
-      "export function defaultMintCloneCredential(/* workspaceId, assignmentId */) {",
+      "function defaultMintCloneCredential(/* workspaceId, assignmentId */) {",
       `  return "${hardCodedLiteral}";`,
       "}",
     ].join("\n");
   }
   return [
-    "export function defaultMintCloneCredential(/* workspaceId, assignmentId */) {",
+    "function defaultMintCloneCredential(/* workspaceId, assignmentId */) {",
     `  const token = process.env.${envVar};`,
     "  return typeof token === \"string\" && token.length > 0 ? token : null;",
     "}",

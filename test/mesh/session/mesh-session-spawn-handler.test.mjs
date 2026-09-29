@@ -448,7 +448,10 @@ export const meshSessionSpawnHandlerTests = [
     run: async () => withSpawnFixture(async (fixture) => {
       // (a) the structural half — the registration exists, on the real lane, with the
       //     handler built by the real factory from the real sibling module.
-      const launcherSource = await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8");
+      const implementation = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, "src/mesh/launcher.mjs"), "utf8");
+      for (const text of [implementation, adapter]) assert.match(text, /createMeshLauncher\(\{[^}]*createMeshWorkerSessionSpawnHandler/su);
+      const launcherSource = adapter + "\n" + implementation;
       assert.ok(
         /import\s*\{[^}]*createMeshWorkerSessionSpawnHandler[^}]*\}\s*from\s*["'](?:\.\.?\/)+session-spawn-handler\.mjs["']/.test(launcherSource),
         "mesh-launcher.mjs imports createMeshWorkerSessionSpawnHandler from ./mesh/session-spawn-handler.mjs",

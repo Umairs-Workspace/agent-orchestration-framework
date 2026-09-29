@@ -41,7 +41,7 @@ import { registeredSuitePaths, registrationSurface } from "../support/registrati
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const GATE_FILE = path.join(repoRoot, "test", "arch", "assignment", "acd-worker-driver-no-headless-print.test.mjs");
 const DRIVER_FILE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
-const HANDLER_FILE = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
+const HANDLER_FILE = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
 
 const lf = (source) => String(source).replace(/\r\n/g, "\n");
 
@@ -234,7 +234,7 @@ export const agentSessionDriverGateAimTests = [
       assert.equal(sourceSide.length, 2, `exactly two source-path constants: ${constants.map((c) => `${c.name}=${c.target}`).join(", ")}`);
       assert.deepEqual(
         sourceSide.map((c) => [c.name, c.target]).sort(),
-        [["DRIVER_SOURCE", "packages/execution/src/session-driver.mjs"], ["HANDLER_SOURCE", "src/mesh/worker-execution.mjs"]],
+        [["DRIVER_SOURCE", "packages/execution/src/session-driver.mjs"], ["HANDLER_SOURCE", "packages/mesh/src/worker-execution.mjs"]],
         "one names the new module, one names the sink",
       );
       // 119/03 — there is no third constant. The gate declared a runner path because its

@@ -957,3 +957,26 @@ Its guard must start at the core session adapter, prove that the mesh implementa
 continue excluding the registry and generic face. The identity command's deferred declarations
 loader must also remain behind the flag: merely injecting a loader would not preserve that cost rule
 if the command called it unconditionally.
+
+## Mesh runtime ownership and initialization
+
+Launcher, worker, credential, session-spawn and fleet/control-stream policies now live in mesh.
+Their configured collaborators remain explicit factory inputs until final core assembly. Mesh uses
+server's public static HTTP helpers; this adds one workspace dependency, without changing third-party
+versions. Transport protocol constants and pure clone URL resolvers export without constructing a
+service. The root worker API retains its legacy driver/worktree re-exports by identity.
+
+Capturing the configured worker API from global-node-registry exposed an initialization cycle.
+That caller only needs `resolveCloneUrl`, so it now imports the pure mesh repo-admission API. The
+credential provider likewise imports `parseRepoFromCloneUrl` locally. Neither pure URL operation
+needs to initialize the worker graph. Final assembly must still remove the remaining composition
+cycles; factory extraction alone does not complete that requirement.
+
+The worker's active-worktree map belongs to its configured instance. Root's singleton preserves
+existing shared state, while separately constructed instances are isolated. The session-spawn
+source contained a raw NUL byte; its moved source spells the same string value as `\0`.
+
+Source guards must distinguish implementation ownership from configured dependency ownership:
+producer scans cover runtime workspace roots, dependency closure starts at the configured adapter,
+and injected services are checked on both the factory input and the adapter binding. Compatibility
+checks continue to import the legacy surface rather than treating a factory as that surface.

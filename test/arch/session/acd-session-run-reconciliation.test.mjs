@@ -62,7 +62,7 @@ const NOW = "2026-07-10T12:00:00.000Z";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const FORMATTER_FILE = path.join("ui", "src", "fleet", "runs.mjs");
-const PRODUCER_FILE = path.join("src", "mesh", "launcher.mjs");
+const PRODUCER_FILE = path.join("packages", "mesh", "src", "launcher.mjs");
 
 // Source is read NORMALISED (this tree is CRLF in places and LF in others — story 01's
 // files landed LF beside m38's CRLF ones), so every detector and every plant below is

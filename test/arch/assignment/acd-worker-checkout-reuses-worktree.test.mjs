@@ -29,7 +29,7 @@ import { registeredSuitePaths, registrationSurface } from "../../support/registr
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workerSourcePath = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
+const workerSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
 const worktreeSourcePath = path.join(repoRoot, "packages", "execution", "src", "worktrees.mjs");
 const testSuitePath = path.join(repoRoot, "scripts", "test.mjs");
 

@@ -88,7 +88,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const STATIC_SERVE_MODULE = "packages/server/src/static-serve.mjs";
 const SERVERS = [
   { file: "packages/server/src/setup-ui.mjs", what: "the setup/board/config origin (board-serve.mjs:20 delegates here, so ONE fix covers both)" },
-  { file: "src/mesh/ui-serve.mjs", what: "the fleet origin — TIGHTENED by the same predicate, not pinned as-is (its :558-568 fallback is unconditional today)" },
+  { file: "packages/mesh/src/ui-serve.mjs", what: "the fleet origin — TIGHTENED by the same predicate, not pinned as-is (its :558-568 fallback is unconditional today)" },
 ];
 
 // The behavioural contract, stated as a table so it is read as a spec rather than as code.
@@ -181,7 +181,7 @@ export const archTests = [
       const found = [];
       for (const helper of HELPERS) {
         const definitions = [];
-        for (const rel of [STATIC_SERVE_MODULE, "packages/server/src/setup-ui.mjs", "src/mesh/ui-serve.mjs"]) {
+        for (const rel of [STATIC_SERVE_MODULE, "packages/server/src/setup-ui.mjs", "packages/mesh/src/ui-serve.mjs"]) {
           let source;
           try {
             source = await readFile(path.join(repoRoot, rel), "utf8");
@@ -275,7 +275,7 @@ export const archTests = [
       for (const server of SERVERS) {
         const code = stripComments(await readFile(path.join(repoRoot, server.file), "utf8"));
         assert.ok(code.length > 1000, `${server.file} was actually read (non-vacuous)`);
-        if (!/from\s+["'](?:\.\.?\/)+static-serve\.mjs["']/.test(code)) missing.push(`${server.file} — ${server.what}`);
+        if (!/from\s+["'](?:(?:\.\.?\/)+static-serve\.mjs|@aof\/server\/static-serve)["']/.test(code)) missing.push(`${server.file} — ${server.what}`);
       }
       assert.deepEqual(
         missing,

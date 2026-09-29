@@ -41,7 +41,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 const GLOBAL_MESH_QUERY = path.join(repoRoot, "packages", "mesh", "src", "global-query.mjs");
 const FLEET_API_TS = path.join(repoRoot, "ui", "src", "fleet", "api.ts");
 

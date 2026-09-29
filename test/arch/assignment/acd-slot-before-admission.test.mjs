@@ -11,7 +11,7 @@ import { boundSiteOffenders } from "./acd-dispatch-bound-single-home.test.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const commandPath = path.join(root, "packages", "work-loop", "src", "commands", "dispatch.mjs");
 const meshPath = path.join(root, "packages", "mesh", "src", "assignment-reclaim.mjs");
-const launcherPath = path.join(root, "src", "mesh", "launcher.mjs");
+const launcherPath = path.join(root, "packages", "mesh", "src", "launcher.mjs");
 const resumePath = path.join(root, "packages", "mesh", "src", "commands", "terminal-resume.mjs");
 
 export function slotBeforeAdmissionProblems(commandSource, meshSource, launcherSource = null) {
@@ -134,7 +134,7 @@ export function productionAdmissionPathProblems(listing, suppliers = SUPPLIED_DI
     const scheduledTicks = executableCallCount(code, "runControlDispatchReclaimTick");
     if (scheduledTicks > 0) {
       tickCalls += scheduledTicks;
-      if (rel !== "src/mesh/launcher.mjs") problems.push(`${rel} schedules the admission scan outside its serialized production seam`);
+      if (rel !== "packages/mesh/src/launcher.mjs") problems.push(`${rel} schedules the admission scan outside its serialized production seam`);
     }
     const resumes = executableCallCount(code, "buildTerminalResumeEnvelope");
     if (resumes > 0) {
@@ -214,7 +214,7 @@ export const archTests = [
       const homes = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: goodCommand },
         { path: "packages/mesh/src/assignment-reclaim.mjs", source: `export async function runControlDispatchReclaimTick() { ${goodMesh} }` },
-        { path: "src/mesh/launcher.mjs", source: goodLauncher },
+        { path: "packages/mesh/src/launcher.mjs", source: goodLauncher },
         { path: "packages/mesh/src/commands/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
       ];
       assert.deepEqual(productionAdmissionPathProblems(homes), []);
@@ -233,7 +233,7 @@ export const archTests = [
       const homes = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, (row) => typeof ctx.runDispatchLane === \"function\" ? ctx.runDispatchLane(row) : resolveDispatchLane(root, row.ref));" },
         { path: "packages/mesh/src/assignment-reclaim.mjs", source: "export async function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); if (used >= dispatchBound) continue; dispatchDirective(buildDirectiveFrame(x)); }" },
-        { path: "src/mesh/launcher.mjs", source: "controlDispatchReclaimInFlight.then(() => runControlDispatchReclaimTick(ws, server)); controlDispatchReclaimInFlight = dispatchReclaimTick.catch(fail);" },
+        { path: "packages/mesh/src/launcher.mjs", source: "controlDispatchReclaimInFlight.then(() => runControlDispatchReclaimTick(ws, server)); controlDispatchReclaimInFlight = dispatchReclaimTick.catch(fail);" },
         { path: "packages/mesh/src/commands/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
       ];
       // the wave's real shape: the opener is a declaration, the binding is a ternary whose arrow calls it, the ask is invokeRegistered
@@ -280,7 +280,7 @@ export const archTests = [
       const doors = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, () => resolveDispatchLane());" },
         { path: "packages/mesh/src/assignment-reclaim.mjs", source: "function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); dispatchDirective(buildDirectiveFrame()); }" },
-        { path: "src/mesh/launcher.mjs", source: "runControlDispatchReclaimTick();" },
+        { path: "packages/mesh/src/launcher.mjs", source: "runControlDispatchReclaimTick();" },
         { path: "packages/mesh/src/commands/terminal-resume.mjs", source: "buildTerminalResumeEnvelope();" },
       ];
       assert.ok(productionAdmissionPathProblems(doors).some((p) => p.includes("without the shared counted set")));

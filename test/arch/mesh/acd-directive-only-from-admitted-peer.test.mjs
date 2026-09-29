@@ -23,7 +23,7 @@ import { startControlStreamServer, dispatchDirectiveOverTargets, buildDirectiveF
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
+const sourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 const NOW = "2026-07-09T10:00:00.000Z";
 
 async function withGlobalHome(fn) {

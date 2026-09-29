@@ -122,9 +122,11 @@ export const discordBotTests = [
   {
     name: "131/10 task00 — the launcher reaches bot.mjs only by a deferred import inside its control branch",
     async run() {
-      const launcher = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8"));
+      const launcher = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8"));
       assert.doesNotMatch(launcher, /^\s*import\b[^;]*discord\/bot\.mjs/mu, "no static import of bot.mjs");
-      const at = launcher.indexOf('import("../discord/bot.mjs")');
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/launcher.mjs"), "utf8"));
+      assert.match(adapter, /loadMessagingBot:\s*\(\)\s*=>\s*import\("\.\.\/discord\/bot\.mjs"\)/u);
+      const at = launcher.indexOf('loadMessagingBot()');
       assert.ok(at > 0, "a deferred import of bot.mjs");
       const guard = launcher.lastIndexOf("if (issuanceAuthority)", at);
       assert.ok(guard > 0 && at - guard < 1200, "inside the control-node branch");

@@ -9,7 +9,8 @@ import { assertFamilyPurity, importSpecifiers } from "../../support/module-famil
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const driverPath = path.join(root, "src", "agent-session-driver.mjs");
-const sinkPath = path.join(root, "src", "mesh", "worker-execution.mjs");
+const adapterPath = path.join(root, "src", "mesh", "worker-execution.mjs");
+const sinkPath = path.join(root, "packages", "mesh", "src", "worker-execution.mjs");
 const MOVED = Object.freeze([
   "NEEDS_INPUT_SENTINEL", "NEEDS_INPUT_INSTRUCTION", "DIRECTIVE_COMPLETE_SENTINEL",
   "DIRECTIVE_COMPLETE_INSTRUCTION", "WORKER_SESSION_INSTRUCTION", "COMPLETION_IDLE_MS",
@@ -63,7 +64,8 @@ const MOVED = Object.freeze([
 // be argued for. SINK_FLOOR is untouched: it is the leg that proves the file was really read, and
 // lowering it to accommodate a larger cut would turn this ratchet's one non-vacuity check into
 // decoration.
-const SINK_CEILING = 1914;
+// 142: imports/re-exports move to the composition adapter; measured implementation: 1871.
+const SINK_CEILING = 1871;
 const SINK_FLOOR = 1500;
 
 function setDelta(actual, expected) {
@@ -112,8 +114,8 @@ const SINK_SURFACE = Object.freeze([
 // The two modules item 83's seams became. WHICH files are this split's children is a decision;
 // WHAT each of them extracted is derived from the child's own body, never retyped here.
 const EXTRACTED_HOMES = Object.freeze([
-  "src/mesh/worker-launch.mjs",
-  "src/mesh/worker-repo-admission.mjs",
+  "packages/mesh/src/worker-launch.mjs",
+  "packages/mesh/src/worker-repo-admission.mjs",
 ]);
 
 // The floor under that derived set (ADR-003 §1 again: store a decision, derive a fact). The
@@ -130,7 +132,7 @@ const SEAM_SYMBOLS = Object.freeze([
 // promise. 2482 was 63/06's raise; 1957 is what the two seams left behind.
 const SINK_CEILING_BEFORE_SPLIT = 2482;
 
-const SINK_REL = "src/mesh/worker-execution.mjs";
+const SINK_REL = "packages/mesh/src/worker-execution.mjs";
 
 function definitionPattern(name) {
   return new RegExp(`(?:export\\s+)?(?:async\\s+)?(?:function|const|let|class)\\s+${name}\\b`, "u");
@@ -273,11 +275,12 @@ export const archTests = [
   {
     name: "arch/53 FF-5302 (acd-session-driver-single-home): the sink defines none of the moved names and names the driver re-export",
     run: async () => {
-      const source = stripComments(await readFile(sinkPath, "utf8"));
+      const source = stripComments(await readFile(adapterPath, "utf8"));
+      const implementation = stripComments(await readFile(sinkPath, "utf8"));
       assert.match(source, /from\s+["'](?:\.\.?\/)+agent-session-driver\.mjs["']/u, "the sink's re-export/import source remains explicit");
       for (const name of MOVED) {
         const definition = new RegExp(`(?:export\\s+)?(?:async\\s+)?(?:function|const|let|class)\\s+${name}\\b`, "u");
-        assert.doesNotMatch(source, definition, `${name} was copied back into the sink`);
+        assert.doesNotMatch(source + "\n" + implementation, definition, `${name} was copied back into the sink`);
       }
     },
   },
@@ -373,7 +376,7 @@ export const archTests = [
         dependents.push({ rel, names: namedImportsOf(source, "worker-execution\\.mjs") });
       }
       assert.ok(dependents.length >= 4, `the importer sweep found ${dependents.length} dependents — it must at least find the four non-test ones`);
-      for (const rel of ["src/global-node-registry.mjs", "src/mesh/clone-credential-provider.mjs", "src/mesh/launcher.mjs", "scripts/pin-checkout-id.mjs"]) {
+      for (const rel of ["src/mesh/launcher.mjs", "scripts/pin-checkout-id.mjs"]) {
         assert.ok(dependents.some((dependent) => dependent.rel === rel), `${rel} is one of the four non-test dependents and the sweep must see it`);
       }
       assert.deepEqual(dependentBindingProblems([...SINK_SURFACE], dependents), [], "every binding every dependent takes from the sink is still on its surface");
@@ -472,7 +475,7 @@ export const archTests = [
       const dropped = SINK_SURFACE.filter((name) => name !== "workerHasRepo");
       assert.deepEqual(setDelta([...dropped].sort(), [...SINK_SURFACE].sort()), { extra: [], missing: ["workerHasRepo"] }, "a dropped export name is named");
       assert.ok(
-        dependentBindingProblems([...dropped], [{ rel: "src/mesh/launcher.mjs", names: ["workerHasRepo"] }]).some((problem) => /launcher\.mjs imports "workerHasRepo"/u.test(problem)),
+        dependentBindingProblems([...dropped], [{ rel: "packages/mesh/src/launcher.mjs", names: ["workerHasRepo"] }]).some((problem) => /launcher\.mjs imports "workerHasRepo"/u.test(problem)),
         "…and the dependent's own binding is named with it, which is the reason the surface is frozen at all",
       );
 
@@ -484,11 +487,11 @@ export const archTests = [
 
       // (5) an extracted module importing the parent back, and one re-exporting its names.
       assert.ok(
-        importBackProblems([{ rel: "src/mesh/worker-launch.mjs", reaches: new Set([SINK_REL]), reexportsParent: false }]).some((problem) => /is a leaf of its parent/u.test(problem)),
+        importBackProblems([{ rel: "packages/mesh/src/worker-launch.mjs", reaches: new Set([SINK_REL]), reexportsParent: false }]).some((problem) => /is a leaf of its parent/u.test(problem)),
         "a child that reaches its parent is named",
       );
       assert.ok(
-        importBackProblems([{ rel: "src/mesh/worker-launch.mjs", reaches: new Set(["src/mesh/repo-marker.mjs"]), reexportsParent: true }]).some((problem) => /re-exports the parent's names/u.test(problem)),
+        importBackProblems([{ rel: "packages/mesh/src/worker-launch.mjs", reaches: new Set(["src/mesh/repo-marker.mjs"]), reexportsParent: true }]).some((problem) => /re-exports the parent's names/u.test(problem)),
         "…and so is one that re-exports them",
       );
 
@@ -510,7 +513,12 @@ export const archTests = [
   {
     name: "arch/119 FF-11907 (acd-session-driver-single-home, extended): the parent PERFORMS neither extracted concern any more — it reads no directive field of its own, and what it still CALLS it imports inward rather than defining again",
     run: async () => {
-      const parent = stripComments(await readFile(sinkPath, "utf8"));
+      const implementation = stripComments(await readFile(sinkPath, "utf8"));
+      const adapter = stripComments(await readFile(adapterPath, "utf8"));
+      for (const text of [implementation, adapter]) {
+        for (const name of ["readDirectiveCommand", "readDirectiveLaunch", "composeDirectiveLaunchOptions", "meshCheckoutPath", "meshCheckoutsRoot", "buildAskpassShim", "redactCredentialFromText"]) assert.match(text, new RegExp(`createWorkerExecutionServices\\(\\{[^}]*\\b${name}\\b`, "su"));
+      }
+      const parent = adapter + "\n" + implementation;
 
       // TASK 00, SCENARIO 4. The reads have ONE home, and it is not this file. A parent keeping
       // "just one" `directive.launch` read for a log line or a brief is the shape that turns a move

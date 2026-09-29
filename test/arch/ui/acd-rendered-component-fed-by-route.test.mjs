@@ -44,7 +44,7 @@ import { queryGlobalMeshStatus } from "../../../src/global-mesh-query.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 const FLEET_TSX = "ui/src/fleet/Fleet.tsx";
-const MESH_UI_SERVE = "src/mesh/ui-serve.mjs";
+const MESH_UI_SERVE = "packages/mesh/src/ui-serve.mjs";
 
 // The ONE shared current-work projection (ui/src/fleet/runs.mjs) and its thin
 // node-shaped wrapper (ui/src/fleet/scope.mjs) — the only sanctioned derivations.

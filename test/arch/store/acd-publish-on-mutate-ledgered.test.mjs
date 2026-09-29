@@ -55,7 +55,7 @@ const PUBLISH_ALLOWED = new Set([
   "packages/mesh/src/commands/repo.mjs",
   // The launcher's periodic propagation tick + its startup snapshot: time-driven
   // convergence, not a mutation's consequence.
-  "src/mesh/launcher.mjs",
+  "packages/mesh/src/launcher.mjs",
 ]);
 
 // The events whose facts propagate. Each must carry the publish reactor.

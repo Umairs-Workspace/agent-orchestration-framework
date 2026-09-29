@@ -32,7 +32,7 @@ import { createDirectiveChannelFixture } from "../../support/mesh-directive-chan
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const assignSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs");
-const controlStreamServerSourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
+const controlStreamServerSourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 
 // Every `{ ok: false, ... }` object literal in the source must carry a `code` field on
 // the SAME literal (never a silent `{ ok:false }` with no code). A brace-balanced scan
@@ -131,7 +131,7 @@ export const archTests = [
     name: "arch/35 ADR-002/34-ADR-008 (acd-assignment-target-not-connected-loud, channel half): structural — sendDirective's miss branch always returns the coded literal, never a bare falsy/silent return",
     run: async () => {
       const source = await readFile(controlStreamServerSourcePath, "utf8");
-      const fn = source.match(/export function sendDirective\([^)]*\)\s*\{[\s\S]*?\n\}/);
+      const fn = source.match(/function sendDirective\([^)]*\)\s*\{[\s\S]*?\n\}/);
       assert.ok(fn, "sendDirective is defined");
       assert.ok(
         /ASSIGNMENT_TARGET_NOT_CONNECTED/.test(fn[0]) && /return\s*\{\s*sent:\s*false/.test(fn[0]),
@@ -144,7 +144,7 @@ export const archTests = [
     name: "arch/35 ADR-002/34-ADR-008 (acd-assignment-target-not-connected-loud, channel half): self-check — a planted silent-return miss branch (no code emitted) fails the structural detector",
     run: async () => {
       const plantedSilent = `
-export function sendDirectiveSilentMiss(targets, nodeId, directive) {
+function sendDirectiveSilentMiss(targets, nodeId, directive) {
   const ws = targets.get(nodeId);
   if (ws == null) {
     return; // silent drop — the defect this fitness catches
@@ -152,7 +152,7 @@ export function sendDirectiveSilentMiss(targets, nodeId, directive) {
   ws.send(JSON.stringify(directive));
 }
 `;
-      const fn = plantedSilent.match(/export function sendDirectiveSilentMiss\([^)]*\)\s*\{[\s\S]*?\n\}/);
+      const fn = plantedSilent.match(/function sendDirectiveSilentMiss\([^)]*\)\s*\{[\s\S]*?\n\}/);
       assert.ok(fn, "the planted function parses");
       const isLoud = /ASSIGNMENT_TARGET_NOT_CONNECTED/.test(fn[0]) && /return\s*\{\s*sent:\s*false/.test(fn[0]);
       assert.equal(isLoud, false, "the planted silent-return miss trips the detector (fails the loud-shape check)");

@@ -1312,10 +1312,11 @@ function workerAskTests() {
       },
     },
     {
-      name: "131/12 task00 — the sink file does not grow: src/mesh/worker-execution.mjs is 1,914 lines",
+      name: "131/12 task00 — the sink file does not grow: mesh worker execution remains below its pre-migration 1,914-line ceiling",
       run: async () => {
-        const text = await readFile(new URL("../../src/mesh/worker-execution.mjs", import.meta.url), "utf8");
-        assert.equal(text.split(/\r?\n/u).length - (text.endsWith("\n") ? 1 : 0), 1914);
+        const text = await readFile(new URL("../../packages/mesh/src/worker-execution.mjs", import.meta.url), "utf8");
+        const count = text.split(/\r?\n/u).length - (text.endsWith("\n") ? 1 : 0);
+        assert.ok(count > 1500 && count <= 1914, `the implementation was read and did not grow: ${count}`);
       },
     },
   ];

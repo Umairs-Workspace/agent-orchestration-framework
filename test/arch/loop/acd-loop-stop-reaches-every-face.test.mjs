@@ -48,7 +48,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
 const PRESENCE = "packages/mesh/src/presence.mjs";
-const READERS_OF_RUNS = Object.freeze(["packages/mesh/src/commands/heartbeat.mjs", "src/mesh/launcher.mjs"]);
+const READERS_OF_RUNS = Object.freeze(["packages/mesh/src/commands/heartbeat.mjs", "packages/mesh/src/launcher.mjs"]);
 const RUNS_CALL = /(?<!function\s)\breadActiveRuns\s*\(/u;
 const LOOPS_CALL = /(?<!function\s)\breadActiveLoops\s*\(/u;
 const SIX_KEYS = Object.freeze(["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVersion", "buildId"]);
@@ -57,7 +57,7 @@ const LOOP_ENTRY_KEYS = Object.freeze(["loopRunId", "workspaceId", "scope", "lev
 const FLEET_DIR = "ui/src/fleet";
 const FLEET_FETCH = 'fetch("/api/mesh/loop-stop"';
 const FORBIDDEN_UI_TOKENS = /work-loops|work\/loops|loops-/u; // FF-5202's forbidden set, the loop registry's names
-const UI_SERVE = "src/mesh/ui-serve.mjs";
+const UI_SERVE = "packages/mesh/src/ui-serve.mjs";
 const ROUTE_TABLE = Object.freeze(["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/loop-stop", "/api/mesh/session", "/api/mesh/session-outcome", "/api/mesh/status"]);
 const CITED_CAPTURED_PRODUCER = "test/arch/session/acd-captured-producer-fixture.test.mjs";
 const CITED_CAPTURED_PRODUCER_INDEX = "test/arch/session/index.mjs";

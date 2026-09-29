@@ -35,7 +35,7 @@ import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../.
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LAUNCHER_SOURCE = path.join(repoRoot, "src", "mesh", "launcher.mjs");
+const LAUNCHER_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 const RECLAIM_DRIVER_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs");
 const ASSIGN_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs");
 const TEST_SUITE = path.join(repoRoot, "scripts", "test.mjs");

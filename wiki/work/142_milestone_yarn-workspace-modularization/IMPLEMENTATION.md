@@ -1920,3 +1920,39 @@ Evidence in `.tmp/workspace-migration/mesh-commands/`:
 No asset manifests, generated citations/lock hashes or repository workflow state changed. Mesh
 launcher/worker/control-stream orchestration, the final core/apps layout and composition, adapter
 removal and full native/platform verification remain open.
+
+## Mesh runtime and transport ownership
+
+Nine implementations now belong to mesh: worker launch, repository admission, clone credentials,
+session spawning, worker execution, launcher orchestration, control stream, worker stream and fleet
+HTTP serving. Core adapters supply configured services; legacy exports retain their behavior and
+identity where re-exported. Protocol constants and pure clone URL helpers export directly. The
+worker's active-worktree map is instance-owned, with the existing root singleton preserving sharing.
+
+Evidence in `.tmp/workspace-migration/mesh-runtime/`:
+
+- All nine legacy APIs and 137 exported values/functions/descriptors match. Five public package
+  tests pass locally and in the installer's copied payload; it retains 117 commands and resolves
+  all nine package APIs within the payload. The package test bridge passes all 210 cases.
+- Standalone JavaScript includes all nine implementations. Yarn skip-build/immutable linking and
+  supply-chain audit pass; `@aof/server` is the only added dependency, with no third-party version
+  changes. Existing peer warnings remain.
+- The 190-suite run passed 1,505 checks with 138 source-guard failures; it started before source
+  ownership updates. The corrected 102-suite run passed 654 checks with 53 failures. Corrections
+  across 38 suites then passed 324 checks with six remaining source-guard failures; the distribution
+  checks in that run passed. The final five guard suites pass all 27 checks, including the corrected
+  source census; the combined census/registry selection is now green.
+- Runtime producer scans cover source and workspace roots. Injected work reads, fleet write doors,
+  publisher policy and terminal spawn services are checked at both adapter and implementation.
+  Credential admission, per-workspace key isolation and producer-count guards retain their negative
+  probes. The worker dependency closure remains rooted at the configured adapter: 106 -> 107 is
+  three mesh implementation homes added and two forwarding modules removed; the driver denylist
+  and its own import closure stay unchanged.
+- URL-only callers now use pure repo-admission exports instead of initializing the configured worker
+  graph. A raw NUL in the old session-spawn source is spelled as the equivalent `\0` escape.
+- The canonical reclaim citation and shipped manifest hash follow the launcher move. No checked-in
+  generated output changed in this extraction. The three previously approved generated loop files
+  and their lock hashes were verified to match; all other pending generated refreshes stay pending.
+
+Final core/apps layout, application assembly, compatibility-adapter removal, remaining root services
+and whole-tree/native/platform verification remain outstanding.

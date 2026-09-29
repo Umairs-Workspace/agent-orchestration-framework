@@ -93,6 +93,15 @@ export const yarnInstallationTests = [
         'worktrees.mjs': ['node:child_process'],
         'bounded-process.mjs': ['node:child_process', 'node:fs'],
       } : name === 'mesh' ? {
+        'worker-launch.mjs': [],
+        'worker-repo-admission.mjs': ["node:path","node:child_process","node:fs/promises","node:crypto","@aof/foundation/fs"],
+        'clone-credential-provider.mjs': ["node:crypto"],
+        'session-spawn-handler.mjs': ["node:path","node:fs"],
+        'worker-execution.mjs': ["node:path","node:child_process","node:fs/promises","node:os","@aof/contracts/loop-bounds"],
+        'launcher.mjs': ["node:os","node:path","node:fs","node:fs/promises"],
+        'control-stream-server.mjs': ["ws","node:http"],
+        'worker-stream-client.mjs': ["ws"],
+        'ui-serve.mjs': ["node:http","node:fs","node:fs/promises","node:path","@aof/server/static-serve","ws","node:crypto"],
         'commands/assign.mjs': ["@aof/contracts/error"],
         'commands/contribution.mjs': [],
         'commands/desktop-preflight.mjs': ["node:fs/promises","node:child_process","node:path"],
@@ -254,7 +263,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');

@@ -66,8 +66,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // the helper-reset control runs over the module that actually clones, and it now asserts the reset
 // and the clone are the SAME argv rather than two tokens that happen to co-occur.
 const SUBJECTS = Object.freeze([
-  { rel: "src/mesh/worker-repo-admission.mjs", clones: true },
-  { rel: "src/mesh/worker-execution.mjs", clones: false },
+  { rel: "packages/mesh/src/worker-repo-admission.mjs", clones: true },
+  { rel: "packages/mesh/src/worker-execution.mjs", clones: false },
 ]);
 
 function sourcePathOf(rel) {
