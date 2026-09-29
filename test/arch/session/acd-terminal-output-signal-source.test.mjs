@@ -56,7 +56,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BRIDGE = path.join(repoRoot, "src", "mesh", "terminal-relay-bridge.mjs");
+const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
 // THE REAL PRODUCER, DISCOVERED rather than named. This gate deliberately holds no path to
 // `src/mesh/launcher.mjs` (where both producers live today), so a file split cannot silently
 // move them out from under it.

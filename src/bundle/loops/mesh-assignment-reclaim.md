@@ -27,7 +27,7 @@ assignment state. Its reference and measurement are the same complete gate: the 
 The narrowest actuator exports are `transitionAssignmentState` at
 `src/effects/assignment-transitions.mjs:272` and `transitionRunReclaimed` at
 `src/effects/run-transitions.mjs:177`; `src/mesh/assignment-reclaim.mjs:32-37` imports them rather than
-defining them. The 15-second default rate is defined at `src/mesh/sync-cadence.mjs:25` and wired only for
+defining them. The 15-second default rate is defined at `packages/mesh/src/sync-cadence.mjs:26` and wired only for
 the control role at `src/mesh/launcher.mjs:1513-1533`, making this the registry's sole periodic loop.
 
 Each tick is a single-shot reclaim scan that terminates by construction, so `ceiling: none` is the known

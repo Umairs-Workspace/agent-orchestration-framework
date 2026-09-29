@@ -34,7 +34,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_RELAY = path.join(repoRoot, "src", "mesh", "relay.mjs");
+const MESH_RELAY = path.join(repoRoot, "packages", "mesh", "src", "relay.mjs");
 
 function stripCommentsAndStrings(source) {
   let out = "";

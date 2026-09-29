@@ -41,13 +41,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const WORKER_EXECUTION = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
 const LAUNCHER = path.join(repoRoot, "src", "mesh", "launcher.mjs");
-const BRIDGE = path.join(repoRoot, "src", "mesh", "terminal-relay-bridge.mjs");
+const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
 const STREAM_CLIENT = path.join(repoRoot, "src", "worker-stream-client.mjs");
-const MIRROR = path.join(repoRoot, "src", "mesh", "terminal-mirror.mjs");
+const MIRROR = path.join(repoRoot, "packages", "mesh", "src", "terminal-mirror.mjs");
 const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
 const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
 
@@ -75,6 +76,13 @@ async function workerDriverSource() {
   // 119/01 — resolved against the SINK's own directory (see the sibling gate's note).
   const reExported = [...sink.matchAll(/export\s*\{[\s\S]*?\}\s*from\s*["'](\.\.?\/[^"']+)["']/g)].map((m) => m[1]);
   const parts = await Promise.all(reExported.map((spec) => realSource(path.join(path.dirname(WORKER_EXECUTION), spec))));
+  // The compatibility driver now composes execution-owned services. Follow its
+  // public execution imports as well, so the finish/watch anchors remain visible.
+  for (const part of [...parts]) {
+    for (const { specifier } of importSpecifiers(part).filter(entry => entry.specifier.startsWith("@aof/execution/"))) {
+      parts.push(await realSource(new URL(import.meta.resolve(specifier))));
+    }
+  }
   return [sink, ...parts].join("\n");
 }
 function sliceBalanced(source, openIndex) {
@@ -153,7 +161,7 @@ function endOfStreamProblems({ bridgeSource, clientSource, workerSource, launche
   const problems = [];
 
   // b1 — the end marker rides INSIDE the opaque `signal` on the EXISTING kind.
-  const builder = /export\s+function\s+buildTerminalEndEnvelope\s*\([^)]*\)\s*\{/.exec(bridgeSource);
+  const builder = /\bfunction\s+buildTerminalEndEnvelope\s*\([^)]*\)\s*\{/.exec(bridgeSource);
   if (!builder) {
     problems.push("mesh-terminal-relay-bridge.mjs exports no buildTerminalEndEnvelope — the terminal-frame protocol has NO end-of-stream marker, so a session end can never reach a watching browser (ADR-014 inv.8 / F-38.06e)");
   } else {

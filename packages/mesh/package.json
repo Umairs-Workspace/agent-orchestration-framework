@@ -5,7 +5,18 @@
   "type": "module",
   "exports": {
     "./effects": "./src/effects.mjs",
-    "./worktrees": "./src/worktrees.mjs"
+    "./worktrees": "./src/worktrees.mjs",
+    "./assignment-directive": "./src/assignment-directive.mjs",
+    "./session-spawn-directive": "./src/session-spawn-directive.mjs",
+    "./session-spawn-outcome": "./src/session-spawn-outcome.mjs",
+    "./terminal-resume-refusal": "./src/terminal-resume-refusal.mjs",
+    "./sync-cadence": "./src/sync-cadence.mjs",
+    "./presence-loop": "./src/presence-loop.mjs",
+    "./relay": "./src/relay.mjs",
+    "./relay-client": "./src/relay-client.mjs",
+    "./terminal-relay-bridge": "./src/terminal-relay-bridge.mjs",
+    "./terminal-input": "./src/terminal-input.mjs",
+    "./terminal-mirror": "./src/terminal-mirror.mjs"
   },
   "files": [
     "src"
@@ -14,6 +25,8 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@aof/execution": "workspace:*"
+    "@aof/execution": "workspace:*",
+    "@aof/work-loop": "workspace:*",
+    "ws": "^8.21.0"
   }
 }

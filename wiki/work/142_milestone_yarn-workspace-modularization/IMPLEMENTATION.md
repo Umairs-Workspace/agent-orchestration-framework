@@ -1738,3 +1738,43 @@ pin follows the package factory and verifies the configured cache-first port at 
 The existing NOTICE attribution follows the relocated terminal transport. No assistant assets,
 checked-in generated files or lock hashes changed. Final core/apps layout, remaining mesh/work
 composition, adapter removal and whole-tree/native/platform checks remain open.
+
+## Mesh relay and protocol ownership
+
+Eleven implementations moved into `@aof/mesh`: assignment directives, session-spawn frames and
+outcomes, terminal-resume refusal frames, sync/presence cadence, relay admission/server, presence
+relay client, terminal bridge, input routing and mirroring. Protocol modules are directly importable.
+Configured services expose factories; immutable kinds and capacity constants remain directly
+exported. Assignment scope validation uses `@aof/work-loop/engine`. `ws` and work-loop are explicit
+dependencies, both already part of the distribution. Registry/publication services and diagnostics
+remain core-supplied pending their own extraction.
+
+Evidence in `.tmp/workspace-migration/mesh-relay/`:
+
+- Eleven legacy APIs and 69 exported values/function bodies match. All 117 registry descriptors
+  and their order match with platform line endings normalized.
+- The 49-suite affected run passed 557 cases with nine ownership/wiring failures. The corrected
+  16-suite run passes all 150 checks. Wire-kind, assignment-author and created-table scans now
+  include declared runtime workspaces. Driver live-report/end checks follow the compatibility
+  driver's public execution imports. Terminal consumers assert both factory ports and core bindings.
+- Five public package tests cover shared loop-scope/cadence decisions, bounded expiring spawn
+  outcomes, terminal tuple isolation/tail/end behavior, input dispatch/refusal and real WebSocket
+  relay admission/fanout. The relay test changes the supplied live registry and proves the next
+  upgrade is denied. All five pass locally and in the actual installer's copied payload; all eleven
+  public APIs resolve inside that payload and its registry retains 117 commands. The root bridge
+  now runs 185 package tests.
+- Standalone JavaScript contains all ten production-reachable implementations. The initial assertion
+  incorrectly required presence-loop in the CLI closure: source inspection confirms it has no
+  production consumer before or after extraction. Its public API bundles independently and the
+  copied-install tests exercise its injected ticker contract. Native/platform proof remains open.
+- Yarn skip-build and immutable installations pass with existing peer warnings. The lockfile adds
+  only two mesh dependencies, with no third-party version change; supply-chain audit has zero warnings.
+- The canonical mesh-assignment-reclaim cadence citation points at the new constant, and the shipped
+  manifest was regenerated. The generated runtime copy and lock hash remain pending their separate
+  approval. No AOF workflow state was changed.
+- Final source census/registry verification passes all 20 checks; all 14 distribution-manifest
+  checks pass after the canonical citation update.
+
+Remaining mesh work includes persistence/projections, assignment coordination/recovery, launchers,
+worker orchestration and command implementation ownership. Final application assembly, core/apps
+layout, removal of transitional modules and full native/platform verification remain outstanding.

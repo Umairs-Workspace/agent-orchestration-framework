@@ -591,7 +591,7 @@ export const sessionSpawnOutcomeLaneTests = [
 
       // NO fs, NO STORE, NO NETWORK — read off the module's own import list rather than
       // trusted. One import, and it is the wire kind's home.
-      const source = (await readFile(path.join(repoRoot, "src", "mesh", "session-spawn-outcome.mjs"), "utf8")).replace(/\r\n/g, "\n");
+      const source = (await readFile(path.join(repoRoot, "packages", "mesh", "src", "session-spawn-outcome.mjs"), "utf8")).replace(/\r\n/g, "\n");
       const imports = [...source.matchAll(/^import\s[^\n]*from\s+["']([^"']+)["'];/gm)].map((match) => match[1]);
       assert.deepEqual(imports, ["./session-spawn-directive.mjs"], "the registry imports exactly ONE module — the lane's contract home — and no fs, store or network module");
       assert.ok(!/setInterval|setTimeout/.test(source), "…and holds no interval or timer handle: pruning happens inside apply/read");

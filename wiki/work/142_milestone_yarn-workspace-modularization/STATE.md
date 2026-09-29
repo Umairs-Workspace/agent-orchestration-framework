@@ -486,3 +486,19 @@ installation and bundle into standalone JavaScript. Yarn skip-build/immutable in
 pass with no third-party version changes. Final mesh transport/domain separation, core/apps layout,
 composition, adapter removal and whole-tree/native/platform verification remain open.
 The final runtime census/registry selection passes all 20 checks.
+
+Mesh relay/protocol extraction: mesh owns eleven directive, wire, cadence, relay and terminal
+implementations, with registry/publication/diagnostic collaborators supplied by core. Wire kinds and
+capacity constants export directly. Eleven legacy APIs and 69 exported values/function bodies match;
+all 117 descriptors/order remain unchanged. The 49-suite selection passed 557 cases with nine
+source-guard failures; the corrected 16-suite selection passes all 150 checks. Five new package
+tests pass locally and in a copied installation, bringing the command bridge to 185 package cases.
+The ten production-reachable modules bundle with the CLI; the existing unused presence-cadence API
+bundles independently and resolves in the copied payload alongside the other ten APIs. Yarn
+skip-build/immutable installs and supply-chain audit pass with no third-party version changes.
+One canonical cadence citation and its shipped manifest hash were refreshed; the unapproved
+generated mesh-assignment-reclaim copy remains pending. Persistence/projections, coordination,
+launchers and most mesh commands, final core/apps layout/composition, adapter removal and whole-tree/
+native/platform verification remain outstanding.
+The final mesh relay census/registry run passes all 20 checks, and all 14 distribution-manifest
+checks pass after the canonical citation update.

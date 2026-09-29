@@ -60,7 +60,7 @@ import { isUiSourceFile } from "../../support/ui-source-files.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 export const HOME_DIR = "ui/src/home";
-export const MIRROR_FILE = "src/mesh/terminal-mirror.mjs";
+export const MIRROR_FILE = "packages/mesh/src/terminal-mirror.mjs";
 export const ARBITER_NAME = "subscribedPaneSet";
 
 const CLIENT_CAP_DECLARATION = /\bexport\s+const\s+MAX_LIVE_PANES\s*=\s*(\d+)\s*;/;

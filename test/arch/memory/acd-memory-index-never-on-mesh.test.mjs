@@ -102,11 +102,11 @@ function indexLeakProblems(label, source) {
 const MESH_TRANSPORT_FILES = [
   "src/control-stream-server.mjs",
   "src/worker-stream-client.mjs",
-  "src/mesh/relay.mjs",
-  "src/mesh/relay-client.mjs",
-  "src/mesh/terminal-relay-bridge.mjs", // story 06 — the NEW terminal-frame kind
-  "src/mesh/terminal-mirror.mjs",
-  "src/mesh/session-spawn-directive.mjs", // milestone 50 — session-spawn down/up frame builders
+  "packages/mesh/src/relay.mjs",
+  "packages/mesh/src/relay-client.mjs",
+  "packages/mesh/src/terminal-relay-bridge.mjs", // story 06 — the NEW terminal-frame kind
+  "packages/mesh/src/terminal-mirror.mjs",
+  "packages/mesh/src/session-spawn-directive.mjs", // milestone 50 — session-spawn down/up frame builders
 ];
 
 // (b) PER-BUILDER scan — the EXHAUSTIVE real frame-builder enumeration (grepped from
@@ -131,17 +131,17 @@ const FRAME_BUILDER_SITES = [
   { file: "src/worker-stream-client.mjs", fn: "buildCloneCredentialRequestFrame" },
   { file: "src/worker-stream-client.mjs", fn: "buildCloneUrlRequestFrame" },
   { file: "src/worker-stream-client.mjs", fn: "buildWriteCredentialRequestFrame" }, // story 07
-  { file: "src/mesh/relay-client.mjs", fn: "relayEnvelope" },
+  { file: "packages/mesh/src/relay-client.mjs", fn: "relayEnvelope" },
   // leaseRelayEnvelope DELETED (m42 item 0 — the lease era's dead wire kind).
-  { file: "src/mesh/terminal-relay-bridge.mjs", fn: "buildTerminalFrameEnvelope" }, // story 06
-  { file: "src/mesh/session-spawn-directive.mjs", fn: "buildSessionSpawnFrame" }, // milestone 50
-  { file: "src/mesh/session-spawn-directive.mjs", fn: "buildSessionSpawnAckFrame" }, // milestone 50
+  { file: "packages/mesh/src/terminal-relay-bridge.mjs", fn: "buildTerminalFrameEnvelope" }, // story 06
+  { file: "packages/mesh/src/session-spawn-directive.mjs", fn: "buildSessionSpawnFrame" }, // milestone 50
+  { file: "packages/mesh/src/session-spawn-directive.mjs", fn: "buildSessionSpawnAckFrame" }, // milestone 50
   // milestone 50 / story 02 (ADR-006) — the session-spawn lane's RELAY envelope, the
   // third rider on the loopback bridge. Enumerated here for the same reason story 01's
   // two were: a builder that places an object onto a mesh transport and is NOT on this
   // list is the stale-enumeration failure class this gate is named for.
-  { file: "src/mesh/session-spawn-directive.mjs", fn: "buildSessionSpawnEnvelope" }, // milestone 50 / story 02
-  { file: "src/mesh/relay.mjs", fn: "sendControl" },
+  { file: "packages/mesh/src/session-spawn-directive.mjs", fn: "buildSessionSpawnEnvelope" }, // milestone 50 / story 02
+  { file: "packages/mesh/src/relay.mjs", fn: "sendControl" },
 ];
 
 // ---------------------------------------------------------------------------------

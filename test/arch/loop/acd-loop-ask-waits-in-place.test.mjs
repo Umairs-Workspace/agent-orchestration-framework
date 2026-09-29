@@ -74,7 +74,7 @@ const ASK_HOME = "packages/work-loop/src/ask-request.mjs";
 const ASK = "packages/work-loop/src/ask.mjs";
 const DRIVER = "packages/execution/src/session-driver.mjs";
 const RESUME = "src/commands/resume.mjs";
-const TERMINAL_FACES = Object.freeze(["src/mesh/terminal-input.mjs", "packages/server/src/terminal-ws.mjs", DRIVER]);
+const TERMINAL_FACES = Object.freeze(["packages/mesh/src/terminal-input.mjs", "packages/server/src/terminal-ws.mjs", DRIVER]);
 const TERMINAL_INPUT_RE = /(?:^|\/)terminal-input(?:[-.][^/]*)?\.mjs$/u;
 const TRANSCRIPT_MAPPING = "async function readTranscriptTerminalOutcome(";
 // Task 00 ruling 5: the sites that compose the wait, by file and enclosing top-level function.
@@ -283,7 +283,7 @@ export const archTests = [
       const implementation = unitOf(units, "packages/work/src/commands/resume.mjs");
       assert.deepEqual(resolvedImports(implementation).filter(target => TERMINAL_INPUT_RE.test(target)), [], "the package implementation imports no terminal-input module either");
       assert.match(implementation.code, /await answerAsk\(/u, "the command writes through the supplied ask service");
-      assert.ok(TERMINAL_INPUT_RE.test("src/mesh/terminal-input.mjs"), "self-check: the terminal-input module is what the needle matches");
+      assert.ok(TERMINAL_INPUT_RE.test("packages/mesh/src/terminal-input.mjs"), "self-check: the terminal-input module is what the needle matches");
     },
   },
   {

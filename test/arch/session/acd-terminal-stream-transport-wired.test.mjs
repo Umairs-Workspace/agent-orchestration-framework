@@ -67,8 +67,8 @@ const LAUNCHER = path.join(repoRoot, "src", "mesh", "launcher.mjs");
 const CLI = path.join(repoRoot, "src", "commands", "mesh", "ui.mjs");
 const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
 const WSCLIENT = path.join(repoRoot, "src", "worker-stream-client.mjs");
-const BRIDGE = path.join(repoRoot, "src", "mesh", "terminal-relay-bridge.mjs");
-const MIRROR = path.join(repoRoot, "src", "mesh", "terminal-mirror.mjs");
+const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
+const MIRROR = path.join(repoRoot, "packages", "mesh", "src", "terminal-mirror.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

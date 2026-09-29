@@ -23,7 +23,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 import {
   ASSIGNMENT_PHASES,
@@ -60,7 +60,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // Named rather than derived on purpose (ADR-003 §1): "where a second speller would live" is a
 // decision about this tree, not a fact readable from it.
 const MESH_FILES = Object.freeze([
-  "src/mesh/assignment-directive.mjs",
+  "packages/mesh/src/assignment-directive.mjs",
   "src/mesh/assignment-reclaim.mjs",
   "src/mesh/worker-execution.mjs",
   "src/mesh/worker-launch.mjs",
@@ -72,7 +72,7 @@ const MESH_FILES = Object.freeze([
 const LAUNCH_COMPOSER = "src/mesh/worker-launch.mjs";
 
 // The ONE module allowed to author a slash command for an assignment phase.
-const DIRECTIVE_HOME = "mesh/assignment-directive.mjs";
+const DIRECTIVE_HOME = "packages/mesh/src/assignment-directive.mjs";
 
 // The delivered four answers, byte for byte. Retyped ON PURPOSE: this is the one place a
 // literal is the contract rather than a duplication, because the claim IS that the bytes a
@@ -242,7 +242,7 @@ export const archTests = [
   {
     name: "arch/63 FF-6306 (acd-assignment-resolves-to-a-loop-call): exactly ONE module in src/ authors a slash command for an assignment phase, and its four answers are byte-unchanged",
     run: async () => {
-      const files = await readSrcFiles(repoRoot);
+      const files = await readRuntimeFiles(repoRoot);
       const authors = [];
       for (const file of files) {
         const code = stripComments(await readFile(file.path, "utf8"));

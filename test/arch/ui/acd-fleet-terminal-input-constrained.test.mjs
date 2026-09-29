@@ -161,8 +161,8 @@ import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE } from "../../.
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BRIDGE = path.join(repoRoot, "src", "mesh", "terminal-relay-bridge.mjs");
-const MIRROR = path.join(repoRoot, "src", "mesh", "terminal-mirror.mjs");
+const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
+const MIRROR = path.join(repoRoot, "packages", "mesh", "src", "terminal-mirror.mjs");
 const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
 const WORKER_EXECUTION = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
 // The BROWSER surfaces. `BOARD_TERMINAL_DOCK` is gone: after m46/04 there is no board-local

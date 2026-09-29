@@ -55,6 +55,8 @@ __metadata:
   resolution: "@aof/mesh@workspace:packages/mesh"
   dependencies:
     "@aof/execution": "workspace:*"
+    "@aof/work-loop": "workspace:*"
+    ws: "npm:^8.21.0"
   languageName: unknown
   linkType: soft
 

@@ -75,6 +75,7 @@
 // never a string-replace on a real file — and each asserts it LANDED before the detector
 // is asked about it.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -240,7 +241,7 @@ async function listSourceFiles(dir, found = []) {
 
 async function readSrcSources() {
   const sources = new Map();
-  for (const file of await listSourceFiles(SRC_DIR)) {
+  for (const { path: file } of await readRuntimeFiles(repoRoot)) {
     sources.set(
       path.relative(repoRoot, file).split(path.sep).join("/"),
       lf(stripComments(await readFile(file, "utf8"))),
@@ -288,12 +289,12 @@ export const archTests = [
       // same fact it was written for.
       assert.deepEqual(
         reading.sort(),
-        ["src/control-stream-server.mjs", "src/mesh/session-spawn-outcome.mjs"],
+        ["packages/mesh/src/session-spawn-outcome.mjs", "src/control-stream-server.mjs"],
         "the ack is branched by the control stream server (before applyStreamFrame) and filtered by the spawn-outcome registry — the two ends the milestone shipped without",
       );
       assert.deepEqual(
         producing.sort(),
-        ["src/mesh/session-spawn-directive.mjs"],
+        ["packages/mesh/src/session-spawn-directive.mjs"],
         "…and it is built in the lane's ONE contract home, which is the house shape for a wire kind (N3 permits the home to supply exactly this end)",
       );
 
@@ -301,7 +302,7 @@ export const archTests = [
       // gate must fire on THIS kind with the reading-end refusal. That is the pre-ADR-008
       // tree, reconstructed.
       const beforeThisTask = new Map(sources);
-      beforeThisTask.delete("src/mesh/session-spawn-outcome.mjs");
+      beforeThisTask.delete("packages/mesh/src/session-spawn-outcome.mjs");
       beforeThisTask.set(
         "src/control-stream-server.mjs",
         sources.get("src/control-stream-server.mjs").replace(/frame\?\.kind === SESSION_SPAWN_ACK_KIND/g, 'frame?.kind === "__removed__"'),

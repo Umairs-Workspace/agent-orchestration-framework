@@ -891,3 +891,15 @@ loading remains execution-owned and deferred.
 network I/O. Moving those whole files into server would assign domain policy to the wrong owner.
 Their next extraction must preserve mesh ownership of assignment, presence, credentials and
 terminal relay behavior while identifying any reusable transport portion.
+
+## Mesh protocol follow-up
+
+Relay admission and terminal/session wire behavior belong to mesh, even though they use HTTP and
+WebSocket libraries. They interpret membership and relay envelopes; generic server ownership would
+obscure those domain rules. Mesh now owns these implementations with configured registry/publication
+ports. Immutable wire kinds export separately from configured factories, making both protocol
+consumers and producer/reader census checks independent of service construction.
+
+The presence-cadence helper has no production caller. It remains a supported package API and is
+tested/bundled separately; expecting it in the executable's reachable source graph would mistake a
+coverage assumption for existing application behavior.

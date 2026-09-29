@@ -22,6 +22,7 @@
 //       rollback lands. Bounded honestly: only each item's LATEST record, and
 //       nothing from before the ledger's birth, is ever re-announced.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -106,9 +107,9 @@ export const archTests = [
     name: "arch/m42-d5: the classification is TOTAL over the real schema — every created table classified, every classified table created (two-way ratchet)",
     run: async () => {
       const created = new Set();
-      const packageFiles = await listSourceFiles(path.join(repoRoot, "packages/effects/src"));
+      const packageFiles = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(packageFiles.some(file => file.endsWith("journal.mjs")), "the extracted schema is scanned");
-      for (const file of [...await listSourceFiles(SRC_DIR), ...packageFiles]) {
+      for (const file of packageFiles) {
         const code = await readFile(file, "utf8");
         for (const match of code.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)) created.add(match[1]);
       }
