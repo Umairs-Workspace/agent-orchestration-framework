@@ -4,7 +4,7 @@
 // the TOKEN `import` in its text (eleven assertion sites, measured at HEAD 2026-09-06 with
 // `grep -rn 'doesNotMatch(.*import' test/arch/*.test.mjs`, keeping only the sites whose pattern
 // carries no specifier and is not scoped to a dynamic `import(`). A token ban forbids the only
-// decomposition that would fix the module it guards: `src/phase-brief.mjs` is 1,651 lines (432 when
+// decomposition that would fix the module it guards: `packages/work/src/phase-brief.mjs` is 1,651 lines (432 when
 // its guard was written) and `src/work/loops-checks.mjs` is 1,284 (380). Two of the nine guard
 // `src/work-acceptor/rule.mjs` and `src/work-acceptor/ledger.mjs` — modules ALREADY inside one
 // family directory, with the guard forbidding the edge between them.
@@ -29,7 +29,7 @@ import { blankStringLiterals, stripComments } from "./source-slice.mjs";
 
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-// `src/phase-brief.mjs`, `src/phase-brief` and `src/phase-brief/` all name ONE subject. The
+// `packages/work/src/phase-brief.mjs`, `src/phase-brief` and `src/phase-brief/` all name ONE subject. The
 // extension is dropped so the two spellings of the same module cannot resolve to two families.
 export function normalizeSubject(subject) {
   return toPosix(subject).replace(/\/+$/u, "").replace(/\.mjs$/u, "");

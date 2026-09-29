@@ -71,7 +71,8 @@ const GRAPH_READER_ALLOWLIST = new Set([
                                             // legally import it — is deliberately NOT listed: it takes an
                                             // already-normalized graph and names no reader symbol at all.
   path.join("packages", "knowledge", "src", "memory", "graphify-backend.mjs"),
-  path.join("src", "story-contract-derive.mjs"), // 96/ADR-004: the read/write-set derivation READS the artifact
+  path.join("src", "story-contract-derive.mjs"), // configured knowledge ports
+  path.join("packages", "work", "src", "story-contract-derive.mjs"), // 96/ADR-004: the read/write-set derivation READS the artifact
                                                  // through the SAME normalizeGraph + computeImpact the shipped
                                                  // command uses, and is asserted by its OWN control (FF-9602) to
                                                  // reach the graph through those two and nothing else — no second

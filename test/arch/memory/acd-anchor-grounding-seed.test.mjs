@@ -9,7 +9,7 @@ import { GROUND_VERDICTS, buildGroundednessReport } from "../../../src/work/loop
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const checksPath = path.join(root, "src/work/loops-checks.mjs");
+const checksPath = path.join(root, "packages/work-graph/src/checks.mjs");
 const endpoint = (raw) => ({ raw, resolved: true });
 
 function graph(seedKind, ground) {
@@ -44,9 +44,9 @@ export const archTests = [
       }
 
       const source = stripComments(await readFile(checksPath, "utf8"));
-      const body = functionBody(source, "export function decomposeLoopGraph(model)");
+      const body = functionBody(source, "function decomposeLoopGraph(model)");
       assert.ok(body && body.length > 200, "the SCC implementation body was found and is non-vacuous");
-      assert.equal(createHash("sha256").update(body).digest("hex"), "14fad85dc54cbf3150c6eb62cf23a7c483385bbe5d905b7b52e9e6bf5845c650", "the milestone-52 SCC body remains byte-identical");
+      assert.equal(createHash("sha256").update(body.replace(/\r?\n/g, "\r\n")).digest("hex"), "14fad85dc54cbf3150c6eb62cf23a7c483385bbe5d905b7b52e9e6bf5845c650", "the milestone-52 SCC body remains identical after line-ending normalization");
       assert.doesNotMatch(body, /ground|observes|resolution|verdict|anchor/i, "grounding widens the seed set outside the unchanged SCC decomposition");
       assert.match(body, /const \{ ids, adjacency \} = graph\(model\)/);
       assert.match(body, /lowlinks/);

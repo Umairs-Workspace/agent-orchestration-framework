@@ -4,7 +4,7 @@
 //
 // Both of the driver's production callers — the local drive command (`src/commands/drive.mjs`)
 // and the mesh worker execution handler (`src/mesh/worker-execution.mjs`) — compile the phase
-// brief through the SHARED pure compiler (`src/phase-brief-read.mjs` -> `src/phase-brief.mjs`)
+// brief through the SHARED pure compiler (`packages/work/src/phase-brief-read.mjs` -> `packages/work/src/phase-brief.mjs`)
 // and hand it to the driver BY VALUE on the `brief` bag's additive `context` key. The driver
 // then types the command + the brief into the session's first input. One test object per
 // @executable scenario; Scenario-Outline rows folded into one entry each.

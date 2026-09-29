@@ -314,22 +314,22 @@ export const archTests = [
       assert.equal(actual.length, 17, "the driver's export set stays the frozen seventeen");
       // the driver DOES import phase-brief (per ADR-002), and its exports are disjoint from the driver's
       const driverSource = await readFile(driverPath, "utf8");
-      assert.match(driverSource, /from\s+["'](?:\.\.?\/)+phase-brief\.mjs["']/u, "the driver imports the pure phase-brief leaf");
-      assert.doesNotMatch(driverSource, /export\s+[^;]*from\s+["'](?:\.\.?\/)+phase-brief\.mjs["']/u, "…without re-exporting it");
+      assert.match(driverSource, /from\s+["']@aof\/work\/phase-brief["']/u, "the driver imports the pure phase-brief leaf");
+      assert.doesNotMatch(driverSource, /export\s+[^;]*from\s+["']@aof\/work\/phase-brief["']/u, "…without re-exporting it");
       const phaseBriefNames = Object.keys(phaseBriefModule);
       for (const name of phaseBriefNames) {
         assert.ok(!MOVED.includes(name), `phase-brief export "${name}" is not smuggled into the driver's frozen export set`);
       }
       // THE LEAF IS PURE AS A FAMILY (119/ADR-002). Purity is a claim about a module's EXTERNAL
       // dependencies, never about how many files it occupies: the subject resolves to
-      // `src/phase-brief/` when that directory exists and to `src/phase-brief.mjs` when it does not,
+      // `src/phase-brief/` when that directory exists and to `packages/work/src/phase-brief.mjs` when it does not,
       // an intra-family specifier is admitted, and every other leg — node builtins, the filesystem,
       // the clock, `fetch`, an outward dynamic `import()` — is re-asserted per file over the whole
       // family. The predicate widened; the guard did not weaken. The old token ban made the only
       // decomposition that would fix this file (1,651 lines, 432 when this guard was written)
       // illegal, which is TECH_DEBT item 61's measured cost.
-      await assertFamilyPurity(assert, root, "src/phase-brief");
-      const leafSource = await readFile(path.join(path.dirname(driverPath), "phase-brief.mjs"), "utf8");
+      await assertFamilyPurity(assert, root, "packages/work/src/phase-brief");
+      const leafSource = await readFile(path.join(root, "packages/work/src/phase-brief.mjs"), "utf8");
       assert.doesNotMatch(leafSource, /\b(?:Date\.now|performance\.now|process\.hrtime|new Date)\b/u, "the phase-brief leaf reads no wall-clock");
     },
   },

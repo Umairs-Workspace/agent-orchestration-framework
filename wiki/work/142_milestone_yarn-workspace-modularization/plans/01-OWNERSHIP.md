@@ -47,3 +47,5 @@ Bundled hooks remain standalone assets installed by core, with no package import
 - Detailed local logs: .tmp/workspace-migration/plan01/.
 
 Copied mesh installation: four public cases pass; all 117 ordered command descriptors unchanged.
+
+Work batch: six public-package tests pass, including bounded briefs, supplied graph services, transcript filtering, readiness, source-preserving migration and shared diagram invocation. Root behavioral and architecture checks inspect package implementations and their configured ports.

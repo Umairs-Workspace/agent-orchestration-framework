@@ -1043,9 +1043,9 @@ export const workBacklogArchiveEnumerateTests = [
           const result = await migrateFolderCommand.run({ folder: src, migratedAt: "2026-09-11" }, { workspace, globalWorkStoreOptions: {} });
           assert.equal(result.milestoneRef, "12", "after 11_chore_beta, never on the archived 05 or 06");
           assert.ok(existsSync(path.join(work, "12_milestone_calls")), "the folder lands at the root");
-          const source = await readFile(path.join(repoRoot, "src", "commands", "migrate-folder.mjs"), "utf8");
+          const source = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "migrate-folder.mjs"), "utf8");
           assert.ok(!/function nextFreeSlot/.test(source), "nextFreeSlot is gone");
-          assert.match(source, /import \{ appendPosition \} from "\.\.\/work-promote\/promotion\.mjs"/);
+          assert.match(source, /import \{ appendPosition \} from "\.\.\/promote\/promotion\.mjs"/);
         } finally {
           await rm(src, { recursive: true, force: true });
         }

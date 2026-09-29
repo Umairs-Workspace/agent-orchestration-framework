@@ -4,7 +4,7 @@ import { reportDegrade } from "./degrade.mjs";
 
 const implementation = createRunStore({
   reportDegrade,
-  getAnswerTokens: () => import("./work-examples/map.mjs"),
+  getAnswerTokens: () => import("@aof/work/examples/map"),
   readSessionAnswers: async (...args) => {
     const { readSessionAnswers } = await import("./work-examples/answers.mjs");
     return await readSessionAnswers(...args);

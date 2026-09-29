@@ -355,7 +355,7 @@ export const storyContractDeriveTests = [
       // …and the module holds no refusal path of its own: no throw, no exit, no error code. Asserted
       // over the CODE, with the header's prose stripped — a module whose comment says "refuses" is
       // not a module that refuses.
-      const code = stripComments(await readFile(new URL("../../src/story-contract-derive.mjs", import.meta.url), "utf8"));
+      const code = stripComments(await readFile(new URL("../../packages/work/src/story-contract-derive.mjs", import.meta.url), "utf8"));
       assert.doesNotMatch(code, /\bthrow\b/, "the derivation throws nothing, so it can block no read");
       assert.doesNotMatch(code, /process\.exit/, "…and exits nothing");
       assert.doesNotMatch(code, /\.code\s*=\s*["'`]/, "…and raises no coded refusal");

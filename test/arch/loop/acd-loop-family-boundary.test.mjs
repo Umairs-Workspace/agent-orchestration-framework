@@ -21,7 +21,7 @@
 // flipped through `setSeaSentinelForTest`, the verb words are the whole argv. SHELL — no `shell:`
 // option anywhere under `src/loop/`. NON-VACUOUS: the spawn leg must FIND the `runBounded(` call.
 //
-// FF-12906, two legs. IMPORT — the family imports neither `src/ready-wave.mjs` nor
+// FF-12906, two legs. IMPORT — the family imports neither `packages/work/src/ready-wave.mjs` nor
 // `src/story-contract.mjs`: the partition is `work:next`'s (71/ADR-006), and a loop that could
 // reach the partitioner could recompute it. WAVE-READ — every `.wave` / `.heldSet` read in the
 // family is guarded by an `invokeRegistered("work:next"` call in its enclosing function (the
@@ -227,7 +227,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/129/05 FF-12906 import leg: the loop family imports neither src/ready-wave.mjs nor src/story-contract.mjs — the partition is work:next's",
+    name: "arch/129/05 FF-12906 import leg: the loop family imports neither packages/work/src/ready-wave.mjs nor src/story-contract.mjs — the partition is work:next's",
     run: async () => {
       const units = await familyUnits();
       assert.ok(units.some((unit) => unit.rel === WAVE), `${WAVE}: NOT FOUND`);

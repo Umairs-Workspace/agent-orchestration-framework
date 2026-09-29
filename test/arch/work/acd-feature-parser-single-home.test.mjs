@@ -12,7 +12,7 @@
 //
 // THE SCAN DISTINGUISHES A RECOGNISER FROM A RENDERER (ROUND 3/9). A recogniser is a
 // pattern TESTED against input; a renderer EMITS a keyword into a scaffold —
-// `src/commands/migrate-folder.mjs:611-620` (`:571-580` before 66/00 edited above it)
+// `packages/work/src/commands/migrate-folder.mjs:611-620` (`:571-580` before 66/00 edited above it)
 // writes `Feature:`/`Scenario:`/`Given `
 // into a migrated task stub. A bare keyword-string scan reports THREE homes and is
 // wrong about the tree, so the two shapes are classified separately and the renderer
@@ -64,13 +64,13 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const srcDir = path.join(repoRoot, "src");
 
 const THE_ONE_PARSER = "packages/work/src/feature-parse.mjs";
-const THE_NAMED_RENDERER = "src/commands/migrate-folder.mjs";
+const THE_NAMED_RENDERER = "packages/work/src/commands/migrate-folder.mjs";
 
 // THE_FORBIDDEN_IMPORTER — the one module that carries a headline recogniser and may
 // NOT reach the one home, named here because two invariants in this repository were in
 // direct conflict and only one of them could stand as written.
 //
-// `src/phase-brief.mjs` condenses a contract to its headlines under a character budget.
+// `packages/work/src/phase-brief.mjs` condenses a contract to its headlines under a character budget.
 // It is a PURE LEAF whose emptiness is not a preference but a guarded contract, twice
 // over: `arch/70 FF-7010` asserts it "pulls in nothing — not even a node builtin", and
 // `arch/53 FF-7002` (extended) asserts "the phase-brief leaf imports nothing from src/
@@ -89,7 +89,7 @@ const THE_NAMED_RENDERER = "src/commands/migrate-folder.mjs";
 // A third module wanting on this list is a review question, not a precedent: the
 // exemption is a named site (m47/R9 — a named site, never a count), so adding one is a
 // visible edit here with its own justification, exactly as this one is.
-const THE_FORBIDDEN_IMPORTER = "src/phase-brief.mjs";
+const THE_FORBIDDEN_IMPORTER = "packages/work/src/phase-brief.mjs";
 
 // The Gherkin vocabulary, exactly as the grammar spells it — step keywords carry
 // their trailing space, because that is what makes them keywords.

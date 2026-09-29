@@ -167,7 +167,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7010 (acd-phase-brief-single-bag): every section at the compilePhaseBrief call site is bound to a named `const …Section = <helper>(…)` whose helper is imported from ./phase-brief.mjs — all seven of them",
     run: async () => {
-      const reader = stripComments(await readFile(path.join(srcRoot, "phase-brief-read.mjs"), "utf8"));
+      const reader = stripComments(await readFile(path.join(root, "packages/work/src/phase-brief-read.mjs"), "utf8"));
       assertOneCallSite(reader);
       const pairs = callSitePairs(reader);
       assert.ok(pairs != null, "the reader has one compilePhaseBrief call site with an object argument");
@@ -203,7 +203,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7010 (acd-phase-brief-single-bag): no identifier bound directly from a disk read appears in any section value at the compilePhaseBrief call site — `objective: spec` and `story` were the measured violations",
     run: async () => {
-      const reader = stripComments(await readFile(path.join(srcRoot, "phase-brief-read.mjs"), "utf8"));
+      const reader = stripComments(await readFile(path.join(root, "packages/work/src/phase-brief-read.mjs"), "utf8"));
       assertOneCallSite(reader);
       const pairs = callSitePairs(reader);
       assert.ok(pairs != null, "the reader has one compilePhaseBrief call site with an object argument");
@@ -231,11 +231,11 @@ export const archTests = [
 
       // The pure compiler is where addressing lives, and it stays pure while it does so — as a
       // FAMILY (119/ADR-002): the subject is `src/phase-brief/` when that directory exists and
-      // `src/phase-brief.mjs` when it does not, an intra-family specifier is admitted, and every
+      // `packages/work/src/phase-brief.mjs` when it does not, an intra-family specifier is admitted, and every
       // external dependency — a bare specifier, a node builtin, a relative path leaving the family —
       // is still a violation naming the file and the specifier.
-      await assertFamilyPurity(assert, root, "src/phase-brief");
-      const compiler = await readFile(path.join(srcRoot, "phase-brief.mjs"), "utf8");
+      await assertFamilyPurity(assert, root, "packages/work/src/phase-brief");
+      const compiler = await readFile(path.join(root, "packages/work/src/phase-brief.mjs"), "utf8");
       for (const verb of DISK_READS) {
         assert.doesNotMatch(compiler, new RegExp(`\\b${verb}\\b`, "u"), `the compiler performs no ${verb}`);
       }

@@ -1,5 +1,9 @@
 // Work owns these operations; namespaces are shared with other packages through core's registry.
 export const WORK_COMMAND_IDS = Object.freeze([
+  "migrate:folder",
+  "diagram:plan",
+  "diagram:export",
+  "diagram:file",
   "work:list",
   "work:continue",
   "work:refine",

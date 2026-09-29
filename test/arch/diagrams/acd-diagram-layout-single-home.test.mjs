@@ -98,7 +98,7 @@ export const archTests = [
         for (const name of await readdir(family)) if (name.endsWith(".mjs")) handlers.push(`src/commands/diagram/${name}`);
       }
       if (existsSync(path.join(repoRoot, "packages", "work", "src", "doctor", "diagrams.mjs"))) handlers.push("packages/work/src/doctor/diagrams.mjs");
-      assert.ok(handlers.includes("src/commands/diagram/plan.mjs"), "the plan verb exists and is checked");
+      assert.ok(handlers.includes("packages/work/src/commands/diagram/plan.mjs"), "the plan verb exists and is checked");
       for (const file of handlers) {
         assert.ok(importsTheLayout(file, await readFile(path.join(repoRoot, file), "utf8")), `${file} imports ${THE_ONE_HOME}`);
       }
@@ -126,8 +126,8 @@ export const archTests = [
       assert.deepEqual(layoutSpellings(MANIFEST, `{ name: "DIAGRAMS", dir: "${SEGMENT}", ext: ".svg" }`), []);
       assert.equal(layoutSpellings(MANIFEST, `"${SEGMENT}"; "${SEGMENT}"`).length, 1);
       assert.deepEqual(layoutSpellings("src/x.mjs", `// "${SEGMENT}/" in a comment\nconst a = 1;`), []);
-      assert.equal(importsTheLayout("src/commands/diagram/plan.mjs", 'import { x } from "../../diagrams/layout.mjs";'), true);
-      assert.equal(importsTheLayout("src/commands/diagram/plan.mjs", 'import { x } from "../diagrams/layout.mjs";'), false);
+      assert.equal(importsTheLayout("packages/work/src/commands/diagram/plan.mjs", 'import { x } from "../../diagrams/layout.mjs";'), true);
+      assert.equal(importsTheLayout("packages/work/src/commands/diagram/plan.mjs", 'import { x } from "../diagrams/layout.mjs";'), false);
     },
   },
 ];

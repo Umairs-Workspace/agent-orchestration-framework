@@ -1,3 +1,13 @@
+export function isSuiteFile(file, roots) {
+  if (typeof file !== "string" || !file.endsWith(".test.mjs")) return false;
+  const normalized = file.replaceAll("\\", "/");
+  return (roots ?? []).some((root) => {
+    const prefix = `${String(root).replaceAll("\\", "/").replace(/\/+$/u, "")}/`;
+    return normalized.startsWith(prefix);
+  });
+}
+
+
 import { existsSync } from "node:fs";
 
 // Application composition supplies execution, graph and shared work services.
@@ -82,15 +92,6 @@ const SELECTION_SCOPES = Object.freeze(["impacted", "all"]);
 
 // A SUITE FILE IS A PATH, and that is the whole predicate (ADR-002 §1a): a `*.test.mjs` under one
 // of the roots the project declared. The roots are handed in — never read from config.
-function isSuiteFile(file, roots) {
-  if (typeof file !== "string" || !file.endsWith(".test.mjs")) return false;
-  const normalized = file.replaceAll("\\", "/");
-  return (roots ?? []).some((root) => {
-    const prefix = `${String(root).replaceAll("\\", "/").replace(/\/+$/u, "")}/`;
-    return normalized.startsWith(prefix);
-  });
-}
-
 const widening = (file, reason) => Object.freeze({ file, reason });
 
 function selection({ scope, selected, widened, builtAt, graphPath, changed, resolved = [], refusal = null }) {

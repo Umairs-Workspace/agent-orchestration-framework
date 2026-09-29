@@ -11,7 +11,7 @@
 // a real on-disk directory — so the lexical rule reproduces a disk-probing reading of this stream
 // EXACTLY, for no filesystem access at all.
 //
-// `src/ready-wave.mjs` then ADOPTS that predicate, and the adoption is a bug fix wearing a
+// `packages/work/src/ready-wave.mjs` then ADOPTS that predicate, and the adoption is a bug fix wearing a
 // refactor's clothes: its collision test was exact-string, and `path.relative` had already stripped
 // the authored slash, so a story declaring `files: [src/commands/]` and a sibling declaring
 // `src/commands/test.mjs` were read as disjoint and dispatched into ONE wave, where they collide on
@@ -54,7 +54,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const LEAF = "packages/work/src/story-contract.mjs";
-const CONSUMER = "src/ready-wave.mjs";
+const CONSUMER = "packages/work/src/ready-wave.mjs";
 
 // Comment-stripped, always. Every leg below is a claim about what the module DOES, and a comment
 // naming the thing it refuses would otherwise fail it — which is how a control teaches the next

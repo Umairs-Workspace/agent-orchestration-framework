@@ -46,7 +46,7 @@ export const archTests = [
     run: async () => {
       // ONE home (milestone 127/01, 127/ADR-001 §5). This list used to name three files — the
       // enumerator plus the two private copies `src/work/doctor.mjs` and
-      // `src/commands/migrate-folder.mjs` carried — and so enshrined the very duplication the
+      // `packages/work/src/commands/migrate-folder.mjs` carried — and so enshrined the very duplication the
       // vocabulary had to be edited three times for. Both copies now import `ITEM_RE` from
       // `src/work.mjs` (FF-12701 holds that a second definition cannot return), so the closed
       // six-type vocabulary is read where it is defined and nowhere else.

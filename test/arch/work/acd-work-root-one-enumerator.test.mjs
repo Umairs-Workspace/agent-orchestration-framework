@@ -41,7 +41,7 @@ export const KEEPERS = Object.freeze([
   { file: "packages/work/src/doctor/index.mjs", reason: "the orphan lane's raw listing — it exists to see what the enumerator DROPS, so it cannot ask the enumerator; it learns the roots through the exported names" },
   { file: "src/integrations/routing.mjs", reason: "matches a FOREIGN `NN-slug`/`NN_slug` form (NUMBERED_FOLDER_RE) the shared grammar does not admit" },
   { file: "packages/knowledge/src/import/recovery.mjs", reason: "scans a FOREIGN source tree (AOF_MILESTONE_RE + loose forms); not a work-root scanner" },
-  { file: "src/commands/migrate-folder.mjs", reason: "scans a FOREIGN source tree's stories/tasks with STORY_FOLDER_RE, read-only; its work-root scan (nextFreeSlot) is retired onto appendPosition" },
+  { file: "packages/work/src/commands/migrate-folder.mjs", reason: "scans a FOREIGN source tree's stories/tasks with STORY_FOLDER_RE, read-only; its work-root scan (nextFreeSlot) is retired onto appendPosition" },
   { file: "packages/work/src/tune/provenance.mjs", reason: "a SYNCHRONOUS resolver (resolveCitationAtEmit → emitProposals) that cannot take the async enumerator; a second readdirSync over the SHARED regex, walking root + archive, never a second regex home" },
   { file: "packages/work/src/commands/ratchet.mjs", reason: "walks an ITEM subtree for files and parses path SEGMENTS with /^(\\d+)_/, never a listing" },
 ]);
@@ -152,7 +152,7 @@ export const archTests = [
       const freshness = files.get("packages/work/src/doctor/freshness.mjs").stripped;
       assert.ok(!IDENTIFIER_RE.test(freshness), "doctor-freshness.mjs imports no ITEM_RE — roadmapFolderMismatch reads milestone numbers off snapshot.items");
       assert.ok(!READDIR_RE.test(freshness), "…and lists nothing of its own");
-      const migrate = files.get("src/commands/migrate-folder.mjs").stripped;
+      const migrate = files.get("packages/work/src/commands/migrate-folder.mjs").stripped;
       assert.ok(!IDENTIFIER_RE.test(migrate), "migrate-folder.mjs no longer references ITEM_RE (its only use was nextFreeSlot)");
       assert.ok(!/nextFreeSlot/.test(migrate), "nextFreeSlot is gone");
       assert.ok(importsFromWork("packages/work/src/tune/provenance.mjs", files.get("packages/work/src/tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from src/work.mjs");

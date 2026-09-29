@@ -6,7 +6,7 @@
 //  EXISTING `.feature` for writing (create-only scaffolding is admitted)."
 //
 // MEASURED AT HEAD (ADR-009/A): ONE write site, create-only
-// (`src/commands/migrate-folder.mjs:244-248` — ADR-009/A cited `:225-229`, which is
+// (`packages/work/src/commands/migrate-folder.mjs:251-255` — ADR-009/A cited `:225-229`, which is
 // where it sat before 66/00 declared the flag at that call, and `:231-235` until 119/02's
 // prose sweep moved this module's registry rationale into its header, 11 lines above the
 // call, and `:242-246` until 127/01 retired its private `ITEM_RE` + `nextFreeSlot` onto the one
@@ -85,7 +85,7 @@ const ACCEPTOR_FACE = "packages/work/src/commands/acceptor.mjs";
 const THE_FROZEN_FIVE = ["not-started", "in-progress", "blocked", "in-review", "done"];
 // The auditor's own record, read where a workspace carries it (ADR-004 §3 cites `:8`).
 const AUDITOR_RECORD = path.join(repoRoot, ".aof", "loops", "instrument-audit.md");
-const THE_NAMED_WRITE_SITE = "src/commands/migrate-folder.mjs";
+const THE_NAMED_WRITE_SITE = "packages/work/src/commands/migrate-folder.mjs";
 // The line the call sits on — a citation a test can check is a citation that stays true.
 // And it did what it was built to do: 119/02 added no code to this module and still moved this
 // call eleven lines, by putting the registry's rationale into the module's own header. A stored
@@ -94,7 +94,7 @@ const THE_NAMED_WRITE_SITE = "src/commands/migrate-folder.mjs";
 // …and 127/01 moved it two more, to :244 — the module's private `ITEM_RE` copy and its
 // `nextFreeSlot` scan retired onto the one enumerator and the one mint (127/ADR-001 §5), and the
 // import that replaced them carries its rationale above the call.
-const THE_NAMED_WRITE_LINE = 244;
+const THE_NAMED_WRITE_LINE = 251;
 
 // Write-shaped callees: every door under `src/` through which bytes reach a path.
 const WRITE_CALLS = [

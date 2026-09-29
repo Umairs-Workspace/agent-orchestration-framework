@@ -2,7 +2,7 @@
 import { createPhaseDrivers } from "@aof/work-loop/commands/drive";
 import { driveInteractiveClaudeSession, INTERACTIVE_COMMAND_READY_DELAY_MS } from "../agent-session-driver.mjs";
 import { ensureWorktreeTrusted } from "../claude-trust.mjs";
-import { compileBriefForItem } from "../phase-brief-read.mjs";
+import { compileBriefForItem } from "@aof/work/phase-brief-read";
 import {
   normalizeEffort,
   resolveSessionLaunch,

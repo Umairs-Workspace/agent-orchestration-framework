@@ -1,6 +1,6 @@
 // Transitional core composition for work-owned validate commands.
 import { createValidateCommand } from "@aof/work/commands/validate";
-import { declaredAdrsInStory, extractAdrBlocks } from "../phase-brief.mjs";
+import { declaredAdrsInStory, extractAdrBlocks } from "@aof/work/phase-brief";
 import { readRenameMap } from "./doctor.mjs";
 import { validateWork as validateCoreWork } from "../work.mjs";
 

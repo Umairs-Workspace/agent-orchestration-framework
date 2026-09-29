@@ -80,7 +80,7 @@ import { doctorFreshnessStructuralTests } from "./doctor-freshness-structural.te
 // over-budget FILE; @executable traceability across both task features + the two new
 // fitness functions — finding-envelope conformance and config-sourced/no-baked-literal)
 import { doctorContextBudgetTests } from "./doctor-context-budget.test.mjs";
-// milestone 70 / story 00 — phase-brief: the pure leaf compiler (`src/phase-brief.mjs`,
+// milestone 70 / story 00 — phase-brief: the pure leaf compiler (`packages/work/src/phase-brief.mjs`,
 // ADR-001/002/003) traced by test/work/phase-brief-compile.test.mjs (tasks 00+01) and the two
 // spawn seams traced by test/work/phase-brief-seams.test.mjs (task 02); the story's three
 // fitness functions FF-7001/FF-7002/FF-7003 (the last an EXTENSION of the m53 single-home

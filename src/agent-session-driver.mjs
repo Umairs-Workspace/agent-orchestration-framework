@@ -8,7 +8,7 @@ import { resolveProvider } from "./terminal-providers.mjs";
 import { reportDegrade } from "./degrade.mjs";
 import { openSessionScreen } from "./terminal/session-screen.mjs";
 import { buildOtelResourceAttributes, OTEL_RESOURCE_ATTRIBUTES_ENV_KEY, OTEL_TELEMETRY_ENV_KEY } from "./otel-attribution.mjs";
-import { composePhaseBriefInput } from "./phase-brief.mjs";
+import { composePhaseBriefInput } from "@aof/work/phase-brief";
 
 const implementation = createSessionDriver({
   transcripts: { claudeProjectsDir, readLastAssistantTurn, NEEDS_INPUT_SENTINEL: inputSentinel, HUMAN_INPUT_TOOL_NAMES: inputToolNames },

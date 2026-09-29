@@ -221,9 +221,7 @@ const CONTRIBUTIONS = [
   createKnowledgeContribution([
     importMilestoneCommand,
   ]),
-  { name: "aof", commands: [
-    migrateFolderCommand,
-  ] },
+  createWorkContribution([migrateFolderCommand]),
   createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
   createWorkContribution([
     runStartCommand,
@@ -239,11 +237,7 @@ const CONTRIBUTIONS = [
   createKnowledgeContribution([
     graphServeCommand,
   ]),
-  { name: "aof", commands: [
-    diagramPlanCommand,
-    diagramExportCommand,
-    diagramFileCommand,
-  ] },
+  createWorkContribution([diagramPlanCommand, diagramExportCommand, diagramFileCommand]),
   messagingContribution,
   { name: "aof", commands: [
     workUiCommand,

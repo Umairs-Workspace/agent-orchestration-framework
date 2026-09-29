@@ -1,7 +1,7 @@
 // FF-13402 (milestone 134 / ADR-001 §2, §4) — THE GRAMMAR HAS ONE HOME.
 //
 // "The provenance vocabulary (`proposed`, `confirmed`, `stated`), the four question states and the
-//  two classes are frozen arrays exported once from `src/work-examples/map.mjs`. No other `src/**`
+//  two classes are frozen arrays exported once from `packages/work/src/examples/map.mjs`. No other `src/**`
 //  module spells an `E<n>`/`Q<n>`/`R<n>` map pattern. No `src/**` module writes a file named
 //  `EXAMPLES.md`."
 //
@@ -34,7 +34,7 @@ import {
 } from "../../../src/work-examples/map.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_ONE_HOME = "src/work-examples/map.mjs";
+const THE_ONE_HOME = "packages/work/src/examples/map.mjs";
 const ADMITTED = new Map([
   ["packages/work/src/declared-id.mjs", "the retrospective heading grammar (`## R<n>`), another grammar sharing the rule heading's shape"],
 ]);

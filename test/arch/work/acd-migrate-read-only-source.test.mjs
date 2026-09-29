@@ -27,7 +27,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 import { invoke } from "../../../src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MIGRATE_COMMAND = path.join(repoRoot, "src", "commands", "migrate-folder.mjs");
+const MIGRATE_COMMAND = path.join(repoRoot, "packages", "work", "src", "commands", "migrate-folder.mjs");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
 
 // Strip line/block comments AND string/template literals so a documented mention of

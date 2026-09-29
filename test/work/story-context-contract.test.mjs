@@ -221,7 +221,7 @@ const WAVE_ROWS = [
   { earlier: "src/commands/", later: "src/commands-old.mjs", verdict: "waved", why: "a shared prefix is not containment" },
   { earlier: "src/Commands/", later: "src/commands/test.mjs", verdict: "held", why: "the collision key case-folds, and still does" },
   { earlier: "test/", later: "test/arch/work/index.mjs", verdict: "held", why: "119/02's real declaration against 119/03's" },
-  { earlier: "src/story-contract.mjs", later: "src/ready-wave.mjs", verdict: "waved", why: "genuinely disjoint, exactly as today" },
+  { earlier: "src/story-contract.mjs", later: "packages/work/src/ready-wave.mjs", verdict: "waved", why: "genuinely disjoint, exactly as today" },
 ];
 
 // THE EXACT-STRING RULE THIS STORY REPLACES, re-implemented here so the adoption is measured as a
@@ -1184,10 +1184,10 @@ export const storyContextContractTests = [
       assert.equal(census.witnessed.length, 1, "…and the census witnesses it through the same predicate");
       assert.equal(census.unwitnessed.length, 0);
 
-      // AND `src/ready-wave.mjs` HOLDS NO SECOND COVERAGE RULE AND NO `Set` INTERSECTION OVER RAW
+      // AND `packages/work/src/ready-wave.mjs` HOLDS NO SECOND COVERAGE RULE AND NO `Set` INTERSECTION OVER RAW
       // DECLARED STRINGS. A claim about what a module does not contain is read off its source,
       // comment-stripped — the prose above `collisionKey` names both of the things it refuses.
-      const wave = stripComments(await readFile(path.join(root, "src", "ready-wave.mjs"), "utf8"));
+      const wave = stripComments(await readFile(path.join(root, "packages", "work", "src", "ready-wave.mjs"), "utf8"));
       assert.match(wave, /import \{[^}]*\bcontractSetCovers\b[^}]*\} from "\.\/story-contract\.mjs"/u, "the predicate comes from its one home");
       assert.ok((wave.match(/\bcontractSetCovers\(/gu) ?? []).length >= 2, "and the collision test is that predicate, asked both ways");
       assert.doesNotMatch(wave, /new Set\(/u, "no Set intersection over raw declared strings");

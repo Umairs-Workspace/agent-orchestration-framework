@@ -57,7 +57,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const HOME = "packages/work/src/promote/promotion.mjs";
 // The promote FAMILY — `appendPosition`'s callers, as the register reads them.
 const APPEND_CALLERS = Object.freeze([
-  "src/commands/migrate-folder.mjs",
+  "packages/work/src/commands/migrate-folder.mjs",
   "packages/work/src/commands/promote-finding-to-chore.mjs",
   "packages/work/src/commands/promote-gap-to-chore.mjs",
   "packages/work/src/commands/promote.mjs",

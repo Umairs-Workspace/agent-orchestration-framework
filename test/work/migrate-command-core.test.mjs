@@ -1135,7 +1135,7 @@ export const migrateCommandCoreTests = [
     // future refactor that drops the cleanup is caught.
     name: "migrate-core/03 the scaffold's rollback path is present: a single try/catch around the mkdir+writes that rm's the freshly-created milestone dir and rethrows",
     async run() {
-      const moduleUrl = new URL("../../src/commands/migrate-folder.mjs", import.meta.url);
+      const moduleUrl = new URL("../../packages/work/src/commands/migrate-folder.mjs", import.meta.url);
       const code = await readFile(moduleUrl, "utf8");
       // The scaffold runs under a try whose catch rm's the freshly-created milestoneDir
       // and rethrows (all-or-nothing). Assert the shape rather than re-deriving it.

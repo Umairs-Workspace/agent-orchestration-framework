@@ -27,7 +27,7 @@ import { doctorCommand } from "../../src/commands/doctor.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const srcWork = path.join(repoRoot, "packages", "work", "src", "validation.mjs");
 const srcHorizon = path.join(repoRoot, "packages", "work", "src", "lifecycle.mjs");
-const srcMigrate = path.join(repoRoot, "src", "commands", "migrate-folder.mjs");
+const srcMigrate = path.join(repoRoot, "packages", "work", "src", "commands", "migrate-folder.mjs");
 
 const CONFIG = { name: "fixture", work: { dir: "./wiki/work", tags: { domains: ["@validate"] } } };
 

@@ -152,3 +152,5 @@ retains the existing ephemeral-cascade policy. Feedback writes use the package's
 and harness validation uses its ruling contract. Harness construction errors have a shared public
 `HarnessTransitionError` export. The stream seam receives the configured lock and archive/reindex
 operations; it defines neither a second lock rule nor a second renumbering engine.
+
+Plan 01 adds pure `phase-brief`, path-driven `phase-brief-read`, `examples/map` and `ready-wave` APIs. `createExampleAnswers` accepts run/transcript readers, tool names and diagnostics; `createStoryContractDeriver` accepts graph read/impact services. No knowledge or execution dependency is added to work. Folder migration and ADR diagram plan/export/file now contribute their commands through work; core injects source recovery, installed version, configured resolution and rendering tools. Product setup/delegation/asset rendering remain core-owned. Compatibility adapters are removed in Plan 06 after Plan 02 assembly.

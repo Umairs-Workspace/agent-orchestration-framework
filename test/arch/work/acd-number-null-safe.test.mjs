@@ -44,7 +44,7 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   "packages/work/src/dependencies.mjs",
   "packages/work/src/readiness.mjs",
   "packages/work/src/reindex.mjs",
-  "src/commands/migrate-folder.mjs",
+  "packages/work/src/commands/migrate-folder.mjs",
   "packages/work/src/insertion/scaffold.mjs",
   "packages/work/src/doctor/depends.mjs",
   "packages/work/src/doctor/freshness.mjs",
@@ -66,8 +66,8 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
 // The sites the rule cannot classify, each with the reason it is admitted. Keyed by file +
 // enclosing top-level function — never by line.
 export const ALLOWED_UNCLASSIFIED = Object.freeze([
-  { file: "src/commands/migrate-folder.mjs", fn: "recoverSourceStories", reason: "source-scan units (a foreign tree's story folders), not enumerator rows" },
-  { file: "src/commands/migrate-folder.mjs", fn: "recoverSourceTasks", reason: "source-scan units (a foreign tree's task features), not enumerator rows" },
+  { file: "packages/work/src/commands/migrate-folder.mjs", fn: "recoverSourceStories", reason: "source-scan units (a foreign tree's story folders), not enumerator rows" },
+  { file: "packages/work/src/commands/migrate-folder.mjs", fn: "recoverSourceTasks", reason: "source-scan units (a foreign tree's task features), not enumerator rows" },
   { file: "packages/work/src/doctor/freshness.mjs", fn: "roadmapFolderMismatch", reason: "a ROADMAP index entry (`entry?.number`, config data), not a row" },
   { file: "packages/work/src/reindex.mjs", fn: "reindexForInsert", reason: "its rows are `selectAffected`'s output, filtered through isLiveStreamRow there" },
 ]);

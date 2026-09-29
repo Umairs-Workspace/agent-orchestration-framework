@@ -12,7 +12,7 @@ import { resolveRefInWorktree, worktreeWorkDir } from "../work/dispatch.mjs";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { resolveWorkspaceCloneUrl as defaultResolveWorkspaceCloneUrl } from "./presence.mjs";
 import { defaultSpawnRuntime, driveInteractiveClaudeSession } from "../agent-session-driver.mjs";
-import { compileBriefForItem } from "../phase-brief-read.mjs";
+import { compileBriefForItem } from "@aof/work/phase-brief-read";
 import { reportDegrade } from "../degrade.mjs";
 import { consumeHeartbeatQueue, readConsumedHeartbeatAt } from "../run-heartbeat-consumption.mjs";
 import { composeDirectiveLaunchOptions, readDirectiveCommand, readDirectiveLaunch } from "./worker-launch.mjs";

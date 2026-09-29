@@ -99,7 +99,7 @@ const CITATION = /(?<![A-Za-z0-9_./-])src\/[A-Za-z0-9_./-]+\.mjs/gu;
 // repair and 55 after it. 130's two modules cleared by landing, as predicted above, so the row
 // would have read 52. Three were added and one was repaired:
 //   · 134's refine (2bf716f) cites the three modules its stories will land:
-//     `src/work-examples/map.mjs`, `src/work-examples/answers.mjs` and
+//     `packages/work/src/examples/map.mjs`, `packages/work/src/examples/answers.mjs` and
 //     `src/work/doctor-examples.mjs`. They are the same species as 130's pair, and they CLEAR by
 //     landing, so this row should fall to 52 at 134's accept;
 //   · 134's SPEC cited `src/observe.mjs`, a module that never existed. It is re-pointed to

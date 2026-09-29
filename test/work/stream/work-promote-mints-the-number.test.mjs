@@ -670,7 +670,7 @@ export const workPromoteMintsTheNumberTests = [
       }
       assert.deepEqual(definitions, ["packages/work/src/promote/promotion.mjs"], "appendPosition is defined once in the work package");
       assert.deepEqual(callers.sort(), [
-        "src/commands/migrate-folder.mjs",
+        "packages/work/src/commands/migrate-folder.mjs",
         "packages/work/src/commands/promote-finding-to-chore.mjs",
         "packages/work/src/commands/promote-gap-to-chore.mjs",
         "packages/work/src/commands/promote.mjs",

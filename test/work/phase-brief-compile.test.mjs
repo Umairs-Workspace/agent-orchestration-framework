@@ -3,7 +3,7 @@
 //   tasks/00_compile-the-brief.feature      (@executable)
 //   tasks/01_bounded-and-truncated.feature  (@executable)
 //
-// These two tasks exercise the PURE COMPILER (`src/phase-brief.mjs`) directly — no PTY, no
+// These two tasks exercise the PURE COMPILER (`packages/work/src/phase-brief.mjs`) directly — no PTY, no
 // worktree, no `claude` binary — which is exactly what ADR-002's purity buys: the bound
 // (ADR-003) is testable because the thing being bounded is deterministic. One test object
 // per @executable scenario; Scenario-Outline rows are folded into one entry each.
@@ -64,7 +64,7 @@ export const phaseBriefCompileTests = [
   {
     name: "70/00 task00 the compiler performs no I/O of its own — no file read, no clock read, and the same inputs produce a byte-identical brief on every invocation",
     run: async () => {
-      const source = await readFile(path.join(root, "src", "phase-brief.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work", "src", "phase-brief.mjs"), "utf8");
       assert.doesNotMatch(source, /\bimport\b/u, "the pure compiler imports nothing (not even node builtins)");
       assert.doesNotMatch(source, /\b(?:readFile|readdir|stat|readlink)\b/u, "no filesystem read in the compiler");
       assert.doesNotMatch(source, /\b(?:Date\.now|performance\.now|process\.hrtime|new Date)\b/u, "no wall-clock read in the compiler");
@@ -216,7 +216,7 @@ export const phaseBriefCompileTests = [
         if (text.includes(String(PHASE_BRIEF_CEILING_CHARS))) hardcoded += 1;
       }
       assert.equal(hardcoded, 0, "no second ceiling literal exists outside the compiler");
-      assert.ok((await readFile(path.join(root, "src", "phase-brief.mjs"), "utf8")).includes("PHASE_BRIEF_CEILING_TOKENS * PHASE_BRIEF_CHARS_PER_TOKEN"), "the ceiling is derived from the declared ratio, one number in one place");
+      assert.ok((await readFile(path.join(root, "packages", "work", "src", "phase-brief.mjs"), "utf8")).includes("PHASE_BRIEF_CEILING_TOKENS * PHASE_BRIEF_CHARS_PER_TOKEN"), "the ceiling is derived from the declared ratio, one number in one place");
       assert.equal(BRIEF_SECTION_PRIORITY.length, 7, "the declared section priority is the single section list the compiler reads, including 70/03's architecture slice");
     },
   },

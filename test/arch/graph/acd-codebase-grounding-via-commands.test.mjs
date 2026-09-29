@@ -65,7 +65,8 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
                                                       // changed, and an inner-loop tool that might cost minutes
                                                       // before it costs seconds is not one.
   path.join("packages", "knowledge", "src", "memory", "graphify-backend.mjs"), // imports the normalizer (10)
-  path.join("src", "story-contract-derive.mjs"),      // imports the normalizer (96/ADR-004): the read/write-set
+  path.join("src", "story-contract-derive.mjs"), // configured knowledge ports
+  path.join("packages", "work", "src", "story-contract-derive.mjs"),      // imports the normalizer (96/ADR-004): the read/write-set
                                                       // derivation reaches the graph by the pure read — never a
                                                       // build and never a spawn, for 72/ADR-002 §1's reasons
                                                       // carried over intact. Its own control (FF-9602) asserts
@@ -197,7 +198,13 @@ export const archTests = [
           assert.match(source, /createAuditSeamLiveness\(\{[^}]*normalizeGraph[^}]*readGraph/u, "the moved reader receives the existing graph services");
           assert.match(source, /normalizeGraph\(readGraph\(artifact\)\)/u, "and it still uses the supplied reader");
         }
-        if (importsDriver || importsNormalizer || suppliedReader || suppliedKnowledge) reachers.push(rel);
+        const suppliedDeriver = rel === path.join("packages", "work", "src", "story-contract-derive.mjs");
+        if (suppliedDeriver) {
+          assert.match(source, /createStoryContractDeriver\(\{[^}]*normalizeGraph[^}]*readGraph/u);
+          assert.match(source, /raw = readGraph\(artifact\)/u);
+          assert.match(source, /normalizeGraph\(raw\)/u);
+        }
+        if (importsDriver || importsNormalizer || suppliedReader || suppliedKnowledge || suppliedDeriver) reachers.push(rel);
       }
       const offenders = reachers.filter((rel) => !GRAPH_REACHING_ALLOWLIST.has(rel));
       assert.deepEqual(

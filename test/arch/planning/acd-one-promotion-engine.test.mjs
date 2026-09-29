@@ -17,7 +17,7 @@
 //
 // WHY THE SIGNATURE IS A CONJUNCTION, and this is the measured part. The tempting sweep — "a
 // `## Notes` heading matcher" or "a section-range walk" — reds on two live, unrelated homes:
-// `src/phase-brief.mjs` (`extractH2Block(text, (title) => /^notes$/i.test(title))`) and
+// `packages/work/src/phase-brief.mjs` (`extractH2Block(text, (title) => /^notes$/i.test(title))`) and
 // `src/memory/local-indexing.mjs`'s `splitSections`. Neither has anything to do with promotion. A
 // module qualifies as a rival only if it BOTH seeds a Definition of Done AND writes a chore record
 // doc, and leg 3 asserts those two files are NOT reported — which is the assertion that proves the
@@ -35,7 +35,7 @@ const SEED = "packages/work/src/promote/chore-seed.mjs";
 const ENGINE = "packages/work/src/promote/promotion.mjs";
 const FACES = Object.freeze(["packages/work/src/commands/promote-gap-to-chore.mjs", "packages/work/src/commands/promote-finding-to-chore.mjs"]);
 // The two live homes the bare-shape sweep reported, kept as named non-subjects (ADR-009 §2).
-const NOT_PROMOTERS = Object.freeze(["src/phase-brief.mjs", "packages/knowledge/src/memory/local-indexing.mjs"]);
+const NOT_PROMOTERS = Object.freeze(["packages/work/src/phase-brief.mjs", "packages/knowledge/src/memory/local-indexing.mjs"]);
 
 // The four mechanics, each as the source signature that identifies its DEFINITION — never a name a
 // caller could also mention, so an importing face does not read as a second home.
@@ -158,7 +158,7 @@ export const archTests = [
       // both really do carry the bare shape the rejected sweep matched.
       const shapes = {
         // `extractH2Block(text, (title) => /^notes$/i.test(title))` — the `## Notes` heading matcher.
-        "src/phase-brief.mjs": /\^notes\$/iu,
+        "packages/work/src/phase-brief.mjs": /\^notes\$/iu,
         // `splitSections` — the section-range walk.
         "packages/knowledge/src/memory/local-indexing.mjs": /splitSections/u,
       };

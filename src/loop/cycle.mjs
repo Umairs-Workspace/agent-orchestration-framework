@@ -14,7 +14,7 @@ import {
   sampleWorktreeProgress,
 } from "../loop-progress.mjs";
 import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS, boundGradeFailures } from "../work/grade.mjs";
-import { PHASE_BRIEF_MAX_CHARS } from "../phase-brief.mjs";
+import { PHASE_BRIEF_MAX_CHARS } from "@aof/work/phase-brief";
 import { declaredRubric } from "../commands/grade.mjs";
 import { lockContextFor } from "../item-lock.mjs";
 import { meshNodeIdOf } from "../commands/mesh/gate.mjs";
