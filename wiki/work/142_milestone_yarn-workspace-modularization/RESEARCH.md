@@ -980,3 +980,24 @@ Source guards must distinguish implementation ownership from configured dependen
 producer scans cover runtime workspace roots, dependency closure starts at the configured adapter,
 and injected services are checked on both the factory input and the adapter binding. Compatibility
 checks continue to import the legacy surface rather than treating a factory as that surface.
+
+## Domain transitions versus generic effects
+
+The generic effects package owns persistence/dispatch mechanics; it should not learn domain event
+vocabulary merely because a transition appends an event. Assignment transitions therefore belong
+to mesh, run transitions and run reconciliation to execution, and item/document/stream/harness
+transitions to work. Core supplies the configured journal, reactor selection and drain services.
+The reconciliation scan needs work-item discovery as a port; importing work from execution would
+undo the mesh-blind local execution boundary. These factories construct no journal or event.
+
+The harness error class is exported once per module and returned by every configured factory,
+preserving error identity across instances. Constants likewise remain available without composing
+the effect runtime. Existing legacy adapters still return the same API and require final assembly
+cleanup; their presence is not evidence that the full modularization is complete.
+
+Source guards now distinguish the configured stream seam from its package implementation when
+checking that archive cannot reach reindex except through the seam. The configured worker closure
+adds two transition implementation homes and loses the assignment-record forward (107 -> 108);
+its driver's own denylist/closure is unchanged. A source detector also mistook prose constants
+inside a function body for object keyword tables. It now checks literal table-cell syntax and has
+regression probes for both factory-local prose and real factory-local keyword tables.

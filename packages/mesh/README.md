@@ -115,3 +115,9 @@ PTY loading occurs only when a session is explicitly spawned.
 Root adapters currently compose the extracted services; final package/application assembly will
 remove them. The presence cadence helper has no production callers and remains available as a
 public API, preserving its existing contract. Run `yarn workspace @aof/mesh test`.
+
+`assignment-transitions` exports `createAssignmentTransitions`. It owns holder/terminal
+admission, assignment settlement, durable worker reports and park/resume reservation/refusal
+transitions. Assignment record writes use the package's own authority; journal, reactors, drain,
+outbox and diagnostic services are supplied by core. Report delivery drains only its own event,
+retaining the journal-unavailable fallback and acknowledgement semantics.

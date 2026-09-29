@@ -272,7 +272,9 @@ export const archTests = [
       }
       // 142: +worker execution/admission/launch implementations, -loop-bounds/repo-marker forwards.
       for (const name of ["worker-execution", "worker-repo-admission", "worker-launch"]) assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)));
-      assert.equal(sinkGraph.seen.size, 107, "three implementation homes replace two forwarding modules in the prior 106-module closure");
+      // Domain transitions add two implementation homes and remove the assignment-record forward.
+      for (const file of ["packages/execution/src/run-transitions.mjs", "packages/mesh/src/assignment-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)));
+      assert.equal(sinkGraph.seen.size, 108, "two transition implementation homes replace one forward in the prior 107-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

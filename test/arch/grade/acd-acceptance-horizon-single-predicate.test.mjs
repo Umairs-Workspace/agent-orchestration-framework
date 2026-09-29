@@ -493,7 +493,7 @@ export const archTests = [
       assert.equal(closesEpoch.length, 1, "…and it really takes one argument, so a from-state cannot be passed to it");
       // The payload's own object literal, cut on matched braces from the ONE HOME — never
       // an `indexOf("};")` sentinel, which assumes a declaration order nothing pins.
-      const payload = stripComments(await readFile(path.join(srcDir, "effects", "item-transitions.mjs"), "utf8"));
+      const payload = stripComments(await readFile(path.join(srcDir, "../packages/work/src/item-transitions.mjs"), "utf8"));
       const payloadAt = payload.indexOf("const payload =");
       assert.ok(payloadAt >= 0, "the transition seam still builds a payload");
       const payloadBody = matchedBraceBody(payload, payload.indexOf("{", payloadAt));

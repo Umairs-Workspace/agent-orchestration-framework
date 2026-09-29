@@ -108,7 +108,11 @@
     "./commands": "./src/commands.mjs",
     "./acceptor/source-units": "./src/acceptor/source-units.mjs",
     "./programs/audit-drive": "./src/programs/audit-drive.mjs",
-    "./programs/audit-probe": "./src/programs/audit-probe.mjs"
+    "./programs/audit-probe": "./src/programs/audit-probe.mjs",
+    "./doc-transitions": "./src/doc-transitions.mjs",
+    "./harness-transitions": "./src/harness-transitions.mjs",
+    "./item-transitions": "./src/item-transitions.mjs",
+    "./stream-transitions": "./src/stream-transitions.mjs"
   },
   "files": [
     "src"

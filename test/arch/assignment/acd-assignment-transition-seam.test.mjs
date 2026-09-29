@@ -36,7 +36,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const SRC = path.join(repoRoot, "src");
 
 // The ONLY modules that may name the guard-free store writer.
-const SANCTIONED_WRITERS = new Set(["packages/mesh/src/assignment-record.mjs", "src/effects/assignment-transitions.mjs"]);
+const SANCTIONED_WRITERS = new Set(["packages/mesh/src/assignment-record.mjs", "packages/mesh/src/assignment-transitions.mjs"]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

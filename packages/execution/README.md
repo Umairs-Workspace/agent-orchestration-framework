@@ -51,3 +51,9 @@ Mesh composes worktree operations with its naming, preparation, commit and reten
 Final application composition will remove the transitional adapters.
 
 Run package checks with `yarn workspace @aof/execution test`.
+
+`run-transitions` exports `createRunTransitions`: run start/retry, completion and reclaim
+combine configured run-store operations with the supplied lock and effect services. The run store
+remains mesh-blind. `reconcile` exports `createRunReconciliation`, which heals the latest
+unreported run fact only when it is no older than the ledger's birth. It receives work-item reads
+as a port and imports no work package. Reconciliation appends owed events; its caller owns draining.

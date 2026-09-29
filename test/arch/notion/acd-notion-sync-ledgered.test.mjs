@@ -59,10 +59,10 @@ const SPAWN_SEAM_CALLERS = new Set(["packages/integration-notion/src/cli.mjs", S
 // Every transition seam resolves reactors through the append-time applicability
 // evaluation — the uniform rule the predicate machinery rides on.
 const TRANSITION_SEAMS = [
-  "src/effects/run-transitions.mjs",
-  "src/effects/doc-transitions.mjs",
-  "src/effects/stream-transitions.mjs",
-  "src/effects/assignment-transitions.mjs",
+  "packages/execution/src/run-transitions.mjs",
+  "packages/work/src/doc-transitions.mjs",
+  "packages/work/src/stream-transitions.mjs",
+  "packages/mesh/src/assignment-transitions.mjs",
 ];
 
 function stripComments(source) {

@@ -149,7 +149,7 @@ export const loopFixTransportShapeTests = [
       // AND NO PERSISTENCE MODULE WAS EDITED TO CARRY IT. Both are passed THROUGH: neither
       // reads the grade, branches on it, or names it anywhere except the one pre-existing
       // provenance guard 54 already placed on every stamped claim.
-      for (const rel of [["packages", "execution", "src", "runs.mjs"], ["src", "effects", "run-transitions.mjs"]]) {
+      for (const rel of [["packages", "execution", "src", "runs.mjs"], ["packages", "execution", "src", "run-transitions.mjs"]]) {
         const code = strip(await readFile(path.join(repoRoot, ...rel), "utf8"));
         const mentions = [...code.matchAll(/\bgrade\b/gu)].length;
         const guarded = [...code.matchAll(/assertStampedClaim\(brief\.grade\)/gu)].length;

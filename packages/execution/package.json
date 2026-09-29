@@ -18,7 +18,9 @@
     "./terminal/claude-screens": "./src/terminal/claude-screens.mjs",
     "./worktrees": "./src/worktrees.mjs",
     "./bounded-process": "./src/bounded-process.mjs",
-    "./rubric-process": "./src/rubric-process.mjs"
+    "./rubric-process": "./src/rubric-process.mjs",
+    "./run-transitions": "./src/run-transitions.mjs",
+    "./reconcile": "./src/reconcile.mjs"
   },
   "files": [
     "src"

@@ -143,3 +143,12 @@ Node. They belong only in an audit child process: the parent uses its bounded ex
 must not import either entry point. Transitional root launchers preserve existing invocation paths.
 The architecture guard follows each launcher's imports through its public package export, checking
 that the entire child implementation stays outside the parent and starts no further processes.
+
+Work owns the item, document, harness and stream transition seams through
+`createItemTransitions`, `createDocumentTransitions`, `createHarnessTransitions` and
+`createStreamTransitions`. They receive the configured journal, reactor selection and drain services
+from core. Fact writes precede event append; guarded refusals owe no event, and an unavailable journal
+retains the existing ephemeral-cascade policy. Feedback writes use the package's raw-evidence store,
+and harness validation uses its ruling contract. Harness construction errors have a shared public
+`HarnessTransitionError` export. The stream seam receives the configured lock and archive/reindex
+operations; it defines neither a second lock rule nor a second renumbering engine.

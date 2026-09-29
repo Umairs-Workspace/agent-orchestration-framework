@@ -31,7 +31,7 @@ const FEEDBACK_COMMAND = new URL("../../../packages/work/src/commands/feedback.m
 // the command); the lens below now points at the seam, and the command itself
 // joins board-ui.mjs in the "writes nothing at all" set — strictly stronger than
 // what this gate asserted before.
-const FEEDBACK_WRITER = new URL("../../../src/effects/doc-transitions.mjs", import.meta.url);
+const FEEDBACK_WRITER = new URL("../../../packages/work/src/doc-transitions.mjs", import.meta.url);
 const FEEDBACK_RECORDS = new URL("../../../packages/work/src/feedback-records.mjs", import.meta.url);
 // Milestone 21 EXTENDS this guard to the run/rerun surface (ADR-003 — the explicit
 // EXTEND-not-sibling decision): the board face's run READ route + the rerun

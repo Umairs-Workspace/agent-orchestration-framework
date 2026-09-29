@@ -102,7 +102,7 @@ const STRUCTURAL = [
   { file: path.join("packages", "work", "src", "commands", "promote.mjs"), symbols: ["listItems"], subject: "promoteRow", diskSource: "../discovery.mjs" },
   { file: path.join("packages", "work", "src", "upgrade.mjs"), symbols: ["listItems"], subject: "planUpgrade", diskSource: "./discovery.mjs" },
   { file: path.join("packages", "work", "src", "effects.mjs"), symbols: ["listItems"], subject: "remapRunRecordRefs", injected: true },
-  { file: path.join("src", "effects", "reconcile.mjs"), symbols: ["listItems"], subject: "reconcileRunRecords" },
+  { file: path.join("packages", "execution", "src", "reconcile.mjs"), symbols: ["listItems"], subject: "reconcileRunRecords", factory: "createRunReconciliation", adapter: "src/effects/reconcile.mjs" },
   // work-doctor keeps ONE disk snapshot; ADR-005 overlays cache facts onto it in the
   // snapshot BUILDER (per-fact, ADR-010/R6.1) rather than splitting the snapshot's
   // source per check-group. The ITEM SET stays the disk's — that is what makes doctor's

@@ -570,3 +570,15 @@ guards check both bindings and implementations. The canonical reclaim citation/m
 refreshed. No generated output changed; the three approved generated loop files/hashes already
 match. Core/apps layout, final composition, compatibility removal, remaining root services and
 whole-tree/native/platform verification remain outstanding.
+
+Domain transition extraction: seven modules now belong to mesh (assignment), execution (run
+transitions/reconciliation), and work (item/document/stream/harness). Core supplies the configured
+effect runtime. Seven legacy APIs/26 exports match; seven public tests pass locally and in the
+copied installation, which retains 117 commands and resolves all seven APIs internally. The package
+bridge passes 217 cases. Standalone bundling, immutable linking and audit pass without dependency
+or lockfile changes. The 42-suite run passed 663 with 12 source-guard failures; the corrected
+17-suite run passed 155 with two failures, followed by all 14 checks passing in the two final
+suites. All 20 census/registry and all 20 distribution checks pass. Canonical reclaim citations/
+manifest and reconciliation metadata follow the package homes; generated copies remain unchanged.
+Remaining root services, core/apps layout, final composition, adapter removal and whole-tree/native/
+platform verification remain open.

@@ -49,7 +49,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const FACE = "packages/work/src/commands/archive.mjs";
 const COMPOSITION = "src/commands/archive.mjs";
 const ENGINE = "packages/work/src/archive.mjs";
-const SEAM = "src/effects/stream-transitions.mjs";
+const SEAM_COMPOSITION = "src/effects/stream-transitions.mjs";
+const SEAM = "packages/work/src/stream-transitions.mjs";
 const REINDEX = "packages/work/src/reindex.mjs";
 const INSERT_SHARED = "packages/work/src/insertion/scaffold.mjs";
 const PROMOTION = "src/work-promote/promotion.mjs";
@@ -146,7 +147,7 @@ export const archTests = [
     run: async () => {
       const face = stripComments(await readRel(FACE));
       const engine = stripComments(await readRel(ENGINE));
-      const problems = [...closedSetProblems(FACE, face, FACE_ALLOWED), ...closedSetProblems(ENGINE, engine, ENGINE_ALLOWED), ...closedSetProblems(COMPOSITION, stripComments(await readRel(COMPOSITION)), new Set([FACE, SEAM]))];
+      const problems = [...closedSetProblems(FACE, face, FACE_ALLOWED), ...closedSetProblems(ENGINE, engine, ENGINE_ALLOWED), ...closedSetProblems(COMPOSITION, stripComments(await readRel(COMPOSITION)), new Set([FACE, SEAM_COMPOSITION]))];
       assert.deepEqual(problems, [], problems.join("\n"));
       // Non-vacuous: each file imports something, and the forbidden names are absent by name too.
       assert.ok(importSpecifiers(face).length >= 3, "the face imports its readers, the seam and the error contract");
@@ -168,16 +169,18 @@ export const archTests = [
     run: async () => {
       const graph = await srcGraph();
       assert.ok(graph.has(FACE) && graph.has(ENGINE) && graph.has(SEAM), "the walk read the three files");
+      assert.ok(graph.get(SEAM_COMPOSITION)?.includes(SEAM), "the configured stream seam reaches its implementation");
+      for (const rel of [SEAM, SEAM_COMPOSITION]) assert.match(stripComments(await readRel(rel)), /createStreamTransitions\(\{[^}]*reindexForInsert[^}]*archiveItems/su);
       const targets = new Set([REINDEX, INSERT_SHARED]);
-      const offending = [...chainsAvoiding(graph, FACE, targets, SEAM), ...chainsAvoiding(graph, ENGINE, targets, SEAM), ...chainsAvoiding(graph, COMPOSITION, targets, SEAM)];
+      const offending = [...chainsAvoiding(graph, FACE, targets, SEAM_COMPOSITION), ...chainsAvoiding(graph, ENGINE, targets, SEAM_COMPOSITION), ...chainsAvoiding(graph, COMPOSITION, targets, SEAM_COMPOSITION)];
       assert.deepEqual(
         offending.map((chain) => chain.join(" → ")),
         [],
         `a path reaches the reindex engine or insert-shared without crossing the seam:\n${offending.map((chain) => chain.join(" → ")).join("\n")}`,
       );
       // Non-vacuous: the sanctioned path exists and is the one excluded.
-      const seamPath = chainThrough(graph, COMPOSITION, REINDEX, SEAM);
-      assert.deepEqual(seamPath, [COMPOSITION, SEAM, "src/work/reindex.mjs", REINDEX], `the seam and compatibility export lead to the package engine (got ${seamPath?.join(" → ")})`);
+      const seamPath = chainThrough(graph, COMPOSITION, REINDEX, SEAM_COMPOSITION);
+      assert.deepEqual(seamPath, [COMPOSITION, SEAM_COMPOSITION, "src/work/reindex.mjs", REINDEX], `the seam and compatibility export lead to the package engine (got ${seamPath?.join(" → ")})`);
     },
   },
 

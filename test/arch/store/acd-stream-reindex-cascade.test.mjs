@@ -46,7 +46,7 @@ import { recordPageId, readMapping, resolvePageId, remapMappingRefs } from "../.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // The reindex engine's write door: reachable from its own module and the seam only.
-const REINDEX_ALLOWED = new Set(["packages/work/src/reindex.mjs", "src/effects/stream-transitions.mjs"]);
+const REINDEX_ALLOWED = new Set(["packages/work/src/reindex.mjs", "packages/work/src/stream-transitions.mjs"]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

@@ -988,7 +988,7 @@ export const workArchiveIsAMoveTests = [
           const code = stripComments(await readFile(file.path, "utf8"));
           if (/\barchiveItems\s*\(/.test(code)) callers.push(file.rel);
         }
-        assert.deepEqual(callers, ["src/effects/stream-transitions.mjs"], "archiveItems( is called from the seam and nowhere else");
+        assert.deepEqual(callers, ["packages/work/src/stream-transitions.mjs"], "archiveItems( is called from the seam and nowhere else");
         const face = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "archive.mjs"), "utf8"));
         assert.match(face, /transitionStreamArchived\(/);
         assert.doesNotMatch(face, /archiveItems\s*\(/);

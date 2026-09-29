@@ -64,7 +64,8 @@
     "./launcher": "./src/launcher.mjs",
     "./control-stream-server": "./src/control-stream-server.mjs",
     "./worker-stream-client": "./src/worker-stream-client.mjs",
-    "./ui-serve": "./src/ui-serve.mjs"
+    "./ui-serve": "./src/ui-serve.mjs",
+    "./assignment-transitions": "./src/assignment-transitions.mjs"
   },
   "files": [
     "src"

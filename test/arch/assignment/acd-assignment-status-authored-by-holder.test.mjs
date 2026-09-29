@@ -94,7 +94,7 @@ export const archTests = [
       const body = extractFunctionBody(source, "applyAssignmentStatusFrame");
       assert.ok(body, "applyAssignmentStatusFrame is defined");
       const seamSource = await readFile(
-        path.join(repoRoot, "src", "effects", "assignment-transitions.mjs"),
+        path.join(repoRoot, "packages", "mesh", "src", "assignment-transitions.mjs"),
         "utf8",
       );
       assert.equal(

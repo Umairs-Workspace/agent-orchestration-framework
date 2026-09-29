@@ -78,6 +78,8 @@ export const yarnInstallationTests = [
         'sync-work.mjs': ['node:path', 'node:fs/promises'],
         'notion-sync-work.mjs': ['node:fs'],
         } : name === 'execution' ? {
+        'run-transitions.mjs': [],
+        'reconcile.mjs': ["node:fs/promises"],
         'rubric-process.mjs': ['node:child_process'],
         'runs.mjs': ['node:path', 'node:fs/promises', 'node:fs', '@aof/foundation/fs', '@aof/contracts/claim-provenance'],
         'spend.mjs': ['node:fs/promises', 'node:path'],
@@ -93,6 +95,7 @@ export const yarnInstallationTests = [
         'worktrees.mjs': ['node:child_process'],
         'bounded-process.mjs': ['node:child_process', 'node:fs'],
       } : name === 'mesh' ? {
+        'assignment-transitions.mjs': [],
         'worker-launch.mjs': [],
         'worker-repo-admission.mjs': ["node:path","node:child_process","node:fs/promises","node:crypto","@aof/foundation/fs"],
         'clone-credential-provider.mjs': ["node:crypto"],
@@ -171,6 +174,10 @@ export const yarnInstallationTests = [
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
+        'doc-transitions.mjs': ["node:path","node:fs/promises"],
+        'harness-transitions.mjs': ["node:crypto"],
+        'item-transitions.mjs': [],
+        'stream-transitions.mjs': [],
         'toolchain.mjs': ['node:path', 'node:fs'],
         'feedback-records.mjs': ['node:path', 'node:fs/promises'],
         'commands/feedback.mjs': ['node:crypto', '@aof/contracts/error'],

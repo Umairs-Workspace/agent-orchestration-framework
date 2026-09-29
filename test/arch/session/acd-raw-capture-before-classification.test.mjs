@@ -52,7 +52,7 @@ export const archTests = [
       assert.match(store, /appendFile\(feedbackRecordPath\(item\)/, "records use the append-only filesystem primitive");
       assert.doesNotMatch(store, /\bwriteFile\b|\brename\b|\btruncate\b/, "the raw ledger has no rewrite primitive");
 
-      const transition = stripComments(await readFile(path.join(root, "src", "effects", "doc-transitions.mjs"), "utf8"));
+      const transition = stripComments(await readFile(path.join(root, "packages", "work", "src", "doc-transitions.mjs"), "utf8"));
       const rawAt = transition.indexOf("await appendRawFeedback(item, raw)");
       const projectionAt = transition.indexOf("await appendFeedbackBullet(statePath, bullet)");
       assert.ok(rawAt >= 0 && projectionAt > rawAt, "the raw append is structurally before the human projection");
@@ -66,7 +66,7 @@ export const archTests = [
         const source = stripComments(await readFile(file.path, "utf8"));
         if (/\bappendRawFeedback\s*\(/.test(source)) callers.push(file.rel.replaceAll("\\", "/"));
       }
-      assert.deepEqual(callers.sort(), ["packages/work/src/feedback-records.mjs", "src/effects/doc-transitions.mjs"]);
+      assert.deepEqual(callers.sort(), ["packages/work/src/doc-transitions.mjs", "packages/work/src/feedback-records.mjs"]);
 
       const command = stripComments(await readFile(path.join(root, "packages", "work", "src", "commands", "feedback.mjs"), "utf8"));
       const refusalAt = command.indexOf("feedback-classification-deferred");

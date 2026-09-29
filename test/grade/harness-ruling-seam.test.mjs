@@ -761,13 +761,13 @@ const featureTwo = [
     name: "61/05 task 02 · every seam already in service keeps working — each raises the name it has always raised, none is refused, and each is owed the consequences it was owed before",
     run: async () => {
       const seams = [
-        "src/effects/run-transitions.mjs",
-        "src/effects/item-transitions.mjs",
-        "src/effects/doc-transitions.mjs",
-        "src/effects/stream-transitions.mjs",
-        "src/effects/assignment-transitions.mjs",
-        "src/effects/reconcile.mjs",
-        "src/effects/harness-transitions.mjs",
+        "packages/execution/src/run-transitions.mjs",
+        "packages/work/src/item-transitions.mjs",
+        "packages/work/src/doc-transitions.mjs",
+        "packages/work/src/stream-transitions.mjs",
+        "packages/mesh/src/assignment-transitions.mjs",
+        "packages/execution/src/reconcile.mjs",
+        "packages/work/src/harness-transitions.mjs",
       ];
 
       const raised = new Set();
@@ -811,7 +811,7 @@ const featureTwo = [
 
       // …and it is STRUCTURAL, not a habit of this test: every seam resolves before it
       // appends, so there is no ordering in which a refused name could reach storage.
-      for (const seam of ["src/effects/run-transitions.mjs", "src/effects/item-transitions.mjs", "src/effects/doc-transitions.mjs", "src/effects/stream-transitions.mjs", "src/effects/harness-transitions.mjs"]) {
+      for (const seam of ["packages/execution/src/run-transitions.mjs", "packages/work/src/item-transitions.mjs", "packages/work/src/doc-transitions.mjs", "packages/work/src/stream-transitions.mjs", "packages/work/src/harness-transitions.mjs"]) {
         const source = await readFile(path.join(repoRoot, seam), "utf8");
         const resolves = source.indexOf("applicableReactors(");
         const appends = source.indexOf("appendEvent(", source.indexOf("await applicableReactors"));

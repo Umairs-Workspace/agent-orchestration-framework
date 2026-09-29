@@ -257,7 +257,10 @@ export function classify(sources) {
       // object literal (`{ head: "Feature:", step: "Given " }` — the same table with
       // names on its cells, added at round 2 after the architect measured it invisible;
       // widening to `{` costs 0 false positives across all 226 modules).
-      if (["[", "{"].includes(enclosingOpener(masked, literal.start))) {
+      // A factory body is also a brace block. Only a literal table cell counts;
+      // scalar assignment inside that block is not a keyword table.
+      const tableCell = /(?:\[|,|:)\s*$/.test(masked.slice(0, literal.start));
+      if (tableCell && ["[", "{"].includes(enclosingOpener(masked, literal.start))) {
         hits.recogniser.push(literal.value);
         continue;
       }
@@ -393,6 +396,8 @@ export const archTests = [
         { file: "src/pretend-label.mjs", text: 'const EMPTY = "Feature: coming soon";\nconst ERR = `Scenario: ${name} not found`;\n' },
       ];
       assert.deepEqual(classify(planted), { recognisers: [], renderers: [] }, "a label is not a scaffold and not a parser");
+      assert.deepEqual(classify([{ file: "src/factory.mjs", text: 'function factory() { const instruction = `When the directive is complete, report it.`; return instruction; }' }]), { recognisers: [], renderers: [] }, "scalar prose inside a function block is not a table");
+      assert.equal(classify([{ file: "src/factory.mjs", text: 'function factory() { const keywords = { step: "Given ", when: "When " }; return keywords; }' }]).recognisers.length, 1, "an object keyword table inside the same block is still detected");
       // …while the scaffold shape — a keyword line WITH its line ending — still is.
       const scaffold = classify([{ file: "src/pretend-scaffold.mjs", text: 'return `Feature: ${title}\\n`;\n' }]);
       assert.deepEqual(scaffold.renderers.map((entry) => entry.file), ["src/pretend-scaffold.mjs"]);

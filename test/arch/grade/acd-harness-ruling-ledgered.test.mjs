@@ -89,13 +89,13 @@ const THE_EIGHT = Object.freeze({
 // `reconcile.mjs` the d5 file-store reconciler; both append only what a transition would.
 const APPEND_EVENT_SEAMS = Object.freeze([
   "packages/mesh/src/control-stream-server.mjs",
-  "src/effects/assignment-transitions.mjs",
-  "src/effects/doc-transitions.mjs",
-  "src/effects/harness-transitions.mjs",
-  "src/effects/item-transitions.mjs",
-  "src/effects/reconcile.mjs",
-  "src/effects/run-transitions.mjs",
-  "src/effects/stream-transitions.mjs",
+  "packages/mesh/src/assignment-transitions.mjs",
+  "packages/work/src/doc-transitions.mjs",
+  "packages/work/src/harness-transitions.mjs",
+  "packages/work/src/item-transitions.mjs",
+  "packages/execution/src/reconcile.mjs",
+  "packages/execution/src/run-transitions.mjs",
+  "packages/work/src/stream-transitions.mjs",
 ]);
 
 // ADR-010 §2's frozen RULING vocabulary — the codes that may reach a `refusals` array.
@@ -398,6 +398,9 @@ export const archTests = [
         ["src/effects/harness-transitions.mjs", "src/effects/table.mjs"],
         "the seam holds the knob write and the reactor holds the ledger append — nothing else reaches either",
       );
+      const seam = codeOnly(await readFile(path.join(root, "packages/work/src/harness-transitions.mjs"), "utf8"));
+      const adapter = codeOnly(await readFile(path.join(root, "src/effects/harness-transitions.mjs"), "utf8"));
+      for (const code of [seam, adapter]) assert.match(code, /createHarnessTransitions\(\{[^}]*writeKnobValue/su);
       assert.deepEqual(importers.filter((rel) => rel.startsWith("src/commands/")), [], "and no command reaches it: a knob movable from a surface is a knob movable without a ruling");
     },
   },
@@ -501,8 +504,8 @@ export const archTests = [
         .filter(({ rel, code }) => !["src/effects/journal.mjs", "packages/effects/src/journal.mjs"].includes(rel) && /\bappendEvent\s*\(/u.test(codeOnly(code)))
         .map(({ rel }) => rel)
         .sort();
-      assert.deepEqual(callers, [...APPEND_EVENT_SEAMS], "the appending seams are the admitted set, and it gained exactly the harness seam");
-      assert.ok(callers.includes("src/effects/harness-transitions.mjs"), "…which is in it");
+      assert.deepEqual(callers, [...APPEND_EVENT_SEAMS].sort(), "the appending seams are the admitted set, and it gained exactly the harness seam");
+      assert.ok(callers.includes("packages/work/src/harness-transitions.mjs"), "…which is in it");
 
       // THE LAYERING IS UNCHANGED: dumb storage never learned the vocabulary. This is the
       // reason the undeclared-name refusal went where it did.

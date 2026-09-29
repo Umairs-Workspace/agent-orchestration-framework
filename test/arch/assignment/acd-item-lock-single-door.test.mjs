@@ -49,7 +49,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "src");
 const RUN_STORE = path.join(repoRoot, "packages", "execution", "src", "runs.mjs");
-const MINT_SEAM = path.join(repoRoot, "src", "effects", "run-transitions.mjs");
+const MINT_SEAM = path.join(repoRoot, "packages", "execution", "src", "run-transitions.mjs");
 const COMMANDS = path.join(repoRoot, "src", "commands");
 
 // Candidate homes for the ADR-003 lock predicate (a near-leaf beside the record).
@@ -110,7 +110,10 @@ export const archTests = [
       if (lockModule == null) return; // not-yet-built: a clean skip that arms the moment the lock lands
 
       const base = path.basename(lockModule);
-      const seamSpecs = importSpecifiers(stripComments(await readFile(MINT_SEAM, "utf8"))).map((entry) => entry.specifier);
+      const seam = stripComments(await readFile(MINT_SEAM, "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/effects/run-transitions.mjs"), "utf8"));
+      for (const source of [seam, adapter]) assert.match(source, /createRunTransitions\(\{[^}]*guardItemLock/su);
+      const seamSpecs = importSpecifiers(adapter).map((entry) => entry.specifier);
       assert.ok(
         seamSpecs.some((s) => s.endsWith(`/${base}`) || s.endsWith(base)),
         `src/effects/run-transitions.mjs must import ${base} — the ONE lock door sits inside the mint seam, not at its five call sites (imports: ${seamSpecs.join(", ")})`,

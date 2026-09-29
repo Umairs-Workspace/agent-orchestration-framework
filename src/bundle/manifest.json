@@ -66,7 +66,7 @@
         "id": "loop-mesh-assignment-reclaim",
         "kind": "asset"
       },
-      "hash": "sha256:114a109589fed716a04391163760a566455805886b855b6912b5b5dfae4762c2"
+      "hash": "sha256:3e976aae9b95544526a01b54fcd2d792551c15e9050d9ce5cfac7e010246e3a5"
     },
     {
       "path": ".aof/loops/operator.md",

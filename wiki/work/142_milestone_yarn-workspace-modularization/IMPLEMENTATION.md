@@ -1956,3 +1956,38 @@ Evidence in `.tmp/workspace-migration/mesh-runtime/`:
 
 Final core/apps layout, application assembly, compatibility-adapter removal, remaining root services
 and whole-tree/native/platform verification remain outstanding.
+
+## Domain transition ownership
+
+Seven transition implementations moved from root effects into their domain packages: assignment
+transitions into mesh; run start/completion/reclaim and run reconciliation into execution; item,
+document, stream and harness transitions into work. Core supplies the configured journal, reactor
+selection, drain/outbox, work/lock and diagnostic services. Direct domain contracts stay local to
+the owner. Construction performs no I/O; the harness error class has one public module identity.
+
+Evidence in `.tmp/workspace-migration/domain-transitions/`:
+
+- Seven legacy APIs and 26 exported values/functions/descriptors match. Seven new public package
+  tests pass locally and in a copied installer payload. They cover refusal before fact writes,
+  fact-before-event ordering, journal closure on failed drain, unavailable-journal fallback,
+  no-op stream insertion, scoped assignment-report delivery and latest-run reconciliation.
+- The copied payload retains 117 commands and resolves all seven transition APIs inside its own
+  installed packages. The root package bridge passes all 217 package cases.
+- All seven modules are included in the standalone JavaScript bundle. Immutable Yarn linking and
+  the supply-chain audit pass (zero audit warnings); no dependency versions or lockfile change.
+- The 42-suite selection passed 663 checks with 12 architecture failures. The corrected 17-suite
+  selection passed 155 with two failures; both final suites then pass all 14 checks. All 20 census/
+  registry checks and all 20 distribution checks pass in the corrected selection.
+- Source checks follow package-owned transition bodies and verify injected collaborators at both
+  adapter and factory. The archive dependency walk retains the configured stream boundary and
+  proves it reaches the implementation. The worker closure changes 107 -> 108: two transition
+  homes enter and the assignment-record forward leaves; driver isolation is unchanged.
+- The Gherkin source detector now distinguishes a scalar prose constant inside a factory block
+  from an object/array keyword cell, with negative and positive regression probes. It still finds
+  the sole grammar home and the separately sanctioned brief-heading reader.
+- Canonical reclaim actuator citations and their manifest hash follow the transition owners.
+  Store metadata now names the execution-owned reconciliation scan. Unapproved generated copies
+  and repository workflow state remain unchanged.
+
+The core/apps layout, remaining root services, final assembly, compatibility-adapter removal and
+whole-tree/native/platform verification remain outstanding.
