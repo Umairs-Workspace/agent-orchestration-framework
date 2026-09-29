@@ -40,7 +40,7 @@ import {
 } from "../../../src/node-identity.mjs";
 import { resolvePeers } from "../../../src/mesh/fabric.mjs";
 import { readRuns } from "../../../src/run-store.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const ID_RE = /^[a-z0-9-]+$/;
@@ -430,7 +430,7 @@ export const runRecordsNodeIdUnitTests = [
   {
     name: "132/00 no module under src/ turns a machine hostname into a node id",
     async run() {
-      const files = await readSrcFiles(REPO_ROOT);
+      const files = await readRuntimeFiles(REPO_ROOT);
       assert.ok(files.length > 100, "the sweep read the tree");
       const callers = [];
       for (const file of files) {
@@ -446,7 +446,7 @@ export const runRecordsNodeIdUnitTests = [
           assert.ok(!/os\.hostname\(\)/.test(arg) && !fromHostname.has(arg), `${file.rel}: sanitizeHostname(${arg}) is fed a value derived from os.hostname()`);
         }
       }
-      assert.deepEqual(callers.sort(), ["commands/mesh/identity.mjs", "node-identity.mjs"]);
+      assert.deepEqual(callers.sort(), ["packages/mesh/src/commands/identity.mjs", "src/node-identity.mjs"]);
       const source = stripComments(await readFile(path.join(REPO_ROOT, "src", "node-identity.mjs"), "utf8"));
       const body = bodyText(source, "export async function deriveNodeId(");
       assert.ok(body != null, "deriveNodeId found");

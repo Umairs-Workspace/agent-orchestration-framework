@@ -22,7 +22,7 @@ const dispatchFiles = [
   "src/work/dispatch.mjs",
   "src/commands/dispatch.mjs",
   "packages/mesh/src/assignment-reclaim.mjs",
-  "src/commands/mesh/terminal-resume.mjs",
+  "packages/mesh/src/commands/terminal-resume.mjs",
   "src/assignment-record.mjs",
 ];
 

@@ -99,7 +99,7 @@ export const archTests = [
 
       // Neither the producer nor the command that carries it spells a flag literal.
       const producer = await source(PRODUCER);
-      const identity = await source("src/commands/mesh/identity.mjs");
+      const identity = await source("packages/mesh/src/commands/identity.mjs");
       assert.doesNotMatch(producer, /"--[a-z]/u, `${PRODUCER} contains no \`--\` flag literal`);
       assert.doesNotMatch(identity, /"--[a-z]/u, "src/commands/mesh/identity.mjs contains no `--` flag literal");
       assert.match(producer, /argvFor\(/u, "…it asks the leaf instead");
@@ -142,18 +142,18 @@ export const archTests = [
       // `mesh:status` is the only command whose result can carry `declarations`.
       const producers = [];
       for (const rel of await sourceModules()) {
-        if (!rel.startsWith("src/commands/")) continue;
+        if (!rel.startsWith("src/commands/") && !/^packages\/[^/]+\/src\/commands\//u.test(rel)) continue;
         const body = stripComments(await read(rel));
         if (/result\.declarations\s*=|declarations:\s*await/u.test(body)) producers.push(rel);
       }
-      assert.deepEqual(producers, ["src/commands/mesh/identity.mjs"], "one producing site");
+      assert.deepEqual(producers, ["packages/mesh/src/commands/identity.mjs"], "one producing site");
       assert.equal(meshStatusCommand.id, "mesh:status");
     },
   },
   {
     name: "arch/126/02 FF-12605 leg 5: the flag gates the WALK, not just the key, and the row carries a cwd",
     run: async () => {
-      const identity = await source("src/commands/mesh/identity.mjs");
+      const identity = await source("packages/mesh/src/commands/identity.mjs");
       // The enumeration sits INSIDE the flag's branch — and so does the MODULE that performs it,
       // loaded by a dynamic import from within that branch. A producer that walked the workspaces
       // and then declined to emit the key would have paid the whole 167 ms the refine measured;
@@ -161,10 +161,13 @@ export const archTests = [
       // (72/FF-7205), which is why the producer lives outside this command's static closure.
       assert.match(
         identity,
-        /if \(input\?\.declarations === true\) \{[\s\S]{0,600}?import\("\.\.\/\.\.\/mesh\/declarations\.mjs"\)[\s\S]{0,200}?supervisedDeclarations\(/u,
+        /if \(input\?\.declarations === true\) \{[\s\S]{0,600}?loadDeclarations\(\)[\s\S]{0,200}?supervisedDeclarations\(/u,
         "the walk, and the module that performs it, are reached only through the flag",
       );
       assert.doesNotMatch(identity, /^import .*declarations\.mjs/mu, "…never statically");
+      const adapter = await source("src/commands/mesh/identity.mjs");
+      assert.match(adapter, /loadDeclarations:\s*\(\)\s*=>\s*import\("\.\.\/\.\.\/mesh\/declarations\.mjs"\)/u, "core supplies the deferred declaration loader");
+      assert.match(identity, /function createMeshIdentityCommands\(\{[^}]*\bloadDeclarations\b/u, "the package accepts the loader");
       const producer = await source(PRODUCER);
       assert.match(producer, /resolveNodeWorkspaces\(/u, "the workspace set comes from the resolver");
       assert.match(producer, /readRuns\(/u, "and the records from disk");

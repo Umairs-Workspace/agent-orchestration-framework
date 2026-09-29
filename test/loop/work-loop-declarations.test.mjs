@@ -592,8 +592,13 @@ export const workLoopDeclarationsTests = [
       const stripped = stripComments(source);
       assert.match(stripped, /import \{[^}]*\breadStopRequest\b[^}]*\} from "\.\.\/loop\/stop-request\.mjs"/, "imports readStopRequest from the one module");
       assert.match(stripped, /import \{[^}]*\bloopStopsDir\b[^}]*\} from "\.\.\/loop\/stop-request\.mjs"/, "imports loopStopsDir from the one module");
-      assert.doesNotMatch(stripped, /loop-stops/, "spells no path segment");
-      assert.match(stripped, /stopped:/, "hands the set to the engine");
+      const implementation = stripComments(await readFile(path.join(here, "..", "..", "packages/mesh/src/declarations.mjs"), "utf8"));
+      for (const symbol of ["readStopRequest", "loopStopsDir"]) {
+        assert.match(stripped, new RegExp('createSupervisedDeclarations\\(\\{[^}]*\\b' + symbol + '\\b'), "core supplies the shared reader");
+        assert.match(implementation, new RegExp('function createSupervisedDeclarations\\(\\{[^}]*\\b' + symbol + '\\b'), "the package accepts the shared reader");
+      }
+      assert.doesNotMatch(stripped + implementation, /loop-stops/, "spells no path segment");
+      assert.match(implementation, /stopped:/, "hands the set to the engine");
     },
   },
   {

@@ -106,7 +106,7 @@ async function productionSources() {
   const [workerSource, effectSource, resumeCommandSource, resumeOrchestrationSource] = await Promise.all([
     read("src/mesh/worker-execution.mjs"),
     read("packages/mesh/src/effects.mjs"),
-    read("src/commands/mesh/terminal-resume.mjs"),
+    read("packages/mesh/src/commands/terminal-resume.mjs"),
     read("packages/mesh/src/park-resume.mjs"),
   ]);
   return { workerSource, effectSource, resumeCommandSource, resumeOrchestrationSource };

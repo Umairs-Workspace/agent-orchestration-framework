@@ -53,6 +53,7 @@ const selfPath = fileURLToPath(import.meta.url);
 
 const CLI_ENTRY = "src/cli.mjs";
 const SESSION_MODULE = "src/commands/mesh/session.mjs";
+const SESSION_IMPLEMENTATION = "packages/mesh/src/commands/session.mjs";
 const REGISTRY = "src/command-core.mjs";
 const FACE = "src/spine/face.mjs";
 const WORKSPACE = "src/work.mjs";
@@ -187,6 +188,7 @@ export const archTests = [
     async run() {
       const cli = await closureOf(CLI_ENTRY);
       const session = await closureOf(SESSION_MODULE);
+      assert.equal(session.has(SESSION_IMPLEMENTATION), true, "the configured session closure includes the mesh-owned implementation");
 
       // The absence rows — the two modules that reach the registry, out of both closures.
       assert.equal(cli.has(REGISTRY), false, `${REGISTRY} is absent from ${CLI_ENTRY}'s static closure — importing it pulls all 88 command modules onto a path that touches none of them`);

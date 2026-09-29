@@ -231,7 +231,7 @@ export const archTests = [
       assert.ok(printersEnd > printersOpen, "PRINTERS is a brace-delimited object");
       const printers = printersSource.slice(printersOpen, printersEnd);
       assert.doesNotMatch(printers, /"work\/memory\.mjs"/, "PRINTERS has no work/memory.mjs row");
-      assert.match(printers, /"commands\/mesh\/session\.mjs"/, "…and keeps the commands/mesh/session.mjs row (aof session is not this story's)");
+      assert.match(printers, /"\.\.\/packages\/mesh\/src\/commands\/session\.mjs"/, "…and keeps the mesh session face's printer row (aof session is not this story's)");
       assert.match(printersSource, /const\s+PRINTER_CEILING\s*=\s*11\s*;/, "PRINTER_CEILING is 11 — the ratchet fell from 12");
 
       // The seam prints nothing.

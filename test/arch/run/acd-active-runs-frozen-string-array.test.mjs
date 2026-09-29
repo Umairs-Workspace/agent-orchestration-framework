@@ -221,12 +221,12 @@ function elementAccessViolations(file, source) {
 // Every surface that consumes the key: the producer + JS/TS render surfaces + the
 // Rust desktop. (The Rust `target/` build dir is NOT source and is excluded.)
 const CONSUMER_FILES = [
-  "src/mesh/presence.mjs",
+  "packages/mesh/src/presence.mjs",
   "src/mesh/launcher.mjs",
   "src/control-stream-server.mjs",
-  "src/global-node-registry.mjs",
-  "src/commands/mesh/identity.mjs",
-  "src/commands/mesh/heartbeat.mjs",
+  "packages/mesh/src/global-node-registry.mjs",
+  "packages/mesh/src/commands/identity.mjs",
+  "packages/mesh/src/commands/heartbeat.mjs",
   "ui/src/fleet/runs.mjs",
   "ui/src/fleet/runs.d.mts",
   "ui/src/fleet/scope.mjs",

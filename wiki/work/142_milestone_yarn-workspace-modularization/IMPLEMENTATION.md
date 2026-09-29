@@ -1883,3 +1883,40 @@ runtime copies, lock hashes, repository workflow runs or work-item transitions c
 The previously approved three generated citation refreshes remain the only authorized generated
 scope. Final launcher/worker/command ownership, core/apps layout, composition, compatibility removal
 and whole-tree/native/platform verification remain outstanding.
+
+## Mesh command family and contribution
+
+All nineteen modules under the former core mesh-command directory now have mesh-owned
+implementations. The seventeen registered definitions retain their routes, input validation,
+arguments/options, launch/probe distinction, JSON and presentation. The existing separate session
+hook entry and desktop install/run/stop preflight remain behaviorally unchanged. The package's
+`createMeshContribution` owns the ordered contribution; core supplies configured services and
+assembles the definitions. Shared face/gate contracts export directly. Core's configured temporary
+file sweeper remains an injected service rather than an invented filesystem export.
+
+Evidence in `.tmp/workspace-migration/mesh-commands/`:
+
+- Nineteen legacy APIs and 53 exports/function bodies/descriptors match, normalizing only the
+  identity command's explicit deferred declaration loader.
+- Five public package tests pass locally and in the installer's copied payload. They cover inert
+  registration of the seventeen real definitions, route uniqueness/order, structured assignment
+  refusals, withdrawal, the relay probe, session identity precedence/degradation and positional/
+  read-miss presentation. All nineteen APIs resolve in the payload, which retains 117 commands.
+- All nineteen modules are in the standalone JavaScript bundle. Immutable Yarn linking and the
+  supply-chain audit pass without changing dependencies or lockfile resolution.
+- The 59-suite affected selection passed 467 checks with 29 source-guard failures. Updating source
+  ownership and factory-sensitive guards yields 249 passes with eight remaining failures across
+  33 suites; ten final suites then pass all 118 checks. This includes correcting two path-containment
+  fixtures that must keep their hypothetical source paths, and following real session call sites.
+  The corrected selection includes all 20 passing census/registry checks and the bridge to 205
+  package tests.
+- The cold-session guard still starts at the configured core adapter and proves the mesh
+  implementation is reached. Preflight, terminal bridge and cache-first reads assert the package
+  input and core binding together. Declaration lookup stays deferred behind its flag. Printer,
+  identity and command-source scans follow the actual implementation homes.
+- Three source-guard suites added after the corrected selection was built pass all 26 checks,
+  covering mesh/presence write scope and desktop heartbeat preflight forwarding.
+
+No asset manifests, generated citations/lock hashes or repository workflow state changed. Mesh
+launcher/worker/control-stream orchestration, the final core/apps layout and composition, adapter
+removal and full native/platform verification remain open.

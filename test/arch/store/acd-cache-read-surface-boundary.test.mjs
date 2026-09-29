@@ -149,7 +149,7 @@ const CONTROL_SIDE = [
   { file: path.join("packages", "work", "src", "commands", "resolve.mjs"), subject: "resolveItemExact", adapter: "src/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
   { file: path.join("packages", "work", "src", "commands", "list.mjs"), subject: "listCommand", adapter: "src/commands/list.mjs", cacheSymbols: ["listStreamCacheFirst"], factory: "createListCommand" },
   { file: path.join("packages", "work", "src", "commands", "run-start.mjs"), subject: "runStartCommand" },
-  { file: path.join("src", "commands", "mesh", "heartbeat.mjs"), subject: "meshHeartbeatCommand" },
+  { file: path.join("packages", "mesh", "src", "commands", "heartbeat.mjs"), subject: "meshHeartbeatCommand", adapter: "src/commands/mesh/heartbeat.mjs", factory: "createMeshHeartbeatCommands", cacheSymbols: ["listItemsCacheFirst"] },
   // (promote-gap-to-chore.mjs moved to STRUCTURAL — ADR-010/R6.3)
   //
   // CLASSIFIED at 110, the third read of the promotion family and the only one of the three that is
@@ -288,7 +288,7 @@ export const archTests = [
           const composition = stripComments(await readFile(path.join(repoRoot, adapter), "utf8"));
           for (const symbol of cacheSymbols) {
             assert.match(source, new RegExp('\\b' + symbol + '\\s*\\(', 'u'), file + ': uses the cache-first service');
-            assert.match(composition, new RegExp('import\\s*\\{[^}]*\\b' + symbol + '\\b[^}]*\\}\\s*from\\s*["\']\\.\\.\\/work\\/read\\.mjs["\']', 'u'));
+            assert.match(composition, new RegExp('import\\s*\\{[^}]*\\b' + symbol + '\\b[^}]*\\}\\s*from\\s*["\'](?:\\.\\.\\/)+work\\/read\\.mjs["\']', 'u'));
             assert.match(composition, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), adapter + ': injects the shared cache-first reader');
             assert.match(source, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), file + ': accepts the cache-first port');
           }

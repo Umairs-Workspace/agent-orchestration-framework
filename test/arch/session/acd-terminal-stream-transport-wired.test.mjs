@@ -64,7 +64,7 @@ const LAUNCHER = path.join(repoRoot, "src", "mesh", "launcher.mjs");
 // m42 wave (d) leg d1 (wave-3 tail) — the `aof mesh ui` verb moved onto the
 // launcher seam: the production serveMeshUi call site lives in the registered
 // command's module now, and the gate moved with the shape.
-const CLI = path.join(repoRoot, "src", "commands", "mesh", "ui.mjs");
+const CLI = path.join(repoRoot, "packages", "mesh", "src", "commands", "ui.mjs");
 const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
 const WSCLIENT = path.join(repoRoot, "src", "worker-stream-client.mjs");
 const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");

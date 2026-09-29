@@ -24,7 +24,7 @@ import { spawnCliAsync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const MESH_JOIN_SRC = path.join(repoRoot, "src", "commands", "mesh", "join.mjs");
+const MESH_JOIN_SRC = path.join(repoRoot, "packages", "mesh", "src", "commands", "join.mjs");
 
 const CONTROL_ID = "control-node-a";
 const JOINER_ID = "joiner-node";

@@ -191,7 +191,7 @@ export const meshDesktopPreflightHeartbeatTests = [
     name: "126/06 task00 every seam runPreflight reads is named in PREFLIGHT_SEAMS, which is the ONE list both faces forward",
     async run() {
       const source = await (await import("node:fs/promises")).readFile(
-        new URL("../../../src/commands/mesh/desktop-preflight.mjs", import.meta.url),
+        new URL("../../../packages/mesh/src/commands/desktop-preflight.mjs", import.meta.url),
         "utf8",
       );
       const read = new Set([...source.matchAll(/options\.([A-Za-z][A-Za-z0-9]*)/g)].map((match) => match[1]));
@@ -202,7 +202,7 @@ export const meshDesktopPreflightHeartbeatTests = [
       assert.ok(read.size >= 8, `non-vacuous: the sweep found ${read.size} option reads`);
 
       const face = await (await import("node:fs/promises")).readFile(
-        new URL("../../../src/commands/mesh/desktop.mjs", import.meta.url),
+        new URL("../../../packages/mesh/src/commands/desktop.mjs", import.meta.url),
         "utf8",
       );
       assert.equal(

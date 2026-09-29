@@ -34,7 +34,7 @@ import { publishNodeRecord } from "../../../src/mesh/store.mjs";
 import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_IDENTITY = path.join(repoRoot, "src", "commands", "mesh", "identity.mjs");
+const MESH_IDENTITY = path.join(repoRoot, "packages", "mesh", "src", "commands", "identity.mjs");
 
 async function makeRepo({ fabricConfigured = true } = {}) {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-broker-retirement-"));

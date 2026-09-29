@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const PRESENCE_MODULE = new URL("../../../packages/mesh/src/presence.mjs", import.meta.url);
-const HEARTBEAT_COMMAND = new URL("../../../src/commands/mesh/heartbeat.mjs", import.meta.url);
+const HEARTBEAT_COMMAND = new URL("../../../packages/mesh/src/commands/heartbeat.mjs", import.meta.url);
 const PRESENCE_SOURCES = [PRESENCE_MODULE, HEARTBEAT_COMMAND];
 const RECORD_DOCS = ["SPEC.md", "STORY.md", "STATE.md", "SESSION.md"];
 // A bare writeFile/appendFile would bypass the atomic writeText seam (forbidden).

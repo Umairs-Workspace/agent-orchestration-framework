@@ -53,7 +53,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(repoRoot, "src");
 const sessionSourcePath = path.join(repoRoot, "packages/mesh/src/session.mjs");
-const commandSourcePath = path.join(srcRoot, "commands", "mesh", "session.mjs");
+const commandSourcePath = path.join(repoRoot, "packages/mesh/src/commands/session.mjs");
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";
@@ -355,7 +355,7 @@ export const archTests = [
       // the SAME per-file path the sweep uses — a hand-typed string would only prove
       // that the regex fires, not that the walk reads the tree.
       const realCaller = await readFile(commandSourcePath, "utf8");
-      assert.deepEqual(keyAsOneObjectViolations(normalise(realCaller), "src/commands/mesh/session.mjs"), [], "the real caller passes the one-object detector");
+      assert.deepEqual(keyAsOneObjectViolations(normalise(realCaller), "packages/mesh/src/commands/session.mjs"), [], "the real caller passes the one-object detector");
       const callerSites = keyedCallSitesByVerb(normalise(realCaller));
       assert.ok(
         Object.values(callerSites).some((count) => count > 0),
@@ -367,7 +367,7 @@ export const archTests = [
         "const record = await startSession(ws, { nodeId, workspaceId, repo, assistant, sessionId, now });",
         "const record = await startSession(ws, nodeId, workspaceId, assistant, sessionId);",
       );
-      const positional = keyAsOneObjectViolations(plantedCall, "src/commands/mesh/session.mjs");
+      const positional = keyAsOneObjectViolations(plantedCall, "packages/mesh/src/commands/session.mjs");
       assert.ok(positional.length > 0, `a 5-positional call site planted into the REAL caller trips the one-object detector (got ${JSON.stringify(positional)})`);
       assert.ok(positional.some((problem) => problem.includes("ONE object")), "…naming the rule it breaks");
 
@@ -378,7 +378,7 @@ export const archTests = [
         'await endSession(ws, "node-a", workspaceId, assistant, sessionId);',
       );
       assert.ok(
-        keyAsOneObjectViolations(plantedString, "src/commands/mesh/session.mjs").some((problem) => problem.includes("positional key component")),
+        keyAsOneObjectViolations(plantedString, "packages/mesh/src/commands/session.mjs").some((problem) => problem.includes("positional key component")),
         "a positional STRING key component planted into the real caller trips the detector too",
       );
 

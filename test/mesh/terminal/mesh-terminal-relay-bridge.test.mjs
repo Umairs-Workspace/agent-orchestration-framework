@@ -208,8 +208,8 @@ const DEPENDENT_ROWS = [
   { module: "packages/mesh/src/terminal-input.mjs", adapter: "src/mesh/terminal-input.mjs", factory: "createTerminalInput", bindings: ["TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
   { module: "src/control-stream-server.mjs", bindings: ["TERMINAL_FRAME_KIND"] },
   { module: "src/mesh/launcher.mjs", bindings: ["createTerminalRelayPushTransport"] },
-  { module: "src/commands/mesh/terminal-resume.mjs", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
-  { module: "src/commands/mesh/ui.mjs", bindings: ["createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/commands/terminal-resume.mjs", adapter: "src/commands/mesh/terminal-resume.mjs", factory: "createMeshTerminalResumeCommands", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/commands/ui.mjs", adapter: "src/commands/mesh/ui.mjs", factory: "createMeshUiCommands", bindings: ["createTerminalRelayPushTransport"] },
 ];
 
 // A dependent's own URL, DERIVED from the repo-relative `module` each row already carries. The row

@@ -49,8 +49,8 @@ export const archTests = [
       assert.ok(/const\s+globalIdentityPath\s*=\s*globalMesh\.identityPath/.test(work), "loadWorkspace reads identityPath from the resolved global mesh paths");
       assert.ok(/identityPath:\s*globalIdentityPath/.test(work), "loadWorkspace exposes ws.identityPath = the global path");
 
-      for (const file of ["commands/mesh/identity.mjs", "commands/mesh/heartbeat.mjs", "mesh/launcher.mjs"]) {
-        const src = stripComments(await readFile(path.join(repoRoot, "src", file), "utf8"));
+      for (const file of ["packages/mesh/src/commands/identity.mjs", "packages/mesh/src/commands/heartbeat.mjs", "src/mesh/launcher.mjs"]) {
+        const src = stripComments(await readFile(path.join(repoRoot, file), "utf8"));
         assert.ok(/ws\.identityPath/.test(src), `${file} mints/reads identity via ws.identityPath (the global home), not the per-workspace sidecar as primary`);
       }
     },

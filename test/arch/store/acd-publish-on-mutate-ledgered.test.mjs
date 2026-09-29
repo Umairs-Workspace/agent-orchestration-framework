@@ -52,7 +52,7 @@ const PUBLISH_ALLOWED = new Set([
   // `aof mesh repo publish`: publishing IS this verb's deliverable (it writes the
   // repo marker and publishes the snapshot that marker unlocks), not a cascade it
   // remembers after some other mutation.
-  "src/commands/mesh/repo.mjs",
+  "packages/mesh/src/commands/repo.mjs",
   // The launcher's periodic propagation tick + its startup snapshot: time-driven
   // convergence, not a mutation's consequence.
   "src/mesh/launcher.mjs",

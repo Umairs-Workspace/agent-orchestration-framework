@@ -12,7 +12,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 const commandPath = path.join(root, "packages", "work-loop", "src", "commands", "dispatch.mjs");
 const meshPath = path.join(root, "packages", "mesh", "src", "assignment-reclaim.mjs");
 const launcherPath = path.join(root, "src", "mesh", "launcher.mjs");
-const resumePath = path.join(root, "src", "commands", "mesh", "terminal-resume.mjs");
+const resumePath = path.join(root, "packages", "mesh", "src", "commands", "terminal-resume.mjs");
 
 export function slotBeforeAdmissionProblems(commandSource, meshSource, launcherSource = null) {
   const command = stripComments(commandSource);
@@ -139,7 +139,7 @@ export function productionAdmissionPathProblems(listing, suppliers = SUPPLIED_DI
     const resumes = executableCallCount(code, "buildTerminalResumeEnvelope");
     if (resumes > 0) {
       resumeAdmissions += resumes;
-      if (rel !== "src/commands/mesh/terminal-resume.mjs") problems.push(`${rel} resumes parked work outside the counted resume door`);
+      if (rel !== "packages/mesh/src/commands/terminal-resume.mjs") problems.push(`${rel} resumes parked work outside the counted resume door`);
       if (!code.includes("countDispatchSlotsByTarget(")) problems.push(`${rel} resumes parked work without the shared counted set`);
     }
   }
@@ -215,7 +215,7 @@ export const archTests = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: goodCommand },
         { path: "packages/mesh/src/assignment-reclaim.mjs", source: `export async function runControlDispatchReclaimTick() { ${goodMesh} }` },
         { path: "src/mesh/launcher.mjs", source: goodLauncher },
-        { path: "src/commands/mesh/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
+        { path: "packages/mesh/src/commands/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
       ];
       assert.deepEqual(productionAdmissionPathProblems(homes), []);
       const bypasses = productionAdmissionPathProblems([
@@ -234,7 +234,7 @@ export const archTests = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, (row) => typeof ctx.runDispatchLane === \"function\" ? ctx.runDispatchLane(row) : resolveDispatchLane(root, row.ref));" },
         { path: "packages/mesh/src/assignment-reclaim.mjs", source: "export async function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); if (used >= dispatchBound) continue; dispatchDirective(buildDirectiveFrame(x)); }" },
         { path: "src/mesh/launcher.mjs", source: "controlDispatchReclaimInFlight.then(() => runControlDispatchReclaimTick(ws, server)); controlDispatchReclaimInFlight = dispatchReclaimTick.catch(fail);" },
-        { path: "src/commands/mesh/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
+        { path: "packages/mesh/src/commands/terminal-resume.mjs", source: "countDispatchSlotsByTarget(rows); buildTerminalResumeEnvelope(node, signal);" },
       ];
       // the wave's real shape: the opener is a declaration, the binding is a ternary whose arrow calls it, the ask is invokeRegistered
       const wave = "async function openLane(ref, base) {\n  if (stale(ref)) { return null; }\n  return await resolveDispatchLane(primaryRoot, ref, { advanceTo: base, exec });\n}\nconst dispatchCtx = { ...ctx, runDispatchLane: typeof ctx.runDispatchLane === \"function\" ? ctx.runDispatchLane : (member) => openLane(member.ref, baseCommit), other: 1 };\nawait invokeRegistered(\"work:dispatch\", { refs }, dispatchCtx);\n";
@@ -281,7 +281,7 @@ export const archTests = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, () => resolveDispatchLane());" },
         { path: "packages/mesh/src/assignment-reclaim.mjs", source: "function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); dispatchDirective(buildDirectiveFrame()); }" },
         { path: "src/mesh/launcher.mjs", source: "runControlDispatchReclaimTick();" },
-        { path: "src/commands/mesh/terminal-resume.mjs", source: "buildTerminalResumeEnvelope();" },
+        { path: "packages/mesh/src/commands/terminal-resume.mjs", source: "buildTerminalResumeEnvelope();" },
       ];
       assert.ok(productionAdmissionPathProblems(doors).some((p) => p.includes("without the shared counted set")));
     },

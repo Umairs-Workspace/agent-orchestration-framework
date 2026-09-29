@@ -82,7 +82,19 @@ Factories remain inert. Recovery retries disconnected workers; resync reports th
 owner immediately. Those policies, assignment authority, scope locks and question bounds are
 unchanged. Shared deadline constants come from `@aof/contracts/loop-bounds`.
 
-Launcher orchestration, worker execution and most command implementations still live under `src/`.
+The command family lives under `@aof/mesh/commands/*`, including identity/status, heartbeat,
+enrollment, relay, assignment, recovery, terminal resume, repository publication, logs, serve/UI,
+desktop placement/launch/preflight and the existing session-hook entry. Factories receive configured
+services and preserve each command's validation, route, options, JSON and presentation contracts.
+`@aof/mesh/commands` exports `createMeshContribution`, which assembles the seventeen registered
+definitions in their established order. The session hook remains its existing separate CLI entry.
+`commands/face-shared` and `commands/gate` export their stateless contracts directly.
+
+Command registration performs no I/O. The identity command requests supervised declarations only
+behind its existing flag, through the supplied deferred loader. Desktop preflight retains its
+injected process/read seams and does not acquire a new package-manager or shell dependency.
+
+Launcher orchestration and worker execution still live under `src/`.
 Root adapters currently compose the extracted services; final package/application assembly will
 remove them. The presence cadence helper has no production callers and remains available as a
 public API, preserving its existing contract. Run `yarn workspace @aof/mesh test`.

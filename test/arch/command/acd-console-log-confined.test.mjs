@@ -40,8 +40,8 @@ const PRINTERS = {
   // posture, announces, refusals and shutdown). Their MACHINE face is the probe,
   // which never launches, so the one-document discipline is preserved where it
   // matters (`--json` is checked before cli.launch is consulted).
-  "commands/mesh/serve.mjs": "cli.launch body — the control/serve daemon's announce + shutdown lines",
-  "commands/mesh/ui.mjs": "cli.launch body — the fleet server's announce lines",
+  "../packages/mesh/src/commands/serve.mjs": "cli.launch body — the control/serve daemon's announce + shutdown lines",
+  "../packages/mesh/src/commands/ui.mjs": "cli.launch body — the fleet server's announce lines",
   "commands/work-ui.mjs": "cli.launch body — the board server's announce lines",
   "commands/assets/ui.mjs": "cli.launch body — the setup UI's announce + not-started print",
   // m53 — `aof work loop` is the same seam: a long-lived FOREGROUND body that owns
@@ -62,7 +62,7 @@ const PRINTERS = {
   // (commands/work/memory.mjs) returns data and the generic face prints — so its row
   // went, exactly as this comment said it would, and the ratchet below made that a
   // one-way door. `session` is still its own face; when it joins, its row goes too.
-  "commands/mesh/session.mjs": "`aof session start|ping|end` — a declared ladder face (its own envelope + exit policy)",
+  "../packages/mesh/src/commands/session.mjs": "`aof session start|ping|end` — a declared ladder face (its own envelope + exit policy)",
 };
 
 // The count may only fall. A migration that retires a printer should also drop its

@@ -48,7 +48,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
 const PRESENCE = "packages/mesh/src/presence.mjs";
-const READERS_OF_RUNS = Object.freeze(["src/commands/mesh/heartbeat.mjs", "src/mesh/launcher.mjs"]);
+const READERS_OF_RUNS = Object.freeze(["packages/mesh/src/commands/heartbeat.mjs", "src/mesh/launcher.mjs"]);
 const RUNS_CALL = /(?<!function\s)\breadActiveRuns\s*\(/u;
 const LOOPS_CALL = /(?<!function\s)\breadActiveLoops\s*\(/u;
 const SIX_KEYS = Object.freeze(["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVersion", "buildId"]);

@@ -36,7 +36,26 @@
     "./resync": "./src/resync.mjs",
     "./role": "./src/role.mjs",
     "./declarations": "./src/declarations.mjs",
-    "./park-resume": "./src/park-resume.mjs"
+    "./park-resume": "./src/park-resume.mjs",
+    "./commands/assign": "./src/commands/assign.mjs",
+    "./commands": "./src/commands/contribution.mjs",
+    "./commands/desktop-preflight": "./src/commands/desktop-preflight.mjs",
+    "./commands/desktop": "./src/commands/desktop.mjs",
+    "./commands/face-shared": "./src/commands/face-shared.mjs",
+    "./commands/gate": "./src/commands/gate.mjs",
+    "./commands/heartbeat": "./src/commands/heartbeat.mjs",
+    "./commands/identity": "./src/commands/identity.mjs",
+    "./commands/invite": "./src/commands/invite.mjs",
+    "./commands/join": "./src/commands/join.mjs",
+    "./commands/logs": "./src/commands/logs.mjs",
+    "./commands/recover-push": "./src/commands/recover-push.mjs",
+    "./commands/relay": "./src/commands/relay.mjs",
+    "./commands/repo": "./src/commands/repo.mjs",
+    "./commands/revoke": "./src/commands/revoke.mjs",
+    "./commands/serve": "./src/commands/serve.mjs",
+    "./commands/session": "./src/commands/session.mjs",
+    "./commands/terminal-resume": "./src/commands/terminal-resume.mjs",
+    "./commands/ui": "./src/commands/ui.mjs"
   },
   "files": [
     "src"

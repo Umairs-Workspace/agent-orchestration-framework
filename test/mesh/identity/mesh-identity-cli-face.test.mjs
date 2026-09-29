@@ -383,8 +383,8 @@ export const runRecordsNodeIdCliTests = [
         assert.equal(result.status, 0, `--name exits 0 (stderr: ${result.stderr})`);
         assert.deepEqual(JSON.parse(result.stdout).invalidated, scanned, "the rename reports exactly what the shared scan finds");
         // …and --reidentify reports through that same scan, not a copy of it.
-        const source = await readFile(path.join(repoRoot, "src", "commands", "mesh", "identity.mjs"), "utf8");
-        const reidentifyBody = source.slice(source.indexOf("async function reidentify("), source.indexOf("export async function keyedByOldId("));
+        const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "commands", "identity.mjs"), "utf8");
+        const reidentifyBody = source.slice(source.indexOf("async function reidentify("), source.indexOf("async function keyedByOldId("));
         assert.match(reidentifyBody, /await keyedByOldId\(ws, config, from\)/, "--reidentify calls the shared scan");
         assert.equal((source.match(/invalidated\.push\(/g) ?? []).length, 4, "the four report entries are pushed in ONE place");
       } finally {

@@ -65,7 +65,7 @@ const REPO = path.resolve(HERE, "..", "..", "..");
 
 const QUERY_FILE = "packages/mesh/src/global-query.mjs";
 const SESSION_FILE = "packages/mesh/src/session.mjs";
-const SESSION_CLI_FILE = "src/commands/mesh/session.mjs";
+const SESSION_CLI_FILE = "packages/mesh/src/commands/session.mjs";
 
 // The keys a session record may NEVER carry: attribution derives onto the session and
 // is stored nowhere (ADR-003).

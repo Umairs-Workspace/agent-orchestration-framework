@@ -26,7 +26,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CLI_PATH = path.join(repoRoot, "src", "commands", "mesh", "ui.mjs");
+const CLI_PATH = path.join(repoRoot, "packages", "mesh", "src", "commands", "ui.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

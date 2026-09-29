@@ -26,8 +26,8 @@ const MESH_STORE = new URL("../../../packages/mesh/src/store.mjs", import.meta.u
 // scan so the guard tracks the write to its real location, not weakened — still no
 // record-doc reference, still writeText-only, still zero bare writeFile/appendFile.
 const MESH_COMMAND_MODULES = [
-  new URL("../../../src/commands/mesh/identity.mjs", import.meta.url),
-  new URL("../../../src/commands/mesh/join.mjs", import.meta.url),
+  new URL("../../../packages/mesh/src/commands/identity.mjs", import.meta.url),
+  new URL("../../../packages/mesh/src/commands/join.mjs", import.meta.url),
   new URL("../../../src/node-identity.mjs", import.meta.url),
 ];
 const RECORD_DOCS = ["SPEC.md", "STORY.md", "STATE.md", "SESSION.md"];

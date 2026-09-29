@@ -157,8 +157,8 @@ export const archTests = [
   {
     name: "arch/96/00 FF-9601 (3) THE PURE RESOLVER STAYS PURE — resolveSessionIdentity resolves over { stdinText, env } alone and reads no filesystem",
     run: async () => {
-      const module = await source("src/commands/mesh/session.mjs");
-      const header = "export function resolveSessionIdentity({ stdinText, env } = {})";
+      const module = await source("packages/mesh/src/commands/session.mjs");
+      const header = "function resolveSessionIdentity({ stdinText, env } = {})";
       assert.ok(module.includes(header), "resolveSessionIdentity still takes exactly { stdinText, env }");
 
       const body = functionBody(module, header);

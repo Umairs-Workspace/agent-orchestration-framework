@@ -540,3 +540,17 @@ zero failures after following configured readers, notification loading and the m
 Canonical reclaim/liveness citations and shipped hashes were refreshed; generated copies remain
 unchanged. Launcher/worker orchestration, remaining commands, core/apps layout, final composition,
 adapter removal and full native/platform verification remain open.
+
+Mesh command ownership: nineteen command/helper modules moved into mesh, including all seventeen
+registered command definitions, the ordered contribution, session-hook entry and desktop preflight.
+Nineteen legacy APIs and 53 exports/function bodies/descriptors match. Five new package tests pass
+locally and in the copied installation; all nineteen APIs resolve there and 117 commands remain.
+All nineteen modules bundle into standalone JavaScript. Immutable linking and supply-chain audit
+pass without dependency changes. The 59-suite selection passed 467 checks with 29 source-guard
+failures. The corrected 33-suite selection passed 249 with eight failures, followed by 118 passing
+checks across ten final suites. The corrected selection includes all 20 census/registry checks and
+the bridge to 205 package tests. Guards retain configured session closure, shared preflight facts,
+terminal transport bindings, source coverage and deferred declaration lookup. No canonical/generated
+assets or workflow state changed. Launcher/worker/control-stream orchestration, core/apps layout,
+final composition/adapter removal and whole-tree/native/platform verification remain outstanding.
+The three later-added write-scope/preflight guard suites pass all 26 checks.

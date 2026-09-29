@@ -49,7 +49,7 @@ import { readSessionRecord, readSessionRecordsForNode } from "../../../src/mesh/
 import { loadWorkspace } from "../../../src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const commandSourcePath = path.join(repoRoot, "src", "commands", "mesh", "session.mjs");
+const commandSourcePath = path.join(repoRoot, "packages", "mesh", "src", "commands", "session.mjs");
 const sessionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
 
 const NODE_ID = "node-a";
@@ -153,7 +153,7 @@ export const archTests = [
     name: "arch/48 ADR-001 (acd-session-id-never-fabricated): STRUCTURAL — no value assigned to a session id, in either file of the id path, is generated or normalised",
     run: async () => {
       const problems = [
-        ...fabricationViolations(await readFile(commandSourcePath, "utf8"), "src/commands/mesh/session.mjs"),
+        ...fabricationViolations(await readFile(commandSourcePath, "utf8"), "packages/mesh/src/commands/session.mjs"),
         ...fabricationViolations(await readFile(sessionSourcePath, "utf8"), "src/mesh/session.mjs"),
       ];
       assert.deepEqual(problems, [], `the id must be READ, never made or rewritten:\n  ${problems.join("\n  ")}`);
@@ -178,7 +178,7 @@ export const archTests = [
 
       // Rung 2 beats rung 3, INSIDE resolveSessionIdentity: payload.session_id is
       // evaluated before env.CLAUDE_SESSION_ID, and an unresolved id is null.
-      const resolver = code.slice(code.indexOf("export function resolveSessionIdentity"));
+      const resolver = code.slice(code.indexOf("function resolveSessionIdentity"));
       const body = resolver.slice(0, resolver.indexOf("\n}"));
       const payloadRung = body.indexOf("session_id");
       const envRung = body.indexOf("CLAUDE_SESSION_ID");

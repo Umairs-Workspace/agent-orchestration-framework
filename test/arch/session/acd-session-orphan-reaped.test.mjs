@@ -62,7 +62,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(repoRoot, "src");
 const sessionSourcePath = path.join(repoRoot, "packages/mesh/src/session.mjs");
-const commandSourcePath = path.join(srcRoot, "commands", "mesh", "session.mjs");
+const commandSourcePath = path.join(repoRoot, "packages/mesh/src/commands/session.mjs");
 
 const NODE_ID = "node-a";
 const PEER_NODE_ID = "node-b";

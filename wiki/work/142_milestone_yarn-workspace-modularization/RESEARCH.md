@@ -943,3 +943,17 @@ application. This does not eliminate the remaining core composition cycles. Eage
 `meshGlobalPropagationDecision` during item-lock construction exposed one such initialization
 cycle; the compatibility adapter now supplies a call-through binding. Final composition must
 remove that cycle rather than count deferred access as architectural completion.
+
+## Mesh command ownership
+
+The mesh contribution is seventeen registered commands, plus the deliberately separate session-hook
+entry. Its implementation family also owns desktop preflight, positional/read-miss presentation and
+the mesh-node gate. Moving the entire family preserves shared namespace and three-word desktop/repo
+routes while making route/flag/handler changes package-owned. Configured services remain supplied by
+core until final assembly; errors and filesystem primitives use public lower-level APIs directly.
+
+Cold session startup is a property of the configured application closure, not just the inert package.
+Its guard must start at the core session adapter, prove that the mesh implementation is reached, and
+continue excluding the registry and generic face. The identity command's deferred declarations
+loader must also remain behind the flag: merely injecting a loader would not preserve that cost rule
+if the command called it unconditionally.
