@@ -24,7 +24,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORK_OBSERVE = path.join(root, "src", "work", "observe.mjs");
+const WORK_OBSERVE = path.join(root, "packages", "work", "src", "observe.mjs");
 
 export const archTests = [
   {

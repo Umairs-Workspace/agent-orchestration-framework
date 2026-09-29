@@ -707,7 +707,13 @@ function askOverlayTests() {
         assert.match(source, /import \{[^}]*\bASK_STATES\b[^}]*\} from "\.\.\/loop\/ask-request\.mjs"/u);
         for (const name of ["readAsks", "loopAsksDir"]) assert.match(source, new RegExp(`import \\{[^}]*\\b${name}\\b[^}]*\\} from "\\.\\./loop/ask-request\\.mjs"`, "u"), name);
         for (const word of ['"waiting"', '"parked"', '"answered"', "loop-asks"]) assert.ok(!source.includes(word), `list.mjs spells no ${word}`);
-        assert.match(source, /export function applyAskOverlay\(/u);
+        const implementation = stripComments(await readFile(path.join(REPO_ROOT, "packages/work/src/commands/list.mjs"), "utf8"));
+        assert.match(implementation, /function applyAskOverlay\(/u);
+        for (const name of ["ASK_STATES", "readAsks", "loopAsksDir"]) {
+          assert.match(source, new RegExp(`createListCommand\\(\\{[^}]*\\b${name}\\b`, "u"), name + ': shared service is supplied');
+          assert.match(implementation, new RegExp(`createListCommand\\(\\{[^}]*\\b${name}\\b`, "u"), name + ': package receives the shared service');
+        }
+        for (const word of ['"waiting"', '"parked"', '"answered"', "loop-asks"]) assert.ok(!implementation.includes(word), `package list spells no ${word}`);
       },
     },
   ];

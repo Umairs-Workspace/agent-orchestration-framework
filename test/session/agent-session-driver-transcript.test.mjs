@@ -386,7 +386,7 @@ function readerAndProducerTests() {
         const files = await readRuntimeFiles(repoRoot);
         assert.ok(files.length > 100 && files.some(file => file.path === DRIVER_SOURCE), "the runtime sweep includes the driver implementation");
         for (const { path: file, rel } of files) {
-          if (rel === "src/work/observe.mjs" || rel === "packages/execution/src/session-driver.mjs") continue;
+          if (rel === "packages/work/src/observe.mjs" || rel === "packages/execution/src/session-driver.mjs") continue;
           assert.equal(occurrences(stripLikeTheDriverControl(await readFile(file, "utf8")), "stop_reason"), 0, `${rel} reads no stop_reason`);
         }
         assert.equal(Object.keys(driverModule).length, 17, "the driver's export set is still the frozen seventeen");

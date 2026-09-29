@@ -534,7 +534,7 @@ function runAskTests() {
         // Not a run record: 131/05's `applyAskOverlay(rows, { asks, workspaceId })` options argument,
         // exempted by its exact spelling so any other `asks:` in list.mjs still reds.
         const notARecord = {
-          "src/commands/list.mjs": "{ asks: await readWorkspaceAsks(ctx),",
+          "packages/work/src/commands/list.mjs": "{ asks: await readWorkspaceAsks(ctx),",
           // Exact service objects in the 142 composition adapters, never persisted records.
           "src/commands/loop.mjs": "asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },",
           "src/loop/cycle.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks },",

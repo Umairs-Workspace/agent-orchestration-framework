@@ -273,8 +273,22 @@ cache, mesh, execution and projection services through explicit factory ports. T
 function comparisons pass. Source and copied-installation comparisons preserve read results, command
 rendering, artifact bodies and all 117 registered commands. The corrected ten-suite selection passes
 82 cases, including the bridge over all 120 package cases; the census passes all 12 cases. Standalone
-JavaScript bundling and the supply-chain audit pass. The original 52-suite affected run is still active
-in session 29996 (`.tmp/workspace-migration/work-read/selected.log`); its ten initial source-location
-failures are covered by the corrected selection. Read its final result before claiming that broader
-selection is complete. No dependencies, generated citations or workflow state changed. Remaining work
+JavaScript bundling and the supply-chain audit pass. The original 52-suite affected run completed
+1,079 cases: 1,066 passed and 13 source-location assertions failed. Ten were covered by the initial
+corrections; the remaining three are covered by the later 156-case observation/read follow-up run.
+No dependencies, generated citations or workflow state changed. Remaining work
 services/commands, other domains and the final core/apps layout remain open in COMPLETION.md.
+
+Observation/debt extraction: work owns the observer, pure debt engine and both commands. Observation
+receives reporting and configuration ports; debt uses foundation's atomic writer. Four legacy API/value/
+function comparisons pass. The affected run completed 750 cases with 738 initial passes and 12 source
+assertion failures. Corrections pass 156 cases (including the bridge over 122 package cases), followed
+by all 35 transcript cases and all 12 census cases. Source and copied-payload reports, snapshots,
+debt previews/pruning and persisted documents match, retaining 117 commands. Standalone JavaScript and
+supply-chain checks pass. The driver closure shrinks from 37 to 29 modules; the worker gains only the
+observer implementation home. The shipped pay-debt instruction now names the package's budget source;
+all 115 shipped manifest hashes match fresh rendering. The bundle/source-reference follow-up has 18
+passes and one generated manifest/lock parity failure. Three pay-debt renders and their lock hashes
+are prepared for the separately requested citation-only approval; the earlier four-loop request is
+still separate. No generated copies or workflow state changed. Continue with remaining work services/commands and the
+other domains, then final core/apps layout, adapter removal and whole-tree/platform verification.

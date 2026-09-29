@@ -57,7 +57,7 @@ const IDENTIFIER_RE = /\b(?:ITEM_RE|BACKLOG_ITEM_RE)\b/;
 // shape), a config value `intake: "backlog"` (story 02's key) — names no root and is admitted;
 // a leg that forbade the literal outright (round-one review, 2026-09-11) would have false-failed
 // both stories and been loosened under delivery pressure.
-export const ROOT_NAMING_LITERAL_RE = /\b(?:join|resolve)\s*\([^)]*["'`](?:backlog|archive)["'`]|["'`](?:backlog|archive)\/|\/(?:backlog|archive)["'`]/;
+export const ROOT_NAMING_LITERAL_RE = /\b(?:join|resolve)\s*\([^)]*["'`](?:backlog|archive)["'`]|["'`](?:backlog|archive)\/|["'`](?!@aof\/)[^"'`\r\n]*\/(?:backlog|archive)["'`]/;
 const READDIR_RE = /\breaddir(?:Sync)?\b/;
 // A regex literal token: `/…/flags`, escapes honoured, never spanning a line. Division
 // expressions can match too — harmless, because only the CONTENT is inspected.
@@ -137,7 +137,7 @@ export const archTests = [
       for (const named of ['path.join(workDir, "archive")', 'resolve(root, "backlog")', 'const p = "backlog/" + name', "const p = `${dir}/archive`"]) {
         assert.ok(ROOT_NAMING_LITERAL_RE.test(named), `catches a root named as: ${named}`);
       }
-      for (const bare of ['route: ["work", "archive"]', 'intake: "backlog"', 'if (mode === "archive")']) {
+      for (const bare of ['route: ["work", "archive"]', 'intake: "backlog"', 'if (mode === "archive")', 'export { archiveItems } from "@aof/work/archive";']) {
         assert.ok(!ROOT_NAMING_LITERAL_RE.test(bare), `admits the bare word in another vocabulary: ${bare}`);
       }
     },
@@ -156,8 +156,8 @@ export const archTests = [
       assert.ok(!IDENTIFIER_RE.test(migrate), "migrate-folder.mjs no longer references ITEM_RE (its only use was nextFreeSlot)");
       assert.ok(!/nextFreeSlot/.test(migrate), "nextFreeSlot is gone");
       assert.ok(importsFromWork("packages/work/src/tune/provenance.mjs", files.get("packages/work/src/tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from src/work.mjs");
-      const observe = files.get("src/work/observe.mjs").stripped;
-      assert.ok(importsFromWork("src/work/observe.mjs", observe, "listItems"), "observe.mjs takes its items from listItems");
+      const observe = files.get("packages/work/src/observe.mjs").stripped;
+      assert.ok(importsFromWork("packages/work/src/observe.mjs", observe, "listItems"), "observe.mjs takes its items from listItems");
       assert.ok(!/\/\^\(\\d\+\)_/.test(observe), "observe.mjs holds no regex literal beginning /^(\\d+)_");
       assert.deepEqual(itemNameMatchesIn(observe), [], "observe.mjs holds no item-name match of its own");
       // The three retired scanners, per function. `buildSessionItemIndex` and `resolveMilestoneFolder`
@@ -167,7 +167,7 @@ export const archTests = [
       // matches no item name (the pairing sweep below is what proves that; recorded as a contract
       // deviation at 127/01's build, since the feature's "no readdir of the work root" cannot hold
       // for an orphan count while `work-observe-scope/02` asserts a stray dir's runs are counted).
-      for (const header of ["export async function buildSessionItemIndex(", "export async function resolveMilestoneFolder("]) {
+      for (const header of ["async function buildSessionItemIndex(", "async function resolveMilestoneFolder("]) {
         const body = functionBody(observe, header);
         assert.ok(body, `${header} is declared`);
         assert.ok(/listItems\(/.test(body), `${header} takes its items from listItems`);
@@ -176,7 +176,7 @@ export const archTests = [
       const unattributed = functionBody(observe, "async function countUnattributedRuns(");
       assert.ok(unattributed && /listItems\(/.test(unattributed), "countUnattributedRuns takes the item set from listItems");
       assert.ok(/BACKLOG_ROOT/.test(unattributed) && /ARCHIVE_ROOT/.test(unattributed), "…and knows the two roots through their exported names");
-      const observeMilestoneBody = functionBody(observe, "export async function observeMilestone(");
+      const observeMilestoneBody = functionBody(observe, "async function observeMilestone(");
       assert.ok(observeMilestoneBody && !/readdir\(storiesDir/.test(observeMilestoneBody), "observeMilestone lists no milestone's stories/ either — its story refs are the enumerator's rows by containment");
     },
   },

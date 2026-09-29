@@ -1198,9 +1198,12 @@ export const storyContextContractTests = [
       assert.match(lane, /import \{[^}]*\bcontractSetCovers\b[^}]*\} from "\.\.\/story-contract\.mjs"/u, "one home, two consumers");
       assert.doesNotMatch(lane, /\.startsWith\(/u, "and the lane holds no containment rule of its own");
       // `work:next` projects the wave off THIS partition, so the rows above are that command's answer.
-      const next = stripComments(await readFile(path.join(root, "src", "commands", "next.mjs"), "utf8"));
+      const next = stripComments(await readFile(path.join(root, "packages/work/src/commands/next.mjs"), "utf8"));
       assert.match(next, /partitionReadySetByDeclaredFiles\(/u, "`aof work next --json` partitions the ready set through this function");
       assert.match(next, /wave: wave\.map|wave,/u, "…and returns its wave");
+      const composition = stripComments(await readFile(path.join(root, "src/commands/next.mjs"), "utf8"));
+      assert.match(composition, /import \{ partitionReadySetByDeclaredFiles \} from "\.\.\/ready-wave\.mjs"/u);
+      assert.match(composition, /createNextCommand\(\{[^}]*\bpartitionReadySetByDeclaredFiles\b/u, "core supplies the shared partition service");
     },
   },
 ];

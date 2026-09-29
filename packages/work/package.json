@@ -74,7 +74,11 @@
     "./commands/list": "./src/commands/list.mjs",
     "./commands/next": "./src/commands/next.mjs",
     "./commands/doc": "./src/commands/doc.mjs",
-    "./commands/tasks": "./src/commands/tasks.mjs"
+    "./commands/tasks": "./src/commands/tasks.mjs",
+    "./debt": "./src/debt.mjs",
+    "./commands/debt": "./src/commands/debt.mjs",
+    "./observe": "./src/observe.mjs",
+    "./commands/observe": "./src/commands/observe.mjs"
   },
   "files": [
     "src"

@@ -658,3 +658,12 @@ worktree cache bypass, supplied execution records, remote doc/task bodies and ex
 Architecture checks follow the implementations and inspect both ends of injected cache ports. The
 worker execution import closure changes from 91 to 94 nodes: only work's row, artifact and content-read
 implementation homes are added behind existing forwards. No previous node or dependency disappears.
+
+Observation's heavy dependency was the core work facade, despite using only disk enumeration and
+two root-name constants. Importing discovery/identity locally removes that upward dependency and eight
+net modules from the local session driver's closure. The observer's only application policy is the
+degrade reporter; workspace configuration loading belongs to its command's composition. The existing
+transcript attribution, question reader, timing/token analysis and snapshot rules remain unchanged.
+Debt's parser/budget is pure, and its command needs only that engine plus foundation's atomic writer.
+The shipped debt instruction must name the package implementation when telling an author to lower
+the budget; naming the old compatibility export would point to a file that no longer owns the value.

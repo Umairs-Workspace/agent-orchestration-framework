@@ -45,7 +45,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The module set milestone 96 / story 00 touches. The absence is asserted over these and not
 // over `src/**` at large: a control that swept everything would be measuring other milestones'
 // modules and would fail for their reasons, not this one's.
-const MODULE_SET = ["src/work/observe.mjs", "src/mesh/session.mjs", "src/commands/run-start.mjs"];
+const MODULE_SET = ["packages/work/src/observe.mjs", "src/mesh/session.mjs", "src/commands/run-start.mjs"];
 
 // The retired path's own vocabulary. `agentMatchesMilestone` is FF-6805's subject by name; the
 // rest are the shapes a widened join would have to wear — a ref matched against a directory
@@ -81,7 +81,7 @@ export const archTests = [
   {
     name: "arch/96/00 FF-9601 (1a) ONE JOIN — `sessionToItem.get(sessionId)` is the only transcript→item resolution in work-observe, and the retired matcher's vocabulary appears nowhere in the 96 module set",
     run: async () => {
-      const observe = await source("src/work/observe.mjs");
+      const observe = await source("packages/work/src/observe.mjs");
 
       // The index is READ in exactly one place. A second `.get` on it would be a second
       // opportunity to answer with something other than the session's own item.
@@ -221,7 +221,7 @@ export const archTests = [
       // ADR-003 is a FACE change and the contract says so on both sides. The list added
       // beside the count must not become a second place an item ref can be inferred, so the
       // rows it emits are asserted to carry an explicit null rather than any derived ref.
-      const observe = await source("src/work/observe.mjs");
+      const observe = await source("packages/work/src/observe.mjs");
       // The ROW ITSELF — the argument list the language draws around it — never a character
       // window or a sentinel end (F-47-04-ARCH-2: both have produced confident reds about a
       // tree that honours the rule). A moved or renamed push fails as NOT FOUND, loudly.

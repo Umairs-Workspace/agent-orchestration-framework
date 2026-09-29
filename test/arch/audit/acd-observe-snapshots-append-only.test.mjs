@@ -10,25 +10,16 @@
 // now writes a NEW timestamped snapshot under `observability/snapshots/<ts>/`, and the
 // legacy in-place files are MARKED, never rewritten (their figures untouched).
 import assert from "node:assert/strict";
-import { readdir, readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
+import { readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(root, "src");
-const WORK_OBSERVE = path.join(SRC, "work/observe.mjs");
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+const WORK_OBSERVE = path.join(root, "packages/work/src/observe.mjs");
 
-async function modulesUnder(dir) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const target = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...await modulesUnder(target));
-    else if (entry.name.endsWith(".mjs")) out.push(target);
-  }
-  return out;
-}
 
 export const archTests = [
   {
@@ -97,7 +88,7 @@ export const archTests = [
   {
     name: "arch/68 FF-6807 (acd-observe-snapshots-append-only): no module in src/** truncates an observability snapshot",
     run: async () => {
-      const modules = await modulesUnder(SRC);
+      const modules = (await readRuntimeFiles(root)).map(file => file.path);
       assert.ok(modules.length > 150, `src was actually walked: ${modules.length} modules`);
       const offenders = [];
       for (const file of modules) {

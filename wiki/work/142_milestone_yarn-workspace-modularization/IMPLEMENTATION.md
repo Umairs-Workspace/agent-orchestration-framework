@@ -1172,11 +1172,52 @@ Evidence in `.tmp/workspace-migration/work-read/`:
   includes 120 package cases. The corrected ten-suite selection passes 82 cases; the final census
   passes all 12 cases. Architecture guards inspect package implementations and composition, and scan
   all runtime packages for duplicate artifact sets and work-item writers.
-- The original 52-suite affected selection is still running in session 29996. Its ten initial failures
-  were source-location assertions, all covered by the corrected run. Its final outcome remains to be
-  collected from `selected.log`; this is not a claim of broader-suite completion.
+- The original 52-suite affected selection finished at 1,066 passes and 13 source-location failures.
+  Ten were covered by the initial corrected run; the remaining three (ask-record assignment, list's
+  shared ask services and next's wave partitioner) are covered by the later 156-case observation/read
+  follow-up run. The latter two verify both package behavior and core service wiring.
 - Standalone JavaScript bundling includes all ten implementations. Supply-chain audit passes with zero
   warnings. No install was needed because dependency declarations did not change.
 
 No generated citations or AOF lifecycle state changed. Remaining work services/commands, domain
 extractions, core/apps layout, adapter removal and final whole-tree/platform verification remain open.
+
+## Work owns observation, debt and their commands
+
+Four implementations moved to work: transcript observation/reporting, the pure debt parser/budget,
+and both command descriptors. Observation receives the degrade reporter; its command receives the
+observer and workspace configuration loader. Debt imports only foundation's atomic writer and native
+filesystem/path APIs. Existing root paths compose or forward the public APIs. No dependency edge changed.
+
+The local session driver's transitive closure shrinks from 37 to 29: the observer imports work's disk
+discovery directly, removing nine modules previously reached through the core work facade and adding
+one observer implementation. The worker's closure gains only that implementation (94 to 95). The
+architecture gate records both measured sets, retains its lifecycle denylist and tightens the driver
+ceiling. Transcript attribution, single-reader, append-only snapshot and enumeration checks follow the
+new home. Runtime snapshot scans cover packages as well as core. The root-name check distinguishes the
+public `@aof/work/archive` specifier from filesystem root literals, with a positive self-check.
+
+Evidence in `.tmp/workspace-migration/work-observation/`:
+
+- Four legacy API/value/function-body comparisons pass. New package cases verify inert construction,
+  observation configuration/reporting ports and debt preview/write/idempotence; the root bridge includes
+  all 122 package cases.
+- The 35-suite affected run completed 750 cases: 738 initial passes and 12 source-location failures.
+  Corrections pass 156 cases, including the three later read-layer assertions. The final transcript
+  suite passes all 35 cases and the census passes all 12 cases.
+- Source and copied-installation comparisons preserve two observation snapshots, latest lookup,
+  reports, debt previews/path filtering/pruning and persisted document contents. Only fixture-root and
+  derived project-slug differences are normalized. All four exports resolve inside the copied payload,
+  which retains 117 commands and passes prior domain comparisons.
+- Standalone JavaScript bundling includes all four implementations. Supply-chain audit passes with
+  zero warnings; no dependency install was needed.
+
+The shipped pay-debt instruction names `packages/work/src/debt.mjs` as the budget's editable source;
+its two shipped manifest entries are updated. All 115 manifest content addresses match fresh rendering.
+The two bundle/source-reference suites pass 18 cases with one generated manifest/lock parity failure;
+the shipped manifest correction is verified, but the three checked-in pay-debt renders and their lock
+hashes still need the separate citation-only approval requested from the user. Their exact proposed
+contents and before/after hashes are prepared in `citation-refresh.json` and checked against the lock.
+The earlier four-loop refresh request remains separate. No generated copies or AOF workflow state
+changed. Remaining domain extraction, composition, core/apps
+layout, adapter removal and whole-tree/platform checks are still outstanding.

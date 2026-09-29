@@ -597,7 +597,7 @@
         "id": "pay-debt",
         "kind": "command"
       },
-      "hash": "sha256:387c6c626943dc95eb65a4c698ef0f02f79fe15c7bfee5c9616609da768bc00b"
+      "hash": "sha256:65d5032084f2e36e045f0bf0a97097dab557c2acfd72b2507e3f3e31dc9220bb"
     },
     {
       "path": ".claude/commands/aof/promote.md",
@@ -975,7 +975,7 @@
         "id": "aof-pay-debt",
         "kind": "skill"
       },
-      "hash": "sha256:0ed9695b63ba0fc9fec257421ec14c01c71f80a24b46e296a78d4f4ed5573e27"
+      "hash": "sha256:bc764c7bb0b251216e2dc5d70493c88b0e0d11d8834f915fae5b654d3d0fffb8"
     },
     {
       "path": ".codex/skills/aof-promote/SKILL.md",

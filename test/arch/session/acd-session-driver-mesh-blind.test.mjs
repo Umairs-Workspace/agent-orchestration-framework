@@ -125,7 +125,9 @@ export const archTests = [
       // the adapters retain their previous imports and no additional domain is reachable.
       // Screen/trust implementation homes add four nodes; direct package imports bypass
       // the old screen-registry and bounds forwards, a net increase of two (35 -> 37).
-      assert.ok(graph.seen.size <= 37, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 screen/trust census of 37`);
+      // Observation now imports discovery directly: one implementation home replaces
+      // nine nodes previously reached through the core work facade (37 -> 29).
+      assert.ok(graph.seen.size <= 29, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 observation census of 29`);
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/pty", "@aof/execution/session-driver"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
       assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/session-driver.mjs"], "the driver package has no transport, work, mesh or core import");
@@ -144,9 +146,11 @@ export const archTests = [
       // is unchanged and no denied subtree is entered; only the set of edges into an admitted
       // module grows by one. Recorded here at 127/01's build (FF-12701 is the control that
       // holds observe.mjs to the enumerator), for `aof:verify 127` to ratify.
-      assert.deepEqual(incoming(graph, work), ["work/observe.mjs"], "only the supplied transcript service reaches work; the transport edge is removed");
+      assert.deepEqual(incoming(graph, work), [], "the transcript service no longer reaches the core work facade");
+      assert.ok(!graph.seen.has(work), "core work composition is absent from the driver closure");
+      assert.deepEqual(incoming(graph, path.join(root, "packages/work/src/discovery.mjs")), ["../packages/work/src/observe.mjs"], "only the work observer reaches disk discovery");
       assert.deepEqual(incoming(graph, applicationLog), ["degrade.mjs"], "diagnostic path policy is reached only through the reporter adapter");
-      assert.deepEqual(incoming(graph, workspace), ["diagnostics/log.mjs", "work.mjs"], "workspace.mjs is reached only through the two named admitted subtrees");
+      assert.deepEqual(incoming(graph, workspace), ["diagnostics/log.mjs"], "workspace.mjs is reached only through diagnostic path policy");
       assert.ok(!graph.seen.has(terminalWs), "local session execution never imports the WebSocket transport");
       assert.ok(graph.edges.some(([from, to]) => from === degrade && to === applicationLog), "the degrade admission still has a subject");
 
@@ -255,7 +259,7 @@ export const archTests = [
       // modules. Deferred domain-service imports are deliberately outside this census.
       // The read extraction adds three implementation homes behind existing forwards:
       // item-row, artifacts and content-read. The other 91 nodes are unchanged.
-      assert.equal(sinkGraph.seen.size, 94, "read extraction adds three work-owned implementation homes to the prior 91-module closure");
+      assert.equal(sinkGraph.seen.size, 95, "observation adds its implementation home to the prior 94-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

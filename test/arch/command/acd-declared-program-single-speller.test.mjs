@@ -219,7 +219,7 @@ export const archTests = [
         { rel: "src/packages.mjs", shape: 'holds "npm" as a member of the package source-type enum', token: '"npm"', stripped: true },
         { rel: "src/frameworks.mjs", shape: "builds an npm: package-source string", token: '"npm:"', stripped: true },
         { rel: "src/frameworks.mjs", shape: "sets npm_config_* environment keys", token: "npm_config_", stripped: true },
-        { rel: "src/work/observe.mjs", shape: "names runners in a comment about what it must not match", token: "vitest", stripped: false },
+        { rel: "packages/work/src/observe.mjs", shape: "names runners in a comment about what it must not match", token: "vitest", stripped: false },
         { rel: "src/board-serve.mjs", shape: "prints an npm --prefix instruction inside a message to a human", token: "npm --prefix", stripped: false },
       ];
       for (const row of admitted) {
