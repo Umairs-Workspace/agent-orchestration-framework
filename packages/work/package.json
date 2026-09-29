@@ -78,7 +78,12 @@
     "./debt": "./src/debt.mjs",
     "./commands/debt": "./src/commands/debt.mjs",
     "./observe": "./src/observe.mjs",
-    "./commands/observe": "./src/commands/observe.mjs"
+    "./commands/observe": "./src/commands/observe.mjs",
+    "./testing/select": "./src/testing/select.mjs",
+    "./testing/changed": "./src/testing/changed.mjs",
+    "./testing/declared": "./src/testing/declared.mjs",
+    "./testing/toolchain": "./src/testing/toolchain.mjs",
+    "./commands/test": "./src/commands/test.mjs"
   },
   "files": [
     "src"

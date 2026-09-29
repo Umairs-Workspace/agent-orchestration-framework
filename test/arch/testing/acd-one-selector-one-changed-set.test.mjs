@@ -30,7 +30,7 @@
 //      "nothing affected" and selects nothing, which is the maximal silent narrowing.
 //      `TEST_SCOPES` is still three.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -41,31 +41,28 @@ import { WIDENING_REASONS, selectSuites } from "../../../src/work/test-select.mj
 import { declaredChangedFiles } from "../../../src/work/test-declared.mjs";
 import { STORY_AND_SINCE, TEST_SCOPES, runTest } from "../../../src/commands/test.mjs";
 
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // The modules milestone 96 adds or edits in the selection family — the subject of claims 1, 2, 4.
-const PRODUCER = "src/work/test-declared.mjs";
-const SELECTOR = "src/work/test-select.mjs";
-const FACE = "src/commands/test.mjs";
+const PRODUCER = "packages/work/src/testing/declared.mjs";
+const SELECTOR = "packages/work/src/testing/select.mjs";
+const FACE = "packages/work/src/commands/test.mjs";
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 
-async function srcModules(dir = path.join(repoRoot, "src"), found = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) await srcModules(full, found);
-    else if (entry.name.endsWith(".mjs")) found.push(path.relative(repoRoot, full).split(path.sep).join("/"));
-  }
-  return found;
+async function srcModules() {
+  return (await readRuntimeFiles(repoRoot)).map(file => file.rel);
 }
 
-// A selection function is one whose NAME says it selects suites. The census is over exported
-// declarations, which is where a second authority would have to appear to be callable.
+// A selection function is one whose NAME says it selects suites. The census covers function
+// declarations, including implementations returned through package factories.
 const SELECTION_NAME = /^(?:select|choose|pick|resolve|derive|compute)(?:Test)?Suites?$/;
 
-const exportedFunctionNames = (text) =>
-  [...text.matchAll(/^export\s+(?:async\s+)?function\s+([A-Za-z0-9_$]+)/gm)].map((m) => m[1])
-    .concat([...text.matchAll(/^export\s+const\s+([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?\(/gm)].map((m) => m[1]));
+const declaredFunctionNames = (text) =>
+  [...text.matchAll(/^\s*(?:export\s+)?(?:async\s+)?function\s+([A-Za-z0-9_$]+)/gm)].map((m) => m[1])
+    .concat([...text.matchAll(/^\s*(?:export\s+)?const\s+([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?\(/gm)].map((m) => m[1]));
 
 const TOOLCHAIN = Object.freeze({
   ok: true,
@@ -116,7 +113,7 @@ export const archTests = [
     async run() {
       const owners = [];
       for (const module of await srcModules()) {
-        const names = exportedFunctionNames(await source(module));
+        const names = declaredFunctionNames(await source(module));
         if (names.some((name) => SELECTION_NAME.test(name))) owners.push(module);
       }
       assert.deepEqual(
@@ -124,6 +121,7 @@ export const archTests = [
         [SELECTOR],
         `suite selection must have exactly one home — found ${owners.join(", ") || "none at all"}`,
       );
+      assert.ok(declaredFunctionNames('export function createOther() {\n  function pickSuites() {}\n  return { pickSuites };\n}').includes("pickSuites"), "a second selector cannot hide inside a package factory");
 
       // …and the producer this story adds selects nothing: it produces a changed SET and hands it on.
       const producer = await source(PRODUCER);

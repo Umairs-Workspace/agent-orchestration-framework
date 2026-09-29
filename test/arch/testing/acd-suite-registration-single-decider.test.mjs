@@ -36,8 +36,8 @@ import { IMPORT_OF, SPREAD_ROW, bindingsOf, directoryCensus, readIndexes, regist
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 const CENSUS = "packages/work/src/audit/census.mjs";
-const REPORTER = "src/work/test-select.mjs";
-const STORY_MODULES = Object.freeze([REPORTER, "src/graph-impact.mjs", "src/work/test-changed.mjs"]);
+const REPORTER = "packages/work/src/testing/select.mjs";
+const STORY_MODULES = Object.freeze([REPORTER, "src/graph-impact.mjs", "packages/work/src/testing/changed.mjs"]);
 
 const sourceOf = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
 const modulesOf = (rels) => rels.map((rel) => ({ rel, code: sourceOf(rel) }));
@@ -104,9 +104,13 @@ export const archTests = [
     run: () => {
       const source = stripComments(sourceOf(REPORTER));
       assert.ok(source.length > 200, `${REPORTER} was actually read (${source.length} bytes)`);
+      const composition = stripComments(sourceOf("src/work/test-select.mjs"));
+      for (const code of [source, composition]) {
+        assert.match(code, /createTestSelector\(\{[^}]*\bregistrationDecision\b/u, "the shared decider is supplied to the package");
+      }
 
       assert.match(
-        source,
+        composition,
         /import\s*\{[^}]*registrationDecision[^}]*\}\s*from\s+"(?:\.\.?\/)+work-audit\/census\.mjs"/u,
         "the decision comes from the shared census module, by import",
       );
@@ -118,7 +122,7 @@ export const archTests = [
       // runner's own process, which is exactly what this module may not do — so it accepts both
       // and produces neither, and the reuse claim stays clearable by a module that cannot honestly
       // produce provenance.
-      const parameters = destructuredParameters(sourceOf(REPORTER), "export function registrationReport");
+      const parameters = destructuredParameters(sourceOf(REPORTER), "function registrationReport");
       assert.ok(Array.isArray(parameters), `the report's parameters were cut structurally: ${JSON.stringify(parameters)}`);
       for (const required of ["selected", "assembled", "suiteNames", "importedBy"]) {
         assert.ok(parameters.includes(required), `${required} is an INJECTED parameter — got ${parameters.join(", ")}`);

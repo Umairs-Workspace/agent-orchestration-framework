@@ -58,7 +58,8 @@ const GRAPH_READER_ALLOWLIST = new Set([
                                                     // STRUCTURED graph.json via the pure normalizer (the
                                                     // 09/ADR-001 permitted handle, exactly as 10's backend
                                                     // does), NOT graphify's opaque markdown stdout. No spawn.
-  path.join("src", "work", "test-select.mjs"), // 72/ADR-002 §1: test selection READS the artifact, through the
+  path.join("src", "work", "test-select.mjs"), // Composition supplies shared graph services.
+  path.join("packages", "work", "src", "testing", "select.mjs"), // 72/ADR-002 §1: test selection READS the artifact, through the
                                             // SAME normalizeGraph + computeImpact the shipped command uses,
                                             // and authors no second reader. src/graph-impact.mjs — the pure
                                             // core moved down out of commands/ so a src-level selector could

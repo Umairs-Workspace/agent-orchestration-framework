@@ -292,3 +292,15 @@ passes and one generated manifest/lock parity failure. Three pay-debt renders an
 are prepared for the separately requested citation-only approval; the earlier four-loop request is
 still separate. No generated copies or workflow state changed. Continue with remaining work services/commands and the
 other domains, then final core/apps layout, adapter removal and whole-tree/platform verification.
+
+Testing extraction: work now owns selection, Git changed sets, story-declared changed sets, toolchain
+resolution/launch mapping and the test command. Core supplies graph, bounded execution, shared census
+and resolver services; declaration parsing and report normalization are local package imports. Five
+legacy API/value/function comparisons pass. The complete affected selection covers 206 cases; its
+remaining source-guard failures are covered by the corrected 75-case run and final nine-case speller
+run. The strengthened authority guard passes all five cases, and the root bridge includes all 125
+package cases. The final census passes all 12 cases. Source and copied-installation checks launch a real declared Node runner and compare
+argv/output, scopes/refusals, Git changes, declarations and widening, retaining 117 commands.
+Standalone JavaScript bundling and supply-chain audit pass. No dependencies, shipped assets, generated
+copies or workflow state changed in this slice. Existing citation approvals remain pending separately.
+Continue with remaining work services/commands and domain extraction before final core/apps layout.

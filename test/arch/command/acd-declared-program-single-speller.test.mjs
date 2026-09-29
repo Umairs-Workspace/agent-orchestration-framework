@@ -38,11 +38,12 @@
 // still fails; stated as an allowlist, it would not. The shapes measured at HEAD that must stay
 // admitted are driven positively below, against those files' REAL contents.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { findWork } from "../../../src/work.mjs";
 // The sibling control's detector, REUSED rather than re-derived — seven of this row's eight plant
 // shapes are exactly the ones it already refuses over the audit family. What is extended locally
@@ -63,10 +64,10 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 // ADR-008 §1's declared module set for this milestone. Restricted at run time to what exists.
 const MILESTONE_MODULES = Object.freeze([
-  "src/work/toolchain.mjs",
-  "src/work/test-select.mjs",
-  "src/work/test-changed.mjs",
-  "src/commands/test.mjs",
+  "packages/work/src/testing/toolchain.mjs",
+  "packages/work/src/testing/select.mjs",
+  "packages/work/src/testing/changed.mjs",
+  "packages/work/src/commands/test.mjs",
 ]);
 
 const MODULE_FLOOR = 1;
@@ -88,7 +89,7 @@ const CONTRACTED_KEYS = Object.freeze([
   "work.worktree.prepare",
 ]);
 
-const KEY_OWNER = "src/work/toolchain.mjs";
+const KEY_OWNER = "packages/work/src/testing/toolchain.mjs";
 
 // ── PURE CENSORS, so every plant drives without touching a real file ─────────────────────────
 
@@ -169,14 +170,9 @@ async function milestoneModules() {
 // the tree rather than about the handful of files somebody remembered.
 async function sourceModules() {
   const modules = [];
-  const walk = async (relative) => {
-    for (const entry of await readdir(path.join(repoRoot, relative), { withFileTypes: true })) {
-      const child = `${relative}/${entry.name}`;
-      if (entry.isDirectory()) await walk(child);
-      else if (entry.name.endsWith(".mjs")) modules.push({ rel: child, code: await readFile(path.join(repoRoot, child), "utf8") });
-    }
-  };
-  await walk("src");
+  for (const {rel, path: file} of await readRuntimeFiles(repoRoot)) {
+    modules.push({rel, code: await readFile(file, "utf8")});
+  }
   return modules;
 }
 
@@ -297,7 +293,7 @@ export const archTests = [
       assert.ok(keyPattern("work.test.command").test(contract), "…and the contract does carry the key, so the exclusion is doing work");
       const suite = await readFile(path.join(repoRoot, "test", "work", "work-toolchain-declaration.test.mjs"), "utf8");
       assert.ok(keyPattern("work.test.command").test(suite), "…as does the behavioural suite");
-      for (const module of modules) assert.ok(module.rel.startsWith("src/"), `the walk stayed inside src/: ${module.rel}`);
+      for (const module of modules) assert.match(module.rel, /^(?:src\/|packages\/[^/]+\/src\/)/u, `the walk stayed inside runtime source: ${module.rel}`);
     },
   },
 
@@ -312,7 +308,10 @@ export const archTests = [
 
       // …and the import that reaches the seam is present, so the claim is "one seam", not "none".
       const owner = modules.find((module) => module.rel === KEY_OWNER);
-      assert.match(owner.code, /from\s+"(?:\.\.?\/)+work-audit\/spawn\.mjs"/u, `${KEY_OWNER} reaches the shared bounded seam by import`);
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/work/toolchain.mjs"), "utf8"));
+      assert.match(owner.code, /createWorkToolchain\(\{\s*runBounded\s*\}\)/u);
+      assert.match(composition, /createWorkToolchain\(\{\s*runBounded\s*\}\)/u);
+      assert.match(composition, /from\s+"(?:\.\.?\/)+work-audit\/spawn\.mjs"/u, `${KEY_OWNER} reaches the shared bounded seam by import`);
       assert.doesNotMatch(stripComments(owner.code), /from\s+"node:child_process"/u, "…and reaches the process module directly nowhere");
     },
   },
@@ -331,9 +330,9 @@ export const archTests = [
         { planted: "a spawn option naming a shell path", code: 'await runBounded({ command: "a-program", args: [], shell: "/bin/sh" });' },
       ];
       for (const row of planted) {
-        const problems = processRouteProblems([{ rel: "src/work/toolchain.mjs", code: row.code }]);
+        const problems = processRouteProblems([{ rel: "packages/work/src/testing/toolchain.mjs", code: row.code }]);
         assert.ok(problems.length >= 1, `${row.planted} planted in a module this story adds fails the census`);
-        assert.ok(problems.every((problem) => problem.includes("src/work/toolchain.mjs")), `…naming that module: ${problems.join(" | ")}`);
+        assert.ok(problems.every((problem) => problem.includes("packages/work/src/testing/toolchain.mjs")), `…naming that module: ${problems.join(" | ")}`);
       }
 
       // THE SEAM IS NOT THE FINDING. Its own import of the process module is exactly what is

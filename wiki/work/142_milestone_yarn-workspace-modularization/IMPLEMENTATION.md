@@ -1221,3 +1221,35 @@ contents and before/after hashes are prepared in `citation-refresh.json` and che
 The earlier four-loop refresh request remains separate. No generated copies or AOF workflow state
 changed. Remaining domain extraction, composition, core/apps
 layout, adapter removal and whole-tree/platform checks are still outstanding.
+
+## Work owns test selection, changed sets and the declared toolchain
+
+Five implementations moved to work: `testing/select`, `testing/changed`, `testing/declared`,
+`testing/toolchain` and `commands/test`. Core supplies graph readers/impact analysis, bounded execution,
+shared census services and exact item resolution. Story declaration parsing and grade report
+normalization use local work APIs. No package dependency edge changed. Root compatibility paths retain
+their complete APIs and compose only through public package exports.
+
+Evidence in `.tmp/workspace-migration/work-testing/`:
+
+- Five legacy API/value/function-body comparisons pass. Three new package cases verify execution argv,
+  deadlines and refusal ports; graph selection/widening; and whole-run command composition. The root
+  bridge now covers all 125 package cases.
+- The first selected harness encountered the existing suite/index initialization cycle when entering
+  the test-command-contract leaf. Initializing the normal runner assembly first avoids it. The complete
+  18-suite run finished with 204 passes and two source-guard failures. The corrected seven-suite run
+  finished with 74 passes and one remaining scan-scope assertion; its final nine-case suite passes.
+  The strengthened selector-authority check passes five cases and detects indented implementations
+  inside factories. Guards inspect both service injection and core imports and census package source.
+  The final architecture census passes all 12 cases.
+- Source and copied-installation fixtures launch a real declared Node runner for all/file/impacted
+  scopes, recording the actual argv. They compare command output/refusals, Git changed sets, story
+  declarations and no-graph widening. Fixture suite files throw if imported, proving that the command
+  does not execute project suite modules in its own process. All five exports resolve inside the copied
+  payload, which retains 117 commands and passes previous domain comparisons.
+- Standalone JavaScript bundling includes all five implementations. Supply-chain audit passes with
+  zero warnings; no install was needed because dependency declarations did not change.
+
+No shipped assets, generated copies or AOF workflow state changed. The pending generated citation
+refreshes remain separate. Remaining services/commands, domains, core/apps layout, final composition,
+adapter removal and whole-tree/platform verification remain outstanding.

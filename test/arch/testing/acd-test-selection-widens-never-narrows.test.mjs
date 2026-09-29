@@ -39,13 +39,13 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 // THE CENSUSED SUBJECT — the modules that touch the graph. Named rather than globbed, because the
 // claim is about these two and a glob would quietly acquire a third.
-const GRAPH_FAMILY = Object.freeze(["src/work/test-select.mjs", "src/graph-impact.mjs"]);
+const GRAPH_FAMILY = Object.freeze(["packages/work/src/testing/select.mjs", "src/graph-impact.mjs"]);
 
 // The story's whole new-module set, for the clock claim (which is about anything that could
 // fabricate a build time) and for the one-seam claim over the git reader.
-const STORY_MODULES = Object.freeze([...GRAPH_FAMILY, "src/work/test-changed.mjs"]);
+const STORY_MODULES = Object.freeze([...GRAPH_FAMILY, "packages/work/src/testing/changed.mjs"]);
 
-const SELECTOR = "src/work/test-select.mjs";
+const SELECTOR = "packages/work/src/testing/select.mjs";
 const MODULE_FLOOR = 2;
 
 const sourceOf = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
@@ -101,7 +101,7 @@ export function clockProblems(modules) {
 // parens — the language's own region, never a character window.
 export function acceptedOptionKeys(code) {
   const source = stripComments(code);
-  const start = source.indexOf("export function selectSuites");
+  const start = source.indexOf("function selectSuites");
   if (start < 0) return null;
   const params = matchedParenSpan(source, start);
   if (params == null) return null;
@@ -163,8 +163,12 @@ export const archTests = [
       // …and the shared reader is genuinely how it is reached, so this is "one route" and not
       // "none". An absence over a module that never touches the graph is free.
       const selector = stripComments(sourceOf(SELECTOR));
-      assert.match(selector, /import\s*\{[^}]*normalizeGraph[^}]*\}\s*from\s+"(?:\.\.?\/)+graph-normalize\.mjs"/u, "the selector reaches the artifact through the shipped normalizer");
-      assert.match(selector, /import\s*\{[^}]*computeImpact[^}]*\}\s*from\s+"(?:\.\.?\/)+graph-impact\.mjs"/u, "…and through the shipped impact core");
+      const composition = stripComments(sourceOf("src/work/test-select.mjs"));
+      for (const name of ["normalizeGraph", "readGraph", "graphJsonPath", "graphArtifactBuiltAt", "computeImpact"]) {
+        for (const code of [selector, composition]) assert.match(code, new RegExp("createTestSelector\\(\\{[^}]*\\b" + name + "\\b", "u"), name + ": shared graph service is injected");
+      }
+      assert.match(composition, /import\s*\{[^}]*normalizeGraph[^}]*\}\s*from\s+"(?:\.\.?\/)+graph-normalize\.mjs"/u, "the selector reaches the artifact through the shipped normalizer");
+      assert.match(composition, /import\s*\{[^}]*computeImpact[^}]*\}\s*from\s+"(?:\.\.?\/)+graph-impact\.mjs"/u, "…and through the shipped impact core");
       assert.match(selector, /graphJsonPath\s*\(/u, "…at the one artifact path the tree already derives");
     },
   },
@@ -192,8 +196,10 @@ export const archTests = [
       // THE GIT READER IS BOUNDED, and that claim is made here so the split above is a placement
       // rather than a hole: it starts children, it starts them through the ONE seam, and it passes
       // no shell.
-      const reader = stripComments(sourceOf("src/work/test-changed.mjs"));
-      assert.match(reader, /import\s*\{\s*runBounded\s*\}\s*from\s+"(?:\.\.?\/)+work-audit\/spawn\.mjs"/u, "the changed-set reader goes through the shared bounded seam");
+      const reader = stripComments(sourceOf("packages/work/src/testing/changed.mjs"));
+      const readerComposition = stripComments(sourceOf("src/work/test-changed.mjs"));
+      for (const code of [reader, readerComposition]) assert.match(code, /createChangedFilesReader\(\{[^}]*\brunBounded\b/u);
+      assert.match(readerComposition, /import\s*\{\s*runBounded\s*\}\s*from\s+"(?:\.\.?\/)+work-audit\/spawn\.mjs"/u, "the changed-set reader goes through the shared bounded seam");
       assert.doesNotMatch(reader, /from\s+"node:child_process"/u, "…and reaches the process module directly nowhere");
       assert.doesNotMatch(reader, /\bshell\s*:/u, "…and passes no shell option");
       assert.doesNotMatch(reader, /\b(?:spawnSync|execFile|execFileSync|execSync|fork)\s*\(/u, "…and opens no second way to start a child");
@@ -208,7 +214,7 @@ export const archTests = [
       }
       // …and it is NOT a route to the graph either: it names no artifact and no build.
       assert.deepEqual(
-        graphRouteProblems([{ rel: "src/work/test-changed.mjs", code: sourceOf("src/work/test-changed.mjs") }])
+        graphRouteProblems([{ rel: "packages/work/src/testing/changed.mjs", code: sourceOf("packages/work/src/testing/changed.mjs") }])
           .filter((problem) => !problem.includes("a child process of any kind")),
         [],
         "the changed-set reader touches the graph in no way at all",

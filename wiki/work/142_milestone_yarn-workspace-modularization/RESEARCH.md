@@ -667,3 +667,16 @@ transcript attribution, question reader, timing/token analysis and snapshot rule
 Debt's parser/budget is pure, and its command needs only that engine plus foundation's atomic writer.
 The shipped debt instruction must name the package implementation when telling an author to lower
 the budget; naming the old compatibility export would point to a file that no longer owns the value.
+
+Test selection and execution form a cohesive work service, but the graph implementation and generic
+bounded process runner belong outside it. Factories now accept graph readers/impact analysis, bounded
+execution and shared census services explicitly. The test command consumes those composed services
+and exact item resolution, while report normalization and story declaration parsing remain direct
+local package dependencies. Changing the source of a changed set still feeds the same selector.
+
+Architecture controls now inspect both the injected services and core bindings. Their configuration
+reader census covers every runtime package, and the single-selector check counts implementations
+inside factories as well as module-level exports. The selected-suite harness must enter through the
+normal `scripts/test.mjs` assembly before importing its test-command-contract leaf: entering that leaf
+first exposes the existing suite/index ESM initialization cycle. This is test harness setup, not a
+runtime import cycle introduced by the extraction.
