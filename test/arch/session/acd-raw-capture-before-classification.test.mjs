@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { getCommand, listCommands } from "../../../src/command-core.mjs";
 import { RAW_FEEDBACK_KEYS } from "../../../src/feedback-records.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { markedRegion, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -48,7 +48,7 @@ export const archTests = [
     async run() {
       assert.ok(Object.isFrozen(RAW_FEEDBACK_KEYS));
       assert.deepEqual([...RAW_FEEDBACK_KEYS], ["kind", "id", "text", "actor", "refs", "at"]);
-      const store = stripComments(await readFile(path.join(root, "src", "feedback-records.mjs"), "utf8"));
+      const store = stripComments(await readFile(path.join(root, "packages", "work", "src", "feedback-records.mjs"), "utf8"));
       assert.match(store, /appendFile\(feedbackRecordPath\(item\)/, "records use the append-only filesystem primitive");
       assert.doesNotMatch(store, /\bwriteFile\b|\brename\b|\btruncate\b/, "the raw ledger has no rewrite primitive");
 
@@ -62,13 +62,13 @@ export const archTests = [
     name: "arch/FF-5507 every production raw writer goes through the one capture transition",
     async run() {
       const callers = [];
-      for (const file of await readSrcFiles(root)) {
+      for (const file of await readRuntimeFiles(root)) {
         const source = stripComments(await readFile(file.path, "utf8"));
         if (/\bappendRawFeedback\s*\(/.test(source)) callers.push(file.rel.replaceAll("\\", "/"));
       }
-      assert.deepEqual(callers.sort(), ["effects/doc-transitions.mjs", "feedback-records.mjs"]);
+      assert.deepEqual(callers.sort(), ["packages/work/src/feedback-records.mjs", "src/effects/doc-transitions.mjs"]);
 
-      const command = stripComments(await readFile(path.join(root, "src", "commands", "feedback.mjs"), "utf8"));
+      const command = stripComments(await readFile(path.join(root, "packages", "work", "src", "commands", "feedback.mjs"), "utf8"));
       const refusalAt = command.indexOf("feedback-classification-deferred");
       const resolveAt = command.indexOf("await resolveItemExact");
       const writeAt = command.indexOf("await transitionFeedbackAppended");

@@ -22,7 +22,7 @@ import { serveSetupUi } from "../../../src/setup-ui.mjs";
 import { matchedBraceBody } from "../../support/source-slice.mjs";
 
 const BOARD_UI = new URL("../../../src/board-ui.mjs", import.meta.url);
-const FEEDBACK_COMMAND = new URL("../../../src/commands/feedback.mjs", import.meta.url);
+const FEEDBACK_COMMAND = new URL("../../../packages/work/src/commands/feedback.mjs", import.meta.url);
 // m42 wave (d) leg d4 (port 1): the sole feedback write moved AGAIN — out of the
 // command and into the record-doc TRANSITION SEAM, which appends the bullet and
 // raises `feedback.recorded` so publish-on-mutate is the ledger's decision rather
@@ -32,7 +32,7 @@ const FEEDBACK_COMMAND = new URL("../../../src/commands/feedback.mjs", import.me
 // joins board-ui.mjs in the "writes nothing at all" set — strictly stronger than
 // what this gate asserted before.
 const FEEDBACK_WRITER = new URL("../../../src/effects/doc-transitions.mjs", import.meta.url);
-const FEEDBACK_RECORDS = new URL("../../../src/feedback-records.mjs", import.meta.url);
+const FEEDBACK_RECORDS = new URL("../../../packages/work/src/feedback-records.mjs", import.meta.url);
 // Milestone 21 EXTENDS this guard to the run/rerun surface (ADR-003 — the explicit
 // EXTEND-not-sibling decision): the board face's run READ route + the rerun
 // affordance's UI wiring. The rerun's launch is the m03 ADR-006 typed-PTY-input
@@ -73,6 +73,9 @@ export const archTests = [
       // lens points at src/effects/doc-transitions.mjs.
       const board = await readFile(BOARD_UI, "utf8");
       const command = await readFile(FEEDBACK_COMMAND, "utf8");
+      const composition = await readFile(new URL("../../../src/commands/feedback.mjs", import.meta.url), "utf8");
+      assert.match(composition, /createFeedbackCommand\(\{[^}]*transitionFeedbackAppended/);
+      assert.match(command, /await transitionFeedbackAppended\(/);
       for (const [label, text] of [["board-ui.mjs", board], ["commands/feedback.mjs", command]]) {
         for (const verb of ["writeFile", "appendFile"]) {
           assert.ok(
@@ -84,7 +87,7 @@ export const archTests = [
       // The command reaches the fact ONLY through the seam, so it cannot append the
       // bullet without raising the event the ledger hangs its cascade on.
       assert.ok(
-        /from\s+["']\.\.\/effects\/doc-transitions\.mjs["']/.test(command),
+        /from\s+["']\.\.\/effects\/doc-transitions\.mjs["']/.test(composition),
         "the work:feedback command writes through the record-doc transition seam"
       );
 

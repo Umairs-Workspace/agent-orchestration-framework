@@ -327,3 +327,14 @@ outcomes and record bytes; the payload retains 117 commands. Standalone JavaScri
 supply-chain audit pass; the final census passes all 12 cases. No dependencies,
 generated copies or workflow state changed. Remaining work commands/services, other domains and
 final layout/composition/verification are still outstanding.
+
+Feedback/ratchet extraction: work now owns the raw/classification record ledger, pure ratchet engine,
+and feedback/counters/ratchet commands. Core supplies transitions/publication, run history/retry
+policy, exact resolution and bounded Git execution. All five legacy APIs, values and function bodies
+match. The 16-suite selection finished with 122 passes and 11 source-guard failures; the corrected
+11-suite run passes all 71 cases. Four new package cases bring the bridge to 137 cases. Source and
+copied-installation comparisons preserve capture/classification, counters, real Git base resolution,
+ratchet output and persisted bytes, retaining 117 commands. Standalone JavaScript bundling and
+supply-chain audit pass; the final census passes all 12 cases. No dependency,
+generated copy or workflow state changed. Remaining work commands/services, other domains and final
+layout/composition/verification remain outstanding.

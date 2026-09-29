@@ -88,7 +88,12 @@
     "./commands/validate": "./src/commands/validate.mjs",
     "./commands/archive": "./src/commands/archive.mjs",
     "./commands/upgrade": "./src/commands/upgrade.mjs",
-    "./commands/grade": "./src/commands/grade.mjs"
+    "./commands/grade": "./src/commands/grade.mjs",
+    "./feedback-records": "./src/feedback-records.mjs",
+    "./ratchet": "./src/ratchet.mjs",
+    "./commands/feedback": "./src/commands/feedback.mjs",
+    "./commands/counters": "./src/commands/counters.mjs",
+    "./commands/ratchet": "./src/commands/ratchet.mjs"
   },
   "files": [
     "src"

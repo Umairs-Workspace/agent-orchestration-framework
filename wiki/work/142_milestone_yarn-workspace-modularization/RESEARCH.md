@@ -705,3 +705,16 @@ The single-rubric-launch guards now scan all runtime packages, assert the work-o
 the single execution-owned implementation, and verify core connects them. Deadline-home scans also
 include contracts rather than passing over the old root forwarding file. The public command and
 process APIs, including every function body, remain unchanged.
+
+Feedback records, counters and contract-integrity observation are work concerns. The append-only raw
+and classification ledger now lives beside the work record APIs; capture still passes through the
+application transition so raw append, STATE projection and publication ordering stay together.
+Counter observation reads that local ledger directly and receives run history/retry policy from core.
+The ratchet's pure engine has three local pure imports; its command receives exact item resolution
+and bounded Git execution. It retains first-parent history resolution and base-only authority checks.
+
+Architecture scans follow both the package implementation and the remaining composition adapter.
+In particular, the raw-writer scan now covers all runtime packages, board-write isolation checks the
+injected transition and its actual binding, and the ratchet remains an item-subtree walker rather
+than becoming a second work-root enumerator. A real temporary Git repository exercises both supplied
+and history-derived bases in source and copied-installation comparisons.

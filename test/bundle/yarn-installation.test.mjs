@@ -90,6 +90,10 @@ export const yarnInstallationTests = [
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
         'toolchain.mjs': ['node:path', 'node:fs'],
+        'feedback-records.mjs': ['node:path', 'node:fs/promises'],
+        'commands/feedback.mjs': ['node:crypto', '@aof/contracts/error'],
+        'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
+        'commands/ratchet.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'commands/grade.mjs': ['node:fs', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/claim-provenance'],
         'commands/archive.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
         'commands/doctor.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs', '@aof/contracts/error'],

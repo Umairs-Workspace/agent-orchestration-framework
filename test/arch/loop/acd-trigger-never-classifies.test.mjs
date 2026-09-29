@@ -87,7 +87,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FAMILY_DIR = path.join(REPO_ROOT, "src", "work-trigger");
 const LEAF_PATH = path.join(FAMILY_DIR, "sources.mjs");
-const FEEDBACK_COMMAND_PATH = path.join(REPO_ROOT, "src", "commands", "feedback.mjs");
+const FEEDBACK_COMMAND_PATH = path.join(REPO_ROOT, "packages", "work", "src", "commands", "feedback.mjs");
 const LOOP_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs");
 
 const read = (file) => readFileSync(file, "utf8");

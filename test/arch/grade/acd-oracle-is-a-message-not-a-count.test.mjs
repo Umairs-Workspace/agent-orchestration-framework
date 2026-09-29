@@ -38,10 +38,10 @@ const loopsDir = path.join(root, "src", "bundle", "loops");
 
 // ADR-007 §1: the modules milestone 57 ADDED. 57/03 owns the first two, 57/04 the second two.
 const ADDED_MODULES = Object.freeze([
-  "src/work/ratchet.mjs",
-  "src/commands/ratchet.mjs",
+  "packages/work/src/ratchet.mjs",
+  "packages/work/src/commands/ratchet.mjs",
   "packages/work/src/counters.mjs",
-  "src/commands/counters.mjs",
+  "packages/work/src/commands/counters.mjs",
 ]);
 
 // LEG A — a test-runner surface. A module that runs the suite, or parses a runner's report, is one

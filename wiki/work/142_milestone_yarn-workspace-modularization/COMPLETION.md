@@ -33,6 +33,8 @@ final tree. Historical passing checks alone do not prove the final layout works.
 
 Grading is also extracted: work owns the command and execution owns the asynchronous rubric process.
 Core still composes its resolver/history/provenance services; final adapter removal remains open.
+Work also owns feedback records, the pure contract-integrity ratchet and feedback/counters/ratchet
+commands. Application transition and runtime service composition remain in core pending final layout.
 
 No row with outstanding work is satisfied by an empty workspace, a forwarding shell, a passing
 unrelated test, or moving an import cycle behind dynamic imports. The goal remains active until

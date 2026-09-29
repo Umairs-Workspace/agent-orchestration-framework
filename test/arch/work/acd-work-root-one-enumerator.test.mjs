@@ -43,7 +43,7 @@ export const KEEPERS = Object.freeze([
   { file: "src/import/recovery.mjs", reason: "scans a FOREIGN source tree (AOF_MILESTONE_RE + loose forms); not a work-root scanner" },
   { file: "src/commands/migrate-folder.mjs", reason: "scans a FOREIGN source tree's stories/tasks with STORY_FOLDER_RE, read-only; its work-root scan (nextFreeSlot) is retired onto appendPosition" },
   { file: "packages/work/src/tune/provenance.mjs", reason: "a SYNCHRONOUS resolver (resolveCitationAtEmit → emitProposals) that cannot take the async enumerator; a second readdirSync over the SHARED regex, walking root + archive, never a second regex home" },
-  { file: "src/commands/ratchet.mjs", reason: "walks an ITEM subtree for files and parses path SEGMENTS with /^(\\d+)_/, never a listing" },
+  { file: "packages/work/src/commands/ratchet.mjs", reason: "walks an ITEM subtree for files and parses path SEGMENTS with /^(\\d+)_/, never a listing" },
 ]);
 
 export const ASSERTED_NO_MATCH = "src/memory/local-indexing.mjs";

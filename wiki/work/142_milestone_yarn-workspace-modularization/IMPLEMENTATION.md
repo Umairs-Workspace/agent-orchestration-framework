@@ -1311,3 +1311,32 @@ Evidence in `.tmp/workspace-migration/work-grade/`:
 
 The remaining work command/service extractions and contribution, other domains, final core/apps
 layout, composition, compatibility removal and whole-tree/platform verification remain outstanding.
+
+## Feedback records, counters and contract-integrity ratchet
+
+Five implementations now live in work: the append-only feedback record ledger, pure ratchet engine,
+and feedback/counters/ratchet command faces. Capture continues through the core transition service;
+it cannot write a raw record without the existing STATE projection and publication ordering.
+Counters receive run history and retry policy. Ratchet receives bounded Git execution and exact
+item resolution, with its parser, authority checks and engine local to work.
+
+Evidence in `.tmp/workspace-migration/work-feedback/`:
+
+- Five legacy API/value/function-body comparisons pass. Four new package tests cover append-only
+  classification, duplicate refusal without mutation, capture refusal before resolution, counter
+  observation and bounded Git argv. The root bridge includes all 137 package cases.
+- The 16-suite affected run completed with 122 passes and 11 source-location failures. Corrected
+  guards pass all 71 cases across 11 suites. Raw-writer scans include all runtime packages; board
+  write isolation checks both package calls and core transition binding. Propagation guards cover
+  the new package face as well as the remaining composition adapter.
+  The final architecture census passes all 12 cases.
+- Source and copied-installation fixtures compare raw and classified records, refusal codes,
+  capture transition output, STATE and ledger bytes, counters, ratchet findings and rendering.
+  A real temporary Git repository exercises supplied and first-parent-history bases, a contracted
+  feature and a weakened assertion. All five exports resolve inside the copied payload, which
+  retains 117 commands and passes previous package comparisons.
+- Standalone JavaScript bundling includes all five implementations. Supply-chain audit reports zero
+  warnings; dependency declarations and generated copies are unchanged. No AOF workflow state moved.
+
+Audit/acceptor and remaining work commands/services, other domains, core/apps layout, final composition,
+compatibility removal and full-tree/platform verification remain outstanding.
