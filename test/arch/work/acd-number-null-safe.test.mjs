@@ -51,7 +51,7 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   "packages/work/src/doctor/index.mjs",
   "packages/work/src/doctor/coherence.mjs",
   "src/memory/local-indexing.mjs",
-  "src/work-promote/promotion.mjs",
+  "packages/work/src/promote/promotion.mjs",
   // 127/02 — the eleventh: the one mint (127/ADR-003) reads the stream's width (`streamWidth`)
   // and the archived-collision set (`archivedCollisions`) over rows, and `numbersWritten`
   // filters through `isLiveStreamRow`. All four sites are guarded; none is allow-listed.

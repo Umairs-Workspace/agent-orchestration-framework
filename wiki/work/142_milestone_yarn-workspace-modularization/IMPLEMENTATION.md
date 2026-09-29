@@ -1089,3 +1089,34 @@ Evidence in `.tmp/workspace-migration/work-mutations/`:
 The full migration remains open. Promotion and remaining work services/commands, other domain
 extractions, final core/apps layout, compatibility-adapter removal and whole-tree/platform validation
 remain on COMPLETION.md. No generated citations or AOF lifecycle state changed in this slice.
+
+## Work owns gap/finding promotion mechanics and commands
+
+Four implementations now live in work: chore content seeding, the promotion engine, and the gap
+and finding command descriptors/handlers. The engine uses work discovery and foundation's atomic
+writer. Command factories receive the shared insertion operation; gap also receives insertion flags,
+and finding receives the cache-first item reader. Core composes these existing collaborators, while
+work owns refusals, idempotence, append positioning, content seeding and CLI definitions. The broader
+scaffold/backlog-promotion implementation remains a transitional core service.
+
+No dependency edge changed. All four legacy APIs, exported values and function bodies match the
+pre-move baseline. The new package case verifies inert registration, supplied cache/insertion calls,
+persisted content, repeat-finding idempotence and the gap operator's explicit position. The package
+bridge now includes 117 cases. Architecture checks follow the actual implementations; positive
+disk/cache pins inspect both factory and composition, and the mint scan includes runtime packages.
+
+Evidence in `.tmp/workspace-migration/work-promotion/`:
+
+- The 15-suite affected selection completed 506 cases: 495 passed initially and 11 source-location
+  assertions needed migration. The corrected eight-suite run passes 225 cases, covering every initial
+  failure and the complete package bridge. The final mint/census run passes all 17 cases.
+- Differential fixtures invoke the old and new handlers against isolated real workspaces. Promotion
+  output, repeat-finding idempotence, discharged-gap and reviewed-chore refusals, rendering and every
+  record byte match. The same comparison passes in a copied installation, with all four public exports
+  resolving inside it and all 117 registered commands retained. Previous domain payload checks pass.
+- Standalone JavaScript bundling includes all four implementations; the supply-chain audit passes
+  with zero warnings. No package install was needed because dependency declarations did not change.
+
+The full migration remains active. Remaining work services/commands, other domains, the core/apps
+layout, adapter removal and whole-tree/platform verification remain outstanding. No generated citation,
+lock hash or AOF workflow state changed in this extraction.

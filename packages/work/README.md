@@ -39,6 +39,9 @@ Private workspace for work-domain behavior.
 | `@aof/work/archive` | Verbatim archive moves, crossing-link rewrites and moved-ref enumeration. |
 | `@aof/work/reindex` | Insert shift selection, ref remaps and surgical frontmatter updates. |
 | `@aof/work/upgrade` | `createWorkUpgrade` supplies schema migration planning, application and changelog rendering using core's installed-version resolver. |
+| `@aof/work/promote/chore-seed`, `promote/promotion` | Chore content seeding, back-references, append positioning and idempotence scans. |
+| `@aof/work/commands/promote-gap-to-chore` | `createPromoteGapCommand` contributes gap promotion with supplied insertion flags and operation. |
+| `@aof/work/commands/promote-finding-to-chore` | `createPromoteFindingCommand` contributes finding promotion with supplied insertion and cache-read operations. |
 
 Doctor checks import pure shared predicates directly rather than importing the snapshot reader.
 The work package depends on contracts for error envelopes and claim provenance; it does not import
@@ -107,3 +110,9 @@ Mutation engines take an explicit work directory. Archive and reindex import onl
 readers and their filesystem primitives; command policy and effect publication remain outside
 these engines. Upgrade invokes the supplied version resolver only when applying a pending stamp.
 Planning is read-only, current records are unchanged, and newer schemas still refuse the whole run.
+
+Promotion commands share one content seed and one idempotence/append engine. Structural placement
+and existing-chore scans read the local work tree. Finding resolution uses the supplied cache reader;
+core binds it to the existing shared read service. Both commands call the supplied insertion operation,
+which retains scaffold and stream-effect policy during migration. Constructing either command performs
+no reads or writes, and the promotion engine imports no command module.

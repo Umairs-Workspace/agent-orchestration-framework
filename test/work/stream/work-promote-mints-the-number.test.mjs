@@ -35,7 +35,7 @@ import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace 
 import { appendPosition } from "../../../src/work-promote/promotion.mjs";
 import { openEffectsJournal, readEvents } from "../../../src/effects/journal.mjs";
 import { ITEM_LOCKED_CODE } from "../../../src/item-lock.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture.mjs";
 import { buildThreeRootFixture } from "./work-backlog-archive-enumerate.test.mjs";
 
@@ -662,19 +662,19 @@ export const workPromoteMintsTheNumberTests = [
     run: async () => {
       const definitions = [];
       const callers = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const source = (await readFile(file.path, "utf8")).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-        const relPath = `src/${slash(file.rel)}`;
+        const relPath = slash(file.rel);
         if (/export\s+async\s+function\s+appendPosition\s*\(/.test(source)) definitions.push(relPath);
         if (/(?<!function\s)\bappendPosition\s*\(/.test(source.replace(/export\s+async\s+function\s+appendPosition\s*\([^)]*\)/, ""))) callers.push(relPath);
       }
-      assert.deepEqual(definitions, ["src/work-promote/promotion.mjs"], "appendPosition is defined once, in src/work-promote/promotion.mjs");
+      assert.deepEqual(definitions, ["packages/work/src/promote/promotion.mjs"], "appendPosition is defined once in the work package");
       assert.deepEqual(callers.sort(), [
         "src/commands/migrate-folder.mjs",
-        "src/commands/promote-finding-to-chore.mjs",
-        "src/commands/promote-gap-to-chore.mjs",
+        "packages/work/src/commands/promote-finding-to-chore.mjs",
+        "packages/work/src/commands/promote-gap-to-chore.mjs",
         "src/commands/promote.mjs",
-      ], `its callers are exactly the promote family plus migrate-folder (got ${JSON.stringify(callers)})`);
+      ].sort(), `its callers are exactly the promote family plus migrate-folder (got ${JSON.stringify(callers)})`);
     },
   },
 

@@ -3,7 +3,7 @@
 // Two places minted a top-level number before this milestone: the `aof:add-*` prompts' "next number
 // = max across work.dir + 1" (agent arithmetic over a directory listing — 41/ADR-002 named it the
 // thing the deterministic CLI exists to replace) and `appendPosition`
-// (`src/work-promote/promotion.mjs`), reached by the two `promote-*-to-chore` faces and, since
+// (`packages/work/src/promote/promotion.mjs`), reached by the two `promote-*-to-chore` faces and, since
 // 127/01, `migrate-folder.mjs`. `insert-*` opened its own slot through the re-index engine. After
 // story 02 the only minting CODE PATH is `aof work promote`, and every other minter is a caller of
 // the SAME `appendPosition`.
@@ -12,7 +12,7 @@
 // beat), each with a NON-VACUITY leg beside it because every one of them is a sweep that would pass
 // on an empty answer:
 //
-//   (a) `appendPosition` is DEFINED in `src/work-promote/promotion.mjs` only, and its src callers are
+//   (a) `appendPosition` is DEFINED in the work-owned promotion engine only, and its runtime callers are
 //       exactly `promote.mjs`, `promote-finding-to-chore.mjs`, `promote-gap-to-chore.mjs` and
 //       `migrate-folder.mjs` — the register's "promote family", read as that set (127/01 made the
 //       last one a caller). Non-vacuous: the sweep finds FOUR callers.
@@ -54,12 +54,12 @@ import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const HOME = "src/work-promote/promotion.mjs";
+const HOME = "packages/work/src/promote/promotion.mjs";
 // The promote FAMILY — `appendPosition`'s callers, as the register reads them.
 const APPEND_CALLERS = Object.freeze([
   "src/commands/migrate-folder.mjs",
-  "src/commands/promote-finding-to-chore.mjs",
-  "src/commands/promote-gap-to-chore.mjs",
+  "packages/work/src/commands/promote-finding-to-chore.mjs",
+  "packages/work/src/commands/promote-gap-to-chore.mjs",
   "src/commands/promote.mjs",
 ]);
 const VERB = "src/commands/promote.mjs";
@@ -81,20 +81,10 @@ const NAMED_ADD_PROMPTS = Object.freeze([
   "add-uat.md",
 ]);
 
-// Every `.mjs` under a directory, repo-relative and forward-slashed.
-async function walkMjs(rel, out = []) {
-  for (const entry of await readdir(path.join(repoRoot, rel), { withFileTypes: true })) {
-    const child = `${rel}/${entry.name}`;
-    if (entry.isDirectory()) await walkMjs(child, out);
-    else if (entry.name.endsWith(".mjs")) out.push(child);
-  }
-  return out;
-}
-
 // rel → comment-stripped source, for every module in the sweep. Read once per leg, so a leg's
 // answer is a fact about one snapshot of the tree.
-async function strippedSources(rel = "src") {
-  const files = rel === "src" ? (await readRuntimeFiles(repoRoot)).map(file => file.rel).sort() : (await walkMjs(rel)).sort();
+async function strippedSources() {
+  const files = (await readRuntimeFiles(repoRoot)).map(file => file.rel).sort();
   const sources = new Map();
   for (const file of files) sources.set(file, stripComments(await readFile(path.join(repoRoot, file), "utf8")));
   return sources;
@@ -162,7 +152,7 @@ export const archTests = [
   {
     name: "arch/FF-12703 (acd-one-mint): the top-level slot-open is called from src/commands/promote.mjs and nowhere else under src/commands, and runInsertTopLevel is defined there",
     run: async () => {
-      const sources = await strippedSources("src/commands");
+      const sources = await strippedSources();
       assert.ok(sources.size > 20, `non-vacuity: the src/commands sweep read ${sources.size} modules`);
 
       let topLevelCalls = 0;

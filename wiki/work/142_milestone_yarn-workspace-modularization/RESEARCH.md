@@ -618,3 +618,16 @@ The public upgrade factory also has a test proving construction/planning do not 
 policy, while applying a pending stamp does and a second application does not. Architecture import
 walks now follow public workspace exports to the actual mutation engines. Positive disk-reader pins
 follow the new implementation paths and explicit discovery imports; legacy forwards remain in place.
+
+Gap/finding promotion has four movable implementations: a pure content seed, the append/idempotence
+engine, and two command descriptors with handlers. The engine needs only work discovery, filesystem
+reads and foundation's atomic writer. Gap promotion additionally needs insertion flags and the shared
+insertion operation; finding promotion needs that operation and the cache-first item reader. These are
+explicit factory inputs, preserving the distinction between structural disk reads and item-state reads.
+The broader scaffold/backlog-promotion implementation remains core composition for the next extraction.
+
+Those four implementations now belong to work. Construction is inert, the seed and append/idempotence
+logic have one home, and the engine imports no command. Source and copied-installation fixtures invoke
+both real command handlers, compare their output and persisted record bytes, and cover repeat-finding,
+discharged-gap and reviewed-chore refusals. Positive cache/disk pins inspect package source and core
+wiring; mint scans cover all runtime packages, including the top-level insertion-call guard.

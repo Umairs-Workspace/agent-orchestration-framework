@@ -5,7 +5,7 @@
 // `work:promote-gap` already did 90% of a promotion: reuse the chore insert seam, seed the DoD from
 // a close criterion, append a `## Notes` back-reference. Copying that into a finding promoter would
 // have been two chore-seeding writers — the duplication this whole register exists to refuse. So the
-// mechanics moved into `src/work-promote/` and both faces reach them by import.
+// mechanics now live in `packages/work/src/promote/` and both faces reach them by import.
 //
 // FOUR LEGS:
 //   1. each mechanic — the DoD seed, the back-reference author, the append-position resolver, the
@@ -13,7 +13,7 @@
 //   2. both faces reach them BY IMPORT and contain no copy of any of them;
 //   3. a tree-wide sweep for a RIVAL promoter, matched by a PROMOTION SIGNATURE rather than a bare
 //      shape (ADR-009 §2), reports nothing outside the family;
-//   4. the family is a LEAF: no file under `src/work-promote/` imports from `../commands/`.
+//   4. the family is a LEAF: no file under the promotion family imports from `../commands/`.
 //
 // WHY THE SIGNATURE IS A CONJUNCTION, and this is the measured part. The tempting sweep — "a
 // `## Notes` heading matcher" or "a section-range walk" — reds on two live, unrelated homes:
@@ -30,10 +30,10 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY = "src/work-promote";
-const SEED = "src/work-promote/chore-seed.mjs";
-const ENGINE = "src/work-promote/promotion.mjs";
-const FACES = Object.freeze(["src/commands/promote-gap-to-chore.mjs", "src/commands/promote-finding-to-chore.mjs"]);
+const FAMILY = "packages/work/src/promote";
+const SEED = "packages/work/src/promote/chore-seed.mjs";
+const ENGINE = "packages/work/src/promote/promotion.mjs";
+const FACES = Object.freeze(["packages/work/src/commands/promote-gap-to-chore.mjs", "packages/work/src/commands/promote-finding-to-chore.mjs"]);
 // The two live homes the bare-shape sweep reported, kept as named non-subjects (ADR-009 §2).
 const NOT_PROMOTERS = Object.freeze(["src/phase-brief.mjs", "src/memory/local-indexing.mjs"]);
 
@@ -69,7 +69,7 @@ export function singleHomeProblems(units) {
       problems.push(`${rel}: NOT FOUND — a promotion face is missing`);
       continue;
     }
-    if (!new RegExp(`from "\\.\\./work-promote/`, "u").test(face.code)) {
+    if (!new RegExp(`from "\\.\\./promote/`, "u").test(face.code)) {
       problems.push(`${rel}: reaches no ${FAMILY} module by import — a face that imports nothing is carrying its own copy`);
     }
   }

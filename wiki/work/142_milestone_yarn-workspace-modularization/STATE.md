@@ -247,3 +247,12 @@ changed-suite run passes 126 cases, including the bridge over all 116 package ca
 census pass all 17 cases.
 Standalone JavaScript bundling and supply-chain audit pass. No dependencies, generated citations or
 workflow state changed. Continue with remaining work services/commands, other domains and final layout.
+
+Gap/finding promotion extraction: the content seed, append/idempotence engine and both command
+implementations now live in work. Core supplies insertion flags/operation and the shared cache reader.
+All four legacy APIs, exported values and function bodies match. The 506-case selection is covered
+after 11 source-location corrections; the changed suites pass 225 cases, including all 117 package
+cases. Source and copied-installation comparisons preserve promotion output, refusals, idempotence and
+record bytes, retaining 117 registered commands. Standalone JavaScript bundling and supply-chain audit
+pass. The final mint/census guard run passes all 17 cases. No dependency or generated-output change was
+needed. Remaining scaffolding/backlog promotion, work services/commands, domains and final layout remain.

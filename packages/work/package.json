@@ -54,7 +54,11 @@
     "./commands/tune": "./src/commands/tune.mjs",
     "./archive": "./src/archive.mjs",
     "./reindex": "./src/reindex.mjs",
-    "./upgrade": "./src/upgrade.mjs"
+    "./upgrade": "./src/upgrade.mjs",
+    "./promote/chore-seed": "./src/promote/chore-seed.mjs",
+    "./promote/promotion": "./src/promote/promotion.mjs",
+    "./commands/promote-gap-to-chore": "./src/commands/promote-gap-to-chore.mjs",
+    "./commands/promote-finding-to-chore": "./src/commands/promote-finding-to-chore.mjs"
   },
   "files": [
     "src"

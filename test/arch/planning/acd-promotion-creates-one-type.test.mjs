@@ -33,16 +33,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { markedRegion, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 import { promoteFindingToChoreCommand } from "../../../src/commands/promote-finding-to-chore.mjs";
-import { PROMOTED_TYPE } from "../../../src/work-promote/promotion.mjs";
+import { PROMOTED_TYPE } from "@aof/work/promote/promotion";
 import { FINDING_ROUTINGS, LOOP_CREATED_ITEM_TYPE } from "../../../packages/work-loop/src/engine.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const INSERT_ENGINE = "src/commands/insert-shared.mjs";
-const GAP_FACE = "src/commands/promote-gap-to-chore.mjs";
-const FINDING_FACE = "src/commands/promote-finding-to-chore.mjs";
+const GAP_FACE = "packages/work/src/commands/promote-gap-to-chore.mjs";
+const FINDING_FACE = "packages/work/src/commands/promote-finding-to-chore.mjs";
 const PROMOTION_PATH = Object.freeze([
-  "src/work-promote/chore-seed.mjs",
-  "src/work-promote/promotion.mjs",
+  "packages/work/src/promote/chore-seed.mjs",
+  "packages/work/src/promote/promotion.mjs",
   GAP_FACE,
   FINDING_FACE,
 ]);

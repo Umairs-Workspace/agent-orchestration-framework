@@ -120,7 +120,7 @@ const STRUCTURAL = [
   // it is now `appendPosition(workDir)` and answers for BOTH faces rather than one. The subject
   // anchor caught the relocation and named it as a re-point rather than passing green on a
   // surviving symbol — the guarantee moved, so the pin moved with it.
-  { file: path.join("src", "work-promote", "promotion.mjs"), symbols: ["listItems"], subject: "appendPosition" },
+  { file: path.join("packages", "work", "src", "promote", "promotion.mjs"), symbols: ["listItems"], subject: "appendPosition", diskSource: "../discovery.mjs" },
   // The SAME module's SECOND structural read, pinned separately at 107 — because a pin carries ONE
   // subject and this module has two. `findPromotedChore(workDir)` scans the real top-level folders to
   // decide whether a finding is ALREADY scheduled, immediately before the promotion writes; answered
@@ -128,7 +128,7 @@ const STRUCTURAL = [
   // the disk is the subject of the write it is about to make. Pinning only `appendPosition` would
   // leave this read green-by-accident if IT relocated while its neighbour stayed: the ADR-016/G2
   // relocation hole one level out, in the very module G2 was re-pointed to at 88.
-  { file: path.join("src", "work-promote", "promotion.mjs"), symbols: ["listItems"], subject: "findPromotedChore" },
+  { file: path.join("packages", "work", "src", "promote", "promotion.mjs"), symbols: ["listItems"], subject: "findPromotedChore", diskSource: "../discovery.mjs" },
 ];
 
 // (a) CONTROL-side readers that must move onto the seam (RESEARCH §5.2).
@@ -158,7 +158,7 @@ const CONTROL_SIDE = [
   // reach through neither a row's `dir` nor its `number`, which is exactly what separates it from
   // its two structural neighbours in `promotion.mjs`. The category is a property of the READ, not of
   // the module or the family: one function here makes all three, and they are classified apart.
-  { file: path.join("src", "commands", "promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore" },
+  { file: path.join("packages", "work", "src", "commands", "promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore", adapter: "src/commands/promote-finding-to-chore.mjs" },
   { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "src/commands/notion-associate.mjs" },
   { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "src/notion/sync-work.mjs" },
   { file: path.join("src", "memory", "local-indexing.mjs"), subject: "buildRecords" },
@@ -271,7 +271,7 @@ export const archTests = [
           const composition = stripComments(await readFile(path.join(repoRoot, adapter), "utf8"));
           assert.match(source, /\blistItemsCacheFirst\s*\(/u, `${file}: the relocated reader uses the cache-first service`);
           assert.match(composition, /import\s*\{[^}]*\blistItemsCacheFirst\b[^}]*\}\s*from\s*["']\.\.\/work\/read\.mjs["']/u);
-          assert.match(composition, /createNotion\w+\(\{[^}]*\blistItemsCacheFirst\b/u, `${adapter}: inject the shared cache-first reader`);
+          assert.match(composition, /create(?:Notion\w+|PromoteFindingCommand)\(\{[^}]*\blistItemsCacheFirst\b/u, `${adapter}: inject the shared cache-first reader`);
           for (const symbol of workImportBindings(composition)) bindings.add(symbol);
         }
         const still = DISK_READERS.filter((symbol) => bindings.has(symbol));

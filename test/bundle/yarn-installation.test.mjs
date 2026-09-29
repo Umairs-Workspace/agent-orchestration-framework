@@ -88,6 +88,9 @@ export const yarnInstallationTests = [
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
+        'promotion.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
+        'promote-gap-to-chore.mjs': ['@aof/contracts/error'],
+        'promote-finding-to-chore.mjs': ['@aof/contracts/error'],
         'archive.mjs': ['node:path', 'node:fs/promises'],
         'reindex.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'upgrade.mjs': ['@aof/contracts/error'],
