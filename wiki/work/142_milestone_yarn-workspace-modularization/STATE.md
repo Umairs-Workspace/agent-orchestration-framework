@@ -304,3 +304,15 @@ argv/output, scopes/refusals, Git changes, declarations and widening, retaining 
 Standalone JavaScript bundling and supply-chain audit pass. No dependencies, shipped assets, generated
 copies or workflow state changed in this slice. Existing citation approvals remain pending separately.
 Continue with remaining work services/commands and domain extraction before final core/apps layout.
+
+Command-face extraction: doctor, validate, archive and upgrade implementations now live in work.
+Core supplies shared services, configured validation, transitions and the two deferred doctor loaders.
+Four legacy API/value comparisons pass; function bodies match apart from the explicit loader-port
+substitutions. The 54-suite selection finished with 779 passes and 12 failures. Those exposed source
+assertions plus missing configured-validator/deferred-loader wiring; corrections pass 156 cases,
+with one pre-existing tuning-loader explanation subsequently restored. The final deferred-import and
+census run passes all 20 cases. Four new package tests bring the bridge to 129 package cases. Source
+and copied-payload comparisons preserve reports, registry composition, archive refusals/moves and
+record bytes, retaining 117 commands. Standalone JavaScript and supply-chain checks pass. No dependency,
+generated copy or workflow state changed. Remaining services/commands, other domains, final layout,
+composition, adapter removal and whole-tree/platform verification remain open.

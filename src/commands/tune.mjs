@@ -8,6 +8,8 @@ import {
   proposalClassForTarget,
 } from "../work-tune/proposal.mjs";
 import { loadLoops } from "../work/loops.mjs";
+// Deferred because command-core registers this command; a static import closes
+// the registry ring before its bindings have initialized.
 const getRegistry = () => import("../command-core.mjs");
 
 export const {

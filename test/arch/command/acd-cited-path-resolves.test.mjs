@@ -51,7 +51,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 const WORK_DIR = path.join(root, "wiki", "work");
 const RESOLVER = "packages/work/src/cited-path-resolve.mjs";
 const SPINE = "packages/work/src/doctor/index.mjs";
-const EDGE = "src/commands/doctor.mjs";
+const EDGE = "packages/work/src/commands/doctor.mjs";
 
 // THE ANCHORED EXTRACTOR. The lookbehind is the whole difference between 357 tokens and 379: without
 // it, `ui/src/fleet/scope.mjs` is read as `src/fleet/scope.mjs` and counted as a casualty.

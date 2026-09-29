@@ -40,7 +40,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // have to name it, so the sweep is over the vocabulary a reader of the block would need.
 const DOORS = [
   "src/commands/item-status.mjs",
-  "src/commands/validate.mjs",
+  "packages/work/src/commands/validate.mjs",
   "packages/work/src/acceptor/admissibility.mjs",
   "packages/work/src/acceptor/rule.mjs",
 ];

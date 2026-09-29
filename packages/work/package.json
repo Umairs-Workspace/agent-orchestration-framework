@@ -83,7 +83,11 @@
     "./testing/changed": "./src/testing/changed.mjs",
     "./testing/declared": "./src/testing/declared.mjs",
     "./testing/toolchain": "./src/testing/toolchain.mjs",
-    "./commands/test": "./src/commands/test.mjs"
+    "./commands/test": "./src/commands/test.mjs",
+    "./commands/doctor": "./src/commands/doctor.mjs",
+    "./commands/validate": "./src/commands/validate.mjs",
+    "./commands/archive": "./src/commands/archive.mjs",
+    "./commands/upgrade": "./src/commands/upgrade.mjs"
   },
   "files": [
     "src"

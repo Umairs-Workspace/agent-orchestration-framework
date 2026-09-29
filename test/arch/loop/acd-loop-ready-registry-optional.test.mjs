@@ -69,8 +69,12 @@ export const archTests = [
     run: async () => {
       const doctor = stripComments(await readFile(path.join(root, "src", "commands", "doctor.mjs"), "utf8"));
       assert.doesNotMatch(doctor, /^import[^\n]+command-core\.mjs/mu, "a static command-core import closes the registry ring");
-      assert.match(doctor, /await\s+import\s*\(\s*["'](?:\.\.?\/)+command-core\.mjs["']\s*\)/u);
-      assert.match(doctor, /invoke\s*\(\s*["']work:loops-validate["']/u);
+      assert.match(doctor, /const loadCommandCore = \(\) => import\("\.\.\/command-core\.mjs"\)/u);
+      assert.match(doctor, /createDoctorCommand\(\{[^}]*loadCommandCore/u);
+      const implementation = stripComments(await readFile(path.join(root, "packages/work/src/commands/doctor.mjs"), "utf8"));
+      assert.doesNotMatch(implementation, /command-core\.mjs/u);
+      assert.match(implementation, /await loadCommandCore\(\)/u);
+      assert.match(implementation, /invoke\s*\(\s*["']work:loops-validate["']/u);
       const command = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.match(command, /invokeRegistered\(\s*["']work:doctor["']/u);
       assert.match(command, /resolveLoopLevelGate\(resolved\.level, l3Gate\)/u);

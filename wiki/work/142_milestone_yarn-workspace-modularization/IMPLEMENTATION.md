@@ -1253,3 +1253,34 @@ Evidence in `.tmp/workspace-migration/work-testing/`:
 No shipped assets, generated copies or AOF workflow state changed. The pending generated citation
 refreshes remain separate. Remaining services/commands, domains, core/apps layout, final composition,
 adapter removal and whole-tree/platform verification remain outstanding.
+
+## Doctor, validate, archive and upgrade command faces
+
+Four command implementations now belong to `@aof/work/commands/*`, preserving their public command
+descriptors, flags, refusal codes and rendering. Core supplies cache, mesh, effects, the configured
+validator, schema-upgrade service and bounded Git execution. Doctor's identity and registry reads
+remain deferred through explicit loaders supplied by core. Archive receives only the stream
+transition, preserving its existing lock/event/publication boundary.
+
+Evidence in `.tmp/workspace-migration/work-command-faces/`:
+
+- Four legacy API/value comparisons pass. Implementation functions match after normalizing only the
+  two deliberate deferred-loader substitutions in doctor. Four new package cases cover Git bounds
+  and degradation, archive refusal/transition ordering, configured validation and upgrade modes.
+  The root contract bridge includes all 129 package cases.
+- The 54-suite affected run finished with 779 passes and 12 failures. It exposed source-location
+  assertions and two wiring errors: raw validation lacked the installed digest contract, and doctor
+  needed explicit loaders for its deferred imports. Both are corrected. The follow-up passes 156
+  cases with one remaining pre-existing missing tuning-loader comment; restoring that explanation
+  makes the final deferred-import/census selection pass all 20 cases. Source guards inspect package
+  implementations and core composition separately. Platform import allowances are path-specific for
+  the new command faces, preserving the tighter archive-engine boundary.
+- Source and copied-installation fixtures compare doctor output with a discriminating loop registry
+  and legacy identity sidecar, validation, upgrade preview/apply/idempotence, archive refusals/moves,
+  rendering and persisted record bytes. All four package exports resolve inside the copied payload,
+  which retains 117 commands and passes the previous domain comparisons.
+- Standalone JavaScript bundling includes all four implementations. Supply-chain audit reports zero
+  warnings. No dependencies, shipped assets, generated copies or AOF workflow state changed.
+
+Remaining work services/commands and contributions, other domains, core/apps layout, final composition,
+compatibility-adapter removal and whole-tree/platform verification remain outstanding.

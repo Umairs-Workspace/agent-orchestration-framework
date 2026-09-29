@@ -680,3 +680,16 @@ inside factories as well as module-level exports. The selected-suite harness mus
 normal `scripts/test.mjs` assembly before importing its test-command-contract leaf: entering that leaf
 first exposes the existing suite/index ESM initialization cycle. This is test harness setup, not a
 runtime import cycle introduced by the extraction.
+
+Doctor, validation, archive and schema upgrade are work-owned command faces. Archive must receive
+the stream transition service, rather than import its fact-writing engine: the lock, event and
+publication behavior belongs to application composition. Validation must receive the configured
+record validator, because its digest contract comes from the installed bundle. Importing the raw
+package validator alone silently drops that required configuration for digest records.
+
+Doctor has two deferred reads in addition to its static collaborators: node identity and the command
+registry. Both now enter through loader ports supplied by core. Their laziness is preserved, with the
+registry cycle explanation beside the actual deferred import. Git history uses an injected bounded
+execFileAsync binding; the work package imports no child-process API for this command. Source and
+copied-payload fixtures include both a legacy identity sidecar and a discriminating loop registry so
+neither optional read can degrade silently and make the comparison pass.

@@ -46,14 +46,15 @@ import { rewriteCrossingLinks, INLINE_LINK_RE } from "../../../src/work/archive.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const FACE = "src/commands/archive.mjs";
+const FACE = "packages/work/src/commands/archive.mjs";
+const COMPOSITION = "src/commands/archive.mjs";
 const ENGINE = "packages/work/src/archive.mjs";
 const SEAM = "src/effects/stream-transitions.mjs";
 const REINDEX = "packages/work/src/reindex.mjs";
 const INSERT_SHARED = "packages/work/src/insertion/scaffold.mjs";
 const PROMOTION = "src/work-promote/promotion.mjs";
 
-const FACE_ALLOWED = new Set(["src/work.mjs", SEAM, "src/command-error.mjs"]);
+const FACE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs", "packages/contracts/src/error.mjs"]);
 const ENGINE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs"]);
 
 // resolveSpecifier(specifier, fromRel) — a relative specifier resolved to a repo-relative posix
@@ -145,12 +146,12 @@ export const archTests = [
     run: async () => {
       const face = stripComments(await readRel(FACE));
       const engine = stripComments(await readRel(ENGINE));
-      const problems = [...closedSetProblems(FACE, face, FACE_ALLOWED), ...closedSetProblems(ENGINE, engine, ENGINE_ALLOWED)];
+      const problems = [...closedSetProblems(FACE, face, FACE_ALLOWED), ...closedSetProblems(ENGINE, engine, ENGINE_ALLOWED), ...closedSetProblems(COMPOSITION, stripComments(await readRel(COMPOSITION)), new Set([FACE, SEAM]))];
       assert.deepEqual(problems, [], problems.join("\n"));
       // Non-vacuous: each file imports something, and the forbidden names are absent by name too.
       assert.ok(importSpecifiers(face).length >= 3, "the face imports its readers, the seam and the error contract");
       assert.ok(importSpecifiers(engine).length >= 2, "the engine imports node:* and the readers");
-      for (const [rel, code] of [[FACE, face], [ENGINE, engine]]) {
+      for (const [rel, code] of [[FACE, face], [ENGINE, engine], [COMPOSITION, stripComments(await readRel(COMPOSITION))]]) {
         for (const forbidden of ["reindex.mjs", "insert-shared.mjs", "promotion.mjs"]) {
           assert.ok(!importSpecifiers(code).some(({ specifier }) => specifier.endsWith(forbidden)), `${rel} does not import ${forbidden}`);
         }
@@ -168,15 +169,15 @@ export const archTests = [
       const graph = await srcGraph();
       assert.ok(graph.has(FACE) && graph.has(ENGINE) && graph.has(SEAM), "the walk read the three files");
       const targets = new Set([REINDEX, INSERT_SHARED]);
-      const offending = [...chainsAvoiding(graph, FACE, targets, SEAM), ...chainsAvoiding(graph, ENGINE, targets, SEAM)];
+      const offending = [...chainsAvoiding(graph, FACE, targets, SEAM), ...chainsAvoiding(graph, ENGINE, targets, SEAM), ...chainsAvoiding(graph, COMPOSITION, targets, SEAM)];
       assert.deepEqual(
         offending.map((chain) => chain.join(" → ")),
         [],
         `a path reaches the reindex engine or insert-shared without crossing the seam:\n${offending.map((chain) => chain.join(" → ")).join("\n")}`,
       );
       // Non-vacuous: the sanctioned path exists and is the one excluded.
-      const seamPath = chainThrough(graph, FACE, REINDEX, SEAM);
-      assert.deepEqual(seamPath, [FACE, SEAM, "src/work/reindex.mjs", REINDEX], `the seam and compatibility export lead to the package engine (got ${seamPath?.join(" → ")})`);
+      const seamPath = chainThrough(graph, COMPOSITION, REINDEX, SEAM);
+      assert.deepEqual(seamPath, [COMPOSITION, SEAM, "src/work/reindex.mjs", REINDEX], `the seam and compatibility export lead to the package engine (got ${seamPath?.join(" → ")})`);
     },
   },
 
@@ -186,7 +187,7 @@ export const archTests = [
   {
     name: "arch/127 FF-12705 (c): neither file's comment-stripped source contains `number:`, `parseInt(`, `Math.max(` or `appendPosition`",
     run: async () => {
-      for (const rel of [FACE, ENGINE]) {
+      for (const rel of [FACE, ENGINE, COMPOSITION]) {
         const code = stripComments(await readRel(rel));
         for (const token of ["number:", "parseInt(", "Math.max(", "appendPosition"]) {
           assert.ok(!code.includes(token), `${rel} contains \`${token}\` — the archive writes no number (ADR-004 §5)`);
@@ -233,6 +234,8 @@ export const archTests = [
     name: "arch/127 FF-12705 (e): the face calls `transitionStreamArchived(` and never `archiveItems(`, whose src callers are exactly the seam",
     run: async () => {
       const face = stripComments(await readRel(FACE));
+      const composition = stripComments(await readRel(COMPOSITION));
+      assert.match(composition, /createArchiveCommand\(\{ transitionStreamArchived \}\)/, "core supplies the real transition to the package command");
       assert.match(face, /\btransitionStreamArchived\s*\(/, "the face calls the seam");
       assert.doesNotMatch(face, /\barchiveItems\s*\(/, "the face never calls the engine");
       const callers = [];

@@ -497,7 +497,7 @@ export const archTests = [
       // probe loop: the cited path reaches `stat` and never a specifier position.
       assert.equal(/import\s*\(\s*(?:path\.join\(projectRoot|control)/.test(spineBody), false, "no cited path ever reaches an import() specifier");
 
-      const face = await read("src/commands/doctor.mjs");
+      const face = await read("packages/work/src/commands/doctor.mjs");
       assert.match(strippedBody(face.file, face.text), /projectRoot:\s*ctx\.workspace\.projectRoot/, "the impure edge hands the engine the project root — without it no cited path can be resolved");
     },
   },

@@ -59,7 +59,7 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   // 127/03 — the twelfth and thirteenth: the archive face (`selectDoneDrivers`) and the archive
   // engine (`liveDrivers`) each order the root's drivers by number for `--done`, and each site sits
   // behind `.filter(isLiveStreamRow)` over the same rows. Guarded; none is allow-listed.
-  "src/commands/archive.mjs",
+  "packages/work/src/commands/archive.mjs",
   "packages/work/src/archive.mjs",
 ]);
 

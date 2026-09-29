@@ -570,9 +570,9 @@ export const workArchiveIsAMoveTests = [
       assert.ok(command, "work:archive is registered");
       assert.deepEqual(command.cli.route, ["work", "archive"]);
       assert.deepEqual(Object.keys(command.cli.spec.flags).sort(), ["done", "force", "yes"]);
-      const face = stripComments(await readFile(path.join(repoRoot, "src", "commands", "archive.mjs"), "utf8"));
+      const face = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "archive.mjs"), "utf8"));
       assert.doesNotMatch(face, /insert-shared\.mjs/, "the face carries no import of insert-shared.mjs");
-      assert.match(face, /export const ARCHIVE_FLAGS/, "the flags are declared in the module");
+      assert.match(face, /const ARCHIVE_FLAGS/, "the flags are declared in the module");
 
       const read = (file) => readFile(path.join(repoRoot, ...file.split("/")), "utf8");
       const contract = await read("test/command/command-core-contract.test.mjs");
@@ -989,7 +989,7 @@ export const workArchiveIsAMoveTests = [
           if (/\barchiveItems\s*\(/.test(code)) callers.push(file.rel);
         }
         assert.deepEqual(callers, ["src/effects/stream-transitions.mjs"], "archiveItems( is called from the seam and nowhere else");
-        const face = stripComments(await readFile(path.join(repoRoot, "src", "commands", "archive.mjs"), "utf8"));
+        const face = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "archive.mjs"), "utf8"));
         assert.match(face, /transitionStreamArchived\(/);
         assert.doesNotMatch(face, /archiveItems\s*\(/);
 

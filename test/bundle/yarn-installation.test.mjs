@@ -89,6 +89,9 @@ export const yarnInstallationTests = [
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
         'toolchain.mjs': ['node:path', 'node:fs'],
+        'commands/archive.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
+        'commands/doctor.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs', '@aof/contracts/error'],
+        'commands/validate.mjs': ['node:path', 'node:fs/promises'],
         'declared.mjs': ['node:path', 'node:fs/promises'],
         'select.mjs': ['node:fs'],
         'observe.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error'],
@@ -136,7 +139,7 @@ export const yarnInstallationTests = [
         'discovery.mjs': ['node:path', 'node:fs/promises'],
         'validation.mjs': ['node:path', 'node:fs/promises'],
       } : {};
-      const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[path.basename(file)] ?? []).includes(specifier);
+      const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[file.slice(`packages/${name}/src/`.length)] ?? nativePorts[path.basename(file)] ?? []).includes(specifier);
       const external = report.violations.filter(forbidden);
       assert.deepEqual(external, [], name + ': only local imports and explicitly allowed platform/package APIs are allowed');
       assert.deepEqual(report.computed, [], `${name}: computed imports cannot bypass the boundary`);
