@@ -216,7 +216,11 @@ const CONTRIBUTIONS = [
   ]),
   { name: "aof", commands: [
     projectProvisionCommand,
+  ] },
+  createKnowledgeContribution([
     importMilestoneCommand,
+  ]),
+  { name: "aof", commands: [
     migrateFolderCommand,
   ] },
   createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),

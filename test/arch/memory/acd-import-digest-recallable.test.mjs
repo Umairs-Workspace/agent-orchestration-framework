@@ -88,7 +88,7 @@ export const archTests = [
       assert.ok(/AOF_FILE/.test(indexing), "local-indexing references AOF_FILE (the digest is a recognised scan artifact)");
       assert.ok(/parseAof\(/.test(indexing), "the digest is indexed through the existing parseAof");
       // The materialize writer RENDERS the digest — it defines no parser and no record shape.
-      const materialize = await readFile(path.join(repoRoot, "src", "import", "materialize.mjs"), "utf8");
+      const materialize = await readFile(path.join(repoRoot, "packages", "knowledge", "src", "import", "materialize.mjs"), "utf8");
       assert.ok(/renderDigest/.test(materialize), "the materialize writer renders the digest (reusing the milestone-14 doc shape)");
       assert.ok(!/function\s+parse[A-Z]/.test(materialize), "the materialize writer defines no parser of its own");
       assert.ok(!/recordType\s*:/.test(materialize), "the materialize writer defines no record shape of its own");

@@ -1658,3 +1658,39 @@ creation, include workspace-wide backend-selection/parser censuses, and assert i
 services against their core bindings. Live Graphify execution was not needed for package contracts.
 Import storage/materialization ownership, remaining mesh/server extraction, core/apps layout, final
 application composition, adapter removal and whole-tree/platform verification remain outstanding.
+
+## Imported knowledge ownership
+
+Moved the five import/source, store, recovery, materialization and command implementations into
+`@aof/knowledge`. Source access is directly importable; configured services expose factories. Core
+supplies workspace geometry, schema/template configuration and backend resolution. Recovery uses
+the work package's public lifecycle and heading APIs. The package contribution now owns
+`import:milestone` while retaining its position among all 117 registered descriptors.
+
+`migrate:folder` still belongs to the remaining work extraction: it creates managed work and consumes
+recovery through application composition. This avoids introducing a work-to-knowledge dependency
+cycle. Final composition should bind knowledge's local collaborators within its package assembly
+and remove the temporary root adapters.
+
+Evidence in `.tmp/workspace-migration/imports/`:
+
+- Five legacy APIs and 27 exported values/function bodies/descriptors match the saved pre-move
+  implementations. All 117 registry descriptors and their order match, normalizing CRLF/LF in
+  function text only.
+- The 26-suite affected selection passes 271 cases with one distribution manifest discrepancy.
+  Five shipped bundle hashes were stale after earlier canonical citation changes. Regenerating
+  `src/bundle/manifest.json` restores all 14 tests in that distribution suite. It does not refresh
+  checked-in `.aof`, Claude, Codex or OpenCode outputs or their lock hashes.
+- Seven public package tests pass locally and in a copied installation. Three new cases cover
+  offline source preview and recovery, deterministic derived-store replacement, and colocated
+  command execution with dry-run refusal to write and injected reindexing. Existing integration
+  suites continue to exercise the configured shipped digest template and memory index.
+- The actual local installer copies all 22 knowledge APIs; each resolves under the payload's
+  `node_modules`, and its registry contains 117 commands. Standalone JavaScript includes all five
+  moved implementations. These checks do not prove a native executable or other platforms.
+- Supply-chain audit reports zero warnings. No dependencies or lockfile entries changed.
+- The final census/registry selection passes all 20 checks. The command-core suite passes all 29
+  cases, including the bridge that now runs 176 package tests.
+
+Generated runtime citation parity, remaining feature extraction, final core/apps layout, assembly,
+adapter removal and whole-tree/platform verification remain open.

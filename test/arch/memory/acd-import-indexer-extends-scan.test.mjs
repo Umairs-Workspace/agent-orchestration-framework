@@ -41,8 +41,8 @@ import {
 import { materializeImport } from "../../../src/import/materialize.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_IMPORT_DIR = path.join(repoRoot, "src", "import");
-const IMPORT_COMMAND = path.join(repoRoot, "src", "commands", "import-milestone.mjs");
+const SRC_IMPORT_DIR = path.join(repoRoot, "packages", "knowledge", "src", "import");
+const IMPORT_COMMAND = path.join(repoRoot, "packages", "knowledge", "src", "commands", "import-milestone.mjs");
 
 const INDEX_NAME = "aof.memory.index.json";
 

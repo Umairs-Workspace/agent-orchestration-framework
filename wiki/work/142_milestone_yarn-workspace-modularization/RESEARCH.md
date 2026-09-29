@@ -866,3 +866,15 @@ receives its transport; moving the generic MCP server belongs to server extracti
 storage/materialization still enters through application ports and needs a final ownership decision.
 Architecture scans now include workspace source and trace configured service bindings through their
 adapters; module actuator validation also recognizes exported destructuring declarations.
+## Import ownership follow-up
+
+The import engine has two distinct consumers. `import:milestone` writes a knowledge digest beside
+the source documents and requests memory reindexing; `migrate:folder` scaffolds managed work from
+the same recovered content. Source access, recovery and knowledge materialization now live in
+`@aof/knowledge`. Managed-work conversion remains a work command, supplied with recovery by the
+application composition. Work must not import knowledge directly because knowledge already uses
+work's public lifecycle, heading and record contracts.
+
+Import services use explicit configured ports for workspace paths, the shipped digest renderer and
+schema version. Package tests can therefore exercise real temporary source/storage directories
+without loading the application registry or locating assets relative to the repository root.

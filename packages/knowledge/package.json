@@ -20,7 +20,12 @@
     "./commands/graph-triage": "./src/commands/graph-triage.mjs",
     "./commands/graph-serve": "./src/commands/graph-serve.mjs",
     "./commands/memory": "./src/commands/memory.mjs",
-    "./commands": "./src/commands.mjs"
+    "./commands": "./src/commands.mjs",
+    "./import/source": "./src/import/source.mjs",
+    "./import/store": "./src/import/store.mjs",
+    "./import/recovery": "./src/import/recovery.mjs",
+    "./import/materialize": "./src/import/materialize.mjs",
+    "./commands/import-milestone": "./src/commands/import-milestone.mjs"
   },
   "files": [
     "src"

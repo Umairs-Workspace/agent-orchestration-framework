@@ -21,7 +21,7 @@
         "id": "watcher-autonomous-cascade",
         "kind": "asset"
       },
-      "hash": "sha256:f8587c64b80e3ea132e1220ee1e6a98bb1e779416154bb4c995aed0f7c736aad"
+      "hash": "sha256:7ef013952c22847f65f3f01bbb4e4746bce5a5b1dfdfa8d2c1880451af1678f3"
     },
     {
       "path": ".aof/loops/autonomous-cascade.md",
@@ -39,7 +39,7 @@
         "id": "watcher-build-to-green",
         "kind": "asset"
       },
-      "hash": "sha256:414ca321ad8328853750b5ecaa103b9883269160d7176a6532cdb27dd6d0e4bf"
+      "hash": "sha256:45247829d6f4c468ee30b8b8d4a6180e88c3ba32d36cb091056d61f75dd09ca4"
     },
     {
       "path": ".aof/loops/build-to-green.md",
@@ -102,7 +102,7 @@
         "id": "watcher-review-fix-rereview",
         "kind": "asset"
       },
-      "hash": "sha256:b0c644879458ae8640d1fb614813c57bbaa799d12e4e0f32059775f2b8186199"
+      "hash": "sha256:d8ff686265b585946f6511c6bcad7f75a31ff35446ffb8d7b7e3f405d508a0ea"
     },
     {
       "path": ".aof/loops/review-fix-rereview.md",
@@ -120,7 +120,7 @@
         "id": "anchor-rubric-process-exit",
         "kind": "asset"
       },
-      "hash": "sha256:946689bb4caefda03eaa31e6cbc3a9e181994701d366e52162061ad43f81cdd3"
+      "hash": "sha256:91e2f71e16a98e7630b3b5c511ee3dad5ce6b0dbd064c5dd51868bd6beb01844"
     },
     {
       "path": ".aof/loops/run-lifecycle-policy.md",
@@ -147,7 +147,7 @@
         "id": "loop-run-resilience",
         "kind": "asset"
       },
-      "hash": "sha256:9af1d86f041f7d50431f9fa636c099e366822cd2988fec45927f01ba3b855f59"
+      "hash": "sha256:e20b6e0c4bcd0342cb672f2f72a88390757d575f92d9e701c135130f9f562710"
     },
     {
       "path": ".aof/loops/speed-thoroughness-autonomy.md",

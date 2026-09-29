@@ -72,7 +72,7 @@ const workDir = path.join(repoRoot, "wiki", "work");
 const THE_ONE_HOME = "packages/work/src/declared-id.mjs";
 // The two modules whose reach is the WHOLE DOCUMENT, and which must therefore take the
 // forms and never the register-block predicate (ADR-008 ruling 2). Named, never counted.
-const WHOLE_DOCUMENT_IMPORTERS = ["packages/knowledge/src/memory/local-indexing.mjs", "src/import/recovery.mjs"];
+const WHOLE_DOCUMENT_IMPORTERS = ["packages/knowledge/src/memory/local-indexing.mjs", "packages/knowledge/src/import/recovery.mjs"];
 
 // ────────────────────────────────────── the leaf's two halves, partitioned ──
 //

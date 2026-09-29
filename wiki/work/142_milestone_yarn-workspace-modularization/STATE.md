@@ -457,3 +457,17 @@ parity mismatch. All 17 knowledge modules/contribution bundle into standalone Ja
 Runtime census/registry verification passes all 20 checks. Yarn
 skip-build/immutable installs and supply-chain audit pass. Final import ownership, mesh/server work,
 core/apps layout, composition, adapter removal and whole-tree/platform verification remain open.
+
+Import extraction: knowledge owns source access, recovery, storage, materialization and the
+import:milestone command/contribution. Core supplies configured paths, the shipped digest renderer,
+schema version and memory backend. Five legacy APIs and 27 exported values/functions/descriptors
+match; all 117 registry descriptors/order match with platform line endings normalized. Seven package
+tests pass locally and in a copied installation, including three new import contracts. The 26-suite
+selection passed 271 cases with one stale shipped-manifest failure; regenerating the five affected
+canonical bundle hashes makes all 14 distribution checks pass. No checked-in generated runtime
+copies or lock hashes were changed. All 22 knowledge APIs resolve inside the copied installation,
+the five implementations bundle into standalone JavaScript, and supply-chain audit is clean.
+The final census/registry selection passes all 20 checks, and the command suite passes all 29 cases,
+including its bridge to 176 package tests.
+Conversion into managed work, mesh/server, final core/apps layout/composition, adapter removal and
+whole-tree/platform verification remain outstanding.

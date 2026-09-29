@@ -131,7 +131,7 @@ export const archTests = [
       for (const [source, hit] of planted) {
         assert.ok(mapSpellings("src/work/doctor-examples.mjs", source).includes(hit), `${source} → ${hit}`);
       }
-      assert.deepEqual(mapSpellings("src/import/materialize.mjs", "const id = outcome.id ?? \"R1\";"), [], "a bare id is not a map shape");
+      assert.deepEqual(mapSpellings("packages/knowledge/src/import/materialize.mjs", "const id = outcome.id ?? \"R1\";"), [], "a bare id is not a map shape");
       assert.deepEqual(mapSpellings("src/x.mjs", "const t = /ADR-\\d{3}/;"), [], "an ADR id is not a map id");
       assert.deepEqual(mapSpellings("packages/work/src/cited-path-resolve.mjs", "const m = /^R\\d*\\t([^\\t]+)$/u.exec(line);"), [], "git's rename status is not a map id");
       assert.deepEqual(mapSpellings("src/x.mjs", "// - E1 · a → b [proposed]\nconst a = 1;"), [], "a comment is not code");
