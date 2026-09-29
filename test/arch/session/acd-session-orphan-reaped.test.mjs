@@ -43,7 +43,7 @@
 //  out of the write, each trip the SAME assertions the real code passes.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
-import { readdirSync, statSync } from "node:fs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -61,7 +61,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(repoRoot, "src");
-const sessionSourcePath = path.join(srcRoot, "mesh/session.mjs");
+const sessionSourcePath = path.join(repoRoot, "packages/mesh/src/session.mjs");
 const commandSourcePath = path.join(srcRoot, "commands", "mesh", "session.mjs");
 
 const NODE_ID = "node-a";
@@ -137,7 +137,7 @@ function suppliedUnlinkSites(code) {
 // declaration to its closing brace, plus the window helper it delegates its clock to.
 function reapPath(code) {
   const source = stripComments(normalise(code));
-  const start = source.indexOf("export async function reapExpiredSessions(");
+  const start = source.indexOf("async function reapExpiredSessions(");
   if (start < 0) return null;
   const body = source.slice(start, source.indexOf("\n}", start));
   const windowStart = source.indexOf("function resolveReapWindow(");
@@ -168,27 +168,19 @@ function reapStructuralViolations(code) {
 
   // The write seam invokes it.
   for (const verb of ["startSession", "pingSession"]) {
-    const start = reap.source.indexOf(`export async function ${verb}(`);
+    const start = reap.source.indexOf(`async function ${verb}(`);
     const body = start < 0 ? "" : reap.source.slice(start, reap.source.indexOf("\n}", start));
     if (!/reapExpiredSessions\s*\(/.test(body)) problems.push(`${verb} does not invoke reapExpiredSessions — ADR-006 puts the sweep at the WRITE seam`);
   }
 
   // ADR-010 R5: the injected deleter defaults to the module's real unlink.
   if (!/options\.unlink\s*\?\?\s*unlink/.test(reap.body)) problems.push("the reap's deleter does not default to the module's real unlink (ADR-010 R5)");
-  const endStart = reap.source.indexOf("export async function endSession(");
+  const endStart = reap.source.indexOf("async function endSession(");
   const endBody = endStart < 0 ? "" : reap.source.slice(endStart, reap.source.indexOf("\n}", endStart));
   if (/options\.unlink/.test(endBody)) problems.push("endSession took the reaper's unlink seam — it is not the reaper (ADR-010 R5)");
   return problems;
 }
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const entry = path.join(dir, name);
-    if (statSync(entry).isDirectory()) walk(entry, out);
-    else if (name.endsWith(".mjs")) out.push(entry);
-  }
-  return out;
-}
 
 async function makeFixture() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-acd-session-orphan-reaped-"));
@@ -235,7 +227,7 @@ export const archTests = [
     name: "arch/48 ADR-010 R5 (acd-session-orphan-reaped): STRUCTURAL — NO src/ call site supplies options.unlink in EITHER spelling (`{ unlink: fn }` or the shorthand `{ unlink }`); a test seam never becomes a production door",
     run: async () => {
       const corpus = [];
-      for (const file of walk(srcRoot)) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         corpus.push([path.relative(repoRoot, file).split(path.sep).join("/"), normalise(await readFile(file, "utf8"))]);
       }
       assert.ok(corpus.length > 50, `the scan really walked src/ (found ${corpus.length} modules)`);

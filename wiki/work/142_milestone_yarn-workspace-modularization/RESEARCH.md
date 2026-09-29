@@ -903,3 +903,15 @@ consumers and producer/reader census checks independent of service construction.
 The presence-cadence helper has no production caller. It remains a supported package API and is
 tested/bundled separately; expecting it in the executable's reachable source graph would mistake a
 coverage assumption for existing application behavior.
+
+## Mesh persistence follow-up
+
+Node records and the registry share the machine-global mesh partition, but have different write
+authority: node records are partitioned by node, while registry writes are limited to the nominated
+control node. The extraction preserves both rules, including strict registry corruption errors.
+Session liveness continues to use execution's one staleness predicate; package ownership must not
+introduce a second TTL implementation. Core supplies the configured predicate and global-home policy.
+
+Launcher lock ownership, fabric discovery and repository publication belong with mesh behavior.
+The repository-marker API retains its read/merge/write contract and injectable Git remote lookup.
+Run-path builders remain execution-owned, despite their historical re-export through the mesh store.

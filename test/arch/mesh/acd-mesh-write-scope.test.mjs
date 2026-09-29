@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const MESH_STORE = new URL("../../../src/mesh/store.mjs", import.meta.url);
+const MESH_STORE = new URL("../../../packages/mesh/src/store.mjs", import.meta.url);
 // The mesh:* command modules the write-scope guard ALSO scans (ARCHITECTURE.md fitness
 // #2 — "source-grep src/mesh/store.mjs (+ the mesh:* command modules)"): a mesh command
 // must not write a record doc and must route every write through the atomic writeText

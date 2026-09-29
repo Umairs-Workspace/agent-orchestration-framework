@@ -548,7 +548,7 @@ export const runRecordsNodeIdUnitTests = [
       assert.equal(asId[0].nodeId, null, "the id seed is gone");
       const asName = await resolvePeers(TAILSCALE, { exec: scriptedPeers([{ HostName: "aof-wsl-guest", TailscaleIPs: ["100.64.0.2"], Online: true }]), platform: "linux", roster });
       assert.equal(asName[0].nodeId, "aof-wsl");
-      const source = stripComments(await readFile(path.join(REPO_ROOT, "src", "mesh", "fabric.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(REPO_ROOT, "packages", "mesh", "src", "fabric.mjs"), "utf8"));
       assert.ok(!/byHost\.set\(\s*nodeId\b/.test(source), "no expression seeds the host index from a nodeId");
     },
   },

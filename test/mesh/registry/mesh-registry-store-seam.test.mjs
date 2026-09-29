@@ -271,9 +271,9 @@ export const meshRegistryStoreSeamTests = [
 
         // the write goes through the atomic writeText temp+rename seam, not a bare
         // writeFile — the module imports the fs.mjs seam and joins registryPath at it
-        const source = await readFile(path.join(repoRoot, "src", "mesh", "registry.mjs"), "utf8");
+        const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "registry.mjs"), "utf8");
         const live = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-        assert.ok(/import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+fs\.mjs["']/.test(live), "the store imports writeText from src/fs.mjs (the atomic temp+rename seam)");
+        assert.ok(/import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*["']@aof\/foundation\/fs["']/.test(live), "the store imports foundation's atomic temp+rename seam");
         assert.ok(/\bwriteText\s*\(\s*registryPath\s*\(/.test(live), "the persist calls writeText(registryPath(...)) — the atomic seam at the registry partition");
         assert.ok(!/\bwriteFile(?:Sync)?\s*\(/.test(live) && !/\bappendFile(?:Sync)?\s*\(/.test(live), "no bare writeFile/appendFile bypasses the atomic seam");
       } finally {

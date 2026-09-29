@@ -1778,3 +1778,39 @@ Evidence in `.tmp/workspace-migration/mesh-relay/`:
 Remaining mesh work includes persistence/projections, assignment coordination/recovery, launchers,
 worker orchestration and command implementation ownership. Final application assembly, core/apps
 layout, removal of transitional modules and full native/platform verification remain outstanding.
+
+## Mesh persistence and fabric ownership
+
+Mesh now owns six more implementations: node-record storage, the group registry, live-session
+persistence, launcher locks, fabric discovery and repository publication markers. Core composes
+global-home policy, diagnostics and execution's shared staleness predicate through explicit ports.
+Registry and session storage receive the configured mesh partition seam. Atomic writes use the
+declared `@aof/foundation/fs` dependency. The historical run-path exports remain compatibility
+forwards to execution; mesh does not duplicate those builders. Construction starts no I/O.
+
+Evidence in `.tmp/workspace-migration/mesh-persistence/`:
+
+- Six legacy APIs and all 58 exported values/function bodies match the pre-move baseline. All
+  117 command descriptors and their order match, including flags and invocation functions.
+- The 101-suite selection passed 911 checks with 25 source-location/ownership failures. After
+  correcting readers and scanners, all 150 checks across the 20 affected verification suites pass.
+  The first corrected run passed 149 with one exact closure assertion remaining; measuring the
+  worker sink confirmed five new implementation homes, with the session driver's boundary unchanged.
+- Five package contracts cover opaque node storage and path confinement, registry authority and
+  corruption/refusal, live revocation and single-use invites, session TTL/sibling isolation/sticky
+  relay state, lock contention/stale release, and repository-marker credential stripping/config
+  preservation. They pass in the installer's copied payload; the package bridge now runs 190 cases.
+  An initial package-test fixture omitted `admittedAt`; supplying it corrected the fixture's
+  undefined-versus-JSON comparison without changing production behavior.
+- The copied installation retains 117 commands and resolves all six APIs inside its own payload.
+  Standalone JavaScript contains all six implementations. Native/platform proof remains open.
+- Yarn skip-build and immutable installs pass with existing peer warnings. The only dependency
+  change is the existing foundation workspace; supply-chain audit reports zero warnings.
+- Source guards now include workspace implementations for fabric/enrollment, session key/deletion
+  rules, attribution-store ownership and run-path uniqueness. The staleness guard checks both the
+  package's input and core's binding to the shared predicate. Existing planted violations remain.
+- The final runtime census and registry architecture selection passes all 20 checks.
+
+No generated assets, lock hashes or AOF workflow state changed. Remaining mesh work includes
+presence/global projections, coordination/recovery, launchers, worker orchestration and command
+ownership. Final core/apps layout, application assembly, adapter removal and full verification remain.

@@ -260,7 +260,13 @@ export const archTests = [
       // The read extraction adds three implementation homes behind existing forwards:
       // item-row, artifacts and content-read. The other 91 nodes are unchanged.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/work-loop/src/dispatch.mjs")), "the sink reaches dispatch's implementation through its core binding");
-      assert.equal(sinkGraph.seen.size, 96, "dispatch adds one implementation home to the prior 95-module closure");
+      // Mesh persistence adds five implementation homes behind existing composition adapters.
+      // The registry is not in this sink's static closure; the six-module extraction
+      // therefore increases this census by five, without widening the driver's imports.
+      for (const name of ["store", "session", "launcher-lock", "fabric", "repo-marker"]) {
+        assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)), name);
+      }
+      assert.equal(sinkGraph.seen.size, 101, "mesh persistence adds five homes to the prior 96-module closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

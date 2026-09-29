@@ -43,7 +43,7 @@ import { assembleSessionRecord } from "../../../src/mesh/session.mjs";
 import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER } from "../../../ui/src/home/feed-axis.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SESSION = path.join(repoRoot, "src", "mesh", "session.mjs");
+const SESSION = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
 const PRESENCE = path.join(repoRoot, "src", "mesh", "presence.mjs");
 const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
 const QUERY = path.join(repoRoot, "src", "global-mesh-query.mjs");

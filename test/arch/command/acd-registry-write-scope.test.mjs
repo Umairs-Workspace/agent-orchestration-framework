@@ -32,7 +32,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const REGISTRY_MODULE = path.join(repoRoot, "src", "mesh", "registry.mjs");
+const REGISTRY_MODULE = path.join(repoRoot, "packages", "mesh", "src", "registry.mjs");
 const SRC = path.join(repoRoot, "src");
 
 const RECORD_DOCS = ["SPEC.md", "STORY.md", "STATE.md", "SESSION.md"];

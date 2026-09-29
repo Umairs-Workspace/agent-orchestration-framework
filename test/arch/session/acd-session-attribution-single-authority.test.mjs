@@ -64,7 +64,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 
 const QUERY_FILE = "src/global-mesh-query.mjs";
-const SESSION_FILE = "src/mesh/session.mjs";
+const SESSION_FILE = "packages/mesh/src/session.mjs";
 const SESSION_CLI_FILE = "src/commands/mesh/session.mjs";
 
 // The keys a session record may NEVER carry: attribution derives onto the session and

@@ -12,28 +12,20 @@
 // runsDir. Non-vacuous per the m03 lesson: each matcher is self-checked against a
 // planted violation.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "src");
-const RUN_STORE = path.join(SRC, "run-store.mjs");
+const RUN_STORE = path.join(repoRoot, "packages/execution/src/runs.mjs");
 const MESH_STORE = path.join(SRC, "mesh/store.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function srcFiles(dir = SRC) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await srcFiles(full)));
-    else if (entry.name.endsWith(".mjs")) out.push(full);
-  }
-  return out;
-}
 
 // Every `join(runsDir(...), …)` call in a comment-stripped source, with its
 // top-level argument count — a call with 3+ arguments joins a segment BETWEEN
@@ -113,11 +105,11 @@ export const archTests = [
     run: async () => {
       const offenders = [];
       let builderSites = 0;
-      for (const file of await srcFiles()) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         const code = stripComments(await readFile(file, "utf8"));
         for (const call of runsDirJoinCalls(code)) {
           if (call.args < 3) continue; // a 2-arg join (dir + leaf / dir + subdir) is not a node builder
-          if (path.basename(file) === "run-store.mjs") {
+          if (file === RUN_STORE) {
             builderSites += 1;
           } else {
             offenders.push(`${path.relative(repoRoot, file)}: ${call.text}`);

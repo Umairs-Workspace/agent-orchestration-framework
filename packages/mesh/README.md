@@ -34,7 +34,22 @@ configured network service. Factories start no network or timer. The relay retai
 checks on every group upgrade, payload-neutral forwarding and explicit shutdown. Terminal tails and
 spawn outcomes remain bounded, ephemeral state. `ws` is the declared network dependency.
 
-Most persistence, coordination, launcher and command implementations still live under `src/`.
+Mesh also owns node-record storage, the single-writer group registry, live-session persistence,
+launcher lock ownership, fabric discovery and repository publication markers:
+
+| API | Composition |
+| --- | --- |
+| `store` / `createMeshStore` | Global mesh-home resolver; explicit workspace roots remain supported. |
+| `registry` / `createMeshRegistry` | Configured store's `meshDir`; owns admission, invite consumption and credential verification. |
+| `session` / `createMeshSessions` | Store's `meshDir`, execution's shared `isStale`, and degradation reporting. |
+| `launcher-lock` / `createMeshLauncherLock` | Global mesh-home resolver and degradation reporting. |
+| `fabric`, `repo-marker` | Direct APIs with existing injected process/network seams. |
+
+Storage uses `@aof/foundation/fs` for atomic writes. Factories perform no I/O at construction;
+callers explicitly start persistence, discovery or lock acquisition. Run-path compatibility exports
+stay in core and refer to execution's implementation; mesh defines no second run-path builder.
+
+Projections, coordination, launcher orchestration and most command implementations still live under `src/`.
 Root adapters currently compose the extracted services; final package/application assembly will
 remove them. The presence cadence helper has no production callers and remains available as a
 public API, preserving its existing contract. Run `yarn workspace @aof/mesh test`.

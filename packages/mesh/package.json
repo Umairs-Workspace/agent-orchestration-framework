@@ -16,7 +16,13 @@
     "./relay-client": "./src/relay-client.mjs",
     "./terminal-relay-bridge": "./src/terminal-relay-bridge.mjs",
     "./terminal-input": "./src/terminal-input.mjs",
-    "./terminal-mirror": "./src/terminal-mirror.mjs"
+    "./terminal-mirror": "./src/terminal-mirror.mjs",
+    "./store": "./src/store.mjs",
+    "./registry": "./src/registry.mjs",
+    "./session": "./src/session.mjs",
+    "./launcher-lock": "./src/launcher-lock.mjs",
+    "./fabric": "./src/fabric.mjs",
+    "./repo-marker": "./src/repo-marker.mjs"
   },
   "files": [
     "src"
@@ -26,6 +32,7 @@
   },
   "dependencies": {
     "@aof/execution": "workspace:*",
+    "@aof/foundation": "workspace:*",
     "@aof/work-loop": "workspace:*",
     "ws": "^8.21.0"
   }

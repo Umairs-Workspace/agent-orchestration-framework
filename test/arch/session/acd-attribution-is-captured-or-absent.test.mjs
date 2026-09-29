@@ -34,7 +34,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { srcFilesContaining } from "../../support/read-src-files.mjs";
+import { runtimeFilesContaining as srcFilesContaining } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody, matchedParenSpan } from "../../support/source-slice.mjs";
 import { pingSession, resolveSessionIdFromLiveStore } from "../../../src/mesh/session.mjs";
 import { runStartCommand } from "../../../src/commands/run-start.mjs";
@@ -45,7 +45,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The module set milestone 96 / story 00 touches. The absence is asserted over these and not
 // over `src/**` at large: a control that swept everything would be measuring other milestones'
 // modules and would fail for their reasons, not this one's.
-const MODULE_SET = ["packages/work/src/observe.mjs", "src/mesh/session.mjs", "packages/work/src/commands/run-start.mjs"];
+const MODULE_SET = ["packages/work/src/observe.mjs", "packages/mesh/src/session.mjs", "packages/work/src/commands/run-start.mjs"];
 
 // The retired path's own vocabulary. `agentMatchesMilestone` is FF-6805's subject by name; the
 // rest are the shapes a widened join would have to wear — a ref matched against a directory
@@ -139,19 +139,19 @@ export const archTests = [
       // The partition is named exactly once, at its own path builder. Any other module that
       // wanted to read it would have to name the segment or import a builder for it — and no
       // builder is exported.
-      const segment = await srcFilesContaining(repoRoot, '"sessions"', { except: ["mesh/session.mjs"] });
+      const segment = await srcFilesContaining(repoRoot, '"sessions"', { except: ["packages/mesh/src/session.mjs"] });
       assert.deepEqual(segment, [], `only src/mesh/session.mjs names the sessions partition (also: ${segment.join(", ")})`);
 
-      const builders = await srcFilesContaining(repoRoot, "sessionRecordPath(", { except: ["mesh/session.mjs"] });
+      const builders = await srcFilesContaining(repoRoot, "sessionRecordPath(", { except: ["packages/mesh/src/session.mjs"] });
       assert.deepEqual(builders, [], `only src/mesh/session.mjs composes a session record path (also: ${builders.join(", ")})`);
 
       // The rung itself is exported from that module and from nowhere else.
-      const rung = await srcFilesContaining(repoRoot, "export async function resolveSessionIdFromLiveStore");
+      const rung = await srcFilesContaining(repoRoot, "async function resolveSessionIdFromLiveStore");
       // ONE HOME, spelled as the floor plus a declared ceiling — never as a one-member census
       // (FF-11902): the module is named AMONG what the sweep found.
       assert.ok(rung.length >= 1, "the sweep of src/ found no module exporting the live-store rung");
       assert.ok(rung.length <= 1, `the live-store rung has one home (found in: ${rung.join(", ")})`);
-      assert.equal(rung[0], "mesh/session.mjs", "…and it is the session module");
+      assert.equal(rung[0], "packages/mesh/src/session.mjs", "…and it is the session module");
     },
   },
   {

@@ -50,7 +50,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const commandSourcePath = path.join(repoRoot, "src", "commands", "mesh", "session.mjs");
-const sessionSourcePath = path.join(repoRoot, "src", "mesh", "session.mjs");
+const sessionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";

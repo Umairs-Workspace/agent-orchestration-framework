@@ -42,7 +42,7 @@
 //  trip the SAME assertion the real code passes.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, unlink, stat } from "node:fs/promises";
-import { readdirSync, statSync } from "node:fs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,7 +52,7 @@ import { loadWorkspace } from "../../../src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(repoRoot, "src");
-const sessionSourcePath = path.join(srcRoot, "mesh/session.mjs");
+const sessionSourcePath = path.join(repoRoot, "packages/mesh/src/session.mjs");
 const commandSourcePath = path.join(srcRoot, "commands", "mesh", "session.mjs");
 
 const NODE_ID = "node-a";
@@ -188,14 +188,6 @@ function keyAsOneObjectViolations(code, label) {
   return problems;
 }
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const entry = path.join(dir, name);
-    if (statSync(entry).isDirectory()) walk(entry, out);
-    else if (name.endsWith(".mjs")) out.push(entry);
-  }
-  return out;
-}
 
 async function makeFixture() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-acd-session-leaf-per-session-"));
@@ -233,7 +225,7 @@ export const archTests = [
     name: "arch/48 ADR-002 (acd-session-leaf-per-session): STRUCTURAL — every src/ call site passes the key as ONE object, never as positional components (and the sweep says how many sites it ruled on)",
     run: async () => {
       const corpus = [];
-      for (const file of walk(srcRoot)) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         corpus.push([path.relative(repoRoot, file).split(path.sep).join("/"), normalise(await readFile(file, "utf8"))]);
       }
       assert.ok(corpus.length > 50, `the scan really walked src/ (found ${corpus.length} modules)`);

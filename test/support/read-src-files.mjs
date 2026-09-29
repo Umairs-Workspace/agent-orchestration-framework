@@ -39,6 +39,15 @@ export async function readRuntimeFiles(repoRoot) {
   return files;
 }
 
+export async function runtimeFilesContaining(repoRoot, needle, { except = [] } = {}) {
+  const hits = [];
+  for (const { rel, path: file } of await readRuntimeFiles(repoRoot)) {
+    if (except.some(tail => rel === tail || rel.endsWith(`/${tail}`))) continue;
+    if ((await readFile(file, "utf8")).includes(needle)) hits.push(rel);
+  }
+  return hits;
+}
+
 // ONE READ OF src/**, SHARED (milestone 70 / story 05). Three suites assert the same fact —
 // "no second ceiling literal exists outside the compiler" — and each was globbing and
 // reading every src file to do it, ~113 ms a copy. The invariant is FF-7003's; the WALK is

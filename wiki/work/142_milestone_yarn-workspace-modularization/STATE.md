@@ -502,3 +502,16 @@ launchers and most mesh commands, final core/apps layout/composition, adapter re
 native/platform verification remain outstanding.
 The final mesh relay census/registry run passes all 20 checks, and all 14 distribution-manifest
 checks pass after the canonical citation update.
+
+Mesh persistence/fabric extraction: six implementations now belong to mesh: node storage, registry,
+sessions, launcher locks, fabric discovery and repository publication markers. Core supplies global
+paths, diagnostics and the shared execution TTL predicate. All six legacy APIs/58 exports match;
+all 117 command descriptors/order match. The 101-suite selection passed 911 checks with 25 source
+guard failures; the corrected 20-suite selection passes all 150 checks. Five package tests pass in
+the copied installation, bringing the package bridge to 190 cases. The installed registry retains
+117 commands, six APIs resolve inside the payload, and all six modules bundle into standalone JS.
+Yarn skip-build/immutable installs and supply-chain audit pass; foundation is the only new declared
+workspace dependency. No generated assets or workflow state changed. Mesh projections/coordination,
+launchers/workers/commands, final core/apps layout/composition, adapter removal and full native/
+platform verification remain outstanding.
+The final persistence/fabric census and registry architecture selection passes all 20 checks.

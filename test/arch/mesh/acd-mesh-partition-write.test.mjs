@@ -11,7 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 
-const MESH_STORE = new URL("../../../src/mesh/store.mjs", import.meta.url);
+const MESH_STORE = new URL("../../../packages/mesh/src/store.mjs", import.meta.url);
 
 export const archTests = [
   {

@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url";
 import { isNodeStale } from "../../../src/mesh/presence.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sessionSourcePath = path.join(repoRoot, "src", "mesh", "session.mjs");
+const sessionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -70,7 +70,12 @@ export const archTests = [
     run: async () => {
       const source = await readIfExists(sessionSourcePath);
       if (source == null) return; // not-yet-built: the invariant cannot be violated by an absent file (pending)
-      const problems = assertStructural(stripComments(source));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/session.mjs"), "utf8"));
+      const implementation = stripComments(source);
+      assert.match(adapter, /import\s*\{\s*createMeshSessions\s*\}\s*from\s*["']@aof\/mesh\/session["']/);
+      assert.match(adapter, /createMeshSessions\(\{[^}]*\bisStale\b[^}]*\}\)/);
+      assert.match(implementation, /function createMeshSessions\(\{[^}]*\bisStale\b[^}]*\}\)/);
+      const problems = assertStructural(adapter + "\n" + implementation);
       assert.deepEqual(problems, [], `structural problems: ${JSON.stringify(problems)}`);
     },
   },
