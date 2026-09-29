@@ -266,3 +266,15 @@ had 793 initial passes and 15 failures: 13 source-location failures are covered 
 pending the separate four-file approval. Standalone JavaScript bundling and supply-chain audit pass.
 The final census passes all 12 cases. No generated output, dependency or workflow state changed. Remaining
 work services/commands, domain extractions, core/apps layout and final verification remain outstanding.
+
+Read extraction: ten implementations now belong to work: row/artifact contracts, worker content
+collection, cache-first reads, shared resolvers and find/list/next/doc/tasks commands. Core supplies
+cache, mesh, execution and projection services through explicit factory ports. Ten legacy API/value/
+function comparisons pass. Source and copied-installation comparisons preserve read results, command
+rendering, artifact bodies and all 117 registered commands. The corrected ten-suite selection passes
+82 cases, including the bridge over all 120 package cases; the census passes all 12 cases. Standalone
+JavaScript bundling and the supply-chain audit pass. The original 52-suite affected run is still active
+in session 29996 (`.tmp/workspace-migration/work-read/selected.log`); its ten initial source-location
+failures are covered by the corrected selection. Read its final result before claiming that broader
+selection is complete. No dependencies, generated citations or workflow state changed. Remaining work
+services/commands, other domains and the final core/apps layout remain open in COMPLETION.md.

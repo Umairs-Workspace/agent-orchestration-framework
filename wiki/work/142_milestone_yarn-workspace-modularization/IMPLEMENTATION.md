@@ -1154,3 +1154,29 @@ existing `mesh-assignment-reclaim` hash/manifest assertion and the four-file upd
 they do not authorize expanding the user's earlier three-file citation approval. Remaining work
 services/commands, domain extraction, core/apps layout, adapter removal and final whole-tree/platform
 verification remain outstanding.
+
+## Work owns item reads, artifacts and read commands
+
+Ten implementations moved to work: item rows, the artifact manifest/helpers, worker content collection,
+cache-first readers, shared resolvers and the five find/list/next/doc/tasks command descriptors. Core
+adapters compose cache, execution, mesh, projection and scope services through explicit ports. Package
+imports use local discovery/readiness and public contracts APIs; no dependency declaration changed.
+
+Evidence in `.tmp/workspace-migration/work-read/`:
+
+- All ten legacy APIs, exported values and function bodies match the captured baseline. Source and
+  copied-installation fixtures preserve five command results/rendering, read services, exact versus
+  slug resolution, artifact bodies and missing-document behavior. The copied payload resolves all ten
+  exports internally and retains 117 commands; earlier domain payload comparisons also pass.
+- Two new package cases verify the injected cache/mesh/execution/content services. The root bridge now
+  includes 120 package cases. The corrected ten-suite selection passes 82 cases; the final census
+  passes all 12 cases. Architecture guards inspect package implementations and composition, and scan
+  all runtime packages for duplicate artifact sets and work-item writers.
+- The original 52-suite affected selection is still running in session 29996. Its ten initial failures
+  were source-location assertions, all covered by the corrected run. Its final outcome remains to be
+  collected from `selected.log`; this is not a claim of broader-suite completion.
+- Standalone JavaScript bundling includes all ten implementations. Supply-chain audit passes with zero
+  warnings. No install was needed because dependency declarations did not change.
+
+No generated citations or AOF lifecycle state changed. Remaining work services/commands, domain
+extractions, core/apps layout, adapter removal and final whole-tree/platform verification remain open.

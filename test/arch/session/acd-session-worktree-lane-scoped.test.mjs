@@ -104,6 +104,10 @@ export const ASSIGNMENT_KEYSPACE_CALLERS = Object.freeze([
   }),
   Object.freeze({
     file: "src/work/read.mjs",
+    why: "TRANSITIONAL COMPOSITION — supplies mesh boundary predicates to the work reader.",
+  }),
+  Object.freeze({
+    file: "packages/work/src/read.mjs",
     why: "READ-SIDE ONLY — `isUnderMeshWorktreesRoot` as a boundary PREDICATE (is this checkout a mesh worktree?). It composes no path and materializes nothing.",
   }),
 ]);
@@ -258,6 +262,7 @@ export const archTests = [
         { path: "src/mesh/worktree.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
         { path: "packages/mesh/src/worktrees.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
         { path: "src/mesh/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
+        { path: "packages/work/src/read.mjs", source: "export function createWorkReader({ isUnderMeshWorktreesRoot }) {}" },
         { path: "src/work/read.mjs", source: "import { isUnderMeshWorktreesRoot } from './worktree.mjs';" },
         { path: "src/mesh-brand-new-lane.mjs", source: "import { meshWorktreePath } from './worktree.mjs';\nconst p = meshWorktreePath(root, `preview-${ref}`);" },
       ];

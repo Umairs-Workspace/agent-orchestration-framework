@@ -645,3 +645,16 @@ and copied-payload fixtures exercise all four commands, including a top-level in
 a milestone, its nested story and a UAT dependency, followed by backlog promotion. Every record byte
 and rendered result matches the baseline. The positive disk-reader pins and mint/importer scans now
 inspect package implementations and verify that core adapters supply the shared insertion service.
+
+The work read layer can own its implementation without acquiring mesh or storage dependencies.
+`createWorkReader` receives the cache reader, degrade reporter and three mesh-worktree predicates;
+disk discovery and readiness stay local to the work package. Worker content collection receives only
+the execution run reader and always reads artifact bodies from its own disk. Command factories receive
+the composed reader, execution/assignment overlays and remote content services. Core remains their
+temporary composition site. This keeps remote-row provenance and the worker's own-checkout rule intact.
+
+Package tests explicitly exercise a remote cache row with no local directory, local cache misses,
+worktree cache bypass, supplied execution records, remote doc/task bodies and exact write resolution.
+Architecture checks follow the implementations and inspect both ends of injected cache ports. The
+worker execution import closure changes from 91 to 94 nodes: only work's row, artifact and content-read
+implementation homes are added behind existing forwards. No previous node or dependency disappears.

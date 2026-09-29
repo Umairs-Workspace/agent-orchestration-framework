@@ -31,11 +31,12 @@
 //  Self-check (m03 non-vacuous): a planted second declaration trips the detector, and an
 //  import / a re-export does not.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 const SRC = path.join(repoRoot, "src");
 
 // FF-7008's per-ADR-sibling detector (milestone 70 / story 03, tightened at 70/05's
@@ -104,22 +105,13 @@ function derivationProblems(initializer) {
   return problems;
 }
 
-async function mjsFilesUnder(dir) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await mjsFilesUnder(full)));
-    else if (entry.name.endsWith(".mjs")) out.push(full);
-  }
-  return out;
-}
 
 export const archTests = [
   {
     name: "arch/43 ADR-007 (acd-work-artifact-set-single-home): the artifact-set constant is DECLARED in exactly ONE module in src/ — the streamed set and the requestable set cannot drift",
     run: async () => {
       const declarers = new Map();
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         const code = stripComments(await readFile(file, "utf8"));
         for (const name of SET_NAMES) {
           if (declares(code, name)) {
@@ -152,7 +144,7 @@ export const archTests = [
     name: "arch/43 ADR-007 (acd-work-artifact-set-single-home): the declaring module really carries the record-doc set (the guard watches a real set, not an empty name)",
     run: async () => {
       let carrier = null;
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         const code = stripComments(await readFile(file, "utf8"));
         if (SET_NAMES.some((name) => declares(code, name))) {
           carrier = code;
@@ -179,7 +171,7 @@ export const archTests = [
     run: async () => {
       let carrier = null;
       let carrierPath = null;
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         const code = stripComments(await readFile(file, "utf8"));
         if (declares(code, "WORK_ITEM_ARTIFACTS")) {
           carrier = code;

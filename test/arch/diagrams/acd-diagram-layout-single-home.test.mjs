@@ -27,7 +27,7 @@ import { parseDiagramLinks, renderDiagramBlock } from "../../../src/diagrams/lay
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_ONE_HOME = "packages/work/src/diagrams/layout.mjs";
 // The manifest's own entry (story 04). Named, never counted; it may spell the segment exactly once.
-const MANIFEST = "src/work/artifacts.mjs";
+const MANIFEST = "packages/work/src/artifacts.mjs";
 const SEGMENT = ["dia", "grams"].join("");
 
 async function modules() {

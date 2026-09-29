@@ -64,7 +64,17 @@
     "./commands/insert-chore": "./src/commands/insert-chore.mjs",
     "./commands/insert-milestone": "./src/commands/insert-milestone.mjs",
     "./commands/insert-story": "./src/commands/insert-story.mjs",
-    "./commands/insert-uat": "./src/commands/insert-uat.mjs"
+    "./commands/insert-uat": "./src/commands/insert-uat.mjs",
+    "./item-row": "./src/item-row.mjs",
+    "./artifacts": "./src/artifacts.mjs",
+    "./content-read": "./src/content-read.mjs",
+    "./read": "./src/read.mjs",
+    "./commands/resolve": "./src/commands/resolve.mjs",
+    "./commands/find": "./src/commands/find.mjs",
+    "./commands/list": "./src/commands/list.mjs",
+    "./commands/next": "./src/commands/next.mjs",
+    "./commands/doc": "./src/commands/doc.mjs",
+    "./commands/tasks": "./src/commands/tasks.mjs"
   },
   "files": [
     "src"

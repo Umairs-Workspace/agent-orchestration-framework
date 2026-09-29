@@ -63,7 +63,7 @@ const NAMED_READERS = Object.freeze([
   "packages/work/src/readiness.mjs",
   "packages/work/src/identity.mjs",
   "src/work/loops.mjs",
-  "src/work/read.mjs",
+  "packages/work/src/read.mjs",
   "src/commands/list.mjs",
   "src/commands/next.mjs",
   "src/commands/find.mjs",

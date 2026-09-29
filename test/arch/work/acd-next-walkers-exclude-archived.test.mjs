@@ -55,8 +55,8 @@ const bodyOf = (code, name) => functionBody(code, `function ${name}(`) ?? functi
 // The store-boundary carriers (127/04, ADR-006 §1) — each reads the flag to carry it, never to
 // exclude on it. Named by path with the reason, exactly as FF-12701 names its keepers.
 const CARRIERS = Object.freeze({
-  "src/work/item-row.mjs": "the work_items row's screen, bind mapping (true → 1) and stored-row widening — the store boundary in both directions",
-  "src/work/read.mjs": "cacheOnlyItem rebuilds a cache-only row in the enumerator's shape, archived: true included",
+  "packages/work/src/item-row.mjs": "the work_items row's screen, bind mapping (true → 1) and stored-row widening — the store boundary in both directions",
+  "packages/work/src/read.mjs": "cacheOnlyItem rebuilds a cache-only row in the enumerator's shape, archived: true included",
 });
 
 // The disk readers `rel` imports from src/work.mjs. Reads the import CLAUSE of a `work.mjs`

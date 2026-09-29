@@ -35,7 +35,7 @@
 //  Self-check (m03 non-vacuous): a planted second writer module and a planted sweep call
 //  trip the SAME detectors.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 // The screen's OWN field lists and predicate — read from the module under test, never
@@ -44,6 +44,7 @@ import { REQUIRED_ITEM_FIELDS, OPTIONAL_ITEM_FIELDS, itemRowFault } from "../../
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "src");
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 const STORES = path.join(repoRoot, "src", "effects", "stores.mjs");
 
 function stripComments(source) {
@@ -55,15 +56,6 @@ function stripComments(source) {
 const WORK_ITEMS_DML = /\b(?:INSERT\s+(?:OR\s+\w+\s+)?INTO|UPDATE|DELETE\s+FROM)\s+work_items\b/i;
 const WHOLESALE_WORK_ITEMS = /wholesaleDelete\s*\([^)]*["']work_items["']/;
 
-async function mjsFilesUnder(dir) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await mjsFilesUnder(full)));
-    else if (entry.name.endsWith(".mjs")) out.push(full);
-  }
-  return out;
-}
 
 // The live classification, read from the registry rather than assumed.
 function classOf(storesSource, table) {
@@ -76,7 +68,7 @@ export const archTests = [
     name: "arch/43 ADR-004 (acd-work-items-single-writer): every work_items INSERT/UPDATE/DELETE in src/ lives in exactly ONE module — the shared upsert seam has one implementation, two callers",
     run: async () => {
       const writers = [];
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         if (WORK_ITEMS_DML.test(stripComments(await readFile(file, "utf8")))) writers.push(path.relative(repoRoot, file));
       }
       assert.equal(
@@ -108,7 +100,7 @@ export const archTests = [
       if (cls !== "fact") return; // pre-cut: a clean skip that arms the moment ADR-004's reclassification lands
 
       const sweepers = [];
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         if (WHOLESALE_WORK_ITEMS.test(stripComments(await readFile(file, "utf8")))) sweepers.push(path.relative(repoRoot, file));
       }
       assert.deepEqual(
@@ -209,7 +201,7 @@ export const archTests = [
     run: async () => {
       const SANCTIONED = ["src/global-work-store.mjs"];
       const callers = [];
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         const code = stripComments(await readFile(file, "utf8"));
         // The call form, not the export/import lines that merely name it.
         if (/wholesaleDelete\s*\(\s*\w/.test(code)) callers.push(path.relative(repoRoot, file).replace(/\\/g, "/"));

@@ -39,7 +39,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const WORK = path.join(repoRoot, "src", "work.mjs");
-const READ_SEAM = path.join(repoRoot, "src", "work", "read.mjs");
+const READ_SEAM = path.join(repoRoot, "packages", "work", "src", "read.mjs");
 
 const DISK_READERS = ["listItems", "findWork", "nextWork", "listStream", "readWorkDirectory"];
 
@@ -68,7 +68,7 @@ const WORKER_SIDE = [
   // 43/03 and is re-pointed here at 43/06's review (ADR-016/G2). It is the read that turns
   // a worker's own worktree into the artifact bodies it streams: it must never be answered
   // by another node's copy of those bodies.
-  { file: path.join("src", "work", "content-read.mjs"), symbols: ["listItems"], subject: "readWorkspaceContentRecords" },
+  { file: path.join("packages", "work", "src", "content-read.mjs"), symbols: ["listItems"], subject: "readWorkspaceContentRecords", diskSource: "./discovery.mjs" },
   // The dual-use self-report read (ADR-005: "how a node reads its own disk to report its own
   // state"). Not a reader that must migrate, and not a worker-side read either — it is the
   // publish path's own disk scan, and a cache-first version of it would make a node report
@@ -143,11 +143,11 @@ const STRUCTURAL = [
 // RE-POINT the entry, never to delete it. ONE entry per SUBJECT, so a module with two migrated reads
 // carries two, exactly as STRUCTURAL does for `promotion.mjs`.
 const CONTROL_SIDE = [
-  { file: path.join("src", "commands", "next.mjs"), subject: "nextCommand" },
-  { file: path.join("src", "commands", "find.mjs"), subject: "findCommand" },
-  { file: path.join("src", "commands", "resolve.mjs"), subject: "resolveItem" },
-  { file: path.join("src", "commands", "resolve.mjs"), subject: "resolveItemExact" },
-  { file: path.join("src", "commands", "list.mjs"), subject: "listCommand" },
+  { file: path.join("packages", "work", "src", "commands", "next.mjs"), subject: "nextCommand", adapter: "src/commands/next.mjs", cacheSymbols: ["nextWorkCacheFirst","listItemsCacheFirst"], factory: "createNextCommand" },
+  { file: path.join("packages", "work", "src", "commands", "find.mjs"), subject: "findCommand", adapter: "src/commands/find.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createFindCommand" },
+  { file: path.join("packages", "work", "src", "commands", "resolve.mjs"), subject: "resolveItem", adapter: "src/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
+  { file: path.join("packages", "work", "src", "commands", "resolve.mjs"), subject: "resolveItemExact", adapter: "src/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
+  { file: path.join("packages", "work", "src", "commands", "list.mjs"), subject: "listCommand", adapter: "src/commands/list.mjs", cacheSymbols: ["listStreamCacheFirst"], factory: "createListCommand" },
   { file: path.join("src", "commands", "run-start.mjs"), subject: "runStartCommand" },
   { file: path.join("src", "commands", "mesh", "heartbeat.mjs"), subject: "meshHeartbeatCommand" },
   // (promote-gap-to-chore.mjs moved to STRUCTURAL — ADR-010/R6.3)
@@ -174,7 +174,7 @@ function stripComments(source) {
 // The named bindings a module imports FROM work.mjs (any relative depth).
 function workImportBindings(commentStrippedSource) {
   const bindings = new Set();
-  const re = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/(?:discovery|readiness))["']/g;
+  const re = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/(?:discovery|readiness)|(?:\.\.?\/)+(?:discovery|readiness)\.mjs)["']/g;
   let m;
   while ((m = re.exec(commentStrippedSource)) !== null) {
     for (const raw of m[1].split(",")) {
@@ -238,18 +238,22 @@ export const archTests = [
 
       const seamSpecs = importSpecifiers(stripComments(await readFile(READ_SEAM, "utf8"))).map((entry) => entry.specifier);
       assert.ok(
-        seamSpecs.some((s) => /(^|\/)work\.mjs$/.test(s)),
-        `src/work/read.mjs must import ./work.mjs (the seam consumes the readers, never the reverse) — imports: ${seamSpecs.join(", ")}`,
+        ["./discovery.mjs", "./readiness.mjs"].every(specifier => seamSpecs.includes(specifier)),
+        `packages/work/src/read.mjs must import disk discovery and readiness (the seam consumes the readers, never the reverse) — imports: ${seamSpecs.join(", ")}`,
       );
       const workSpecs = importSpecifiers(stripComments(await readFile(WORK, "utf8"))).map((entry) => entry.specifier);
       assert.deepEqual(
-        workSpecs.filter((s) => /(^|\/)work-read\.mjs$/.test(s)),
+        workSpecs.filter((s) => /(^|\/)(?:work-read|work\/read)\.mjs$/.test(s) || s === "@aof/work/read"),
         [],
         "src/work.mjs must NEVER import the read seam — the 37-module god-node's blast radius does not grow (m41/ADR-001)",
       );
+      for (const leaf of ["discovery", "readiness"]) {
+        const source = await readFile(path.join(repoRoot, "packages/work/src", leaf + ".mjs"), "utf8");
+        assert.deepEqual(importSpecifiers(stripComments(source)).filter(({specifier}) => specifier === "@aof/work/read" || /(?:^|\/)read\.mjs$/u.test(specifier)), [], leaf + ': disk readers never import the cache-first seam');
+      }
 
       const stragglers = [];
-      for (const { file, subject, adapter } of CONTROL_SIDE) {
+      for (const { file, subject, adapter, cacheSymbols = ["listItemsCacheFirst"], factory = "create(?:Notion\\w+|PromoteFindingCommand)" } of CONTROL_SIDE) {
         const full = path.join(repoRoot, file);
         // A MISSING module is a re-point signal, not a skip. The positive pins have always treated
         // it as one (`assertPinned` just reads the file), and a `continue` here would let a deleted
@@ -269,9 +273,12 @@ export const archTests = [
         const bindings = workImportBindings(source);
         if (adapter) {
           const composition = stripComments(await readFile(path.join(repoRoot, adapter), "utf8"));
-          assert.match(source, /\blistItemsCacheFirst\s*\(/u, `${file}: the relocated reader uses the cache-first service`);
-          assert.match(composition, /import\s*\{[^}]*\blistItemsCacheFirst\b[^}]*\}\s*from\s*["']\.\.\/work\/read\.mjs["']/u);
-          assert.match(composition, /create(?:Notion\w+|PromoteFindingCommand)\(\{[^}]*\blistItemsCacheFirst\b/u, `${adapter}: inject the shared cache-first reader`);
+          for (const symbol of cacheSymbols) {
+            assert.match(source, new RegExp('\\b' + symbol + '\\s*\\(', 'u'), file + ': uses the cache-first service');
+            assert.match(composition, new RegExp('import\\s*\\{[^}]*\\b' + symbol + '\\b[^}]*\\}\\s*from\\s*["\']\\.\\.\\/work\\/read\\.mjs["\']', 'u'));
+            assert.match(composition, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), adapter + ': injects the shared cache-first reader');
+            assert.match(source, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), file + ': accepts the cache-first port');
+          }
           for (const symbol of workImportBindings(composition)) bindings.add(symbol);
         }
         const still = DISK_READERS.filter((symbol) => bindings.has(symbol));
@@ -295,6 +302,8 @@ export const archTests = [
       assert.ok(directPackage.has("findWork") && directPackage.has("readWorkDirectory"), "package APIs cannot bypass the disk-reader boundary");
 
       assert.ok(workImportBindings('import { nextWork as next } from "@aof/work/readiness";').has("nextWork"), "package readiness remains a disk reader");
+      assert.ok(workImportBindings('import { listItems } from "../discovery.mjs";').has("listItems"), "package-local discovery cannot bypass the boundary");
+      assert.ok(workImportBindings('import { nextWork } from "./readiness.mjs";').has("nextWork"), "package-local readiness cannot bypass the boundary");
       const unrelated = workImportBindings('import { listItems } from "./catalog.mjs";');
       assert.equal(unrelated.size, 0, "the detector does NOT flag an unrelated module's listItems (catalog.mjs — a verified false positive)");
 
