@@ -81,7 +81,7 @@ export function buildSpawnEnv({ token, tokenEnv = DEFAULT_TOKEN_ENV, baseEnv = p
 }
 
 // The Notion CLI descriptor identity (package name + pinned version), for hints.
-export function createNotionCli({ descriptorFor, reportDegrade }) {
+export function createNotionCli({ descriptorFor, reportDegrade, nodeExecutable = () => process.execPath }) {
   function notionBinary() {
     const descriptor = descriptorFor("notion");
     return { name: descriptor.name, version: descriptor.version, binary: descriptor.binaries[0] };
@@ -130,7 +130,7 @@ export function createNotionCli({ descriptorFor, reportDegrade }) {
     config = {},
     env = process.env,
     resolveLauncher = resolveNtnLauncher,
-    node = process.execPath,
+    node = nodeExecutable(),
     spawn = spawnSync,
   } = {}) {
     return async function notionSpawn(argv) {

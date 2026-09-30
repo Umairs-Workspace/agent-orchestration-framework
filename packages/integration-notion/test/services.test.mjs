@@ -7,6 +7,24 @@ import { createNotionMapping, resolvePageId } from '@aof/integration-notion/mapp
 import { createNotionApply } from '@aof/integration-notion/sync';
 import { projectMilestone } from '@aof/integration-notion/projection';
 import { createNotionCli } from '@aof/integration-notion/cli';
+
+test('external JavaScript CLI uses the supplied Node runtime lazily and honors explicit overrides', async () => {
+  let reads = 0, command;
+  const cli = createNotionCli({
+    descriptorFor: () => ({ name: 'ntn', version: '0.1.0', binaries: ['ntn'] }),
+    reportDegrade: () => {},
+    nodeExecutable: () => { reads += 1; return '/fixture/node-runtime/node'; },
+  });
+  assert.equal(reads, 0, 'assembly performs no runtime lookup');
+  const options = { env: {}, resolveLauncher: () => '/fixture/ntn',
+    spawn: file => { command = file; return { status: 0, stdout: '{"id":"fixture"}' }; } };
+  await cli.makeNotionSpawn(options)([]);
+  assert.equal(command, '/fixture/node-runtime/node');
+  assert.equal(reads, 1);
+  await cli.makeNotionSpawn({ ...options, node: '/explicit/node' })([]);
+  assert.equal(command, '/explicit/node');
+  assert.equal(reads, 1, 'explicit override avoids the default lookup');
+});
 import { createNotionSync } from '@aof/integration-notion/sync-work';
 import { createNotionContribution, createNotionAssociateCommand, createNotionSyncWorkCommand } from '@aof/integration-notion/commands';
 
