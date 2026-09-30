@@ -2085,3 +2085,51 @@ and private adapter/forwarder removal remains Plan 06. No real local installatio
 Code commits: `1e8976ee`, `78be5372`, `6ef52f65`, `4a341b73`, `2a80686d`, `f8fd4f88`.
 
 Plan 03 is complete. Plan 04 is next; the overall workspace migration retains its later-plan acceptance gates.
+
+## Plan 05 — workspace distribution and native release gates (2026-09-30)
+
+Copied installations and standalone releases now carry the complete runtime contract: core assets,
+built UI, product version, declared production dependencies, audit child programs and an unmodified
+Node runtime. Core supplies Node lazily to work audit and optional Notion CLI factories; explicit
+caller overrides remain effective. Release archives retain their existing names and checksum format.
+Both real installers replace retired sidecars and clear a prior developer-payload stamp when a
+standalone release replaces it. Target-native PTY staging resolves from its execution owner and
+excludes foreign-platform prebuilds and build intermediates.
+
+Build/staging consumers follow locked workspace owners, so UI staging already accepts `apps/ui`.
+Main and child bundler metafiles enforce source ownership and native externalization. Immutable
+worktree preparation skips lifecycle scripts; native compilation remains explicit and reviewed.
+Core's executable mode is tracked for clean Unix preparation. WSL transport synchronizes all locked
+owners, hashes their manifests and pinned configuration, removes retired source, and keeps its own
+native dependencies. Release CI executes the extracted distribution gate before signing/upload;
+its existing five native legs and signing order remain unchanged. Pages already uses the correct
+workspace preparation/public APIs. Plan 04 still owns the real app moves and desktop consumer.
+
+The tracked `scripts/release/verify-distribution.mjs` invokes real installers twice in temporary
+paths with spaces, checks source help/assets and both supported runtime renders, executes a SEA
+census and bundled audit children, serves built UI, and proves bidirectional terminal input/output
+through real node-pty. Module-load hooks refuse code outside the isolated fixture. Windows x64
+(Node 22.22.2) and independent Linux x64/WSL (Node 22.23.1) builds at `23676ce5` pass all eight
+checks. Fresh preparation/audit and UI builds pass; Linux prepared Git status is empty. WSL
+synchronization/update/repeat checks use only a disposable clone. No real local installation or
+existing worker was changed, and no release was signed, published or deployed.
+
+Focused overlapping batches pass 111 packaging/installer checks, 82 ownership/composition checks,
+78 installer/census regressions, 48 consolidated distribution/budget checks, 20 final asset/isolation
+checks and 29 Notion/assembly/Yarn checks. The optional Notion package has five passing tests.
+Unit tests have 997 passes and one inherited generated-render mismatch. The five added tooling
+cases share the existing distribution suite; its exact file budget remains 35 and negative probes
+remain intact. No dependency versions, lock resolutions, generated assistant assets, managed work
+state or persisted formats changed. Native hashes, build IDs, commands and remaining gates are
+recorded in `plans/05-DISTRIBUTION.md`.
+
+The full root run completes all 11,533 registered cases with 11,504 passes and 29 failures. Six
+introduced file-budget failures pass the corrected 48-case batch after test consolidation. The
+remaining 23 exactly match Plan 03's ledger (20 inherited-family checks and three citation checks);
+no additional unresolved failure title appears. The broad run began before final corrections;
+focused and native executable evidence covers the final runtime/UI changes separately.
+All 134 CLI integration cases, all 118 Rust tests and the desktop shell cargo check pass.
+
+Plan 05's current-layout implementation is delivered. Final application-layout confirmation awaits
+Plan 04. Other native/platform execution and signing remain Plan 08; inherited source-reader and
+generated/citation findings retain Plans 06/07/08 assignments.
