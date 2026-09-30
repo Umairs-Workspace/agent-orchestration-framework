@@ -89,3 +89,91 @@ test('programmatic commands need no CLI route and unknown routes remain unmatche
 test('package internals are inaccessible through undeclared export paths', async () => {
   await assert.rejects(import('@aof/contracts/src/commands.mjs'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
 });
+
+function extensible() {
+  return {
+    ...command('work:place', ['work', 'place'], async input => input),
+    input: { type: 'object', properties: { ref: { type: 'string' } }, required: ['ref'], additionalProperties: false },
+    extensionPoints: { placement: { contributors: ['mesh'], flags: ['node', 'offline'], arguments: ['region'] } },
+    cli: {
+      route: ['work', 'place'],
+      spec: { flags: {}, arguments: [{ name: 'ref', type: 'string' }] },
+      argv: (positionals, options) => {
+        assert.equal(positionals.length, 1);
+        assert.equal(options.node, undefined);
+        assert.equal(options.offline, undefined);
+        assert.deepEqual(options._, positionals);
+        return { ref: positionals[0] };
+      },
+    },
+  };
+}
+const extend = extension => ({ name: 'mesh', commands: [], extensions: [{ commandId: 'work:place', point: 'placement', ...extension }] });
+
+test('declared option and positional additions preserve the owner and validate through every invocation face', async () => {
+  const owner = extensible();
+  const registry = createCommandRegistry([
+    extend({ flags: { node: { type: 'string', required: true }, offline: { type: 'boolean', default: false } }, arguments: [{ name: 'region', type: 'string', enum: ['west', 'east'] }] }),
+    contribution('work', owner),
+  ]);
+  const extended = registry.getCommand(owner.id);
+  assert.equal(registry.ownerOf(owner.id), 'work');
+  assert.deepEqual(owner.cli.spec.flags, {});
+  assert.equal(owner.input.properties.node, undefined);
+  const input = await extended.cli.argv(['42', 'west'], { _: ['42', 'west'], node: 'worker' });
+  assert.deepEqual(input, { ref: '42', node: 'worker', offline: false, region: 'west' });
+  assert.deepEqual(await registry.invoke(owner.id, input), input);
+  assert.deepEqual(await registry.invoke(owner.id, { ref: '42', node: 'worker' }), { ref: '42', node: 'worker', offline: false });
+  for (const invalid of [{ ref: '42' }, { ref: '42', node: null }, { node: 'worker', offline: 'yes' }, { node: 'worker', region: 'north' }]) {
+    await assert.rejects(registry.invoke(owner.id, invalid), { code: 'invalid-input' });
+  }
+  await assert.rejects(extended.cli.argv(['42', 'west', 'extra'], { node: 'worker' }), { code: 'invalid-input' });
+});
+
+test('independent additions compose in declared order without replacing handlers', async () => {
+  const registry = createCommandRegistry([
+    contribution('work', extensible()),
+    extend({ flags: { node: { type: 'string' } } }),
+    extend({ flags: { offline: { type: 'boolean' } } }),
+  ]);
+  const value = await registry.getCommand('work:place').cli.argv(['42'], { node: 'worker', offline: true });
+  assert.deepEqual(await registry.invoke('work:place', value), { ref: '42', node: 'worker', offline: true });
+});
+
+test('undeclared targets, contributors, fields, replacement handlers and incompatible additions fail at registration', () => {
+  const owner = extensible();
+  const invalid = [
+    { commandId: 'missing', flags: { node: { type: 'string' } } },
+    { point: 'missing', flags: { node: { type: 'string' } } },
+    { flags: { unknown: { type: 'string' } } },
+    { flags: { node: { type: 'number' } } },
+    { flags: { node: { type: 'string', default: false } } },
+    { flags: { node: { type: 'string', enum: [] } } },
+    { arguments: [{ name: 'region', type: 'boolean' }] },
+    { flags: { node: { type: 'string' } }, run() {} },
+    { flags: { node: { type: 'string' } }, cli: { route: ['replaced'] } },
+    {},
+  ];
+  for (const entry of invalid) assert.throws(() => createCommandRegistry([contribution('work', owner), extend(entry)]));
+  assert.throws(() => createCommandRegistry([contribution('work', owner), { ...extend({ flags: { node: { type: 'string' } } }), name: 'uninvited' }]), /not declared/);
+  for (const type of ['string', 'boolean']) {
+    assert.throws(() => createCommandRegistry([contribution('work', owner), extend({ flags: { node: { type: 'string' } } }), extend({ flags: { node: { type } } })]), /input collision/);
+  }
+  owner.input.properties.node = { type: 'string' };
+  assert.throws(() => createCommandRegistry([contribution('work', owner), extend({ flags: { node: { type: 'string' } } })]), /input collision/);
+});
+
+test('common flags cannot be replaced and positional extensions require an explicit owner argument contract', () => {
+  const owner = extensible();
+  owner.extensionPoints.placement.flags.push('config', 'json');
+  for (const name of ['config', 'json']) assert.throws(() => createCommandRegistry([contribution('work', owner), extend({ flags: { [name]: { type: 'string' } } })]), /input collision/);
+  delete owner.cli.spec.arguments;
+  assert.throws(() => createCommandRegistry([contribution('work', owner), extend({ arguments: [{ name: 'region', type: 'string' }] })]), /owner to declare/);
+  const positionalOwner = extensible();
+  positionalOwner.input.properties = {};
+  positionalOwner.extensionPoints.placement.arguments.push('ref');
+  assert.throws(() => createCommandRegistry([contribution('work', positionalOwner), extend({ arguments: [{ name: 'ref', type: 'string' }] })]), /input collision/);
+  const arrayOwner = extensible();
+  arrayOwner.input.type = 'array';
+  assert.throws(() => createCommandRegistry([contribution('work', arrayOwner), extend({ flags: { node: { type: 'string' } } })]), /object input schema/);
+});

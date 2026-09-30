@@ -1,6 +1,8 @@
 // Shared command composition only: no core, filesystem, providers, or application startup.
 // Contributions retain the existing { id, input, run, cli } descriptor. Each feature owns
 // cli.route, cli.spec (including flags), argument conversion, and presentation.
+import { extendCommand } from './command-extensions.mjs';
+
 export function createCommandRegistry(contributions) {
   if (!Array.isArray(contributions)) throw new TypeError('Command contributions must be an array.');
   const commands = new Map();
@@ -25,6 +27,18 @@ export function createCommandRegistry(contributions) {
       }
       commands.set(command.id, command);
       owners.set(command.id, contribution.name);
+    }
+  }
+  // Resolve explicit additions after all owners register, so contribution order cannot
+  // hide an unknown target. Registration order still determines additive field order.
+  for (const contribution of contributions) {
+    if (contribution.extensions !== undefined && !Array.isArray(contribution.extensions)) {
+      throw new TypeError(`Invalid command extensions from "${contribution.name}".`);
+    }
+    for (const extension of contribution.extensions ?? []) {
+      const command = commands.get(extension?.commandId);
+      if (!command) throw new Error(`Unknown extension command "${extension?.commandId}" from "${contribution.name}".`);
+      commands.set(command.id, extendCommand(command, extension, contribution.name));
     }
   }
   deriveRouteTable([...commands.values()]);
