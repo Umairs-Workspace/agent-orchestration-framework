@@ -1,3 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Traceability wiring for milestone 96 / story 00 — the run record on the phase path.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -24,11 +29,15 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
-import { pingSession, resolveSessionIdFromLiveStore, DEFAULT_SESSION_TTL_SECONDS } from "../../packages/core/src/mesh/session.mjs";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
-import { observeMilestone, projectSlug } from "../../packages/core/src/work/observe.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const findWork = _aofWorkspace.work.findWork;
+const pingSession = _aofHooks.meshSession.pingSession;
+const resolveSessionIdFromLiveStore = _aofHooks.meshSession.resolveSessionIdFromLiveStore;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const observeMilestone = _aofSessions.workObserve.observeMilestone;
+const projectSlug = _aofSessions.workObserve.projectSlug;
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -471,7 +480,7 @@ export const runMintSessionAttributionTests = [
         // …and nothing in the story's module set leaves a pointer the hook could read
         // instead: a pointer file would make the one component that must never block a
         // tool call a second authority for which run is live (ADR-002 §3).
-        for (const file of ["packages/core/src/mesh/session.mjs", "packages/core/src/commands/run-start.mjs", "packages/core/src/work/observe.mjs"]) {
+        for (const file of ["packages/core/src/application/bindings/mesh/session.mjs", "packages/core/src/application/bindings/commands/run-start.mjs", "packages/core/src/application/bindings/work/observe.mjs"]) {
           const source = await readFile(path.join(repoRoot, file), "utf8");
           assert.ok(!/AOF_RUN_ID|AOF_RUN_ITEM_DIR|\.heartbeats\.ndjson/.test(source), `${file} names no live-run pointer for that hook to read`);
         }

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-12404 — "Cap exhaustion asks the engine, returns the EXISTING refine act aimed at a
 // derived plan ref, and is bounded twice by counters that already exist."
@@ -27,7 +28,8 @@ import {
   loopPlanRef,
   loopScopeIncludes,
 } from "../../../packages/work-loop/src/engine.mjs";
-import { LOOP_FIX_TRANSPORT_KEYS, loopCommand } from "../../../packages/core/src/commands/loop.mjs";
+const LOOP_FIX_TRANSPORT_KEYS = _aofApplication.loop.commandTools.loop.LOOP_FIX_TRANSPORT_KEYS;
+const loopCommand = _aofApplication.getCommand("work:loop");
 // THE COMMENT STRIPPER, FROM ITS ONE HOME (chore 106 / TECH_DEBT item 24). A hand-rolled one is
 // what `acd-comment-stripper-order` exists to refuse: strip block comments first and a line
 // comment containing `/*` blinds every source-reading assertion below it, so an absence sweep

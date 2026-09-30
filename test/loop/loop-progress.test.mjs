@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 69 / story 03. The ledger records deterministic samples,
 // appends them beside a run, and bounds stalls without asking a model for a verdict.
 import assert from "node:assert/strict";
@@ -5,18 +6,17 @@ import { access, appendFile, mkdtemp, mkdir, readFile, rm } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 
-import {
-  appendProgressSample,
-  decideBuildProgress,
-  evaluateProgressPolicy,
-  madeProgress,
-  progressLedgerPath,
-  progressPolicyFromConfig,
-  progressSample,
-  readProgressSamples,
-  sampleWorktreeProgress,
-} from "../../packages/core/src/loop-progress.mjs";
-import { readRuns, startRun } from "../../packages/core/src/run-store.mjs";
+const appendProgressSample = _aofApplication.loop.loopProgress.appendProgressSample;
+const decideBuildProgress = _aofApplication.loop.loopProgress.decideBuildProgress;
+const evaluateProgressPolicy = _aofApplication.loop.loopProgress.evaluateProgressPolicy;
+const madeProgress = _aofApplication.loop.loopProgress.madeProgress;
+const progressLedgerPath = _aofApplication.loop.loopProgress.progressLedgerPath;
+const progressPolicyFromConfig = _aofApplication.loop.loopProgress.progressPolicyFromConfig;
+const progressSample = _aofApplication.loop.loopProgress.progressSample;
+const readProgressSamples = _aofApplication.loop.loopProgress.readProgressSamples;
+const sampleWorktreeProgress = _aofApplication.loop.loopProgress.sampleWorktreeProgress;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
 
 const AT = "2026-08-23T10:00:00.000Z";
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12603 — "`run-status` renders what the record holds: the RENDER moves, the DOCUMENT does not."
 //
 // milestone 126 / story 01, ADR-003 §1-§5 (AMENDED). The STRUCTURAL half plus task 02's document
@@ -15,7 +16,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { runStatusCommand } from "../../../packages/core/src/commands/run-status.mjs";
+const runStatusCommand = _aofApplication.getCommand("work:run-status");
 import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

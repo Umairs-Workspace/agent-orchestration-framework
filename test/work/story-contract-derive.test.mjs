@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 96 / story 01 — the sets are derived, not recalled.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -22,7 +23,8 @@ import os from "node:os";
 import path from "node:path";
 
 import { stripComments } from "../support/source-slice.mjs";
-import { PROPOSAL_REASONS, deriveStoryContract } from "../../packages/core/src/story-contract-derive.mjs";
+const PROPOSAL_REASONS = _aofApplication.work.storyContractDerive.PROPOSAL_REASONS;
+const deriveStoryContract = _aofApplication.work.storyContractDerive.deriveStoryContract;
 import { partitionReadySetByDeclaredFiles } from "@aof/work/ready-wave";
 
 // ── fixtures ─────────────────────────────────────────────────────────────────

@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 127 / story 04 — the board shows the backlog and hides
 // the archive, and the fleet partitions the backlog out:
 //
@@ -33,10 +35,11 @@ import { withBoardApp, BOARD_EPOCH, isBadgeNode, findAll, visibleTextOf, textOf 
 import { bundleSurface } from "../support/react-app-harness.mjs";
 import { withFleetApp } from "../support/fleet-app-harness.mjs";
 import { regionSummary, documentFacts, mentionsFact } from "../support/fleet-filter-readers.mjs";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const MODEL_TS = path.join(repoRoot, "ui", "src", "board", "model.ts");

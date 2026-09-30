@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Behavioural evidence for milestone 72 / story 01 — the selection.
 //
 //   tasks/00_an-unknown-widens-the-selection.feature
@@ -20,16 +21,16 @@ import os from "node:os";
 import path from "node:path";
 
 import { graphArtifactBuiltAt, graphJsonPath } from "@aof/knowledge/graph-normalize";
-import {
-  CHANGED_SET_EMPTY,
-  SINCE_REV_UNRESOLVABLE,
-  WIDENING_REASONS,
-  isSuiteFile,
-  registrationReport,
-  selectSuites,
-  wideningRuleProblems,
-} from "../../../packages/core/src/work/test-select.mjs";
-import { changedFiles, parseNameOnly, parsePorcelain } from "../../../packages/core/src/work/test-changed.mjs";
+const CHANGED_SET_EMPTY = _aofApplication.work.testSelect.CHANGED_SET_EMPTY;
+const SINCE_REV_UNRESOLVABLE = _aofApplication.work.testSelect.SINCE_REV_UNRESOLVABLE;
+const WIDENING_REASONS = _aofApplication.work.testSelect.WIDENING_REASONS;
+const isSuiteFile = _aofApplication.work.testSelect.isSuiteFile;
+const registrationReport = _aofApplication.work.testSelect.registrationReport;
+const selectSuites = _aofApplication.work.testSelect.selectSuites;
+const wideningRuleProblems = _aofApplication.work.testSelect.wideningRuleProblems;
+const changedFiles = _aofApplication.work.testChanged.changedFiles;
+const parseNameOnly = _aofApplication.work.testChanged.parseNameOnly;
+const parsePorcelain = _aofApplication.work.testChanged.parsePorcelain;
 
 const ROOTS = ["test", "test/arch"];
 const ALL_SUITES = ["test/a.test.mjs", "test/b.test.mjs", "test/arch/c.test.mjs"];

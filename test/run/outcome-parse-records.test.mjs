@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 39 / story 02, task 00
 // (00_parse-outcome-records.feature).
 //
@@ -19,7 +20,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseOutcome, buildRecords, reindex } from "../../packages/core/src/memory/local-indexing.mjs";
+const parseOutcome = _aofApplication.knowledge.memory.localIndexing.parseOutcome;
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-7808 (78/ADR-007) — THE RECORD NEVER GATES. No status, doctor, validate or acceptor door reads
 // the signature as a verdict, and doctor's findings for it carry severity `warn`.
 //
@@ -24,12 +25,13 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { CHECK_GROUPS, doctorWork } from "../../../packages/core/src/work/doctor.mjs";
+const invoke = _aofApplication.invoke;
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
-import { DOCTOR_GATE_CODES } from "../../../packages/core/src/commands/loop.mjs";
+const DOCTOR_GATE_CODES = _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES;
 import { LOOP_RECORD_FINDING_CODES, loopRecordLane } from "@aof/work/doctor/loop-record";
-import { loopRecordCommand } from "../../../packages/core/src/commands/loop-record.mjs";
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, ctxFor, signInPlace, withRepo } from "../../loop/loop-record-command.test.mjs";
 import { seedGreenRegressionGate } from "../../support/regression-gate-fixture.mjs";
@@ -39,7 +41,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The four doors ADR-007 names, plus the acceptor's two leaves. A door that read the signature would
 // have to name it, so the sweep is over the vocabulary a reader of the block would need.
 const DOORS = [
-  "packages/core/src/commands/item-status.mjs",
+  "packages/core/src/application/bindings/commands/item-status.mjs",
   "packages/work/src/commands/validate.mjs",
   "packages/work/src/acceptor/admissibility.mjs",
   "packages/work/src/acceptor/rule.mjs",

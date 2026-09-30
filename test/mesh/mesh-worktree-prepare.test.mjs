@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 72 / story 04 —
 // tasks/00_a-worktree-is-prepared-through-the-declared-program.feature.
 //
@@ -14,16 +15,14 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  WORKTREE_PREPARE_DEADLINE_EXPIRED,
-  WORKTREE_PREPARE_FAILED,
-  WORKTREE_PREPARE_NOT_STARTED,
-  addDispatchWorktree,
-  addSessionWorktree,
-  addWorktree,
-  meshWorktreePath,
-  reuseWorktreeOnBranch,
-} from "../../packages/core/src/mesh/worktree.mjs";
+const WORKTREE_PREPARE_DEADLINE_EXPIRED = _aofApplication.mesh.worktree.WORKTREE_PREPARE_DEADLINE_EXPIRED;
+const WORKTREE_PREPARE_FAILED = _aofApplication.mesh.worktree.WORKTREE_PREPARE_FAILED;
+const WORKTREE_PREPARE_NOT_STARTED = _aofApplication.mesh.worktree.WORKTREE_PREPARE_NOT_STARTED;
+const addDispatchWorktree = _aofApplication.mesh.worktree.addDispatchWorktree;
+const addSessionWorktree = _aofApplication.mesh.worktree.addSessionWorktree;
+const addWorktree = _aofApplication.mesh.worktree.addWorktree;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const reuseWorktreeOnBranch = _aofApplication.mesh.worktree.reuseWorktreeOnBranch;
 
 // A declaration that compiles: `node` resolves on every machine this suite runs on, which is what
 // makes the "command resolving nowhere" row below a real contrast rather than a stub's opinion.

@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import * as _aofPublic_aof_work_identity from "@aof/work/identity";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 127 / story 05 — "This tree holds what is live".
 //
 //   tasks/00_the-repository-sets-intake-to-backlog.feature          (@executable)
@@ -45,15 +48,19 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { bundleSurface } from "../../support/react-app-harness.mjs";
-import { handleWorkApi } from "../../../packages/core/src/board-ui.mjs";
-import { ITEM_RE, ARCHIVE_ROOT, BACKLOG_ROOT, parseFrontmatter, recordDoc } from "../../../packages/core/src/work.mjs";
+const handleWorkApi = _aofApplication.server.board.handleWorkApi;
+const ITEM_RE = _aofPublic_aof_work_identity.ITEM_RE;
+const ARCHIVE_ROOT = _aofPublic_aof_work_identity.ARCHIVE_ROOT;
+const BACKLOG_ROOT = _aofPublic_aof_work_identity.BACKLOG_ROOT;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const recordDoc = _aofWorkspace.work.recordDoc;
 import { archTests as intakeWriteSideTests } from "../../arch/work/acd-intake-write-side-only.test.mjs";
 import { archTests as tuneReaderTests } from "../../arch/planning/acd-tune-carries-no-second-rule.test.mjs";
 import { archTests as spellerReaderTests } from "../../arch/command/acd-declared-program-single-speller.test.mjs";
 import { censusItemPathMentions } from "./work-archive-is-a-move.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const workRoot = path.join(repoRoot, "wiki", "work");
 const MODEL_TS = path.join(repoRoot, "ui", "src", "board", "model.ts");
 const THIS_SUITE = "test/work/stream/work-this-tree-holds-what-is-live.test.mjs";

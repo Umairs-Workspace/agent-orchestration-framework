@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 10 / story 02 (extraction-posture-and-fallback),
 // task 01 — 01_binary-absent-degrades-gracefully.feature.
 //
@@ -20,11 +21,12 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import graphifyBackend, {
-  GRAPH_SIGNAL_UNAVAILABLE,
-  GRAPH_STATE_BINARY_ABSENT,
-} from "../../packages/core/src/memory/graphify-backend.mjs";
-import { runMemory, resolveConfiguredBackend, briefDigest } from "../../packages/core/src/work/memory.mjs";
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+const GRAPH_SIGNAL_UNAVAILABLE = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_UNAVAILABLE;
+const GRAPH_STATE_BINARY_ABSENT = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BINARY_ABSENT;
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const briefDigest = _aofApplication.knowledge.work.memory.briefDigest;
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",

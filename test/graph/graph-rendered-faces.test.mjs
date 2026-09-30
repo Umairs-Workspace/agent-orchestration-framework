@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 09 / story 02 — rendered-faces.
 //
 // Covers every @executable scenario across the story's two task features against
@@ -36,8 +37,8 @@ import os from "node:os";
 import path from "node:path";
 
 import { applyConfig, renderConfigOutputs } from "../../packages/core/src/adapters.mjs";
-import { resolveConfig } from "../../packages/core/src/dsl.mjs";
-import { doctorConfig } from "../../packages/core/src/config-inspect.mjs";
+const resolveConfig = _aofApplication.assets.dsl.resolveConfig;
+const doctorConfig = _aofApplication.assets.configInspect.doctorConfig;
 import { readLock, writeLock } from "../../packages/core/src/lock.mjs";
 import {
   createLockManifest,

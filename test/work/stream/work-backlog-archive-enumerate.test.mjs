@@ -1,3 +1,7 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import * as _aofPublic_aof_work_identity from "@aof/work/identity";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Traceability wiring for milestone 127 / story 01 — "One enumerator, three roots".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) of the story's five
@@ -25,33 +29,32 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import {
-  listItems,
-  listStream,
-  findWork,
-  nextWork,
-  validateWork,
-  loadWorkspace,
-  isLiveStreamRow,
-  ITEM_RE,
-  BACKLOG_ITEM_RE,
-  BACKLOG_ROOT,
-  ARCHIVE_ROOT,
-} from "../../../packages/core/src/work.mjs";
-import { doctorWork, buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
+const listItems = _aofWorkspace.work.listItems;
+const listStream = _aofWorkspace.work.listStream;
+const findWork = _aofWorkspace.work.findWork;
+const nextWork = _aofWorkspace.work.nextWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const isLiveStreamRow = _aofWorkspace.work.isLiveStreamRow;
+const ITEM_RE = _aofPublic_aof_work_identity.ITEM_RE;
+const BACKLOG_ITEM_RE = _aofPublic_aof_work_identity.BACKLOG_ITEM_RE;
+const BACKLOG_ROOT = _aofPublic_aof_work_identity.BACKLOG_ROOT;
+const ARCHIVE_ROOT = _aofPublic_aof_work_identity.ARCHIVE_ROOT;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
 import { resolvedDependsEdges, classifyDependsEdges } from "@aof/work/doctor/depends";
 import { statusCoherenceGroup } from "@aof/work/doctor/coherence";
 import { appendPosition } from "@aof/work/promote/promotion";
 import { countShiftedByInsert, refsTouchedByInsert } from "@aof/work/reindex";
-import { buildRecords } from "../../../packages/core/src/memory/local-indexing.mjs";
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
 import { resolveCitationAtEmit } from "@aof/work/tune/provenance";
-import { resolveMilestoneFolder } from "../../../packages/core/src/work/observe.mjs";
-import { migrateFolderCommand } from "../../../packages/core/src/commands/migrate-folder.mjs";
-import { docCommand } from "../../../packages/core/src/commands/doc.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const resolveMilestoneFolder = _aofSessions.workObserve.resolveMilestoneFolder;
+const migrateFolderCommand = _aofApplication.getCommand("migrate:folder");
+const docCommand = _aofApplication.getCommand("work:doc");
+const invoke = _aofApplication.invoke;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const RECORD_DOC = { milestone: "SPEC.md", story: "STORY.md", uat: "SESSION.md", spike: "SPIKE.md", chore: "CHORE.md" };
 const SEVEN_KEYS = ["dir", "parent", "ref", "slug", "status", "title", "type"];

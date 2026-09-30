@@ -1,14 +1,20 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
-import { publishGlobalWorkSnapshot } from "../../../packages/core/src/global-work-publisher.mjs";
-import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../packages/core/src/global-node-registry.mjs";
-import { nodeRecordPath, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const queryGlobalRegistry = _aofApplication.mesh.globalNodeRegistry.queryGlobalRegistry;
+const nodeRecordPath = _aofHooks.meshStore.nodeRecordPath;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 const NOW = "2026-07-04T10:02:00.000Z";

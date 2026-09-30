@@ -137,7 +137,7 @@ import { attributionAtSpawnTests } from "./attribution-at-spawn.test.mjs";
 // milestone 70 / story 01 — cache-stable-launch (ADR-004/005): the shareable-prefix
 // flag, the chosen session model/effort, and the held 1-hour cache window, at the
 // launch seam and the drive path, plus the pure session-model resolver.
-import { sessionModelTests } from "./session-model.test.mjs";
+
 // milestone 33 (story 00) — per-install-node-identity: the four @executable task
 // features (00_identity-sidecar-persist / 01_loadworkspace-hydration /
 // 02_backcompat-migrate-doctor / 03_self-heal-hostname-mismatch). Task 04
@@ -229,7 +229,6 @@ export const tests = [
   // milestone 70 / story 01 — cache-stable-launch (ADR-004/005): the shareable-prefix
   // flag, the chosen session model/effort and the held 1-hour cache window, at the
   // launch seam and the drive path, plus the pure session-model resolver.
-  ...sessionModelTests,
   // milestone 33 (story 00) — per-install-node-identity: tasks 00–03
   ...identitySidecarPersistTests,
   ...selfHealHostnameMismatchTests,

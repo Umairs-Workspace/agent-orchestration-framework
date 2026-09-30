@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { applicationConstructionGraph } from "../../support/workspace/assembly-graph.mjs";
 // Fitness function: acd-reference-corpus-offline-and-sourced (milestone 77 / story 03, FF-7705;
 // ADR-007 §1, §2, §2b, §3; ADR-008 §1, §3).
@@ -45,10 +46,10 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importClosure, staticImportSpecifiers } from "../audit/acd-audit-never-imports-project-code.test.mjs";
-import { AUDIT_FINDING_CODES } from "../../../packages/core/src/work-audit/census.mjs";
+const AUDIT_FINDING_CODES = _aofApplication.work.audit.census.AUDIT_FINDING_CODES;
 import { HARNESS_REFERENCE_ROWS, REFERENCE_ROW_FLOOR, checkReferenceCorpus, referenceCorpusProblems } from "../../../packages/core/src/harness-reference.mjs";
-import { DECLARED_BOUNDS_FINDING_CODES } from "../../../packages/core/src/work-audit/declared-bounds.mjs";
-import { listCommands } from "../../../packages/core/src/command-core.mjs";
+const DECLARED_BOUNDS_FINDING_CODES = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_FINDING_CODES;
+const listCommands = _aofApplication.listCommands;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

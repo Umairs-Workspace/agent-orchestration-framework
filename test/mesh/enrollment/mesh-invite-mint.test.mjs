@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 24 / story 01 — task 00 (tasks/00_mesh-invite-mint
 // .feature). mesh:invite mints a short-lived single-use 6-digit code, records it HASHED
 // as a pending invite, and returns the plaintext once.
@@ -14,13 +16,15 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, access } from "node:fs/promise
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { writeRegistry, readRegistry, registryPath } from "../../../packages/core/src/mesh/registry.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const writeRegistry = _aofApplication.mesh.registry.writeRegistry;
+const readRegistry = _aofApplication.mesh.registry.readRegistry;
+const registryPath = _aofApplication.mesh.registry.registryPath;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const CONTROL_ID = "control-node-a";
 const PEER_ID = "peer-node-b";

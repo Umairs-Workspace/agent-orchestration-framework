@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 137 / tasks/02_validate-holds-a-digest-to-the-template.feature —
 // "validate holds an AOF.md record doc to the template" (@executable).
 //
@@ -10,8 +11,8 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateWork } from "../../../packages/core/src/work.mjs";
-import { digestContract } from "../../../packages/core/src/work/digest-template.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
+const digestContract = _aofWorkspace.workDigestTemplate.digestContract;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const TEMPLATE = path.join(repoRoot, "packages", "core", "assets", "templates", "milestone", "AOF.md");

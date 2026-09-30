@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 50 / story 04 — task 00
 // (tasks/00_spawn-outcome-and-producer-fact.feature, @executable), LANES A and B.
 //
@@ -32,9 +35,13 @@ import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
 import { suitePathByBasename } from "../support/registration/registration-surface.mjs";
 
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
-import { startControlStreamServer, applyStreamFrame, applyPresenceFrame, sendDirective } from "../../packages/core/src/control-stream-server.mjs";
-import { createTerminalInputRouter } from "../../packages/core/src/mesh/terminal-input.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const applyPresenceFrame = _aofApplication.mesh.controlStreamServer.applyPresenceFrame;
+const sendDirective = _aofApplication.mesh.controlStreamServer.sendDirective;
+const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
 import {
   SESSION_SPAWN_KIND,
   SESSION_SPAWN_ACK_KIND,
@@ -48,12 +55,17 @@ import {
   MAX_SPAWN_OUTCOMES,
   SPAWN_OUTCOME_RETENTION_MS,
 } from "@aof/mesh/session-spawn-outcome";
-import { startSession, pingSession, endSession, readSessionRecord, assembleSessionRecord } from "../../packages/core/src/mesh/session.mjs";
-import { readLiveSessions } from "../../packages/core/src/mesh/presence.mjs";
-import { buildSessionIndex } from "../../packages/core/src/global-mesh-query.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { createMeshWorkerSessionSpawnHandler } from "../../packages/core/src/mesh/session-spawn-handler.mjs";
-import { workerHasRepo, meshCheckoutPath } from "../../packages/core/src/mesh/worker-execution.mjs";
+const startSession = _aofHooks.meshSession.startSession;
+const pingSession = _aofHooks.meshSession.pingSession;
+const endSession = _aofHooks.meshSession.endSession;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const assembleSessionRecord = _aofHooks.meshSession.assembleSessionRecord;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerSessionSpawnHandler = _aofApplication.mesh.sessionSpawnHandler.createMeshWorkerSessionSpawnHandler;
+const workerHasRepo = _aofApplication.mesh.worker.workerHasRepo;
+const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,

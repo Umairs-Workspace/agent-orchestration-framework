@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-13111 + FF-13112 + FF-13113 — AN ASK IS ANSWERED FROM DISCORD THROUGH ONE GATEWAY AND ONE
 // ALLOWLISTED VERB, AND A COMMAND DEFERS, DISPATCHES A REGISTERED VERB AND STARTS NOTHING (milestone 131
 // / stories 10 and 11; ARCHITECTURE `## Fitness functions`, ADR-008 and ADR-009). Which of this directory's
@@ -44,11 +45,13 @@ import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
-import { handleInteraction } from "../../../packages/core/src/discord/commands.mjs";
+const handleInteraction = _aofApplication.messaging.discord.commands.handleInteraction;
 import { decideSupervisedDeclarations } from "../../../packages/work-loop/src/engine.mjs";
-import { isRunning, isStale, retryReadiness } from "../../../packages/core/src/run-store.mjs";
-import { startGateway } from "../../../packages/core/src/discord/gateway.mjs";
-import { handleReply } from "../../../packages/core/src/discord/replies.mjs";
+const isRunning = _aofApplication.execution.runs.isRunning;
+const isStale = _aofApplication.execution.runs.isStale;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
+const startGateway = _aofApplication.messaging.discord.gateway.startGateway;
+const handleReply = _aofApplication.messaging.discord.replies.handleReply;
 import { ALLOWED, STRANGER, TOKEN, degradeSink, fakeClock, fakeGateway, flush, ready, releaseDegradeSink, reply, withReplyWorld } from "../../discord/discord-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

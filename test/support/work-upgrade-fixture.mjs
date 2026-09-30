@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "./cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-export const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+export const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // ---------------------------------------------------------- bare work dir --
 

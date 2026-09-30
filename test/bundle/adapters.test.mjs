@@ -1,10 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { applyConfig } from "../../packages/core/src/adapters.mjs";
-import { resolveConfig } from "../../packages/core/src/dsl.mjs";
+const resolveConfig = _aofApplication.assets.dsl.resolveConfig;
 // m43 / ADR-002 — the door the claude runtime's hooks/settings take now that the
 // whole-file render is closed for the co-authored file.
 import { applyClaudeSettingsMerge, claudeSettingsPatch } from "../../packages/core/src/claude-settings.mjs";
@@ -174,7 +175,7 @@ async function rendersManifestAndLockAgree() {
   );
   const home = await mkdtemp(path.join(os.tmpdir(), "aof-141-home-"));
   try {
-    const dry = spawnCliSync(process.execPath, [path.join(REPO_ROOT, "bin", "aof.mjs"), "work", "update", "--dry-run", "--json"], {
+    const dry = spawnCliSync(process.execPath, [path.join(REPO_ROOT, "packages", "core", "bin", "aof.mjs"), "work", "update", "--dry-run", "--json"], {
       cwd: REPO_ROOT,
       encoding: "utf8",
       env: { ...process.env, AOF_GLOBAL_HOME: home },

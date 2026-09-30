@@ -1,3 +1,7 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // Traceability wiring for milestone 48 / story 02 — task 00
 // (tasks/00_the-wire-carries-every-live-session.feature): "every live session reaches
 // the wire, including the one whose workspace has a run in flight".
@@ -28,11 +32,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
-import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const startSession = _aofHooks.meshSession.startSession;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -7,12 +8,13 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { LOADER_FINDING_CODES, loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const LOADER_FINDING_CODES = _aofApplication.graph.work.loops.LOADER_FINDING_CODES;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   CHECK_FINDING_CODES, CHECK_IDS, GATING_CODES, checkActuatorArbitration, checkAnchorGrounding, checkGrounding, checkPairing,
   checkReferenceOwnership, checkTimescale,
 } from "@aof/work-graph/checks";
-import { loopsValidateCommand } from "../../../packages/core/src/commands/loops-validate.mjs";
+const loopsValidateCommand = _aofApplication.getCommand("work:loops-validate");
 
 const runFile = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

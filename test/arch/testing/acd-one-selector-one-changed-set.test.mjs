@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-9604 (96/ADR-007) — ONE SELECTOR, AND A DECLARED PATH THE GRAPH DOES NOT KNOW WIDENS.
 //
 // Milestone 72's module exists to prevent one failure, and this story is the shape that failure
@@ -37,9 +38,12 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import { graphJsonPath } from "@aof/knowledge/graph-normalize";
-import { WIDENING_REASONS, selectSuites } from "../../../packages/core/src/work/test-select.mjs";
+const WIDENING_REASONS = _aofApplication.work.testSelect.WIDENING_REASONS;
+const selectSuites = _aofApplication.work.testSelect.selectSuites;
 import { declaredChangedFiles } from "@aof/work/testing/declared";
-import { STORY_AND_SINCE, TEST_SCOPES, runTest } from "../../../packages/core/src/commands/test.mjs";
+const STORY_AND_SINCE = _aofApplication.work.commandTools.test.STORY_AND_SINCE;
+const TEST_SCOPES = _aofApplication.work.commandTools.test.TEST_SCOPES;
+const runTest = _aofApplication.work.commandTools.test.runTest;
 
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 

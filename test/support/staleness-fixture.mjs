@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/staleness-fixture.mjs — the shared fixture for milestone 43 / story 04
 // (staleness, never eviction: the READ side of schema v8's provenance columns).
 //
@@ -20,9 +21,10 @@
 //       race.
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
-import { invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
-import { upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofApplication.loadWorkspace;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
 import { withCacheFixture, withStore, tick, stream, itemRow, rows, registerDescriptor, seedActive, settle } from "./cache-authority-fixture.mjs";
 
 export { withStore, tick, stream, itemRow, rows, registerDescriptor, seedActive, settle };

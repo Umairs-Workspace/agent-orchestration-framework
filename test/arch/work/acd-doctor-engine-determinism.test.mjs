@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 15 / ADR-003 (engine determinism). "Same fixture
 // + same injected `now` ⇒ byte-identical findings (JSON.stringify equal across two
 // runs); AND the engine source reads NO wall-clock — no Date.now( / new Date( in
@@ -15,8 +17,8 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { doctorWork } from "../../../packages/core/src/work/doctor.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC_DIR = path.join(repoRoot, "packages", "core", "src");

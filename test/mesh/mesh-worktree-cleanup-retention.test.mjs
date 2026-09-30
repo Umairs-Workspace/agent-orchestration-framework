@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // task 03 — a done assignment removes its worktree with `git worktree remove`, a
 // failed assignment retains it for inspection, and retention is bounded by a
 // documented default (milestone 35 / story 02, ADR-004). Exercised over a REAL `git
@@ -6,9 +8,14 @@
 // injected runtime spawn scripted to each outcome; retention sweeping is driven with
 // an injected clock past the documented ceiling.
 import assert from "node:assert/strict";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
-import { addWorktree, removeWorktree, listWorktrees, meshWorktreePath, sweepRetainedWorktrees, DEFAULT_WORKTREE_RETENTION_MS } from "../../packages/core/src/mesh/worktree.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const addWorktree = _aofApplication.mesh.worktree.addWorktree;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const sweepRetainedWorktrees = _aofApplication.mesh.worktree.sweepRetainedWorktrees;
+const DEFAULT_WORKTREE_RETENTION_MS = _aofApplication.mesh.worktree.DEFAULT_WORKTREE_RETENTION_MS;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
 
 const NODE_ID = "worker-a";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 21 / story 00 — the run READ route.
 //
 // Covers the SERVER-side @executable scenarios of
@@ -16,9 +17,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
-import { loadWorkspace } from "../../packages/core/src/command-core.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const loadWorkspace = _aofApplication.loadWorkspace;
+const invoke = _aofApplication.invoke;
 
 // --- fixture builders --------------------------------------------------------
 

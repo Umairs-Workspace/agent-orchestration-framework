@@ -19,7 +19,7 @@ import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { withInsertFixture, buildTopLevelMilestones } from "../../support/work-insert-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 export const workInsertCliConfirmEnvelopeTests = [
   {

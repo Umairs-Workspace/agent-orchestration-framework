@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 40 / story 01 (version stamp & reader), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
 //     01_story_version-stamp-and-reader/tasks/02_transform-scoped-writer-body-preserving.feature
@@ -10,7 +11,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { applyItemFrontmatter, rollbackItemStatus, readItemSchema } from "../../../packages/core/src/work.mjs";
+const applyItemFrontmatter = _aofWorkspace.work.applyItemFrontmatter;
+const rollbackItemStatus = _aofWorkspace.work.rollbackItemStatus;
+const readItemSchema = _aofWorkspace.work.readItemSchema;
 import { withWork, writeWriterFixtureDoc } from "../../support/work-version-fixture.mjs";
 
 const bodyOf = (text) => text.slice(text.indexOf("\n---", 3) + "\n---".length);

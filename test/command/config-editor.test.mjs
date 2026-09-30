@@ -1,9 +1,14 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp } from "node:fs/promises";
-import { capabilitiesPayload, loadEditableConfig, saveEditableResource, saveEditableSections, validateEditableResource } from "../../packages/core/src/config-editor.mjs";
+const capabilitiesPayload = _aofApplication.assets.configEditor.capabilitiesPayload;
+const loadEditableConfig = _aofApplication.assets.configEditor.loadEditableConfig;
+const saveEditableResource = _aofApplication.assets.configEditor.saveEditableResource;
+const saveEditableSections = _aofApplication.assets.configEditor.saveEditableSections;
+const validateEditableResource = _aofApplication.assets.configEditor.validateEditableResource;
 
 export const configEditorTests = [
   {

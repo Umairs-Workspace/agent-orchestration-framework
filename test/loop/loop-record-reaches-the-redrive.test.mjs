@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 03, task `00_the-record-reaches-the-redrive`.
 //
 // Every @executable scenario of
@@ -21,8 +22,8 @@ import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+const invoke = _aofApplication.invoke;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import { registeredSuitePaths } from "../support/registration/registration-surface.mjs";
 import {

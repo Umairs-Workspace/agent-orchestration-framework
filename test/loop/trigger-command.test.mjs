@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 63 / story 05 — the trigger's face.
 //
 // One test object per @executable scenario across the five task features (Scenario-Outline rows
@@ -22,15 +24,21 @@ import { fileURLToPath } from "node:url";
 
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { cleanL3Gate } from "../support/l3-gate-fixture.mjs";
-import { getCommand, invoke, listCommands } from "../../packages/core/src/command-core.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS, LOOP_INPUT_KEYS as LOOP_INPUT_KEYS_UNDER_TEST } from "../../packages/core/src/commands/trigger.mjs";
-import { TRIGGER_SOURCES, compileTriggerDeclaration } from "../../packages/core/src/work-trigger/declaration.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const buildTriggerReport = _aofApplication.loop.commandTools.trigger.buildTriggerReport;
+const triggerCommand = _aofApplication.getCommand("work:trigger");
+const RESOLVED_TRIGGER_KEYS = _aofApplication.loop.commandTools.trigger.RESOLVED_TRIGGER_KEYS;
+const LOOP_INPUT_KEYS_UNDER_TEST = _aofApplication.loop.commandTools.trigger.LOOP_INPUT_KEYS;
+const TRIGGER_SOURCES = _aofApplication.loop.workTrigger.declaration.TRIGGER_SOURCES;
+const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.compileTriggerDeclaration;
 import { resolveTriggerLevel } from "@aof/work-loop/trigger/level";
 import { LOOP_LEVELS, LOOP_REFUSALS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const BUNDLED_DECLARATION = path.join(repoRoot, "packages", "core", "assets", "triggers.jsonc");
 
 const LOOP_ID = "work:loop";

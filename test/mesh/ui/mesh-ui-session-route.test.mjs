@@ -1,3 +1,7 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 50 / story 02 — tasks 00 + 02
 // (tasks/00_spawn-route-handler.feature, tasks/02_honest-failure-responses.feature,
 // both @executable). Task 01 is a fitness-function update and is armed in
@@ -23,20 +27,22 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
 // The closed set the route validates `assistant` against, read from its ONE home so this
 // suite cannot drift from the module the face imports (ADR-002 decision 2's
 // `"claude"|"codex"|"gemini"`; ADR-007 decision 3 keeps it closed as a session-key LABEL).
-import { PROVIDER_IDS } from "../../../packages/core/src/terminal-providers.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { createTerminalInputRouter } from "../../../packages/core/src/mesh/terminal-input.mjs";
+const PROVIDER_IDS = _aofSessions.terminalProviders.PROVIDER_IDS;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
 import { SESSION_SPAWN_KIND } from "@aof/mesh/session-spawn-directive";
-import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../../packages/core/src/worker-stream-client.mjs";
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const createWorkerWsTransport = _aofApplication.mesh.workerStreamClient.createWorkerWsTransport;
 
 // A v4 UUID, the shape `crypto.randomUUID()` mints (ADR-002 decision 2 — the session's
 // routable address, minted CONTROL-side so the 200 can carry it).

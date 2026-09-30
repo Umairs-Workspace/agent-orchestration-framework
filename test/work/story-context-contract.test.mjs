@@ -1,10 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { validateWork } from "../../packages/core/src/commands/validate.mjs";
+const validateWork = _aofApplication.work.commandTools.validate.validateWork;
 import { MAX_REVIEW_ROUNDS, reviewRoundsFromConfig } from "@aof/contracts/loop-bounds";
 import { partitionReadySetByDeclaredFiles } from "@aof/work/ready-wave";
 import {
@@ -20,7 +22,7 @@ import {
 // the one input where equality and coverage disagree. Importing the lane here is the point of
 // task 01's last scenario: two surfaces, one predicate.
 import { classifyDependsEdges } from "@aof/work/doctor/depends";
-import { listItems } from "../../packages/core/src/work.mjs";
+const listItems = _aofWorkspace.work.listItems;
 import {
   decideExecutionMode,
   decideReviewGate,
@@ -1201,7 +1203,7 @@ export const storyContextContractTests = [
       const next = stripComments(await readFile(path.join(root, "packages/work/src/commands/next.mjs"), "utf8"));
       assert.match(next, /partitionReadySetByDeclaredFiles\(/u, "`aof work next --json` partitions the ready set through this function");
       assert.match(next, /wave: wave\.map|wave,/u, "…and returns its wave");
-      const composition = stripComments(await readFile(path.join(root, "packages/core/src/commands/next.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(root, "packages/core/src/application/bindings/commands/next.mjs"), "utf8"));
       assert.match(composition, /import \{ partitionReadySetByDeclaredFiles \} from "\.\.\/ready-wave\.mjs"/u);
       assert.match(composition, /createNextCommand\(\{[^}]*\bpartitionReadySetByDeclaredFiles\b/u, "core supplies the shared partition service");
     },

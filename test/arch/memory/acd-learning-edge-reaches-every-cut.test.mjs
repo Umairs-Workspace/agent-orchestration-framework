@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12405 — "The learning edge reaches EVERY cut-making command, in a form the shipped CLI
 // actually parses, and the edited bundle source re-renders into all three of its mirrors."
 //
@@ -28,10 +29,11 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { MEMORY_VERBS, SCOPE_FLAGS } from "../../../packages/core/src/work/memory.mjs";
+const MEMORY_VERBS = _aofApplication.knowledge.work.memory.MEMORY_VERBS;
+const SCOPE_FLAGS = _aofApplication.knowledge.work.memory.SCOPE_FLAGS;
 import { loadBundle, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
 import { hashContent } from "../../../packages/core/src/lock.mjs";
-import { listCommands } from "../../../packages/core/src/command-core.mjs";
+const listCommands = _aofApplication.listCommands;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const slash = (value) => String(value).split("\\").join("/");

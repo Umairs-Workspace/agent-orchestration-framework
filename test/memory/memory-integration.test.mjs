@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Integration coverage for milestone 05 (work-memory): the REAL wired stack —
 // seam → backend registry (a lazy dynamic import of the `local` glue) → local
 // backend → on-disk index — exercised through `runMemory` exactly as the CLI does.
@@ -13,8 +14,9 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
-import { memoryIndexPath } from "../../packages/core/src/memory/local-indexing.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
 
 const REPO_ROOT = path.resolve(new URL("../..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
 const WORK_DIR = path.join(REPO_ROOT, "wiki", "work");

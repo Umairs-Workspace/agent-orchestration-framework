@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 01 — task 01
 // (tasks/01_the-wire-stays-a-passthrough.feature): "a session entry crosses the fabric
 // whole — the control node relays it, it does not re-specify it".
@@ -22,14 +25,19 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, readdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../packages/core/src/global-node-registry.mjs";
-import { meshDir, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { assemblePresenceRecord, readLiveSessions, readPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const queryGlobalRegistry = _aofApplication.mesh.globalNodeRegistry.queryGlobalRegistry;
+const meshDir = _aofHooks.meshStore.meshDir;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const readPresenceRecord = _aofApplication.mesh.presence.readPresenceRecord;
+const startSession = _aofHooks.meshSession.startSession;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const WORKER_NODE_ID = "worker-a";
 const NOW = "2026-08-10T12:00:00.000Z";

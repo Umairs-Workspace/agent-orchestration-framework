@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // test/support/artifact-sync-fixture.mjs — the shared fixture for milestone 43 /
 // story 03 (write-triggered artifact sync), tasks 01 and 02.
 //
@@ -24,16 +27,20 @@
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { startLauncher } from "../../packages/core/src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore, readWorkItemDoc } from "../../packages/core/src/global-work-store.mjs";
-import { applyWorktreeContentFrame, applyDeltaFrame, applyLogEntriesFrame } from "../../packages/core/src/control-stream-server.mjs";
-import { buildLogEntriesFrame } from "../../packages/core/src/worker-stream-client.mjs";
-import { meshLogsCommand } from "../../packages/core/src/commands/mesh/logs.mjs";
-import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
-import { registerActiveWorktree, clearActiveWorktree } from "../../packages/core/src/mesh/worker-execution.mjs";
-import { docCommand } from "../../packages/core/src/commands/doc.mjs";
-import { tasksCommand } from "../../packages/core/src/commands/tasks.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const readWorkItemDoc = _aofApplication.mesh.store.readWorkItemDoc;
+const applyWorktreeContentFrame = _aofApplication.mesh.controlStreamServer.applyWorktreeContentFrame;
+const applyDeltaFrame = _aofApplication.mesh.controlStreamServer.applyDeltaFrame;
+const applyLogEntriesFrame = _aofApplication.mesh.controlStreamServer.applyLogEntriesFrame;
+const buildLogEntriesFrame = _aofApplication.mesh.workerStreamClient.buildLogEntriesFrame;
+const meshLogsCommand = _aofApplication.getCommand("mesh:logs");
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const registerActiveWorktree = _aofApplication.mesh.worker.registerActiveWorktree;
+const clearActiveWorktree = _aofApplication.mesh.worker.clearActiveWorktree;
+const docCommand = _aofApplication.getCommand("work:doc");
+const tasksCommand = _aofApplication.getCommand("work:tasks");
 import { artifactSyncQueuePath } from "@aof/mesh/artifact-sync";
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 import { WORK_ITEM_DOC_FILES } from "@aof/work/artifacts";

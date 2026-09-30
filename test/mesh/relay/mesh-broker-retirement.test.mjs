@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 33 / story 01 — the ws@8 broker retires as the
 // liveness transport (tasks/02_broker-retirement.feature, ADR-002.1/.4/.consequence).
 //
@@ -28,10 +31,10 @@ import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MESH_IDENTITY = path.join(repoRoot, "packages", "mesh", "src", "commands", "identity.mjs");

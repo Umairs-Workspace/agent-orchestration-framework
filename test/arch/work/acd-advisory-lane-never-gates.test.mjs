@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-12402 (124/ADR-002) — AN ADVISORY DOCTOR LANE CANNOT GATE, AS A CLASS.
 //
 // The mechanism already existed three times before this milestone: a lane is a pure
@@ -36,13 +38,14 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { CHECK_GROUPS } from "../../../packages/core/src/work/doctor.mjs";
+const invoke = _aofApplication.invoke;
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import { DEPENDS_FINDING_CODES, dependsLane } from "@aof/work/doctor/depends";
-import { DOCTOR_GATE_CODES, admittedDoctorFindings } from "../../../packages/core/src/commands/loop.mjs";
+const DOCTOR_GATE_CODES = _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES;
+const admittedDoctorFindings = _aofApplication.loop.commandTools.loop.admittedDoctorFindings;
 import { ITEM_STATUS_EDGES } from "@aof/work/lifecycle";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { resolveDeclaredSet } from "@aof/work/story-contract";
 import { stripComments } from "../../support/source-slice.mjs";
 

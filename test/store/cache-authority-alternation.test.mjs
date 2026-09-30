@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 02 (the authority cut), task
 //   .../02_story_cache-authority/tasks/03_alternation-proof-the-worker-row-survives.feature
 //
@@ -12,7 +13,8 @@
 // the proof is that N further control ticks against an UNCHANGED control disk never move
 // the worker's row.
 import assert from "node:assert/strict";
-import { readWorkItemDoc, upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
+const readWorkItemDoc = _aofApplication.mesh.store.readWorkItemDoc;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
 import {
   withCacheFixture,
   withStore,

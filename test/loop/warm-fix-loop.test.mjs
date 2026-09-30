@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Executable wiring for milestone 70 / story 04, task 00. The real loop, drive
 // command, interactive launch resolver, run transitions, and run store are used;
 // only the PTY/session availability edge is injected; ordinary change scoping uses git.
@@ -7,11 +9,12 @@ import { appendFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { admitResumeBuildRun, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
-import { resolvePhaseResumeTarget } from "../../packages/core/src/commands/drive.mjs";
-import { readRuns } from "../../packages/core/src/run-store.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
-import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
+const admitResumeBuildRun = _aofApplication.loop.commandTools.loop.admitResumeBuildRun;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const resolvePhaseResumeTarget = _aofApplication.loop.commandTools.drive.resolvePhaseResumeTarget;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
 import { reviewBlockerClaim } from "../../packages/work-loop/src/engine.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";

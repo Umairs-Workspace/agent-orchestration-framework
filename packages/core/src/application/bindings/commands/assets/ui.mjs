@@ -1,6 +1,4 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
-import path from "node:path";
-import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import { assetBase } from "../../../../asset-base.mjs";
 import { commandError } from "@aof/contracts/error";
@@ -45,7 +43,7 @@ export function assembleCommandsAssetsUi({ provideSetupUi }) {
     const { uiPort, apiPort } = input;
     const { serveSetupUi } = await provideSetupUi();
     const { server } = await serveSetupUi(null, { port: apiPort });
-    const frontend = startSetupUiFrontend(uiPort, `http://127.0.0.1:${apiPort}`);
+    const frontend = await startSetupUiFrontend(uiPort, `http://127.0.0.1:${apiPort}`);
     // milestone 45 / story 04 (ADR-002) — the config editor's PATH is `/config`, NOT
     // `/assets`: `/assets` is the built bundle's OWN asset directory (ui/dist/assets/
     // index-*.js), so a route by that name would collide with the JavaScript it serves.
@@ -85,12 +83,12 @@ export function assembleCommandsAssetsUi({ provideSetupUi }) {
   // asset-base seam for correctness (the same repoRoot-derivation every other
   // site used), but allow-listed from the "must serve packaged assets" assertion
   // (acd-sea-safe-asset-base fitness #1) since this line never executes in a SEA.
-  function startSetupUiFrontend(port, apiUrl = "http://127.0.0.1:4178") {
+  async function startSetupUiFrontend(port, apiUrl = "http://127.0.0.1:4178") {
     // "version" resolves to the repo root in dev (the same base package.json/
     // work-bundle-manifest.mjs read); it never runs under a SEA (dev-only path).
     const uiDir = assetBase("ui");
-    const viteManifest = createRequire(path.join(uiDir, "package.json")).resolve("vite/package.json");
-    const viteBin = path.join(path.dirname(viteManifest), "bin", "vite.js");
+    const { viteCliPath } = await import("@aof/ui/vite-cli");
+    const viteBin = viteCliPath();
     return spawn(process.execPath, [viteBin, "--host", "127.0.0.1", "--port", String(port), "--strictPort"], {
       cwd: uiDir,
       stdio: "inherit",

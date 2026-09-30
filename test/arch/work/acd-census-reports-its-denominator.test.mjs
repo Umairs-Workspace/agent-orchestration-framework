@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-12401 (124/ADR-001) — THE CENSUS REPORTS ITS DENOMINATOR, AND RENDERS NO VERDICT IT CANNOT
 // REACH.
 //
@@ -32,7 +34,9 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildSnapshot, doctorWork, isDriver } from "../../../packages/core/src/work/doctor.mjs";
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+const isDriver = _aofApplication.work.doctor.isDriver;
 import {
   DEPENDS_FINDING_CODES,
   classifyDependsEdges,
@@ -40,8 +44,9 @@ import {
   resolvedDependsEdges,
 } from "@aof/work/doctor/depends";
 import { resolveDeclaredSet } from "@aof/work/story-contract";
-import { isDependNumber, loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { validateWork } from "../../../packages/core/src/commands/validate.mjs";
+const isDependNumber = _aofWorkspace.work.isDependNumber;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const validateWork = _aofApplication.work.commandTools.validate.validateWork;
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

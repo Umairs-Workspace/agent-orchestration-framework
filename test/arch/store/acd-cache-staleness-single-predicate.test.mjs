@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-cache-staleness-single-predicate (milestone 43 / ADR-006) —
 //
 //   "The staleness predicate is the shared strict-`>` isStale, with exactly ONE
@@ -64,7 +65,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isNodeStale } from "../../../packages/core/src/mesh/presence.mjs";
+const isNodeStale = _aofApplication.mesh.presence.isNodeStale;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "packages", "core", "src");

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-test-command-reports-not-decides (milestone 72 / story 02, FF-7204;
 // ADR-001 §4, ADR-002 §4, ADR-003).
 //
@@ -55,10 +56,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 // THE TEST ROOTS COME FROM THEIR ONE HOME. A literal `["test", "test/arch", …]` here would be the
 // FF-7203 species one directory over — a second answer that agrees until a fourth root arrives.
-import { TEST_ROOTS } from "../../../packages/core/src/work-audit/census.mjs";
+const TEST_ROOTS = _aofApplication.work.audit.census.TEST_ROOTS;
 import { runBounded } from "@aof/execution/bounded-process";
-import { getCommand } from "../../../packages/core/src/command-core.mjs";
-import { runTest, testCommand } from "../../../packages/core/src/commands/test.mjs";
+const getCommand = _aofApplication.getCommand;
+const runTest = _aofApplication.work.commandTools.test.runTest;
+const testCommand = _aofApplication.getCommand("test");
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -71,11 +73,11 @@ const TEST_COMMAND_ID = "test";
 // this milestone owns. Restricted at run time to what exists on disk, with a non-vacuity floor, so
 // a walk that resolves nothing cannot pass.
 const PROBED_MODULES = Object.freeze([
-  "packages/core/src/commands/test.mjs",
-  "packages/core/src/command-core.mjs",
-  "packages/core/src/work/toolchain.mjs",
-  "packages/core/src/work/test-select.mjs",
-  "packages/core/src/work/test-changed.mjs",
+  "packages/core/src/application/bindings/commands/test.mjs",
+  "packages/core/src/application/bindings/command-core.mjs",
+  "packages/core/src/application/bindings/work/toolchain.mjs",
+  "packages/core/src/application/bindings/work/test-select.mjs",
+  "packages/core/src/application/bindings/work/test-changed.mjs",
   "packages/execution/src/bounded-process.mjs",
   "packages/work/src/audit/census.mjs",
   "packages/knowledge/src/graph-normalize.mjs",
@@ -86,10 +88,10 @@ const PROBE_FLOOR = 4;
 
 // The doors where a selection must never be readable as a verdict.
 const DOOR_ROOTS = Object.freeze([
-  "packages/core/src/commands/item-status.mjs",
+  "packages/core/src/application/bindings/commands/item-status.mjs",
   "packages/work/src/doctor/index.mjs",
   "packages/work-loop/src/engine.mjs",
-  "packages/core/src/work-audit",
+  "packages/core/src/application/bindings/work-audit",
   "packages/work/src/audit",
   "packages/core/assets",
 ]);
@@ -396,7 +398,7 @@ export const archTests = [
     name: "arch/72 FF-7204 (acd-test-command-reports-not-decides): the family holds no dynamic import of a test module, as text",
     async run() {
       const sources = [];
-      for (const rel of PROBED_MODULES.filter((entry) => entry.startsWith("packages/core/src/commands/test") || entry.startsWith("packages/core/src/work/t"))) {
+      for (const rel of PROBED_MODULES.filter((entry) => entry.startsWith("packages/core/src/application/bindings/commands/test") || entry.startsWith("packages/core/src/application/bindings/work/t"))) {
         sources.push({ rel, code: await readFile(path.join(repoRoot, rel), "utf8") });
       }
       assert.ok(sources.length >= 3, `the family resolved (non-vacuous): ${sources.length} modules`);
@@ -404,8 +406,8 @@ export const archTests = [
       assert.deepEqual(problems, [], `no module in this family names a test module in a dynamic import:\n  ${problems.join("\n  ")}`);
 
       // …and the detector is not vacuous: a planted convenience import is caught, in both spellings.
-      assert.equal(testModuleReachProblems([{ rel: "packages/core/src/commands/test.mjs", code: 'const s = await import("../test/arch/thing.test.mjs");' }]).length, 1, "a planted dynamic import is caught");
-      assert.equal(testModuleReachProblems([{ rel: "packages/core/src/commands/test.mjs", code: 'const s = require("./test/helper.mjs");' }]).length, 1, "…and so is the older syntax");
+      assert.equal(testModuleReachProblems([{ rel: "packages/core/src/application/bindings/commands/test.mjs", code: 'const s = await import("../test/arch/thing.test.mjs");' }]).length, 1, "a planted dynamic import is caught");
+      assert.equal(testModuleReachProblems([{ rel: "packages/core/src/application/bindings/commands/test.mjs", code: 'const s = require("./test/helper.mjs");' }]).length, 1, "…and so is the older syntax");
     },
   },
 

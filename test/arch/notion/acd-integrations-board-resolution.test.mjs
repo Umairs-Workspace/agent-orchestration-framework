@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function FF-C for milestone 18 / ADR-002 + ADR-003 (board resolution +
 // default fallback + the no-regression arm):
 //   Drive resolveNotionRouting (story 00's resolver) + projectMilestone (the pure
@@ -15,7 +16,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveNotionRouting } from "../../../packages/core/src/integrations/routing.mjs";
+const resolveNotionRouting = _aofApplication.work.integrations.routing.resolveNotionRouting;
 import { projectMilestone } from "@aof/integration-notion/projection";
 
 const FULL_STATUS_MAP = {

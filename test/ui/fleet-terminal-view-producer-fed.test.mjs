@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/ui/fleet-terminal-view-producer-fed.test.mjs — QA-authored behavioural coverage
 // for milestone 38 / story 06 / task 04 (BLOCKER F-38.06c), added at the task-04
 // behavioural review (2026-07-23). Carries findings **F-38.06d** and **F-38.06e**.
@@ -50,15 +52,18 @@ import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
 
-import { createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL } from "../../packages/core/src/mesh/worker-execution.mjs";
-import { buildAssignmentStatusFrame } from "../../packages/core/src/worker-stream-client.mjs";
-import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
-import { createTerminalMirror } from "../../packages/core/src/mesh/terminal-mirror.mjs";
-import { buildTerminalFrameEnvelope, buildTerminalEndEnvelope } from "../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const NEEDS_INPUT_SENTINEL = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
+const buildAssignmentStatusFrame = _aofApplication.mesh.workerStreamClient.buildAssignmentStatusFrame;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const createTerminalMirror = _aofApplication.mesh.terminalMirror.createTerminalMirror;
+const buildTerminalFrameEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalFrameEnvelope;
+const buildTerminalEndEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalEndEnvelope;
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,

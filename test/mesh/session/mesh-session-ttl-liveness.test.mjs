@@ -1,3 +1,4 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 38 / story 00
 // tasks/01_session-ttl-liveness.feature — "a session is LIVE only while its
 // lastPingAt is within the TTL — reusing the ONE shared staleness predicate".
@@ -7,7 +8,9 @@
 // DEFAULT_SESSION_TTL_SECONDS) — a pure, injected-clock surface, no fs/fixture
 // needed. node:assert/strict.
 import assert from "node:assert/strict";
-import { isSessionLive, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../packages/core/src/mesh/session.mjs";
+const isSessionLive = _aofHooks.meshSession.isSessionLive;
+const resolveSessionTtlSeconds = _aofHooks.meshSession.resolveSessionTtlSeconds;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
 
 const NOW_ISO = "2026-07-10T12:00:00.000Z";
 const NOW_MS = Date.parse(NOW_ISO);

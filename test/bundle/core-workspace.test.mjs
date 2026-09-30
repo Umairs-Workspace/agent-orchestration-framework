@@ -7,9 +7,11 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, realpath, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { installPayload } from '../../scripts/install-local.mjs';
+import { inspectBoundaries, dependencyCycles, moduleReferences } from '../../scripts/workspace-boundaries.mjs';
+import { workspaceTestInventory, assertNativeTestSource } from '../../scripts/workspace-tests.mjs';
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 function ownershipFixture(run) {
@@ -161,6 +163,85 @@ export const coreWorkspaceTests = [
   } },
   { name: 'distribution-workspaces/release staging refuses a PTY-only payload with missing directory assets', run() {
     ownershipFixture(root => assert.throws(() => packSidecarArchive(root, path.join(root, 'archive')), /Required release sidecar missing/u));
+  } },
+
+  { name: 'workspace-boundaries/all actual owners are scanned and every owned array case is registered exactly once', async run() {
+    const audit = JSON.parse(await readFile(path.join(repoRoot, 'scripts/workspace-runtime-audit.json'), 'utf8'));
+    const report = inspectBoundaries(repoRoot, { runtimeAudit: audit });
+    assert.deepEqual(report.findings, []);
+    assert.ok(report.files >= 700, `${report.files} actual source and tooling files`);
+    assert.equal(Object.keys(report.covered).length, 15, 'all packages, UI and repository tooling are covered');
+    assert.ok(Object.values(report.covered).every(count => count > 0));
+    const { tests } = await import('../../scripts/test.mjs');
+    const inventory = workspaceTestInventory(repoRoot);
+    let suiteFiles = 0; let cases = 0;
+    for (const owner of inventory) for (const file of owner.suites) {
+      const module = await import(pathToFileURL(file).href);
+      const arrays = [...new Set(Object.values(module).filter(value => Array.isArray(value) && value.length
+        && value.every(entry => typeof entry?.name === 'string' && typeof entry.run === 'function')))];
+      assert.ok(arrays.length, `${file} owns executable cases`); suiteFiles++;
+      for (const entry of arrays.flat()) {
+        assert.equal(tests.filter(candidate => candidate === entry).length, 1, `${entry.name} is assembled exactly once`);
+        cases++;
+      }
+    }
+    assert.ok(suiteFiles >= 18); assert.ok(cases >= 254);
+    assert.ok(inventory.filter(owner => owner.native.length).length >= 13);
+    assert.ok(inventory.flatMap(owner => owner.native).length >= 63);
+  } },
+
+  { name: 'workspace-tests/selected root runs execute cases and propagate a planted failure through the shared harness', run() {
+    const fixture = mkdtempSync(path.join(os.tmpdir(), 'aof-harness-proof-'));
+    try {
+      for (const failed of [false, true]) {
+        const file = path.join(fixture, 'selected.mjs');
+        writeFileSync(file, `export const tests = [{ name: "selected-harness-sentinel", run() { if (!process.env.AOF_GLOBAL_HOME?.includes(".aof-test")) throw Error("global home not isolated"); ${failed ? 'throw Error("planted-selected-failure");' : ''} } }];`);
+        const result = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/test.mjs'), '--only', file], { cwd: repoRoot, encoding: 'utf8', timeout: 30_000, windowsHide: true });
+        assert.equal(result.status, failed ? 1 : 0, result.error?.message ?? result.stdout + result.stderr);
+        assert.match(result.stdout + result.stderr, /selected-harness-sentinel/u);
+        assert.ok(result.stdout.includes(`# executed 1 cases; failures ${failed ? 1 : 0}`), 'the selected case executed, including the failure count');
+      }
+    } finally { rmSync(fixture, { recursive: true, force: true }); }
+  } },
+  { name: 'workspace-boundaries/planted undeclared, private, core-back, cyclic and computed edges fail through the actual detector', run() {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'aof-boundary-plants-'));
+    const owners = ['aof', '@aof/leaf', '@aof/other'].map((name, index) => ({ directory: path.join(root, `owner-${index}`),
+      manifest: { name, exports: { './entry': './src/entry.mjs' }, dependencies: index === 0 ? { '@aof/leaf': 'workspace:*' } : {} } }));
+    const files = owners.map(owner => ({ owner: owner.manifest.name, rel: path.relative(root, path.join(owner.directory, 'src/entry.mjs')).replaceAll('\\', '/'), path: path.join(owner.directory, 'src/entry.mjs') }));
+    try {
+      for (const file of files) { mkdirSync(path.dirname(file.path), { recursive: true }); writeFileSync(file.path, 'export const value = 1;'); }
+      assert.deepEqual(inspectBoundaries(root, { owners, files }).findings, []);
+      writeFileSync(files[0].path, 'import "not-declared"; import "../../owner-1/src/entry.mjs"; import "@aof/leaf/private"; await import("@aof/leaf/private"); require("@aof/leaf/private"); await import(selected); spawn(process.execPath, [selected]);');
+      writeFileSync(files[1].path, 'import "aof/entry";');
+      const planted = inspectBoundaries(root, { owners, files }).findings.join('\n');
+      for (const phrase of ['undeclared dependency', 'private sibling', 'missing explicit export', 'imports assembled core', 'unaudited computed-import', 'unaudited child-process']) assert.ok(planted.includes(phrase), phrase);
+      assert.equal(planted.match(/missing explicit export/gu).length, 3, 'static, literal dynamic and require edges all use export enforcement');
+      assert.ok(inspectBoundaries(root, { owners, files: [] }).findings.some(finding => finding.includes('read no files')));
+      owners[1].manifest.dependencies['@aof/other'] = 'workspace:*'; owners[2].manifest.dependencies['@aof/leaf'] = 'workspace:*';
+      assert.deepEqual(dependencyCycles(owners), [['@aof/leaf', '@aof/other', '@aof/leaf']]);
+      owners[1].manifest.exports['./*'] = './src/entry.mjs';
+      assert.ok(inspectBoundaries(root, { owners, files }).findings.some(finding => finding.includes('invalid explicit export')));
+      assert.equal(moduleReferences('// import("plant")\nconst prose = "require(plant)";').references.length, 0);
+      assert.throws(() => assertNativeTestSource('export const tests = [{ name: "never executed", run() {} }];', 'plant.test.mjs'), /declares no native/u);
+      assert.throws(() => assertNativeTestSource('import test from "node:test";', 'plant.test.mjs'), /declares no native/u);
+      assert.doesNotThrow(() => assertNativeTestSource('import { test as owned } from "node:test"; owned("actual case", () => {});', 'plant.test.mjs'));
+      assert.equal(moduleReferences('import { createRequire as makeLoader } from "node:module"; const loader = makeLoader(import.meta.url); loader("@aof/leaf/private");').references.filter(reference => reference.kind === 'require').length, 1);
+      assert.equal(moduleReferences('import { createRequire as makeLoader } from "node:module"; makeLoader(import.meta.url).resolve(selected);').runtime.filter(reference => reference.kind === 'computed-require').length, 1);
+      const reviewedSource = 'const selected = "known.mjs"; await import(selected);';
+      writeFileSync(files[0].path, reviewedSource);
+      const reviewed = inspectBoundaries(root, { owners, files }).runtime.filter(entry => entry.file === files[0].rel).map(entry => ({ ...entry, reason: 'Synthetic bounded module selection' }));
+      assert.ok(!inspectBoundaries(root, { owners, files, runtimeAudit: reviewed }).findings.some(finding => finding.includes('unaudited computed-import')));
+      writeFileSync(files[0].path, reviewedSource.replace('known.mjs', 'changed.mjs'));
+      assert.ok(inspectBoundaries(root, { owners, files, runtimeAudit: reviewed }).findings.some(finding => finding.includes('unaudited computed-import')), 'changing the selector invalidates review even when the call expression is identical');
+      owners[0].manifest.devDependencies = { '@aof/other': 'workspace:*' };
+      writeFileSync(files[0].path, 'import "@aof/other/entry";');
+      assert.ok(inspectBoundaries(root, { owners, files }).findings.some(finding => finding.includes('undeclared dependency @aof/other')), 'static production imports cannot rely on dev dependencies');
+      writeFileSync(files[0].path, 'await import("@aof/other/entry");');
+      const devReport = inspectBoundaries(root, { owners, files });
+      assert.ok(devReport.findings.some(finding => finding.includes('unaudited dev-tool-import')), 'lazy development imports require explicit runtime review');
+      const devAudit = devReport.runtime.filter(entry => entry.file === files[0].rel).map(entry => ({ ...entry, reason: 'Synthetic optional development tool' }));
+      assert.ok(!inspectBoundaries(root, { owners, files, runtimeAudit: devAudit }).findings.some(finding => finding.includes('unaudited dev-tool-import')), 'reviewed lazy public development entry is admitted');
+    } finally { rmSync(root, { recursive: true, force: true }); }
   } },
 
 ];

@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 16 / ADR-005 (config-sourced budget / NO baked-in
 // literal). (a) The budgetGroup body in packages/core/src/work/doctor-budget.mjs holds NO
 // budget-magnitude integer literal — defaults live ONLY in the budgetsFromConfig
@@ -10,8 +12,8 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { doctorWork } from "../../../packages/core/src/work/doctor.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 import { budgetGroup } from "@aof/work/doctor/budget";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

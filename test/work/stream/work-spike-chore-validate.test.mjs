@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 37 / story 00
 // tasks/02_record-doc-and-structural-validate.feature — "a spike/chore folder
 // validates on its native shape with no behavioural contract".
@@ -11,7 +12,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateWork } from "../../../packages/core/src/work.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
 
 function frontmatter(fields) {
   const body = Object.entries(fields)

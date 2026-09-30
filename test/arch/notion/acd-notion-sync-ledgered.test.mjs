@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d4, PORT 4 (PRD-command-spine-effects-
 // ledger, "cascade-ports"): the Notion status sync is a LEDGERED CONSEQUENCE,
 // with an APPLICABILITY PREDICATE deciding what is owed at append time.
@@ -39,13 +41,21 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS, applicableReactors } from "../../../packages/core/src/effects/table.mjs";
-import { transitionRunStart, transitionRunComplete } from "../../../packages/core/src/effects/run-transitions.mjs";
-import { openEffectsJournal, appendEvent, readEvents, readEventSteps, pendingSteps } from "../../../packages/core/src/effects/journal.mjs";
-import { drainEffects, reachableLoci, LOCAL_LOCI } from "../../../packages/core/src/effects/dispatch.mjs";
-import { remoteSteps } from "../../../packages/core/src/effects/outbox.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const applicableReactors = _aofApplication.effects.reactors.applicableReactors;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const transitionRunComplete = _aofApplication.execution.transitions.transitionRunComplete;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const pendingSteps = _aofApplication.effects.journal.pendingSteps;
+const drainEffects = _aofApplication.effects.dispatcher.drainEffects;
+const reachableLoci = _aofApplication.effects.dispatcher.reachableLoci;
+const LOCAL_LOCI = _aofApplication.effects.dispatcher.LOCAL_LOCI;
+const remoteSteps = _aofApplication.effects.outbox.remoteSteps;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

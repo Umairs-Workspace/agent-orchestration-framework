@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-12605 — "The argv has ONE home, and the declarations answer rides the ONE data command."
 //
@@ -16,9 +17,9 @@ import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { LEVEL_FLAG, RESUME_FLAG, argvFor, loopInputOf } from "@aof/work-loop/argv";
-import { loopCommand } from "../../../packages/core/src/commands/loop.mjs";
-import { meshStatusCommand } from "../../../packages/core/src/commands/mesh/identity.mjs";
-import { listCommands } from "../../../packages/core/src/command-core.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
+const meshStatusCommand = _aofApplication.getCommand("mesh:status");
+const listCommands = _aofApplication.listCommands;
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

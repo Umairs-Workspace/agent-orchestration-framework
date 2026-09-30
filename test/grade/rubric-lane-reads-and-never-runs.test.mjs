@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 04, task `02_the-lane-reads-and-never-runs`.
 //
 // Every @executable scenario of
@@ -20,8 +21,9 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { buildSnapshot, CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
+const invoke = _aofApplication.invoke;
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
 import { rubricTraceabilityGroup, RUBRIC_REPORT_CONFIG_KEY, declaredReportFrom } from "@aof/work/doctor/rubric";
 import { stripComments } from "../support/source-slice.mjs";
 import { makeGradeRepo, ctxFor } from "../support/grade-fixture.mjs";
@@ -157,7 +159,20 @@ export const rubricLaneReadsAndNeverRunsTests = [
         const withoutRubric = CHECK_GROUPS.filter((group) => group !== rubricTraceabilityGroup);
         assert.equal(withoutRubric.length, CHECK_GROUPS.length - 1, "guard: the lane really is one registry entry");
 
-        const { doctorWork } = await import("../../packages/core/src/work/doctor.mjs");
+        const { doctorWork } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
         const baseline = await doctorWork(ctx.workspace.workDir, ctx.workspace.config, "03/00", {
           now: Date.now(),
           projectRoot: ctx.workspace.projectRoot,

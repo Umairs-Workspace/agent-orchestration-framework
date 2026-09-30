@@ -47,7 +47,7 @@ import { meshPresenceRecordTests } from "./mesh-presence-record.test.mjs";
 // two-publish control-flow grep) are RETIRED with it; meshPresenceDegradationLoopTests is
 // TRIMMED to its cadence-loop-only scenarios (the relay-down/relay-restored rows retired
 // alongside the push).
-import { meshPresenceDegradationLoopTests } from "./mesh-presence-degradation-loop.test.mjs";
+
 import { meshPresenceAdditiveSessionsTests } from "./mesh-presence-additive-sessions.test.mjs";
 import { meshPresenceAggregateWorkspacesTests } from "./mesh-presence-aggregate-workspaces.test.mjs";
 //   task 00 — the PROJECTION, the one place on the whole path where a session field was
@@ -61,7 +61,6 @@ import { meshPresenceSessionWireTests } from "./mesh-presence-session-wire.test.
 
 export const tests = [
   ...meshPresenceRecordTests,
-  ...meshPresenceDegradationLoopTests,
   ...meshPresenceAdditiveSessionsTests,
   ...meshPresenceAggregateWorkspacesTests,
   // …and its two @executable task features (00 the projection, 01 the fabric crossing).

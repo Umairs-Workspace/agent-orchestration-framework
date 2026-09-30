@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 125 / task 02 — THE README CANNOT NAME A COMMAND THAT DOES NOT RESOLVE.
 //
 //   "The one line is a specimen, not the defect."
@@ -35,8 +37,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { listCommands } from "../../../packages/core/src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../packages/core/src/spine/face.mjs";
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const README = "README.md";

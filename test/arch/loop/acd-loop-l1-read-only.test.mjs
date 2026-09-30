@@ -1,7 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { completingDriver, loopFixture } from "../../loop/loop-command-probe.test.mjs";
 
 async function snapshot(root) {

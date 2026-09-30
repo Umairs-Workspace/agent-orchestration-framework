@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/mesh-recovery-push.test.mjs — VERIFICATION (control-driven recovery push, live
 // two-machine soak 2026-07-25). Story 07's push-home fires ONLY on an ACTIVE assignment's
 // own `done` seam; when a worker STALLS (interactive `claude` parks at an idle prompt so
@@ -18,22 +19,22 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { assembleAssignmentRecord, insertAssignment } from "@aof/mesh/assignment-record";
-import { addWorktree, meshWorktreePath, meshItemBranchName } from "../../packages/core/src/mesh/worktree.mjs";
-import { createMeshRecoveryPushHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
-import { recoverPush } from "../../packages/core/src/commands/mesh/recover-push.mjs";
+const addWorktree = _aofApplication.mesh.worktree.addWorktree;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+const createMeshRecoveryPushHandler = _aofApplication.mesh.worker.createMeshRecoveryPushHandler;
+const recoverPush = _aofApplication.mesh.commandTools.mesh.recoverPush.recoverPush;
 import { withMeshWorkerPushFixture } from "../support/mesh-worker-push-fixture.mjs";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
-import {
-  RECOVERY_PUSH_KIND,
-  RECOVERY_PUSH_RESULT_KIND,
-  requestRecoveryPush,
-  readRecoveryPush,
-  markRecoveryPushState,
-  applyRecoveryPushResultFrame,
-  runRecoveryPushDispatchTick,
-} from "../../packages/core/src/mesh/recovery-push.mjs";
+const RECOVERY_PUSH_KIND = _aofApplication.mesh.recoveryPush.RECOVERY_PUSH_KIND;
+const RECOVERY_PUSH_RESULT_KIND = _aofApplication.mesh.recoveryPush.RECOVERY_PUSH_RESULT_KIND;
+const requestRecoveryPush = _aofApplication.mesh.recoveryPush.requestRecoveryPush;
+const readRecoveryPush = _aofApplication.mesh.recoveryPush.readRecoveryPush;
+const markRecoveryPushState = _aofApplication.mesh.recoveryPush.markRecoveryPushState;
+const applyRecoveryPushResultFrame = _aofApplication.mesh.recoveryPush.applyRecoveryPushResultFrame;
+const runRecoveryPushDispatchTick = _aofApplication.mesh.recoveryPush.runRecoveryPushDispatchTick;
 
 // A hermetic store under a throwaway AOF_GLOBAL_HOME (the test-isolation discipline —
 // never the real ~/.aof).

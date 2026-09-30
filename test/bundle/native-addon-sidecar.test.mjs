@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 28 / story 00, task 02 —
 // tasks/02_native-addon-sidecar.feature (ADR-002).
 //
@@ -16,8 +17,9 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
-import { createTerminalSpawn, loadNodePty } from "../../packages/core/src/terminal-ws.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const createTerminalSpawn = _aofApplication.server.terminalWs.createTerminalSpawn;
+const loadNodePty = _aofApplication.server.terminalWs.loadNodePty;
 import { setSeaSentinelForTest, isPackaged } from "../../packages/core/src/asset-base.mjs";
 import { run as runCli } from "../../packages/core/src/cli.mjs";
 

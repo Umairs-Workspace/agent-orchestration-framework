@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 03 / story 02 — the @executable SERVER
 // scenarios across the two task features. Drives the REAL upgrade handshake by
 // standing up serveSetupUi (which attaches /ws/terminal on the same server) with
@@ -14,7 +15,7 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 
 // --- fixtures ----------------------------------------------------------------
 

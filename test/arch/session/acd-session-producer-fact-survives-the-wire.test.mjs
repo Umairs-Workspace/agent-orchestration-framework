@@ -1,3 +1,4 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Fitness function: acd-session-producer-fact-survives-the-wire (milestone 50 / story 04;
 // ARCHITECTURE ADR-008 FF-F).
 //
@@ -39,7 +40,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assembleSessionRecord } from "../../../packages/core/src/mesh/session.mjs";
+const assembleSessionRecord = _aofHooks.meshSession.assembleSessionRecord;
 import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER } from "../../../ui/src/home/feed-axis.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

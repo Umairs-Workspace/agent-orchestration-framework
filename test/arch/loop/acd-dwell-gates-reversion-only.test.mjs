@@ -1,7 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 
-import { acceptorCommand, reversionDecision, withdrawalOnHarm } from "../../../packages/core/src/commands/acceptor.mjs";
+const acceptorCommand = _aofApplication.getCommand("work:acceptor");
+const reversionDecision = _aofApplication.work.commandTools.acceptor.reversionDecision;
+const withdrawalOnHarm = _aofApplication.work.commandTools.acceptor.withdrawalOnHarm;
 import { functionBody } from "../../support/source-slice.mjs";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 

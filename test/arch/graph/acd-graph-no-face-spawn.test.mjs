@@ -180,8 +180,8 @@ export const archTests = [
         path.join(srcDir, "graph-faces.mjs"),
         path.join(repoRoot, "packages/server/src/graph-mcp-server.mjs"),
       ];
-      const commandFiles = (await graphCommandModules(path.join(srcDir, "commands")))
-        .map((rel) => path.join(srcDir, "commands", rel));
+      const commandFiles = (await graphCommandModules(path.join(srcDir, "application", "bindings", "commands")))
+        .map((rel) => path.join(srcDir, "application", "bindings", "commands", rel));
       const packageCommands = (await readRuntimeFiles(repoRoot)).filter(file => file.rel.startsWith("packages/knowledge/src/commands/")).map(file => file.path);
       assert.ok(packageCommands.length >= 6, "knowledge command implementations are scanned");
       const targets = [...faceFiles, ...commandFiles, ...packageCommands];

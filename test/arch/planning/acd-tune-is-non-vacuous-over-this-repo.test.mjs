@@ -1,12 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-6208 — the integrated face says something real over AOF's tracked corpus.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { buildTuneReport } from "../../../packages/core/src/commands/tune.mjs";
-import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { PROPOSAL_CLASSES } from "../../../packages/core/src/work-tune/proposal.mjs";
+const buildTuneReport = _aofApplication.work.commandTools.tune.buildTuneReport;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const PROPOSAL_CLASSES = _aofApplication.work.tune.proposal.PROPOSAL_CLASSES;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 

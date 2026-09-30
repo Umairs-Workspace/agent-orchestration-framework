@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 01 (the exclusive item lock), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/01_story_item-lock/
 //     tasks/01_lock-is-symmetric-over-execution-scope.feature
@@ -19,9 +20,9 @@
 // against the store's own row counts: a refusal that left a row behind would not be a
 // lock, it would be a message.
 import assert from "node:assert/strict";
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { assignWork } from "../../packages/core/src/mesh/assignment.mjs";
+const invoke = _aofApplication.invoke;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const assignWork = _aofApplication.mesh.assignments.assignWork;
 import { withItemLockFixture, seedActive, seedWorker, countAssignments, refuse } from "../support/item-lock-fixture.mjs";
 
 const HOLDER = "aof-wsl";

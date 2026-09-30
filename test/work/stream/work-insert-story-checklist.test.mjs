@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 03 (insert-story), task
 //   wiki/work/41_milestone_work-item-insertion/stories/03_story_insert-story/
 //     tasks/02_stories-checklist-best-effort-update.feature
@@ -12,8 +14,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { findWork, validateWork } from "../../../packages/core/src/work.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const validateWork = _aofWorkspace.work.validateWork;
 import { withInsertFixture, buildMilestone, writeStoryItem, SLUGS } from "../../support/work-insert-fixture.mjs";
 
 const STORIES_BODY = [

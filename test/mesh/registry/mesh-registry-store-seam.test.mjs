@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 24 / story 00 — the group-registry store + seam
 // (tasks/00_registry-store-and-seam.feature).
 //
@@ -103,8 +105,36 @@ export const meshRegistryStoreSeamTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { writeRegistry, readRegistry, registryDir, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
-        const { meshDir } = await import("../../../packages/core/src/mesh/store.mjs");
+        const { writeRegistry, readRegistry, registryDir, registryPath } = await Promise.resolve(Object.freeze({
+  registryDir: _aofApplication.mesh.registry.registryDir,
+  registryPath: _aofApplication.mesh.registry.registryPath,
+  isControlNode: _aofApplication.mesh.registry.isControlNode,
+  emptyRegistry: _aofApplication.mesh.registry.emptyRegistry,
+  writeRegistry: _aofApplication.mesh.registry.writeRegistry,
+  readRegistry: _aofApplication.mesh.registry.readRegistry,
+  admitNode: _aofApplication.mesh.registry.admitNode,
+  registerBoard: _aofApplication.mesh.registry.registerBoard,
+  appendRevocation: _aofApplication.mesh.registry.appendRevocation,
+  appendPendingInvite: _aofApplication.mesh.registry.appendPendingInvite,
+  consumePendingInvite: _aofApplication.mesh.registry.consumePendingInvite,
+  isInviteConsumed: _aofApplication.mesh.registry.isInviteConsumed,
+  isInviteExpired: _aofApplication.mesh.registry.isInviteExpired,
+  isInvitePending: _aofApplication.mesh.registry.isInvitePending,
+  isRevoked: _aofApplication.mesh.registry.isRevoked,
+  verifyCredential: _aofApplication.mesh.registry.verifyCredential,
+}));
+        const { meshDir } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
         // a registry with roster, boards, pending, revocations PLUS an unknown
         // additive top-level key the store has never seen
         const registry = sampleRegistry({ futureField: { schemaRev: 2, note: "unknown to the store" } });
@@ -134,7 +164,24 @@ export const meshRegistryStoreSeamTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { readRegistry } = await import("../../../packages/core/src/mesh/registry.mjs");
+        const { readRegistry } = await Promise.resolve(Object.freeze({
+  registryDir: _aofApplication.mesh.registry.registryDir,
+  registryPath: _aofApplication.mesh.registry.registryPath,
+  isControlNode: _aofApplication.mesh.registry.isControlNode,
+  emptyRegistry: _aofApplication.mesh.registry.emptyRegistry,
+  writeRegistry: _aofApplication.mesh.registry.writeRegistry,
+  readRegistry: _aofApplication.mesh.registry.readRegistry,
+  admitNode: _aofApplication.mesh.registry.admitNode,
+  registerBoard: _aofApplication.mesh.registry.registerBoard,
+  appendRevocation: _aofApplication.mesh.registry.appendRevocation,
+  appendPendingInvite: _aofApplication.mesh.registry.appendPendingInvite,
+  consumePendingInvite: _aofApplication.mesh.registry.consumePendingInvite,
+  isInviteConsumed: _aofApplication.mesh.registry.isInviteConsumed,
+  isInviteExpired: _aofApplication.mesh.registry.isInviteExpired,
+  isInvitePending: _aofApplication.mesh.registry.isInvitePending,
+  isRevoked: _aofApplication.mesh.registry.isRevoked,
+  verifyCredential: _aofApplication.mesh.registry.verifyCredential,
+}));
         // meshDir/registry/ has no registry file yet (not even the .mesh/ dir exists)
         let read;
         await assert.doesNotReject(async () => { read = await readRegistry(workspace); }, "reading an absent registry raises no error (absence is benign — the ENOENT→absent discipline)");
@@ -143,7 +190,24 @@ export const meshRegistryStoreSeamTests = [
         // registry THROWS rather than silently reading as empty — the registry is the
         // authoritative git-of-record, and a control-node read→mutate→write over a
         // silently-emptied registry would persist the wipe.
-        const { registryDir, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
+        const { registryDir, registryPath } = await Promise.resolve(Object.freeze({
+  registryDir: _aofApplication.mesh.registry.registryDir,
+  registryPath: _aofApplication.mesh.registry.registryPath,
+  isControlNode: _aofApplication.mesh.registry.isControlNode,
+  emptyRegistry: _aofApplication.mesh.registry.emptyRegistry,
+  writeRegistry: _aofApplication.mesh.registry.writeRegistry,
+  readRegistry: _aofApplication.mesh.registry.readRegistry,
+  admitNode: _aofApplication.mesh.registry.admitNode,
+  registerBoard: _aofApplication.mesh.registry.registerBoard,
+  appendRevocation: _aofApplication.mesh.registry.appendRevocation,
+  appendPendingInvite: _aofApplication.mesh.registry.appendPendingInvite,
+  consumePendingInvite: _aofApplication.mesh.registry.consumePendingInvite,
+  isInviteConsumed: _aofApplication.mesh.registry.isInviteConsumed,
+  isInviteExpired: _aofApplication.mesh.registry.isInviteExpired,
+  isInvitePending: _aofApplication.mesh.registry.isInvitePending,
+  isRevoked: _aofApplication.mesh.registry.isRevoked,
+  verifyCredential: _aofApplication.mesh.registry.verifyCredential,
+}));
         await mkdir(registryDir(workspace), { recursive: true });
         await writeFile(registryPath(workspace), "{ this is not json", "utf8");
         await assert.rejects(async () => { await readRegistry(workspace); }, "a corrupt registry rejects (fail-closed) — corruption never reads as an empty registry");
@@ -163,7 +227,24 @@ export const meshRegistryStoreSeamTests = [
       for (const row of rows) {
         const { repo, workspace } = await makeWorkspace();
         try {
-          const { writeRegistry, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
+          const { writeRegistry, registryPath } = await Promise.resolve(Object.freeze({
+  registryDir: _aofApplication.mesh.registry.registryDir,
+  registryPath: _aofApplication.mesh.registry.registryPath,
+  isControlNode: _aofApplication.mesh.registry.isControlNode,
+  emptyRegistry: _aofApplication.mesh.registry.emptyRegistry,
+  writeRegistry: _aofApplication.mesh.registry.writeRegistry,
+  readRegistry: _aofApplication.mesh.registry.readRegistry,
+  admitNode: _aofApplication.mesh.registry.admitNode,
+  registerBoard: _aofApplication.mesh.registry.registerBoard,
+  appendRevocation: _aofApplication.mesh.registry.appendRevocation,
+  appendPendingInvite: _aofApplication.mesh.registry.appendPendingInvite,
+  consumePendingInvite: _aofApplication.mesh.registry.consumePendingInvite,
+  isInviteConsumed: _aofApplication.mesh.registry.isInviteConsumed,
+  isInviteExpired: _aofApplication.mesh.registry.isInviteExpired,
+  isInvitePending: _aofApplication.mesh.registry.isInvitePending,
+  isRevoked: _aofApplication.mesh.registry.isRevoked,
+  verifyCredential: _aofApplication.mesh.registry.verifyCredential,
+}));
           // a pre-existing registry file on disk whose bytes I record (seeded via the
           // control-node write — the one legitimate writer)
           const prior = sampleRegistry();
@@ -195,7 +276,24 @@ export const meshRegistryStoreSeamTests = [
       // and on a FRESH workspace a non-control invocation creates nothing at all
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { writeRegistry, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
+        const { writeRegistry, registryPath } = await Promise.resolve(Object.freeze({
+  registryDir: _aofApplication.mesh.registry.registryDir,
+  registryPath: _aofApplication.mesh.registry.registryPath,
+  isControlNode: _aofApplication.mesh.registry.isControlNode,
+  emptyRegistry: _aofApplication.mesh.registry.emptyRegistry,
+  writeRegistry: _aofApplication.mesh.registry.writeRegistry,
+  readRegistry: _aofApplication.mesh.registry.readRegistry,
+  admitNode: _aofApplication.mesh.registry.admitNode,
+  registerBoard: _aofApplication.mesh.registry.registerBoard,
+  appendRevocation: _aofApplication.mesh.registry.appendRevocation,
+  appendPendingInvite: _aofApplication.mesh.registry.appendPendingInvite,
+  consumePendingInvite: _aofApplication.mesh.registry.consumePendingInvite,
+  isInviteConsumed: _aofApplication.mesh.registry.isInviteConsumed,
+  isInviteExpired: _aofApplication.mesh.registry.isInviteExpired,
+  isInvitePending: _aofApplication.mesh.registry.isInvitePending,
+  isRevoked: _aofApplication.mesh.registry.isRevoked,
+  verifyCredential: _aofApplication.mesh.registry.verifyCredential,
+}));
         const result = await writeRegistry(workspace, sampleRegistry(), nonControlConfig());
         assert.equal(result.written, false, "the fresh-workspace non-control write is a structured no-op");
         await assert.rejects(() => access(registryPath(workspace)), "the non-control node neither creates nor mutates a registry file");
@@ -209,7 +307,24 @@ export const meshRegistryStoreSeamTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { writeRegistry } = await import("../../../packages/core/src/mesh/registry.mjs");
+        const { writeRegistry } = await Promise.resolve(Object.freeze({
+  registryDir: _aofApplication.mesh.registry.registryDir,
+  registryPath: _aofApplication.mesh.registry.registryPath,
+  isControlNode: _aofApplication.mesh.registry.isControlNode,
+  emptyRegistry: _aofApplication.mesh.registry.emptyRegistry,
+  writeRegistry: _aofApplication.mesh.registry.writeRegistry,
+  readRegistry: _aofApplication.mesh.registry.readRegistry,
+  admitNode: _aofApplication.mesh.registry.admitNode,
+  registerBoard: _aofApplication.mesh.registry.registerBoard,
+  appendRevocation: _aofApplication.mesh.registry.appendRevocation,
+  appendPendingInvite: _aofApplication.mesh.registry.appendPendingInvite,
+  consumePendingInvite: _aofApplication.mesh.registry.consumePendingInvite,
+  isInviteConsumed: _aofApplication.mesh.registry.isInviteConsumed,
+  isInviteExpired: _aofApplication.mesh.registry.isInviteExpired,
+  isInvitePending: _aofApplication.mesh.registry.isInvitePending,
+  isRevoked: _aofApplication.mesh.registry.isRevoked,
+  verifyCredential: _aofApplication.mesh.registry.verifyCredential,
+}));
         // a workspace with real content OUTSIDE meshDir whose on-disk state I record
         await writeFile(path.join(repo, "outside-root.txt"), "workDir-root sentinel\n", "utf8");
         await mkdir(path.join(workspace.workDir, "24_milestone_group-enrollment"), { recursive: true });
@@ -247,7 +362,24 @@ export const meshRegistryStoreSeamTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { writeRegistry, readRegistry, registryDir, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
+        const { writeRegistry, readRegistry, registryDir, registryPath } = await Promise.resolve(Object.freeze({
+  registryDir: _aofApplication.mesh.registry.registryDir,
+  registryPath: _aofApplication.mesh.registry.registryPath,
+  isControlNode: _aofApplication.mesh.registry.isControlNode,
+  emptyRegistry: _aofApplication.mesh.registry.emptyRegistry,
+  writeRegistry: _aofApplication.mesh.registry.writeRegistry,
+  readRegistry: _aofApplication.mesh.registry.readRegistry,
+  admitNode: _aofApplication.mesh.registry.admitNode,
+  registerBoard: _aofApplication.mesh.registry.registerBoard,
+  appendRevocation: _aofApplication.mesh.registry.appendRevocation,
+  appendPendingInvite: _aofApplication.mesh.registry.appendPendingInvite,
+  consumePendingInvite: _aofApplication.mesh.registry.consumePendingInvite,
+  isInviteConsumed: _aofApplication.mesh.registry.isInviteConsumed,
+  isInviteExpired: _aofApplication.mesh.registry.isInviteExpired,
+  isInvitePending: _aofApplication.mesh.registry.isInvitePending,
+  isRevoked: _aofApplication.mesh.registry.isRevoked,
+  verifyCredential: _aofApplication.mesh.registry.verifyCredential,
+}));
         // a prior COMPLETE registry on disk on the control node
         const prior = sampleRegistry();
         await writeRegistry(workspace, prior, controlConfig());

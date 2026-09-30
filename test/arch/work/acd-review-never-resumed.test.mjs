@@ -1,12 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // arch/70 FF-7007 (ADR-008) — THE REVIEWER IS NEVER RESUMED.
 // Drive the production commands: a helper that merely returns null can stay green
 // while a caller still forwards a supplied build session into the real launch.
 import assert from "node:assert/strict";
-import {
-  continueDriverCommand,
-  refineDriverCommand,
-  verifyDriverCommand,
-} from "../../../packages/core/src/commands/drive.mjs";
+const continueDriverCommand = _aofApplication.getCommand("work:drive-continue");
+const refineDriverCommand = _aofApplication.getCommand("work:drive-refine");
+const verifyDriverCommand = _aofApplication.getCommand("work:drive-verify");
 import { createFakePtySpawn, createFakeWhich } from "../../support/mesh-worker-terminal-fixture.mjs";
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 

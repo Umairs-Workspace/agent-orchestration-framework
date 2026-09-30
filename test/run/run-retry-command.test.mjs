@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 20 / story 01 — the work:run-retry command.
 //
 // Covers EVERY @executable scenario in tasks/00_run-retry-command.feature,
@@ -17,8 +19,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
-import { getCommand, listCommands, invoke } from "../../packages/core/src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const findWork = _aofWorkspace.work.findWork;
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const invoke = _aofApplication.invoke;
 
 const FROZEN_KEYS = ["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks"];
 

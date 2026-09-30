@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 50 / story 01 — tasks 00 + 01.
 // Covers every @executable scenario:
 //   Task 00: buildSessionSpawnFrame produces a well-formed down-frame;
@@ -17,8 +18,9 @@ import {
   buildSessionSpawnFrame,
   buildSessionSpawnAckFrame,
 } from "@aof/mesh/session-spawn-directive";
-import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../../packages/core/src/worker-stream-client.mjs";
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const createWorkerWsTransport = _aofApplication.mesh.workerStreamClient.createWorkerWsTransport;
 
 function createFakeTransport() {
   const sent = [];

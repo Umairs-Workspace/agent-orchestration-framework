@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5809 — A REGISTRY FIXTURE COPIES AN ENDPOINT-CLOSED SUBSET, THROUGH ONE HELPER.
 //
 // Milestone 58 / story 00, from 58/ADR-007 §3a. The invariant:
@@ -36,7 +37,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { stripComments } from "../../support/source-slice.mjs";
 import {
   SHIPPED_LOOPS_DIR, shippedRecords, shippedRegistryFiles, withShippedRegistry,

@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
@@ -5,8 +7,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { LOOP_SCOPE_FORMS } from "../../../packages/work-loop/src/engine.mjs";
-import { loopCommand } from "../../../packages/core/src/commands/loop.mjs";
-import { nextWork } from "../../../packages/core/src/work.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
+const nextWork = _aofWorkspace.work.nextWork;
 import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-command-probe.test.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 

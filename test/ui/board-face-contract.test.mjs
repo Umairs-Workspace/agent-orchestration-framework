@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 08 / story 02 (the board face).
 //
 // Covers EVERY @executable scenario across the three task features, exercising
@@ -21,7 +22,7 @@ import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 
 // --- fixture builders --------------------------------------------------------
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 45 / story 02 (ADR-004) — the three @executable
 // task features of `02_story_static-serve-history-fallback`:
 //
@@ -35,9 +36,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
-import { serveBoard, boardUiDist } from "../../packages/core/src/board-serve.mjs";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const serveBoard = _aofApplication.server.serve.serveBoard;
+const boardUiDist = _aofApplication.server.serve.boardUiDist;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
 
 // --- fixtures ----------------------------------------------------------------
 

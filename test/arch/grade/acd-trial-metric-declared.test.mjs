@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6102 (milestone 61 / ADR-002) — THE TRIAL METRIC IS DECLARED, RESOLVABLE AND
 // SWAPPABLE, AND THE ENGINE NAMES NONE OF IT.
@@ -24,7 +25,9 @@ import { fileURLToPath } from "node:url";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 import * as workCounters from "@aof/work/counters";
-import { CriterionError, defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
+const CriterionError = _aofApplication.work.acceptor.criterion.CriterionError;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
 import {
   COUNTER_METRIC_UNRESOLVABLE,
   METRIC_UNMEASURABLE,

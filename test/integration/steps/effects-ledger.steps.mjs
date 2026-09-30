@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Steps for effects-ledger.feature (m42 wave (d) leg d2). The execution and
 // status assertions are the shared grammar; the journal steps are the ONE
 // sanctioned grey-box seam — they verify at the real data store (the per-node
@@ -9,15 +10,13 @@ import { readFile } from "node:fs/promises";
 import { createStepRegistry } from "../support/step-registry.mjs";
 import { registerCommonSteps } from "../support/common-steps.mjs";
 import { readFile as readTextFile, writeFile } from "node:fs/promises";
-import {
-  openEffectsJournal,
-  effectsJournalPath,
-  appendEvent,
-  pendingSteps,
-  readEvents,
-  readEventSteps,
-} from "../../../packages/core/src/effects/journal.mjs";
-import { applicableReactors } from "../../../packages/core/src/effects/table.mjs";
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const effectsJournalPath = _aofApplication.effects.journal.effectsJournalPath;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const pendingSteps = _aofApplication.effects.journal.pendingSteps;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const applicableReactors = _aofApplication.effects.reactors.applicableReactors;
 
 const registry = createStepRegistry();
 registerCommonSteps(registry);

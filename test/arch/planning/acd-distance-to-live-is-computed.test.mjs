@@ -1,10 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6206 — the distance is read from the acceptor and the counter, never copied.
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { REFUSAL_REMOVALS, RULING_REFUSAL_ORDER } from "../../../packages/core/src/commands/acceptor.mjs";
+const REFUSAL_REMOVALS = _aofApplication.work.commandTools.acceptor.REFUSAL_REMOVALS;
+const RULING_REFUSAL_ORDER = _aofApplication.work.commandTools.acceptor.RULING_REFUSAL_ORDER;
 import { NOT_ADMISSIBLE } from "@aof/work/acceptor/admissibility";
 import {
   DISTANCE_LIMBS,

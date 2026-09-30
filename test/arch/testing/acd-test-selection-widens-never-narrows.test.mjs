@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-test-selection-widens-never-narrows (milestone 72 / story 01, FF-7202;
 // ADR-002 §1, §2, §3, §5).
 //
@@ -33,7 +34,9 @@ import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { graphArtifactBuiltAt, graphJsonPath } from "@aof/knowledge/graph-normalize";
-import { WIDENING_REASONS, selectSuites, wideningRuleProblems } from "../../../packages/core/src/work/test-select.mjs";
+const WIDENING_REASONS = _aofApplication.work.testSelect.WIDENING_REASONS;
+const selectSuites = _aofApplication.work.testSelect.selectSuites;
+const wideningRuleProblems = _aofApplication.work.testSelect.wideningRuleProblems;
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 

@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-work-ui-rename-complete (milestone 25 / ADR-001) — the
 // "the `aof work board` → `aof work ui` rename actually happened" proof, in the
 // acd-mesh-command-cli-bijection grep idiom (isolate the dispatcher body; discount
@@ -31,8 +33,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { deriveRouteTable } from "../../../packages/core/src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");

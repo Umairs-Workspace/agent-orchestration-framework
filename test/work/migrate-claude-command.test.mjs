@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 31 `migrate-claude-command` — the /aof:migrate
 // bundle command (the INFERENCE CEILING over the story-29 mechanical CLI).
 //
@@ -36,7 +37,7 @@ import { hashContent, hashFileIfExists, writeLock } from "../../packages/core/sr
 import { createLockManifest, executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
 import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
 import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
-import { initWork } from "../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
 
 const root = new URL("../../", import.meta.url);
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");

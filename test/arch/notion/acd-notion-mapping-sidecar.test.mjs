@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 17 / ADR-001 (inv. 1):
 //   "Mapping-sidecar-only. The aof↔Notion mapping lives ONLY in the git-ignored
 //    `.aof/` sidecar keyed by aof ref; no code writes an aof-identity property onto a
@@ -28,7 +29,10 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readMapping, resolvePageId, recordPageId, NOTION_WORK_MAP_FILE } from "../../../packages/core/src/notion/mapping.mjs";
+const readMapping = _aofApplication.integrations.notion.mapping.readMapping;
+const resolvePageId = _aofApplication.integrations.notion.mapping.resolvePageId;
+const recordPageId = _aofApplication.integrations.notion.mapping.recordPageId;
+const NOTION_WORK_MAP_FILE = _aofApplication.integrations.notion.mapping.NOTION_WORK_MAP_FILE;
 import { AOF_GITIGNORE_ENTRIES } from "../../../packages/core/src/aof-gitignore.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6604 (milestone 66 / ADR-001 §7, scoped by ADR-008 ruling 2) — THE GRAMMAR HAS
 // ONE HOME, THE TWO EXPORTS ARE SEPARATE, AND THE EXTRACTION CHANGED NO RECORD.
 //
@@ -63,7 +64,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { ID_FORMS, headingCaptureRe, headingSplitRe } from "@aof/work/declared-id";
-import { parseArchitecture, parseRetrospective } from "../../../packages/core/src/memory/local-indexing.mjs";
+const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
+const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "packages", "core", "src");

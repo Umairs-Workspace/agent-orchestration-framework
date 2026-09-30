@@ -1,34 +1,32 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  openGlobalWorkProjectionStore,
-  queryGlobalWorkProjection,
-  recordWorkspaceProjectionError,
-  workspaceIdFor,
-  upsertWorkItemContent,
-  readWorkItemDoc,
-  readWorkItemRuns,
-  // 127/04 task 00 — the hops the two shapes ride: the disk projection, the publish, the
-  // read-back and the schema constant the v9 migration moves.
-  readWorkspaceProjectionItems,
-  publishWorkspaceSnapshot,
-  readWorkspaceItems,
-  GLOBAL_WORK_SCHEMA_VERSION,
-} from "../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const queryGlobalWorkProjection = _aofApplication.mesh.store.queryGlobalWorkProjection;
+const recordWorkspaceProjectionError = _aofApplication.mesh.store.recordWorkspaceProjectionError;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
+const readWorkItemDoc = _aofApplication.mesh.store.readWorkItemDoc;
+const readWorkItemRuns = _aofApplication.mesh.store.readWorkItemRuns;
+const readWorkspaceProjectionItems = _aofApplication.mesh.store.readWorkspaceProjectionItems;
+const publishWorkspaceSnapshot = _aofApplication.mesh.store.publishWorkspaceSnapshot;
+const readWorkspaceItems = _aofApplication.mesh.store.readWorkspaceItems;
+const GLOBAL_WORK_SCHEMA_VERSION = _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION;
 // …the frame doors a worker's rows arrive through, the fleet payload, the raw runtime (to
 // write a v8 file by hand), and 127/01's three-root fixture — the ONE stream every hop is
 // measured over, imported from where its owning story left it (the 127/02 and 127/03 idiom).
-import { applySnapshotFrame, applyDeltaFrame } from "../../packages/core/src/control-stream-server.mjs";
-import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
+const applySnapshotFrame = _aofApplication.mesh.controlStreamServer.applySnapshotFrame;
+const applyDeltaFrame = _aofApplication.mesh.controlStreamServer.applyDeltaFrame;
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
 import { importSqliteRuntime } from "@aof/foundation/sqlite-runtime";
 import { withThreeRoots } from "../work/stream/work-backlog-archive-enumerate.test.mjs";
 // m43 / ADR-012/B4 — the WORKER-side content read moved into its own module when 43/03
 // widened it to the artifact manifest (the store module's line ceiling's own escape
 // hatch). Same function, same shapes; imported from where it now lives.
-import { readWorkspaceContentRecords } from "../../packages/core/src/work/content-read.mjs";
+const readWorkspaceContentRecords = _aofApplication.work.contentRead.readWorkspaceContentRecords;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 
 function frontmatter(fields) {

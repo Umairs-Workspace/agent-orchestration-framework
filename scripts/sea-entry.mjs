@@ -30,7 +30,7 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { run } from "../packages/core/src/cli.mjs";
+import { run } from "aof/cli";
 
 // Native dynamic import, shielded from esbuild: under --format=cjs esbuild
 // rewrites a bare `import(expr)` into a require()-based shim, which cannot load

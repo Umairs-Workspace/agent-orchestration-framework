@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 25 / story 02 / task 00 —
 // tasks/00_mesh-ui-serve.feature (@executable).
 //
@@ -29,14 +32,17 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, DEFAULT_MESH_UI_PORT, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { queryGlobalMeshStatus } from "../../../packages/core/src/global-mesh-query.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const DEFAULT_MESH_UI_PORT = _aofApplication.mesh.uiServe.DEFAULT_MESH_UI_PORT;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
-import { loopStopsDir, readStopRequest } from "../../../packages/core/src/loop/stop-request.mjs";
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
 import { publishRepoInto, withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";

@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 01 (reindex-engine), task
 //   wiki/work/41_milestone_work-item-insertion/stories/01_story_reindex-engine/
 //     tasks/03_two-number-space-axes.feature
@@ -6,7 +7,8 @@
 // confirmed via a fresh `findWork`/`listItems` read (packages/core/src/work.mjs) of the
 // fixture stream after the engine call.
 import assert from "node:assert/strict";
-import { findWork, listItems } from "../../../packages/core/src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
 import { reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, writeStoryItem } from "../../support/work-reindex-fixture.mjs";
 

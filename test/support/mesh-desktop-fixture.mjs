@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Shared fixture builder for the milestone 36 / story 03 desktop install/run test
 // suites — a fixture install root (a temp $HOME/.aof/bin) + a fixture "app
 // artifact" + a fixture "WebView2 bootstrapper artifact" standing in for the real
@@ -7,7 +8,8 @@
 import { chmod, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { DESKTOP_APP_EXE, WEBVIEW2_BOOTSTRAPPER } from "../../packages/core/src/commands/mesh/desktop.mjs";
+const DESKTOP_APP_EXE = _aofApplication.mesh.commandTools.mesh.desktop.DESKTOP_APP_EXE;
+const WEBVIEW2_BOOTSTRAPPER = _aofApplication.mesh.commandTools.mesh.desktop.WEBVIEW2_BOOTSTRAPPER;
 
 // withMeshDesktopFixture(fn, { seedAofBinary, seedArtifacts }) — builds a temp
 // tree: <tmp>/home/.aof/bin (the fixture $HOME/.aof/bin install dir, with the m28

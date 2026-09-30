@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 18 / story 01, task 01 —
 // tasks/01_projection-parent-nesting.feature (@executable, every scenario). One test
 // object per @executable scenario; ADR-001/003/005/006.
@@ -13,7 +14,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveNotionRouting } from "../../packages/core/src/integrations/routing.mjs";
+const resolveNotionRouting = _aofApplication.work.integrations.routing.resolveNotionRouting;
 import { projectMilestone } from "@aof/integration-notion/projection";
 
 const FULL_STATUS_MAP = {

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 35 / story 01 — task 01
 // (tasks/01_directive-admission.feature). Covers every @executable scenario /
 // Scenario Outline row:
@@ -19,10 +20,8 @@
 // No live tailnet — the real non-peer dial being refused is the milestone's @manual
 // soak (story 02).
 import assert from "node:assert/strict";
-import {
-  dispatchDirectiveOverTargets,
-  buildDirectiveFrame,
-} from "../../packages/core/src/control-stream-server.mjs";
+const dispatchDirectiveOverTargets = _aofApplication.mesh.controlStreamServer.dispatchDirectiveOverTargets;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
 import { createDirectiveChannelFixture } from "../support/mesh-directive-channel-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

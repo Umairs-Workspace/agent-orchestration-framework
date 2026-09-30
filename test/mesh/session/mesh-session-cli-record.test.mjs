@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 38 / story 00
 // tasks/00_session-cli-record.feature — "`aof session start|ping|end` are the sole
 // producers of a per-(node, workspace, assistant) session record".
@@ -11,9 +13,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../packages/core/src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode } from "../../../packages/core/src/mesh/session.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const NODE_ID = "node-a";
 

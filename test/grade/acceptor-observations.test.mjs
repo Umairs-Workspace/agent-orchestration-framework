@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 61 / story 02 — the observation census.
 //
 // Covers EVERY @executable scenario and EVERY Examples row in the one task feature:
@@ -22,16 +23,16 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { appendEvent, openEffectsJournal } from "../../packages/core/src/effects/journal.mjs";
-import { dispatchWorktreeSlug, meshDispatchWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
-import {
-  OBSERVATION_FINDING_CODES,
-  OBSERVATION_SWEEPS,
-  classifyObservation,
-  countPopulation,
-  observationCensus,
-  readObservationCensus,
-} from "../../packages/core/src/work-acceptor/observations.mjs";
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const dispatchWorktreeSlug = _aofApplication.mesh.worktree.dispatchWorktreeSlug;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const OBSERVATION_FINDING_CODES = _aofApplication.work.acceptor.observations.OBSERVATION_FINDING_CODES;
+const OBSERVATION_SWEEPS = _aofApplication.work.acceptor.observations.OBSERVATION_SWEEPS;
+const classifyObservation = _aofApplication.work.acceptor.observations.classifyObservation;
+const countPopulation = _aofApplication.work.acceptor.observations.countPopulation;
+const observationCensus = _aofApplication.work.acceptor.observations.observationCensus;
+const readObservationCensus = _aofApplication.work.acceptor.observations.readObservationCensus;
 
 // The workspace this census is for, and a second one that is not it. Synthetic absolute
 // paths (never the machine's temp root — see the header), resolved so Windows and POSIX

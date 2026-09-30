@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // `aof work delegation` — the gpt-5.6 delegation on/off toggle.
 //
 // Two surfaces asserted against the REAL modules:
@@ -26,7 +27,7 @@ import {
   applyDelegationModelToResources
 } from "../../packages/core/src/work/delegation.mjs";
 import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
-import { validateConfig } from "../../packages/core/src/config-inspect.mjs";
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 
 const silent = () => {};
 

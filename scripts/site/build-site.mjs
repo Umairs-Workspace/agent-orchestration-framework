@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // scripts/site/build-site.mjs — the STAGING step for the published site (story 125).
 //
 // WHAT IT IS, AND WHAT IT IS NOT. It assembles ONE git-ignored directory that Jekyll builds from:
@@ -46,7 +47,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

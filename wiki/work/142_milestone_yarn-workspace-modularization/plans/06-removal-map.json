@@ -13563,7 +13563,195 @@
         }
       ],
       "consumers": []
+    },
+    {
+      "coreRelativePath": "commands/assets/add.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../../application/default.mjs",
+          "clause": "{ commandsAssetsAdd }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "assetsAddCommand",
+          "member": "assetsAddCommand",
+          "expression": "commandsAssetsAdd"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "commands/assets/apply.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../../application/default.mjs",
+          "clause": "{ commandsAssetsApply }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "assetsApplyCommand",
+          "member": "assetsApplyCommand",
+          "expression": "commandsAssetsApply"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "commands/assets/list.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../../application/default.mjs",
+          "clause": "{ commandsAssetsList }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "assetsListCommand",
+          "member": "assetsListCommand",
+          "expression": "commandsAssetsList"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "commands/assets/refs.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../../application/default.mjs",
+          "clause": "{ commandsAssetsRefs }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "assetsUseCommand",
+          "member": "assetsUseCommand",
+          "expression": "commandsAssetsRefs"
+        },
+        {
+          "name": "assetsUnuseCommand",
+          "member": "assetsUnuseCommand",
+          "expression": "commandsAssetsRefs"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "commands/assets/remove.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../../application/default.mjs",
+          "clause": "{ commandsAssetsRemove }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "assetsRemoveCommand",
+          "member": "assetsRemoveCommand",
+          "expression": "commandsAssetsRemove"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "commands/assets/show.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../../application/default.mjs",
+          "clause": "{ commandsAssetsShow }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "assetsShowCommand",
+          "member": "assetsShowCommand",
+          "expression": "commandsAssetsShow"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "commands/assets/ui.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../../application/default.mjs",
+          "clause": "{ commandsAssetsUi }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "assetsUiCommand",
+          "member": "assetsUiCommand",
+          "expression": "commandsAssetsUi"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "commands/assets/validate.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../../application/default.mjs",
+          "clause": "{ commandsAssetsValidate }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "assetsValidateCommand",
+          "member": "assetsValidateCommand",
+          "expression": "commandsAssetsValidate"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "spine/face.mjs",
+      "kind": "configured",
+      "targets": [
+        {
+          "from": "../application/default.mjs",
+          "clause": "{ spineFace }"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "BASE_FLAGS",
+          "member": "BASE_FLAGS",
+          "expression": "spineFace"
+        },
+        {
+          "name": "parseSpecArgv",
+          "member": "parseSpecArgv",
+          "expression": "spineFace"
+        },
+        {
+          "name": "deriveRouteTable",
+          "member": "deriveRouteTable",
+          "expression": "spineFace"
+        },
+        {
+          "name": "resolveRoute",
+          "member": "resolveRoute",
+          "expression": "spineFace"
+        },
+        {
+          "name": "runCommandFace",
+          "member": "runCommandFace",
+          "expression": "spineFace"
+        }
+      ]
+    },
+    {
+      "coreRelativePath": "mesh/log.mjs",
+      "kind": "core-alias",
+      "targets": [
+        {
+          "from": "../diagnostics/log.mjs"
+        }
+      ]
     }
   ],
-  "baselineCore": "packages/core/src"
+  "baselineCore": "packages/core/src",
+  "inventoryCorrection": "The initial walk skipped every assets directory. Source discovery must skip generated asset roots, never source directories by basename. Nine configured entries were added from the unchanged baseline sources, along with the relative mesh log alias."
 }

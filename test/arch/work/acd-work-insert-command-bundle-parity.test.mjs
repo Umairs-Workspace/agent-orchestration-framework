@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 41 / RETROSPECTIVE R5 (the packaging axis of the
 // registry trio, R3's sibling): "Adding a work:* command IMPLIES its Claude command."
 //
@@ -28,7 +29,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../packages/core/src/command-core.mjs";
+const listCommands = _aofApplication.listCommands;
 import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

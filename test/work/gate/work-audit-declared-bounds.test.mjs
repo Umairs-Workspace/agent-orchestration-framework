@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Behavioural evidence for milestone 77 / story 03 — the declared bounds.
 //
 //   tasks/01_a-declared-bound-is-joined-against-the-reference.feature
@@ -17,19 +18,17 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { loopRecord, makeLoopRegistry, withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { readFinding } from "@aof/work/audit/reads";
-import {
-  BOUND_CONFIG_KEYS,
-  DECLARED_BOUNDS_FINDING_CODES,
-  DECLARED_BOUNDS_SWEEPS,
-  DEFAULT_REFERENCE_STALE_WINDOW_MS,
-  boundConfigKeyProblems,
-  boundRange,
-  declaredBoundValues,
-  runDeclaredBounds,
-} from "../../../packages/core/src/work-audit/declared-bounds.mjs";
+const BOUND_CONFIG_KEYS = _aofApplication.work.audit.declaredBounds.BOUND_CONFIG_KEYS;
+const DECLARED_BOUNDS_FINDING_CODES = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_FINDING_CODES;
+const DECLARED_BOUNDS_SWEEPS = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_SWEEPS;
+const DEFAULT_REFERENCE_STALE_WINDOW_MS = _aofApplication.work.audit.declaredBounds.DEFAULT_REFERENCE_STALE_WINDOW_MS;
+const boundConfigKeyProblems = _aofApplication.work.audit.declaredBounds.boundConfigKeyProblems;
+const boundRange = _aofApplication.work.audit.declaredBounds.boundRange;
+const declaredBoundValues = _aofApplication.work.audit.declaredBounds.declaredBoundValues;
+const runDeclaredBounds = _aofApplication.work.audit.declaredBounds.runDeclaredBounds;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

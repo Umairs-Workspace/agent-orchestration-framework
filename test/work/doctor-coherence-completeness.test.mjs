@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 15 / story 01 — the coherence & completeness
 // check-groups (status-coherence + lifecycle-completeness). Covers EVERY
 // @executable scenario across the story's two task features, exercising the REAL
@@ -15,8 +17,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 
 // --- fixture builders --------------------------------------------------------
 

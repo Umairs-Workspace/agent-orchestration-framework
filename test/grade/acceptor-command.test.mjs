@@ -1,16 +1,17 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 
-import {
-  RULING_REFUSAL_ORDER,
-  acceptorCommand,
-  buildAcceptorReport,
-  reversionDecision,
-  withdrawalOnHarm,
-} from "../../packages/core/src/commands/acceptor.mjs";
-import { criterionDigest, defaultCriterion, makeCriterion } from "../../packages/core/src/work-acceptor/criterion.mjs";
+const RULING_REFUSAL_ORDER = _aofApplication.work.commandTools.acceptor.RULING_REFUSAL_ORDER;
+const acceptorCommand = _aofApplication.getCommand("work:acceptor");
+const buildAcceptorReport = _aofApplication.work.commandTools.acceptor.buildAcceptorReport;
+const reversionDecision = _aofApplication.work.commandTools.acceptor.reversionDecision;
+const withdrawalOnHarm = _aofApplication.work.commandTools.acceptor.withdrawalOnHarm;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
 import { PAIR_OUTCOMES } from "@aof/work/acceptor/ledger";
 import { tunableSet } from "@aof/work/acceptor/admissibility";
 import { compoundStepRefusal } from "@aof/contracts/loop-bounds";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-7809 (78/ADR-001, m66/ADR-001) — THE SIGN-OFF BLOCK IS FROZEN: the `h2`, the table header row,
 // and the id ALONE in the first cell.
 //
@@ -24,7 +25,10 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 
-import * as writer from "../../../packages/core/src/commands/loop-record.mjs";
+const writer = Object.freeze({
+  ..._aofApplication.graph.commandTools.loopRecord,
+  loopRecordCommand: _aofApplication.getCommand("work:loop-record"),
+});
 import * as checker from "@aof/work/doctor/loop-record";
 import { ITEM_REF, ctxFor, signInPlace, signedRow, withRepo } from "../../loop/loop-record-command.test.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/arch/assignment/acd-assignment-resolves-to-a-loop-call.test.mjs — FF-6306 (milestone 63,
 // ADR-006, ADR-010 §1/§2/§3, ADR-012 §3).
 //
@@ -41,7 +42,7 @@ import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 // driver's own module. That is the honest door for this leg — the claim is about the
 // caller-side obligation, and the caller reaches the seam here — and it leaves the driver's
 // closed ADR-015 §2 test allowlist untouched.
-import { resolveInteractiveDriverLaunch } from "../../../packages/core/src/mesh/worker-execution.mjs";
+const resolveInteractiveDriverLaunch = _aofApplication.mesh.worker.resolveInteractiveDriverLaunch;
 import { bundledFrozenSet, compileFrozenSet } from "../../../packages/core/src/frozen-set.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -242,7 +243,9 @@ export const archTests = [
   {
     name: "arch/63 FF-6306 (acd-assignment-resolves-to-a-loop-call): exactly ONE module in src/ authors a slash command for an assignment phase, and its four answers are byte-unchanged",
     run: async () => {
-      const files = await readRuntimeFiles(repoRoot);
+      // Assignment phase policy is authored by Node services; UI action labels
+      // are presentation. The separate package boundary gate includes UI source.
+      const files = await readRuntimeFiles(repoRoot, { runtime: "node" });
       const authors = [];
       for (const file of files) {
         const code = stripComments(await readFile(file.path, "utf8"));

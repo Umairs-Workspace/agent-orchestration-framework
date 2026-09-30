@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12602 — "The loop narrates in flight through the ONE injected printer it already has, by
 // default; `--quiet` silences in-flight lines and nothing else."
 //
@@ -18,7 +19,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { loopCommand } from "../../../packages/core/src/commands/loop.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

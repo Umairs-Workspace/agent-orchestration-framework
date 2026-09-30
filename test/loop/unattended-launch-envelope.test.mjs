@@ -1,3 +1,4 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // 63/02 — THE LAUNCH ENVELOPE COMPILES. The four task features of "the launch envelope
 // compiles", driven over the real compiler and the real launch seam:
 //
@@ -31,8 +32,9 @@ import {
   FROZEN_SET_RELPATH,
   FrozenSetError,
 } from "../../packages/core/src/frozen-set.mjs";
-import { driveInteractiveClaudeSession, resolveInteractiveDriverLaunch } from "../../packages/core/src/agent-session-driver.mjs";
-import { PROVIDER_IDS } from "../../packages/core/src/terminal-providers.mjs";
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const resolveInteractiveDriverLaunch = _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch;
+const PROVIDER_IDS = _aofSessions.terminalProviders.PROVIDER_IDS;
 import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

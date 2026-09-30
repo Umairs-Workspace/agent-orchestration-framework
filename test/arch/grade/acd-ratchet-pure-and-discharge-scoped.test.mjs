@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand } from "../../../packages/core/src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
 import { evaluateRatchet } from "@aof/work/ratchet";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 

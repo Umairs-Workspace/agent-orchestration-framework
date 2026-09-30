@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5313 — delivered loop records are immutable framework-owned asset members.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -6,13 +7,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readLock } from "../../../packages/core/src/lock.mjs";
-import {
-  ADMITTED_KEYS,
-  ENDPOINT_SCHEMES,
-  NODE_KINDS,
-  POINTER_SCHEMES,
-  loadLoops,
-} from "../../../packages/core/src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const ENDPOINT_SCHEMES = _aofApplication.graph.work.loops.ENDPOINT_SCHEMES;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const POINTER_SCHEMES = _aofApplication.graph.work.loops.POINTER_SCHEMES;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { loadBundle, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
 import { readShippedManifest } from "../../../packages/core/src/work/bundle-manifest.mjs";
 

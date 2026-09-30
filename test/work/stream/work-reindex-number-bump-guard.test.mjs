@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Regression test for review fix 3 (milestone 41 as-built review, 2026-07-16):
 // "The mandatory `number:` bump silently no-ops, committing a folder<->frontmatter
 // mismatch." `reindexForInsert` (packages/core/src/work/reindex.mjs) used to rename a shifted
@@ -17,7 +18,7 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { findWork } from "../../../packages/core/src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
 import { reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, folderNames } from "../../support/work-reindex-fixture.mjs";
 

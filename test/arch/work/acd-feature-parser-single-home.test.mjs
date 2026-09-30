@@ -327,7 +327,7 @@ export const archTests = [
     name: "arch/FF-6601: src/work.mjs carries no keyword regex and reaches the grammar only by importing the leaf",
     run: async () => {
       const text = await readFile(path.join(repoRoot, "packages/work/src/validation.mjs"), "utf8");
-      const { recognisers, renderers } = classify([{ file: "packages/core/src/work.mjs", text }]);
+      const { recognisers, renderers } = classify([{ file: "packages/core/src/application/bindings/work.mjs", text }]);
       assert.deepEqual(recognisers, [], `work.mjs carries no Gherkin recogniser: ${JSON.stringify(recognisers)}`);
       assert.deepEqual(renderers, [], `and emits no Gherkin either: ${JSON.stringify(renderers)}`);
       // The import-statement parse: the god node reaches the grammar by import.

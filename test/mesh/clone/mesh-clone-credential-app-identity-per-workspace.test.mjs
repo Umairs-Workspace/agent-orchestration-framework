@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-app-identity-per-workspace.test.mjs — traceability for
 // milestone 38 / story 03, task 00
 // (00_per-workspace-app-identity-resolution.feature, ADR-011). Every @executable
@@ -15,8 +16,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createGithubAppMintProvider } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
-import { createResolveWorkspaceAppIdentity, createResolveWorkspaceCloneUrl } from "../../../packages/core/src/mesh/launcher.mjs";
+const createGithubAppMintProvider = _aofApplication.mesh.cloneCredentialProvider.createGithubAppMintProvider;
+const createResolveWorkspaceAppIdentity = _aofApplication.mesh.launcher.createResolveWorkspaceAppIdentity;
+const createResolveWorkspaceCloneUrl = _aofApplication.mesh.launcher.createResolveWorkspaceCloneUrl;
 import { createFakeHttpRequest, jsonResponse } from "../../support/mesh-clone-credential-mint-fixture.mjs";
 import { withPerOrgAppIdentityFixture, generateThrowawayPrivateKeyPem } from "../../support/mesh-per-org-app-identity-fixture.mjs";
 

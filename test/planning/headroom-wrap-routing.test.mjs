@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 06 / story 02 — headroom-wrap-routing. The
 // @executable SERVER scenarios across the three task features, driven END-TO-END
 // through the REAL handleConnection (packages/core/src/terminal-ws.mjs) with an INJECTED stub
@@ -16,7 +17,7 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 
 // --- fixtures ----------------------------------------------------------------
 

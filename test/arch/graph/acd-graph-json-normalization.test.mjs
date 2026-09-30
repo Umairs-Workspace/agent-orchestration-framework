@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 09 / ADR-006 inv. 5 (result derived from
 // graph.json, not stdout; ADR-001 + ADR-003, amended 2026-06-21):
 // "Where a `graph:*` result carries graph-derived structured data it is normalized
@@ -15,9 +16,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeGraph, readGraph } from "../../../packages/core/src/graphify.mjs";
-import { graphQueryCommand } from "../../../packages/core/src/commands/graph/query.mjs";
-import { graphTriageCommand } from "../../../packages/core/src/commands/graph/triage.mjs";
+const normalizeGraph = _aofApplication.knowledge.graphify.normalizeGraph;
+const readGraph = _aofApplication.knowledge.graphify.readGraph;
+const graphQueryCommand = _aofApplication.getCommand("graph:query");
+const graphTriageCommand = _aofApplication.getCommand("graph:triage");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = path.join(repoRoot, "test", "fixtures", "graph", "graph.json");

@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/terminal/claude-screens-registry.test.mjs — milestone 138 / story 01, tasks 01 and 02
 // (01_the-registry-holds-the-six-v1-screens.feature, 02_trust-is-answered-and-the-rest-stop-by-name
 // .feature; 138/ADR-003 §1-§5, §4 as amended 2026-09-27, RESEARCH Q5).
@@ -10,9 +12,10 @@
 // redraws its menu rows, so the dialog's words stay the recording's (QA 4).
 import assert from "node:assert/strict";
 import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
-import { openSessionScreen, readConsentMenu } from "../../packages/core/src/terminal/session-screen.mjs";
-import { createScreen } from "../../packages/core/src/terminal/screen.mjs";
-import { isRetryable } from "../../packages/core/src/run-store.mjs";
+const openSessionScreen = _aofSessions.terminalSessionScreen.openSessionScreen;
+const readConsentMenu = _aofSessions.terminalSessionScreen.readConsentMenu;
+const createScreen = _aofSessions.terminalScreen.createScreen;
+const isRetryable = _aofApplication.execution.runs.isRetryable;
 import { captureDegrades, loadFixture, replay } from "./screen-model.test.mjs";
 import { BRIEF, ESC, SUBMIT_KEY, drive, pasteOf, sleep, waitUntil } from "./session-screen-ready.test.mjs";
 

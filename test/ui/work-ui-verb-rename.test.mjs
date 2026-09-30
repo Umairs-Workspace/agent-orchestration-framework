@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliSync, spawnCliAsync } from "../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A repo whose .aof/aof.config.json points work.dir at wiki/work, with one milestone
 // so the board's work stream is non-empty (mirrors board-serve.test.mjs's makeRepo).

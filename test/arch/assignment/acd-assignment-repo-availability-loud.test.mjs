@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-repo-availability-loud (milestone 35 / ADR-004 /
 // 34-ADR-008, fitness #7 — WORKER half) — "the worker execution path checks repo
 // availability BEFORE creating a worktree, and on a miss emits a coded
@@ -24,9 +26,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { listWorktrees } from "../../../packages/core/src/mesh/worktree.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
 import { withMeshWorkerExecFixture, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

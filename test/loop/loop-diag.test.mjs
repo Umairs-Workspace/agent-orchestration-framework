@@ -1,3 +1,5 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 // test/loop/loop-diag.test.mjs — the loop's HOME-SIDE files: the exit-reason recorder
 // (packages/core/src/loop-diag.mjs, 2026-09-11) and, since 130/01, the stop request (packages/core/src/loop/stop-request.mjs).
@@ -14,44 +16,38 @@ import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:f
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 import { stripComments } from "../support/source-slice.mjs";
-import {
-  STOP_LEVELS,
-  STOP_STATES,
-  clearStopRequest,
-  createStopSource,
-  loopStopsDir,
-  markStopHonoured,
-  readStopRequest,
-  requestLoopStop,
-  stopRequestPath,
-} from "../../packages/core/src/loop/stop-request.mjs";
-import {
-  answerAsk,
-  askRequestPath,
-  clearAsk,
-  createAskPoll,
-  loopAsksDir,
-  openAsk,
-  parkAsk,
-  readAsk,
-  readAsks,
-} from "../../packages/core/src/loop/ask-request.mjs";
-import {
-  LOOP_DIAG_ENV,
-  LOOP_DIAG_KEEP,
-  LOOP_DIAG_PREFIX,
-  formatLoopDiagLine,
-  installLoopDiagnostics,
-  loopDiagEnabled,
-  loopDiagLogDir,
-  loopDiagLogPath,
-  loopDiagScopeTag,
-  pruneLoopDiagLogs,
-  readLastLoopDiagEvent,
-} from "../../packages/core/src/loop-diag.mjs";
+const STOP_LEVELS = _aofApplication.loop.stopRequest.STOP_LEVELS;
+const STOP_STATES = _aofApplication.loop.stopRequest.STOP_STATES;
+const clearStopRequest = _aofApplication.loop.stopRequest.clearStopRequest;
+const createStopSource = _aofApplication.loop.stopRequest.createStopSource;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const clearAsk = _aofApplication.loop.askRequest.clearAsk;
+const createAskPoll = _aofApplication.loop.askRequest.createAskPoll;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const parkAsk = _aofApplication.loop.askRequest.parkAsk;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+const LOOP_DIAG_ENV = _aofApplication.loop.loopDiag.LOOP_DIAG_ENV;
+const LOOP_DIAG_KEEP = _aofApplication.loop.loopDiag.LOOP_DIAG_KEEP;
+const LOOP_DIAG_PREFIX = _aofApplication.loop.loopDiag.LOOP_DIAG_PREFIX;
+const formatLoopDiagLine = _aofApplication.loop.loopDiag.formatLoopDiagLine;
+const installLoopDiagnostics = _aofApplication.loop.loopDiag.installLoopDiagnostics;
+const loopDiagEnabled = _aofApplication.loop.loopDiag.loopDiagEnabled;
+const loopDiagLogDir = _aofApplication.loop.loopDiag.loopDiagLogDir;
+const loopDiagLogPath = _aofApplication.loop.loopDiag.loopDiagLogPath;
+const loopDiagScopeTag = _aofApplication.loop.loopDiag.loopDiagScopeTag;
+const pruneLoopDiagLogs = _aofApplication.loop.loopDiag.pruneLoopDiagLogs;
+const readLastLoopDiagEvent = _aofApplication.loop.loopDiag.readLastLoopDiagEvent;
 
 function fakeProcess() {
   const proc = new EventEmitter();
@@ -975,7 +971,7 @@ const stopRequestTests = [
   {
     name: "130/01 stop-request/02 a real interval never holds a finished process open — a child that starts a source with the real process and the default pollMs exits on its own",
     async run() {
-      const module = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "core", "src", "loop", "stop-request.mjs")).href;
+      const module = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "work-loop", "src", "stop-request.mjs")).href;
       const script = [
         `import { createStopSource, loopStopsDir } from ${JSON.stringify(module)};`,
         `const source = createStopSource({ loopRunId: "L1", dir: loopStopsDir() });`,

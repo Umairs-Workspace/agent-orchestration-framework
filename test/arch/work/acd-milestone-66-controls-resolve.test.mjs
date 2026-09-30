@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6607b (milestone 66 / ADR-004 §1/§3, ADR-007 §1, ADR-009/B + /J) — THIS
 // MILESTONE'S OWN CONTROLS RESOLVE.
 //
@@ -30,7 +31,7 @@ import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises"
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
 import { controlGroup, fitnessDeclarations } from "@aof/work/audit/controls";
 import { resolveThroughRenames } from "@aof/work/cited-path-resolve";
 import { registeredSuitePaths } from "../../support/registration/registration-surface.mjs";

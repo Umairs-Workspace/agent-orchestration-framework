@@ -1,9 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateConfig } from "../../packages/core/src/config-inspect.mjs";
-import { loadConfig, resolveConfig } from "../../packages/core/src/dsl.mjs";
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
+const loadConfig = _aofApplication.assets.dsl.loadConfig;
+const resolveConfig = _aofApplication.assets.dsl.resolveConfig;
 
 export const dslPrimitiveTests = [
   {

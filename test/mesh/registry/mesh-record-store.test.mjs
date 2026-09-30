@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 22 / story 00 — the mesh-record store.
 //
 // Covers EVERY @executable scenario in tasks/00_mesh-record-store.feature,
@@ -16,7 +18,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
+const meshDir = _aofHooks.meshStore.meshDir;
 
 // A workspace-shaped object: the store only needs workspace.workDir (where meshDir
 // — .aof/mesh/ — sits under the .aof home).
@@ -64,7 +66,18 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
+        const { publishNodeRecord } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
         // partition root has no nodes/ directory yet
         assert.deepEqual(await listNodeFiles(workspace), [], "no nodes/ files before the first publish");
 
@@ -91,7 +104,18 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord, readNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
+        const { publishNodeRecord, readNodeRecord } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
         const record = nodeRecord("umami-desktop");
         await publishNodeRecord(workspace, "umami-desktop", record);
 
@@ -108,7 +132,18 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord, readNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
+        const { publishNodeRecord, readNodeRecord } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
         // a record carrying an unknown top-level "tags" array of objects, mixing
         // string/number/boolean/null leaf values at depth 3 — the store has never
         // seen "tags"; it must persist the record AS-IS (ADR-003 additive-friendly).
@@ -139,7 +174,18 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { readNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
+        const { readNodeRecord } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
         // nodes/ has no record for umami-mbp (the dir may not even exist)
         let read;
         await assert.doesNotReject(async () => { read = await readNodeRecord(workspace, "umami-mbp"); }, "reading an absent record raises no error");
@@ -154,7 +200,18 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord, readNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
+        const { publishNodeRecord, readNodeRecord } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
         const desktop = nodeRecord("umami-desktop");
         const mbp = nodeRecord("umami-mbp");
 
@@ -181,7 +238,18 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
+        const { publishNodeRecord } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
         await publishNodeRecord(workspace, "umami-desktop", nodeRecord("umami-desktop"));
         await publishNodeRecord(workspace, "umami-mbp", nodeRecord("umami-mbp"));
         const mbpBytesBefore = await readBytes(workspace, "umami-mbp.json");

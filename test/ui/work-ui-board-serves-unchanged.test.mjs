@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 25 / story 00 / task 01 —
 // 01_board-serves-unchanged.feature (@cli @work @board @executable).
 //
@@ -24,7 +25,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { serveBoard } from "../../packages/core/src/board-serve.mjs";
+const serveBoard = _aofApplication.server.serve.serveBoard;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5906 (milestone 59 / ADR-002 §3, ADR-004 §3) — EVIDENCE IS RE-RUN, NEVER RE-READ,
 // AND THE ORACLE IS THE MESSAGE.
 //
@@ -39,21 +40,19 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
-import {
-  DRIVE_PROGRAM,
-  DRIVE_RESULT_SENTINEL,
-  EVIDENCE_FINDING_CODES,
-  EVIDENCE_VERDICTS,
-  MESSAGE_NORMALISATIONS,
-  REPRODUCED_VERDICTS,
-  SIZE_KINDS,
-  dispositionOf,
-  messagesAgree,
-  findingsForRow,
-  runEvidence,
-  sizeFor,
-  verdictFor,
-} from "../../../packages/core/src/work-audit/evidence.mjs";
+const DRIVE_PROGRAM = _aofApplication.work.audit.evidence.DRIVE_PROGRAM;
+const DRIVE_RESULT_SENTINEL = _aofApplication.work.audit.evidence.DRIVE_RESULT_SENTINEL;
+const EVIDENCE_FINDING_CODES = _aofApplication.work.audit.evidence.EVIDENCE_FINDING_CODES;
+const EVIDENCE_VERDICTS = _aofApplication.work.audit.evidence.EVIDENCE_VERDICTS;
+const MESSAGE_NORMALISATIONS = _aofApplication.work.audit.evidence.MESSAGE_NORMALISATIONS;
+const REPRODUCED_VERDICTS = _aofApplication.work.audit.evidence.REPRODUCED_VERDICTS;
+const SIZE_KINDS = _aofApplication.work.audit.evidence.SIZE_KINDS;
+const dispositionOf = _aofApplication.work.audit.evidence.dispositionOf;
+const messagesAgree = _aofApplication.work.audit.evidence.messagesAgree;
+const findingsForRow = _aofApplication.work.audit.evidence.findingsForRow;
+const runEvidence = _aofApplication.work.audit.evidence.runEvidence;
+const sizeFor = _aofApplication.work.audit.evidence.sizeFor;
+const verdictFor = _aofApplication.work.audit.evidence.verdictFor;
 // THE ONE HOME for the control corpus (see that module's header for why it is not written twice).
 import { EXECUTED_CASES, withControlFixtureRepo as withFixtureRepo } from "../../support/evidence-control-fixture.mjs";
 

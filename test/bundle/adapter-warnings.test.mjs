@@ -1,5 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
-import { resolveConfig } from "../../packages/core/src/dsl.mjs";
+const resolveConfig = _aofApplication.assets.dsl.resolveConfig;
 import { createLockManifest, createRenderPlan, planApplyActions } from "../../packages/core/src/render-plan.mjs";
 import {
   ADAPTER_WARNING_CODES,

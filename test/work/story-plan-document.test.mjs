@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 96 / story 02 — the plan document.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -26,10 +28,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { restatementViolations } from "../support/plan-restatement-ban.mjs";
-import { loadWorkspace, parseFrontmatter } from "../../packages/core/src/work.mjs";
-import { budgetsFromConfig, doctorWork } from "../../packages/core/src/work/doctor.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const budgetsFromConfig = _aofApplication.work.doctor.budgetsFromConfig;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 import { budgetGroup, PLAN_BASENAME } from "@aof/work/doctor/budget";
-import { planEnabledFromConfig, validateConfig } from "../../packages/core/src/config-inspect.mjs";
+const planEnabledFromConfig = _aofApplication.assets.configInspect.planEnabledFromConfig;
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

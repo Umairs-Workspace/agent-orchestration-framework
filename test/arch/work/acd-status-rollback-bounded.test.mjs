@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-status-rollback-bounded (milestone 20, ADR-005).
 //
 // rollbackItemStatus is the FAILURE face of the item-status lifecycle, and it is bounded
@@ -33,7 +34,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { rollbackItemStatus } from "../../../packages/core/src/work.mjs";
+const rollbackItemStatus = _aofWorkspace.work.rollbackItemStatus;
 import { ITEM_STATUS_EDGES } from "@aof/work/lifecycle";
 
 const WORK = new URL("../../../packages/work/src/records.mjs", import.meta.url);

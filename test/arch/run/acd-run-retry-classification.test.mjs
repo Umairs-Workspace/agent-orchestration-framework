@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-run-retry-classification (milestone 20, ADR-002).
 //
 // The classification table is CLOSED and the functions are PURE: runtime_offline /
@@ -9,7 +10,8 @@
 // source-grep of the two function BODIES.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { isRetryable, shouldRetry } from "../../../packages/core/src/run-store.mjs";
+const isRetryable = _aofApplication.execution.runs.isRetryable;
+const shouldRetry = _aofApplication.execution.runs.shouldRetry;
 
 const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 

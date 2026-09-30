@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 96 / story 03 — the test run matches the story.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -31,7 +32,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { graphJsonPath } from "@aof/knowledge/graph-normalize";
-import { WIDENING_REASONS } from "../../../packages/core/src/work/test-select.mjs";
+const WIDENING_REASONS = _aofApplication.work.testSelect.WIDENING_REASONS;
 import {
   DECLARED_SET_EMPTY,
   DECLARED_SET_MALFORMED,
@@ -40,15 +41,13 @@ import {
   STORY_REF_UNRESOLVABLE,
   declaredChangedFiles,
 } from "@aof/work/testing/declared";
-import {
-  NO_SCOPE,
-  SCOPE_UNRECOGNISED,
-  STORY_AND_SINCE,
-  STORY_OUTSIDE_IMPACTED,
-  TEST_SCOPES,
-  runTest,
-  testCommand,
-} from "../../../packages/core/src/commands/test.mjs";
+const NO_SCOPE = _aofApplication.work.commandTools.test.NO_SCOPE;
+const SCOPE_UNRECOGNISED = _aofApplication.work.commandTools.test.SCOPE_UNRECOGNISED;
+const STORY_AND_SINCE = _aofApplication.work.commandTools.test.STORY_AND_SINCE;
+const STORY_OUTSIDE_IMPACTED = _aofApplication.work.commandTools.test.STORY_OUTSIDE_IMPACTED;
+const TEST_SCOPES = _aofApplication.work.commandTools.test.TEST_SCOPES;
+const runTest = _aofApplication.work.commandTools.test.runTest;
+const testCommand = _aofApplication.getCommand("test");
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
 

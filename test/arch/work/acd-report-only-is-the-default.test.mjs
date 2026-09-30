@@ -1,9 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import { functionBody } from "../../support/source-slice.mjs";
 import { NOT_ADMISSIBLE, HARNESS_NOT_INTROSPECTABLE, KEY_OUTSIDE_DECLARED_SET } from "@aof/work/acceptor/admissibility";
-import { defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
 import { BUDGET_EXHAUSTED, EVIDENCE_SHORT } from "@aof/work/acceptor/ledger";
 import {
   METRIC_UNMEASURABLE,
@@ -14,7 +16,10 @@ import {
   TRIAL_UNIT_UNDECLARED,
 } from "@aof/work/acceptor/rule";
 import { NO_DECLARED_RANGE, OUTSIDE_DECLARED_RANGE, STEP_WOULD_BE_COMPOUND, compoundStepRefusal } from "@aof/contracts/loop-bounds";
-import { RULING_REFUSAL_ORDER, YIELD_BOUND, acceptorCommand, buildAcceptorReport } from "../../../packages/core/src/commands/acceptor.mjs";
+const RULING_REFUSAL_ORDER = _aofApplication.work.commandTools.acceptor.RULING_REFUSAL_ORDER;
+const YIELD_BOUND = _aofApplication.work.commandTools.acceptor.YIELD_BOUND;
+const acceptorCommand = _aofApplication.getCommand("work:acceptor");
+const buildAcceptorReport = _aofApplication.work.commandTools.acceptor.buildAcceptorReport;
 
 const KEY = "config.fixture.knob";
 const census = Object.freeze({ populations: Object.freeze([]), findings: Object.freeze([]) });

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 01, task `03_the-spawn-is-bounded-and-single`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -18,9 +19,9 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const invoke = _aofApplication.invoke;
 import { DEFAULT_HEARTBEAT_MS, DEFAULT_START_TO_CLOSE_MS } from "@aof/contracts/loop-bounds";
-import { GRADE_REENTRANCY_ENV } from "../../packages/core/src/commands/grade.mjs";
+const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
@@ -358,7 +359,7 @@ export const gradeSpawnBoundedAndSingleTests = [
       // tree without a structural refusal.
       const inner = await writeRunner(repo, "reenter.cjs", `
 const { spawnSync } = require("node:child_process");
-const result = spawnSync(process.argv[0], [${JSON.stringify(path.join(repoRoot, "bin", "aof.mjs"))}, "work", "grade", "03", "--run", "--json"], {
+const result = spawnSync(process.argv[0], [${JSON.stringify(path.join(repoRoot, "packages", "core", "bin", "aof.mjs"))}, "work", "grade", "03", "--run", "--json"], {
   cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, NODE_NO_WARNINGS: "1" },
 });

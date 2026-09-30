@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 02 (the authority cut), task
 //   .../02_story_cache-authority/tasks/06_deliberate-workspace-row-removal.feature
 //
@@ -15,12 +16,10 @@
 // would leave the artifact rows orphaned under an id nothing will ever publish again —
 // the same "removable only by a sweep that no longer exists" corner one level down.
 import assert from "node:assert/strict";
-import {
-  removeWorkspaceFromCache,
-  upsertWorkItemContent,
-  readWorkItemDoc,
-  readWorkItemRuns,
-} from "../../packages/core/src/global-work-store.mjs";
+const removeWorkspaceFromCache = _aofApplication.mesh.store.removeWorkspaceFromCache;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
+const readWorkItemDoc = _aofApplication.mesh.store.readWorkItemDoc;
+const readWorkItemRuns = _aofApplication.mesh.store.readWorkItemRuns;
 import {
   withCacheFixture,
   withStore,

@@ -1,3 +1,4 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // test/arch/terminal/acd-screen-registry-is-recorded.test.mjs — FF-13802, EVERY REGISTERED SCREEN IS
 // RECORDED (milestone 138 / story 01, task 04; 138/ADR-002 §1, ADR-003 §1 §2 §4 §7).
 //
@@ -19,8 +20,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
-import { readConsentMenu } from "../../../packages/core/src/terminal/session-screen.mjs";
-import { createScreen } from "../../../packages/core/src/terminal/screen.mjs";
+const readConsentMenu = _aofSessions.terminalSessionScreen.readConsentMenu;
+const createScreen = _aofSessions.terminalScreen.createScreen;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const fixtureDir = path.join(repoRoot, "test", "fixtures", "claude-screens");

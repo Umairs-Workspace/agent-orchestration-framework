@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d4, PORT 2 (PRD-command-spine-effects-
 // ledger, "the two reclaim implementations unify on one transition edge + shared
 // cascade").
@@ -33,14 +35,18 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
-import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
-import { startRun, heartbeat, readRuns } from "../../../packages/core/src/run-store.mjs";
-import { findWork } from "../../../packages/core/src/work.mjs";
-import { reclaimStaleAssignments, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
-import { transitionStaleRunsReclaimed } from "../../../packages/core/src/effects/run-transitions.mjs";
-import { openEffectsJournal, readEvents } from "../../../packages/core/src/effects/journal.mjs";
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const startRun = _aofApplication.execution.runs.startRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const findWork = _aofWorkspace.work.findWork;
+const reclaimStaleAssignments = _aofApplication.mesh.assignmentReclaim.reclaimStaleAssignments;
+const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = _aofApplication.mesh.assignmentReclaim.DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS;
+const transitionStaleRunsReclaimed = _aofApplication.execution.transitions.transitionStaleRunsReclaimed;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

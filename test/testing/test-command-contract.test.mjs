@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 72 / story 02 — THE TEST COMMAND'S FACE.
 //
 // One test object per @executable scenario (Scenario-Outline rows folded into one entry), each
@@ -37,7 +38,12 @@ import { fileURLToPath } from "node:url";
 import { runBounded } from "@aof/execution/bounded-process";
 // The story's own subject, and its two faces — taken from the REGISTERED command object rather
 // than from a private helper, so what these rows measure is what the runtime runs.
-import { NO_SCOPE, SCOPE_UNRECOGNISED, NO_FILES_NAMED, TEST_SCOPES, runTest, testCommand } from "../../packages/core/src/commands/test.mjs";
+const NO_SCOPE = _aofApplication.work.commandTools.test.NO_SCOPE;
+const SCOPE_UNRECOGNISED = _aofApplication.work.commandTools.test.SCOPE_UNRECOGNISED;
+const NO_FILES_NAMED = _aofApplication.work.commandTools.test.NO_FILES_NAMED;
+const TEST_SCOPES = _aofApplication.work.commandTools.test.TEST_SCOPES;
+const runTest = _aofApplication.work.commandTools.test.runTest;
+const testCommand = _aofApplication.getCommand("test");
 // The runner's own selection half, exported so its shape rows drive in-process. Importing the
 // runner from inside the suite is FREE in both paths that matter: under the full run and under
 // `--only`, this module is the entry point and is already evaluated, so the import resolves from

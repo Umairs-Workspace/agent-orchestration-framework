@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6303 — aof holds NO clock and NO receiver, and the face writes nothing (63/ADR-003,
 // ADR-008 §7, ADR-010 §6).
 //
@@ -29,12 +30,13 @@ import { fileURLToPath } from "node:url";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { getCommand } from "../../../packages/core/src/command-core.mjs";
-import { buildTriggerReport, triggerCommand } from "../../../packages/core/src/commands/trigger.mjs";
+const getCommand = _aofApplication.getCommand;
+const buildTriggerReport = _aofApplication.loop.commandTools.trigger.buildTriggerReport;
+const triggerCommand = _aofApplication.getCommand("work:trigger");
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const cliPath = path.join(root, "bin", "aof.mjs");
+const cliPath = path.join(root, "packages", "core", "bin", "aof.mjs");
 
 // THE FAMILY AND ITS CLOSURE ARE EXPORTED, and `acd-trigger-is-a-caller-not-a-coordinator` reads
 // them from here. That is a shared DERIVATION, not a merged claim: the two rows keep their own

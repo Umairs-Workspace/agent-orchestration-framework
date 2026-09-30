@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6605 (milestone 66 / ADR-003, ADR-004 §2, ADR-009 ROUND 3/3 + 3/4) — THE
 // CONTROLS LANE READS, NEVER RUNS, AND IS PURE.
@@ -72,15 +73,19 @@ import { resolveSpecifier } from "./acd-audit-never-imports-project-code.test.mj
 // `identity` and `controls`; `packages/core/src/work/doctor-rubric.mjs` is 54/04's traceability lane and
 // pre-dates this milestone, which is why the set below has six members and none of them is 59's.
 // The load-bearing half is the last clause: **59 adds no doctor lane at all.**
-import { AUDIT_FINDING_CODES } from "../../../packages/core/src/work-audit/census.mjs";
-import { EVIDENCE_FINDING_CODES } from "../../../packages/core/src/work-audit/evidence.mjs";
+const AUDIT_FINDING_CODES = _aofApplication.work.audit.census.AUDIT_FINDING_CODES;
+const EVIDENCE_FINDING_CODES = _aofApplication.work.audit.evidence.EVIDENCE_FINDING_CODES;
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
-import { CHECK_GROUPS } from "../../../packages/core/src/work/doctor.mjs";
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
 // EXTENDED BY 77/05 (FF-7707). The checked code space is `AUDITABLE_CODES` — a fold over the
 // REGISTERED lanes — rather than two constants named here. The two imports above stay: they are the
 // NON-VACUITY floors for the sides they measure, and a floor read from the thing under test would
 // be a floor that moves with it.
-import { AUDITABLE_CODES, LANE_NEUTRAL_CODES, REPORT_LANES, auditableCodesFor, laneVocabularyCollisions } from "../../../packages/core/src/work-audit/report.mjs";
+const AUDITABLE_CODES = _aofApplication.work.audit.report.AUDITABLE_CODES;
+const LANE_NEUTRAL_CODES = _aofApplication.work.audit.report.LANE_NEUTRAL_CODES;
+const REPORT_LANES = _aofApplication.work.audit.report.REPORT_LANES;
+const auditableCodesFor = _aofApplication.work.audit.report.auditableCodesFor;
+const laneVocabularyCollisions = _aofApplication.work.audit.report.laneVocabularyCollisions;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "packages", "core", "src");
@@ -239,7 +244,7 @@ const FORBIDDEN_MODULES = ["packages/work/src/grade.mjs", "packages/core/src/app
 // Forbidding it to the whole family would have made 54/04's traceability lane write its own
 // copy of the TAP normaliser — a second parser, which is the defect `66/ADR-003` and this
 // milestone both refuse by name.
-const FORBIDDEN_RUNNER_MODULES = ["packages/core/src/commands/grade.mjs", "packages/core/src/application/bindings/commands/grade.mjs", "packages/work/src/commands/grade.mjs", "packages/execution/src/rubric-process.mjs"];
+const FORBIDDEN_RUNNER_MODULES = ["packages/core/src/application/bindings/commands/grade.mjs", "packages/core/src/application/bindings/commands/grade.mjs", "packages/work/src/commands/grade.mjs", "packages/execution/src/rubric-process.mjs"];
 
 // The deterministic engines FF-5407 covers beyond the lane itself: `work.mjs`'s
 // `validateWork` and the whole `work-doctor*` family. A guard that read only the one lane
@@ -531,7 +536,7 @@ export const archTests = [
       // planted RUNNER import is caught for any engine; the pure leaf is admitted for the
       // family and refused for the lane — which is the distinction the two sets exist to draw.
       const resolvedFrom = (module, source) => directImports(source).map((specifier) => resolveRelative(module, specifier)).filter((rel) => rel != null);
-      const plantedRunner = 'import { gradeCommand } from "../../../../packages/core/src/commands/grade.mjs";';
+      const plantedRunner = 'import { createGradeCommand } from "@aof/work/commands/grade";';
       assert.ok(resolvedFrom(THE_LANE, plantedRunner).some((rel) => FORBIDDEN_RUNNER_MODULES.includes(rel)), "a planted runner import is detected");
       const plantedLeaf = 'import { normaliseReport } from "../grade.mjs";';
       assert.ok(!resolvedFrom(THE_LANE, plantedLeaf).some((rel) => FORBIDDEN_RUNNER_MODULES.includes(rel)), "the pure leaf is admitted to the family…");

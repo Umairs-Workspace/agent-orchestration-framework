@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 35 / story 01 — task 02
 // (tasks/02_assignment-status-uplink.feature). Covers every @executable scenario /
 // Scenario Outline row:
@@ -14,9 +15,10 @@
 // 00 added. No live ws. Depends on story 00 — the ingest advances the record story
 // 00 minted.
 import assert from "node:assert/strict";
-import { applyStreamFrame, applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const applyAssignmentStatusFrame = _aofApplication.mesh.controlStreamServer.applyAssignmentStatusFrame;
 import { readAssignment } from "@aof/mesh/assignment-record";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

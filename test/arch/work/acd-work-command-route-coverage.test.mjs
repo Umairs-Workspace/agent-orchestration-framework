@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 08 / ADR-004 inv. 1, GENERALISED by milestone 15
 // / ADR-005 from "exactly six" to REGISTRY-DERIVED (route ↔ command BIJECTION):
 // "The /api/work/<op> set served by board-ui.mjs is in BIJECTION with the
@@ -21,8 +22,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { serveSetupUi } from "../../../packages/core/src/setup-ui.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BOARD_UI = path.join(repoRoot, "packages", "server", "src", "board-ui.mjs");

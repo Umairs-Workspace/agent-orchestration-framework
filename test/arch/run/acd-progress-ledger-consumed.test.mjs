@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // F-69-V7: a declared progress authority is not delivered until the production
 // build loop consumes it. This guard distinguishes a resolvable ceiling pointer
 // from a runtime reader and keeps measurement in loop-progress.mjs.
@@ -25,9 +26,9 @@ import path from "node:path";
 // 54/03 review finding D5 — "is this a usable argv array" is `work:grade`'s own predicate and
 // is read here rather than restated, so the declaration and the command that runs it can
 // never disagree about what usable means.
-import { usableCommand } from "../../../packages/core/src/commands/grade.mjs";
+const usableCommand = _aofApplication.work.commandTools.grade.usableCommand;
 import { LOOP_BOUND_CONFIG_RESOLVERS, resolvesLoopBoundConfigKey } from "@aof/contracts/loop-bounds";
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 // 61/FF-6109 — the DECISION-SITE half is the acceptor's own predicate, imported rather than
 // restated. Two implementations of "does this bound have a consumer?" would be two answers
 // the first time either changed, which is the species this whole file exists to indict.

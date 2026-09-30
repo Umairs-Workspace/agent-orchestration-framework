@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/worker/mesh-worker-withdraw-settle.test.mjs — the OWED lanes from m42's soak day
 // (STATE.md §MISSING TESTS, 2026-07-27: "today's code shipped under fire — write
 // these before/while merging"). Pins the withdraw/settle family:
@@ -28,15 +30,15 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import {
-  createMeshWorkerExecutionHandler,
-  createMeshWorkerWithdrawHandler,
-  settleStrandedRunRecords,
-} from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { loadWorkspace, listItems } from "../../../packages/core/src/work.mjs";
-import { readRuns } from "../../../packages/core/src/run-store.mjs";
-import { transitionRunStart } from "../../../packages/core/src/effects/run-transitions.mjs";
-import { openEffectsJournal, readEvents } from "../../../packages/core/src/effects/journal.mjs";
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const createMeshWorkerWithdrawHandler = _aofApplication.mesh.worker.createMeshWorkerWithdrawHandler;
+const settleStrandedRunRecords = _aofApplication.mesh.worker.settleStrandedRunRecords;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const listItems = _aofWorkspace.work.listItems;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   withMeshWorkerExecFixture,

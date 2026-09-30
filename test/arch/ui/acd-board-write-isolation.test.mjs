@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-board-write-isolation (ADR-004, milestone 03; re-anchored
 // by milestone 08's command-core migration).
 //
@@ -18,7 +19,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../../packages/core/src/setup-ui.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 import { matchedBraceBody } from "../../support/source-slice.mjs";
 
 const BOARD_UI = new URL("../../../packages/server/src/board-ui.mjs", import.meta.url);

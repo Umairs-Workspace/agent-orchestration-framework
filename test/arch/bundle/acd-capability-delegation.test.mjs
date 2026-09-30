@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 01 / ADR-006:
 // "init/update contain no runtime conditional deciding member installability —
 //  cross-runtime mapping is delegated to the CAPABILITIES matrix."
@@ -25,14 +26,14 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { initWork } from "../../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
 import { partitionByCapability, synthesizeBundleConfig } from "../../../packages/core/src/work/bundle-synthesis.mjs";
 import { ACD_BUNDLE_CAPABILITIES } from "../../../packages/core/src/work/bundle-runtime.mjs";
 import { loadBundle } from "../../../packages/core/src/work/bundle.mjs";
 import { CAPABILITIES, CAPABILITY_STATUS } from "../../../packages/core/src/model.mjs";
 
 const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src");
-const SOURCES = ["work/init.mjs", "work/update.mjs", "work/bundle-synthesis.mjs"];
+const SOURCES = ["application/bindings/work/init.mjs", "work/update.mjs", "work/bundle-synthesis.mjs"];
 
 function stripComments(source) {
   return source

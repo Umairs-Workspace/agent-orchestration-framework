@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // task 00 — the frozen assignment record + the state→producer enum + the additive
 // global_assignments table (v2→v3) + dedicated single-row writers + snapshot survival
 // (milestone 35 / story 00, ADR-001). Hermetic over AOF_GLOBAL_HOME opening a v3 store
@@ -6,11 +7,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  openGlobalWorkProjectionStore,
-  publishWorkspaceSnapshot,
-  GLOBAL_WORK_SCHEMA_VERSION,
-} from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishWorkspaceSnapshot = _aofApplication.mesh.store.publishWorkspaceSnapshot;
+const GLOBAL_WORK_SCHEMA_VERSION = _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION;
 import {
   assembleAssignmentRecord,
   ASSIGNMENT_STATE_PRODUCERS,

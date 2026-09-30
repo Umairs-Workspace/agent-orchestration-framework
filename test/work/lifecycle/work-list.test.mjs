@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 03 / story 00 `aof work list`.
 //
 // Covers every @executable scenario (and every Scenario-Outline Examples row)
@@ -23,10 +24,10 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listStream } from "../../../packages/core/src/work.mjs";
+const listStream = _aofWorkspace.work.listStream;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // ----------------------------------------------------------- fixtures ----
 

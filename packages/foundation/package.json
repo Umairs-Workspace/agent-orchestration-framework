@@ -13,6 +13,6 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test test/foundation.test.mjs"
+    "test": "node ../../scripts/test-workspace.mjs @aof/foundation"
   }
 }

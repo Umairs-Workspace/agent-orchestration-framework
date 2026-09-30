@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 124 / story 00, tasks `02_the-lane-names-each-unwitnessed-edge`
 // and `03_the-lane-reports-its-denominator`.
 //
@@ -27,8 +29,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { classifyDependsEdges, dependsLane, DEPENDS_FINDING_CODES } from "@aof/work/doctor/depends";
 import { resolveDeclaredSet } from "@aof/work/story-contract";
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 126 / story 06, task
 // 00_a-fourth-check-and-the-count-it-supersedes.feature.
 //
@@ -31,13 +32,12 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import {
-  PREFLIGHT_CHECKS,
-  PREFLIGHT_SEAMS,
-  runPreflight,
-  renderPreflight,
-} from "../../../packages/core/src/commands/mesh/desktop-preflight.mjs";
-import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
+const PREFLIGHT_CHECKS = _aofApplication.mesh.commandTools.mesh.desktopPreflight.PREFLIGHT_CHECKS;
+const PREFLIGHT_SEAMS = _aofApplication.mesh.commandTools.mesh.desktopPreflight.PREFLIGHT_SEAMS;
+const runPreflight = _aofApplication.mesh.commandTools.mesh.desktopPreflight.runPreflight;
+const renderPreflight = _aofApplication.mesh.commandTools.mesh.desktopPreflight.renderPreflight;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
 import { withMeshDesktopFixture, seedInstalledApp, DESKTOP_APP_EXE } from "../../support/mesh-desktop-fixture.mjs";
 
 // The argv `markedEntry` writes: the script resolved at run time through the harness's own

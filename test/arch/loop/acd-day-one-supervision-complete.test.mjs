@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5806 — THE DAY-ONE SUPERVISION HIERARCHY IS COMPLETE, ADMISSIBLE AND CORROBORATED.
 //
 // Milestone 58 / story 01, from 58/ADR-001, ADR-002 and ADR-005. Over the records shipped in
@@ -37,7 +38,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   GATING_CODES,
   checkActuatorArbitration,

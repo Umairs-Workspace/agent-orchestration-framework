@@ -1,3 +1,10 @@
+import { tests as ownedExecutionTests } from "../packages/execution/test/index.mjs";
+import { tests as ownedIntegrationNotionTests } from "../packages/integration-notion/test/index.mjs";
+import { tests as ownedMeshTests } from "../packages/mesh/test/index.mjs";
+import { tests as ownedWorkGraphTests } from "../packages/work-graph/test/index.mjs";
+import { tests as ownedWorkTests } from "../packages/work/test/index.mjs";
+import { tests as ownedKnowledgeTests } from "../packages/knowledge/test/index.mjs";
+import { runCases } from "./test-harness.mjs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 // THE SUITE REGISTRY — it names DIRECTORIES, not suites (119/03, ADR-010 §1).
@@ -80,6 +87,12 @@ import { tests as workRecordTests } from "../test/work/record/index.mjs";
 import { tests as workStreamTests } from "../test/work/stream/index.mjs";
 
 export const tests = [
+  ...ownedExecutionTests,
+  ...ownedIntegrationNotionTests,
+  ...ownedMeshTests,
+  ...ownedWorkGraphTests,
+  ...ownedWorkTests,
+  ...ownedKnowledgeTests,
   ...archAssignmentTests,
   ...archAuditTests,
   ...archBundleTests,
@@ -146,39 +159,7 @@ export const tests = [
 // acd-roundtrip-registration meta-test imports the assembled `tests` array above
 // to verify every arch-test is registered; that import must NOT re-run the suite.
 async function runSuite(tests, { lanes = true } = {}) {
-  let failures = 0;
-
-  // Per-test hermetic global AOF home (34/story 00) — see scripts/test-unit.mjs for the
-  // rationale: the node identity is machine-wide now, so each test gets its OWN empty
-  // global home to stop identity/global-store state leaking across tests (or onto the real
-  // machine). The integration lane below keeps process.env untouched afterward.
-  //
-  // Rooted under ~/.aof-test (never ~/.aof, the real machine's global home) — a fixed,
-  // dedicated, gitignored test root, not raw OS tmpdir, so stray test fixtures are
-  // trivially auditable/wipeable in one place instead of scattered across the OS temp dir.
-  const { homedir } = await import("node:os");
-  const { join } = await import("node:path");
-  const { rmSync } = await import("node:fs");
-  const ghRoot = join(homedir(), ".aof-test", `gh-${process.pid}`);
-  let ghIndex = 0;
-
-  console.log("# unit");
-  for (const { name, run } of tests) {
-    const prevHome = process.env.AOF_GLOBAL_HOME;
-    process.env.AOF_GLOBAL_HOME = join(ghRoot, `t-${ghIndex++}`);
-    try {
-      await run();
-      console.log(`ok - ${name}`);
-    } catch (error) {
-      failures += 1;
-      console.error(`not ok - ${name}`);
-      console.error(error.stack ?? error.message);
-    } finally {
-      if (prevHome === undefined) delete process.env.AOF_GLOBAL_HOME;
-      else process.env.AOF_GLOBAL_HOME = prevHome;
-    }
-  }
-  try { rmSync(ghRoot, { recursive: true, force: true }); } catch { /* best-effort cleanup */ }
+  let failures = await runCases(tests);
 
   // A SELECTED RUN STOPS HERE. The integration, cargo and shell lanes are the whole-suite
   // lanes; a selection of unit suites is not a reason to compile a Rust crate, and the gate is

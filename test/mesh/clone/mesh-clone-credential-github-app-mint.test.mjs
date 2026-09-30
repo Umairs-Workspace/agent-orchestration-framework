@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-github-app-mint.test.mjs — traceability for milestone 38
 // / story 02, task 01 (01_github-app-mint-scoped.feature, ADR-010 §6.2/§6.3, RESEARCH
 // §3, SECURITY T9/F6). Every @executable scenario / Scenario Outline row driven
@@ -10,8 +11,8 @@
 // assertion against production code.
 import assert from "node:assert/strict";
 import { createVerify } from "node:crypto";
-import { createGithubAppMintProvider } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
-import { parseRepoFromCloneUrl } from "../../../packages/core/src/mesh/worker-execution.mjs";
+const createGithubAppMintProvider = _aofApplication.mesh.cloneCredentialProvider.createGithubAppMintProvider;
+const parseRepoFromCloneUrl = _aofApplication.mesh.worker.parseRepoFromCloneUrl;
 import { generateThrowawayKeypair, createFakeHttpRequest, jsonResponse } from "../../support/mesh-clone-credential-mint-fixture.mjs";
 
 function base64urlToBuffer(value) {

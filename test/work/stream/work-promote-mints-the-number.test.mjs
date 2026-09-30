@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 127 / story 02 — "Promote mints the number".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) of tasks 00, 01 and 02 is
@@ -30,17 +32,23 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace } from "../../../packages/core/src/work.mjs";
+const invoke = _aofApplication.invoke;
+const listItems = _aofWorkspace.work.listItems;
+const listStream = _aofWorkspace.work.listStream;
+const findWork = _aofWorkspace.work.findWork;
+const nextWork = _aofWorkspace.work.nextWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { appendPosition } from "@aof/work/promote/promotion";
-import { openEffectsJournal, readEvents } from "../../../packages/core/src/effects/journal.mjs";
-import { ITEM_LOCKED_CODE } from "../../../packages/core/src/item-lock.mjs";
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const ITEM_LOCKED_CODE = _aofApplication.mesh.locks.ITEM_LOCKED_CODE;
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture.mjs";
 import { buildThreeRootFixture } from "./work-backlog-archive-enumerate.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const RECORD_DOC = { milestone: "SPEC.md", story: "STORY.md", uat: "SESSION.md", spike: "SPIKE.md", chore: "CHORE.md" };
 const ITEM_RE = /^(\d+)_(milestone|story|task|uat|spike|chore)_([a-z0-9-]+)$/;

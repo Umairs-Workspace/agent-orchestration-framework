@@ -42,7 +42,7 @@ import { globalMeshQueryTests } from "./global-mesh-query.test.mjs";
 // candidate off the fabric Online pre-filter via INJECTED ctx.fabricPeers, the
 // Online-≠-dialable handled outcomes (resolvePeerReachability, an injected dial closure),
 // the presence record assembly/read staying byte-unchanged, the unconfigured-mesh floor.
-import { meshFabricSeamTests } from "./mesh-fabric-seam.test.mjs";
+
 import { meshDirectFabricTests } from "./mesh-direct-fabric.test.mjs";
 import { meshFabricLivenessCutoverTests } from "./mesh-fabric-liveness-cutover.test.mjs";
 import { meshOperatorGuidanceTests } from "./mesh-operator-guidance.test.mjs";
@@ -117,7 +117,6 @@ export const tests = [
   // milestone 34 — global mesh work store (story 03: mesh UI global scope, ADR-006)
   ...globalMeshQueryTests,
   // milestone 33 (story 01) — fabric-native transport + coordination launcher: tasks 00–04
-  ...meshFabricSeamTests,
   ...meshDirectFabricTests,
   ...meshFabricLivenessCutoverTests,
   ...meshOperatorGuidanceTests,

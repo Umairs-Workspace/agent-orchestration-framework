@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 02, task
 // `01_the-doctor-gate-scope-and-severity`.
 //
@@ -25,8 +26,11 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
-import { runLoopBody, admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../packages/core/src/commands/loop.mjs";
+const invoke = _aofApplication.invoke;
+const getCommand = _aofApplication.getCommand;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const admittedDoctorFindings = _aofApplication.loop.commandTools.loop.admittedDoctorFindings;
+const DOCTOR_GATE_CODES = _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES;
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import { severityFor } from "@aof/work/lifecycle";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";

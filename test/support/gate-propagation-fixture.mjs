@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/gate-propagation-fixture.mjs — the shared REAL-GIT fixture family for
 // milestone 43 / story 05 (gate-time propagation, ADR-008). Wraps the existing
 // `withMeshWorkerExecFixture` / `withMeshWorkerPushFixture` real-local-repo builders and
@@ -25,9 +27,9 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { spawnSyncHardened } from "./cli-spawn.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
-import { meshItemBranchName } from "../../packages/core/src/mesh/worktree.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/terminal/mesh-terminal-mirror-reconnect.test.mjs — VERIFICATION (relay-subscriber
 // reconnect, live soak 2026-07-25).
 //
@@ -14,8 +15,9 @@
 // until the broker appears, recovers from a post-open DROP, and never reconnects after
 // stop(). The timers are injected, so the retry loop is driven with no wall clock.
 import assert from "node:assert/strict";
-import { createTerminalMirror, startTerminalMirrorSubscriber } from "../../../packages/core/src/mesh/terminal-mirror.mjs";
-import { TERMINAL_FRAME_KIND } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+const createTerminalMirror = _aofApplication.mesh.terminalMirror.createTerminalMirror;
+const startTerminalMirrorSubscriber = _aofApplication.mesh.terminalMirror.startTerminalMirrorSubscriber;
+const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
 
 // A controllable clock: setTimeoutFn/clearTimeoutFn doubles that queue callbacks so a
 // test fires the retry itself (no wall-clock wait anywhere in this file).

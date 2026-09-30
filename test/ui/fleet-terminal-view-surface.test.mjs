@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // test/ui/fleet-terminal-view-surface.test.mjs — traceability for milestone 38 /
 // story 06 / task 04 (tasks/04_bug-fleet-terminal-view-surface.feature; BLOCKER
 // F-38.06c). ARCHITECTURE ADR-013 (the `session_id` join key) + ADR-014 (the
@@ -36,26 +38,27 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
 
-import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
-import { buildAssignmentStatusFrame } from "../../packages/core/src/worker-stream-client.mjs";
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const buildAssignmentStatusFrame = _aofApplication.mesh.workerStreamClient.buildAssignmentStatusFrame;
 // m49/00 — `listAllAssignments` is the SHARED reader `shapeGlobalStatus` itself
 // threads through (global-mesh-query.mjs), so scenario 1 pins the mapper's output
 // at the exact seam the fleet shaping consumes, not at a lookalike.
 import { readAssignment, listAllAssignments } from "@aof/mesh/assignment-record";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
-import { createTerminalMirror } from "../../packages/core/src/mesh/terminal-mirror.mjs";
-import { buildTerminalFrameEnvelope } from "../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const createTerminalMirror = _aofApplication.mesh.terminalMirror.createTerminalMirror;
+const buildTerminalFrameEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalFrameEnvelope;
 import { withMeshAssignFixture, seedAssignment, seedTargetNode } from "../support/mesh-assign-fixture.mjs";
 // m49/00 scenario 2 — the NODE attachment needs a node that survives the REAL
 // registry read, and `seedTargetNode`'s direct-SQL row does not: `queryGlobalRegistry`
 // silently drops a `global_nodes` row whose descriptor FILE does not resolve (the
 // asymmetry test/support/mesh-ui-assign-fixture.mjs documents at `dropNodeFromRoster`).
 // A node published through these two REAL doors is genuinely on the wire.
-import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
 
 // ═══ RE-POINTED BY MILESTONE 46 / STORY 04, IN THE DIFF THAT DELETED THE MODULES ═════════════
 // `ui/src/fleet/terminal-view/` is gone. Its four behaviours went to two homes, and WHICH home

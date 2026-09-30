@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-session-index-derived-not-stored (milestone 48 / ADR-007, with
 // ADR-009's no-new-sibling clause and ADR-010's R2 miss ruling) — "the index is a
 // projection, not a store, and it is not a second liveness authority".
@@ -71,7 +72,8 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { shapeGlobalStatus, buildSessionIndex } from "../../../packages/core/src/global-mesh-query.mjs";
+const shapeGlobalStatus = _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");

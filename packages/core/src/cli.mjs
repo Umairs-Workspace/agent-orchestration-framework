@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
-import { loadWorkspace } from "./work.mjs";
+import { defaultWorkspace } from "./application/default-workspace.mjs";
+const { loadWorkspace } = defaultWorkspace.work;
 // THE REGISTRY AND THE GENERIC FACE ARE NOT STATIC IMPORTS (milestone 72 / story 03, ADR-005 §1).
 //
 // `aof session ping` fires on EVERY prompt an operator types, writes a small record and exits. What
@@ -40,7 +41,8 @@ import { loadWorkspace } from "./work.mjs";
 // mesh-desktop.mjs nested-verb shape, but at the top level rather than under
 // `mesh`) — NOT a registered mesh:* command (its stdin-JSON/env identity resolution
 // doesn't fit meshVerbCli's single-positional shape).
-import { meshSessionCommand } from "./commands/mesh/session.mjs";
+import { defaultSessionHooks } from "./application/default-session-hooks.mjs";
+const { meshSessionCommand } = defaultSessionHooks.commandsMeshSession;
 // startLauncher / acquireMeshLauncherLock / createMeshLogSink — no longer
 // imported here (m42 wave (d) leg d1, wave-3 tail): the `aof mesh serve --serve`
 // daemon body moved into commands/mesh-serve.mjs as mesh:serve's cli.launch
@@ -104,7 +106,7 @@ export async function run(argv) {
   // As verbs migrate (WAVE-D-MIGRATION.md), their ladder branches are deleted;
   // when the last one goes, run() IS argv → route table → face.
   // The registry arrives HERE, below the session arm, and only on the paths that need it.
-  const { resolveRoute, runCommandFace } = await import("./spine/face.mjs");
+  const { resolveRoute, runCommandFace } = (await import("./application/default.mjs")).defaultApplication.cli;
   const routed = resolveRoute(argv);
   if (routed) {
     await runCommandFace(routed.command, routed.rest);
@@ -172,7 +174,7 @@ export async function run(argv) {
   // through the generic face (the bare-`aof project` sanctioned-delegation
   // precedent — one door, two spellings).
   if (command === "upgrade") {
-    const { getCommand } = await import("./command-core.mjs");
+    const { getCommand } = (await import("./application/default.mjs")).defaultApplication;
     await runCommandFace(getCommand("work:upgrade"), rest);
     return;
   }
@@ -209,8 +211,8 @@ async function projectCommand(args) {
   // default spelling, delegating to the SAME registered command + generic face
   // (one door, two spellings — the upgrade/work-upgrade precedent).
   if (subcommand === "show") {
-    const { getCommand } = await import("./command-core.mjs");
-    const { runCommandFace } = await import("./spine/face.mjs");
+    const { getCommand } = (await import("./application/default.mjs")).defaultApplication;
+    const { runCommandFace } = (await import("./application/default.mjs")).defaultApplication.cli;
     await runCommandFace(getCommand("project:show"), rest);
     return;
   }
@@ -625,7 +627,7 @@ const HELP_USAGE_WORD_ORDER = ["init", "migrate"];
 // the ripple stops inside this file — and a missed `await` at the second one would render
 // `[object Promise]` into an error message that no existing control would have caught.
 async function helpText() {
-  const { listCommands } = await import("./command-core.mjs");
+  const { listCommands } = (await import("./application/default.mjs")).defaultApplication;
   const families = new Map();
   for (const command of listCommands()) {
     const route = command.cli?.route;

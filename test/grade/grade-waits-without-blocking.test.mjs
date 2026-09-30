@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 81, task `00_the-grade-waits-without-blocking`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -23,14 +24,16 @@ import { rm, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+const invoke = _aofApplication.invoke;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import {
   DEFAULT_HEARTBEAT_MS,
   DEFAULT_START_TO_CLOSE_MS,
   gradeDeadlineFromConfig,
 } from "@aof/contracts/loop-bounds";
-import { rubricSpawnOptions, spawnRubricAsync, GRADE_REENTRANCY_ENV } from "../../packages/core/src/commands/grade.mjs";
+const rubricSpawnOptions = _aofApplication.work.commandTools.grade.rubricSpawnOptions;
+const spawnRubricAsync = _aofApplication.work.commandTools.grade.spawnRubricAsync;
+const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../loop/loop-command-probe.test.mjs";

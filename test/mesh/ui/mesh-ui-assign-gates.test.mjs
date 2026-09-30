@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 38 / story 04 / task 01 —
 // tasks/01_assign-gates-hold-on-ui-path.feature (@executable).
 //
@@ -12,8 +14,8 @@
 // for the SAME input called directly against the SAME (untouched) store —
 // producer-fed PARITY, not a re-implemented refusal (STATE.md F1/F4).
 import assert from "node:assert/strict";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { assignWork } from "../../../packages/core/src/mesh/assignment.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const assignWork = _aofApplication.mesh.assignments.assignWork;
 import { withAssignRouteFixture, sameOriginAssign, seedTargetNode, readAssignmentRows } from "../../support/mesh-ui-assign-fixture.mjs";
 
 async function directAssignCode({ root, globalStoreOptions }, ref, nodeId) {

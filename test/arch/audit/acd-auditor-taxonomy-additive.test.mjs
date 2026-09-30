@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5901 — THE AUDITOR VOCABULARY WIDENS ADDITIVELY AND ADMITS NOTHING THAT COULD ACT.
 //
 // Milestone 59 / story 00. The invariant, from ADR-001:
@@ -52,10 +53,15 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  ADMITTED_KEYS, EDGE_KEYS, ENDPOINT_SCHEMES, FIELD_KINDS, LOADER_FINDING_CODES, NODE_KINDS,
-  POINTER_SCHEMES, SENTINEL_TOKENS, loadLoops,
-} from "../../../packages/core/src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const ENDPOINT_SCHEMES = _aofApplication.graph.work.loops.ENDPOINT_SCHEMES;
+const FIELD_KINDS = _aofApplication.graph.work.loops.FIELD_KINDS;
+const LOADER_FINDING_CODES = _aofApplication.graph.work.loops.LOADER_FINDING_CODES;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const POINTER_SCHEMES = _aofApplication.graph.work.loops.POINTER_SCHEMES;
+const SENTINEL_TOKENS = _aofApplication.graph.work.loops.SENTINEL_TOKENS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 

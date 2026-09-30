@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 58 / story 02 — FF-5805.
 //
 // THE ARBITER RECORDS THE TRADE-OFF AND CANNOT ACT, and the membership that makes any of it
@@ -13,7 +14,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { NODE_KINDS } from "../../../packages/core/src/work/loops.mjs";
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
 import {
   checkActuatorArbitration,
   checkAnchorGrounding,

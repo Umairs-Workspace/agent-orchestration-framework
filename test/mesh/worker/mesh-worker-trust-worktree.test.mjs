@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Regression: milestone 38 / story 05 fix (live two-machine soak 2026-07-25,
 // VERIFICATION F24) — the worker PRE-TRUSTS each per-assignment worktree so claude's
 // one-time "trust this folder?" dialog (which fires BEFORE the system prompt is read)
@@ -12,7 +13,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ensureWorktreeTrusted, driveInteractiveClaudeSession } from "../../../packages/core/src/mesh/worker-execution.mjs";
+const ensureWorktreeTrusted = _aofApplication.mesh.worker.ensureWorktreeTrusted;
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 async function tempHomeWithConfig(initial) {

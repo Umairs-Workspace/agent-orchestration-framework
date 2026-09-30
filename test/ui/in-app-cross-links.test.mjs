@@ -114,7 +114,7 @@ import { findAll, textOf, visibleTextOf } from "../support/mini-react.mjs";
 import { spawnCliAsync } from "../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // The Background's work stream: one milestone "34" with story "34/01".
 const STREAM = {

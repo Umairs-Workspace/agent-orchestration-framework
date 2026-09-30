@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness functions for the m42 brittleness cure (2026-07-31; STATE §Residual
 // defects — "THE structural debt"): ONE DERIVABLE BRANCH PER ITEM.
 //
@@ -28,14 +29,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { meshItemBranchName } from "../../../packages/core/src/mesh/worktree.mjs";
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 const MINT_ALLOWED = new Set([
-  "packages/core/src/mesh/worktree.mjs",
+  "packages/core/src/application/bindings/mesh/worktree.mjs",
   "packages/mesh/src/worktrees.mjs",
   "packages/mesh/src/worker-execution.mjs",
   "packages/mesh/src/recovery-push.mjs",

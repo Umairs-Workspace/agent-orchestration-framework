@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 01 (the exclusive item lock), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/01_story_item-lock/
 //     tasks/04_next-skips-held-items-and-reports-the-holder.feature
@@ -21,8 +22,8 @@
 // scenario uses the Background stream verbatim.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { nextCommand } from "../../packages/core/src/commands/next.mjs";
+const invoke = _aofApplication.invoke;
+const nextCommand = _aofApplication.getCommand("work:next");
 import { withItemLockFixture, seedActive, settle, refuse } from "../support/item-lock-fixture.mjs";
 
 const HOLDER = "aof-wsl";

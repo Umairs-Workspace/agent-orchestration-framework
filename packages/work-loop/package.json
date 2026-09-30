@@ -29,7 +29,7 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test test/services.test.mjs test/trigger.test.mjs test/dispatch.test.mjs"
+    "test": "node ../../scripts/test-workspace.mjs @aof/work-loop"
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",

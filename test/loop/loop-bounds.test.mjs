@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: 69/00/tasks/00_the-bounds-resolve.feature. Every scenario and
 // every Examples row is exercised here against the pure declaration leaf.
 import assert from "node:assert/strict";
@@ -47,20 +48,18 @@ import {
   stepProbe,
   stepProbeFromConfig,
 } from "@aof/contracts/loop-bounds";
-import { DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../packages/core/src/mesh/assignment-reclaim.mjs";
-import { dispatchConcurrencyFromConfig } from "../../packages/core/src/work/dispatch.mjs";
+const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = _aofApplication.mesh.assignmentReclaim.DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS;
+const dispatchConcurrencyFromConfig = _aofApplication.loop.work.dispatch.dispatchConcurrencyFromConfig;
 // 61/00 — the clamp is asked for at the doors it actually binds, not only at its
 // declaration: the three no-progress decisions, the attempt-retry door and the
 // drive-cycle door are all exercised through their own production surfaces.
-import {
-  decideBuildProgress,
-  evaluateProgressPolicy,
-  progressPolicyFromConfig,
-  progressSample,
-} from "../../packages/core/src/loop-progress.mjs";
-import { resolveAttemptCeiling } from "../../packages/core/src/commands/run-retry.mjs";
+const decideBuildProgress = _aofApplication.loop.loopProgress.decideBuildProgress;
+const evaluateProgressPolicy = _aofApplication.loop.loopProgress.evaluateProgressPolicy;
+const progressPolicyFromConfig = _aofApplication.loop.loopProgress.progressPolicyFromConfig;
+const progressSample = _aofApplication.loop.loopProgress.progressSample;
+const resolveAttemptCeiling = _aofApplication.work.commandTools.runRetry.resolveAttemptCeiling;
 import { stripComments } from "../support/source-slice.mjs";
-import { loopCommand } from "../../packages/core/src/commands/loop.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
 import { loopFixture } from "./loop-command-probe.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -128,7 +127,7 @@ export const loopBoundsTests = [
     name: "69/00 bounds/00 heartbeat is the reclaim threshold's one declared constant",
     async run() {
       assert.equal(loopBoundsFromConfig({ config: {} }).heartbeatMs, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS);
-      const reclaim = await readFile(path.join(root, "packages", "core", "src", "mesh", "assignment-reclaim.mjs"), "utf8");
+      const reclaim = await readFile(path.join(root, "packages", "mesh", "src", "assignment-reclaim.mjs"), "utf8");
       assert.match(reclaim, /DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS\s*=\s*DEFAULT_HEARTBEAT_MS/u);
       assert.doesNotMatch(reclaim, /DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS\s*=\s*15\s*\*/u);
     },

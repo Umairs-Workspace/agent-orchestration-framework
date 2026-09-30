@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 39 / story 01
 // tasks/01_verify-authors-outcome.feature — ONLY the @executable scenarios:
 //   - "an item's primary record doc is its identity doc — never OUTCOME.md"
@@ -13,7 +14,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { recordDoc, validateWork } from "../../packages/core/src/work.mjs";
+const recordDoc = _aofWorkspace.work.recordDoc;
+const validateWork = _aofWorkspace.work.validateWork;
 
 // ---------------------------------------------------------------------------
 // Scenario Outline: an item's primary record doc is its identity doc — never

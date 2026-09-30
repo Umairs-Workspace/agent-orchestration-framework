@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 40 / ADR-001 + ADR-003 + ADR-005 — the anti-drift
 // single-source-of-truth guard for the work-item schema version.
 //
@@ -14,10 +16,35 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import * as work from "../../../packages/core/src/work.mjs";
+const work = Object.freeze({
+  recordDoc: _aofWorkspace.work.recordDoc,
+  typeHasRecordDoc: _aofWorkspace.work.typeHasRecordDoc,
+  parseFrontmatter: _aofWorkspace.work.parseFrontmatter,
+  WORK_ITEM_SCHEMA_VERSION: _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION,
+  readItemSchema: _aofWorkspace.work.readItemSchema,
+  readItemVersion: _aofWorkspace.work.readItemVersion,
+  rollbackItemStatus: _aofWorkspace.work.rollbackItemStatus,
+  setItemStatus: _aofWorkspace.work.setItemStatus,
+  applyItemFrontmatter: _aofWorkspace.work.applyItemFrontmatter,
+  parseStorySpan: _aofWorkspace.work.parseStorySpan,
+  listItems: _aofWorkspace.work.listItems,
+  isLiveStreamRow: _aofWorkspace.work.isLiveStreamRow,
+  findWork: _aofWorkspace.work.findWork,
+  listStream: _aofWorkspace.work.listStream,
+  isDependTarget: _aofWorkspace.work.isDependTarget,
+  siblingDependencyNumber: _aofWorkspace.work.siblingDependencyNumber,
+  siblingGate: _aofWorkspace.work.siblingGate,
+  isDependNumber: _aofWorkspace.work.isDependNumber,
+  rewriteRefEntry: _aofWorkspace.work.rewriteRefEntry,
+  rewriteDependsEntries: _aofWorkspace.work.rewriteDependsEntries,
+  nextWork: _aofWorkspace.work.nextWork,
+  validateWork: _aofWorkspace.work.validateWork,
+  loadWorkspace: _aofWorkspace.work.loadWorkspace,
+  healIdentitySidecar: _aofWorkspace.work.healIdentitySidecar,
+});
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UPGRADE_MODULE = path.join(repoRoot, "packages", "core", "src", "work", "upgrade.mjs");
+const UPGRADE_MODULE = path.join(repoRoot, "packages", "work", "src", "upgrade.mjs");
 
 // A transform descriptor may name its endpoints from/to (canonical) or a *Schema/*Version
 // variant — read whichever is present so the guard is not brittle on the exact key.
@@ -31,7 +58,7 @@ function endpointOf(descriptor, kind) {
 
 async function loadRegistry() {
   assert.ok(existsSync(UPGRADE_MODULE), `the upgrade engine must be readable at ${UPGRADE_MODULE} — a subject a control cannot find is a FAILURE, never a skip (119/01, ADR-003 §4): this gate returned green having asserted nothing, so a move of its subject was undetectable at review`);
-  const mod = await import(pathToFileURL(UPGRADE_MODULE).href);
+  const mod = _aofApplication.work.upgrade;
   const migrations = mod.WORK_ITEM_MIGRATIONS ?? mod.MIGRATIONS ?? mod.migrations;
   return Array.isArray(migrations) ? migrations : null;
 }

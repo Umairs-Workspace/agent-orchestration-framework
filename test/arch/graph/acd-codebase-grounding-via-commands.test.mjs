@@ -48,7 +48,8 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
   path.join("packages/core/src/application/assemble.mjs"), // Core constructs the sole graph service.
   // Transitional core adapters supply the configured graph services.
   path.join("packages/core/src/application/bindings/graphify.mjs"),
-  path.join("packages", "core", "src", "graph-normalize.mjs"),
+  // Plan 06 removes the pure public forward. The owned normalizer defines the
+  // API itself and therefore is not an importer of that API.
   path.join("packages/core/src/application/bindings/commands/graph/build.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/query.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/triage.mjs"),

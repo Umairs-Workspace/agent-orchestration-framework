@@ -1,1 +1,1 @@
-import '../packages/core/src/work/audit-probe.mjs';
+import 'aof/audit-probe';

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-strict-is-two-policies (milestone 59, FF-5911; 59/ADR-002 §2a, 15/ADR-002).
 //
 //   `--strict` means two DIFFERENT things on `aof work doctor` and `aof work audit`, and that is a
@@ -38,7 +39,8 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

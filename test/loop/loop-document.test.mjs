@@ -1,3 +1,6 @@
+import * as _aofPublic_aof_work_graph_commands_loops_graph from "@aof/work-graph/commands/loops-graph";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 79 / task 00 — the composed document.
 //
 // Covers EVERY @executable scenario in
@@ -18,9 +21,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { composeLoopDocument, loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
-import { renderLoopGraph } from "../../packages/core/src/commands/loops-graph.mjs";
-import { loopsGraphCommand } from "../../packages/core/src/commands/loops-graph.mjs";
-import { parseFrontmatter } from "../../packages/core/src/work.mjs";
+const renderLoopGraph = _aofPublic_aof_work_graph_commands_loops_graph.renderLoopGraph;
+const loopsGraphCommand = _aofApplication.getCommand("work:loops-graph");
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
 // THE ONE HOME for cutting source (m47 / F-47-04-ARCH-2). Its `stripComments` strips LINE
 // COMMENTS FIRST — TECH_DEBT item 24's trap order. The source sweeps below MUST run over the
 // stripped text: this module's own header names `process.cwd()` as a thing it does not reach,

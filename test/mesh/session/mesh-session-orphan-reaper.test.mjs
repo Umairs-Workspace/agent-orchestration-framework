@@ -1,3 +1,7 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 00
 // tasks/02_orphan-reaper.feature — "a session that expires leaves disk — swept by the
 // owning node, at the write seam, under the one shared liveness predicate".
@@ -23,11 +27,15 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../packages/core/src/commands/mesh/session.mjs";
-import { readSessionRecord, reapExpiredSessions, sessionRecordPath, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../packages/core/src/mesh/session.mjs";
-import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
-import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const reapExpiredSessions = _aofHooks.meshSession.reapExpiredSessions;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const resolveSessionTtlSeconds = _aofHooks.meshSession.resolveSessionTtlSeconds;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const NODE_ID = "node-a";
 const PEER_NODE_ID = "node-b";
@@ -256,7 +264,20 @@ export const meshSessionOrphanReaperTests = [
         // because no real filesystem fault is portable across this fleet's three
         // platforms. Driven through the REAL pingSession (the CLI supplies no
         // options, which is the production shape the fitness function pins).
-        const { pingSession } = await import("../../../packages/core/src/mesh/session.mjs");
+        const { pingSession } = await Promise.resolve(Object.freeze({
+  DEFAULT_SESSION_TTL_SECONDS: _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS,
+  resolveSessionTtlSeconds: _aofHooks.meshSession.resolveSessionTtlSeconds,
+  sessionRecordPath: _aofHooks.meshSession.sessionRecordPath,
+  assembleSessionRecord: _aofHooks.meshSession.assembleSessionRecord,
+  readSessionRecord: _aofHooks.meshSession.readSessionRecord,
+  readSessionRecordsForNode: _aofHooks.meshSession.readSessionRecordsForNode,
+  reapExpiredSessions: _aofHooks.meshSession.reapExpiredSessions,
+  startSession: _aofHooks.meshSession.startSession,
+  pingSession: _aofHooks.meshSession.pingSession,
+  endSession: _aofHooks.meshSession.endSession,
+  isSessionLive: _aofHooks.meshSession.isSessionLive,
+  resolveSessionIdFromLiveStore: _aofHooks.meshSession.resolveSessionIdFromLiveStore,
+}));
         const record = await pingSession(
           fixture.ws,
           { nodeId: NODE_ID, workspaceId: "ws-mine", repo: "demo", assistant: "claude-code", sessionId: "sess-mine", now: NOW },

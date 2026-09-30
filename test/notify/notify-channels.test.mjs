@@ -1,3 +1,6 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/notify/notify-channels.test.mjs — milestone 131 / story 02, tasks 00, 02, 03, 05 and 06
 // (ADR-005 §1-§5), story 09, tasks 01-02 (ADR-007 §3-§4, §6), and story 10, tasks 02 and 04 (ADR-008
 // §4, §7: the ask message indexed at delivery, and `allow` offering the reply). The family's registration (00),
@@ -17,13 +20,20 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { renderDiscord, sendDiscord } from "@aof/messaging/discord";
-import { CHANNELS, EVENTS, NOTIFY_TIMEOUT_MS, buildNotifyEnvelope, notify, resolveNotifyConfig } from "../../packages/core/src/notify/notify.mjs";
-import { askMessagesDir, readAskMessage, recordAskMessage } from "../../packages/core/src/notify/ask-messages.mjs";
-import { writeMessagingSecret } from "../../packages/core/src/notify/secret.mjs";
+const CHANNELS = _aofApplication.messaging.notify.CHANNELS;
+const EVENTS = _aofApplication.messaging.notify.EVENTS;
+const NOTIFY_TIMEOUT_MS = _aofApplication.messaging.notify.NOTIFY_TIMEOUT_MS;
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
+const notify = _aofApplication.messaging.notify.notify;
+const resolveNotifyConfig = _aofApplication.messaging.notify.resolveNotifyConfig;
+const askMessagesDir = _aofApplication.messaging.askMessages.askMessagesDir;
+const readAskMessage = _aofApplication.messaging.askMessages.readAskMessage;
+const recordAskMessage = _aofApplication.messaging.askMessages.recordAskMessage;
+const writeMessagingSecret = _aofApplication.messaging.secret.writeMessagingSecret;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   FLAT_LAYER_THRESHOLD,

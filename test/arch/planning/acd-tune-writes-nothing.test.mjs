@@ -1,10 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6207 — the tune face is byte-level read-only and carries no state between runs.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { buildTuneReport, tuneCommand } from "../../../packages/core/src/commands/tune.mjs";
+const buildTuneReport = _aofApplication.work.commandTools.tune.buildTuneReport;
+const tuneCommand = _aofApplication.getCommand("work:tune");
 
 async function snapshot(root) {
   const files = new Map();

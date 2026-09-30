@@ -1,3 +1,5 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
 // Fitness function: acd-no-new-silent-catch (milestone 42 wave (a), TECH_DEBT item 3
 // — "silent catch {} is load-bearing").
 //
@@ -80,7 +82,7 @@ export const archTests = [
     name: "arch/m42-item-3: no NEW silent catch — every src file is at or below its shrink-only baseline, and unlisted files have none",
     async run() {
       const offenders = [];
-      const files = await readRuntimeFiles(repoRoot);
+      const files = await readRuntimeFiles(repoRoot, { runtime: "node" });
       assert.ok(files.length > 150, 'the runtime scan includes core and packages');
       for (const rel of Object.keys(BASELINE)) assert.ok(files.some(file => file.rel === rel), rel + ': the sanctioned floor is still scanned');
       for (const { rel, path: file } of files) {

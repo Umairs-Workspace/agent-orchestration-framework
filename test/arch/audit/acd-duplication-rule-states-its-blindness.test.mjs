@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-duplication-rule-states-its-blindness (milestone 77 / story 00, FF-7702;
 // ADR-004 §1-§4).
 //
@@ -46,11 +47,9 @@ import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { RESOURCE_KINDS, RUNTIMES } from "../../../packages/core/src/model.mjs";
-import {
-  PROMPT_LAYER_SWEEPS,
-  SENTENCE_FLOOR,
-  runPromptLayer,
-} from "../../../packages/core/src/work-audit/prompt-layer.mjs";
+const PROMPT_LAYER_SWEEPS = _aofApplication.work.audit.promptLayer.PROMPT_LAYER_SWEEPS;
+const SENTENCE_FLOOR = _aofApplication.work.audit.promptLayer.SENTENCE_FLOOR;
+const runPromptLayer = _aofApplication.work.audit.promptLayer.runPromptLayer;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MODULE_REL = "packages/work/src/audit/prompt-layer.mjs";

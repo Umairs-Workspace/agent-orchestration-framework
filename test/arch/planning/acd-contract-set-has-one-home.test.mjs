@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-12403 (124/ADR-003) — ONE HOME FOR THE CONTRACT SET, DIRECTORY INTENT IS AUTHORED, AND THE
 // WAVE CHECK ONLY EVER TIGHTENS.
 //
@@ -47,7 +48,7 @@ import {
   resolveDeclaredSet,
   resolveStoryContractPath,
 } from "@aof/work/story-contract";
-import { listItems } from "../../../packages/core/src/work.mjs";
+const listItems = _aofWorkspace.work.listItems;
 import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 

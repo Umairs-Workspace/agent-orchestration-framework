@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 01 (the exclusive item lock), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/01_story_item-lock/
 //     tasks/00_scope-rule-one-home-faces-unchanged.feature
@@ -29,11 +30,12 @@
 //     the rule is observable at all.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const invoke = _aofApplication.invoke;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
-import { resolveContinueDecision } from "../../packages/core/src/commands/continue.mjs";
-import { readExecutionOverlay } from "../../packages/core/src/board-mesh-execution.mjs";
-import { openGlobalWorkProjectionStore, upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
+const resolveContinueDecision = _aofApplication.work.commandTools.continue.resolveContinueDecision;
+const readExecutionOverlay = _aofApplication.mesh.boardMeshExecution.readExecutionOverlay;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
 import { withItemLockFixture, seedActive } from "../support/item-lock-fixture.mjs";
 
 const HOLDER = "aof-wsl";

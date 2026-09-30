@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 23 / story 01 — task 01
 // (tasks/01_relay-envelope-and-resilience.feature). The frozen, payload-agnostic envelope
 // { kind, nodeId, signal } where `signal` is an OPAQUE blob forwarded unparsed, and a bad
@@ -12,7 +13,7 @@
 // OUR { type:'error' } frame (not ws's 1009 close).
 import assert from "node:assert/strict";
 import { WebSocket } from "ws";
-import { serveRelay } from "../../../packages/core/src/mesh/relay.mjs";
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
 
 function connect(url, { timeoutMs = 3000 } = {}) {
   return new Promise((resolve, reject) => {

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 10 / story 02 (extraction-posture-and-fallback),
 // task 00 — 00_claude-cli-classified-and-surfaced.feature.
 //
@@ -20,12 +21,11 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir } from "node:fs/promises";
-import {
-  isNetworkBackend,
-  isKnownNetworkBackend,
-  classifyEgress,
-} from "../../packages/core/src/commands/graph/build.mjs";
-import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
+const isNetworkBackend = _aofApplication.knowledge.commandTools.graph.build.isNetworkBackend;
+const isKnownNetworkBackend = _aofApplication.knowledge.commandTools.graph.build.isKnownNetworkBackend;
+const classifyEgress = _aofApplication.knowledge.commandTools.graph.build.classifyEgress;
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
 
 // An isolated projectRoot so status reads no real store (recordCount 0, never throws,
 // reaches NO graphify binary).

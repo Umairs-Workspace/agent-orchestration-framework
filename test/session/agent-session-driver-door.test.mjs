@@ -1,3 +1,6 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/session/agent-session-driver-door.test.mjs — milestone 53 / story 00, tasks 00 and 01
 // (00_the-two-doors.feature, 01_the-importers-stay-put.feature; ADR-001 §1/§2, ADR-010
 // §17/§18).
@@ -47,65 +50,123 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
+import ts from "typescript";
 
 // ── DOOR 1: the driver's own ────────────────────────────────────────────────────────
 // Seventeen static named imports. A name this module does not export makes the line
 // below a SyntaxError at link time, which is exactly the observable task 00 asks for.
-import {
-  NEEDS_INPUT_SENTINEL as drvNeedsInputSentinel,
-  NEEDS_INPUT_INSTRUCTION as drvNeedsInputInstruction,
-  DIRECTIVE_COMPLETE_SENTINEL as drvDirectiveCompleteSentinel,
-  DIRECTIVE_COMPLETE_INSTRUCTION as drvDirectiveCompleteInstruction,
-  WORKER_SESSION_INSTRUCTION as drvWorkerSessionInstruction,
-  COMPLETION_IDLE_MS as drvCompletionIdleMs,
-  DECLARED_COMPLETION_IDLE_MS as drvDeclaredCompletionIdleMs,
-  HUMAN_INPUT_TOOL_NAMES as drvHumanInputToolNames,
-  INTERACTIVE_COMMAND_READY_DELAY_MS as drvInteractiveCommandReadyDelayMs,
-  defaultWatchTranscriptSessionId as drvDefaultWatchTranscriptSessionId,
-  defaultWatchTranscriptCompletion as drvDefaultWatchTranscriptCompletion,
-  defaultPtySpawn as drvDefaultPtySpawn,
-  resolveInteractiveDriverLaunch as drvResolveInteractiveDriverLaunch,
-  driveInteractiveClaudeSession as drvDriveInteractiveClaudeSession,
-  buildDriverCommand as drvBuildDriverCommand,
-  defaultSpawnRuntime as drvDefaultSpawnRuntime,
-  ensureWorktreeTrusted as drvEnsureWorktreeTrusted,
-} from "../../packages/core/src/agent-session-driver.mjs";
+const drvNeedsInputSentinel = _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL;
+const drvNeedsInputInstruction = _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION;
+const drvDirectiveCompleteSentinel = _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL;
+const drvDirectiveCompleteInstruction = _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION;
+const drvWorkerSessionInstruction = _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION;
+const drvCompletionIdleMs = _aofSessions.agentSessionDriver.COMPLETION_IDLE_MS;
+const drvDeclaredCompletionIdleMs = _aofSessions.agentSessionDriver.DECLARED_COMPLETION_IDLE_MS;
+const drvHumanInputToolNames = _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES;
+const drvInteractiveCommandReadyDelayMs = _aofSessions.agentSessionDriver.INTERACTIVE_COMMAND_READY_DELAY_MS;
+const drvDefaultWatchTranscriptSessionId = _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId;
+const drvDefaultWatchTranscriptCompletion = _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion;
+const drvDefaultPtySpawn = _aofSessions.agentSessionDriver.defaultPtySpawn;
+const drvResolveInteractiveDriverLaunch = _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch;
+const drvDriveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const drvBuildDriverCommand = _aofSessions.agentSessionDriver.buildDriverCommand;
+const drvDefaultSpawnRuntime = _aofSessions.agentSessionDriver.defaultSpawnRuntime;
+const drvEnsureWorktreeTrusted = _aofSessions.agentSessionDriver.ensureWorktreeTrusted;
 
 // ── DOOR 2: the sink's re-export ────────────────────────────────────────────────────
 // Byte-for-byte the import line a pre-existing dependent already writes.
-import {
-  NEEDS_INPUT_SENTINEL as sinkNeedsInputSentinel,
-  NEEDS_INPUT_INSTRUCTION as sinkNeedsInputInstruction,
-  DIRECTIVE_COMPLETE_SENTINEL as sinkDirectiveCompleteSentinel,
-  DIRECTIVE_COMPLETE_INSTRUCTION as sinkDirectiveCompleteInstruction,
-  WORKER_SESSION_INSTRUCTION as sinkWorkerSessionInstruction,
-  COMPLETION_IDLE_MS as sinkCompletionIdleMs,
-  DECLARED_COMPLETION_IDLE_MS as sinkDeclaredCompletionIdleMs,
-  HUMAN_INPUT_TOOL_NAMES as sinkHumanInputToolNames,
-  INTERACTIVE_COMMAND_READY_DELAY_MS as sinkInteractiveCommandReadyDelayMs,
-  defaultWatchTranscriptSessionId as sinkDefaultWatchTranscriptSessionId,
-  defaultWatchTranscriptCompletion as sinkDefaultWatchTranscriptCompletion,
-  defaultPtySpawn as sinkDefaultPtySpawn,
-  resolveInteractiveDriverLaunch as sinkResolveInteractiveDriverLaunch,
-  driveInteractiveClaudeSession as sinkDriveInteractiveClaudeSession,
-  buildDriverCommand as sinkBuildDriverCommand,
-  defaultSpawnRuntime as sinkDefaultSpawnRuntime,
-  ensureWorktreeTrusted as sinkEnsureWorktreeTrusted,
-  createMeshWorkerExecutionHandler,
-  createMeshWorkerTerminalResumeHandler,
-} from "../../packages/core/src/mesh/worker-execution.mjs";
+const sinkNeedsInputSentinel = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
+const sinkNeedsInputInstruction = _aofApplication.mesh.worker.NEEDS_INPUT_INSTRUCTION;
+const sinkDirectiveCompleteSentinel = _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL;
+const sinkDirectiveCompleteInstruction = _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_INSTRUCTION;
+const sinkWorkerSessionInstruction = _aofApplication.mesh.worker.WORKER_SESSION_INSTRUCTION;
+const sinkCompletionIdleMs = _aofApplication.mesh.worker.COMPLETION_IDLE_MS;
+const sinkDeclaredCompletionIdleMs = _aofApplication.mesh.worker.DECLARED_COMPLETION_IDLE_MS;
+const sinkHumanInputToolNames = _aofApplication.mesh.worker.HUMAN_INPUT_TOOL_NAMES;
+const sinkInteractiveCommandReadyDelayMs = _aofApplication.mesh.worker.INTERACTIVE_COMMAND_READY_DELAY_MS;
+const sinkDefaultWatchTranscriptSessionId = _aofApplication.mesh.worker.defaultWatchTranscriptSessionId;
+const sinkDefaultWatchTranscriptCompletion = _aofApplication.mesh.worker.defaultWatchTranscriptCompletion;
+const sinkDefaultPtySpawn = _aofApplication.mesh.worker.defaultPtySpawn;
+const sinkResolveInteractiveDriverLaunch = _aofApplication.mesh.worker.resolveInteractiveDriverLaunch;
+const sinkDriveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const sinkBuildDriverCommand = _aofApplication.mesh.worker.buildDriverCommand;
+const sinkDefaultSpawnRuntime = _aofApplication.mesh.worker.defaultSpawnRuntime;
+const sinkEnsureWorktreeTrusted = _aofApplication.mesh.worker.ensureWorktreeTrusted;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const createMeshWorkerTerminalResumeHandler = _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler;
 
-import * as driverNamespace from "../../packages/core/src/agent-session-driver.mjs";
-import * as sinkNamespace from "../../packages/core/src/mesh/worker-execution.mjs";
+const driverNamespace = Object.freeze({
+  COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.DECLARED_COMPLETION_IDLE_MS,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL,
+  HUMAN_INPUT_TOOL_NAMES: _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofSessions.agentSessionDriver.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  NEEDS_INPUT_INSTRUCTION: _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION,
+  NEEDS_INPUT_SENTINEL: _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL,
+  WORKER_SESSION_INSTRUCTION: _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION,
+  buildDriverCommand: _aofSessions.agentSessionDriver.buildDriverCommand,
+  defaultPtySpawn: _aofSessions.agentSessionDriver.defaultPtySpawn,
+  defaultSpawnRuntime: _aofSessions.agentSessionDriver.defaultSpawnRuntime,
+  defaultWatchTranscriptCompletion: _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion,
+  defaultWatchTranscriptSessionId: _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId,
+  driveInteractiveClaudeSession: _aofSessions.agentSessionDriver.driveInteractiveClaudeSession,
+  ensureWorktreeTrusted: _aofSessions.agentSessionDriver.ensureWorktreeTrusted,
+  resolveInteractiveDriverLaunch: _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch,
+});
+const sinkNamespace = Object.freeze({
+  ASSIGNMENT_LOOP_LAUNCH_UNDECLARED: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_UNDECLARED,
+  ASSIGNMENT_LOOP_LAUNCH_SCOPELESS: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_SCOPELESS,
+  resolveRefInWorktree: _aofApplication.mesh.worker.resolveRefInWorktree,
+  workerHasRepo: _aofApplication.mesh.worker.workerHasRepo,
+  resolveCloneUrl: _aofApplication.mesh.worker.resolveCloneUrl,
+  parseRepoFromCloneUrl: _aofApplication.mesh.worker.parseRepoFromCloneUrl,
+  meshCheckoutsRoot: _aofApplication.mesh.worker.meshCheckoutsRoot,
+  meshCheckoutPath: _aofApplication.mesh.worker.meshCheckoutPath,
+  isUnderMeshCheckoutsRoot: _aofApplication.mesh.worker.isUnderMeshCheckoutsRoot,
+  buildAskpassShim: _aofApplication.mesh.worker.buildAskpassShim,
+  cloneRepoForWorkspace: _aofApplication.mesh.worker.cloneRepoForWorkspace,
+  pinWorkspaceIdInCheckout: _aofApplication.mesh.worker.pinWorkspaceIdInCheckout,
+  commitWorktreeChanges: _aofApplication.mesh.worker.commitWorktreeChanges,
+  NEEDS_INPUT_SENTINEL: _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL,
+  NEEDS_INPUT_INSTRUCTION: _aofApplication.mesh.worker.NEEDS_INPUT_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_INSTRUCTION,
+  WORKER_SESSION_INSTRUCTION: _aofApplication.mesh.worker.WORKER_SESSION_INSTRUCTION,
+  COMPLETION_IDLE_MS: _aofApplication.mesh.worker.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofApplication.mesh.worker.DECLARED_COMPLETION_IDLE_MS,
+  HUMAN_INPUT_TOOL_NAMES: _aofApplication.mesh.worker.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofApplication.mesh.worker.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  defaultWatchTranscriptSessionId: _aofApplication.mesh.worker.defaultWatchTranscriptSessionId,
+  defaultWatchTranscriptCompletion: _aofApplication.mesh.worker.defaultWatchTranscriptCompletion,
+  defaultPtySpawn: _aofApplication.mesh.worker.defaultPtySpawn,
+  resolveInteractiveDriverLaunch: _aofApplication.mesh.worker.resolveInteractiveDriverLaunch,
+  driveInteractiveClaudeSession: _aofApplication.mesh.worker.driveInteractiveClaudeSession,
+  buildDriverCommand: _aofApplication.mesh.worker.buildDriverCommand,
+  defaultSpawnRuntime: _aofApplication.mesh.worker.defaultSpawnRuntime,
+  ensureWorktreeTrusted: _aofApplication.mesh.worker.ensureWorktreeTrusted,
+  registerActiveWorktree: _aofApplication.mesh.worker.registerActiveWorktree,
+  clearActiveWorktree: _aofApplication.mesh.worker.clearActiveWorktree,
+  listActiveWorktrees: _aofApplication.mesh.worker.listActiveWorktrees,
+  checkoutRootForWorktree: _aofApplication.mesh.worker.checkoutRootForWorktree,
+  listStrandedWorktreeAssignments: _aofApplication.mesh.worker.listStrandedWorktreeAssignments,
+  pushWorktreeBranch: _aofApplication.mesh.worker.pushWorktreeBranch,
+  createMeshWorkerExecutionHandler: _aofApplication.mesh.worker.createMeshWorkerExecutionHandler,
+  settleStrandedRunRecords: _aofApplication.mesh.worker.settleStrandedRunRecords,
+  createMeshWorkerWithdrawHandler: _aofApplication.mesh.worker.createMeshWorkerWithdrawHandler,
+  createMeshWorkerTerminalInputHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalInputHandler,
+  createMeshWorkerTerminalResumeHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler,
+  createMeshRecoveryPushHandler: _aofApplication.mesh.worker.createMeshRecoveryPushHandler,
+});
 
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
 import { registeredSuitePaths, registrationSurface } from "../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const DRIVER_MODULE = "packages/core/src/agent-session-driver.mjs";
-const SINK_MODULE = "packages/core/src/mesh/worker-execution.mjs";
+const DRIVER_MODULE = "packages/core/src/application/bindings/agent-session-driver.mjs";
+const SINK_MODULE = "packages/core/src/application/bindings/mesh/worker-execution.mjs";
 const SINK_CONSTRUCTOR = "packages/core/src/application/bindings/mesh/worker-execution.mjs";
 const DRIVER_CONSTRUCTOR = "packages/core/src/application/bindings/agent-session-driver.mjs";
 // Compatibility imports retain their old doors. Configured consumers receive the
@@ -306,7 +367,8 @@ function importedNames(clause) {
 // imports construct an instance; they are not consumers of its exported operations.
 function sinkDependencies(rel, source) {
   const direct = staticImports(source).filter(entry => resolvesToSink(rel, entry.specifier))
-    .map(entry => ({ ...entry, names: importedNames(entry.clause) }));
+    .map(entry => ({ ...entry, names: importedNames(entry.clause) }))
+    .filter(entry => entry.names.some(name => name !== "assembleMeshWorkerExecution"));
   const supplied = dependencySpecifiers(source).filter(entry => entry.injected && entry.parameter === 'meshWorkerExecutionServices');
   for (const entry of supplied) {
     assert.equal(path.posix.normalize(path.posix.join(path.posix.dirname(rel), entry.specifier)), SINK_CONSTRUCTOR);
@@ -314,6 +376,14 @@ function sinkDependencies(rel, source) {
       .flatMap(match => importedNames(`{${match[1]}}`));
     direct.push({ ...entry, names });
   }
+  const members = [];
+  const syntax = ts.createSourceFile(rel, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  function visit(node) {
+    if (ts.isPropertyAccessExpression(node) && node.expression.getText(syntax) === "_aofApplication.mesh.worker") members.push(node.name.text);
+    ts.forEachChild(node, visit);
+  }
+  visit(syntax);
+  if (members.length > 0 && staticImports(source).some(entry => entry.specifier === "aof/default-application")) direct.push({ names: [...new Set(members)] });
   return direct;
 }
 
@@ -389,8 +459,20 @@ async function runConsumerModule(names, moduleRel) {
   try {
     const target = path.join(repoRoot, moduleRel).split(path.sep).join("/");
     const file = path.join(dir, "consumer.mjs");
+    // A test-only named bridge checks the scoped public API in a fresh process.
+    // Its export set comes from the real service, so a bogus name still fails linking.
+    const driverDoor = moduleRel === DRIVER_MODULE;
+    const service = driverDoor ? _aofSessions.agentSessionDriver : _aofApplication.mesh.worker;
+    const publicEntry = driverDoor ? "application/default-session-driver.mjs" : "application/default.mjs";
+    const exportName = driverDoor ? "defaultSessionDriver" : "defaultApplication";
+    const scope = driverDoor ? "agentSessionDriver" : "mesh.worker";
+    const bridge = path.join(dir, "public-service.mjs");
+    await writeFile(bridge, [
+      `import { ${exportName} as service } from ${JSON.stringify(new URL(`../../packages/core/src/${publicEntry}`, import.meta.url).href)};`,
+      ...Object.keys(service).map(name => `export const ${name} = service.${scope}.${name};`),
+    ].join("\n"));
     const body = [
-      `import { ${names.join(", ")} } from "file:///${target}";`,
+      `import { ${names.join(", ")} } from "./public-service.mjs";`,
       `const bound = { ${names.join(", ")} };`,
       "for (const [name, value] of Object.entries(bound)) {",
       '  if (value === undefined) { console.error(`undefined binding: ${name}`); process.exit(2); }',
@@ -454,7 +536,7 @@ export const agentSessionDriverDoorTests = [
       const source = stripComments(await readFile(path.join(repoRoot, SINK_MODULE), "utf8"));
       for (const member of FROZEN) {
         assert.equal(
-          new RegExp(`(?:export\\s+)?(?:async\\s+)?(?:function|const|let|var|class)\\s+${member.name}\\b`).test(source),
+          new RegExp(`(?:export\\s+)?(?:async\\s+)?(?:function|class)\\s+${member.name}\\b`).test(source),
           false,
           `${member.name} is no longer DEFINED in the sink — it is re-exported from the driver's module`,
         );
@@ -710,11 +792,11 @@ export const agentSessionDriverDoorTests = [
       // `driveInteractiveClaudeSession` through the sink for task 01's driver-level `signal` cases;
       // FF-11902's no-headroom probe (`acd-control-derives-its-census`) ratchets these floors to the
       // live census, so the pair moves together (49 + 2 + 4 = 55).
-      const SUITE_FLOOR = 50;
+      const SUITE_FLOOR = 52;
       const FIXTURE_FLOOR = 2;
       // Two URL-only consumers now import the pure repo-admission API directly.
       const SOURCE_SIDE_FLOOR = 2;
-      const CENSUS_FLOOR = 54;
+      const CENSUS_FLOOR = 56;
       const importsTheSink = async (rel) =>
         sinkDependencies(rel, await readFile(path.join(repoRoot, rel), "utf8")).length > 0;
 
@@ -787,7 +869,7 @@ export const agentSessionDriverDoorTests = [
       const naming = [];
       for (const rel of testFiles) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
-        if (source.includes("agent-session-driver") || source.includes("packages/execution/src/session-driver") || source.includes('"packages", "execution", "src", "session-driver.mjs"')) naming.push(rel);
+        if (source.includes("agent-session-driver") || source.includes("packages/execution/src/session-driver") || source.includes('"packages", "execution", "src", "session-driver.mjs"') || /_aofSessions\.agentSessionDriver\./u.test(source)) naming.push(rel);
       }
       assert.ok(testFiles.length > 300, `the test tree was actually walked (non-vacuous): ${testFiles.length} files`);
       assert.deepEqual(naming.sort(), NAMES_THE_NEW_MODULE, "the closed ADR-015 §2 allowlist includes every later driver consumer by name and reason");
@@ -800,7 +882,7 @@ export const agentSessionDriverDoorTests = [
       const named = [];
       for (const member of suites) {
         const source = await readFile(path.join(repoRoot, member.rel), "utf8");
-        const hits = (source.match(/agent-session-driver|packages\/execution\/src\/session-driver|"packages", "execution", "src", "session-driver\.mjs"/g) ?? []).length;
+        const hits = (source.match(/agent-session-driver|packages\/execution\/src\/session-driver|"packages", "execution", "src", "session-driver\.mjs"|_aofSessions\.agentSessionDriver\./g) ?? []).length;
         (hits === 0 ? zeroMention : named).push(member.rel);
       }
       // DERIVED, WITH A FLOOR. The property is per member — each suite in the zero-mention class
@@ -808,7 +890,7 @@ export const agentSessionDriverDoorTests = [
       // census the same walk produced, which is what the retyped 44 and 48 were standing in for.
       for (const rel of zeroMention) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
-        assert.equal((source.match(/agent-session-driver|packages\/execution\/src\/session-driver|"packages", "execution", "src", "session-driver\.mjs"/g) ?? []).length, 0, `${rel} names the driver zero times`);
+        assert.equal((source.match(/agent-session-driver|packages\/execution\/src\/session-driver|"packages", "execution", "src", "session-driver\.mjs"|_aofSessions\.agentSessionDriver\./g) ?? []).length, 0, `${rel} names the driver zero times`);
       }
       assert.equal(zeroMention.length + named.length, suites.length, "the two classes partition the census exhaustively");
       assert.ok(zeroMention.length >= 44, `at least 44 census suites name the new module zero times (got ${zeroMention.length})`);
@@ -879,7 +961,7 @@ export const agentSessionDriverDoorTests = [
       assert.equal(importable.length, preExisting.length - 1, "exactly the one named CLI entry point is held out of the fresh-import probe");
       assert.ok(importable.length >= 52, `the probe links at least 52 members (got ${importable.length})`);
       const probe = [
-        'const sink = await import("file:///" + process.argv[2] + "/packages/core/src/mesh/worker-execution.mjs");',
+        'const { defaultApplication } = await import("file:///" + process.argv[2] + "/packages/core/src/application/default.mjs"); const sink = defaultApplication.mesh.worker;',
         "const rels = JSON.parse(process.argv[3]);",
         "for (const rel of rels) { await import(\"file:///\" + process.argv[2] + \"/\" + rel); }",
         "const wanted = JSON.parse(process.argv[4]);",
@@ -913,9 +995,9 @@ export const agentSessionDriverDoorTests = [
     run: async () => {
       const rel = "scripts/pin-checkout-id.mjs";
       const source = await readFile(path.join(repoRoot, rel), "utf8");
-      const imports = staticImports(source).filter((entry) => resolvesToSink(rel, entry.specifier));
+      const imports = sinkDependencies(rel, source);
       assert.equal(imports.length, 1, "the pin CLI has exactly one static import from the sink");
-      const names = importedNames(imports[0].clause);
+      const names = imports[0].names;
       assert.ok(names.length > 0, "the parsed pin-CLI binding set is non-vacuous");
       const linked = await runConsumerModule(names, SINK_MODULE);
       assert.equal(linked.code, 0, `the pin CLI's parsed sink bindings link without evaluating its command body:\n${linked.stderr}`);
@@ -950,7 +1032,7 @@ export const agentSessionDriverDoorTests = [
         false,
         "packages/core/src/agent-session-driver.mjs does not import packages/core/src/work.mjs",
       );
-      const godNode = await readFile(path.join(repoRoot, "packages", "core", "src", "work.mjs"), "utf8");
+      const godNode = await readFile(path.join(repoRoot, "packages", "work", "src", "discovery.mjs"), "utf8");
       assert.equal(godNode.includes("agent-session-driver"), false, "packages/core/src/work.mjs was not touched by this story");
     },
   },

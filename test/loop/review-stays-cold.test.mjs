@@ -1,6 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Executable wiring for milestone 70 / story 04, task 01 (ADR-008).
 import assert from "node:assert/strict";
-import { continueDriverCommand, refineDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand } from "../../packages/core/src/commands/drive.mjs";
+const continueDriverCommand = _aofApplication.getCommand("work:drive-continue");
+const refineDriverCommand = _aofApplication.getCommand("work:drive-refine");
+const resolvePhaseResumeTarget = _aofApplication.loop.commandTools.drive.resolvePhaseResumeTarget;
+const verifyDriverCommand = _aofApplication.getCommand("work:drive-verify");
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { loopFixture } from "./loop-command-probe.test.mjs";
 

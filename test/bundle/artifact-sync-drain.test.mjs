@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // milestone 43 / story 03 — task 01: the DRAIN
 // (`tasks/01_daemon-drains-queue-into-one-batched-frame.feature`, AC5, ADR-001).
 //
@@ -28,9 +30,9 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { withArtifactSyncFixture, writeArtifact, enqueueLine, WORKER_ID, ITEM_REF, ASSIGNMENT_WORKSPACE_ID, RECORD_DOCS } from "../support/artifact-sync-fixture.mjs";
 import { artifactSyncBatchPath, drainArtifactQueue } from "@aof/mesh/artifact-sync";
-import { readWorkspaceContentRecords } from "../../packages/core/src/work/content-read.mjs";
-import { buildWorktreeContentFrame } from "../../packages/core/src/worker-stream-client.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const readWorkspaceContentRecords = _aofApplication.work.contentRead.readWorkspaceContentRecords;
+const buildWorktreeContentFrame = _aofApplication.mesh.workerStreamClient.buildWorktreeContentFrame;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 // prime(fx) — the Background's "a control node that already holds this item's
 // PREVIOUSLY STREAMED artifact rows". One real tick delivers everything the worktree

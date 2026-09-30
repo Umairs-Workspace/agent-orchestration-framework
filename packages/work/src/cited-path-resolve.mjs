@@ -144,15 +144,18 @@ export function resolveCitedPath(cited, { existsAtHead = null, renameMap = null 
   // Recorded declarative forwards have an implementation destination, separately
   // derived by the impure history reader. They are deliberately not rename records.
   const implementation = renameMap?.moduleLinks?.get(renamed ?? file) ?? null;
+  const implementations = implementation == null ? [] : Array.isArray(implementation) ? implementation : [implementation];
+  const destination = implementations[0] ?? null;
+  const destinations = implementations.length > 1 ? { destinations: implementations } : {};
   if (typeof existsAtHead !== "function") {
-    return { cited: String(cited ?? ""), path: file, locator, resolved: implementation != null || renamed != null, at: implementation ?? renamed, via: implementation != null ? "module" : renamed == null ? null : "rename" };
+    return { cited: String(cited ?? ""), path: file, locator, resolved: destination != null || renamed != null, at: destination ?? renamed, via: destination != null ? "module" : renamed == null ? null : "rename", ...destinations };
   }
   if (existsAtHead(file)) return { cited: String(cited ?? ""), path: file, locator, resolved: true, at: file, via: "head" };
   if (renamed != null && existsAtHead(renamed)) {
     return { cited: String(cited ?? ""), path: file, locator, resolved: true, at: renamed, via: "rename" };
   }
-  if (implementation != null && existsAtHead(implementation)) {
-    return { cited: String(cited ?? ""), path: file, locator, resolved: true, at: implementation, via: "module" };
+  if (destination != null && implementations.every(existsAtHead)) {
+    return { cited: String(cited ?? ""), path: file, locator, resolved: true, at: destination, via: "module", ...destinations };
   }
   return { cited: String(cited ?? ""), path: file, locator, resolved: false, at: null, via: null };
 }

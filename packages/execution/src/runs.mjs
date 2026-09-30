@@ -40,6 +40,41 @@ import { writeText } from "@aof/foundation/fs";
 import { assertStampedClaim, compileProvenance } from "@aof/contracts/claim-provenance";
 import { createRunSpendIngest } from "./spend.mjs";
 
+// ------------------------------------------- failure classification (20) ----
+
+// The CLOSED retryable/non-retryable classification (20/ADR-002), the
+// isLegalTransition sibling (the 06/ADR-003 single-pure-resolver precedent):
+//   runtime_offline / timeout  → retryable     (infra: host down / no verdict in time)
+//   session_limit              → retryable     (infra: the PLATFORM stopped us, with a
+//                                               stated reset — see the parking gate below)
+//   agent_error                → non-retryable  (the agent ran and produced a bad output)
+//   anything else, or null     → non-retryable  (FAIL CLOSED — an unknown reason never auto-retries)
+// PURE: reads no clock/fs/config. A face never improvises which failures retry.
+//
+// `session_limit` was added after the vista-app 348 post-mortem, where three API
+// session limits cost 6h18m of dead run because the vocabulary had no word for them:
+// every kill was recorded as `runtime_offline` — retryable, but carrying no reset
+// time, so nothing could tell "retry now" from "retry at 1:10am". The reason is
+// distinct precisely so the record can carry `resumeAfter` and the retry can WAIT.
+const RETRYABLE_REASONS = new Set(["runtime_offline", "timeout", "session_limit"]);
+
+export function isRetryable(failureReason) {
+  return RETRYABLE_REASONS.has(failureReason);
+}
+
+// shouldRetry ANDs the classification with the attempt ceiling (20/ADR-002): true
+// IFF the reason is retryable AND the record is still below the ceiling. PURE over
+// (record, maxAttempts) — the resolved ceiling is passed in; the store never reads
+// config (08/ADR-002 basis-neutral). Fails closed at attempt >= maxAttempts.
+//
+// DELIBERATELY time-blind, and it stays that way: this answers "is this class of
+// failure resumable at all", not "may it resume yet". The clock gate is
+// retryReadiness below, which takes `nowMs` as data. Keeping them apart is what
+// lets the reclaim path (run-start) go on calling this with two arguments.
+export function shouldRetry(record, maxAttempts) {
+  return isRetryable(record.failureReason) && record.attempt < maxAttempts;
+}
+
 // Composition performs no I/O; callers supply application policy explicitly.
 export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnswers }) {
   if (typeof reportDegrade !== "function") throw new TypeError("createRunStore: reportDegrade is required");
@@ -299,41 +334,6 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // A `queued` record is NOT running: it has been minted and has not begun.
   function isRunning(record) {
     return record?.state === "running";
-  }
-
-  // ------------------------------------------- failure classification (20) ----
-
-  // The CLOSED retryable/non-retryable classification (20/ADR-002), the
-  // isLegalTransition sibling (the 06/ADR-003 single-pure-resolver precedent):
-  //   runtime_offline / timeout  → retryable     (infra: host down / no verdict in time)
-  //   session_limit              → retryable     (infra: the PLATFORM stopped us, with a
-  //                                               stated reset — see the parking gate below)
-  //   agent_error                → non-retryable  (the agent ran and produced a bad output)
-  //   anything else, or null     → non-retryable  (FAIL CLOSED — an unknown reason never auto-retries)
-  // PURE: reads no clock/fs/config. A face never improvises which failures retry.
-  //
-  // `session_limit` was added after the vista-app 348 post-mortem, where three API
-  // session limits cost 6h18m of dead run because the vocabulary had no word for them:
-  // every kill was recorded as `runtime_offline` — retryable, but carrying no reset
-  // time, so nothing could tell "retry now" from "retry at 1:10am". The reason is
-  // distinct precisely so the record can carry `resumeAfter` and the retry can WAIT.
-  const RETRYABLE_REASONS = new Set(["runtime_offline", "timeout", "session_limit"]);
-
-  function isRetryable(failureReason) {
-    return RETRYABLE_REASONS.has(failureReason);
-  }
-
-  // shouldRetry ANDs the classification with the attempt ceiling (20/ADR-002): true
-  // IFF the reason is retryable AND the record is still below the ceiling. PURE over
-  // (record, maxAttempts) — the resolved ceiling is passed in; the store never reads
-  // config (08/ADR-002 basis-neutral). Fails closed at attempt >= maxAttempts.
-  //
-  // DELIBERATELY time-blind, and it stays that way: this answers "is this class of
-  // failure resumable at all", not "may it resume yet". The clock gate is
-  // retryReadiness below, which takes `nowMs` as data. Keeping them apart is what
-  // lets the reclaim path (run-start) go on calling this with two arguments.
-  function shouldRetry(record, maxAttempts) {
-    return isRetryable(record.failureReason) && record.attempt < maxAttempts;
   }
 
   // ------------------------------------------------- the parking gate (348) ----

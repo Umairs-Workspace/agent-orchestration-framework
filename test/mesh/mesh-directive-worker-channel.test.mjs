@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Supplementary wiring for milestone 35 / story 01 — the WORKER-SIDE half of tasks
 // 00/02: worker-stream-client.mjs's FIRST receive listener (onMessage on
 // createWorkerWsTransport, wired into connect()) and the down-channel/up-channel
@@ -9,7 +10,7 @@
 // task 02 specifies, over the SAME injected bidirectional fake channel
 // (test/support/mesh-directive-channel-fixture.mjs).
 import assert from "node:assert/strict";
-import { createWorkerStreamClient } from "../../packages/core/src/worker-stream-client.mjs";
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
 import { createFakeWorkerTransport } from "../support/mesh-directive-channel-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

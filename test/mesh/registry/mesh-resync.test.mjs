@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/registry/mesh-resync.test.mjs — the RESYNC transport, behaviourally (m43 / story 04,
 // ADR-006 + ADR-010/R4.2, owed by ADR-014/E6).
 //
@@ -32,35 +33,34 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore, upsertWorkItems } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const upsertWorkItems = _aofApplication.mesh.store.upsertWorkItems;
 import { assembleAssignmentRecord, insertAssignment } from "@aof/mesh/assignment-record";
-import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
-import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
-import { resyncCommand } from "../../../packages/core/src/commands/resync.mjs";
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const resyncCommand = _aofApplication.getCommand("work:resync");
 import { DEFAULT_SYNC_CADENCE_SECONDS } from "@aof/mesh/sync-cadence";
-import {
-  RESYNC_KIND,
-  RESYNC_RESULT_KIND,
-  RESYNC_REQUESTED,
-  RESYNC_DISPATCHED,
-  RESYNC_PUSHED,
-  RESYNC_FAILED,
-  RESYNC_OK,
-  RESYNC_NO_OWNER,
-  RESYNC_OWNER_NOT_CONNECTED,
-  RESYNC_OWNER_UNREACHABLE,
-  RESYNC_OWNER_IS_SELF,
-  RESYNC_PENDING,
-  requestResync,
-  readResync,
-  listResyncRequests,
-  markResyncState,
-  buildResyncFrame,
-  buildResyncResultFrame,
-  applyResyncResultFrame,
-  runResyncDispatchTick,
-  resyncRequestId,
-} from "../../../packages/core/src/mesh/resync.mjs";
+const RESYNC_KIND = _aofApplication.mesh.resync.RESYNC_KIND;
+const RESYNC_RESULT_KIND = _aofApplication.mesh.resync.RESYNC_RESULT_KIND;
+const RESYNC_REQUESTED = _aofApplication.mesh.resync.RESYNC_REQUESTED;
+const RESYNC_DISPATCHED = _aofApplication.mesh.resync.RESYNC_DISPATCHED;
+const RESYNC_PUSHED = _aofApplication.mesh.resync.RESYNC_PUSHED;
+const RESYNC_FAILED = _aofApplication.mesh.resync.RESYNC_FAILED;
+const RESYNC_OK = _aofApplication.mesh.resync.RESYNC_OK;
+const RESYNC_NO_OWNER = _aofApplication.mesh.resync.RESYNC_NO_OWNER;
+const RESYNC_OWNER_NOT_CONNECTED = _aofApplication.mesh.resync.RESYNC_OWNER_NOT_CONNECTED;
+const RESYNC_OWNER_UNREACHABLE = _aofApplication.mesh.resync.RESYNC_OWNER_UNREACHABLE;
+const RESYNC_OWNER_IS_SELF = _aofApplication.mesh.resync.RESYNC_OWNER_IS_SELF;
+const RESYNC_PENDING = _aofApplication.mesh.resync.RESYNC_PENDING;
+const requestResync = _aofApplication.mesh.resync.requestResync;
+const readResync = _aofApplication.mesh.resync.readResync;
+const listResyncRequests = _aofApplication.mesh.resync.listResyncRequests;
+const markResyncState = _aofApplication.mesh.resync.markResyncState;
+const buildResyncFrame = _aofApplication.mesh.resync.buildResyncFrame;
+const buildResyncResultFrame = _aofApplication.mesh.resync.buildResyncResultFrame;
+const applyResyncResultFrame = _aofApplication.mesh.resync.applyResyncResultFrame;
+const runResyncDispatchTick = _aofApplication.mesh.resync.runResyncDispatchTick;
+const resyncRequestId = _aofApplication.mesh.resync.resyncRequestId;
 
 const WS = "ws-resync-1";
 const OTHER_WS = "ws-resync-2";

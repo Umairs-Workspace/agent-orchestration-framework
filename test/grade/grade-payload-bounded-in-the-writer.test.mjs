@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 81, task `01_the-payload-is-bounded-in-the-writer`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -23,9 +24,9 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
-import { gradeCommand } from "../../packages/core/src/commands/grade.mjs";
+const invoke = _aofApplication.invoke;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const gradeCommand = _aofApplication.getCommand("work:grade");
 import { PHASE_BRIEF_MAX_CHARS } from "@aof/work/phase-brief";
 import {
   GRADE_FAILURE_MAX_ENTRIES, GRADE_TRUNCATION_KEY, boundGradeFailures, compileGrade,

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 35 / story 01 — task 00
 // (tasks/00_directive-down-frame.feature). Covers every @executable scenario /
 // Scenario Outline row:
@@ -20,13 +21,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  sendDirective,
-  buildDirectiveFrame,
-  ASSIGNMENT_TARGET_NOT_CONNECTED,
-  startControlStreamServer,
-} from "../../packages/core/src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../packages/core/src/worker-stream-client.mjs";
+const sendDirective = _aofApplication.mesh.controlStreamServer.sendDirective;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
+const ASSIGNMENT_TARGET_NOT_CONNECTED = _aofApplication.mesh.controlStreamServer.ASSIGNMENT_TARGET_NOT_CONNECTED;
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const createWorkerWsTransport = _aofApplication.mesh.workerStreamClient.createWorkerWsTransport;
 import { createDirectiveChannelFixture } from "../support/mesh-directive-channel-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

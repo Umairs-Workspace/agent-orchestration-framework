@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 43 / story 06 (the readers migrate), task
 //   .../06_story_cache-read-surface/tasks/00_seam-answers-cache-first-with-reported-fallback.feature
 //
@@ -47,21 +49,28 @@ import {
   CONTROL_NODE, WORKER_NODE, SYNCED_AT,
 } from "../support/cache-read-fixture.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
-import { loadWorkspace } from "../../packages/core/src/command-core.mjs";
-import {
-  listItemsCacheFirst, findWorkCacheFirst, listStreamCacheFirst, nextWorkCacheFirst,
-  DEGRADE_CACHE_MISS, DEGRADE_CACHE_UNAVAILABLE,
-  withoutAnsweringSide, ANSWERING_SIDE_KEYS,
-} from "../../packages/core/src/work/read.mjs";
-import { listItems, findWork, listStream, nextWork, isLiveStreamRow } from "../../packages/core/src/work.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const listItemsCacheFirst = _aofApplication.work.read.listItemsCacheFirst;
+const findWorkCacheFirst = _aofApplication.work.read.findWorkCacheFirst;
+const listStreamCacheFirst = _aofApplication.work.read.listStreamCacheFirst;
+const nextWorkCacheFirst = _aofApplication.work.read.nextWorkCacheFirst;
+const DEGRADE_CACHE_MISS = _aofApplication.work.read.DEGRADE_CACHE_MISS;
+const DEGRADE_CACHE_UNAVAILABLE = _aofApplication.work.read.DEGRADE_CACHE_UNAVAILABLE;
+const withoutAnsweringSide = _aofApplication.work.read.withoutAnsweringSide;
+const ANSWERING_SIDE_KEYS = _aofApplication.work.read.ANSWERING_SIDE_KEYS;
+const listItems = _aofWorkspace.work.listItems;
+const findWork = _aofWorkspace.work.findWork;
+const listStream = _aofWorkspace.work.listStream;
+const nextWork = _aofWorkspace.work.nextWork;
+const isLiveStreamRow = _aofWorkspace.work.isLiveStreamRow;
 // 127/04 task 01 — the OWNING node's disk projection is what its cache reports, so the
 // remote-node fixture below projects 127/01's three-root fixture through the real own-disk
 // read and streams the rows through the real frame door.
-import { readWorkspaceProjectionItems } from "../../packages/core/src/global-work-store.mjs";
+const readWorkspaceProjectionItems = _aofApplication.mesh.store.readWorkspaceProjectionItems;
 import { buildThreeRootFixture } from "../work/stream/work-backlog-archive-enumerate.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // The Background's stream: this node's own disk holds milestones "00" and "01" ONLY.
 const DISK_STREAM = [{ number: "00", stories: [] }, { number: "01", stories: [] }];
@@ -611,7 +620,7 @@ export const cacheReadSeamTests = [
       // work.mjs's four disk readers keep their exact return shape over a stream with neither
       // root — and the module imports nothing new for the seam's sake (it consumes the
       // enumerator's row and isLiveStreamRow; the seam re-derives neither).
-      const source = await readFile(path.join(repoRoot, "packages", "core", "src", "work.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "work", "src", "discovery.mjs"), "utf8");
       const imports = [...source.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]).filter((spec) => spec.startsWith("."));
       assert.ok(!imports.some((spec) => spec.includes("read.mjs") || spec.includes("cache-read") || spec.includes("global-work-store") || spec.includes("item-row")), `work.mjs imports no cache module (${imports.join(", ")})`);
     }),

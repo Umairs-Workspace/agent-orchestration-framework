@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // test/terminal/session-screen-evidence.test.mjs — milestone 138 / story 00, task 05
 // (05_every-stop-but-done-leaves-the-screen.feature; 138/ADR-004).
 //
@@ -6,10 +8,10 @@
 // each stop, and the event's rows are that frame, not a blank screen (QA 2). `packages/core/src/degrade.mjs` has no
 // suite of its own, so the throttle cases live here, beside the evidence the key exists for (QA 4).
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession } from "../../packages/core/src/agent-session-driver.mjs";
-import { openSessionScreen } from "../../packages/core/src/terminal/session-screen.mjs";
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const openSessionScreen = _aofSessions.terminalSessionScreen.openSessionScreen;
 import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
-import { reportDegrade } from "../../packages/core/src/degrade.mjs";
+const reportDegrade = _aofFoundation.degrade.reportDegrade;
 import { createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { captureDegrades } from "./screen-model.test.mjs";
 import { BYTE_PATH, ESC, READY_CHUNKS, drive, screenPty, sleep, waitUntil, withRegistry } from "./session-screen-ready.test.mjs";

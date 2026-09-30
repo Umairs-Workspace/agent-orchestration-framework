@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 03 / story 01 / task 05 (finding F-1):
 // 05_serve-board-same-origin.feature.
 //
@@ -15,8 +16,9 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
-import { serveBoard, boardUiDist } from "../../packages/core/src/board-serve.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const serveBoard = _aofApplication.server.serve.serveBoard;
+const boardUiDist = _aofApplication.server.serve.boardUiDist;
 
 // --- fixtures ----------------------------------------------------------------
 

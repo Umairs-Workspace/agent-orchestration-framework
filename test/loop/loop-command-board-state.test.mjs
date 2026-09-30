@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 53 (the frozen brief.loop declaration on the board seam) and
 // for milestone 102 / story 01 — THE SHELL DECLARES THE LOOP IT IS.
 //
@@ -18,10 +19,12 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { SHELL_LOOP_ID, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { readRuns, startRun } from "../../packages/core/src/run-store.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+const SHELL_LOOP_ID = _aofApplication.loop.commandTools.loop.SHELL_LOOP_ID;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const invoke = _aofApplication.invoke;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { stripComments } from "../support/source-slice.mjs";
 import { completingDriver, loopFixture, replaceStatus, treeFiles } from "./loop-command-probe.test.mjs";
 

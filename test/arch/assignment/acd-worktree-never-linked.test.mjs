@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-worktree-never-linked (milestone 72 / story 04, FF-7207;
 // ADR-007 §2, §3, TECH_DEBT item 36).
 //
@@ -42,14 +43,12 @@ import { fileURLToPath } from "node:url";
 
 import { enclosingParenGroup, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import {
-  isInsideMeshWorktree,
-  meshDispatchWorktreePath,
-  meshSessionWorktreePath,
-  meshWorktreePath,
-  meshWorktreesRoot,
-  removeWorktree,
-} from "../../../packages/core/src/mesh/worktree.mjs";
+const isInsideMeshWorktree = _aofApplication.mesh.worktree.isInsideMeshWorktree;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const meshSessionWorktreePath = _aofApplication.mesh.worktree.meshSessionWorktreePath;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshWorktreesRoot = _aofApplication.mesh.worktree.meshWorktreesRoot;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const selfPath = fileURLToPath(import.meta.url);
@@ -203,7 +202,8 @@ export const archTests = [
     name: "arch/72 FF-7207 (acd-worktree-never-linked): the worktree root is DERIVED, not matched as a literal",
     async run() {
       const own = await readFile(selfPath, "utf8");
-      assert.match(own, /from\s+"(?:\.\.\/)+packages\/core\/src\/mesh\/worktree\.mjs"/u, "this control reaches the shared worktree-path derivation by import");
+      assert.match(own, /from\s+"aof\/default-application"/u, "this control imports the public assembled application");
+      assert.match(own, /(?:const\s+isInsideMeshWorktree\s*=|isInsideMeshWorktree:)\s*_aofApplication\.mesh\.worktree\.isInsideMeshWorktree/u, "the predicate comes from the composed worktree service");
       assert.match(own, /\bisInsideMeshWorktree\b/u, "…and classifies through the composed predicate rather than by hand");
 
       // NO WORKTREE PATH LITERAL OF ITS OWN. Every path this file reasons about is produced by the
@@ -276,7 +276,7 @@ export const archTests = [
       // AND NO FILESYSTEM DELETE IS REACHED — asserted over the module's own source rather than
       // over this call, because "this path did not delete anything" is a weaker claim than "there
       // is nothing here that could".
-      for (const file of ["packages/core/src/mesh/worktree.mjs", "packages/mesh/src/worktrees.mjs", "packages/execution/src/worktrees.mjs"]) {
+      for (const file of ["packages/core/src/application/bindings/mesh/worktree.mjs", "packages/mesh/src/worktrees.mjs", "packages/execution/src/worktrees.mjs"]) {
         const module = await readFile(path.join(repoRoot, file), "utf8");
         const deletes = callsOf(stripComments(module), DELETE_CALLS);
         assert.deepEqual(deletes.map((call) => call.name), [], `${file} reaches no filesystem delete at all: ${deletes.map((call) => call.name).join(", ")}`);

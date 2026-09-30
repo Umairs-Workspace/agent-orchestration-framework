@@ -1,13 +1,20 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../packages/core/src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
 import { GATE_ORDER, LOOP_REFUSALS, LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS } from "@aof/work/grade";
-import { gradeRoute, gradeStopCode, gradeStopProducer, runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const gradeRoute = _aofApplication.loop.commandTools.loop.gradeRoute;
+const gradeStopCode = _aofApplication.loop.commandTools.loop.gradeStopCode;
+const gradeStopProducer = _aofApplication.loop.commandTools.loop.gradeStopProducer;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const invoke = _aofApplication.invoke;
 import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-command-probe.test.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 

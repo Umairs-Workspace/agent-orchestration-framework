@@ -1,8 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { acquireMeshLauncherLock, meshLauncherLockPaths } from "../../../packages/core/src/mesh/launcher-lock.mjs";
+const acquireMeshLauncherLock = _aofApplication.mesh.launcherLock.acquireMeshLauncherLock;
+const meshLauncherLockPaths = _aofApplication.mesh.launcherLock.meshLauncherLockPaths;
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 async function withTempHome(fn) {

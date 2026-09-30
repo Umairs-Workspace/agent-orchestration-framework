@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 38 / story 00
 // tasks/05_assistant-hook-wiring.feature — "the assistant hook seam wires Claude
 // Code lifecycle events to `aof session start|ping|end`".
@@ -13,10 +15,11 @@ import { readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { meshSessionCommand, resolveSessionIdentity } from "../../packages/core/src/commands/mesh/session.mjs";
-import { DEFAULT_SESSION_TTL_SECONDS } from "../../packages/core/src/mesh/session.mjs";
-import { readSessionRecordsForNode } from "../../packages/core/src/mesh/session.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const resolveSessionIdentity = _aofHooks.commandsMeshSession.resolveSessionIdentity;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const settingsPath = path.join(repoRoot, ".claude", "settings.json");

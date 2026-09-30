@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 05 / ADR-005:
 // "The local index is written only to .aof/aof.memory.index.json, that path is
 //  git-ignored, and every record matches the frozen MemoryRecord shape."
@@ -13,7 +14,8 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { reindex, memoryIndexPath } from "../../../packages/core/src/memory/local-indexing.mjs";
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
 
 const FIXED_NAME = "aof.memory.index.json";
 // F-02: ignored via the nested .aof/.gitignore, so the entry is relative to .aof/.

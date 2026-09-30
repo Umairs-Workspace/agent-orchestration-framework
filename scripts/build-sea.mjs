@@ -104,7 +104,8 @@ export function assertSafeOutDir(outDir, { repoRoot: root = repoRoot, cwd = proc
   }
   const hasGitAndPackage = existsSync(path.join(resolved, ".git")) && existsSync(path.join(resolved, "package.json"));
   const hasAofEntryAndPackage = existsSync(path.join(resolved, "bin", "aof.mjs")) && existsSync(path.join(resolved, "package.json"));
-  if (hasGitAndPackage || hasAofEntryAndPackage) {
+  const hasOwnedCoreEntryAndPackage = existsSync(path.join(resolved, "packages", "core", "bin", "aof.mjs")) && existsSync(path.join(resolved, "package.json"));
+  if (hasGitAndPackage || hasAofEntryAndPackage || hasOwnedCoreEntryAndPackage) {
     throw new Error(`Refusing to build into ${resolved} — it looks like a SOURCE workspace (.git/bin/aof.mjs alongside package.json). Pass a dedicated --out directory.`);
   }
   return resolved;
@@ -209,7 +210,9 @@ async function main() {
       // entry here: they are read at runtime (readFile/readdir through the
       // ADR-003 seam), never `import`ed, so esbuild never sees them as
       // inputs — they ship as the sidecar this script copies below.
-      external: ["node-pty"],
+      // The repository-only development server is lazy and absent from installed
+      // built-UI paths. Keep its public helper outside the native runtime bundle.
+      external: ["node-pty", "@aof/ui/vite-cli"],
       define: { __AOF_EMBEDDED_BUILD_ID__: JSON.stringify(embeddedBuildId()) },
       logLevel: "info",
     })

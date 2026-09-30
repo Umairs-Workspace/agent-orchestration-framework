@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12601 — "The clock's subject is the ATTEMPT SERIES, not the calendar: `scheduleToClose` sums
 // attempt durations over the `retryOf` lineage, and downtime is charged to nobody."
 //
@@ -29,7 +30,8 @@ import {
   lineageElapsedMs,
   retryLineage,
 } from "../../../packages/work-loop/src/engine.mjs";
-import { isStale, startRun } from "../../../packages/core/src/run-store.mjs";
+const isStale = _aofApplication.execution.runs.isStale;
+const startRun = _aofApplication.execution.runs.startRun;
 // THE COMMENT STRIPPER, FROM ITS ONE HOME (chore 106 / TECH_DEBT item 24) — a hand-rolled one is
 // what `acd-comment-stripper-order` refuses, and every absence sweep below depends on it.
 import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";

@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isTailnetPeer } from "../../../packages/core/src/control-stream-server.mjs";
+const isTailnetPeer = _aofApplication.mesh.controlStreamServer.isTailnetPeer;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -128,7 +129,13 @@ export const archTests = [
       // store) is covered functionally by control-stream-server.test.mjs; this unit
       // cross-checks the redaction primitive itself against a representative
       // secret-shaped item, the same seam applySnapshotFrame/applyDeltaFrame call.
-      const { redactDescriptor } = await import("../../../packages/core/src/global-node-registry.mjs");
+      const { redactDescriptor } = await Promise.resolve(Object.freeze({
+  publishGlobalRegistryDescriptorsToStore: _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore,
+  assembleGlobalRegistrySnapshot: _aofApplication.mesh.globalNodeRegistry.assembleGlobalRegistrySnapshot,
+  queryGlobalRegistry: _aofApplication.mesh.globalNodeRegistry.queryGlobalRegistry,
+  upsertGlobalRegistryRows: _aofApplication.mesh.globalNodeRegistry.upsertGlobalRegistryRows,
+  redactDescriptor: _aofApplication.mesh.globalNodeRegistry.redactDescriptor,
+}));
       const redacted = redactDescriptor([{ ref: "34/04/00", relayAuthToken: "top-secret" }]);
       assert.equal("relayAuthToken" in redacted[0], false);
     },

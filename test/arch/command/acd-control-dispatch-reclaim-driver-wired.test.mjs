@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-control-dispatch-reclaim-driver-wired (milestone 35 / ADR-008,
 // fitness #13) — "startLauncher wires ONE control-side periodic tick (a sibling of the
 // existing propagationTicker/peerPollTicker, over the SAME injected-ticker seam) that,
@@ -28,9 +30,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
 import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 

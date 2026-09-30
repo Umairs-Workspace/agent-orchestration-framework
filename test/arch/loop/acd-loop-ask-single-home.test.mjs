@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // FF-13101 + FF-13102 + FF-13103 — THE ASK HAS ONE HOME, ONE READER READS THE QUESTION, AND A
 // WAITING RUN IS RECORDED RATHER THAN RECLAIMED OR CHARGED (milestone 131 / story 06; ARCHITECTURE
 // `## Fitness functions`, ADR-001 §4, ADR-002, ADR-003). Which of this directory's three subjects:
@@ -42,11 +44,17 @@ import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
-import { answerAsk, openAsk } from "../../../packages/core/src/loop/ask-request.mjs";
-import { answerRunAsk, readRuns, runRecordPath, startRun } from "../../../packages/core/src/run-store.mjs";
-import { transitionStaleRunsReclaimed } from "../../../packages/core/src/effects/run-transitions.mjs";
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const answerRunAsk = _aofApplication.execution.runs.answerRunAsk;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const runRecordPath = _aofApplication.execution.runs.runRecordPath;
+const startRun = _aofApplication.execution.runs.startRun;
+const transitionStaleRunsReclaimed = _aofApplication.execution.transitions.transitionStaleRunsReclaimed;
 import { attemptElapsedMs } from "../../../packages/work-loop/src/engine.mjs";
-import { claudeProjectsDir, readAskQuestion, NEEDS_INPUT_SENTINEL } from "../../../packages/core/src/work/observe.mjs";
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const readAskQuestion = _aofSessions.workObserve.readAskQuestion;
+const NEEDS_INPUT_SENTINEL = _aofSessions.workObserve.NEEDS_INPUT_SENTINEL;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
@@ -363,7 +371,25 @@ export const archTests = [
   {
     name: "arch/131 FF-13102 (acd-loop-ask-single-home): the driver keeps its seventeen exports, and NEEDS_INPUT_INSTRUCTION embeds the sentinel, asks the four labels and keeps the genuine-judgment-call sentence",
     run: async () => {
-      const driver = await import("../../../packages/core/src/agent-session-driver.mjs");
+      const driver = await Promise.resolve(Object.freeze({
+  COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.DECLARED_COMPLETION_IDLE_MS,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL,
+  HUMAN_INPUT_TOOL_NAMES: _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofSessions.agentSessionDriver.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  NEEDS_INPUT_INSTRUCTION: _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION,
+  NEEDS_INPUT_SENTINEL: _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL,
+  WORKER_SESSION_INSTRUCTION: _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION,
+  buildDriverCommand: _aofSessions.agentSessionDriver.buildDriverCommand,
+  defaultPtySpawn: _aofSessions.agentSessionDriver.defaultPtySpawn,
+  defaultSpawnRuntime: _aofSessions.agentSessionDriver.defaultSpawnRuntime,
+  defaultWatchTranscriptCompletion: _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion,
+  defaultWatchTranscriptSessionId: _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId,
+  driveInteractiveClaudeSession: _aofSessions.agentSessionDriver.driveInteractiveClaudeSession,
+  ensureWorktreeTrusted: _aofSessions.agentSessionDriver.ensureWorktreeTrusted,
+  resolveInteractiveDriverLaunch: _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch,
+}));
       assert.equal(Object.keys(driver).length, DRIVER_EXPORTS, `the driver's export set stays at 17 (53/FF-5302) — it has ${Object.keys(driver).length}`);
       const text = driver.NEEDS_INPUT_INSTRUCTION;
       assert.equal(typeof text, "string", "NEEDS_INPUT_INSTRUCTION is exported");

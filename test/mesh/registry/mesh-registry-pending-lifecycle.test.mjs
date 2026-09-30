@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 24 / story 00 — the pending-invite durable shape
 // + lifecycle (tasks/02_pending-invite-lifecycle.feature).
 //
@@ -19,14 +20,12 @@
 //     NOT expired); consuming one invite leaves the other pending invites
 //     byte-unchanged (an add-only marker on the one record).
 import assert from "node:assert/strict";
-import {
-  appendPendingInvite,
-  consumePendingInvite,
-  isInviteConsumed,
-  isInviteExpired,
-  isInvitePending,
-  emptyRegistry,
-} from "../../../packages/core/src/mesh/registry.mjs";
+const appendPendingInvite = _aofApplication.mesh.registry.appendPendingInvite;
+const consumePendingInvite = _aofApplication.mesh.registry.consumePendingInvite;
+const isInviteConsumed = _aofApplication.mesh.registry.isInviteConsumed;
+const isInviteExpired = _aofApplication.mesh.registry.isInviteExpired;
+const isInvitePending = _aofApplication.mesh.registry.isInvitePending;
+const emptyRegistry = _aofApplication.mesh.registry.emptyRegistry;
 
 export const meshRegistryPendingLifecycleTests = [
   {

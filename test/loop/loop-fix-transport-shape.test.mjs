@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 81, task `03_the-transport-carries-what-the-transport-needs`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -23,11 +24,11 @@ import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import {
-  LOOP_FIX_TRANSPORT_KEYS, fixTransport, runLoopBody,
-} from "../../packages/core/src/commands/loop.mjs";
-import { createPhaseDriverCommand } from "../../packages/core/src/commands/drive.mjs";
+const invoke = _aofApplication.invoke;
+const LOOP_FIX_TRANSPORT_KEYS = _aofApplication.loop.commandTools.loop.LOOP_FIX_TRANSPORT_KEYS;
+const fixTransport = _aofApplication.loop.commandTools.loop.fixTransport;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const createPhaseDriverCommand = _aofApplication.loop.commandTools.drive.createPhaseDriverCommand;
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import {
   capturingReport, emitsFailing, gradingCtx, gradingFixture, stubRubric,

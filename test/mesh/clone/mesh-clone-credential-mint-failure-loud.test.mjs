@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-mint-failure-loud.test.mjs — traceability for milestone
 // 38 / story 02, task 04 (04_mint-failure-loud-no-fallback.feature, ADR-010 decision
 // 5, SECURITY T10). Every @executable Scenario Outline row is driven through the REAL
@@ -8,14 +9,13 @@
 // never a hand-authored stand-in for either half.
 import assert from "node:assert/strict";
 import { stat } from "node:fs/promises";
-import {
-  applyCloneCredentialRequestFrame,
-  CLONE_CREDENTIAL_MINT_FAILED,
-} from "../../../packages/core/src/control-stream-server.mjs";
-import { createGithubAppMintProvider } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
-import { createMeshWorkerExecutionHandler, meshCheckoutPath } from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const applyCloneCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame;
+const CLONE_CREDENTIAL_MINT_FAILED = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_MINT_FAILED;
+const createGithubAppMintProvider = _aofApplication.mesh.cloneCredentialProvider.createGithubAppMintProvider;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { createDirectiveChannelFixture, createFakeWorkerTransport } from "../../support/mesh-directive-channel-fixture.mjs";
 import { seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 import { withMeshCloneFixture, createStatusRecorder, createRecordingCloneExec } from "../../support/mesh-worker-clone-fixture.mjs";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function FF-7103 for milestone 71 / ADR-003 (amended by ADR-009 §1):
 // "The loop's item-creation authority is one type, one placement, and zero shifts."
 //
@@ -32,7 +33,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { markedRegion, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
-import { promoteFindingToChoreCommand } from "../../../packages/core/src/commands/promote-finding-to-chore.mjs";
+const promoteFindingToChoreCommand = _aofApplication.getCommand("work:promote-finding");
 import { PROMOTED_TYPE } from "@aof/work/promote/promotion";
 import { FINDING_ROUTINGS, LOOP_CREATED_ITEM_TYPE } from "../../../packages/work-loop/src/engine.mjs";
 
@@ -366,7 +367,10 @@ export const archTests = [
 
       // THE SEPARATION PROOF: the OPERATOR's face still ships `--at <P>`, and that leaves this
       // control green — the leg binds the loop's seam, not every promotion in the tree.
-      const { promoteGapToChoreCommand } = await import("../../../packages/core/src/commands/promote-gap-to-chore.mjs");
+      const { promoteGapToChoreCommand } = await Promise.resolve(Object.freeze({
+  promoteGapToChoreCommand: _aofApplication.getCommand("work:promote-gap"),
+  runPromoteGapToChore: _aofApplication.work.commandTools.promoteGapToChore.runPromoteGapToChore,
+}));
       assert.ok("at" in promoteGapToChoreCommand.input.properties, "work:promote-gap still ships its delivered --at flag");
       assert.deepEqual(loopAppendOnlyProblems(promoteFindingToChoreCommand, findingSource), [], "…and the finding face is still green beside it");
     },

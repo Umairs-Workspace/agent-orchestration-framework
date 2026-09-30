@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-claude-settings-co-authored (milestone 43 / ADR-002) —
 //
 //   "`.claude/settings.json` is a CO-AUTHORED file: aof splices only its own
@@ -166,7 +167,11 @@ export const archTests = [
       // renderer fired on either. `renderConfigOutputs` is the render pipeline's own
       // entry point, so this holds whatever the emitting function is renamed to.
       const { renderConfigOutputs } = await import("../../../packages/core/src/adapters.mjs");
-      const { resolveConfig } = await import("../../../packages/core/src/dsl.mjs");
+      const { resolveConfig } = await Promise.resolve(Object.freeze({
+  loadConfig: _aofApplication.assets.dsl.loadConfig,
+  loadProjectConfig: _aofApplication.assets.dsl.loadProjectConfig,
+  resolveConfig: _aofApplication.assets.dsl.resolveConfig,
+}));
       const config = await resolveConfig({
         name: "co-authored-canary",
         resources: [],

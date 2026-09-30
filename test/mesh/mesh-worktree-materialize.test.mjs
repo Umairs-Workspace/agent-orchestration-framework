@@ -1,12 +1,19 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // task 00 — an accepted directive materializes a dedicated git worktree, keyed by
 // assignmentId under the ONE mesh worktrees root, that the ref cannot escape
 // (milestone 35 / story 02, ADR-004, SECURITY T4/F4/T3b). Exercised over a REAL `git
 // worktree add` in a disposable temp fixture repo (RESEARCH.md §4/§5).
 import assert from "node:assert/strict";
 import path from "node:path";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { addWorktree, meshWorktreePath, meshWorktreesRoot, isUnderMeshWorktreesRoot, listWorktrees, removeWorktree } from "../../packages/core/src/mesh/worktree.mjs";
-import { resolveRefInWorktree } from "../../packages/core/src/mesh/worker-execution.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const addWorktree = _aofApplication.mesh.worktree.addWorktree;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshWorktreesRoot = _aofApplication.mesh.worktree.meshWorktreesRoot;
+const isUnderMeshWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
+const resolveRefInWorktree = _aofApplication.mesh.worker.resolveRefInWorktree;
 import { withMeshWorkerExecFixture } from "../support/mesh-worker-exec-fixture.mjs";
 
 export const meshWorktreeMaterializeTests = [

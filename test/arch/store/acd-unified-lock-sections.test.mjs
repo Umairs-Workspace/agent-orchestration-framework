@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 02 / ADR-009:
 // "A project has exactly ONE .aof/*.lock.json (aof.lock.json). Every writer
 //  preserves the sections it does not own: `aof planning init` writes only the
@@ -25,7 +26,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, readFile, writeFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { initWork } from "../../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
 import { initPlanning } from "../../../packages/core/src/planning-init.mjs";
 import { createRenderPlan, createLockManifest, planApplyActions, executeApplyActions } from "../../../packages/core/src/render-plan.mjs";
 import { writeLock, readLock, mergeFrameworkInstallAttempts } from "../../../packages/core/src/lock.mjs";

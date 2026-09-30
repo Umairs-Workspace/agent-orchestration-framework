@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // THE REGISTRY CENSUS — milestone 52 / story 05 / task 04 (finding F-52-04-H's species, one story over).
 //
 // This is the only suite in story 05 with a fixture it does not author: it drives the exported loader
@@ -42,7 +43,8 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { EDGE_KEYS, loadLoops } from "../../packages/core/src/work/loops.mjs";
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   checkActuatorArbitration,
   checkGrounding,

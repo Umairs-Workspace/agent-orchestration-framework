@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5312 — the production registry has one home: <workspace.aofDir>/loops.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -8,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const sourceDir = path.join(root, "packages", "core", "assets", "loops");

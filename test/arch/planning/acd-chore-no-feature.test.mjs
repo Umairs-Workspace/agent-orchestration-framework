@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 37 / ADR-002 + ADR-003 (FF-3704b):
 // "A `chore` carries NO behavioural contract: a well-formed chore folder — a single
 //  CHORE.md record doc, NO `tasks/`, NO `.feature` — validates CLEAN. The chore is
@@ -12,10 +13,10 @@ import { readFile, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateWork } from "../../../packages/core/src/work.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "packages", "core", "src", "work.mjs");
+const workSrc = path.join(repoRoot, "packages", "work", "src", "identity.mjs");
 
 async function itemTypeAlternation() {
   const src = await readFile(workSrc, "utf8");

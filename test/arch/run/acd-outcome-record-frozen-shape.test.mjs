@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 39 / ADR-001:
 // "Delivery records reuse the frozen MemoryRecord (05/ADR-005) — no field added,
 //  none omitted; a gap's open/discharged lifecycle lives in the EXISTING `status`
@@ -12,13 +13,11 @@
 // parser, then self-activates and holds the delivery records to the SAME frozen
 // shape (capability/gap, gap.status in {"",open,discharged}).
 import assert from "node:assert/strict";
-import {
-  INDEX_VERSION,
-  parseArchitecture,
-  parseRetrospective,
-  parseAof,
-} from "../../../packages/core/src/memory/local-indexing.mjs";
-import { GRAPHIFY_INDEX_VERSION } from "../../../packages/core/src/memory/graphify-backend.mjs";
+const INDEX_VERSION = _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION;
+const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
+const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
+const parseAof = _aofApplication.knowledge.memory.localIndexing.parseAof;
+const GRAPHIFY_INDEX_VERSION = _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_INDEX_VERSION;
 import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 const FROZEN = [...MEMORY_RECORD_FIELDS].sort();
@@ -69,7 +68,22 @@ function assertFrozen(records, label) {
 }
 
 async function outcomeParser() {
-  const mod = await import("../../../packages/core/src/memory/local-indexing.mjs");
+  const mod = await Promise.resolve(Object.freeze({
+  INDEX_VERSION: _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION,
+  memoryIndexPath: _aofApplication.knowledge.memory.localIndexing.memoryIndexPath,
+  parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+  parseArchitecture: _aofApplication.knowledge.memory.localIndexing.parseArchitecture,
+  parseAof: _aofApplication.knowledge.memory.localIndexing.parseAof,
+  parseOutcome: _aofApplication.knowledge.memory.localIndexing.parseOutcome,
+  IMPORT_ITEM_PREFIX: _aofApplication.knowledge.memory.localIndexing.IMPORT_ITEM_PREFIX,
+  importItem: _aofApplication.knowledge.memory.localIndexing.importItem,
+  isImportRecord: _aofApplication.knowledge.memory.localIndexing.isImportRecord,
+  resolveRecordSourcePath: _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath,
+  buildRecords: _aofApplication.knowledge.memory.localIndexing.buildRecords,
+  buildIndex: _aofApplication.knowledge.memory.localIndexing.buildIndex,
+  reindex: _aofApplication.knowledge.memory.localIndexing.reindex,
+  status: _aofApplication.knowledge.memory.localIndexing.status,
+}));
   return typeof mod.parseOutcome === "function" ? mod.parseOutcome : null;
 }
 

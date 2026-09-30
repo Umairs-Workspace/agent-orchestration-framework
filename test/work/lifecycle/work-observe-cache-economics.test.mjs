@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 70 / story 02 — cache economics per phase.
 //
 // Covers EVERY @executable scenario in the two task features:
@@ -18,15 +20,14 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  observeMilestone,
-  rollupRunsByPhase,
-  applyCacheTarget,
-  verdictForCacheBucket,
-  cacheTargetIsHonourable,
-} from "../../../packages/core/src/work/observe.mjs";
-import { observeCommand } from "../../../packages/core/src/commands/observe.mjs";
-import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
+const observeMilestone = _aofSessions.workObserve.observeMilestone;
+const rollupRunsByPhase = _aofSessions.workObserve.rollupRunsByPhase;
+const applyCacheTarget = _aofSessions.workObserve.applyCacheTarget;
+const verdictForCacheBucket = _aofSessions.workObserve.verdictForCacheBucket;
+const cacheTargetIsHonourable = _aofSessions.workObserve.cacheTargetIsHonourable;
+const observeCommand = _aofApplication.getCommand("work:observe");
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
 
 const T0 = Date.parse("2026-08-21T10:00:00.000Z");
 

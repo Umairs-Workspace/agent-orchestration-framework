@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -5,11 +6,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
-import { loopsShowCommand } from "../../../packages/core/src/commands/loops-show.mjs";
-import { loopsGraphCommand } from "../../../packages/core/src/commands/loops-graph.mjs";
-import { createLoopsGroundednessCommand } from "../../../packages/core/src/commands/loops-groundedness.mjs";
-import { loopsValidateCommand } from "../../../packages/core/src/commands/loops-validate.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const loopsShowCommand = _aofApplication.getCommand("work:loops-show");
+const loopsGraphCommand = _aofApplication.getCommand("work:loops-graph");
+const createLoopsGroundednessCommand = _aofApplication.graph.commandTools.loopsGroundedness.createLoopsGroundednessCommand;
+const loopsValidateCommand = _aofApplication.getCommand("work:loops-validate");
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

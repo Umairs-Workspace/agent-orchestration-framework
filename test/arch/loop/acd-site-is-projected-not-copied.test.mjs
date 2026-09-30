@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for story 125 / task 01 — THE PLACEMENT CONTROL.
 //
 //   "The published graph page is projected from the committed artefact, and the builder that
@@ -38,7 +39,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loopDocumentPath } from "@aof/work-graph/document";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { SHELL_DIR, buildSite, carriesProvenanceEnvelope } from "../../../scripts/site/build-site.mjs";
 import { snapshot } from "../../support/loop-document-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";

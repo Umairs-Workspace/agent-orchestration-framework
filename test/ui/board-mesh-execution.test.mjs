@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // test/ui/board-mesh-execution.test.mjs — VERIFICATION (board mesh-execution overlay,
 // live two-machine soak 2026-07-25).
 //
@@ -14,16 +17,26 @@ import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
 import { setItemBranch } from "@aof/mesh/assignment-directive";
-import { readExecutionOverlay, applyExecutionOverlay, resolveScopedExecution } from "../../packages/core/src/board-mesh-execution.mjs";
-import { resolveContinueDecision, resolveDirectivePhase } from "../../packages/core/src/commands/continue.mjs";
-import { mergeWorkerItems, applyCachedProvenance } from "../../packages/core/src/cache-read.mjs";
-import { listCommand, applyAskOverlay } from "../../packages/core/src/commands/list.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { loopAsksDir, openAsk, parkAsk, answerAsk, clearAsk, askRequestPath } from "../../packages/core/src/loop/ask-request.mjs";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+const readExecutionOverlay = _aofApplication.mesh.boardMeshExecution.readExecutionOverlay;
+const applyExecutionOverlay = _aofApplication.mesh.boardMeshExecution.applyExecutionOverlay;
+const resolveScopedExecution = _aofApplication.mesh.boardMeshExecution.resolveScopedExecution;
+const resolveContinueDecision = _aofApplication.work.commandTools.continue.resolveContinueDecision;
+const resolveDirectivePhase = _aofApplication.work.commandTools.continue.resolveDirectivePhase;
+const mergeWorkerItems = _aofApplication.mesh.cacheRead.mergeWorkerItems;
+const applyCachedProvenance = _aofApplication.mesh.cacheRead.applyCachedProvenance;
+const listCommand = _aofApplication.getCommand("work:list");
+const applyAskOverlay = _aofApplication.work.commandTools.list.applyAskOverlay;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const parkAsk = _aofApplication.loop.askRequest.parkAsk;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const clearAsk = _aofApplication.loop.askRequest.clearAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { stripComments } from "../support/source-slice.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

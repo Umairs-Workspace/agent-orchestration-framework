@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 128 / task 01
 // (`01_the-ladder-door-closes-and-the-frozen-lists-move.feature`): THE LADDER DOOR CLOSES
 // BEHIND THE MIGRATED VERB, AND THE FROZEN LISTS MOVE WITH IT.
@@ -47,15 +49,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
-import { listCommands, getCommand } from "../../../packages/core/src/command-core.mjs";
-import { deriveRouteTable } from "../../../packages/core/src/spine/face.mjs";
+const listCommands = _aofApplication.listCommands;
+const getCommand = _aofApplication.getCommand;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
 import { archTests as routeDerivedTests } from "./acd-command-route-derived.test.mjs";
 import { SOURCE_DIRECTORY_BUDGETS, COUNTING_RULES } from "../testing/acd-source-directory-budget.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const at = (...segments) => path.join(repoRoot, ...segments);
 const read = async (...segments) => (await readFile(at(...segments), "utf8")).replace(/\r\n/g, "\n");
-const cliPath = at("bin", "aof.mjs");
+const cliPath = at("packages", "core", "bin", "aof.mjs");
 
 const CLI_MJS = ["packages", "core", "src", "cli.mjs"];
 const SEAM = ["packages", "knowledge", "src", "memory.mjs"];
@@ -128,7 +131,7 @@ export const archTests = [
         if (/\bworkMemoryCommand\b/.test(code)) holders.push(path.relative(repoRoot, file).split(path.sep).join("/"));
       }
       assert.deepEqual(holders, [], `\`workMemoryCommand\` is imported (or declared) by nothing under src/ — found in: ${holders.join(", ")}`);
-      const seam = await import(new URL("../../../packages/core/src/work/memory.mjs", import.meta.url));
+      const seam = _aofApplication.knowledge.work.memory;
       assert.equal("workMemoryCommand" in seam, false, "the seam exports no `workMemoryCommand` (the ladder face is deleted)");
 
       // And the registry's route for the verb is the ONE door: the route-derived control's own
@@ -172,18 +175,19 @@ export const archTests = [
       assert.equal(flatRow.allowance, 0, "…and the flat row grants no allowance");
 
       assert.ok(existsSync(at(...COMMAND)), "packages/core/src/commands/work/memory.mjs exists");
-      const module = await import(new URL("../../../packages/core/src/commands/work/memory.mjs", import.meta.url));
-      const exported = Object.values(module).find((value) => value && typeof value === "object" && value.id === "work:memory");
+      const module = await import(new URL("../../../packages/core/src/application/bindings/commands/work/memory.mjs", import.meta.url));
+      assert.equal(typeof module.assembleCommandsWorkMemory, "function", "the real composition binding constructs the command");
+      const exported = getCommand("work:memory");
       assert.ok(exported, "…and exports the work:memory command");
       assert.equal(getCommand("work:memory"), exported, "…which is the one the registry carries");
       assert.deepEqual(exported.cli.route, ["work", "memory"], "…routed at `work memory`");
 
-      const familyRow = SOURCE_DIRECTORY_BUDGETS.find((row) => row.directory === "packages/core/src/commands/work");
+      const familyRow = SOURCE_DIRECTORY_BUDGETS.find((row) => row.directory === "packages/core/src/application/bindings/commands/work");
       assert.ok(familyRow, "SOURCE_DIRECTORY_BUDGETS carries a row for packages/core/src/commands/work — the family is founded, stated rather than smuggled");
       assert.equal(familyRow.allowance, 0, "the founded row grants no allowance");
       assert.match(familyRow.why, /fold/i, "its `why` names the fold of the other work:* commands");
       assert.match(familyRow.why, /separate item/i, "…as a separate item, not taken here");
-      const familyChildren = (await readdir(at("packages", "core", "src", "commands", "work"), { withFileTypes: true })).filter((entry) => entry.isFile()).length;
+      const familyChildren = (await readdir(at("packages", "core", "src", "application", "bindings", "commands", "work"), { withFileTypes: true })).filter((entry) => entry.isFile()).length;
       assert.equal(familyChildren, familyRow.ceiling, `the founded directory holds exactly its ceiling (${familyRow.ceiling}) — the row was measured, not guessed`);
     },
   },
@@ -244,16 +248,15 @@ export const archTests = [
   {
     name: "arch/128/01 (acd-work-memory-routed): the seam's existing callers are untouched — every binding test/memory/* and declared-id import from src/work/memory.mjs is still exported by it (the suites themselves run unedited in the story's focused set)",
     run: async () => {
-      const seam = await import(new URL("../../../packages/core/src/work/memory.mjs", import.meta.url));
+      const seam = _aofApplication.knowledge.work.memory;
       const callers = (await readdir(at(...SEAM_CALLERS_DIR))).filter((name) => name.endsWith(".test.mjs")).map((name) => [...SEAM_CALLERS_DIR, name]);
       callers.push(DECLARED_ID);
       let importers = 0;
       for (const caller of callers) {
         const code = stripComments(await read(...caller));
-        const match = /import\s*\{([^}]*)\}\s*from\s*["'](?:\.\.\/)+packages\/core\/src\/work\/memory\.mjs["']/.exec(code);
-        if (!match) continue;
+        const bindings = [...code.matchAll(/_aofApplication\.knowledge\.work\.memory\.(\w+)/gu)].map(match => match[1]);
+        if (bindings.length === 0) continue;
         importers += 1;
-        const bindings = match[1].split(",").map((binding) => binding.trim().split(/\s+as\s+/)[0]).filter(Boolean);
         assert.ok(bindings.length > 0, `${caller.join("/")} names at least one binding`);
         for (const binding of bindings) {
           assert.ok(binding in seam, `${caller.join("/")} imports \`${binding}\` from the seam, and the seam still exports it`);

@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 40 / story 02 (migration registry &
 // `aof upgrade`), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
@@ -12,7 +13,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { WORK_ITEM_SCHEMA_VERSION } from "../../../packages/core/src/work.mjs";
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { withUpgradeProject, writeItem, readDoc, runCli, parseJsonOut } from "../../support/work-upgrade-fixture.mjs";
 
 // A fixture stream mixing an unstamped milestone (00) and a stamped story (00/00).

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6108 (milestone 61 / ADR-007) — `harness.ruled` is a declared event; the harness
 // write has ONE home; and an undeclared name is now refused instead of resolving to zero
 // reactors.
@@ -53,13 +54,24 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan } from "../../support/source-slice.mjs";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { AOF_GITIGNORE_ENTRIES } from "../../../packages/core/src/aof-gitignore.mjs";
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { tunableSet } from "@aof/work/acceptor/admissibility";
-import { EFFECTS, EVENT_NOT_DECLARED, applicableReactors, isKnownLocus, knownEvents } from "../../../packages/core/src/effects/table.mjs";
-import { appendEvent, openEffectsJournal } from "../../../packages/core/src/effects/journal.mjs";
-import { HARNESS_RULED, STAMP_EVIDENCE } from "../../../packages/core/src/effects/harness-transitions.mjs";
-import { LEDGER_RELPATH, criterionDigest, defaultCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
-import { STORE_REFUSALS, appendRuling, readLedger, setKnobValue } from "../../../packages/core/src/work-acceptor/store.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const EVENT_NOT_DECLARED = _aofApplication.effects.reactors.EVENT_NOT_DECLARED;
+const applicableReactors = _aofApplication.effects.reactors.applicableReactors;
+const isKnownLocus = _aofApplication.effects.reactors.isKnownLocus;
+const knownEvents = _aofApplication.effects.reactors.knownEvents;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const HARNESS_RULED = _aofApplication.work.harness.HARNESS_RULED;
+const STAMP_EVIDENCE = _aofApplication.work.harness.STAMP_EVIDENCE;
+const LEDGER_RELPATH = _aofApplication.work.acceptor.criterion.LEDGER_RELPATH;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const STORE_REFUSALS = _aofApplication.work.acceptor.store.STORE_REFUSALS;
+const appendRuling = _aofApplication.work.acceptor.store.appendRuling;
+const readLedger = _aofApplication.work.acceptor.store.readLedger;
+const setKnobValue = _aofApplication.work.acceptor.store.setKnobValue;
 import { PAIR_OUTCOMES } from "@aof/work/acceptor/rule";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: FF-6302 — THE DECLARATION IS DATA WITH ONE COMPILER AND ONE HOME, AND NO
 // GRAMMAR IS WRITTEN TWICE (63/ADR-002, ADR-010 §4, §4a, §8).
 //
@@ -36,13 +37,27 @@ import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import * as loaderModule from "../../../packages/core/src/work/loops.mjs";
-import {
-  TRIGGER_SOURCES,
-  TriggerDeclarationError,
-  bundledTriggerDeclaration,
-  compileTriggerDeclaration,
-} from "../../../packages/core/src/work-trigger/declaration.mjs";
+const loaderModule = Object.freeze({
+  ADMITTED_KEYS: _aofApplication.graph.work.loops.ADMITTED_KEYS,
+  CADENCE_KINDS: _aofApplication.graph.work.loops.CADENCE_KINDS,
+  EDGE_KEYS: _aofApplication.graph.work.loops.EDGE_KEYS,
+  ENDPOINT_SCHEMES: _aofApplication.graph.work.loops.ENDPOINT_SCHEMES,
+  EVENT_TRIGGERS: _aofApplication.graph.work.loops.EVENT_TRIGGERS,
+  FIELD_KINDS: _aofApplication.graph.work.loops.FIELD_KINDS,
+  GROUND_VALUES: _aofApplication.graph.work.loops.GROUND_VALUES,
+  LOADER_FINDING_CODES: _aofApplication.graph.work.loops.LOADER_FINDING_CODES,
+  NODE_KINDS: _aofApplication.graph.work.loops.NODE_KINDS,
+  PERIODIC_UNITS: _aofApplication.graph.work.loops.PERIODIC_UNITS,
+  POINTER_SCHEMES: _aofApplication.graph.work.loops.POINTER_SCHEMES,
+  SENTINEL_TOKENS: _aofApplication.graph.work.loops.SENTINEL_TOKENS,
+  loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+  parseCadence: _aofApplication.graph.work.loops.parseCadence,
+  loadLoops: _aofApplication.graph.work.loops.loadLoops,
+});
+const TRIGGER_SOURCES = _aofApplication.loop.workTrigger.declaration.TRIGGER_SOURCES;
+const TriggerDeclarationError = _aofApplication.loop.workTrigger.declaration.TriggerDeclarationError;
+const bundledTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.bundledTriggerDeclaration;
+const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.compileTriggerDeclaration;
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FAMILY_DIR = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger");

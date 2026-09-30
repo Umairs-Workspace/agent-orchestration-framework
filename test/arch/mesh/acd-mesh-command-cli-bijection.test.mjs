@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-mesh-command-cli-bijection (milestone 22, ADR-001 / fitness
 // #3) — the NEW registry-derived mesh-namespace gate (19/R1). A deliberate MIRROR of
 // acd-work-command-cli-bijection, filtered id.startsWith("mesh:"):
@@ -26,12 +28,12 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../packages/core/src/command-core.mjs";
-import { deriveRouteTable } from "../../../packages/core/src/spine/face.mjs";
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 // The mesh-surface subcommands DERIVED from the registry — every mesh:* command's op

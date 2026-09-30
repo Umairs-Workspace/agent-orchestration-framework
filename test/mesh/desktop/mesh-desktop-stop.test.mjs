@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // `aof mesh desktop stop` — the programmatic exit the supervisor never had
 // (TECH_DEBT 20(b), raised again by the m46 deploy on 2026-08-09 when the tray
 // menu's Quit — the ONLY graceful exit — was unreachable and the operator had no
@@ -9,15 +10,13 @@
 // success. Killing a real supervisor is exactly the thing a test must never do
 // on the control node — this file runs beside a live one.
 import assert from "node:assert/strict";
-import {
-  desktopProcessName,
-  findDesktopProcesses,
-  parsePgrepPids,
-  parseTasklistPids,
-  stopDesktopApp,
-  DESKTOP_APP_EXE,
-} from "../../../packages/core/src/commands/mesh/desktop.mjs";
-import { getCommand } from "../../../packages/core/src/command-core.mjs";
+const desktopProcessName = _aofApplication.mesh.commandTools.mesh.desktop.desktopProcessName;
+const findDesktopProcesses = _aofApplication.mesh.commandTools.mesh.desktop.findDesktopProcesses;
+const parsePgrepPids = _aofApplication.mesh.commandTools.mesh.desktop.parsePgrepPids;
+const parseTasklistPids = _aofApplication.mesh.commandTools.mesh.desktop.parseTasklistPids;
+const stopDesktopApp = _aofApplication.mesh.commandTools.mesh.desktop.stopDesktopApp;
+const DESKTOP_APP_EXE = _aofApplication.mesh.commandTools.mesh.desktop.DESKTOP_APP_EXE;
+const getCommand = _aofApplication.getCommand;
 
 // A recording runner: answers a queued { stdout, code } per call and records the
 // argv it was handed, so a test can assert WHICH command the platform branch ran.

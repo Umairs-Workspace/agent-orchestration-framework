@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 38 / story 00
 // tasks/02_presence-additive-sessions.feature — "the presence record gains an
 // additive `sessions` key without breaking the frozen m23 byte-equivalence".
@@ -19,9 +22,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { assemblePresenceRecord, readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const startSession = _aofHooks.meshSession.startSession;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const FROZEN_FIVE = ["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVersion"];
 // m48/ADR-005 — the session ENTRY's frozen ordered six (m38's four, plus the leading

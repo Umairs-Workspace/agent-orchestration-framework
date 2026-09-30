@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function FF-E for milestone 18 / ADR-003 (provider-namespaced + extensible):
 //   The `.integrations.json` reader (packages/core/src/integrations/routing.mjs `readRouting`)
 //   TOLERATES an unknown provider key — a planted `jira` block (a future provider) is
@@ -12,7 +13,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readRouting } from "../../../packages/core/src/integrations/routing.mjs";
+const readRouting = _aofApplication.work.integrations.routing.readRouting;
 
 // A fixture milestone folder + an `.integrations.json` whose `notion` block sits beside a
 // planted UNKNOWN provider block (jira). Returns the resolver-shaped item + a cleanup.

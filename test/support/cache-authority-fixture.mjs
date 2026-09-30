@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/cache-authority-fixture.mjs — the shared fixture for milestone 43 /
 // story 02 (the authority cut: work_items becomes a provenance-stamped, row-upserted
 // FACT).
@@ -24,9 +25,9 @@
 // 43/04 will map onto the wire.
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { publishGlobalWorkSnapshot } from "../../packages/core/src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../packages/core/src/global-work-store.mjs";
-import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
+const readWorkspaceItems = _aofApplication.mesh.store.readWorkspaceItems;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
 import { withItemLockFixture, seedActive, settle, withStore, seedWorker, refuse } from "./item-lock-fixture.mjs";
 
 export { withItemLockFixture, seedActive, settle, withStore, seedWorker, refuse };

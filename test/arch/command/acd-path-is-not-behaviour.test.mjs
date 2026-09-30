@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function: FF-11905 (119/ADR-008) —
 //
@@ -212,7 +213,12 @@ export const archTests = [
   {
     name: "arch/119 FF-11905: the registered set, its routes and its declared flags are read from the REGISTRY rather than from any path",
     run: async () => {
-      const core = await import("../../../packages/core/src/command-core.mjs");
+      const core = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
       const listed = core.listCommands();
       assert.ok(Array.isArray(listed) && listed.length >= 40, `non-vacuity: the registry lists ${listed.length} commands`);
 

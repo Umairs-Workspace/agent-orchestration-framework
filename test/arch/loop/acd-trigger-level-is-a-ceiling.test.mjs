@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: FF-6304 — A DECLARED LEVEL IS A CEILING REQUEST, AND ADMISSION STAYS IN ONE
 // HOME (63/ADR-004, ADR-010 §7, §11).
 //
@@ -61,7 +62,8 @@ import {
   resolveTriggerLevel,
   resolveTriggerLevels,
 } from "@aof/work-loop/trigger/level";
-import { bundledTriggerDeclaration, compileTriggerDeclaration } from "../../../packages/core/src/work-trigger/declaration.mjs";
+const bundledTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.bundledTriggerDeclaration;
+const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.compileTriggerDeclaration;
 import { L3_SCORE_THRESHOLD, LOOP_LEVELS, resolveLoopLevelGate } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — and that ORDER is the whole reason this is imported rather
 // than written here. The first cut of this control cloned the three-line function with the two

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 24 / story 00 — the add-only aggregate mutations
 // (tasks/01_roster-boards-revocations.feature).
 //
@@ -16,7 +17,10 @@
 //     add-only mutation leaves every OTHER entry byte-unchanged; reading the aggregate
 //     returns the full roster/boards/revocations and mutates nothing.
 import assert from "node:assert/strict";
-import { admitNode, registerBoard, appendRevocation, emptyRegistry } from "../../../packages/core/src/mesh/registry.mjs";
+const admitNode = _aofApplication.mesh.registry.admitNode;
+const registerBoard = _aofApplication.mesh.registry.registerBoard;
+const appendRevocation = _aofApplication.mesh.registry.appendRevocation;
+const emptyRegistry = _aofApplication.mesh.registry.emptyRegistry;
 
 export const meshRegistryAggregateMutationsTests = [
   {

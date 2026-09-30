@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // Traceability wiring for milestone 35 / story 02 — task 06
 // (tasks/06_reclaim-scheduler.feature, ADR-008 the control-side dispatch/reclaim
 // driver — the RECLAIM half). Covers every @executable scenario:
@@ -12,13 +15,17 @@
 // an injected fake stream server (the dispatch half's fixture, reused for scenario 3).
 import assert from "node:assert/strict";
 import path from "node:path";
-import { startLauncher } from "../../packages/core/src/mesh/launcher.mjs";
-import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const findWork = _aofWorkspace.work.findWork;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
-import { publishPresenceRecord } from "../../packages/core/src/mesh/presence.mjs";
-import { startRun, heartbeat, readRuns, isRetryable } from "../../packages/core/src/run-store.mjs";
-import { DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../packages/core/src/mesh/assignment-reclaim.mjs";
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const startRun = _aofApplication.execution.runs.startRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const isRetryable = _aofApplication.execution.runs.isRetryable;
+const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = _aofApplication.mesh.assignmentReclaim.DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS;
 import { withMeshWorkerExecFixture } from "../support/mesh-worker-exec-fixture.mjs";
 
 const NOW = "2026-07-09T12:00:00.000Z";
@@ -94,7 +101,12 @@ async function seedPresence(fx, nodeId, heartbeatAt) {
 // (the reclaim-scheduler feature needs a control-role launcher; the shared exec
 // fixture defaults to a bare mesh.nodeId with no relay.controlNode).
 async function markAsControlNode(fx) {
-  const { readJson, writeText } = await import("../../packages/core/src/fs.mjs");
+  const { readJson, writeText } = await Promise.resolve(Object.freeze({
+  readJson: _aofFoundation.fs.readJson,
+  writeText: _aofFoundation.fs.writeText,
+  normalizeId: _aofFoundation.fs.normalizeId,
+  sweepStaleTempFiles: _aofFoundation.fs.sweepStaleTempFiles,
+}));
   const configPath = path.join(fx.root, ".aof", "aof.config.json");
   const onDisk = await readJson(configPath);
   onDisk.mesh = { ...onDisk.mesh, fabric: "tailscale", relay: { controlNode: onDisk.mesh.nodeId } };

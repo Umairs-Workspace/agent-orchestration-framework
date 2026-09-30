@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 27 / story 01 — the candidacy lookup at EVERY
 // nextWork ready-return (tasks/03_candidacy-every-return.feature, ADR-004.3, the
 // m26/ADR-007 fold-in).
@@ -22,7 +23,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { nextWork } from "../../../packages/core/src/work.mjs";
+const nextWork = _aofWorkspace.work.nextWork;
 
 function frontmatter(fields) {
   const body = Object.entries(fields)

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 23 / story 01 — task 02
 // (tasks/02_control-node-role.feature). The control node is a re-nominate-able config role
 // (config.mesh.relay.controlNode = the nominated node id; config.mesh.relay.url = the
@@ -15,7 +16,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveRelay, relayMode, relayStatus } from "../../../packages/core/src/mesh/relay.mjs";
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const relayMode = _aofApplication.mesh.relay.relayMode;
+const relayStatus = _aofApplication.mesh.relay.relayStatus;
 
 // A ws connect that resolves on the join ack (proof the relay is actually serving).
 function connect(url, { timeoutMs = 3000 } = {}) {

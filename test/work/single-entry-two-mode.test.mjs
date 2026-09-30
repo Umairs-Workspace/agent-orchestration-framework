@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 28 / story 00, task 03 —
 // tasks/03_single-entry-two-mode.feature (ADR-004).
 //
@@ -7,7 +8,7 @@
 // row is a distinct real route; every one dispatches through the ONE run().
 import assert from "node:assert/strict";
 import { run } from "../../packages/core/src/cli.mjs";
-import { getCommand } from "../../packages/core/src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
 
 // Capture console.log output across an awaited call, restoring afterwards
 // even on throw.

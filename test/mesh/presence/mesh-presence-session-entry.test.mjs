@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 01 — task 00
 // (tasks/00_frozen-session-entry.feature): "a live session reaches the wire as a
 // frozen, ordered six — carrying its id and the run fact, with both new keys always
@@ -22,10 +25,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, readdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { assemblePresenceRecord, readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
-import { DEFAULT_SESSION_TTL_SECONDS, startSession } from "../../../packages/core/src/mesh/session.mjs";
-import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const startSession = _aofHooks.meshSession.startSession;
+const meshDir = _aofHooks.meshStore.meshDir;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const NODE_ID = "node-a";
 const OTHER_NODE_ID = "node-b";

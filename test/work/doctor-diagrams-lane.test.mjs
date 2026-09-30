@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 133 / story 03 — the diagrams doctor lane (ADR-006): tasks 00 and 01.
 //
 // The lane is asked over LITERAL snapshots whose item dirs name directories that do not exist, so a
@@ -10,14 +11,16 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofApplication.loadWorkspace;
 import { renderDiagramBlock } from "@aof/work/diagrams/layout";
-import { CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
-import { DIAGRAM_LANE_CODES, diagramsGroup } from "../../packages/core/src/work/doctor-diagrams.mjs";
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
+const DIAGRAM_LANE_CODES = _aofApplication.work.doctorDiagrams.DIAGRAM_LANE_CODES;
+const diagramsGroup = _aofApplication.work.doctorDiagrams.diagramsGroup;
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const GHOST = path.join(os.tmpdir(), "aof-diagrams-lane-no-such-dir", "07_milestone_m");
 const ON = (formats = ["svg", "png"]) => ({ work: { diagrams: { generator: "diagram-design", formats } } });
 const BLOCK = renderDiagramBlock({ adrId: "ADR-002", title: "seam", stem: "ADR-002-seam", sourceExt: ".html", formats: ["svg", "png"] });

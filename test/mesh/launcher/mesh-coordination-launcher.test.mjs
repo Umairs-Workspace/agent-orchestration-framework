@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 33 / story 01 — the coordination launcher.
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
@@ -20,11 +23,14 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { presenceRecordPath, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { launcherProbe, startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import { acquireMeshLauncherLock } from "../../../packages/core/src/mesh/launcher-lock.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+const presenceRecordPath = _aofHooks.meshStore.presenceRecordPath;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const launcherProbe = _aofApplication.mesh.launcher.launcherProbe;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const acquireMeshLauncherLock = _aofApplication.mesh.launcherLock.acquireMeshLauncherLock;
 
 const NODE_ID = "test-node-self";
 

@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 66 / story 00, task `00_one-gherkin-parser`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -23,11 +24,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseFeature } from "@aof/work/feature-parse";
-import { validateWork } from "../../packages/core/src/work.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");
-const srcWork = path.join(repoRoot, "packages", "core", "src", "work.mjs");
+const srcWork = path.join(repoRoot, "packages", "work", "src", "discovery.mjs");
 const srcParser = path.join(repoRoot, "packages/work/src/feature-parse.mjs");
 const validationSource = path.join(repoRoot, "packages/work/src/validation.mjs");
 

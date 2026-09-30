@@ -1,3 +1,5 @@
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 10 / ADR-003:
 // "`claude-cli` is classified HONESTLY and never a silent network default:
 //  classifyEgress('claude-cli') === 'docs-media' (the doc/media hop ran) and
@@ -19,15 +21,11 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir } from "node:fs/promises";
-import {
-  classifyEgress,
-  isNetworkBackend,
-  isKnownNetworkBackend,
-} from "../../../packages/core/src/commands/graph/build.mjs";
-import graphifyBackend, {
-  GRAPHIFY_EXTRACTION_BACKEND,
-  GRAPHIFY_EXTRACTION_EGRESS,
-} from "../../../packages/core/src/memory/graphify-backend.mjs";
+const classifyEgress = _aofApplication.knowledge.commandTools.graph.build.classifyEgress;
+const isNetworkBackend = _aofApplication.knowledge.commandTools.graph.build.isNetworkBackend;
+const isKnownNetworkBackend = _aofApplication.knowledge.commandTools.graph.build.isKnownNetworkBackend;
+const GRAPHIFY_EXTRACTION_BACKEND = _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_EXTRACTION_BACKEND;
+const GRAPHIFY_EXTRACTION_EGRESS = _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_EXTRACTION_EGRESS;
 
 async function freshProjectRoot() {
   const projectRoot = await mkdtemp(path.join(os.tmpdir(), "aof-arch-classified-"));

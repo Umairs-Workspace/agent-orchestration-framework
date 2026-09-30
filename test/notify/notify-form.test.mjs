@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/notify/notify-form.test.mjs — milestone 131 / story 02, task 01
 // (01_one-form-for-every-face.feature; ADR-006 §1, DESIGN "The one shape").
 //
@@ -11,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { accountLine, cost, eventPhrase, formatElapsed, headline, oneLineAsk } from "@aof/messaging/form";
 import * as formModule from "@aof/messaging/form";
-import { buildNotifyEnvelope } from "../../packages/core/src/notify/notify.mjs";
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
 import { renderDiscord } from "@aof/messaging/discord";
 import { stripComments } from "../support/source-slice.mjs";
 

@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import * as _aofPublic_aof_work_identity from "@aof/work/identity";
 // Traceability wiring for milestone 127 / story 03 — "Archive is a move".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) of tasks 00-04 is asserted
@@ -41,15 +44,24 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { invoke, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace, ARCHIVE_ROOT } from "../../../packages/core/src/work.mjs";
-import { doctorWork } from "../../../packages/core/src/work/doctor.mjs";
-import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
-import { transitionStreamArchived } from "../../../packages/core/src/effects/stream-transitions.mjs";
-import { openEffectsJournal, readEvents, readEventSteps } from "../../../packages/core/src/effects/journal.mjs";
-import { publishGlobalWorkSnapshot } from "../../../packages/core/src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../../packages/core/src/global-work-store.mjs";
-import { ITEM_LOCKED_CODE } from "../../../packages/core/src/item-lock.mjs";
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+const listItems = _aofWorkspace.work.listItems;
+const listStream = _aofWorkspace.work.listStream;
+const findWork = _aofWorkspace.work.findWork;
+const nextWork = _aofWorkspace.work.nextWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const ARCHIVE_ROOT = _aofPublic_aof_work_identity.ARCHIVE_ROOT;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const transitionStreamArchived = _aofApplication.work.streams.transitionStreamArchived;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
+const readWorkspaceItems = _aofApplication.mesh.store.readWorkspaceItems;
+const ITEM_LOCKED_CODE = _aofApplication.mesh.locks.ITEM_LOCKED_CODE;
 import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
@@ -61,7 +73,7 @@ import { archTests as tuneReaderTests } from "../../arch/planning/acd-tune-carri
 import { archTests as spellerReaderTests } from "../../arch/command/acd-declared-program-single-speller.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const slash = (value) => String(value).replaceAll("\\", "/");
 const rel = (work, dir) => slash(path.relative(work, dir));

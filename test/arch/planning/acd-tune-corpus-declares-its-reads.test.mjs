@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 62 / story 00 — FF-6205.
 // The corpus declares every read against a floor and reaches each source through
 // the reader which already owns it. Scope likewise has one home.
@@ -9,12 +10,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { copyWorkRuntime } from "../../support/workspace/copied-work-runtime.mjs";
 
 import * as reads from "@aof/work/audit/reads";
-import {
-  CORPUS_LANES,
-  assembleCorpus,
-  assertCorpusLanesDeclared,
-  corpusFinding,
-} from "../../../packages/core/src/work-tune/corpus.mjs";
+const CORPUS_LANES = _aofApplication.work.tune.corpus.CORPUS_LANES;
+const assembleCorpus = _aofApplication.work.tune.corpus.assembleCorpus;
+const assertCorpusLanesDeclared = _aofApplication.work.tune.corpus.assertCorpusLanesDeclared;
+const corpusFinding = _aofApplication.work.tune.corpus.corpusFinding;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const modulePath = path.join(root, "packages", "work", "src", "tune", "corpus.mjs");
@@ -132,8 +131,16 @@ export const archTests = [
         ].join("\n"));
         await writeFile(copiedScope, widened, "utf8");
 
-        const copied = await import(`${pathToFileURL(path.join(temp, "packages", "core", "src", "work-tune", "corpus.mjs")).href}?copy=${Date.now()}`);
-        const result = await copied.assembleCorpus({ cwd: temp, scope: "01-02" });
+        const copied = await import(`${pathToFileURL(path.join(temp, "packages", "work", "src", "tune", "corpus.mjs")).href}?copy=${Date.now()}`);
+        const service = copied.createTuneCorpus({
+          parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+          readRuns: _aofApplication.execution.runs.readRuns,
+          runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+          runRecordPath: _aofApplication.execution.runs.runRecordPath,
+          readLatestSnapshot: _aofApplication.work.observe.readLatestSnapshot,
+          loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+        });
+        const result = await service.assembleCorpus({ cwd: temp, scope: "01-02" });
         assert.equal(result.matched, true);
         assert.deepEqual(result.items, ["01", "02"], "the copied corpus inherits whatever the copied shared rule admits");
         assert.equal(await readFile(path.join(root, "packages", "work", "src", "ref-scope.mjs"), "utf8") === before, true, "the working tree's rule was not edited");

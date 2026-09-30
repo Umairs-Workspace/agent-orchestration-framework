@@ -15,7 +15,7 @@ const expectedLoopModules = [
 // six this set holds; it is spelled separately because THIS one is compared against a resolved
 // specifier and that one against a discovered listing, and collapsing them would make one
 // control's answer depend on the other's.
-const LOOP_FAMILY = Object.freeze(new Set([...expectedLoopModules, "packages/core/src/work/loops.mjs", "packages/work-graph/src/checks.mjs", ...["loops-show", "loops-graph", "loops-validate", "loops-groundedness"].map(name => `packages/core/src/commands/${name}.mjs`)]));
+const LOOP_FAMILY = Object.freeze(new Set([...expectedLoopModules, "packages/core/src/application/bindings/work/loops.mjs", "packages/core/src/work/loops.mjs", ...["loops-show", "loops-graph", "loops-validate", "loops-groundedness"].flatMap(name => [`packages/core/src/commands/${name}.mjs`, `packages/core/src/application/bindings/commands/${name}.mjs`])]));
 
 // What TEXT carries and no resolver can reach: a `work:loops-*` command id, a bare `"loops-show"`
 // route or id string, a prose citation, and an EXTENSIONLESS `ui/` import (Vite's default
@@ -114,7 +114,7 @@ export const archTests = [
   {
     name: "arch/52 FF-5202: god-node, doctor, CLI and UI do not reference the loop family",
     run: async () => {
-      const targets = [path.join(root, "packages/core/src/work.mjs"), path.join(root, "packages/core/src/cli.mjs")];
+      const targets = [path.join(root, "packages/core/src/application/bindings/work.mjs"), path.join(root, "packages/core/src/cli.mjs")];
       // Inspect implementations and transitional composition together. Counting adapters
       // alone would leave the package free to acquire a forbidden dependency unnoticed.
       const doctorFiles = (await readRuntimeFiles(root)).filter(file =>

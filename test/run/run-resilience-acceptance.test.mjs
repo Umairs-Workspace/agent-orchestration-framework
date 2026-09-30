@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A multi-line milestone record doc with status in-progress, so the reclaim/failed
 // rollback wiring can be observed (status NOT first nor last).

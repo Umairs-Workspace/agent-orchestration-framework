@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Traceability wiring for milestone 43 / story 01 (the exclusive item lock), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/01_story_item-lock/
 //     tasks/03_holder-admitted-by-identity-never-exemption.feature
@@ -23,18 +26,19 @@
 import assert from "node:assert/strict";
 import { readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const invoke = _aofApplication.invoke;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
-import { transitionRunStart } from "../../packages/core/src/effects/run-transitions.mjs";
-import { runStartCommand } from "../../packages/core/src/commands/run-start.mjs";
-import { readRuns } from "../../packages/core/src/run-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const runStartCommand = _aofApplication.getCommand("work:run-start");
+const readRuns = _aofApplication.execution.runs.readRuns;
 import { mkdir } from "node:fs/promises";
-import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
-import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
-import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
-import { createMeshWorkerTerminalResumeHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const findWork = _aofWorkspace.work.findWork;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const createMeshWorkerTerminalResumeHandler = _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler;
 import { assembleAssignmentRecord, insertAssignment } from "@aof/mesh/assignment-record";
 import { withMeshWorkerExecFixture, createStatusRecorder } from "../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
@@ -400,7 +404,19 @@ export const itemLockHolderIdentityTests = [
     name: "item-lock/03 identity (ADR-010/R1.4): `readHeldScopes` itself fails CLOSED on a torn store — a `next` that quietly reported nothing held would be the invisible-item failure with a friendly face",
     run: () =>
       withItemLockFixture(async (fx) => {
-        const { readHeldScopes } = await import("../../packages/core/src/item-lock.mjs");
+        const { readHeldScopes } = await Promise.resolve(Object.freeze({
+  ITEM_LOCKED_CODE: _aofApplication.mesh.locks.ITEM_LOCKED_CODE,
+  ITEM_LOCK_UNDETERMINABLE_CODE: _aofApplication.mesh.locks.ITEM_LOCK_UNDETERMINABLE_CODE,
+  ITEM_LOCK_CONTEXT_MISSING_CODE: _aofApplication.mesh.locks.ITEM_LOCK_CONTEXT_MISSING_CODE,
+  itemLockPayload: _aofApplication.mesh.locks.itemLockPayload,
+  itemLockMessage: _aofApplication.mesh.locks.itemLockMessage,
+  itemLockedError: _aofApplication.mesh.locks.itemLockedError,
+  lockContextFor: _aofApplication.mesh.locks.lockContextFor,
+  openLockableStore: _aofApplication.mesh.locks.openLockableStore,
+  inspectItemLock: _aofApplication.mesh.locks.inspectItemLock,
+  guardItemLock: _aofApplication.mesh.locks.guardItemLock,
+  readHeldScopes: _aofApplication.mesh.locks.readHeldScopes,
+}));
         await tearTheStore(fx);
         const error = await refuse(() => readHeldScopes(fx.workspace, { globalWorkStoreOptions: fx.ctx.globalWorkStoreOptions }));
         assert.equal(error.code, "item-lock-undeterminable");

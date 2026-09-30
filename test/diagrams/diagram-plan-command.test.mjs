@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const ID = generatorIds()[0];
 
 const ARCHITECTURE = [

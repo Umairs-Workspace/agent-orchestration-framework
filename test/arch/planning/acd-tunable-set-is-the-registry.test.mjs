@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6110 — WHAT MAY BE TUNED AT ALL IS THE REGISTRY'S DECLARATION, NEVER A LIST THIS
 // MACHINERY KEEPS. Milestone 61 / story 03, from 61/ADR-008 §4 and 61/ADR-009 §5.
 //
@@ -30,7 +31,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   KEY_OUTSIDE_DECLARED_SET,
   TUNING_EDGE,

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -5,8 +6,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
-import { loadLoops } from "../../packages/core/src/work/loops.mjs";
-import { getCommand } from "../../packages/core/src/command-core.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const getCommand = _aofApplication.getCommand;
 import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
 import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
 import { planApplyActions, executeApplyActions, createLockManifest } from "../../packages/core/src/render-plan.mjs";

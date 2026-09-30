@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/worker/mesh-worker-driver-directive-command.test.mjs — traceability for milestone 38
 // / story 05, task 01 (01_directive-command-typed-into-pty.feature, ADR-013
 // invariant 2). The assignment directive's WHOLE command string is written into the
@@ -5,8 +7,9 @@
 // baked into the spawn argv as a `-p` prompt — and interactive `claude` is spawned
 // ONCE for the assignment's whole run (never re-spawned to deliver the command).
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 

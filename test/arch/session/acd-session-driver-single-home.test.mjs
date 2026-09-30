@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
@@ -230,7 +232,7 @@ async function sinkImporters() {
       if (!entry.name.endsWith(".mjs")) continue;
       if (rel === SINK_REL) continue;
       const source = await readFile(path.join(root, ...rel.split("/")), "utf8");
-      if (dependencySpecifiers(source).some(({ specifier, injected }) => specifier.endsWith("worker-execution.mjs") && (injected || !specifier.includes("bindings/")))) found.push(rel);
+      if (dependencySpecifiers(source).some(({ specifier, injected }) => specifier.endsWith("worker-execution.mjs") && (injected || !specifier.includes("bindings/"))) || (/from "aof\/default-application"/u.test(source) && /_aofApplication\.mesh\.worker\./u.test(stripComments(source)))) found.push(rel);
     }
   };
   for (const dir of ["packages/core/src", "scripts", "test"]) await walk(dir);
@@ -254,7 +256,9 @@ function namedImportsOf(source, specifierSuffix) {
       if (name.length > 0) bindings.push(name);
     }
   }
-  return bindings;
+  bindings.push(...[...stripComments(source).matchAll(/_aofApplication\.mesh\.worker\.(\w+)/gu)].map(match => match[1]));
+  bindings.push(...[...stripComments(source).matchAll(/const\s*\{([^}]*)\}\s*=\s*meshWorkerExecutionServices/gu)].flatMap(match => match[1].split(",").map(name => name.trim())));
+  return [...new Set(bindings)];
 }
 
 export const archTests = [
@@ -262,8 +266,69 @@ export const archTests = [
     name: "arch/53 FF-5302 (acd-session-driver-single-home): the driver export set is exactly the frozen seventeen and the sink re-exports every binding by identity",
     run: async () => {
       const [driverModule, sinkModule] = await Promise.all([
-        import("../../../packages/core/src/agent-session-driver.mjs"),
-        import("../../../packages/core/src/mesh/worker-execution.mjs"),
+        Promise.resolve(Object.freeze({
+  COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.DECLARED_COMPLETION_IDLE_MS,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL,
+  HUMAN_INPUT_TOOL_NAMES: _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofSessions.agentSessionDriver.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  NEEDS_INPUT_INSTRUCTION: _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION,
+  NEEDS_INPUT_SENTINEL: _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL,
+  WORKER_SESSION_INSTRUCTION: _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION,
+  buildDriverCommand: _aofSessions.agentSessionDriver.buildDriverCommand,
+  defaultPtySpawn: _aofSessions.agentSessionDriver.defaultPtySpawn,
+  defaultSpawnRuntime: _aofSessions.agentSessionDriver.defaultSpawnRuntime,
+  defaultWatchTranscriptCompletion: _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion,
+  defaultWatchTranscriptSessionId: _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId,
+  driveInteractiveClaudeSession: _aofSessions.agentSessionDriver.driveInteractiveClaudeSession,
+  ensureWorktreeTrusted: _aofSessions.agentSessionDriver.ensureWorktreeTrusted,
+  resolveInteractiveDriverLaunch: _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch,
+})),
+        Promise.resolve(Object.freeze({
+  ASSIGNMENT_LOOP_LAUNCH_UNDECLARED: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_UNDECLARED,
+  ASSIGNMENT_LOOP_LAUNCH_SCOPELESS: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_SCOPELESS,
+  resolveRefInWorktree: _aofApplication.mesh.worker.resolveRefInWorktree,
+  workerHasRepo: _aofApplication.mesh.worker.workerHasRepo,
+  resolveCloneUrl: _aofApplication.mesh.worker.resolveCloneUrl,
+  parseRepoFromCloneUrl: _aofApplication.mesh.worker.parseRepoFromCloneUrl,
+  meshCheckoutsRoot: _aofApplication.mesh.worker.meshCheckoutsRoot,
+  meshCheckoutPath: _aofApplication.mesh.worker.meshCheckoutPath,
+  isUnderMeshCheckoutsRoot: _aofApplication.mesh.worker.isUnderMeshCheckoutsRoot,
+  buildAskpassShim: _aofApplication.mesh.worker.buildAskpassShim,
+  cloneRepoForWorkspace: _aofApplication.mesh.worker.cloneRepoForWorkspace,
+  pinWorkspaceIdInCheckout: _aofApplication.mesh.worker.pinWorkspaceIdInCheckout,
+  commitWorktreeChanges: _aofApplication.mesh.worker.commitWorktreeChanges,
+  NEEDS_INPUT_SENTINEL: _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL,
+  NEEDS_INPUT_INSTRUCTION: _aofApplication.mesh.worker.NEEDS_INPUT_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_INSTRUCTION,
+  WORKER_SESSION_INSTRUCTION: _aofApplication.mesh.worker.WORKER_SESSION_INSTRUCTION,
+  COMPLETION_IDLE_MS: _aofApplication.mesh.worker.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofApplication.mesh.worker.DECLARED_COMPLETION_IDLE_MS,
+  HUMAN_INPUT_TOOL_NAMES: _aofApplication.mesh.worker.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofApplication.mesh.worker.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  defaultWatchTranscriptSessionId: _aofApplication.mesh.worker.defaultWatchTranscriptSessionId,
+  defaultWatchTranscriptCompletion: _aofApplication.mesh.worker.defaultWatchTranscriptCompletion,
+  defaultPtySpawn: _aofApplication.mesh.worker.defaultPtySpawn,
+  resolveInteractiveDriverLaunch: _aofApplication.mesh.worker.resolveInteractiveDriverLaunch,
+  driveInteractiveClaudeSession: _aofApplication.mesh.worker.driveInteractiveClaudeSession,
+  buildDriverCommand: _aofApplication.mesh.worker.buildDriverCommand,
+  defaultSpawnRuntime: _aofApplication.mesh.worker.defaultSpawnRuntime,
+  ensureWorktreeTrusted: _aofApplication.mesh.worker.ensureWorktreeTrusted,
+  registerActiveWorktree: _aofApplication.mesh.worker.registerActiveWorktree,
+  clearActiveWorktree: _aofApplication.mesh.worker.clearActiveWorktree,
+  listActiveWorktrees: _aofApplication.mesh.worker.listActiveWorktrees,
+  checkoutRootForWorktree: _aofApplication.mesh.worker.checkoutRootForWorktree,
+  listStrandedWorktreeAssignments: _aofApplication.mesh.worker.listStrandedWorktreeAssignments,
+  pushWorktreeBranch: _aofApplication.mesh.worker.pushWorktreeBranch,
+  createMeshWorkerExecutionHandler: _aofApplication.mesh.worker.createMeshWorkerExecutionHandler,
+  settleStrandedRunRecords: _aofApplication.mesh.worker.settleStrandedRunRecords,
+  createMeshWorkerWithdrawHandler: _aofApplication.mesh.worker.createMeshWorkerWithdrawHandler,
+  createMeshWorkerTerminalInputHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalInputHandler,
+  createMeshWorkerTerminalResumeHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler,
+  createMeshRecoveryPushHandler: _aofApplication.mesh.worker.createMeshRecoveryPushHandler,
+})),
       ]);
       const actual = Object.keys(driverModule).sort();
       const expected = [...MOVED].sort();
@@ -306,7 +371,25 @@ export const archTests = [
     name: "arch/53 FF-7002 (acd-session-driver-single-home, extended): the driver imports the pure phase-brief leaf WITHOUT re-exporting it, the leaf is pure, and the driver's export set stays the frozen seventeen",
     run: async () => {
       const [driverModule, phaseBriefModule] = await Promise.all([
-        import("../../../packages/core/src/agent-session-driver.mjs"),
+        Promise.resolve(Object.freeze({
+  COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.DECLARED_COMPLETION_IDLE_MS,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL,
+  HUMAN_INPUT_TOOL_NAMES: _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofSessions.agentSessionDriver.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  NEEDS_INPUT_INSTRUCTION: _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION,
+  NEEDS_INPUT_SENTINEL: _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL,
+  WORKER_SESSION_INSTRUCTION: _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION,
+  buildDriverCommand: _aofSessions.agentSessionDriver.buildDriverCommand,
+  defaultPtySpawn: _aofSessions.agentSessionDriver.defaultPtySpawn,
+  defaultSpawnRuntime: _aofSessions.agentSessionDriver.defaultSpawnRuntime,
+  defaultWatchTranscriptCompletion: _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion,
+  defaultWatchTranscriptSessionId: _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId,
+  driveInteractiveClaudeSession: _aofSessions.agentSessionDriver.driveInteractiveClaudeSession,
+  ensureWorktreeTrusted: _aofSessions.agentSessionDriver.ensureWorktreeTrusted,
+  resolveInteractiveDriverLaunch: _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch,
+})),
         import("@aof/work/phase-brief"),
       ]);
       // the driver's export set is STILL exactly the frozen seventeen (phase-brief is NOT re-exported)
@@ -361,7 +444,50 @@ export const archTests = [
   {
     name: "arch/119 FF-11907 (acd-session-driver-single-home, extended): the exported surface is identical across item 83's split, in both directions, and every binding a dependent takes is still on it",
     run: async () => {
-      const sinkModule = await import("../../../packages/core/src/mesh/worker-execution.mjs");
+      const sinkModule = await Promise.resolve(Object.freeze({
+  ASSIGNMENT_LOOP_LAUNCH_UNDECLARED: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_UNDECLARED,
+  ASSIGNMENT_LOOP_LAUNCH_SCOPELESS: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_SCOPELESS,
+  resolveRefInWorktree: _aofApplication.mesh.worker.resolveRefInWorktree,
+  workerHasRepo: _aofApplication.mesh.worker.workerHasRepo,
+  resolveCloneUrl: _aofApplication.mesh.worker.resolveCloneUrl,
+  parseRepoFromCloneUrl: _aofApplication.mesh.worker.parseRepoFromCloneUrl,
+  meshCheckoutsRoot: _aofApplication.mesh.worker.meshCheckoutsRoot,
+  meshCheckoutPath: _aofApplication.mesh.worker.meshCheckoutPath,
+  isUnderMeshCheckoutsRoot: _aofApplication.mesh.worker.isUnderMeshCheckoutsRoot,
+  buildAskpassShim: _aofApplication.mesh.worker.buildAskpassShim,
+  cloneRepoForWorkspace: _aofApplication.mesh.worker.cloneRepoForWorkspace,
+  pinWorkspaceIdInCheckout: _aofApplication.mesh.worker.pinWorkspaceIdInCheckout,
+  commitWorktreeChanges: _aofApplication.mesh.worker.commitWorktreeChanges,
+  NEEDS_INPUT_SENTINEL: _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL,
+  NEEDS_INPUT_INSTRUCTION: _aofApplication.mesh.worker.NEEDS_INPUT_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_INSTRUCTION,
+  WORKER_SESSION_INSTRUCTION: _aofApplication.mesh.worker.WORKER_SESSION_INSTRUCTION,
+  COMPLETION_IDLE_MS: _aofApplication.mesh.worker.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofApplication.mesh.worker.DECLARED_COMPLETION_IDLE_MS,
+  HUMAN_INPUT_TOOL_NAMES: _aofApplication.mesh.worker.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofApplication.mesh.worker.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  defaultWatchTranscriptSessionId: _aofApplication.mesh.worker.defaultWatchTranscriptSessionId,
+  defaultWatchTranscriptCompletion: _aofApplication.mesh.worker.defaultWatchTranscriptCompletion,
+  defaultPtySpawn: _aofApplication.mesh.worker.defaultPtySpawn,
+  resolveInteractiveDriverLaunch: _aofApplication.mesh.worker.resolveInteractiveDriverLaunch,
+  driveInteractiveClaudeSession: _aofApplication.mesh.worker.driveInteractiveClaudeSession,
+  buildDriverCommand: _aofApplication.mesh.worker.buildDriverCommand,
+  defaultSpawnRuntime: _aofApplication.mesh.worker.defaultSpawnRuntime,
+  ensureWorktreeTrusted: _aofApplication.mesh.worker.ensureWorktreeTrusted,
+  registerActiveWorktree: _aofApplication.mesh.worker.registerActiveWorktree,
+  clearActiveWorktree: _aofApplication.mesh.worker.clearActiveWorktree,
+  listActiveWorktrees: _aofApplication.mesh.worker.listActiveWorktrees,
+  checkoutRootForWorktree: _aofApplication.mesh.worker.checkoutRootForWorktree,
+  listStrandedWorktreeAssignments: _aofApplication.mesh.worker.listStrandedWorktreeAssignments,
+  pushWorktreeBranch: _aofApplication.mesh.worker.pushWorktreeBranch,
+  createMeshWorkerExecutionHandler: _aofApplication.mesh.worker.createMeshWorkerExecutionHandler,
+  settleStrandedRunRecords: _aofApplication.mesh.worker.settleStrandedRunRecords,
+  createMeshWorkerWithdrawHandler: _aofApplication.mesh.worker.createMeshWorkerWithdrawHandler,
+  createMeshWorkerTerminalInputHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalInputHandler,
+  createMeshWorkerTerminalResumeHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler,
+  createMeshRecoveryPushHandler: _aofApplication.mesh.worker.createMeshRecoveryPushHandler,
+}));
       const actual = Object.keys(sinkModule).sort();
       assert.deepEqual(setDelta(actual, [...SINK_SURFACE].sort()), { extra: [], missing: [] }, "an extra name is as much a defect as a missing one — the split subtracts definitions, never surface");
       assert.equal(actual.length, 42, "the surface measured before the split");
@@ -402,7 +528,50 @@ export const archTests = [
 
       // …and every extracted symbol that was ON the pre-split surface is STILL on it, which is the
       // pairing that distinguishes a move from a deletion.
-      const sinkModule = await import("../../../packages/core/src/mesh/worker-execution.mjs");
+      const sinkModule = await Promise.resolve(Object.freeze({
+  ASSIGNMENT_LOOP_LAUNCH_UNDECLARED: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_UNDECLARED,
+  ASSIGNMENT_LOOP_LAUNCH_SCOPELESS: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_SCOPELESS,
+  resolveRefInWorktree: _aofApplication.mesh.worker.resolveRefInWorktree,
+  workerHasRepo: _aofApplication.mesh.worker.workerHasRepo,
+  resolveCloneUrl: _aofApplication.mesh.worker.resolveCloneUrl,
+  parseRepoFromCloneUrl: _aofApplication.mesh.worker.parseRepoFromCloneUrl,
+  meshCheckoutsRoot: _aofApplication.mesh.worker.meshCheckoutsRoot,
+  meshCheckoutPath: _aofApplication.mesh.worker.meshCheckoutPath,
+  isUnderMeshCheckoutsRoot: _aofApplication.mesh.worker.isUnderMeshCheckoutsRoot,
+  buildAskpassShim: _aofApplication.mesh.worker.buildAskpassShim,
+  cloneRepoForWorkspace: _aofApplication.mesh.worker.cloneRepoForWorkspace,
+  pinWorkspaceIdInCheckout: _aofApplication.mesh.worker.pinWorkspaceIdInCheckout,
+  commitWorktreeChanges: _aofApplication.mesh.worker.commitWorktreeChanges,
+  NEEDS_INPUT_SENTINEL: _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL,
+  NEEDS_INPUT_INSTRUCTION: _aofApplication.mesh.worker.NEEDS_INPUT_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_INSTRUCTION,
+  WORKER_SESSION_INSTRUCTION: _aofApplication.mesh.worker.WORKER_SESSION_INSTRUCTION,
+  COMPLETION_IDLE_MS: _aofApplication.mesh.worker.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofApplication.mesh.worker.DECLARED_COMPLETION_IDLE_MS,
+  HUMAN_INPUT_TOOL_NAMES: _aofApplication.mesh.worker.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofApplication.mesh.worker.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  defaultWatchTranscriptSessionId: _aofApplication.mesh.worker.defaultWatchTranscriptSessionId,
+  defaultWatchTranscriptCompletion: _aofApplication.mesh.worker.defaultWatchTranscriptCompletion,
+  defaultPtySpawn: _aofApplication.mesh.worker.defaultPtySpawn,
+  resolveInteractiveDriverLaunch: _aofApplication.mesh.worker.resolveInteractiveDriverLaunch,
+  driveInteractiveClaudeSession: _aofApplication.mesh.worker.driveInteractiveClaudeSession,
+  buildDriverCommand: _aofApplication.mesh.worker.buildDriverCommand,
+  defaultSpawnRuntime: _aofApplication.mesh.worker.defaultSpawnRuntime,
+  ensureWorktreeTrusted: _aofApplication.mesh.worker.ensureWorktreeTrusted,
+  registerActiveWorktree: _aofApplication.mesh.worker.registerActiveWorktree,
+  clearActiveWorktree: _aofApplication.mesh.worker.clearActiveWorktree,
+  listActiveWorktrees: _aofApplication.mesh.worker.listActiveWorktrees,
+  checkoutRootForWorktree: _aofApplication.mesh.worker.checkoutRootForWorktree,
+  listStrandedWorktreeAssignments: _aofApplication.mesh.worker.listStrandedWorktreeAssignments,
+  pushWorktreeBranch: _aofApplication.mesh.worker.pushWorktreeBranch,
+  createMeshWorkerExecutionHandler: _aofApplication.mesh.worker.createMeshWorkerExecutionHandler,
+  settleStrandedRunRecords: _aofApplication.mesh.worker.settleStrandedRunRecords,
+  createMeshWorkerWithdrawHandler: _aofApplication.mesh.worker.createMeshWorkerWithdrawHandler,
+  createMeshWorkerTerminalInputHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalInputHandler,
+  createMeshWorkerTerminalResumeHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler,
+  createMeshRecoveryPushHandler: _aofApplication.mesh.worker.createMeshRecoveryPushHandler,
+}));
       for (const rel of EXTRACTED_HOMES) {
         const child = await import(`../../../${rel}`);
         for (const [name, value] of Object.entries(child)) {

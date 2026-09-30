@@ -31,11 +31,13 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "packages", "core", "src");
+const COMMANDS = path.join(SRC, "application", "bindings", "commands");
 
 // The command layer's own doors — these are ALLOWED to import commands/* because they
 // ARE the layer's entry points, not modules underneath it.
@@ -110,7 +112,7 @@ export const archTests = [
   {
     name: "arch/42 wave (d) d1: no import cycle across the commands/ boundary — nothing a command imports imports commands/ back",
     run: async () => {
-      const commandFiles = await readCommandModules(path.join(SRC, "commands"));
+      const commandFiles = await readCommandModules(COMMANDS);
       // NON-VACUITY: a walk that lost the interior would assert this cycle claim over whatever
       // stayed flat and report green. 67 flat + 32 in `mesh/`, `assets/` and `graph/` at 119/02.
       assert.ok(
@@ -119,25 +121,25 @@ export const archTests = [
           + `${commandFiles.filter((name) => name.includes("/")).length} of them inside a family directory`,
       );
       const offenders = [];
-      for (const name of commandFiles) {
-        const source = await readFile(path.join(SRC, "commands", name), "utf8");
-        for (const spec of staticImports(source)) {
-          // Only edges that LEAVE the command layer can close a cycle through it.
-          if (!spec.startsWith("../")) continue;
-          const target = path.basename(spec);
-          if (!target.endsWith(".mjs")) continue;
-          if (FACE_MODULES.has(target)) continue; // the registry/face doors, exempt above
-          let targetSource;
-          try {
-            targetSource = await readFile(path.join(SRC, target), "utf8");
-          } catch {
-            continue; // not a src-root module (spine/, effects/, …) — walked by its own path below
-          }
-          for (const back of staticImports(targetSource)) {
-            if (back.startsWith("./commands/")) offenders.push(`commands/${name} → ${target} → ${back}`);
-          }
+      const visited = new Set();
+      const walk = async (file, stack = []) => {
+        if (stack.includes(file)) {
+          const cycle = [...stack.slice(stack.indexOf(file)), file];
+          if (cycle.some(at => at.startsWith(COMMANDS + path.sep))) offenders.push(cycle.map(at => path.relative(repoRoot, at)).join(" → "));
+          return;
         }
-      }
+        if (visited.has(file)) return;
+        visited.add(file);
+        const source = await readFile(file, "utf8");
+        for (const spec of staticImports(source)) {
+          if (!(spec.startsWith(".") || spec.startsWith("@aof/"))) continue;
+          const target = createRequire(file).resolve(spec);
+          if (!target.endsWith(".mjs")) continue;
+          await walk(target, [...stack, file]);
+        }
+      };
+      for (const name of commandFiles) await walk(path.join(COMMANDS, name));
+      assert.ok(visited.size >= 200, "command bindings and their real factory/helper closures were read");
       assert.deepEqual(
         offenders,
         [],

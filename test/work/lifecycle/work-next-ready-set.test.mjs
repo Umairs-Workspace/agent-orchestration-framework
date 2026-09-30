@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 65, task 01 —
 // `wiki/work/65_story_concurrent-story-dispatch/tasks/01_next-answers-with-the-ready-set.feature`
 // (@executable). One exported entry per Scenario, one per Scenario-Outline ROW.
@@ -21,9 +23,10 @@
 // directly on `mergeSkipped`. Three lanes, one key, no gap.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { nextWork } from "../../../packages/core/src/work.mjs";
-import { nextCommand, mergeSkipped } from "../../../packages/core/src/commands/next.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const nextWork = _aofWorkspace.work.nextWork;
+const nextCommand = _aofApplication.getCommand("work:next");
+const mergeSkipped = _aofApplication.work.commandTools.next.mergeSkipped;
+const invoke = _aofApplication.invoke;
 import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture.mjs";
 import { withStream } from "../../support/story-depends-fixture.mjs";
 import { withCacheReadFixture, plantCacheRow, runCommand, WORKER_NODE, SYNCED_AT } from "../../support/cache-read-fixture.mjs";

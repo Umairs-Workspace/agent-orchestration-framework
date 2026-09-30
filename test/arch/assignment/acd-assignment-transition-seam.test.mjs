@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-transition-seam (milestone 42 wave (d) leg d3;
 // PRD-command-spine-effects-ledger: "the apply-seam guards (holder,
 // terminal-never-regresses) move inside the shared transition so ALL writers
@@ -28,8 +29,8 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { guardAssignmentTransition } from "../../../packages/core/src/effects/assignment-transitions.mjs";
-import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
+const guardAssignmentTransition = _aofApplication.mesh.transitions.guardAssignmentTransition;
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
 import { ACTIVE_ASSIGNMENT_STATES, TERMINAL_ASSIGNMENT_STATES } from "@aof/mesh/assignment-record";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

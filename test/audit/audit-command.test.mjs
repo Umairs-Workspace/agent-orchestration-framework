@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 59 / story 04 — THE AUDIT FACE, behaviourally.
 //
 // Contracts: `wiki/work/59_milestone_audit-loops/stories/04_story_the-audit-face/tasks/
@@ -19,31 +21,34 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { auditCommand, anchorWindowFromConfig, resolveRoleRouting, DEFAULT_ANCHOR_STALE_DAYS } from "../../packages/core/src/commands/audit.mjs";
+const auditCommand = _aofApplication.getCommand("work:audit");
+const anchorWindowFromConfig = _aofApplication.work.commandTools.audit.anchorWindowFromConfig;
+const resolveRoleRouting = _aofApplication.work.commandTools.audit.resolveRoleRouting;
+const DEFAULT_ANCHOR_STALE_DAYS = _aofApplication.work.commandTools.audit.DEFAULT_ANCHOR_STALE_DAYS;
 import { AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
 import { runHookWiring } from "@aof/work/audit/hook-wiring";
-import { runDeclaredBounds } from "../../packages/core/src/work-audit/declared-bounds.mjs";
-import { getCommand, listCommands } from "../../packages/core/src/command-core.mjs";
-import { deriveRouteTable } from "../../packages/core/src/spine/face.mjs";
-import { loadLoops } from "../../packages/core/src/work/loops.mjs";
-import {
-  AUDITABLE_CODES,
-  AUDIT_ENVELOPE_KEYS,
-  AUDIT_FACE_CODES,
-  ESCALATING_CODES,
-  REPORT_LANES,
-  addresseesFor,
-  auditorsOf,
-  canReceive,
-  escalates,
-  escalationActorOf,
-  instrumentFor,
-  ownersOfInstrument,
-  referenceSettersOf,
-  resolveAddressees,
-  runAudit,
-} from "../../packages/core/src/work-audit/report.mjs";
-import { CENSUS_SWEEPS, sweepLimits } from "../../packages/core/src/work-audit/census.mjs";
+const runDeclaredBounds = _aofApplication.work.audit.declaredBounds.runDeclaredBounds;
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const AUDITABLE_CODES = _aofApplication.work.audit.report.AUDITABLE_CODES;
+const AUDIT_ENVELOPE_KEYS = _aofApplication.work.audit.report.AUDIT_ENVELOPE_KEYS;
+const AUDIT_FACE_CODES = _aofApplication.work.audit.report.AUDIT_FACE_CODES;
+const ESCALATING_CODES = _aofApplication.work.audit.report.ESCALATING_CODES;
+const REPORT_LANES = _aofApplication.work.audit.report.REPORT_LANES;
+const addresseesFor = _aofApplication.work.audit.report.addresseesFor;
+const auditorsOf = _aofApplication.work.audit.report.auditorsOf;
+const canReceive = _aofApplication.work.audit.report.canReceive;
+const escalates = _aofApplication.work.audit.report.escalates;
+const escalationActorOf = _aofApplication.work.audit.report.escalationActorOf;
+const instrumentFor = _aofApplication.work.audit.report.instrumentFor;
+const ownersOfInstrument = _aofApplication.work.audit.report.ownersOfInstrument;
+const referenceSettersOf = _aofApplication.work.audit.report.referenceSettersOf;
+const resolveAddressees = _aofApplication.work.audit.report.resolveAddressees;
+const runAudit = _aofApplication.work.audit.report.runAudit;
+const CENSUS_SWEEPS = _aofApplication.work.audit.census.CENSUS_SWEEPS;
+const sweepLimits = _aofApplication.work.audit.census.sweepLimits;
 import { LIMIT_KEYS, limitRecord } from "@aof/work/audit/reads";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 
@@ -793,8 +798,8 @@ export const auditCommandTests = [
       await withLoopRegistry(ambiguous, async (fixture) => {
         const model = await loadLoops(fixture.workDir);
         assert.deepEqual(model.findings.filter((f) => f.severity === "error"), [], "the fixture is clean");
-        const about = instrumentFor({ path: path.join(repoRoot, "packages", "core", "src", "run-store.mjs") }, { model, repoRoot });
-        assert.equal(about, "file:packages/core/src/run-store.mjs", "the finding is about the FILE the registry names twice");
+        const about = instrumentFor({ path: path.join(repoRoot, "packages", "execution", "src", "runs.mjs") }, { model, repoRoot });
+        assert.equal(about, "file:packages/execution/src/runs.mjs", "the finding is about the actual owning FILE the registry names twice");
         assert.deepEqual([...ownersOfInstrument(about, model)], [], "…which no loop declares, so it escalates");
         const resolved = resolveAddressees(about, model, escalationActorOf(model));
         assert.equal(resolved.via, "escalation-unowned");

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 17 / story 00 — the `.aof/` mapping sidecar
 // (ADR-001). One test object per @executable scenario of
 // `02_mapping-sidecar-roundtrip.feature`.
@@ -13,7 +14,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readMapping, resolvePageId, recordPageId } from "../../packages/core/src/notion/mapping.mjs";
+const readMapping = _aofApplication.integrations.notion.mapping.readMapping;
+const resolvePageId = _aofApplication.integrations.notion.mapping.resolvePageId;
+const recordPageId = _aofApplication.integrations.notion.mapping.recordPageId;
 
 async function makeRoot() {
   return await mkdtemp(path.join(os.tmpdir(), "aof-notion-map-"));

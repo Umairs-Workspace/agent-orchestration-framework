@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/terminal/session-screen-verdicts.test.mjs — milestone 138 / story 00, task 04
 // (04_every-verdict-the-screen-can-give-is-acted-on.feature; 138/ADR-003 §1 §4 §5 §6, ADR-006).
 //
@@ -12,7 +13,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
-import { isRetryable } from "../../packages/core/src/run-store.mjs";
+const isRetryable = _aofApplication.execution.runs.isRetryable;
 import { loadFixture } from "./screen-model.test.mjs";
 import { BRIEF, ESC, SUBMIT_KEY, READY_CHUNKS, drive, frame, pasteOf, sleep, waitUntil, withRegistry } from "./session-screen-ready.test.mjs";
 

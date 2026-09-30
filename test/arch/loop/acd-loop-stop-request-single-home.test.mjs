@@ -1,3 +1,6 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-13001 + FF-13003 — THE REQUEST HAS ONE HOME, AND THE VERB IS A PROBE-SHAPED WRITE THROUGH
 // ONE FUNCTION (milestone 130 / story 05; ARCHITECTURE `## Fitness functions`, ADR-001 and
 // ADR-002). Which of this directory's three subjects: the RECORD — the stop request is a file
@@ -42,7 +45,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../../packages/core/src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
@@ -98,7 +101,7 @@ function resolved(fromRel, specifier) {
 // ONE read of `packages/core/src/**`, comment-stripped: `[{ rel, code, raw }]` with `rel` repo-relative posix.
 async function srcUnits() {
   const units = [];
-  for (const file of await readRuntimeFiles(repoRoot)) {
+  for (const file of await readRuntimeFiles(repoRoot, { runtime: "node" })) {
     const raw = await readFile(file.path, "utf8");
     units.push({ rel: toPosix(file.rel), raw, code: stripComments(raw) });
   }

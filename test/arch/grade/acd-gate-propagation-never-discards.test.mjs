@@ -51,7 +51,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The modules that may run git against the item branch — posix, repo-relative, so a finding
 // names the module the way the register does.
 export const BRANCH_PATH_MODULES = Object.freeze([
-  "packages/core/src/mesh/worktree.mjs",
+  "packages/core/src/application/bindings/mesh/worktree.mjs",
   "packages/mesh/src/worktrees.mjs",
   "packages/execution/src/worktrees.mjs",
   "packages/mesh/src/worker-execution.mjs",
@@ -263,7 +263,7 @@ export const archTests = [
     run: async () => {
       assert.deepEqual(
         [...BRANCH_PATH_MODULES].sort(),
-        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/mesh/src/recovery-push.mjs", "packages/mesh/src/worker-execution.mjs", "packages/core/src/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
+        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/mesh/src/recovery-push.mjs", "packages/mesh/src/worker-execution.mjs", "packages/core/src/application/bindings/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
         "BRANCH_PATH_MODULES as a set",
       );
       for (const rel of BRANCH_PATH_MODULES) assert.ok((await readModule(rel)).length > 0, `${rel} was read`);

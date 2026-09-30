@@ -1,3 +1,5 @@
+import * as _aofPublic_aof_contracts_cache_provenance from "@aof/contracts/cache-provenance";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 04 / task 03 —
 // tasks/03_freshness-ramp-and-stale-badge.feature (@executable).
 //
@@ -64,8 +66,8 @@
 // The ramp's minimal RENDERING is asserted here and its a11y contract in task 08;
 // `minimal` is RESERVED with no painter in this milestone.
 import assert from "node:assert/strict";
-import { isStale } from "../../packages/core/src/run-store.mjs";
-import { cacheFreshness } from "../../packages/core/src/cache-provenance.mjs";
+const isStale = _aofApplication.execution.runs.isStale;
+const cacheFreshness = _aofPublic_aof_contracts_cache_provenance.cacheFreshness;
 import {
   BADGE_FORMS,
   FRESHNESS_GLYPH,

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 61 / story 04 — the rule and the ledger (the LEDGER half).
 //
 //   tasks/01_a-loss-carries-rather-than-resets.feature
@@ -19,13 +20,11 @@
 // it is discharged here, asserted rather than assumed.
 import assert from "node:assert/strict";
 
-import {
-  accrualReport,
-  criterionDigest,
-  defaultCriterion,
-  makeCriterion,
-  rulingsUnderCurrentCriterion,
-} from "../../packages/core/src/work-acceptor/criterion.mjs";
+const accrualReport = _aofApplication.work.acceptor.criterion.accrualReport;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
+const rulingsUnderCurrentCriterion = _aofApplication.work.acceptor.criterion.rulingsUnderCurrentCriterion;
 import { PAIR_OUTCOMES, deriveRule, earliestCrossing } from "@aof/work/acceptor/rule";
 import {
   BUDGET_EXHAUSTED,

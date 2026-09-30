@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 39 / story 03 (gap-to-chore), task
 //   wiki/work/39_milestone_delivery-memory-outcome/stories/03_story_gap-to-chore/
 //     tasks/01_promote-gap-to-chore.feature
@@ -14,8 +16,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { findWork, validateWork } from "../../packages/core/src/work.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const validateWork = _aofWorkspace.work.validateWork;
 import { withInsertFixture } from "../support/work-insert-fixture.mjs";
 
 // Extract a heading section's body: everything between the heading line and

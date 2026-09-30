@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 39 / ADR-002:
 // "`buildRecords` (packages/core/src/memory/local-indexing.mjs) remains the SINGLE shared
 //  record-source seam BOTH backends consume; `parseOutcome` is composed into it,
@@ -31,7 +32,22 @@ const LOCAL_BACKEND = path.join(repoRoot, "packages", "knowledge", "src/memory/l
 const PARSER_DEF_RE = /(?:function|const)\s+(parse(?:Outcome|Architecture|Retrospective|Aof)\b)/g;
 
 async function outcomeParser() {
-  const mod = await import("../../../packages/core/src/memory/local-indexing.mjs");
+  const mod = await Promise.resolve(Object.freeze({
+  INDEX_VERSION: _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION,
+  memoryIndexPath: _aofApplication.knowledge.memory.localIndexing.memoryIndexPath,
+  parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+  parseArchitecture: _aofApplication.knowledge.memory.localIndexing.parseArchitecture,
+  parseAof: _aofApplication.knowledge.memory.localIndexing.parseAof,
+  parseOutcome: _aofApplication.knowledge.memory.localIndexing.parseOutcome,
+  IMPORT_ITEM_PREFIX: _aofApplication.knowledge.memory.localIndexing.IMPORT_ITEM_PREFIX,
+  importItem: _aofApplication.knowledge.memory.localIndexing.importItem,
+  isImportRecord: _aofApplication.knowledge.memory.localIndexing.isImportRecord,
+  resolveRecordSourcePath: _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath,
+  buildRecords: _aofApplication.knowledge.memory.localIndexing.buildRecords,
+  buildIndex: _aofApplication.knowledge.memory.localIndexing.buildIndex,
+  reindex: _aofApplication.knowledge.memory.localIndexing.reindex,
+  status: _aofApplication.knowledge.memory.localIndexing.status,
+}));
   return typeof mod.parseOutcome === "function" ? mod.parseOutcome : null;
 }
 
@@ -78,7 +94,22 @@ export const archTests = [
 
       // Prove the parser is WIRED INTO buildRecords (not merely exported): a milestone
       // folder carrying an OUTCOME.md must yield delivery records from buildRecords.
-      const { buildRecords } = await import("../../../packages/core/src/memory/local-indexing.mjs");
+      const { buildRecords } = await Promise.resolve(Object.freeze({
+  INDEX_VERSION: _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION,
+  memoryIndexPath: _aofApplication.knowledge.memory.localIndexing.memoryIndexPath,
+  parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+  parseArchitecture: _aofApplication.knowledge.memory.localIndexing.parseArchitecture,
+  parseAof: _aofApplication.knowledge.memory.localIndexing.parseAof,
+  parseOutcome: _aofApplication.knowledge.memory.localIndexing.parseOutcome,
+  IMPORT_ITEM_PREFIX: _aofApplication.knowledge.memory.localIndexing.IMPORT_ITEM_PREFIX,
+  importItem: _aofApplication.knowledge.memory.localIndexing.importItem,
+  isImportRecord: _aofApplication.knowledge.memory.localIndexing.isImportRecord,
+  resolveRecordSourcePath: _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath,
+  buildRecords: _aofApplication.knowledge.memory.localIndexing.buildRecords,
+  buildIndex: _aofApplication.knowledge.memory.localIndexing.buildIndex,
+  reindex: _aofApplication.knowledge.memory.localIndexing.reindex,
+  status: _aofApplication.knowledge.memory.localIndexing.status,
+}));
       const projectRoot = await mkdtemp(path.join(os.tmpdir(), "aof-arch-outcome-seam-"));
       const workDir = path.join(projectRoot, "wiki", "work");
       const dir = path.join(workDir, "39_milestone_delivery-memory-outcome");

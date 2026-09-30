@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-cross-org-isolation.test.mjs — traceability for
 // milestone 38 / story 03, task 01 (01_cross-org-key-isolation.feature, ADR-011
 // structural invariant #2, SECURITY T12). Every @executable scenario / Scenario
@@ -17,8 +18,10 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createGithubAppMintProvider, defaultSignAppJwt } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
-import { createResolveWorkspaceAppIdentity, createResolveWorkspaceCloneUrl } from "../../../packages/core/src/mesh/launcher.mjs";
+const createGithubAppMintProvider = _aofApplication.mesh.cloneCredentialProvider.createGithubAppMintProvider;
+const defaultSignAppJwt = _aofApplication.mesh.cloneCredentialProvider.defaultSignAppJwt;
+const createResolveWorkspaceAppIdentity = _aofApplication.mesh.launcher.createResolveWorkspaceAppIdentity;
+const createResolveWorkspaceCloneUrl = _aofApplication.mesh.launcher.createResolveWorkspaceCloneUrl;
 import { createFakeHttpRequest, jsonResponse } from "../../support/mesh-clone-credential-mint-fixture.mjs";
 import { withPerOrgAppIdentityFixture, generateThrowawayPrivateKeyPem } from "../../support/mesh-per-org-app-identity-fixture.mjs";
 

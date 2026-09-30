@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 02 (insert-top-level), task
 //   wiki/work/41_milestone_work-item-insertion/stories/02_story_insert-top-level/
 //     tasks/00_insert-top-level-places-and-scaffolds.feature
@@ -30,11 +32,15 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { findWork, listItems, validateWork, loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { scaffoldBacklogDriver } from "../../../packages/core/src/commands/insert-shared.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const scaffoldBacklogDriver = _aofApplication.work.commandTools.insertShared.scaffoldBacklogDriver;
 import { packageVersionString } from "../../../packages/core/src/asset-base.mjs";
-import { openEffectsJournal, readEvents } from "../../../packages/core/src/effects/journal.mjs";
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
 import { withInsertFixture, buildTopLevelMilestones, writeStoryItem, setMilestoneDepends, frontmatter } from "../../support/work-insert-fixture.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
@@ -726,7 +732,7 @@ export const workInsertAliasTests = [
       );
       const anyImporters = [...sources].filter(([, code]) => /\brunInsertTopLevel\b/u.test(code) && !/function\s+runInsertTopLevel\b/u.test(code)).map(([relPath]) => relPath).sort();
       const packageFaces = importers.map(file => file.replace("packages/core/src/application/bindings/commands/", "packages/work/src/commands/"));
-      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "packages/core/src/application/bindings/commands/promote.mjs", "packages/core/src/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
+      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "packages/core/src/application/bindings/commands/promote.mjs", "packages/core/src/application/bindings/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
       for (const face of packageFaces) {
         assert.match(sources.get(face), /\brunInsertTopLevel\s*\(/u, `${face}: the injected insertion service is called`);
         const adapter = sources.get(face.replace("packages/work/src/", "packages/core/src/application/bindings/"));

@@ -1,16 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 62 / story 00 — the three corpus lanes and the absence floor.
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 
-import {
-  CORPUS_LANES,
-  assembleCorpus,
-  corpusFinding,
-  renderCorpusReport,
-} from "../../packages/core/src/work-tune/corpus.mjs";
-import { loopPointersIn } from "../../packages/core/src/work/loops.mjs";
+const CORPUS_LANES = _aofApplication.work.tune.corpus.CORPUS_LANES;
+const assembleCorpus = _aofApplication.work.tune.corpus.assembleCorpus;
+const corpusFinding = _aofApplication.work.tune.corpus.corpusFinding;
+const renderCorpusReport = _aofApplication.work.tune.corpus.renderCorpusReport;
+const loopPointersIn = _aofApplication.graph.work.loops.loopPointersIn;
 
 async function put(file, body) {
   await mkdir(path.dirname(file), { recursive: true });

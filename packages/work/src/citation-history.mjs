@@ -37,13 +37,31 @@ export function moduleRelocations(modules, { exports, constructors }) {
     const statements = [...clean.matchAll(/export\s*(?:\{[^}]+\}|\*)\s*from\s*['"](@aof\/[^'"]+)['"];?/gu)];
     if (statements.length && clean.replace(/export\s*(?:\{[^}]+\}|\*)\s*from\s*['"]@aof\/[^'"]+['"];?/gu, '').trim() === '') {
       const targets = new Set(statements.map(match => exports.get(match[1])));
-      if (targets.size === 1 && !targets.has(undefined)) links.set(file, [...targets][0]);
+      if (!targets.has(undefined)) links.set(file, targets.size === 1 ? [...targets][0] : Object.freeze([...targets]));
       continue;
     }
-    if (!source.includes('Compatibility entry; construction belongs to core application assembly.')) continue;
+    // The complete configured-forward grammar also covers the CLI face entry.
+    const remainder = clean
+      .replace(/import\s*\{[\w\s,]+\}\s*from\s*['"][^'"]*application\/default(?:-[\w-]+)?\.mjs['"];?/gu, '')
+      .replace(/export\s+const\s*\{[\w\s,:]+\}\s*=\s*\w+;?/gu, '')
+      .replace(/export\s+const\s+\w+\s*=\s*\w+(?:\.\w+){1,2};?/gu, '')
+      .replace(/export\s+default\s+\w+\.\w+;?/gu, '')
+      .replace(/export\s*(?:\{[\w\s,]+\}|\*)\s*from\s*['"]@aof\/[^'"]+['"];?/gu, '')
+      .replace(/export\s*\{[\w\s,]+\}\s*from\s*['"]\.\.?\/[^'"]+['"];?/gu, '').trim();
+    if (remainder !== '' || !/import\s*\{[^}]+\}\s*from\s*['"][^'"]*application\/default/u.test(clean)) continue;
     const object = /export\s+const\s*\{[^}]+\}\s*=\s*(\w+)/u.exec(clean)?.[1];
-    const service = object ?? /export\s+const\s+\w+\s*=\s*default\w+\.(\w+)\./u.exec(clean)?.[1];
+    const service = object ?? /export\s+const\s+\w+\s*=\s*default\w+\.(\w+)\./u.exec(clean)?.[1] ?? /export\s+default\s+(\w+)\./u.exec(clean)?.[1];
     if (constructors.has(service)) links.set(file, constructors.get(service));
+  }
+  // Relative alias forwards (for example the former mesh log names) inherit
+  // a destination already proved from the target's recorded configured source.
+  for (const [file, source] of modules) {
+    if (links.has(file)) continue;
+    const clean = source.split(/\r?\n/u).filter(line => !/^\s*\/\//u.test(line)).join('\n').trim();
+    const match = /^export\s*\{[\w\s,]+\}\s*from\s*['"](\.\.?\/[^'"]+)['"];?$/u.exec(clean);
+    if (!match) continue;
+    const target = path.posix.normalize(path.posix.join(path.posix.dirname(file), match[1]));
+    if (links.has(target)) links.set(file, links.get(target));
   }
   return links;
 }

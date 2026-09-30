@@ -5,7 +5,7 @@
 // (acd-bundle-manifest-hashes) fails CI if the shipped manifest drifts from the
 // rendered bundle, so a stale manifest cannot ship.
 import { writeFileSync } from "node:fs";
-import { generateBundleManifest, serializeBundleManifest, manifestPath } from "../packages/core/src/work/bundle-manifest.mjs";
+import { generateBundleManifest, serializeBundleManifest, manifestPath } from "aof/bundle-manifest";
 
 const manifest = generateBundleManifest();
 const target = manifestPath();

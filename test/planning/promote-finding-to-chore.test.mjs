@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 71 / story 01 (findings-become-work-items):
 //   tasks/00_the-triage-rule-routes-every-finding.feature
 //   tasks/01_promote-a-finding-to-a-chore.feature
@@ -20,11 +22,13 @@
 import assert from "node:assert/strict";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { findWork, listItems, validateWork } from "../../packages/core/src/work.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
+const validateWork = _aofWorkspace.work.validateWork;
 import { FINDING_ROUTINGS, routeFinding, routeFindings } from "@aof/work-loop/engine";
 import { appendPosition } from "@aof/work/promote/promotion";
-import { promoteGapToChoreCommand } from "../../packages/core/src/commands/promote-gap-to-chore.mjs";
+const promoteGapToChoreCommand = _aofApplication.getCommand("work:promote-gap");
 import { withInsertFixture } from "../support/work-insert-fixture.mjs";
 import { frontmatter, writeMilestoneItem, writeStoryItem, writeUatItem } from "../support/work-reindex-fixture.mjs";
 

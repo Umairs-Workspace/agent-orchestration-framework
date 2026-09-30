@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 02 (insert-top-level), task
 //   wiki/work/41_milestone_work-item-insertion/stories/02_story_insert-top-level/
 //     tasks/03_shift-count-reported-in-json-envelope.feature
@@ -9,8 +11,8 @@
 // insert-milestone --json`'s stdout, cross-checked against a fresh `listItems`
 // read to count what actually moved.
 import assert from "node:assert/strict";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { listItems } from "../../../packages/core/src/work.mjs";
+const invoke = _aofApplication.invoke;
+const listItems = _aofWorkspace.work.listItems;
 import { withInsertFixture, buildTopLevelMilestones } from "../../support/work-insert-fixture.mjs";
 
 const THRESHOLD_CONFIG = { work: { insert: { confirmThreshold: 5 } } };

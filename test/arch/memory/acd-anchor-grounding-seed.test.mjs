@@ -1,10 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { EDGE_KEYS, GROUND_VALUES } from "../../../packages/core/src/work/loops.mjs";
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const GROUND_VALUES = _aofApplication.graph.work.loops.GROUND_VALUES;
 import { GROUND_VERDICTS, buildGroundednessReport } from "@aof/work-graph/checks";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-audit-lane-registry-complete (milestone 77 / story 05, FF-7708;
 // ADR-001 §2, ADR-008 §3, §5, ADR-010 §2, §4).
 //
@@ -34,19 +35,17 @@ import { fileURLToPath } from "node:url";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import {
-  REPORT_LANES,
-  assertLaneLimits,
-  assertLaneRead,
-  assertLaneRunnersDistinct,
-  runAudit,
-} from "../../../packages/core/src/work-audit/report.mjs";
+const REPORT_LANES = _aofApplication.work.audit.report.REPORT_LANES;
+const assertLaneLimits = _aofApplication.work.audit.report.assertLaneLimits;
+const assertLaneRead = _aofApplication.work.audit.report.assertLaneRead;
+const assertLaneRunnersDistinct = _aofApplication.work.audit.report.assertLaneRunnersDistinct;
+const runAudit = _aofApplication.work.audit.report.runAudit;
 import { sweepDeclarationProblems } from "@aof/work/audit/reads";
-import { PROMPT_LAYER_SWEEPS } from "../../../packages/core/src/work-audit/prompt-layer.mjs";
+const PROMPT_LAYER_SWEEPS = _aofApplication.work.audit.promptLayer.PROMPT_LAYER_SWEEPS;
 import { HOOK_WIRING_SWEEPS } from "@aof/work/audit/hook-wiring";
-import { SEAM_LIVENESS_SWEEPS } from "../../../packages/core/src/work-audit/seam-liveness.mjs";
-import { DECLARED_BOUNDS_SWEEPS } from "../../../packages/core/src/work-audit/declared-bounds.mjs";
-import { auditCommand } from "../../../packages/core/src/commands/audit.mjs";
+const SEAM_LIVENESS_SWEEPS = _aofApplication.work.audit.seamLiveness.SEAM_LIVENESS_SWEEPS;
+const DECLARED_BOUNDS_SWEEPS = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_SWEEPS;
+const auditCommand = _aofApplication.getCommand("work:audit");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

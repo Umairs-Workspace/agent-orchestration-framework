@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loopsValidateCommand } from "../../packages/core/src/commands/loops-validate.mjs";
+const loopsValidateCommand = _aofApplication.getCommand("work:loops-validate");
 import {
   CHECK_FINDING_CODES,
   GATING_CODES,

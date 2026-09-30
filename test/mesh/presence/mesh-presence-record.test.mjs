@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 23 / story 00 — mesh:heartbeat assembles and
 // publishes this node's presence record (tasks/00_presence-record.feature).
 //
@@ -25,13 +28,24 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace, listItems } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { meshDir, presenceRecordPath, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { assemblePresenceRecord, publishPresenceRecord, readActiveLoops, readActiveRuns } from "../../../packages/core/src/mesh/presence.mjs";
-import { loopStopsDir, markStopHonoured, readStopRequest, requestLoopStop, stopRequestPath } from "../../../packages/core/src/loop/stop-request.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../packages/core/src/global-node-registry.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const listItems = _aofWorkspace.work.listItems;
+const invoke = _aofApplication.invoke;
+const meshDir = _aofHooks.meshStore.meshDir;
+const presenceRecordPath = _aofHooks.meshStore.presenceRecordPath;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const readActiveLoops = _aofApplication.mesh.presence.readActiveLoops;
+const readActiveRuns = _aofApplication.mesh.presence.readActiveRuns;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const queryGlobalRegistry = _aofApplication.mesh.globalNodeRegistry.queryGlobalRegistry;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

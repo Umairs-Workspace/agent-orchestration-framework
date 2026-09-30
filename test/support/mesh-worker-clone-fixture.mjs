@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/mesh-worker-clone-fixture.mjs — shared fixture builder for milestone
 // 38 / story 01 (worker-repo-checkout) task traceability modules. Mirrors
 // mesh-worker-exec-fixture.mjs's shape but for the CLONE-ON-MISS lane: a REAL git
@@ -9,8 +11,8 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnSyncHardened } from "./cli-spawn.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
 
 function git(cwd, args) {
   return spawnSyncHardened("git", args, { cwd, encoding: "utf8", shell: process.platform === "win32" });

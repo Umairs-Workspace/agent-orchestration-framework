@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 38 / story 00
 // tasks/03_presence-aggregate-workspaces.feature — "presence aggregates across ALL
 // the node's registered workspaces, not just the daemon's launch cwd".
@@ -22,12 +25,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
-import { upsertWorkItemContent } from "../../../packages/core/src/global-work-store.mjs";
-import { listItems } from "../../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const startSession = _aofHooks.meshSession.startSession;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
+const listItems = _aofWorkspace.work.listItems;
 import { workspaceIdFromPath } from "@aof/mesh/workspace-identity";
 
 const NODE_ID = "node-a";
@@ -339,7 +342,32 @@ export const meshPresenceAggregateWorkspacesTests = [
           const handle = await publishOnce(fixture.root, fixture.env, {
             listItems: async (workDir) => {
               if (workDir === second.workDir) throw new Error("simulated item-enumeration fault for ws-2");
-              const { listItems: realListItems } = await import("../../../packages/core/src/work.mjs");
+              const { listItems: realListItems } = await Promise.resolve(Object.freeze({
+  recordDoc: _aofWorkspace.work.recordDoc,
+  typeHasRecordDoc: _aofWorkspace.work.typeHasRecordDoc,
+  parseFrontmatter: _aofWorkspace.work.parseFrontmatter,
+  WORK_ITEM_SCHEMA_VERSION: _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION,
+  readItemSchema: _aofWorkspace.work.readItemSchema,
+  readItemVersion: _aofWorkspace.work.readItemVersion,
+  rollbackItemStatus: _aofWorkspace.work.rollbackItemStatus,
+  setItemStatus: _aofWorkspace.work.setItemStatus,
+  applyItemFrontmatter: _aofWorkspace.work.applyItemFrontmatter,
+  parseStorySpan: _aofWorkspace.work.parseStorySpan,
+  listItems: _aofWorkspace.work.listItems,
+  isLiveStreamRow: _aofWorkspace.work.isLiveStreamRow,
+  findWork: _aofWorkspace.work.findWork,
+  listStream: _aofWorkspace.work.listStream,
+  isDependTarget: _aofWorkspace.work.isDependTarget,
+  siblingDependencyNumber: _aofWorkspace.work.siblingDependencyNumber,
+  siblingGate: _aofWorkspace.work.siblingGate,
+  isDependNumber: _aofWorkspace.work.isDependNumber,
+  rewriteRefEntry: _aofWorkspace.work.rewriteRefEntry,
+  rewriteDependsEntries: _aofWorkspace.work.rewriteDependsEntries,
+  nextWork: _aofWorkspace.work.nextWork,
+  validateWork: _aofWorkspace.work.validateWork,
+  loadWorkspace: _aofWorkspace.work.loadWorkspace,
+  healIdentitySidecar: _aofWorkspace.work.healIdentitySidecar,
+}));
               return realListItems(workDir);
             },
           });

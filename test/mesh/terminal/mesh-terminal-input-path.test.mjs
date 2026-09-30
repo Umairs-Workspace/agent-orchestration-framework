@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // test/mesh/terminal/mesh-terminal-input-path.test.mjs — m42 "interactive worker terminals"
 // (SECURITY T14's read-only decision operator-overridden 2026-07-27; the
 // constrained shape is pinned structurally by
@@ -27,27 +30,30 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, appendFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createTerminalInputRouter } from "../../../packages/core/src/mesh/terminal-input.mjs";
-import { TERMINAL_INPUT_KIND, buildTerminalInputEnvelope, TERMINAL_FRAME_KIND, TERMINAL_RESUME_KIND, buildTerminalResumeEnvelope } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
-import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
-import {
-  createMeshWorkerExecutionHandler,
-  createMeshWorkerTerminalInputHandler,
-  createMeshWorkerTerminalResumeHandler,
-  defaultWatchTranscriptCompletion,
-  NEEDS_INPUT_SENTINEL,
-  DIRECTIVE_COMPLETE_SENTINEL,
-} from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { meshWorktreePath } from "../../../packages/core/src/mesh/worktree.mjs";
-import { meshTerminalResumeCommand } from "../../../packages/core/src/commands/mesh/terminal-resume.mjs";
+const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
+const TERMINAL_INPUT_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_INPUT_KIND;
+const buildTerminalInputEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalInputEnvelope;
+const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
+const TERMINAL_RESUME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_RESUME_KIND;
+const buildTerminalResumeEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalResumeEnvelope;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const createMeshWorkerTerminalInputHandler = _aofApplication.mesh.worker.createMeshWorkerTerminalInputHandler;
+const createMeshWorkerTerminalResumeHandler = _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler;
+const defaultWatchTranscriptCompletion = _aofApplication.mesh.worker.defaultWatchTranscriptCompletion;
+const NEEDS_INPUT_SENTINEL = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
+const DIRECTIVE_COMPLETE_SENTINEL = _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshTerminalResumeCommand = _aofApplication.getCommand("mesh:terminal-resume");
 import { updateAssignmentState, restoreParkedAssignmentResume } from "@aof/mesh/assignment-record";
-import { findWork } from "../../../packages/core/src/work.mjs";
-import { readRuns, startRun } from "../../../packages/core/src/run-store.mjs";
-import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
-import { applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
+const applyAssignmentStatusFrame = _aofApplication.mesh.controlStreamServer.applyAssignmentStatusFrame;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 
@@ -621,7 +627,50 @@ export const meshTerminalInputPathTests = [
   {
     name: "terminal-input/launch-env: a worker session's env is SCRUBBED of the IDE-attachment vector (CLAUDE_CODE_SSE_PORT / TERM_PROGRAM / VSCODE_*) — a daemon-spawned claude must never attach to a human's editor",
     async run() {
-      const { resolveInteractiveDriverLaunch } = await import("../../../packages/core/src/mesh/worker-execution.mjs");
+      const { resolveInteractiveDriverLaunch } = await Promise.resolve(Object.freeze({
+  ASSIGNMENT_LOOP_LAUNCH_UNDECLARED: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_UNDECLARED,
+  ASSIGNMENT_LOOP_LAUNCH_SCOPELESS: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_SCOPELESS,
+  resolveRefInWorktree: _aofApplication.mesh.worker.resolveRefInWorktree,
+  workerHasRepo: _aofApplication.mesh.worker.workerHasRepo,
+  resolveCloneUrl: _aofApplication.mesh.worker.resolveCloneUrl,
+  parseRepoFromCloneUrl: _aofApplication.mesh.worker.parseRepoFromCloneUrl,
+  meshCheckoutsRoot: _aofApplication.mesh.worker.meshCheckoutsRoot,
+  meshCheckoutPath: _aofApplication.mesh.worker.meshCheckoutPath,
+  isUnderMeshCheckoutsRoot: _aofApplication.mesh.worker.isUnderMeshCheckoutsRoot,
+  buildAskpassShim: _aofApplication.mesh.worker.buildAskpassShim,
+  cloneRepoForWorkspace: _aofApplication.mesh.worker.cloneRepoForWorkspace,
+  pinWorkspaceIdInCheckout: _aofApplication.mesh.worker.pinWorkspaceIdInCheckout,
+  commitWorktreeChanges: _aofApplication.mesh.worker.commitWorktreeChanges,
+  NEEDS_INPUT_SENTINEL: _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL,
+  NEEDS_INPUT_INSTRUCTION: _aofApplication.mesh.worker.NEEDS_INPUT_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_INSTRUCTION,
+  WORKER_SESSION_INSTRUCTION: _aofApplication.mesh.worker.WORKER_SESSION_INSTRUCTION,
+  COMPLETION_IDLE_MS: _aofApplication.mesh.worker.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofApplication.mesh.worker.DECLARED_COMPLETION_IDLE_MS,
+  HUMAN_INPUT_TOOL_NAMES: _aofApplication.mesh.worker.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofApplication.mesh.worker.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  defaultWatchTranscriptSessionId: _aofApplication.mesh.worker.defaultWatchTranscriptSessionId,
+  defaultWatchTranscriptCompletion: _aofApplication.mesh.worker.defaultWatchTranscriptCompletion,
+  defaultPtySpawn: _aofApplication.mesh.worker.defaultPtySpawn,
+  resolveInteractiveDriverLaunch: _aofApplication.mesh.worker.resolveInteractiveDriverLaunch,
+  driveInteractiveClaudeSession: _aofApplication.mesh.worker.driveInteractiveClaudeSession,
+  buildDriverCommand: _aofApplication.mesh.worker.buildDriverCommand,
+  defaultSpawnRuntime: _aofApplication.mesh.worker.defaultSpawnRuntime,
+  ensureWorktreeTrusted: _aofApplication.mesh.worker.ensureWorktreeTrusted,
+  registerActiveWorktree: _aofApplication.mesh.worker.registerActiveWorktree,
+  clearActiveWorktree: _aofApplication.mesh.worker.clearActiveWorktree,
+  listActiveWorktrees: _aofApplication.mesh.worker.listActiveWorktrees,
+  checkoutRootForWorktree: _aofApplication.mesh.worker.checkoutRootForWorktree,
+  listStrandedWorktreeAssignments: _aofApplication.mesh.worker.listStrandedWorktreeAssignments,
+  pushWorktreeBranch: _aofApplication.mesh.worker.pushWorktreeBranch,
+  createMeshWorkerExecutionHandler: _aofApplication.mesh.worker.createMeshWorkerExecutionHandler,
+  settleStrandedRunRecords: _aofApplication.mesh.worker.settleStrandedRunRecords,
+  createMeshWorkerWithdrawHandler: _aofApplication.mesh.worker.createMeshWorkerWithdrawHandler,
+  createMeshWorkerTerminalInputHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalInputHandler,
+  createMeshWorkerTerminalResumeHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler,
+  createMeshRecoveryPushHandler: _aofApplication.mesh.worker.createMeshRecoveryPushHandler,
+}));
       const launch = resolveInteractiveDriverLaunch("claude", {
         which: createFakeWhich(["claude"]),
         env: {

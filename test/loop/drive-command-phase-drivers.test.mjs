@@ -1,3 +1,7 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readdir, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -6,30 +10,35 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import {
-  composeFixInput,
-  phaseCommand,
-  PHASE_MODE_FLAGS,
-  continueDriverCommand,
-  refineDriverCommand,
-  verifyDriverCommand,
-} from "../../packages/core/src/commands/drive.mjs";
+const composeFixInput = _aofApplication.loop.commandTools.drive.composeFixInput;
+const phaseCommand = _aofApplication.loop.commandTools.drive.phaseCommand;
+const PHASE_MODE_FLAGS = _aofApplication.loop.commandTools.drive.PHASE_MODE_FLAGS;
+const continueDriverCommand = _aofApplication.getCommand("work:drive-continue");
+const refineDriverCommand = _aofApplication.getCommand("work:drive-refine");
+const verifyDriverCommand = _aofApplication.getCommand("work:drive-verify");
 // The driver is reached through the SINK, as every loop suite reaches it (53/ADR-015 §2: the set
 // of test files that NAME the driver module is closed; the sink re-exports its bindings by identity).
-import { driveInteractiveClaudeSession } from "../../packages/core/src/mesh/worker-execution.mjs";
-import { spawnLaneDrive } from "../../packages/core/src/loop/child-drive.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const spawnLaneDrive = _aofApplication.loop.childDrive.spawnLaneDrive;
 import { setSeaSentinelForTest } from "../../packages/core/src/asset-base.mjs";
 import { DEFAULT_DEADLINE_MS } from "@aof/execution/bounded-process";
-import { parseSpecArgv } from "../../packages/core/src/spine/face.mjs";
+const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
-import { transitionRunStart } from "../../packages/core/src/effects/run-transitions.mjs";
-import { fixTransport } from "../../packages/core/src/commands/loop.mjs";
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const fixTransport = _aofApplication.loop.commandTools.loop.fixTransport;
 import { SOURCE_DIRECTORY_EXEMPTIONS, FLAT_LAYER_THRESHOLD } from "../arch/testing/acd-source-directory-budget.test.mjs";
-import { continueCommand, refineDoorCommand, verifyDoorCommand } from "../../packages/core/src/commands/continue.mjs";
-import { completeRun, readRuns, recordSessionId } from "../../packages/core/src/run-store.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, openAsk } from "../../packages/core/src/loop/ask-request.mjs";
-import { findWork } from "../../packages/core/src/work.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+const continueCommand = _aofApplication.getCommand("work:continue");
+const refineDoorCommand = _aofApplication.getCommand("work:refine");
+const verifyDoorCommand = _aofApplication.getCommand("work:verify");
+const completeRun = _aofApplication.execution.runs.completeRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordSessionId = _aofApplication.execution.runs.recordSessionId;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const findWork = _aofWorkspace.work.findWork;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 
@@ -42,7 +51,7 @@ const BRACKETED_PASTE_START = `${ESC}[200~`;
 const BRACKETED_PASTE_END = `${ESC}[201~`;
 // The Enter byte the driver submits with (carriage return, never line feed).
 const SUBMIT_KEY = String.fromCharCode(13);
-import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
 
 const DECLARED_DONE_TRANSCRIPT_LINE = "AOF_DIRECTIVE_COMPLETE";
 const DECLARED_DONE_IDLE_MS = 10_000;

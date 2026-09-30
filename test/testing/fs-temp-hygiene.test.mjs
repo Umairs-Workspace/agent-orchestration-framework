@@ -1,3 +1,4 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // m42 wave (a) / m38-F26 — the atomic-write temp-file hygiene. Pins:
 //   - a FAILED rename reclaims the temp it created (the leak: dozens of .tmp-*
 //     orphans in presence/ + nodes/ that nothing swept), while the original
@@ -8,7 +9,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readdir, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { writeText, sweepStaleTempFiles } from "../../packages/core/src/fs.mjs";
+const writeText = _aofFoundation.fs.writeText;
+const sweepStaleTempFiles = _aofFoundation.fs.sweepStaleTempFiles;
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-fs-hygiene-"));

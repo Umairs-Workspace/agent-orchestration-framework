@@ -19,8 +19,8 @@ const RUN_RECORD_KEYS_AT_M68 = [
 // record; every other later claim still rides the opaque brief.
 const RUN_RECORD_KEYS_AT_M131 = [...RUN_RECORD_KEYS_AT_M68, "asks"];
 const dispatchFiles = [
-  "packages/core/src/work/dispatch.mjs",
-  "packages/core/src/commands/dispatch.mjs",
+  "packages/core/src/application/bindings/work/dispatch.mjs",
+  "packages/core/src/application/bindings/commands/dispatch.mjs",
   "packages/mesh/src/assignment-reclaim.mjs",
   "packages/mesh/src/commands/terminal-resume.mjs",
   "packages/mesh/src/assignment-record.mjs",

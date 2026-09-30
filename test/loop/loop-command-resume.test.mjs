@@ -1,12 +1,26 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { completeRun, heartbeat, isStale, retryRun, startRun, readRuns } from "../../packages/core/src/run-store.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
-import { loopCommand, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+const completeRun = _aofApplication.execution.runs.completeRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const isStale = _aofApplication.execution.runs.isStale;
+const retryRun = _aofApplication.execution.runs.retryRun;
+const startRun = _aofApplication.execution.runs.startRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const loopCommand = _aofApplication.getCommand("work:loop");
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { lineageElapsedMs } from "../../packages/work-loop/src/engine.mjs";
-import { loopResumesDir, loopStopsDir, markStopHonoured, readResumeRequest, readStopRequest, requestLoopResume, requestLoopStop, stopRequestPath } from "../../packages/core/src/loop/stop-request.mjs";
+const loopResumesDir = _aofApplication.loop.stopRequest.loopResumesDir;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const readResumeRequest = _aofApplication.loop.stopRequest.readResumeRequest;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
+const requestLoopResume = _aofApplication.loop.stopRequest.requestLoopResume;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
 import {
   DECLARATION_L1,
   cancellableDriver,

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 12 / story 01, task 00 —
 // tasks/00_provision-command.feature.
 //
@@ -20,12 +21,13 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../packages/core/src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
 import { toolStoreRoot, toolVersionDir } from "../../packages/core/src/paths.mjs";
 import { GRAPHIFY_DESCRIPTOR } from "../../packages/core/src/tool-store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // The pinned graphify version — read from the frozen descriptor (story 00) so
 // this suite tracks a pin bump instead of failing on a stale hardcode. The

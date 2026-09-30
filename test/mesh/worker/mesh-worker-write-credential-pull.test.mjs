@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/worker/mesh-worker-write-credential-pull.test.mjs — traceability for milestone 38 /
 // story 07 (durable-worker-pushback, ADR-015 decision 3 "mechanism"; SECURITY T15/T6).
 // The write-credential PULL is the wire this story adds ALONGSIDE the ADR-009
@@ -14,14 +15,12 @@
 // active-state) — over the house bidirectional stream fixture
 // (mesh-directive-channel-fixture.mjs). No real GitHub, no network.
 import assert from "node:assert/strict";
-import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
-import {
-  applyWriteCredentialRequestFrame,
-  WRITE_CREDENTIAL_NOT_HOLDER,
-  WRITE_CREDENTIAL_WORKSPACE_MISMATCH,
-  WRITE_CREDENTIAL_ASSIGNMENT_INACTIVE,
-} from "../../../packages/core/src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const applyWriteCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyWriteCredentialRequestFrame;
+const WRITE_CREDENTIAL_NOT_HOLDER = _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_NOT_HOLDER;
+const WRITE_CREDENTIAL_WORKSPACE_MISMATCH = _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_WORKSPACE_MISMATCH;
+const WRITE_CREDENTIAL_ASSIGNMENT_INACTIVE = _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_ASSIGNMENT_INACTIVE;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 import { createFakeWorkerTransport, createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 import { seedAssignment } from "../../support/mesh-assign-fixture.mjs";

@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 66 / story 00, task
 // `02_a-contract-that-does-not-parse-is-refused`.
 //
@@ -16,8 +18,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFeature } from "@aof/work/feature-parse";
-import { validateWork, parseFrontmatter } from "../../../packages/core/src/work.mjs";
-import { validateCommand } from "../../../packages/core/src/commands/validate.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const validateCommand = _aofApplication.getCommand("work:validate");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const realWorkDir = path.join(repoRoot, "wiki", "work");

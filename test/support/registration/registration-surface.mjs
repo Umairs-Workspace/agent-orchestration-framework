@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // THE REGISTRATION SURFACE — one home for "where can a suite be registered?" (119/ADR-010).
 //
 // WHY IT EXISTS. Before 119/03 the answer was one file: `scripts/test.mjs` imported and spread every
@@ -17,7 +18,7 @@
 // decides nothing. It imports no suite and spawns nothing.
 import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
-import { readRegistrationIndexes } from "../../../packages/core/src/work-audit/census.mjs";
+const readRegistrationIndexes = _aofApplication.work.audit.census.readRegistrationIndexes;
 
 /**
  * Every `index.mjs` beneath `root`, as `{ rel, dir, source }`.
@@ -31,17 +32,20 @@ export const readIndexes = readRegistrationIndexes;
 // Every directory beneath `root` that holds a suite or an index, with how many of each.
 export async function directoryCensus(repoRoot, root = "test") {
   const dirs = new Map();
-  const walk = async (rel) => {
+  const walk = async (rel, arraysOnly = false) => {
     let suites = 0;
     let indexes = 0;
     for (const entry of await readdir(path.join(repoRoot, rel), { withFileTypes: true })) {
-      if (entry.isDirectory()) { await walk(`${rel}/${entry.name}`); continue; }
-      if (entry.name.endsWith(".test.mjs")) suites += 1;
+      if (entry.isDirectory()) { await walk(`${rel}/${entry.name}`, arraysOnly); continue; }
+      if ((!arraysOnly && entry.name.endsWith(".test.mjs")) || entry.name.endsWith(".suite.mjs")) suites += 1;
       if (entry.name === "index.mjs") indexes += 1;
     }
     if (suites > 0 || indexes > 0) dirs.set(rel, { suites, indexes });
   };
   await walk(root);
+  for (const index of await readIndexes(repoRoot, root)) {
+    if (index.dir !== root && !index.dir.startsWith(`${root}/`)) await walk(index.dir, true);
+  }
   return dirs;
 }
 
@@ -65,6 +69,7 @@ export const IMPORT_OF = /import\s*\{([^}]*)\}\s*from\s*"([^"]+)";/gu;
 export const SPREAD_ROW = /^\s*\.\.\.([A-Za-z_$][\w$]*),?\s*$/gmu;
 export const bindingsOf = (clause) =>
   clause.split(",").map((part) => (part.includes(" as ") ? part.split(" as ")[1] : part).trim()).filter(Boolean);
+export const isArraySuiteSpecifier = specifier => /\.(?:test|suite)\.mjs$/u.test(specifier);
 
 /**
  * The REPO-RELATIVE path of every suite the registration surface actually reaches, as a Set.
@@ -100,7 +105,7 @@ export async function registeredSuitePaths(repoRoot, { runner = "scripts/test.mj
     if (!reachedDirs.has(index.dir)) continue;
     const indexSpread = spreadIn(index.source);
     for (const match of index.source.matchAll(IMPORT_OF)) {
-      if (!match[2].endsWith(".test.mjs")) continue;
+      if (!isArraySuiteSpecifier(match[2])) continue;
       if (!bindingsOf(match[1]).some((binding) => indexSpread.has(binding))) continue;
       registered.add(path.posix.normalize(path.posix.join(index.dir, match[2])));
     }

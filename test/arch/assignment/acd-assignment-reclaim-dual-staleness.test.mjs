@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-assignment-reclaim-dual-staleness (milestone 35 / ADR-005,
 // fitness #10) — "an assignment is reclaimed ONLY under DUAL staleness (presence
 // stale AND run-heartbeat stale), strict >; fresh presence and no-presence-record are
@@ -18,12 +20,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
-import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
-import { startRun, heartbeat } from "../../../packages/core/src/run-store.mjs";
-import { findWork } from "../../../packages/core/src/work.mjs";
-import { reclaimStaleAssignments, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const startRun = _aofApplication.execution.runs.startRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const findWork = _aofWorkspace.work.findWork;
+const reclaimStaleAssignments = _aofApplication.mesh.assignmentReclaim.reclaimStaleAssignments;
+const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = _aofApplication.mesh.assignmentReclaim.DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS;
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

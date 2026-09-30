@@ -1,3 +1,7 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-9601 (96/ADR-001, 96/ADR-003) — ATTRIBUTION IS CAPTURED OR ABSENT, AND THERE IS
 // EXACTLY ONE PATH FROM A TRANSCRIPT TO AN ITEM REF.
 //
@@ -36,9 +40,10 @@ import { fileURLToPath } from "node:url";
 
 import { runtimeFilesContaining as srcFilesContaining } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody, matchedParenSpan } from "../../support/source-slice.mjs";
-import { pingSession, resolveSessionIdFromLiveStore } from "../../../packages/core/src/mesh/session.mjs";
-import { runStartCommand } from "../../../packages/core/src/commands/run-start.mjs";
-import { resolveSessionIdentity } from "../../../packages/core/src/commands/mesh/session.mjs";
+const pingSession = _aofHooks.meshSession.pingSession;
+const resolveSessionIdFromLiveStore = _aofHooks.meshSession.resolveSessionIdFromLiveStore;
+const runStartCommand = _aofApplication.getCommand("work:run-start");
+const resolveSessionIdentity = _aofHooks.commandsMeshSession.resolveSessionIdentity;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -139,14 +144,14 @@ export const archTests = [
       // The partition is named exactly once, at its own path builder. Any other module that
       // wanted to read it would have to name the segment or import a builder for it — and no
       // builder is exported.
-      const segment = await srcFilesContaining(repoRoot, '"sessions"', { except: ["packages/mesh/src/session.mjs"] });
+      const segment = await srcFilesContaining(repoRoot, '"sessions"', { runtime: "node", except: ["packages/mesh/src/session.mjs"] });
       assert.deepEqual(segment, [], `only packages/core/src/mesh/session.mjs names the sessions partition (also: ${segment.join(", ")})`);
 
-      const builders = await srcFilesContaining(repoRoot, "sessionRecordPath(", { except: ["packages/mesh/src/session.mjs"] });
+      const builders = await srcFilesContaining(repoRoot, "sessionRecordPath(", { runtime: "node", except: ["packages/mesh/src/session.mjs"] });
       assert.deepEqual(builders, [], `only packages/core/src/mesh/session.mjs composes a session record path (also: ${builders.join(", ")})`);
 
       // The rung itself is exported from that module and from nowhere else.
-      const rung = await srcFilesContaining(repoRoot, "async function resolveSessionIdFromLiveStore");
+      const rung = await srcFilesContaining(repoRoot, "async function resolveSessionIdFromLiveStore", { runtime: "node" });
       // ONE HOME, spelled as the floor plus a declared ceiling — never as a one-member census
       // (FF-11902): the module is named AMONG what the sweep found.
       assert.ok(rung.length >= 1, "the sweep of src/ found no module exporting the live-store rung");

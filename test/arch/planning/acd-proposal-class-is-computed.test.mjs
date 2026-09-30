@@ -1,14 +1,13 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6202 — lane membership is the registry's answer, never a class table in 62.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  PROPOSAL_CLASSES,
-  computeProposalLane,
-  laneProposals,
-} from "../../../packages/core/src/work-tune/proposal.mjs";
+const PROPOSAL_CLASSES = _aofApplication.work.tune.proposal.PROPOSAL_CLASSES;
+const computeProposalLane = _aofApplication.work.tune.proposal.computeProposalLane;
+const laneProposals = _aofApplication.work.tune.proposal.laneProposals;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const key = "work.fixture.roundsAllowed";

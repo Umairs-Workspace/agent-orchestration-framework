@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 01, task `02_the-read-face-never-executes`.
 //
 // Every @executable scenario of
@@ -21,15 +22,17 @@ import { readFile, rm, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke, getCommand, listCommands } from "../../packages/core/src/command-core.mjs";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
-import { startRun } from "../../packages/core/src/run-store.mjs";
-import { resolveItem } from "../../packages/core/src/commands/resolve.mjs";
+const invoke = _aofApplication.invoke;
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const startRun = _aofApplication.execution.runs.startRun;
+const resolveItem = _aofApplication.work.commandTools.resolve.resolveItem;
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A grade record of ADR-005 §4's exact shape, standing in for 54/03's writer.
 const RECORDED = Object.freeze({
@@ -273,7 +276,7 @@ export const gradeReadFaceNeverExecutesTests = [
         assert.deepEqual(carried[0].codes, ["case-failed"], "…and its codes");
 
         // ZERO BOARD CHANGE. Asserted as a property of the sources rather than as a diff.
-        const boardUi = await readFile(path.join(repoRoot, "packages", "core", "src", "board-ui.mjs"), "utf8");
+        const boardUi = await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8");
         assert.ok(!boardUi.includes("work:grade"), "packages/core/src/board-ui.mjs was not edited to make that true");
         assert.ok(!boardUi.includes("/api/work/grade"), "…and it serves no grade route");
 

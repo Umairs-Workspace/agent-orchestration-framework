@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 79 / task 01 — the writer, its one home, and its bytes.
 //
 // Covers EVERY @executable scenario in
@@ -17,12 +19,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { spawnCliSync } from "../support/cli-spawn.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { loopDocumentCommand } from "../../packages/core/src/commands/loop-document.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const loopDocumentCommand = _aofApplication.getCommand("work:loop-document");
 import { loopDocumentPath } from "@aof/work-graph/document";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // The fixture repo, its registry grammar and the tree snapshot live in ONE home
 // (`test/support/loop-registry-fixture.mjs`) — the drift gate stands up the same tree, and a

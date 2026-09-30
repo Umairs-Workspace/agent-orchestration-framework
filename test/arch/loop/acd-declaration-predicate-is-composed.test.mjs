@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12604 — "One pure decider says which declarations should be running now: it composes the
 // store's verdicts, names none of them, and supervision is a ninth declaration key off by default."
 //
@@ -18,7 +19,9 @@ import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { decideSupervisedDeclarations, readLoopDeclaration } from "../../../packages/work-loop/src/engine.mjs";
-import { isRunning, isStale, retryReadiness } from "../../../packages/core/src/run-store.mjs";
+const isRunning = _aofApplication.execution.runs.isRunning;
+const isStale = _aofApplication.execution.runs.isStale;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

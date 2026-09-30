@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 79 / task 02 — THE DRIFT CHECK.
 //
 //   "A committed projection of a deterministic function is a thing CI can check."
@@ -21,8 +22,9 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke, loadWorkspace } from "../../../packages/core/src/command-core.mjs";
-import { loopDocumentCommand } from "../../../packages/core/src/commands/loop-document.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofApplication.loadWorkspace;
+const loopDocumentCommand = _aofApplication.getCommand("work:loop-document");
 import { loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
 import { RECORDS, loop, record, snapshot, withRepo, writeRegistry } from "../../support/loop-document-fixture.mjs";
 import { stripComments } from "../../support/source-slice.mjs";

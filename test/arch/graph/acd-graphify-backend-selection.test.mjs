@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for milestone 10 / ADR-003 (05/ADR-002):
 // "`graphify` is a registered memory backend — it is the third value in the
@@ -18,7 +19,8 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { BACKEND_REGISTRY, selectBackendName } from "../../../packages/core/src/work/memory.mjs";
+const BACKEND_REGISTRY = _aofApplication.knowledge.work.memory.BACKEND_REGISTRY;
+const selectBackendName = _aofApplication.knowledge.work.memory.selectBackendName;
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const HERE = path.dirname(fileURLToPath(import.meta.url));

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 126 / story 05, tasks 00_one-import-home.feature and
 // 01_the-filter-is-targeted-and-restored.feature.
 //
@@ -19,8 +20,8 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { importSqliteRuntime } from "@aof/foundation/sqlite-runtime";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { openEffectsJournal } from "../../packages/core/src/effects/journal.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 
 const run = promisify(execFile);
@@ -361,7 +362,7 @@ export const sqliteRuntimeTests = [
 
         const { stdout, stderr } = await run(
           process.execPath,
-          [path.join(repoRoot, "bin", "aof.mjs"), "work", "find", "126", "--json"],
+          [path.join(repoRoot, "packages", "core", "bin", "aof.mjs"), "work", "find", "126", "--json"],
           { env, cwd: repoRoot },
         );
 

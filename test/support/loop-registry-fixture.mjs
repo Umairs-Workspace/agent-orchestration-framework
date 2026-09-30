@@ -44,7 +44,7 @@ import { spawnSyncHardened } from "./cli-spawn.mjs";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** The loader module's absolute path — used for the fresh-process leg, never imported here. */
-export const LOADER_MODULE_PATH = path.join(REPO_ROOT, "packages", "core", "src", "work", "loops.mjs");
+export const LOADER_MODULE_PATH = path.join(REPO_ROOT, "packages", "core", "src", "application", "bindings", "work", "loops.mjs");
 
 // The finding-free field blocks, in the schema's own authored order. Exported so a suite can
 // state which value it is overriding and a reader can see what "otherwise valid" means.

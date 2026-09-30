@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-app-key-default-dir.test.mjs — traceability for
 // milestone 38 / story 03, task 02
 // (02_default-private-key-directory.feature, ADR-011 decision 5 / structural
@@ -16,7 +17,7 @@
 // by this file's own additional (beyond-the-locked-contract) scenarios below.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { resolveGithubAppPrivateKey } from "../../../packages/core/src/mesh/launcher.mjs";
+const resolveGithubAppPrivateKey = _aofApplication.mesh.launcher.resolveGithubAppPrivateKey;
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 const SYNC_SCOPED_SEGMENTS = ["Dropbox", "OneDrive", "iCloud", "Library/Mobile Documents", "Library\\Mobile Documents"];

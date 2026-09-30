@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 35 / story 03 / task 02 —
 // tasks/02_read-only-invariant.feature (@executable).
 //
@@ -27,11 +30,12 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 import { insertAssignment } from "@aof/mesh/assignment-record";
 import { assembleAssignmentRecord } from "@aof/mesh/assignment-record";
 

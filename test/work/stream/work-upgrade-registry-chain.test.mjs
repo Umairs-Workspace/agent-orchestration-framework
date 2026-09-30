@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 40 / story 02 (migration registry &
 // `aof upgrade`), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
@@ -9,8 +11,9 @@
 // schema. No source read.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { WORK_ITEM_MIGRATIONS, planUpgrade } from "../../../packages/core/src/work/upgrade.mjs";
-import { WORK_ITEM_SCHEMA_VERSION } from "../../../packages/core/src/work.mjs";
+const WORK_ITEM_MIGRATIONS = _aofApplication.work.upgrade.WORK_ITEM_MIGRATIONS;
+const planUpgrade = _aofApplication.work.upgrade.planUpgrade;
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { withWork, writeItem } from "../../support/work-upgrade-fixture.mjs";
 
 export const workUpgradeRegistryChainTests = [

@@ -1,3 +1,7 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-orphan-reaped (milestone 48 / ADR-006 + ADR-010 R5,
 // fitness #3) — "a TTL-expired session record is REMOVED, by the owning node, at the
 // write seam, under the shared liveness predicate."
@@ -47,17 +51,15 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  pingSession,
-  startSession,
-  reapExpiredSessions,
-  sessionRecordPath,
-  isSessionLive,
-  DEFAULT_SESSION_TTL_SECONDS,
-} from "../../../packages/core/src/mesh/session.mjs";
-import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
-import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const pingSession = _aofHooks.meshSession.pingSession;
+const startSession = _aofHooks.meshSession.startSession;
+const reapExpiredSessions = _aofHooks.meshSession.reapExpiredSessions;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const isSessionLive = _aofHooks.meshSession.isSessionLive;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(repoRoot, "packages", "core", "src");

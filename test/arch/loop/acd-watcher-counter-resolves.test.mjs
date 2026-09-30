@@ -1,10 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
-import { getCommand } from "../../../packages/core/src/command-core.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const getCommand = _aofApplication.getCommand;
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

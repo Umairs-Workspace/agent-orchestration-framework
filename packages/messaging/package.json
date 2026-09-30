@@ -19,7 +19,7 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node ../../scripts/test-workspace.mjs @aof/messaging"
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",

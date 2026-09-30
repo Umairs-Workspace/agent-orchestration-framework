@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 37 / ADR-001 + 26/ADR-007 (FF-3705):
 // "`nextWork` treats spike/chore the UAT way (item-is-the-work): it ready-returns
 //  the DRIVER ITSELF — it never drills them into stories, never labels them 'needs
@@ -20,7 +21,7 @@ import { readFile, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { nextWork } from "../../../packages/core/src/work.mjs";
+const nextWork = _aofWorkspace.work.nextWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const workSrc = path.join(repoRoot, "packages/work/src/readiness.mjs");

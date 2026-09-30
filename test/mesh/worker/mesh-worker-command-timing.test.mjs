@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Regression: milestone 38 / story 05 fix (live two-machine soak 2026-07-25,
 // VERIFICATION F27) — the worker types the directive command into claude's PTY only
 // AFTER a readiness delay, never at t=0. A t=0 write raced claude's interactive-TUI
@@ -6,7 +7,7 @@
 // view to bind to). The delay is injected (options.commandDelayMs); the driver defaults
 // to 0 so the rest of the suite stays fast, and mesh-launcher wires the real value.
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession } from "../../../packages/core/src/mesh/worker-execution.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 // The bracketed-paste protocol bytes, built here from char codes rather than

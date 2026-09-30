@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6301 — the trigger layer is a CALLER, not a coordinator (63/ADR-001, ADR-003 §2, ADR-007 §3,
 // ADR-011 §2).
 //
@@ -32,10 +33,13 @@ import { spawnCliSync } from "../../support/cli-spawn.mjs";
 // leaves the other legible. A second brace-and-import walker written beside that one would be
 // TECH_DEBT 24 and 57's species, in the milestone that indicts it.
 import { CLOSURE, familySource } from "./acd-trigger-holds-no-clock.test.mjs";
-import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
 import { resolveTriggerLevel } from "@aof/work-loop/trigger/level";
 import { ASSIGNMENT_PHASES } from "@aof/mesh/assignment-directive";
-import { RESOLVED_TRIGGER_KEYS, LOOP_INPUT_KEYS, LEVEL_FLAG } from "../../../packages/core/src/commands/trigger.mjs";
+const RESOLVED_TRIGGER_KEYS = _aofApplication.loop.commandTools.trigger.RESOLVED_TRIGGER_KEYS;
+const LOOP_INPUT_KEYS = _aofApplication.loop.commandTools.trigger.LOOP_INPUT_KEYS;
+const LEVEL_FLAG = _aofApplication.loop.commandTools.trigger.LEVEL_FLAG;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -266,7 +270,7 @@ export const archTests = [
         const marker = path.join(directory, "spawns.log");
         await writeFile(preload, SPAWN_PRELOAD, "utf8");
         await writeFile(marker, "", "utf8");
-        const result = spawnCliSync(process.execPath, ["--require", preload, path.join(root, "bin", "aof.mjs"), "work", "trigger", "--json"], {
+        const result = spawnCliSync(process.execPath, ["--require", preload, path.join(root, "packages", "core", "bin", "aof.mjs"), "work", "trigger", "--json"], {
           cwd: root,
           encoding: "utf8",
           env: { ...process.env, NODE_NO_WARNINGS: "1", AOF_TRIGGER_SPAWN_MARKER: marker },
@@ -312,7 +316,24 @@ export const archTests = [
   {
     name: "architecture: FF-6301 the object the FACE projects carries the loop's input, the argv and ONE identity key",
     async run() {
-      const { buildTriggerReport } = await import("../../../packages/core/src/commands/trigger.mjs");
+      const { buildTriggerReport } = await Promise.resolve(Object.freeze({
+  LEVEL_FLAG: _aofApplication.loop.commandTools.trigger.LEVEL_FLAG,
+  LOOP_INPUT_KEYS: _aofApplication.loop.commandTools.trigger.LOOP_INPUT_KEYS,
+  RESOLVED_TRIGGER_KEYS: _aofApplication.loop.commandTools.trigger.RESOLVED_TRIGGER_KEYS,
+  TRIGGER_GATE_READING_FAILED: _aofApplication.loop.commandTools.trigger.TRIGGER_GATE_READING_FAILED,
+  TRIGGER_GATE_READING_UNOBTAINED: _aofApplication.loop.commandTools.trigger.TRIGGER_GATE_READING_UNOBTAINED,
+  TRIGGER_GATE_READING_UNREACHABLE: _aofApplication.loop.commandTools.trigger.TRIGGER_GATE_READING_UNREACHABLE,
+  TRIGGER_LOOP_UNREGISTERED: _aofApplication.loop.commandTools.trigger.TRIGGER_LOOP_UNREGISTERED,
+  TRIGGER_SIGNAL_UNMATCHED: _aofApplication.loop.commandTools.trigger.TRIGGER_SIGNAL_UNMATCHED,
+  TRIGGER_SIGNAL_UNREADABLE: _aofApplication.loop.commandTools.trigger.TRIGGER_SIGNAL_UNREADABLE,
+  TRIGGER_SOURCE_UNDECLARED_GAP: _aofApplication.loop.commandTools.trigger.TRIGGER_SOURCE_UNDECLARED_GAP,
+  TRIGGER_SOURCE_UNKNOWN: _aofApplication.loop.commandTools.trigger.TRIGGER_SOURCE_UNKNOWN,
+  TRIGGER_SOURCE_UNRESOLVABLE_HERE: _aofApplication.loop.commandTools.trigger.TRIGGER_SOURCE_UNRESOLVABLE_HERE,
+  TRIGGER_SOURCE_UNRESOLVED_GAP: _aofApplication.loop.commandTools.trigger.TRIGGER_SOURCE_UNRESOLVED_GAP,
+  TRIGGER_UNKNOWN: _aofApplication.loop.commandTools.trigger.TRIGGER_UNKNOWN,
+  buildTriggerReport: _aofApplication.loop.commandTools.trigger.buildTriggerReport,
+  triggerCommand: _aofApplication.getCommand("work:trigger"),
+}));
       const report = await buildTriggerReport({}, {
         workspace: { projectRoot: `${root}`, workDir: `${root}/wiki/work`, config: {} },
         trigger: {

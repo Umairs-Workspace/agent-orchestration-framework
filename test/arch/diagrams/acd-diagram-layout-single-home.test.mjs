@@ -1,3 +1,5 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
 // FF-13302 (milestone 133 / ADR-003, ADR-006 §1) — THE LAYOUT HAS ONE HOME.
 //
 // "Outside `packages/core/src/diagrams/layout.mjs`, no `packages/core/src/**` module spells the `ADR-\d{3}-` stem pattern or
@@ -31,7 +33,7 @@ const MANIFEST = "packages/work/src/artifacts.mjs";
 const SEGMENT = ["dia", "grams"].join("");
 
 async function modules() {
-  const files = await readRuntimeFiles(repoRoot);
+  const files = await readRuntimeFiles(repoRoot, { runtime: "node" });
   assert.ok(files.length > 100, "the runtime implementation census is non-empty");
   assert.ok(files.some(file => file.rel === THE_ONE_HOME), "the owner is included");
   return files.map(file => file.path);

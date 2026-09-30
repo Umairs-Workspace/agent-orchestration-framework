@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/grade/gate-propagation-refusals-leave-branch.test.mjs — traceability for milestone 43 /
 // story 05 (gate-time propagation), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/05_story_gate-propagation/
@@ -30,7 +31,10 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readFile, realpath, rm, unlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshWorktreePath, listWorktrees, advanceBranchToBase, addDispatchWorktree } from "../../packages/core/src/mesh/worktree.mjs";
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
+const advanceBranchToBase = _aofApplication.mesh.worktree.advanceBranchToBase;
+const addDispatchWorktree = _aofApplication.mesh.worktree.addDispatchWorktree;
 import {
   withGatePropagationFixture,
   buildItemLine,
@@ -495,7 +499,45 @@ export const gatePropagationRefusalsTests = [
   {
     name: "129/03 task 01 (fix round 1, I4a) — parsePorcelainStatus is the one porcelain parser: columns, both halves of a rename, quote-stripped paths, and short lines skipped",
     run: async () => {
-      const { parsePorcelainStatus } = await import("../../packages/core/src/mesh/worktree.mjs");
+      const { parsePorcelainStatus } = await Promise.resolve(Object.freeze({
+  DEFAULT_WORKTREE_RETENTION_MS: _aofApplication.mesh.worktree.DEFAULT_WORKTREE_RETENTION_MS,
+  WORKTREE_PREPARE_DEADLINE_EXPIRED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_DEADLINE_EXPIRED,
+  WORKTREE_PREPARE_FAILED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_FAILED,
+  WORKTREE_PREPARE_NOT_STARTED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_NOT_STARTED,
+  addDispatchWorktree: _aofApplication.mesh.worktree.addDispatchWorktree,
+  addSessionWorktree: _aofApplication.mesh.worktree.addSessionWorktree,
+  addWorktree: _aofApplication.mesh.worktree.addWorktree,
+  adoptRemoteBranch: _aofApplication.mesh.worktree.adoptRemoteBranch,
+  advanceBranchToBase: _aofApplication.mesh.worktree.advanceBranchToBase,
+  commitWorktreeChanges: _aofApplication.mesh.worktree.commitWorktreeChanges,
+  defaultGitExec: _aofApplication.mesh.worktree.defaultGitExec,
+  dispatchWorktreeSlug: _aofApplication.mesh.worktree.dispatchWorktreeSlug,
+  ensureCommitAvailable: _aofApplication.mesh.worktree.ensureCommitAvailable,
+  findItemWorktree: _aofApplication.mesh.worktree.findItemWorktree,
+  headCommit: _aofApplication.mesh.worktree.headCommit,
+  isInsideMeshWorktree: _aofApplication.mesh.worktree.isInsideMeshWorktree,
+  isUnderMeshDispatchWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshDispatchWorktreesRoot,
+  isUnderMeshSessionWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot,
+  isUnderMeshWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot,
+  listWorktrees: _aofApplication.mesh.worktree.listWorktrees,
+  localBranchExists: _aofApplication.mesh.worktree.localBranchExists,
+  meshDispatchWorktreePath: _aofApplication.mesh.worktree.meshDispatchWorktreePath,
+  meshDispatchWorktreesRoot: _aofApplication.mesh.worktree.meshDispatchWorktreesRoot,
+  meshIdentityArgs: _aofApplication.mesh.worktree.meshIdentityArgs,
+  meshItemBranchName: _aofApplication.mesh.worktree.meshItemBranchName,
+  meshSessionWorktreePath: _aofApplication.mesh.worktree.meshSessionWorktreePath,
+  meshSessionWorktreesRoot: _aofApplication.mesh.worktree.meshSessionWorktreesRoot,
+  meshWorktreePath: _aofApplication.mesh.worktree.meshWorktreePath,
+  meshWorktreesRoot: _aofApplication.mesh.worktree.meshWorktreesRoot,
+  parsePorcelainStatus: _aofApplication.mesh.worktree.parsePorcelainStatus,
+  remoteBranchExists: _aofApplication.mesh.worktree.remoteBranchExists,
+  removeDispatchWorktree: _aofApplication.mesh.worktree.removeDispatchWorktree,
+  removeWorktree: _aofApplication.mesh.worktree.removeWorktree,
+  resolveExec: _aofApplication.mesh.worktree.resolveExec,
+  reuseWorktreeOnBranch: _aofApplication.mesh.worktree.reuseWorktreeOnBranch,
+  sessionWorktreeSlug: _aofApplication.mesh.worktree.sessionWorktreeSlug,
+  sweepRetainedWorktrees: _aofApplication.mesh.worktree.sweepRetainedWorktrees,
+}));
       const parsed = parsePorcelainStatus([
         " M src/x.mjs",
         "M  README.md",

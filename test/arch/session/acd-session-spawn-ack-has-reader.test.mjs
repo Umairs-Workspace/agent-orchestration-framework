@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-session-spawn-ack-has-reader (milestone 50 / story 04;
 // ARCHITECTURE ADR-008 FF-A).
 //
@@ -43,8 +44,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
-import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
 import { buildSessionSpawnAckFrame, buildSessionSpawnAckEnvelope, SESSION_SPAWN_ACK_KIND } from "@aof/mesh/session-spawn-directive";
 import { createSpawnOutcomeRegistry } from "@aof/mesh/session-spawn-outcome";
 

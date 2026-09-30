@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/terminal/mesh-terminal-stream-relay-transport-wired.test.mjs — producer-fed behavioural
 // coverage for the milestone 38 / story 06 ADR-014 AMENDMENT (2026-07-19, closing
 // BLOCKER F-38.06 — the HYBRID transport). The fitness
@@ -27,17 +28,18 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveRelay } from "../../../packages/core/src/mesh/relay.mjs";
-import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../../packages/core/src/worker-stream-client.mjs";
-import {
-  createTerminalMirror,
-  createTerminalMirrorSubscriberTransport,
-  startTerminalMirrorSubscriber,
-} from "../../../packages/core/src/mesh/terminal-mirror.mjs";
-import { createTerminalRelayPushTransport } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
-import { openGlobalWorkProjectionStore, queryGlobalWorkProjection } from "../../../packages/core/src/global-work-store.mjs";
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const createWorkerWsTransport = _aofApplication.mesh.workerStreamClient.createWorkerWsTransport;
+const createTerminalMirror = _aofApplication.mesh.terminalMirror.createTerminalMirror;
+const createTerminalMirrorSubscriberTransport = _aofApplication.mesh.terminalMirror.createTerminalMirrorSubscriberTransport;
+const startTerminalMirrorSubscriber = _aofApplication.mesh.terminalMirror.startTerminalMirrorSubscriber;
+const createTerminalRelayPushTransport = _aofApplication.mesh.terminalRelayBridge.createTerminalRelayPushTransport;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const queryGlobalWorkProjection = _aofApplication.mesh.store.queryGlobalWorkProjection;
 
 const NOW = "2026-07-19T10:00:00.000Z";
 

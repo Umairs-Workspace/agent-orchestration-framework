@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/discord/discord-replies.test.mjs — milestone 131 / story 10, task 03
 // (03_an-allowlisted-reply-answers-the-ask.feature; ADR-008 §3, §5, §6). The answer by reply runs the
 // REAL `work:answer` over a real ask file in an isolated home, with `discordRequest` faked, so the
@@ -7,9 +8,11 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { answerAsk, loopAsksDir } from "../../packages/core/src/loop/ask-request.mjs";
-import { discordActor, handleReply } from "../../packages/core/src/discord/replies.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const discordActor = _aofApplication.messaging.discord.replies.discordActor;
+const handleReply = _aofApplication.messaging.discord.replies.handleReply;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { ALLOWED, ASK_MESSAGE, CHANNEL, NODE, REPLY_MESSAGE, STRANGER, TOKEN, degradeSink, releaseDegradeSink, reply, withReplyWorld } from "./discord-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -107,7 +110,7 @@ export const discordRepliesTests = [
     name: "131/10 task03 — the CLI face still has no via flag: --via discord is refused as an unknown flag, and the ask still waits",
     async run() {
       await withReplyWorld(async ({ root, home, askState }) => {
-        const run = spawnSync(process.execPath, [path.join(repoRoot, "bin", "aof.mjs"), "work", "answer", "131/03", "x", "--via", "discord", "--json"], {
+        const run = spawnSync(process.execPath, [path.join(repoRoot, "packages", "core", "bin", "aof.mjs"), "work", "answer", "131/03", "x", "--via", "discord", "--json"], {
           cwd: root, encoding: "utf8", windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home },
         });
         assert.notEqual(run.status, 0, "refused");
@@ -120,7 +123,14 @@ export const discordRepliesTests = [
     name: "131/10 task03 — the reply handler's index lookup is the index's: the record names the ask message and its channel",
     async run() {
       await withReplyWorld(async () => {
-        const { readAskMessage } = await import("../../packages/core/src/notify/ask-messages.mjs");
+        const { readAskMessage } = await Promise.resolve(Object.freeze({
+  ASK_MESSAGE_KEYS: _aofApplication.messaging.askMessages.ASK_MESSAGE_KEYS,
+  ASK_MESSAGE_TTL_MS: _aofApplication.messaging.askMessages.ASK_MESSAGE_TTL_MS,
+  askMessagesDir: _aofApplication.messaging.askMessages.askMessagesDir,
+  recordAskMessage: _aofApplication.messaging.askMessages.recordAskMessage,
+  readAskMessage: _aofApplication.messaging.askMessages.readAskMessage,
+  findAskMessage: _aofApplication.messaging.askMessages.findAskMessage,
+}));
         const record = await readAskMessage(ASK_MESSAGE);
         assert.equal(record.channelId, CHANNEL);
         assert.equal(record.ref, "131/03");

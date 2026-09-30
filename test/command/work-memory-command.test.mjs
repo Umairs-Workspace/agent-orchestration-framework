@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // work-memory-command — story 128 / task 00
 // (`00_the-memory-door-rides-the-route-table.feature`): `aof work memory` rides the route
 // table, and every verb answers what it answered before.
@@ -45,14 +47,18 @@ import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../packages/core/src/command-core.mjs";
-import { deriveRouteTable, parseSpecArgv, resolveRoute } from "../../packages/core/src/spine/face.mjs";
-import { memoryCommand } from "../../packages/core/src/commands/work/memory.mjs";
-import { memoryUsage, runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
+const getCommand = _aofApplication.getCommand;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
+const resolveRoute = _aofApplication.cli.resolveRoute;
+const memoryCommand = _aofApplication.getCommand("work:memory");
+const memoryUsage = _aofApplication.knowledge.work.memory.memoryUsage;
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
 import { parseFeature } from "../integration/support/feature-runner.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const FACE = path.join(repoRoot, "packages/core/src/application/bindings/spine/face.mjs");
 const FEATURE = path.join(repoRoot, "test", "integration", "features", "work-memory.feature");
 

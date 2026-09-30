@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 39 / story 01
 // tasks/00_outcome-template.feature — "The OUTCOME.md bundle template ships with
 // the pinned Delivered/Assumptions/Gaps grammar" (@executable).
@@ -15,7 +16,7 @@ import { readFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripBundleMarker } from "../../packages/core/src/commands/insert-shared.mjs";
+const stripBundleMarker = _aofApplication.work.commandTools.insertShared.stripBundleMarker;
 import { TEMPLATE_STAMP } from "../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

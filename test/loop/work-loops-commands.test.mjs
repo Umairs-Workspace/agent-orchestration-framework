@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/loop/work-loops-commands.test.mjs — milestone 52 / story 05, task 03: THE COMMAND FAMILY SUITE.
 //
 // The subjects are the three REGISTERED commands — `work:loops-show`, `work:loops-graph`,
@@ -69,10 +71,12 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { getCommand, invoke, listCommands } from "../../packages/core/src/command-core.mjs";
-import { resolveRoute } from "../../packages/core/src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+const resolveRoute = _aofApplication.cli.resolveRoute;
 import { CHECK_FINDING_CODES, CHECK_IDS } from "@aof/work-graph/checks";
-import { LOADER_FINDING_CODES } from "../../packages/core/src/work/loops.mjs";
+const LOADER_FINDING_CODES = _aofApplication.graph.work.loops.LOADER_FINDING_CODES;
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { examplesTables, scenarioTitles } from "../support/feature-parse.mjs";
 import { suiteFilesBelow } from "../support/registration/registration-surface.mjs";
@@ -84,7 +88,7 @@ import {
 // directory is not guaranteed, and a cwd-derived root would spawn the wrong CLI.
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(here, "..", "..");
-const CLI_ENTRY = path.join(ROOT, "bin", "aof.mjs");
+const CLI_ENTRY = path.join(ROOT, "packages", "core", "bin", "aof.mjs");
 const SELF = path.join(here, "work-loops-commands.test.mjs");
 
 const FEATURE_DIR = "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/02_story_work-loops-command-family/tasks";

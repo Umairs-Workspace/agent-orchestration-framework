@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // Harness for milestone 46 / story 00 (ADR-008) — the pre-session frame queue.
 //
 // It is the EXISTING channel `test/session/terminal-ws.test.mjs` already drives (the REAL
@@ -24,8 +26,8 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 
 export const GREETING = "ready\r\n";
 

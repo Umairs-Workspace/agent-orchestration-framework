@@ -1,3 +1,5 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-13106 + FF-13107 + FF-13108 + FF-13109 + FF-13110 — THE ASK REACHES EVERY FACE THROUGH ONE
 // NOTIFIER, ONE FORM, ONE GUARDED ROUTE AND ONE AUTHORISED DOOR (milestone 131 / stories 06 and 09;
 // ARCHITECTURE `## Fitness functions`, ADR-005, ADR-006 and ADR-007). Which of this directory's three subjects: the RECORD — the envelope the
@@ -78,17 +80,20 @@ import { computedDynamicImports } from "../../support/module-family.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import { withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
-import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { isDiscordBotToken, renderDiscord, sendDiscord } from "@aof/messaging/discord";
 import { accountLine, cost, headline } from "@aof/messaging/form";
-import { CHANNELS, EVENTS, buildNotifyEnvelope, notify } from "../../../packages/core/src/notify/notify.mjs";
-import { serveSetupUi } from "../../../packages/core/src/setup-ui.mjs";
+const CHANNELS = _aofApplication.messaging.notify.CHANNELS;
+const EVENTS = _aofApplication.messaging.notify.EVENTS;
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
+const notify = _aofApplication.messaging.notify.notify;
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 import { withMeshAssignFixture } from "../../support/mesh-assign-fixture.mjs";
-import { reportAssignmentSettled } from "../../../packages/core/src/effects/assignment-transitions.mjs";
-import { effectsFor } from "../../../packages/core/src/effects/table.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { readExecutionOverlay } from "../../../packages/core/src/board-mesh-execution.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const reportAssignmentSettled = _aofApplication.mesh.transitions.reportAssignmentSettled;
+const effectsFor = _aofApplication.effects.reactors.effectsFor;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const readExecutionOverlay = _aofApplication.mesh.boardMeshExecution.readExecutionOverlay;
+const invoke = _aofApplication.invoke;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
@@ -175,6 +180,7 @@ function resolved(fromRel, specifier) {
 async function srcUnits() {
   const units = [];
   for (const file of await readRuntimeFiles(repoRoot)) {
+    if (file.owner === "@aof/ui") continue; // UI is read once by uiUnits below.
     const raw = await readFile(file.path, "utf8");
     units.push({ rel: toPosix(file.rel), raw, code: stripComments(raw) });
   }

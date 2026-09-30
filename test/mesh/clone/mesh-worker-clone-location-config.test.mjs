@@ -1,13 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-worker-clone-location-config.test.mjs — traceability for milestone 38 /
 // story 01 task 00 (00_clone-location-config.feature). Every @executable scenario +
 // Examples row wired to the real engine surface: resolveCloneUrl
 // (packages/core/src/mesh/worker-execution.mjs) / isWellFormedCloneUrl (packages/core/src/mesh/repo-marker.mjs)
 // and createMeshWorkerExecutionHandler's clone-on-miss prefix.
 import assert from "node:assert/strict";
-import {
-  resolveCloneUrl,
-  createMeshWorkerExecutionHandler,
-} from "../../../packages/core/src/mesh/worker-execution.mjs";
+const resolveCloneUrl = _aofApplication.mesh.worker.resolveCloneUrl;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
 import { isWellFormedCloneUrl } from "@aof/mesh/repo-marker";
 import {
   withMeshCloneFixture,
@@ -16,8 +15,8 @@ import {
   scriptedPushExec,
   scriptedSpawnRuntime,
 } from "../../support/mesh-worker-clone-fixture.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { resolveWorkspaceCloneUrl } from "../../../packages/core/src/mesh/presence.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const resolveWorkspaceCloneUrl = _aofApplication.mesh.presence.resolveWorkspaceCloneUrl;
 
 export const meshWorkerCloneLocationConfigTests = [
   // Scenario: a resolvable cloneUrl is used as the clone source

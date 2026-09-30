@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-7807 (78/ADR-008) — REGISTRATION, THE FROZEN LISTS, AND THE DEFERRAL THAT IS A DECISION.
 //
 // The command registers into the SAME core every `work:*` command uses (08/ADR-001), which is what
@@ -23,8 +25,10 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../packages/core/src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
 import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, withRepo } from "../../loop/loop-record-command.test.mjs";
@@ -91,7 +95,7 @@ export const archTests = [
     run: async () => {
       const { spawnCliSync } = await import("../../support/cli-spawn.mjs");
       const command = getCommand(ID);
-      const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+      const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
       await withRepo({}, async (repo) => {
         const env = { ...process.env, AOF_GLOBAL_HOME: repo.root };

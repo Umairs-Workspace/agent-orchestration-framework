@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for the AOF.md digest-on-import (13/ADR-006 — the deferred 13×14
 // follow-up):
 //   "An import that recovers intent but NO decisions and NO outcomes materializes an
@@ -16,8 +17,11 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeImport, AOF_FILE } from "../../../packages/core/src/import/materialize.mjs";
-import { buildRecords, resolveRecordSourcePath, isImportRecord } from "../../../packages/core/src/memory/local-indexing.mjs";
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const AOF_FILE = _aofApplication.knowledge.import.materialize.AOF_FILE;
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+const resolveRecordSourcePath = _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath;
+const isImportRecord = _aofApplication.knowledge.memory.localIndexing.isImportRecord;
 import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

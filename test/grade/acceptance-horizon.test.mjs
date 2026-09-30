@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 66 / story 00, task `01_the-acceptance-horizon`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -19,10 +21,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isOpen, severityFor, VALID_STATUS } from "@aof/work/lifecycle";
-import { validateWork, loadWorkspace } from "../../packages/core/src/work.mjs";
-import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
-import { validateCommand } from "../../packages/core/src/commands/validate.mjs";
-import { doctorCommand } from "../../packages/core/src/commands/doctor.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+const validateCommand = _aofApplication.getCommand("work:validate");
+const doctorCommand = _aofApplication.getCommand("work:doctor");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const srcWork = path.join(repoRoot, "packages", "work", "src", "validation.mjs");

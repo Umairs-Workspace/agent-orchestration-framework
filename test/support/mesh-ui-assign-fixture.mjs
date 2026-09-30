@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Shared fixture builder for the milestone 38 / story 04 fleet-face
 // POST /api/mesh/assign suite (tasks 00-02) — the REAL serveMeshUi stood up on a
 // loopback port over an isolated global-store seam (a temp AOF_GLOBAL_HOME v3
@@ -13,11 +16,14 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
-import { workspaceIdFor, openGlobalWorkProjectionStore, removeWorkspaceFromCache } from "../../packages/core/src/global-work-store.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const removeWorkspaceFromCache = _aofApplication.mesh.store.removeWorkspaceFromCache;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 import { updateAssignmentState } from "@aof/mesh/assignment-record";
 
 export {

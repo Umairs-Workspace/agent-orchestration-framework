@@ -1,9 +1,10 @@
+import * as _aofPublic_aof_work_graph_commands_loops_graph from "@aof/work-graph/commands/loops-graph";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { KIND_SHAPES } from "../../../packages/core/src/commands/loops-graph.mjs";
+const KIND_SHAPES = _aofPublic_aof_work_graph_commands_loops_graph.KIND_SHAPES;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const RENDERER = "packages/work-graph/src/record-render.mjs";

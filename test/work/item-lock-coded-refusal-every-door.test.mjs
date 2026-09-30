@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 01 (the exclusive item lock), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/01_story_item-lock/
 //     tasks/02_one-coded-refusal-at-every-door.feature
@@ -27,10 +28,10 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { applyDeltaFrame } from "../../packages/core/src/control-stream-server.mjs";
-import { publishGlobalWorkSnapshot } from "../../packages/core/src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../packages/core/src/global-work-store.mjs";
+const invoke = _aofApplication.invoke;
+const applyDeltaFrame = _aofApplication.mesh.controlStreamServer.applyDeltaFrame;
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
+const readWorkspaceItems = _aofApplication.mesh.store.readWorkspaceItems;
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import {
   withItemLockFixture,
@@ -45,7 +46,7 @@ import {
 } from "../support/item-lock-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const HOLDER = "aof-wsl";
 const TARGET = "worker-b";
 

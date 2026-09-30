@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 24 / story 01 — task 01 (tasks/01_device-code-flow
 // .feature). The relay device-flow HTTP endpoint matches a presented code, consumes it
 // single-use, admits the node + issues the credential, and bounds the 10^6 space with a
@@ -16,15 +17,14 @@ import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import {
-  serveRelay,
-  sha256Hex,
-  resolveCodeTtlSeconds,
-  resolveMaxAttempts,
-  DEFAULT_CODE_TTL_SECONDS,
-  DEFAULT_MAX_ATTEMPTS,
-} from "../../../packages/core/src/mesh/relay.mjs";
-import { writeRegistry, readRegistry } from "../../../packages/core/src/mesh/registry.mjs";
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const sha256Hex = _aofApplication.mesh.relay.sha256Hex;
+const resolveCodeTtlSeconds = _aofApplication.mesh.relay.resolveCodeTtlSeconds;
+const resolveMaxAttempts = _aofApplication.mesh.relay.resolveMaxAttempts;
+const DEFAULT_CODE_TTL_SECONDS = _aofApplication.mesh.relay.DEFAULT_CODE_TTL_SECONDS;
+const DEFAULT_MAX_ATTEMPTS = _aofApplication.mesh.relay.DEFAULT_MAX_ATTEMPTS;
+const writeRegistry = _aofApplication.mesh.registry.writeRegistry;
+const readRegistry = _aofApplication.mesh.registry.readRegistry;
 
 const CONTROL_ID = "control-node-a";
 const JOINER_ID = "joiner-node";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 09 / ADR-006 inv. 4 (privacy boundary not
 // widened; ADR-001 + ADR-005):
 // "No aof code path ships source code / AST to a backend. aof passes graphify a
@@ -21,7 +22,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { graphBuildCommand, classifyEgress } from "../../../packages/core/src/commands/graph/build.mjs";
+const graphBuildCommand = _aofApplication.getCommand("graph:build");
+const classifyEgress = _aofApplication.knowledge.commandTools.graph.build.classifyEgress;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "packages", "core", "src");

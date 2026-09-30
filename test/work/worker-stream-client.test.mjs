@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 34 / story 04 — task 01
 // (tasks/01_worker-stream-client.feature). Covers every @executable scenario /
 // Scenario Outline row:
@@ -12,12 +13,10 @@
 // reconnecting channel distinct from mesh-relay-client.mjs's one-shot fake. An
 // injected manual ticker drives the backoff schedule with zero wall-clock waits.
 import assert from "node:assert/strict";
-import {
-  createWorkerStreamClient,
-  backoffDelaySeconds,
-  WORKTREE_CONTENT_FRAME_KIND,
-  WITHDRAW_KIND,
-} from "../../packages/core/src/worker-stream-client.mjs";
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const backoffDelaySeconds = _aofApplication.mesh.workerStreamClient.backoffDelaySeconds;
+const WORKTREE_CONTENT_FRAME_KIND = _aofApplication.mesh.workerStreamClient.WORKTREE_CONTENT_FRAME_KIND;
+const WITHDRAW_KIND = _aofApplication.mesh.workerStreamClient.WITHDRAW_KIND;
 
 // A scriptable fake transport: connect()/send() resolve unless scripted to throw;
 // every sent frame is recorded in order (kind + items) so a test can assert the

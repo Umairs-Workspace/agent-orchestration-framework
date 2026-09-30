@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import * as _aofPublic_aof_work_graph_commands_loop_record from "@aof/work-graph/commands/loop-record";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-7810 (78/ADR-001, ADR-009, m52/FF-5201) — THE WRITE SCOPE, AND THE NAME THE GATE FORCES.
 //
@@ -27,12 +29,13 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../../packages/core/src/command-core.mjs";
-import { EXECUTION_RECORD_BASENAME, loopRecordCommand } from "../../../packages/core/src/commands/loop-record.mjs";
-import { loopsGraphCommand } from "../../../packages/core/src/commands/loops-graph.mjs";
-import { loopsShowCommand } from "../../../packages/core/src/commands/loops-show.mjs";
-import { loopsValidateCommand } from "../../../packages/core/src/commands/loops-validate.mjs";
-import { createLoopsGroundednessCommand } from "../../../packages/core/src/commands/loops-groundedness.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const EXECUTION_RECORD_BASENAME = _aofPublic_aof_work_graph_commands_loop_record.EXECUTION_RECORD_BASENAME;
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
+const loopsGraphCommand = _aofApplication.getCommand("work:loops-graph");
+const loopsShowCommand = _aofApplication.getCommand("work:loops-show");
+const loopsValidateCommand = _aofApplication.getCommand("work:loops-validate");
+const createLoopsGroundednessCommand = _aofApplication.graph.commandTools.loopsGroundedness.createLoopsGroundednessCommand;
 import { snapshot } from "../../support/loop-document-fixture.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, ctxFor, withRepo } from "../../loop/loop-record-command.test.mjs";

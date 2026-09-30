@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // Shared fixture builder for milestone 35 / story 02 (isolated worker execution) —
 // a REAL git repo (git init + commit, the makeGitFixtureRepo idiom
 // test/memory/import-command-core.test.mjs already established) with a resolvable work
@@ -9,9 +12,11 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnSyncHardened } from "./cli-spawn.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
-import { readJson, writeText } from "../../packages/core/src/fs.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const readJson = _aofFoundation.fs.readJson;
+const writeText = _aofFoundation.fs.writeText;
 
 function git(cwd, args) {
   return spawnSyncHardened("git", args, { cwd, encoding: "utf8", shell: process.platform === "win32" });

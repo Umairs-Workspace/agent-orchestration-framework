@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6902: framework ceilings are declarations backed by real authorities.
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -6,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { LOOP_BOUND_CONFIG_RESOLVERS } from "@aof/contracts/loop-bounds";
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 function ceilingProblems(model) {

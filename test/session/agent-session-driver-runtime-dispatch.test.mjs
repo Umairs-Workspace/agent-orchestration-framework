@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/session/agent-session-driver-runtime-dispatch.test.mjs — milestone 53 / story 00, task 04
 // (04_codex-is-not-a-pty-path.feature; ADR-001 §1, RESEARCH §Q1).
 //
@@ -37,8 +39,10 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { defaultSpawnRuntime, buildDriverCommand } from "../../packages/core/src/agent-session-driver.mjs";
-import { defaultSpawnRuntime as sinkDefaultSpawnRuntime, buildDriverCommand as sinkBuildDriverCommand } from "../../packages/core/src/mesh/worker-execution.mjs";
+const defaultSpawnRuntime = _aofSessions.agentSessionDriver.defaultSpawnRuntime;
+const buildDriverCommand = _aofSessions.agentSessionDriver.buildDriverCommand;
+const sinkDefaultSpawnRuntime = _aofApplication.mesh.worker.defaultSpawnRuntime;
+const sinkBuildDriverCommand = _aofApplication.mesh.worker.buildDriverCommand;
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 
 const CODEX_ARGV_HEAD = ["exec", "--json", "-o", "last-message.txt", "--sandbox", "workspace-write", "--ask-for-approval", "never"];

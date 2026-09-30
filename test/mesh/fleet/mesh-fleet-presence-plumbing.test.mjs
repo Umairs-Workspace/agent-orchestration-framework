@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 38 / story 00
 // tasks/08_bug-web-fleet-presence-plumbing.feature — finding F6 (aof:verify 38,
 // BLOCKER): the web fleet's ONE read route (`GET /api/mesh/status`, served by
@@ -29,12 +32,14 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { publishPresenceRecord, assemblePresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
 // ui/src/fleet/runs.mjs's fleetCurrentWorkLines — the SAME pure projection
 // ui/src/fleet/Fleet.tsx:631 (NodeCard) hands `node.presence ?? {}` to. Imported
 // directly (node:test has no React harness in this repo, the house pattern —

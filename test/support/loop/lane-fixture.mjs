@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/loop/lane-fixture.mjs — THE WAVE'S FIXTURE (milestone 129 / story 04): a REAL
 // git repo carrying milestone `07`, a committed `.aof/aof.config.json` with the rubric and
 // `work.loop.concurrency: "refine_first"`, and the seams the wave is driven through —
@@ -20,11 +22,13 @@ import { EventEmitter } from "node:events";
 import os from "node:os";
 import path from "node:path";
 
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { resolveRefInWorktree } from "../../../packages/core/src/work/dispatch.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const resolveRefInWorktree = _aofApplication.loop.work.dispatch.resolveRefInWorktree;
 import { createFakePtySpawn, createFakeWhich } from "../mesh-worker-terminal-fixture.mjs";
-import { createStopSource, loopStopsDir } from "../../../packages/core/src/loop/stop-request.mjs";
-import { loopAsksDir, readAsk } from "../../../packages/core/src/loop/ask-request.mjs";
+const createStopSource = _aofApplication.loop.stopRequest.createStopSource;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
 
 // git(args, cwd) — argv form only, never a shell string.
 export function git(args, cwd) {
@@ -223,7 +227,12 @@ export function scriptedRegistry(scripts = {}) {
   const calls = [];
   const ids = { grade: "work:grade", validate: "work:validate", doctor: "work:doctor", next: "work:next", dispatch: "work:dispatch", tasks: "work:tasks" };
   const seam = async (id, input, ctx) => {
-    const { invoke } = await import("../../../packages/core/src/command-core.mjs");
+    const { invoke } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
     const real = () => invoke(id, input, ctx);
     const key = Object.entries(ids).find(([, value]) => value === id)?.[0];
     const script = key == null ? undefined : scripts[key];

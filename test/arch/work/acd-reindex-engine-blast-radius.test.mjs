@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORK = path.join(repoRoot, "packages", "core", "src", "work.mjs");
+const WORK = path.join(repoRoot, "packages", "work", "src", "discovery.mjs");
 const REINDEX = path.join(repoRoot, "packages", "work", "src", "reindex.mjs");
 
 function stripComments(source) {

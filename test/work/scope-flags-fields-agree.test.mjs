@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Review fix (milestone 39): `aof work memory recall`'s scope dimensions are a
 // deliberately duplicated two-file seam — `work-memory.mjs`'s SCOPE_FLAGS (which
 // argv flags PARSE into `scope`) and `local-retrieval.mjs`'s SCOPE_FIELDS (which
@@ -7,7 +8,7 @@
 // never filters, or a filterable field with no flag to set it) rather than
 // half-working silently.
 import assert from "node:assert/strict";
-import { SCOPE_FLAGS } from "../../packages/core/src/work/memory.mjs";
+const SCOPE_FLAGS = _aofApplication.knowledge.work.memory.SCOPE_FLAGS;
 import { SCOPE_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 export const scopeFlagsFieldsAgreeTests = [

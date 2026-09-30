@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 22 / story 01 — the node-identity mechanic.
 //
 // Covers EVERY @executable scenario in tasks/00_node-identity-descriptor.feature,
@@ -39,7 +40,7 @@ import {
   isOpaqueNodeId,
 } from "../../../packages/mesh/src/node-identity.mjs";
 import { resolvePeers } from "@aof/mesh/fabric";
-import { readRuns } from "../../../packages/core/src/run-store.mjs";
+const readRuns = _aofApplication.execution.runs.readRuns;
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 

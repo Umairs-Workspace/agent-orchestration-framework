@@ -142,7 +142,7 @@ import { gradePayloadBoundedInTheWriterTests } from "./grade-payload-bounded-in-
 // has disagree about TAP and a hand-written specimen would test the author's belief against
 // itself. FF-5402 + FF-5403 are the story's own fitness functions, each with its
 // planted-defect lane.
-import { gradeRecordVocabulariesTests } from "./grade-record-vocabularies.test.mjs";
+
 import { gradeGreenIsEvidenceTests } from "./grade-green-is-evidence.test.mjs";
 import { gradeReportNormalisersTests } from "./grade-report-normalisers.test.mjs";
 import { gradeSkippedIsNotEvidenceTests } from "./grade-skipped-is-not-evidence.test.mjs";
@@ -204,7 +204,6 @@ export const tests = [
   // construction". Keeping `...acdVerificationTemplateShapeTests` terminal and comma-less
   // holds the residue at 18fd3c1e…, measured equal to the pin. The control's own defect is
   // routed to milestone 53 as F-54-00-4; until it lands, append ABOVE this comment.
-  ...gradeRecordVocabulariesTests,
   ...gradeGreenIsEvidenceTests,
   ...gradeReportNormalisersTests,
   ...gradeSkippedIsNotEvidenceTests,

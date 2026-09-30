@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-work-items-single-writer (milestone 43 / ADR-004) —
 //
 //   "`work_items` stops being a disk-rebuilt projection and becomes a
@@ -40,7 +41,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 // The screen's OWN field lists and predicate — read from the module under test, never
 // re-spelled here (a second copy would make the coverage ratchet agree with itself).
-import { REQUIRED_ITEM_FIELDS, OPTIONAL_ITEM_FIELDS, itemRowFault } from "../../../packages/core/src/global-work-store.mjs";
+const REQUIRED_ITEM_FIELDS = _aofApplication.mesh.store.REQUIRED_ITEM_FIELDS;
+const OPTIONAL_ITEM_FIELDS = _aofApplication.mesh.store.OPTIONAL_ITEM_FIELDS;
+const itemRowFault = _aofApplication.mesh.store.itemRowFault;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "packages", "core", "src");

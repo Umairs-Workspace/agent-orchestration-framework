@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 40 / story 04 (the generated changelog),
 // task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
@@ -18,7 +19,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { renderChangelog, changelogDrift, WORK_ITEM_MIGRATIONS } from "../../../packages/core/src/work/upgrade.mjs";
+const renderChangelog = _aofApplication.work.upgrade.renderChangelog;
+const changelogDrift = _aofApplication.work.upgrade.changelogDrift;
+const WORK_ITEM_MIGRATIONS = _aofApplication.work.upgrade.WORK_ITEM_MIGRATIONS;
 import { withUpgradeProject, writeItem, runCli, parseJsonOut } from "../../support/work-upgrade-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

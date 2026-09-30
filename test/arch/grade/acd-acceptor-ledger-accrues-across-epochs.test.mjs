@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6106 (milestone 61 / ADR-006 §1–§4a) — THE LEDGER ACCRUES ACROSS EPOCHS AND
 // REFUSES AN INCOMPLETE RULING AT CONSTRUCTION.
@@ -22,7 +23,10 @@ import { fileURLToPath } from "node:url";
 
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import { criterionDigest, defaultCriterion, makeCriterion, rulingsUnderCurrentCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
+const rulingsUnderCurrentCriterion = _aofApplication.work.acceptor.criterion.rulingsUnderCurrentCriterion;
 import { deriveRule } from "@aof/work/acceptor/rule";
 import {
   LEDGER_INCOMPLETE,

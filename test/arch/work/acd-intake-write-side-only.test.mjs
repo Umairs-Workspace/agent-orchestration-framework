@@ -41,7 +41,7 @@ const TOKEN = /intake/iu;
 
 // The WRITE side, by path. `packages/core/assets/commands/*.md` is a glob because the prompts are the scaffold
 // path as a class — a new `aof:add-*` prompt reads the key the day it ships.
-const ALLOWED_FILES = Object.freeze(["packages/core/src/work/init.mjs", /* compatibility export of intake policy */ "packages/core/src/application/bindings/work/init.mjs", "packages/core/src/application/bindings/commands/init-update.mjs", "packages/work/src/commands/promote.mjs"]);
+const ALLOWED_FILES = Object.freeze(["packages/core/src/application/bindings/work/init.mjs", /* compatibility export of intake policy */ "packages/core/src/application/bindings/work/init.mjs", "packages/core/src/application/bindings/commands/init-update.mjs", "packages/work/src/commands/promote.mjs"]);
 const ALLOWED_GLOB = /^src\/bundle\/commands\/[^/]+\.md$/u;
 // The two that must carry it — the writer and the reader (ADR-005 §1).
 const MUST_CARRY = Object.freeze(["packages/core/src/application/bindings/work/init.mjs", "packages/work/src/commands/promote.mjs"]);
@@ -126,9 +126,9 @@ export const archTests = [
   {
     name: "arch/FF-12704 (acd-intake-write-side-only): every named reader — and the whole doctor family — contains the token zero times; no reader branches on the setting",
     run: async () => {
-      const doctors = (await readdir(path.join(repoRoot, "packages", "core", "src", "work")))
-        .filter((name) => DOCTOR_FAMILY.test(name))
-        .map((name) => `packages/core/src/work/${name}`)
+      const doctors = (await readRuntimeFiles(repoRoot))
+        .filter(file => file.rel.startsWith("packages/work/src/doctor/"))
+        .map(file => file.rel)
         .sort();
       assert.ok(doctors.length >= 5, `non-vacuity: the doctor family glob found ${doctors.length} modules`);
 

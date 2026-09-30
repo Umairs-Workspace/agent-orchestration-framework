@@ -384,9 +384,28 @@ function baselineProblems(baseline, files) {
 // Walk a directory for `*.test.mjs`, recursively, returning repo-relative forward-slash paths.
 // Recursive is the point: the retired gate's `TEST_DIRS` was flat, which put `test/integration/**`
 // outside registration entirely (56, and ADR-003 §2's third clause).
+// Workspace array suites join the same membership census. Native Node tests
+// remain a separately executed surface, verified by the repository bridge.
+async function workspaceSuiteRoots(repoRoot, root) {
+  if (root !== "test") return [];
+  const manifest = await readFile(path.join(repoRoot, "package.json"), "utf8").then(JSON.parse).catch(() => null);
+  const roots = [];
+  for (const pattern of manifest?.workspaces ?? []) {
+    if (typeof pattern !== "string" || pattern.includes("..") || path.isAbsolute(pattern)) throw Error("Invalid workspace test root");
+    const directories = pattern.endsWith("/*")
+      ? (await readdir(path.join(repoRoot, pattern.slice(0, -2)), { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => `${pattern.slice(0, -2)}/${entry.name}`)
+      : [pattern];
+    for (const directory of directories) {
+      const index = await readFile(path.join(repoRoot, directory, "test", "index.mjs"), "utf8").catch(() => null);
+      if (index != null) roots.push(`${directory}/test`);
+    }
+  }
+  return [...new Set(roots)];
+}
+
 async function walkSuiteFiles(repoRoot, root = "test") {
   const out = [];
-  async function walk(rel) {
+  async function walk(rel, arraysOnly = false) {
     let entries;
     try {
       entries = await readdir(path.join(repoRoot, rel), { withFileTypes: true });
@@ -395,11 +414,12 @@ async function walkSuiteFiles(repoRoot, root = "test") {
     }
     for (const entry of entries) {
       const child = `${rel}/${entry.name}`;
-      if (entry.isDirectory()) await walk(child);
-      else if (entry.name.endsWith(".test.mjs")) out.push(child);
+      if (entry.isDirectory()) await walk(child, arraysOnly);
+      else if ((!arraysOnly && entry.name.endsWith(".test.mjs")) || entry.name.endsWith(".suite.mjs")) out.push(child);
     }
   }
   await walk(root.replaceAll("\\", "/"));
+  for (const owned of await workspaceSuiteRoots(repoRoot, root)) await walk(owned, true);
   return out.sort();
 }
 
@@ -409,7 +429,7 @@ async function walkSuiteFiles(repoRoot, root = "test") {
 function runnerImportedSuites(source, runnerRel = "scripts/test.mjs") {
   const base = path.posix.dirname(runnerRel.replaceAll("\\", "/"));
   const out = new Set();
-  for (const match of String(source).matchAll(/from\s+"([^"]+\.test\.mjs)"/gu)) {
+  for (const match of String(source).matchAll(/from\s+"([^"]+\.(?:test|suite)\.mjs)"/gu)) {
     out.add(path.posix.normalize(path.posix.join(base, match[1])));
   }
   return out;
@@ -455,6 +475,7 @@ async function readRegistrationIndexes(repoRoot, root = "test") {
     }
   };
   await walk(root.replaceAll("\\", "/"));
+  for (const owned of await workspaceSuiteRoots(repoRoot, root)) await walk(owned);
   return found;
 }
 
@@ -479,7 +500,7 @@ async function registrationSources(repoRoot, { runner = "scripts/test.mjs", root
 function runnerBindings(source, runnerRel = "scripts/test.mjs") {
   const base = path.posix.dirname(runnerRel.replaceAll("\\", "/"));
   const out = [];
-  for (const match of String(source).matchAll(/import\s*\{([^}]*)\}\s*from\s*"([^"]+\.test\.mjs)";/gu)) {
+  for (const match of String(source).matchAll(/import\s*\{([^}]*)\}\s*from\s*"([^"]+\.(?:test|suite)\.mjs)";/gu)) {
     const suite = path.posix.normalize(path.posix.join(base, match[2]));
     for (const clause of match[1].split(",")) {
       const text = clause.trim();

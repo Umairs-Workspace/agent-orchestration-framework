@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 43 / story 03 — task 03: the CO-AUTHORED `.claude/settings.json`
 // (`tasks/03_claude-settings-surgical-merge.feature`, AC9–AC12, ADR-002).
 //
@@ -36,9 +38,9 @@ import { fileURLToPath } from "node:url";
 import { applyClaudeSettingsMerge, claudeSettingsPath, formatClaudeSettingsOutcome, AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
 import { bundledFrozenSet, compileFrozenSet } from "../../packages/core/src/frozen-set.mjs";
 import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH } from "@aof/mesh/artifact-sync";
-import { initWork } from "../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
 import { updateWork } from "../../packages/core/src/work/update.mjs";
-import { assetsApplyCommand } from "../../packages/core/src/commands/assets/apply.mjs";
+const assetsApplyCommand = _aofApplication.getCommand("assets:apply");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OPERATOR_SETTINGS = path.join(repoRoot, ".claude", "settings.json");

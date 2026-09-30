@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability tests (@executable step definitions) for milestone 06 / story 01 —
 // headroom-toggle-cli. ONE file covering the @executable scenarios — and every
 // Scenario Outline row — of all four task features:
@@ -16,7 +17,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { useHeadroom, unuseHeadroom } from "../../packages/core/src/work/headroom.mjs";
-import { initWork } from "../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
 
 const HEADROOM_REPO = "github.com/chopratejas/headroom";
 const whichPresent = (bin) => (bin === "headroom" ? "/usr/local/bin/headroom" : null);

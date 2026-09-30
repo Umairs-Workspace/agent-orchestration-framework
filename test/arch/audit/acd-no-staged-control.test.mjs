@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6607a (milestone 66 / ADR-004 §4, ADR-009 ROUND 3/12) — NO STAGED CONTROL.
 //
 // "Zero `*.test.*`/`*.spec.*` under `<work.dir>/**` (the `reference/` retirement
@@ -33,7 +34,7 @@ import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
 import { controlGroup, isControlFileName } from "@aof/work/audit/controls";
 import { registerBlockKind, registerDeclarations, registerEntries } from "@aof/work/declared-id";
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5404 (milestone 54 / ADR-002 §3, ADR-004 §4, ADR-007 §3) — THE GRADE LEG IS ADDITIVE.
 //
 // SCOPE, STATED FIRST SO THIS IS NOT MISREAD AS MORE THAN IT IS: this proves the GRADE leg
@@ -14,7 +15,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const invoke = _aofApplication.invoke;
 import { GRADE_VERDICTS } from "@aof/work/grade";
 import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 import { readSrcFiles } from "../../support/read-src-files.mjs";

@@ -1,8 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CADENCE_KINDS, EVENT_TRIGGERS } from "../../../packages/core/src/work/loops.mjs";
+const CADENCE_KINDS = _aofApplication.graph.work.loops.CADENCE_KINDS;
+const EVENT_TRIGGERS = _aofApplication.graph.work.loops.EVENT_TRIGGERS;
 import { LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey } from "@aof/contracts/loop-bounds";
 import { MIN_SEPARATION_RATIO, checkReferenceOwnership, checkTimescale } from "@aof/work-graph/checks";
 import { stripComments } from "../../support/source-slice.mjs";

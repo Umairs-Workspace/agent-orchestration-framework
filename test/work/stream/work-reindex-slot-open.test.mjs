@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 01 (reindex-engine), task
 //   wiki/work/41_milestone_work-item-insertion/stories/01_story_reindex-engine/
 //     tasks/00_slot-open-renames-and-bumps-number.feature
@@ -9,7 +10,9 @@
 // (packages/core/src/work.mjs) against the fixture on disk — the feature's own litmus
 // ("a fresh `aof work find|validate --json`").
 import assert from "node:assert/strict";
-import { findWork, listItems, validateWork } from "../../../packages/core/src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
+const validateWork = _aofWorkspace.work.validateWork;
 import { reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, folderNames, SLUGS } from "../../support/work-reindex-fixture.mjs";
 

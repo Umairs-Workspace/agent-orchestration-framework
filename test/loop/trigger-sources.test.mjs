@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 63 / story 04 — THE SIGNALS THAT ARE NOT THE MESH.
 //
 // Every @executable scenario and every Scenario-Outline row of the story's five task features,
@@ -51,12 +52,12 @@ import {
   resolveTriggerSignal,
   resolveTriggerSignals,
 } from "@aof/work-loop/trigger/sources";
-import { TRIGGER_SOURCES } from "../../packages/core/src/work-trigger/declaration.mjs";
+const TRIGGER_SOURCES = _aofApplication.loop.workTrigger.declaration.TRIGGER_SOURCES;
 import { LOOP_LEVELS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 // The two vocabularies the "a refusal carries no more than a resolution does" sweep recognises a
 // level and a cadence BY, rather than by the key they arrive under: `runAt: "L3"` is a level and
 // `every: "1h"` is a cadence, and a name-exact guard sees neither.
-import { parseCadence } from "../../packages/core/src/work/loops.mjs";
+const parseCadence = _aofApplication.graph.work.loops.parseCadence;
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

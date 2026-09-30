@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 66 / story 02 — the CONTROLS LANE.
 //
 // Every `@executable` scenario (and every Examples row) of the story's four task
@@ -287,7 +288,10 @@ export const workDoctorControlsTests = [
   {
     name: "66/02 lane: an ERROR gates and a WARN does not, on the exit code doctor already publishes",
     run: async () => {
-      const { doctorCommand } = await import("../../../packages/core/src/commands/doctor.mjs");
+      const { doctorCommand } = await Promise.resolve(Object.freeze({
+  doctorCommand: _aofApplication.getCommand("work:doctor"),
+  readRenameMap: _aofApplication.work.commandTools.doctor.readRenameMap,
+}));
       const exitFor = (findings, strict) => doctorCommand.cli.exit({ findings }, { options: strict ? { strict: true } : {} });
       // A stream whose ONLY controls findings are warns: exits zero, and non-zero under
       // `--strict`. Driven over findings the lane really produced, not invented ones.
@@ -549,7 +553,20 @@ export const workDoctorControlsTests = [
       // THE SETTLING SCENARIO, and it is settled by measurement rather than by
       // assertion (ADR-009/A). Run over the real `wiki/work` through the shipped
       // snapshot builder, so the universe is doctor's own — not a fixture's.
-      const { buildSnapshot } = await import("../../../packages/core/src/work/doctor.mjs");
+      const { buildSnapshot } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       const snapshot = await buildSnapshot(path.join(repoRoot, "wiki", "work"), { projectRoot: repoRoot });
       const findings = registerGroup(snapshot, {});
 
@@ -601,7 +618,20 @@ export const workDoctorControlsTests = [
   {
     name: "66/02 register: the two seed checks keep their own findings — this lane re-implements neither",
     run: async () => {
-      const { duplicateDriverNumberGroup, CHECK_GROUPS } = await import("../../../packages/core/src/work/doctor.mjs");
+      const { duplicateDriverNumberGroup, CHECK_GROUPS } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       const snapshot = snapshotOf([
         item({ ref: "66", number: "66", slug: "a", docs: { "ARCHITECTURE.md": fitnessRegister("| **FF-01** | a | `test/arch/x.test.mjs` | ADR |", "| **FF-01** | b | `test/arch/x.test.mjs` | ADR |") } }),
         item({ ref: "66", number: "66", slug: "b" }),

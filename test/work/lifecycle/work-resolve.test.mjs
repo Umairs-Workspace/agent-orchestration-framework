@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 00/00 `resolve-items`.
 //
 // These tests prove every @executable scenario/row in the story's two task
@@ -12,7 +13,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listItems, findWork, parseFrontmatter } from "../../../packages/core/src/work.mjs";
+const listItems = _aofWorkspace.work.listItems;
+const findWork = _aofWorkspace.work.findWork;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
 
 // --- fixture helpers (mirror test/work/work.test.mjs) ----------------------------
 

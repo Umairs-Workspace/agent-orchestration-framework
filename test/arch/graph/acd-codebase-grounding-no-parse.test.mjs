@@ -48,7 +48,7 @@ const SEAMS = {
 // (the registered command), never by reading graph.json / importing the normalizer
 // (09/ADR-005). Its only `graph.json` mentions are in comments/strings (discounted).
 const GRAPH_READER_ALLOWLIST = new Set([
-  path.join("packages/core/src/graphify.mjs"), // Compatibility export of the same configured reader.
+  path.join("packages/core/src/application/bindings/graphify.mjs"), // Compatibility export of the same configured reader.
   // Transitional core adapters supply the configured graph services.
   path.join("packages/core/src/application/bindings/graphify.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/build.mjs"),

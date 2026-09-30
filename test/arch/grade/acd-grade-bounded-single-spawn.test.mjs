@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5406 (milestone 54 / ADR-003 §1-§2, ADR-005 §5) — THE COMPILER IS A PURE LEAF AND THE
 // SPAWN IS BOUNDED IN ONE PLACE.
 //
@@ -15,7 +16,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { rubricSpawnOptions, rubricChildEnv, GRADE_REENTRANCY_ENV } from "../../../packages/core/src/commands/grade.mjs";
+const rubricSpawnOptions = _aofApplication.work.commandTools.grade.rubricSpawnOptions;
+const rubricChildEnv = _aofApplication.work.commandTools.grade.rubricChildEnv;
+const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 

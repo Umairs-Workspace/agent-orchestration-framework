@@ -1,3 +1,4 @@
+import * as _aofPublic_aof_mesh_cache_policy from "@aof/mesh/cache-policy";
 // Traceability wiring for milestone 43 / story 04 (staleness, never eviction), task
 //   .../04_story_staleness-and-resync/tasks/01_cached-rows-carry-provenance.feature
 //
@@ -21,7 +22,7 @@ import assert from "node:assert/strict";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_CACHE_STALENESS_SECONDS } from "../../packages/core/src/cache-provenance.mjs";
+const DEFAULT_CACHE_STALENESS_SECONDS = _aofPublic_aof_mesh_cache_policy.DEFAULT_CACHE_STALENESS_SECONDS;
 import {
   withStalenessFixture,
   setStalenessWindow,
@@ -43,7 +44,7 @@ import {
 } from "../support/staleness-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const REF = "43/04";
 // A story the worker reports that this checkout does not have AT ALL — the merge's insert

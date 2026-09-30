@@ -295,7 +295,9 @@ const RUNNER_REGIONS = Object.freeze([
   { id: "the per-test global-home restore (the loop's finally)", from: (suite, loop) => ({ code: loop, at: loop.indexOf("} finally") + "} finally".length }), pin: "0de5a2941999272297fc2f5ef6f776d2f55f4917e67c66bb215d09638c9a1540" },
   { id: "the integration lane's environment restore", from: (suite) => ({ code: suite, at: suite.indexOf("if (previousInProcess === undefined)") + "if (previousInProcess === undefined)".length }), pin: "4726fd6d84c3867494fce10e78674196f83921d2ccb29665da7ddd252c9b3e6d" },
 ]);
-const RUNNER_RESIDUE = "d7c50c16e14ea92e6797dfd491afee7a91755f0d38c6ec2906792878c924b81a";
+// Plan 06 extracts the unchanged per-case isolation/loop into test-harness.mjs.
+// Pin both real files together, including the awaited bridge and executed count.
+const RUNNER_RESIDUE = "ea395d23e716cf51d6b57cf2d2e1ed6b0299f81be8d02f8f1d3313f2ad2d14e2";
 const REGISTRATION_IMPORT = /^import\s+\{[^}]*\}\s+from\s+"\.\.\/test\/[^"]+";$/u;
 const REGISTRATION_SPREAD = /^\s*\.\.\.[A-Za-z_$][\w$]*,?$/u;
 const COMMENT_OR_BLANK = /^\s*(?:\/\/.*)?$/u;
@@ -319,11 +321,12 @@ function runnerPins(source) {
   if (registration.error != null) return { error: registration.error };
   const suite = functionBody(text, "async function runSuite(");
   if (suite == null) return { error: "NOT FOUND — `async function runSuite(` has no cuttable body, so none of the runner's logic regions can be located" };
-  const loop = blockOrStatementAfter(suite, suite.indexOf(RUNNER_LOOP_HEADER) + RUNNER_LOOP_HEADER.length);
+  const cases = functionBody(text, "export async function runCases(") ?? suite;
+  const loop = blockOrStatementAfter(cases, cases.indexOf(RUNNER_LOOP_HEADER) + RUNNER_LOOP_HEADER.length);
   if (loop == null || !loop.braced) return { error: `NOT FOUND — the suite loop \`${RUNNER_LOOP_HEADER}\` owns no braced body. A runner whose loop destructures anything but \`{ name, run }\` cannot be cut here, and a proof against a stale runner is no proof.` };
   const regions = {};
   for (const region of RUNNER_REGIONS) {
-    const { code, at } = region.from(suite, loop.body);
+    const { code, at } = region.from(region.id.startsWith("the integration") ? suite : cases, loop.body);
     const cut = blockOrStatementAfter(code, at);
     if (cut == null) return { error: `NOT FOUND — ${region.id} could not be cut from scripts/test.mjs` };
     regions[region.id] = digest(cut.body);
@@ -605,7 +608,8 @@ const ACCEPTED_CEILINGS = Object.freeze([
     // comment appended to the accepted suite reds REG-MUT-15 against this pin.
     // 142: five read-subject/child-import path lines now name work-graph source.
     // Assertions, fixtures, pinned regions and line positions are unchanged.
-    residue: "0d0e46af0c12403b1ff161dad841e374fe0249642c7f8aed4f1a813954a45c92",
+    // Plan 06: configured services use public scoped bindings; case bodies stay pinned.
+    residue: "50c5340a673a954e5ee04b434e645177aea22f12aaa596153ddf0ffc8305a30b",
     regions: [
       {
         id: "FF-5209 roster",
@@ -678,7 +682,8 @@ const ACCEPTED_CEILINGS = Object.freeze([
     // `archive/` segment so its oracles keep reading the features they cite — the same class of
     // byte 119/03 re-pinned for when the suite itself moved. The mask set is unchanged; every other
     // byte is frozen at its value, and an archived folder never moves again.
-    residue: "1bf4beac4927417568bc0c2dc96dbc900f0410e9f532c3a36a1ecd9c098287fd",
+    // Plan 06: the owned work-graph suite moves; its imported coverage and cases stay pinned.
+    residue: "93f070ce876af4f0992b342a373c82c0128be1abd709abd2cc4b74466ac88b7c",
     regions: [
       {
         id: "leg 5 exclusion-pointer roster (beyond §8's enumeration — see above)",
@@ -769,7 +774,9 @@ export const archTests = [
   {
     name: "arch/53 FF-5311 (acd-loop-suite-registration): the runner's real destructuring makes a planted wrong-key member unreachable",
     run: async () => {
-      const runner = stripComments(await readFile(path.join(root, "scripts", "test.mjs"), "utf8"));
+      const rootRunner = stripComments(await readFile(path.join(root, "scripts", "test.mjs"), "utf8"));
+      assert.match(rootRunner, /await runCases\(tests\)/u, "the root actually delegates every selected case");
+      const runner = stripComments(await readFile(path.join(root, "scripts", "test-harness.mjs"), "utf8"));
       assert.match(runner, /for\s*\(\s*const\s*\{\s*name\s*,\s*run\s*\}\s*of\s*tests\s*\)/u);
       const calls = [];
       const members = [{ name: "a", run: async () => calls.push("a") }, { name: "b", wrong: async () => calls.push("b") }];
@@ -959,7 +966,7 @@ export const archTests = [
   {
     name: "arch/53 FF-5311 (acd-loop-suite-registration): REG-MUT-11 — the suite loop, the global-home handling, the integration lane and every runner line outside the labelled blocks are frozen",
     run: async () => {
-      const source = await readFile(path.join(root, "scripts", "test.mjs"), "utf8");
+      const source = (await readFile(path.join(root, "scripts", "test.mjs"), "utf8")) + "\n" + (await readFile(path.join(root, "scripts", "test-harness.mjs"), "utf8"));
       const exists = (specifier) => existsSync(path.join(root, "scripts", specifier));
       const pins = { regions: Object.fromEntries(RUNNER_REGIONS.map((region) => [region.id, region.pin])), residue: RUNNER_RESIDUE };
       assert.deepEqual(runnerLogicProblems(source, pins, exists), []);
@@ -1225,7 +1232,7 @@ export const archTests = [
       const normalized = normalize(await readFile(file, "utf8"));
       const lines = normalized.split("\n");
       const keyLines = lines.filter((line) => line.includes("Object.keys("));
-      assert.equal(lines.length - 1, 683, "doctor-command-core remains 683 newline-terminated lines");
+      assert.equal(lines.length - 1, 688, "Plan 06 adds five public service bindings; the 24 case bodies and their ceiling remain frozen");
       assert.equal(keyLines.length, 1, "exactly one Object.keys( occurrence is the envelope ceiling");
       assert.equal(
         keyLines[0],
@@ -1241,7 +1248,8 @@ export const archTests = [
       // gained a segment. The file is STILL 683 lines and still carries exactly ONE `Object.keys(`,
       // both asserted above before the residue is taken, so the ceiling's own claim is untouched —
       // only the bytes around it moved, which is what the residue exists to notice.
-      assert.equal(digest(residue), "cca976b5f9e8f454c25b19e7422e60f57e24eff01c8a7985cf53319531f0a2df");
+      // Plan 06's public API bindings change only imports and their local declarations.
+      assert.equal(digest(residue), "59d9dcbc968625eff8642befcb3faccd7710b412d5ed1d3af37f8a58f4ae2f8d");
       const moved = [keyLines[0], ...lines.filter((line) => !line.includes("Object.keys("))].map((line) => (line.includes("Object.keys(") ? MASK : line)).join("\n");
       assert.notEqual(digest(moved), digest(residue), "relocating the one permitted line changes the residue — position is hashed, not just content");
       const { doctorCommandCoreTests } = await import(pathToFileURL(file).href);

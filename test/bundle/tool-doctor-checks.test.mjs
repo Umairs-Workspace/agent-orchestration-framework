@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 12 / story 01, task 01 —
 // tasks/01_doctor-checks.feature.
 //
@@ -17,13 +18,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  doctorConfig,
-  managedToolChecks,
-  providerPrereqCheck,
-  toolPlatformChecks,
-  toolPlatformCheckFor,
-} from "../../packages/core/src/config-inspect.mjs";
+const doctorConfig = _aofApplication.assets.configInspect.doctorConfig;
+const managedToolChecks = _aofApplication.assets.configInspect.managedToolChecks;
+const providerPrereqCheck = _aofApplication.assets.configInspect.providerPrereqCheck;
+const toolPlatformChecks = _aofApplication.assets.configInspect.toolPlatformChecks;
+const toolPlatformCheckFor = _aofApplication.assets.configInspect.toolPlatformCheckFor;
 
 // A single-tool descriptor list so the managed-tool matrix drives ONE check at a
 // time (the binaries[0] is the resolved binary name; ADR-001's package→binary map).

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 78 / story 03, task `01_the-doctor-lane`.
 //
 // Covers EVERY @executable scenario in
@@ -17,8 +18,10 @@ import assert from "node:assert/strict";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { CHECK_GROUPS, buildSnapshot, doctorWork } from "../../packages/core/src/work/doctor.mjs";
+const invoke = _aofApplication.invoke;
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 import {
   LOOP_RECORD_FINDING_CODES,
   SIGNOFF_DIVIDER,
@@ -27,7 +30,7 @@ import {
   SIGNOFF_PLACEHOLDER,
   loopRecordLane,
 } from "@aof/work/doctor/loop-record";
-import { loopRecordCommand } from "../../packages/core/src/commands/loop-record.mjs";
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import {
   ENGAGED_RUNS,
   ITEM_REF,

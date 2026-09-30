@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 13 / story 01 — source-shape recovery (the
 // REAL heuristics behind story 00's frozen recoverMilestone seam).
 //
@@ -35,9 +36,11 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { recoverMilestone } from "../../packages/core/src/import/recovery.mjs";
-import { materializeImport, INTENT_NOT_RECOVERABLE } from "../../packages/core/src/import/materialize.mjs";
-import { parseArchitecture, parseRetrospective } from "../../packages/core/src/memory/local-indexing.mjs";
+const recoverMilestone = _aofApplication.knowledge.import.recovery.recoverMilestone;
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const INTENT_NOT_RECOVERABLE = _aofApplication.knowledge.import.materialize.INTENT_NOT_RECOVERABLE;
+const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
+const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
 import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 // --- fixture builders -----------------------------------------------------------

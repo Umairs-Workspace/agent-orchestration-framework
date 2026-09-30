@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 65, task 00 —
 // `wiki/work/65_story_concurrent-story-dispatch/tasks/00_story-depends-becomes-data.feature`
 // (@executable). One exported entry per Scenario, and one per Scenario-Outline ROW, with
@@ -12,7 +13,9 @@
 // Run focused and isolated (hook-enforced):
 //   AOF_GLOBAL_HOME=$(mktemp -d) node scripts/test-unit.mjs   (or the focused runner)
 import assert from "node:assert/strict";
-import { nextWork, validateWork, siblingDependencyNumber } from "../../../packages/core/src/work.mjs";
+const nextWork = _aofWorkspace.work.nextWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const siblingDependencyNumber = _aofWorkspace.work.siblingDependencyNumber;
 import { withStream, VALIDATE_CONFIG, hasFinding } from "../../support/story-depends-fixture.mjs";
 
 const NOT_STARTED = "not-started";

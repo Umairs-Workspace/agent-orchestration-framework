@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Fitness function: acd-captured-producer-fixture (milestone 38 / ADR-008)
 //
 // THE INVARIANT (ADR-008). Wherever we do NOT own the producer — a vendor hook
@@ -50,9 +53,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const startSession = _aofHooks.meshSession.startSession;
 import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
 // The DECLARED one home for "which sessions survive the run filter, projected to their
 // repo" (test/support/session-line-rule.mjs — the m49 rule module). Imported rather than

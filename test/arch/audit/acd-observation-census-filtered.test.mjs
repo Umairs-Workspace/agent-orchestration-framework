@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6107 — COUNTING OFF THE EFFECTS JOURNAL IS FILTERED AND COLLAPSED IN ONE HOME, AND THE
 // READ RECORD IS IMPORTED RATHER THAN RESTATED.
 //
@@ -35,11 +36,30 @@ import { fileURLToPath } from "node:url";
 
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import * as reads from "@aof/work/audit/reads";
-import {
-  dispatchWorktreeSlug,
-  meshDispatchWorktreePath,
-} from "../../../packages/core/src/mesh/worktree.mjs";
-import * as observations from "../../../packages/core/src/work-acceptor/observations.mjs";
+const dispatchWorktreeSlug = _aofApplication.mesh.worktree.dispatchWorktreeSlug;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const observations = Object.freeze({
+  CENSUS_EVENT_LIMIT: _aofApplication.work.acceptor.observations.CENSUS_EVENT_LIMIT,
+  FLOOR_DIVISOR: _aofApplication.work.acceptor.observations.FLOOR_DIVISOR,
+  JOURNAL_ROOT_PLACEHOLDER: _aofApplication.work.acceptor.observations.JOURNAL_ROOT_PLACEHOLDER,
+  OBSERVATION_DISPOSITIONS: _aofApplication.work.acceptor.observations.OBSERVATION_DISPOSITIONS,
+  OBSERVATION_FINDING_CODES: _aofApplication.work.acceptor.observations.OBSERVATION_FINDING_CODES,
+  OBSERVATION_LOCATION_FIELDS: _aofApplication.work.acceptor.observations.OBSERVATION_LOCATION_FIELDS,
+  OBSERVATION_SWEEPS: _aofApplication.work.acceptor.observations.OBSERVATION_SWEEPS,
+  OBSERVATION_WORKSPACE_FIELD: _aofApplication.work.acceptor.observations.OBSERVATION_WORKSPACE_FIELD,
+  assertObservationSweepsDeclared: _aofApplication.work.acceptor.observations.assertObservationSweepsDeclared,
+  classifyObservation: _aofApplication.work.acceptor.observations.classifyObservation,
+  countPopulation: _aofApplication.work.acceptor.observations.countPopulation,
+  fixtureRoots: _aofApplication.work.acceptor.observations.fixtureRoots,
+  floorFromMeasured: _aofApplication.work.acceptor.observations.floorFromMeasured,
+  foldDispatchWorktree: _aofApplication.work.acceptor.observations.foldDispatchWorktree,
+  isFixtureLocation: _aofApplication.work.acceptor.observations.isFixtureLocation,
+  observationCensus: _aofApplication.work.acceptor.observations.observationCensus,
+  observationFinding: _aofApplication.work.acceptor.observations.observationFinding,
+  readObservationCensus: _aofApplication.work.acceptor.observations.readObservationCensus,
+  unfilteredFinding: _aofApplication.work.acceptor.observations.unfilteredFinding,
+  workspaceKey: _aofApplication.work.acceptor.observations.workspaceKey,
+});
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const CENSUS_MODULE = "packages/work/src/acceptor/observations.mjs";

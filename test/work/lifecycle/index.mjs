@@ -24,7 +24,7 @@ import { workTestSelectTests } from "./work-test-select.test.mjs";
 import { workMemorySeamTests } from "./work-memory-seam.test.mjs";
 // milestone 03 — work board UI
 import { workListTests } from "./work-list.test.mjs";
-import { workDebtTests } from "./work-debt.test.mjs";
+
 // milestone 68 / story 04 — story-and-phase-scoped-observe: the resolver reads one
 // level deeper (NN/SS → the story's own folder; a bare story-like ref is refused,
 // never substring-resolved), the per-phase rollup groups by brief.loop.phase (ADR-002,
@@ -68,7 +68,6 @@ export const tests = [
   ...workTestSelectTests,
   ...workMemorySeamTests,
   ...workListTests,
-  ...workDebtTests,
   // milestone 68 / story 04 — story-and-phase-scoped-observe (the three @executable
   // task features; no fitness function of its own).
   ...workObserveScopeTests,

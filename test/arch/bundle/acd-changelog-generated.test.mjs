@@ -16,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UPGRADE_MODULE = path.join(repoRoot, "packages", "core", "src", "work", "upgrade.mjs");
+const UPGRADE_MODULE = path.join(repoRoot, "packages", "work", "src", "upgrade.mjs");
 
 function findGeneratorFn(mod) {
   for (const name of ["renderChangelog", "generateChangelog", "changelogFromMigrations", "renderUpgradeChangelog", "buildChangelog"]) {

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/grade/gate-propagation-reuse-door-advance.test.mjs — traceability for milestone 43 /
 // story 05 (gate-time propagation), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/05_story_gate-propagation/
@@ -20,7 +21,7 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
 import {
   withGatePropagationFixture,
   buildItemLine,

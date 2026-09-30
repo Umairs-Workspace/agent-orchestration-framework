@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 29 (the read-only source boundary, modelled on
 // acd-import-read-only-source):
 // "migrate reads the source READ-ONLY. The migrate command module constructs NO git
@@ -23,12 +25,12 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MIGRATE_COMMAND = path.join(repoRoot, "packages", "work", "src", "commands", "migrate-folder.mjs");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // Strip line/block comments AND string/template literals so a documented mention of
 // a write verb in prose, or a verb inside an error MESSAGE string, does not trip the

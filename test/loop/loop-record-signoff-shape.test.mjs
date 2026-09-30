@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 78 / story 03, task `00_the-frozen-signoff-block`.
 //
 // Covers EVERY @executable scenario in
@@ -26,7 +27,7 @@ import {
   isSignedRow,
   readSignoff,
 } from "@aof/work/doctor/loop-record";
-import { loopRecordCommand } from "../../packages/core/src/commands/loop-record.mjs";
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { BARE_RUNS, ITEM_REF, ctxFor, signInPlace, signedRow, withRepo } from "./loop-record-command.test.mjs";
 
 const write = async (repo) => await loopRecordCommand.run({ ref: ITEM_REF, write: true }, await ctxFor(repo));

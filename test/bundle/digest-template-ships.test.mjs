@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import * as _aofPublic_aof_work_identity from "@aof/work/identity";
 // Traceability wiring for story 137 / tasks/00_the-digest-template-ships-with-the-set.feature —
 // "the AOF.md digest template ships with the record-doc set" (@executable).
 //
@@ -13,8 +15,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadBundle, renderBundleTemplateOutputs, TEMPLATE_STAMP } from "../../packages/core/src/work/bundle.mjs";
 import { readShippedManifest } from "../../packages/core/src/work/bundle-manifest.mjs";
-import { scaffoldBacklogDriver } from "../../packages/core/src/commands/insert-shared.mjs";
-import { BACKLOG_ROOT } from "../../packages/core/src/work.mjs";
+const scaffoldBacklogDriver = _aofApplication.work.commandTools.insertShared.scaffoldBacklogDriver;
+const BACKLOG_ROOT = _aofPublic_aof_work_identity.BACKLOG_ROOT;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SOURCE = path.join(repoRoot, "packages", "core", "assets", "templates", "milestone", "AOF.md");

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: 69/00/tasks/03_the-cap-binds-the-loop.feature (authoritative
 // amended contract supplied from the orchestrator's main checkout).
 import assert from "node:assert/strict";
@@ -13,7 +14,8 @@ import {
   isReviewBlockerClaim,
   reviewBlockerClaim,
 } from "../../packages/work-loop/src/engine.mjs";
-import { loopCommand, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { completingDriver, loopFixture } from "./loop-command-probe.test.mjs";
 import { functionBody } from "../support/source-slice.mjs";
 

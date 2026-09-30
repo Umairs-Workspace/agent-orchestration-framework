@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Story 30 · task 02 — a project overrides the per-role model default via config.
 //
 // Traceability for tasks/02_per-project-config-override.feature. Two surfaces:
@@ -16,7 +17,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { loadBundle, renderBundleOutputs, renderBundleOutputsWithConfig } from "../../packages/core/src/work/bundle.mjs";
-import { validateConfig } from "../../packages/core/src/config-inspect.mjs";
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 
 // The shipped defaults, READ FROM THE BUNDLE rather than copied from it.
 //

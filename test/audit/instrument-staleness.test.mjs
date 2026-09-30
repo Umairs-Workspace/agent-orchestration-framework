@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 59 / story 03 — STALENESS, SILENCE AND THE PRUNE.
 //
 // Mechanises all four `@executable` task features of 59/03 against the four audit lanes exported by
@@ -32,7 +33,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   ANCHOR_FRESHNESS_VERDICTS,
   AUDIT_LANE_FINDING_CODES,

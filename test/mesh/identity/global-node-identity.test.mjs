@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Milestone 34 / story 00 — the node identity is MACHINE-WIDE (global), not per-workspace.
 // These are the checks that were MISSING at the first (wrong) accept: they prove one node
 // id per machine, initialized once in the global AOF home, hydrated into every workspace,
@@ -8,9 +10,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
-import { meshIdentityCommand } from "../../../packages/core/src/commands/mesh/identity.mjs";
+const meshIdentityCommand = _aofApplication.getCommand("mesh:identity");
 import { migrateIdentityToGlobal, sidecarPathFor } from "@aof/mesh/node-identity";
 
 async function withTemp(fn) {

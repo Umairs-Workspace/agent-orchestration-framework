@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-9602 (96/ADR-004) — DERIVATION PROPOSES, READS A GRAPH IT NEVER BUILDS, AND THE PARSER IT
 // SITS BESIDE KEEPS ITS ZERO IMPORTS.
 //
@@ -33,7 +34,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { PROPOSAL_REASONS, deriveStoryContract } from "../../../packages/core/src/story-contract-derive.mjs";
+const PROPOSAL_REASONS = _aofApplication.work.storyContractDerive.PROPOSAL_REASONS;
+const deriveStoryContract = _aofApplication.work.storyContractDerive.deriveStoryContract;
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

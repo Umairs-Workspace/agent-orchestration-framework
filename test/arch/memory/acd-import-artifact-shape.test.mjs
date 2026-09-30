@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for milestone 13 / ADR-001:
 // "Reuse the 05 doc shapes; NO new parser, NO new record shape. Every record an
@@ -34,12 +35,13 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, rm, mkdir, readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import {
-  parseArchitecture,
-  parseRetrospective,
-} from "../../../packages/core/src/memory/local-indexing.mjs";
+const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
+const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
 import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
-import { materializeImport, ARCHITECTURE_FILE, RETROSPECTIVE_FILE, SPEC_FILE } from "../../../packages/core/src/import/materialize.mjs";
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const ARCHITECTURE_FILE = _aofApplication.knowledge.import.materialize.ARCHITECTURE_FILE;
+const RETROSPECTIVE_FILE = _aofApplication.knowledge.import.materialize.RETROSPECTIVE_FILE;
+const SPEC_FILE = _aofApplication.knowledge.import.materialize.SPEC_FILE;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC_IMPORT_DIR = path.join(repoRoot, "packages", "knowledge", "src", "import");

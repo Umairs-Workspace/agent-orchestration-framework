@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 65, task 02 —
 // `wiki/work/65_story_concurrent-story-dispatch/tasks/02_concurrent-dispatch-into-worktrees.feature`
 // (@executable). One exported entry per @executable Scenario, one per Scenario-Outline ROW.
@@ -18,34 +20,30 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile, mkdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  resolveDispatchLane,
-  dispatchReadySet,
-  inspectDispatchLanes,
-  sweepDispatchLanes,
-  cleanupDispatchLane,
-  overlappingFiles,
-  laneChanges,
-  dispatchConcurrencyFromConfig,
-  narrowDispatchBound,
-  resolveDispatchConcurrency,
-  DEFAULT_DISPATCH_CONCURRENCY,
-  dispatchLaneBase,
-  commitDispatchLane,
-  mergeDispatchLaneHome,
-} from "../../../packages/core/src/work/dispatch.mjs";
-import {
-  meshDispatchWorktreePath,
-  meshDispatchWorktreesRoot,
-  isUnderMeshDispatchWorktreesRoot,
-  isUnderMeshWorktreesRoot,
-  isUnderMeshSessionWorktreesRoot,
-  meshItemBranchName,
-  listWorktrees,
-} from "../../../packages/core/src/mesh/worktree.mjs";
+const resolveDispatchLane = _aofApplication.loop.work.dispatch.resolveDispatchLane;
+const dispatchReadySet = _aofApplication.loop.work.dispatch.dispatchReadySet;
+const inspectDispatchLanes = _aofApplication.loop.work.dispatch.inspectDispatchLanes;
+const sweepDispatchLanes = _aofApplication.loop.work.dispatch.sweepDispatchLanes;
+const cleanupDispatchLane = _aofApplication.loop.work.dispatch.cleanupDispatchLane;
+const overlappingFiles = _aofApplication.loop.work.dispatch.overlappingFiles;
+const laneChanges = _aofApplication.loop.work.dispatch.laneChanges;
+const dispatchConcurrencyFromConfig = _aofApplication.loop.work.dispatch.dispatchConcurrencyFromConfig;
+const narrowDispatchBound = _aofApplication.loop.work.dispatch.narrowDispatchBound;
+const resolveDispatchConcurrency = _aofApplication.loop.work.dispatch.resolveDispatchConcurrency;
+const DEFAULT_DISPATCH_CONCURRENCY = _aofApplication.loop.work.dispatch.DEFAULT_DISPATCH_CONCURRENCY;
+const dispatchLaneBase = _aofApplication.loop.work.dispatch.dispatchLaneBase;
+const commitDispatchLane = _aofApplication.loop.work.dispatch.commitDispatchLane;
+const mergeDispatchLaneHome = _aofApplication.loop.work.dispatch.mergeDispatchLaneHome;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const meshDispatchWorktreesRoot = _aofApplication.mesh.worktree.meshDispatchWorktreesRoot;
+const isUnderMeshDispatchWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshDispatchWorktreesRoot;
+const isUnderMeshWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot;
+const isUnderMeshSessionWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
 import { withDispatchRepo, git, dirtyPaths, writeRel, mergeHeadAbsent, conflictMarkers } from "../../support/dispatch-lane-fixture.mjs";
-import { dispatchCommand } from "../../../packages/core/src/commands/dispatch.mjs";
-import { findWork } from "../../../packages/core/src/work.mjs";
+const dispatchCommand = _aofApplication.getCommand("work:dispatch");
+const findWork = _aofWorkspace.work.findWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHARED = "src/sandbox/provisionSandboxAgent.ts";

@@ -20,7 +20,7 @@ import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcCli = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
-const binCli = path.join(repoRoot, "bin", "aof.mjs");
+const binCli = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 function runNode(args) {
   const result = spawnCliSync(process.execPath, ["--no-warnings", ...args], {

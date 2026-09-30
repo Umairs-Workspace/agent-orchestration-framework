@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 129 / story 04 — THE PHASES, THE FRESH GATE, THE INTERRUPTS
 // AND THE RECONCILE.
 //
@@ -14,14 +15,23 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 
-import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
-import { readRuns, startRun, completeRun, heartbeat, recordSessionId } from "../../packages/core/src/run-store.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const recordSessionId = _aofApplication.execution.runs.recordSessionId;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
-import { resolveRefInWorktree } from "../../packages/core/src/work/dispatch.mjs";
-import { meshDispatchWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
-import { appendProgressSample } from "../../packages/core/src/loop-progress.mjs";
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const resolveRefInWorktree = _aofApplication.loop.work.dispatch.resolveRefInWorktree;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const appendProgressSample = _aofApplication.loop.loopProgress.appendProgressSample;
 import {
   withLaneRepo, fakeLaneChild, stubRubric, emits, passingTap, collector, fakeTimers, fakeSignals,
   primaryDriver, verifyCompleter, laneCtx, statusOf, git, headSha, deferred, scriptedRegistry, laneStoryFile, replaceStatus, realExec,

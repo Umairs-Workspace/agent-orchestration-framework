@@ -62,7 +62,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { coverage as recordCoverage, workLoopsRecordTests } from "./work-loops-record.test.mjs";
 import { coverage as valueCoverage, workLoopsValueTests } from "./work-loops-value.test.mjs";
-import { coverage as checksCoverage, workLoopsChecksTests } from "./work-loops-checks.test.mjs";
+import { coverage as checksCoverage, workLoopsChecksTests } from "../../packages/work-graph/test/work-loops-checks.suite.mjs";
 import { coverage as commandsCoverage, workLoopsCommandsTests } from "./work-loops-commands.test.mjs";
 import { coverage as censusCoverage, workLoopsRegistryCensusTests } from "./work-loops-registry-census.test.mjs";
 

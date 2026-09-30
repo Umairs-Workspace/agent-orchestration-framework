@@ -31,7 +31,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliAsync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A temp repo whose .aof/aof.config.json points work.dir at wiki/work, with a minimal
 // planted .mesh (one live node + registered board) so the mesh:status aggregate is

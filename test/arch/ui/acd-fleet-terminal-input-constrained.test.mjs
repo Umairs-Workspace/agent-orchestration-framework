@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-fleet-terminal-input-constrained (m42 "interactive worker
 // terminals" — the DELIBERATE rewrite of acd-fleet-terminal-mirror-read-only).
 //
@@ -141,9 +142,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
-import { createTerminalMirror } from "../../../packages/core/src/mesh/terminal-mirror.mjs";
-import { buildTerminalFrameEnvelope, TERMINAL_INPUT_KIND } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const createTerminalMirror = _aofApplication.mesh.terminalMirror.createTerminalMirror;
+const buildTerminalFrameEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalFrameEnvelope;
+const TERMINAL_INPUT_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_INPUT_KIND;
 // m46/04 — INVARIANT 4's POLICY HALF is driven BEHAVIOURALLY, over the REAL modules the
 // browser imports. A source-grep could only say the words are present; running the real
 // policy over the real frozen table says the ANSWER is right, for every pair.

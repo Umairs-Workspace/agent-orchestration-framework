@@ -20,6 +20,6 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs test/services.test.mjs"
+    "test": "node ../../scripts/test-workspace.mjs @aof/integration-notion"
   }
 }

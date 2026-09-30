@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 33 / story 00 — per-install node identity.
 //
 // Covers EVERY @executable scenario in tasks/03_self-heal-hostname-mismatch.feature,
@@ -25,7 +26,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { healIdentitySidecar, loadWorkspace } from "../../packages/core/src/work.mjs";
+const healIdentitySidecar = _aofWorkspace.work.healIdentitySidecar;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { installHash, readSidecar } from "@aof/mesh/node-identity";
 
 async function tempSidecar(initial) {

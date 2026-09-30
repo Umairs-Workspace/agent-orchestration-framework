@@ -1,14 +1,39 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  ADMITTED_KEYS, CADENCE_KINDS, EDGE_KEYS, ENDPOINT_SCHEMES, EVENT_TRIGGERS, FIELD_KINDS,
-  GROUND_VALUES, LOADER_FINDING_CODES, NODE_KINDS, PERIODIC_UNITS, POINTER_SCHEMES,
-  SENTINEL_TOKENS, loadLoops,
-} from "../../../packages/core/src/work/loops.mjs";
-import * as loaderModule from "../../../packages/core/src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const CADENCE_KINDS = _aofApplication.graph.work.loops.CADENCE_KINDS;
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const ENDPOINT_SCHEMES = _aofApplication.graph.work.loops.ENDPOINT_SCHEMES;
+const EVENT_TRIGGERS = _aofApplication.graph.work.loops.EVENT_TRIGGERS;
+const FIELD_KINDS = _aofApplication.graph.work.loops.FIELD_KINDS;
+const GROUND_VALUES = _aofApplication.graph.work.loops.GROUND_VALUES;
+const LOADER_FINDING_CODES = _aofApplication.graph.work.loops.LOADER_FINDING_CODES;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const PERIODIC_UNITS = _aofApplication.graph.work.loops.PERIODIC_UNITS;
+const POINTER_SCHEMES = _aofApplication.graph.work.loops.POINTER_SCHEMES;
+const SENTINEL_TOKENS = _aofApplication.graph.work.loops.SENTINEL_TOKENS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const loaderModule = Object.freeze({
+  ADMITTED_KEYS: _aofApplication.graph.work.loops.ADMITTED_KEYS,
+  CADENCE_KINDS: _aofApplication.graph.work.loops.CADENCE_KINDS,
+  EDGE_KEYS: _aofApplication.graph.work.loops.EDGE_KEYS,
+  ENDPOINT_SCHEMES: _aofApplication.graph.work.loops.ENDPOINT_SCHEMES,
+  EVENT_TRIGGERS: _aofApplication.graph.work.loops.EVENT_TRIGGERS,
+  FIELD_KINDS: _aofApplication.graph.work.loops.FIELD_KINDS,
+  GROUND_VALUES: _aofApplication.graph.work.loops.GROUND_VALUES,
+  LOADER_FINDING_CODES: _aofApplication.graph.work.loops.LOADER_FINDING_CODES,
+  NODE_KINDS: _aofApplication.graph.work.loops.NODE_KINDS,
+  PERIODIC_UNITS: _aofApplication.graph.work.loops.PERIODIC_UNITS,
+  POINTER_SCHEMES: _aofApplication.graph.work.loops.POINTER_SCHEMES,
+  SENTINEL_TOKENS: _aofApplication.graph.work.loops.SENTINEL_TOKENS,
+  loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+  parseCadence: _aofApplication.graph.work.loops.parseCadence,
+  loadLoops: _aofApplication.graph.work.loops.loadLoops,
+});
 import { CHECK_FINDING_CODES, CHECK_IDS } from "@aof/work-graph/checks";
 import { COMPOSED_CHECK_IDS } from "@aof/work/doctor/loop-ready";
 

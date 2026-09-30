@@ -17,10 +17,10 @@ import { provenanceAtWriteTimeTests } from "./provenance-at-write-time.test.mjs"
 import { tuneCorpusTests } from "./tune-corpus.test.mjs";
 // milestone 62 / story 02 — disk-resolved provenance, honest demotion and the
 // distinct-document proposal floor, plus FF-6204's two imported-grammar controls.
-import { tuneProvenanceTests } from "./tune-provenance.test.mjs";
+
 // milestone 62 / story 03 — proposal distance, acceptor-owned removals, measured
 // prerequisite limbs, shrink-only closure and FF-6206's no-copy/no-second-walk guard.
-import { tuneDistanceTests } from "./tune-distance.test.mjs";
+
 // milestone 62 / story 05 — pure, lossless candidate formation under a readable,
 // variable criterion, plus FF-6209's partition and content-derived tie-break.
 import { tuneFormationTests } from "./tune-formation.test.mjs";
@@ -55,9 +55,7 @@ export const tests = [
   // milestone 62 / story 00 — three source-owned readers behind one floor-disciplined corpus.
   ...tuneCorpusTests,
   // milestone 62 / story 02 — provenance resolution and FF-6204.
-  ...tuneProvenanceTests,
   // milestone 62 / story 03 — measured distance and FF-6206.
-  ...tuneDistanceTests,
   // milestone 62 / story 05 — candidate formation tasks 00–04 and FF-6209.
   ...tuneFormationTests,
   // milestone 62 / story 04 — tasks 00–04 plus FF-6201, FF-6207 and FF-6208.

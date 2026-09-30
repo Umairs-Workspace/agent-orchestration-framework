@@ -1,4 +1,4 @@
-// Transitional child launcher; the work package owns control execution.
+// Installed child entry: the documented src/work path is retained in copied payloads and SEA sidecars.
 import { pathToFileURL } from "node:url";
 import { runAuditDriver } from "@aof/work/programs/audit-drive";
 

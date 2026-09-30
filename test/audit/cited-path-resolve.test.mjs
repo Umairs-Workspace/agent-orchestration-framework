@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // 119/00 task 02 — the resolver's own behaviour: one answer for every citation, at HEAD or through
 // a rename the repository itself recorded (119/ADR-004).
 //
@@ -14,6 +15,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { readCitationHistory } from "@aof/work/citation-history";
 
 import {
   RENAME_LEDGER_PATH,
@@ -25,23 +27,24 @@ import {
   resolveThroughRenames,
   splitLocator,
 } from "@aof/work/cited-path-resolve";
-import { readRenameMap } from "../../packages/core/src/commands/doctor.mjs";
+const readRenameMap = _aofApplication.work.commandTools.doctor.readRenameMap;
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const KNOWN_RENAME = Object.freeze({ from: "src/commands/errors.mjs", to: "packages/contracts/src/error.mjs" });
+const KNOWN_RENAME = Object.freeze({ from: "src/commands/errors.mjs", to: "packages/core/src/command-error.mjs" });
 
 async function realRenameMap() {
-  const ledger = await readFile(path.join(repoRoot, ...RENAME_LEDGER_PATH), "utf8").catch(() => "");
-  const { stdout } = await execFileAsync("git", [...RENAME_LOG_ARGS], {
+  return readCitationHistory(repoRoot, async args => {
+  const { stdout } = await execFileAsync("git", args, {
     cwd: repoRoot,
     encoding: "utf8",
     timeout: 30_000,
-    maxBuffer: 16 * 1024 * 1024,
+    maxBuffer: 64 * 1024 * 1024,
     windowsHide: true,
   });
-  return buildRenameMap(parseRenameRecords(`${stdout}\n${ledger}`));
+  return stdout;
+  });
 }
 
 export const citedPathResolveTests = [
@@ -111,7 +114,7 @@ export const citedPathResolveTests = [
       assert.deepEqual([head.resolved, head.at, head.via], [true, "src/work/doctor.mjs", "head"], "a src/ path that exists at HEAD resolves at its own path");
 
       const renamed = answer(KNOWN_RENAME.from);
-      assert.deepEqual([renamed.resolved, renamed.at, renamed.via], [true, KNOWN_RENAME.to, "rename"], "a path this repository's history records as renamed resolves at its new path");
+      assert.deepEqual([renamed.resolved, renamed.at, renamed.via], [true, "packages/contracts/src/error.mjs", "module"], "the recorded rename reaches its deleted forward, whose recorded public export reaches the owning implementation");
 
       const twice = resolveCitedPath("src/a.mjs", {
         existsAtHead: (candidate) => candidate === "src/c.mjs",
@@ -202,7 +205,7 @@ export const citedPathResolveTests = [
         seen.push(args);
         return "R100\tsrc/from.mjs\tsrc/to.mjs\n";
       });
-      assert.deepEqual(seen, [[...RENAME_LOG_ARGS]], "the edge spells no argv of its own — it runs the resolver's");
+      assert.deepEqual(seen, [[...RENAME_LOG_ARGS], ['log', '--format=', '--diff-filter=D', '-p', '--', 'packages/core/src'], ['diff', '--no-ext-diff', '--unified=10000', '--', 'packages/core/src']], "the edge reads real renames and deleted forward source with no redirect table");
       assert.equal(stub.get("src/from.mjs"), "src/to.mjs");
 
       assert.equal(await readRenameMap(null), null, "no project root means no map at all, and the probe degrades to leg A alone");

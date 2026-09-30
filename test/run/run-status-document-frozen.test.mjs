@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 126 / story 01, task 02 (ADR-003 §3-§5). THE DOCUMENT DOES NOT MOVE.
 //
 // The render gained the record's facts; the `--json` document gained nothing. This suite drives the
@@ -15,10 +16,10 @@ import {
   withCacheReadFixture, plantCacheRow, refuseCommand, runCommand, streamRun, writeItem,
   WORKER_NODE,
 } from "../support/cache-read-fixture.mjs";
-import { loadWorkspace } from "../../packages/core/src/command-core.mjs";
-import { startRun } from "../../packages/core/src/run-store.mjs";
-import { runStatusCommand } from "../../packages/core/src/commands/run-status.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const startRun = _aofApplication.execution.runs.startRun;
+const runStatusCommand = _aofApplication.getCommand("work:run-status");
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 
 // This node's own disk holds milestone "00" only, so a cache-only ref has genuinely no folder here.
 const DISK_STREAM = [{ number: "00", stories: [] }];

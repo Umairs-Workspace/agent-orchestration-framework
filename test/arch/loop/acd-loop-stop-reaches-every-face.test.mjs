@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-13005 + FF-13006 + FF-13007 (node leg) — THE STOP REACHES EVERY FACE (milestone 130 /
 // story 05; ARCHITECTURE `## Fitness functions`, ADR-005 and ADR-004 §3-§4). Which of this
 // directory's three subjects: the RECORD — the loop's presence entry is the record every face
@@ -37,8 +38,10 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assemblePresenceRecord, readActiveLoops } from "../../../packages/core/src/mesh/presence.mjs";
-import { loopStopsDir, requestLoopStop } from "../../../packages/core/src/loop/stop-request.mjs";
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
+const readActiveLoops = _aofApplication.mesh.presence.readActiveLoops;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
 import { fleetCurrentWorkLines, loopStopAffordance, rememberStopRung } from "../../../ui/src/fleet/runs.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";

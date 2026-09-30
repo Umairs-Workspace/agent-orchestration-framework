@@ -185,6 +185,7 @@ export const yarnInstallationTests = [
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
+        'citation-history.mjs': ['node:path', 'node:fs/promises'],
         "phase-brief-read.mjs": ["node:fs/promises","node:path"],
         "ready-wave.mjs": ["node:path","node:fs/promises"],
         "story-contract-derive.mjs": ["node:path","node:fs"],

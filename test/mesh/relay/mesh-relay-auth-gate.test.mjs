@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 24 / story 02 — task 00 (tasks/00_relay-auth-gate
 // .feature). serveRelay's ws upgrade handler CHECKS a connecting node's credential against
 // the LIVE roster/revocation before brokering: a valid credential is admitted (joins the
@@ -23,8 +24,11 @@ import { mkdtemp, rm, mkdir, readdir, readFile, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveRelay, sha256Hex } from "../../../packages/core/src/mesh/relay.mjs";
-import { writeRegistry, appendRevocation, readRegistry } from "../../../packages/core/src/mesh/registry.mjs";
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const sha256Hex = _aofApplication.mesh.relay.sha256Hex;
+const writeRegistry = _aofApplication.mesh.registry.writeRegistry;
+const appendRevocation = _aofApplication.mesh.registry.appendRevocation;
+const readRegistry = _aofApplication.mesh.registry.readRegistry;
 
 const CONTROL_ID = "control-node-a";
 const CLOCK = "2026-07-01T10:00:00.000Z";

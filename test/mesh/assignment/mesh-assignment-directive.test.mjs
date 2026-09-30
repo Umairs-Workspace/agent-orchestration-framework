@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/assignment/mesh-assignment-directive.test.mjs — VERIFICATION (UI phase selection,
 // 2026-07-25). Story 04 put a UI face on `aof mesh assign`, but the dispatch tick
 // hardcoded ONE command for every assignment — `/aof:refine <ref> --autonomous`. The
@@ -12,14 +14,17 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
-import { runControlDispatchReclaimTick } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
-import { buildDirectiveFrame, applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
-import { applyRecoveryPushResultFrame, buildRecoveryPushResultFrame } from "../../../packages/core/src/mesh/recovery-push.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { meshItemBranchName, meshWorktreePath } from "../../../packages/core/src/mesh/worktree.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const runControlDispatchReclaimTick = _aofApplication.mesh.assignmentReclaim.runControlDispatchReclaimTick;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
+const applyAssignmentStatusFrame = _aofApplication.mesh.controlStreamServer.applyAssignmentStatusFrame;
+const applyRecoveryPushResultFrame = _aofApplication.mesh.recoveryPush.applyRecoveryPushResultFrame;
+const buildRecoveryPushResultFrame = _aofApplication.mesh.recoveryPush.buildRecoveryPushResultFrame;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import {
   ASSIGNMENT_PHASES,
   phaseRunsOnItemBranch,

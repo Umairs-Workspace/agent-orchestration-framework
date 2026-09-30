@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // chore 94 — a malformed aof config must not read as an empty one.
 //
 // `loadWorkspace` answers `{ config: {} }` for a project with NO config, and answered the
@@ -14,8 +16,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 
 // A fixture project whose config is planted VERBATIM (so a deliberately torn one stays
 // torn), or omitted entirely for the no-config case.

@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 03 / task 01 —
 // `tasks/01_attribution-and-the-free-session.feature`: a session says what it is
 // working on, or says plainly that it is working on nothing — and the payload carries
@@ -27,16 +30,21 @@ import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { queryGlobalMeshStatus, shapeGlobalStatus, buildSessionIndex, workspaceIdForProjectRoot } from "../../../packages/core/src/global-mesh-query.mjs";
-import { publishPresenceRecord, readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
-import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
-import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
+const shapeGlobalStatus = _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
+const workspaceIdForProjectRoot = _aofApplication.mesh.globalMeshQuery.workspaceIdForProjectRoot;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const startSession = _aofHooks.meshSession.startSession;
+const meshDir = _aofHooks.meshStore.meshDir;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
 import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

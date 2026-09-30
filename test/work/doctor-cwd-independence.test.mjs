@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // chore 103 — `work doctor` reported health over a stream it could not see.
 //
 // THE FAILURE, measured at 78's gate (F-78-K): the same ref, on the same tree, answered
@@ -31,10 +32,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 import { findProjectConfig, workspacePaths } from "../../packages/core/src/workspace.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // Three days back — the same relative-date discipline doctor-command-core.test.mjs uses,
 // so the freshness group stays inert instead of aging red a month after this is written.

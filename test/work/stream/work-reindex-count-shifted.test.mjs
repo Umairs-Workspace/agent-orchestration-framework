@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 01 (reindex-engine), task
 //   wiki/work/41_milestone_work-item-insertion/stories/01_story_reindex-engine/
 //     tasks/04_count-shifted-primitive.feature
@@ -8,7 +9,7 @@
 // `reindexForInsert`'s own reported shift count — the ADR-004 "one source of
 // truth" guarantee.
 import assert from "node:assert/strict";
-import { listItems } from "../../../packages/core/src/work.mjs";
+const listItems = _aofWorkspace.work.listItems;
 import { countShiftedByInsert, reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, writeStoryItem, folderNames } from "../../support/work-reindex-fixture.mjs";
 

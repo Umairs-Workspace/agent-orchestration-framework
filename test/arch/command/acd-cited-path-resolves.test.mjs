@@ -194,9 +194,16 @@ async function realSweep() {
   const srcFiles = new Set();
   for (const owner of await readdir(path.join(root, "packages"))) {
     const source = path.join(root, "packages", owner, "src");
-    if (existsSync(source)) for (const file of await walk(source)) srcFiles.add(rel(file));
+    if (existsSync(source)) {
+      const owned = await walk(source);
+      assert.ok(owned.length > 0, `${owner}: the actual source root must not be empty`);
+      for (const file of owned) srcFiles.add(rel(file));
+    }
   }
-  assert.ok(srcFiles.size >= 700, `the citation sweep covers actual workspace implementations and configured core bindings (${srcFiles.size} files)`);
+  // 609 actual source files remain after retiring 226 configured/alias entries.
+  // Each owner is independently nonempty above; none of the deleted scaffolding
+  // contributes to this implementation floor.
+  assert.ok(srcFiles.size >= 600, `the citation sweep covers actual workspace implementations and configured core bindings (${srcFiles.size} files)`);
   return { result: await sweep({ documents, srcFiles, renameMap: await renameMapFromHistory() }), documents, srcFiles };
 }
 

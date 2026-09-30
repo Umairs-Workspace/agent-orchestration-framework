@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 61 / story 05 — the event a ruling raises.
 //
 //   tasks/00_a-ruling-raises-a-declared-event.feature
@@ -23,33 +24,34 @@ import { fileURLToPath } from "node:url";
 
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 import { AOF_GITIGNORE_ENTRIES, ensureAofGitignore } from "../../packages/core/src/aof-gitignore.mjs";
-import {
-  EFFECTS,
-  EVENT_NOT_DECLARED,
-  applicableReactors,
-  effectsFor,
-  knownEvents,
-} from "../../packages/core/src/effects/table.mjs";
-import { openEffectsJournal, appendEvent, markStep, pendingSteps, readEventSteps, readEvents } from "../../packages/core/src/effects/journal.mjs";
-import { drainEffects } from "../../packages/core/src/effects/dispatch.mjs";
-import {
-  HARNESS_DRAIN_NOT_OPTIONAL,
-  HARNESS_RECORD_NOT_STAMPED,
-  HARNESS_RULED,
-  STAMP_EVIDENCE,
-  transitionHarnessRuled,
-} from "../../packages/core/src/effects/harness-transitions.mjs";
-import {
-  LEDGER_LINE_CONFLICT,
-  LEDGER_LINE_KEY,
-  PROJECT_DIR_UNSET,
-  STORE_REFUSALS,
-  appendRuling,
-  ledgerPath,
-  readLedger,
-  setKnobValue,
-} from "../../packages/core/src/work-acceptor/store.mjs";
-import { LEDGER_RELPATH, criterionDigest, defaultCriterion } from "../../packages/core/src/work-acceptor/criterion.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const EVENT_NOT_DECLARED = _aofApplication.effects.reactors.EVENT_NOT_DECLARED;
+const applicableReactors = _aofApplication.effects.reactors.applicableReactors;
+const effectsFor = _aofApplication.effects.reactors.effectsFor;
+const knownEvents = _aofApplication.effects.reactors.knownEvents;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const markStep = _aofApplication.effects.journal.markStep;
+const pendingSteps = _aofApplication.effects.journal.pendingSteps;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const drainEffects = _aofApplication.effects.dispatcher.drainEffects;
+const HARNESS_DRAIN_NOT_OPTIONAL = _aofApplication.work.harness.HARNESS_DRAIN_NOT_OPTIONAL;
+const HARNESS_RECORD_NOT_STAMPED = _aofApplication.work.harness.HARNESS_RECORD_NOT_STAMPED;
+const HARNESS_RULED = _aofApplication.work.harness.HARNESS_RULED;
+const STAMP_EVIDENCE = _aofApplication.work.harness.STAMP_EVIDENCE;
+const transitionHarnessRuled = _aofApplication.work.harness.transitionHarnessRuled;
+const LEDGER_LINE_CONFLICT = _aofApplication.work.acceptor.store.LEDGER_LINE_CONFLICT;
+const LEDGER_LINE_KEY = _aofApplication.work.acceptor.store.LEDGER_LINE_KEY;
+const PROJECT_DIR_UNSET = _aofApplication.work.acceptor.store.PROJECT_DIR_UNSET;
+const STORE_REFUSALS = _aofApplication.work.acceptor.store.STORE_REFUSALS;
+const appendRuling = _aofApplication.work.acceptor.store.appendRuling;
+const ledgerPath = _aofApplication.work.acceptor.store.ledgerPath;
+const readLedger = _aofApplication.work.acceptor.store.readLedger;
+const setKnobValue = _aofApplication.work.acceptor.store.setKnobValue;
+const LEDGER_RELPATH = _aofApplication.work.acceptor.criterion.LEDGER_RELPATH;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
 import { PAIR_OUTCOMES, deriveRule } from "@aof/work/acceptor/rule";
 
 // One derivation of the repo root, not one per leg. Two legs below each spelled their own

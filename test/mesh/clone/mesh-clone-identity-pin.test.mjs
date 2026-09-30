@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // m42 wave (b) / TECH_DEBT item 4 — the CLONE-TIME IDENTITY PIN. A scoped checkout's
 // identity used to be re-derived from ITS OWN path on each machine (a different id
 // per machine for the same repo): the Mac's checkout of lark-guard answered
@@ -9,9 +11,9 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
-import { cloneRepoForWorkspace } from "../../../packages/core/src/mesh/worker-execution.mjs";
+const cloneRepoForWorkspace = _aofApplication.mesh.worker.cloneRepoForWorkspace;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const NOW = "2026-07-26T12:00:00.000Z";

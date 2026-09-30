@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // THE STORY-SPAN REF — `NN/MM-PP`, the stories MM..PP (inclusive) of driver NN.
 //
 // The form exists so an operator can drive a NAMED SLICE of a milestone (`aof:continue
@@ -53,9 +55,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { findWork, nextWork } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { nextCommand } from "../../../packages/core/src/commands/next.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const nextWork = _aofWorkspace.work.nextWork;
+const invoke = _aofApplication.invoke;
+const nextCommand = _aofApplication.getCommand("work:next");
 import { withStream } from "../../support/story-depends-fixture.mjs";
 import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture.mjs";
 

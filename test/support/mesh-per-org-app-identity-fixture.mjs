@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/mesh-per-org-app-identity-fixture.mjs — shared fixture builder for
 // milestone 38 / story 03 (per-org credential-provider scoping, ADR-011) task
 // traceability modules (tasks 00, 01). Builds a HERMETIC multi-workspace control-node
@@ -12,8 +14,8 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { generateKeyPairSync } from "node:crypto";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 
 // generateThrowawayPrivateKeyPem() — a LOCAL, test-only RSA private key (PEM, PKCS#1
 // — GitHub's own App-key download format), never a real GitHub App's registered key.

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 61 / story 03 — no executed consumer, no proposal.
 //
 // Covers EVERY @executable scenario and EVERY Examples row in all three task features:
@@ -30,7 +31,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ADMITTED_KEYS, EDGE_KEYS, ENDPOINT_SCHEMES, loadLoops } from "../../packages/core/src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const ENDPOINT_SCHEMES = _aofApplication.graph.work.loops.ENDPOINT_SCHEMES;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   ADMISSIBILITY_RAN_ON_NOTHING,
   DISPOSITIONS,
@@ -397,7 +401,7 @@ export const acceptorAdmissibilityTests = [
 
       // AND THE RULE HAS NO CASES IN IT: the module names no knob, in code, in a string or
       // in a comment. There is nothing in it to add a case to.
-      const source = await readFile(path.join(root, "packages", "core", "src", "work-acceptor", "admissibility.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work", "src", "acceptor", "admissibility.mjs"), "utf8");
       for (const key of [KEY, OTHER_KEY, "work.loop", "work.autonomous"]) {
         assert.equal(source.includes(key), false, `the acceptor spells no knob key: ${key}`);
       }

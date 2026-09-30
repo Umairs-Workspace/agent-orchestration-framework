@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-9603 (96/ADR-005, ADR-006) — THE PLAN RESTATES NO DECLARED PATH, AND ITS LENGTH IS GOVERNED
 // BY THE ONE BUDGET FAMILY.
 //
@@ -35,7 +36,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { restatementViolations } from "../../support/plan-restatement-ban.mjs";
 import { budgetKeyFor, budgetGroup } from "@aof/work/doctor/budget";
-import { budgetsFromConfig } from "../../../packages/core/src/work/doctor.mjs";
+const budgetsFromConfig = _aofApplication.work.doctor.budgetsFromConfig;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

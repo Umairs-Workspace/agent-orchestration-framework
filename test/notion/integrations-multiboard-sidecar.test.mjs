@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 18 / story 01, task 02 —
 // tasks/02_multiboard-sidecar-coexistence.feature (@executable, every scenario). One
 // test object per @executable scenario; ADR-005/006.
@@ -17,7 +18,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readMapping, resolvePageId, recordPageId, NOTION_WORK_MAP_FILE } from "../../packages/core/src/notion/mapping.mjs";
+const readMapping = _aofApplication.integrations.notion.mapping.readMapping;
+const resolvePageId = _aofApplication.integrations.notion.mapping.resolvePageId;
+const recordPageId = _aofApplication.integrations.notion.mapping.recordPageId;
+const NOTION_WORK_MAP_FILE = _aofApplication.integrations.notion.mapping.NOTION_WORK_MAP_FILE;
 
 async function makeRoot() {
   return await mkdtemp(path.join(os.tmpdir(), "aof-multiboard-map-"));

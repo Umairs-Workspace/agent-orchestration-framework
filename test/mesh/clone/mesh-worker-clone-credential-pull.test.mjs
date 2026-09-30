@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // test/mesh/clone/mesh-worker-clone-credential-pull.test.mjs — traceability for milestone 38 /
 // story 01, task 05 (05_bug-clone-credential-pull.feature, ADR-009, finding F12).
 // Every @executable scenario / Scenario Outline row wired to the REAL engine surface:
@@ -22,23 +25,20 @@ import { readFile, stat, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises"
 import os from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
-import {
-  createMeshWorkerExecutionHandler,
-  cloneRepoForWorkspace,
-  meshCheckoutPath,
-} from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
-import {
-  applyCloneCredentialRequestFrame,
-  buildDirectiveFrame,
-  CLONE_CREDENTIAL_NOT_HOLDER,
-  CLONE_CREDENTIAL_WORKSPACE_MISMATCH,
-  CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE,
-} from "../../../packages/core/src/control-stream-server.mjs";
-import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
-import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const cloneRepoForWorkspace = _aofApplication.mesh.worker.cloneRepoForWorkspace;
+const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const applyCloneCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
+const CLONE_CREDENTIAL_NOT_HOLDER = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_NOT_HOLDER;
+const CLONE_CREDENTIAL_WORKSPACE_MISMATCH = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_WORKSPACE_MISMATCH;
+const CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 import { TERMINAL_ASSIGNMENT_STATES } from "@aof/mesh/assignment-record";
 import {
   withMeshCloneFixture,

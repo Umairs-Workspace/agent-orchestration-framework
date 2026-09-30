@@ -1,11 +1,14 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Shared fixture builder for the milestone 35 / story 00 assign/withdraw/repo-gate
 // test suites — a hermetic AOF_GLOBAL_HOME v3 store + a resolvable work item + a
 // seeded node registry (the m34 global-store/global-node-registry test convention).
 import { mkdtemp, mkdir, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 export async function withMeshAssignFixture(fn, { seedItems = ["00"] } = {}) {
   // realpath the root: macOS's os.tmpdir() is a symlink (/var → /private/var),

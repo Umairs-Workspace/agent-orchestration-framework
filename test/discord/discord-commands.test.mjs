@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/discord/discord-commands.test.mjs — milestone 131 / story 11, tasks 00 to 04 (ADR-009). The
 // slash commands: the table and its per-guild registration (00), the deferral before any dispatch and
 // the allowlist that decides who reaches what (01), the two views over `work:list` (02), `/loop stop`
@@ -9,12 +11,19 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { COMMANDS, REGISTER_INTERVAL_MS, clipReply, handleInteraction, statusLine } from "../../packages/core/src/discord/commands.mjs";
-import { startDiscordBot } from "../../packages/core/src/discord/bot.mjs";
-import { startGateway } from "../../packages/core/src/discord/gateway.mjs";
-import { recordAskMessage } from "../../packages/core/src/notify/ask-messages.mjs";
-import { loopResumesDir, loopStopsDir, readStopRequest, requestLoopStop } from "../../packages/core/src/loop/stop-request.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const COMMANDS = _aofApplication.messaging.discord.commands.COMMANDS;
+const REGISTER_INTERVAL_MS = _aofApplication.messaging.discord.commands.REGISTER_INTERVAL_MS;
+const clipReply = _aofApplication.messaging.discord.commands.clipReply;
+const handleInteraction = _aofApplication.messaging.discord.commands.handleInteraction;
+const statusLine = _aofApplication.messaging.discord.commands.statusLine;
+const startDiscordBot = _aofApplication.messaging.discord.bot.startDiscordBot;
+const startGateway = _aofApplication.messaging.discord.gateway.startGateway;
+const recordAskMessage = _aofApplication.messaging.askMessages.recordAskMessage;
+const loopResumesDir = _aofApplication.loop.stopRequest.loopResumesDir;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { TOKEN, degradeSink, fakeClock, fakeGateway, flush, releaseDegradeSink } from "./discord-fixture.mjs";
 
@@ -393,7 +402,12 @@ async function withLoopProject({ live }, body) {
     await writeFile(path.join(itemDir, "runs", "run-1.json"), JSON.stringify(record, null, 2), "utf8");
     await writeFile(path.join(root, ".aof", "aof.config.json"), JSON.stringify({ name: "fixture", work: { dir: "wiki/work", notify: { channels: { discord: { type: "discord", channelId: CHANNEL, allow: [ALPHA_USER] } } } } }, null, 2), "utf8");
     const workspace = await loadWorkspace(root, undefined, { env: process.env });
-    const { invoke } = await import("../../packages/core/src/command-core.mjs");
+    const { invoke } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
     const spawned = [];
     const invokeReal = (id, input, ctx) => invoke(id, input, { ...ctx, spawnPhaseDrive: (...args) => { spawned.push(args); }, invokeRegistered: async (...args) => { spawned.push(args); } });
     return await body({ workspace, loopRunId, invokeReal, spawned });

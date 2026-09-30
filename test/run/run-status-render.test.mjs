@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 126 / story 01, tasks 00 and 01 (ADR-003 §1-§2, AMENDED). The DRIVEN
 // half — what the render actually prints for a record, and the two time figures it derives from an
 // injected `now`. The structural half is `test/arch/run/acd-run-status-renders-the-record.test.mjs`.
@@ -11,10 +12,10 @@ import path from "node:path";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 
-import { runStatusCommand } from "../../packages/core/src/commands/run-status.mjs";
+const runStatusCommand = _aofApplication.getCommand("work:run-status");
 import { attemptElapsedMs } from "@aof/work-loop/engine";
-import { startRun } from "../../packages/core/src/run-store.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const startRun = _aofApplication.execution.runs.startRun;
+const invoke = _aofApplication.invoke;
 
 const DAY = "2026-09-08T";
 const at = (clock) => (clock === "absent" || clock == null ? null : (clock.includes("-") ? clock : `${DAY}${clock}`));

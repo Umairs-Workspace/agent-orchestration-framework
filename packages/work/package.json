@@ -132,7 +132,7 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node ../../scripts/test-workspace.mjs @aof/work"
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",

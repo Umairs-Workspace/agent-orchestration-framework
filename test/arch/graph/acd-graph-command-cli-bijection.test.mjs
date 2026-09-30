@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 09 / ADR-006 inv. 1 (the 08 bijection, extended
 // to graph:*):
 // "`graph:build`/`graph:query`/`graph:triage` are in the SAME `listCommands()`
@@ -23,12 +25,12 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../packages/core/src/command-core.mjs";
-import { deriveRouteTable } from "../../../packages/core/src/spine/face.mjs";
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 // The graph verbs, each backed by a graph:<verb> command. `impact` is the

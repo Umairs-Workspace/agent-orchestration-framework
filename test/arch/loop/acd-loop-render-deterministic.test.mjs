@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import * as _aofPublic_aof_work_graph_commands_loops_graph from "@aof/work-graph/commands/loops-graph";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -5,7 +7,8 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loopsGraphCommand, renderLoopGraph } from "../../../packages/core/src/commands/loops-graph.mjs";
+const loopsGraphCommand = _aofApplication.getCommand("work:loops-graph");
+const renderLoopGraph = _aofPublic_aof_work_graph_commands_loops_graph.renderLoopGraph;
 import { stripComments } from "../../support/source-slice.mjs";
 
 const runFile = promisify(execFile);

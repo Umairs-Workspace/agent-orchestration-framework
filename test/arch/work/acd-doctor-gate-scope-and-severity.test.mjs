@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5410 (milestone 54 / ADR-007 §2) — THE DOCTOR GATE'S ADMITTED SCOPE, SEVERITY AND CODE
 // SET ARE EXACTLY THE RULED ONES.
 //
@@ -26,7 +27,8 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../../packages/core/src/commands/loop.mjs";
+const admittedDoctorFindings = _aofApplication.loop.commandTools.loop.admittedDoctorFindings;
+const DOCTOR_GATE_CODES = _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES;
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 

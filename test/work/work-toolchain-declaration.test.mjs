@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Behavioural evidence for milestone 72 / story 00 — the declared toolchain.
 //
 //   tasks/00_the-runner-is-declared-or-there-is-no-run.feature
@@ -17,23 +18,21 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  DEFAULT_REPORT_FORMAT,
-  FILE_TOKEN,
-  TEST_RUNNER_DECLARATION_INVALID,
-  TEST_RUNNER_UNDECLARED,
-  TEST_RUNNER_UNRESOLVABLE,
-  TOOLCHAIN_CONFIG_KEYS,
-  WORKTREE_PREPARE_DECLARATION_INVALID,
-  WORKTREE_PREPARE_UNRESOLVABLE,
-  argumentVector,
-  launchRunner,
-  resolveProgram,
-  resolveTestToolchain,
-  resolveWorktreePrepare,
-  selectionArgs,
-  toolchainReport,
-} from "../../packages/core/src/work/toolchain.mjs";
+const DEFAULT_REPORT_FORMAT = _aofApplication.work.toolchain.DEFAULT_REPORT_FORMAT;
+const FILE_TOKEN = _aofApplication.work.toolchain.FILE_TOKEN;
+const TEST_RUNNER_DECLARATION_INVALID = _aofApplication.work.toolchain.TEST_RUNNER_DECLARATION_INVALID;
+const TEST_RUNNER_UNDECLARED = _aofApplication.work.toolchain.TEST_RUNNER_UNDECLARED;
+const TEST_RUNNER_UNRESOLVABLE = _aofApplication.work.toolchain.TEST_RUNNER_UNRESOLVABLE;
+const TOOLCHAIN_CONFIG_KEYS = _aofApplication.work.toolchain.TOOLCHAIN_CONFIG_KEYS;
+const WORKTREE_PREPARE_DECLARATION_INVALID = _aofApplication.work.toolchain.WORKTREE_PREPARE_DECLARATION_INVALID;
+const WORKTREE_PREPARE_UNRESOLVABLE = _aofApplication.work.toolchain.WORKTREE_PREPARE_UNRESOLVABLE;
+const argumentVector = _aofApplication.work.toolchain.argumentVector;
+const launchRunner = _aofApplication.work.toolchain.launchRunner;
+const resolveProgram = _aofApplication.work.toolchain.resolveProgram;
+const resolveTestToolchain = _aofApplication.work.toolchain.resolveTestToolchain;
+const resolveWorktreePrepare = _aofApplication.work.toolchain.resolveWorktreePrepare;
+const selectionArgs = _aofApplication.work.toolchain.selectionArgs;
+const toolchainReport = _aofApplication.work.toolchain.toolchainReport;
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 

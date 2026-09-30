@@ -52,7 +52,7 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const selfPath = fileURLToPath(import.meta.url);
 
 const CLI_ENTRY = "packages/core/src/cli.mjs";
-const SESSION_MODULE = "packages/core/src/commands/mesh/session.mjs";
+const SESSION_MODULE = "packages/core/src/application/default-session-hooks.mjs";
 const SESSION_IMPLEMENTATION = "packages/mesh/src/commands/session.mjs";
 const REGISTRY = "packages/core/src/application/bindings/command-core.mjs";
 const FACE = "packages/core/src/application/bindings/spine/face.mjs";
@@ -88,7 +88,7 @@ async function closureOf(entry, { root = repoRoot } = {}) {
 // A dynamic import of the registry or the face, however the specifier is spelled relative to the
 // module doing it. Matched on the module NAME rather than on one relative path, because `../` and
 // `./` are the same reach from two directories.
-const DYNAMIC_REGISTRY = /\bimport\s*\(\s*["'][^"']*(?:command-core|spine\/face)\.mjs["']\s*\)/u;
+const DYNAMIC_REGISTRY = /\bimport\s*\(\s*["'][^"']*(?:command-core|spine\/face|application\/(?:default|assemble))\.mjs["']\s*\)/u;
 
 // PURE — `[{ rel, code }]` in, the modules that lazily reach the registry out. Used over the
 // SESSION module and everything its closure reaches, where a deferred registry is the same cost

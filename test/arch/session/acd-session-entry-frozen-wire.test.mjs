@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-entry-frozen-wire (milestone 48 / ADR-005, with
 // ADR-001's present-and-null clause and ADR-009's one-home clause) —
 // "the presence session ENTRY is a FROZEN, ORDERED SIX, and the wire stays a
@@ -51,10 +54,10 @@ import { mkdtemp, mkdir, rm, readdir, readFile, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
-import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const startSession = _aofHooks.meshSession.startSession;
+const meshDir = _aofHooks.meshStore.meshDir;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");

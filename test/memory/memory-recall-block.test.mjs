@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 05 / story 03 (memory-hooks), task 00
 // `00_recall-block-injectable.feature` (@executable).
 //
@@ -16,7 +17,8 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, writeFile, readFile } from "node:fs/promises";
 import { recall } from "@aof/knowledge/memory/local-retrieval";
-import { renderRecallBlock, HOOK_LIMIT } from "../../packages/core/src/work/memory.mjs";
+const renderRecallBlock = _aofApplication.knowledge.work.memory.renderRecallBlock;
+const HOOK_LIMIT = _aofApplication.knowledge.work.memory.HOOK_LIMIT;
 
 // Build a full MemoryRecord (ADR-005) from a partial spec: every field present,
 // absent-type fields as "" (the empty-string-present convention retrieval reads).

@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Fitness function: acd-session-run-reconciliation (milestone 38 / ADR-004,
 // AMENDED by milestone 48 / ADR-004 + ADR-010 R3) — "a run+session on one workspace
 // yields ONE line (the run's), a session-only workspace yields the (session)
@@ -51,10 +54,10 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const startSession = _aofHooks.meshSession.startSession;
 import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
 
 const NODE_ID = "node-a";

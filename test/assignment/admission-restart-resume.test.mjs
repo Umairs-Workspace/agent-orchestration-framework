@@ -1,11 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for 69/04 task 03: durable mesh occupancy and resume re-admission.
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshTerminalResumeCommand } from "../../packages/core/src/commands/mesh/terminal-resume.mjs";
-import { createTerminalInputRouter } from "../../packages/core/src/mesh/terminal-input.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const meshTerminalResumeCommand = _aofApplication.getCommand("mesh:terminal-resume");
+const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import {
   assembleAssignmentRecord,
   insertAssignment,
@@ -15,11 +16,9 @@ import {
   restoreParkedAssignmentResume,
   updateAssignmentState,
 } from "@aof/mesh/assignment-record";
-import {
-  assignmentOccupiesDispatchSlot,
-  countDispatchSlotsByTarget,
-  runControlDispatchReclaimTick,
-} from "../../packages/core/src/mesh/assignment-reclaim.mjs";
+const assignmentOccupiesDispatchSlot = _aofApplication.mesh.assignmentReclaim.assignmentOccupiesDispatchSlot;
+const countDispatchSlotsByTarget = _aofApplication.mesh.assignmentReclaim.countDispatchSlotsByTarget;
+const runControlDispatchReclaimTick = _aofApplication.mesh.assignmentReclaim.runControlDispatchReclaimTick;
 
 const NOW = "2026-08-22T10:00:00.000Z";
 const CONFIRMED_AT = "2099-01-01T00:00:00.000Z";

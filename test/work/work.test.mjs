@@ -1,8 +1,13 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listItems, findWork, validateWork, nextWork, parseFrontmatter } from "../../packages/core/src/work.mjs";
+const listItems = _aofWorkspace.work.listItems;
+const findWork = _aofWorkspace.work.findWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const nextWork = _aofWorkspace.work.nextWork;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
 
 const CONFIG = { work: { tags: { layers: ["@backend"], refinements: [], domains: [] } } };
 

@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d4, PORT 3 (PRD-command-spine-effects-
 // ledger: "insert/reindex emits `stream.reindexed` (run-record refs, Notion
 // sidecar, projection remap) — the silent page mis-binding dies").
@@ -35,13 +37,17 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
-import { LOCAL_LOCI } from "../../../packages/core/src/effects/dispatch.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const LOCAL_LOCI = _aofApplication.effects.dispatcher.LOCAL_LOCI;
 import { reindexForInsert } from "@aof/work/reindex";
-import { transitionStreamReindexed } from "../../../packages/core/src/effects/stream-transitions.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { startRun, readRuns } from "../../../packages/core/src/run-store.mjs";
-import { recordPageId, readMapping, resolvePageId, remapMappingRefs } from "../../../packages/core/src/notion/mapping.mjs";
+const transitionStreamReindexed = _aofApplication.work.streams.transitionStreamReindexed;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startRun = _aofApplication.execution.runs.startRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordPageId = _aofApplication.integrations.notion.mapping.recordPageId;
+const readMapping = _aofApplication.integrations.notion.mapping.readMapping;
+const resolvePageId = _aofApplication.integrations.notion.mapping.resolvePageId;
+const remapMappingRefs = _aofApplication.integrations.notion.mapping.remapMappingRefs;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

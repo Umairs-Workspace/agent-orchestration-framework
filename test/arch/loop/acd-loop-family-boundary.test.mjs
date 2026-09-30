@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-loop-family-boundary (milestone 129 / story 05; FF-12902 and FF-12906;
 // ADR-005 §5 and ADR-001 §3) —
 //
@@ -181,7 +182,12 @@ export const archTests = [
       assert.deepEqual(route.problems.filter((problem) => !problem.includes("`shell:`")), [], `the family's one spawn seam:\n${route.problems.join("\n")}`);
 
       // THE ARGUMENT VECTOR, both branches, through the seam's injectable child — no process.
-      const { spawnLaneDrive } = await import("../../../packages/core/src/loop/child-drive.mjs");
+      const { spawnLaneDrive } = await Promise.resolve(Object.freeze({
+  LANE_CANCEL_GRACE_MS: _aofApplication.loop.childDrive.LANE_CANCEL_GRACE_MS,
+  loopFixFilePath: _aofApplication.loop.childDrive.loopFixFilePath,
+  childDriveOutcome: _aofApplication.loop.childDrive.childDriveOutcome,
+  spawnLaneDrive: _aofApplication.loop.childDrive.spawnLaneDrive,
+}));
       const { setSeaSentinelForTest } = await import("../../../packages/core/src/asset-base.mjs");
       const { EventEmitter } = await import("node:events");
       const calls = [];

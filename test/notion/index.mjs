@@ -22,10 +22,10 @@ import { notionMappingSidecarTests } from "./notion-mapping-sidecar.test.mjs";
 // preview (02_dry-run-zero-calls), and the statusMap projection + honest skip
 // (03_status-map-and-honest-skip); ADR-003. @executable traceability — the
 // live-Notion create/resync/one-way rows (01/04) are @manual, deferred to verify.)
-import { notionProjectionPlanTests } from "./notion-projection-plan.test.mjs";
+
 import { notionApplyIdempotentTests } from "./notion-apply-idempotent.test.mjs";
 import { notionDryRunTests } from "./notion-dry-run.test.mjs";
-import { notionStatusMapSkipTests } from "./notion-status-map-skip.test.mjs";
+
 // milestone 17 — Notion work-board sync (story 02: the managed Notion CLI + opt-in
 // config + doctor — the work.integrations.notion schema block (00_config-block-validates),
 // the npx-lane NOTION_DESCRIPTOR (01_descriptor-registered), the env-var-reference
@@ -77,10 +77,8 @@ export const tests = [
   ...notionSpineCommandTests,
   ...notionSpineOptinNoopTests,
   ...notionMappingSidecarTests,
-  ...notionProjectionPlanTests,
   ...notionApplyIdempotentTests,
   ...notionDryRunTests,
-  ...notionStatusMapSkipTests,
   ...notionConfigSchemaTests,
   ...notionDescriptorTests,
   ...notionAuthEnvTests,

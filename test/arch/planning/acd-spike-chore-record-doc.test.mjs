@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 37 / ADR-002 (FF-3703):
 // "`recordDoc` maps spike → SPIKE.md and chore → CHORE.md (the per-type record doc)."
 //
@@ -12,10 +13,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { recordDoc } from "../../../packages/core/src/work.mjs";
+const recordDoc = _aofWorkspace.work.recordDoc;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "packages", "core", "src", "work.mjs");
+const workSrc = path.join(repoRoot, "packages", "work", "src", "identity.mjs");
 
 async function itemTypeAlternation() {
   const src = await readFile(workSrc, "utf8");

@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-run-store-mesh-blind (milestone 35 / ADR-004,
 // fitness #12) — "the run-store stays mesh-blind — the assignment execution reuses
 // startRun/completeRun/heartbeat with the node id passed as DATA; the store imports
@@ -38,9 +40,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace, findWork } from "../../../packages/core/src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { readRuns } from "../../../packages/core/src/run-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const findWork = _aofWorkspace.work.findWork;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const readRuns = _aofApplication.execution.runs.readRuns;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";

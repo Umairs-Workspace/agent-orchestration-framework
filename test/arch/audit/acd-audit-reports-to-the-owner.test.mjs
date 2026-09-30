@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-audit-reports-to-the-owner (milestone 59 / story 04, FF-5909; ADR-006).
 //
 //   "Bad news does not have to travel through the party responsible for it."
@@ -36,23 +37,21 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
-import {
-  AUDITABLE_CODES,
-  AUDIT_ENVELOPE_KEYS,
-  AUDIT_FACE_CODES,
-  ESCALATING_CODES,
-  OWNING_KEYS,
-  addresseesFor,
-  canReceive,
-  declaredPointerRaws,
-  escalates,
-  escalationActorOf,
-  ownersOfInstrument,
-  referenceSettersOf,
-  resolveAddressees,
-  runAudit,
-} from "../../../packages/core/src/work-audit/report.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const AUDITABLE_CODES = _aofApplication.work.audit.report.AUDITABLE_CODES;
+const AUDIT_ENVELOPE_KEYS = _aofApplication.work.audit.report.AUDIT_ENVELOPE_KEYS;
+const AUDIT_FACE_CODES = _aofApplication.work.audit.report.AUDIT_FACE_CODES;
+const ESCALATING_CODES = _aofApplication.work.audit.report.ESCALATING_CODES;
+const OWNING_KEYS = _aofApplication.work.audit.report.OWNING_KEYS;
+const addresseesFor = _aofApplication.work.audit.report.addresseesFor;
+const canReceive = _aofApplication.work.audit.report.canReceive;
+const declaredPointerRaws = _aofApplication.work.audit.report.declaredPointerRaws;
+const escalates = _aofApplication.work.audit.report.escalates;
+const escalationActorOf = _aofApplication.work.audit.report.escalationActorOf;
+const ownersOfInstrument = _aofApplication.work.audit.report.ownersOfInstrument;
+const referenceSettersOf = _aofApplication.work.audit.report.referenceSettersOf;
+const resolveAddressees = _aofApplication.work.audit.report.resolveAddressees;
+const runAudit = _aofApplication.work.audit.report.runAudit;
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -61,7 +60,7 @@ const BUNDLE = path.join(root, "packages", "core", "assets");
 // place and copies nothing, so it is that gate's lane 3 — but a suite that reaches the shipped
 // records by a spelling the sweep cannot detect is unclassified by accident rather than by rule.
 const SHIPPED_LOOPS = path.join(root, "packages", "core", "assets", "loops");
-const FAMILY = path.join(root, "packages", "core", "src", "work-audit");
+const FAMILY = path.join(root, "packages", "work", "src", "audit");
 
 const shipped = () => loadLoops(BUNDLE);
 

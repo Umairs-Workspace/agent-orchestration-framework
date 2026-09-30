@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 133 / story 05 / task 00 — the architect's ADR rule and refine's Decide stage carry ONE
 // diagram step, which names aof's verbs and never a generator (ADR-008).
 //
@@ -8,11 +10,11 @@ import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../packages/core/src/command-core.mjs";
-import { parseSpecArgv } from "../../packages/core/src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => text.replace(/\r\n/g, "\n"));
 
 const ARCHITECT = "packages/core/assets/agents/aof-architect.md";

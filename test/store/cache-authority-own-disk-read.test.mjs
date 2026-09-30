@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 43 / story 02 (the authority cut), task
 //   .../02_story_cache-authority/tasks/07_own-disk-read-primitive-unchanged.feature
 //
@@ -16,10 +18,10 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readWorkspaceProjectionItems } from "../../packages/core/src/global-work-store.mjs";
-import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
-import { readWorkerItems } from "../../packages/core/src/cache-read.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const readWorkspaceProjectionItems = _aofApplication.mesh.store.readWorkspaceProjectionItems;
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
+const readWorkerItems = _aofApplication.mesh.cacheRead.readWorkerItems;
+const invoke = _aofApplication.invoke;
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import {
   withCacheFixture,
@@ -34,7 +36,7 @@ import {
 } from "../support/cache-authority-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const STREAM = [{ number: "43", stories: ["01", "02", "03"] }];
 const ROW_SHAPE = ["ref", "type", "slug", "status", "title", "parent", "sourcePath"];
 
@@ -187,7 +189,32 @@ export const cacheAuthorityOwnDiskReadTests = [
 
       // 43/02's own deliverable, unchanged: work.mjs's disk readers — the ones this story
       // never touched, and which 43/06 pins to disk positively — still say not-started.
-      const { findWork, listStream } = await import("../../packages/core/src/work.mjs");
+      const { findWork, listStream } = await Promise.resolve(Object.freeze({
+  recordDoc: _aofWorkspace.work.recordDoc,
+  typeHasRecordDoc: _aofWorkspace.work.typeHasRecordDoc,
+  parseFrontmatter: _aofWorkspace.work.parseFrontmatter,
+  WORK_ITEM_SCHEMA_VERSION: _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION,
+  readItemSchema: _aofWorkspace.work.readItemSchema,
+  readItemVersion: _aofWorkspace.work.readItemVersion,
+  rollbackItemStatus: _aofWorkspace.work.rollbackItemStatus,
+  setItemStatus: _aofWorkspace.work.setItemStatus,
+  applyItemFrontmatter: _aofWorkspace.work.applyItemFrontmatter,
+  parseStorySpan: _aofWorkspace.work.parseStorySpan,
+  listItems: _aofWorkspace.work.listItems,
+  isLiveStreamRow: _aofWorkspace.work.isLiveStreamRow,
+  findWork: _aofWorkspace.work.findWork,
+  listStream: _aofWorkspace.work.listStream,
+  isDependTarget: _aofWorkspace.work.isDependTarget,
+  siblingDependencyNumber: _aofWorkspace.work.siblingDependencyNumber,
+  siblingGate: _aofWorkspace.work.siblingGate,
+  isDependNumber: _aofWorkspace.work.isDependNumber,
+  rewriteRefEntry: _aofWorkspace.work.rewriteRefEntry,
+  rewriteDependsEntries: _aofWorkspace.work.rewriteDependsEntries,
+  nextWork: _aofWorkspace.work.nextWork,
+  validateWork: _aofWorkspace.work.validateWork,
+  loadWorkspace: _aofWorkspace.work.loadWorkspace,
+  healIdentitySidecar: _aofWorkspace.work.healIdentitySidecar,
+}));
       assert.equal((await findWork(fx.workDir, "43/02"))[0].status, "not-started", "the control's own disk still reads not-started");
       assert.equal((await listStream(fx.workDir)).find((row) => row.ref === "43/02").status, "not-started", "…and the disk reader reports it");
 

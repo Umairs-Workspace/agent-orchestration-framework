@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 39 / story 03 (gap-to-chore), task
 //   wiki/work/39_milestone_delivery-memory-outcome/stories/03_story_gap-to-chore/
 //     tasks/00_gap-carries-discharge.feature
@@ -18,7 +19,7 @@
 // SCOPE_FIELDS) are exercised together, end to end, exactly as
 // "aof work memory recall --status open" behaves for real.
 import assert from "node:assert/strict";
-import { runMemory } from "../../packages/core/src/work/memory.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 import { recall as localRecall } from "@aof/knowledge/memory/local-retrieval";
 
 // Build a full MemoryRecord (ADR-005) from a partial spec: absent-type fields

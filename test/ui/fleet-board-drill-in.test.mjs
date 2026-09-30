@@ -65,7 +65,7 @@ import { spawnCliAsync } from "../support/cli-spawn.mjs";
 import { POLL_MS } from "../../ui/src/fleet/assign-affordance.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const RESOLVER = "/api/mesh/board-url";
 const AT_REST = "Open board →";

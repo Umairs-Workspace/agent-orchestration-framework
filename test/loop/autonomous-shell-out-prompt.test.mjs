@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Milestone 53 / story 04 — executable evidence for the autonomous prompt hand-off.
 // The human soak in task 01 is deliberately absent: it is @uat and belongs to verify.
 import assert from "node:assert/strict";
@@ -16,10 +17,10 @@ import {
 } from "../../packages/core/src/work/bundle-manifest.mjs";
 import { hashContent } from "../../packages/core/src/lock.mjs";
 import { executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
-import { readRuns } from "../../packages/core/src/run-store.mjs";
+const readRuns = _aofApplication.execution.runs.readRuns;
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
-const cliPath = fileURLToPath(new URL("../../bin/aof.mjs", import.meta.url));
+const cliPath = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
 const promptPath = path.join(repoRoot, "packages", "core", "assets", "commands", "autonomous.md");
 const renderedPath = ".claude/commands/aof/autonomous.md";
 const mappedSkillPath = ".codex/skills/aof-autonomous/SKILL.md";

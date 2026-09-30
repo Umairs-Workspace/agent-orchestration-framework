@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // FF-13104 + FF-13105 — AN ANSWER REACHES A SESSION ONLY AS A RESUMED COMMAND, AND A WAITING LANE
 // DOES NOT HALT THE WAVE (milestone 131 / story 06; ARCHITECTURE `## Fitness functions`, ADR-001,
 // ADR-003 §7, ADR-004). Which of this directory's three subjects: the LADDER — what the loop does
@@ -55,15 +57,21 @@ import {
   verifyCompleter,
   withLaneRepo,
 } from "../../support/loop/lane-fixture.mjs";
-import { getCommand } from "../../../packages/core/src/command-core.mjs";
-import { runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
-import { resolveItemExact } from "../../../packages/core/src/commands/resolve.mjs";
-import { transitionRunStart } from "../../../packages/core/src/effects/run-transitions.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../../packages/core/src/loop/ask-request.mjs";
-import { meshDispatchWorktreePath } from "../../../packages/core/src/mesh/worktree.mjs";
-import { readRuns, recordSessionId } from "../../../packages/core/src/run-store.mjs";
-import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
-import { resolveRefInWorktree } from "../../../packages/core/src/work/dispatch.mjs";
+const getCommand = _aofApplication.getCommand;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordSessionId = _aofApplication.execution.runs.recordSessionId;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const resolveRefInWorktree = _aofApplication.loop.work.dispatch.resolveRefInWorktree;
 import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 

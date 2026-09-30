@@ -1,3 +1,5 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // m42 wave (a) / TECH_DEBT item 2 — the daemons' durable log sink. Pins:
 //   - one JSONL line per event under <meshRoot>/logs/<proc>.log (AOF_GLOBAL_HOME)
 //   - size rotation keeps exactly one previous generation (bounded disk)
@@ -9,8 +11,10 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createMeshLogSink, readMeshLog, meshLogPath } from "../../packages/core/src/mesh/log.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const createMeshLogSink = _aofFoundation.diagnosticsLog.createApplicationLogSink;
+const readMeshLog = _aofFoundation.diagnosticsLog.readApplicationLog;
+const meshLogPath = _aofFoundation.diagnosticsLog.applicationLogPath;
+const invoke = _aofApplication.invoke;
 
 async function withHome(fn) {
   const home = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-log-"));
@@ -105,9 +109,98 @@ export const meshLogTests = [
     name: "mesh-log/item-2 REMOTE: log-entries frames land in the node_logs ring (T6-attributed, ring-bounded) and mesh:logs --node reads them",
     async run() {
       await withHome(async ({ env }) => {
-        const { openGlobalWorkProjectionStore, readNodeLogEntries } = await import("../../packages/core/src/global-work-store.mjs");
-        const { applyStreamFrame } = await import("../../packages/core/src/control-stream-server.mjs");
-        const { buildLogEntriesFrame } = await import("../../packages/core/src/worker-stream-client.mjs");
+        const { openGlobalWorkProjectionStore, readNodeLogEntries } = await Promise.resolve(Object.freeze({
+  GLOBAL_WORK_SCHEMA_VERSION: _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION,
+  globalStoreError: _aofApplication.mesh.store.globalStoreError,
+  workspaceIdFor: _aofApplication.mesh.store.workspaceIdFor,
+  wholesaleDelete: _aofApplication.mesh.store.wholesaleDelete,
+  openGlobalWorkProjectionStore: _aofApplication.mesh.store.openGlobalWorkProjectionStore,
+  remapWorkspaceProjectionRefs: _aofApplication.mesh.store.remapWorkspaceProjectionRefs,
+  remapWorkspaceFactRefs: _aofApplication.mesh.store.remapWorkspaceFactRefs,
+  UPSERT_AUTHORITIES: _aofApplication.mesh.store.UPSERT_AUTHORITIES,
+  upsertWorkItems: _aofApplication.mesh.store.upsertWorkItems,
+  removeWorkspaceFromCache: _aofApplication.mesh.store.removeWorkspaceFromCache,
+  publishWorkspaceSnapshot: _aofApplication.mesh.store.publishWorkspaceSnapshot,
+  recordWorkspaceProjectionError: _aofApplication.mesh.store.recordWorkspaceProjectionError,
+  readWorkspaceProjectionItems: _aofApplication.mesh.store.readWorkspaceProjectionItems,
+  readWorkspaceItems: _aofApplication.mesh.store.readWorkspaceItems,
+  readWorkspaceItemProvenance: _aofApplication.mesh.store.readWorkspaceItemProvenance,
+  upsertWorkItemContent: _aofApplication.mesh.store.upsertWorkItemContent,
+  readWorkItemDoc: _aofApplication.mesh.store.readWorkItemDoc,
+  readWorkItemDocMembers: _aofApplication.mesh.store.readWorkItemDocMembers,
+  readWorkItemRuns: _aofApplication.mesh.store.readWorkItemRuns,
+  NODE_LOG_KEEP: _aofApplication.mesh.store.NODE_LOG_KEEP,
+  appendNodeLogEntries: _aofApplication.mesh.store.appendNodeLogEntries,
+  readNodeLogEntries: _aofApplication.mesh.store.readNodeLogEntries,
+  queryGlobalWorkProjection: _aofApplication.mesh.store.queryGlobalWorkProjection,
+  WORK_ITEM_DOC_FILES: _aofApplication.mesh.store.WORK_ITEM_DOC_FILES,
+  REQUIRED_ITEM_FIELDS: _aofApplication.mesh.store.REQUIRED_ITEM_FIELDS,
+  OPTIONAL_ITEM_FIELDS: _aofApplication.mesh.store.OPTIONAL_ITEM_FIELDS,
+  itemRowFault: _aofApplication.mesh.store.itemRowFault,
+  isCompleteItemRow: _aofApplication.mesh.store.isCompleteItemRow,
+}));
+        const { applyStreamFrame } = await Promise.resolve(Object.freeze({
+  isTailnetPeer: _aofApplication.mesh.controlStreamServer.isTailnetPeer,
+  applySnapshotFrame: _aofApplication.mesh.controlStreamServer.applySnapshotFrame,
+  applyDeltaFrame: _aofApplication.mesh.controlStreamServer.applyDeltaFrame,
+  applyWorktreeContentFrame: _aofApplication.mesh.controlStreamServer.applyWorktreeContentFrame,
+  applyLogEntriesFrame: _aofApplication.mesh.controlStreamServer.applyLogEntriesFrame,
+  applyPresenceFrame: _aofApplication.mesh.controlStreamServer.applyPresenceFrame,
+  applyAssignmentStatusFrame: _aofApplication.mesh.controlStreamServer.applyAssignmentStatusFrame,
+  applyTerminalResumeRefusedFrame: _aofApplication.mesh.controlStreamServer.applyTerminalResumeRefusedFrame,
+  applyEffectStepFrame: _aofApplication.mesh.controlStreamServer.applyEffectStepFrame,
+  defaultMintCloneCredential: _aofApplication.mesh.controlStreamServer.defaultMintCloneCredential,
+  CLONE_CREDENTIAL_NOT_HOLDER: _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_NOT_HOLDER,
+  CLONE_CREDENTIAL_UNKNOWN_ASSIGNMENT: _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_UNKNOWN_ASSIGNMENT,
+  CLONE_CREDENTIAL_REQUEST_INVALID: _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_REQUEST_INVALID,
+  CLONE_CREDENTIAL_MINT_FAILED: _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_MINT_FAILED,
+  CLONE_CREDENTIAL_WORKSPACE_MISMATCH: _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_WORKSPACE_MISMATCH,
+  CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE: _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE,
+  applyCloneCredentialRequestFrame: _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame,
+  CLONE_URL_NOT_HOLDER: _aofApplication.mesh.controlStreamServer.CLONE_URL_NOT_HOLDER,
+  CLONE_URL_UNKNOWN_ASSIGNMENT: _aofApplication.mesh.controlStreamServer.CLONE_URL_UNKNOWN_ASSIGNMENT,
+  CLONE_URL_REQUEST_INVALID: _aofApplication.mesh.controlStreamServer.CLONE_URL_REQUEST_INVALID,
+  CLONE_URL_WORKSPACE_MISMATCH: _aofApplication.mesh.controlStreamServer.CLONE_URL_WORKSPACE_MISMATCH,
+  applyCloneUrlRequestFrame: _aofApplication.mesh.controlStreamServer.applyCloneUrlRequestFrame,
+  defaultMintWriteCredential: _aofApplication.mesh.controlStreamServer.defaultMintWriteCredential,
+  WRITE_CREDENTIAL_NOT_HOLDER: _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_NOT_HOLDER,
+  WRITE_CREDENTIAL_UNKNOWN_ASSIGNMENT: _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_UNKNOWN_ASSIGNMENT,
+  WRITE_CREDENTIAL_REQUEST_INVALID: _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_REQUEST_INVALID,
+  WRITE_CREDENTIAL_MINT_FAILED: _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_MINT_FAILED,
+  WRITE_CREDENTIAL_WORKSPACE_MISMATCH: _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_WORKSPACE_MISMATCH,
+  WRITE_CREDENTIAL_ASSIGNMENT_INACTIVE: _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_ASSIGNMENT_INACTIVE,
+  applyWriteCredentialRequestFrame: _aofApplication.mesh.controlStreamServer.applyWriteCredentialRequestFrame,
+  applyStreamFrame: _aofApplication.mesh.controlStreamServer.applyStreamFrame,
+  DEFAULT_HEARTBEAT_WINDOW_SECONDS: _aofApplication.mesh.controlStreamServer.DEFAULT_HEARTBEAT_WINDOW_SECONDS,
+  streamLivenessLabel: _aofApplication.mesh.controlStreamServer.streamLivenessLabel,
+  freshnessLabel: _aofApplication.mesh.controlStreamServer.freshnessLabel,
+  buildDirectiveFrame: _aofApplication.mesh.controlStreamServer.buildDirectiveFrame,
+  ASSIGNMENT_TARGET_NOT_CONNECTED: _aofApplication.mesh.controlStreamServer.ASSIGNMENT_TARGET_NOT_CONNECTED,
+  sendDirective: _aofApplication.mesh.controlStreamServer.sendDirective,
+  dispatchDirectiveOverTargets: _aofApplication.mesh.controlStreamServer.dispatchDirectiveOverTargets,
+  createStreamRegistry: _aofApplication.mesh.controlStreamServer.createStreamRegistry,
+  startControlStreamServer: _aofApplication.mesh.controlStreamServer.startControlStreamServer,
+}));
+        const { buildLogEntriesFrame } = await Promise.resolve(Object.freeze({
+  backoffDelaySeconds: _aofApplication.mesh.workerStreamClient.backoffDelaySeconds,
+  buildSnapshotFrame: _aofApplication.mesh.workerStreamClient.buildSnapshotFrame,
+  buildDeltaFrame: _aofApplication.mesh.workerStreamClient.buildDeltaFrame,
+  WORKTREE_CONTENT_FRAME_KIND: _aofApplication.mesh.workerStreamClient.WORKTREE_CONTENT_FRAME_KIND,
+  LOG_ENTRIES_FRAME_KIND: _aofApplication.mesh.workerStreamClient.LOG_ENTRIES_FRAME_KIND,
+  WITHDRAW_KIND: _aofApplication.mesh.workerStreamClient.WITHDRAW_KIND,
+  buildLogEntriesFrame: _aofApplication.mesh.workerStreamClient.buildLogEntriesFrame,
+  buildWorktreeContentFrame: _aofApplication.mesh.workerStreamClient.buildWorktreeContentFrame,
+  buildPresenceFrame: _aofApplication.mesh.workerStreamClient.buildPresenceFrame,
+  buildAssignmentStatusFrame: _aofApplication.mesh.workerStreamClient.buildAssignmentStatusFrame,
+  buildCloneCredentialRequestFrame: _aofApplication.mesh.workerStreamClient.buildCloneCredentialRequestFrame,
+  buildCloneUrlRequestFrame: _aofApplication.mesh.workerStreamClient.buildCloneUrlRequestFrame,
+  buildWriteCredentialRequestFrame: _aofApplication.mesh.workerStreamClient.buildWriteCredentialRequestFrame,
+  DEFAULT_CLONE_CREDENTIAL_TIMEOUT_MS: _aofApplication.mesh.workerStreamClient.DEFAULT_CLONE_CREDENTIAL_TIMEOUT_MS,
+  DEFAULT_CLONE_URL_TIMEOUT_MS: _aofApplication.mesh.workerStreamClient.DEFAULT_CLONE_URL_TIMEOUT_MS,
+  DEFAULT_WRITE_CREDENTIAL_TIMEOUT_MS: _aofApplication.mesh.workerStreamClient.DEFAULT_WRITE_CREDENTIAL_TIMEOUT_MS,
+  createWorkerStreamClient: _aofApplication.mesh.workerStreamClient.createWorkerStreamClient,
+  createWorkerWsTransport: _aofApplication.mesh.workerStreamClient.createWorkerWsTransport,
+}));
         const store = await openGlobalWorkProjectionStore({ env });
         try {
           const frame = buildLogEntriesFrame("spoofed-node", [
@@ -123,7 +216,36 @@ export const meshLogTests = [
           assert.equal(result.entries[0].code, "frame-skipped", "the remote node's streamed event reads back");
 
           // Ring bound: appending beyond keep retains only the newest rows.
-          const { appendNodeLogEntries } = await import("../../packages/core/src/global-work-store.mjs");
+          const { appendNodeLogEntries } = await Promise.resolve(Object.freeze({
+  GLOBAL_WORK_SCHEMA_VERSION: _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION,
+  globalStoreError: _aofApplication.mesh.store.globalStoreError,
+  workspaceIdFor: _aofApplication.mesh.store.workspaceIdFor,
+  wholesaleDelete: _aofApplication.mesh.store.wholesaleDelete,
+  openGlobalWorkProjectionStore: _aofApplication.mesh.store.openGlobalWorkProjectionStore,
+  remapWorkspaceProjectionRefs: _aofApplication.mesh.store.remapWorkspaceProjectionRefs,
+  remapWorkspaceFactRefs: _aofApplication.mesh.store.remapWorkspaceFactRefs,
+  UPSERT_AUTHORITIES: _aofApplication.mesh.store.UPSERT_AUTHORITIES,
+  upsertWorkItems: _aofApplication.mesh.store.upsertWorkItems,
+  removeWorkspaceFromCache: _aofApplication.mesh.store.removeWorkspaceFromCache,
+  publishWorkspaceSnapshot: _aofApplication.mesh.store.publishWorkspaceSnapshot,
+  recordWorkspaceProjectionError: _aofApplication.mesh.store.recordWorkspaceProjectionError,
+  readWorkspaceProjectionItems: _aofApplication.mesh.store.readWorkspaceProjectionItems,
+  readWorkspaceItems: _aofApplication.mesh.store.readWorkspaceItems,
+  readWorkspaceItemProvenance: _aofApplication.mesh.store.readWorkspaceItemProvenance,
+  upsertWorkItemContent: _aofApplication.mesh.store.upsertWorkItemContent,
+  readWorkItemDoc: _aofApplication.mesh.store.readWorkItemDoc,
+  readWorkItemDocMembers: _aofApplication.mesh.store.readWorkItemDocMembers,
+  readWorkItemRuns: _aofApplication.mesh.store.readWorkItemRuns,
+  NODE_LOG_KEEP: _aofApplication.mesh.store.NODE_LOG_KEEP,
+  appendNodeLogEntries: _aofApplication.mesh.store.appendNodeLogEntries,
+  readNodeLogEntries: _aofApplication.mesh.store.readNodeLogEntries,
+  queryGlobalWorkProjection: _aofApplication.mesh.store.queryGlobalWorkProjection,
+  WORK_ITEM_DOC_FILES: _aofApplication.mesh.store.WORK_ITEM_DOC_FILES,
+  REQUIRED_ITEM_FIELDS: _aofApplication.mesh.store.REQUIRED_ITEM_FIELDS,
+  OPTIONAL_ITEM_FIELDS: _aofApplication.mesh.store.OPTIONAL_ITEM_FIELDS,
+  itemRowFault: _aofApplication.mesh.store.itemRowFault,
+  isCompleteItemRow: _aofApplication.mesh.store.isCompleteItemRow,
+}));
           appendNodeLogEntries(store, "umamis-mac-mini", Array.from({ length: 6 }, (_, i) => ({ code: `e${i}` })), { keep: 3 });
           const entries = readNodeLogEntries(store, "umamis-mac-mini", { tail: 10 });
           assert.deepEqual(entries.map((e) => e.code), ["e3", "e4", "e5"], "the ring keeps exactly the newest N, oldest-first on read");

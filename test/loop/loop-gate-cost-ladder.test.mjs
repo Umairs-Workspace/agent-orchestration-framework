@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 02, task `00_the-cost-ladder`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -20,8 +21,8 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { GATE_ORDER } from "../../packages/work-loop/src/engine.mjs";
-import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
-import { listCommands } from "../../packages/core/src/command-core.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const listCommands = _aofApplication.listCommands;
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 // 54/03 review finding D4 — the configured half of the ladder's cost claim needs the same
 // grading fixture 54/03's suites use, because a rubric nobody declared can launch nothing.
@@ -337,7 +338,12 @@ export const loopGateCostLadderTests = [
           report: () => {},
         };
         // The scope each rung is invoked with, read off the real registry call.
-        const { getCommand } = await import("../../packages/core/src/command-core.mjs");
+        const { getCommand } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
         for (const id of ["work:validate", "work:doctor"]) {
           const command = getCommand(id);
           const original = command.run.bind(command);

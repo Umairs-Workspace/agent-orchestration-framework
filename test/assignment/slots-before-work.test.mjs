@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 69 / story 04. One entry per @executable
 // Scenario and per Scenario-Outline row in tasks 00 and 01. The local half drives
 // the real bounded pool; the mesh half drives the real control tick over a real
@@ -6,24 +7,20 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  DEFAULT_DISPATCH_CONCURRENCY,
-  dispatchConcurrencyFromConfig,
-  dispatchReadySet,
-} from "../../packages/core/src/work/dispatch.mjs";
-import {
-  assignmentOccupiesDispatchSlot,
-  countDispatchSlotsByTarget,
-  runControlDispatchReclaimTick,
-} from "../../packages/core/src/mesh/assignment-reclaim.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const DEFAULT_DISPATCH_CONCURRENCY = _aofApplication.loop.work.dispatch.DEFAULT_DISPATCH_CONCURRENCY;
+const dispatchConcurrencyFromConfig = _aofApplication.loop.work.dispatch.dispatchConcurrencyFromConfig;
+const dispatchReadySet = _aofApplication.loop.work.dispatch.dispatchReadySet;
+const assignmentOccupiesDispatchSlot = _aofApplication.mesh.assignmentReclaim.assignmentOccupiesDispatchSlot;
+const countDispatchSlotsByTarget = _aofApplication.mesh.assignmentReclaim.countDispatchSlotsByTarget;
+const runControlDispatchReclaimTick = _aofApplication.mesh.assignmentReclaim.runControlDispatchReclaimTick;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import {
   assembleAssignmentRecord,
   insertAssignment,
   readAssignment,
   updateAssignmentState,
 } from "@aof/mesh/assignment-record";
-import { dispatchCommand } from "../../packages/core/src/commands/dispatch.mjs";
+const dispatchCommand = _aofApplication.getCommand("work:dispatch");
 import { withDispatchRepo } from "../support/dispatch-lane-fixture.mjs";
 
 const NOW = "2026-08-22T10:00:00.000Z";

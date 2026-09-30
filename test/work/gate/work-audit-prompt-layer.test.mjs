@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Behavioural evidence for milestone 77 / story 00 — the prompt layer.
 //
 //   tasks/00_a-capability-gap-cites-a-code-span-and-under-reports.feature
@@ -21,13 +22,11 @@ import os from "node:os";
 import path from "node:path";
 
 import { readFinding, sweepDeclarationProblems } from "@aof/work/audit/reads";
-import {
-  CAPABILITY_PROGRAMS,
-  PROMPT_LAYER_SWEEPS,
-  ROLE_WORDS,
-  SENTENCE_FLOOR,
-  runPromptLayer,
-} from "../../../packages/core/src/work-audit/prompt-layer.mjs";
+const CAPABILITY_PROGRAMS = _aofApplication.work.audit.promptLayer.CAPABILITY_PROGRAMS;
+const PROMPT_LAYER_SWEEPS = _aofApplication.work.audit.promptLayer.PROMPT_LAYER_SWEEPS;
+const ROLE_WORDS = _aofApplication.work.audit.promptLayer.ROLE_WORDS;
+const SENTENCE_FLOOR = _aofApplication.work.audit.promptLayer.SENTENCE_FLOOR;
+const runPromptLayer = _aofApplication.work.audit.promptLayer.runPromptLayer;
 
 // ── FIXTURES ─────────────────────────────────────────────────────────────────────────────────
 

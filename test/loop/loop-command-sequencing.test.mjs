@@ -1,6 +1,7 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 
 export const loopCommandSequencingTests = [{

@@ -1,3 +1,6 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-12706 — milestone 127 / ADR-002 §1–§3: THE SCHEDULING WALKERS FILTER THROUGH THE ONE
 // PREDICATE; THE RESOLVING READERS DO NOT.
 //
@@ -34,7 +37,9 @@ import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody, blankStringLiterals } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
-import { findWork, listStream, nextWork } from "../../../packages/core/src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const listStream = _aofWorkspace.work.listStream;
+const nextWork = _aofWorkspace.work.nextWork;
 import { withThreeRoots } from "../../work/stream/work-backlog-archive-enumerate.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -65,7 +70,7 @@ const CARRIERS = Object.freeze({
 // the bindings a clause names). `importSpecifiers` is what proves the file reaches work.mjs at all.
 function importsDiskReaderFromWork(stripped, rel) {
   const dir = path.posix.dirname(rel);
-  const reachesWork = importSpecifiers(stripped).some((entry) => (["@aof/work/discovery", "@aof/work/readiness"].includes(entry.specifier) || path.posix.normalize(path.posix.join(dir, entry.specifier)) === "packages/core/src/work.mjs"));
+  const reachesWork = importSpecifiers(stripped).some((entry) => (["@aof/work/discovery", "@aof/work/readiness"].includes(entry.specifier) || path.posix.normalize(path.posix.join(dir, entry.specifier)) === "packages/core/src/application/bindings/work.mjs"));
   if (!reachesWork) return [];
   const hits = [];
   for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/(?:discovery|readiness))["']/g)) {
@@ -104,7 +109,7 @@ export const archTests = [
     run: async () => {
       const outside = [];
       const carriersSeen = [];
-      for (const file of await readRuntimeFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot, { runtime: "node" })) {
         const rel = file.rel;
         if (rel === DISCOVERY) continue;
         // A member READ, never a string: the stream's own event name `stream.archived`

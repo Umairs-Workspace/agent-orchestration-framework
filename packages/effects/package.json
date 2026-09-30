@@ -16,6 +16,6 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test test/effects.test.mjs test/journal.test.mjs test/registry.test.mjs"
+    "test": "node ../../scripts/test-workspace.mjs @aof/effects"
   }
 }

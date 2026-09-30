@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // test/session/agent-session-driver-transcript.test.mjs — milestone 53 / story 00, task 03
 // (03_the-transcript-watches.feature; ADR-001 §1 and §3, RESEARCH §Q1 and §Q8).
 //
@@ -33,20 +35,39 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, utimes, stat } from "node:fs/p
 import { utimesSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {
-  defaultWatchTranscriptSessionId,
-  defaultWatchTranscriptCompletion,
-  driveInteractiveClaudeSession,
-  HUMAN_INPUT_TOOL_NAMES,
-  NEEDS_INPUT_SENTINEL,
-  DIRECTIVE_COMPLETE_SENTINEL,
-  NEEDS_INPUT_INSTRUCTION,
-  DIRECTIVE_COMPLETE_INSTRUCTION,
-  WORKER_SESSION_INSTRUCTION,
-} from "../../packages/core/src/agent-session-driver.mjs";
-import * as driverModule from "../../packages/core/src/agent-session-driver.mjs";
-import { claudeProjectsDir, readLastAssistantTurn, askQuestionFromTurn, readAskQuestion } from "../../packages/core/src/work/observe.mjs";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+const defaultWatchTranscriptSessionId = _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId;
+const defaultWatchTranscriptCompletion = _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion;
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const HUMAN_INPUT_TOOL_NAMES = _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES;
+const NEEDS_INPUT_SENTINEL = _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL;
+const DIRECTIVE_COMPLETE_SENTINEL = _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL;
+const NEEDS_INPUT_INSTRUCTION = _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION;
+const DIRECTIVE_COMPLETE_INSTRUCTION = _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION;
+const WORKER_SESSION_INSTRUCTION = _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION;
+const driverModule = Object.freeze({
+  COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.DECLARED_COMPLETION_IDLE_MS,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL,
+  HUMAN_INPUT_TOOL_NAMES: _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofSessions.agentSessionDriver.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  NEEDS_INPUT_INSTRUCTION: _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION,
+  NEEDS_INPUT_SENTINEL: _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL,
+  WORKER_SESSION_INSTRUCTION: _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION,
+  buildDriverCommand: _aofSessions.agentSessionDriver.buildDriverCommand,
+  defaultPtySpawn: _aofSessions.agentSessionDriver.defaultPtySpawn,
+  defaultSpawnRuntime: _aofSessions.agentSessionDriver.defaultSpawnRuntime,
+  defaultWatchTranscriptCompletion: _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion,
+  defaultWatchTranscriptSessionId: _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId,
+  driveInteractiveClaudeSession: _aofSessions.agentSessionDriver.driveInteractiveClaudeSession,
+  ensureWorktreeTrusted: _aofSessions.agentSessionDriver.ensureWorktreeTrusted,
+  resolveInteractiveDriverLaunch: _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch,
+});
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const readLastAssistantTurn = _aofSessions.workObserve.readLastAssistantTurn;
+const askQuestionFromTurn = _aofSessions.workObserve.askQuestionFromTurn;
+const readAskQuestion = _aofSessions.workObserve.readAskQuestion;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { fileURLToPath } from "node:url";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 

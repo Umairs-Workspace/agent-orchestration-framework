@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Story 30 · task 03 — per-role model selection is inert under solo mode, and
 // surfaced as such.
 //
@@ -12,7 +13,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateConfig } from "../../packages/core/src/config-inspect.mjs";
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 
 async function diagnosticsForConfig(config) {
   const targetDir = await mkdtemp(path.join(os.tmpdir(), "aof-solo-inert-"));

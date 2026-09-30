@@ -33,7 +33,7 @@ import { promptLayerTests } from "./work-audit-prompt-layer.test.mjs";
 // reformatted copy is a copy and a differing `args` is not. The marker key is INJECTED, which keeps
 // the family closure free of the module that declares it, and is proved by one object giving two
 // answers under two keys. Both @executable task features plus FF-7703, a RATCHET green on arrival.
-import { hookWiringTests } from "./work-audit-hook-wiring.test.mjs";
+
 // milestone 77 / story 02 — THE SEAM LIVENESS: an exported module the code graph gives no dependent
 // outside the declared test roots is a bound that exists only in prose, and a command can ask that
 // on every run for the price of reading an artifact something else already built. It READS and never
@@ -70,7 +70,6 @@ export const tests = [
   // milestone 77 / story 00 - the prompt layer (tasks 00-02) plus FF-7701 and FF-7702.
   ...promptLayerTests,
   // milestone 77 / story 01 - the hook wiring (tasks 00-01) plus FF-7703.
-  ...hookWiringTests,
   // milestone 77 / story 02 - the seam liveness (tasks 00-02) plus FF-7704.
   ...seamLivenessTests,
   ...declaredBoundsTests,

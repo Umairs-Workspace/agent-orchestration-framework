@@ -23,7 +23,7 @@ test('deletion parsing rejects modifications and keeps the newest recorded sourc
   assert.match(deletedModules(deletion('@aof/work/new') + deletion('@aof/work/old')).get('packages/core/src/old.mjs'), /work\/new/u);
 });
 
-test('complete public forwards are recognized while private, mixed and executable plants are refused', () => {
+test('complete public forwards require every explicit destination and refuse private or executable plants', () => {
   const modules = new Map([
     ['good', 'export { leaf } from "@aof/work/leaf";'],
     ['star', 'export * from "@aof/work/leaf";'],
@@ -32,7 +32,12 @@ test('complete public forwards are recognized while private, mixed and executabl
     ['unknown', 'export { leaf } from "@aof/missing/leaf";'],
     ['mixed', 'export { leaf } from "@aof/work/leaf"; export { other } from "@aof/work/other";'],
   ]);
-  assert.deepEqual([...moduleRelocations(modules, { exports: new Map([['@aof/work/leaf', 'leaf.mjs'], ['@aof/work/other', 'other.mjs']]), constructors: new Map() })], [['good', 'leaf.mjs'], ['star', 'leaf.mjs']]);
+  const links = moduleRelocations(modules, { exports: new Map([['@aof/work/leaf', 'leaf.mjs'], ['@aof/work/other', 'other.mjs']]), constructors: new Map() });
+  assert.deepEqual([...links], [['good', 'leaf.mjs'], ['star', 'leaf.mjs'], ['mixed', ['leaf.mjs', 'other.mjs']]]);
+  const map = new Map(); map.moduleLinks = links;
+  assert.equal(resolveCitedPath('mixed', { renameMap: map, existsAtHead: file => file === 'leaf.mjs' }).resolved, false);
+  const answer = resolveCitedPath('mixed', { renameMap: map, existsAtHead: file => ['leaf.mjs', 'other.mjs'].includes(file) });
+  assert.deepEqual(answer.destinations, ['leaf.mjs', 'other.mjs']);
 });
 
 test('configured destinations are derived from real imported constructor calls', () => {

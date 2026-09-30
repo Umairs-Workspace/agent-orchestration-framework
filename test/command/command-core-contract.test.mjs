@@ -1,3 +1,6 @@
+import { runNativeWorkspaceTests } from "../../scripts/test-workspace.mjs";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 08 / story 00 — the command core.
 //
 // Covers EVERY @executable scenario across the four task features, exercising the
@@ -23,8 +26,11 @@ import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace, listStream } from "../../packages/core/src/work.mjs";
-import { getCommand, listCommands, invoke } from "../../packages/core/src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const listStream = _aofWorkspace.work.listStream;
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const invoke = _aofApplication.invoke;
 
 // The milestone-08 SIX work operations. Milestone 15 (ADR-001) registers a 7th
 // work command — work:doctor, the health lane — into the SAME registry; it is a
@@ -385,7 +391,7 @@ export const commandCoreContractTests = [
       for (const name of ["work", "mesh", "integration-notion"]) {
         assert.ok(files.includes(`packages/${name}/src/effects.mjs`), `${name}: its contribution is in the startup closure`);
       }
-      for (const forbidden of ["packages/core/src/work.mjs", "packages/core/src/global-work-store.mjs", "packages/core/src/notion/sync-work.mjs", "packages/mesh/src/assignment-transitions.mjs", "packages/core/src/effects/dispatch.mjs", "packages/core/src/mesh/log.mjs"]) {
+      for (const forbidden of ["packages/core/src/application/bindings/work.mjs", "packages/core/src/application/bindings/global-work-store.mjs", "packages/core/src/application/bindings/notion/sync-work.mjs", "packages/mesh/src/assignment-transitions.mjs", "packages/core/src/application/bindings/effects/dispatch.mjs", "packages/core/src/application/bindings/diagnostics/log.mjs"]) {
         assert.ok(!files.includes(forbidden), `registration must not load ${forbidden}`);
       }
       await assert.rejects(closure(true), /Static effect registration cycle/);
@@ -395,11 +401,12 @@ export const commandCoreContractTests = [
     name: "command-core/effects adapters load from every application entry without eager cyclic initialization",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      for (const entry of ["effects/dispatch", "effects/outbox", "effects/table", "effects/assignment-transitions", "effects/run-transitions", "command-core"]) {
-        const script = `import './packages/core/src/${entry}.mjs';
+      for (const entry of ["aof/default-application", "aof/foundation-services", "aof/workspace-services", "aof/session-services", "aof/session-hooks", "aof/cli"]) {
+        const script = `import '${entry}';
           import assert from 'node:assert/strict';
-          import {runEffectsEphemeral} from './packages/core/src/effects/dispatch.mjs';
-          import {applyEffectAck} from './packages/core/src/effects/outbox.mjs';
+          import { defaultApplication } from 'aof/default-application';
+          const {runEffectsEphemeral} = defaultApplication.effects.dispatcher;
+          const {applyEffectAck} = defaultApplication.effects.outbox;
           assert.deepEqual(await runEffectsEphemeral('empty', {}, {effects:{}}), []);
           assert.equal(applyEffectAck(null, {}).code, 'effect-ack-invalid');`;
         const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], { cwd: root, encoding: "utf8", timeout: 30_000 });
@@ -411,14 +418,11 @@ export const commandCoreContractTests = [
     name: "command-core/workspace packages pass their package-local suites",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      const result = spawnSync(process.execPath, ["--test", "packages/work/test/citation-history.test.mjs", "packages/work/test/domain-services.test.mjs",
-      "packages/execution/test/domain-services.test.mjs",
-      "packages/effects/test/ownership-services.test.mjs",
-      "packages/integration-notion/test/routing.test.mjs",
-      "packages/server/test/work-ui-command.test.mjs", "packages/mesh/test/cache-services.test.mjs", "packages/work/test/transitions.test.mjs", "packages/execution/test/transitions.test.mjs", "packages/mesh/test/transitions.test.mjs", "packages/mesh/test/runtime.test.mjs", "packages/mesh/test/commands.test.mjs", "packages/mesh/test/coordination.test.mjs", "packages/mesh/test/projections.test.mjs", "packages/mesh/test/persistence.test.mjs", "packages/mesh/test/relay.test.mjs", "packages/server/test/transports.test.mjs", "packages/knowledge/test/services.test.mjs", "packages/messaging/test/services.test.mjs", "packages/contracts/test/commands.test.mjs", "packages/effects/test/effects.test.mjs", "packages/effects/test/journal.test.mjs", "packages/effects/test/registry.test.mjs", "packages/work/test/effects.test.mjs", "packages/work/test/commands.test.mjs", "packages/work/test/source-units.test.mjs", "packages/work/test/records.test.mjs", "packages/work/test/discovery.test.mjs", "packages/work/test/readiness.test.mjs", "packages/work/test/validation.test.mjs", "packages/work/test/acceptor.test.mjs", "packages/work/test/audit.test.mjs", "packages/work/test/audit-programs.test.mjs", "packages/work/test/doctor.test.mjs", "packages/work/test/tune.test.mjs", "packages/work/test/mutations.test.mjs", "packages/work/test/promotion.test.mjs", "packages/work/test/insertion.test.mjs", "packages/work/test/read.test.mjs", "packages/work/test/observation.test.mjs", "packages/work/test/testing.test.mjs", "packages/work/test/command-faces.test.mjs", "packages/work/test/grade-command.test.mjs", "packages/work/test/feedback.test.mjs", "packages/work/test/audit-faces.test.mjs", "packages/work/test/run-commands.test.mjs", "packages/work/test/status-gate.test.mjs", "packages/work/test/reentry.test.mjs", "packages/execution/test/rubric-process.test.mjs", "packages/work-graph/test/commands.test.mjs", "packages/work-loop/test/services.test.mjs", "packages/work-loop/test/trigger.test.mjs", "packages/work-loop/test/dispatch.test.mjs", "packages/execution/test/runs.test.mjs", "packages/execution/test/terminals.test.mjs", "packages/execution/test/driver.test.mjs", "packages/execution/test/screen.test.mjs", "packages/execution/test/worktrees.test.mjs", "packages/mesh/test/worktrees.test.mjs", "packages/mesh/test/effects.test.mjs", "packages/integration-notion/test/effects.test.mjs", "packages/integration-notion/test/services.test.mjs", "packages/foundation/test/foundation.test.mjs"], {
-        cwd: root, encoding: "utf8", timeout: 30_000,
-      });
-      assert.equal(result.status, 0, result.error?.message ?? result.stdout + result.stderr);
+      const result = runNativeWorkspaceTests(root);
+      assert.ok(result.files >= 62, "all owned native files were discovered");
+      assert.ok(result.cases >= 222, `executed ${result.cases} native cases`);
+      assert.equal(result.owners.length, 13, "every package has an executed native surface");
+      console.log(`# aggregate bridge: ${result.cases} native cases in ${result.files} files`);
     },
   },
   // ════════════════════════ 00_registry-contract.feature ════════════════════

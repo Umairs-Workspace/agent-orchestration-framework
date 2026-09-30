@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 129 / story 04 — THE WAVE TICK.
 //
 // Every @executable scenario (and every Examples row) of
@@ -17,15 +18,28 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 
-import { runLoopBody, admittedDoctorFindings } from "../../packages/core/src/commands/loop.mjs";
-import { readGradeBaseline, settleStoryCycle } from "../../packages/core/src/loop/cycle.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const admittedDoctorFindings = _aofApplication.loop.commandTools.loop.admittedDoctorFindings;
+const readGradeBaseline = _aofApplication.loop.cycle.readGradeBaseline;
+const settleStoryCycle = _aofApplication.loop.cycle.settleStoryCycle;
 import { decideSupervisedDeclarations, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
-import { completeRun, isRunning, isStale, readRuns, retryReadiness, startRun, heartbeat } from "../../packages/core/src/run-store.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
-import { resolveRefInWorktree } from "../../packages/core/src/work/dispatch.mjs";
-import { meshDispatchWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
-import { loopStopsDir, requestLoopStop } from "../../packages/core/src/loop/stop-request.mjs";
+const completeRun = _aofApplication.execution.runs.completeRun;
+const isRunning = _aofApplication.execution.runs.isRunning;
+const isStale = _aofApplication.execution.runs.isStale;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
+const startRun = _aofApplication.execution.runs.startRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const resolveRefInWorktree = _aofApplication.loop.work.dispatch.resolveRefInWorktree;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   withLaneRepo, fakeLaneChild, stubRubric, emits, passingTap, failingTap, collector, fakeTimers, fakeSignals,
@@ -76,7 +90,33 @@ export const loopCommandWaveTests = [
   {
     name: "129/04 task00 settleStoryCycle is the one home of the ladder — the shell reaches work:grade and the sampler only through it",
     run: async () => {
-      const cycle = await import("../../packages/core/src/loop/cycle.mjs");
+      const cycle = await Promise.resolve(Object.freeze({
+  LOOP_FIX_TRANSPORT_KEYS: _aofApplication.loop.cycle.LOOP_FIX_TRANSPORT_KEYS,
+  accumulatedRecord: _aofApplication.loop.cycle.accumulatedRecord,
+  admitResumeBuildRun: _aofApplication.loop.cycle.admitResumeBuildRun,
+  applyGradeBaseline: _aofApplication.loop.cycle.applyGradeBaseline,
+  budgetElapsedMs: _aofApplication.loop.cycle.budgetElapsedMs,
+  drivePhase: _aofApplication.loop.cycle.drivePhase,
+  drivenRow: _aofApplication.loop.cycle.drivenRow,
+  failingCountFromGrade: _aofApplication.loop.cycle.failingCountFromGrade,
+  fixTransport: _aofApplication.loop.cycle.fixTransport,
+  gradeFindings: _aofApplication.loop.cycle.gradeFindings,
+  gradeRoute: _aofApplication.loop.cycle.gradeRoute,
+  gradeStopCode: _aofApplication.loop.cycle.gradeStopCode,
+  gradeStopProducer: _aofApplication.loop.cycle.gradeStopProducer,
+  gradeSummary: _aofApplication.loop.cycle.gradeSummary,
+  measureGradeBaseline: _aofApplication.loop.cycle.measureGradeBaseline,
+  mergeGateFindings: _aofApplication.loop.cycle.mergeGateFindings,
+  progressReportFacts: _aofApplication.loop.cycle.progressReportFacts,
+  readGradeBaseline: _aofApplication.loop.cycle.readGradeBaseline,
+  recordBuildProgress: _aofApplication.loop.cycle.recordBuildProgress,
+  reenterPrimaryAsks: _aofApplication.loop.cycle.reenterPrimaryAsks,
+  retryUntilTerminal: _aofApplication.loop.cycle.retryUntilTerminal,
+  runBrief: _aofApplication.loop.cycle.runBrief,
+  settleDriven: _aofApplication.loop.cycle.settleDriven,
+  settleStoryCycle: _aofApplication.loop.cycle.settleStoryCycle,
+  transitionOptionsFor: _aofApplication.loop.cycle.transitionOptionsFor,
+}));
       assert.equal(typeof cycle.settleStoryCycle, "function");
       const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       assert.equal(shell.includes('invokeRegistered("work:grade", { ref: act.ref, run: true'), false, "no rubric run of its own");
@@ -271,7 +311,17 @@ export const loopCommandWaveTests = [
             readChangeUnderReview: async () => "",
           };
           if (row.branch === "reset") {
-            const { appendProgressSample } = await import("../../packages/core/src/loop-progress.mjs");
+            const { appendProgressSample } = await Promise.resolve(Object.freeze({
+  appendProgressSample: _aofApplication.loop.loopProgress.appendProgressSample,
+  decideBuildProgress: _aofApplication.loop.loopProgress.decideBuildProgress,
+  evaluateProgressPolicy: _aofApplication.loop.loopProgress.evaluateProgressPolicy,
+  madeProgress: _aofApplication.loop.loopProgress.madeProgress,
+  progressLedgerPath: _aofApplication.loop.loopProgress.progressLedgerPath,
+  progressPolicyFromConfig: _aofApplication.loop.loopProgress.progressPolicyFromConfig,
+  progressSample: _aofApplication.loop.loopProgress.progressSample,
+  readProgressSamples: _aofApplication.loop.loopProgress.readProgressSamples,
+  sampleWorktreeProgress: _aofApplication.loop.loopProgress.sampleWorktreeProgress,
+}));
             for (const sample of samples.slice(0, 2)) await appendProgressSample(item, record, sample);
           }
           const bookkeeping = { pendingFixes: new Map(), pendingGrades: new Map(), progressStates: new Map(), reviewRounds: new Map(), reviewBlockerCounts: new Map(), cycles: new Map(), driven: [] };

@@ -1,16 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6203 — patches are whole, appliers are registry answers, and neither executes here.
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  ABSENT,
-  ABSENT_READING,
-  PROPOSAL_CLASSES,
-  emitProposal,
-  emitProposals,
-} from "../../../packages/core/src/work-tune/proposal.mjs";
+const ABSENT = _aofApplication.work.tune.proposal.ABSENT;
+const ABSENT_READING = _aofApplication.work.tune.proposal.ABSENT_READING;
+const PROPOSAL_CLASSES = _aofApplication.work.tune.proposal.PROPOSAL_CLASSES;
+const emitProposal = _aofApplication.work.tune.proposal.emitProposal;
+const emitProposals = _aofApplication.work.tune.proposal.emitProposals;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const command = { id: "work:fixture-apply" };

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-capability-gap-cites-a-code-span (milestone 77 / story 00, FF-7701;
 // ADR-003 §1-§5).
 //
@@ -54,11 +55,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
-import {
-  CAPABILITY_PROGRAMS,
-  ROLE_WORDS,
-  runPromptLayer,
-} from "../../../packages/core/src/work-audit/prompt-layer.mjs";
+const CAPABILITY_PROGRAMS = _aofApplication.work.audit.promptLayer.CAPABILITY_PROGRAMS;
+const ROLE_WORDS = _aofApplication.work.audit.promptLayer.ROLE_WORDS;
+const runPromptLayer = _aofApplication.work.audit.promptLayer.runPromptLayer;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MODULE_REL = "packages/work/src/audit/prompt-layer.mjs";

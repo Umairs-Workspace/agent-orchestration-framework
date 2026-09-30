@@ -1,4 +1,8 @@
+import * as _aofPublic_aof_work_graph_commands_loop_record from "@aof/work-graph/commands/loop-record";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
+import { moduleReferences } from "../../../scripts/workspace-boundaries.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-7805 (78/ADR-002) — THE RECORD IS A FACE, NEVER A SECOND TRUTH.
 //
@@ -26,7 +30,8 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { EXECUTION_RECORD_BASENAME, loopRecordCommand } from "../../../packages/core/src/commands/loop-record.mjs";
+const EXECUTION_RECORD_BASENAME = _aofPublic_aof_work_graph_commands_loop_record.EXECUTION_RECORD_BASENAME;
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, ctxFor, withRepo } from "../../loop/loop-record-command.test.mjs";
 
@@ -131,8 +136,16 @@ export const archTests = [
         const source = stripComments(await readFile(file, "utf8")).replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, "");
         // The SPECIFIERS, resolved against the importing file, so `./commands/loop-record.mjs` (the
         // command core's import of the COMMAND) is never mistaken for an import of the projection.
-        const specifiers = [...source.matchAll(/from\s+["']((?:\.|@aof\/)[^"']+)["']/g)]
-          .map((match) => path.relative(repoRoot, createRequire(file).resolve(match[1])).split(path.sep).join("/"));
+        const specifiers = moduleReferences(source, file).references.filter(entry => !entry.typeOnly && entry.specifier && /^(?:\.|@aof\/)/u.test(entry.specifier))
+          .map(({ specifier }) => {
+            let target;
+            if (specifier.startsWith(".")) {
+              const base = path.resolve(path.dirname(file), specifier);
+              target = [base, ...[".mjs", ".js", ".ts", ".tsx", "/index.ts", "/index.tsx"].map(suffix => base + suffix)].find(existsSync);
+              assert.ok(target, `${rel}: local source import resolves (${specifier})`);
+            } else target = createRequire(file).resolve(specifier);
+            return path.relative(repoRoot, target).split(path.sep).join("/");
+          });
         if (specifiers.includes("packages/work-graph/src/record.mjs") || specifiers.includes("packages/work-graph/src/record.mjs")) importers.projection.push(rel);
         if (specifiers.includes("packages/work-graph/src/record-render.mjs") || specifiers.includes("packages/work-graph/src/record-render.mjs")) importers.renderer.push(rel);
       }

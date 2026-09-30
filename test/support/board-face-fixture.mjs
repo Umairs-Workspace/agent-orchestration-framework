@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // The REAL board face on a loopback port, over a REAL work stream on disk and an
 // isolated global store (milestone 43 / story 04 — the substrate the board mount
 // harness runs against).
@@ -31,11 +33,17 @@ import http from "node:http";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { handleWorkApi } from "../../packages/core/src/board-ui.mjs";
-import { openGlobalWorkProjectionStore, upsertWorkItemContent, upsertWorkItems, readWorkspaceItems, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
-import { RESYNC_REQUESTED, readResync, runResyncDispatchTick } from "../../packages/core/src/mesh/resync.mjs";
+const handleWorkApi = _aofApplication.server.board.handleWorkApi;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
+const upsertWorkItems = _aofApplication.mesh.store.upsertWorkItems;
+const readWorkspaceItems = _aofApplication.mesh.store.readWorkspaceItems;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const RESYNC_REQUESTED = _aofApplication.mesh.resync.RESYNC_REQUESTED;
+const readResync = _aofApplication.mesh.resync.readResync;
+const runResyncDispatchTick = _aofApplication.mesh.resync.runResyncDispatchTick;
 import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 // The REAL timers, captured at MODULE LOAD — before any mounted app installs its
 // controllable clock over `globalThis.setTimeout` / `globalThis.setInterval`. The

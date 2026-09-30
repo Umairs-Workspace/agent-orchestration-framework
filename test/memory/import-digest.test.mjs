@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // import-digest — the AOF.md digest-on-import follow-up (milestone 13 / story 04;
 // ADR-006). The @executable proof for `04_import-emits-recallable-digest.feature`.
 //
@@ -16,15 +17,15 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
-import {
-  reindex,
-  memoryIndexPath,
-  resolveRecordSourcePath,
-  isImportRecord,
-} from "../../packages/core/src/memory/local-indexing.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
+const resolveRecordSourcePath = _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath;
+const isImportRecord = _aofApplication.knowledge.memory.localIndexing.isImportRecord;
 import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
-import { materializeImport, AOF_FILE } from "../../packages/core/src/import/materialize.mjs";
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const AOF_FILE = _aofApplication.knowledge.import.materialize.AOF_FILE;
 
 // memory.backend = "local" so reindex/recall actually run the local backend.
 const CONFIG = { name: "fixture", work: { dir: "./wiki/work" }, memory: { backend: "local" } };

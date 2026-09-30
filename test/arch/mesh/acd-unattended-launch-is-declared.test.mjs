@@ -1,3 +1,4 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // FF-6305 / 63/ADR-005, ADR-010 §2, §5 — THE FOURTH ENFORCEMENT POINT COMPILES, AND EVERY
 // ATTENDED LAUNCH IS BYTE-IDENTICAL.
 //
@@ -41,7 +42,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
 import { bundledFrozenSet, compileFrozenSet, FROZEN_ENFORCEMENT_POINTS } from "../../../packages/core/src/frozen-set.mjs";
-import { resolveInteractiveDriverLaunch } from "../../../packages/core/src/agent-session-driver.mjs";
+const resolveInteractiveDriverLaunch = _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COMPILER_SOURCE = path.join(repoRoot, "packages", "core", "src", "frozen-set.mjs");

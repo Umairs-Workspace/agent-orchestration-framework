@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Fitness function: acd-active-runs-frozen-string-array
 // (milestone 38 / ADR-004 AS-BUILT AMENDMENT + ADR-008)
 //
@@ -48,9 +51,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { enclosingParenGroup, blockOrStatementAfter } from "../../support/source-slice.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const startSession = _aofHooks.meshSession.startSession;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // 119/00 task 02 — `control-unresolved` keeps its exact meaning, end to end.
 //
 // The finding says "this register declares a control that does not exist". Before 119 it also said
@@ -17,9 +18,9 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
 import { controlGroup } from "@aof/work/audit/controls";
-import { readRenameMap } from "../../../packages/core/src/commands/doctor.mjs";
+const readRenameMap = _aofApplication.work.commandTools.doctor.readRenameMap;
 
 const execFileAsync = promisify(execFile);
 

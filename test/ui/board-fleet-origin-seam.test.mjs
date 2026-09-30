@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 46 / story 02 / task 00 —
 // tasks/00_the-board-is-handed-the-fleet-origin.feature (@executable @cli @work @board).
 //
@@ -37,12 +40,14 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveBoard, boardUiDist } from "../../packages/core/src/board-serve.mjs";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+const serveBoard = _aofApplication.server.serve.serveBoard;
+const boardUiDist = _aofApplication.server.serve.boardUiDist;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 // The workspace id is asked of its ONE home (TECH_DEBT 4's fix), never re-derived
 // here — it is the same rule the projection store keyed the published snapshot on.
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";

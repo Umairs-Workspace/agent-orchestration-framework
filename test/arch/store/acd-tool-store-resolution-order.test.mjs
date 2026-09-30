@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 12 / ADR-005 inv. 1 (store-first resolution;
 // ADR-001 + ADR-004):
 // "A managed tool resolves the store binary
@@ -20,11 +21,9 @@ import os from "node:os";
 import path from "node:path";
 import { toolStoreRoot, toolVersionDir } from "../../../packages/core/src/paths.mjs";
 import { resolveManagedBinary, exeDirFor, exeNameFor } from "../../../packages/core/src/tool-store.mjs";
-import {
-  resolveGraphifyBinary,
-  GRAPHIFY_BINARY,
-  PINNED_GRAPHIFY_VERSION,
-} from "../../../packages/core/src/graphify.mjs";
+const resolveGraphifyBinary = _aofApplication.knowledge.graphify.resolveGraphifyBinary;
+const GRAPHIFY_BINARY = _aofApplication.knowledge.graphify.GRAPHIFY_BINARY;
+const PINNED_GRAPHIFY_VERSION = _aofApplication.knowledge.graphify.PINNED_GRAPHIFY_VERSION;
 import { resolveHeadroomBinary } from "../../../packages/core/src/headroom.mjs";
 import { HEADROOM_DESCRIPTOR } from "../../../packages/core/src/tool-store.mjs";
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 46 / story 02 / task 01 —
 // tasks/01_standalone-resolves-its-own-default.feature (@executable @cli @work @board).
 //
@@ -41,14 +42,18 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveBoard, boardUiDist, boardUiProbe } from "../../packages/core/src/board-serve.mjs";
-import { serveMeshUi, meshUiDist, DEFAULT_MESH_UI_PORT } from "../../packages/core/src/mesh/ui-serve.mjs";
+const serveBoard = _aofApplication.server.serve.serveBoard;
+const boardUiDist = _aofApplication.server.serve.boardUiDist;
+const boardUiProbe = _aofApplication.server.serve.boardUiProbe;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const DEFAULT_MESH_UI_PORT = _aofApplication.mesh.uiServe.DEFAULT_MESH_UI_PORT;
 // The COMMAND layer's own resolver — the subject of this task, imported rather than
 // re-implemented so a shape row exercises the production decision, not a copy of it.
-import { resolveStandaloneFleetOrigin } from "../../packages/core/src/commands/work-ui.mjs";
+const resolveStandaloneFleetOrigin = _aofApplication.server.commandTools.workUi.resolveStandaloneFleetOrigin;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // The ONE place this file names the route the build chose (task 00 owns its shape; this
 // task only CONSUMES the served fact).

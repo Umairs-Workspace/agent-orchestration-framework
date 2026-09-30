@@ -1,3 +1,7 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // Traceability: milestone 126 / story 02, tasks 00 and 01 (ADR-004). THE DECLARATION PREDICATE,
 // driven over literal run records — which declarations should be running on this node now.
 //
@@ -17,22 +21,22 @@ import {
   decideSupervisedDeclarations,
   readLoopDeclaration,
 } from "../../packages/work-loop/src/engine.mjs";
-import { isRunning, isStale, retryReadiness } from "../../packages/core/src/run-store.mjs";
-import { meshStatusCommand } from "../../packages/core/src/commands/mesh/identity.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
-import { stopLoop } from "../../packages/core/src/loop/stop.mjs";
-import {
-  clearStopRequest,
-  loopResumesDir,
-  loopStopsDir,
-  markStopHonoured,
-  requestLoopStop,
-  stopRequestPath,
-} from "../../packages/core/src/loop/stop-request.mjs";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+const isRunning = _aofApplication.execution.runs.isRunning;
+const isStale = _aofApplication.execution.runs.isStale;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
+const meshStatusCommand = _aofApplication.getCommand("mesh:status");
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const stopLoop = _aofApplication.loop.stop.stopLoop;
+const clearStopRequest = _aofApplication.loop.stopRequest.clearStopRequest;
+const loopResumesDir = _aofApplication.loop.stopRequest.loopResumesDir;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { stripComments } from "../support/source-slice.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
@@ -84,7 +88,7 @@ function ask(runs, { ceilingMs = CEILING, now = NOW, items, ...rest } = {}) {
 }
 
 // The real CLI in `dir`, under the process's (the harness's isolated) global home.
-const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "bin", "aof.mjs");
+const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), "packages", "core", "bin", "aof.mjs");
 function cliIn(dir, args) {
   const run = spawnSync(process.execPath, [BIN, ...args], { cwd: dir, encoding: "utf8", windowsHide: true, env: { ...process.env } });
   return { status: run.status, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };

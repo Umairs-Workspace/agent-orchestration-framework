@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-clone-credential-pull-not-pushed (milestone 38 / ADR-009 —
 // arming ADR-005's deferred credential MECHANISM, RESEARCH §1/A4, SECURITY T1–T4, and
 // re-arming ADR-008's producer-vs-fixture rule at the wiring seam)
@@ -67,7 +68,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const controlSourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");

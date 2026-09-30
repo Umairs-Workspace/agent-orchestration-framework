@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 37 / story 01
 // tasks/01_chore-template-and-command.feature — "the bundled CHORE.md template
 // instantiates to a folder that validates clean".
@@ -17,7 +18,8 @@ import { readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateWork, WORK_ITEM_SCHEMA_VERSION } from "../../../packages/core/src/work.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { packageVersionString } from "../../../packages/core/src/asset-base.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

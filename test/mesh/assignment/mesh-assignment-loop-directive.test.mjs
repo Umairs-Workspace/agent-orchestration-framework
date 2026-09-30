@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/assignment/mesh-assignment-loop-directive.test.mjs — milestone 63 / story 03
 // (`a-mesh-assignment-resolves-to-a-loop-call`), tasks 00, 01, 02 and 04.
 //
@@ -29,7 +32,7 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import {
   assembleAssignmentRecord,
   insertAssignment,
@@ -37,8 +40,8 @@ import {
   updateAssignmentState,
   ASSIGNMENT_STATES,
 } from "@aof/mesh/assignment-record";
-import { runControlDispatchReclaimTick } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
-import { buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
+const runControlDispatchReclaimTick = _aofApplication.mesh.assignmentReclaim.runControlDispatchReclaimTick;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
 import {
   ASSIGNMENT_PHASES,
   DEFAULT_ASSIGNMENT_PHASE,
@@ -53,21 +56,19 @@ import {
   setAssignmentPhase,
   setItemBranch,
 } from "@aof/mesh/assignment-directive";
-import {
-  createMeshWorkerExecutionHandler,
-  NEEDS_INPUT_SENTINEL,
-  ASSIGNMENT_LOOP_LAUNCH_UNDECLARED,
-  ASSIGNMENT_LOOP_LAUNCH_SCOPELESS,
-} from "../../../packages/core/src/mesh/worker-execution.mjs";
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const NEEDS_INPUT_SENTINEL = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
+const ASSIGNMENT_LOOP_LAUNCH_UNDECLARED = _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_UNDECLARED;
+const ASSIGNMENT_LOOP_LAUNCH_SCOPELESS = _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_SCOPELESS;
 import { bundledFrozenSet, compileFrozenSet } from "../../../packages/core/src/frozen-set.mjs";
 // 63/06 (ADR-013 §1) — the SESSION-SHAPED default and the directory it reads, imported
 // so the lane below can prove the defect is reachable before proving it is gone. A leg
 // that only asserted "the seam resolves null" would pass over a watch that never had
 // anything to find.
-import { defaultWatchTranscriptSessionId } from "../../../packages/core/src/agent-session-driver.mjs";
-import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
+const defaultWatchTranscriptSessionId = _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
 import { LOOP_STOPS, LOOP_SCOPE_FORMS, resolveLoopLevel } from "@aof/work-loop/engine";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,

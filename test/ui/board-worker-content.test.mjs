@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // schema v5 (TECH_DEBT item 6 — finish the board bridge): the board's drill-downs
 // answer from the worker-streamed projection when the LOCAL checkout cannot.
 //
@@ -17,7 +18,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace, invoke } from "../../packages/core/src/command-core.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const invoke = _aofApplication.invoke;
 // m43 / story 06 (ADR-005 rule 3) — the ONE statement of what this milestone may add to an
 // m42-era frozen envelope, and of what it may not. Three exact-key `deepEqual`s below were
 // RED against the delivered 43/06 build (found 2026-08-04, at the ADR-016 must-fix pass, and
@@ -26,7 +28,8 @@ import { loadWorkspace, invoke } from "../../packages/core/src/command-core.mjs"
 // MORE than the deepEqual it replaces: every frozen key still present, the only additions the
 // three named answering-side keys, PLUS the stamp's two-value domain.
 import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.mjs";
-import { openGlobalWorkProjectionStore, upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
 
 const WORKSPACE_ID = "ws-board-content";
 const NOW = "2026-07-26T10:00:00.000Z";
@@ -169,7 +172,36 @@ export const boardWorkerContentTests = [
     async run() {
       await withFixture(async ({ ctx, env }) => {
         // The item row itself streams (the board lists it) — no docs, no runs yet.
-        const { upsertWorkItemContent, openGlobalWorkProjectionStore } = await import("../../packages/core/src/global-work-store.mjs");
+        const { upsertWorkItemContent, openGlobalWorkProjectionStore } = await Promise.resolve(Object.freeze({
+  GLOBAL_WORK_SCHEMA_VERSION: _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION,
+  globalStoreError: _aofApplication.mesh.store.globalStoreError,
+  workspaceIdFor: _aofApplication.mesh.store.workspaceIdFor,
+  wholesaleDelete: _aofApplication.mesh.store.wholesaleDelete,
+  openGlobalWorkProjectionStore: _aofApplication.mesh.store.openGlobalWorkProjectionStore,
+  remapWorkspaceProjectionRefs: _aofApplication.mesh.store.remapWorkspaceProjectionRefs,
+  remapWorkspaceFactRefs: _aofApplication.mesh.store.remapWorkspaceFactRefs,
+  UPSERT_AUTHORITIES: _aofApplication.mesh.store.UPSERT_AUTHORITIES,
+  upsertWorkItems: _aofApplication.mesh.store.upsertWorkItems,
+  removeWorkspaceFromCache: _aofApplication.mesh.store.removeWorkspaceFromCache,
+  publishWorkspaceSnapshot: _aofApplication.mesh.store.publishWorkspaceSnapshot,
+  recordWorkspaceProjectionError: _aofApplication.mesh.store.recordWorkspaceProjectionError,
+  readWorkspaceProjectionItems: _aofApplication.mesh.store.readWorkspaceProjectionItems,
+  readWorkspaceItems: _aofApplication.mesh.store.readWorkspaceItems,
+  readWorkspaceItemProvenance: _aofApplication.mesh.store.readWorkspaceItemProvenance,
+  upsertWorkItemContent: _aofApplication.mesh.store.upsertWorkItemContent,
+  readWorkItemDoc: _aofApplication.mesh.store.readWorkItemDoc,
+  readWorkItemDocMembers: _aofApplication.mesh.store.readWorkItemDocMembers,
+  readWorkItemRuns: _aofApplication.mesh.store.readWorkItemRuns,
+  NODE_LOG_KEEP: _aofApplication.mesh.store.NODE_LOG_KEEP,
+  appendNodeLogEntries: _aofApplication.mesh.store.appendNodeLogEntries,
+  readNodeLogEntries: _aofApplication.mesh.store.readNodeLogEntries,
+  queryGlobalWorkProjection: _aofApplication.mesh.store.queryGlobalWorkProjection,
+  WORK_ITEM_DOC_FILES: _aofApplication.mesh.store.WORK_ITEM_DOC_FILES,
+  REQUIRED_ITEM_FIELDS: _aofApplication.mesh.store.REQUIRED_ITEM_FIELDS,
+  OPTIONAL_ITEM_FIELDS: _aofApplication.mesh.store.OPTIONAL_ITEM_FIELDS,
+  itemRowFault: _aofApplication.mesh.store.itemRowFault,
+  isCompleteItemRow: _aofApplication.mesh.store.isCompleteItemRow,
+}));
         const store = await openGlobalWorkProjectionStore({ env });
         try {
           store.db.prepare(
@@ -207,7 +239,50 @@ export const boardWorkerContentTests = [
   {
     name: "board-worker-content/rethink checkoutRootForWorktree inverts the worktree layout",
     async run() {
-      const { checkoutRootForWorktree } = await import("../../packages/core/src/mesh/worker-execution.mjs");
+      const { checkoutRootForWorktree } = await Promise.resolve(Object.freeze({
+  ASSIGNMENT_LOOP_LAUNCH_UNDECLARED: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_UNDECLARED,
+  ASSIGNMENT_LOOP_LAUNCH_SCOPELESS: _aofApplication.mesh.worker.ASSIGNMENT_LOOP_LAUNCH_SCOPELESS,
+  resolveRefInWorktree: _aofApplication.mesh.worker.resolveRefInWorktree,
+  workerHasRepo: _aofApplication.mesh.worker.workerHasRepo,
+  resolveCloneUrl: _aofApplication.mesh.worker.resolveCloneUrl,
+  parseRepoFromCloneUrl: _aofApplication.mesh.worker.parseRepoFromCloneUrl,
+  meshCheckoutsRoot: _aofApplication.mesh.worker.meshCheckoutsRoot,
+  meshCheckoutPath: _aofApplication.mesh.worker.meshCheckoutPath,
+  isUnderMeshCheckoutsRoot: _aofApplication.mesh.worker.isUnderMeshCheckoutsRoot,
+  buildAskpassShim: _aofApplication.mesh.worker.buildAskpassShim,
+  cloneRepoForWorkspace: _aofApplication.mesh.worker.cloneRepoForWorkspace,
+  pinWorkspaceIdInCheckout: _aofApplication.mesh.worker.pinWorkspaceIdInCheckout,
+  commitWorktreeChanges: _aofApplication.mesh.worker.commitWorktreeChanges,
+  NEEDS_INPUT_SENTINEL: _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL,
+  NEEDS_INPUT_INSTRUCTION: _aofApplication.mesh.worker.NEEDS_INPUT_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_INSTRUCTION,
+  WORKER_SESSION_INSTRUCTION: _aofApplication.mesh.worker.WORKER_SESSION_INSTRUCTION,
+  COMPLETION_IDLE_MS: _aofApplication.mesh.worker.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofApplication.mesh.worker.DECLARED_COMPLETION_IDLE_MS,
+  HUMAN_INPUT_TOOL_NAMES: _aofApplication.mesh.worker.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofApplication.mesh.worker.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  defaultWatchTranscriptSessionId: _aofApplication.mesh.worker.defaultWatchTranscriptSessionId,
+  defaultWatchTranscriptCompletion: _aofApplication.mesh.worker.defaultWatchTranscriptCompletion,
+  defaultPtySpawn: _aofApplication.mesh.worker.defaultPtySpawn,
+  resolveInteractiveDriverLaunch: _aofApplication.mesh.worker.resolveInteractiveDriverLaunch,
+  driveInteractiveClaudeSession: _aofApplication.mesh.worker.driveInteractiveClaudeSession,
+  buildDriverCommand: _aofApplication.mesh.worker.buildDriverCommand,
+  defaultSpawnRuntime: _aofApplication.mesh.worker.defaultSpawnRuntime,
+  ensureWorktreeTrusted: _aofApplication.mesh.worker.ensureWorktreeTrusted,
+  registerActiveWorktree: _aofApplication.mesh.worker.registerActiveWorktree,
+  clearActiveWorktree: _aofApplication.mesh.worker.clearActiveWorktree,
+  listActiveWorktrees: _aofApplication.mesh.worker.listActiveWorktrees,
+  checkoutRootForWorktree: _aofApplication.mesh.worker.checkoutRootForWorktree,
+  listStrandedWorktreeAssignments: _aofApplication.mesh.worker.listStrandedWorktreeAssignments,
+  pushWorktreeBranch: _aofApplication.mesh.worker.pushWorktreeBranch,
+  createMeshWorkerExecutionHandler: _aofApplication.mesh.worker.createMeshWorkerExecutionHandler,
+  settleStrandedRunRecords: _aofApplication.mesh.worker.settleStrandedRunRecords,
+  createMeshWorkerWithdrawHandler: _aofApplication.mesh.worker.createMeshWorkerWithdrawHandler,
+  createMeshWorkerTerminalInputHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalInputHandler,
+  createMeshWorkerTerminalResumeHandler: _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler,
+  createMeshRecoveryPushHandler: _aofApplication.mesh.worker.createMeshRecoveryPushHandler,
+}));
       const path = (await import("node:path")).default;
       const checkout = path.resolve("/home/u/.aof/mesh/checkouts/1f164bd03ea535da");
       const worktree = path.join(checkout, ".aof", "mesh", "worktrees", "asg-1");

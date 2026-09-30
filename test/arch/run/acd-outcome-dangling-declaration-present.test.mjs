@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 39 / ADR-005 (PRESENCE meta-fitness):
 // "A dangling-declaration fitness function (record-format-field-has-a-producer,
 //  story 04's deliverable) EXISTS under test/arch and is wired into the assembled
@@ -47,7 +48,22 @@ async function assembledNames() {
 }
 
 async function parseOutcomeLanded() {
-  const mod = await import("../../../packages/core/src/memory/local-indexing.mjs");
+  const mod = await Promise.resolve(Object.freeze({
+  INDEX_VERSION: _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION,
+  memoryIndexPath: _aofApplication.knowledge.memory.localIndexing.memoryIndexPath,
+  parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+  parseArchitecture: _aofApplication.knowledge.memory.localIndexing.parseArchitecture,
+  parseAof: _aofApplication.knowledge.memory.localIndexing.parseAof,
+  parseOutcome: _aofApplication.knowledge.memory.localIndexing.parseOutcome,
+  IMPORT_ITEM_PREFIX: _aofApplication.knowledge.memory.localIndexing.IMPORT_ITEM_PREFIX,
+  importItem: _aofApplication.knowledge.memory.localIndexing.importItem,
+  isImportRecord: _aofApplication.knowledge.memory.localIndexing.isImportRecord,
+  resolveRecordSourcePath: _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath,
+  buildRecords: _aofApplication.knowledge.memory.localIndexing.buildRecords,
+  buildIndex: _aofApplication.knowledge.memory.localIndexing.buildIndex,
+  reindex: _aofApplication.knowledge.memory.localIndexing.reindex,
+  status: _aofApplication.knowledge.memory.localIndexing.status,
+}));
   return typeof mod.parseOutcome === "function";
 }
 

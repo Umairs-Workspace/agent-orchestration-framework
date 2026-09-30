@@ -95,7 +95,7 @@ import { releaseSidecarArchiveRoundtripTests } from "./release-sidecar-archive-r
 // install.sh is self-consistent today.
 import { releaseFingerprintPinTests } from "./release-fingerprint-pin.test.mjs";
 import { bundleSpikeChoreMembershipTests } from "./bundle-spike-chore-membership.test.mjs";
-import { capabilityRecallSurfacesTests } from "./capability-recall-surfaces.test.mjs";
+
 // milestone 43 / story 03 — WRITE-TRIGGERED ARTIFACT SYNC (ADR-001/002/007 + ADR-013).
 // REGISTERED 2026-08-03 by 43/04's structural review (ADR-014/E7): these four were imported
 // by NEITHER runner, so an ACCEPTED story's behavioural proof had never once run in CI —
@@ -151,7 +151,7 @@ export const tests = [
   ...releaseSidecarArchiveRoundtripTests,
   ...releaseFingerprintPinTests,
   ...bundleSpikeChoreMembershipTests,
-  ...capabilityRecallSurfacesTests,
+
   // milestone 43 / story 03 — write-triggered artifact sync (registered by ADR-014/E7)
   ...artifactSyncEnqueueHookTests,
   ...artifactSyncDrainTests,

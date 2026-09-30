@@ -3,12 +3,20 @@
 // consumers — never two implementations of the same scan.
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { sourceFiles, workspaceSourceRoots } from "../../scripts/source-inventory.mjs";
 
 // readSrcFiles(repoRoot) — every src/**/*.mjs file as `{ rel, path }`, where `rel` is
 // the slash-joined path relative to src/. Used to assert that a forbidden argv shape
 // (a `--system-prompt` replacement, a second claude launch builder) exists nowhere.
-export async function readSrcFiles(repoRoot) {
-  return readSourceDirectory(path.join(repoRoot, "packages", "core", "src"));
+function runtimeFiles(files, runtime) {
+  if (!["all", "node", "browser"].includes(runtime)) throw Error(`Unknown source runtime: ${runtime}`);
+  return files.filter(file => runtime === "all" || (file.owner === "@aof/ui") === (runtime === "browser"));
+}
+
+export async function readSrcFiles(repoRoot, { runtime = "all" } = {}) {
+  return runtimeFiles(sourceFiles(repoRoot), runtime).map(file => ({ ...file,
+    rel: file.rel.startsWith("packages/core/src/") ? file.rel.slice("packages/core/src/".length) : file.rel,
+  }));
 }
 
 async function readSourceDirectory(srcDir) {
@@ -30,24 +38,18 @@ async function readSourceDirectory(srcDir) {
 
 // Runtime ownership now spans src/ and packages/*/src/. Keep package tests and
 // node_modules outside the scan; paths here are relative to the repository.
-export async function readRuntimeFiles(repoRoot) {
-  const files = [];
-  for (const entry of await readdir(path.join(repoRoot, "packages"), { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const packageRoot = path.join(repoRoot, "packages", entry.name);
-    for (const file of await readSourceDirectory(path.join(packageRoot, "src"))) {
-      files.push({ ...file, rel: `packages/${entry.name}/src/${file.rel}` });
-    }
-  }
+export async function readRuntimeFiles(repoRoot, { runtime = "all" } = {}) {
+  const files = runtimeFiles(sourceFiles(repoRoot, workspaceSourceRoots(repoRoot)), runtime);
+  if (runtime === "browser") return files;
   for (const file of await readSourceDirectory(path.join(repoRoot, "packages", "core", "assets"))) {
     files.push({ ...file, rel: `packages/core/assets/${file.rel}` });
   }
   return files;
 }
 
-export async function runtimeFilesContaining(repoRoot, needle, { except = [] } = {}) {
+export async function runtimeFilesContaining(repoRoot, needle, { except = [], runtime = "all" } = {}) {
   const hits = [];
-  for (const { rel, path: file } of await readRuntimeFiles(repoRoot)) {
+  for (const { rel, path: file } of await readRuntimeFiles(repoRoot, { runtime })) {
     if (except.some(tail => rel === tail || rel.endsWith(`/${tail}`))) continue;
     if ((await readFile(file, "utf8")).includes(needle)) hits.push(rel);
   }
@@ -61,16 +63,18 @@ export async function runtimeFilesContaining(repoRoot, needle, { except = [] } =
 // walk, and the bodies are read once per process because they cannot change under a running
 // suite. (A cache in a TEST SUPPORT module, not in the pure compiler — the leaf stays
 // stateless, which is what makes its output a function of its inputs.)
-let bodyCache = null;
+const bodyCache = new Map();
 
 async function srcBodies(repoRoot) {
-  if (bodyCache == null) {
-    bodyCache = new Map();
+  const key = path.resolve(repoRoot);
+  if (!bodyCache.has(key)) {
+    const bodies = new Map();
     for (const file of await readSrcFiles(repoRoot)) {
-      bodyCache.set(file.rel, await readFile(file.path, "utf8"));
+      bodies.set(file.rel, await readFile(file.path, "utf8"));
     }
+    bodyCache.set(key, bodies);
   }
-  return bodyCache;
+  return bodyCache.get(key);
 }
 
 /**

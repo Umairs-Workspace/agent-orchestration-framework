@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Behavioural evidence for milestone 77 / story 02 — the seam liveness.
 //
 //   tasks/00_a-seam-with-no-production-caller-is-named.feature
@@ -20,14 +21,12 @@ import os from "node:os";
 import path from "node:path";
 
 import { graphJsonPath } from "@aof/knowledge/graph-normalize";
-import { TEST_ROOTS } from "../../../packages/core/src/work-audit/census.mjs";
+const TEST_ROOTS = _aofApplication.work.audit.census.TEST_ROOTS;
 import { readFinding } from "@aof/work/audit/reads";
-import {
-  SEAM_LIVENESS_FINDING_CODES,
-  dependentsIndex,
-  exportedNames,
-  runSeamLiveness,
-} from "../../../packages/core/src/work-audit/seam-liveness.mjs";
+const SEAM_LIVENESS_FINDING_CODES = _aofApplication.work.audit.seamLiveness.SEAM_LIVENESS_FINDING_CODES;
+const dependentsIndex = _aofApplication.work.audit.seamLiveness.dependentsIndex;
+const exportedNames = _aofApplication.work.audit.seamLiveness.exportedNames;
+const runSeamLiveness = _aofApplication.work.audit.seamLiveness.runSeamLiveness;
 
 // ── FIXTURES ─────────────────────────────────────────────────────────────────────────────────
 

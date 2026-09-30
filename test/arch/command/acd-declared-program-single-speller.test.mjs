@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-declared-program-single-speller (milestone 72 / story 00, FF-7201;
 // ADR-001 §1, §2, §3, §5, §5a, §6, ADR-007 §5, ADR-008 §1, §2).
 //
@@ -44,21 +46,19 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { findWork } from "../../../packages/core/src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
 // The sibling control's detector, REUSED rather than re-derived — seven of this row's eight plant
 // shapes are exactly the ones it already refuses over the audit family. What is extended locally
 // is the eighth: `OTHER_SPAWN_APIS` omits bare `exec`, and editing that constant is a write
 // outside this story's set.
 import { spawnRouteProblems } from "../audit/acd-audit-never-imports-project-code.test.mjs";
-import {
-  TEST_RUNNER_DECLARATION_INVALID,
-  TEST_RUNNER_UNDECLARED,
-  TEST_RUNNER_UNRESOLVABLE,
-  TOOLCHAIN_CONFIG_KEYS,
-  launchRunner,
-  resolveTestToolchain,
-  selectionArgs,
-} from "../../../packages/core/src/work/toolchain.mjs";
+const TEST_RUNNER_DECLARATION_INVALID = _aofApplication.work.toolchain.TEST_RUNNER_DECLARATION_INVALID;
+const TEST_RUNNER_UNDECLARED = _aofApplication.work.toolchain.TEST_RUNNER_UNDECLARED;
+const TEST_RUNNER_UNRESOLVABLE = _aofApplication.work.toolchain.TEST_RUNNER_UNRESOLVABLE;
+const TOOLCHAIN_CONFIG_KEYS = _aofApplication.work.toolchain.TOOLCHAIN_CONFIG_KEYS;
+const launchRunner = _aofApplication.work.toolchain.launchRunner;
+const resolveTestToolchain = _aofApplication.work.toolchain.resolveTestToolchain;
+const selectionArgs = _aofApplication.work.toolchain.selectionArgs;
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -293,7 +293,7 @@ export const archTests = [
       assert.ok(keyPattern("work.test.command").test(contract), "…and the contract does carry the key, so the exclusion is doing work");
       const suite = await readFile(path.join(repoRoot, "test", "work", "work-toolchain-declaration.test.mjs"), "utf8");
       assert.ok(keyPattern("work.test.command").test(suite), "…as does the behavioural suite");
-      for (const module of modules) assert.match(module.rel, /^(?:src\/|packages\/[^/]+\/src\/|packages\/core\/assets\/)/u, `the walk stayed inside runtime source: ${module.rel}`);
+      for (const module of modules) assert.match(module.rel, /^(?:src\/|ui\/src\/|packages\/[^/]+\/(?:src|bin)\/|packages\/core\/assets\/)/u, `the walk stayed inside runtime source: ${module.rel}`);
     },
   },
 

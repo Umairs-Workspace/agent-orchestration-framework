@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 17 / story 02, task 03 —
 // tasks/03_doctor-surfaces-notion.feature (@executable rows; the @manual live
 // install + token report is deferred to verify).
@@ -11,12 +12,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  doctorConfig,
-  managedToolChecks,
-  toolPlatformCheckFor,
-  notionAuthCheck,
-} from "../../packages/core/src/config-inspect.mjs";
+const doctorConfig = _aofApplication.assets.configInspect.doctorConfig;
+const managedToolChecks = _aofApplication.assets.configInspect.managedToolChecks;
+const toolPlatformCheckFor = _aofApplication.assets.configInspect.toolPlatformCheckFor;
+const notionAuthCheck = _aofApplication.assets.configInspect.notionAuthCheck;
 import { NOTION_DESCRIPTOR } from "../../packages/core/src/tool-store.mjs";
 
 const NOTION_LIST = [NOTION_DESCRIPTOR];

@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 24 / story 02 — task 01 (tasks/01_mesh-revoke
 // .feature). aof mesh revoke <node> (control-node-guarded) removes the node from the
 // registry roster, appends an explicit-deny revocation { nodeId, revokedAt, reason } via
@@ -19,15 +22,17 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { serveRelay, sha256Hex } from "../../../packages/core/src/mesh/relay.mjs";
-import { writeRegistry, readRegistry } from "../../../packages/core/src/mesh/registry.mjs";
-import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const sha256Hex = _aofApplication.mesh.relay.sha256Hex;
+const writeRegistry = _aofApplication.mesh.registry.writeRegistry;
+const readRegistry = _aofApplication.mesh.registry.readRegistry;
+const meshDir = _aofHooks.meshStore.meshDir;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const CONTROL_ID = "control-node-a";
 const CLOCK = "2026-07-01T10:00:00.000Z";

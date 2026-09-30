@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 01 (reindex-engine), task
 //   wiki/work/41_milestone_work-item-insertion/stories/01_story_reindex-engine/
 //     tasks/02_surgical-frontmatter-rewrite-is-byte-identical.feature
@@ -8,7 +9,7 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
-import { findWork } from "../../../packages/core/src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
 import { reindexForInsert } from "@aof/work/reindex";
 import { withWork } from "../../support/work-reindex-fixture.mjs";
 

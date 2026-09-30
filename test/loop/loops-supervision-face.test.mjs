@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/loop/loops-supervision-face.test.mjs — milestone 58 / story 03: THE SUPERVISION FACE.
 //
 // The subjects are the two REGISTERED read commands — `work:loops-show` and `work:loops-graph` —
@@ -38,8 +39,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand } from "../../packages/core/src/command-core.mjs";
-import { loadLoops } from "../../packages/core/src/work/loops.mjs";
+const getCommand = _aofApplication.getCommand;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import {
   actorRecord,
@@ -52,7 +53,7 @@ import {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(here, "..", "..");
-const CLI_ENTRY = path.join(ROOT, "bin", "aof.mjs");
+const CLI_ENTRY = path.join(ROOT, "packages", "core", "bin", "aof.mjs");
 
 const SHOW = "work:loops-show";
 const GRAPH = "work:loops-graph";

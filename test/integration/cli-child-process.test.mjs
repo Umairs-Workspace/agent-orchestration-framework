@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const root = await mkdtemp(path.join(os.tmpdir(), "aof-smoke-"));
 const projectDir = path.join(root, "project");

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -19,7 +20,9 @@ import {
   checkGrounding, checkPairing, checkReferenceOwnership, checkTimescale,
 } from "@aof/work-graph/checks";
 import * as checksModule from "@aof/work-graph/checks";
-import { ADMITTED_KEYS, NODE_KINDS, loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { makeLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -10,7 +11,7 @@ import {
   LOOP_LEVELS,
   resolveLoopLevelGate,
 } from "../../../packages/work-loop/src/engine.mjs";
-import { loopCommand } from "../../../packages/core/src/commands/loop.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 import { cleanL3Gate, makeQualifiedL3Repo } from "../../support/l3-gate-fixture.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";

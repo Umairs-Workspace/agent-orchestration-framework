@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 01, task `01_unconfigured-is-an-honest-no-op`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -19,7 +20,8 @@ import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
+const invoke = _aofApplication.invoke;
+const getCommand = _aofApplication.getCommand;
 import { makeGradeRepo, writeRunner, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 import { registeredSuitePaths } from "../support/registration/registration-surface.mjs";
 

@@ -1,3 +1,5 @@
+import { isArraySuiteSpecifier } from "../../support/registration/registration-surface.mjs";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-suite-registration-single-decider (milestone 72 / story 01, FF-7203;
 // ADR-004 §4, ADR-002 §1c).
 //
@@ -29,8 +31,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { registrationDecision, runnerImportedSuites } from "../../../packages/core/src/work-audit/census.mjs";
-import { registrationReport } from "../../../packages/core/src/work/test-select.mjs";
+const registrationDecision = _aofApplication.work.audit.census.registrationDecision;
+const runnerImportedSuites = _aofApplication.work.audit.census.runnerImportedSuites;
+const registrationReport = _aofApplication.work.testSelect.registrationReport;
 import { IMPORT_OF, SPREAD_ROW, bindingsOf, directoryCensus, readIndexes, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -271,7 +274,7 @@ export function indexRegistryProblems({ registry, indexes, dirs, testUnit = null
   const reached = new Set();
   for (const match of registrySource.matchAll(IMPORT_OF)) {
     const specifier = match[2];
-    if (specifier.endsWith(".test.mjs")) {
+    if (isArraySuiteSpecifier(specifier)) {
       problems.push(`the registry names a suite directly (${specifier}) — it names DIRECTORIES; a suite is registered in its own directory's index (ADR-010 §1)`);
       continue;
     }
@@ -301,7 +304,7 @@ export function indexRegistryProblems({ registry, indexes, dirs, testUnit = null
     const spread = new Set([...source.matchAll(SPREAD_ROW)].map((match) => match[1]));
     for (const match of source.matchAll(IMPORT_OF)) {
       const specifier = match[2];
-      if (!specifier.endsWith(".test.mjs")) continue;
+      if (!isArraySuiteSpecifier(specifier)) continue;
       const owner = path.posix.dirname(path.posix.normalize(path.posix.join(index.dir, specifier)));
       if (owner !== index.dir) {
         problems.push(`${index.rel} imports ${specifier}, which lives in ${owner}/ — one directory's suites spread by another's index, so the same entries are assembled twice or under two owners`);
@@ -343,7 +346,7 @@ archTests.push(
     name: "arch/119 FF-11906: the registry no longer grows a line per suite, and names no suite directly",
     run: () => {
       const registry = readFileSync(path.join(repoRoot, "scripts", "test.mjs"), "utf8");
-      const suiteSpecifiers = [...stripComments(registry).matchAll(IMPORT_OF)].filter((match) => match[2].endsWith(".test.mjs"));
+      const suiteSpecifiers = [...stripComments(registry).matchAll(IMPORT_OF)].filter((match) => isArraySuiteSpecifier(match[2]));
       assert.deepEqual(suiteSpecifiers.map((match) => match[2]), [], "the registry names directories, not suites");
       assert.ok(
         registry.split(/\r?\n/).length < 1000,
@@ -429,7 +432,7 @@ archTests.push(
       const specifiers = [...stripComments(source).matchAll(IMPORT_OF)].map((match) => match[2]).filter((specifier) => specifier.includes("/test/"));
       assert.ok(specifiers.length >= 90, `its hand-listed suite imports are intact: ${specifiers.length}`);
       for (const specifier of specifiers) {
-        assert.ok(specifier.endsWith(".test.mjs"), `${specifier}: names a suite, never an index`);
+        assert.ok(isArraySuiteSpecifier(specifier), `${specifier}: names a suite, never an index`);
       }
       assert.equal(/export\s/u.test(stripComments(source)), false, "it still exports nothing");
     },

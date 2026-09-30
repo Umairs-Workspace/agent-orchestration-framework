@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d5 (PRD-command-spine-effects-ledger,
 // "fact-projection-split"): the store epistemology is EXECUTABLE, and the last
 // two crash windows the arc named are closed.
@@ -28,22 +30,24 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { TABLE_CLASSIFICATION, tableClass, refRemapTables } from "../../../packages/core/src/effects/stores.mjs";
-import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
-import { transitionStreamReindexed } from "../../../packages/core/src/effects/stream-transitions.mjs";
-import { transitionRunStart } from "../../../packages/core/src/effects/run-transitions.mjs";
-import { reconcileRunRecords } from "../../../packages/core/src/effects/reconcile.mjs";
-import { openEffectsJournal, readEvents, readEventSteps } from "../../../packages/core/src/effects/journal.mjs";
-import { drainEffects, CONTROL_LOCI } from "../../../packages/core/src/effects/dispatch.mjs";
-import {
-  openGlobalWorkProjectionStore,
-  remapWorkspaceFactRefs,
-  wholesaleDelete,
-} from "../../../packages/core/src/global-work-store.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const transitionStreamReindexed = _aofApplication.work.streams.transitionStreamReindexed;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const reconcileRunRecords = _aofApplication.effects.reconcile.reconcileRunRecords;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const drainEffects = _aofApplication.effects.dispatcher.drainEffects;
+const CONTROL_LOCI = _aofApplication.effects.dispatcher.CONTROL_LOCI;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const remapWorkspaceFactRefs = _aofApplication.mesh.store.remapWorkspaceFactRefs;
+const wholesaleDelete = _aofApplication.mesh.store.wholesaleDelete;
 import { setItemBranch, readItemBranch } from "@aof/mesh/assignment-directive";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { startRun, completeRun } from "../../../packages/core/src/run-store.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startRun = _aofApplication.execution.runs.startRun;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const invoke = _aofApplication.invoke;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC_DIR = path.join(repoRoot, "packages", "core", "src");

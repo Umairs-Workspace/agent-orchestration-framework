@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 39 / ADR-004:
 // "OUTCOME.md is an ADDITIONAL per-item artifact, never the `recordDoc` PRIMARY
 //  record doc (recordDoc feeds validate/rollback across a graph-verified 38
@@ -15,7 +16,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { recordDoc } from "../../../packages/core/src/work.mjs";
+const recordDoc = _aofWorkspace.work.recordDoc;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const TEMPLATE_ROOT = path.join(repoRoot, "packages", "core", "assets", "templates");

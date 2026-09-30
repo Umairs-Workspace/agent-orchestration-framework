@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 09 / story 04 — the graphify MCP server runtime.
 //
 // Covers the @executable scenarios across the two task features by exercising the
@@ -20,14 +22,12 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { graphJsonPath } from "../../packages/core/src/graphify.mjs";
-import {
-  handleMcpMessage,
-  serveStdio,
-  MCP_PROTOCOL_VERSION,
-  MCP_SERVER_INFO,
-} from "../../packages/core/src/graph-mcp-server.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const graphJsonPath = _aofApplication.knowledge.graphify.graphJsonPath;
+const handleMcpMessage = _aofApplication.server.mcp.handleMcpMessage;
+const serveStdio = _aofApplication.server.mcp.serveStdio;
+const MCP_PROTOCOL_VERSION = _aofApplication.server.mcp.MCP_PROTOCOL_VERSION;
+const MCP_SERVER_INFO = _aofApplication.server.mcp.MCP_SERVER_INFO;
 import {
   graphifyMcpServer,
   GRAPHIFY_SERVE_COMMAND,

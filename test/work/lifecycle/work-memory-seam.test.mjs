@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 05 / story 00 `memory-seam`.
 //
 // Every @executable scenario AND every Scenario-Outline Examples row across the
@@ -22,15 +23,13 @@
 //        --limit into `opts`; text view by default, structured records array under --json.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import {
-  runMemory,
-  parseMemoryArgv,
-  resolveConfiguredBackend,
-  selectBackendName,
-  BACKEND_REGISTRY,
-  MEMORY_VERBS,
-  memoryUsage
-} from "../../../packages/core/src/work/memory.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const parseMemoryArgv = _aofApplication.knowledge.work.memory.parseMemoryArgv;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const selectBackendName = _aofApplication.knowledge.work.memory.selectBackendName;
+const BACKEND_REGISTRY = _aofApplication.knowledge.work.memory.BACKEND_REGISTRY;
+const MEMORY_VERBS = _aofApplication.knowledge.work.memory.MEMORY_VERBS;
+const memoryUsage = _aofApplication.knowledge.work.memory.memoryUsage;
 import noneBackend from "@aof/knowledge/memory/none-backend";
 
 // ------------------------------------------------------------ test rig ----

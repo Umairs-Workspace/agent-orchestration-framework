@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 47 / story 01 / task 01 —
 // `stories/01_story_board-drill-in/tasks/01_unreachable-boards-branch-deleted.feature`
 // (@executable). Every @executable Scenario and every Scenario-Outline ROW is covered here.
@@ -54,7 +55,8 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
 import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
 import { visibleTextOf } from "../support/mini-react.mjs";
 import { withFleetBoards, withMeshStatusBoards, BOARDS_FIXTURE_LOCAL_NODE, BOARDS_FIXTURE_PEER_NODE } from "../support/mesh-status-boards-fixture.mjs";
@@ -64,7 +66,7 @@ import { fleetBoardDrillInTests } from "./fleet-board-drill-in.test.mjs";
 import { registeredSuitePaths } from "../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const REGIONS = ["Workspaces", "Milestones", "Nodes", "Diagnostics"];
 const PLACEHOLDER = "No boards registered in the group yet";

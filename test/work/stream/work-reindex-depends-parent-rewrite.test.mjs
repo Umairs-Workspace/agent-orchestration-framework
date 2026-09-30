@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 41 / story 01 (reindex-engine), task
 //   wiki/work/41_milestone_work-item-insertion/stories/01_story_reindex-engine/
 //     tasks/01_depends-and-parent-rewrite-stays-resolvable.feature
@@ -16,9 +18,11 @@
 import assert from "node:assert/strict";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
-import { findWork, validateWork, loadWorkspace } from "../../../packages/core/src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { reindexForInsert } from "@aof/work/reindex";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const invoke = _aofApplication.invoke;
 import { withWork, buildTopLevelStream, writeMilestoneItem, writeStoryItem, writeUatItem, readDocText } from "../../support/work-reindex-fixture.mjs";
 import { buildThreeRootFixture, writeItem } from "./work-backlog-archive-enumerate.test.mjs";
 

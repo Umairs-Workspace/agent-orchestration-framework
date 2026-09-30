@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-mesh-ui-write-isolation (milestone 25 / story 02;
 // ARCHITECTURE 25/ADR-003 decision 5 + ADR-004 read-only — the 03/ADR-004
 // write-isolation posture mirrored onto the fleet face; the mesh-face sibling of
@@ -22,7 +23,8 @@ import { readFile, mkdtemp, rm, mkdir, writeFile, readdir, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");

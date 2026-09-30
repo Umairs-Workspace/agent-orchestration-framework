@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 96 / story 04 — the regression gate is mandatory.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -37,8 +39,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 import {
   EMPTY_CELL,
   RECORD_MALFORMED,
@@ -48,8 +50,11 @@ import {
   REGRESSION_RECORD_BASENAME,
   parseRegressionRows,
 } from "@aof/work/regression-record";
-import { DIRTY_TREE, runRegressionGate } from "../../packages/core/src/commands/regression-gate.mjs";
-import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../packages/core/src/commands/item-status.mjs";
+const DIRTY_TREE = _aofApplication.work.commandTools.regressionGate.DIRTY_TREE;
+const runRegressionGate = _aofApplication.work.commandTools.regressionGate.runRegressionGate;
+const GATE_MISSING = _aofApplication.work.commandTools.itemStatus.GATE_MISSING;
+const GATE_RED = _aofApplication.work.commandTools.itemStatus.GATE_RED;
+const OVERRIDE_REASON_REQUIRED = _aofApplication.work.commandTools.itemStatus.OVERRIDE_REASON_REQUIRED;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

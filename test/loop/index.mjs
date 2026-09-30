@@ -20,7 +20,7 @@
 // while running never (m35/R4).
 import { workLoopsRecordTests } from "./work-loops-record.test.mjs";
 import { workLoopsValueTests } from "./work-loops-value.test.mjs";
-import { workLoopsChecksTests } from "./work-loops-checks.test.mjs";
+
 import { workLoopsCommandsTests } from "./work-loops-commands.test.mjs";
 import { workLoopsRegistryCensusTests } from "./work-loops-registry-census.test.mjs";
 import { workLoopsCoverageLedgerTests } from "./work-loops-coverage-ledger.test.mjs";
@@ -72,7 +72,7 @@ import { loopReadyJsonKeyTests } from "./loop-ready-json-key.test.mjs";
 import { loopReadyRegistryAbsentTests } from "./loop-ready-registry-absent.test.mjs";
 import { loopReadyComposedTests } from "./loop-ready-composed.test.mjs";
 import { loopReadyBaseChecksTests } from "./loop-ready-base-checks.test.mjs";
-import { loopReadyScoreTests } from "./loop-ready-score.test.mjs";
+
 // milestone 53 / story 04 — the autonomous prompt hands the range to the code-owned
 // shell while retaining its solo/ship wrapper semantics and existing bundle door.
 import { autonomousShellOutPromptTests } from "./autonomous-shell-out-prompt.test.mjs";
@@ -83,7 +83,7 @@ import { groundednessReportTests } from "./groundedness-report.test.mjs";
 import { l3LadderWidensTests } from "./l3-ladder-widens.test.mjs";
 import { l3GateComputedTests } from "./l3-gate-computed.test.mjs";
 import { l3GateRefusalTests } from "./l3-gate-refusal.test.mjs";
-import { l3AnchorCheckScoreTests } from "./l3-anchor-check-score.test.mjs";
+
 // milestone 57 / story 00 — the fourth loop-registry node kind, its frozen
 // declaration vocabulary, the existing outbound monitoring edge, and FF-5701.
 import { watcherNodeTests } from "./watcher-node.test.mjs";
@@ -239,7 +239,7 @@ import { loopRecordProjectionTests, loopRecordRegistryShapeTests } from "./loop-
 // loops-graph.mjs byte-unmodified, asked of git rather than of a digest someone re-stamps) and
 // FF-7806 (the four declared-ceiling states are PAIRWISE distinguishable in the rendered bytes,
 // which is the requirement SPEC.md opens with).
-import { loopRecordRenderTests } from "./loop-record-render.test.mjs";
+
 // milestone 78 / story 02 — the record COMMAND: the read face, the writer, and the frozen lists it
 // moves. One behavioural suite over the two task contracts it owns (the read face; the writer's
 // byte-identity and signature preservation), plus the four gates the story's fitness functions name:
@@ -262,7 +262,6 @@ export const tests = [
   // milestone 52 / story 05 — the six behavioural suites and their coverage ledger
   ...workLoopsRecordTests,
   ...workLoopsValueTests,
-  ...workLoopsChecksTests,
   ...workLoopsCommandsTests,
   ...workLoopsRegistryCensusTests,
   ...workLoopsCoverageLedgerTests,
@@ -298,7 +297,6 @@ export const tests = [
   ...loopReadyRegistryAbsentTests,
   ...loopReadyComposedTests,
   ...loopReadyBaseChecksTests,
-  ...loopReadyScoreTests,
   // milestone 53 / story 04 — one prompt-side door, no second prose loop
   ...autonomousShellOutPromptTests,
   // milestone 55 / story 01 — groundedness behavior and the unchanged SCC gate
@@ -307,7 +305,6 @@ export const tests = [
   ...l3LadderWidensTests,
   ...l3GateComputedTests,
   ...l3GateRefusalTests,
-  ...l3AnchorCheckScoreTests,
   // milestone 57 / story 00 — watcher grammar and its additive fitness gate
   ...watcherNodeTests,
   // milestone 58 / story 03 — the supervision face: the layer, the computed reference-setter, and one shape per declared kind
@@ -369,7 +366,6 @@ export const tests = [
   ...loopRecordProjectionTests,
   ...loopRecordRegistryShapeTests,
   // milestone 78 / story 01 — the renderer's two faces and its two fitness functions.
-  ...loopRecordRenderTests,
   // milestone 78 / story 02 — the record command's two task contracts and its five fitness
   // functions (see the import note).
   ...loopRecordFixtureShapeTests,

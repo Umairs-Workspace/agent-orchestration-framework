@@ -662,11 +662,13 @@ function sourceExports(source, symbol) {
   return false;
 }
 
-async function moduleCeilingPointerResolves(value, root) {
+async function moduleCeilingPointerResolves(value, root, resolveModule) {
   const pointer = value?.pointer;
   if (pointer?.scheme !== "module") return null;
   try {
-    const source = await readFile(path.resolve(root, pointer.operand), "utf8");
+    const target = resolveModule ? await resolveModule(pointer.operand, root) : path.resolve(root, pointer.operand);
+    if (!target) return false;
+    const source = await readFile(target, "utf8");
     return sourceExports(source, pointer.symbol);
   } catch (error) {
     if (error?.code === "ENOENT" || error?.code === "EISDIR") return false;
@@ -674,10 +676,10 @@ async function moduleCeilingPointerResolves(value, root) {
   }
 }
 
-async function ceilingAuthorityResolves(value, root) {
+async function ceilingAuthorityResolves(value, root, resolveModule) {
   const config = ceilingPointerResolves(value);
   if (config !== null) return config;
-  const module = await moduleCeilingPointerResolves(value, root);
+  const module = await moduleCeilingPointerResolves(value, root, resolveModule);
   return module ?? true;
 }
 
@@ -926,7 +928,7 @@ function loopsDirectory(workspace) {
   return path.resolve(value, "loops");
 }
 
-export async function loadLoops(workspace, { getFrameworkRoot } = {}) {
+export async function loadLoops(workspace, { getFrameworkRoot, resolveFrameworkModule } = {}) {
   const source = loopsDirectory(workspace);
   const root = authorityRoot(workspace, source);
   let entries;
@@ -962,7 +964,7 @@ export async function loadLoops(workspace, { getFrameworkRoot } = {}) {
     const ceilings = record.node.fields.ceiling ?? [];
     for (const [entryIndex, value] of ceilings.entries()) {
       const pointerRoot = record.framework ? getFrameworkRoot() : root;
-      if (value.kind !== "pointer" || await ceilingAuthorityResolves(value, pointerRoot)) continue;
+      if (value.kind !== "pointer" || await ceilingAuthorityResolves(value, pointerRoot, record.framework ? resolveFrameworkModule : undefined)) continue;
       record.findings.push(
         finding(
           "loop-ceiling-pointer-unresolved",

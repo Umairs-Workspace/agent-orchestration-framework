@@ -72,7 +72,7 @@ export const archTests = [
     run: async () => {
       const raw = await readFile(seaEntryPath, "utf8");
       const code = stripComments(raw);
-      assert.ok(/import\s*\{\s*run\s*\}\s*from\s*["']\.\.\/packages\/core\/src\/cli\.mjs["']/.test(code), "scripts/sea-entry.mjs imports { run } from ../packages/core/src/cli.mjs (the embedded fallback)");
+      assert.ok(/import\s*\{\s*run\s*\}\s*from\s*["']aof\/cli["']/.test(code), "scripts/sea-entry.mjs imports { run } from the public core CLI (the embedded fallback)");
       assert.ok(callsRunWithFullArgv(code), "the SEA main source calls run(process.argv.slice(2))");
       assert.ok(!hasPerModeFork(code), "the SEA main source has no argv[0]/mode === \"relay\" fork ahead of run()");
       // The SEA main must not stand up its own relay serve/listener ahead of

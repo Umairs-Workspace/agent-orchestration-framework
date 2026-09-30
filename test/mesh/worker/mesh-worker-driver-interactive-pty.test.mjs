@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/worker/mesh-worker-driver-interactive-pty.test.mjs — traceability for milestone 38 /
 // story 05, task 00 (00_pty-driver-replaces-headless-print.feature, ADR-013
 // invariant 1). The worker driver resolves interactive `claude` through the EXISTING
@@ -11,8 +13,11 @@
 // the session_id transcript watch injected — never a hand-built stub of "what the
 // provider ought to emit" (the milestone's producer-fed lesson).
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL, DIRECTIVE_COMPLETE_SENTINEL } from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const NEEDS_INPUT_SENTINEL = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
+const DIRECTIVE_COMPLETE_SENTINEL = _aofApplication.mesh.worker.DIRECTIVE_COMPLETE_SENTINEL;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 

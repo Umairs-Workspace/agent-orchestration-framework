@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 66 / story 01 — BOTH task features:
 //   tasks/00_the-declaration-grammar.feature          (every row of every Outline)
 //   tasks/01_memory-parsers-share-the-one-home.feature (every row of every Outline)
@@ -43,9 +44,11 @@ import {
   registerDeclarations,
   registerEntries,
 } from "@aof/work/declared-id";
-import { parseArchitecture, parseRetrospective } from "../../packages/core/src/memory/local-indexing.mjs";
+const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
+const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
 import { rankRecords } from "@aof/knowledge/memory/local-retrieval";
-import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
 // THE PRE-EXTRACTION GOLDEN, from its one home. FF-6604 owns the differential and
 // therefore owns the second implementation that drives it (the 66/00 idiom — its arch
 // gates export the pure functions their lanes run). A third copy of "what the parsers
@@ -492,8 +495,24 @@ export const declaredIdTests = [
       // built for a temp fixture the rerank degrades to the local ranking, which is
       // exactly the path that isolates the RECORD SET (what this task changed) from the
       // ranking (what it did not).
-      const graphify = (await import("../../packages/core/src/memory/graphify-backend.mjs")).default;
-      const local = (await import("../../packages/core/src/memory/local-backend.mjs")).default;
+      const graphify = (await Promise.resolve(Object.freeze({
+  GRAPHIFY_INDEX_VERSION: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_INDEX_VERSION,
+  workGraphRoot: _aofApplication.knowledge.memory.graphifyBackend.workGraphRoot,
+  GRAPHIFY_EXTRACTION_BACKEND: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_EXTRACTION_BACKEND,
+  GRAPHIFY_EXTRACTION_EGRESS: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_EXTRACTION_EGRESS,
+  graphifyIndexPath: _aofApplication.knowledge.memory.graphifyBackend.graphifyIndexPath,
+  GRAPH_SIGNAL_RANKED: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_RANKED,
+  GRAPH_SIGNAL_UNAVAILABLE: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_UNAVAILABLE,
+  GRAPH_STATE_BUILT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BUILT,
+  GRAPH_STATE_BINARY_ABSENT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BINARY_ABSENT,
+  GRAPH_STATE_NOT_BUILT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_NOT_BUILT,
+  rerank: _aofApplication.knowledge.memory.graphifyBackend.rerank,
+  applyScope: _aofApplication.knowledge.memory.graphifyBackend.applyScope,
+  default: _aofApplication.knowledge.memory.graphifyBackend.default,
+}))).default;
+      const local = (await Promise.resolve(Object.freeze({
+  default: _aofApplication.knowledge.memory.localBackend.default,
+}))).default;
       await graphify.reindex(undefined, { ...ctx, configMemory: { backend: "graphify" } });
       const viaGraphify = await graphify.recall("the separator set", null, { limit: 10 }, { ...ctx, configMemory: { backend: "graphify" } });
       const viaLocal = await local.recall("the separator set", null, { limit: 10 }, ctx);
@@ -503,7 +522,7 @@ export const declaredIdTests = [
       // NEITHER CONSUMER IS EDITED TO ABSORB A CHANGE — the checkable residue of that
       // claim: neither module names the declaration grammar in any form.
       for (const consumer of ["local-backend.mjs", "graphify-backend.mjs"]) {
-        const text = await readFile(path.join(repoRoot, "packages", "core", "src", "memory", consumer), "utf8");
+        const text = await readFile(path.join(repoRoot, "packages", "knowledge", "src", "memory", consumer), "utf8");
         assert.equal(/declared-id/.test(text), false, `${consumer} does not import the grammar`);
         assert.equal(/ADR-\\d|R\\d\+|\[:·—–-\]/.test(text), false, `${consumer} holds no id pattern either`);
       }

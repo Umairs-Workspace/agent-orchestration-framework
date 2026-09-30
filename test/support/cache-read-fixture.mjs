@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // test/support/cache-read-fixture.mjs — the shared fixture for milestone 43 / story 06
 // (the readers migrate: the cache becomes the READ surface).
 //
@@ -25,12 +27,13 @@
 import { mkdir, writeFile, readFile, rm, cp } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
-import { upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofApplication.loadWorkspace;
+const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
-import { publishPresenceRecord } from "../../packages/core/src/mesh/presence.mjs";
-import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
 import {
   withCacheFixture, withStore, tick, stream, itemRow, rows, registerDescriptor,
   seedActive, settle, writeItem, deleteItem, breakItem, removeStream, authorOf, seedWorker,

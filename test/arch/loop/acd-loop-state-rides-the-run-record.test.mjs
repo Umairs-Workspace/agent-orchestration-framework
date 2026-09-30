@@ -1,12 +1,13 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { isLegalTransition } from "../../../packages/core/src/run-store.mjs";
-import { runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
+const invoke = _aofApplication.invoke;
+const isLegalTransition = _aofApplication.execution.runs.isLegalTransition;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { completingDriver, loopFixture, replaceStatus } from "../../loop/loop-command-probe.test.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
@@ -56,7 +57,10 @@ async function normalizedDigest(file) {
 // can hand it an edited tree in memory and watch it refuse. The tree is git's TRACKED list read from
 // the working tree: path then LF-normalised content, in path order.
 async function uiTreePairs() {
-  const files = trackedFilesUnder(path.join(root, "ui")).sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+  const manifest = JSON.parse(await readFile(path.join(root, "ui/package.json"), "utf8"));
+  // Include the new public development helper before it enters the Git index too.
+  const publicFiles = Object.values(manifest.exports ?? {}).map(target => path.resolve(root, "ui", target));
+  const files = [...new Set([...trackedFilesUnder(path.join(root, "ui")), ...publicFiles])].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
   return Promise.all(files.map(async (file) => [path.relative(root, file).replaceAll("\\", "/"), await readFile(file, "utf8")]));
 }
 
@@ -153,8 +157,10 @@ function assertUiFrozen(pairs) {
   // key: no run-record key, cycle, level or loop state is read, so the loop's state still rides
   // the run record with no face of its own.
   // 142: only ui/package-lock.json is retired in favor of the authoritative root yarn.lock.
-  // No UI source, manifest, style, or run/board behavior changed. All remaining bytes stay pinned.
-  assert.equal(hash.digest("hex"), "8cfe881ee68dd2b4950966afa5fd9f8367b6562f8ddc818d45b059ac0f1f81eb", "ui/ changed despite the zero-board-change contract");
+  // 142/06 adds explicit exports and the Node-only vite-cli development helper.
+  // The helper resolves Vite from its UI owner; browser sources, styles and run/board reads
+  // are unchanged. The complete remaining tree, including this public helper, stays pinned.
+  assert.equal(hash.digest("hex"), "ba426252f2c166a955b832464175279b6593c4b41d5c177093c816adf75c9a68", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -250,7 +256,9 @@ export const archTests = [
         // work-answer readers are supplied, spend is composed locally without a module cycle.
         // Source-body comparison and persisted-byte parity accompany the unchanged schema/edge checks.
         // Plan 01 moves only the strict freshness predicate to contracts; the store returns the same function.
-        ["packages/execution/src/runs.mjs", "7375de920e4c8e3a46a875214ea6dcf38e5a23059becaf5240ffd666838059e5"],
+        // 142/06 exports the existing pure retry predicates by identity for framework module ceilings.
+        // Their bodies and the run writer are unchanged; the public factory returns those same functions.
+        ["packages/execution/src/runs.mjs", "812a7624917cdc50fa7aeec3a0dd1985d99486956d170cdcb8c1b53eb98685e1"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

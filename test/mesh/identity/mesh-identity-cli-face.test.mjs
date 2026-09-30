@@ -1,3 +1,6 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 22 / story 01 — the CLI face over mesh:identity /
 // mesh:status.
 //
@@ -18,13 +21,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
+const meshDir = _aofHooks.meshStore.meshDir;
 import { installHash, sanitizeHostname } from "@aof/mesh/node-identity";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { keyedByOldId } from "../../../packages/core/src/commands/mesh/identity.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const keyedByOldId = _aofApplication.mesh.commandTools.mesh.identity.keyedByOldId;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 async function buildFixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-meshcli-"));

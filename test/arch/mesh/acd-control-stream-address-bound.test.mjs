@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness: control-stream-server's admission binds to the CONNECTION's remote
 // address (never a self-declared header) and the server never binds all
 // interfaces (milestone 34 / story 04, ADR-007 / 33-ADR-002 "the fabric IS the
@@ -17,7 +18,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 09 / story 01 — binary-provisioning.
 //
 // Covers every @executable scenario across the story's two task features against
@@ -33,12 +34,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  resolveGraphifyBinary,
-  GRAPHIFY_SPEC,
-  GRAPHIFY_BINARY,
-} from "../../packages/core/src/graphify.mjs";
-import { doctorConfig } from "../../packages/core/src/config-inspect.mjs";
+const resolveGraphifyBinary = _aofApplication.knowledge.graphify.resolveGraphifyBinary;
+const GRAPHIFY_SPEC = _aofApplication.knowledge.graphify.GRAPHIFY_SPEC;
+const GRAPHIFY_BINARY = _aofApplication.knowledge.graphify.GRAPHIFY_BINARY;
+const doctorConfig = _aofApplication.assets.configInspect.doctorConfig;
 
 // --- fixtures ----------------------------------------------------------------
 

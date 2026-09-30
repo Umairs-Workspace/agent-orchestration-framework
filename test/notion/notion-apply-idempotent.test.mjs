@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 17 / story 01 —
 // tasks/01_first-run-creates-resync-updates.feature (the now-@executable MECHANIC
 // rows; ADR-003/ADR-001/ADR-002). One test object per offline-provable scenario.
@@ -17,10 +19,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
-import { readMapping, resolvePageId } from "../../packages/core/src/notion/mapping.mjs";
-import { applyPlan } from "../../packages/core/src/notion/sync.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const readMapping = _aofApplication.integrations.notion.mapping.readMapping;
+const resolvePageId = _aofApplication.integrations.notion.mapping.resolvePageId;
+const applyPlan = _aofApplication.integrations.notion.sync.applyPlan;
 
 const DATA_SOURCE_ID = "ds-fixture";
 

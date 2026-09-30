@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for story 79 — THE WRITE SCOPE, THE NAME THE GATE FORCES, AND THE PURE LEAF.
 //
@@ -25,9 +26,9 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../../packages/core/src/command-core.mjs";
-import { loopDocumentCommand } from "../../../packages/core/src/commands/loop-document.mjs";
-import { loopsGraphCommand } from "../../../packages/core/src/commands/loops-graph.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const loopDocumentCommand = _aofApplication.getCommand("work:loop-document");
+const loopsGraphCommand = _aofApplication.getCommand("work:loops-graph");
 import { snapshot, withRepo } from "../../support/loop-document-fixture.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";

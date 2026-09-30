@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 34 / story 03 — ui/src/fleet/scope.mjs, the
 // pure render-decision helper Fleet.tsx imports for the two @executable UI task
 // features. There is NO React test harness in this repo (no vitest/testing-
@@ -37,14 +40,16 @@ import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance, rememberStop
 import { POLL_MS, ASSIGN_SENT_HOLD_MS, ASSIGN_TIMEOUT_MS } from "../../ui/src/fleet/assign-affordance.mjs";
 import { removeWorkspaceFromProjection, withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
 import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
-import { assemblePresenceRecord, publishPresenceRecord } from "../../packages/core/src/mesh/presence.mjs";
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
-import { loopStopsDir } from "../../packages/core/src/loop/stop-request.mjs";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 // FF-11902 — "no new file under ui/src/fleet/" is the directory budget's ceiling, read from its ONE
 // home rather than retyped here as a count the next story to move a file would pay for.
 import { UI_DIRECTORY_BUDGETS } from "../arch/testing/acd-ui-directory-budget.test.mjs";

@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 17 / ADR-004 + STATE §Opt-in no-op (inv. 3):
 //   "Opt-in-no-op. Absent `work.integrations.notion` ⇒ `notion:sync-work` returns
 //    `{ configured:false, items:[], hint }`, spawns NO CLI, and issues ZERO Notion
@@ -13,8 +15,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 
 // A fixture project with milestone 17 + a story on disk and a config WITHOUT a
 // `work.integrations.notion` block (the unconfigured baseline — the opt-in no-op case).

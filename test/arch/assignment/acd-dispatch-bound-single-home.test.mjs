@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function: acd-dispatch-bound-single-home (story 65 / task 02) —
 //
@@ -31,11 +32,9 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import {
-  DEFAULT_DISPATCH_CONCURRENCY,
-  resolveDispatchConcurrency,
-  dispatchConcurrencyFromConfig,
-} from "../../../packages/core/src/work/dispatch.mjs";
+const DEFAULT_DISPATCH_CONCURRENCY = _aofApplication.loop.work.dispatch.DEFAULT_DISPATCH_CONCURRENCY;
+const resolveDispatchConcurrency = _aofApplication.loop.work.dispatch.resolveDispatchConcurrency;
+const dispatchConcurrencyFromConfig = _aofApplication.loop.work.dispatch.dispatchConcurrencyFromConfig;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

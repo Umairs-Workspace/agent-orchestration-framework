@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 13 / story 02 — "Import reaches memory": the
 // EXTENDED buildRecords scan (the import store as a SECOND scan root) + the import
 // command's reindex trigger (ADR-003/001/005). The LOAD-BEARING win: imported
@@ -37,22 +39,21 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
-import {
-  reindex,
-  buildRecords,
-  memoryIndexPath,
-  resolveRecordSourcePath,
-  isImportRecord,
-  importItem,
-} from "../../packages/core/src/memory/local-indexing.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
+const resolveRecordSourcePath = _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath;
+const isImportRecord = _aofApplication.knowledge.memory.localIndexing.isImportRecord;
+const importItem = _aofApplication.knowledge.memory.localIndexing.importItem;
 import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
-import { materializeImport } from "../../packages/core/src/import/materialize.mjs";
-import { importStoreRoot } from "../../packages/core/src/import/store.mjs";
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const importStoreRoot = _aofApplication.knowledge.import.store.importStoreRoot;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // memory.backend = "local" so reindex/recall actually run the local backend.
 const CONFIG = { name: "fixture", work: { dir: "./wiki/work" }, memory: { backend: "local" } };

@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 45 / story 04, task 00 —
 // `stories/04_story_advertised-entry-points/tasks/00_servers-advertise-paths.feature`
 // (@executable). Every Scenario and every Scenario-Outline ROW of that feature is
@@ -54,16 +57,18 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveBoard, boardUiDist } from "../../packages/core/src/board-serve.mjs";
-import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+const serveBoard = _aofApplication.server.serve.serveBoard;
+const boardUiDist = _aofApplication.server.serve.boardUiDist;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 import { spawnCliAsync } from "../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // --- the Background, on disk -------------------------------------------------
 
@@ -281,7 +286,12 @@ async function withFleetFace(fn) {
 
 // The published workspace's id, read back through the same projection the face reads.
 async function publishedWorkspaceId(globalStoreOptions) {
-  const { queryGlobalMeshStatus } = await import("../../packages/core/src/global-mesh-query.mjs");
+  const { queryGlobalMeshStatus } = await Promise.resolve(Object.freeze({
+  queryGlobalMeshStatus: _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus,
+  buildSessionIndex: _aofApplication.mesh.globalMeshQuery.buildSessionIndex,
+  shapeGlobalStatus: _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus,
+  workspaceIdForProjectRoot: _aofApplication.mesh.globalMeshQuery.workspaceIdForProjectRoot,
+}));
   const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
   const id = (status.workspaces ?? [])[0]?.workspaceId;
   assert.ok(id, "the fixture publishes exactly one workspace into the isolated projection");

@@ -130,7 +130,7 @@ import { workspaceTests } from "./workspace.test.mjs";
 // the stream retry/reconciliation/freshness lanes, plus the story's 4 fitness
 // units. Tasks 00–03 are @executable; task 04 (the real two-machine soak) is @manual
 // and deliberately has no test file here.
-import { workerRoleAddressTests } from "./worker-role-address.test.mjs";
+
 import { workerStreamClientTests } from "./worker-stream-client.test.mjs";
 import { pathTests } from "./paths.test.mjs";
 import { singleEntryTwoModeTests } from "./single-entry-two-mode.test.mjs";
@@ -279,7 +279,6 @@ export const tests = [
   ...workspaceTests,
   // milestone 34 — global mesh work store (story 04: worker live-state stream to
   // control node, ADR-007)
-  ...workerRoleAddressTests,
   ...workerStreamClientTests,
   ...pathTests,
   ...singleEntryTwoModeTests,

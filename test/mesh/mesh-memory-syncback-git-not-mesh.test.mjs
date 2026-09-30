@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 38 / story 08 (worker-verified-memory-syncback,
 // ADR-016) — tasks/00_knowledge-rides-git-not-mesh.feature.
 //
@@ -29,11 +30,14 @@ import { WebSocket } from "ws";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 import { withMeshMemorySyncbackFixture } from "../support/mesh-memory-syncback-fixture.mjs";
 import { seedAssignment } from "../support/mesh-assign-fixture.mjs";
-import graphifyBackend from "../../packages/core/src/memory/graphify-backend.mjs";
-import { buildDirectiveFrame, applyCloneCredentialRequestFrame, applyCloneUrlRequestFrame } from "../../packages/core/src/control-stream-server.mjs";
-import { relayEnvelope } from "../../packages/core/src/mesh/relay-client.mjs";
-import { serveRelay } from "../../packages/core/src/mesh/relay.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
+const applyCloneCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame;
+const applyCloneUrlRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneUrlRequestFrame;
+const relayEnvelope = _aofApplication.mesh.relayClient.relayEnvelope;
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 
 // ------------------------------------------------------------ graphify ctx ----
 

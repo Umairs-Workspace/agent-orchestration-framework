@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness functions for m42 — THE SHARED-STORE CONCURRENCY PRAGMAS.
 //
 // The measured residual (STATE 2026-07-27, "CONTINUOUS `ERR_SQLITE_ERROR:
@@ -32,7 +33,7 @@ import { fork } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

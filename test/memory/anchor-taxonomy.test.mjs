@@ -1,12 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  ADMITTED_KEYS, GROUND_VALUES, NODE_KINDS, SENTINEL_TOKENS, loadLoops,
-} from "../../packages/core/src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const GROUND_VALUES = _aofApplication.graph.work.loops.GROUND_VALUES;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const SENTINEL_TOKENS = _aofApplication.graph.work.loops.SENTINEL_TOKENS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 import { examplesTables } from "../support/feature-parse.mjs";
 

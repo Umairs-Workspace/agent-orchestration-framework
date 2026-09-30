@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 70 / story 05 (brief-carries-the-contract) — task 02.
 //
 //   tasks/02_pinned-against-the-real-stream.feature  (@executable)
@@ -19,7 +20,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listItems } from "../../packages/core/src/work.mjs";
+const listItems = _aofWorkspace.work.listItems;
 import { compileBriefForItem } from "@aof/work/phase-brief-read";
 // The `.feature` parse comes from its ONE home (52/05, F-52-05-D). It is NOT re-derived
 // here, and that is not in tension with `dependsDeclaredIn` below, which DOES re-derive the

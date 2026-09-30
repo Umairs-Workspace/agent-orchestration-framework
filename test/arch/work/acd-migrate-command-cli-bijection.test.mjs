@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-migrate-command-cli-bijection (story 29) — a deliberate
 // MIRROR of acd-mesh-command-cli-bijection / acd-graph-command-cli-bijection,
 // filtered to the migrate:* namespace:
@@ -23,11 +25,12 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands, getCommand } from "../../../packages/core/src/command-core.mjs";
+const listCommands = _aofApplication.listCommands;
+const getCommand = _aofApplication.getCommand;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 // The migrate-surface commands DERIVED from the registry (NOT a hard-coded literal:
@@ -116,7 +119,13 @@ export const archTests = [
       // face) — reachability is now a REGISTRY fact, mirroring the
       // acd-work-command-cli-bijection route-or-ladder update. The ladder form
       // stays accepted so this gate never forces a route back out.
-      const { deriveRouteTable } = await import("../../../packages/core/src/spine/face.mjs");
+      const { deriveRouteTable } = await Promise.resolve(Object.freeze({
+  BASE_FLAGS: _aofApplication.cli.BASE_FLAGS,
+  parseSpecArgv: _aofApplication.cli.parseSpecArgv,
+  deriveRouteTable: _aofApplication.cli.deriveRouteTable,
+  resolveRoute: _aofApplication.cli.resolveRoute,
+  runCommandFace: _aofApplication.cli.runCommandFace,
+}));
       const routes = deriveRouteTable(listCommands());
       const routed = routes.has("migrate") && routes.get("migrate").id === "migrate:folder";
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 35 / story 03 / task 00 —
 // tasks/00_status-shape.feature (@executable).
 //
@@ -15,7 +16,7 @@
 // (including the forward-compat `withdrawn`/`reclaimed` terminal states) travels
 // through verbatim.
 import assert from "node:assert/strict";
-import { shapeGlobalStatus } from "../../packages/core/src/global-mesh-query.mjs";
+const shapeGlobalStatus = _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus;
 
 function baseArgs(overrides = {}) {
   return {

@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-day-one-audit-complete (milestone 59 / story 04, FF-5910;
 // ADR-001, ADR-006, ADR-007 §1).
 //
@@ -29,11 +31,13 @@ import assert from "node:assert/strict";
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { moduleCitationTarget, declaresServiceSymbol } from "../../support/workspace/module-citation.mjs";
 
-import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { deriveRouteTable } from "../../../packages/core/src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
 import { GATE_ORDER } from "../../../packages/work-loop/src/engine.mjs";
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   GATING_CODES,
   checkActuatorArbitration,
@@ -132,10 +136,9 @@ export const archTests = [
         assert.equal(raw.startsWith("prose:"), false, `${raw}: a paragraph is not an instrument`);
         if (raw.startsWith("module:")) {
           const { file, symbol } = moduleParts(raw);
-          const pointerRoot = file.startsWith("src/") ? path.join(root, "packages", "core") : root;
-          await access(path.join(pointerRoot, file));
-          const source = await readFile(path.join(pointerRoot, file), "utf8");
-          assert.equal(exportsSymbol(source, symbol), true, `${raw}: ${file} really exports ${symbol}`);
+          const target = await moduleCitationTarget(root, file);
+          await access(target);
+          assert.equal(await declaresServiceSymbol(target, symbol), true, `${raw}: the actual public module or constructed service exposes ${symbol}`);
           files += 1;
         } else if (raw.startsWith("command:")) {
           const id = raw.slice("command:".length);

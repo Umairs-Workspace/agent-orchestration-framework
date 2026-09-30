@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // arch/102 FF (acd-shell-loop-id-is-declared) — THE DRIFT CHECK for milestone 102 / story 01.
 //
 // Covers the two registry-facing @executable scenarios of
@@ -30,8 +31,8 @@
 // found by that same id rather than by filename, so a renamed file is not a second literal either.
 import assert from "node:assert/strict";
 
-import { SHELL_LOOP_ID } from "../../../packages/core/src/commands/loop.mjs";
-import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const SHELL_LOOP_ID = _aofApplication.loop.commandTools.loop.SHELL_LOOP_ID;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 
 /** The frontmatter line a record declaring the shell's id carries. */

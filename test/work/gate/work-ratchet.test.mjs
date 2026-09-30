@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 
 import {
@@ -6,7 +7,9 @@ import {
   countExecutableContract,
   evaluateRatchet,
 } from "@aof/work/ratchet";
-import { observeRatchet, ratchetCommand, resolveRatchetBase } from "../../../packages/core/src/commands/ratchet.mjs";
+const observeRatchet = _aofApplication.work.commandTools.ratchet.observeRatchet;
+const ratchetCommand = _aofApplication.getCommand("work:ratchet");
+const resolveRatchetBase = _aofApplication.work.commandTools.ratchet.resolveRatchetBase;
 
 const feature = ({ lane = "executable", name = "criterion", rows = [] } = {}) => `@${lane}
 Feature: governed contract

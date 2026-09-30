@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6105 (milestone 61 / ADR-005) — THE CRITERION IS FROZEN WITHIN THE EPOCH ON THREE
 // LAYERS, AND THE ARITHMETIC LAYER CANNOT BE BYPASSED.
@@ -40,20 +41,18 @@ import {
   FROZEN_ENFORCEMENT_POINTS,
   FROZEN_OWNERSHIP_MARKER,
 } from "../../../packages/core/src/frozen-set.mjs";
-import {
-  CRITERION_FROZEN_IN_EPOCH,
-  CRITERION_RELPATH,
-  FROZEN_CRITERION_KEYS,
-  FROZEN_CRITERION_MEMBERS,
-  LEDGER_RELPATH,
-  accrualReport,
-  criterionDigest,
-  criterionRevisionWindow,
-  defaultCriterion,
-  makeCriterion,
-  rulingsUnderCurrentCriterion,
-  writeCriterion,
-} from "../../../packages/core/src/work-acceptor/criterion.mjs";
+const CRITERION_FROZEN_IN_EPOCH = _aofApplication.work.acceptor.criterion.CRITERION_FROZEN_IN_EPOCH;
+const CRITERION_RELPATH = _aofApplication.work.acceptor.criterion.CRITERION_RELPATH;
+const FROZEN_CRITERION_KEYS = _aofApplication.work.acceptor.criterion.FROZEN_CRITERION_KEYS;
+const FROZEN_CRITERION_MEMBERS = _aofApplication.work.acceptor.criterion.FROZEN_CRITERION_MEMBERS;
+const LEDGER_RELPATH = _aofApplication.work.acceptor.criterion.LEDGER_RELPATH;
+const accrualReport = _aofApplication.work.acceptor.criterion.accrualReport;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const criterionRevisionWindow = _aofApplication.work.acceptor.criterion.criterionRevisionWindow;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
+const rulingsUnderCurrentCriterion = _aofApplication.work.acceptor.criterion.rulingsUnderCurrentCriterion;
+const writeCriterion = _aofApplication.work.acceptor.criterion.writeCriterion;
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

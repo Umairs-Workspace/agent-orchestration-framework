@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 137 / tasks/01_the-import-renders-through-the-template.feature —
 // "the import renders every AOF.md through the template" (@executable).
 //
@@ -9,9 +11,12 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { writeColocatedDigest, materializeImport, AOF_FILE } from "../../packages/core/src/import/materialize.mjs";
-import { parseAof } from "../../packages/core/src/memory/local-indexing.mjs";
-import { validateWork, WORK_ITEM_SCHEMA_VERSION } from "../../packages/core/src/work.mjs";
+const writeColocatedDigest = _aofApplication.knowledge.import.materialize.writeColocatedDigest;
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const AOF_FILE = _aofApplication.knowledge.import.materialize.AOF_FILE;
+const parseAof = _aofApplication.knowledge.memory.localIndexing.parseAof;
+const validateWork = _aofWorkspace.work.validateWork;
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { packageVersionString } from "../../packages/core/src/asset-base.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

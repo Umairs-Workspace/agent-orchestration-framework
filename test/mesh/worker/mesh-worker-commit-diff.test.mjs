@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/worker/mesh-worker-commit-diff.test.mjs — VERIFICATION F-38.06i (live two-machine soak
 // 2026-07-25). Story 07's push-home (ADR-015) shipped verified against a scripted agent
 // that COMMITTED its own diff (mesh-worker-push-before-remove.test.mjs's
@@ -17,10 +19,15 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { createMeshWorkerExecutionHandler, commitWorktreeChanges, resolveRefInWorktree } from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { meshWorktreePath, meshItemBranchName, addDispatchWorktree, commitWorktreeChanges as commitWorktreeChangesFromHome } from "../../../packages/core/src/mesh/worktree.mjs";
-import { resolveRefInWorktree as resolveRefInWorktreeFromHome } from "../../../packages/core/src/work/dispatch.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const commitWorktreeChanges = _aofApplication.mesh.worker.commitWorktreeChanges;
+const resolveRefInWorktree = _aofApplication.mesh.worker.resolveRefInWorktree;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+const addDispatchWorktree = _aofApplication.mesh.worktree.addDispatchWorktree;
+const commitWorktreeChangesFromHome = _aofApplication.mesh.worktree.commitWorktreeChanges;
+const resolveRefInWorktreeFromHome = _aofApplication.loop.work.dispatch.resolveRefInWorktree;
 import { markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";
 import { withMeshWorkerPushFixture } from "../../support/mesh-worker-push-fixture.mjs";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";

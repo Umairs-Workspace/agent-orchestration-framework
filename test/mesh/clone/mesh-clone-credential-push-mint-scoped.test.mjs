@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-push-mint-scoped.test.mjs — traceability for milestone
 // 38 / story 07, task 02 (02_two-token-write-scope.feature, ADR-015 decision 3;
 // SECURITY T15, RE-OPENS T9). Scenarios 1-4 are driven against the REAL
@@ -10,7 +11,8 @@
 // per the story's own framing ("the DETECTOR REWRITE itself is SECURITY-owned +
 // ARMED AT BUILD ... this task is the BEHAVIOURAL scope contract that ARMS it").
 import assert from "node:assert/strict";
-import { createGithubAppMintProvider, createGithubAppPushMintProvider } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
+const createGithubAppMintProvider = _aofApplication.mesh.cloneCredentialProvider.createGithubAppMintProvider;
+const createGithubAppPushMintProvider = _aofApplication.mesh.cloneCredentialProvider.createGithubAppPushMintProvider;
 import { generateThrowawayKeypair, createFakeHttpRequest, jsonResponse } from "../../support/mesh-clone-credential-mint-fixture.mjs";
 
 const REPO_CLONE_URL = "https://github.com/acme/secret.git";

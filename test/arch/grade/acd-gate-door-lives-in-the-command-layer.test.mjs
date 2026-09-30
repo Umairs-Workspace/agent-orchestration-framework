@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-9605 (96/ADR-008 §3, §4, §5) — THE GATE DOOR LIVES IN THE COMMAND LAYER, AND THE ACCEPTANCE
 // HORIZON STILL IMPORTS NOTHING.
@@ -44,11 +46,13 @@ import { assertFamilyPurity } from "../../support/module-family.mjs";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
-import { AUDIT_FINDING_CODES } from "../../../packages/core/src/work-audit/census.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const AUDIT_FINDING_CODES = _aofApplication.work.audit.census.AUDIT_FINDING_CODES;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 import { REGRESSION_RECORD_BASENAME, parseRegressionRows } from "@aof/work/regression-record";
-import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../../packages/core/src/commands/item-status.mjs";
+const GATE_MISSING = _aofApplication.work.commandTools.itemStatus.GATE_MISSING;
+const GATE_RED = _aofApplication.work.commandTools.itemStatus.GATE_RED;
+const OVERRIDE_REASON_REQUIRED = _aofApplication.work.commandTools.itemStatus.OVERRIDE_REASON_REQUIRED;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

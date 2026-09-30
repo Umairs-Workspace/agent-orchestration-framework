@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import * as _aofPublic_aof_work_graph_commands_loop_record from "@aof/work-graph/commands/loop-record";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 78 / story 02 — the record command: a read face, one door to
 // disk, and a signature that survives.
 //
@@ -22,20 +25,18 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import {
-  EXECUTION_RECORD_BASENAME,
-  SIGNOFF_DIVIDER,
-  SIGNOFF_HEADER,
-  SIGNOFF_HEADING,
-  SIGNOFF_PLACEHOLDER,
-  loopRecordCommand,
-} from "../../packages/core/src/commands/loop-record.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const EXECUTION_RECORD_BASENAME = _aofPublic_aof_work_graph_commands_loop_record.EXECUTION_RECORD_BASENAME;
+const SIGNOFF_DIVIDER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_DIVIDER;
+const SIGNOFF_HEADER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_HEADER;
+const SIGNOFF_HEADING = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_HEADING;
+const SIGNOFF_PLACEHOLDER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_PLACEHOLDER;
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { record, snapshot, writeRegistry } from "../support/loop-document-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // ---------------------------------------------------------------- the fixture ----
 
@@ -224,7 +225,23 @@ export const loopRecordFixtureShapeTests = [
   {
     name: "loop-record-command/fixture the real loader parses this registry's two ceiling states",
     async run() {
-      const { loadLoops } = await import("../../packages/core/src/work/loops.mjs");
+      const { loadLoops } = await Promise.resolve(Object.freeze({
+  ADMITTED_KEYS: _aofApplication.graph.work.loops.ADMITTED_KEYS,
+  CADENCE_KINDS: _aofApplication.graph.work.loops.CADENCE_KINDS,
+  EDGE_KEYS: _aofApplication.graph.work.loops.EDGE_KEYS,
+  ENDPOINT_SCHEMES: _aofApplication.graph.work.loops.ENDPOINT_SCHEMES,
+  EVENT_TRIGGERS: _aofApplication.graph.work.loops.EVENT_TRIGGERS,
+  FIELD_KINDS: _aofApplication.graph.work.loops.FIELD_KINDS,
+  GROUND_VALUES: _aofApplication.graph.work.loops.GROUND_VALUES,
+  LOADER_FINDING_CODES: _aofApplication.graph.work.loops.LOADER_FINDING_CODES,
+  NODE_KINDS: _aofApplication.graph.work.loops.NODE_KINDS,
+  PERIODIC_UNITS: _aofApplication.graph.work.loops.PERIODIC_UNITS,
+  POINTER_SCHEMES: _aofApplication.graph.work.loops.POINTER_SCHEMES,
+  SENTINEL_TOKENS: _aofApplication.graph.work.loops.SENTINEL_TOKENS,
+  loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+  parseCadence: _aofApplication.graph.work.loops.parseCadence,
+  loadLoops: _aofApplication.graph.work.loops.loadLoops,
+}));
       const { LOOP_BOUND_CONFIG_RESOLVERS } = await import("@aof/contracts/loop-bounds");
       await withRepo({}, async (repo) => {
         const registry = await loadLoops((await ctxFor(repo)).workspace);

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 18 / story 00, task 01 —
 // tasks/01_boards-registry-and-default.feature (@executable, every scenario + every
 // Scenario-Outline row). One test object per @executable scenario/row; ADR-001/002/003.
@@ -13,7 +14,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveNotionRouting } from "../../packages/core/src/integrations/routing.mjs";
+const resolveNotionRouting = _aofApplication.work.integrations.routing.resolveNotionRouting;
 
 const board = (extra = {}) => ({
   dataSourceId: "ds-x",

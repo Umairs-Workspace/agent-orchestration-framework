@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 04 / ADR-002 (+ ADR-003 agent-stub clause):
 // "The proof drives the SHIPPED code paths. The round-trip harness imports the real
 //  entry points — `initWork` (packages/core/src/work/init.mjs), `loadBundle` (packages/core/src/work/bundle.mjs),
@@ -32,7 +33,7 @@ import { mkdtemp, rm, readFile, access } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { initWork } from "../../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "..", "..", "..");
@@ -82,9 +83,11 @@ export const archTests = [
       const code = stripComments(raw);
 
       // Imports the REAL shipped surfaces — the install, the bundle loader, the verbs.
-      assert.ok(/from\s+["'][^"']*work\/init\.mjs["']/.test(code), "harness imports the real initWork from packages/core/src/work/init.mjs");
+      assert.match(code, /from "aof\/default-application"/u);
+      assert.match(code, /const initWork = _aofApplication\.assets\.work\.init\.initWork/u);
       assert.ok(/from\s+["'][^"']*work\/bundle\.mjs["']/.test(code), "harness imports the real loadBundle from packages/core/src/work/bundle.mjs");
-      assert.ok(/from\s+["'][^"']*work\.mjs["']/.test(code), "harness imports the real work verbs from packages/core/src/work.mjs");
+      assert.match(code, /from "aof\/workspace-services"/u);
+      for (const verb of ["findWork", "listStream", "validateWork", "nextWork"]) assert.ok(code.includes(`const ${verb} = _aofWorkspace.work.${verb}`), `${verb} is the configured shipped verb`);
       assert.ok(/\binitWork\b/.test(code), "harness calls the shipped initWork (no hand-rolled install)");
 
       // No fabricated agent-loop "result" masquerading as an automated assertion

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 01 / story 01 `work-init`.
 //
 // Every @executable scenario AND every Scenario-Outline Examples row across the
@@ -23,7 +24,8 @@ import { mkdtemp, rm, readFile, writeFile, mkdir, readdir } from "node:fs/promis
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { initWork, workLockPath } from "../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
+const workLockPath = _aofApplication.assets.work.init.workLockPath;
 import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
 
 // ADR-009: the install manifest is the `work` SECTION of the unified lock. Read the

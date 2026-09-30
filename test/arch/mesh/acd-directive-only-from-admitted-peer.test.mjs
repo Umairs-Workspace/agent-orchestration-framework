@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Security fitness: acd-directive-only-from-admitted-peer (milestone 35 / SECURITY
 // T5, F1) — "A `directive` frame is honoured ONLY from an admitted tailnet-peer
 // connection; a non-peer's directive is refused at the upgrade gate (socket
@@ -19,7 +20,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { startControlStreamServer, dispatchDirectiveOverTargets, buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const dispatchDirectiveOverTargets = _aofApplication.mesh.controlStreamServer.dispatchDirectiveOverTargets;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

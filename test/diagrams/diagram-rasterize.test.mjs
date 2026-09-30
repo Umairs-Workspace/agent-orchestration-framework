@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 133 / story 02 / tasks 00 + 01 — the browser ladder and the rasterizer (ADR-005 §2-§3).
 //
 // Pure over injected facts: `findBrowser` gets fake lookups, `rasterizeSvg` a fake spawn and a fake
@@ -10,7 +11,9 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { browserArgv, findBrowser, rasterizeSvg } from "../../packages/core/src/diagrams/rasterize.mjs";
+const browserArgv = _aofApplication.execution.diagrams.rasterize.browserArgv;
+const findBrowser = _aofApplication.execution.diagrams.rasterize.findBrowser;
+const rasterizeSvg = _aofApplication.execution.diagrams.rasterize.rasterizeSvg;
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 23 / story 01 — task 00
 // (tasks/00_relay-broker-fanout.feature). serveRelay stands up a stateless ws@8 broker
 // that fans one node's signal out to the OTHER nodes and persists nothing.
@@ -14,7 +15,7 @@ import { mkdtemp, rm, mkdir, writeFile, readdir, readFile, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveRelay } from "../../../packages/core/src/mesh/relay.mjs";
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
 
 // --- the in-process ws harness ------------------------------------------------
 

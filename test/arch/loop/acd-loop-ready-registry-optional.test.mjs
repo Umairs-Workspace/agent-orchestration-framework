@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CHECK_GROUPS } from "../../../packages/core/src/work/doctor.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
+const invoke = _aofApplication.invoke;
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";

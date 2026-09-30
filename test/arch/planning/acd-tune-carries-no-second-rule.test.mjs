@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-6201 — tune reaches the acceptor through the deferred registry and carries no ruling rule.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -6,8 +8,8 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { RULING_REFUSAL_ORDER } from "../../../packages/core/src/commands/acceptor.mjs";
-import { findWork } from "../../../packages/core/src/work.mjs";
+const RULING_REFUSAL_ORDER = _aofApplication.work.commandTools.acceptor.RULING_REFUSAL_ORDER;
+const findWork = _aofWorkspace.work.findWork;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const facePath = fileURLToPath(new URL("../../../packages/work/src/commands/tune.mjs", import.meta.url));

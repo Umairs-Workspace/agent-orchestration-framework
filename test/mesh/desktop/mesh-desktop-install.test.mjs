@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 36 / story 03, task
 // 01_install-placement.feature — `aof mesh desktop install` places the app +
 // WebView2 bootstrapper at $HOME/.aof/bin idempotently, refusing failures calmly.
@@ -9,19 +11,19 @@
 import assert from "node:assert/strict";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import {
-  installDesktopApp,
-  DESKTOP_APP_EXE,
-  WEBVIEW2_BOOTSTRAPPER,
-} from "../../../packages/core/src/commands/mesh/desktop.mjs";
+const installDesktopApp = _aofApplication.mesh.commandTools.mesh.desktop.installDesktopApp;
+const DESKTOP_APP_EXE = _aofApplication.mesh.commandTools.mesh.desktop.DESKTOP_APP_EXE;
+const WEBVIEW2_BOOTSTRAPPER = _aofApplication.mesh.commandTools.mesh.desktop.WEBVIEW2_BOOTSTRAPPER;
 // The preflight is its own module since 126/06’s post-hoc review; the verbs report it.
-import { runPreflight, PREFLIGHT_CHECKS } from "../../../packages/core/src/commands/mesh/desktop-preflight.mjs";
+const runPreflight = _aofApplication.mesh.commandTools.mesh.desktopPreflight.runPreflight;
+const PREFLIGHT_CHECKS = _aofApplication.mesh.commandTools.mesh.desktopPreflight.PREFLIGHT_CHECKS;
 // m42 wave (d) leg d1 (wave-3 tail) — the CLI face is the registered
 // mesh:desktop-install command through the ONE generic face (the retired
 // meshDesktopCommand nested face's tests now drive runCommandFace with the
 // verb's declared flags — full face fidelity, no spawn).
-import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
-import { runCommandFace } from "../../../packages/core/src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const runCommandFace = _aofApplication.cli.runCommandFace;
 import { withMeshDesktopFixture, seedInstalledApp } from "../../support/mesh-desktop-fixture.mjs";
 
 // Capture console.log/console.error output around a call (the CLI-face --json

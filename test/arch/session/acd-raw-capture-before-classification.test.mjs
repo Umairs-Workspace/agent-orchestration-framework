@@ -1,9 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
 import { RAW_FEEDBACK_KEYS } from "@aof/work/feedback-records";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { markedRegion, stripComments } from "../../support/source-slice.mjs";

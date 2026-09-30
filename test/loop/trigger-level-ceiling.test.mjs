@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 63 / story 01 — THE LEVEL IS A CEILING, NOT AN ADMISSION.
 //
 // Every @executable scenario and every Scenario-Outline row of the story's four task features,
@@ -35,7 +36,7 @@ import {
   resolveTriggerLevel,
   resolveTriggerLevels,
 } from "@aof/work-loop/trigger/level";
-import { compileTriggerDeclaration } from "../../packages/core/src/work-trigger/declaration.mjs";
+const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.compileTriggerDeclaration;
 import {
   L3_SCORE_THRESHOLD,
   LOOP_LEVELS,

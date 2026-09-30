@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
@@ -7,7 +10,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
-import { runLoopBody, runLoopLaunch, renderLoopState } from "../../packages/core/src/commands/loop.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const runLoopLaunch = _aofApplication.loop.commandTools.loop.runLoopLaunch;
+const renderLoopState = _aofApplication.loop.commandTools.loop.renderLoopState;
 import {
   DECLARATION_L1,
   cancellableDriver,
@@ -19,21 +24,41 @@ import {
   runCollected,
   writeDeclarationRun,
 } from "./loop-command-probe.test.mjs";
-import { answerRunAsk, completeRun, openRunAsk, parkRunAsk, readRuns, recordSessionId, retryReadiness } from "../../packages/core/src/run-store.mjs";
+const answerRunAsk = _aofApplication.execution.runs.answerRunAsk;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const openRunAsk = _aofApplication.execution.runs.openRunAsk;
+const parkRunAsk = _aofApplication.execution.runs.parkRunAsk;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordSessionId = _aofApplication.execution.runs.recordSessionId;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
 import { LOOP_STOPS, attemptElapsedMs } from "../../packages/work-loop/src/engine.mjs";
-import { PHASE_WORDS, askBlockLines, awaitAnswer, defaultAskWait, parkedHalt, phaseWord } from "../../packages/core/src/loop/ask.mjs";
+const PHASE_WORDS = _aofApplication.loop.ask.PHASE_WORDS;
+const askBlockLines = _aofApplication.loop.ask.askBlockLines;
+const awaitAnswer = _aofApplication.loop.ask.awaitAnswer;
+const defaultAskWait = _aofApplication.loop.ask.defaultAskWait;
+const parkedHalt = _aofApplication.loop.ask.parkedHalt;
+const phaseWord = _aofApplication.loop.ask.phaseWord;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
-import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
-import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
-import { transitionRunStart } from "../../packages/core/src/effects/run-transitions.mjs";
-import { installLoopDiagnostics, loopDiagLogDir } from "../../packages/core/src/loop-diag.mjs";
-import { createStopSource, loopStopsDir, requestLoopStop, stopRequestPath } from "../../packages/core/src/loop/stop-request.mjs";
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const installLoopDiagnostics = _aofApplication.loop.loopDiag.installLoopDiagnostics;
+const loopDiagLogDir = _aofApplication.loop.loopDiag.loopDiagLogDir;
+const createStopSource = _aofApplication.loop.stopRequest.createStopSource;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
 import { functionBody, stripComments } from "../support/source-slice.mjs";
 import { seedActive, withItemLockFixture } from "../support/item-lock-fixture.mjs";
-import { LANE_CANCEL_GRACE_MS, childDriveOutcome } from "../../packages/core/src/loop/child-drive.mjs";
-import { drivePhase } from "../../packages/core/src/loop/cycle.mjs";
+const LANE_CANCEL_GRACE_MS = _aofApplication.loop.childDrive.LANE_CANCEL_GRACE_MS;
+const childDriveOutcome = _aofApplication.loop.childDrive.childDriveOutcome;
+const drivePhase = _aofApplication.loop.cycle.drivePhase;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -759,7 +784,12 @@ aofVersion: 0.1.0
         const dir = loopStopsDir();
         let sampledDuring = null;
         let asks = 0;
-        const { invoke } = await import("../../packages/core/src/command-core.mjs");
+        const { invoke } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
         const driver = completingDriver(fx);
         const ctx = {
           ...fx.ctx,

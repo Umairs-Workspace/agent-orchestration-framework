@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 36 / story 03, task 02_run-launch.feature —
 // `aof mesh desktop run` discovers the installed app and launches it detached,
 // refusing calmly when it is not installed.
@@ -10,19 +12,18 @@
 import assert from "node:assert/strict";
 import { chmod, writeFile } from "node:fs/promises";
 import path from "node:path";
-import {
-  discoverDesktopApp,
-  launchDesktopApp,
-  DESKTOP_APP_EXE,
-} from "../../../packages/core/src/commands/mesh/desktop.mjs";
+const discoverDesktopApp = _aofApplication.mesh.commandTools.mesh.desktop.discoverDesktopApp;
+const launchDesktopApp = _aofApplication.mesh.commandTools.mesh.desktop.launchDesktopApp;
+const DESKTOP_APP_EXE = _aofApplication.mesh.commandTools.mesh.desktop.DESKTOP_APP_EXE;
 // m42 wave (d) leg d1 (wave-3 tail) — the CLI face is the registered
 // mesh:desktop-run command through the ONE generic face. The success envelope is
 // asserted at the core+adapter level (invoke with an injected spawnFn — the face
 // cannot inject a fake spawn, and a face-level success would launch a REAL
 // process); the refusal path drives runCommandFace whole (it refuses before any
 // spawn).
-import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
-import { runCommandFace } from "../../../packages/core/src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const runCommandFace = _aofApplication.cli.runCommandFace;
 import { withMeshDesktopFixture, seedInstalledApp } from "../../support/mesh-desktop-fixture.mjs";
 
 async function captureConsole(run) {

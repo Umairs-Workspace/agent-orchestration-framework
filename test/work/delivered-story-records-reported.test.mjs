@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 85 /
 // tasks/01_a-delivered-story-without-its-records-is-reported.feature — every @executable
 // scenario it declares.
@@ -26,7 +27,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { doctorWork, CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
 import { lifecycleCompletenessGroup, DELIVERED_STORY_RECORDS } from "@aof/work/doctor/coherence";
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 

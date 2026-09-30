@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness (milestone 34 / story 05): the node identity is resolved from the MACHINE-WIDE
 // global AOF home, never a per-workspace aofDir. This is the structural guard that was
 // MISSING at the first accept — a global work store keyed on nodeId is only coherent if
@@ -9,7 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const stripComments = (s) => s.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

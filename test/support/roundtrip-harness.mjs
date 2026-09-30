@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // The round-trip proof harness (milestone 04 / story 00) — the SINGLE frozen
 // support contract (ADR-005) the two downstream proof stories bind to. It owns
 // exactly three exports and nothing else:
@@ -23,9 +25,12 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { initWork } from "../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
 import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
-import { findWork, listStream, validateWork, nextWork } from "../../packages/core/src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const listStream = _aofWorkspace.work.listStream;
+const validateWork = _aofWorkspace.work.validateWork;
+const nextWork = _aofWorkspace.work.nextWork;
 
 // Re-export the shipped work verbs so the proof stories resolve seeded refs
 // through the SAME code the product ships (ADR-002) — never a private copy.

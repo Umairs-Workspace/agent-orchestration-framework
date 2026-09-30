@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 80 / tasks/00_the-template-has-one-home.feature —
 // "The OUTCOME.md template ships once, filed under no type, and the milestone copy
 // is deleted on update" (@executable).
@@ -29,8 +31,8 @@ import { planApplyActions, executeApplyActions, createLockManifest } from "../..
 import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
 import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
 import { writeLock } from "../../packages/core/src/lock.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 import { budgetGroup, budgetKeyFor } from "@aof/work/doctor/budget";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

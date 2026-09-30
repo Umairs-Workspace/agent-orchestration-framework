@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-test-suite-registration (m43 / ADR-014/E7, TECH_DEBT item 17;
 // EXTENDED by m59/01, FF-5903, ADR-003 §2 — TECH_DEBT item 50 paid down).
 //
@@ -103,7 +104,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { UNREGISTERED_BASELINE, baselineProblems, registrationDecision, runnerImportedSuites, walkSuiteFiles } from "../../../packages/core/src/work-audit/census.mjs";
+const UNREGISTERED_BASELINE = _aofApplication.work.audit.census.UNREGISTERED_BASELINE;
+const baselineProblems = _aofApplication.work.audit.census.baselineProblems;
+const registrationDecision = _aofApplication.work.audit.census.registrationDecision;
+const runnerImportedSuites = _aofApplication.work.audit.census.runnerImportedSuites;
+const walkSuiteFiles = _aofApplication.work.audit.census.walkSuiteFiles;
 import { registrationSurface, suiteFilesBelow } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

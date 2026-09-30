@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 12 / story 03, task 01 —
 // tasks/01_provision-and-platform.feature.
 //
@@ -20,7 +21,7 @@ import os from "node:os";
 import path from "node:path";
 import { toolVersionDir } from "../../packages/core/src/paths.mjs";
 import { HEADROOM_DESCRIPTOR, planProvision } from "../../packages/core/src/tool-store.mjs";
-import { toolPlatformCheckFor } from "../../packages/core/src/config-inspect.mjs";
+const toolPlatformCheckFor = _aofApplication.assets.configInspect.toolPlatformCheckFor;
 
 export const headroomProvisionPlatformTests = [
   // ═══════════════ 01_provision-and-platform.feature ══════════════════════════

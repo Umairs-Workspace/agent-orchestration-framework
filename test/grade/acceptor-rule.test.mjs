@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 61 / story 04 — the rule and the ledger (the RULE half).
 //
 //   tasks/00_the-threshold-and-the-e-value-are-one-object.feature
@@ -25,7 +26,10 @@ import assert from "node:assert/strict";
 
 import * as bounds from "@aof/contracts/loop-bounds";
 import * as workCounters from "@aof/work/counters";
-import { defaultCriterion, makeCriterion, criterionDigest, CriterionError } from "../../packages/core/src/work-acceptor/criterion.mjs";
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const CriterionError = _aofApplication.work.acceptor.criterion.CriterionError;
 import {
   COUNTER_METRIC_MISSING,
   COUNTER_METRIC_UNRESOLVABLE,

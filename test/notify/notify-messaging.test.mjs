@@ -1,3 +1,5 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/notify/notify-messaging.test.mjs — milestone 131 / story 08, tasks 00 to 05 (ADR-005 §1, as
 // amended at 131/08), and story 09, tasks 00 to 03 (ADR-007). `aof messaging`: the family's
 // registration and budget (08/00), the machine-wide owner-only store (08/01), `init`'s
@@ -20,12 +22,20 @@ import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
-import { invoke, listCommands } from "../../packages/core/src/command-core.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
 import * as discordModule from "@aof/messaging/discord";
-import { CHANNELS, buildNotifyEnvelope, notify, sendTestMessage } from "../../packages/core/src/notify/notify.mjs";
-import { messagingSecretPath, messagingSecretPresent, readMessagingSecret, writeMessagingSecret } from "../../packages/core/src/notify/secret.mjs";
-import { messagingInitCommand, messagingStatusCommand } from "../../packages/core/src/commands/messaging/messaging.mjs";
+const CHANNELS = _aofApplication.messaging.notify.CHANNELS;
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
+const notify = _aofApplication.messaging.notify.notify;
+const sendTestMessage = _aofApplication.messaging.notify.sendTestMessage;
+const messagingSecretPath = _aofApplication.messaging.secret.messagingSecretPath;
+const messagingSecretPresent = _aofApplication.messaging.secret.messagingSecretPresent;
+const readMessagingSecret = _aofApplication.messaging.secret.readMessagingSecret;
+const writeMessagingSecret = _aofApplication.messaging.secret.writeMessagingSecret;
+const messagingInitCommand = _aofApplication.getCommand("messaging:init");
+const messagingStatusCommand = _aofApplication.getCommand("messaging:status");
 import {
   SOURCE_DIRECTORY_BUDGETS,
   SOURCE_DIRECTORY_EXEMPTIONS,
@@ -36,7 +46,7 @@ import { stripComments } from "../support/source-slice.mjs";
 
 const { isDiscordBotToken } = discordModule;
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BIN = path.join(repoRoot, "bin", "aof.mjs");
+const BIN = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 // The fixture token (09 QA ruling 1): base64url("123456789012345678"), `.AbCdEf.`, 27 base64url
 // characters. Its third segment is what a leak check greps for.
 const SEG_A = "a1B2c3D4e5F6g7H8i9J0k1L2m3N";

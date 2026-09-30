@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-9606 (96/ADR-008 §1, §2) — THE GATE'S RESULT IS EVIDENCE: a record with a frozen shape, in the
 // item's own folder, that a rerun APPENDS to rather than overwrites.
@@ -46,7 +47,7 @@ import {
   regressionRecordPath,
   satisfiesDoor,
 } from "@aof/work/regression-record";
-import { runRegressionGate } from "../../../packages/core/src/commands/regression-gate.mjs";
+const runRegressionGate = _aofApplication.work.commandTools.regressionGate.runRegressionGate;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

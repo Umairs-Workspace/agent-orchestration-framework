@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-13002 + FF-13004 — THE INTERRUPT PATH ALWAYS SETTLES, AND A HONOURED DECLARATION YIELDS NO
 // ROW (milestone 130 / story 05; ARCHITECTURE `## Fitness functions`, ADR-003 and ADR-004 §4).
 // Which of this directory's three subjects: the LADDER — what the shell does after a drive returns
@@ -42,18 +44,20 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { decideSupervisedDeclarations } from "../../../packages/work-loop/src/engine.mjs";
-import { supervisedDeclarations } from "../../../packages/core/src/mesh/declarations.mjs";
-import { isRunning, isStale, readRuns, retryReadiness } from "../../../packages/core/src/run-store.mjs";
-import { loadWorkspace, listItems } from "../../../packages/core/src/work.mjs";
-import {
-  clearStopRequest,
-  loopStopsDir,
-  markStopHonoured,
-  requestLoopStop,
-  stopRequestPath,
-} from "../../../packages/core/src/loop/stop-request.mjs";
+const supervisedDeclarations = _aofApplication.mesh.declarations.supervisedDeclarations;
+const isRunning = _aofApplication.execution.runs.isRunning;
+const isStale = _aofApplication.execution.runs.isStale;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const listItems = _aofWorkspace.work.listItems;
+const clearStopRequest = _aofApplication.loop.stopRequest.clearStopRequest;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
 import { computedDynamicImports } from "../../support/module-family.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { NESTED_FUNCTION_DECLARATION_RE, classifySites, functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";

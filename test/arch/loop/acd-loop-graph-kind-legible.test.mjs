@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import * as _aofPublic_aof_work_graph_commands_loops_graph from "@aof/work-graph/commands/loops-graph";
 // milestone 58 / story 03 — FF-5808.
 //
 // EVERY DECLARED NODE KIND RENDERS AS A DISTINCT SHAPE, AND NONE OF THEM IS THE FALLBACK.
@@ -35,8 +37,9 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { NODE_KINDS } from "../../../packages/core/src/work/loops.mjs";
-import { KIND_SHAPES, renderLoopGraph } from "../../../packages/core/src/commands/loops-graph.mjs";
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const KIND_SHAPES = _aofPublic_aof_work_graph_commands_loops_graph.KIND_SHAPES;
+const renderLoopGraph = _aofPublic_aof_work_graph_commands_loops_graph.renderLoopGraph;
 
 const runFile = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

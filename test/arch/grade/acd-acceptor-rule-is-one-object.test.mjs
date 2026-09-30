@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6101 (milestone 61 / ADR-001) — THE RULE IS ONE OBJECT AND ITS NUMBERS ARE DERIVED,
 // NEVER TYPED.
@@ -29,7 +30,9 @@ import { fileURLToPath } from "node:url";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 import * as bounds from "@aof/contracts/loop-bounds";
-import { CriterionError, defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
+const CriterionError = _aofApplication.work.acceptor.criterion.CriterionError;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
 import {
   NOT_AN_ORDINAL_KNOB,
   crossingLattice,

@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 40 / story 01 (version stamp & reader), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
 //     01_story_version-stamp-and-reader/tasks/01_new-items-born-stamped.feature
@@ -15,8 +17,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { parseFrontmatter, readItemSchema, readItemVersion, WORK_ITEM_SCHEMA_VERSION } from "../../../packages/core/src/work.mjs";
+const invoke = _aofApplication.invoke;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const readItemSchema = _aofWorkspace.work.readItemSchema;
+const readItemVersion = _aofWorkspace.work.readItemVersion;
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { packageVersionString } from "../../../packages/core/src/asset-base.mjs";
 import { withInsertFixture, buildMilestone } from "../../support/work-insert-fixture.mjs";
 

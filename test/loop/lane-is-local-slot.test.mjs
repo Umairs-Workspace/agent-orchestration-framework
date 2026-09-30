@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for 69/04 task 02: the local slot is git's dispatch lane.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
@@ -5,17 +6,16 @@ import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dispatchCommand } from "../../packages/core/src/commands/dispatch.mjs";
-import {
-  cleanupDispatchLane,
-  dispatchLaneOccupiesSlot,
-  inspectDispatchLaneAdmission,
-  inspectDispatchLanes,
-  resolveDispatchLane,
-  sweepDispatchLanes,
-} from "../../packages/core/src/work/dispatch.mjs";
-import { meshDispatchWorktreePath, meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
-import { acquireMeshLauncherLock } from "../../packages/core/src/mesh/launcher-lock.mjs";
+const dispatchCommand = _aofApplication.getCommand("work:dispatch");
+const cleanupDispatchLane = _aofApplication.loop.work.dispatch.cleanupDispatchLane;
+const dispatchLaneOccupiesSlot = _aofApplication.loop.work.dispatch.dispatchLaneOccupiesSlot;
+const inspectDispatchLaneAdmission = _aofApplication.loop.work.dispatch.inspectDispatchLaneAdmission;
+const inspectDispatchLanes = _aofApplication.loop.work.dispatch.inspectDispatchLanes;
+const resolveDispatchLane = _aofApplication.loop.work.dispatch.resolveDispatchLane;
+const sweepDispatchLanes = _aofApplication.loop.work.dispatch.sweepDispatchLanes;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const acquireMeshLauncherLock = _aofApplication.mesh.launcherLock.acquireMeshLauncherLock;
 import { withDispatchRepo, git } from "../support/dispatch-lane-fixture.mjs";
 
 const ws = (root, bound) => ({ projectRoot: root, config: { work: { dispatch: { concurrency: bound } } } });

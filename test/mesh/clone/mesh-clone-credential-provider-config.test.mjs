@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-provider-config.test.mjs — traceability for milestone 38
 // / story 02, task 00 (00_provider-config-driven.feature, ADR-010 §6.1). Every
 // @executable scenario / Scenario Outline row wired to the REAL production surface:
@@ -14,17 +16,16 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
-import {
-  defaultMintCloneCredential,
-  applyCloneCredentialRequestFrame,
-  CLONE_CREDENTIAL_NOT_HOLDER,
-  CLONE_CREDENTIAL_WORKSPACE_MISMATCH,
-  CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE,
-} from "../../../packages/core/src/control-stream-server.mjs";
-import { resolveCloneCredentialProvider, CLONE_CREDENTIAL_PROVIDER_UNKNOWN } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const defaultMintCloneCredential = _aofApplication.mesh.controlStreamServer.defaultMintCloneCredential;
+const applyCloneCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame;
+const CLONE_CREDENTIAL_NOT_HOLDER = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_NOT_HOLDER;
+const CLONE_CREDENTIAL_WORKSPACE_MISMATCH = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_WORKSPACE_MISMATCH;
+const CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE;
+const resolveCloneCredentialProvider = _aofApplication.mesh.cloneCredentialProvider.resolveCloneCredentialProvider;
+const CLONE_CREDENTIAL_PROVIDER_UNKNOWN = _aofApplication.mesh.cloneCredentialProvider.CLONE_CREDENTIAL_PROVIDER_UNKNOWN;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 

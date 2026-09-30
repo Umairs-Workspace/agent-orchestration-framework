@@ -13,7 +13,7 @@
 // framework anchors, and FF-5501. Kept outside 52's frozen `acd-loop-*` roster.
 import { anchorTaxonomyTests } from "./anchor-taxonomy.test.mjs";
 import { memoryIndexingTests } from "./memory-indexing.test.mjs";
-import { memoryRetrievalTests } from "./memory-retrieval.test.mjs";
+
 import { memoryIntegrationTests } from "./memory-integration.test.mjs";
 import { memoryRecallBlockTests } from "./memory-recall-block.test.mjs";
 import { memoryHooksInertTests } from "./memory-hooks-inert.test.mjs";
@@ -50,7 +50,6 @@ export const tests = [
   // milestone 55 / story 00 — anchor schema, compatibility, delivery and structural gate
   ...anchorTaxonomyTests,
   ...memoryIndexingTests,
-  ...memoryRetrievalTests,
   ...memoryIntegrationTests,
   ...memoryRecallBlockTests,
   ...memoryHooksInertTests,

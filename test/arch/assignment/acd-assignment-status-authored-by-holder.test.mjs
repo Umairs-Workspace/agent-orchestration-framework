@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Security fitness: acd-assignment-status-authored-by-holder (milestone 35 /
 // SECURITY T6, F5) — "The control writes an assignment's lifecycle ONLY from the
 // connection whose nodeId holds it — a status/lifecycle frame's node is taken from
@@ -19,9 +20,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
 import { readAssignment } from "@aof/mesh/assignment-record";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 03 / task 00 —
 // `tasks/00_the-index-is-a-projection.feature`: the fleet-side session index is an
 // O(1) answer to "what is live across the mesh", derived fresh every time and stored
@@ -23,11 +26,12 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { buildSessionIndex, shapeGlobalStatus } from "../../../packages/core/src/global-mesh-query.mjs";
-import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
-import { startSession } from "../../../packages/core/src/mesh/session.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
+const shapeGlobalStatus = _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const startSession = _aofHooks.meshSession.startSession;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 
 // The ADR-007 entry, in its exact order: nodeId, then ADR-005's frozen six verbatim,
 // then the one derived field.

@@ -241,7 +241,7 @@ async function listSourceFiles(dir, found = []) {
 
 async function readSrcSources() {
   const sources = new Map();
-  for (const { path: file } of await readRuntimeFiles(repoRoot)) {
+  for (const { path: file } of await readRuntimeFiles(repoRoot, { runtime: "node" })) {
     sources.set(
       path.relative(repoRoot, file).split(path.sep).join("/"),
       lf(stripComments(await readFile(file, "utf8"))),

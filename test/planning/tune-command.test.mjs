@@ -1,7 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
-import { buildTuneReport, tuneCommand } from "../../packages/core/src/commands/tune.mjs";
+const buildTuneReport = _aofApplication.work.commandTools.tune.buildTuneReport;
+const tuneCommand = _aofApplication.getCommand("work:tune");
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const key = "fixture.reviewRounds";

@@ -1,1 +1,1 @@
-import '../packages/core/src/work/audit-drive.mjs';
+import 'aof/audit-drive';

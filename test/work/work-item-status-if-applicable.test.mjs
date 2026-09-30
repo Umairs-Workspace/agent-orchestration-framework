@@ -1,3 +1,6 @@
+
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // STORY 74 — A REFUSED STATUS MOVE IS DATA, NOT A FAILURE (2026-08-20).
 //
 // THE DEFECT. The item-status door and the phase door disagreed about what a refusal is.
@@ -22,13 +25,18 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, unlink, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { setItemStatus, rollbackItemStatus, loadWorkspace } from "../../packages/core/src/work.mjs";
+const setItemStatus = _aofWorkspace.work.setItemStatus;
+const rollbackItemStatus = _aofWorkspace.work.rollbackItemStatus;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { itemStatusEdges } from "@aof/work/lifecycle";
-import { transitionRunStart, transitionRunComplete } from "../../packages/core/src/effects/run-transitions.mjs";
-import { openEffectsJournal, readEvents } from "../../packages/core/src/effects/journal.mjs";
-import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
-import { runCommandFace } from "../../packages/core/src/spine/face.mjs";
-import { publishGlobalWorkSnapshot } from "../../packages/core/src/global-work-publisher.mjs";
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const transitionRunComplete = _aofApplication.execution.transitions.transitionRunComplete;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const invoke = _aofApplication.invoke;
+const getCommand = _aofApplication.getCommand;
+const runCommandFace = _aofApplication.cli.runCommandFace;
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
 
 function specDoc(status) {
   return [
@@ -338,7 +346,12 @@ export const workItemStatusIfApplicableTests = [
       // raised since m43/ADR-010 R6.4 is `item-not-local` (commands/resolve.mjs's
       // requireLocalCheckout). Same refusal, and the contract's requirement is what is
       // asserted here: it FAILS under the flag, writing nothing.
-      const { requireLocalCheckout } = await import("../../packages/core/src/commands/resolve.mjs");
+      const { requireLocalCheckout } = await Promise.resolve(Object.freeze({
+  requireLocalCheckout: _aofApplication.work.commandTools.resolve.requireLocalCheckout,
+  resolveDrivenRun: _aofApplication.work.commandTools.resolve.resolveDrivenRun,
+  resolveItem: _aofApplication.work.commandTools.resolve.resolveItem,
+  resolveItemExact: _aofApplication.work.commandTools.resolve.resolveItemExact,
+}));
       // The cache-answered row's shape (ADR-010/R6.4): resolvable, but `dir: null`.
       assert.throws(
         () => requireLocalCheckout({ ref: "70/00", dir: null, reportedBy: "aof-wsl" }, "70/00"),

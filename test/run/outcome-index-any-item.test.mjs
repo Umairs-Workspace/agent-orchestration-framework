@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 80 /
 // tasks/02_the-index-reads-an-outcome-from-any-item.feature (@executable, every
 // scenario and every Examples row).
@@ -20,7 +21,8 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildRecords, INDEX_VERSION } from "../../packages/core/src/memory/local-indexing.mjs";
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+const INDEX_VERSION = _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION;
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 import { applyScope, MEMORY_RECORD_FIELDS, recall } from "@aof/knowledge/memory/local-retrieval";
 
@@ -326,7 +328,21 @@ export const outcomeIndexAnyItemTests = [
       );
       assert.ok(dependencySpecifiers(graphify).some(edge => edge.parameter === "memoryLocalIndexingServices" && edge.specifier === "./local-indexing.mjs"), "the supplied builder comes from the shared indexing constructor");
 
-      const { GRAPHIFY_INDEX_VERSION } = await import("../../packages/core/src/memory/graphify-backend.mjs");
+      const { GRAPHIFY_INDEX_VERSION } = await Promise.resolve(Object.freeze({
+  GRAPHIFY_INDEX_VERSION: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_INDEX_VERSION,
+  workGraphRoot: _aofApplication.knowledge.memory.graphifyBackend.workGraphRoot,
+  GRAPHIFY_EXTRACTION_BACKEND: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_EXTRACTION_BACKEND,
+  GRAPHIFY_EXTRACTION_EGRESS: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_EXTRACTION_EGRESS,
+  graphifyIndexPath: _aofApplication.knowledge.memory.graphifyBackend.graphifyIndexPath,
+  GRAPH_SIGNAL_RANKED: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_RANKED,
+  GRAPH_SIGNAL_UNAVAILABLE: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_UNAVAILABLE,
+  GRAPH_STATE_BUILT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BUILT,
+  GRAPH_STATE_BINARY_ABSENT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BINARY_ABSENT,
+  GRAPH_STATE_NOT_BUILT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_NOT_BUILT,
+  rerank: _aofApplication.knowledge.memory.graphifyBackend.rerank,
+  applyScope: _aofApplication.knowledge.memory.graphifyBackend.applyScope,
+  default: _aofApplication.knowledge.memory.graphifyBackend.default,
+}));
       assert.equal(INDEX_VERSION, GRAPHIFY_INDEX_VERSION, "INDEX_VERSION and GRAPHIFY_INDEX_VERSION are equal");
       assert.equal(INDEX_VERSION, 1, "…and unchanged — this story alters no record shape");
     },
@@ -397,7 +413,20 @@ export const outcomeIndexAnyItemTests = [
     name: "80/02 scope-rule: itemInScope is byte-for-byte the pre-story `inScope` over every ref/scope shape, and doctor's inScope now delegates to it",
     run: async () => {
       const { itemInScope, refInScope } = await import("@aof/work/ref-scope");
-      const { inScope } = await import("../../packages/core/src/work/doctor.mjs");
+      const { inScope } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
 
       // The rule AS IT WAS, before the re-home (work-doctor.mjs, pre-story 80).
       const before = (item, scopeRef) => {

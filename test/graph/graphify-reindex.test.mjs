@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 10 / story 00 (graphify-backend-module),
 // task 01 — 01_reindex-rebuilds-records-and-graph.feature.
 //
@@ -27,9 +28,12 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import graphifyBackend from "../../packages/core/src/memory/graphify-backend.mjs";
-import { graphifyIndexPath, workGraphRoot } from "../../packages/core/src/memory/graphify-backend.mjs";
-import { reindex as localReindex, memoryIndexPath } from "../../packages/core/src/memory/local-indexing.mjs";
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+
+const graphifyIndexPath = _aofApplication.knowledge.memory.graphifyBackend.graphifyIndexPath;
+const workGraphRoot = _aofApplication.knowledge.memory.graphifyBackend.workGraphRoot;
+const localReindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",

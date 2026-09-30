@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 13 / ADR-004:
 // "An import is never a managed work item. Nothing the import materializes is a
 //  top-level NN_type_slug folder under workDir; the import store lives OUTSIDE workDir
@@ -32,9 +34,13 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
 import { fileURLToPath } from "node:url";
-import { listItems, findWork, nextWork, validateWork } from "../../../packages/core/src/work.mjs";
-import { materializeImport } from "../../../packages/core/src/import/materialize.mjs";
-import { importStoreRoot, importMilestoneDir } from "../../../packages/core/src/import/store.mjs";
+const listItems = _aofWorkspace.work.listItems;
+const findWork = _aofWorkspace.work.findWork;
+const nextWork = _aofWorkspace.work.nextWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const importStoreRoot = _aofApplication.knowledge.import.store.importStoreRoot;
+const importMilestoneDir = _aofApplication.knowledge.import.store.importMilestoneDir;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 // The work-item resolver's ONE rule (mirrors packages/core/src/work.mjs ITEM_RE) — used to PROVE the

@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 126 / story 04, tasks
 // 00_autostart-is-a-flag-on-install.feature, 01_the-registry-is-reached-through-one-
 // injected-runner.feature and 02_off-windows-is-a-coded-refusal.feature.
@@ -12,15 +14,15 @@
 // prior-state table meaningful rather than a check that a stub was called.
 import assert from "node:assert/strict";
 import path from "node:path";
-import {
-  applyAutostart,
-  resolveAutostartAction,
-  AUTOSTART_RUN_KEY,
-  AUTOSTART_VALUE_NAME,
-  DESKTOP_APP_EXE,
-} from "../../../packages/core/src/commands/mesh/desktop.mjs";
-import { getCommand, invoke, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { runCommandFace } from "../../../packages/core/src/spine/face.mjs";
+const applyAutostart = _aofApplication.mesh.commandTools.mesh.desktop.applyAutostart;
+const resolveAutostartAction = _aofApplication.mesh.commandTools.mesh.desktop.resolveAutostartAction;
+const AUTOSTART_RUN_KEY = _aofApplication.mesh.commandTools.mesh.desktop.AUTOSTART_RUN_KEY;
+const AUTOSTART_VALUE_NAME = _aofApplication.mesh.commandTools.mesh.desktop.AUTOSTART_VALUE_NAME;
+const DESKTOP_APP_EXE = _aofApplication.mesh.commandTools.mesh.desktop.DESKTOP_APP_EXE;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+const runCommandFace = _aofApplication.cli.runCommandFace;
 import { withMeshDesktopFixture } from "../../support/mesh-desktop-fixture.mjs";
 
 // `reg`'s own sentence for "no such value" — the ONE stderr text that makes a non-zero

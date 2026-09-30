@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Security fitness: acd-revoked-issuer-directive-never-executes (milestone 35 /
 // SECURITY T2, F2) — "A directive whose `issuer` is in the live registry
 // `revocations` never routes to execution."
@@ -17,7 +18,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dispatchDirectiveOverTargets, buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
+const dispatchDirectiveOverTargets = _aofApplication.mesh.controlStreamServer.dispatchDirectiveOverTargets;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

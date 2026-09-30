@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 125 (the loop graph gets a published face),
 // task 00_the-site-has-a-publishing-path.feature + task 01_the-graph-page-is-projected-not-copied.feature.
 //
@@ -36,8 +38,8 @@ import { RECORDS, loop, snapshot, writeRegistry } from "../support/loop-document
 import { computedDynamicImports, importSpecifiers } from "../support/module-family.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { normaliseEol, readWorkflowText, stripYamlComments } from "../support/workflow/workflow-lint.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { loopDocumentCommand } from "../../packages/core/src/commands/loop-document.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const loopDocumentCommand = _aofApplication.getCommand("work:loop-document");
 import { loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
 import {
   BUILD_COMMAND,
@@ -342,19 +344,22 @@ async function staticImportClosure(entry) {
   const bare = [];
   const computed = [];
   const workspaces = new Set();
+  const builtins = new Set();
   async function walk(file) {
     if (seen.has(file)) return;
     const code = await readFile(file, "utf8");
     seen.set(file, code);
     for (const expression of computedDynamicImports(code)) computed.push(`${path.relative(repoRoot, file)}: import(${expression})`);
     for (const { specifier } of importSpecifiers(code)) {
-      if (specifier.startsWith("node:")) continue;
-      if (specifier.startsWith("@aof/")) {
+      if (specifier.startsWith("node:")) { builtins.add(specifier); continue; }
+      if (specifier.startsWith("@aof/") || specifier.startsWith("aof/")) {
         const [scope, name, ...subpath] = specifier.split("/");
-        const root = path.join(repoRoot, "packages", name);
+        const core = scope === "aof";
+        const root = path.join(repoRoot, "packages", core ? "core" : name);
         const manifest = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
-        assert.equal(manifest.name, `${scope}/${name}`, "workspace identity matches its import");
-        const target = manifest.exports[subpath.length ? `./${subpath.join("/")}` : "."];
+        assert.equal(manifest.name, core ? "aof" : `${scope}/${name}`, "workspace identity matches its import");
+        const key = core ? `./${[name, ...subpath].join("/")}` : subpath.length ? `./${subpath.join("/")}` : ".";
+        const target = manifest.exports[key];
         assert.ok(typeof target === "string" && target.startsWith("./src/") && !target.includes("..", 2), `${specifier}: public workspace source export`);
         workspaces.add(manifest.name);
         await walk(path.resolve(root, target));
@@ -368,7 +373,7 @@ async function staticImportClosure(entry) {
     }
   }
   await walk(path.resolve(repoRoot, entry));
-  return { modules: [...seen.keys()].map((file) => path.relative(repoRoot, file).split(path.sep).join("/")), bare, computed, workspaces: [...workspaces] };
+  return { modules: [...seen.keys()].map((file) => path.relative(repoRoot, file).split(path.sep).join("/")), bare, computed, workspaces: [...workspaces], builtins: [...builtins] };
 }
 
 // A copy of this repository's runnable tree — everything `scripts/test.mjs` reaches at LOAD (the
@@ -881,7 +886,8 @@ export const siteBuildTests = [
     run: async () => {
       const closure = await staticImportClosure(BUILDER);
       assert.ok(closure.modules.includes(BUILDER), "the walk started at the builder");
-      assert.ok(closure.modules.length >= 5, `the closure was actually walked (${closure.modules.length} modules): ${closure.modules.join(", ")}`);
+      assert.ok(closure.modules.length >= 5 && closure.modules.includes("packages/work-graph/src/document.mjs"), "the builder reaches the public document implementation and workspace service closure");
+      assert.ok(closure.modules.length + closure.builtins.length >= 5, `the real closure was walked: ${closure.modules.join(", ")}; ${closure.builtins.join(", ")}`);
       assert.ok(closure.workspaces.length > 0, "the closure follows workspace exports, not only relative imports");
       assert.deepEqual(closure.bare, [], `the builder reaches no unexpected external dependency:\n  ${closure.bare.join("\n  ")}`);
       assert.deepEqual(closure.computed, [], `and no module the builder reaches carries a computed dynamic import, which the walk could not follow:\n  ${closure.computed.join("\n  ")}`);

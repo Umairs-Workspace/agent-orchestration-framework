@@ -46,7 +46,7 @@ import { archTests as acdMeshUiScopeVisibleTests } from "../test/arch/mesh/acd-m
 // the stream retry/reconciliation/freshness lanes, plus the story's 4 fitness
 // units. Tasks 00–03 are @executable; task 04 (the real two-machine soak) is @manual
 // and deliberately has no test file here.
-import { workerRoleAddressTests } from "../test/work/worker-role-address.test.mjs";
+import { workerRoleAddressTests } from "../packages/mesh/test/worker-role-address.suite.mjs";
 import { workerStreamClientTests } from "../test/work/worker-stream-client.test.mjs";
 import { controlStreamServerTests } from "../test/mesh/relay/control-stream-server.test.mjs";
 import { meshLauncherStreamRoleTests } from "../test/mesh/launcher/mesh-launcher-stream-role.test.mjs";
@@ -80,7 +80,7 @@ import { archTests as acdPlanningClonableRefTests } from "../test/arch/planning/
 import { archTests as acdUnifiedLockSectionsTests } from "../test/arch/store/acd-unified-lock-sections.test.mjs";
 import { workMemorySeamTests } from "../test/work/lifecycle/work-memory-seam.test.mjs";
 import { memoryIndexingTests } from "../test/memory/memory-indexing.test.mjs";
-import { memoryRetrievalTests } from "../test/memory/memory-retrieval.test.mjs";
+import { memoryRetrievalTests } from "../packages/knowledge/test/memory-retrieval.suite.mjs";
 import { archTests as acdMemoryBackendSelectionTests } from "../test/arch/memory/acd-memory-backend-selection.test.mjs";
 import { archTests as acdMemoryDerivedIndexTests } from "../test/arch/memory/acd-memory-derived-index.test.mjs";
 import { archTests as acdMemoryIndexLocationTests } from "../test/arch/memory/acd-memory-index-location.test.mjs";

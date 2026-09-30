@@ -15,7 +15,7 @@
 // PATH. Both review lanes measured the same hole from opposite sides, and both plants passed
 // all five lanes:
 //
-//   · QA planted `packages/core/src/work-audit/lanes/qa-nested.mjs` holding a `node:child_process` import, a
+//   · QA planted `packages/core/src/application/bindings/work-audit/lanes/qa-nested.mjs` holding a `node:child_process` import, a
 //     static import of a test file, and `execSync(…, { shell: true })`. A non-recursive
 //     `readdir` never saw it: a second door, project code in the aof process, and a shell — the
 //     exact three things this gate exists to refuse — all green.
@@ -420,15 +420,15 @@ export const archTests = [
       // twice. Everything here is driven against a SYNTHETIC module map, so the two holes review
       // found are re-proved closed on every run without planting a file in the real tree.
 
-      // (a) THE NESTED PLANT — QA's `packages/core/src/work-audit/lanes/qa-nested.mjs`. A flat `readdir` never
+      // (a) THE NESTED PLANT — QA's `packages/core/src/application/bindings/work-audit/lanes/qa-nested.mjs`. A flat `readdir` never
       // saw it. The recursive walk is real-tree; the closure's job here is to still SWEEP it.
       const nested = {
-        "packages/core/src/work-audit/census.mjs": 'import { runBounded } from "./spawn.mjs";\nimport { deep } from "./lanes/qa-nested.mjs";\n',
+        "packages/core/src/application/bindings/work-audit/census.mjs": 'import { runBounded } from "./spawn.mjs";\nimport { deep } from "./lanes/qa-nested.mjs";\n',
         "packages/execution/src/bounded-process.mjs": 'import { spawn } from "node:child_process";\n',
-        "packages/core/src/work-audit/lanes/qa-nested.mjs": 'import { execSync } from "node:child_process";\nimport { archTests } from "../../../test/arch/acd-thing.test.mjs";\nconst out = execSync("x", { shell: true });\n',
+        "packages/core/src/application/bindings/work-audit/lanes/qa-nested.mjs": 'import { execSync } from "node:child_process";\nimport { archTests } from "../../../../../../../test/arch/acd-thing.test.mjs";\nconst out = execSync("x", { shell: true });\n',
       };
-      const nestedClosure = await importClosure(["packages/core/src/work-audit/census.mjs", "packages/execution/src/bounded-process.mjs"], async (rel) => nested[rel] ?? null);
-      assert.ok(nestedClosure.closure.has("packages/core/src/work-audit/lanes/qa-nested.mjs"), "the closure reaches a NESTED module — the flat readdir this gate shipped with did not");
+      const nestedClosure = await importClosure(["packages/core/src/application/bindings/work-audit/census.mjs", "packages/execution/src/bounded-process.mjs"], async (rel) => nested[rel] ?? null);
+      assert.ok(nestedClosure.closure.has("packages/core/src/application/bindings/work-audit/lanes/qa-nested.mjs"), "the closure reaches a NESTED module — the flat readdir this gate shipped with did not");
       const nestedModules = [...nestedClosure.closure.entries()].map(([rel, code]) => ({ rel, code }));
       const nestedProblems = [...nestedModules.flatMap((module) => projectCodeReaches(module.rel, module.code)), ...spawnRouteProblems(nestedModules)];
       assert.ok(nestedProblems.some((problem) => problem.includes("outside src/")), `the nested plant's import of a test file is caught:\n${nestedProblems.join("\n")}`);
@@ -455,19 +455,19 @@ export const archTests = [
       // directory-scoped freeze never swept it; a closure does, because it followed the import
       // that reached it.
       const sideways = {
-        "packages/core/src/work-audit/census.mjs": 'import { load } from "../work-audit-loader.mjs";\n',
-        "packages/core/src/work-audit-loader.mjs": "export async function load(cited) { return await import(cited); }\n",
+        "packages/core/src/application/bindings/work-audit/census.mjs": 'import { load } from "../work-audit-loader.mjs";\n',
+        "packages/core/src/application/bindings/work-audit-loader.mjs": "export async function load(cited) { return await import(cited); }\n",
       };
-      const sidewaysClosure = await importClosure(["packages/core/src/work-audit/census.mjs"], async (rel) => sideways[rel] ?? null);
-      assert.ok(sidewaysClosure.closure.has("packages/core/src/work-audit-loader.mjs"), "the closure follows an import OUT of the family directory — the freeze is on what the family can reach, not on where a file sits");
+      const sidewaysClosure = await importClosure(["packages/core/src/application/bindings/work-audit/census.mjs"], async (rel) => sideways[rel] ?? null);
+      assert.ok(sidewaysClosure.closure.has("packages/core/src/application/bindings/work-audit-loader.mjs"), "the closure follows an import OUT of the family directory — the freeze is on what the family can reach, not on where a file sits");
       const sidewaysProblems = [...sidewaysClosure.closure.entries()].flatMap(([rel, code]) => projectCodeReaches(rel, code));
       assert.equal(sidewaysProblems.length, 1, `and the dynamic import one directory up is caught:\n${sidewaysProblems.join("\n")}`);
       assert.match(sidewaysProblems[0], /dynamic `import\(\)`/u, sidewaysProblems[0]);
 
       // (c) A SPECIFIER THE SWEEP CANNOT LOAD IS REPORTED, never skipped — otherwise a rename is
       // a silent hole rather than a red.
-      const dangling = await importClosure(["packages/core/src/work-audit/census.mjs"], async (rel) => (rel === "packages/core/src/work-audit/census.mjs" ? 'import { x } from "./gone.mjs";\n' : null));
-      assert.deepEqual(dangling.unresolved, ["packages/core/src/work-audit/gone.mjs"], "an unreadable member of the closure is named");
+      const dangling = await importClosure(["packages/core/src/application/bindings/work-audit/census.mjs"], async (rel) => (rel === "packages/core/src/application/bindings/work-audit/census.mjs" ? 'import { x } from "./gone.mjs";\n' : null));
+      assert.deepEqual(dangling.unresolved, ["packages/core/src/application/bindings/work-audit/gone.mjs"], "an unreadable member of the closure is named");
 
       // (d) THE POINT DETECTORS, planted one shape at a time.
       const plants = [
@@ -492,7 +492,7 @@ export const archTests = [
         'import { spawn as spawnChildProcess } from "node:child_process";',
         "const suites = files.filter((rel) => rel.endsWith(\".test.mjs\"));",
       ]) {
-        assert.deepEqual(projectCodeReaches("packages/core/src/work-audit/census.mjs", clean), [], `the detector stays silent on \`${clean}\``);
+        assert.deepEqual(projectCodeReaches("packages/core/src/application/bindings/work-audit/census.mjs", clean), [], `the detector stays silent on \`${clean}\``);
       }
 
       // (e) THE SEAM'S ONE EXEMPTION IS KEYED ON ITS PATH, not on its basename — a nested
@@ -508,17 +508,17 @@ export const archTests = [
       // nobody declared. The version this gate shipped with hardcoded one path and would have
       // missed it entirely.
       const index = new Map([["work/audit-probe.mjs", "packages/core/src/work/audit-probe.mjs"], ["work-audit-second.mjs", "packages/core/src/work-audit-second.mjs"]]);
-      const named = new Map([["packages/core/src/work-audit/census.mjs", 'const probe = path.join(root, "packages", "core", "src", "work-audit-second.mjs");\n']]);
+      const named = new Map([["packages/core/src/application/bindings/work-audit/census.mjs", 'const probe = path.join(root, "packages", "core", "src", "work-audit-second.mjs");\n']]);
       const second = undeclaredProgramProblems(named, index, SPAWNED_PROGRAMS);
       assert.equal(second.length, 1, `a second spawned program the family names and nobody declared is refused:\n${second.join("\n")}`);
       assert.match(second[0], /work-audit-second\.mjs/u, second[0]);
       assert.deepEqual(
-        undeclaredProgramProblems(new Map([["packages/core/src/work-audit/census.mjs", 'const probe = "work/audit-probe.mjs";\n']]), index, SPAWNED_PROGRAMS),
+        undeclaredProgramProblems(new Map([["packages/core/src/application/bindings/work-audit/census.mjs", 'const probe = "work/audit-probe.mjs";\n']]), index, SPAWNED_PROGRAMS),
         [],
         "…and the declared one is not",
       );
       assert.deepEqual(
-        undeclaredProgramProblems(new Map([["packages/core/src/work-audit/census.mjs", 'const runner = "scripts/test.mjs";\n']]), index, SPAWNED_PROGRAMS),
+        undeclaredProgramProblems(new Map([["packages/core/src/application/bindings/work-audit/census.mjs", 'const runner = "scripts/test.mjs";\n']]), index, SPAWNED_PROGRAMS),
         [],
         "…and the SUBJECT the census points a child at is not a program of ours: it resolves outside src/ and is arbitrary by design",
       );
@@ -526,7 +526,7 @@ export const archTests = [
       // A comment naming a retired shape is history, not an instance — otherwise every module
       // that documents why it does not do a thing would be flagged for documenting it.
       assert.deepEqual(
-        projectCodeReaches("packages/core/src/work-audit/census.mjs", stripComments('// never `await import(runner)` from here — that evaluates 880 modules in this process\nconst x = 1;\n')),
+        projectCodeReaches("packages/core/src/application/bindings/work-audit/census.mjs", stripComments('// never `await import(runner)` from here — that evaluates 880 modules in this process\nconst x = 1;\n')),
         [],
         "a comment describing the refused shape is not an instance of it (the shared stripper, line comments first)",
       );

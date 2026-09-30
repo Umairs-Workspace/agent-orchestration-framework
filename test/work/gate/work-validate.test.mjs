@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 00/01 `validate-stream`.
 //
 // Each test below proves one @executable scenario (or one example-table row)
@@ -19,7 +20,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateWork } from "../../../packages/core/src/work.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
 
 // The config supplies the closed vocabulary. @validate is the configured domain
 // tag the features lean on; @backend is a layer some fixtures decorate with.

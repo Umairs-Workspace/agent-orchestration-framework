@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 12 / story 02, task 00 —
 // tasks/00_graphify-store-first.feature.
 //
@@ -24,11 +25,9 @@ import os from "node:os";
 import path from "node:path";
 import { toolStoreRoot, toolVersionDir } from "../../packages/core/src/paths.mjs";
 import { exeDirFor, exeNameFor } from "../../packages/core/src/tool-store.mjs";
-import {
-  resolveGraphifyBinary,
-  GRAPHIFY_BINARY,
-  PINNED_GRAPHIFY_VERSION,
-} from "../../packages/core/src/graphify.mjs";
+const resolveGraphifyBinary = _aofApplication.knowledge.graphify.resolveGraphifyBinary;
+const GRAPHIFY_BINARY = _aofApplication.knowledge.graphify.GRAPHIFY_BINARY;
+const PINNED_GRAPHIFY_VERSION = _aofApplication.knowledge.graphify.PINNED_GRAPHIFY_VERSION;
 
 // --- helpers -----------------------------------------------------------------
 

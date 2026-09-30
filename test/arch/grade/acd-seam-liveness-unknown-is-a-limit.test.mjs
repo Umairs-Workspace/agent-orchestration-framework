@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-seam-liveness-unknown-is-a-limit (milestone 77 / story 02, FF-7704;
 // ADR-006 §1, §1a, §2, §3, §4).
 //
@@ -47,9 +48,10 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import { graphJsonPath } from "@aof/knowledge/graph-normalize";
-import { TEST_ROOTS } from "../../../packages/core/src/work-audit/census.mjs";
+const TEST_ROOTS = _aofApplication.work.audit.census.TEST_ROOTS;
 import { readFinding } from "@aof/work/audit/reads";
-import { SEAM_LIVENESS_SWEEPS, runSeamLiveness } from "../../../packages/core/src/work-audit/seam-liveness.mjs";
+const SEAM_LIVENESS_SWEEPS = _aofApplication.work.audit.seamLiveness.SEAM_LIVENESS_SWEEPS;
+const runSeamLiveness = _aofApplication.work.audit.seamLiveness.runSeamLiveness;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MODULE_REL = "packages/work/src/audit/seam-liveness.mjs";

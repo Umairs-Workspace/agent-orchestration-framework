@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 102 / story 02 — THE JOIN CLOSES.
 //
 // Covers every @executable scenario in
@@ -24,11 +25,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SHELL_LOOP_ID } from "../../packages/core/src/commands/loop.mjs";
+const SHELL_LOOP_ID = _aofApplication.loop.commandTools.loop.SHELL_LOOP_ID;
 import { buildLoopDeclaration } from "../../packages/work-loop/src/engine.mjs";
 import { projectExecution } from "@aof/work-graph/record";
-import { completeRun, readRuns, startRun } from "../../packages/core/src/run-store.mjs";
-import { loadLoops } from "../../packages/core/src/work/loops.mjs";
+const completeRun = _aofApplication.execution.runs.completeRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BUNDLE = path.join(root, "packages", "core", "assets");

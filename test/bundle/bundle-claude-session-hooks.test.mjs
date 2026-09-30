@@ -1,3 +1,6 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 49 / story 07
 // tasks/00_the-bundle-wires-claude-session-hooks.feature — "the bundle wires the
 // Claude session lifecycle, so a workspace aof provisioned records Claude sessions
@@ -36,10 +39,10 @@ import { fileURLToPath } from "node:url";
 import { readDescriptor, loadBundle, loadBundleHooks, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 import { applyClaudeSettingsMerge, AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
 import { bundledFrozenSet, compileFrozenSet } from "../../packages/core/src/frozen-set.mjs";
-import { readSessionRecordsForNode } from "../../packages/core/src/mesh/session.mjs";
-import { readLiveSessions } from "../../packages/core/src/mesh/presence.mjs";
-import { buildSessionIndex } from "../../packages/core/src/global-mesh-query.mjs";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { defaultGlobalWorkspaceDir } from "../../packages/core/src/paths.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

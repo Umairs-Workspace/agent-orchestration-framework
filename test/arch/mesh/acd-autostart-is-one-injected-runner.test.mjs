@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function FF-12607 (milestone 126 / ADR-007) — "Autostart is ONE injected
 // runner, idempotent, and never a silent no-op off Windows."
 //
@@ -18,7 +19,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
-import { listCommands, getCommand } from "../../../packages/core/src/command-core.mjs";
+const listCommands = _aofApplication.listCommands;
+const getCommand = _aofApplication.getCommand;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const DESKTOP_MODULE = path.join(repoRoot, "packages", "mesh", "src", "commands", "desktop.mjs");

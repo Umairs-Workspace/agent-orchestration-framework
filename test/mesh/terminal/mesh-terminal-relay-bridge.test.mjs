@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/terminal/mesh-terminal-relay-bridge.test.mjs — traceability for milestone 38 / story 06,
 // task 00 (tasks/00_pty-bytes-ride-relay-signal.feature, ADR-014) AND milestone 46 /
 // story 01, task 00 (ADR-007). The worker's PTY byte stream rides the FROZEN
@@ -29,21 +30,29 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { WebSocket } from "ws";
-import { serveRelay } from "../../../packages/core/src/mesh/relay.mjs";
-import * as bridge from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
-import {
-  TERMINAL_FRAME_KIND,
-  TERMINAL_INPUT_KIND,
-  TERMINAL_RESUME_KIND,
-  buildTerminalFrameEnvelope,
-  buildTerminalEndEnvelope,
-  buildTerminalInputEnvelope,
-  buildTerminalResumeEnvelope,
-  createTerminalRelayPushTransport,
-} from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
-import { createTerminalMirror } from "../../../packages/core/src/mesh/terminal-mirror.mjs";
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const bridge = Object.freeze({
+  TERMINAL_FRAME_KIND: _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND,
+  TERMINAL_INPUT_KIND: _aofApplication.mesh.terminalRelayBridge.TERMINAL_INPUT_KIND,
+  TERMINAL_RESUME_KIND: _aofApplication.mesh.terminalRelayBridge.TERMINAL_RESUME_KIND,
+  loopbackRelayUrl: _aofApplication.mesh.terminalRelayBridge.loopbackRelayUrl,
+  buildTerminalFrameEnvelope: _aofApplication.mesh.terminalRelayBridge.buildTerminalFrameEnvelope,
+  buildTerminalEndEnvelope: _aofApplication.mesh.terminalRelayBridge.buildTerminalEndEnvelope,
+  buildTerminalInputEnvelope: _aofApplication.mesh.terminalRelayBridge.buildTerminalInputEnvelope,
+  buildTerminalResumeEnvelope: _aofApplication.mesh.terminalRelayBridge.buildTerminalResumeEnvelope,
+  createTerminalRelayPushTransport: _aofApplication.mesh.terminalRelayBridge.createTerminalRelayPushTransport,
+});
+const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
+const TERMINAL_INPUT_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_INPUT_KIND;
+const TERMINAL_RESUME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_RESUME_KIND;
+const buildTerminalFrameEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalFrameEnvelope;
+const buildTerminalEndEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalEndEnvelope;
+const buildTerminalInputEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalInputEnvelope;
+const buildTerminalResumeEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalResumeEnvelope;
+const createTerminalRelayPushTransport = _aofApplication.mesh.terminalRelayBridge.createTerminalRelayPushTransport;
+const createTerminalMirror = _aofApplication.mesh.terminalMirror.createTerminalMirror;
 
-const BRIDGE_URL = new URL("../../../packages/core/src/mesh/terminal-relay-bridge.mjs", import.meta.url).href;
+const BRIDGE_URL = new URL("../../../packages/core/src/application/bindings/mesh/terminal-relay-bridge.mjs", import.meta.url).href;
 
 // --- the REAL in-process relay harness (mirrors test/mesh-relay-broker-fanout /
 // mesh-relay-envelope-resilience's own connect()/waitFor() shape) ---
@@ -454,7 +463,9 @@ function resumeAnswerEnvelopeTests() {
     {
       name: "131/04 task03 — the mesh leg is one additive key on a closed schema, and imports no ask module",
       async run() {
-        const { meshTerminalResumeCommand } = await import("../../../packages/core/src/commands/mesh/terminal-resume.mjs");
+        const { meshTerminalResumeCommand } = await Promise.resolve(Object.freeze({
+  meshTerminalResumeCommand: _aofApplication.getCommand("mesh:terminal-resume"),
+}));
         const { input, cli } = meshTerminalResumeCommand;
         assert.deepEqual(Object.keys(input.properties), ["session", "node", "answer"]);
         assert.equal(input.additionalProperties, false, "the schema refuses any other key");
@@ -464,7 +475,7 @@ function resumeAnswerEnvelopeTests() {
         assert.equal(input.properties.answer.additionalProperties, false);
         assert.ok(!Object.hasOwn(cli.spec.flags, "answer"), "the CLI face has no answer flag");
         assert.deepEqual(cli.argv(["sess-89d1"], {}), { session: "sess-89d1" });
-        for (const rel of ["packages/mesh/src/terminal-input.mjs", "packages/mesh/src/terminal-relay-bridge.mjs", "packages/mesh/src/worker-execution.mjs", "packages/core/src/mesh/park-resume.mjs"]) {
+        for (const rel of ["packages/mesh/src/terminal-input.mjs", "packages/mesh/src/terminal-relay-bridge.mjs", "packages/mesh/src/worker-execution.mjs", "packages/core/src/application/bindings/mesh/park-resume.mjs"]) {
           const source = await readFile(new URL(`../../../${rel}`, import.meta.url), "utf8");
           assert.ok(!/from\s+["'][^"']*loop\/ask(?:-request)?\.mjs["']/u.test(source), `${rel} imports no ask module`);
         }

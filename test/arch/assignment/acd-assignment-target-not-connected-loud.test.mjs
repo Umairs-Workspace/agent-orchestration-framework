@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-target-not-connected-loud (milestone 35 / ADR-002 /
 // 34-ADR-008, fitness #6). "An assign to an unknown/ineligible target — OR a directive
 // to a node with no live socket in the WS targeting map — emits a coded,
@@ -24,9 +25,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assignWork } from "../../../packages/core/src/mesh/assignment.mjs";
+const assignWork = _aofApplication.mesh.assignments.assignWork;
 import { withMeshAssignFixture, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
-import { sendDirective, buildDirectiveFrame, ASSIGNMENT_TARGET_NOT_CONNECTED } from "../../../packages/core/src/control-stream-server.mjs";
+const sendDirective = _aofApplication.mesh.controlStreamServer.sendDirective;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
+const ASSIGNMENT_TARGET_NOT_CONNECTED = _aofApplication.mesh.controlStreamServer.ASSIGNMENT_TARGET_NOT_CONNECTED;
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 

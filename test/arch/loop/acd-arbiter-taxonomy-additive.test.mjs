@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5801 — THE SUPERVISION VOCABULARY WIDENS ADDITIVELY AND ADMITS NOTHING THAT COULD ACT.
 //
 // Milestone 58 / story 00. The invariant, from ADR-002, ADR-003 and ADR-004:
@@ -33,10 +34,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  ADMITTED_KEYS, EDGE_KEYS, ENDPOINT_SCHEMES, NODE_KINDS, POINTER_SCHEMES, SENTINEL_TOKENS,
-  loadLoops,
-} from "../../../packages/core/src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const ENDPOINT_SCHEMES = _aofApplication.graph.work.loops.ENDPOINT_SCHEMES;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const POINTER_SCHEMES = _aofApplication.graph.work.loops.POINTER_SCHEMES;
+const SENTINEL_TOKENS = _aofApplication.graph.work.loops.SENTINEL_TOKENS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 
@@ -175,7 +179,23 @@ export const archTests = [
         "the endpoint vocabulary gains exactly `arbiter` — no watcher, no anchor");
       assert.match(loaderSource, /const LAYER_VALUES = frozenSet\("operational", "management", "governance"\);/u,
         "LAYER_VALUES equals its three frozen literals, in the loader and nowhere else");
-      assert.equal("LAYER_VALUES" in (await import("../../../packages/core/src/work/loops.mjs")), false,
+      assert.equal("LAYER_VALUES" in (await Promise.resolve(Object.freeze({
+  ADMITTED_KEYS: _aofApplication.graph.work.loops.ADMITTED_KEYS,
+  CADENCE_KINDS: _aofApplication.graph.work.loops.CADENCE_KINDS,
+  EDGE_KEYS: _aofApplication.graph.work.loops.EDGE_KEYS,
+  ENDPOINT_SCHEMES: _aofApplication.graph.work.loops.ENDPOINT_SCHEMES,
+  EVENT_TRIGGERS: _aofApplication.graph.work.loops.EVENT_TRIGGERS,
+  FIELD_KINDS: _aofApplication.graph.work.loops.FIELD_KINDS,
+  GROUND_VALUES: _aofApplication.graph.work.loops.GROUND_VALUES,
+  LOADER_FINDING_CODES: _aofApplication.graph.work.loops.LOADER_FINDING_CODES,
+  NODE_KINDS: _aofApplication.graph.work.loops.NODE_KINDS,
+  PERIODIC_UNITS: _aofApplication.graph.work.loops.PERIODIC_UNITS,
+  POINTER_SCHEMES: _aofApplication.graph.work.loops.POINTER_SCHEMES,
+  SENTINEL_TOKENS: _aofApplication.graph.work.loops.SENTINEL_TOKENS,
+  loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+  parseCadence: _aofApplication.graph.work.loops.parseCadence,
+  loadLoops: _aofApplication.graph.work.loops.loadLoops,
+}))), false,
         "…and it is NOT exported: 52's delivered `00_frozen-vocabulary.feature:22` says no twelfth set is, and 57 answered this the same way for DETERMINISM_VALUES");
 
       // `dead-band` (ADR-004 §5) exists in NO admitted set. A refusal recorded as a sentence in an

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-session-worktree-lane-scoped (milestone 50 / story 03; TECH_DEBT
 // item 47) — "the bare-session lane is a SIBLING of the assignment lane, never a squatter
 // in its module or its keyspace."
@@ -41,14 +42,12 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import {
-  meshWorktreesRoot,
-  meshSessionWorktreesRoot,
-  meshSessionWorktreePath,
-  sessionWorktreeSlug,
-  isUnderMeshSessionWorktreesRoot,
-  isUnderMeshWorktreesRoot,
-} from "../../../packages/core/src/mesh/worktree.mjs";
+const meshWorktreesRoot = _aofApplication.mesh.worktree.meshWorktreesRoot;
+const meshSessionWorktreesRoot = _aofApplication.mesh.worktree.meshSessionWorktreesRoot;
+const meshSessionWorktreePath = _aofApplication.mesh.worktree.meshSessionWorktreePath;
+const sessionWorktreeSlug = _aofApplication.mesh.worktree.sessionWorktreeSlug;
+const isUnderMeshSessionWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot;
+const isUnderMeshWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
@@ -94,7 +93,7 @@ export function siblingBoundaryProblems(code) {
 // reasons, not a count: TECH_DEBT 47's whole finding is that the SECOND writer into this
 // root cost a review to notice.
 export const ASSIGNMENT_KEYSPACE_CALLERS = Object.freeze([
-  Object.freeze({ file: "packages/core/src/mesh/worktree.mjs", why: "Compatibility exports of the same configured lane services; no path construction." }),
+  Object.freeze({ file: "packages/core/src/application/bindings/mesh/worktree.mjs", why: "Compatibility exports of the same configured lane services; no path construction." }),
   Object.freeze({ file: "packages/core/src/application/bindings/mesh/worker-execution.mjs", why: "COMPOSITION — supplies the assignment lane path services to the mesh-owned worker." }),
   Object.freeze({
     file: "packages/core/src/application/bindings/mesh/worktree.mjs",
@@ -265,7 +264,7 @@ export const archTests = [
       // …and the sweep: a NEW module naming the assignment seam is an offender until it
       // is allowlisted with a reason.
       const planted = [
-        { path: "packages/core/src/mesh/worktree.mjs", source: "export const { meshWorktreePath, meshWorktreesRoot } = meshWorktree;" },
+        { path: "packages/core/src/application/bindings/mesh/worktree.mjs", source: "export const { meshWorktreePath, meshWorktreesRoot } = meshWorktree;" },
         { path: "packages/core/src/application/bindings/mesh/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
         { path: "packages/core/src/application/bindings/mesh/worktree.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
         { path: "packages/mesh/src/worktrees.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },

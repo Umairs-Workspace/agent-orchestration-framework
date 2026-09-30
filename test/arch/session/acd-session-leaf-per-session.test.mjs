@@ -1,3 +1,6 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-leaf-per-session (milestone 48 / ADR-002 + ADR-010 R1,
 // fitness #2) — "one live session, one record; an `end` cannot kill a sibling."
 //
@@ -46,9 +49,12 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startSession, endSession, readSessionRecord, sessionRecordPath } from "../../../packages/core/src/mesh/session.mjs";
-import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const startSession = _aofHooks.meshSession.startSession;
+const endSession = _aofHooks.meshSession.endSession;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(repoRoot, "packages", "core", "src");

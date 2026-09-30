@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // m42 wave (b) / TECH_DEBT item 7 — the PTY LIVENESS PROBE. Measured live (run
 // 39ec5149, 2026-07-26): the agent process vanished ~11 minutes into a run with no
 // onExit ever delivered, so the run — and its assignment — sat `running` for 25+
@@ -11,7 +12,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { driveInteractiveClaudeSession, listStrandedWorktreeAssignments } from "../../../packages/core/src/mesh/worker-execution.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const listStrandedWorktreeAssignments = _aofApplication.mesh.worker.listStrandedWorktreeAssignments;
 import { createFakeWhich } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 // A minimal PTY fake matching the driver's contract (onData/onExit subscriptions

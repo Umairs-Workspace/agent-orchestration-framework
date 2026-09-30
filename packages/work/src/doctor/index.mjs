@@ -621,7 +621,8 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
       const answer = resolveCitedPath(control, { renameMap });
       if (answer.at == null) continue;
       try {
-        controlProbes[control] = (await stat(path.join(projectRoot, answer.at))).isFile();
+        const destinations = answer.destinations ?? [answer.at];
+        controlProbes[control] = (await Promise.all(destinations.map(file => stat(path.join(projectRoot, file))))).every(info => info.isFile());
       } catch {
         controlProbes[control] = false;
       }

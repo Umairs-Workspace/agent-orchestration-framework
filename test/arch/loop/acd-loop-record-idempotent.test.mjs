@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-7803 (78/ADR-002, ADR-010) — REGENERATION IS BYTE-IDENTICAL ON UNCHANGED INPUTS, ACROSS
 // SEPARATE PROCESSES.
 //
@@ -22,7 +23,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loopRecordCommand } from "../../../packages/core/src/commands/loop-record.mjs";
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import {
   ENGAGED_RUNS,
@@ -35,7 +36,7 @@ import {
 } from "../../loop/loop-record-command.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const write = async (repo) => await loopRecordCommand.run({ ref: ITEM_REF, write: true }, await ctxFor(repo));
 

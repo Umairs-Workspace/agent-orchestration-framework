@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 02 / ADR-009 (supersedes m01-ADR-004's file-isolation):
 // "aof work init/update write ONLY the `work` section of the unified
 //  .aof/aof.lock.json. They never write a separate aof.work.lock.json, preserve the
@@ -24,7 +25,7 @@ import { readFile, mkdtemp, mkdir, rm, writeFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { initWork } from "../../../packages/core/src/work/init.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
 import { updateWork } from "../../../packages/core/src/work/update.mjs";
 import { loadBundle } from "../../../packages/core/src/work/bundle.mjs";
 import { workspacePaths } from "../../../packages/core/src/workspace.mjs";

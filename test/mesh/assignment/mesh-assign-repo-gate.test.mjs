@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // task 03 — the control-side assign gate refuses a target that lacks the repo, loudly
 // and with a code (milestone 35 / story 00, ADR-001 / 34-ADR-008 / SECURITY T3).
 // Hermetic over AOF_GLOBAL_HOME opening a v3 store seeded with global_node_workspaces
@@ -5,13 +6,13 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assignWork } from "../../../packages/core/src/mesh/assignment.mjs";
+const assignWork = _aofApplication.mesh.assignments.assignWork;
 import { withMeshAssignFixture, seedTargetNode, seedAssignment, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const NOW = "2026-07-08T12:00:00.000Z";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 export const meshAssignRepoGateTests = [
   {

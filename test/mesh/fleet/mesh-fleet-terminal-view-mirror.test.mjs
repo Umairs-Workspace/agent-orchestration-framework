@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/fleet/mesh-fleet-terminal-view-mirror.test.mjs — traceability for milestone 38 /
 // story 06, task 01 (tasks/01_fleet-terminal-view-mirror.feature, ADR-014). The
 // fleet face gains a READ-ONLY terminal-VIEW route serving an IN-MEMORY EPHEMERAL
@@ -16,9 +17,11 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
-import { createTerminalMirror } from "../../../packages/core/src/mesh/terminal-mirror.mjs";
-import { buildTerminalFrameEnvelope, buildTerminalEndEnvelope } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const createTerminalMirror = _aofApplication.mesh.terminalMirror.createTerminalMirror;
+const buildTerminalFrameEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalFrameEnvelope;
+const buildTerminalEndEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalEndEnvelope;
 
 async function writeDist(dir) {
   await mkdir(path.join(dir, "assets"), { recursive: true });

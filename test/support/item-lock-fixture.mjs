@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/item-lock-fixture.mjs — the shared fixture for milestone 43 / story 01
 // (the exclusive item lock).
 //
@@ -17,8 +19,9 @@ import { mkdtemp, mkdir, realpath, rm, writeFile, cp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
 import { seedAssignment, seedTargetNode, readAssignmentRows } from "./mesh-assign-fixture.mjs";
 
 export { seedAssignment, seedTargetNode, readAssignmentRows };

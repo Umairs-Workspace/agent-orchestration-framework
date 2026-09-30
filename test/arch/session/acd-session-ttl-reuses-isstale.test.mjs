@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-session-ttl-reuses-isstale (milestone 38 / ADR-002) —
 // "session TTL liveness REUSES the shared m23 `isStale` predicate (strict >, injected
 // clock) — it NEVER forks a parallel staleness rule."
@@ -29,7 +30,7 @@ import assert from "node:assert/strict";
 import { readFile, access } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isNodeStale } from "../../../packages/core/src/mesh/presence.mjs";
+const isNodeStale = _aofApplication.mesh.presence.isNodeStale;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const sessionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");

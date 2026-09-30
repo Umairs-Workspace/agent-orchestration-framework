@@ -1,3 +1,4 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Traceability wiring for milestone 68 / story 03 — attribution-by-join.
 //
 // Covers EVERY @executable scenario in the two task features:
@@ -14,14 +15,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  observeMilestone,
-  collectMilestoneAgents,
-  buildSessionItemIndex,
-  analyzeTranscript,
-  classifyToolCallResult,
-  projectSlug,
-} from "../../../packages/core/src/work/observe.mjs";
+const observeMilestone = _aofSessions.workObserve.observeMilestone;
+const collectMilestoneAgents = _aofSessions.workObserve.collectMilestoneAgents;
+const buildSessionItemIndex = _aofSessions.workObserve.buildSessionItemIndex;
+const analyzeTranscript = _aofSessions.workObserve.analyzeTranscript;
+const classifyToolCallResult = _aofSessions.workObserve.classifyToolCallResult;
+const projectSlug = _aofSessions.workObserve.projectSlug;
 
 const T0 = Date.parse("2026-08-20T10:00:00.000Z");
 const iso = (o) => new Date(T0 + o).toISOString();

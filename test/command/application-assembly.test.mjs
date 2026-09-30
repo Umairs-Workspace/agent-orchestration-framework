@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, realpath, rm, access } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -12,7 +13,7 @@ import path from 'node:path';
 import { createApplication } from '../../packages/core/src/application/assemble.mjs';
 import { createApplicationLifetime } from '../../packages/core/src/application/lifetime.mjs';
 import { defaultApplication } from '../../packages/core/src/application/default.mjs';
-import { registerActiveWorktree } from '../../packages/core/src/mesh/worker-execution.mjs';
+const registerActiveWorktree = _aofApplication.mesh.worker.registerActiveWorktree;
 import { importSpecifiers } from '../support/module-family.mjs';
 import { applicationConstructionDetails } from '../support/workspace/assembly-graph.mjs';
 

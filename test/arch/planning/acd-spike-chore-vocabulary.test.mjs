@@ -13,7 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "packages/core/src/application/bindings/work.mjs");
+const workSrc = path.join(repoRoot, "packages/work/src/identity.mjs");
 
 // Extract the alternation `(milestone|story|task|uat|...)` from the ITEM_RE literal
 // in source. Returns the set of admitted type tokens (or null if ITEM_RE not found).

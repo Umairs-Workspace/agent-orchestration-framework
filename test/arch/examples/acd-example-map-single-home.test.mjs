@@ -40,7 +40,9 @@ const ADMITTED = new Map([
 ]);
 
 async function modules() {
-  const files = await readRuntimeFiles(repoRoot);
+  // The Node example-map parser is distinct from UI display labels. The full
+  // source boundary scan still covers every browser source file.
+  const files = await readRuntimeFiles(repoRoot, { runtime: "node" });
   assert.ok(files.length > 0, "runtime grammar sources were enumerated");
   return files.map(file => file.path);
 }

@@ -1,18 +1,29 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loopCommand, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
-import { invoke } from "../../packages/core/src/command-core.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const invoke = _aofApplication.invoke;
 import { LOOP_STOPS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { immediatePark } from "../support/loop/lane-fixture.mjs";
-import { completeRun, heartbeat, readRuns, retryRun, runNodeRecordPath, runRecordPath, startRun } from "../../packages/core/src/run-store.mjs";
+const completeRun = _aofApplication.execution.runs.completeRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const retryRun = _aofApplication.execution.runs.retryRun;
+const runNodeRecordPath = _aofApplication.execution.runs.runNodeRecordPath;
+const runRecordPath = _aofApplication.execution.runs.runRecordPath;
+const startRun = _aofApplication.execution.runs.startRun;
 import { heartbeatFromConfig } from "@aof/contracts/loop-bounds";
-import { loopStopsDir, readStopRequest, requestLoopStop, stopRequestPath } from "../../packages/core/src/loop/stop-request.mjs";
-import { stopLoop } from "../../packages/core/src/loop/stop.mjs";
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const stopLoop = _aofApplication.loop.stop.stopLoop;
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 
@@ -449,7 +460,7 @@ export const loopCommandProbeTests = [
       const deferred = /const BOARD_DEFERRED = new Set\(\[([\s\S]*?)\]\)/u.exec(coverage);
       assert.ok(deferred, "BOARD_DEFERRED is a literal set in the route-coverage control");
       assert.match(deferred[1], /"loop"/u, "work:loop is still deferred");
-      assert.doesNotMatch(await readFile(path.join(root, "packages", "core", "src", "board-ui.mjs"), "utf8"), /\/api\/work\/loop/u);
+      assert.doesNotMatch(await readFile(path.join(root, "packages", "server", "src", "board-ui.mjs"), "utf8"), /\/api\/work\/loop/u);
     },
   },
 
@@ -715,7 +726,7 @@ export const loopCommandProbeTests = [
     name: "130/02 task01 [outline] the child process prints the document or the refusal and exits accordingly (3 rows)",
     async run() {
       const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-      const cliPath = path.join(root, "bin", "aof.mjs");
+      const cliPath = path.join(root, "packages", "core", "bin", "aof.mjs");
       const rows = [
         { seed: true, flags: ["--json"], exit: 0 },
         { seed: true, flags: [], exit: 0 },

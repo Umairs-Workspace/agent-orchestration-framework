@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 00
 // tasks/00_the-id-ladder.feature — "the routable session id is READ from the
 // assistant through one ordered ladder, and never invented".
@@ -19,9 +21,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../packages/core/src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode, sessionRecordPath } from "../../../packages/core/src/mesh/session.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";

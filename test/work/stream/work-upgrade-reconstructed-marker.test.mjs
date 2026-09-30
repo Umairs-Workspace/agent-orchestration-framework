@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 40 / story 02 (migration registry &
 // `aof upgrade`), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
@@ -12,7 +13,8 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { WORK_ITEM_MIGRATIONS, runUpgrade } from "../../../packages/core/src/work/upgrade.mjs";
+const WORK_ITEM_MIGRATIONS = _aofApplication.work.upgrade.WORK_ITEM_MIGRATIONS;
+const runUpgrade = _aofApplication.work.upgrade.runUpgrade;
 import { withWork, writeItem } from "../../support/work-upgrade-fixture.mjs";
 
 const bodyOf = (text) => text.slice(text.indexOf("\n---", 3) + "\n---".length);

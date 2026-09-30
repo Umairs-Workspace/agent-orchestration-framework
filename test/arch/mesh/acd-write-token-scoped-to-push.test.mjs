@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-write-token-scoped-to-push (milestone 38 / ADR-015; SECURITY
 // T9 re-opened, co-owned with the acd-minted-token-scoped-single-repo T15 rewrite)
 //
@@ -26,11 +27,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGithubAppPushMintProvider } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
-import { applyWriteCredentialRequestFrame, WRITE_CREDENTIAL_NOT_HOLDER } from "../../../packages/core/src/control-stream-server.mjs";
+const createGithubAppPushMintProvider = _aofApplication.mesh.cloneCredentialProvider.createGithubAppPushMintProvider;
+const applyWriteCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyWriteCredentialRequestFrame;
+const WRITE_CREDENTIAL_NOT_HOLDER = _aofApplication.mesh.controlStreamServer.WRITE_CREDENTIAL_NOT_HOLDER;
 import { generateThrowawayKeypair, createFakeHttpRequest, jsonResponse } from "../../support/mesh-clone-credential-mint-fixture.mjs";
 import { seedAssignment } from "../../support/mesh-assign-fixture.mjs";
-import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

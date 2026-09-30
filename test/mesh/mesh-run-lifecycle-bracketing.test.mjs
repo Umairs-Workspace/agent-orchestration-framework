@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // task 02 — accepting a directive brackets execution in a node-partitioned run and
 // streams accepted -> running -> done|failed, with the run-store staying mesh-blind
 // (milestone 35 / story 02, ADR-004). Exercised over the worker execution handler in a
@@ -7,9 +9,11 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
-import { readRuns, runNodeRecordPath } from "../../packages/core/src/run-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const findWork = _aofWorkspace.work.findWork;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const runNodeRecordPath = _aofApplication.execution.runs.runNodeRecordPath;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
 
 const NODE_ID = "node-a";

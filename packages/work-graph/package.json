@@ -22,7 +22,7 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test test/commands.test.mjs"
+    "test": "node ../../scripts/test-workspace.mjs @aof/work-graph"
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",

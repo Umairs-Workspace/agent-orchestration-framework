@@ -1,5 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { mkdir } from "node:fs/promises";
-import { serveSetupUi } from "../../../packages/core/src/setup-ui.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 
 export async function startSetupUi(context) {
   if (context.setupUi) return;

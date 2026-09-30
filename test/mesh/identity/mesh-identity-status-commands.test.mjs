@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 22 / story 01 — the mesh:identity / mesh:status
 // commands.
 //
@@ -17,9 +20,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
-import { meshDir, nodeRecordPath, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const meshDir = _aofHooks.meshStore.meshDir;
+const nodeRecordPath = _aofHooks.meshStore.nodeRecordPath;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 
 // 34/story 02 (operator directive): `skills` is REMOVED from the descriptor
 // (see assembleDescriptor) — six keys, until 132/02 added a seventh:

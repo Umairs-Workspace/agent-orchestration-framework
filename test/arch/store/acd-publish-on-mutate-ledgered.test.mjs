@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d4, PORT 1 (PRD-command-spine-effects-
 // ledger, "cascade-ports"): publish-on-mutate is a LEDGERED CONSEQUENCE, not a
 // per-command import decision.
@@ -35,11 +37,12 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
-import { openEffectsJournal, readUnsettledSteps } from "../../../packages/core/src/effects/journal.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { settleLaneProjectionEffects } from "../../../packages/core/src/commands/dispatch.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readUnsettledSteps = _aofApplication.effects.journal.readUnsettledSteps;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const settleLaneProjectionEffects = _aofApplication.loop.commandTools.dispatch.settleLaneProjectionEffects;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

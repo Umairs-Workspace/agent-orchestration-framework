@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-memory-recall-contract (ADR-004).
 //
 // `recall` returns { query, scope, records[], text }; each record is a
@@ -5,7 +6,7 @@
 // `records` array (the contract), never the rendered `text` blob.
 import assert from "node:assert/strict";
 import { recall, MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
-import { runMemory } from "../../../packages/core/src/work/memory.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 
 // A minimal frozen-shape fixture index (ADR-005): absent-type fields present-as-"".
 function fixtureRecords() {

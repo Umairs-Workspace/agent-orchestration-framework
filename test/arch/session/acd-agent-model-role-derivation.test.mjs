@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 30 / task 02 (the validator's accepted-key set).
 //
 // The task feature flagged this STRUCTURAL invariant as an arch-test (NOT a
@@ -26,7 +27,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
-import { validateConfig } from "../../../packages/core/src/config-inspect.mjs";
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 
 // The frozen ACD agent ids, DERIVED from the descriptor at test time. This is
 // the SAME source the validator is asserted to derive from — so if the validator

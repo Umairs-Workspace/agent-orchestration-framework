@@ -1,3 +1,7 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6602 (milestone 66 / ADR-002 + ADR-009) — THE ACCEPTANCE HORIZON HAS ONE HOME
 // AND NEVER GATES AN IMMUTABLE RECORD.
 //
@@ -64,8 +68,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ITEM_STATUS_EDGES, closesEpoch, isOpen, severityFor, VALID_STATUS } from "@aof/work/lifecycle";
-import { validateWork } from "../../../packages/core/src/work.mjs";
-import { ACCEPTOR_EPOCH_CADENCE, criterionRevisionWindow } from "../../../packages/core/src/work-acceptor/criterion.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
+const ACCEPTOR_EPOCH_CADENCE = _aofApplication.work.acceptor.criterion.ACCEPTOR_EPOCH_CADENCE;
+const criterionRevisionWindow = _aofApplication.work.acceptor.criterion.criterionRevisionWindow;
 // THE ONE HOME for cutting source (milestone 47 / F-47-04-ARCH-2). Its `stripComments`
 // strips LINE COMMENTS FIRST (TECH_DEBT item 24), and its cuts are structural — a
 // second brace balancer written beside it, or a fixed character window, is the exact
@@ -232,7 +237,7 @@ export function featureWriteSites(sources) {
 }
 
 async function readSources() {
-  const files = await readRuntimeFiles(repoRoot);
+  const files = await readRuntimeFiles(repoRoot, { runtime: "node" });
   assert.ok(files.some(file => file.rel === THE_ONE_HOME), 'the lifecycle implementation is scanned');
   return Promise.all(files.map(async file => ({ file: file.rel, text: await readFile(file.path, 'utf8') })));
 }

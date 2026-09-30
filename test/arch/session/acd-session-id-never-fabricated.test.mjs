@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-id-never-fabricated (milestone 48 / ADR-001,
 // fitness #1) — "the routable session id is READ from the assistant, never made."
 //
@@ -44,9 +46,10 @@ import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { meshSessionCommand } from "../../../packages/core/src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode } from "../../../packages/core/src/mesh/session.mjs";
-import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const commandSourcePath = path.join(repoRoot, "packages", "mesh", "src", "commands", "session.mjs");
@@ -154,7 +157,7 @@ export const archTests = [
     run: async () => {
       const problems = [
         ...fabricationViolations(await readFile(commandSourcePath, "utf8"), "packages/mesh/src/commands/session.mjs"),
-        ...fabricationViolations(await readFile(sessionSourcePath, "utf8"), "packages/core/src/mesh/session.mjs"),
+        ...fabricationViolations(await readFile(sessionSourcePath, "utf8"), "packages/core/src/application/bindings/mesh/session.mjs"),
       ];
       assert.deepEqual(problems, [], `the id must be READ, never made or rewritten:\n  ${problems.join("\n  ")}`);
     },

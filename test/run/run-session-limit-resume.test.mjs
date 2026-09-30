@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // Traceability wiring for 348 auto-resume — the session-limit park gate and the
 // deterministic re-entry face (work:resume).
 //
@@ -18,25 +21,40 @@ import { stripComments } from "../support/source-slice.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
-import {
-  parseResumeAfter, retryReadiness, retryRun, startRun, completeRun, readRuns, isRetryable,
-  openRunAsk, parkRunAsk, answerRunAsk, heartbeat, runRecordPath,
-} from "../../packages/core/src/run-store.mjs";
-import { answerCommand, resumeCommand } from "../../packages/core/src/commands/resume.mjs";
-import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
-import { loopAsksDir, openAsk, parkAsk, readAsk, answerAsk, askRequestPath } from "../../packages/core/src/loop/ask-request.mjs";
-import { buildNotifyEnvelope } from "../../packages/core/src/notify/notify.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const getCommand = _aofApplication.getCommand;
+const parseResumeAfter = _aofApplication.execution.runs.parseResumeAfter;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
+const retryRun = _aofApplication.execution.runs.retryRun;
+const startRun = _aofApplication.execution.runs.startRun;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const isRetryable = _aofApplication.execution.runs.isRetryable;
+const openRunAsk = _aofApplication.execution.runs.openRunAsk;
+const parkRunAsk = _aofApplication.execution.runs.parkRunAsk;
+const answerRunAsk = _aofApplication.execution.runs.answerRunAsk;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const runRecordPath = _aofApplication.execution.runs.runRecordPath;
+const answerCommand = _aofApplication.getCommand("work:answer");
+const resumeCommand = _aofApplication.getCommand("work:resume");
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const parkAsk = _aofApplication.loop.askRequest.parkAsk;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
 import { renderDiscord } from "@aof/messaging/discord";
-import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
-import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { withCacheReadFixture, plantCacheRow, runCommand, streamRun, WORKER_NODE } from "../support/cache-read-fixture.mjs";
 
 const ANSWER_REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const ANSWER_CLI = path.join(ANSWER_REPO_ROOT, "bin", "aof.mjs");
+const ANSWER_CLI = path.join(ANSWER_REPO_ROOT, "packages", "core", "bin", "aof.mjs");
 
 const FROZEN_KEYS = ["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks"];
 
@@ -876,7 +894,7 @@ function answerVerbTests() {
         assert.equal(Object.keys(before).length, 1, "R1's record is on disk");
         await invoke("work:answer", { ref: "03/01", text: "take b", now: ANSWER_NOW }, ctx);
         assert.deepEqual(await snapshotFiles(runs), before, "every file under runs/ is byte-unchanged");
-        const source = (await readFile(path.join(ANSWER_REPO_ROOT, "packages", "core", "src", "commands", "resume.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
+        const source = (await readFile(path.join(ANSWER_REPO_ROOT, "packages", "work", "src", "commands", "resume.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
         for (const writer of ["openRunAsk", "parkRunAsk", "answerRunAsk"]) assert.ok(!source.includes(writer), `resume.mjs calls no ${writer}`);
       }),
     },

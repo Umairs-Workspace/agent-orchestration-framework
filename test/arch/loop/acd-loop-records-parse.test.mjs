@@ -1,12 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { moduleCitationTarget, declaresServiceSymbol } from "../../support/workspace/module-citation.mjs";
 
-import { listCommands } from "../../../packages/core/src/command-core.mjs";
-import { FIELD_KINDS, loadLoops } from "../../../packages/core/src/work/loops.mjs";
+const listCommands = _aofApplication.listCommands;
+const FIELD_KINDS = _aofApplication.graph.work.loops.FIELD_KINDS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -100,13 +103,12 @@ export const archTests = [
         pointers += 1;
         if (entry.pointer.scheme === "command") assert.ok(commands.has(entry.pointer.operand), entry.raw);
         if (entry.pointer.scheme === "module") {
-          const pointerRoot = entry.pointer.operand.startsWith("src/") ? path.join(root, "packages", "core") : root;
-          const source = await readFile(path.join(pointerRoot, entry.pointer.operand), "utf8");
-          assert.ok(await declaresPublicSymbol(source, entry.pointer.symbol), `${entry.raw}: target declares symbol`);
+          const target = await moduleCitationTarget(root, entry.pointer.operand);
+          assert.ok(await declaresServiceSymbol(target, entry.pointer.symbol), `${entry.raw}: actual source declares the public service symbol`);
         }
       }
       assert.ok(pointers > 10, "real pointer sweep is non-vacuous");
-      assert.equal(declaredHere(await readFile(path.join(root, "packages/core/src/terminal-providers.mjs"), "utf8"), "CliProvider"), true);
+      assert.equal(await declaresServiceSymbol(path.join(root, "packages/core/src/application/bindings/terminal-providers.mjs"), "CliProvider"), true);
       assert.equal(declaredHere(await readFile(path.join(root, "packages/core/src/application/bindings/command-core.mjs"), "utf8"), "loadWorkspace"), false);
       assert.equal(declaredHere(await readFile(path.join(root, "packages/knowledge/src/graphify.mjs"), "utf8"), "readGraph"), false);
     },

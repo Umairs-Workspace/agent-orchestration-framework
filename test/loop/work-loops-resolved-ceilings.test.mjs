@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: 69/00/tasks/02_registry-declares-the-ceiling.feature.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -6,8 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { DEFAULT_REVIEW_ROUNDS } from "@aof/contracts/loop-bounds";
-import { initWork } from "../../packages/core/src/work/init.mjs";
-import { loadLoops } from "../../packages/core/src/work/loops.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const bundleAof = path.join(root, "packages", "core", "assets");

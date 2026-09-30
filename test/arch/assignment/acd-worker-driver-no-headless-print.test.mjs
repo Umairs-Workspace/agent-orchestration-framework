@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-worker-driver-no-headless-print (milestone 38 / ADR-013 +
 // its 2026-07-19 AMENDMENT, fitness #16) — "the worker driver path emits NO `claude
 // -p` + `--output-format json` one-shot; the interactive `claude` launch resolves
@@ -44,7 +45,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { driveInteractiveClaudeSession, NEEDS_INPUT_SENTINEL } from "../../../packages/core/src/mesh/worker-execution.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const NEEDS_INPUT_SENTINEL = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";

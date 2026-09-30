@@ -40,13 +40,13 @@ import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const COMMANDS_DIR = path.join(repoRoot, "packages", "core", "src", "commands");
+const COMMANDS_DIR = path.join(repoRoot, "packages", "mesh", "src", "commands");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 
 // The mesh:status host, by MODULE rather than by spelling: `mesh-identity.mjs` while the directory
 // was flat, `mesh/identity.mjs` since 119/02 gave it an interior. One pattern, both spellings, so
 // the assertion below moves with the subject set the walk derives instead of trailing it.
-const MESH_STATUS_HOST = /^mesh[-/]identity\.mjs$/u;
+const MESH_STATUS_HOST = /^(?:mesh[-/])?identity\.mjs$/u;
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -58,12 +58,12 @@ function stripComments(source) {
 // the old walk returned nothing and this control asserted 25/ADR-002 over the empty set forever.
 // A mesh command module is one whose PATH names the mesh family — the flat `mesh-…​.mjs` spelling
 // or the `mesh/` directory the interior gives it — so both spellings resolve to the same subject.
-async function readMeshCommandModules(dir, prefix = "") {
+export async function readMeshCommandModules(dir, prefix = "") {
   const found = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const rel = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
     if (entry.isDirectory()) found.push(...(await readMeshCommandModules(path.join(dir, entry.name), rel)));
-    else if (entry.name.endsWith(".mjs") && (rel.startsWith("mesh-") || rel.startsWith("mesh/"))) found.push(rel);
+    else if (entry.name.endsWith(".mjs")) found.push(rel);
   }
   return found;
 }
