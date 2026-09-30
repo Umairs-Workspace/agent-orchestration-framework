@@ -24,7 +24,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // and everything else matching /concurren|parallel/ is prose. So this is not a second home
 // beside an existing one; it is the first, and this gate is what keeps it the only one.
 //
-// The scan is source-shape over `src/`, comments stripped, so a comment naming the key (this
+// The scan is source-shape over `packages/core/src/`, comments stripped, so a comment naming the key (this
 // file's own subject matter, and the module header's) is never counted as a reader.
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
@@ -35,7 +35,7 @@ import {
   DEFAULT_DISPATCH_CONCURRENCY,
   resolveDispatchConcurrency,
   dispatchConcurrencyFromConfig,
-} from "../../../src/work/dispatch.mjs";
+} from "../../../packages/core/src/work/dispatch.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -49,7 +49,7 @@ const BOUND_HOME = "packages/work-loop/src/dispatch.mjs";
 //   · re-implementing the resolver.
 const CONFIG_KEY = /\bdispatch\s*(?:\?\.|\.)\s*concurrency\b/;
 // 129/07 — the LOOP's own `work.loop.dispatch.concurrency` is a different key with a different
-// home (`src/loop-bounds.mjs`, where it is read as `loopConfig(workspace)?.dispatch?.concurrency`
+// home (`packages/core/src/loop-bounds.mjs`, where it is read as `loopConfig(workspace)?.dispatch?.concurrency`
 // and spelled as a map entry `"work.loop.dispatch.concurrency"`). Those two forms are erased
 // before the pool key's pattern is asked, so the bounds home is not a second site of THIS key,
 // while a `work?.dispatch?.concurrency` read anywhere but the home still is.
@@ -88,7 +88,7 @@ export const archTests = [
     name: "arch/65 (acd-dispatch-bound-single-home): the concurrency bound has exactly ONE resolution site in src/ — one configured key, one default constant, one resolver",
     run: async () => {
       const listing = await readSrcListing();
-      assert.ok(listing.length > 100, `src/ was actually swept (non-vacuous): ${listing.length} modules`);
+      assert.ok(listing.length > 100, `packages/core/src/ was actually swept (non-vacuous): ${listing.length} modules`);
       const offenders = boundSiteOffenders(listing);
       assert.deepEqual(offenders, [], `dispatch-bound offenders:\n  ${offenders.join("\n  ")}`);
     },
@@ -104,7 +104,7 @@ export const archTests = [
 
       for (const [label, planted] of [
         ["a second reader of the configured key", { path: "packages/mesh/src/launcher.mjs", source: "const bound = config?.work?.dispatch?.concurrency ?? 3;" }],
-        ["a second default constant", { path: "src/application/bindings/work/loops.mjs", source: "const DEFAULT_DISPATCH_CONCURRENCY = 6;" }],
+        ["a second default constant", { path: "packages/core/src/application/bindings/work/loops.mjs", source: "const DEFAULT_DISPATCH_CONCURRENCY = 6;" }],
         ["a second resolver", { path: "packages/server/src/board-ui.mjs", source: "function resolveDispatchConcurrency(value) { return value ?? 3; }" }],
       ]) {
         const offenders = boundSiteOffenders([home, consumer, planted]);
@@ -114,16 +114,16 @@ export const archTests = [
 
       // 129/07 — the bounds home reading ITS OWN `work.loop.dispatch.concurrency` (and spelling it as
       // a map entry) is not a second site of the pool key; the same file reading the pool key is.
-      const loopHome = { path: "src/loop-bounds.mjs", source: 'const loopConfig = (w) => w?.config?.work?.loop;\nexport function loopDispatchConcurrencyFromConfig(workspace) { return positiveInteger(loopConfig(workspace)?.dispatch?.concurrency, null); }\nexport const M = { "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig };' };
+      const loopHome = { path: "packages/core/src/loop-bounds.mjs", source: 'const loopConfig = (w) => w?.config?.work?.loop;\nexport function loopDispatchConcurrencyFromConfig(workspace) { return positiveInteger(loopConfig(workspace)?.dispatch?.concurrency, null); }\nexport const M = { "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig };' };
       assert.deepEqual(boundSiteOffenders([home, consumer, loopHome]), [], "self-check: the loop key's own home is not a second site of the pool key");
-      const annexing = { path: "src/loop-bounds.mjs", source: `${loopHome.source}\nconst pool = workspace?.config?.work?.dispatch?.concurrency;` };
+      const annexing = { path: "packages/core/src/loop-bounds.mjs", source: `${loopHome.source}\nconst pool = workspace?.config?.work?.dispatch?.concurrency;` };
       const annexed = boundSiteOffenders([home, consumer, annexing]);
       assert.equal(annexed.length, 1, `self-check: the same file reading the pool key is reported (got ${JSON.stringify(annexed)})`);
 
       // …and a COMMENT naming the key is history, not an instance of it — otherwise the
       // module that documents the rule would be the first to break it.
       assert.deepEqual(
-        boundSiteOffenders([home, { path: "src/prose.mjs", source: "// the bound comes from config.work.dispatch.concurrency, resolved in work-dispatch.mjs\n" }]),
+        boundSiteOffenders([home, { path: "packages/core/src/prose.mjs", source: "// the bound comes from config.work.dispatch.concurrency, resolved in work-dispatch.mjs\n" }]),
         [],
         "self-check: a comment naming the key is not a reader of it",
       );

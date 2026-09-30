@@ -50,15 +50,15 @@ async function collectFiles(dir, exts) {
 
 export const archTests = [
   {
-    name: "arch/ADR-003: node-pty and ws are ROOT dependencies, not ui/ dependencies",
+    name: "arch/ADR-003: native terminal and WebSocket dependencies belong to runtime owners",
     run: async () => {
-      const root = await readJson("package.json");
+      const execution = await readJson("packages/execution/package.json");
+      const server = await readJson("packages/server/package.json");
       const ui = await readJson("ui/package.json");
-      const rootDeps = { ...root.dependencies, ...root.devDependencies };
       const uiDeps = { ...ui.dependencies, ...ui.devDependencies };
 
-      assert.ok(rootDeps["node-pty"], "root package.json depends on node-pty");
-      assert.ok(rootDeps["ws"], "root package.json depends on ws");
+      assert.ok(execution.dependencies["node-pty"], "execution owns the native terminal runtime");
+      assert.ok(server.dependencies["ws"], "server owns the WebSocket runtime");
       assert.ok(!uiDeps["node-pty"], "ui/package.json does NOT depend on node-pty");
       assert.ok(!uiDeps["ws"], "ui/package.json does NOT depend on ws");
     },

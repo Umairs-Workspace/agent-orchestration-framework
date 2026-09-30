@@ -9,7 +9,7 @@
 // matching the ui/src/terminal/*.mjs convention.
 
 // The notifier's words (131/ADR-006 §1) — the ONE `ui/src` import that resolves outside `ui/src`.
-import { eventPhrase, formatElapsed } from "../../../src/notify/form.mjs";
+import { eventPhrase, formatElapsed } from "@aof/messaging/form";
 
 // Derive the primary action for an item. Pure: status + ctx in, action out.
 //   ctx.liveForRef  — dock open + bound to THIS ref → "View terminal" (wins over status)

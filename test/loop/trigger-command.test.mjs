@@ -22,16 +22,16 @@ import { fileURLToPath } from "node:url";
 
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { cleanL3Gate } from "../support/l3-gate-fixture.mjs";
-import { getCommand, invoke, listCommands } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS, LOOP_INPUT_KEYS as LOOP_INPUT_KEYS_UNDER_TEST } from "../../src/commands/trigger.mjs";
-import { TRIGGER_SOURCES, compileTriggerDeclaration } from "../../src/work-trigger/declaration.mjs";
-import { resolveTriggerLevel } from "../../src/work-trigger/level.mjs";
+import { getCommand, invoke, listCommands } from "../../packages/core/src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS, LOOP_INPUT_KEYS as LOOP_INPUT_KEYS_UNDER_TEST } from "../../packages/core/src/commands/trigger.mjs";
+import { TRIGGER_SOURCES, compileTriggerDeclaration } from "../../packages/core/src/work-trigger/declaration.mjs";
+import { resolveTriggerLevel } from "../../packages/core/src/work-trigger/level.mjs";
 import { LOOP_LEVELS, LOOP_REFUSALS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const BUNDLED_DECLARATION = path.join(repoRoot, "src", "bundle", "triggers.jsonc");
+const BUNDLED_DECLARATION = path.join(repoRoot, "packages", "core", "assets", "triggers.jsonc");
 
 const LOOP_ID = "work:loop";
 const DOCTOR_ID = "work:doctor";
@@ -1235,7 +1235,7 @@ export const triggerCommandTests = [
       // the `work:insert-*` family, so `work:trigger` is outside its domain by construction
       // rather than by a carve-out list this story had to edit. Pinned here so the claim the
       // command-core comment makes is one a test would notice breaking.
-      const { readDescriptor } = await import("../../src/work/bundle.mjs");
+      const { readDescriptor } = await import("../../packages/core/src/work/bundle.mjs");
       assert.equal("work:trigger".startsWith("work:insert-"), false, "work:trigger is not a member of the insert family the parity guard covers");
       const commandMembers = readDescriptor().members.filter((entry) => entry.kind === "command").map((entry) => entry.id);
       assert.equal(commandMembers.includes("trigger"), false, "and it ships no /aof:trigger bundle command");

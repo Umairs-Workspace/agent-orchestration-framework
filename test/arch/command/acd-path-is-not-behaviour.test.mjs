@@ -15,9 +15,9 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // ── THE FIVE SUBJECTS THE REGISTER NAMES, AND A SIXTH THIS STORY MEASURED ────────────────
 // ADR-008 enumerates route, command name, lane membership, bundle target and registry ordering.
 // Building this story found a live instance that is NONE of them and that ADR-008's headline
-// sentence covers exactly: `src/work-loops.mjs:318` derived the PACKAGE ROOT from its own module
-// location with two `path.dirname` hops. Two hops from `src/work-loops.mjs` is the repository
-// root; from `src/work/loops.mjs` it is `src/`, so every framework loop record's ceiling pointer
+// sentence covers exactly: `packages/core/src/work-loops.mjs:318` derived the PACKAGE ROOT from its own module
+// location with two `path.dirname` hops. Two hops from `packages/core/src/work-loops.mjs` is the repository
+// root; from `packages/core/src/work/loops.mjs` it is `packages/core/src/`, so every framework loop record's ceiling pointer
 // would have stopped resolving — `loop-ceiling-pointer-unresolved` on every one — because a
 // module moved one directory deeper. It was the ONLY self-located constant in the 71-module
 // moving set, and the sixth leg below is what stops the next one arriving unseen. A control that
@@ -44,12 +44,12 @@ import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-export const REGISTRY = "src/application/bindings/command-core.mjs";
-export const FACE = "src/application/bindings/spine/face.mjs";
+export const REGISTRY = "packages/core/src/application/bindings/command-core.mjs";
+export const FACE = "packages/core/src/application/bindings/spine/face.mjs";
 
-// THE SWEEP IS EVERY MODULE UNDER `src/`, and that is a correction (119/01 review). It swept the
+// THE SWEEP IS EVERY MODULE UNDER `packages/core/src/`, and that is a correction (119/01 review). It swept the
 // two directories this story moved — a STORED fact about which families had moved, which goes
-// SILENTLY stale rather than red: 119/02 moves `src/commands/mesh-*.mjs` into a directory this
+// SILENTLY stale rather than red: 119/02 moves `packages/core/src/commands/mesh-*.mjs` into a directory this
 // list does not name, both named families stay non-vacuous, and the leg passes having never read
 // the module that acquired the defect. That is ADR-003's own carrier species, inside the control
 // that closes ADR-008. The invariant was never about moved modules: a root derived by hop
@@ -59,13 +59,8 @@ export const FACE = "src/application/bindings/spine/face.mjs";
 // carries its reason here, the list MAY FALL and MAY NEVER RISE (the length assertion in the leg
 // is what refuses a raise), and each entry is re-checked to still BE such a module — an
 // allowlist naming a module that no longer derives a root is a stale allowlist.
-export const ADMITTED_SELF_LOCATED = Object.freeze([
-  Object.freeze({
-    module: "src/work-audit/toolkit.mjs",
-    why: "THE TOOLKIT ROOT IS THIS MODULE'S SUBJECT (m77/ADR-002). It answers 'where was aof itself installed', which is a question about this file's own location and nothing else — deriving it from anywhere but here is the second root TECH_DEBT 72 is made of. It is admitted because the derivation IS the module, and it is safe because `src/work-audit/` is a sub-family directory ADR-005 §3 rules is never nested.",
-  }),
-
-]);
+// Core toolkit paths now delegate to the asset seam; no self-located root remains.
+export const ADMITTED_SELF_LOCATED = Object.freeze([]);
 
 // A path expression that produces a NAME. `path.basename(...)`, `path.dirname(...)`,
 // `path.parse(...)` and the bare `.split("/").pop()` idiom are the four spellings this tree
@@ -151,7 +146,7 @@ async function read(rel) {
   return readFile(path.join(repoRoot, rel), "utf8");
 }
 
-// Every `.mjs` under `src/`, recursively. `src/bundle/` is skipped: it is shipped PROSE and
+// Every `.mjs` under `packages/core/src/`, recursively. `packages/core/assets/` is skipped: it is shipped PROSE and
 // template assets rather than modules this tree loads, and a template is allowed to spell
 // whatever a rendered file will need.
 async function sourceModules() {
@@ -217,7 +212,7 @@ export const archTests = [
   {
     name: "arch/119 FF-11905: the registered set, its routes and its declared flags are read from the REGISTRY rather than from any path",
     run: async () => {
-      const core = await import("../../../src/command-core.mjs");
+      const core = await import("../../../packages/core/src/command-core.mjs");
       const listed = core.listCommands();
       assert.ok(Array.isArray(listed) && listed.length >= 40, `non-vacuity: the registry lists ${listed.length} commands`);
 
@@ -282,13 +277,13 @@ export const archTests = [
       assert.deepEqual(pathDerivedIdentifiers(FACE, stripComments(await read(FACE))), [], "…and the unmodified face, in this same lane, reports none");
 
       // (b) a module deriving its root by hops from its own location — the live shape this story
-      //     found at `src/work-loops.mjs:318`, reproduced verbatim.
+      //     found at `packages/core/src/work-loops.mjs:318`, reproduced verbatim.
       const plantedRoot = "const PACKAGE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));";
-      const rootFindings = selfLocatedRoots("src/application/bindings/work/loops.mjs", plantedRoot);
+      const rootFindings = selfLocatedRoots("packages/core/src/application/bindings/work/loops.mjs", plantedRoot);
       assert.equal(rootFindings.length, 1, `a planted self-located root fires the shipped detector: ${JSON.stringify(rootFindings)}`);
       assert.equal(rootFindings[0].constant, "PACKAGE_ROOT", "…and the refusal names the constant");
       assert.match(rootFindings[0].message, /function of the file's DEPTH/u, "…and says why a green suite would never have caught it");
-      assert.deepEqual(selfLocatedRoots("src/application/bindings/work/loops.mjs", await read("src/application/bindings/work/loops.mjs")), [], "…and the real module, now asking a seam for the root, reports none in this same lane");
+      assert.deepEqual(selfLocatedRoots("packages/core/src/application/bindings/work/loops.mjs", await read("packages/core/src/application/bindings/work/loops.mjs")), [], "…and the real module, now asking a seam for the root, reports none in this same lane");
 
       // (c) the `path.resolve(dirname, "..", "..")` spelling of the same defect is caught too —
       //     one derivation, two idioms, and a control that knew only one would meter half of it.

@@ -16,9 +16,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../../src/command-core.mjs";
-import { loopDocumentCommand } from "../../../src/commands/loop-document.mjs";
-import { loopDocumentPath } from "../../../src/loop-document.mjs";
+import { loadWorkspace } from "../../../packages/core/src/command-core.mjs";
+import { loopDocumentCommand } from "../../../packages/core/src/commands/loop-document.mjs";
+import { loopDocumentPath } from "../../../packages/core/src/loop-document.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { RECORDS, loop, withRepo, writeRegistry } from "../../support/loop-document-fixture.mjs";
 

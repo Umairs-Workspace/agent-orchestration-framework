@@ -4,9 +4,9 @@
 // Every @executable scenario AND every Scenario-Outline Examples row of that
 // feature is covered here, exercised against the REAL seam (`runMemory` /
 // `selectBackendName` / `resolveConfiguredBackend` / `BACKEND_REGISTRY` in
-// ../src/work/memory.mjs), the REAL `$defs/memory` schema (the same ajv-2020 engine
+// ../packages/core/src/work/memory.mjs), the REAL `$defs/memory` schema (the same ajv-2020 engine
 // the codebase ships), and the REAL graphify backend module's default export
-// (../src/memory/graphify-backend.mjs). One test object per scenario; Scenario-Outline
+// (../packages/core/src/memory/graphify-backend.mjs). One test object per scenario; Scenario-Outline
 // rows folded one-per-row, each name tracing to feature + scenario.
 //
 //   00_backend-registered-and-selectable.feature
@@ -25,8 +25,8 @@ import {
   selectBackendName,
   resolveConfiguredBackend,
   BACKEND_REGISTRY,
-} from "../../src/work/memory.mjs";
-import graphifyBackend from "../../src/memory/graphify-backend.mjs";
+} from "../../packages/core/src/work/memory.mjs";
+import graphifyBackend from "../../packages/core/src/memory/graphify-backend.mjs";
 
 // Schema loading + ajv-2020 compile mirrors test/work/lifecycle/work-memory-seam.test.mjs (the same
 // engine the codebase ships in node_modules; the draft this schema declares).

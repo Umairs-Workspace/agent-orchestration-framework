@@ -10,7 +10,7 @@
 //      `"pnpm"` literal handed to the seam as the command is a default waiting for a caller, so
 //      the claim is a census and not merely a behavioural check of one path.
 //   2. ONE READER PER KEY. `work.test.*` resolved in two places is two answers that agree until
-//      they do not — the species `src/loop-bounds.mjs` exists to prevent for `work.loop.*`.
+//      they do not — the species `packages/core/src/loop-bounds.mjs` exists to prevent for `work.loop.*`.
 //   3. ONE WAY TO START A CHILD PROCESS, over this milestone's own family. `59/FF-5904` makes the
 //      same clauses over the audit family and does not reach this one: 72's modules IMPORT the
 //      seam, they are not reached FROM it, so this is a new subject rather than a second copy.
@@ -25,8 +25,8 @@
 // control runs, with a non-vacuity floor of at least one — a walk that resolves nothing must not
 // pass.
 //
-// AND IT IS DELIBERATELY NOT WIDENED TREE-WIDE. 23 modules under `src/` import the process module
-// today and four carry a `shell:` option, none of them 72's; `src/frameworks.mjs:66` builds an
+// AND IT IS DELIBERATELY NOT WIDENED TREE-WIDE. 23 modules under `packages/core/src/` import the process module
+// today and four carry a `shell:` option, none of them 72's; `packages/core/src/frameworks.mjs:66` builds an
 // `["npx", …]` vector and spawns it with a shell on win32, which is milestone 12's installer. A
 // tree-wide census would red on arrival, and a census that reds on correct code is a census
 // somebody switches off.
@@ -44,7 +44,7 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { findWork } from "../../../src/work.mjs";
+import { findWork } from "../../../packages/core/src/work.mjs";
 // The sibling control's detector, REUSED rather than re-derived — seven of this row's eight plant
 // shapes are exactly the ones it already refuses over the audit family. What is extended locally
 // is the eighth: `OTHER_SPAWN_APIS` omits bare `exec`, and editing that constant is a write
@@ -58,7 +58,7 @@ import {
   launchRunner,
   resolveTestToolchain,
   selectionArgs,
-} from "../../../src/work/toolchain.mjs";
+} from "../../../packages/core/src/work/toolchain.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -166,7 +166,7 @@ async function milestoneModules() {
   return present.filter(Boolean);
 }
 
-// Every `.mjs` under `src/`, recursively. The walk is what makes the one-reader claim a claim about
+// Every `.mjs` under `packages/core/src/`, recursively. The walk is what makes the one-reader claim a claim about
 // the tree rather than about the handful of files somebody remembered.
 async function sourceModules() {
   const modules = [];
@@ -199,22 +199,22 @@ export const archTests = [
     run: async () => {
       // (a) THE RED THIS CENSUS OWES — one plant per name, in the position that matters.
       for (const name of FROZEN_PROGRAM_NAMES) {
-        const planted = { rel: "src/planted-runner.mjs", code: `await runBounded({ command: "${name}", args: ["test"], deadlineMs: 1000 });` };
+        const planted = { rel: "packages/core/src/planted-runner.mjs", code: `await runBounded({ command: "${name}", args: ["test"], deadlineMs: 1000 });` };
         const problems = programNameProblems([planted]);
         assert.equal(problems.length, 1, `"${name}" planted as the command handed to the bounded spawn seam fails the census`);
-        assert.ok(problems[0].includes("src/planted-runner.mjs"), `…and it names the file the literal was planted in: ${problems[0]}`);
+        assert.ok(problems[0].includes("packages/core/src/planted-runner.mjs"), `…and it names the file the literal was planted in: ${problems[0]}`);
         assert.ok(problems[0].includes(name), `…and the name it found`);
       }
       // …in the other shape too: the literal as the first argument of a call that starts a child.
-      const positional = programNameProblems([{ rel: "src/planted-positional.mjs", code: 'spawn("pnpm", ["install"]);' }]);
+      const positional = programNameProblems([{ rel: "packages/core/src/planted-positional.mjs", code: 'spawn("pnpm", ["install"]);' }]);
       assert.equal(positional.length, 1, "the name as argv[0] of a spawning call is the same defect wearing a different syntax");
 
       // (b) THE SHAPES MEASURED AT HEAD THAT MUST STAY ADMITTED — driven against those files' REAL
       // contents, so the row is a claim about this tree and not about a paraphrase of it.
       const admitted = [
-        { rel: "src/packages.mjs", shape: 'holds "npm" as a member of the package source-type enum', token: '"npm"', stripped: true },
-        { rel: "src/frameworks.mjs", shape: "builds an npm: package-source string", token: '"npm:"', stripped: true },
-        { rel: "src/frameworks.mjs", shape: "sets npm_config_* environment keys", token: "npm_config_", stripped: true },
+        { rel: "packages/core/src/packages.mjs", shape: 'holds "npm" as a member of the package source-type enum', token: '"npm"', stripped: true },
+        { rel: "packages/core/src/frameworks.mjs", shape: "builds an npm: package-source string", token: '"npm:"', stripped: true },
+        { rel: "packages/core/src/frameworks.mjs", shape: "sets npm_config_* environment keys", token: "npm_config_", stripped: true },
         { rel: "packages/work/src/observe.mjs", shape: "names runners in a comment about what it must not match", token: "vitest", stripped: false },
         { rel: "packages/server/src/board-serve.mjs", shape: "prints an npm --prefix instruction inside a message to a human", token: "npm --prefix", stripped: false },
       ];
@@ -236,7 +236,7 @@ export const archTests = [
       const modules = await sourceModules();
       assert.ok(modules.length > SOURCE_MODULE_FLOOR, `the source tree was actually walked (non-vacuous): ${modules.length} modules, floor ${SOURCE_MODULE_FLOOR}`);
       assert.ok(modules.some((module) => module.rel === KEY_OWNER), "…and the walk recursed far enough to reach the owner");
-      assert.ok(modules.some((module) => module.rel.startsWith("src/commands/")), "…and into src/commands/, which a flat walk would miss");
+      assert.ok(modules.some((module) => module.rel.startsWith("packages/core/src/commands/")), "…and into packages/core/src/commands/, which a flat walk would miss");
 
       for (const key of CONTRACTED_KEYS) {
         const problems = keyReaderProblems(key, modules, KEY_OWNER);
@@ -254,24 +254,24 @@ export const archTests = [
     run: async () => {
       const owner = { rel: KEY_OWNER, code: 'export const KEYS = ["work.test.command"];' };
 
-      const second = { rel: "src/planted-second-reader.mjs", code: "const declared = config.work.test.command;" };
+      const second = { rel: "packages/core/src/planted-second-reader.mjs", code: "const declared = config.work.test.command;" };
       const flagged = keyReaderProblems("work.test.command", [owner, second], KEY_OWNER);
       assert.equal(flagged.length, 1, "a second module that READS the key fails the census");
-      assert.ok(flagged[0].includes("src/planted-second-reader.mjs"), `…naming that second module: ${flagged[0]}`);
+      assert.ok(flagged[0].includes("packages/core/src/planted-second-reader.mjs"), `…naming that second module: ${flagged[0]}`);
 
-      const mentioned = { rel: "src/planted-second-reader.mjs", code: "// work.test.command is resolved in src/work/toolchain.mjs\nconst declared = null;" };
+      const mentioned = { rel: "packages/core/src/planted-second-reader.mjs", code: "// work.test.command is resolved in packages/core/src/work/toolchain.mjs\nconst declared = null;" };
       assert.deepEqual(keyReaderProblems("work.test.command", [owner, mentioned], KEY_OWNER), [], "the same key named in that module's comment is a mention, not a read");
 
       // …and the optional-chained spelling is the same read, so a module cannot slip through by
       // guarding its own access.
-      const chained = { rel: "src/planted-chained.mjs", code: "const declared = config?.work?.test?.command;" };
+      const chained = { rel: "packages/core/src/planted-chained.mjs", code: "const declared = config?.work?.test?.command;" };
       assert.equal(keyReaderProblems("work.test.command", [owner, chained], KEY_OWNER).length, 1, "an optional-chained read is a read");
 
       // A census that resolved NOTHING must not pass: an absence over an empty set is free.
-      const vacuous = keyReaderProblems("work.test.command", [{ rel: "src/nothing.mjs", code: "export const x = 1;" }], KEY_OWNER);
+      const vacuous = keyReaderProblems("work.test.command", [{ rel: "packages/core/src/nothing.mjs", code: "export const x = 1;" }], KEY_OWNER);
       assert.equal(vacuous.length, 1, "a key with no reader at all is its own failure, not a silent pass");
 
-      // THE SUBJECT IS `src/`. These three files all carry the key text and none of them is a
+      // THE SUBJECT IS `packages/core/src/`. These three files all carry the key text and none of them is a
       // source module — asserted from both ends, so the exclusion is measured rather than assumed.
       const modules = await sourceModules();
       // milestone 127 / ADR-004 §3 — the contract this leg reads is resolved BY REF at run time,
@@ -293,7 +293,7 @@ export const archTests = [
       assert.ok(keyPattern("work.test.command").test(contract), "…and the contract does carry the key, so the exclusion is doing work");
       const suite = await readFile(path.join(repoRoot, "test", "work", "work-toolchain-declaration.test.mjs"), "utf8");
       assert.ok(keyPattern("work.test.command").test(suite), "…as does the behavioural suite");
-      for (const module of modules) assert.match(module.rel, /^(?:src\/|packages\/[^/]+\/src\/)/u, `the walk stayed inside runtime source: ${module.rel}`);
+      for (const module of modules) assert.match(module.rel, /^(?:src\/|packages\/[^/]+\/src\/|packages\/core\/assets\/)/u, `the walk stayed inside runtime source: ${module.rel}`);
     },
   },
 
@@ -308,7 +308,7 @@ export const archTests = [
 
       // …and the import that reaches the seam is present, so the claim is "one seam", not "none".
       const owner = modules.find((module) => module.rel === KEY_OWNER);
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work/toolchain.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/toolchain.mjs"), "utf8"));
       assert.match(owner.code, /createWorkToolchain\(\{\s*runBounded\s*\}\)/u);
       assert.match(composition, /createWorkToolchain\(\{\s*runBounded\s*\}\)/u);
       assert.match(composition, /from\s+"@aof\/execution\/bounded-process"/u, `${KEY_OWNER} reaches the shared bounded seam by import`);

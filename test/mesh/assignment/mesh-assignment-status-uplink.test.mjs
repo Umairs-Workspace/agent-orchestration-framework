@@ -14,9 +14,9 @@
 // 00 added. No live ws. Depends on story 00 — the ingest advances the record story
 // 00 minted.
 import assert from "node:assert/strict";
-import { applyStreamFrame, applyAssignmentStatusFrame } from "../../../src/control-stream-server.mjs";
-import { readAssignment } from "../../../src/assignment-record.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+import { applyStreamFrame, applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
+import { readAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

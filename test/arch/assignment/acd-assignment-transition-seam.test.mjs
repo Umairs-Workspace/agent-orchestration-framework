@@ -28,12 +28,12 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { guardAssignmentTransition } from "../../../src/effects/assignment-transitions.mjs";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { ACTIVE_ASSIGNMENT_STATES, TERMINAL_ASSIGNMENT_STATES } from "../../../src/assignment-record.mjs";
+import { guardAssignmentTransition } from "../../../packages/core/src/effects/assignment-transitions.mjs";
+import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
+import { ACTIVE_ASSIGNMENT_STATES, TERMINAL_ASSIGNMENT_STATES } from "../../../packages/core/src/assignment-record.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 
 // The ONLY modules that may name the guard-free store writer.
 const SANCTIONED_WRITERS = new Set(["packages/mesh/src/assignment-record.mjs", "packages/mesh/src/assignment-transitions.mjs"]);
@@ -68,7 +68,7 @@ export const archTests = [
   {
     name: "arch/42 wave (d) d3: applyAssignmentStatusFrame decides neither invariant itself — it hands the edge to the transition",
     run: async () => {
-      const source = stripComments(await readFile(path.join(SRC, "../packages/mesh/src/control-stream-server.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(SRC, "../../mesh/src/control-stream-server.mjs"), "utf8"));
       const start = source.indexOf("async function applyAssignmentStatusFrame");
       assert.ok(start > -1, "applyAssignmentStatusFrame is still the frame door");
       const body = source.slice(start, source.indexOf("\nasync function ", start + 10));

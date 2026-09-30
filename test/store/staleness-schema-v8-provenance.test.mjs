@@ -36,8 +36,8 @@ import {
   openGlobalWorkProjectionStore,
   upsertWorkItems,
   GLOBAL_WORK_SCHEMA_VERSION,
-} from "../../src/global-work-store.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
+} from "../../packages/core/src/global-work-store.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 
 const WS = "ws-preexisting";
 const OTHER_WS = "ws-second";

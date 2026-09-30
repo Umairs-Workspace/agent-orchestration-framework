@@ -23,8 +23,8 @@ import { fileURLToPath } from "node:url";
 
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import * as workCounters from "../../../src/work/counters.mjs";
-import { CriterionError, defaultCriterion, makeCriterion } from "../../../src/work-acceptor/criterion.mjs";
+import * as workCounters from "../../../packages/core/src/work/counters.mjs";
+import { CriterionError, defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
 import {
   COUNTER_METRIC_UNRESOLVABLE,
   METRIC_UNMEASURABLE,
@@ -37,11 +37,11 @@ import {
   metricPopulation,
   parsePointer,
   readArm,
-} from "../../../src/work-acceptor/rule.mjs";
+} from "../../../packages/core/src/work-acceptor/rule.mjs";
 import {
   PAIR_OUTCOMES as LEDGER_PAIR_OUTCOMES,
   evaluateRun,
-} from "../../../src/work-acceptor/ledger.mjs";
+} from "../../../packages/core/src/work-acceptor/ledger.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COUNTERS_LEAF = "src/work/counters.mjs";
@@ -53,7 +53,7 @@ const { N: _derived, ...shippedFields } = shipped;
 const revising = (fields) => makeCriterion({ ...shippedFields, ...fields });
 const registry = deriveMetricRegistry({ [COUNTERS_LEAF]: workCounters });
 
-// Every module under `src/work-acceptor/`, read from disk rather than listed, so a
+// Every module under `packages/core/src/work-acceptor/`, read from disk rather than listed, so a
 // module a later story adds is swept the day it appears.
 async function acceptorModules() {
   const dir = path.join(root, "packages", "work", "src", "acceptor");
@@ -115,7 +115,7 @@ export const archTests = [
       assert.ok(notCallable.length > 0, `the leaf also exports non-callables: ${notCallable.join(", ")}`);
       for (const name of notCallable) assert.equal(Object.hasOwn(registry, `module:${COUNTERS_LEAF}#${name}`), false, `${name} is not a resolver`);
       // …and a planted allow-list-shaped namespace of strings yields an EMPTY registry.
-      assert.deepEqual(deriveMetricRegistry({ "src/planted.mjs": { roundsToAccept: "a name nobody computes" } }), {});
+      assert.deepEqual(deriveMetricRegistry({ "packages/core/src/planted.mjs": { roundsToAccept: "a name nobody computes" } }), {});
 
       // A POINTER NAMING A SYMBOL THAT DOES NOT EXIST is refused when the criterion is
       // built, not discovered at the moment a ruling was due.

@@ -26,8 +26,8 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../../src/commands/loop.mjs";
-import { CONTROL_FINDING_CODES } from "../../../src/work/doctor-controls.mjs";
+import { admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../../packages/core/src/commands/loop.mjs";
+import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

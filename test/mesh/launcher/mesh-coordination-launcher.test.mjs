@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 33 / story 01 — the coordination launcher.
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
-// tasks/03_coordination-launcher.feature, exercising src/mesh/launcher.mjs
+// tasks/03_coordination-launcher.feature, exercising packages/core/src/mesh/launcher.mjs
 // (launcherProbe / startLauncher) and the registered mesh:serve command over an
 // INJECTED fabric-exec closure + an injected sync-loop ticker + an injected peer-poll
 // ticker — no tailnet, no wall-clock wait. One test object per @executable scenario
@@ -20,11 +20,11 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke, listCommands } from "../../../src/command-core.mjs";
-import { presenceRecordPath, publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { launcherProbe, startLauncher } from "../../../src/mesh/launcher.mjs";
-import { acquireMeshLauncherLock } from "../../../src/mesh/launcher-lock.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { presenceRecordPath, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { launcherProbe, startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { acquireMeshLauncherLock } from "../../../packages/core/src/mesh/launcher-lock.mjs";
 
 const NODE_ID = "test-node-self";
 

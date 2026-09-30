@@ -1,13 +1,13 @@
 // Fitness function FF-7101 for milestone 71 / ADR-002:
 // "A bound stated in a bundled prompt names its home, and equals it."
 //
-// The complement of `acd-loop-cap-single-home`, which walks `src/**/*.mjs` and never reads
-// `src/bundle/**`. Measured at HEAD before 71/00: `src/bundle/loops/*.md` named four `work.loop.*`
-// keys and all four resolved, while `src/bundle/commands/*.md` named ZERO keys and stated three
+// The complement of `acd-loop-cap-single-home`, which walks `packages/core/src/**/*.mjs` and never reads
+// `packages/core/assets/**`. Measured at HEAD before 71/00: `packages/core/assets/loops/*.md` named four `work.loop.*`
+// keys and all four resolved, while `packages/core/assets/commands/*.md` named ZERO keys and stated three
 // numerals — "Review runs once by default", "Three rounds is the hard cap" (×2). Three untethered
 // numerals, and nothing that failed when their one home changed.
 //
-// THREE LEGS, and each is derived from `src/loop-bounds.mjs` rather than enumerated here:
+// THREE LEGS, and each is derived from `packages/core/src/loop-bounds.mjs` rather than enumerated here:
 //   (a) every `work.loop.*` key a bundled asset names RESOLVES through `LOOP_BOUND_VALUE_RESOLVERS`;
 //   (b) every value a bundled asset STATES for such a key equals that bound's own declared answer —
 //       binding to the CLAMP when an exported clamp identifier stands in the same sentence, and to
@@ -41,10 +41,10 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as loopBounds from "../../../src/loop-bounds.mjs";
+import * as loopBounds from "../../../packages/core/src/loop-bounds.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUNDLE = path.join(root, "src", "bundle");
+const BUNDLE = path.join(root, "packages", "core", "assets");
 
 // Generated indexes, not authored prose. `manifest.json` is a whole-bundle content address and
 // `bundle.json` is the member list; neither states a bound, and both would drag derived bytes into
@@ -124,7 +124,7 @@ export function unitOf(name) {
 
 // The values a sentence STATES for a bound counted in `unit`: a cardinal (digit or word) whose
 // following few words reach that unit. "2 consecutive no-progress rounds" states 2; "the two numbers
-// this gate resolves" states nothing, and neither does "whose one home is `src/loop-bounds.mjs`".
+// this gate resolves" states nothing, and neither does "whose one home is `packages/core/src/loop-bounds.mjs`".
 export function statedValues(sentence, unit) {
   const words = stripCode(sentence).split(/[^\w-]+/u).filter(Boolean);
   const stated = [];
@@ -159,7 +159,7 @@ export function boundStatementProblems(assets) {
       if (known.length === 0) continue;
 
       // (b) — a stated value binds to the CLAMP when one stands in the same sentence, else to the
-      // key's own resolved default. Both are read from `src/loop-bounds.mjs`.
+      // key's own resolved default. Both are read from `packages/core/src/loop-bounds.mjs`.
       const clamps = CLAMPS.filter((clamp) => sentence.includes(clamp.name));
       for (const key of known) {
         const resolved = loopBounds.LOOP_BOUND_VALUE_RESOLVERS[key](undefined);

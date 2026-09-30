@@ -27,13 +27,13 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { insertAssignment } from "../../../src/assignment-record.mjs";
-import { assembleAssignmentRecord } from "../../../src/assignment-record.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { insertAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord } from "../../../packages/core/src/assignment-record.mjs";
 
 async function makeRepo() {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-ui-assign-ro-"));

@@ -11,10 +11,10 @@
 // This file also exports the driven-PTY double and the frame builder the verdict and evidence suites
 // share, so one double drives every screen case.
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession } from "../../src/agent-session-driver.mjs";
-import { openSessionScreen } from "../../src/terminal/session-screen.mjs";
-import { CLAUDE_SCREENS } from "../../src/terminal/claude-screens.mjs";
-import { createScreen } from "../../src/terminal/screen.mjs";
+import { driveInteractiveClaudeSession } from "../../packages/core/src/agent-session-driver.mjs";
+import { openSessionScreen } from "../../packages/core/src/terminal/session-screen.mjs";
+import { CLAUDE_SCREENS } from "../../packages/core/src/terminal/claude-screens.mjs";
+import { createScreen } from "../../packages/core/src/terminal/screen.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { captureDegrades, loadFixture, replay } from "./screen-model.test.mjs";
 

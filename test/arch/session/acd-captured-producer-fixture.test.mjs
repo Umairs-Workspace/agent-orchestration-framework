@@ -50,9 +50,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
 import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
 // The DECLARED one home for "which sessions survive the run filter, projected to their
 // repo" (test/support/session-line-rule.mjs — the m49 rule module). Imported rather than

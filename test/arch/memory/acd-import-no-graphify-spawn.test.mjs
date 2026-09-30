@@ -1,6 +1,6 @@
 // Fitness function for milestone 13 / ADR-003 (the 10/ADR-002 precedent):
 // "Never graphify directly. The import command + materialize + recovery + source
-//  modules import NO `src/graphify.mjs` (the SOLE graphify spawn site) and spawn NO
+//  modules import NO `packages/core/src/graphify.mjs` (the SOLE graphify spawn site) and spawn NO
 //  graphify — graphify is reached ONLY by the graphify backend, via the registered 09
 //  `graph:*` commands. There is no bespoke second graphify integration on the import
 //  side."
@@ -112,7 +112,7 @@ export const archTests = [
         const liveCode = stripCommentsAndStrings(await readFile(file, "utf8"));
         assert.ok(
           !/graphify\.mjs/.test(liveCode),
-          `${path.relative(repoRoot, file)} does not reference src/graphify.mjs in live code`
+          `${path.relative(repoRoot, file)} does not reference packages/core/src/graphify.mjs in live code`
         );
       }
       // Self-check (non-vacuous): the guard FIRES on a graphify spawn and does NOT fire on

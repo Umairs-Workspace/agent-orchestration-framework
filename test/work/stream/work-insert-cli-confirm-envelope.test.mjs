@@ -2,7 +2,7 @@
 // 41 review fast-follow, 2026-07-16): "CLI loud-failure envelope untested
 // end-to-end." The count-gate error is asserted at the `invoke()` throw site
 // (test/work/stream/work-insert-count-gate.test.mjs), but the operator-facing shaping in
-// `workInsertCli` (src/cli.mjs, ~L1589 -> catches the coded
+// `workInsertCli` (packages/core/src/cli.mjs, ~L1589 -> catches the coded
 // "insert-confirm-required" error and emits ONE
 // `{ ok:false, error, code, shifted }` envelope + `process.exitCode = 1` under
 // --json) was run by no test.

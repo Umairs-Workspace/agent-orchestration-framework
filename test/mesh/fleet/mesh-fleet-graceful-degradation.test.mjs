@@ -3,7 +3,7 @@
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
 // tasks/02_graceful-degradation.feature, exercising the REAL in-process registry
-// (src/command-core.mjs + the EXTENDED mesh:status in src/commands/mesh-identity.mjs)
+// (packages/core/src/command-core.mjs + the EXTENDED mesh:status in packages/core/src/commands/mesh-identity.mjs)
 // against a temp fixture repo — loadWorkspace + invoke, real fs, in-process — plus one
 // CLI-spawn scenario (the stale node still renders). `now` is INJECTED for the invoke
 // scenarios. node:assert/strict.
@@ -20,10 +20,10 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../src/mesh/store.mjs";
-import { registryPath, registryDir } from "../../../src/mesh/registry.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../packages/core/src/mesh/store.mjs";
+import { registryPath, registryDir } from "../../../packages/core/src/mesh/registry.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

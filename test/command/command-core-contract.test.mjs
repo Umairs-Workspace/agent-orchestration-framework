@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 08 / story 00 — the command core.
 //
 // Covers EVERY @executable scenario across the four task features, exercising the
-// REAL in-process registry (src/command-core.mjs + src/commands/*) against temp
+// REAL in-process registry (packages/core/src/command-core.mjs + packages/core/src/commands/*) against temp
 // fixture repos — loadWorkspace + invoke, real fs, in-process. One test object
 // per @executable scenario (Scenario-Outline rows folded into one entry), each
 // name tracing to feature + scenario.
@@ -23,8 +23,8 @@ import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace, listStream } from "../../src/work.mjs";
-import { getCommand, listCommands, invoke } from "../../src/command-core.mjs";
+import { loadWorkspace, listStream } from "../../packages/core/src/work.mjs";
+import { getCommand, listCommands, invoke } from "../../packages/core/src/command-core.mjs";
 
 // The milestone-08 SIX work operations. Milestone 15 (ADR-001) registers a 7th
 // work command — work:doctor, the health lane — into the SAME registry; it is a
@@ -50,7 +50,7 @@ const SIX_IDS = ["work:list", "work:doc", "work:tasks", "work:validate", "work:n
 // carve-out (BOARD_DEFERRED), same design.
 // Milestone 40 / story 02 (migration registry & `aof upgrade`, ADR-005)
 // registers one more — work:upgrade, the thin face over the NEW
-// src/work/upgrade.mjs registry engine — another sanctioned in-namespace
+// packages/core/src/work/upgrade.mjs registry engine — another sanctioned in-namespace
 // extension, CLI-only by design (same BOARD_DEFERRED carve-out).
 const WORK_IDS = [
   ...SIX_IDS,
@@ -168,14 +168,14 @@ const WORK_IDS = [
   // PRE-EXISTING STALENESS, found at milestone 53's gate and recorded rather than
   // quietly folded in: neither of these is milestone 53's, and the census had already
   // drifted from the registry before this milestone began. `work:resume`
-  // (`src/commands/resume.mjs:99`) is m20/348's auto-resume face — run-retry's
+  // (`packages/core/src/commands/resume.mjs:99`) is m20/348's auto-resume face — run-retry's
   // re-entry, already carried in acd-work-command-route-coverage's BOARD_DEFERRED.
-  // `work:init-config` (`src/commands/init-update.mjs:149`) is the config-scaffold
+  // `work:init-config` (`packages/core/src/commands/init-update.mjs:149`) is the config-scaffold
   // door beside work:init/work:update.
   "work:resume",
   "work:init-config",
   // milestone 131 / story 04 — work:answer, the operator's answer to a waiting session, beside
-  // work:resume in `src/commands/resume.mjs`.
+  // work:resume in `packages/core/src/commands/resume.mjs`.
   "work:answer",
   // milestone 54 / story 01 — work:grade, the declared rubric's ONE impure edge (the
   // milestone's only registering story, 54/ADR-003 §2). Its bare face is a READ (the plan
@@ -201,7 +201,7 @@ const WORK_IDS = [
   // milestone 62 / story 04 — the read-only tuner convergence face.
   "work:tune",
   // milestone 63 / story 05 — the trigger's face, this milestone's ONE registered surface. It
-  // composes the four `src/work-trigger/` leaves, obtains the two gate readings through this
+  // composes the four `packages/core/src/work-trigger/` leaves, obtains the two gate readings through this
   // registry and emits the `work:loop` input each declared trigger resolves to plus the argv that
   // carries it; it declares no `cli.launch`, because 53/ADR-005 left the loop exactly one
   // launcher and this face resolves rather than launches. BOARD_DEFERRED (63/ADR-008 §7) for a
@@ -361,7 +361,7 @@ export const commandCoreContractTests = [
     name: "command-core/effect registration has no static domain or transition cycle",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      const entry = path.join(root, "src/application/bindings/effects/table.mjs");
+      const entry = path.join(root, "packages/core/src/application/bindings/effects/table.mjs");
       async function closure(planted = false) {
         const seen = new Set(), visiting = new Set();
         async function visit(file) {
@@ -385,7 +385,7 @@ export const commandCoreContractTests = [
       for (const name of ["work", "mesh", "integration-notion"]) {
         assert.ok(files.includes(`packages/${name}/src/effects.mjs`), `${name}: its contribution is in the startup closure`);
       }
-      for (const forbidden of ["src/work.mjs", "src/global-work-store.mjs", "src/notion/sync-work.mjs", "packages/mesh/src/assignment-transitions.mjs", "src/effects/dispatch.mjs", "src/mesh/log.mjs"]) {
+      for (const forbidden of ["packages/core/src/work.mjs", "packages/core/src/global-work-store.mjs", "packages/core/src/notion/sync-work.mjs", "packages/mesh/src/assignment-transitions.mjs", "packages/core/src/effects/dispatch.mjs", "packages/core/src/mesh/log.mjs"]) {
         assert.ok(!files.includes(forbidden), `registration must not load ${forbidden}`);
       }
       await assert.rejects(closure(true), /Static effect registration cycle/);
@@ -396,10 +396,10 @@ export const commandCoreContractTests = [
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
       for (const entry of ["effects/dispatch", "effects/outbox", "effects/table", "effects/assignment-transitions", "effects/run-transitions", "command-core"]) {
-        const script = `import './src/${entry}.mjs';
+        const script = `import './packages/core/src/${entry}.mjs';
           import assert from 'node:assert/strict';
-          import {runEffectsEphemeral} from './src/effects/dispatch.mjs';
-          import {applyEffectAck} from './src/effects/outbox.mjs';
+          import {runEffectsEphemeral} from './packages/core/src/effects/dispatch.mjs';
+          import {applyEffectAck} from './packages/core/src/effects/outbox.mjs';
           assert.deepEqual(await runEffectsEphemeral('empty', {}, {effects:{}}), []);
           assert.equal(applyEffectAck(null, {}).code, 'effect-ack-invalid');`;
         const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], { cwd: root, encoding: "utf8", timeout: 30_000 });

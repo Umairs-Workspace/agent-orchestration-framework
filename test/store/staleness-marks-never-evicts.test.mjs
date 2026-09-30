@@ -26,9 +26,9 @@
 // instant. A `>=` implementation passes every other row in the first Outline and fails only
 // the one named "EXACTLY at the window".
 import assert from "node:assert/strict";
-import { invoke, loadWorkspace } from "../../src/command-core.mjs";
-import { cacheFreshness } from "../../src/cache-provenance.mjs";
-import { upsertWorkItems } from "../../src/global-work-store.mjs";
+import { invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
+import { cacheFreshness } from "../../packages/core/src/cache-provenance.mjs";
+import { upsertWorkItems } from "../../packages/core/src/global-work-store.mjs";
 import {
   withStalenessFixture,
   setStalenessWindow,

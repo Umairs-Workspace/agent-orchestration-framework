@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assignWork } from "../../../src/mesh/assignment.mjs";
+import { assignWork } from "../../../packages/core/src/mesh/assignment.mjs";
 import { withMeshAssignFixture, seedTargetNode, seedAssignment, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

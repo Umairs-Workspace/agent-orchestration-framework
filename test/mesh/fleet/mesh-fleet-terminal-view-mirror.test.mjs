@@ -5,7 +5,7 @@
 // multiplexing multiple (nodeId, sessionId) streams; an unresolvable frame is
 // DROPPED, never broadcast to an unrelated card.
 //
-// PRODUCER-FED (ADR-008): every scenario drives the REAL src/mesh/ui-serve.mjs
+// PRODUCER-FED (ADR-008): every scenario drives the REAL packages/core/src/mesh/ui-serve.mjs
 // `serveMeshUi()` server (a REAL loopback http server, a REAL `GET
 // /ws/terminal-view?nodeId=&sessionId=` upgrade, a REAL `ws` client) — never a
 // stub of the fleet route. Every applied frame is built through the REAL
@@ -16,9 +16,9 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { createTerminalMirror } from "../../../src/mesh/terminal-mirror.mjs";
-import { buildTerminalFrameEnvelope, buildTerminalEndEnvelope } from "../../../src/mesh/terminal-relay-bridge.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { createTerminalMirror } from "../../../packages/core/src/mesh/terminal-mirror.mjs";
+import { buildTerminalFrameEnvelope, buildTerminalEndEnvelope } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
 
 async function writeDist(dir) {
   await mkdir(path.join(dir, "assets"), { recursive: true });

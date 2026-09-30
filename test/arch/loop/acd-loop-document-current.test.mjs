@@ -21,9 +21,9 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke, loadWorkspace } from "../../../src/command-core.mjs";
-import { loopDocumentCommand } from "../../../src/commands/loop-document.mjs";
-import { loopDocumentPath, REGENERATE_COMMAND } from "../../../src/loop-document.mjs";
+import { invoke, loadWorkspace } from "../../../packages/core/src/command-core.mjs";
+import { loopDocumentCommand } from "../../../packages/core/src/commands/loop-document.mjs";
+import { loopDocumentPath, REGENERATE_COMMAND } from "../../../packages/core/src/loop-document.mjs";
 import { RECORDS, loop, record, snapshot, withRepo, writeRegistry } from "../../support/loop-document-fixture.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
@@ -217,7 +217,7 @@ export const archTests = [
           assert.doesNotMatch(text, /loops\.md/, `no finding is sourced from the stale document: ${text}`);
         }
 
-        // AND NO ACCEPTOR DOOR READS IT. The document has exactly two readers in `src/`: the
+        // AND NO ACCEPTOR DOOR READS IT. The document has exactly two readers in `packages/core/src/`: the
         // module that derives its path and the command that writes it. Anything else — a doctor
         // lane, the acceptor, a status edge — would be this story making the graph gate something,
         // which its scope excludes.
@@ -234,7 +234,7 @@ export const archTests = [
             }
           }
         }
-        await walk(path.join(repoRoot, "src"));
+        await walk(path.join(repoRoot, "packages", "core", "src"));
         await walk(path.join(repoRoot, "packages"));
         assert.deepEqual(
           readers.sort(),

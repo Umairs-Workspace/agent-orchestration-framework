@@ -33,10 +33,10 @@ import http from "node:http";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, presenceRecordPath } from "../../src/mesh/store.mjs";
-import { registryPath, registryDir, emptyRegistry, admitNode, registerBoard } from "../../src/mesh/registry.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { meshDir, nodeRecordPath, presenceRecordPath } from "../../packages/core/src/mesh/store.mjs";
+import { registryPath, registryDir, emptyRegistry, admitNode, registerBoard } from "../../packages/core/src/mesh/registry.mjs";
 import { withFleetApp } from "./fleet-app-harness.mjs";
 
 export const BOARDS_FIXTURE_NOW = "2026-07-01T12:00:00.000Z";

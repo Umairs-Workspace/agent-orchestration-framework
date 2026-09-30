@@ -1,14 +1,14 @@
 // Milestone 62 / story 03 — executable traceability for all five task features.
 import assert from "node:assert/strict";
 
-import { NOT_ADMISSIBLE } from "../../src/work-acceptor/admissibility.mjs";
+import { NOT_ADMISSIBLE } from "../../packages/core/src/work-acceptor/admissibility.mjs";
 import {
   DISTANCE_LIMBS,
   DISTANCE_STATES,
   attachProposalDistances,
   distanceToLive,
   runAttributionReading,
-} from "../../src/work-tune/distance.mjs";
+} from "../../packages/core/src/work-tune/distance.mjs";
 
 const KEY = "work.fixture.rounds";
 
@@ -32,7 +32,7 @@ const advisory = (overrides = {}) => ({
 });
 
 const consumerGround = (key = KEY, sites = [{
-  rel: "src/example.mjs",
+  rel: "packages/core/src/example.mjs",
   line: 12,
   spelling: "config-resolver",
   disposition: "resolved-then-discarded",
@@ -40,7 +40,7 @@ const consumerGround = (key = KEY, sites = [{
   code: NOT_ADMISSIBLE,
   key,
   records: ["loop:fixture"],
-  declaringHome: "src/fixture-bounds.mjs",
+  declaringHome: "packages/core/src/fixture-bounds.mjs",
   sites,
   inspections: [],
   consumers: [],
@@ -226,8 +226,8 @@ export const tuneDistanceTests = [
           admissibility: { considered: true, refusals: [consumerGround(KEY, sites)] },
         })] },
       })).standing[0].measurement.subjects[0].sites;
-      const first = read([{ rel: "src/a.mjs", line: 1, disposition: "resolved-then-discarded" }]);
-      const second = read([{ rel: "src/b.mjs", line: 9, disposition: "handed-off" }]);
+      const first = read([{ rel: "packages/core/src/a.mjs", line: 1, disposition: "resolved-then-discarded" }]);
+      const second = read([{ rel: "packages/core/src/b.mjs", line: 9, disposition: "handed-off" }]);
       assert.notDeepEqual(first, second);
       assert.equal(second[0].disposition, "handed-off");
     },

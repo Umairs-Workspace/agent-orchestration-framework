@@ -17,8 +17,8 @@ import { mkdtemp, mkdir, realpath, rm, writeFile, cp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../src/global-work-store.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
 import { seedAssignment, seedTargetNode, readAssignmentRows } from "./mesh-assign-fixture.mjs";
 
 export { seedAssignment, seedTargetNode, readAssignmentRows };
@@ -211,7 +211,7 @@ export async function refuse(run) {
 // validate expectation, with ONE home for all three suites that make it.
 //
 // WHY THIS IS NOT `deepEqual(findings, [])` ANY MORE. `work:insert-story` scaffolds a
-// STORY.md carrying `reads: []` + `files: []`, and `src/commands/validate.mjs` reports
+// STORY.md carrying `reads: []` + `files: []`, and `packages/core/src/commands/validate.mjs` reports
 // exactly that signature as an unauthored contract — deliberately, so an untouched
 // scaffold cannot pass `aof:continue`'s missing-reads stop while declaring nothing. The
 // three call sites were written before that rule existed and were asserting structural

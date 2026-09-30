@@ -12,9 +12,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { probeFabric, fabricGuidance, macOsAppStoreSplitWarning, remediationForReason } from "../../src/mesh/fabric.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { probeFabric, fabricGuidance, macOsAppStoreSplitWarning, remediationForReason } from "../../packages/core/src/mesh/fabric.mjs";
 
 const STATUS_FIXTURE = {
   BackendState: "Running",

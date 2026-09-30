@@ -8,10 +8,10 @@
 // the board) walks `backlog/` and `archive/` whenever they exist, under either setting (ADR-005 §2).
 //
 // THE LEGS:
-//   (1) the token appears in `src/**` only in `src/work/init.mjs` (the one WRITER), in
-//       `src/commands/init-update.mjs` (the face that projects `intakeWritten`), in
-//       `src/commands/promote.mjs` (the one READER — its refusal text explains a stream-intake
-//       project) and in `src/bundle/commands/*.md` (the prompts, which are the scaffold path);
+//   (1) the token appears in `packages/core/src/**` only in `packages/core/src/work/init.mjs` (the one WRITER), in
+//       `packages/core/src/commands/init-update.mjs` (the face that projects `intakeWritten`), in
+//       `packages/core/src/commands/promote.mjs` (the one READER — its refusal text explains a stream-intake
+//       project) and in `packages/core/assets/commands/*.md` (the prompts, which are the scaffold path);
 //   (2) the NAMED readers contain it ZERO times, spelled out by path so the claim is legible at the
 //       place it matters rather than implied by leg (1)'s allow-list;
 //   (3) non-vacuity: `init.mjs` and `promote.mjs` each contain it at least once. Without this leg a
@@ -39,37 +39,37 @@ import { stripComments } from "../../support/source-slice.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const TOKEN = /intake/iu;
 
-// The WRITE side, by path. `src/bundle/commands/*.md` is a glob because the prompts are the scaffold
+// The WRITE side, by path. `packages/core/assets/commands/*.md` is a glob because the prompts are the scaffold
 // path as a class — a new `aof:add-*` prompt reads the key the day it ships.
-const ALLOWED_FILES = Object.freeze(["src/work/init.mjs", /* compatibility export of intake policy */ "src/application/bindings/work/init.mjs", "src/application/bindings/commands/init-update.mjs", "packages/work/src/commands/promote.mjs"]);
+const ALLOWED_FILES = Object.freeze(["packages/core/src/work/init.mjs", /* compatibility export of intake policy */ "packages/core/src/application/bindings/work/init.mjs", "packages/core/src/application/bindings/commands/init-update.mjs", "packages/work/src/commands/promote.mjs"]);
 const ALLOWED_GLOB = /^src\/bundle\/commands\/[^/]+\.md$/u;
 // The two that must carry it — the writer and the reader (ADR-005 §1).
-const MUST_CARRY = Object.freeze(["src/application/bindings/work/init.mjs", "packages/work/src/commands/promote.mjs"]);
+const MUST_CARRY = Object.freeze(["packages/core/src/application/bindings/work/init.mjs", "packages/work/src/commands/promote.mjs"]);
 // The readers the register names one by one, RESOLVED TO THE MODULES THAT EXIST. Two of the names in
 // the register row are spellings of verbs that do not have a module of that path, and both are
 // recorded here rather than silently dropped — a named reader that cannot be read must fail as NOT
 // FOUND (asserted below), never be skipped:
-//   · `src/commands/read.mjs` — the READ seam is `src/work/read.mjs` (the cache-first reader every
+//   · `packages/core/src/commands/read.mjs` — the READ seam is `packages/core/src/work/read.mjs` (the cache-first reader every
 //     resolving door goes through); `work:doc`/`work:tasks` are the faces, and `doc.mjs` is named.
-//   · `src/commands/recent.mjs` — `aof:recent` is a bundle PROMPT driven through `aof work list
+//   · `packages/core/src/commands/recent.mjs` — `aof:recent` is a bundle PROMPT driven through `aof work list
 //     --json` (127/01's outcome), so the module that must hold zero is `list.mjs`, already named.
 // The doctor family is DERIVED by glob rather than listed: the register says `doctor-*.mjs`, there
 // are nine of them, and a tenth must be covered the day it lands.
 const NAMED_READERS = Object.freeze([
-  "src/application/bindings/work.mjs",
+  "packages/core/src/application/bindings/work.mjs",
   "packages/work/src/validation.mjs",
   "packages/work/src/discovery.mjs",
   "packages/work/src/dependencies.mjs",
   "packages/work/src/readiness.mjs",
   "packages/work/src/identity.mjs",
-  "src/application/bindings/work/loops.mjs",
+  "packages/core/src/application/bindings/work/loops.mjs",
   "packages/work/src/read.mjs",
-  "src/application/bindings/commands/list.mjs",
-  "src/application/bindings/commands/next.mjs",
-  "src/application/bindings/commands/find.mjs",
-  "src/application/bindings/commands/doc.mjs",
+  "packages/core/src/application/bindings/commands/list.mjs",
+  "packages/core/src/application/bindings/commands/next.mjs",
+  "packages/core/src/application/bindings/commands/find.mjs",
+  "packages/core/src/application/bindings/commands/doc.mjs",
   "packages/server/src/board-ui.mjs",
-  "src/application/bindings/global-work-store.mjs",
+  "packages/core/src/application/bindings/global-work-store.mjs",
   // The aliases pass THROUGH the backlog under either setting and read nothing (task 04).
   "packages/work/src/insertion/scaffold.mjs",
 ]);
@@ -77,10 +77,10 @@ const DOCTOR_FAMILY = /^doctor.*\.mjs$/u;
 
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-// Every file under `src/` this control reads: `.mjs` (comment-stripped) and `.md`/`.jsonc`/`.json`
+// Every file under `packages/core/src/` this control reads: `.mjs` (comment-stripped) and `.md`/`.jsonc`/`.json`
 // (verbatim). The sweep is over the TREE, so a new module carrying the token is caught the day it
 // lands rather than the day someone remembers this file.
-async function walkSrc(rel = "src", out = []) {
+async function walkSrc(rel = "packages/core/src", out = []) {
   for (const entry of await readdir(path.join(repoRoot, rel), { withFileTypes: true })) {
     const child = `${rel}/${entry.name}`;
     if (entry.isDirectory()) await walkSrc(child, out);
@@ -126,9 +126,9 @@ export const archTests = [
   {
     name: "arch/FF-12704 (acd-intake-write-side-only): every named reader — and the whole doctor family — contains the token zero times; no reader branches on the setting",
     run: async () => {
-      const doctors = (await readdir(path.join(repoRoot, "src", "work")))
+      const doctors = (await readdir(path.join(repoRoot, "packages", "core", "src", "work")))
         .filter((name) => DOCTOR_FAMILY.test(name))
-        .map((name) => `src/work/${name}`)
+        .map((name) => `packages/core/src/work/${name}`)
         .sort();
       assert.ok(doctors.length >= 5, `non-vacuity: the doctor family glob found ${doctors.length} modules`);
 

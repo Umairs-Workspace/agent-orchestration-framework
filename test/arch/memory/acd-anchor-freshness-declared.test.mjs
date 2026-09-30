@@ -12,7 +12,7 @@
 // observation is four months old, which is a TEMPORAL one, and an operator acts on the two
 // differently: one is broken, the other has simply stopped being evidence. This gate is about the
 // field that difference is declared in. Whether a given date is too old is a WINDOW, the window is
-// 59/03's, and nothing here compares a date to anything — which is also why `src/work-loops-checks
+// 59/03's, and nothing here compares a date to anything — which is also why `packages/core/src/work-loops-checks
 // .mjs` can stay the pure leaf that imports nothing (52/ADR-007, ADR-005 §4).
 //
 // WHY OPTIONAL IS PART OF THE INVARIANT. An anchor that has never declared a date is not thereby
@@ -36,7 +36,7 @@ import { fileURLToPath } from "node:url";
 import {
   ADMITTED_KEYS, FIELD_KINDS, GROUND_VALUES, LOADER_FINDING_CODES, NODE_KINDS, POINTER_SCHEMES,
   SENTINEL_TOKENS, loadLoops,
-} from "../../../src/work/loops.mjs";
+} from "../../../packages/core/src/work/loops.mjs";
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 

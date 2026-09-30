@@ -4,7 +4,7 @@
 //
 //   "The group registry — the group-level, control-node-owned SINGLE-WRITER second
 //    git-of-record (roster + registered boards + pending invites + revocations) — has
-//    EXACTLY ONE write seam (writeRegistry in src/mesh/registry.mjs). That write (a)
+//    EXACTLY ONE write seam (writeRegistry in packages/core/src/mesh/registry.mjs). That write (a)
 //    joins the registryPath/registryDir/meshDir partition seam, never a record doc; (b)
 //    routes through the atomic writeText temp+rename seam (19/R2), never a bare
 //    writeFile/appendFile; (c) is guarded by a control-node predicate (the relayMode /
@@ -24,7 +24,7 @@
 // record doc; no bare write; no other module writes registry/) AND a non-vacuous
 // self-check (the detector fires on a planted violation).
 //
-// State: RED until src/mesh/registry.mjs exists — readFile rejects on the absent module,
+// State: RED until packages/core/src/mesh/registry.mjs exists — readFile rejects on the absent module,
 // so the gate fails cleanly (module-not-found), the RED-until-built discipline.
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
@@ -33,7 +33,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const REGISTRY_MODULE = path.join(repoRoot, "packages", "mesh", "src", "registry.mjs");
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 
 const RECORD_DOCS = ["SPEC.md", "STORY.md", "STATE.md", "SESSION.md"];
 // A bare writeFile/appendFile would bypass the atomic writeText seam (forbidden).
@@ -119,7 +119,7 @@ export const archTests = [
       for (const doc of RECORD_DOCS) {
         assert.ok(
           !code.includes(doc),
-          `src/mesh/registry.mjs references no record-doc filename "${doc}" — a registry write can never target one`
+          `packages/core/src/mesh/registry.mjs references no record-doc filename "${doc}" — a registry write can never target one`
         );
       }
 
@@ -128,12 +128,12 @@ export const archTests = [
       assert.equal(
         bareWrites.length,
         0,
-        `src/mesh/registry.mjs calls no bare ${DIRECT_WRITE_VERBS.join("/")} (every persist routes through writeText) — got: ${bareWrites.map((c) => c.verb).join(", ")}`
+        `packages/core/src/mesh/registry.mjs calls no bare ${DIRECT_WRITE_VERBS.join("/")} (every persist routes through writeText) — got: ${bareWrites.map((c) => c.verb).join(", ")}`
       );
 
       // (c) There IS a real write, AND every seam write joins the partition seam.
       const seamWrites = collectCalls(code, SEAM_WRITE_VERBS);
-      assert.ok(seamWrites.length >= 1, "src/mesh/registry.mjs performs at least one fs write (it persists the registry)");
+      assert.ok(seamWrites.length >= 1, "packages/core/src/mesh/registry.mjs performs at least one fs write (it persists the registry)");
       let sawWriteText = false;
       for (const call of seamWrites) {
         if (call.verb === "writeText") sawWriteText = true;
@@ -171,7 +171,7 @@ export const archTests = [
       // either satisfies the single-writer discipline.)
       assert.ok(
         CONTROL_NODE_GUARD.test(code),
-        "src/mesh/registry.mjs guards its write with a control-node predicate (relayMode/controlNode/isControlNode) — the registry is SINGLE-WRITER (the control node owns it), resolving 22/ADR-002's 'no aggregate roster two nodes co-write' tension. RED until the guarded writeRegistry lands"
+        "packages/core/src/mesh/registry.mjs guards its write with a control-node predicate (relayMode/controlNode/isControlNode) — the registry is SINGLE-WRITER (the control node owns it), resolving 22/ADR-002's 'no aggregate roster two nodes co-write' tension. RED until the guarded writeRegistry lands"
       );
       // Self-checks (non-vacuous): the guard matcher fires on a real controlNode read and
       // does NOT fire on an unrelated read.
@@ -184,9 +184,9 @@ export const archTests = [
     run: async () => {
       // Scan every src/**.mjs (excluding the registry module itself): none may write the
       // MESH registry. The discriminator is IMPORT-scoped, so an UNRELATED local
-      // `registryPath` (e.g. src/terminal-sessions.mjs's own .aof/terminal-sessions
+      // `registryPath` (e.g. packages/core/src/terminal-sessions.mjs's own .aof/terminal-sessions
       // registry — a different artifact entirely) is NOT a false positive: a module is a
-      // candidate mesh-registry writer ONLY if it imports src/mesh/registry.mjs (so its
+      // candidate mesh-registry writer ONLY if it imports packages/core/src/mesh/registry.mjs (so its
       // registryPath/registryDir symbol IS the mesh one) OR writes a path literal under a
       // `.mesh/registry` mesh-partition segment.
       const offenders = [];
@@ -218,7 +218,7 @@ export const archTests = [
       assert.deepEqual(
         offenders,
         [],
-        `no src/**.mjs module other than src/mesh/registry.mjs writes the MESH registry subtree (single write owner) — offenders: ${offenders.join(" | ")}`
+        `no src/**.mjs module other than packages/core/src/mesh/registry.mjs writes the MESH registry subtree (single write owner) — offenders: ${offenders.join(" | ")}`
       );
       // Self-check (non-vacuous): a module that IMPORTS mesh-registry.mjs and writes
       // registryPath(...) WOULD be flagged; an unrelated local registryPath (no

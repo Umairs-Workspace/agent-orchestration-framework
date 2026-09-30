@@ -2,7 +2,7 @@
 //
 // Covers EVERY @executable scenario in
 //   tasks/01_failure-classification.feature
-// exercising the REAL pure functions of src/run-store.mjs in-process. The closed
+// exercising the REAL pure functions of packages/core/src/run-store.mjs in-process. The closed
 // classification table and the shouldRetry ceiling matrix are asserted row-by-row
 // (Scenario-Outline rows folded into one entry each). node:assert/strict.
 //
@@ -19,7 +19,7 @@ export const runFailureClassificationTests = [
   {
     name: "run-failure-classification/01 isRetryable returns the closed-table verdict for each failureReason",
     async run() {
-      const { isRetryable } = await import("../../src/run-store.mjs");
+      const { isRetryable } = await import("../../packages/core/src/run-store.mjs");
 
       // the full closed table — both Examples blocks (infra → retryable; agent
       // rejection + unknown/null → fail closed). The literal string "null" row is
@@ -44,7 +44,7 @@ export const runFailureClassificationTests = [
   {
     name: "run-failure-classification/01 shouldRetry ANDs the classification with the attempt ceiling, failing closed at the ceiling",
     async run() {
-      const { shouldRetry } = await import("../../src/run-store.mjs");
+      const { shouldRetry } = await import("../../packages/core/src/run-store.mjs");
 
       const rows = [
         // a retryable reason retries below the ceiling, halts at it
@@ -73,7 +73,7 @@ export const runFailureClassificationTests = [
   {
     name: "run-failure-classification/01 the ceiling is the supplied maxAttempts, not a fixed constant",
     async run() {
-      const { shouldRetry } = await import("../../src/run-store.mjs");
+      const { shouldRetry } = await import("../../packages/core/src/run-store.mjs");
 
       // the SAME record yields a different verdict under a different maxAttempts —
       // proving the ceiling is the passed-in argument, not a baked-in constant.
@@ -86,7 +86,7 @@ export const runFailureClassificationTests = [
   {
     name: "run-failure-classification/01 classification is referentially transparent — same inputs same verdict, no mutation",
     async run() {
-      const { shouldRetry } = await import("../../src/run-store.mjs");
+      const { shouldRetry } = await import("../../packages/core/src/run-store.mjs");
 
       const record = { failureReason: "timeout", attempt: 1 };
       const before = JSON.stringify(record);

@@ -2,7 +2,7 @@
 // tasks/01_doctor-checks.feature.
 //
 // Covers every @executable scenario against the REAL in-process code:
-// src/config-inspect.mjs's three new doctorConfig checks (12/ADR-003, SUPERSEDING
+// packages/core/src/config-inspect.mjs's three new doctorConfig checks (12/ADR-003, SUPERSEDING
 // the 09 graphify-binary check in place) — managedToolChecks (store-first),
 // providerPrereqCheck (uv), and toolPlatformChecks/toolPlatformCheckFor. One test
 // object per @executable scenario (Scenario-Outline rows folded into one entry),
@@ -23,7 +23,7 @@ import {
   providerPrereqCheck,
   toolPlatformChecks,
   toolPlatformCheckFor,
-} from "../../src/config-inspect.mjs";
+} from "../../packages/core/src/config-inspect.mjs";
 
 // A single-tool descriptor list so the managed-tool matrix drives ONE check at a
 // time (the binaries[0] is the resolved binary name; ADR-001's package→binary map).

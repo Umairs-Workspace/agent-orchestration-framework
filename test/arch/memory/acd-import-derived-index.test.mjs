@@ -33,9 +33,9 @@ import {
   reindex,
   resolveRecordSourcePath,
   isImportRecord,
-} from "../../../src/memory/local-indexing.mjs";
-import { materializeImport } from "../../../src/import/materialize.mjs";
-import { importStoreRoot, importMilestoneDir } from "../../../src/import/store.mjs";
+} from "../../../packages/core/src/memory/local-indexing.mjs";
+import { materializeImport } from "../../../packages/core/src/import/materialize.mjs";
+import { importStoreRoot, importMilestoneDir } from "../../../packages/core/src/import/store.mjs";
 
 const SOURCE_SLUG = "fixture-src";
 const MILESTONE_REF = "00";

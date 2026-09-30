@@ -6,9 +6,9 @@
 // injected runtime spawn scripted to each outcome; retention sweeping is driven with
 // an injected clock past the documented ceiling.
 import assert from "node:assert/strict";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../src/mesh/worker-execution.mjs";
-import { addWorktree, removeWorktree, listWorktrees, meshWorktreePath, sweepRetainedWorktrees, DEFAULT_WORKTREE_RETENTION_MS } from "../../src/mesh/worktree.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
+import { addWorktree, removeWorktree, listWorktrees, meshWorktreePath, sweepRetainedWorktrees, DEFAULT_WORKTREE_RETENTION_MS } from "../../packages/core/src/mesh/worktree.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
 
 const NODE_ID = "worker-a";

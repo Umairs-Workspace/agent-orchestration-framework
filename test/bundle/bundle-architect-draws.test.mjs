@@ -8,15 +8,15 @@ import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../src/command-core.mjs";
-import { parseSpecArgv } from "../../src/spine/face.mjs";
+import { getCommand } from "../../packages/core/src/command-core.mjs";
+import { parseSpecArgv } from "../../packages/core/src/spine/face.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
 const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => text.replace(/\r\n/g, "\n"));
 
-const ARCHITECT = "src/bundle/agents/aof-architect.md";
-const REFINE = "src/bundle/commands/refine.md";
+const ARCHITECT = "packages/core/assets/agents/aof-architect.md";
+const REFINE = "packages/core/assets/commands/refine.md";
 const COPIES = [
   ".claude/agents/aof-architect.md",
   ".claude/commands/aof/refine.md",
@@ -117,7 +117,7 @@ export const bundleArchitectDrawsTests = [
   {
     name: "133/05 task 00: the architect's tools are not widened to draw",
     run: async () => {
-      const frozen = await read("src/bundle/frozen-set.jsonc");
+      const frozen = await read("packages/core/assets/frozen-set.jsonc");
       const pinned = /"aof-architect":\s*\[([^\]]*)\]/.exec(frozen)?.[1] ?? "";
       assert.deepEqual(pinned.split(",").map((tool) => tool.trim().replace(/"/g, "")), ["Read", "Grep", "Glob", "Bash", "Write", "Edit"]);
       const architect = await read(ARCHITECT);

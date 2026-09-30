@@ -9,7 +9,7 @@
 // `activeRuns` stays `string[]` (cited: `acd-active-runs-frozen-string-array`);
 // `assemblePresenceRecord(diskRecordWithLoops)` — the registry's read-side reshape — keeps the
 // entry; `readActiveLoops` over a fixture with one running loop run and a `requested` level-2 file
-// answers exactly one eleven-key entry with `stop: "cancel"`. Structural: every `src/**` module
+// answers exactly one eleven-key entry with `stop: "cancel"`. Structural: every `packages/core/src/**` module
 // that CALLS `readActiveRuns(` also calls `readActiveLoops(` — two today, `heartbeat.mjs` and
 // `launcher.mjs`, and the sweep must find both: the launcher's tick is the record this machine
 // actually publishes, and a heartbeat that carried the key alone would be erased by the next tick.
@@ -37,8 +37,8 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assemblePresenceRecord, readActiveLoops } from "../../../src/mesh/presence.mjs";
-import { loopStopsDir, requestLoopStop } from "../../../src/loop/stop-request.mjs";
+import { assemblePresenceRecord, readActiveLoops } from "../../../packages/core/src/mesh/presence.mjs";
+import { loopStopsDir, requestLoopStop } from "../../../packages/core/src/loop/stop-request.mjs";
 import { fleetCurrentWorkLines, loopStopAffordance, rememberStopRung } from "../../../ui/src/fleet/runs.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";

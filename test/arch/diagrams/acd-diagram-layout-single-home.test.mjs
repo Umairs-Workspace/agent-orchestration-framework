@@ -1,9 +1,9 @@
 // FF-13302 (milestone 133 / ADR-003, ADR-006 §1) — THE LAYOUT HAS ONE HOME.
 //
-// "Outside `src/diagrams/layout.mjs`, no `src/**` module spells the `ADR-\d{3}-` stem pattern or
-//  builds a `"diagrams/"` path. Every `src/**` module that reads or writes a diagram path imports
-//  the layout by resolved specifier. That includes `src/commands/diagram/*.mjs` and
-//  `src/work/doctor-diagrams.mjs`, each checked once the file exists. `src/work/artifacts.mjs`'s
+// "Outside `packages/core/src/diagrams/layout.mjs`, no `packages/core/src/**` module spells the `ADR-\d{3}-` stem pattern or
+//  builds a `"diagrams/"` path. Every `packages/core/src/**` module that reads or writes a diagram path imports
+//  the layout by resolved specifier. That includes `packages/core/src/commands/diagram/*.mjs` and
+//  `packages/core/src/work/doctor-diagrams.mjs`, each checked once the file exists. `packages/core/src/work/artifacts.mjs`'s
 //  manifest entry (`dir: "diagrams"`, ADR-007 §2) is the one named exception, because the manifest
 //  is its own single home (FF-7008). A round trip `parseDiagramLinks(renderDiagramBlock(x))` gives
 //  back every target it wrote."
@@ -13,7 +13,7 @@
 // is the drift that makes the doctor lane report a correct diagram as missing.
 //
 // The ADR id's SHAPE is not this control's: FF-6604 already confines every `ADR-\d` spelling to
-// `src/declared-id.mjs`, and the layout narrows that form rather than re-spelling it. What this
+// `packages/core/src/declared-id.mjs`, and the layout narrows that form rather than re-spelling it. What this
 // control adds is the STEM (an `ADR-` template joined to a slug) and the FOLDER segment.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
@@ -22,7 +22,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { parseDiagramLinks, renderDiagramBlock } from "../../../src/diagrams/layout.mjs";
+import { parseDiagramLinks, renderDiagramBlock } from "../../../packages/core/src/diagrams/layout.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_ONE_HOME = "packages/work/src/diagrams/layout.mjs";
@@ -38,7 +38,7 @@ async function modules() {
 }
 
 // Every string/template literal's content in comment-stripped code, import specifiers excepted: a
-// module path through the `src/diagrams/` family is an import, not a diagram path.
+// module path through the `packages/core/src/diagrams/` family is an import, not a diagram path.
 function literals(code) {
   const out = [];
   const body = code.replace(/\bfrom\s*(["'])[^"'\n]*\1/g, "").replace(/\bimport\s*\(\s*(["'])[^"'\n]*\1\s*\)/g, "");
@@ -67,7 +67,7 @@ const LAYOUT_IMPORT = /from\s*["']([^"']*diagrams\/layout\.mjs)["']/g;
 function importsTheLayout(file, text) {
   const code = stripComments(text);
   return [...code.matchAll(LAYOUT_IMPORT)].some((match) =>
-    [THE_ONE_HOME, "src/diagrams/layout.mjs"].some(owner =>
+    [THE_ONE_HOME, "packages/core/src/diagrams/layout.mjs"].some(owner =>
       path.resolve(repoRoot, path.dirname(file), match[1]) === path.join(repoRoot, owner)));
 }
 
@@ -89,7 +89,7 @@ export const archTests = [
   {
     name: "arch/133 FF-13302: every module that handles a diagram path imports the layout by resolved specifier",
     run: async () => {
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/diagrams/layout.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/diagrams/layout.mjs"), "utf8"));
       assert.match(adapter, /^\s*export\s*\{[^}]+\}\s*from "@aof\/work\/diagrams\/layout";\s*$/u,
         "the admitted legacy path only forwards to the package owner");
       const handlers = [];
@@ -120,12 +120,12 @@ export const archTests = [
     name: "arch/133 FF-13302 red probe: the detector fires on a planted folder path and a planted stem, and allows the manifest's one entry",
     run: () => {
       assert.deepEqual(layoutSpellings("packages/work/src/doctor/diagrams.mjs", `const dir = path.join(item, "${SEGMENT}");`), [`builds a folder path from "${SEGMENT}"`]);
-      assert.deepEqual(layoutSpellings("src/x.mjs", `const p = \`${SEGMENT}/\${stem}.svg\`;`).length, 1);
-      assert.deepEqual(layoutSpellings("src/x.mjs", "const stem = `ADR-${n}-${slug}`;"), ["builds an ADR-<NNN>- stem"]);
-      assert.deepEqual(layoutSpellings("src/x.mjs", "const id = `ADR-${String(n).padStart(3, \"0\")}`;"), [], "an ADR id alone is not a stem");
+      assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", `const p = \`${SEGMENT}/\${stem}.svg\`;`).length, 1);
+      assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", "const stem = `ADR-${n}-${slug}`;"), ["builds an ADR-<NNN>- stem"]);
+      assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", "const id = `ADR-${String(n).padStart(3, \"0\")}`;"), [], "an ADR id alone is not a stem");
       assert.deepEqual(layoutSpellings(MANIFEST, `{ name: "DIAGRAMS", dir: "${SEGMENT}", ext: ".svg" }`), []);
       assert.equal(layoutSpellings(MANIFEST, `"${SEGMENT}"; "${SEGMENT}"`).length, 1);
-      assert.deepEqual(layoutSpellings("src/x.mjs", `// "${SEGMENT}/" in a comment\nconst a = 1;`), []);
+      assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", `// "${SEGMENT}/" in a comment\nconst a = 1;`), []);
       assert.equal(importsTheLayout("packages/work/src/commands/diagram/plan.mjs", 'import { x } from "../../diagrams/layout.mjs";'), true);
       assert.equal(importsTheLayout("packages/work/src/commands/diagram/plan.mjs", 'import { x } from "../diagrams/layout.mjs";'), false);
     },

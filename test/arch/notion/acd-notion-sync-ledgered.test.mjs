@@ -39,13 +39,13 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS, applicableReactors } from "../../../src/effects/table.mjs";
-import { transitionRunStart, transitionRunComplete } from "../../../src/effects/run-transitions.mjs";
-import { openEffectsJournal, appendEvent, readEvents, readEventSteps, pendingSteps } from "../../../src/effects/journal.mjs";
-import { drainEffects, reachableLoci, LOCAL_LOCI } from "../../../src/effects/dispatch.mjs";
-import { remoteSteps } from "../../../src/effects/outbox.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+import { EFFECTS, applicableReactors } from "../../../packages/core/src/effects/table.mjs";
+import { transitionRunStart, transitionRunComplete } from "../../../packages/core/src/effects/run-transitions.mjs";
+import { openEffectsJournal, appendEvent, readEvents, readEventSteps, pendingSteps } from "../../../packages/core/src/effects/journal.mjs";
+import { drainEffects, reachableLoci, LOCAL_LOCI } from "../../../packages/core/src/effects/dispatch.mjs";
+import { remoteSteps } from "../../../packages/core/src/effects/outbox.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

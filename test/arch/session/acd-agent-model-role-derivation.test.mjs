@@ -25,8 +25,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readDescriptor } from "../../../src/work/bundle.mjs";
-import { validateConfig } from "../../../src/config-inspect.mjs";
+import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
+import { validateConfig } from "../../../packages/core/src/config-inspect.mjs";
 
 // The frozen ACD agent ids, DERIVED from the descriptor at test time. This is
 // the SAME source the validator is asserted to derive from — so if the validator

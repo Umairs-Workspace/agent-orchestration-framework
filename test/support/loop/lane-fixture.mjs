@@ -20,11 +20,11 @@ import { EventEmitter } from "node:events";
 import os from "node:os";
 import path from "node:path";
 
-import { loadWorkspace } from "../../../src/work.mjs";
-import { resolveRefInWorktree } from "../../../src/work/dispatch.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { resolveRefInWorktree } from "../../../packages/core/src/work/dispatch.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../mesh-worker-terminal-fixture.mjs";
-import { createStopSource, loopStopsDir } from "../../../src/loop/stop-request.mjs";
-import { loopAsksDir, readAsk } from "../../../src/loop/ask-request.mjs";
+import { createStopSource, loopStopsDir } from "../../../packages/core/src/loop/stop-request.mjs";
+import { loopAsksDir, readAsk } from "../../../packages/core/src/loop/ask-request.mjs";
 
 // git(args, cwd) — argv form only, never a shell string.
 export function git(args, cwd) {
@@ -36,7 +36,7 @@ export function git(args, cwd) {
   });
 }
 
-// The `exec(args, { cwd })` seam `src/mesh/worktree.mjs` reads — real git, with the fixture's
+// The `exec(args, { cwd })` seam `packages/core/src/mesh/worktree.mjs` reads — real git, with the fixture's
 // own identity so a commit under the mesh identity and one under the fixture's both land.
 export const realExec = (args, { cwd }) => git(args, cwd);
 
@@ -92,7 +92,7 @@ export async function withLaneRepo(body, { stories = ["01", "03"], rubric = true
         type: "story", number, slug: `s${number}`, parent: milestone, status: spec.status ?? "not-started",
         title: `"Story ${number}"`, created: "2026-09-01", updated: "2026-09-01", schema: 1,
         ...(spec.depends ? { depends: spec.depends } : {}),
-        files: spec.files ?? [`src/s${number}.mjs`],
+        files: spec.files ?? [`packages/core/src/s${number}.mjs`],
       })}# Story ${number}\n`, "utf8");
       if (spec.tasks !== false) await writeFile(path.join(dir, "tasks", "00_ready.feature"), FEATURE, "utf8");
     }
@@ -223,7 +223,7 @@ export function scriptedRegistry(scripts = {}) {
   const calls = [];
   const ids = { grade: "work:grade", validate: "work:validate", doctor: "work:doctor", next: "work:next", dispatch: "work:dispatch", tasks: "work:tasks" };
   const seam = async (id, input, ctx) => {
-    const { invoke } = await import("../../../src/command-core.mjs");
+    const { invoke } = await import("../../../packages/core/src/command-core.mjs");
     const real = () => invoke(id, input, ctx);
     const key = Object.entries(ids).find(([, value]) => value === id)?.[0];
     const script = key == null ? undefined : scripts[key];

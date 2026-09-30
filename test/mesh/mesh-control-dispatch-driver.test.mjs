@@ -18,10 +18,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { startLauncher } from "../../src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../src/global-work-store.mjs";
-import { assignWork } from "../../src/mesh/assignment.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { startLauncher } from "../../packages/core/src/mesh/launcher.mjs";
+import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
+import { assignWork } from "../../packages/core/src/mesh/assignment.mjs";
 import { seedTargetNode } from "../support/mesh-assign-fixture.mjs";
 
 const NODE_ID = "control-a";

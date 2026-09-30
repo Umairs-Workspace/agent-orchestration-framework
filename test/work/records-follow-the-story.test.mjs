@@ -21,7 +21,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLE = path.join(repoRoot, "src", "bundle");
+const BUNDLE = path.join(repoRoot, "packages", "core", "assets");
 const COMMANDS = path.join(BUNDLE, "commands");
 const AGENTS = path.join(BUNDLE, "agents");
 const VERIFY_PROMPT = path.join(COMMANDS, "verify.md");

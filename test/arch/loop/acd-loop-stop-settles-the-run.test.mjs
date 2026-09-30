@@ -6,9 +6,9 @@
 // FF-13002, structural. For every drive site the binding it assigns reaches a `settleDriven(` call
 // before any `return` in the enclosing function — the enclosing-function textual rule FF-12702
 // uses, through `classifySites` — and there are EXACTLY THREE drive sites, counted as FF-12602
-// counts them: the main site in `src/commands/loop.mjs`, the in-process retry and the cross to
-// verify in `src/loop/cycle.mjs` (129/04 moved the ladder there after the register was written on
-// 2026-09-13; the register's "in `src/commands/loop.mjs`" is enforced over the family the cited
+// counts them: the main site in `packages/core/src/commands/loop.mjs`, the in-process retry and the cross to
+// verify in `packages/core/src/loop/cycle.mjs` (129/04 moved the ladder there after the register was written on
+// 2026-09-13; the register's "in `packages/core/src/commands/loop.mjs`" is enforced over the family the cited
 // control sweeps, so the count it states can hold). Every `haltDecision("operator-interrupt"` in
 // the shell receives a producer bound from `source.producer()` — the third argument, cut by
 // matching parens and split at depth-0 commas, never a message match.
@@ -28,8 +28,8 @@
 // rows (the DEFAULT-ABSENT discipline); `packages/work-loop/src/engine.mjs` has zero import statements (cited:
 // `acd-clock-counts-attempts`). Producer fixture: `supervisedDeclarations` over a fixture home
 // holding a `honoured` request for that `loopRunId` answers no row, and a `requested` one still
-// answers the row. Structural: `src/mesh/declarations.mjs` imports `readStopRequest` from
-// `src/loop/stop-request.mjs` (resolved, through module-family.mjs) and passes `stopped` to the
+// answers the row. Structural: `packages/core/src/mesh/declarations.mjs` imports `readStopRequest` from
+// `packages/core/src/loop/stop-request.mjs` (resolved, through module-family.mjs) and passes `stopped` to the
 // engine — the argument the register's red probe drops.
 //
 // The fixture legs ride the loop fixture and the stop-source double `test/loop/loop-command-probe`
@@ -42,18 +42,18 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runLoopBody } from "../../../src/commands/loop.mjs";
+import { runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
 import { decideSupervisedDeclarations } from "../../../packages/work-loop/src/engine.mjs";
-import { supervisedDeclarations } from "../../../src/mesh/declarations.mjs";
-import { isRunning, isStale, readRuns, retryReadiness } from "../../../src/run-store.mjs";
-import { loadWorkspace, listItems } from "../../../src/work.mjs";
+import { supervisedDeclarations } from "../../../packages/core/src/mesh/declarations.mjs";
+import { isRunning, isStale, readRuns, retryReadiness } from "../../../packages/core/src/run-store.mjs";
+import { loadWorkspace, listItems } from "../../../packages/core/src/work.mjs";
 import {
   clearStopRequest,
   loopStopsDir,
   markStopHonoured,
   requestLoopStop,
   stopRequestPath,
-} from "../../../src/loop/stop-request.mjs";
+} from "../../../packages/core/src/loop/stop-request.mjs";
 import { computedDynamicImports } from "../../support/module-family.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { NESTED_FUNCTION_DECLARATION_RE, classifySites, functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
@@ -93,7 +93,7 @@ function resolved(fromRel, specifier) {
   if (specifier === "@aof/work-loop/stop-request") return "packages/work-loop/src/stop-request.mjs";
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
-  if (joined === "src/application/bindings/loop/stop-request.mjs") joined = "packages/work-loop/src/stop-request.mjs";
+  if (joined === "packages/core/src/application/bindings/loop/stop-request.mjs") joined = "packages/work-loop/src/stop-request.mjs";
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
@@ -387,7 +387,7 @@ export const archTests = [
     name: "arch/130 FF-13004 (acd-loop-stop-settles-the-run): structural — the producer imports readStopRequest from the one home by resolved specifier and passes stopped to the engine, and the engine imports nothing",
     run: async () => {
       const producer = await source(PRODUCER);
-      const adapterPath = "src/application/bindings/mesh/declarations.mjs";
+      const adapterPath = "packages/core/src/application/bindings/mesh/declarations.mjs";
       const adapter = await source(adapterPath);
       const imports = dependencySpecifiers(adapter);
       assertRead("the producer's import clauses", imports.length, 3, "specifier(s)");

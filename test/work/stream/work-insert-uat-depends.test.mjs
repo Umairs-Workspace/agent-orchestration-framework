@@ -2,15 +2,15 @@
 //   wiki/work/41_milestone_work-item-insertion/stories/02_story_insert-top-level/
 //     tasks/01_insert-uat-depends-framing.feature
 // Every @executable scenario below is wired against the REAL registered command
-// `work:insert-uat` (src/commands/insert-uat.mjs), invoked in-process through the
+// `work:insert-uat` (packages/core/src/commands/insert-uat.mjs), invoked in-process through the
 // command core. Per the feature's own LITMUS note, `depends` is NOT surfaced by
 // find/list/validate, so the ONLY black-box channel for the authored value is the
 // insert-uat --json envelope's `created.depends` — asserted here directly off the
 // command's result. validate-green is the second, independent channel (an
 // authored depends that failed to resolve would flag).
 import assert from "node:assert/strict";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, validateWork } from "../../../src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { findWork, validateWork } from "../../../packages/core/src/work.mjs";
 import { withInsertFixture, buildTopLevelMilestones } from "../../support/work-insert-fixture.mjs";
 
 export const workInsertUatDependsTests = [

@@ -4,7 +4,7 @@
 // Nine legs. Each fails for a different reason, and each is one a cheap conforming edit would
 // otherwise satisfy while holding nothing:
 //
-//   1 · THE LEAF HOLDS NO GATE. `src/work-trigger/level.mjs` contains no score threshold, no
+//   1 · THE LEAF HOLDS NO GATE. `packages/core/src/work-trigger/level.mjs` contains no score threshold, no
 //       `100`, no groundedness predicate, no component-state literal and NO LEVEL LITERAL AT ALL —
 //       not even the one an `if (level === the gated rung)` branch would have needed, because the
 //       leaf asks the GATE whether a rung is gated instead of knowing. Asserted over the source
@@ -12,7 +12,7 @@
 //       to name what it forbids.
 //   2 · THE ONE HOME IS REACHED BY IMPORT, AND IT IS THE SAME HOME THE LOOP GATES WITH.
 //       `resolveLoopLevel` and `resolveLoopLevelGate` are the leaf's ONLY imports, and
-//       `src/commands/loop.mjs` gates at fire time through that same `resolveLoopLevelGate` — so
+//       `packages/core/src/commands/loop.mjs` gates at fire time through that same `resolveLoopLevelGate` — so
 //       "the loop's own gate" and "the pre-flight's gate" are provably one function rather than
 //       two that happen to agree today.
 //   3 · THE FACTS ARE HANDED IN. No filesystem read, no `invoke`, no clock and no cwd anywhere in
@@ -60,14 +60,14 @@ import {
   TRIGGER_LEVEL_FACTS_NOT_SUPPLIED,
   resolveTriggerLevel,
   resolveTriggerLevels,
-} from "../../../src/work-trigger/level.mjs";
-import { bundledTriggerDeclaration, compileTriggerDeclaration } from "../../../src/work-trigger/declaration.mjs";
+} from "../../../packages/core/src/work-trigger/level.mjs";
+import { bundledTriggerDeclaration, compileTriggerDeclaration } from "../../../packages/core/src/work-trigger/declaration.mjs";
 import { L3_SCORE_THRESHOLD, LOOP_LEVELS, resolveLoopLevelGate } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — and that ORDER is the whole reason this is imported rather
 // than written here. The first cut of this control cloned the three-line function with the two
 // passes INVERTED, which is TECH_DEBT item 24's measured defect: a `//` comment containing `/*`
 // opens a block-comment run for a block-first stripper, and everything to the next `*/` is
-// deleted — 9,192 characters of `src/mesh/ui-serve.mjs`, including its whole route table. Leg 1
+// deleted — 9,192 characters of `packages/core/src/mesh/ui-serve.mjs`, including its whole route table. Leg 1
 // sweeps the REMAINDER, so that deletion makes every ban below report green over a region it
 // never read, with all three of leg 1's own non-vacuity guards still passing. The one home is
 // `test/support/source-slice.mjs`; 52 gates already read it from there and this is the 53rd.
@@ -177,7 +177,7 @@ export const archTests = [
         [/Date\.now\(|new Date\(|process\.(cwd|env)/, "a clock or an ambient reading", "const now = Date.now();"],
       ];
       for (const [pattern, what, planted] of bans) {
-        assert.equal(pattern.test(code), false, `src/work-trigger/level.mjs contains ${what}`);
+        assert.equal(pattern.test(code), false, `packages/core/src/work-trigger/level.mjs contains ${what}`);
         for (const sample of [].concat(planted)) {
           assert.equal(pattern.test(sample), true, `the ban on ${what} would catch a planted \`${sample}\``);
         }
@@ -230,7 +230,7 @@ export const archTests = [
         assert.ok(moduleSpecifiers(planted).includes(expected), `a planted \`${planted}\` is seen`);
       }
 
-      // The SAME function is what `src/commands/loop.mjs` gates with when the loop is entered, so
+      // The SAME function is what `packages/core/src/commands/loop.mjs` gates with when the loop is entered, so
       // the pre-flight and the fire-time gate cannot be two implementations that agree today.
       const loopCommand = read(LOOP_COMMAND_PATH);
       assert.match(loopCommand, /^\s*resolveLoopLevelGate,\s*$/m, "the loop command imports the same gate");
@@ -280,7 +280,7 @@ export const archTests = [
         "preflight", "requestedLevel", "code", "failingHalves", "missing", "gate", "loopReady", "groundedness",
       ];
       const sets = [compileTriggerDeclaration({ version: 1, members: [member(), member({ id: "t-1", level: "L1" })] })];
-      if (existsSync(path.join(REPO_ROOT, "src", "bundle", "triggers.jsonc"))) {
+      if (existsSync(path.join(REPO_ROOT, "packages", "core", "assets", "triggers.jsonc"))) {
         sets.push(compileTriggerDeclaration(bundledTriggerDeclaration()));
       }
       let compiledCount = 0;

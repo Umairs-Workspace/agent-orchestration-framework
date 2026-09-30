@@ -33,9 +33,9 @@ import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildSnapshot } from "../../../src/work/doctor.mjs";
-import { controlGroup, isControlFileName } from "../../../src/work/doctor-controls.mjs";
-import { registerBlockKind, registerDeclarations, registerEntries } from "../../../src/declared-id.mjs";
+import { buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
+import { controlGroup, isControlFileName } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { registerBlockKind, registerDeclarations, registerEntries } from "../../../packages/core/src/declared-id.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");

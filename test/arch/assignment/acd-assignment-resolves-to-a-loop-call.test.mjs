@@ -14,7 +14,7 @@
 // while the story is unmerged and VACUOUSLY TRUE the moment it merges — precisely when the
 // fence has to keep holding. So the fence is asserted structurally instead, and it is the
 // stronger claim: the module that OWNS the PTY spawn, the output chunking, the completion
-// detection and the NEEDS_INPUT sentinel (`src/agent-session-driver.mjs`) contains none of
+// detection and the NEEDS_INPUT sentinel (`packages/core/src/agent-session-driver.mjs`) contains none of
 // this story's identifiers at all, and inside the mesh worker every one of those concerns
 // is still forwarded as a bare shorthand key that no launch decision can reach. Both fail
 // on a plant; neither goes quiet after the merge.
@@ -34,15 +34,15 @@ import {
   assignmentDirectiveCommand,
   assignmentDirectiveResolution,
   assignmentDirectiveLaunch,
-} from "../../../src/mesh/assignment-directive.mjs";
-import { assembleAssignmentRecord } from "../../../src/assignment-record.mjs";
+} from "../../../packages/core/src/mesh/assignment-directive.mjs";
+import { assembleAssignmentRecord } from "../../../packages/core/src/assignment-record.mjs";
 import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 // The launch seam is reached through the door the WORKER itself re-exports, not through the
 // driver's own module. That is the honest door for this leg — the claim is about the
 // caller-side obligation, and the caller reaches the seam here — and it leaves the driver's
 // closed ADR-015 §2 test allowlist untouched.
-import { resolveInteractiveDriverLaunch } from "../../../src/mesh/worker-execution.mjs";
-import { bundledFrozenSet, compileFrozenSet } from "../../../src/frozen-set.mjs";
+import { resolveInteractiveDriverLaunch } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { bundledFrozenSet, compileFrozenSet } from "../../../packages/core/src/frozen-set.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -50,7 +50,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // asserted over exactly these.
 //
 // 119/04 (item 83's seam 2, ADR-007) WIDENED this census rather than repointing it. The three
-// were 63/03's own write set; the composer has since moved to `src/mesh/worker-launch.mjs`,
+// were 63/03's own write set; the composer has since moved to `packages/core/src/mesh/worker-launch.mjs`,
 // and a census left at three would have gone on sweeping the composer's OLD home and nothing
 // else — a `{ program: "aof", args: [...] }` literal could have been authored in the new one
 // with no control in this tree able to see it. That is ADR-003 §4's vacuity arriving through a

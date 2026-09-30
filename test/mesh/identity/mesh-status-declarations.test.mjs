@@ -10,8 +10,8 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { meshStatusCommand } from "../../../src/commands/mesh/identity.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { meshStatusCommand } from "../../../packages/core/src/commands/mesh/identity.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const NOW = "2026-09-08T12:00:00.000Z";
 

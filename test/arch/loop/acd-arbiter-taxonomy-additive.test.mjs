@@ -14,7 +14,7 @@
 //   of the FOURTEEN records shipped before 58 parses with zero new findings.
 //
 // WHY THE COMPATIBILITY LEG IS OVER THE CORPUS AND NOT OVER AN EXAMPLE. The fourteen records under
-// `src/bundle/loops/` are the framework's own declaration of how it improves itself, installed into
+// `packages/core/assets/loops/` are the framework's own declaration of how it improves itself, installed into
 // every project that runs aof. A widening that re-classified one of them, or raised a single new
 // finding against one, would break the thing this milestone exists to make trustworthy while
 // claiming to strengthen it. The oracle is the signature milestone 57 froze over ELEVEN of them
@@ -36,7 +36,7 @@ import { fileURLToPath } from "node:url";
 import {
   ADMITTED_KEYS, EDGE_KEYS, ENDPOINT_SCHEMES, NODE_KINDS, POINTER_SCHEMES, SENTINEL_TOKENS,
   loadLoops,
-} from "../../../src/work/loops.mjs";
+} from "../../../packages/core/src/work/loops.mjs";
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 
@@ -175,7 +175,7 @@ export const archTests = [
         "the endpoint vocabulary gains exactly `arbiter` — no watcher, no anchor");
       assert.match(loaderSource, /const LAYER_VALUES = frozenSet\("operational", "management", "governance"\);/u,
         "LAYER_VALUES equals its three frozen literals, in the loader and nowhere else");
-      assert.equal("LAYER_VALUES" in (await import("../../../src/work/loops.mjs")), false,
+      assert.equal("LAYER_VALUES" in (await import("../../../packages/core/src/work/loops.mjs")), false,
         "…and it is NOT exported: 52's delivered `00_frozen-vocabulary.feature:22` says no twelfth set is, and 57 answered this the same way for DETERMINISM_VALUES");
 
       // `dead-band` (ADR-004 §5) exists in NO admitted set. A refusal recorded as a sentence in an
@@ -249,7 +249,7 @@ export const archTests = [
         "module:": "module:src/work/loops.mjs#loadLoops",
         "command:": "command:work:next",
         "config:": "config:work.loop.reviewRounds",
-        "prose:": "prose:src/bundle/agents/aof-developer.md",
+        "prose:": "prose:packages/core/assets/agents/aof-developer.md",
       })[prefix];
 
       const corpus = [

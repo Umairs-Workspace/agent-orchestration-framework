@@ -10,7 +10,7 @@
 //
 // WHY IT EXISTS — finding F9 (aof:verify 38, BLOCKER). `ui/src/fleet/Fleet.tsx`
 // branches `isGlobalStatus(status) ? <GlobalScopeView/> : <NodesRegion/>`. Milestone
-// 38's session render went into `NodesRegion → NodeCard`. But `src/mesh/ui-serve.mjs`
+// 38's session render went into `NodesRegion → NodeCard`. But `packages/core/src/mesh/ui-serve.mjs`
 // serves BOTH scopes from `queryGlobalMeshStatus` (its ONE data source), whose payload
 // ALWAYS carries `workspaces` — so `isGlobalStatus` is ALWAYS true and the app ALWAYS
 // mounts `GlobalScopeView → GlobalNodePanel`, which had NO current-work line at all.
@@ -39,7 +39,7 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { queryGlobalMeshStatus } from "../../../src/global-mesh-query.mjs";
+import { queryGlobalMeshStatus } from "../../../packages/core/src/global-mesh-query.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
@@ -139,7 +139,7 @@ function renderedChildren(block) {
 // that happens to contain the two characters `/*` — an API glob in prose, a path pattern,
 // a regex quoted in English — opens a PHANTOM block comment that runs to the next `*/`
 // anywhere in the file and deletes everything between.
-// Measured, because this is not hypothetical: `src/mesh/ui-serve.mjs:277` gained the line
+// Measured, because this is not hypothetical: `packages/core/src/mesh/ui-serve.mjs:277` gained the line
 // comment `// … //api/* dodges the API guard …` in 45/02 (64d471b). Under the old order
 // the stripper ate 39,000 characters of that file, every `queryGlobalMeshStatus(` call
 // site vanished, and PROOF 3 below started reporting `found []` — a fitness function

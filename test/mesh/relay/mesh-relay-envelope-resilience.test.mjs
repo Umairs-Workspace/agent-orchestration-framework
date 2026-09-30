@@ -12,7 +12,7 @@
 // OUR { type:'error' } frame (not ws's 1009 close).
 import assert from "node:assert/strict";
 import { WebSocket } from "ws";
-import { serveRelay } from "../../../src/mesh/relay.mjs";
+import { serveRelay } from "../../../packages/core/src/mesh/relay.mjs";
 
 function connect(url, { timeoutMs = 3000 } = {}) {
   return new Promise((resolve, reject) => {

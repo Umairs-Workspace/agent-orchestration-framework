@@ -37,7 +37,7 @@ import {
   SIZE_KINDS,
   sizeFor,
   verdictFor,
-} from "../../src/work-audit/evidence.mjs";
+} from "../../packages/core/src/work-audit/evidence.mjs";
 // THE ONE HOME for the control corpus and the throwaway repository that holds it. Two copies of
 // this fixture had already diverged (green was 2 cases here and 3 there) before it was lifted.
 import { EXECUTED_CASES, withControlFixtureRepo as withFixtureRepo } from "../support/evidence-control-fixture.mjs";
@@ -266,7 +266,7 @@ export const evidenceReRunTests = [
         ];
         // The SEAM is counted, not stubbed: the children are real, and the count is what proves
         // no memoisation by control path crept in.
-        const { runBounded } = await import("../../src/work-audit/spawn.mjs");
+        const { runBounded } = await import("../../packages/core/src/work-audit/spawn.mjs");
         const started = [];
         const spawn = async (options) => {
           started.push(options.args[options.args.length - 1]);
@@ -416,7 +416,7 @@ export const evidenceReRunTests = [
         const { architecture, verification } = oneRow({
           control: "test/arch/red-moved.test.mjs",
           result: "**RED** — standing red",
-          probe: "Observed `red a breaks: expected src/work.mjs:118 to hold`",
+          probe: "Observed `red a breaks: expected packages/core/src/work.mjs:118 to hold`",
         });
         const report = await runEvidence({ repoRoot: root, items: [fixtureItem({ architecture, verification })] });
         const row = rowFor(report, "FF-9901");
@@ -667,7 +667,7 @@ export const evidenceReRunTests = [
 
   // ───────────────────────────────────────────────────────────────────────────────────────────
   // The pure readers, driven directly. Each is the one home for a fact the register carries and
-  // `src/work/doctor-controls.mjs` does not offer, so each is asserted rather than inferred from
+  // `packages/core/src/work/doctor-controls.mjs` does not offer, so each is asserted rather than inferred from
   // a lane result.
   // ───────────────────────────────────────────────────────────────────────────────────────────
   {
@@ -715,7 +715,7 @@ export const evidenceReRunTests = [
       // result the verification register carries must survive it — letting the marker win erased
       // every recorded result on a `done` milestone.
       const stale = architectureRegister([{ id: "FF-6601", enforcedBy: "`test/arch/work/acd-feature-parser-single-home.test.mjs` **(pending — 66/00)** — a source scan" }]);
-      const recorded = verificationRegister([{ id: "FF-6601", enforcedBy: "`test/arch/work/acd-feature-parser-single-home.test.mjs` (7 cases)", result: "**GREEN** — one recogniser under src/", probe: "Planted `SCENARIO_RE` in src/work.mjs" }]);
+      const recorded = verificationRegister([{ id: "FF-6601", enforcedBy: "`test/arch/work/acd-feature-parser-single-home.test.mjs` (7 cases)", result: "**GREEN** — one recogniser under src/", probe: "Planted `SCENARIO_RE` in packages/core/src/work.mjs" }]);
       const [landed] = recordedRowsFor(fixtureItem({ architecture: stale, verification: recorded }));
       assert.equal(landed.pending, true, "the register really does carry the stale marker");
       assert.equal(landed.result, "green", "…and the result the VERIFICATION register records survives it");

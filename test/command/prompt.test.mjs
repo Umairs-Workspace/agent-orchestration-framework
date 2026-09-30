@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { parseResourceInput, resolveConfirmation, resolveRuntimeSelection, resolveSelection } from "../../src/prompt.mjs";
+import { parseResourceInput, resolveConfirmation, resolveRuntimeSelection, resolveSelection } from "../../packages/core/src/prompt.mjs";
 
 const items = [
   { id: "local-skill", defaultEnabled: true },

@@ -14,7 +14,7 @@
 //
 // This is the SECURITY.md control for replay (T4) and the timing-oracle facet of
 // brute-force (T2). It is grounded in the real node:crypto seam the repo already uses
-// (src/node-identity.mjs line 31 imports node:crypto; src/lock.mjs + src/notion/
+// (packages/core/src/node-identity.mjs line 31 imports node:crypto; packages/core/src/lock.mjs + src/notion/
 // mapping.mjs already call timingSafeEqual — the primitive exists in this codebase).
 //
 // The invariant has TWO structural facets, each a proof:
@@ -46,7 +46,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 const COMMANDS = path.join(SRC, "commands");
 const MESH_DIR = path.join(SRC, "mesh");
 
@@ -93,7 +93,7 @@ const RAW_HASH_EQUALITY = /\b\w*(?:[cC]odeHash|[hH]ash|[cC]ode|[dD]igest)\w*\s*(
 async function matchSurface() {
   const found = [];
   for (const { rel, path: file } of await readRuntimeFiles(repoRoot)) {
-    if (!rel.startsWith("src/mesh/") && !rel.startsWith("src/commands/mesh/") && !rel.startsWith("packages/mesh/src/")) continue;
+    if (!rel.startsWith("packages/core/src/mesh/") && !rel.startsWith("packages/core/src/commands/mesh/") && !rel.startsWith("packages/mesh/src/")) continue;
     const raw = await readFile(file, "utf8");
     if (MATCH_MARKER.test(stripCommentsAndStrings(raw))) found.push({ file, raw });
   }

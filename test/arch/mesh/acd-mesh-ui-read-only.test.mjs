@@ -30,7 +30,7 @@
 // them is still a clean 405. `acd-mesh-ui-write-isolation` owns the enumeration's own
 // "and a third one fires" self-check.
 //
-// A structural grep of src/mesh/ui-serve.mjs (comments discounted) PLUS a
+// A structural grep of packages/core/src/mesh/ui-serve.mjs (comments discounted) PLUS a
 // behavioural exercise of the real server: every mutating method on the two
 // GET routes 405s with the Allow header, no /api/mesh/issue|route|revoke route
 // resolves to a 2xx, every upgrade is destroyed, and the route table is still
@@ -41,7 +41,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
@@ -202,7 +202,7 @@ export const archTests = [
 
       // …and the two shapes the OLD name-shape capture (`[a-zA-Z-]+`) could not see at
       // all — a route whose name carries a PATH SEPARATOR and one that carries an
-      // UNDERSCORE. Both were planted into the real src/mesh/ui-serve.mjs and confirmed
+      // UNDERSCORE. Both were planted into the real packages/core/src/mesh/ui-serve.mjs and confirmed
       // to fire before being reverted; kept here as the standing self-check.
       for (const name of ["/api/mesh/session/kill", "/api/mesh/kill_session"]) {
         const plantedOddName = stripComments(`

@@ -1,4 +1,4 @@
-// Unit coverage for `src/work/debt.mjs` — the pure tech-debt ledger engine behind `work:debt`.
+// Unit coverage for `packages/core/src/work/debt.mjs` — the pure tech-debt ledger engine behind `work:debt`.
 //
 // Every case here is a defect the REAL ledger exhibited on 2026-09-05, when it stood at 4,836
 // lines across 91 entries: inconsistent status wording (`open` / `CLOSED …` / `PAID DOWN …` /
@@ -13,7 +13,7 @@ import {
   evaluateDebtLedger,
   parseDebtLedger,
   pruneResolved,
-} from "../../../src/work/debt.mjs";
+} from "../../../packages/core/src/work/debt.mjs";
 
 // A ledger built from parts, so each test states only what it is about. `eol` is a parameter
 // because line endings are the one thing this engine must round-trip rather than decide (item 74).
@@ -225,7 +225,7 @@ export const workDebtTests = [
         "",
         "**Status:** open",
         "",
-        "It names `src/mesh/worker-execution.mjs` and `src/mesh/launcher.mjs` and `src/cli.mjs`.",
+        "It names `packages/core/src/mesh/worker-execution.mjs` and `packages/core/src/mesh/launcher.mjs` and `packages/core/src/cli.mjs`.",
         "",
         "---",
         "",
@@ -233,7 +233,7 @@ export const workDebtTests = [
         "",
         "**Status:** open",
         "",
-        "It names `src/mesh/worker-execution.mjs:2462` with a locator.",
+        "It names `packages/core/src/mesh/worker-execution.mjs:2462` with a locator.",
         "",
         "---",
         "",
@@ -241,7 +241,7 @@ export const workDebtTests = [
         "",
         "**Status:** open",
         "",
-        "It names `src/claude-settings.mjs` only.",
+        "It names `packages/core/src/claude-settings.mjs` only.",
         "",
       ].join("\n");
       const parsed = parseDebtLedger(text);
@@ -261,17 +261,17 @@ export const workDebtTests = [
       assert.deepEqual(hits[1].matchedPaths, ["packages/mesh/src/worker-execution.mjs"]);
 
       // Separator and prefix tolerance — a caller types what their shell completed.
-      for (const spelling of ["src\\mesh\\worker-execution.mjs", "./src/mesh/worker-execution.mjs", "SRC/MESH/WORKER-EXECUTION.MJS"]) {
+      for (const spelling of ["src\\mesh\\worker-execution.mjs", "./packages/core/src/mesh/worker-execution.mjs", "SRC/MESH/WORKER-EXECUTION.MJS"]) {
         assert.equal(entriesTouching(parsed, [spelling]).length, 2, `${spelling} resolves`);
       }
 
       // A suffix match must respect segment boundaries, never raw string endings.
       assert.equal(entriesTouching(parsed, ["execution.mjs"]).length, 0, "a partial filename is not a match");
-      assert.equal(entriesTouching(parsed, ["src/settings.mjs"]).length, 0, "`settings.mjs` must not match `claude-settings.mjs`");
+      assert.equal(entriesTouching(parsed, ["packages/core/src/settings.mjs"]).length, 0, "`settings.mjs` must not match `claude-settings.mjs`");
 
       // Nothing asked, nothing returned — the bare face is the full report, not an empty one.
       assert.deepEqual(entriesTouching(parsed, []), []);
-      assert.deepEqual(entriesTouching(parsed, ["src/nonexistent.mjs"]), []);
+      assert.deepEqual(entriesTouching(parsed, ["packages/core/src/nonexistent.mjs"]), []);
     },
   },
 
@@ -284,7 +284,7 @@ export const workDebtTests = [
         ["# tech debt", "", "## 1. Bare mention", "", "**Status:** open", "", "It mentions `work.mjs` with no directory.", ""].join("\n")
       );
       assert.deepEqual(parsed.entries[0].citedPaths, [], "no directory, no citation");
-      assert.equal(entriesTouching(parsed, ["src/work.mjs"]).length, 0);
+      assert.equal(entriesTouching(parsed, ["packages/core/src/work.mjs"]).length, 0);
     },
   },
 

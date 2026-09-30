@@ -10,9 +10,9 @@ import { matchedParenSpan, stripComments } from '../source-slice.mjs';
 export async function applicationConstructionDetails(repoRoot) {
   const instances = new Map();
   const calls = [];
-  for (const entry of await readdir(path.join(repoRoot, 'src/application'), { withFileTypes: true })) {
+  for (const entry of await readdir(path.join(repoRoot, 'packages/core/src/application'), { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.mjs')) continue;
-    const rel = `src/application/${entry.name}`;
+    const rel = `packages/core/src/application/${entry.name}`;
     const source = stripComments(await readFile(path.join(repoRoot, rel), 'utf8'));
     const factories = new Map();
     for (const match of source.matchAll(/import\s*\{\s*(assemble\w+)\s*\}\s*from\s*['"]([^'"]+)['"]/g)) {
@@ -44,7 +44,7 @@ export async function applicationConstructionDetails(repoRoot) {
       `${file}: every supplied runtime callback asserts readiness before returning its constructed service`);
     const dependencies = [];
     for (const { name, dynamic, parameter } of names) {
-      if (name === 'workspace') { dependencies.push({ target: 'src/application/paths.mjs', dynamic, parameter }); continue; }
+      if (name === 'workspace') { dependencies.push({ target: 'packages/core/src/application/paths.mjs', dynamic, parameter }); continue; }
       const target = instances.get(name === 'commandPort' ? 'commandCore' : name);
       assert.ok(target, `${file}: collaborator ${name} has a known construction`);
       dependencies.push({ target, dynamic, parameter });

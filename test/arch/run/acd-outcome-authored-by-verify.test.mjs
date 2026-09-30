@@ -15,12 +15,12 @@ import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { recordDoc } from "../../../src/work.mjs";
+import { recordDoc } from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TEMPLATE_ROOT = path.join(repoRoot, "src", "bundle", "templates");
-const VERIFY_PROMPT = path.join(repoRoot, "src", "bundle", "commands", "verify.md");
-const DEVELOPER_AGENT = path.join(repoRoot, "src", "bundle", "agents", "aof-developer.md");
+const TEMPLATE_ROOT = path.join(repoRoot, "packages", "core", "assets", "templates");
+const VERIFY_PROMPT = path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md");
+const DEVELOPER_AGENT = path.join(repoRoot, "packages", "core", "assets", "agents", "aof-developer.md");
 
 // Does any bundle template dir ship an OUTCOME.md (story 01's scaffold)?
 async function outcomeTemplateExists() {

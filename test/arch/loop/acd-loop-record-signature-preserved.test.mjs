@@ -30,7 +30,7 @@ import {
   composeSignoffBlock,
   loopRecordCommand,
   parseSignoffRows,
-} from "../../../src/commands/loop-record.mjs";
+} from "../../../packages/core/src/commands/loop-record.mjs";
 import {
   ENGAGED_RUNS,
   ITEM_REF,

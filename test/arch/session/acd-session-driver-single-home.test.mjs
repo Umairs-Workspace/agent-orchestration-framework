@@ -9,8 +9,8 @@ import { assertFamilyPurity } from "../../support/module-family.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const driverPath = path.join(root, "src/application/bindings/agent-session-driver.mjs");
-const adapterPath = path.join(root, "src/application/bindings/mesh/worker-execution.mjs");
+const driverPath = path.join(root, "packages/core/src/application/bindings/agent-session-driver.mjs");
+const adapterPath = path.join(root, "packages/core/src/application/bindings/mesh/worker-execution.mjs");
 const sinkPath = path.join(root, "packages", "mesh", "src", "worker-execution.mjs");
 const MOVED = Object.freeze([
   "NEEDS_INPUT_SENTINEL", "NEEDS_INPUT_INSTRUCTION", "DIRECTIVE_COMPLETE_SENTINEL",
@@ -60,7 +60,7 @@ const MOVED = Object.freeze([
 // next mover can reproduce it.
 //
 // MEASURED, never estimated:
-//   wc -l src/mesh/worker-execution.mjs
+//   wc -l packages/core/src/mesh/worker-execution.mjs
 // and the value below IS that number, with no headroom, so the next line still has to come here and
 // be argued for. SINK_FLOOR is untouched: it is the leg that proves the file was really read, and
 // lowering it to accommodate a larger cut would turn this ratchet's one non-vacuity check into
@@ -88,7 +88,7 @@ function setDelta(actual, expected) {
 // since 53/00 is as much a defect as a missing one.
 
 // The sink's exported surface, measured BEFORE the split and frozen here:
-//   node -e 'import("./src/mesh/worker-execution.mjs").then((m) => console.log(Object.keys(m).sort().join("\n")))'
+//   node -e 'import("./packages/core/src/mesh/worker-execution.mjs").then((m) => console.log(Object.keys(m).sort().join("\n")))'
 // (42 names, 2026-09-07, at c5139669 — the commit before this story's first edit.)
 //
 // This is the one STORED DECISION in this file rather than a derived fact, and it has to be
@@ -233,7 +233,7 @@ async function sinkImporters() {
       if (dependencySpecifiers(source).some(({ specifier, injected }) => specifier.endsWith("worker-execution.mjs") && (injected || !specifier.includes("bindings/")))) found.push(rel);
     }
   };
-  for (const dir of ["src", "scripts", "test"]) await walk(dir);
+  for (const dir of ["packages/core/src", "scripts", "test"]) await walk(dir);
   return found;
 }
 
@@ -262,8 +262,8 @@ export const archTests = [
     name: "arch/53 FF-5302 (acd-session-driver-single-home): the driver export set is exactly the frozen seventeen and the sink re-exports every binding by identity",
     run: async () => {
       const [driverModule, sinkModule] = await Promise.all([
-        import("../../../src/agent-session-driver.mjs"),
-        import("../../../src/mesh/worker-execution.mjs"),
+        import("../../../packages/core/src/agent-session-driver.mjs"),
+        import("../../../packages/core/src/mesh/worker-execution.mjs"),
       ]);
       const actual = Object.keys(driverModule).sort();
       const expected = [...MOVED].sort();
@@ -306,8 +306,8 @@ export const archTests = [
     name: "arch/53 FF-7002 (acd-session-driver-single-home, extended): the driver imports the pure phase-brief leaf WITHOUT re-exporting it, the leaf is pure, and the driver's export set stays the frozen seventeen",
     run: async () => {
       const [driverModule, phaseBriefModule] = await Promise.all([
-        import("../../../src/agent-session-driver.mjs"),
-        import("../../../src/phase-brief.mjs"),
+        import("../../../packages/core/src/agent-session-driver.mjs"),
+        import("../../../packages/core/src/phase-brief.mjs"),
       ]);
       // the driver's export set is STILL exactly the frozen seventeen (phase-brief is NOT re-exported)
       const actual = Object.keys(driverModule).sort();
@@ -323,7 +323,7 @@ export const archTests = [
       }
       // THE LEAF IS PURE AS A FAMILY (119/ADR-002). Purity is a claim about a module's EXTERNAL
       // dependencies, never about how many files it occupies: the subject resolves to
-      // `src/phase-brief/` when that directory exists and to `packages/work/src/phase-brief.mjs` when it does not,
+      // `packages/core/src/phase-brief/` when that directory exists and to `packages/work/src/phase-brief.mjs` when it does not,
       // an intra-family specifier is admitted, and every other leg — node builtins, the filesystem,
       // the clock, `fetch`, an outward dynamic `import()` — is re-asserted per file over the whole
       // family. The predicate widened; the guard did not weaken. The old token ban made the only
@@ -353,7 +353,7 @@ export const archTests = [
       // Red probe: a SECOND module constructs a claude launch argv → the detector trips.
       const probe = [
         ...realFiles,
-        { rel: "commands/rogue.mjs", path: path.join(root, "src", "commands", "rogue.mjs"), body: 'function rogue() { return ["--permission-mode", "auto"]; }\n' },
+        { rel: "commands/rogue.mjs", path: path.join(root, "packages", "core", "src", "commands", "rogue.mjs"), body: 'function rogue() { return ["--permission-mode", "auto"]; }\n' },
       ];
       assert.deepEqual(findOffenders(probe, implementationPath), ["commands/rogue.mjs builds --permission-mode"], "a second claude launch builder trips the detector");
     },
@@ -361,7 +361,7 @@ export const archTests = [
   {
     name: "arch/119 FF-11907 (acd-session-driver-single-home, extended): the exported surface is identical across item 83's split, in both directions, and every binding a dependent takes is still on it",
     run: async () => {
-      const sinkModule = await import("../../../src/mesh/worker-execution.mjs");
+      const sinkModule = await import("../../../packages/core/src/mesh/worker-execution.mjs");
       const actual = Object.keys(sinkModule).sort();
       assert.deepEqual(setDelta(actual, [...SINK_SURFACE].sort()), { extra: [], missing: [] }, "an extra name is as much a defect as a missing one — the split subtracts definitions, never surface");
       assert.equal(actual.length, 42, "the surface measured before the split");
@@ -377,7 +377,7 @@ export const archTests = [
         dependents.push({ rel, names: namedImportsOf(source, "worker-execution\\.mjs") });
       }
       assert.ok(dependents.length >= 4, `the importer sweep found ${dependents.length} dependents — it must at least find the four non-test ones`);
-      for (const rel of ["src/application/bindings/mesh/launcher.mjs", "scripts/pin-checkout-id.mjs"]) {
+      for (const rel of ["packages/core/src/application/bindings/mesh/launcher.mjs", "scripts/pin-checkout-id.mjs"]) {
         assert.ok(dependents.some((dependent) => dependent.rel === rel), `${rel} is one of the four non-test dependents and the sweep must see it`);
       }
       assert.deepEqual(dependentBindingProblems([...SINK_SURFACE], dependents), [], "every binding every dependent takes from the sink is still on its surface");
@@ -402,7 +402,7 @@ export const archTests = [
 
       // …and every extracted symbol that was ON the pre-split surface is STILL on it, which is the
       // pairing that distinguishes a move from a deletion.
-      const sinkModule = await import("../../../src/mesh/worker-execution.mjs");
+      const sinkModule = await import("../../../packages/core/src/mesh/worker-execution.mjs");
       for (const rel of EXTRACTED_HOMES) {
         const child = await import(`../../../${rel}`);
         for (const [name, value] of Object.entries(child)) {
@@ -458,7 +458,7 @@ export const archTests = [
       const ownComment = [];
       for (let index = declaration - 1; index >= 0 && controlLines[index].startsWith("//"); index -= 1) ownComment.unshift(controlLines[index]);
       assert.ok(ownComment.length > 0, "the declaration carries a comment block of its own — an empty one would make the next assertion vacuous");
-      assert.ok(ownComment.some((line) => line.includes("wc -l src/mesh/worker-execution.mjs")), "the constant's own comment carries the command that produced its value");
+      assert.ok(ownComment.some((line) => line.includes("wc -l packages/core/src/mesh/worker-execution.mjs")), "the constant's own comment carries the command that produced its value");
     },
   },
   {
@@ -492,7 +492,7 @@ export const archTests = [
         "a child that reaches its parent is named",
       );
       assert.ok(
-        importBackProblems([{ rel: "packages/mesh/src/worker-launch.mjs", reaches: new Set(["src/mesh/repo-marker.mjs"]), reexportsParent: true }]).some((problem) => /re-exports the parent's names/u.test(problem)),
+        importBackProblems([{ rel: "packages/mesh/src/worker-launch.mjs", reaches: new Set(["packages/core/src/mesh/repo-marker.mjs"]), reexportsParent: true }]).some((problem) => /re-exports the parent's names/u.test(problem)),
         "…and so is one that re-exports them",
       );
 

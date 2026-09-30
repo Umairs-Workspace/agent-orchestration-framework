@@ -38,7 +38,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
+import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

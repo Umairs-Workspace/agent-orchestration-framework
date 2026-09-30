@@ -5,16 +5,16 @@
 // The render is a pure function of what it is handed, so every case here calls
 // `runStatusCommand.cli.render(result, faceCtx)` over a literal result of the shape `run()` returns
 // — the `cli.render(result, {})` idiom — with ONE case taken from a real `invoke("work:run-status")`
-// through `src/command-core.mjs`, so the literals below are not a private shape.
+// through `packages/core/src/command-core.mjs`, so the literals below are not a private shape.
 import assert from "node:assert/strict";
 import path from "node:path";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 
-import { runStatusCommand } from "../../src/commands/run-status.mjs";
-import { attemptElapsedMs } from "../../src/work/loop.mjs";
-import { startRun } from "../../src/run-store.mjs";
-import { invoke } from "../../src/command-core.mjs";
+import { runStatusCommand } from "../../packages/core/src/commands/run-status.mjs";
+import { attemptElapsedMs } from "../../packages/core/src/work/loop.mjs";
+import { startRun } from "../../packages/core/src/run-store.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 
 const DAY = "2026-09-08T";
 const at = (clock) => (clock === "absent" || clock == null ? null : (clock.includes("-") ? clock : `${DAY}${clock}`));

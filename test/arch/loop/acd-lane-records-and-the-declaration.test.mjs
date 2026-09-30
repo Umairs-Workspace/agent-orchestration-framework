@@ -4,7 +4,7 @@
 //   FF-12903  "The tree that commits the change owns the record."
 //   FF-12907  "Lanes are children of one declaration."
 //
-// FF-12903, STRUCTURAL LEG — in `src/loop/**`, every `transitionRunStart` / `transitionRunComplete`
+// FF-12903, STRUCTURAL LEG — in `packages/core/src/loop/**`, every `transitionRunStart` / `transitionRunComplete`
 // call made by a function that builds a LANE brief (a `runBrief(…, { …, lane: {…} })`) takes an
 // item bound in that same function from a `resolveRefInWorktree(` call — the item AS IT LIVES IN
 // THE LANE, never the primary's copy (`startedHere`'s rule: a control-side write of a status the
@@ -16,7 +16,7 @@
 // each lane's story dir holds exactly one record whose `brief.lane.worktree` is that lane, and
 // after the merge `readRuns(primaryStory)` returns that same run, `done`.
 //
-// FF-12907, STRUCTURAL LEG — `src/loop/**` assigns nothing to `brief.loop.scope` or
+// FF-12907, STRUCTURAL LEG — `packages/core/src/loop/**` assigns nothing to `brief.loop.scope` or
 // `.loopRunId` and passes no `scope:` / `loopRunId:` override into `declarationFor(` or
 // `runBrief(`: the declaration is the shell's, passed in WHOLE, so a lane run is a run of this
 // loop and never a declaration of its own. FIXTURE LEG — over the same wave, every lane run's
@@ -172,11 +172,11 @@ async function familyUnits() {
 // ── the fixture leg, shared by both controls: one two-member wave, everything injected ──
 async function driveTwoMemberWave() {
   const fixture = await import("../../support/loop/lane-fixture.mjs");
-  const { runLoopBody } = await import("../../../src/commands/loop.mjs");
-  const { readRuns } = await import("../../../src/run-store.mjs");
-  const { resolveItemExact } = await import("../../../src/commands/resolve.mjs");
-  const { resolveRefInWorktree } = await import("../../../src/work/dispatch.mjs");
-  const { meshDispatchWorktreePath } = await import("../../../src/mesh/worktree.mjs");
+  const { runLoopBody } = await import("../../../packages/core/src/commands/loop.mjs");
+  const { readRuns } = await import("../../../packages/core/src/run-store.mjs");
+  const { resolveItemExact } = await import("../../../packages/core/src/commands/resolve.mjs");
+  const { resolveRefInWorktree } = await import("../../../packages/core/src/work/dispatch.mjs");
+  const { meshDispatchWorktreePath } = await import("../../../packages/core/src/mesh/worktree.mjs");
   return await fixture.withLaneRepo(async (fx) => {
     const seenBeforeMerge = new Map();
     // Each child is HELD (`pause`) until the spawn-time inspection has read both trees, so the
@@ -296,7 +296,7 @@ export const archTests = [
     name: "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
     run: async () => {
       const { decideSupervisedDeclarations } = await import("../../../packages/work-loop/src/engine.mjs");
-      const { isRunning, isStale, retryReadiness } = await import("../../../src/run-store.mjs");
+      const { isRunning, isStale, retryReadiness } = await import("../../../packages/core/src/run-store.mjs");
       const wave = await driveTwoMemberWave();
       assert.equal(wave.state.state, "done");
       const waveRuns = wave.milestoneRuns.filter((run) => run.brief?.wave != null);

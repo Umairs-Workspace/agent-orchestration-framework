@@ -4,7 +4,7 @@
 // Seven legs, each of which fails for a different reason and each of which a cheap conforming
 // edit would otherwise satisfy while holding nothing:
 //
-//   1 · ONE PARSER IN THE FAMILY. Exactly one module under `src/work-trigger/` turns declaration
+//   1 · ONE PARSER IN THE FAMILY. Exactly one module under `packages/core/src/work-trigger/` turns declaration
 //       text into an object. A second reader is how two copies of one file come to disagree.
 //   2 · A BAD MEMBER REFUSES THE WHOLE SET, asserted by PLANTING one bad member among good ones
 //       and requiring the compile to refuse with a code and hand back nothing — 55/ADR-004 §4's
@@ -36,18 +36,18 @@ import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import * as loaderModule from "../../../src/work/loops.mjs";
+import * as loaderModule from "../../../packages/core/src/work/loops.mjs";
 import {
   TRIGGER_SOURCES,
   TriggerDeclarationError,
   bundledTriggerDeclaration,
   compileTriggerDeclaration,
-} from "../../../src/work-trigger/declaration.mjs";
+} from "../../../packages/core/src/work-trigger/declaration.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FAMILY_DIR = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger");
 const LOADER_PATH = path.join(REPO_ROOT, "packages/work-graph/src/registry.mjs");
-const BUNDLE_DESCRIPTOR = path.join(REPO_ROOT, "src", "bundle", "bundle.json");
+const BUNDLE_DESCRIPTOR = path.join(REPO_ROOT, "packages", "core", "assets", "bundle.json");
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const read = (file) => readFileSync(file, "utf8");
@@ -141,7 +141,7 @@ export const archTests = [
     name: "FF-6302/3 the cadence grammar is reached by IMPORT and no equivalent literal is authored in the family",
     run: () => {
       const files = familyFiles();
-      const importers = [...files, path.join(REPO_ROOT, "src/application/bindings/work-trigger/declaration.mjs")].filter((file) => /const\s*\{\s*parseCadence\s*\}\s*= workLoopsServices/.test(read(file)));
+      const importers = [...files, path.join(REPO_ROOT, "packages/core/src/application/bindings/work-trigger/declaration.mjs")].filter((file) => /const\s*\{\s*parseCadence\s*\}\s*= workLoopsServices/.test(read(file)));
       assert.ok(importers.length > 0, "the family reaches the grammar through the imported `parseCadence`");
       assert.equal(typeof loaderModule.parseCadence, "function", "…and it is a real export of the loader");
 
@@ -214,7 +214,7 @@ export const archTests = [
       assert.equal(declared.kind, "asset", "…of the asset kind, which installs its bytes verbatim");
       assert.equal(declared.file, "triggers.jsonc", "…from the bundled source");
 
-      const source = readFileSync(path.join(REPO_ROOT, "src", "bundle", declared.file));
+      const source = readFileSync(path.join(REPO_ROOT, "packages", "core", "assets", declared.file));
       const installed = readFileSync(path.join(REPO_ROOT, ...declared.target.split("/")));
       assert.ok(installed.equals(source), "the installed copy is byte-identical to the bundled source");
       assert.equal(sha256(installed), sha256(source), "…and so is its content address");
@@ -294,14 +294,14 @@ export const archTests = [
         const installed = readFileSync(target);
         assert.equal(installed.includes(0x0d), false, remedy(member.target));
         assert.ok(
-          installed.equals(readFileSync(path.join(REPO_ROOT, "src", "bundle", member.file))),
-          `${member.target} is byte-identical to src/bundle/${member.file}\n${remedy(member.target)}`,
+          installed.equals(readFileSync(path.join(REPO_ROOT, "packages", "core", "assets", member.file))),
+          `${member.target} is byte-identical to packages/core/assets/${member.file}\n${remedy(member.target)}`,
         );
       }
 
       // Non-vacuity: a path the pins do not cover answers `unspecified`, so the assertion above
       // is deciding something rather than matching whatever git happens to print.
-      const unpinned = git(["check-attr", "eol", "--", "src/application/bindings/work-trigger/declaration.mjs"]);
+      const unpinned = git(["check-attr", "eol", "--", "packages/core/src/application/bindings/work-trigger/declaration.mjs"]);
       assert.match(unpinned.stdout.trim(), /: eol: unspecified$/, "an unpinned path is distinguishable from a pinned one");
     },
   },

@@ -81,7 +81,7 @@ export const archTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { startRun, completeRun, retryRun, readRuns } = await import("../../../src/run-store.mjs");
+        const { startRun, completeRun, retryRun, readRuns } = await import("../../../packages/core/src/run-store.mjs");
 
         const started = await startRun(item, { sessionId: "sess-arch", now: "2026-06-30T09:00:00.000Z" });
         await completeRun(item, { outcome: "failed", failureReason: "timeout", now: "2026-06-30T09:01:00.000Z" });
@@ -115,7 +115,7 @@ export const archTests = [
   {
     name: "arch/run-retry-resumes-lineage: a non-retryable or ceiling-exhausted prior → a coded error, no new run, prior byte-unchanged",
     async run() {
-      const { startRun, completeRun, retryRun } = await import("../../../src/run-store.mjs");
+      const { startRun, completeRun, retryRun } = await import("../../../packages/core/src/run-store.mjs");
 
       // (a) non-retryable prior (agent_error) → not-retryable
       {
@@ -157,8 +157,8 @@ export const archTests = [
   {
     name: "arch/run-retry-resumes-lineage: the command path (invoke work:run-retry) resumes the lineage and surfaces not-retryable on a non-retryable prior",
     async run() {
-      const { loadWorkspace } = await import("../../../src/work.mjs");
-      const { invoke } = await import("../../../src/command-core.mjs");
+      const { loadWorkspace } = await import("../../../packages/core/src/work.mjs");
+      const { invoke } = await import("../../../packages/core/src/command-core.mjs");
 
       // (a) a retryable failed prior → the resumed record carries sessionId/attempt+1/retryOf
       {

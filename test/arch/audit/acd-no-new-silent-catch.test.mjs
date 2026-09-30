@@ -34,16 +34,16 @@ const BASELINE = {
   "packages/foundation/src/degrade.mjs": 1,
   "packages/foundation/src/log.mjs": 1,
   // m43 / ADR-001 — the SAME sanctioned-floor rationale, in a third file: a fault with
-  // nowhere lower to report. `src/bundle/hooks/artifact-sync-enqueue.mjs` is the
+  // nowhere lower to report. `packages/core/assets/hooks/artifact-sync-enqueue.mjs` is the
   // PostToolUse enqueue hook, and every reporting channel is closed to it BY CONTRACT
-  // and by a second fitness function: it may import nothing from `src/` (so it cannot
+  // and by a second fitness function: it may import nothing from `packages/core/src/` (so it cannot
   // reach `reportDegrade` — `acd-artifact-sync-hook-derivation-free` fails the build if
   // it tries), it must write nothing on stdout, and it must exit 0 because `PostToolUse`
   // cannot block. The ONE site is the queue append; its compensating control is the
   // daemon's reconciliation tick, which converges the artifact anyway. Pinned at 1 and
   // shrink-only, like every other entry — if the hook ever gains a second catch, this
   // gate reds.
-  "src/bundle/hooks/artifact-sync-enqueue.mjs": 1,
+  "packages/core/assets/hooks/artifact-sync-enqueue.mjs": 1,
   // m69 / story 01 — the SECOND member of that same sanctioned floor, and it belongs
   // here for the identical reason rather than as a convenience. `run-heartbeat-enqueue.mjs`
   // is the PostToolUse liveness hook: every reporting channel is closed to it BY CONTRACT
@@ -59,7 +59,7 @@ const BASELINE = {
   // been red — on a site that meets its own stated exception — and the redness was read as
   // background. Pinned at 1 and shrink-only like every other entry: a second catch in that
   // hook reds this gate.
-  "src/bundle/hooks/run-heartbeat-enqueue.mjs": 1,
+  "packages/core/assets/hooks/run-heartbeat-enqueue.mjs": 1,
 };
 
 

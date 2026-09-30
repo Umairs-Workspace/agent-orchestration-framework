@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { generatorFor, generatorIds } from "../../src/diagrams/generators.mjs";
+import { generatorFor, generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
 
 const ID = generatorIds()[0];
 const KEY = `${ID}@${ID}`;

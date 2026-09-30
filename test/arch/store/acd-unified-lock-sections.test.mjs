@@ -25,16 +25,16 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, readFile, writeFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { initWork } from "../../../src/work/init.mjs";
-import { initPlanning } from "../../../src/planning-init.mjs";
-import { createRenderPlan, createLockManifest, planApplyActions, executeApplyActions } from "../../../src/render-plan.mjs";
-import { writeLock, readLock, mergeFrameworkInstallAttempts } from "../../../src/lock.mjs";
-import { workspacePaths } from "../../../src/workspace.mjs";
+import { initWork } from "../../../packages/core/src/work/init.mjs";
+import { initPlanning } from "../../../packages/core/src/planning-init.mjs";
+import { createRenderPlan, createLockManifest, planApplyActions, executeApplyActions } from "../../../packages/core/src/render-plan.mjs";
+import { writeLock, readLock, mergeFrameworkInstallAttempts } from "../../../packages/core/src/lock.mjs";
+import { workspacePaths } from "../../../packages/core/src/workspace.mjs";
 
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
 
 // Drive the asset-apply lock-write path EXACTLY as `aof assets apply` does
-// (src/cli.mjs assetsApplyCommand): build the render plan, plan the actions against
+// (packages/core/src/cli.mjs assetsApplyCommand): build the render plan, plan the actions against
 // the current lock, run createLockManifest, then writeLock to the unified lockPath.
 // An empty config keeps the asset `files[]` empty but still exercises the flat-field
 // asset write — the precise seam that must read-merge-write to preserve foreign

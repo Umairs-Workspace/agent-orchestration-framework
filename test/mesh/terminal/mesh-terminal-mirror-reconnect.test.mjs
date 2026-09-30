@@ -14,8 +14,8 @@
 // until the broker appears, recovers from a post-open DROP, and never reconnects after
 // stop(). The timers are injected, so the retry loop is driven with no wall clock.
 import assert from "node:assert/strict";
-import { createTerminalMirror, startTerminalMirrorSubscriber } from "../../../src/mesh/terminal-mirror.mjs";
-import { TERMINAL_FRAME_KIND } from "../../../src/mesh/terminal-relay-bridge.mjs";
+import { createTerminalMirror, startTerminalMirrorSubscriber } from "../../../packages/core/src/mesh/terminal-mirror.mjs";
+import { TERMINAL_FRAME_KIND } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
 
 // A controllable clock: setTimeoutFn/clearTimeoutFn doubles that queue callbacks so a
 // test fires the retry itself (no wall-clock wait anywhere in this file).

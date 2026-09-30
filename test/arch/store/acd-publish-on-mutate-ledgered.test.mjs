@@ -8,7 +8,7 @@
 // every other mutation did not, and nothing said so. That is wave (d)'s disease
 // exactly — the consequence living at whichever call site needed it first — and
 // the cure is the same as run-completion's: DECLARE it. `publish-projection` is
-// now one reactor in src/effects/table.mjs, hung off the events the transition
+// now one reactor in packages/core/src/effects/table.mjs, hung off the events the transition
 // seams raise, and a command can neither forget it nor opt itself out.
 //
 //   (1) THE WRAPPER IS GONE. `withGlobalWorkPropagation` exists nowhere in src/
@@ -35,11 +35,11 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { openEffectsJournal, readUnsettledSteps } from "../../../src/effects/journal.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { settleLaneProjectionEffects } from "../../../src/commands/dispatch.mjs";
+import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
+import { openEffectsJournal, readUnsettledSteps } from "../../../packages/core/src/effects/journal.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { settleLaneProjectionEffects } from "../../../packages/core/src/commands/dispatch.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

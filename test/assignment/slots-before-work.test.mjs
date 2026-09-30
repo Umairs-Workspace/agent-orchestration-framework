@@ -10,20 +10,20 @@ import {
   DEFAULT_DISPATCH_CONCURRENCY,
   dispatchConcurrencyFromConfig,
   dispatchReadySet,
-} from "../../src/work/dispatch.mjs";
+} from "../../packages/core/src/work/dispatch.mjs";
 import {
   assignmentOccupiesDispatchSlot,
   countDispatchSlotsByTarget,
   runControlDispatchReclaimTick,
-} from "../../src/mesh/assignment-reclaim.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+} from "../../packages/core/src/mesh/assignment-reclaim.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 import {
   assembleAssignmentRecord,
   insertAssignment,
   readAssignment,
   updateAssignmentState,
-} from "../../src/assignment-record.mjs";
-import { dispatchCommand } from "../../src/commands/dispatch.mjs";
+} from "../../packages/core/src/assignment-record.mjs";
+import { dispatchCommand } from "../../packages/core/src/commands/dispatch.mjs";
 import { withDispatchRepo } from "../support/dispatch-lane-fixture.mjs";
 
 const NOW = "2026-08-22T10:00:00.000Z";

@@ -1,6 +1,6 @@
 // FF-13303 (milestone 133 / ADR-005 §3, §5) — EXPORT NEEDS NO PLAYWRIGHT AND FORMS ONE ARGV.
 //
-// "`src/diagrams/**` and `src/commands/diagram/**` import no `playwright` and spawn no `npx` or
+// "`packages/core/src/diagrams/**` and `packages/core/src/commands/diagram/**` import no `playwright` and spawn no `npx` or
 //  `python`. `packages/execution/src/svg-rasterizer.mjs` has exactly ONE function that returns a browser argv, and
 //  every spawn in the file uses it. No rung of the ladder downloads anything."
 //
@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILIES = ["src/diagrams", "src/commands/diagram", "packages/work/src/diagrams", "packages/work/src/commands/diagram"];
+const FAMILIES = ["packages/core/src/diagrams", "packages/core/src/commands/diagram", "packages/work/src/diagrams", "packages/work/src/commands/diagram"];
 const RASTERIZE = "packages/execution/src/svg-rasterizer.mjs";
 const PACKAGE_RUNNERS = ["npx", "python", "python3", "py", "pip", "npm"];
 

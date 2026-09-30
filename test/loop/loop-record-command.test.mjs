@@ -7,7 +7,7 @@
 // (task 02's registration/deferral scenarios are mechanised by FF-7807's gate,
 // `test/arch/loop/acd-loop-record-board-deferred.test.mjs`, and by the two frozen-list controls it reads.)
 //
-// It exercises the REAL `src/commands/loop-record.mjs` against a temp fixture project (mkdtemp →
+// It exercises the REAL `packages/core/src/commands/loop-record.mjs` against a temp fixture project (mkdtemp →
 // build a registry, an item and its run records → run → rm in finally), through the REAL
 // `loadWorkspace` and the REAL ref resolver, so the configured `work.dir` and the item's own
 // `runs/` directory are genuinely read rather than assumed. One test object per @executable
@@ -22,7 +22,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../src/work.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import {
   EXECUTION_RECORD_BASENAME,
   SIGNOFF_DIVIDER,
@@ -30,7 +30,7 @@ import {
   SIGNOFF_HEADING,
   SIGNOFF_PLACEHOLDER,
   loopRecordCommand,
-} from "../../src/commands/loop-record.mjs";
+} from "../../packages/core/src/commands/loop-record.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { record, snapshot, writeRegistry } from "../support/loop-document-fixture.mjs";
 
@@ -47,7 +47,7 @@ const ITEM_DIR = "03_milestone_board";
 
 // THE FIXTURE REGISTRY, and its ceilings are the reason it is not story 79's. That module's `loop()`
 // spells `ceiling: [uncapped]` — an INLINE LIST — and the loader admits a sentinel ceiling only as a
-// SCALAR (`src/work/loops.mjs`: an inline `ceiling` entry goes through `pointerField`, so a bare word
+// SCALAR (`packages/core/src/work/loops.mjs`: an inline `ceiling` entry goes through `pointerField`, so a bare word
 // there is a bad value and the field is never parsed at all). A fixture built on it therefore carries
 // loop records with NO ceiling, which the projection reports as `unknown` — and every ceiling
 // assertion over it would pass for the wrong reason. That is m77/R8 exactly ("the fixture was written
@@ -59,7 +59,7 @@ const ITEM_DIR = "03_milestone_board";
 // produce the same record, so the fixture must be able to tell them apart.
 const CEILING_KEY = "work.loop.buildNoProgressRounds";
 // The number that key resolves to for a config that does not set it — the bound the machinery would
-// really enforce, which is what the projection reports (`src/loop-bounds.mjs` owns it, and the pin
+// really enforce, which is what the projection reports (`packages/core/src/loop-bounds.mjs` owns it, and the pin
 // below asserts this constant against that resolver rather than trusting the literal).
 export const CEILING_BOUND = 2;
 
@@ -224,8 +224,8 @@ export const loopRecordFixtureShapeTests = [
   {
     name: "loop-record-command/fixture the real loader parses this registry's two ceiling states",
     async run() {
-      const { loadLoops } = await import("../../src/work/loops.mjs");
-      const { LOOP_BOUND_CONFIG_RESOLVERS } = await import("../../src/loop-bounds.mjs");
+      const { loadLoops } = await import("../../packages/core/src/work/loops.mjs");
+      const { LOOP_BOUND_CONFIG_RESOLVERS } = await import("../../packages/core/src/loop-bounds.mjs");
       await withRepo({}, async (repo) => {
         const registry = await loadLoops((await ctxFor(repo)).workspace);
         assert.equal(registry.present, true, "the fixture registry is found where 53/07 puts one");

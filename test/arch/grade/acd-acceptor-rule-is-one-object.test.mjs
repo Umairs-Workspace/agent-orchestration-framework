@@ -9,7 +9,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // input is revised — so what this control checks is the DERIVATION, not the eight.
 //
 // WHICH FILES ARE "THE ENGINE", AND WHY THE CRITERION IS NOT ONE OF THEM.
-// `src/work-acceptor/{rule,ledger}.mjs` COMPUTE; `criterion.mjs` DECLARES. A declared
+// `packages/core/src/work-acceptor/{rule,ledger}.mjs` COMPUTE; `criterion.mjs` DECLARES. A declared
 // `alpha: 0.05` is the input whose revision this control exists to propagate, and
 // banning it where it is declared would ban the criterion from having a value at all.
 // A literal in the engine is the defect precisely because it SURVIVES that revision.
@@ -28,21 +28,21 @@ import { fileURLToPath } from "node:url";
 
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import * as bounds from "../../../src/loop-bounds.mjs";
-import { CriterionError, defaultCriterion, makeCriterion } from "../../../src/work-acceptor/criterion.mjs";
+import * as bounds from "../../../packages/core/src/loop-bounds.mjs";
+import { CriterionError, defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
 import {
   NOT_AN_ORDINAL_KNOB,
   crossingLattice,
   deriveRule,
   readStep,
-} from "../../../src/work-acceptor/rule.mjs";
+} from "../../../packages/core/src/work-acceptor/rule.mjs";
 import {
   BUDGET_EXHAUSTED,
   EVIDENCE_SHORT,
   PAIR_OUTCOMES,
   attained,
   evaluateRun,
-} from "../../../src/work-acceptor/ledger.mjs";
+} from "../../../packages/core/src/work-acceptor/ledger.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -262,7 +262,7 @@ export const archTests = [
     run: async () => {
       const modules = await engineSources();
       // PURITY IS EXTERNAL (119/ADR-002), and this is the ruling's own case live in the tree: both
-      // engine modules sit inside `src/work-acceptor/`, and the token ban forbade the edge between
+      // engine modules sit inside `packages/core/src/work-acceptor/`, and the token ban forbade the edge between
       // them. The family is the containment boundary and the two engine modules are the scope — the
       // directory's other four members open files, and no ADR ever claimed they were pure.
       await assertFamilyPurity(assert, root, "packages/work/src/acceptor", { members: [...ENGINE_MODULES] });
@@ -272,7 +272,7 @@ export const archTests = [
         assert.doesNotMatch(codeOnly(code), /\breadFile\b|\bwriteFile\b|\bappendFile\b|\bspawn\b|\bexecFile\b/u, `${rel} touches no file`);
       }
       // ONE HOME FOR THE E-VALUE. A wealth product is an exponentiation over a win and a
-      // loss count; the only module in `src/` that forms one is the arithmetic leaf.
+      // loss count; the only module in `packages/core/src/` that forms one is the arithmetic leaf.
       const derivers = [];
       for (const rel of (await readRuntimeFiles(root)).map(file => file.rel)) {
         const code = codeOnly(await readFile(path.join(root, rel), "utf8"));

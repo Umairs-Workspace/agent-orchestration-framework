@@ -20,8 +20,8 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { getCommand, listCommands, invoke } from "../../src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { getCommand, listCommands, invoke } from "../../packages/core/src/command-core.mjs";
 import {
   normalizeGraph,
   graphifyBuildArgs,
@@ -30,8 +30,8 @@ import {
   runGraphifyBuild,
   GRAPHIFY_TIMEOUT_ENV,
   DEFAULT_GRAPHIFY_TIMEOUT_MS,
-} from "../../src/graphify.mjs";
-import { classifyEgress, isNetworkBackend, readBuiltGraph } from "../../src/commands/graph/build.mjs";
+} from "../../packages/core/src/graphify.mjs";
+import { classifyEgress, isNetworkBackend, readBuiltGraph } from "../../packages/core/src/commands/graph/build.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

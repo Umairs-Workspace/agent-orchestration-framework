@@ -9,10 +9,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { accountLine, cost, eventPhrase, formatElapsed, headline, oneLineAsk } from "../../src/notify/form.mjs";
-import * as formModule from "../../src/notify/form.mjs";
-import { buildNotifyEnvelope } from "../../src/notify/notify.mjs";
-import { renderDiscord } from "../../src/notify/discord.mjs";
+import { accountLine, cost, eventPhrase, formatElapsed, headline, oneLineAsk } from "../../packages/core/src/notify/form.mjs";
+import * as formModule from "../../packages/core/src/notify/form.mjs";
+import { buildNotifyEnvelope } from "../../packages/core/src/notify/notify.mjs";
+import { renderDiscord } from "../../packages/core/src/notify/discord.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

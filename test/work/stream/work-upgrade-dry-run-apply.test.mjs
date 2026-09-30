@@ -12,7 +12,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { WORK_ITEM_SCHEMA_VERSION } from "../../../src/work.mjs";
+import { WORK_ITEM_SCHEMA_VERSION } from "../../../packages/core/src/work.mjs";
 import { withUpgradeProject, writeItem, readDoc, runCli, parseJsonOut } from "../../support/work-upgrade-fixture.mjs";
 
 // A fixture stream mixing an unstamped milestone (00) and a stamped story (00/00).

@@ -6,7 +6,7 @@ import {
   FORMATION_CRITERION,
   FORMATION_REFUSAL_CODES,
   formCandidates,
-} from "../../src/work-tune/formation.mjs";
+} from "../../packages/core/src/work-tune/formation.mjs";
 
 const rec = (id, overrides = {}) => ({
   id,
@@ -86,7 +86,7 @@ export const tuneFormationTests = [
       const expected = JSON.stringify(formCandidates(records));
       assert.equal(JSON.stringify(formCandidates(records)), expected);
       assert.equal(JSON.stringify(formCandidates([...records].reverse())), expected);
-      const source = `import {formCandidates} from ${JSON.stringify(new URL("../../src/work-tune/formation.mjs", import.meta.url).href)}; const r=${JSON.stringify(records)}; process.stdout.write(JSON.stringify(formCandidates(r)));`;
+      const source = `import {formCandidates} from ${JSON.stringify(new URL("../../packages/core/src/work-tune/formation.mjs", import.meta.url).href)}; const r=${JSON.stringify(records)}; process.stdout.write(JSON.stringify(formCandidates(r)));`;
       const fresh = spawnSync(process.execPath, ["--input-type=module", "--eval", source], { encoding: "utf8" });
       assert.equal(fresh.status, 0, fresh.stderr);
       assert.equal(fresh.stdout, expected);

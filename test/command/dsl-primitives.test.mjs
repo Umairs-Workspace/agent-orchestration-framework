@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateConfig } from "../../src/config-inspect.mjs";
-import { loadConfig, resolveConfig } from "../../src/dsl.mjs";
+import { validateConfig } from "../../packages/core/src/config-inspect.mjs";
+import { loadConfig, resolveConfig } from "../../packages/core/src/dsl.mjs";
 
 export const dslPrimitiveTests = [
   {

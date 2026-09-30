@@ -2,8 +2,8 @@
 // publishes this node's presence record (tasks/00_presence-record.feature).
 //
 // Covers EVERY @executable scenario in tasks/00_presence-record.feature, exercising
-// the REAL in-process registry (src/command-core.mjs + src/commands/mesh-heartbeat.mjs
-// over src/mesh/presence.mjs + the m22 src/mesh/store.mjs presence seam) against a temp
+// the REAL in-process registry (packages/core/src/command-core.mjs + packages/core/src/commands/mesh-heartbeat.mjs
+// over packages/core/src/mesh/presence.mjs + the m22 packages/core/src/mesh/store.mjs presence seam) against a temp
 // fixture repo — loadWorkspace + invoke, real fs, in-process. One test object per
 // @executable scenario, each name tracing to feature + scenario. node:assert/strict.
 //
@@ -25,13 +25,13 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace, listItems } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { meshDir, presenceRecordPath, publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { assemblePresenceRecord, publishPresenceRecord, readActiveLoops, readActiveRuns } from "../../../src/mesh/presence.mjs";
-import { loopStopsDir, markStopHonoured, readStopRequest, requestLoopStop, stopRequestPath } from "../../../src/loop/stop-request.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../src/global-node-registry.mjs";
+import { loadWorkspace, listItems } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { meshDir, presenceRecordPath, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { assemblePresenceRecord, publishPresenceRecord, readActiveLoops, readActiveRuns } from "../../../packages/core/src/mesh/presence.mjs";
+import { loopStopsDir, markStopHonoured, readStopRequest, requestLoopStop, stopRequestPath } from "../../../packages/core/src/loop/stop-request.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../packages/core/src/global-node-registry.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

@@ -9,10 +9,10 @@ import { createConnection } from 'node:net';
 import { once } from 'node:events';
 import os from 'node:os';
 import path from 'node:path';
-import { createApplication } from '../../src/application/assemble.mjs';
-import { createApplicationLifetime } from '../../src/application/lifetime.mjs';
-import { defaultApplication } from '../../src/application/default.mjs';
-import { registerActiveWorktree } from '../../src/mesh/worker-execution.mjs';
+import { createApplication } from '../../packages/core/src/application/assemble.mjs';
+import { createApplicationLifetime } from '../../packages/core/src/application/lifetime.mjs';
+import { defaultApplication } from '../../packages/core/src/application/default.mjs';
+import { registerActiveWorktree } from '../../packages/core/src/mesh/worker-execution.mjs';
 import { importSpecifiers } from '../support/module-family.mjs';
 import { applicationConstructionDetails } from '../support/workspace/assembly-graph.mjs';
 
@@ -51,8 +51,8 @@ export const applicationAssemblyTests = [
         visited.add(file);
       }
       for (const file of construction.keys()) visit(file);
-      const legacy = new Set([...construction.keys()].filter(file => file.startsWith('src/application/bindings/'))
-        .map(file => path.resolve(repoRoot, file.replace('src/application/bindings/', 'src/'))));
+      const legacy = new Set([...construction.keys()].filter(file => file.startsWith('packages/core/src/application/bindings/'))
+        .map(file => path.resolve(repoRoot, file.replace('packages/core/src/application/bindings/', 'packages/core/src/'))));
       assert.ok(legacy.size >= 200, 'the compatibility boundary covers the service families');
       const seen = new Set();
       async function inspect(file) {
@@ -62,16 +62,16 @@ export const applicationAssemblyTests = [
         for (const { specifier } of importSpecifiers(await readFile(file, 'utf8'))) {
           if (!specifier.startsWith('.') && !specifier.startsWith('@aof/')) continue;
           const target = createRequire(file).resolve(specifier);
-          if (file.startsWith(path.join(repoRoot, 'packages') + path.sep)) {
-            assert.ok(!target.startsWith(path.join(repoRoot, 'src') + path.sep), `${file} imports assembled core`);
+          if (file.startsWith(path.join(repoRoot, 'packages') + path.sep) && !file.startsWith(path.join(repoRoot, 'packages/core') + path.sep)) {
+            assert.ok(!target.startsWith(path.join(repoRoot, "packages", "core", "src") + path.sep), `${file} imports assembled core`);
           }
           await inspect(target);
         }
       }
-      await inspect(path.join(repoRoot, 'src/application/assemble.mjs'));
+      await inspect(path.join(repoRoot, 'packages/core/src/application/assemble.mjs'));
       assert.ok(seen.size > 400, 'the full application implementation graph was inspected');
       // The same detector refuses a planted old adapter edge.
-      await assert.rejects(inspect(path.join(repoRoot, 'src/command-core.mjs')), /legacy entry/);
+      await assert.rejects(inspect(path.join(repoRoot, 'packages/core/src/command-core.mjs')), /legacy entry/);
     },
   },
   {
@@ -104,10 +104,10 @@ export const applicationAssemblyTests = [
           if (specifier === 'node-pty') throw Error('Registration loaded a native PTY');
           return next(specifier, context);
         }});
-        const { createApplication } = await import('./src/application/assemble.mjs');
+        const { createApplication } = await import('./packages/core/src/application/assemble.mjs');
         const app = createApplication({ env: process.env });
         assert.equal(app.listCommands().length, 117);
-        const { run } = await import('./src/cli.mjs');
+        const { run } = await import('./packages/core/src/cli.mjs');
         await run(['--help']);
         await app.close();
         assert.deepEqual(started, []);

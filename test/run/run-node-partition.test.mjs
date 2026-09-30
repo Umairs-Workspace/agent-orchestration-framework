@@ -2,7 +2,7 @@
 //
 // Covers EVERY @executable scenario in
 //   tasks/00_node-dimensioned-records.feature
-// exercising the REAL src/run-store.mjs in-process against a temp fixture repo
+// exercising the REAL packages/core/src/run-store.mjs in-process against a temp fixture repo
 // (mkdtemp → mkdir → run → rm in finally — the run-dedup-atomic-persist idiom). One
 // test object per @executable scenario (Scenario-Outline rows folded into one entry
 // iterating the rows), each name tracing to feature + scenario. node:assert/strict.
@@ -129,7 +129,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-07-02T10:00:00.000Z";
 
         // Row 1: node "node-a" supplied ⇒ under runs/node-a/ with the run-id leaf
@@ -167,7 +167,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
         const now = "2026-07-02T10:00:00.000Z";
 
@@ -213,7 +213,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
 
         // Row 1: a nine-key milestone-19 record at the flat path — resilience keys
         // read null (defaulted, absence benign), node reads null.
@@ -292,7 +292,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         // The fixture interleaves ids across locations: the FLAT record holds the
@@ -324,7 +324,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         await writeRecord(item, { node: "node-a", runId: "20260702T090000000Z-0000" , state: "done", outcome: "done" });
@@ -355,7 +355,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-07-02T12:00:00.000Z";
 
         const rows = [
@@ -404,7 +404,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { completeRun } = await import("../../src/run-store.mjs");
+        const { completeRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const running = await writeRecord(item, { node: "node-a", runId: "20260702T100000000Z-0000" });
@@ -435,7 +435,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { completeRun } = await import("../../src/run-store.mjs");
+        const { completeRun } = await import("../../packages/core/src/run-store.mjs");
 
         const rows = [
           {
@@ -490,7 +490,7 @@ export const runNodePartitionTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
         const now = "2026-07-02T10:00:00.000Z";
 

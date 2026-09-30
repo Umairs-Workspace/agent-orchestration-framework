@@ -2,7 +2,7 @@
 //
 // Covers EVERY @executable scenario in
 //   tasks/04_dedup-and-atomic-persist.feature
-// exercising the REAL src/run-store.mjs in-process against a temp fixture repo
+// exercising the REAL packages/core/src/run-store.mjs in-process against a temp fixture repo
 // (mkdtemp → mkdir → run → rm in finally). One test object per @executable
 // scenario (Scenario-Outline rows folded into one entry iterating the rows), each
 // name tracing to feature + scenario. node:assert/strict.
@@ -121,7 +121,7 @@ export const runDedupAtomicPersistTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, retryRun } = await import("../../src/run-store.mjs");
+        const { startRun, retryRun } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T09:00:00.000Z";
 
         // Each row sets up an existing non-terminal run, then attempts a second mint.
@@ -199,7 +199,7 @@ export const runDedupAtomicPersistTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
 
         const terminals = [
           { state: "done", outcome: "done", failureReason: null },
@@ -230,7 +230,7 @@ export const runDedupAtomicPersistTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, completeRun } = await import("../../src/run-store.mjs");
+        const { startRun, completeRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         // complete the first before minting the second (dedup) — both at the SAME now.
@@ -261,13 +261,13 @@ export const runDedupAtomicPersistTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const record = await startRun(item, { sessionId: "sess-atomic", brief: { k: "v" }, now: "2026-06-30T09:00:00.000Z" });
 
         // a FRESH store load reads the committed record fully-formed
-        const fresh = await import("../../src/run-store.mjs?fresh-dedup-atomic");
+        const fresh = await import("../../packages/core/src/run-store.mjs?fresh-dedup-atomic");
         const runs = await fresh.readRuns(item);
         assert.equal(runs.length, 1, "the record reloads as one run");
         const [reloaded] = runs;
@@ -288,7 +288,7 @@ export const runDedupAtomicPersistTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const store = await import("../../src/run-store.mjs");
+        const store = await import("../../packages/core/src/run-store.mjs");
         const { startRun, completeRun, heartbeat, reclaimStaleRuns, retryRun, readRuns } = store;
 
         const rows = [
@@ -321,7 +321,7 @@ export const runDedupAtomicPersistTests = [
           await row.drive(item);
 
           // reload the store fresh and assert every record parses as complete JSON
-          const fresh = await import(`../../src/run-store.mjs?fresh-persist-${rows.indexOf(row)}`);
+          const fresh = await import(`../../packages/core/src/run-store.mjs?fresh-persist-${rows.indexOf(row)}`);
           const runs = await fresh.readRuns(item);
           assert.ok(runs.length >= 1, `[${row.label}] at least one record persists`);
           for (const run of runs) {

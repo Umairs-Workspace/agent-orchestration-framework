@@ -14,10 +14,10 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import { rubricTraceabilityGroup, RUBRIC_FINDING_CODES } from "../../src/work/doctor-rubric.mjs";
-import { compileGrade } from "../../src/work/grade.mjs";
-import { admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../src/commands/loop.mjs";
-import { CONTROL_FINDING_CODES } from "../../src/work/doctor-controls.mjs";
+import { rubricTraceabilityGroup, RUBRIC_FINDING_CODES } from "../../packages/core/src/work/doctor-rubric.mjs";
+import { compileGrade } from "../../packages/core/src/work/grade.mjs";
+import { admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../packages/core/src/commands/loop.mjs";
+import { CONTROL_FINDING_CODES } from "../../packages/core/src/work/doctor-controls.mjs";
 
 function feature(scenarios) {
   return `@executable\nFeature: F\n${scenarios.map((name) => `\n  Scenario: ${name}\n    Given a\n    When b\n    Then c\n`).join("")}`;

@@ -2,8 +2,8 @@
 //
 //   tasks/02_passed-at-both-seams.feature  (@executable)
 //
-// Both of the driver's production callers — the local drive command (`src/commands/drive.mjs`)
-// and the mesh worker execution handler (`src/mesh/worker-execution.mjs`) — compile the phase
+// Both of the driver's production callers — the local drive command (`packages/core/src/commands/drive.mjs`)
+// and the mesh worker execution handler (`packages/core/src/mesh/worker-execution.mjs`) — compile the phase
 // brief through the SHARED pure compiler (`packages/work/src/phase-brief-read.mjs` -> `packages/work/src/phase-brief.mjs`)
 // and hand it to the driver BY VALUE on the `brief` bag's additive `context` key. The driver
 // then types the command + the brief into the session's first input. One test object per
@@ -12,12 +12,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { driveInteractiveClaudeSession } from "../../src/agent-session-driver.mjs";
-import { continueDriverCommand, refineDriverCommand, verifyDriverCommand } from "../../src/commands/drive.mjs";
+import { driveInteractiveClaudeSession } from "../../packages/core/src/agent-session-driver.mjs";
+import { continueDriverCommand, refineDriverCommand, verifyDriverCommand } from "../../packages/core/src/commands/drive.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../src/mesh/worker-execution.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
 
 const NODE_ID = "worker-a";
 

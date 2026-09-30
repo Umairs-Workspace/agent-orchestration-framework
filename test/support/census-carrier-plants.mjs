@@ -19,7 +19,7 @@ const HEADER = [
   'import { fileURLToPath } from "node:url";',
   'import { readdir } from "node:fs/promises";',
   'const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");',
-  'const COMMANDS = path.join(root, "src", "commands");',
+  'const COMMANDS = path.join(root, "packages", "core", "src", "commands");',
 ].join("\n");
 
 const open = "export const archTests = [{ name: 'planted', run: async () => {";
@@ -129,12 +129,12 @@ export const GUARDED_BOUND_FIRST_FILTER = [
 ].join("\n");
 
 // A ROOTED READ THROUGH AN IMPORTED READER — `readFile` handed a root-derived path — narrowed to an
-// ABSENCE claim. Four controls carry this shape over `src/work.mjs`'s and `src/run-store.mjs`'s
+// ABSENCE claim. Four controls carry this shape over `packages/core/src/work.mjs`'s and `packages/core/src/run-store.mjs`'s
 // import lists. The floor belongs on the READ, never on the filtered set, which is meant to be
 // empty: an import list that came back empty would pass the absence claim over nothing.
 export const NAKED_ROOTED_READ_ABSENCE = [
   HEADER,
-  'const WORK = path.join(root, "src", "work.mjs");',
+  'const WORK = path.join(root, "packages", "core", "src", "work.mjs");',
   'function importSpecifiers(source) { return [...source.matchAll(/from "([^"]+)"/gu)].map((m) => m[1]); }',
   open,
   '  const specs = importSpecifiers(await readFile(WORK, "utf8"));',
@@ -145,7 +145,7 @@ export const NAKED_ROOTED_READ_ABSENCE = [
 
 export const GUARDED_ROOTED_READ_ABSENCE = [
   HEADER,
-  'const WORK = path.join(root, "src", "work.mjs");',
+  'const WORK = path.join(root, "packages", "core", "src", "work.mjs");',
   'function importSpecifiers(source) { return [...source.matchAll(/from "([^"]+)"/gu)].map((m) => m[1]); }',
   open,
   '  const specs = importSpecifiers(await readFile(WORK, "utf8"));',

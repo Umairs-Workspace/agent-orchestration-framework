@@ -3,7 +3,7 @@
 // (02_default-private-key-directory.feature, ADR-011 decision 5 / structural
 // invariant #3, SECURITY T8/T12(b)). Every @executable scenario / Scenario Outline
 // row is driven against the REAL, EXPORTED `resolveGithubAppPrivateKey`
-// (src/mesh/launcher.mjs) over an injected file-reader (records the PATH it is asked
+// (packages/core/src/mesh/launcher.mjs) over an injected file-reader (records the PATH it is asked
 // to read — no real fs read of a secret, no real key) and a temp `AOF_GLOBAL_HOME`
 // (via `options.env`, never the real machine's `~/.aof`). NO real GitHub, no network.
 //
@@ -16,8 +16,8 @@
 // by this file's own additional (beyond-the-locked-contract) scenarios below.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { resolveGithubAppPrivateKey } from "../../../src/mesh/launcher.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
+import { resolveGithubAppPrivateKey } from "../../../packages/core/src/mesh/launcher.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 const SYNC_SCOPED_SEGMENTS = ["Dropbox", "OneDrive", "iCloud", "Library/Mobile Documents", "Library\\Mobile Documents"];
 

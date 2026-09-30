@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import { defaultDataDir, defaultGlobalWorkspaceDir } from "../../src/paths.mjs";
+import { defaultDataDir, defaultGlobalWorkspaceDir } from "../../packages/core/src/paths.mjs";
 
 export const pathTests = [
   {

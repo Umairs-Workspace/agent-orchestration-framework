@@ -16,8 +16,8 @@ import {
   managedToolChecks,
   toolPlatformCheckFor,
   notionAuthCheck,
-} from "../../src/config-inspect.mjs";
-import { NOTION_DESCRIPTOR } from "../../src/tool-store.mjs";
+} from "../../packages/core/src/config-inspect.mjs";
+import { NOTION_DESCRIPTOR } from "../../packages/core/src/tool-store.mjs";
 
 const NOTION_LIST = [NOTION_DESCRIPTOR];
 

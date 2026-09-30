@@ -5,8 +5,8 @@
 //
 // GENERALISES test/arch/assignment/acd-assignment-state-has-producer.test.mjs (35/ADR-001, "no
 // state exists without a writer") from a state ENUM to a record-format FIELD SET:
-//   (i)  the declared field set  = MEMORY_RECORD_FIELDS (src/memory/local-retrieval.mjs)
-//   (ii) the producer modules    = the record parsers (src/memory/local-indexing.mjs:
+//   (i)  the declared field set  = MEMORY_RECORD_FIELDS (packages/core/src/memory/local-retrieval.mjs)
+//   (ii) the producer modules    = the record parsers (packages/core/src/memory/local-indexing.mjs:
 //        parseArchitecture, parseRetrospective, parseAof, and — once story 02 lands,
 //        concurrently — parseOutcome), all of which live in the ONE bounded module.
 //
@@ -34,7 +34,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

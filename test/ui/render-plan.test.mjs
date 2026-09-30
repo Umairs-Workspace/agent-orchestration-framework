@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveConfig } from "../../src/dsl.mjs";
-import { hashContent, readLock, writeLock } from "../../src/lock.mjs";
-import { createLockManifest, createRenderPlan, executeApplyActions, planApplyActions } from "../../src/render-plan.mjs";
+import { resolveConfig } from "../../packages/core/src/dsl.mjs";
+import { hashContent, readLock, writeLock } from "../../packages/core/src/lock.mjs";
+import { createLockManifest, createRenderPlan, executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
 
 export const renderPlanTests = [
   {

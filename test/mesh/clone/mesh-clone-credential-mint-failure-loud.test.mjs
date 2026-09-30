@@ -1,21 +1,21 @@
 // test/mesh/clone/mesh-clone-credential-mint-failure-loud.test.mjs — traceability for milestone
 // 38 / story 02, task 04 (04_mint-failure-loud-no-fallback.feature, ADR-010 decision
 // 5, SECURITY T10). Every @executable Scenario Outline row is driven through the REAL
-// producer chain: createGithubAppMintProvider (src/mesh/clone-credential-provider.mjs)
+// producer chain: createGithubAppMintProvider (packages/core/src/mesh/clone-credential-provider.mjs)
 // scripted to fault at a different step per row, minting through the REAL
 // createMeshWorkerExecutionHandler / cloneRepoForWorkspace (worker side) and the REAL
-// applyCloneCredentialRequestFrame (control side, src/control-stream-server.mjs) —
+// applyCloneCredentialRequestFrame (control side, packages/core/src/control-stream-server.mjs) —
 // never a hand-authored stand-in for either half.
 import assert from "node:assert/strict";
 import { stat } from "node:fs/promises";
 import {
   applyCloneCredentialRequestFrame,
   CLONE_CREDENTIAL_MINT_FAILED,
-} from "../../../src/control-stream-server.mjs";
-import { createGithubAppMintProvider } from "../../../src/mesh/clone-credential-provider.mjs";
-import { createMeshWorkerExecutionHandler, meshCheckoutPath } from "../../../src/mesh/worker-execution.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+} from "../../../packages/core/src/control-stream-server.mjs";
+import { createGithubAppMintProvider } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
+import { createMeshWorkerExecutionHandler, meshCheckoutPath } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 import { createDirectiveChannelFixture, createFakeWorkerTransport } from "../../support/mesh-directive-channel-fixture.mjs";
 import { seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 import { withMeshCloneFixture, createStatusRecorder, createRecordingCloneExec } from "../../support/mesh-worker-clone-fixture.mjs";

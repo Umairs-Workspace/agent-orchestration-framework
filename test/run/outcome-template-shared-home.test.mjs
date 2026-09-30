@@ -3,7 +3,7 @@
 // is deleted on update" (@executable).
 //
 // THE BOUNDARY WAS THE FILING, AND NOTHING ELSE. `templateOutputPath`
-// (src/work/bundle.mjs) renders every template file to
+// (packages/core/src/work/bundle.mjs) renders every template file to
 // `.aof/templates/work/<member-id>/<file>`, so the member id IS the scope. The
 // member's id therefore names the PROPERTY — `shared`, type-agnostic — not a type,
 // and the grammar the single `parseOutcome` reads is asserted byte-identical across
@@ -23,15 +23,15 @@ import {
   renderBundleTemplateOutputs,
   bundleRoot,
   TEMPLATE_STAMP,
-} from "../../src/work/bundle.mjs";
-import { readShippedManifest, generateBundleManifest, serializeBundleManifest, manifestPath } from "../../src/work/bundle-manifest.mjs";
-import { planApplyActions, executeApplyActions, createLockManifest } from "../../src/render-plan.mjs";
-import { synthesizeBundleConfig } from "../../src/work/bundle-synthesis.mjs";
-import { updateWork, workLockPath } from "../../src/work/update.mjs";
-import { writeLock } from "../../src/lock.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
-import { budgetGroup, budgetKeyFor } from "../../src/work/doctor-budget.mjs";
+} from "../../packages/core/src/work/bundle.mjs";
+import { readShippedManifest, generateBundleManifest, serializeBundleManifest, manifestPath } from "../../packages/core/src/work/bundle-manifest.mjs";
+import { planApplyActions, executeApplyActions, createLockManifest } from "../../packages/core/src/render-plan.mjs";
+import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
+import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
+import { writeLock } from "../../packages/core/src/lock.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
+import { budgetGroup, budgetKeyFor } from "../../packages/core/src/work/doctor-budget.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -39,7 +39,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // scopes its files to that type — which is exactly what OUTCOME.md must NOT be.
 const WORK_ITEM_TYPES = ["milestone", "story", "task", "uat", "spike", "chore"];
 
-const SHARED_SOURCE = path.join(repoRoot, "src", "bundle", "templates", "shared", "OUTCOME.md");
+const SHARED_SOURCE = path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md");
 const NEW_RENDER_PATH = ".aof/templates/work/shared/OUTCOME.md";
 const OLD_RENDER_PATH = ".aof/templates/work/milestone/OUTCOME.md";
 

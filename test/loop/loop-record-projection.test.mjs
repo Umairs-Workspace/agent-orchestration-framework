@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loopConcurrencyFromConfig } from "../../src/loop-bounds.mjs";
-import { projectExecution, GAP_CLASSES } from "../../src/loop-record.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
+import { loopConcurrencyFromConfig } from "../../packages/core/src/loop-bounds.mjs";
+import { projectExecution, GAP_CLASSES } from "../../packages/core/src/loop-record.mjs";
+import { loadLoops } from "../../packages/core/src/work/loops.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -14,7 +14,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 // `.aof/loops`, which is the m77/R8 lesson made executable: two of five fixture rows there passed
 // for the wrong reason because the fixture was written against a belief about the loader.
 //
-// A ceiling is one of exactly two things the loader can produce (`src/work/loops.mjs`): a list of
+// A ceiling is one of exactly two things the loader can produce (`packages/core/src/work/loops.mjs`): a list of
 // POINTER entries, or one of the three sentinels. It is NEVER a bare number — `ceiling: 6` is a
 // `loop-bad-value`. So the contract's "`ceiling: 6`" is realised the only way the registry admits
 // a numeric bound: a `config:` pointer, resolved against the config handed to the projection.

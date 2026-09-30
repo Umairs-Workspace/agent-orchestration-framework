@@ -15,10 +15,10 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { LEVEL_FLAG, RESUME_FLAG, argvFor, loopInputOf } from "../../../src/loop-argv.mjs";
-import { loopCommand } from "../../../src/commands/loop.mjs";
-import { meshStatusCommand } from "../../../src/commands/mesh/identity.mjs";
-import { listCommands } from "../../../src/command-core.mjs";
+import { LEVEL_FLAG, RESUME_FLAG, argvFor, loopInputOf } from "../../../packages/core/src/loop-argv.mjs";
+import { loopCommand } from "../../../packages/core/src/commands/loop.mjs";
+import { meshStatusCommand } from "../../../packages/core/src/commands/mesh/identity.mjs";
+import { listCommands } from "../../../packages/core/src/command-core.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -30,7 +30,7 @@ const ROUTE = Object.freeze(["work", "loop"]);
 const flagKey = (token) => token.replace(/^--/u, "");
 
 async function sourceModules() {
-  const dir = path.join(root, "src");
+  const dir = path.join(root, "packages", "core", "src");
   const modules = (await readRuntimeFiles(root)).map(file => file.rel).sort();
   assert.ok(modules.length > 0, `the sweep of ${dir} found no .mjs module — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)`);
   return modules;
@@ -72,12 +72,12 @@ export const archTests = [
       assert.equal(
         raw.split("\n").filter((line) => /^import\b/u.test(line.trim())).length,
         0,
-        "src/loop-argv.mjs carries no `import` statement of any kind",
+        "packages/core/src/loop-argv.mjs carries no `import` statement of any kind",
       );
       assert.doesNotMatch(stripComments(raw), /\bimport\s*\(/u, "and no dynamic import — TECH_DEBT 26's ring stays open");
       // It imports cleanly in a fresh process, which is the property that makes it reachable from
       // a registered command module without joining a cycle.
-      const fresh = await import(`../../../src/loop-argv.mjs?fresh=${Date.now()}`);
+      const fresh = await import(`../../../packages/core/src/loop-argv.mjs?fresh=${Date.now()}`);
       assert.equal(typeof fresh.argvFor, "function");
 
       // `--level` and `--resume` are each BOUND TO A CONSTANT in exactly one module: this leaf.
@@ -101,7 +101,7 @@ export const archTests = [
       const producer = await source(PRODUCER);
       const identity = await source("packages/mesh/src/commands/identity.mjs");
       assert.doesNotMatch(producer, /"--[a-z]/u, `${PRODUCER} contains no \`--\` flag literal`);
-      assert.doesNotMatch(identity, /"--[a-z]/u, "src/commands/mesh/identity.mjs contains no `--` flag literal");
+      assert.doesNotMatch(identity, /"--[a-z]/u, "packages/core/src/commands/mesh/identity.mjs contains no `--` flag literal");
       assert.match(producer, /argvFor\(/u, "…it asks the leaf instead");
     },
   },
@@ -142,7 +142,7 @@ export const archTests = [
       // `mesh:status` is the only command whose result can carry `declarations`.
       const producers = [];
       for (const rel of await sourceModules()) {
-        if (!rel.startsWith("src/commands/") && !/^packages\/[^/]+\/src\/commands\//u.test(rel)) continue;
+        if (!rel.startsWith("packages/core/src/commands/") && !/^packages\/[^/]+\/src\/commands\//u.test(rel)) continue;
         const body = stripComments(await read(rel));
         if (/result\.declarations\s*=|declarations:\s*await/u.test(body)) producers.push(rel);
       }
@@ -165,7 +165,7 @@ export const archTests = [
         "the walk, and the module that performs it, are reached only through the flag",
       );
       assert.doesNotMatch(identity, /^import .*declarations\.mjs/mu, "…never statically");
-      const adapter = await source("src/application/bindings/commands/mesh/identity.mjs");
+      const adapter = await source("packages/core/src/application/bindings/commands/mesh/identity.mjs");
       assert.match(adapter, /loadDeclarations:\s*\(\)\s*=>\s*provideMeshDeclarations\(\)/u, "core supplies the ready declaration callback");
       assert.match(identity, /function createMeshIdentityCommands\(\{[^}]*\bloadDeclarations\b/u, "the package accepts the loader");
       const producer = await source(PRODUCER);

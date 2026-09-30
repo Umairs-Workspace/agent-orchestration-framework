@@ -1,7 +1,7 @@
 // FF-5806 — THE DAY-ONE SUPERVISION HIERARCHY IS COMPLETE, ADMISSIBLE AND CORROBORATED.
 //
 // Milestone 58 / story 01, from 58/ADR-001, ADR-002 and ADR-005. Over the records shipped in
-// `src/bundle/loops/`:
+// `packages/core/assets/loops/`:
 //
 //   every `kind: loop` record has an inbound `target-setting` edge from another node; every
 //   `target-setting` edge's source is a `loop`, an `actor`, or an `anchor` whose `ground:` is
@@ -24,7 +24,7 @@
 // clears a shared actuator on a non-contending node that vetoes every contender — and the node
 // this story ships is a `kind: arbiter`, which `isGraphNode` did not admit until 58/02 landed
 // (58/ADR-003 §6, amended: the two halves have different owners, and 58/02 is the sole writer of
-// `src/work/loops-checks.mjs`). So the finding count is 58/02's contract, asserted by FF-5805;
+// `packages/core/src/work/loops-checks.mjs`). So the finding count is 58/02's contract, asserted by FF-5805;
 // what THIS control owns is that the registry satisfies the requirement on merit — one arbiter,
 // not itself a contender, vetoing every contender for every shared actuator, with an order that
 // accounts for exactly those loops. That claim was true before 58/02 and is true after it.
@@ -37,7 +37,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
+import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import {
   GATING_CODES,
   checkActuatorArbitration,
@@ -46,7 +46,7 @@ import {
   checkPairing,
   checkReferenceOwnership,
   checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
+} from "../../../packages/core/src/work/loops-checks.mjs";
 import { withShippedRegistry, SHIPPED_LOOPS_DIR } from "../../support/registry-fixture.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -308,14 +308,14 @@ export const archTests = [
         .map(([actuator, set]) => [actuator, [...set].sort(compare)])
         .sort((left, right) => compare(left[0], right[0]));
       assert.deepEqual(shared, [
-        ["prose:src/bundle/agents/aof-developer.md", [
+        ["prose:packages/core/assets/agents/aof-developer.md", [
           "loop:autonomous-cascade",
           "loop:build-to-green",
           "loop:review-fix-rereview",
           "loop:verify-triage-accept",
         ]],
-        ["prose:src/bundle/agents/aof-product-owner.md", ["loop:autonomous-cascade", "loop:verify-triage-accept"]],
-        ["prose:src/bundle/agents/aof-qa.md", ["loop:autonomous-cascade", "loop:verify-triage-accept"]],
+        ["prose:packages/core/assets/agents/aof-product-owner.md", ["loop:autonomous-cascade", "loop:verify-triage-accept"]],
+        ["prose:packages/core/assets/agents/aof-qa.md", ["loop:autonomous-cascade", "loop:verify-triage-accept"]],
       ], "three shared actuators and four distinct contenders");
 
       const vetoed = edgeRaws(arbiter, "veto");
@@ -450,7 +450,7 @@ export const archTests = [
   //       `<name>` is an EXPORTED symbol of that module, `<n>` is the line of its `export`.
   //
   // MEASURED AT 58/01's REVIEW, which is why this exists: three citations of
-  // `src/bundle/commands/autonomous.md` named lines 49-81 of a 47-line file, and twelve of
+  // `packages/core/assets/commands/autonomous.md` named lines 49-81 of a 47-line file, and twelve of
   // fifteen `<symbol> at <module>:<line>` claims were off by +1 to +355 because the modules
   // grew underneath them — two records giving different lines for the SAME export inside one
   // milestone's diff. `TECH_DEBT` item 68 is the ledger; this is the guard that closes it.
@@ -505,7 +505,7 @@ export const archTests = [
         // (a) every `<path>:<line>` or `<path>:<line>-<line>` the record writes.
         for (const match of text.matchAll(/([\w./-]+\.(?:mjs|md|json|js|ts)):(\d+)(?:-(\d+))?/g)) {
           const [, rel, startText, endText] = match;
-          if (!rel.startsWith("src/") && !rel.startsWith("scripts/") && !rel.startsWith("ui/") && !rel.startsWith("packages/")) continue;
+          if (!rel.startsWith("packages/core/src/") && !rel.startsWith("scripts/") && !rel.startsWith("ui/") && !rel.startsWith("packages/")) continue;
           citations += 1;
           const total = await lineCountOf(rel);
           const start = Number(startText);

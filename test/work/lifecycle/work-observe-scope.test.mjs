@@ -4,8 +4,8 @@
 //   tasks/00_story-scoped-ref.feature
 //   tasks/01_per-phase-rollup.feature
 //   tasks/02_json-contract.feature
-// exercising the REAL src/work/observe.mjs resolver + rollup/report path and the REAL
-// registered src/commands/observe.mjs --json door, against a temp fixture work stream
+// exercising the REAL packages/core/src/work/observe.mjs resolver + rollup/report path and the REAL
+// registered packages/core/src/commands/observe.mjs --json door, against a temp fixture work stream
 // (mkdtemp → write folders/runs/config → observe → rm in finally). One test object per
 // @executable scenario (Scenario-Outline rows folded into one entry iterating the rows),
 // each name tracing to feature + scenario. node:assert/strict. `{ name, run }` shape so
@@ -19,8 +19,8 @@ import {
   observeMilestone,
   rollupRunsByPhase,
   observabilityEnabled,
-} from "../../../src/work/observe.mjs";
-import { observeCommand } from "../../../src/commands/observe.mjs";
+} from "../../../packages/core/src/work/observe.mjs";
+import { observeCommand } from "../../../packages/core/src/commands/observe.mjs";
 
 const T0 = Date.parse("2026-08-20T10:00:00.000Z");
 

@@ -12,14 +12,14 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../src/assignment-record.mjs";
-import { runControlDispatchReclaimTick } from "../../../src/mesh/assignment-reclaim.mjs";
-import { buildDirectiveFrame, applyAssignmentStatusFrame } from "../../../src/control-stream-server.mjs";
-import { applyRecoveryPushResultFrame, buildRecoveryPushResultFrame } from "../../../src/mesh/recovery-push.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../src/mesh/worker-execution.mjs";
-import { meshItemBranchName, meshWorktreePath } from "../../../src/mesh/worktree.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../packages/core/src/assignment-record.mjs";
+import { runControlDispatchReclaimTick } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
+import { buildDirectiveFrame, applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
+import { applyRecoveryPushResultFrame, buildRecoveryPushResultFrame } from "../../../packages/core/src/mesh/recovery-push.mjs";
+import { createMeshWorkerExecutionHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { meshItemBranchName, meshWorktreePath } from "../../../packages/core/src/mesh/worktree.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import {
   ASSIGNMENT_PHASES,
   phaseRunsOnItemBranch,
@@ -30,7 +30,7 @@ import {
   readAssignmentPhase,
   setItemBranch,
   readItemBranch,
-} from "../../../src/mesh/assignment-directive.mjs";
+} from "../../../packages/core/src/mesh/assignment-directive.mjs";
 import { withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { withMeshWorkerPushFixture } from "../../support/mesh-worker-push-fixture.mjs";
 import { markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";

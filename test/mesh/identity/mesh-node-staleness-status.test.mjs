@@ -3,8 +3,8 @@
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
 // tasks/01_node-staleness-and-status.feature, exercising the REAL in-process registry
-// (src/command-core.mjs + the EXTENDED mesh:status in src/commands/mesh-identity.mjs
-// over src/mesh/presence.mjs) against a temp fixture repo — loadWorkspace + invoke,
+// (packages/core/src/command-core.mjs + the EXTENDED mesh:status in packages/core/src/commands/mesh-identity.mjs
+// over packages/core/src/mesh/presence.mjs) against a temp fixture repo — loadWorkspace + invoke,
 // real fs, in-process. `now` and `heartbeatAt` are driven as INJECTED values (white-box
 // over the staleness inputs, never wall-clock — the 22/R2 discipline). One test object
 // per scenario (outline rows folded into one entry iterating the rows). node:assert/strict.
@@ -20,10 +20,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../src/mesh/store.mjs";
-import { DEFAULT_PRESENCE_STALENESS_SECONDS } from "../../../src/mesh/presence.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../packages/core/src/mesh/store.mjs";
+import { DEFAULT_PRESENCE_STALENESS_SECONDS } from "../../../packages/core/src/mesh/presence.mjs";
 
 const NOW = "2026-06-30T12:00:00.000Z";
 

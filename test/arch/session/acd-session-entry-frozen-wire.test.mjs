@@ -3,7 +3,7 @@
 // "the presence session ENTRY is a FROZEN, ORDERED SIX, and the wire stays a
 // pass-through".
 //
-// THE INVARIANT. `readLiveSessions` (src/mesh/presence.mjs) projects every live session
+// THE INVARIANT. `readLiveSessions` (packages/core/src/mesh/presence.mjs) projects every live session
 // record to EXACTLY
 //   { sessionId, workspaceId, repo, assistant, lastPingAt, workspaceHasRun }
 // in that order — an INSERTION at the head and an APPEND at the tail, never a reorder
@@ -16,7 +16,7 @@
 //
 // AND THE OTHER HALF, which is why this file exists rather than a behavioural test
 // alone: the wire's remaining hops MUST STAY PASS-THROUGHS. `applyPresenceFrame`'s
-// `safeSessionArray` (src/control-stream-server.mjs) is an ENTRY-level guard — "is this
+// `safeSessionArray` (packages/core/src/control-stream-server.mjs) is an ENTRY-level guard — "is this
 // a non-array object" — and is NEVER taught a per-field whitelist. That helpful-looking
 // change is exactly how this milestone's key would be silently dropped in transit while
 // every other test stayed green, and it is why the highest-fan-in file on the path
@@ -30,7 +30,7 @@
 //     present-and-false by default (and TRUE when a run set says so, so "false" is a
 //     default rather than a constant).
 //  2. STRUCTURAL — the projection's own source names those six keys, in that order, in
-//     ONE place; and `src/mesh/launcher.mjs` does not stamp the run fact inline
+//     ONE place; and `packages/core/src/mesh/launcher.mjs` does not stamp the run fact inline
 //     (ADR-009: the projection has one home, and this milestone REMOVES a block from
 //     the widest-out-degree file in src/ rather than adding one).
 //  3. STRUCTURAL — `ui/src/fleet/api.ts`'s `PresenceSession` declares exactly those six
@@ -51,10 +51,10 @@ import { mkdtemp, mkdir, rm, readdir, readFile, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { meshDir } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");

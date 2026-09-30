@@ -2,10 +2,10 @@
 // tasks/01_the-architecture-template-asks-for-a-runnable-path.feature ("ACD asks for a control it
 // can resolve, at the moment the control is declared", @executable).
 //
-// A CHECK WITH NO ASK IS A TRAP (ADR-007 §1). ACD's gates are met by agents reading `src/bundle/`
+// A CHECK WITH NO ASK IS A TRAP (ADR-007 §1). ACD's gates are met by agents reading `packages/core/assets/`
 // prompts and templates; a refusal no prompt ever asked for arrives as a surprise at `validate` and
 // the agent's only recovery is to guess. The shipped template was itself part of the defect —
-// measured at HEAD, `src/bundle/templates/milestone/ARCHITECTURE.md` rendered a fitness table with
+// measured at HEAD, `packages/core/assets/templates/milestone/ARCHITECTURE.md` rendered a fitness table with
 // NO ID COLUMN, so ACD asked architects to declare invariants it gave them no way to name.
 //
 // Every @executable scenario and every Examples row is wired here against the REAL shipped bytes.
@@ -17,8 +17,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { registerDeclarations, registerEntries, qualifiedRefsIn, declaredIdOn } from "../../src/declared-id.mjs";
-import { CONTROL_FINDING_CODES, fitnessDeclarations } from "../../src/work/doctor-controls.mjs";
+import { registerDeclarations, registerEntries, qualifiedRefsIn, declaredIdOn } from "../../packages/core/src/declared-id.mjs";
+import { CONTROL_FINDING_CODES, fitnessDeclarations } from "../../packages/core/src/work/doctor-controls.mjs";
 import {
   ADR_LITERALS,
   FROZEN_ASKS,
@@ -28,7 +28,7 @@ import {
 } from "../arch/work/acd-verification-template-shape.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const bundleText = (relative) => readFileSync(path.join(repoRoot, "src", "bundle", ...relative.split("/")), "utf8");
+const bundleText = (relative) => readFileSync(path.join(repoRoot, "packages", "core", "assets", ...relative.split("/")), "utf8");
 
 const ARCHITECTURE_TEMPLATE = "templates/milestone/ARCHITECTURE.md";
 const REFINE = "commands/refine.md";

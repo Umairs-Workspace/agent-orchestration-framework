@@ -31,11 +31,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable } from "../../../src/spine/face.mjs";
+import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { deriveRouteTable } from "../../../packages/core/src/spine/face.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
+const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 // Discount `// …` and `/* … */` so a comment naming a branch literal is not a match.
 function stripComments(source) {

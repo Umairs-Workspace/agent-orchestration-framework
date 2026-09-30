@@ -1,6 +1,6 @@
 // Fitness function FF-B for milestone 18 / ADR-003 + ADR-007 (reader-is-JSON-no-
 // parseFrontmatter + the parser revert):
-//   (a) The descriptor reader (src/integrations/routing.mjs) reads the per-folder
+//   (a) The descriptor reader (packages/core/src/integrations/routing.mjs) reads the per-folder
 //       `.integrations.json` with `JSON.parse` and has NO `parseFrontmatter` import or
 //       usage — routing is a discrete JSON file, never frontmatter (R4 (m18): extending
 //       the shared frontmatter parser is a blast-radius hazard).

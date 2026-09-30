@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 35 / story 03 / task 00 —
 // tasks/00_status-shape.feature (@executable).
 //
-// `shapeGlobalStatus` (src/global-mesh-query.mjs) is a PURE function of its
+// `shapeGlobalStatus` (packages/core/src/global-mesh-query.mjs) is a PURE function of its
 // `{ paths, workProjection, registry, assignments, now }` inputs (zero I/O) — so
 // every scenario/example row is asserted HEADLESSLY over planted projection +
 // assignment inputs, no live SQLite, no server, mirroring the m34
@@ -15,7 +15,7 @@
 // (including the forward-compat `withdrawn`/`reclaimed` terminal states) travels
 // through verbatim.
 import assert from "node:assert/strict";
-import { shapeGlobalStatus } from "../../src/global-mesh-query.mjs";
+import { shapeGlobalStatus } from "../../packages/core/src/global-mesh-query.mjs";
 
 function baseArgs(overrides = {}) {
   return {

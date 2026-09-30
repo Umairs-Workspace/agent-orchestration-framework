@@ -3,7 +3,7 @@
 //   "The registry cites; it does not explain."
 //
 // ── WHAT IS ASSERTED, AND WHAT IS DELIBERATELY NOT ────────────────────────────────────────
-// A SHAPE over the file that exists: no entry in `src/command-core.mjs` carries a rationale
+// A SHAPE over the file that exists: no entry in `packages/core/src/command-core.mjs` carries a rationale
 // paragraph. Each command's registry comment is a SINGLE line whose content is a citation, and the
 // prose lives in the command module's own header. NO comment count, NO comment ratio and NO line
 // budget other than one-per-entry is asserted anywhere here — item 61's measured failure is a cap
@@ -29,17 +29,17 @@
 //
 // ── THE EXEMPT CLASS IS NOT IN THE REGISTRY, AND THAT IS THE POINT ────────────────────────
 // TECH_DEBT item 84 names "this file's deferred-import comments" as the one exempt class.
-// Measured: `grep -c "await import(" src/command-core.mjs` is **0**. Those comments live one
-// directory over, in `src/commands/` — `trigger.mjs`, `tune.mjs`, `work-ui.mjs`, `loop.mjs`,
+// Measured: `grep -c "await import(" packages/core/src/command-core.mjs` is **0**. Those comments live one
+// directory over, in `packages/core/src/commands/` — `trigger.mjs`, `tune.mjs`, `work-ui.mjs`, `loop.mjs`,
 // `loop-document.mjs`, `doctor.mjs` and the two `assets/` modules. Scoped as the register row
 // words it, the exempt-class leg would pass over the EMPTY SET permanently (ADR-003 §4's silent
 // carrier, in the row that exists to prevent a deletion) and the deletion it forbids would go
 // unguarded in the only directory where it can happen. Leg 3 therefore scopes the class to
-// `src/commands/**`, DERIVES the site set by reading it, and asserts the set non-empty and no
+// `packages/core/src/commands/**`, DERIVES the site set by reading it, and asserts the set non-empty and no
 // smaller than the floor measured at HEAD.
 //
 // ── THE WALK IS RECURSIVE, BECAUSE THIS STORY IS WHAT GIVES THE DIRECTORY AN INTERIOR ─────
-// 119/02 moves `src/commands/{mesh,assets,graph}-*.mjs` into `src/commands/{mesh,assets,graph}/`.
+// 119/02 moves `packages/core/src/commands/{mesh,assets,graph}-*.mjs` into `packages/core/src/commands/{mesh,assets,graph}/`.
 // A non-recursive `readdir` here would lose 32 modules WITHOUT ERRORING — three of them
 // (`assets/add.mjs`, `assets/clean.mjs`, `assets/ui.mjs`) carrying deferred imports — which is the
 // species ADR-003 §4 names and the one this control must not be an instance of.
@@ -50,8 +50,8 @@
 //
 // WHAT WOULD QUIETLY UNDO THIS: a comment-density number added to this control later, which turns a
 // shape claim back into item 61's cap (leg 5 refuses it); the exempt class re-scoped to
-// `src/command-core.mjs`, where it is vacuous (leg 3's floor refuses it); a non-recursive walk of
-// `src/commands/`, which loses a third of the directory in silence (leg 3's floor refuses that too);
+// `packages/core/src/command-core.mjs`, where it is vacuous (leg 3's floor refuses it); a non-recursive walk of
+// `packages/core/src/commands/`, which loses a third of the directory in silence (leg 3's floor refuses that too);
 // and the module header classified as an entry's comment, which deletes the file's own
 // documentation (leg 4 refuses it).
 import assert from "node:assert/strict";
@@ -62,8 +62,8 @@ import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const REGISTRY_FILE = "src/application/bindings/command-core.mjs";
-const COMMANDS_DIR = "src/application/bindings/commands";
+const REGISTRY_FILE = "packages/core/src/application/bindings/command-core.mjs";
+const COMMANDS_DIR = "packages/core/src/application/bindings/commands";
 
 // The three modules TECH_DEBT item 26 names, measured 2026-09-06. They are a claim about WHICH
 // modules explain their ring — asserted against the derived set, never used as the set.
@@ -88,7 +88,7 @@ const NAMED_RING_MODULES = Object.freeze(["trigger.mjs", "tune.mjs"]);
 export const EXEMPT_SITE_FLOOR = 4;
 
 // ── THE SHIPPED PARSER ───────────────────────────────────────────────────────────────────
-// `src/command-core.mjs` as a list of contiguous `//` blocks, each classified by WHAT IT SITS
+// `packages/core/src/command-core.mjs` as a list of contiguous `//` blocks, each classified by WHAT IT SITS
 // ABOVE and by WHERE IT IS — the two facts that separate an entry's comment from the file's own.
 //
 //   header      — the block that opens the file. Position, never content.
@@ -215,7 +215,7 @@ export function registryShapeViolations(source) {
 }
 
 // ── THE EXEMPT CLASS, DERIVED ────────────────────────────────────────────────────────────
-// A site is a comment block in a `src/commands/**` module that EXPLAINS a deferred import or the
+// A site is a comment block in a `packages/core/src/commands/**` module that EXPLAINS a deferred import or the
 // ring hazard that forces one. Two facts make it one, and both are read from the source:
 //   · its text names the deferral or the hazard (`defer…`, `TDZ`, `ring`, `lazy-load…`,
 //     `before initialization`), and
@@ -428,7 +428,7 @@ export const archTests = [
     run: async () => {
       const real = await readCommandModules();
       const trigger = real.find((file) => file.rel === "trigger.mjs");
-      assert.ok(trigger, "self-check: src/commands/trigger.mjs is in the walked set");
+      assert.ok(trigger, "self-check: packages/core/src/commands/trigger.mjs is in the walked set");
 
       const stripped = real.map((file) => (file.rel === "trigger.mjs"
         ? { rel: file.rel, source: file.source.split(/\r?\n/).filter((line) => !/^\s*\/\//.test(line)).join("\n") }
@@ -456,7 +456,7 @@ export const archTests = [
       const inside = all.filter((site) => site.rel.includes("/"));
       assert.ok(
         inside.length > 0,
-        "the interior 119/02 gives src/commands/ holds deferred-import comments of its own — a flat walk would lose them silently",
+        "the interior 119/02 gives packages/core/src/commands/ holds deferred-import comments of its own — a flat walk would lose them silently",
       );
       assert.deepEqual(
         flat.map((site) => site.rel).sort(),

@@ -2,7 +2,7 @@
 // milestone 38 / story 01 task 03 (03_credential-not-persisted.feature). Every
 // @executable scenario + Examples row wired to the real engine surface:
 // cloneRepoForWorkspace's credential-env scoping, buildAskpassShim, and
-// redactCredentialFromText (src/mesh/worker-execution.mjs). Hermetic over an
+// redactCredentialFromText (packages/core/src/mesh/worker-execution.mjs). Hermetic over an
 // INJECTED clone-exec seam + a FAKE token string — no real forge, no real
 // credential, no network (the developer-amigo feasibility seat's verdict).
 //
@@ -23,7 +23,7 @@ import {
   cloneRepoForWorkspace,
   createMeshWorkerExecutionHandler,
   buildAskpassShim,
-} from "../../../src/mesh/worker-execution.mjs";
+} from "../../../packages/core/src/mesh/worker-execution.mjs";
 
 // invokeAskpassShim(shimPath, prompt) — runs the GIT_ASKPASS one-shot shim exactly as
 // git would (the documented contract: "the user's input is read from its standard
@@ -365,7 +365,7 @@ export const meshWorkerCloneCredentialNotPersistedTests = [
     name: "task03/38 worker-repo-checkout: buildAskpassShim writes a one-shot script that emits the token to stdout, then cleanup() removes it entirely",
     run: async () => withMeshCloneFixture(async ({ env }) => {
       const { execFile } = await import("node:child_process");
-      const { meshCheckoutsRoot } = await import("../../../src/mesh/worker-execution.mjs");
+      const { meshCheckoutsRoot } = await import("../../../packages/core/src/mesh/worker-execution.mjs");
       const scriptsRoot = meshCheckoutsRoot({ env });
       const shim = await buildAskpassShim(scriptsRoot, FAKE_TOKEN);
       try {
@@ -395,7 +395,7 @@ export const meshWorkerCloneCredentialNotPersistedTests = [
   {
     name: "task03/38 worker-repo-checkout (ADR-010): the prompt-aware askpass shim answers a Username prompt with the public `x-access-token` constant, never the token",
     run: async () => withMeshCloneFixture(async ({ env }) => {
-      const { meshCheckoutsRoot } = await import("../../../src/mesh/worker-execution.mjs");
+      const { meshCheckoutsRoot } = await import("../../../packages/core/src/mesh/worker-execution.mjs");
       const scriptsRoot = meshCheckoutsRoot({ env });
       const shim = await buildAskpassShim(scriptsRoot, FAKE_TOKEN);
       try {

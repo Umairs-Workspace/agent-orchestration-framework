@@ -26,7 +26,7 @@ import {
   readMapToken,
   ruleCount,
   rulesWithoutExample,
-} from "../../src/work-examples/map.mjs";
+} from "../../packages/core/src/work-examples/map.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const MAP_MODULE = path.join(repoRoot, "packages", "work", "src", "examples", "map.mjs");

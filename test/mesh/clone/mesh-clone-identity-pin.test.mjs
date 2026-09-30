@@ -9,9 +9,9 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
-import { cloneRepoForWorkspace } from "../../../src/mesh/worker-execution.mjs";
-import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { cloneRepoForWorkspace } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { resolveWorkspaceId } from "../../../packages/core/src/workspace-identity.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const NOW = "2026-07-26T12:00:00.000Z";

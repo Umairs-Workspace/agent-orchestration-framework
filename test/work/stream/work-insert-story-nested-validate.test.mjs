@@ -7,8 +7,8 @@
 // read (mirrors the feature's own LITMUS note).
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, listItems, validateWork } from "../../../src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { findWork, listItems, validateWork } from "../../../packages/core/src/work.mjs";
 import { withInsertFixture, buildTopLevelMilestones, writeStoryItem, frontmatter, SLUGS } from "../../support/work-insert-fixture.mjs";
 
 // The Background: milestone "05" with nested stories "05/00" (alpha), "05/01"

@@ -10,11 +10,11 @@
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { clearAsk, loopAsksDir, openAsk, readAsks } from "../../src/loop/ask-request.mjs";
-import { recordAskMessage } from "../../src/notify/ask-messages.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { clearAsk, loopAsksDir, openAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
+import { recordAskMessage } from "../../packages/core/src/notify/ask-messages.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
 
 // A synthetic bot token (131/09 QA ruling 1); its third segment is what a leak check greps for.
 export const TOKEN_SEGMENT = "gatewaySecretSegment0123456";
@@ -188,7 +188,7 @@ export async function withReplyWorld(body, { allow = [ALLOWED] } = {}) {
       posted.push({ url, init });
       return { status: 200, headers: { get: () => "application/json" }, json: async () => ({ id: "990000000000000001" }) };
     };
-    const { invoke } = await import("../../src/command-core.mjs");
+    const { invoke } = await import("../../packages/core/src/command-core.mjs");
     const invoked = [];
     const context = {
       request,

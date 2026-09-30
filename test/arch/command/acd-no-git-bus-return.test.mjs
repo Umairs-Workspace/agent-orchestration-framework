@@ -1,10 +1,10 @@
 // Fitness function: acd-no-git-bus-return (milestone 35 / ADR-003, fitness #1) —
-// "The rebuild uses no git-bus. No `src/` module imports or creates the retired
+// "The rebuild uses no git-bus. No `packages/core/src/` module imports or creates the retired
 //  git-bus lease/issuance/sync machinery (mesh-lease.mjs / mesh-issuance.mjs /
 //  mesh-sync.mjs / commands/mesh-issue.mjs / a leaseClaimPath function)."
 //
 // Proofs:
-//  1. Structural — over every `src/**/*.mjs` (comments stripped), assert NO
+//  1. Structural — over every `packages/core/src/**/*.mjs` (comments stripped), assert NO
 //     `import … from "./mesh-lease.mjs"`, `"./mesh-issuance.mjs"`, `"./mesh-sync.mjs"`,
 //     or `"./commands/mesh-issue.mjs"` (any relative depth), and no definition/
 //     reference of a `leaseClaimPath` function.
@@ -17,7 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 
 const FORBIDDEN_IMPORT_RE = /from\s+["'][^"']*\/(mesh-lease|mesh-issuance|mesh-sync|commands\/mesh-issue)\.mjs["']/;
 const LEASE_CLAIM_PATH_RE = /\bleaseClaimPath\b/;

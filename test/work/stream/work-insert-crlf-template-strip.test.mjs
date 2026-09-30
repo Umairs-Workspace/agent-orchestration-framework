@@ -1,6 +1,6 @@
 // Regression test for review fix 2 (milestone 41 as-built review, 2026-07-16):
 // "CRLF templates defeat the bundle-marker strip -> validate-broken scaffold on
-// Windows." `stripBundleMarker` (src/commands/insert-shared.mjs) used
+// Windows." `stripBundleMarker` (packages/core/src/commands/insert-shared.mjs) used
 // `/^<!--[^\n]*-->\r?\n+(?=---)/`, which on a CRLF template (`-->\r\n\r\n---`,
 // i.e. TWO separate \r\n units) consumed only the FIRST \r\n, leaving a
 // leftover `\r\n---` that the `(?=---)` lookahead never satisfied — nothing
@@ -19,8 +19,8 @@
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, validateWork, parseFrontmatter } from "../../../src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { findWork, validateWork, parseFrontmatter } from "../../../packages/core/src/work.mjs";
 import { withInsertFixture, buildTopLevelMilestones } from "../../support/work-insert-fixture.mjs";
 
 // Convert EVERY line ending to CRLF (first normalizing to LF, defensively) —

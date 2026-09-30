@@ -7,7 +7,7 @@
 import { chmod, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { DESKTOP_APP_EXE, WEBVIEW2_BOOTSTRAPPER } from "../../src/commands/mesh/desktop.mjs";
+import { DESKTOP_APP_EXE, WEBVIEW2_BOOTSTRAPPER } from "../../packages/core/src/commands/mesh/desktop.mjs";
 
 // withMeshDesktopFixture(fn, { seedAofBinary, seedArtifacts }) — builds a temp
 // tree: <tmp>/home/.aof/bin (the fixture $HOME/.aof/bin install dir, with the m28

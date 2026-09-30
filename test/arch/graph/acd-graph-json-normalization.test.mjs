@@ -9,15 +9,15 @@
 //
 // Fixture-driven (RESEARCH §A1/A2 @executable): feed the real committed
 // test/fixtures/graph/graph.json (+ a captured markdown stdout) through the
-// normalizer (normalizeGraph/readGraph from src/graphify.mjs) and assert the
+// normalizer (normalizeGraph/readGraph from packages/core/src/graphify.mjs) and assert the
 // structural facts hold against the LANDED code.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeGraph, readGraph } from "../../../src/graphify.mjs";
-import { graphQueryCommand } from "../../../src/commands/graph/query.mjs";
-import { graphTriageCommand } from "../../../src/commands/graph/triage.mjs";
+import { normalizeGraph, readGraph } from "../../../packages/core/src/graphify.mjs";
+import { graphQueryCommand } from "../../../packages/core/src/commands/graph/query.mjs";
+import { graphTriageCommand } from "../../../packages/core/src/commands/graph/triage.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = path.join(repoRoot, "test", "fixtures", "graph", "graph.json");
@@ -166,7 +166,7 @@ export const archTests = [
       // assert structurally on the command source that the returned object names
       // only the opaque + path handles (no nodes/edges/hyperedges/prs key).
       for (const [label, command] of [["graph:query", graphQueryCommand], ["graph:triage", graphTriageCommand]]) {
-        // 119/02 — the id's two halves are the DIRECTORY and the LEAF now that `src/commands/` has
+        // 119/02 — the id's two halves are the DIRECTORY and the LEAF now that `packages/core/src/commands/` has
         // an interior: `graph:query` is `commands/graph/query.mjs`, where it was `graph-query.mjs`.
         // Still derived from the id rather than typed, so the mapping moves with the family; the
         // separator it derives across is what changed, and a `-` left here opened a file that is

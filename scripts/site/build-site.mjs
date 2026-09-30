@@ -45,8 +45,8 @@ import { cp, mkdir, mkdtemp, readdir, readFile, rename, rm, stat, writeFile } fr
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { loopDocumentPath, REGENERATE_COMMAND } from "../../src/loop-document.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { loopDocumentPath, REGENERATE_COMMAND } from "../../packages/core/src/loop-document.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

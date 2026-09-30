@@ -7,9 +7,9 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { loadWorkspace, findWork } from "../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../src/mesh/worker-execution.mjs";
-import { readRuns, runNodeRecordPath } from "../../src/run-store.mjs";
+import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
+import { readRuns, runNodeRecordPath } from "../../packages/core/src/run-store.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
 
 const NODE_ID = "node-a";

@@ -16,7 +16,7 @@
 // an unresolvable frame is dropped downstream, never delivered to the wrong card) is
 // exercised deterministically.
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession } from "../../../src/mesh/worker-execution.mjs";
+import { driveInteractiveClaudeSession } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { createFakeWhich, createScriptedPty } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 const sleep = (ms = 5) => new Promise((resolve) => setTimeout(resolve, ms));

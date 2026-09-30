@@ -14,10 +14,10 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import * as work from "../../../src/work.mjs";
+import * as work from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UPGRADE_MODULE = path.join(repoRoot, "src", "work", "upgrade.mjs");
+const UPGRADE_MODULE = path.join(repoRoot, "packages", "core", "src", "work", "upgrade.mjs");
 
 // A transform descriptor may name its endpoints from/to (canonical) or a *Schema/*Version
 // variant — read whichever is present so the guard is not brittle on the exact key.

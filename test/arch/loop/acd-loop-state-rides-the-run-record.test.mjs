@@ -4,9 +4,9 @@ import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../../src/command-core.mjs";
-import { isLegalTransition } from "../../../src/run-store.mjs";
-import { runLoopBody } from "../../../src/commands/loop.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { isLegalTransition } from "../../../packages/core/src/run-store.mjs";
+import { runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../../loop/loop-command-probe.test.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
@@ -64,12 +64,18 @@ function assertUiFrozen(pairs) {
   const hash = createHash("sha256");
   for (const [rel, content] of pairs) {
     hash.update(`${rel}\0`);
-    hash.update(content.replace(/\r\n/gu, "\n"));
+    // Plan 03 changes one import to its owning public package and declares that
+    // dependency. Normalize only those exact ownership edits; the UI behavior
+    // and every other byte still have to match the existing frozen digest.
+    let normalized = content.replace(/\r\n/gu, "\n");
+    if (rel === "ui/src/board/action.mjs") normalized = normalized.replace('"@aof/messaging/form"', '"../../../src/notify/form.mjs"');
+    if (rel === "ui/package.json") normalized = normalized.replace('    "@aof/messaging": "workspace:*",\n', '');
+    hash.update(normalized);
     hash.update("\0");
   }
   // RE-PINNED by 119/01 — 11 lines across 9 files under `ui/src/{board,fleet,home,terminal}/`,
   // in `.ts`, `.mjs` and `.d.mts`. EVERY ONE is a comment citation of a module this story
-  // moved (`src/mesh-*` -> `src/mesh/*`, `src/board-worker-stream.mjs` -> `src/cache-read.mjs`);
+  // moved (`packages/core/src/mesh-*` -> `packages/core/src/mesh/*`, `packages/core/src/board-worker-stream.mjs` -> `packages/core/src/cache-read.mjs`);
   // no component, style, route, export or behaviour changed. `git diff 7893d02c..HEAD -- ui/`
   // is the whole of it, and it is the diff to read before accepting this pin.
   //
@@ -108,10 +114,10 @@ function assertUiFrozen(pairs) {
   // fleet node card's loop line and its Stop: `presence.loops[]` rendered beside the pinned
   // current-work lines, ONE button on the serving node's card, `fleetApi.loopStop` the one
   // fetch. NOTHING under `ui/src/board/` moved (`git diff -- ui/src/board/` is empty);
-  // `src/board-ui.mjs`'s digest above is UNCHANGED (959ebf96…), as is `src/run-store.mjs`'s;
+  // `packages/core/src/board-ui.mjs`'s digest above is UNCHANGED (959ebf96…), as is `packages/core/src/run-store.mjs`'s;
   // and the `ui/` diff reads NO run record at all — every `runId` it names is a field of the
   // presence record's additive `loops[]` entry (the node's projection of its own run
-  // records, src/mesh/presence.mjs), so the loop's state still rides the run record with no
+  // records, packages/core/src/mesh/presence.mjs), so the loop's state still rides the run record with no
   // face of its own and the board's frozen seam is byte-identical. `work:loop` stays
   // BOARD_DEFERRED; no `/api/work/loop` exists.
   //
@@ -200,7 +206,7 @@ export const archTests = [
       assert.doesNotMatch(engine, /node:(?:fs|fs\/promises|child_process|process|os)|Date\.now\s*\(|new\s+Date\s*\(|\bimport\s*\(/u);
       const command = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.doesNotMatch(command, /\b(?:writeFile|mkdir|rename)\s*\(/u);
-      const modules = await modulesUnder(path.join(root, "src"));
+      const modules = await modulesUnder(path.join(root, "packages", "core", "src"));
       assert.ok(modules.length > 150, `src was actually walked: ${modules.length} modules`);
       const stores = modules.filter((file) => /(?:^|[-/\\])loop(?:[-/\\].*)?[-]store\.mjs$/u.test(path.relative(root, file)));
       assert.deepEqual(stores, [], `loop facts must not acquire a sidecar store: ${stores.join(", ")}`);
@@ -209,15 +215,15 @@ export const archTests = [
   {
     name: "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): frozen store and board read surfaces remain byte-identical to the milestone base",
     run: async () => {
-      // `src/run-store.mjs` is RE-PINNED at its post-55/02 digest, not dropped (55/VERIFICATION
+      // `packages/core/src/run-store.mjs` is RE-PINNED at its post-55/02 digest, not dropped (55/VERIFICATION
       // F-55-02-1): 55/02's change to the store is in scope, and the repair to a seam a story
       // legitimately moved is a new pin, never a deleted entry — an unpinned file is covered by
-      // no byte-freeze at all. `src/board-ui.mjs` stays at the milestone base: 55/01's
+      // no byte-freeze at all. `packages/core/src/board-ui.mjs` stays at the milestone base: 55/01's
       // groundedness route was removed rather than blessed (F-55-01-1), so this seam never moved.
       const pins = new Map([
         // RE-PINNED by 119/01: each carries exactly one changed line, and it is a path citation of
-        // a module this story moved — `src/mesh-presence.mjs` → `src/mesh/presence.mjs` in the
-        // store, and `src/board-worker-stream.mjs` → `src/cache-read.mjs` in the command. No
+        // a module this story moved — `packages/core/src/mesh-presence.mjs` → `packages/core/src/mesh/presence.mjs` in the
+        // store, and `packages/core/src/board-worker-stream.mjs` → `packages/core/src/cache-read.mjs` in the command. No
         // behaviour, no export and no signature moved in either.
         // RE-PINNED by 126/02 for ONE additive export: `isRunning`, the `isLegalTransition`
         // sibling. The declaration predicate must answer "is this attempt still in flight" without
@@ -268,7 +274,7 @@ export const archTests = [
         // OUTSIDE the `/api/work` namespace; `handleWorkApi` is byte-identical. No run key is read.
         // RE-PINNED by 131/04 (ADR-006 §3): one hoisted admission and one route onto `work:answer`;
         // no run key is read; every GET route's body is byte-identical. The measured
-        // `git diff -- src/board-ui.mjs`, non-comment lines: the five write branches match on
+        // `git diff -- packages/core/src/board-ui.mjs`, non-comment lines: the five write branches match on
         // pathname and call `admitWriteRequest` (the three phase doors now `return await`), the new
         // `/api/work/answer` branch, `admitWriteRequest` + `sendMethodNotAllowed`, the
         // `./static-serve.mjs` import of `isLoopbackHost`, and `readJsonBody` refusing a non-object

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
-import { buildTuneReport, tuneCommand } from "../../src/commands/tune.mjs";
+import { buildTuneReport, tuneCommand } from "../../packages/core/src/commands/tune.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const key = "fixture.reviewRounds";
@@ -45,10 +45,10 @@ const advisory = (source, overrides = {}) => record(source, {
 
 function corpus({ matched = true, records = null } = {}) {
   const rows = records ?? [
-    tunable("src/commands/audit.mjs:1"),
-    tunable("src/commands/observe.mjs:1"),
-    advisory("src/work.mjs:1"),
-    advisory("src/work/read.mjs:1"),
+    tunable("packages/core/src/commands/audit.mjs:1"),
+    tunable("packages/core/src/commands/observe.mjs:1"),
+    advisory("packages/core/src/work.mjs:1"),
+    advisory("packages/core/src/work/read.mjs:1"),
   ];
   return Object.freeze({
     scope: matched ? null : "missing",
@@ -122,7 +122,7 @@ export const tuneCommandTests = [
           proposals: [{
             key,
             to: 2,
-            provenance: ["src/commands/audit.mjs:1", "src/commands/observe.mjs:1"],
+            provenance: ["packages/core/src/commands/audit.mjs:1", "packages/core/src/commands/observe.mjs:1"],
           }],
         },
       }]);
@@ -163,8 +163,8 @@ export const tuneCommandTests = [
       const moves = Object.freeze([Object.freeze({ from: 1, to: 2 }), Object.freeze({ from: 2, to: 3 })]);
       const arms = Object.freeze([Object.freeze({ id: "control" }), Object.freeze({ id: "trial" })]);
       const records = [
-        tunable("src/commands/audit.mjs:1", { to: undefined, moves, arms, epochId: "epoch-7", observedYield: 0.5 }),
-        tunable("src/commands/observe.mjs:1", { to: undefined, moves, arms, epochId: "epoch-7", observedYield: 0.5 }),
+        tunable("packages/core/src/commands/audit.mjs:1", { to: undefined, moves, arms, epochId: "epoch-7", observedYield: 0.5 }),
+        tunable("packages/core/src/commands/observe.mjs:1", { to: undefined, moves, arms, epochId: "epoch-7", observedYield: 0.5 }),
       ];
       let offered = null;
       await buildTuneReport({}, context({
@@ -178,7 +178,7 @@ export const tuneCommandTests = [
         arms,
         epochId: "epoch-7",
         observedYield: 0.5,
-        provenance: ["src/commands/audit.mjs:1", "src/commands/observe.mjs:1"],
+        provenance: ["packages/core/src/commands/audit.mjs:1", "packages/core/src/commands/observe.mjs:1"],
       }]);
       assert.equal(Object.prototype.hasOwnProperty.call(offered[0], "proposed"), false);
       assert.equal(Object.prototype.hasOwnProperty.call(offered[0], "from"), false);
@@ -198,8 +198,8 @@ export const tuneCommandTests = [
       assert.equal(movedProposal.reason.inForce, 5);
 
       const noSourceFrom = [
-        tunable("src/commands/audit.mjs:1", { from: undefined }),
-        tunable("src/commands/observe.mjs:1", { from: undefined }),
+        tunable("packages/core/src/commands/audit.mjs:1", { from: undefined }),
+        tunable("packages/core/src/commands/observe.mjs:1", { from: undefined }),
       ];
       let offered = null;
       const rebased = await buildTuneReport({}, context({
@@ -216,8 +216,8 @@ export const tuneCommandTests = [
     name: "tune/01 a structured config target without a step is still offered and carries the acceptor construction refusal",
     async run() {
       const records = [
-        tunable("src/commands/audit.mjs:1", { from: undefined, to: undefined }),
-        tunable("src/commands/observe.mjs:1", { from: undefined, to: undefined }),
+        tunable("packages/core/src/commands/audit.mjs:1", { from: undefined, to: undefined }),
+        tunable("packages/core/src/commands/observe.mjs:1", { from: undefined, to: undefined }),
       ];
       const constructionRefusals = Object.freeze([Object.freeze({
         code: "no-step-proposed",
@@ -241,7 +241,7 @@ export const tuneCommandTests = [
       }));
       assert.deepEqual(offered, [{
         key,
-        provenance: ["src/commands/audit.mjs:1", "src/commands/observe.mjs:1"],
+        provenance: ["packages/core/src/commands/audit.mjs:1", "packages/core/src/commands/observe.mjs:1"],
       }]);
       const proposal = report.proposals.find((entry) => entry.lane === "tunable");
       assert.equal(proposal.reason.code, "patch-part-missing");
@@ -304,10 +304,10 @@ export const tuneCommandTests = [
     name: "tune/02 one missing acceptor row does not cost another key its verdict",
     async run() {
       const records = [
-        tunable("src/commands/audit.mjs:1"),
-        tunable("src/commands/observe.mjs:1"),
-        tunable("src/work.mjs:1", { target: otherKey }),
-        tunable("src/work/read.mjs:1", { target: otherKey }),
+        tunable("packages/core/src/commands/audit.mjs:1"),
+        tunable("packages/core/src/commands/observe.mjs:1"),
+        tunable("packages/core/src/work.mjs:1", { target: otherKey }),
+        tunable("packages/core/src/work/read.mjs:1", { target: otherKey }),
       ];
       const report = await buildTuneReport({}, context({
         model: modelFor(key, otherKey),
@@ -329,10 +329,10 @@ export const tuneCommandTests = [
     name: "tune/01 same-key candidates consolidate without loss and duplicate returned verdicts cannot bleed",
     async run() {
       const records = [
-        tunable("src/commands/audit.mjs:1"),
-        tunable("src/commands/observe.mjs:1"),
-        tunable("src/work.mjs:1", { kind: "observation", area: "code", stage: "build", owner: "architect" }),
-        tunable("src/work/read.mjs:1", { kind: "observation", area: "code", stage: "build", owner: "architect" }),
+        tunable("packages/core/src/commands/audit.mjs:1"),
+        tunable("packages/core/src/commands/observe.mjs:1"),
+        tunable("packages/core/src/work.mjs:1", { kind: "observation", area: "code", stage: "build", owner: "architect" }),
+        tunable("packages/core/src/work/read.mjs:1", { kind: "observation", area: "code", stage: "build", owner: "architect" }),
       ];
       let offered = null;
       const report = await buildTuneReport({}, context({
@@ -355,10 +355,10 @@ export const tuneCommandTests = [
     name: "tune/01 incompatible same-key steps and source-field conflicts become construction findings",
     async run() {
       const incompatible = [
-        tunable("src/commands/audit.mjs:1", { to: 2 }),
-        tunable("src/commands/observe.mjs:1", { to: 2 }),
-        tunable("src/work.mjs:1", { to: 3, kind: "observation", area: "code", stage: "build", owner: "architect" }),
-        tunable("src/work/read.mjs:1", { to: 3, kind: "observation", area: "code", stage: "build", owner: "architect" }),
+        tunable("packages/core/src/commands/audit.mjs:1", { to: 2 }),
+        tunable("packages/core/src/commands/observe.mjs:1", { to: 2 }),
+        tunable("packages/core/src/work.mjs:1", { to: 3, kind: "observation", area: "code", stage: "build", owner: "architect" }),
+        tunable("packages/core/src/work/read.mjs:1", { to: 3, kind: "observation", area: "code", stage: "build", owner: "architect" }),
       ];
       let calls = 0;
       const report = await buildTuneReport({}, context({
@@ -370,8 +370,8 @@ export const tuneCommandTests = [
       assert.ok(report.findings.some((finding) => finding.code === "tunable-step-conflict"));
 
       const conflictingSources = [
-        tunable("src/commands/audit.mjs:1", { to: 2 }),
-        tunable("src/commands/observe.mjs:1", { to: 3 }),
+        tunable("packages/core/src/commands/audit.mjs:1", { to: 2 }),
+        tunable("packages/core/src/commands/observe.mjs:1", { to: 3 }),
       ];
       const conflict = await buildTuneReport({}, context({ corpus: corpus({ records: conflictingSources }), registry }));
       assert.ok(conflict.findings.some((finding) => finding.code === "candidate-fact-conflict"));
@@ -382,8 +382,8 @@ export const tuneCommandTests = [
     async run() {
       let invoked = 0;
       const already = [
-        tunable("src/commands/audit.mjs:1", { from: 2, to: 2 }),
-        tunable("src/commands/observe.mjs:1", { from: 2, to: 2 }),
+        tunable("packages/core/src/commands/audit.mjs:1", { from: 2, to: 2 }),
+        tunable("packages/core/src/commands/observe.mjs:1", { from: 2, to: 2 }),
       ];
       const report = await buildTuneReport({}, context({
         corpus: corpus({ records: already }),
@@ -403,8 +403,8 @@ export const tuneCommandTests = [
     async run() {
       let invoked = 0;
       const advisoryOnly = corpus({ records: [
-        advisory("src/work.mjs:1"),
-        advisory("src/work/read.mjs:1"),
+        advisory("packages/core/src/work.mjs:1"),
+        advisory("packages/core/src/work/read.mjs:1"),
       ] });
       const report = await buildTuneReport({}, context({
         corpus: advisoryOnly,
@@ -428,17 +428,17 @@ export const tuneCommandTests = [
       });
       const inputCorpus = Object.freeze({
         ...corpus({ records: [
-          advisory("src/work.mjs:1"),
-          advisory("src/work/read.mjs:1"),
-          record("src/work-tune/proposal.mjs:1", { target: "model:reviewer", class: "model-reallocation", to: "gpt-5", kind: "observation", area: "code", stage: "design", owner: "architect" }),
-          record("src/work-tune/distance.mjs:1", { target: "model:reviewer", class: "model-reallocation", to: "gpt-5", kind: "observation", area: "code", stage: "design", owner: "architect" }),
+          advisory("packages/core/src/work.mjs:1"),
+          advisory("packages/core/src/work/read.mjs:1"),
+          record("packages/core/src/work-tune/proposal.mjs:1", { target: "model:reviewer", class: "model-reallocation", to: "gpt-5", kind: "observation", area: "code", stage: "design", owner: "architect" }),
+          record("packages/core/src/work-tune/distance.mjs:1", { target: "model:reviewer", class: "model-reallocation", to: "gpt-5", kind: "observation", area: "code", stage: "design", owner: "architect" }),
         ] }),
         lanes: Object.freeze([
           ...corpus({ records: [
-            advisory("src/work.mjs:1"),
-            advisory("src/work/read.mjs:1"),
-            record("src/work-tune/proposal.mjs:1", { target: "model:reviewer", class: "model-reallocation", to: "gpt-5", kind: "observation", area: "code", stage: "design", owner: "architect" }),
-            record("src/work-tune/distance.mjs:1", { target: "model:reviewer", class: "model-reallocation", to: "gpt-5", kind: "observation", area: "code", stage: "design", owner: "architect" }),
+            advisory("packages/core/src/work.mjs:1"),
+            advisory("packages/core/src/work/read.mjs:1"),
+            record("packages/core/src/work-tune/proposal.mjs:1", { target: "model:reviewer", class: "model-reallocation", to: "gpt-5", kind: "observation", area: "code", stage: "design", owner: "architect" }),
+            record("packages/core/src/work-tune/distance.mjs:1", { target: "model:reviewer", class: "model-reallocation", to: "gpt-5", kind: "observation", area: "code", stage: "design", owner: "architect" }),
           ] }).lanes,
           Object.freeze({
             lane: "observations",

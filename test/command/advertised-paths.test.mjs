@@ -32,7 +32,7 @@
 //     regression than the one the milestone fixes, so every advertised address is fetched.
 //
 // TWO TRAPS, both measured at HEAD, both given their own assertions:
-//   1. `src/commands/mesh-ui.mjs` composed its announce as `${fleetUrl}&scope=${scope}`,
+//   1. `packages/core/src/commands/mesh-ui.mjs` composed its announce as `${fleetUrl}&scope=${scope}`,
 //      with the `&` hard-coded on the assumption that `fleetUrl` already carried a query.
 //      Against a PATH url that same untouched line yields `…/fleet&scope=global` — a
 //      pathname of `/fleet&scope=global` with NO `scope` parameter, which
@@ -54,12 +54,12 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveBoard, boardUiDist } from "../../src/board-serve.mjs";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
+import { serveBoard, boardUiDist } from "../../packages/core/src/board-serve.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
 import { spawnCliAsync } from "../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -281,7 +281,7 @@ async function withFleetFace(fn) {
 
 // The published workspace's id, read back through the same projection the face reads.
 async function publishedWorkspaceId(globalStoreOptions) {
-  const { queryGlobalMeshStatus } = await import("../../src/global-mesh-query.mjs");
+  const { queryGlobalMeshStatus } = await import("../../packages/core/src/global-mesh-query.mjs");
   const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
   const id = (status.workspaces ?? [])[0]?.workspaceId;
   assert.ok(id, "the fixture publishes exactly one workspace into the isolated projection");

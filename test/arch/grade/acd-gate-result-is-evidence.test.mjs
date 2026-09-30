@@ -14,7 +14,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //      comment, because both of those directories declare themselves rebuildable or deletable and
 //      evidence that survives to accept cannot live in one.
 //   2. THE FROZEN SHAPE HAS ONE HOME. The `h2`, the header row and the divider are exported
-//      constants, and no comparison site in `src/` holds a second copy of any of them. A frozen
+//      constants, and no comparison site in `packages/core/src/` holds a second copy of any of them. A frozen
 //      literal beside a comparison freezes that site's BELIEF about the document rather than the
 //      document.
 //   3. EVERY ROW CARRIES FOUR FACTS, and a row missing any of them is UNREADABLE rather than
@@ -45,8 +45,8 @@ import {
   parseRegressionRows,
   regressionRecordPath,
   satisfiesDoor,
-} from "../../../src/regression-record.mjs";
-import { runRegressionGate } from "../../../src/commands/regression-gate.mjs";
+} from "../../../packages/core/src/regression-record.mjs";
+import { runRegressionGate } from "../../../packages/core/src/commands/regression-gate.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -200,7 +200,7 @@ export const archTests = [
     run: () => withItem(async ({ recordPath, run }) => {
       for (const [label, suite, cell] of [
         ["scope was not `all`", suiteResult({ scope: "impacted" }), "impacted"],
-        ["selection widened", suiteResult({ widened: [{ file: "src/x.mjs", reason: "graph-unknown" }] }), "all+widened"],
+        ["selection widened", suiteResult({ widened: [{ file: "packages/core/src/x.mjs", reason: "graph-unknown" }] }), "all+widened"],
       ]) {
         await rm(recordPath, { force: true });
         const out = await run({ suite });

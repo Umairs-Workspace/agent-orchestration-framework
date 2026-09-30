@@ -47,17 +47,17 @@ import {
   CONTROL_NODE, WORKER_NODE, SYNCED_AT,
 } from "../support/cache-read-fixture.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
-import { loadWorkspace } from "../../src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/command-core.mjs";
 import {
   listItemsCacheFirst, findWorkCacheFirst, listStreamCacheFirst, nextWorkCacheFirst,
   DEGRADE_CACHE_MISS, DEGRADE_CACHE_UNAVAILABLE,
   withoutAnsweringSide, ANSWERING_SIDE_KEYS,
-} from "../../src/work/read.mjs";
-import { listItems, findWork, listStream, nextWork, isLiveStreamRow } from "../../src/work.mjs";
+} from "../../packages/core/src/work/read.mjs";
+import { listItems, findWork, listStream, nextWork, isLiveStreamRow } from "../../packages/core/src/work.mjs";
 // 127/04 task 01 — the OWNING node's disk projection is what its cache reports, so the
 // remote-node fixture below projects 127/01's three-root fixture through the real own-disk
 // read and streams the rows through the real frame door.
-import { readWorkspaceProjectionItems } from "../../src/global-work-store.mjs";
+import { readWorkspaceProjectionItems } from "../../packages/core/src/global-work-store.mjs";
 import { buildThreeRootFixture } from "../work/stream/work-backlog-archive-enumerate.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -611,7 +611,7 @@ export const cacheReadSeamTests = [
       // work.mjs's four disk readers keep their exact return shape over a stream with neither
       // root — and the module imports nothing new for the seam's sake (it consumes the
       // enumerator's row and isLiveStreamRow; the seam re-derives neither).
-      const source = await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "core", "src", "work.mjs"), "utf8");
       const imports = [...source.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]).filter((spec) => spec.startsWith("."));
       assert.ok(!imports.some((spec) => spec.includes("read.mjs") || spec.includes("cache-read") || spec.includes("global-work-store") || spec.includes("item-row")), `work.mjs imports no cache module (${imports.join(", ")})`);
     }),

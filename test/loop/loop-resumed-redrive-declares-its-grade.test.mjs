@@ -23,15 +23,15 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { writeFileSync } from "node:fs";
 
-import { invoke } from "../../src/command-core.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 import { LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
-import { runLoopBody, SHELL_LOOP_ID } from "../../src/commands/loop.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { startRun, completeRun } from "../../src/run-store.mjs";
+import { runLoopBody, SHELL_LOOP_ID } from "../../packages/core/src/commands/loop.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+import { startRun, completeRun } from "../../packages/core/src/run-store.mjs";
 // A seeded `brief.grade` is a CLAIM, and the run store refuses an unstamped one
 // (`assertStampedClaim`, 55/ADR-003) — so the fixture stamps it through the same pure
 // compiler the grade command uses rather than hand-rolling a four-key object.
-import { compileProvenance } from "../../src/claim-provenance.mjs";
+import { compileProvenance } from "../../packages/core/src/claim-provenance.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import {
   capturingReport, emitsPassing, gradingCtx, gradingFixture, stubRubric,

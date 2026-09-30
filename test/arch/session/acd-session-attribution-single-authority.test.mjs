@@ -51,14 +51,14 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { queryGlobalMeshStatus, shapeGlobalStatus, workspaceIdForProjectRoot } from "../../../src/global-mesh-query.mjs";
-import { publishPresenceRecord, readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { meshDir, publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../src/assignment-record.mjs";
+import { queryGlobalMeshStatus, shapeGlobalStatus, workspaceIdForProjectRoot } from "../../../packages/core/src/global-mesh-query.mjs";
+import { publishPresenceRecord, readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { meshDir, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../packages/core/src/assignment-record.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
@@ -105,7 +105,7 @@ function stripComments(source) {
 }
 
 // NON-VACUITY OF THE STRIP ITSELF (TECH_DEBT item 24, fix (b)). `workItemHomeViolations`
-// sweeps ALL of `src/` for an ABSENCE, and an absence-sweep is silently GREEN if the
+// sweeps ALL of `packages/core/src/` for an ABSENCE, and an absence-sweep is silently GREEN if the
 // stripper deleted the source it was meant to read — item 24's named "silent false
 // GREEN" shape. The anchor is each module's OWN exported symbol names: a name a module
 // `export`s at line start is code by construction, so if it does not survive
@@ -383,10 +383,10 @@ export const archTests = [
             continue;
           }
           if (!item.name.endsWith(".mjs")) continue;
-          entries.push([`src/${relPath}`, await readFile(path.join(dir, item.name), "utf8")]);
+          entries.push([`packages/core/src/${relPath}`, await readFile(path.join(dir, item.name), "utf8")]);
         }
       }
-      await walk(path.join(REPO, "src"), "");
+      await walk(path.join(REPO, "packages", "core", "src"), "");
       assert.ok(entries.length > 50, `the scan really walked src/ (found ${entries.length} modules)`);
 
       // …and the sweep really READ what it walked (TECH_DEBT item 24): an absence-rule

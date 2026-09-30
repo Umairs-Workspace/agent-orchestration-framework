@@ -23,12 +23,12 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands, getCommand } from "../../../src/command-core.mjs";
+import { listCommands, getCommand } from "../../../packages/core/src/command-core.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
+const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 // The migrate-surface commands DERIVED from the registry (NOT a hard-coded literal:
 // a future migrate:* command is covered with no edit). work:/graph:/import:/mesh: are
@@ -116,7 +116,7 @@ export const archTests = [
       // face) — reachability is now a REGISTRY fact, mirroring the
       // acd-work-command-cli-bijection route-or-ladder update. The ladder form
       // stays accepted so this gate never forces a route back out.
-      const { deriveRouteTable } = await import("../../../src/spine/face.mjs");
+      const { deriveRouteTable } = await import("../../../packages/core/src/spine/face.mjs");
       const routes = deriveRouteTable(listCommands());
       const routed = routes.has("migrate") && routes.get("migrate").id === "migrate:folder";
 

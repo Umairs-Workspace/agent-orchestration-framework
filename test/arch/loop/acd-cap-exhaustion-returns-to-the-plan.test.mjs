@@ -27,7 +27,7 @@ import {
   loopPlanRef,
   loopScopeIncludes,
 } from "../../../packages/work-loop/src/engine.mjs";
-import { LOOP_FIX_TRANSPORT_KEYS, loopCommand } from "../../../src/commands/loop.mjs";
+import { LOOP_FIX_TRANSPORT_KEYS, loopCommand } from "../../../packages/core/src/commands/loop.mjs";
 // THE COMMENT STRIPPER, FROM ITS ONE HOME (chore 106 / TECH_DEBT item 24). A hand-rolled one is
 // what `acd-comment-stripper-order` exists to refuse: strip block comments first and a line
 // comment containing `/*` blinds every source-reading assertion below it, so an absence sweep
@@ -41,7 +41,7 @@ const ENGINE = "packages/work-loop/src/engine.mjs";
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const DRIVER = "packages/work-loop/src/commands/drive.mjs";
 
-/** Every `.mjs` under `src/`, relative and forward-slashed. */
+/** Every `.mjs` under `packages/core/src/`, relative and forward-slashed. */
 async function sourceModules() {
   return (await readRuntimeFiles(root)).map(file => file.rel).sort();
 }
@@ -123,7 +123,7 @@ export const archTests = [
       }
 
       // AND THE SHELL SUPPLIES NO AUTHORED KEY: its one call site passes what `work:next`
-      // answered, and `ready()` (`src/work.mjs:1301-1308`) carries no `parent` at all.
+      // answered, and `ready()` (`packages/core/src/work.mjs:1301-1308`) carries no `parent` at all.
       assert.equal(body.includes("input?.parent"), true, "a caller-supplied parent is still honoured, which is what makes the out-of-scope guard reachable");
     },
   },

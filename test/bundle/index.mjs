@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -13,6 +13,7 @@
 // coded tamper, and the human ownership-marker escape hatch (FF-5505/FF-5506).
 import { frozenSetCompiledTests } from "./frozen-set-compiled.test.mjs";
 import { yarnInstallationTests } from "./yarn-installation.test.mjs";
+import { coreWorkspaceTests } from "./core-workspace.test.mjs";
 import { opencodeHookTests } from "./opencode-hooks.test.mjs";
 import { adapterWarningTests } from "./adapter-warnings.test.mjs";
 import { packageTests } from "./packages.test.mjs";
@@ -37,7 +38,7 @@ import { schemaTests } from "./schema.test.mjs";
 // here.
 import { bundleClaudeSessionHookTests } from "./bundle-claude-session-hooks.test.mjs";
 // milestone 28 — console-app (story 00: self-contained-binary — ADR-001/002/003/004).
-// src/asset-base.mjs is the ONE SEA-safe asset-base seam (assetBase/readAssetText/
+// packages/core/src/asset-base.mjs is the ONE SEA-safe asset-base seam (assetBase/readAssetText/
 // listAssetMembers/packageVersionString, an injectable isPackaged sentinel +
 // sidecar anchor mirroring terminal-ws.mjs's injected spawn); all 7 import.meta.url
 // sites (work-bundle.mjs's bundleRoot + its readdir/readFile walkers, board-serve.mjs,
@@ -60,7 +61,7 @@ import { bundleClaudeSessionHookTests } from "./bundle-claude-session-hooks.test
 // bundle-asset-manifest-complete (#4, a set-equality over the real trees vs the
 // generator's output). acd-bundle-location is CO-TOUCHED (bundleRoot() now routes
 // through assetBase(); the import.meta.url resolution assert re-points at
-// src/asset-base.mjs; the cwd-independence asserts stay green).
+// packages/core/src/asset-base.mjs; the cwd-independence asserts stay green).
 import { assetBaseSeamTests } from "./asset-base-seam.test.mjs";
 // TECH_DEBT item 1 — the launcher decouple: build-info (source/payload/embedded
 // + the BUILD_ID.json stamp behind --version and the daemons' "Build:" line).
@@ -165,4 +166,5 @@ export const tests = [
   // story 137 — the AOF.md digest template ships with the record-doc set (task 00).
   ...digestTemplateShipsTests,
   ...yarnInstallationTests,
+  ...coreWorkspaceTests,
 ];

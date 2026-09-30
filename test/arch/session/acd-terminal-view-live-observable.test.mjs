@@ -44,7 +44,7 @@ import { fileURLToPath } from "node:url";
 import { dependencySpecifiers, configuredPortSources } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORKER_EXECUTION = path.join(repoRoot, "src/application/bindings/mesh/worker-execution.mjs");
+const WORKER_EXECUTION = path.join(repoRoot, "packages/core/src/application/bindings/mesh/worker-execution.mjs");
 const LAUNCHER = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
 const STREAM_CLIENT = path.join(repoRoot, "packages", "mesh", "src/worker-stream-client.mjs");

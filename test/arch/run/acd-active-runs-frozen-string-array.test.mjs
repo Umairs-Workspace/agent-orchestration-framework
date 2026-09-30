@@ -16,7 +16,7 @@
 //                 ADR-004 subsumption off `run.workspaceId`; the producer emits a bare
 //                 `string[]`, so the collapse rule could never have fired in production.
 //                 (Fixed by relocating subsumption upstream into
-//                 `assembleCurrentPresenceRecord`, src/mesh/launcher.mjs.)
+//                 `assembleCurrentPresenceRecord`, packages/core/src/mesh/launcher.mjs.)
 //   - F8 (Rust) — `view_model.rs` read the same key as objects (`.get("ref")` /
 //                 `.get("title")`), so the desktop's current-work cell silently read
 //                 empty against every real payload.
@@ -48,9 +48,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { enclosingParenGroup, blockOrStatementAfter } from "../../support/source-slice.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");

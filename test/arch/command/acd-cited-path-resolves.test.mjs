@@ -44,7 +44,7 @@ import {
   parseRenameRecords,
   resolveCitedPath,
   resolveThroughRenames,
-} from "../../../src/cited-path-resolve.mjs";
+} from "../../../packages/core/src/cited-path-resolve.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -55,7 +55,7 @@ const EDGE = "packages/work/src/commands/doctor.mjs";
 
 // THE ANCHORED EXTRACTOR. The lookbehind is the whole difference between 357 tokens and 379: without
 // it, `ui/src/fleet/scope.mjs` is read as `src/fleet/scope.mjs` and counted as a casualty.
-const CITATION = /(?<![A-Za-z0-9_./-])src\/[A-Za-z0-9_./-]+\.mjs/gu;
+const CITATION = /(?<![A-Za-z0-9_./-])(?:src|packages\/core\/src)\/[A-Za-z0-9_./-]+\.mjs/gu;
 
 // THE SHRINK-ONLY CEILING, pinned to the count measured on the day this control landed, with NO
 // HEADROOM — so the next unresolvable citation has to come here and be argued for. Produced by the
@@ -196,7 +196,7 @@ async function realSweep() {
     }
     documents.push({ rel: rel(full), text });
   }
-  const srcFiles = new Set((await walk(path.join(root, "src"))).map(rel));
+  const srcFiles = new Set((await walk(path.join(root, "packages", "core", "src"))).map(rel));
   return { result: await sweep({ documents, srcFiles, renameMap: await renameMapFromHistory() }), documents, srcFiles };
 }
 
@@ -205,14 +205,14 @@ export const archTests = [
     name: "arch/119 FF-11903: one resolver answers every citation — at HEAD, or through a rename this repository recorded",
     run: async () => {
       const renameMap = await renameMapFromHistory();
-      const present = new Set(["src/work/doctor.mjs", "src/command-error.mjs", "ui/src/fleet/scope.mjs"]);
+      const present = new Set(["src/work/doctor.mjs", "packages/core/src/command-error.mjs", "ui/src/fleet/scope.mjs"]);
       const existsAtHead = (candidate) => present.has(candidate);
       const answer = (cited, map = renameMap) => resolveCitedPath(cited, { existsAtHead, renameMap: map });
 
       assert.equal(answer("src/work/doctor.mjs").via, "head", "a src/ path that exists at HEAD resolves at its own path");
       assert.deepEqual(
         [answer("src/commands/errors.mjs").resolved, answer("src/commands/errors.mjs").at],
-        [true, "src/command-error.mjs"],
+        [true, "packages/core/src/command-error.mjs"],
         "a path renamed once in history resolves at its new path — real, committed, immutable",
       );
       const chained = buildRenameMap([{ from: "src/b.mjs", to: "src/command-error.mjs" }, { from: "src/a.mjs", to: "src/b.mjs" }]);
@@ -246,7 +246,7 @@ export const archTests = [
       // up: this control moved into `test/arch/command/` when the arch tree gained an interior, so a
       // pinned `../../` was asserting where the CONTROL sits rather than which module it calls. A
       // re-pointed subject with a token that was not re-pointed with it is 119/01's round-2 Blocker.
-      assert.match(control, /from "(?:\.\.\/)+src\/cited-path-resolve\.mjs"/u, "reader 2 — this sweep calls the same exported resolver");
+      assert.match(control, /from "(?:\.\.\/)+packages\/core\/src\/cited-path-resolve\.mjs"/u, "reader 2 — this sweep calls the same exported resolver");
 
       // READER 3 (119/03) — a suite path cited in a delivered `.feature`. ADR-004 was amended to
       // name it: 489 such citations across 156 immutable task features are stranded by the test
@@ -254,14 +254,14 @@ export const archTests = [
       // ruling is still one resolver asked three times rather than three rules that agree today.
       const THIRD_READER = "test/support/registration/cited-suite-path.mjs";
       const featureReader = stripComments(await readFile(path.join(root, THIRD_READER), "utf8"));
-      assert.match(featureReader, /from "(?:\.\.\/)+src\/cited-path-resolve\.mjs"/u, "reader 3 — the .feature-evidence reader calls the same exported resolver");
+      assert.match(featureReader, /from "(?:\.\.\/)+packages\/core\/src\/cited-path-resolve\.mjs"/u, "reader 3 — the .feature-evidence reader calls the same exported resolver");
       assert.match(featureReader, /\bresolveCitedPath\(/u, "reader 3 — …and calls it rather than re-implementing the fall-through");
       assert.doesNotMatch(featureReader, /\bwhile\s*\([^)]{0,120}\.has\(/u, "reader 3 — it follows no rename chain of its own; the one home does that");
       assert.match(spine, /resolveCitedPath\(control, \{ renameMap \}\)/u, "…and the spine calls it rather than re-implementing the fall-through");
 
       // NO SECOND RESOLUTION RULE. Every module that walks a rename record does it through the one
       // home; nothing re-derives the chain, and nothing stores a redirect table.
-      const sources = [...(await walk(path.join(root, "src"))), ...(await walk(path.join(root, "test")))]
+      const sources = [...(await walk(path.join(root, "packages", "core", "src"))), ...(await walk(path.join(root, "test")))]
         .filter((full) => full.endsWith(".mjs"))
         .map((full) => rel(full));
       assert.ok(sources.length > 0, "the sweep of src/ and test/ found no .mjs module — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)");
@@ -319,7 +319,7 @@ export const archTests = [
       assert.ok(renameMap.size > 0, `the rename map is non-empty (${renameMap.size} records) — read from git's own rename records and from no file in the tree`);
       assert.equal(
         resolveThroughRenames("src/commands/errors.mjs", renameMap),
-        "src/command-error.mjs",
+        "packages/core/src/command-error.mjs",
         "the control names ONE known rename it resolved, so a map that answered nothing could not report green",
       );
       const resolver = stripComments(await readFile(path.join(root, RESOLVER), "utf8"));

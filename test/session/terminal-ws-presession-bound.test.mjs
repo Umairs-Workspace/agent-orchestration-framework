@@ -28,7 +28,7 @@ import {
   PRESESSION_OVERFLOW_CODE,
   SOCKET_ERROR_CODE,
   createConnectionGate,
-} from "../../src/terminal-ws.mjs";
+} from "../../packages/core/src/terminal-ws.mjs";
 import {
   makeRepo,
   stubWhich,

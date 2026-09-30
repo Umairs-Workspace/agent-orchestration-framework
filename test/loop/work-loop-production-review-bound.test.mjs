@@ -6,14 +6,14 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { reviewRoundsFromConfig } from "../../src/loop-bounds.mjs";
+import { reviewRoundsFromConfig } from "../../packages/core/src/loop-bounds.mjs";
 import {
   REVIEW_BLOCKER_CLASSES,
   decideReviewGate,
   isReviewBlockerClaim,
   reviewBlockerClaim,
 } from "../../packages/work-loop/src/engine.mjs";
-import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
+import { loopCommand, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { completingDriver, loopFixture } from "./loop-command-probe.test.mjs";
 import { functionBody } from "../support/source-slice.mjs";
 

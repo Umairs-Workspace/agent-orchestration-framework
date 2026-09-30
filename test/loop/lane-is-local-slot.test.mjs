@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dispatchCommand } from "../../src/commands/dispatch.mjs";
+import { dispatchCommand } from "../../packages/core/src/commands/dispatch.mjs";
 import {
   cleanupDispatchLane,
   dispatchLaneOccupiesSlot,
@@ -13,9 +13,9 @@ import {
   inspectDispatchLanes,
   resolveDispatchLane,
   sweepDispatchLanes,
-} from "../../src/work/dispatch.mjs";
-import { meshDispatchWorktreePath, meshWorktreePath } from "../../src/mesh/worktree.mjs";
-import { acquireMeshLauncherLock } from "../../src/mesh/launcher-lock.mjs";
+} from "../../packages/core/src/work/dispatch.mjs";
+import { meshDispatchWorktreePath, meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
+import { acquireMeshLauncherLock } from "../../packages/core/src/mesh/launcher-lock.mjs";
 import { withDispatchRepo, git } from "../support/dispatch-lane-fixture.mjs";
 
 const ws = (root, bound) => ({ projectRoot: root, config: { work: { dispatch: { concurrency: bound } } } });
@@ -29,8 +29,8 @@ function spawnDispatchProcess(root, refs, bound, { marker = "", delayMs = 0 } = 
     import { pathToFileURL } from "node:url";
     const root = process.env.AOF_TEST_PROJECT_ROOT;
     const code = process.env.AOF_TEST_CODE_ROOT;
-    const { dispatchCommand } = await import(pathToFileURL(path.join(code, "src", "commands", "dispatch.mjs")));
-    const { resolveDispatchLane } = await import(pathToFileURL(path.join(code, "src", "work", "dispatch.mjs")));
+    const { dispatchCommand } = await import(pathToFileURL(path.join(code, "packages", "core", "src", "commands", "dispatch.mjs")));
+    const { resolveDispatchLane } = await import(pathToFileURL(path.join(code, "packages", "core", "src", "work", "dispatch.mjs")));
     let opened = 0;
     const result = await dispatchCommand.run({ refs: JSON.parse(process.env.AOF_TEST_REFS) }, {
       workspace: { projectRoot: root, config: { work: { dispatch: { concurrency: Number(process.env.AOF_TEST_BOUND) } } } },

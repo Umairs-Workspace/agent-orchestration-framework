@@ -2,7 +2,7 @@
 // tasks/00_a-worktree-is-prepared-through-the-declared-program.feature.
 //
 // One test object per @executable scenario (Scenario-Outline rows folded into one entry), driven
-// against the REAL doors in `src/mesh/worktree.mjs` with the module's own two seams injected: the
+// against the REAL doors in `packages/core/src/mesh/worktree.mjs` with the module's own two seams injected: the
 // `options.exec` git seam it already had, and the bounded-launch seam the prepare step goes through.
 // No git binary, no network, no real install — and the SAME code path production takes.
 //
@@ -23,7 +23,7 @@ import {
   addWorktree,
   meshWorktreePath,
   reuseWorktreeOnBranch,
-} from "../../src/mesh/worktree.mjs";
+} from "../../packages/core/src/mesh/worktree.mjs";
 
 // A declaration that compiles: `node` resolves on every machine this suite runs on, which is what
 // makes the "command resolving nowhere" row below a real contrast rather than a stub's opinion.

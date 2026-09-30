@@ -28,7 +28,7 @@ import { applicationConstructionGraph } from "../../support/workspace/assembly-g
 // ── THE SUBJECT IS THE FAMILY, DERIVED — NEVER A LIST OF THIS STORY'S FILES ──────────────────
 //
 // The settings-write, merge-import and marker-import legs are asserted over EVERY module under
-// `src/work-audit/**`, walked recursively. That claim is true of the modules that were already
+// `packages/core/src/work-audit/**`, walked recursively. That claim is true of the modules that were already
 // there and is strictly stronger than a claim about the two this milestone has added so far — and,
 // unlike a ledger of story files, a module 77/03, 77/04 or 77/05 adds is covered on arrival rather
 // than needing this file edited to see it.
@@ -46,11 +46,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { resolvedInvocation, runHookWiring } from "../../../src/work-audit/hook-wiring.mjs";
+import { resolvedInvocation, runHookWiring } from "../../../packages/core/src/work-audit/hook-wiring.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_ROOT = "src/application/bindings/work-audit";
+const FAMILY_ROOT = "packages/core/src/application/bindings/work-audit";
 const FAMILY_FLOOR = 6;
 
 // The one child-process seam the family is allowed, named by PATH rather than by basename so a
@@ -165,18 +165,18 @@ export const archTests = [
         ['import { execFile } from "node:child_process";', "a child process of any kind"],
       ];
       for (const [source, why] of plants) {
-        const reported = settingsWriteRoutes("src/work-audit/planted.mjs", source);
+        const reported = settingsWriteRoutes("packages/core/src/work-audit/planted.mjs", source);
         assert.equal(reported.length > 0, true, `${why}: the planted route is reported`);
-        assert.equal(reported.every((problem) => problem.startsWith("src/work-audit/planted.mjs")), true, `${why}: …by the file that holds it`);
+        assert.equal(reported.every((problem) => problem.startsWith("packages/core/src/work-audit/planted.mjs")), true, `${why}: …by the file that holds it`);
       }
 
       const clean = 'import { limitRecord, readRecord } from "./reads.mjs";\nexport function run() { return { findings: [] }; }';
-      assert.deepEqual(settingsWriteRoutes("src/work-audit/clean.mjs", clean), [], "and with nothing planted no route is found");
+      assert.deepEqual(settingsWriteRoutes("packages/core/src/work-audit/clean.mjs", clean), [], "and with nothing planted no route is found");
 
       // …and the one shape that must NOT be read as a child process, because the family really does
       // use it: a regular expression consuming its own subject.
       assert.deepEqual(
-        settingsWriteRoutes("src/work-audit/regex.mjs", "const match = LEADING_RESULT.exec(String(text));"),
+        settingsWriteRoutes("packages/core/src/work-audit/regex.mjs", "const match = LEADING_RESULT.exec(String(text));"),
         [],
         "a RegExp.prototype.exec call is not a child process — the false positive this detector was measured to have on its first run",
       );

@@ -1,6 +1,6 @@
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 // test/loop/loop-diag.test.mjs — the loop's HOME-SIDE files: the exit-reason recorder
-// (src/loop-diag.mjs, 2026-09-11) and, since 130/01, the stop request (src/loop/stop-request.mjs).
+// (packages/core/src/loop-diag.mjs, 2026-09-11) and, since 130/01, the stop request (packages/core/src/loop/stop-request.mjs).
 //
 // The recorder is exercised against an INJECTED process double: a real `process.on("exit")` or a
 // wrapped `process.exit` registered in the test runner would outlive the test, so nothing in that
@@ -14,8 +14,8 @@ import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:f
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import {
   STOP_LEVELS,
@@ -27,7 +27,7 @@ import {
   readStopRequest,
   requestLoopStop,
   stopRequestPath,
-} from "../../src/loop/stop-request.mjs";
+} from "../../packages/core/src/loop/stop-request.mjs";
 import {
   answerAsk,
   askRequestPath,
@@ -38,7 +38,7 @@ import {
   parkAsk,
   readAsk,
   readAsks,
-} from "../../src/loop/ask-request.mjs";
+} from "../../packages/core/src/loop/ask-request.mjs";
 import {
   LOOP_DIAG_ENV,
   LOOP_DIAG_KEEP,
@@ -51,7 +51,7 @@ import {
   loopDiagScopeTag,
   pruneLoopDiagLogs,
   readLastLoopDiagEvent,
-} from "../../src/loop-diag.mjs";
+} from "../../packages/core/src/loop-diag.mjs";
 
 function fakeProcess() {
   const proc = new EventEmitter();
@@ -258,7 +258,7 @@ const recorderTests = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// milestone 130 / story 01 — THE STOP REQUEST HAS ONE HOME (`src/loop/stop-request.mjs`, ADR-001).
+// milestone 130 / story 01 — THE STOP REQUEST HAS ONE HOME (`packages/core/src/loop/stop-request.mjs`, ADR-001).
 //
 // The loop's SECOND home-side file, beside the recorder's log, and its suite sits beside the
 // recorder's for that reason (test/loop is at its ceiling; story 05 owns every budget row). The
@@ -975,7 +975,7 @@ const stopRequestTests = [
   {
     name: "130/01 stop-request/02 a real interval never holds a finished process open — a child that starts a source with the real process and the default pollMs exits on its own",
     async run() {
-      const module = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "loop", "stop-request.mjs")).href;
+      const module = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "core", "src", "loop", "stop-request.mjs")).href;
       const script = [
         `import { createStopSource, loopStopsDir } from ${JSON.stringify(module)};`,
         `const source = createStopSource({ loopRunId: "L1", dir: loopStopsDir() });`,
@@ -994,7 +994,7 @@ const stopRequestTests = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// milestone 131 / story 01, tasks 02-03 — THE ASK HAS ONE HOME (`src/loop/ask-request.mjs`,
+// milestone 131 / story 01, tasks 02-03 — THE ASK HAS ONE HOME (`packages/core/src/loop/ask-request.mjs`,
 // ADR-003 §1-§2). The loop's THIRD home-side file, beside the stop request, and driven the same
 // way: inside the isolated aof home the runner hands every test, with the degrade sink injected
 // and reset before every read, and the poll over an injected timer pair.

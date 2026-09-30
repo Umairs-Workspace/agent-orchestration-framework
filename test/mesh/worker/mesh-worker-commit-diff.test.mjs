@@ -17,10 +17,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler, commitWorktreeChanges, resolveRefInWorktree } from "../../../src/mesh/worker-execution.mjs";
-import { meshWorktreePath, meshItemBranchName, addDispatchWorktree, commitWorktreeChanges as commitWorktreeChangesFromHome } from "../../../src/mesh/worktree.mjs";
-import { resolveRefInWorktree as resolveRefInWorktreeFromHome } from "../../../src/work/dispatch.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler, commitWorktreeChanges, resolveRefInWorktree } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { meshWorktreePath, meshItemBranchName, addDispatchWorktree, commitWorktreeChanges as commitWorktreeChangesFromHome } from "../../../packages/core/src/mesh/worktree.mjs";
+import { resolveRefInWorktree as resolveRefInWorktreeFromHome } from "../../../packages/core/src/work/dispatch.mjs";
 import { markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";
 import { withMeshWorkerPushFixture } from "../../support/mesh-worker-push-fixture.mjs";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
@@ -95,7 +95,7 @@ function frontmatter(fields) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n`;
 }
 
-// withMoveFixture(body) — a repo at T0 holding a tracked `src/a.mjs`, `README.md`, a plain
+// withMoveFixture(body) — a repo at T0 holding a tracked `packages/core/src/a.mjs`, `README.md`, a plain
 // `wiki/work/07_m/STATE.md` (the paths-scope subject; `07_m` is not an item dir, so the work
 // scanner skips it), a VALID work stream for `07/01`, a committed `.aof/aof.config.json`, and a
 // dispatch worktree for `07/01` on `aof/mesh/07-01` at T0.
@@ -105,7 +105,7 @@ async function withMoveFixture(body) {
     await git(["init", "-b", "main"], root);
     await git(["config", "user.email", "fixture@aof.test"], root);
     await git(["config", "user.name", "aof fixture"], root);
-    await writeUnder(root, "src/a.mjs", "export const a = 1;\n");
+    await writeUnder(root, "packages/core/src/a.mjs", "export const a = 1;\n");
     await writeUnder(root, "README.md", "# fixture\n");
     await writeUnder(root, "wiki/work/07_m/STATE.md", "---\ndoc: state\n---\n\n## Notes\n\n- base note\n");
     await writeUnder(root, "wiki/work/07_milestone_m/SPEC.md", frontmatter({
@@ -144,42 +144,42 @@ function recordingDouble() {
 
 const DIRT_ROWS = [
   {
-    dirt: "one unstaged edit to a tracked file `src/a.mjs`",
-    apply: async (wt) => writeUnder(wt, "src/a.mjs", "export const a = 2;\n"),
+    dirt: "one unstaged edit to a tracked file `packages/core/src/a.mjs`",
+    apply: async (wt) => writeUnder(wt, "packages/core/src/a.mjs", "export const a = 2;\n"),
     committedAs: ["M src/a.mjs"],
   },
   {
-    dirt: "one untracked file `src/b.mjs`",
-    apply: async (wt) => writeUnder(wt, "src/b.mjs", "export const b = 1;\n"),
+    dirt: "one untracked file `packages/core/src/b.mjs`",
+    apply: async (wt) => writeUnder(wt, "packages/core/src/b.mjs", "export const b = 1;\n"),
     committedAs: ["A src/b.mjs"],
   },
   {
-    dirt: "one unstaged deletion of a tracked file `src/a.mjs`",
+    dirt: "one unstaged deletion of a tracked file `packages/core/src/a.mjs`",
     apply: async (wt) => unlink(path.join(wt, "src", "a.mjs")),
     committedAs: ["D src/a.mjs"],
   },
   {
-    dirt: "one staged rename of `src/a.mjs` to `src/c.mjs`",
-    apply: async (wt) => { await git(["mv", "src/a.mjs", "src/c.mjs"], wt); },
+    dirt: "one staged rename of `packages/core/src/a.mjs` to `packages/core/src/c.mjs`",
+    apply: async (wt) => { await git(["mv", "packages/core/src/a.mjs", "packages/core/src/c.mjs"], wt); },
     committedAs: ["R100 src/a.mjs src/c.mjs"],
   },
   {
-    dirt: "an edit to `src/a.mjs` and an untracked `runs/n/r1.json`",
-    apply: async (wt) => { await writeUnder(wt, "src/a.mjs", "export const a = 3;\n"); await writeUnder(wt, "runs/n/r1.json", "{}\n"); },
+    dirt: "an edit to `packages/core/src/a.mjs` and an untracked `runs/n/r1.json`",
+    apply: async (wt) => { await writeUnder(wt, "packages/core/src/a.mjs", "export const a = 3;\n"); await writeUnder(wt, "runs/n/r1.json", "{}\n"); },
     committedAs: ["A runs/n/r1.json", "M src/a.mjs"],
   },
 ];
 
 const AOF_ROWS = [
   {
-    dirt: "an edit to `.aof/aof.config.json` and an edit to `src/a.mjs`",
-    apply: async (wt) => { await writeUnder(wt, ".aof/aof.config.json", "{ \"name\": \"edited\" }\n"); await writeUnder(wt, "src/a.mjs", "export const a = 9;\n"); },
-    answer: { committed: true }, committed: ["src/a.mjs"], porcelainAfter: [" M .aof/aof.config.json"],
+    dirt: "an edit to `.aof/aof.config.json` and an edit to `packages/core/src/a.mjs`",
+    apply: async (wt) => { await writeUnder(wt, ".aof/aof.config.json", "{ \"name\": \"edited\" }\n"); await writeUnder(wt, "packages/core/src/a.mjs", "export const a = 9;\n"); },
+    answer: { committed: true }, committed: ["packages/core/src/a.mjs"], porcelainAfter: [" M .aof/aof.config.json"],
   },
   {
-    dirt: "an untracked `.aof/notes.json` and an untracked `src/b.mjs`",
-    apply: async (wt) => { await writeUnder(wt, ".aof/notes.json", "{}\n"); await writeUnder(wt, "src/b.mjs", "export const b = 1;\n"); },
-    answer: { committed: true }, committed: ["src/b.mjs"], porcelainAfter: ["?? .aof/notes.json"],
+    dirt: "an untracked `.aof/notes.json` and an untracked `packages/core/src/b.mjs`",
+    apply: async (wt) => { await writeUnder(wt, ".aof/notes.json", "{}\n"); await writeUnder(wt, "packages/core/src/b.mjs", "export const b = 1;\n"); },
+    answer: { committed: true }, committed: ["packages/core/src/b.mjs"], porcelainAfter: ["?? .aof/notes.json"],
   },
   {
     dirt: "an edit to `.aof/aof.config.json` alone",
@@ -279,15 +279,15 @@ export const meshWorkerCommitDiffTests = [
   },
 
   // ════════════════════════════════════════════════════════════════════════════
-  // 129/03 task 00 — commitWorktreeChanges moves to src/mesh/worktree.mjs and gains a
-  // paths scope; resolveRefInWorktree moves to src/work/dispatch.mjs; both re-exported
+  // 129/03 task 00 — commitWorktreeChanges moves to packages/core/src/mesh/worktree.mjs and gains a
+  // paths scope; resolveRefInWorktree moves to packages/core/src/work/dispatch.mjs; both re-exported
   // ════════════════════════════════════════════════════════════════════════════
   {
     name: "129/03 task 00 — the definition lives in worktree.mjs and the re-export is the same reference",
     run: async () => {
       assert.strictEqual(commitWorktreeChanges, commitWorktreeChangesFromHome, "both bindings are the same function");
       const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
       const sink = adapter + "\n" + implementation;
       assert.doesNotMatch(sink, /function\s+commitWorktreeChanges\b/u, "worker-execution.mjs contains no `function commitWorktreeChanges` definition");
       assert.match(adapter, /"commitWorktreeChanges":\s*meshWorktreeServices\.commitWorktreeChanges/u, "the compatibility API returns the supplied worktree operation");
@@ -342,7 +342,7 @@ export const meshWorkerCommitDiffTests = [
     name: `129/03 task 00 — the runner is resolved from exec first, then pushExec [${row.label}]`,
     run: () => withMoveFixture(async ({ worktree, t0 }) => {
       // Real dirt in the real tree: if the real runner received anything, the tree would change.
-      await writeUnder(worktree, "src/a.mjs", "export const a = 2;\n");
+      await writeUnder(worktree, "packages/core/src/a.mjs", "export const a = 2;\n");
       const before = await porcelainLines(worktree);
       const double = recordingDouble();
       const other = recordingDouble();
@@ -364,7 +364,7 @@ export const meshWorkerCommitDiffTests = [
   })),
   ...[
     { verb: "add", stderr: "index locked", names: ["git add", "index locked"], script: { add: { status: 1, stderr: "index locked" } } },
-    { verb: "commit", stderr: "hook rejected", names: ["git commit", "hook rejected"], script: { diff: { status: 0, stdout: "src/a.mjs\n" }, commit: { status: 1, stderr: "hook rejected" } } },
+    { verb: "commit", stderr: "hook rejected", names: ["git commit", "hook rejected"], script: { diff: { status: 0, stdout: "packages/core/src/a.mjs\n" }, commit: { status: 1, stderr: "hook rejected" } } },
   ].map((row) => ({
     name: `129/03 task 00 — a failing add or commit throws commit-failed with the verb named [${row.verb} / ${row.stderr}]`,
     run: async () => {
@@ -384,7 +384,7 @@ export const meshWorkerCommitDiffTests = [
   {
     name: "129/03 task 00 — a failing reset of the .aof home is best-effort and does not fail the commit",
     run: async () => {
-      const { exec, calls } = scriptedExec({ reset: { status: 1, stderr: "pathspec did not match" }, diff: { status: 0, stdout: "src/a.mjs\n" } });
+      const { exec, calls } = scriptedExec({ reset: { status: 1, stderr: "pathspec did not match" }, diff: { status: 0, stdout: "packages/core/src/a.mjs\n" } });
       const answer = await commitWorktreeChanges("/tmp/wt", { message: "m", node: "n", exec });
       assert.deepEqual(answer, { committed: true }, "the answer is { committed: true }");
       assert.ok(calls.some((call) => call.args.includes("commit")), "the commit invocation was made");
@@ -394,7 +394,7 @@ export const meshWorkerCommitDiffTests = [
     name: "129/03 task 00 — the worker's two call sites are unchanged lines",
     run: async () => {
       const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
       const sink = adapter + "\n" + implementation;
       const sites = [...sink.matchAll(/\bcommitWorktreeChanges\s*\(/gu)];
       assert.equal(sites.length, 2, "exactly two commitWorktreeChanges( call sites");
@@ -461,7 +461,7 @@ export const meshWorkerCommitDiffTests = [
     run: async () => {
       assert.strictEqual(resolveRefInWorktree, resolveRefInWorktreeFromHome, "both bindings are the same function");
       const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
       const sink = adapter + "\n" + implementation;
       assert.doesNotMatch(sink, /function\s+resolveRefInWorktree\b/u, "worker-execution.mjs contains no `function resolveRefInWorktree` definition");
       assert.doesNotMatch(sink, /function\s+worktreeWorkDir\b/u, "…and no `function worktreeWorkDir` definition");
@@ -472,7 +472,7 @@ export const meshWorkerCommitDiffTests = [
       assert.match(home, /function\s+worktreeWorkDir\b/u, "…and worktreeWorkDir");
       // worktree.mjs GAINS no import of ../work.mjs: its one pre-existing `loadWorkspace` import
       // line is the only one, and it takes no `findWork` — the resolver's edge is dispatch.mjs's.
-      const worktreeSource = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/worktree.mjs"), "utf8"));
+      const worktreeSource = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/worktree.mjs"), "utf8"));
       assert.ok(dependencySpecifiers(worktreeSource).some(edge => edge.parameter === "workServices" && edge.specifier === "../work.mjs"), "the worktree constructor receives the work service");
       const workImports = [...worktreeSource.matchAll(/const\s*\{([^}]*)\}\s*=\s*workServices/gmu)];
       assert.equal(workImports.length, 1, "worktree.mjs carries exactly its one pre-existing ../work.mjs import line");

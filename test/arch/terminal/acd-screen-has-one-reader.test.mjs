@@ -1,13 +1,13 @@
 // test/arch/terminal/acd-screen-has-one-reader.test.mjs — FF-13801, THE SCREEN HAS ONE READER
 // (milestone 138 / story 00, task 06; 138/ADR-001 §1 §5, ADR-002 §4 §6).
 //
-// Three things hold over the live `src/**` tree:
-//   1. `@xterm/headless` is imported — statically or by `import()` — by `src/terminal/screen.mjs`
+// Three things hold over the live `packages/core/src/**` tree:
+//   1. `@xterm/headless` is imported — statically or by `import()` — by `packages/core/src/terminal/screen.mjs`
 //      and by no other module;
 //   2. the comment-stripped session driver spells none of the byte readers that moved into the door
 //      (`ANSI_ESCAPE_RE`, `TUI_READY_MARKER`, `2004h`, `PARKED_PASTE_RE`, `PROVIDER_WAIT_RE`,
 //      `hasVisibleText`, `screenTail`);
-//   3. no comment-stripped module but `src/terminal/session-screen.mjs` spells the byte gate's
+//   3. no comment-stripped module but `packages/core/src/terminal/session-screen.mjs` spells the byte gate's
 //      markers, `?2004h` or `?2004l`.
 // Comments are stripped the way `acd-worker-driver-no-headless-print` strips them, so a comment that
 // narrates the move is never a violation. Each spelling is PLANTED into a copy of the live sources to
@@ -33,8 +33,8 @@ function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-// screenReaderViolations(files) — `files` is `[{ rel, source }]` over `src/**`, `rel` relative to
-// `src/`. Answers `[{ file, spelling }]`, `file` repo-relative.
+// screenReaderViolations(files) — `files` is `[{ rel, source }]` over `packages/core/src/**`, `rel` relative to
+// `packages/core/src/`. Answers `[{ file, spelling }]`, `file` repo-relative.
 export function screenReaderViolations(files) {
   const violations = [];
   for (const { rel, source } of files) {
@@ -86,10 +86,10 @@ export const archTests = [
     },
   },
   ...[
-    { plant: "`import(\"@xterm/headless\")` added to `src/loop-bounds.mjs`", rel: "src/loop-bounds.mjs", edit: (source) => `${source}\nexport const loadScreen = () => import("@xterm/headless");\n`, spelling: EMULATOR },
+    { plant: "`import(\"@xterm/headless\")` added to `packages/core/src/loop-bounds.mjs`", rel: "packages/core/src/loop-bounds.mjs", edit: (source) => `${source}\nexport const loadScreen = () => import("@xterm/headless");\n`, spelling: EMULATOR },
     { plant: "`const hasVisibleText = 0;` added to the driver", rel: DRIVER, edit: (source) => `${source}\nconst hasVisibleText = 0;\n`, spelling: "hasVisibleText" },
     { plant: "`PROVIDER_WAIT_RE` added to the driver's import from `loop-bounds.mjs`", rel: DRIVER, edit: (source) => source.replace('import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";', 'import { DEFAULT_HEARTBEAT_MS, PROVIDER_WAIT_RE } from "@aof/contracts/loop-bounds";'), spelling: "PROVIDER_WAIT_RE" },
-    { plant: "the string `\"\\u001b[?2004h\"` added to `src/terminal/screen.mjs`", rel: MODEL, edit: (source) => `${source}\nexport const PASTE_ON = "\\u001b[?2004h";\n`, spelling: "?2004h" },
+    { plant: "the string `\"\\u001b[?2004h\"` added to `packages/core/src/terminal/screen.mjs`", rel: MODEL, edit: (source) => `${source}\nexport const PASTE_ON = "\\u001b[?2004h";\n`, spelling: "?2004h" },
   ].map(({ plant: label, rel, edit, spelling }) => ({
     name: `arch/138 FF-13801 outline — each plant turns the control red, naming the file and the spelling [${label}]`,
     run: async () => {

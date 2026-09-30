@@ -15,8 +15,8 @@ import { mkdtemp, mkdir, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore, publishWorkspaceSnapshot } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../src/assignment-record.mjs";
+import { openGlobalWorkProjectionStore, publishWorkspaceSnapshot } from "../../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../packages/core/src/assignment-record.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const storeSourcePath = path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs");

@@ -1,8 +1,8 @@
 // Traceability wiring for milestone 33 / story 00 — per-install node identity.
 //
 // Covers EVERY @executable scenario in tasks/02_backcompat-migrate-doctor.feature,
-// exercising src/node-identity.mjs's migrateIdentity IN-PROCESS over injected
-// committed-config/sidecar paths, and src/commands/doctor.mjs's `work:doctor`
+// exercising packages/core/src/node-identity.mjs's migrateIdentity IN-PROCESS over injected
+// committed-config/sidecar paths, and packages/core/src/commands/doctor.mjs's `work:doctor`
 // mesh-identity-committed warn-group via the real command core against a temp
 // fixture repo. One test object per @executable scenario (Scenario-Outline rows
 // folded into one entry iterating the rows), each name tracing to feature +
@@ -17,9 +17,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { migrateIdentity } from "../../src/node-identity.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { migrateIdentity } from "../../packages/core/src/node-identity.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 
 async function fixtureRepo({ committedMesh } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-migrate-doctor-"));

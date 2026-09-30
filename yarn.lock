@@ -75,6 +75,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/repository@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@aof/repository@workspace:."
+  dependencies:
+    "@yarnpkg/parsers": "npm:3.1.0"
+    ajv: "npm:^8.20.0"
+    aof: "workspace:*"
+    esbuild: "npm:0.28.1"
+    postject: "npm:1.0.0-alpha.6"
+  dependenciesMeta:
+    esbuild@0.25.12:
+      built: true
+    esbuild@0.28.1:
+      built: true
+    fsevents@2.3.3:
+      built: true
+    node-pty@1.1.0:
+      built: true
+  languageName: unknown
+  linkType: soft
+
 "@aof/server@workspace:*, @aof/server@workspace:packages/server":
   version: 0.0.0-use.local
   resolution: "@aof/server@workspace:packages/server"
@@ -88,6 +109,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aof/ui@workspace:ui"
   dependencies:
+    "@aof/messaging": "workspace:*"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
@@ -1853,9 +1875,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aof@workspace:.":
+"aof@workspace:*, aof@workspace:packages/core":
   version: 0.0.0-use.local
-  resolution: "aof@workspace:."
+  resolution: "aof@workspace:packages/core"
   dependencies:
     "@aof/contracts": "workspace:*"
     "@aof/effects": "workspace:*"
@@ -1870,22 +1892,6 @@ __metadata:
     "@aof/work-graph": "workspace:*"
     "@aof/work-loop": "workspace:*"
     "@inquirer/prompts": "npm:^8.4.2"
-    "@xterm/headless": "npm:6.0.0"
-    "@yarnpkg/parsers": "npm:3.1.0"
-    ajv: "npm:^8.20.0"
-    esbuild: "npm:0.28.1"
-    node-pty: "npm:1.1.0"
-    postject: "npm:1.0.0-alpha.6"
-    ws: "npm:^8.21.0"
-  dependenciesMeta:
-    esbuild@0.25.12:
-      built: true
-    esbuild@0.28.1:
-      built: true
-    fsevents@2.3.3:
-      built: true
-    node-pty@1.1.0:
-      built: true
   bin:
     aof: ./bin/aof.mjs
   languageName: unknown

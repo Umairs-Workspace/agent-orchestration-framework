@@ -9,15 +9,15 @@
 // data level (API-independent, durable) — the behavioural "run twice = no-op" is the
 // concern of story 02's .feature over the real engine.
 //
-// GUARD-IF-PRESENT: a clean no-op until src/work/upgrade.mjs exists; arms on build.
+// GUARD-IF-PRESENT: a clean no-op until packages/core/src/work/upgrade.mjs exists; arms on build.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import * as work from "../../../src/work.mjs";
+import * as work from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UPGRADE_MODULE = path.join(repoRoot, "src", "work", "upgrade.mjs");
+const UPGRADE_MODULE = path.join(repoRoot, "packages", "core", "src", "work", "upgrade.mjs");
 
 function endpointOf(descriptor, kind) {
   const candidates = kind === "from"

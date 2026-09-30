@@ -54,7 +54,7 @@ const lf = (source) => String(source).replace(/\r\n/g, "\n");
 // weakens nothing: a handler that composed or appended the instruction ITSELF would
 // still be caught.
 function withoutDriverBoundary(code) {
-  // 119/01 — `(?:\.\.?\/)+` rather than a pinned `./`: the sink now sits in `src/mesh/` and reaches
+  // 119/01 — `(?:\.\.?\/)+` rather than a pinned `./`: the sink now sits in `packages/core/src/mesh/` and reaches
   // the driver as `../agent-session-driver.mjs`. A pinned spelling silently stopped cutting the
   // boundary block, which put every re-exported name back into the "body" these aims read.
   return code.replace(/^[ \t]*(?:import|export)\s*\{[\s\S]*?\}\s*from\s*["'](?:\.\.?\/)+agent-session-driver\.mjs["'];?/gm, "");
@@ -230,7 +230,7 @@ export const agentSessionDriverGateAimTests = [
     run: async () => {
       const s = await sources();
       const constants = sourceConstants(s.gate.stripped);
-      const sourceSide = constants.filter((c) => c.target.startsWith("src/") || c.target.startsWith("packages/"));
+      const sourceSide = constants.filter((c) => c.target.startsWith("packages/core/src/") || c.target.startsWith("packages/"));
       assert.equal(sourceSide.length, 2, `exactly two source-path constants: ${constants.map((c) => `${c.name}=${c.target}`).join(", ")}`);
       assert.deepEqual(
         sourceSide.map((c) => [c.name, c.target]).sort(),

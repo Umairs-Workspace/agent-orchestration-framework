@@ -103,7 +103,7 @@ const CONFIG_SCHEME = "config";
 export const HARNESS_KINDS = Object.freeze({ prompt: "prompt", code: "code" });
 export const HARNESS_OF_RECORD = Object.freeze({
   kind: HARNESS_KINDS.prompt,
-  document: "src/bundle/commands/continue.md",
+  document: "packages/core/assets/commands/continue.md",
 });
 
 // The three conditions the fall-back can rest on. All three are the SAME ground — the
@@ -166,7 +166,10 @@ export function ceilingRecordsFor(model, key) {
 // bodies installed into a project. An asset naming a bound is not the running program acting
 // on it, and a check that counted one would be satisfied by the very declaration it exists
 // to test.
-export const isShippedAsset = (rel) => String(rel).replaceAll("\\", "/").includes("bundle/");
+export const isShippedAsset = (rel) => {
+  const normalized = String(rel).replaceAll("\\", "/");
+  return normalized.includes("bundle/") || normalized.startsWith("packages/core/assets/");
+};
 
 // COMMENTS AND STRING LITERALS ARE NOT CODE, and the mask preserves OFFSETS so a line number
 // and a brace depth still mean what they say. A dotted key inside a quoted string is a

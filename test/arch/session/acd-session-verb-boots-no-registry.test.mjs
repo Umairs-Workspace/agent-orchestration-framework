@@ -4,10 +4,10 @@
 //   "A presence ping fires on every prompt an operator types. It writes a small record and exits."
 //
 // What it used to cost was the entire command surface. Measured at HEAD before this story:
-// `src/cli.mjs` took 363–384 ms to import, of which `src/command-core.mjs` alone was 324–351 ms,
+// `packages/core/src/cli.mjs` took 363–384 ms to import, of which `packages/core/src/command-core.mjs` alone was 324–351 ms,
 // because that module statically imports all 88 command modules; the whole process was 0.609 s
-// against 0.150 s for the session module alone. `src/spine/face.mjs` goes with it for the same
-// reason and no other — it reaches the registry and measures the same. `src/work.mjs` STAYS: 16 ms,
+// against 0.150 s for the session module alone. `packages/core/src/spine/face.mjs` goes with it for the same
+// reason and no other — it reaches the registry and measures the same. `packages/core/src/work.mjs` STAYS: 16 ms,
 // and moving it would be churn dressed as a fix.
 //
 // ── THE INVARIANT IS THE CLOSURE, AND DELIBERATELY NOT A DURATION ────────────────────────────
@@ -51,12 +51,12 @@ import { importClosure } from "../audit/acd-audit-never-imports-project-code.tes
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const selfPath = fileURLToPath(import.meta.url);
 
-const CLI_ENTRY = "src/cli.mjs";
-const SESSION_MODULE = "src/commands/mesh/session.mjs";
+const CLI_ENTRY = "packages/core/src/cli.mjs";
+const SESSION_MODULE = "packages/core/src/commands/mesh/session.mjs";
 const SESSION_IMPLEMENTATION = "packages/mesh/src/commands/session.mjs";
-const REGISTRY = "src/application/bindings/command-core.mjs";
-const FACE = "src/application/bindings/spine/face.mjs";
-const WORKSPACE = "src/application/default-workspace.mjs";
+const REGISTRY = "packages/core/src/application/bindings/command-core.mjs";
+const FACE = "packages/core/src/application/bindings/spine/face.mjs";
+const WORKSPACE = "packages/core/src/application/default-workspace.mjs";
 
 // Floors, not equalities. The CLI entry's closure measured 25 modules after this story (277 before)
 // and the session module's 20; a ceiling would red on any story that adds a leaf, and a floor is
@@ -130,7 +130,7 @@ export function sessionArmProblems(cliCode) {
   for (const use of REGISTRY_USES) {
     const at = body.indexOf(use.token);
     if (at >= 0 && at < arm) {
-      problems.push(`src/cli.mjs reaches the registry (${use.label}) before the session arm dispatches — a presence ping that fires on every prompt would pay the whole command surface for a code path that touches none of it.`);
+      problems.push(`packages/core/src/cli.mjs reaches the registry (${use.label}) before the session arm dispatches — a presence ping that fires on every prompt would pay the whole command surface for a code path that touches none of it.`);
     }
   }
   return problems;
@@ -238,12 +238,12 @@ export const archTests = [
 
       const cliCode = await readFile(path.join(repoRoot, CLI_ENTRY), "utf8");
       const shipped = sessionArmProblems(cliCode);
-      assert.deepEqual(shipped, [], `src/cli.mjs dispatches the session arm above every registry use:\n  ${shipped.join("\n  ")}`);
+      assert.deepEqual(shipped, [], `packages/core/src/cli.mjs dispatches the session arm above every registry use:\n  ${shipped.join("\n  ")}`);
 
       // THE MATRIX, driven against PLANTED sources so each row is a row rather than one shipped
       // file inspected five times.
       assert.equal(lazyRegistryProblems([{ rel: SESSION_MODULE, code: 'const { invoke } = await import("../command-core.mjs");' }]).length, 1, "a lazy registry import IN the session module fails, naming that module");
-      assert.equal(lazyRegistryProblems([{ rel: "src/mesh-session-store.mjs", code: 'const face = await import("./spine/face.mjs");' }]).length, 1, "…and one in a module its closure reaches fails, naming that module");
+      assert.equal(lazyRegistryProblems([{ rel: "packages/core/src/mesh-session-store.mjs", code: 'const face = await import("./spine/face.mjs");' }]).length, 1, "…and one in a module its closure reaches fails, naming that module");
       assert.deepEqual(lazyRegistryProblems([{ rel: SESSION_MODULE, code: '// await import("../command-core.mjs") is what we must NOT do\nexport const x = 1;' }]), [], "…while the same words inside a comment are prose, not a reach");
 
       const armed = (bodyLines) => `export async function run(argv) {\n  const [command, ...rest] = argv;\n${bodyLines}\n}\n`;

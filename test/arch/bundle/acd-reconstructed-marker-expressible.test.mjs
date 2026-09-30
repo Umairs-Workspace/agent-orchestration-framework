@@ -15,7 +15,7 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isImportRecord, IMPORT_ITEM_PREFIX } from "../../../src/memory/local-indexing.mjs";
+import { isImportRecord, IMPORT_ITEM_PREFIX } from "../../../packages/core/src/memory/local-indexing.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const UPGRADE_MODULE = path.join(repoRoot, "packages", "work", "src", "upgrade.mjs");
@@ -46,7 +46,7 @@ export const archTests = [
       // registry with no such token cannot carry m39's backfill (ADR-008 readiness).
       assert.ok(
         /\breconstruct(s|ed|ion)?\b/i.test(source),
-        "src/work/upgrade.mjs expresses the reconstructed-marker distinction (a `reconstructs` descriptor flag / `reconstructed` frontmatter marker) — the readiness criterion for m39's backfill",
+        "packages/core/src/work/upgrade.mjs expresses the reconstructed-marker distinction (a `reconstructs` descriptor flag / `reconstructed` frontmatter marker) — the readiness criterion for m39's backfill",
       );
       // Non-vacuity: the token detector does not fire on unrelated registry prose.
       assert.ok(!/\breconstruct(s|ed|ion)?\b/i.test("const migrations = [{ from: 0, to: 1, id: 'stamp' }];"), "the detector does NOT fire on a plain, non-reconstructing registry");

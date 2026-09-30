@@ -19,14 +19,14 @@ const RUN_RECORD_KEYS_AT_M68 = [
 // record; every other later claim still rides the opaque brief.
 const RUN_RECORD_KEYS_AT_M131 = [...RUN_RECORD_KEYS_AT_M68, "asks"];
 const dispatchFiles = [
-  "src/work/dispatch.mjs",
-  "src/commands/dispatch.mjs",
+  "packages/core/src/work/dispatch.mjs",
+  "packages/core/src/commands/dispatch.mjs",
   "packages/mesh/src/assignment-reclaim.mjs",
   "packages/mesh/src/commands/terminal-resume.mjs",
-  "src/assignment-record.mjs",
+  "packages/core/src/assignment-record.mjs",
 ];
 
-async function sourceModules(dir = path.join(root, "src")) {
+async function sourceModules(dir = path.join(root, "packages", "core", "src")) {
   const modules = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const target = path.join(dir, entry.name);

@@ -22,7 +22,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { nextWork } from "../../../src/work.mjs";
+import { nextWork } from "../../../packages/core/src/work.mjs";
 
 function frontmatter(fields) {
   const body = Object.entries(fields)

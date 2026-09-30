@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 
-import { acceptorCommand, reversionDecision, withdrawalOnHarm } from "../../../src/commands/acceptor.mjs";
+import { acceptorCommand, reversionDecision, withdrawalOnHarm } from "../../../packages/core/src/commands/acceptor.mjs";
 import { functionBody } from "../../support/source-slice.mjs";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 

@@ -25,12 +25,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { setItemStatus, rollbackItemStatus, loadWorkspace } from "../../src/work.mjs";
+import { setItemStatus, rollbackItemStatus, loadWorkspace } from "../../packages/core/src/work.mjs";
 // The lifecycle TABLE lives with the frozen five words it keys on (ADR-009/F); work.mjs is
 // the writer that imports it.
-import { itemStatusEdges, ITEM_STATUS_EDGES } from "../../src/acceptance-horizon.mjs";
-import { transitionRunStart } from "../../src/effects/run-transitions.mjs";
-import { invoke } from "../../src/command-core.mjs";
+import { itemStatusEdges, ITEM_STATUS_EDGES } from "../../packages/core/src/acceptance-horizon.mjs";
+import { transitionRunStart } from "../../packages/core/src/effects/run-transitions.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 
 // A multi-key record doc with `status` and `updated` as INTERIOR keys, so "only these two
 // lines change" is exercised against neighbours on both sides.

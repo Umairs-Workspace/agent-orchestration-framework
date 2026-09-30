@@ -17,8 +17,8 @@ import path from "node:path";
 import {
   driveInteractiveClaudeSession,
   defaultWatchTranscriptCompletion,
-} from "../../../src/mesh/worker-execution.mjs";
-import { claudeProjectsDir } from "../../../src/work/observe.mjs";
+} from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 // A CEILING ON EVERY TERMINAL `await watch` BELOW. Each scenario drives the watch to a

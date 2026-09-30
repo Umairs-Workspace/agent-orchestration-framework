@@ -3,12 +3,12 @@
 //
 //   "The INSTALLED bundle trees — `.claude/`, `.codex/`, `.opencode/`, the render targets
 //    of `aof work init` / `aof work update` — are pinned `text eol=lf` in .gitattributes,
-//    exactly as their LF-pinned `src/bundle/**` source already is."
+//    exactly as their LF-pinned `packages/core/assets/**` source already is."
 //
-// WHY THIS EXISTS. `planApplyActions` (src/render-plan.mjs) classifies a managed file by
+// WHY THIS EXISTS. `planApplyActions` (packages/core/src/render-plan.mjs) classifies a managed file by
 // comparing its ON-DISK BYTES against both the desired render's hash and the install
 // manifest's, and refuses to overwrite a divergent one without `--force`. The renderer
-// emits LF; `src/bundle/**` is pinned LF. With the install targets unpinned, a
+// emits LF; `packages/core/assets/**` is pinned LF. With the install targets unpinned, a
 // `core.autocrlf=true` Windows checkout writes CRLF and every rendered file is drift by
 // construction — so `aof work update` stops re-rendering the repo's own bundle, silently,
 // and the installed prompts freeze at whatever text was last force-written. Measured at
@@ -50,7 +50,7 @@ const INSTALL_TARGETS = [
 
 // The control proving the matcher can say no. A source file outside the three install
 // trees and outside every other pin in .gitattributes.
-const CONTROL = "src/render-plan.mjs";
+const CONTROL = "packages/core/src/render-plan.mjs";
 
 // Parse `git check-attr text eol -- <paths>` into { path: { attr: value } }.
 function checkAttr(paths) {

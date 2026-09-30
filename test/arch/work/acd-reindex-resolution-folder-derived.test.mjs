@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rename, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listItems, findWork } from "../../../src/work.mjs";
+import { listItems, findWork } from "../../../packages/core/src/work.mjs";
 
 function frontmatter(fields) {
   const lines = Object.entries(fields).map(([key, value]) => `${key}: ${value}`);

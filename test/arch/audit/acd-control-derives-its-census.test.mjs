@@ -15,7 +15,7 @@
 //     `startsWith("work-doctor")` filter is backed by `assert.ok(edges >= 1, …)`, so a move REDS it.
 //   · SILENT — the assertion goes vacuous. `test/arch/mesh/acd-mesh-ui-single-data-command.test.mjs` set
 //     `files = []` inside a `catch` and then asserted `joiners.length <= 1`, so once
-//     `src/commands/mesh-*.mjs` moves the claim is asserted over the empty set forever, with no
+//     `packages/core/src/commands/mesh-*.mjs` moves the claim is asserted over the empty set forever, with no
 //     message anywhere. This story de-silences it; the sweep below is what stops the next one.
 //   · UNFIXABLE — loud, but its subject is an immutable delivered document. FF-11903 is that class.
 //
@@ -24,7 +24,7 @@
 // `readdir`, or a locally declared helper that reaches one, rooted at this repository's own
 // directory by the statement, by the helper's declaration, or by the call sites of the helper it
 // sits in), or from a READ handed a root-derived path as its first positional argument
-// (`readFile(path.join(root, …))`, `loadLoops(path.join(root, "src", "bundle"))`), and then through
+// (`readFile(path.join(root, …))`, `loadLoops(path.join(root, "packages", "core", "assets"))`), and then through
 // PURE SET-NARROWING and nothing else — `filter`, `map`, `sort`, `flat`, `slice`, a spread, `new Set`.
 // A CALL is not a narrowing: `check([...files, planted])` may add a plant, and the ~50 red probes
 // that assert "exactly one offender" over the real tree plus a plant are exact for good reason. A
@@ -815,7 +815,7 @@ export const archTests = [
       assert.deepEqual(unguardedPredicateFilters(source), [], `${MESH_UI}'s walk carries a non-vacuity leg`);
       assert.match(clean, /assert\.ok\(\s*\n?\s*files\.length > 0/u, "it asserts its swept set is non-empty BEFORE asserting anything over it");
       assert.match(clean, /found no mesh command module/u, "…and the failure message names the directory that was walked");
-      assert.match(clean, /entry\.isDirectory\(\)/u, "the walk is recursive, so 119/02's `src/commands/mesh/` interior does not empty it");
+      assert.match(clean, /entry\.isDirectory\(\)/u, "the walk is recursive, so 119/02's `packages/core/src/commands/mesh/` interior does not empty it");
       assert.match(clean, /startsWith\("mesh\/"\)/u, "…and the family's directory spelling resolves to the same subject as the flat one");
     },
   },
@@ -823,9 +823,9 @@ export const archTests = [
   {
     name: "arch/119 FF-11902: a move REDS a control — the four ways a sweep goes quiet each fail naming the subject",
     run: async () => {
-      const DIR = "src/commands";
+      const DIR = "packages/core/src/commands";
       // (1) the directory it walks is renamed — the walk THROWS rather than returning [].
-      await assert.rejects(async () => readdir(path.join(root, "src", "no-such-directory")), /ENOENT/u, "a renamed directory throws; a catch substituting [] is what hides it");
+      await assert.rejects(async () => readdir(path.join(root, "packages", "core", "src", "no-such-directory")), /ENOENT/u, "a renamed directory throws; a catch substituting [] is what hides it");
       // (2) every member matching the filename predicate moves into a subdirectory — the shape the
       //     detector refuses, driven over a plant with no floor.
       assert.equal(unguardedPredicateFilters(NAKED_PREFIX_FILTER).length, 1, "a predicate-narrowed walk with no floor is caught");

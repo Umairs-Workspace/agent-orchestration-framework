@@ -1,5 +1,5 @@
 // Fitness function for milestone 16 / ADR-005 (config-sourced budget / NO baked-in
-// literal). (a) The budgetGroup body in src/work/doctor-budget.mjs holds NO
+// literal). (a) The budgetGroup body in packages/core/src/work/doctor-budget.mjs holds NO
 // budget-magnitude integer literal — defaults live ONLY in the budgetsFromConfig
 // resolver (source-grep the group module, comments stripped per the house
 // strip-comments discipline). (b) BEHAVIOURALLY, the SAME over-length artifact flips
@@ -10,9 +10,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { doctorWork } from "../../../src/work/doctor.mjs";
-import { budgetGroup } from "../../../src/work/doctor-budget.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { doctorWork } from "../../../packages/core/src/work/doctor.mjs";
+import { budgetGroup } from "../../../packages/core/src/work/doctor-budget.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BUDGET_MODULE = path.join(repoRoot, "packages", "work", "src", "doctor", "budget.mjs");

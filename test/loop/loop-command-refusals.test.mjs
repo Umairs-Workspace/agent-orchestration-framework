@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
+import { loopCommand, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { completingDriver, loopFixture, treeFiles } from "./loop-command-probe.test.mjs";
 
 async function refusal(fn, code) {

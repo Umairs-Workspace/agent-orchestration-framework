@@ -25,13 +25,13 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { initWork } from "../../../src/work/init.mjs";
-import { partitionByCapability, synthesizeBundleConfig } from "../../../src/work/bundle-synthesis.mjs";
-import { ACD_BUNDLE_CAPABILITIES } from "../../../src/work/bundle-runtime.mjs";
-import { loadBundle } from "../../../src/work/bundle.mjs";
-import { CAPABILITIES, CAPABILITY_STATUS } from "../../../src/model.mjs";
+import { initWork } from "../../../packages/core/src/work/init.mjs";
+import { partitionByCapability, synthesizeBundleConfig } from "../../../packages/core/src/work/bundle-synthesis.mjs";
+import { ACD_BUNDLE_CAPABILITIES } from "../../../packages/core/src/work/bundle-runtime.mjs";
+import { loadBundle } from "../../../packages/core/src/work/bundle.mjs";
+import { CAPABILITIES, CAPABILITY_STATUS } from "../../../packages/core/src/model.mjs";
 
-const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src");
+const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src");
 const SOURCES = ["work/init.mjs", "work/update.mjs", "work/bundle-synthesis.mjs"];
 
 function stripComments(source) {

@@ -32,12 +32,12 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
 import { fileURLToPath } from "node:url";
-import { listItems, findWork, nextWork, validateWork } from "../../../src/work.mjs";
-import { materializeImport } from "../../../src/import/materialize.mjs";
-import { importStoreRoot, importMilestoneDir } from "../../../src/import/store.mjs";
+import { listItems, findWork, nextWork, validateWork } from "../../../packages/core/src/work.mjs";
+import { materializeImport } from "../../../packages/core/src/import/materialize.mjs";
+import { importStoreRoot, importMilestoneDir } from "../../../packages/core/src/import/store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-// The work-item resolver's ONE rule (mirrors src/work.mjs ITEM_RE) — used to PROVE the
+// The work-item resolver's ONE rule (mirrors packages/core/src/work.mjs ITEM_RE) — used to PROVE the
 // import store path/folder could never be enumerated, and to make the test non-vacuous.
 const ITEM_RE = /^(\d+)_(milestone|story|task|uat)_([a-z0-9-]+)$/;
 

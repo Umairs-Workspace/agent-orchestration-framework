@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CHECK_GROUPS } from "../../../src/work/doctor.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+import { CHECK_GROUPS } from "../../../packages/core/src/work/doctor.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
@@ -56,7 +56,7 @@ export const archTests = [
       const graph = await importGraph(scorerPath);
       assert.ok(graph.has(scorerPath));
       assert.ok(graph.size > 1, `scorer graph was non-vacuous: ${graph.size} modules`);
-      // 119/01 — the family moved to `src/work/`, so the filter matches the DIRECTORY it now sits in
+      // 119/01 — the family moved to `packages/core/src/work/`, so the filter matches the DIRECTORY it now sits in
       // rather than a `work-loops` filename prefix that no file carries any more.
       const registryModules = [...graph].filter((file) => /(?:^|[\/])src[\/]work[\/]loops[a-z0-9-]*\.mjs$/u.test(file));
       assert.deepEqual(registryModules, []);
@@ -67,7 +67,7 @@ export const archTests = [
   {
     name: "arch/53 FF-5309 (acd-loop-ready-registry-optional): doctor reaches the registry only through its deferred command invocation",
     run: async () => {
-      const doctor = stripComments(await readFile(path.join(root, "src/application/bindings/commands/doctor.mjs"), "utf8"));
+      const doctor = stripComments(await readFile(path.join(root, "packages/core/src/application/bindings/commands/doctor.mjs"), "utf8"));
       assert.doesNotMatch(doctor, /^import[^\n]+command-core\.mjs/mu, "a static command-core import closes the registry ring");
       assert.match(doctor, /const loadCommandCore = \(\) => provideCommandCore\(\)/u);
       assert.match(doctor, /createDoctorCommand\(\{[^}]*loadCommandCore/u);

@@ -17,11 +17,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ITEM_STATUS_EDGES, closesEpoch, isOpen } from "../../src/acceptance-horizon.mjs";
-import { setItemStatus } from "../../src/work.mjs";
-import { bundledFrozenSet, compileFrozenSet, readFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../src/frozen-set.mjs";
-import { initWork } from "../../src/work/init.mjs";
-import { updateWork } from "../../src/work/update.mjs";
+import { ITEM_STATUS_EDGES, closesEpoch, isOpen } from "../../packages/core/src/acceptance-horizon.mjs";
+import { setItemStatus } from "../../packages/core/src/work.mjs";
+import { bundledFrozenSet, compileFrozenSet, readFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../packages/core/src/frozen-set.mjs";
+import { initWork } from "../../packages/core/src/work/init.mjs";
+import { updateWork } from "../../packages/core/src/work/update.mjs";
 import {
   ACCEPTOR_EPOCH_CADENCE,
   ACCEPTOR_EPOCH_SPAN,
@@ -46,7 +46,7 @@ import {
   reviseCriterion,
   rulingsUnderCurrentCriterion,
   writeCriterion,
-} from "../../src/work-acceptor/criterion.mjs";
+} from "../../packages/core/src/work-acceptor/criterion.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 // The auditor's own record, read where a workspace carries it. Its `cadence:` is the other
@@ -83,7 +83,7 @@ async function milestoneAt(root, ref, status) {
 }
 
 // The move the framework actually makes, then the boundary asked about its RESULT. The
-// payload the seam raises carries `status` and `from` (`src/effects/item-transitions.mjs`),
+// payload the seam raises carries `status` and `from` (`packages/core/src/effects/item-transitions.mjs`),
 // and this returns exactly that pair so the predicate is asked the payload's own question.
 async function makeTheMove(root, ref, from, to) {
   const item = await milestoneAt(root, ref, from);
@@ -295,7 +295,7 @@ export const acceptorCriterionTests = [
       assert.ok(declared != null, "the auditor record declares a cadence");
       assert.equal(declared[1], ACCEPTOR_EPOCH_CADENCE, "the two agree");
 
-      const acceptorSource = await readFile(path.join(repoRoot, "src", "work-acceptor", "criterion.mjs"), "utf8");
+      const acceptorSource = await readFile(path.join(repoRoot, "packages", "core", "src", "work-acceptor", "criterion.mjs"), "utf8");
       assert.equal(
         /readFile\([^)]*instrument-audit/.test(acceptorSource) || acceptorSource.includes("loops/instrument-audit.md\""),
         false,
@@ -504,7 +504,7 @@ export const acceptorCriterionTests = [
       // Nothing had to be installed for that to be true: the record is absent from the
       // project, and absent from the bundle that installs into it.
       await assert.rejects(readFile(path.join(dir, ...CRITERION_RELPATH.split("/")), "utf8"), { code: "ENOENT" });
-      const descriptor = JSON.parse(await readFile(path.join(repoRoot, "src", "bundle", "bundle.json"), "utf8"));
+      const descriptor = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "bundle.json"), "utf8"));
       assert.equal(
         descriptor.members.some((member) => String(member?.target ?? "").replaceAll("\\", "/") === CRITERION_RELPATH),
         false,

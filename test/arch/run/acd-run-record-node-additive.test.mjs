@@ -47,7 +47,7 @@ export const archTests = [
     run: async () => {
       const { repo, item } = await makeItem();
       try {
-        const { startRun } = await import("../../../src/run-store.mjs");
+        const { startRun } = await import("../../../packages/core/src/run-store.mjs");
 
         // Non-vacuous anchor: the fourteen-key list's thirteen-key PREFIX is the
         // m20 freeze verbatim (names AND order — the supersede is additive-only).
@@ -79,7 +79,7 @@ export const archTests = [
     run: async () => {
       const { repo, item } = await makeItem();
       try {
-        const { startRun } = await import("../../../src/run-store.mjs");
+        const { startRun } = await import("../../../packages/core/src/run-store.mjs");
         const record = await startRun(item, { now: "2026-07-02T10:00:00.000Z" });
         assert.deepEqual(Object.keys(record), SEVENTEEN_KEYS, "the no-node record still carries the seventeen keys, in order");
         assert.equal(record.node, null, "node defaults to null");
@@ -96,7 +96,7 @@ export const archTests = [
     run: async () => {
       const { repo, item } = await makeItem();
       try {
-        const { readRuns } = await import("../../../src/run-store.mjs");
+        const { readRuns } = await import("../../../packages/core/src/run-store.mjs");
         const thirteen = {
           runId: "20260630T000000000Z-0000",
           itemRef: item.ref,

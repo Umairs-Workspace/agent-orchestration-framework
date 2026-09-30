@@ -36,10 +36,10 @@ import {
   parseCheckedDate,
   referenceBounds,
   referenceCorpusProblems,
-} from "../../src/harness-reference.mjs";
+} from "../../packages/core/src/harness-reference.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const CORPUS_REL = "src/harness-reference.mjs";
+const CORPUS_REL = "packages/core/src/harness-reference.mjs";
 const corpusUrl = pathToFileURL(path.join(repoRoot, CORPUS_REL)).href;
 
 // A row that passes, as the base every refusal is driven from — so each row below differs from an

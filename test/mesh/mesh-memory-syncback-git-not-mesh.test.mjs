@@ -29,11 +29,11 @@ import { WebSocket } from "ws";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 import { withMeshMemorySyncbackFixture } from "../support/mesh-memory-syncback-fixture.mjs";
 import { seedAssignment } from "../support/mesh-assign-fixture.mjs";
-import graphifyBackend from "../../src/memory/graphify-backend.mjs";
-import { buildDirectiveFrame, applyCloneCredentialRequestFrame, applyCloneUrlRequestFrame } from "../../src/control-stream-server.mjs";
-import { relayEnvelope } from "../../src/mesh/relay-client.mjs";
-import { serveRelay } from "../../src/mesh/relay.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+import graphifyBackend from "../../packages/core/src/memory/graphify-backend.mjs";
+import { buildDirectiveFrame, applyCloneCredentialRequestFrame, applyCloneUrlRequestFrame } from "../../packages/core/src/control-stream-server.mjs";
+import { relayEnvelope } from "../../packages/core/src/mesh/relay-client.mjs";
+import { serveRelay } from "../../packages/core/src/mesh/relay.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 
 // ------------------------------------------------------------ graphify ctx ----
 
@@ -253,7 +253,7 @@ export const meshMemorySyncbackGitNotMeshTests = [
         await writeFile(path.join(fx.root, "graphify-out", "graph.json"), "{\"nodes\":[],\"edges\":[]}\n", "utf8");
 
         const ignoreCheck = spawnSyncHardened("git", ["check-ignore", "-q", "graphify-out/graph.json"], { cwd: fx.root });
-        assert.equal(ignoreCheck.status, 0, "graphify-out/graph.json is recognised as git-ignored (.gitignore:4 graphify-out/, enforced by src/aof-gitignore.mjs)");
+        assert.equal(ignoreCheck.status, 0, "graphify-out/graph.json is recognised as git-ignored (.gitignore:4 graphify-out/, enforced by packages/core/src/aof-gitignore.mjs)");
         const tracked = fx.git(["ls-files"]).stdout.split(/\r?\n/).filter(Boolean).map((f) => f.replace(/\\/g, "/"));
         assert.ok(!tracked.some((f) => f.includes("graphify-out")), "graphify-out/graph.json is untracked");
 

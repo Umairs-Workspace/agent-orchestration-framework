@@ -25,16 +25,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { addWorktree, removeWorktree } from "../../../src/mesh/worktree.mjs";
-import { resolveRefInWorktree } from "../../../src/mesh/worker-execution.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { addWorktree, removeWorktree } from "../../../packages/core/src/mesh/worktree.mjs";
+import { resolveRefInWorktree } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 // The ref-resolution module. 129/03 (129/ADR-008 §4, ADR-005 §5) moved `resolveRefInWorktree`
-// and its `worktreeWorkDir` helper OUT of `src/mesh/worker-execution.mjs` INTO
-// `src/work/dispatch.mjs` — the lane's home — so the loop's wave can resolve an item as it lives
+// and its `worktreeWorkDir` helper OUT of `packages/core/src/mesh/worker-execution.mjs` INTO
+// `packages/core/src/work/dispatch.mjs` — the lane's home — so the loop's wave can resolve an item as it lives
 // in a lane without importing the module that imports the PTY driver. The structural leg below
 // (no `path.join(root, ref)`, resolution via `findWork(rootedWorkDir, itemRef)`) follows the
 // DEFINITION to its new home; the behavioural leg keeps importing the name from

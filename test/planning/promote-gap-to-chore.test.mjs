@@ -4,7 +4,7 @@
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
 // wired against the REAL registered command `work:promote-gap`
-// (src/commands/promote-gap-to-chore.mjs — composes over insert-shared.mjs's
+// (packages/core/src/commands/promote-gap-to-chore.mjs — composes over insert-shared.mjs's
 // runInsertTopLevel via the SAME "chore" type work:insert-chore uses),
 // invoked in-process through the command core (mirrors
 // test/work/stream/work-insert-top-level-places.test.mjs), scaffolding into a temp work
@@ -14,8 +14,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../src/command-core.mjs";
-import { findWork, validateWork } from "../../src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { findWork, validateWork } from "../../packages/core/src/work.mjs";
 import { withInsertFixture } from "../support/work-insert-fixture.mjs";
 
 // Extract a heading section's body: everything between the heading line and

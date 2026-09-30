@@ -17,14 +17,14 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { renderDiscord, sendDiscord } from "../../src/notify/discord.mjs";
-import { CHANNELS, EVENTS, NOTIFY_TIMEOUT_MS, buildNotifyEnvelope, notify, resolveNotifyConfig } from "../../src/notify/notify.mjs";
-import { askMessagesDir, readAskMessage, recordAskMessage } from "../../src/notify/ask-messages.mjs";
-import { writeMessagingSecret } from "../../src/notify/secret.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { renderDiscord, sendDiscord } from "../../packages/core/src/notify/discord.mjs";
+import { CHANNELS, EVENTS, NOTIFY_TIMEOUT_MS, buildNotifyEnvelope, notify, resolveNotifyConfig } from "../../packages/core/src/notify/notify.mjs";
+import { askMessagesDir, readAskMessage, recordAskMessage } from "../../packages/core/src/notify/ask-messages.mjs";
+import { writeMessagingSecret } from "../../packages/core/src/notify/secret.mjs";
+import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
 import {
   FLAT_LAYER_THRESHOLD,
   SOURCE_DIRECTORY_BUDGETS,
@@ -32,7 +32,7 @@ import {
   readTreeListing,
   sourceDirectoryBudgetViolations,
 } from "../arch/testing/acd-source-directory-budget.test.mjs";
-import { REGRESSION_DIVIDER, REGRESSION_HEADER, REGRESSION_HEADING } from "../../src/regression-record.mjs";
+import { REGRESSION_DIVIDER, REGRESSION_HEADER, REGRESSION_HEADING } from "../../packages/core/src/regression-record.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -164,8 +164,8 @@ export const notifyChannelsTests = [
   {
     name: "131/02 task00 — src/notify and test/notify are exemptions naming their members, and the live tree's budget holds",
     async run() {
-      const src = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "src/notify");
-      assert.ok(src, "src/notify is an exemption");
+      const src = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/notify");
+      assert.ok(src, "packages/core/src/notify is an exemption");
       for (const member of ["form.mjs", "form.d.mts", "notify.mjs", "discord.mjs", "ADR-005"]) assert.ok(src.why.includes(member), `its why names ${member}`);
       assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.some((entry) => entry.directory === "test/notify"), "test/notify is an exemption");
       const listing = await readTreeListing();
@@ -203,16 +203,16 @@ export const notifyChannelsTests = [
   {
     name: "131/02 task00 — the exemptions hold only while the family stays small (six rows)",
     async run() {
-      const live = (await readTreeListing()).filter((entry) => !["src/notify", "test/notify"].includes(entry.dir) && !(entry.name === "notify" && ["src", "test"].includes(entry.dir)));
+      const live = (await readTreeListing()).filter((entry) => !["packages/core/src/notify", "test/notify"].includes(entry.dir) && !(entry.name === "notify" && ["src", "test"].includes(entry.dir)));
       const withFiles = (dir, n) => [
         ...live,
         { dir: dir.split("/")[0], name: "notify", kind: "dir" },
         ...Array.from({ length: n }, (_, i) => ({ dir, name: `m${i}.mjs`, kind: "file" })),
       ];
-      const keepOther = (dir) => (dir === "src/notify" ? withFiles("test/notify", 4) : withFiles("src/notify", 4));
+      const keepOther = (dir) => (dir === "packages/core/src/notify" ? withFiles("test/notify", 4) : withFiles("packages/core/src/notify", 4));
       const naming = (listing, dir) => sourceDirectoryBudgetViolations(listing, SOURCE_DIRECTORY_BUDGETS, SOURCE_DIRECTORY_EXEMPTIONS).filter((v) => (v.message ?? "").includes(`${dir}/`));
-      for (const [dir, n, count] of [["src/notify", 4, 0], ["src/notify", 8, 0], ["src/notify", 9, 1], ["test/notify", 4, 0], ["test/notify", 9, 1]]) {
-        const other = dir === "src/notify" ? "test/notify" : "src/notify";
+      for (const [dir, n, count] of [["packages/core/src/notify", 4, 0], ["packages/core/src/notify", 8, 0], ["packages/core/src/notify", 9, 1], ["test/notify", 4, 0], ["test/notify", 9, 1]]) {
+        const other = dir === "packages/core/src/notify" ? "test/notify" : "packages/core/src/notify";
         const listing = [...withFiles(dir, n), ...keepOther(dir).filter((e) => e.dir === other || (e.name === "notify" && e.dir === other.split("/")[0]))];
         const violations = naming(listing, dir);
         assert.equal(violations.length, count, `${dir} with ${n} files: ${JSON.stringify(violations.map((v) => v.message))}`);
@@ -220,7 +220,7 @@ export const notifyChannelsTests = [
       }
       assert.ok(FLAT_LAYER_THRESHOLD === 8, "the threshold these rows are measured against");
       const absent = [...live, { dir: "test", name: "notify", kind: "dir" }, ...Array.from({ length: 4 }, (_, i) => ({ dir: "test/notify", name: `m${i}.mjs`, kind: "file" }))];
-      assert.equal(naming(absent, "src/notify").length, 1, "an absent src/notify is one stale-exemption violation");
+      assert.equal(naming(absent, "packages/core/src/notify").length, 1, "an absent src/notify is one stale-exemption violation");
     },
   },
 

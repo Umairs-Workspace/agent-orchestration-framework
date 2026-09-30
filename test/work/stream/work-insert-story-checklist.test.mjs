@@ -12,8 +12,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, validateWork } from "../../../src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { findWork, validateWork } from "../../../packages/core/src/work.mjs";
 import { withInsertFixture, buildMilestone, writeStoryItem, SLUGS } from "../../support/work-insert-fixture.mjs";
 
 const STORIES_BODY = [

@@ -22,7 +22,7 @@
 // 129/ADR-002 (FF-12904) — MERGE-HOME NEVER DISCARDS. The loop merges each lane home in the
 // PRIMARY through the same verb (`advanceBranchToBase`), and three more modules now run git
 // against a branch that carries commits: `packages/work-loop/src/dispatch.mjs` (the composed lane verbs),
-// `src/loop/wave.mjs` and `src/loop/cycle.mjs`. They JOIN `BRANCH_PATH_MODULES` — an extension
+// `packages/core/src/loop/wave.mjs` and `packages/core/src/loop/cycle.mjs`. They JOIN `BRANCH_PATH_MODULES` — an extension
 // of this control, never a twin, so the ONE detector (`discardingOps`) judges all six; the
 // sanctioned forms stay sanctioned (`worktree remove --force`, the path-scoped `reset -q -- .aof`
 // that moved into `worktree.mjs` with `commitWorktreeChanges`, the two `merge` doors, the plain
@@ -51,7 +51,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The modules that may run git against the item branch — posix, repo-relative, so a finding
 // names the module the way the register does.
 export const BRANCH_PATH_MODULES = Object.freeze([
-  "src/mesh/worktree.mjs",
+  "packages/core/src/mesh/worktree.mjs",
   "packages/mesh/src/worktrees.mjs",
   "packages/execution/src/worktrees.mjs",
   "packages/mesh/src/worker-execution.mjs",
@@ -178,7 +178,7 @@ export const archTests = [
       const worktree = stripComments(await readModule(WORKTREE));
       assert.ok(
         /refs\/remotes\/[^"'`\s]*\$\{branch\}|refs\/remotes\/origin\//.test(worktree),
-        "src/mesh/worktree.mjs never verifies a ref under refs/remotes/ — the branch-existence question is local-only, so a worker whose checkout has fetched the item's line but has no local head for it will take the create door and orphan the previous phase's commits (VERIFICATION F-05.3)",
+        "packages/core/src/mesh/worktree.mjs never verifies a ref under refs/remotes/ — the branch-existence question is local-only, so a worker whose checkout has fetched the item's line but has no local head for it will take the create door and orphan the previous phase's commits (VERIFICATION F-05.3)",
       );
 
       const execution = stripComments(await readModule("packages/mesh/src/worker-execution.mjs"));
@@ -186,11 +186,11 @@ export const archTests = [
       // decision consumes rather than on the variable's name.
       assert.ok(
         /localBranchExists\s*\(/.test(execution) && /remoteBranchExists\s*\(/.test(execution),
-        "src/mesh/worker-execution.mjs decides the reuse door without asking whether the branch exists on the remote — the item's line can then be forked (VERIFICATION F-05.3)",
+        "packages/core/src/mesh/worker-execution.mjs decides the reuse door without asking whether the branch exists on the remote — the item's line can then be forked (VERIFICATION F-05.3)",
       );
       assert.ok(
         /adoptRemoteBranch\s*\(/.test(execution),
-        "src/mesh/worker-execution.mjs finds a remote-only line but never adopts it as a local head, so the reuse door (and its advance) cannot apply to it (VERIFICATION F-05.3)",
+        "packages/core/src/mesh/worker-execution.mjs finds a remote-only line but never adopts it as a local head, so the reuse door (and its advance) cannot apply to it (VERIFICATION F-05.3)",
       );
     },
   },
@@ -216,12 +216,12 @@ export const archTests = [
       const aborts = groups.filter((tokens) => tokens.includes("merge") && tokens.includes("--abort"));
       assert.ok(
         aborts.length > 0,
-        "src/mesh/worktree.mjs performs a merge with no `git merge --abort` path — a conflicting advance must abort cleanly and refuse (assignment-gate-propagation-conflict), never leave a half-merged tree for an agent to start a phase on",
+        "packages/core/src/mesh/worktree.mjs performs a merge with no `git merge --abort` path — a conflicting advance must abort cleanly and refuse (assignment-gate-propagation-conflict), never leave a half-merged tree for an agent to start a phase on",
       );
       // The advance must also be able to take the cheap door when it exists.
       assert.ok(
         groups.some((tokens) => tokens.includes("--ff-only")) || /ff-only/.test(code),
-        "src/mesh/worktree.mjs merges without ever attempting --ff-only — the fast-forward case must not create a merge commit it does not need",
+        "packages/core/src/mesh/worktree.mjs merges without ever attempting --ff-only — the fast-forward case must not create a merge commit it does not need",
       );
     },
   },
@@ -263,13 +263,13 @@ export const archTests = [
     run: async () => {
       assert.deepEqual(
         [...BRANCH_PATH_MODULES].sort(),
-        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/mesh/src/recovery-push.mjs", "packages/mesh/src/worker-execution.mjs", "src/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
+        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/mesh/src/recovery-push.mjs", "packages/mesh/src/worker-execution.mjs", "packages/core/src/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
         "BRANCH_PATH_MODULES as a set",
       );
       for (const rel of BRANCH_PATH_MODULES) assert.ok((await readModule(rel)).length > 0, `${rel} was read`);
       // A member absent from disk rejects the sweep with ENOENT naming its path.
       await assert.rejects(
-        forbiddenFormOffenders(readModule, [...BRANCH_PATH_MODULES, "src/loop/absent.mjs"]),
+        forbiddenFormOffenders(readModule, [...BRANCH_PATH_MODULES, "packages/core/src/loop/absent.mjs"]),
         (error) => error?.code === "ENOENT" && String(error?.message).includes("absent.mjs"),
         "an absent member fails the sweep with ENOENT naming its path",
       );

@@ -12,13 +12,13 @@
 // an injected fake stream server (the dispatch half's fixture, reused for scenario 3).
 import assert from "node:assert/strict";
 import path from "node:path";
-import { startLauncher } from "../../src/mesh/launcher.mjs";
-import { loadWorkspace, findWork } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../src/assignment-record.mjs";
-import { publishPresenceRecord } from "../../src/mesh/presence.mjs";
-import { startRun, heartbeat, readRuns, isRetryable } from "../../src/run-store.mjs";
-import { DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../src/mesh/assignment-reclaim.mjs";
+import { startLauncher } from "../../packages/core/src/mesh/launcher.mjs";
+import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../packages/core/src/assignment-record.mjs";
+import { publishPresenceRecord } from "../../packages/core/src/mesh/presence.mjs";
+import { startRun, heartbeat, readRuns, isRetryable } from "../../packages/core/src/run-store.mjs";
+import { DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../packages/core/src/mesh/assignment-reclaim.mjs";
 import { withMeshWorkerExecFixture } from "../support/mesh-worker-exec-fixture.mjs";
 
 const NOW = "2026-07-09T12:00:00.000Z";
@@ -94,7 +94,7 @@ async function seedPresence(fx, nodeId, heartbeatAt) {
 // (the reclaim-scheduler feature needs a control-role launcher; the shared exec
 // fixture defaults to a bare mesh.nodeId with no relay.controlNode).
 async function markAsControlNode(fx) {
-  const { readJson, writeText } = await import("../../src/fs.mjs");
+  const { readJson, writeText } = await import("../../packages/core/src/fs.mjs");
   const configPath = path.join(fx.root, ".aof", "aof.config.json");
   const onDisk = await readJson(configPath);
   onDisk.mesh = { ...onDisk.mesh, fabric: "tailscale", relay: { controlNode: onDisk.mesh.nodeId } };

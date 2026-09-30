@@ -239,7 +239,7 @@ export const meshUiAssignItemWorkspaceTests = [
   // ══ QA-e — the item's uniqueness gate is PER-WORKSPACE ══
   //
   // REVIEW FIX QA-e (2026-07-24): `findActiveAssignment` keys on
-  // (workspace_id, item_ref) (src/assignment-record.mjs), and on a GLOBAL face
+  // (workspace_id, item_ref) (packages/core/src/assignment-record.mjs), and on a GLOBAL face
   // two cards legitimately carry ref "18". Nothing pinned that, so a future
   // "fix" that globalised the gate — keyed it on item_ref alone — would make the
   // SECOND card silently un-assignable ("already active, held by worker-a") with

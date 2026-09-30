@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 import {
   meshGlobalPropagationDecision,
   publishGlobalWorkSnapshot,
   renderWithPropagationWarnings,
   threadPropagationWarnings,
-} from "../../src/global-work-publisher.mjs";
-import { startLauncher } from "../../src/mesh/launcher.mjs";
+} from "../../packages/core/src/global-work-publisher.mjs";
+import { startLauncher } from "../../packages/core/src/mesh/launcher.mjs";
 
 const NOW = "2026-07-05T10:00:00.000Z";
 const NODE_ID = "node-a";

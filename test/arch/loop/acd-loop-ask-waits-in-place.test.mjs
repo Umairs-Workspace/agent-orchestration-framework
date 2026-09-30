@@ -4,9 +4,9 @@
 // with a drive that stopped to ask: it waits in the run's owner, resumes the same session with the
 // answer typed, and parks at the bound, while every other lane keeps building.
 //
-// FF-13104, structural. `src/mesh/terminal-input.mjs`, `src/terminal-ws.mjs` and the driver import
-// neither `src/loop/ask-request.mjs` nor `src/loop/ask.mjs` (resolved specifiers, through
-// `test/support/module-family.mjs`), and `src/commands/resume.mjs` imports no terminal-input
+// FF-13104, structural. `packages/core/src/mesh/terminal-input.mjs`, `packages/core/src/terminal-ws.mjs` and the driver import
+// neither `packages/core/src/loop/ask-request.mjs` nor `packages/core/src/loop/ask.mjs` (resolved specifiers, through
+// `test/support/module-family.mjs`), and `packages/core/src/commands/resume.mjs` imports no terminal-input
 // module: the live-PTY wait is not built (ADR-001 §2). The driver has no branch that skips
 // `stopForOutcome` for `needs-input`: it compares no outcome against the word, and every
 // `"needs-input"` it spells outside its transcript mapping (`readTranscriptTerminalOutcome`) is an
@@ -55,17 +55,17 @@ import {
   verifyCompleter,
   withLaneRepo,
 } from "../../support/loop/lane-fixture.mjs";
-import { getCommand } from "../../../src/command-core.mjs";
-import { runLoopBody } from "../../../src/commands/loop.mjs";
-import { resolveItemExact } from "../../../src/commands/resolve.mjs";
-import { transitionRunStart } from "../../../src/effects/run-transitions.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../../src/loop/ask-request.mjs";
-import { meshDispatchWorktreePath } from "../../../src/mesh/worktree.mjs";
-import { readRuns, recordSessionId } from "../../../src/run-store.mjs";
-import { claudeProjectsDir } from "../../../src/work/observe.mjs";
-import { resolveRefInWorktree } from "../../../src/work/dispatch.mjs";
+import { getCommand } from "../../../packages/core/src/command-core.mjs";
+import { runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
+import { resolveItemExact } from "../../../packages/core/src/commands/resolve.mjs";
+import { transitionRunStart } from "../../../packages/core/src/effects/run-transitions.mjs";
+import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../../packages/core/src/loop/ask-request.mjs";
+import { meshDispatchWorktreePath } from "../../../packages/core/src/mesh/worktree.mjs";
+import { readRuns, recordSessionId } from "../../../packages/core/src/run-store.mjs";
+import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
+import { resolveRefInWorktree } from "../../../packages/core/src/work/dispatch.mjs";
 import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
-import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "../../../packages/core/src/workspace-identity.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
@@ -73,7 +73,7 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 const ASK_HOME = "packages/work-loop/src/ask-request.mjs";
 const ASK = "packages/work-loop/src/ask.mjs";
 const DRIVER = "packages/execution/src/session-driver.mjs";
-const RESUME = "src/application/bindings/commands/resume.mjs";
+const RESUME = "packages/core/src/application/bindings/commands/resume.mjs";
 const TERMINAL_FACES = Object.freeze(["packages/mesh/src/terminal-input.mjs", "packages/server/src/terminal-ws.mjs", DRIVER]);
 const TERMINAL_INPUT_RE = /(?:^|\/)terminal-input(?:[-.][^/]*)?\.mjs$/u;
 const TRANSCRIPT_MAPPING = "async function readTranscriptTerminalOutcome(";
@@ -103,7 +103,7 @@ function resolved(fromRel, specifier) {
   if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
-  if (/^src\/loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace("src/loop/", "packages/work-loop/src/");
+  if (/^src\/loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace("packages/core/src/loop/", "packages/work-loop/src/");
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
@@ -273,13 +273,13 @@ export const archTests = [
       assertRead("the src/** sweep", units.length, 150);
       for (const face of TERMINAL_FACES) {
         const reached = resolvedImports(unitOf(units, face)).filter((target) => target === ASK_HOME || target === ASK);
-        assert.deepEqual(reached, [], `${face} imports neither src/loop/ask-request.mjs nor src/loop/ask.mjs — an answer reaches a session only as a resumed command, never through a live terminal (ADR-001 §2): it imports ${reached.join(", ")}`);
+        assert.deepEqual(reached, [], `${face} imports neither packages/core/src/loop/ask-request.mjs nor packages/core/src/loop/ask.mjs — an answer reaches a session only as a resumed command, never through a live terminal (ADR-001 §2): it imports ${reached.join(", ")}`);
       }
       const resume = unitOf(units, RESUME);
       const imports = resolvedImports(resume);
       assertRead(`the import specifiers of ${RESUME}`, imports.length, 5, "specifier(s)");
       const terminal = imports.filter((target) => TERMINAL_INPUT_RE.test(target));
-      assert.deepEqual(terminal, [], `src/commands/resume.mjs imports no terminal-input module — the verb writes the ask file, it never types into a PTY: ${terminal.join(", ")}`);
+      assert.deepEqual(terminal, [], `packages/core/src/commands/resume.mjs imports no terminal-input module — the verb writes the ask file, it never types into a PTY: ${terminal.join(", ")}`);
       const implementation = unitOf(units, "packages/work/src/commands/resume.mjs");
       assert.deepEqual(resolvedImports(implementation).filter(target => TERMINAL_INPUT_RE.test(target)), [], "the package implementation imports no terminal-input module either");
       assert.match(implementation.code, /await answerAsk\(/u, "the command writes through the supplied ask service");

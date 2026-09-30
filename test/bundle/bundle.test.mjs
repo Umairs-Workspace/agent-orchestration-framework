@@ -20,13 +20,13 @@ import {
   readDescriptor,
   renderBundleOutputs,
   bundleRoot
-} from "../../src/work/bundle.mjs";
+} from "../../packages/core/src/work/bundle.mjs";
 import {
   generateBundleManifest,
   serializeBundleManifest,
   readShippedManifest
-} from "../../src/work/bundle-manifest.mjs";
-import { hashContent } from "../../src/lock.mjs";
+} from "../../packages/core/src/work/bundle-manifest.mjs";
+import { hashContent } from "../../packages/core/src/lock.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -148,9 +148,9 @@ export const bundleTests = [
       }
       assert.equal(ignored, false, "bundle root is not matched by any git-ignore rule");
       // Tracked: the descriptor + a representative member are known to git.
-      const lsFiles = execFileSync("git", ["ls-files", "src/bundle"], { cwd: repoRoot, encoding: "utf8" });
-      assert.ok(lsFiles.includes("src/bundle/bundle.json"), "descriptor is git-tracked");
-      assert.ok(lsFiles.includes("src/bundle/agents/aof-architect.md"), "agents are git-tracked");
+      const lsFiles = execFileSync("git", ["ls-files", "packages/core/assets"], { cwd: repoRoot, encoding: "utf8" });
+      assert.ok(lsFiles.includes("packages/core/assets/bundle.json"), "descriptor is git-tracked");
+      assert.ok(lsFiles.includes("packages/core/assets/agents/aof-architect.md"), "agents are git-tracked");
     }
   },
   // Scenario Outline: a declared ACD member is present in the bundle root.
@@ -321,7 +321,7 @@ export const bundleTests = [
       const baseline = memberIds().slice().sort();
       const originalCwd = process.cwd();
       const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-bundle-cwd-"));
-      const nested = path.join(repoRoot, "src", "bundle", "agents");
+      const nested = path.join(repoRoot, "packages", "core", "assets", "agents");
       try {
         for (const cwd of [repoRoot, tmp, nested]) {
           process.chdir(cwd);
@@ -347,7 +347,7 @@ export const bundleTests = [
       // A black-box proof of cwd-independence: spawn node from a temp cwd and
       // load the bundle by its module path; the member count must match.
       const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-bundle-proc-"));
-      const loaderUrl = pathToFileUrl(path.join(repoRoot, "src", "work", "bundle.mjs"));
+      const loaderUrl = pathToFileUrl(path.join(repoRoot, "packages", "core", "src", "work", "bundle.mjs"));
       try {
         const script = `import { loadBundle } from ${JSON.stringify(loaderUrl)}; const b = loadBundle(); process.stdout.write(String(b.resources.length + b.hooks.length + b.templates.length + b.assets.length));`;
         const out = execFileSync(process.execPath, ["--input-type=module", "-e", script], {

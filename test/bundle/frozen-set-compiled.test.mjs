@@ -18,16 +18,16 @@ import {
   FROZEN_ENFORCEMENT_POINTS,
   FROZEN_MEMBER_MARKER,
   FrozenSetError,
-} from "../../src/frozen-set.mjs";
+} from "../../packages/core/src/frozen-set.mjs";
 import {
   AOF_HOOK_MARKER,
   applyClaudeSettingsMerge,
   claudeSettingsPath,
   formatClaudeSettingsOutcome,
-} from "../../src/claude-settings.mjs";
+} from "../../packages/core/src/claude-settings.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const declarationPath = path.join(repoRoot, "src", "bundle", "frozen-set.jsonc");
+const declarationPath = path.join(repoRoot, "packages", "core", "assets", "frozen-set.jsonc");
 
 // The synthetic hook-shaped member. It is declared HERE and never ships: the compiler's
 // hook branch is the subject under test, and holding that branch through whatever member

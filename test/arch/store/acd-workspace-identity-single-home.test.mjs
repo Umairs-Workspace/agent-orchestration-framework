@@ -15,11 +15,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(repoRoot, "src");
+const srcRoot = path.join(repoRoot, "packages", "core", "src");
 
 // The raw derivation may be REFERENCED only here: its home, and the compat
 // re-export (global-work-store.mjs, kept so existing imports/tests stay valid).
-const DERIVATION_HOMES = new Set(["packages/mesh/src/workspace-identity.mjs", "packages/mesh/src/projection-store.mjs", "src/global-work-store.mjs"]);
+const DERIVATION_HOMES = new Set(["packages/mesh/src/workspace-identity.mjs", "packages/mesh/src/projection-store.mjs", "packages/core/src/global-work-store.mjs"]);
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {

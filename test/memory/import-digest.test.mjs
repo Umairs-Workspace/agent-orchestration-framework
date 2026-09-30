@@ -16,15 +16,15 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
+import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
 import {
   reindex,
   memoryIndexPath,
   resolveRecordSourcePath,
   isImportRecord,
-} from "../../src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../src/memory/local-retrieval.mjs";
-import { materializeImport, AOF_FILE } from "../../src/import/materialize.mjs";
+} from "../../packages/core/src/memory/local-indexing.mjs";
+import { MEMORY_RECORD_FIELDS } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { materializeImport, AOF_FILE } from "../../packages/core/src/import/materialize.mjs";
 
 // memory.backend = "local" so reindex/recall actually run the local backend.
 const CONFIG = { name: "fixture", work: { dir: "./wiki/work" }, memory: { backend: "local" } };

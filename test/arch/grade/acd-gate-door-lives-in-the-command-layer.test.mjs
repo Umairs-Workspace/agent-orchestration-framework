@@ -3,7 +3,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // HORIZON STILL IMPORTS NOTHING.
 //
 // The tempting home for a lifecycle predicate is the module that owns the lifecycle. Here that
-// module is `src/acceptance-horizon.mjs`, and putting the gate there would be ILLEGAL rather than
+// module is `packages/core/src/acceptance-horizon.mjs`, and putting the gate there would be ILLEGAL rather than
 // merely untidy: it imports nothing by 66/ARCHITECTURE ROUND 3/3, and 66/02's FF-6605 forbids the
 // controls lane reaching `node:fs` through its direct imports — so a predicate that reads a
 // recorded result cannot live there and stay legal. The refusal would fail 66/02 on arrival, and
@@ -15,7 +15,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //      call. Asserted over the MODULE rather than assumed from the graph, because that is the
 //      property ADR-008 §3 exists to preserve and the one a future "move it closer to the
 //      lifecycle" edit would take away.
-//   2. THE TWO CODES ARE RAISED IN THE ITEM-STATUS COMMAND, and nowhere else in `src/`. A second
+//   2. THE TWO CODES ARE RAISED IN THE ITEM-STATUS COMMAND, and nowhere else in `packages/core/src/`. A second
 //      raiser is a second door, and a door nobody knows about is one nobody can override.
 //   3. THEY ARE DISJOINT FROM THE VOCABULARIES ALREADY IN SERVICE — doctor's control codes and the
 //      audit's own set. A shared code lets one command's severity table decide the other's meaning,
@@ -43,12 +43,12 @@ import { fileURLToPath } from "node:url";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
-import { CONTROL_FINDING_CODES } from "../../../src/work/doctor-controls.mjs";
-import { AUDIT_FINDING_CODES } from "../../../src/work-audit/census.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { REGRESSION_RECORD_BASENAME, parseRegressionRows } from "../../../src/regression-record.mjs";
-import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../../src/commands/item-status.mjs";
+import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { AUDIT_FINDING_CODES } from "../../../packages/core/src/work-audit/census.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { REGRESSION_RECORD_BASENAME, parseRegressionRows } from "../../../packages/core/src/regression-record.mjs";
+import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../../packages/core/src/commands/item-status.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -135,7 +135,7 @@ export const archTests = [
       // itself — 66/02's FF-6605 forbids the controls lane reaching `node:fs` through its direct
       // imports, which is why the gate door is in the command layer — and that claim is about its
       // DEPENDENCIES, not about how many files it occupies. The unit is the family, so
-      // `src/acceptance-horizon/` stays a legal decomposition while every external specifier is
+      // `packages/core/src/acceptance-horizon/` stays a legal decomposition while every external specifier is
       // still a violation naming the file and the specifier.
       await assertFamilyPurity(assert, repoRoot, HORIZON);
       assert.equal(/\brequire\s*\(/.test(text), false, "…and no CommonJS require either");

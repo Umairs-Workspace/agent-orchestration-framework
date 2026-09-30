@@ -1,10 +1,10 @@
 // Fitness function: acd-ui-surface-file-budget (m43 / ADR-015/F2) —
 //
 //   "A React surface file gains CHILD COMPONENTS, not blocks. The `ui/` half of the
-//    codebase gets the same ratchet the `src/` half already has."
+//    codebase gets the same ratchet the `packages/core/src/` half already has."
 //
 // WHY, MEASURED RATHER THAN FELT. ADR-012/B4 put a line ceiling on
-// `src/global-work-store.mjs` because it went 885 -> 1,233 lines in ONE story, and named
+// `packages/core/src/global-work-store.mjs` because it went 885 -> 1,233 lines in ONE story, and named
 // the failure mode: `mesh-worker-execution.mjs` reached 3,174 lines the same way, "one
 // justified block at a time, with no single diff ever looking wrong" (TECH_DEBT item 10).
 // `ui/` had no equivalent, and it has been running the identical trajectory unwatched.

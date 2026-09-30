@@ -3,10 +3,10 @@
 //     tasks/00_insert-top-level-places-and-scaffolds.feature
 // Every @executable scenario (and each Scenario Outline row) below is wired
 // against the REAL registered commands `work:insert-milestone` / `work:insert-uat`
-// (src/commands/insert-milestone.mjs, insert-uat.mjs — thin wrappers over story
-// 01's engine via src/commands/insert-shared.mjs), invoked in-process through the
-// command core (src/command-core.mjs), and read back black-box via
-// findWork/listItems/validateWork (src/work.mjs) — mirroring the feature's own
+// (packages/core/src/commands/insert-milestone.mjs, insert-uat.mjs — thin wrappers over story
+// 01's engine via packages/core/src/commands/insert-shared.mjs), invoked in-process through the
+// command core (packages/core/src/command-core.mjs), and read back black-box via
+// findWork/listItems/validateWork (packages/core/src/work.mjs) — mirroring the feature's own
 // LITMUS note: every Then is confirmable from the command's result envelope plus a
 // FRESH find/validate read, no source read.
 //
@@ -15,26 +15,26 @@
 //     tasks/03_insert-verbs-are-aliases-of-promote.feature
 // `workInsertAliasTests` (below the delivered array) wires EVERY @executable scenario and EVERY
 // Scenario Outline row of task 03: `insert-milestone|chore|uat --at P` are now a COMPOSITION of
-// `scaffoldBacklogDriver` (src/commands/insert-shared.mjs — the un-numbered write side) and
-// `promote --at P` (src/commands/promote.mjs — the one mint, ADR-003 §4), `insert-story` keeps the
+// `scaffoldBacklogDriver` (packages/core/src/commands/insert-shared.mjs — the un-numbered write side) and
+// `promote --at P` (packages/core/src/commands/promote.mjs — the one mint, ADR-003 §4), `insert-story` keeps the
 // nested engine, and the slot-open's callers under src/commands are promote and nothing else. The
 // alias cases sit HERE, beside the delivered insert assertions they must keep green, because the
 // budget row for test/work/stream/ asks that new cases land on the insert/reindex/promote suites.
 // Driven through the REAL registered commands via the command core and read back black-box —
 // findWork / listItems / validateWork, a whole-tree byte snapshot for every "identical" claim, and
 // the effects journal for the one event claim; the source scan (the last scenario) reads
-// src/commands/** comment-stripped through the ONE strip home (test/support/source-slice.mjs).
+// packages/core/src/commands/** comment-stripped through the ONE strip home (test/support/source-slice.mjs).
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, writeFile, readFile, readdir, rm, cp } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, listItems, validateWork, loadWorkspace } from "../../../src/work.mjs";
-import { scaffoldBacklogDriver } from "../../../src/commands/insert-shared.mjs";
-import { packageVersionString } from "../../../src/asset-base.mjs";
-import { openEffectsJournal, readEvents } from "../../../src/effects/journal.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { findWork, listItems, validateWork, loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { scaffoldBacklogDriver } from "../../../packages/core/src/commands/insert-shared.mjs";
+import { packageVersionString } from "../../../packages/core/src/asset-base.mjs";
+import { openEffectsJournal, readEvents } from "../../../packages/core/src/effects/journal.mjs";
 import { withInsertFixture, buildTopLevelMilestones, writeStoryItem, setMilestoneDepends, frontmatter } from "../../support/work-insert-fixture.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
@@ -295,7 +295,7 @@ const FINDING = Object.freeze({
   ref: "01",
   title: "F-a the resolver is called twice per row",
   remedy: "hoist the resolver call out of the row loop",
-  location: "src/work/loop.mjs:143",
+  location: "packages/core/src/work/loop.mjs:143",
   round: 1,
 });
 
@@ -686,14 +686,14 @@ export const workInsertAliasTests = [
     name: "work-insert/alias: 03 the slot-open's callers in src/commands are promote and nothing else",
     run: async () => {
       const files = (await readRuntimeFiles(repoRoot)).filter((file) => file.rel.includes("/commands/") || file.rel === "packages/work/src/insertion/scaffold.mjs");
-      assert.ok(files.length > 20, `non-vacuity: ${files.length} modules under src/commands`);
+      assert.ok(files.length > 20, `non-vacuity: ${files.length} modules under packages/core/src/commands`);
       const sources = new Map();
       for (const file of files) sources.set(file.rel, stripComments(await readFile(file.path, "utf8")));
       // `rel` is src/-relative, so a specifier resolved from `commands/x.mjs` lands on `work/reindex.mjs`.
       const resolvesTo = (specifier, fromRel, target) =>
         specifier.startsWith(".") && path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier)) === target;
 
-      // `reindex.mjs` is imported by insert-shared.mjs and by no other module under src/commands/.
+      // `reindex.mjs` is imported by insert-shared.mjs and by no other module under packages/core/src/commands/.
       const engineImporters = [...sources].filter(([relPath, code]) => importSpecifiers(code).some(({ specifier }) => resolvesTo(specifier, relPath, "packages/work/src/reindex.mjs"))).map(([relPath]) => relPath);
       assert.deepEqual(engineImporters, ["packages/work/src/insertion/scaffold.mjs"], `the scaffold is the only insertion consumer of reindex: ${engineImporters.join(", ") || "none"}`);
 
@@ -721,15 +721,15 @@ export const workInsertAliasTests = [
         .sort();
       assert.deepEqual(
         importers,
-        ["src/application/bindings/commands/insert-chore.mjs", "src/application/bindings/commands/insert-milestone.mjs", "src/application/bindings/commands/insert-uat.mjs", "src/application/bindings/commands/promote-finding-to-chore.mjs", "src/application/bindings/commands/promote-gap-to-chore.mjs"],
+        ["packages/core/src/application/bindings/commands/insert-chore.mjs", "packages/core/src/application/bindings/commands/insert-milestone.mjs", "packages/core/src/application/bindings/commands/insert-uat.mjs", "packages/core/src/application/bindings/commands/promote-finding-to-chore.mjs", "packages/core/src/application/bindings/commands/promote-gap-to-chore.mjs"],
         `…and imported from ./promote.mjs by exactly the five: ${importers.join(", ")}`,
       );
       const anyImporters = [...sources].filter(([, code]) => /\brunInsertTopLevel\b/u.test(code) && !/function\s+runInsertTopLevel\b/u.test(code)).map(([relPath]) => relPath).sort();
-      const packageFaces = importers.map(file => file.replace("src/application/bindings/commands/", "packages/work/src/commands/"));
-      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "src/application/bindings/commands/promote.mjs", "src/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
+      const packageFaces = importers.map(file => file.replace("packages/core/src/application/bindings/commands/", "packages/work/src/commands/"));
+      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "packages/core/src/application/bindings/commands/promote.mjs", "packages/core/src/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
       for (const face of packageFaces) {
         assert.match(sources.get(face), /\brunInsertTopLevel\s*\(/u, `${face}: the injected insertion service is called`);
-        const adapter = sources.get(face.replace("packages/work/src/", "src/application/bindings/"));
+        const adapter = sources.get(face.replace("packages/work/src/", "packages/core/src/application/bindings/"));
         assert.match(adapter, /create\w+\(\{[^}]*\brunInsertTopLevel\b/u, `${face}: core supplies the shared insertion service`);
       }
 

@@ -4,7 +4,7 @@
 //     04_story_generated-changelog/tasks/00_changelog-generated-from-registry-no-drift.feature
 // Every @executable scenario below is wired against the LOCKED three seams the
 // task's LITMUS block names:
-//   (a) THE REGENERATED OUTPUT — `renderChangelog` (src/work/upgrade.mjs), called
+//   (a) THE REGENERATED OUTPUT — `renderChangelog` (packages/core/src/work/upgrade.mjs), called
 //       directly on a fixture registry OR on the real `WORK_ITEM_MIGRATIONS`.
 //   (b) THE COMMITTED ARTIFACT ON DISK — the git-tracked `UPGRADE-CHANGELOG.md`
 //       at the repo root (story 04's chosen path — see the file's own leading
@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { renderChangelog, changelogDrift, WORK_ITEM_MIGRATIONS } from "../../../src/work/upgrade.mjs";
+import { renderChangelog, changelogDrift, WORK_ITEM_MIGRATIONS } from "../../../packages/core/src/work/upgrade.mjs";
 import { withUpgradeProject, writeItem, runCli, parseJsonOut } from "../../support/work-upgrade-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -172,7 +172,7 @@ export const workUpgradeChangelogTests = [
           // seam (c): changelog -> registry is DEAD — no feedback edge. The
           // CLI/engine's whole input surface for a plan is workDir +
           // WORK_ITEM_MIGRATIONS (planUpgrade/runUpgrade, work-upgrade.mjs);
-          // neither it nor the work:upgrade CLI command (src/commands/
+          // neither it nor the work:upgrade CLI command (packages/core/src/commands/
           // upgrade.mjs) ever reads a changelog path. Proven behaviourally: a
           // hand edit to committed-changelog TEXT (read from the real
           // artifact, mutated only in memory — never written back to the

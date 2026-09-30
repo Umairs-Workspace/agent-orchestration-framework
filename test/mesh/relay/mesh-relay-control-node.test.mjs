@@ -15,7 +15,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveRelay, relayMode, relayStatus } from "../../../src/mesh/relay.mjs";
+import { serveRelay, relayMode, relayStatus } from "../../../packages/core/src/mesh/relay.mjs";
 
 // A ws connect that resolves on the join ack (proof the relay is actually serving).
 function connect(url, { timeoutMs = 3000 } = {}) {

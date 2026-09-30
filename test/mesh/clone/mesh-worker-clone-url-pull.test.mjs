@@ -9,13 +9,13 @@
 // published. This module covers the PULL that actually closes it — the worker
 // asks the control node directly, over the SAME live stream ADR-009's
 // clone-credential PULL already uses, mirroring that mechanism exactly:
-//   - worker side: requestCloneUrl (src/worker-stream-client.mjs), wired into
+//   - worker side: requestCloneUrl (packages/core/src/worker-stream-client.mjs), wired into
 //     createMeshWorkerExecutionHandler's clone-on-miss fallback chain
-//     (src/mesh/worker-execution.mjs).
+//     (packages/core/src/mesh/worker-execution.mjs).
 //   - control side: applyStreamFrame / applyCloneUrlRequestFrame
-//     (src/control-stream-server.mjs) — the REAL authorization + registry-read +
+//     (packages/core/src/control-stream-server.mjs) — the REAL authorization + registry-read +
 //     reply path, never hand-authored by this test.
-//   - production wiring: startLauncher (src/mesh/launcher.mjs) — constructed the
+//   - production wiring: startLauncher (packages/core/src/mesh/launcher.mjs) — constructed the
 //     way `aof mesh serve --serve` does, with NO cloneUrl-shaped test injection
 //     (the SAME F12 discipline ADR-009's own guard already enforces for the
 //     credential — a resolver reachable only through the test-injection spread
@@ -28,18 +28,18 @@ import {
   createMeshWorkerExecutionHandler,
   resolveCloneUrl,
   meshCheckoutPath,
-} from "../../../src/mesh/worker-execution.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
+} from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
 import {
   applyCloneUrlRequestFrame,
   buildDirectiveFrame,
   CLONE_URL_NOT_HOLDER,
   CLONE_URL_WORKSPACE_MISMATCH,
-} from "../../../src/control-stream-server.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
+} from "../../../packages/core/src/control-stream-server.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
+import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
 import {
   withMeshCloneFixture,
   createStatusRecorder,

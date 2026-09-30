@@ -3,7 +3,7 @@
 // as first-class item types".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
-// asserted against the LOCKED engine `findWork`/`listStream` in ../src/work.mjs —
+// asserted against the LOCKED engine `findWork`/`listStream` in ../packages/core/src/work.mjs —
 // the same surface `aof work find`/`list --json` are thin faces over (cli.mjs's
 // workFindCommand calls findWork directly; work:list's command wraps listStream).
 // Mirrors the temp-dir fixture style of test/work/lifecycle/work-list.test.mjs / test/work/lifecycle/work-next.test.mjs.
@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { findWork, listStream } from "../../../src/work.mjs";
+import { findWork, listStream } from "../../../packages/core/src/work.mjs";
 
 function frontmatter(fields) {
   const lines = Object.entries(fields).map(([key, value]) => `${key}: ${value}`);

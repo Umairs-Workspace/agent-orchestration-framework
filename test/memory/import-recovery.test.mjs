@@ -27,7 +27,7 @@
 // (aof-shaped + arbitrary-with-git-history + thin/empty). The round-trip
 // assertions call recoverMilestone → materializeImport → parse the materialized
 // `.md` with the EXISTING parseArchitecture/parseRetrospective (imported from
-// src/memory/local-indexing.mjs) and assert record counts/types/titles + the
+// packages/core/src/memory/local-indexing.mjs) and assert record counts/types/titles + the
 // frozen MemoryRecord field set.
 import assert from "node:assert/strict";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
@@ -35,10 +35,10 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { recoverMilestone } from "../../src/import/recovery.mjs";
-import { materializeImport, INTENT_NOT_RECOVERABLE } from "../../src/import/materialize.mjs";
-import { parseArchitecture, parseRetrospective } from "../../src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../src/memory/local-retrieval.mjs";
+import { recoverMilestone } from "../../packages/core/src/import/recovery.mjs";
+import { materializeImport, INTENT_NOT_RECOVERABLE } from "../../packages/core/src/import/materialize.mjs";
+import { parseArchitecture, parseRetrospective } from "../../packages/core/src/memory/local-indexing.mjs";
+import { MEMORY_RECORD_FIELDS } from "../../packages/core/src/memory/local-retrieval.mjs";
 
 // --- fixture builders -----------------------------------------------------------
 

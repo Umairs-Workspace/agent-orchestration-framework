@@ -18,20 +18,20 @@ import { stripComments } from "../support/source-slice.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke, getCommand } from "../../src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
 import {
   parseResumeAfter, retryReadiness, retryRun, startRun, completeRun, readRuns, isRetryable,
   openRunAsk, parkRunAsk, answerRunAsk, heartbeat, runRecordPath,
-} from "../../src/run-store.mjs";
-import { answerCommand, resumeCommand } from "../../src/commands/resume.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { loopAsksDir, openAsk, parkAsk, readAsk, answerAsk, askRequestPath } from "../../src/loop/ask-request.mjs";
-import { buildNotifyEnvelope } from "../../src/notify/notify.mjs";
-import { renderDiscord } from "../../src/notify/discord.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../src/assignment-record.mjs";
+} from "../../packages/core/src/run-store.mjs";
+import { answerCommand, resumeCommand } from "../../packages/core/src/commands/resume.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+import { loopAsksDir, openAsk, parkAsk, readAsk, answerAsk, askRequestPath } from "../../packages/core/src/loop/ask-request.mjs";
+import { buildNotifyEnvelope } from "../../packages/core/src/notify/notify.mjs";
+import { renderDiscord } from "../../packages/core/src/notify/discord.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../packages/core/src/assignment-record.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { withCacheReadFixture, plantCacheRow, runCommand, streamRun, WORKER_NODE } from "../support/cache-read-fixture.mjs";
 

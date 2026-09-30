@@ -19,9 +19,9 @@
 // against the store's own row counts: a refusal that left a row behind would not be a
 // lock, it would be a message.
 import assert from "node:assert/strict";
-import { invoke } from "../../src/command-core.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { assignWork } from "../../src/mesh/assignment.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { assignWork } from "../../packages/core/src/mesh/assignment.mjs";
 import { withItemLockFixture, seedActive, seedWorker, countAssignments, refuse } from "../support/item-lock-fixture.mjs";
 
 const HOLDER = "aof-wsl";

@@ -6,7 +6,7 @@ import {
   continueDriverCommand,
   refineDriverCommand,
   verifyDriverCommand,
-} from "../../../src/commands/drive.mjs";
+} from "../../../packages/core/src/commands/drive.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../../support/mesh-worker-terminal-fixture.mjs";
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 

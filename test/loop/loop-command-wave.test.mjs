@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 129 / story 04 — THE WAVE TICK.
 //
 // Every @executable scenario (and every Examples row) of
-//   tasks/00_the-ladder-is-extracted.feature        — the ladder in `src/loop/cycle.mjs`
+//   tasks/00_the-ladder-is-extracted.feature        — the ladder in `packages/core/src/loop/cycle.mjs`
 //   tasks/02_a-lane-runs-its-story.feature           — open → mint → child → settle → ladder → commit → merge → cleanup
 //   tasks/03_the-baseline-is-per-base-commit.feature — one baseline per base, measured in the first lane
 //   tasks/04_the-wave-run-carries-the-liveness.feature — the milestone-level wave run and its heartbeat
@@ -17,16 +17,16 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 
-import { runLoopBody, admittedDoctorFindings } from "../../src/commands/loop.mjs";
-import { readGradeBaseline, settleStoryCycle } from "../../src/loop/cycle.mjs";
+import { runLoopBody, admittedDoctorFindings } from "../../packages/core/src/commands/loop.mjs";
+import { readGradeBaseline, settleStoryCycle } from "../../packages/core/src/loop/cycle.mjs";
 import { decideSupervisedDeclarations, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
-import { completeRun, isRunning, isStale, readRuns, retryReadiness, startRun, heartbeat } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { resolveRefInWorktree } from "../../src/work/dispatch.mjs";
-import { meshDispatchWorktreePath } from "../../src/mesh/worktree.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../src/loop/ask-request.mjs";
-import { loopStopsDir, requestLoopStop } from "../../src/loop/stop-request.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
+import { completeRun, isRunning, isStale, readRuns, retryReadiness, startRun, heartbeat } from "../../packages/core/src/run-store.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+import { resolveRefInWorktree } from "../../packages/core/src/work/dispatch.mjs";
+import { meshDispatchWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
+import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
+import { loopStopsDir, requestLoopStop } from "../../packages/core/src/loop/stop-request.mjs";
+import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
 import {
   withLaneRepo, fakeLaneChild, stubRubric, emits, passingTap, failingTap, collector, fakeTimers, fakeSignals,
   primaryDriver, verifyCompleter, laneCtx, statusOf, git, headSha, deferred, scriptedRegistry, laneStoryFile, replaceStatus,
@@ -76,7 +76,7 @@ export const loopCommandWaveTests = [
   {
     name: "129/04 task00 settleStoryCycle is the one home of the ladder — the shell reaches work:grade and the sampler only through it",
     run: async () => {
-      const cycle = await import("../../src/loop/cycle.mjs");
+      const cycle = await import("../../packages/core/src/loop/cycle.mjs");
       assert.equal(typeof cycle.settleStoryCycle, "function");
       const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       assert.equal(shell.includes('invokeRegistered("work:grade", { ref: act.ref, run: true'), false, "no rubric run of its own");
@@ -271,7 +271,7 @@ export const loopCommandWaveTests = [
             readChangeUnderReview: async () => "",
           };
           if (row.branch === "reset") {
-            const { appendProgressSample } = await import("../../src/loop-progress.mjs");
+            const { appendProgressSample } = await import("../../packages/core/src/loop-progress.mjs");
             for (const sample of samples.slice(0, 2)) await appendProgressSample(item, record, sample);
           }
           const bookkeeping = { pendingFixes: new Map(), pendingGrades: new Map(), progressStates: new Map(), reviewRounds: new Map(), reviewBlockerCounts: new Map(), cycles: new Map(), driven: [] };
@@ -329,7 +329,7 @@ export const loopCommandWaveTests = [
     run: async () => {
       const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       const lines = shell.split(/\r?\n/u).length;
-      assert.ok(lines < 2311, `src/commands/loop.mjs is ${lines} lines, below the 2311 it was before 129/04`);
+      assert.ok(lines < 2311, `packages/core/src/commands/loop.mjs is ${lines} lines, below the 2311 it was before 129/04`);
     },
   },
 
@@ -668,7 +668,7 @@ export const loopCommandWaveTests = [
         assert.match(report.lines.at(-1), /files=\["src\/cli.mjs"\]/u);
         assert.ok(existsSync(meshDispatchWorktreePath(fx.root, "07/01")), "the lane is kept");
         assert.match((await git(["log", "--format=%s", "aof/mesh/07-01"], fx.root)).stdout, /lane commit/u, "…committed");
-      }, { stories: ["01"], commit: { "src/cli.mjs": "// base\n" } });
+      }, { stories: ["01"], commit: { "packages/core/src/cli.mjs": "// base\n" } });
       // MERGE — detached head
       await withLaneRepo(async (fx) => {
         const registry = scriptedRegistry({
@@ -708,7 +708,7 @@ export const loopCommandWaveTests = [
         assert.equal(existsSync(path.join(fx.root, ".git", "MERGE_HEAD")), false, "no MERGE_HEAD in the primary");
         const waveRuns = (await laneRunsOf(fx, "07")).filter((r) => r.brief?.wave != null);
         assert.ok(waveRuns.length > 0 && waveRuns.every((r) => r.state !== "running"), "the wave run is settled, not stranded");
-      }, { stories: ["01"], commit: { "src/cli.mjs": "// base\n" } });
+      }, { stories: ["01"], commit: { "packages/core/src/cli.mjs": "// base\n" } });
       // MERGE — conflict
       await withLaneRepo(async (fx) => {
         const child = fakeLaneChild(fx, { answers: { "07/01": async (input) => {
@@ -726,7 +726,7 @@ export const loopCommandWaveTests = [
         for (const key of ["lane=", "branch=", "base=", "tip="]) assert.ok(report.lines.at(-1).includes(key), `detail ${key}`);
         assert.ok(existsSync(meshDispatchWorktreePath(fx.root, "07/01")), "the lane is kept");
         assert.equal(existsSync(path.join(fx.root, ".git", "MERGE_HEAD")), false, "no MERGE_HEAD in the primary");
-      }, { stories: ["01"], commit: { "src/cli.mjs": "// base\n" } });
+      }, { stories: ["01"], commit: { "packages/core/src/cli.mjs": "// base\n" } });
       // CLEANUP — refused
       await withLaneRepo(async (fx) => {
         const registry = scriptedRegistry({
@@ -851,7 +851,7 @@ export const loopCommandWaveTests = [
           assert.ok(["fast-forwarded", "merged"].includes(row03.merge?.outcome), `${row.fails}: 07/03 merged`);
           assert.equal(asked.length, 1, `${row.fails}: no further work:dispatch ask`);
           assert.match(report.lines.findLast((line) => line.includes(" — halted on ")), /drained=\[\{"ref":"07\/03","merge":"(fast-forwarded|merged)"\}\]/u, `${row.fails}: the drained detail names 07/03 with its merge outcome`);
-        }, { commit: { "src/x.mjs": "// base\n" } });
+        }, { commit: { "packages/core/src/x.mjs": "// base\n" } });
       }
     },
   },
@@ -1071,7 +1071,7 @@ export const loopCommandWaveTests = [
         const verifyGrades = registry.calls.filter((c) => c.id === "work:grade").slice(-3);
         assert.ok(verifyGrades.every((c) => c.input.run !== true), "VERIFY reads the recorded grade and never re-grades");
         assert.ok(report.lines.some((line) => /Gate work:grade 07\/01 — pass \(recorded delta 0 on run /u.test(line)), "…from the last progress sample of its merged lane run");
-      }, { stories: [{ number: "01", files: ["src/a.mjs"] }, { number: "02", files: ["src/a.mjs"] }, { number: "03", files: ["src/c.mjs"] }] });
+      }, { stories: [{ number: "01", files: ["packages/core/src/a.mjs"] }, { number: "02", files: ["packages/core/src/a.mjs"] }, { number: "03", files: ["packages/core/src/c.mjs"] }] });
       // a resumed loop reads it back by sha — a live, unmerged lane holds it and nothing in the primary does
       await withLaneRepo(async (fx) => {
         const rubric = stubRubric((at) => (at === 0 ? emits(failingTap([["base-red-1", "r"]], ["alpha"]), 1) : emits(passingTap(["alpha"]))));
@@ -1258,7 +1258,7 @@ export const loopCommandWaveTests = [
             const merged = (await laneRunsOf(fx, ref)).filter((r) => r.brief?.lane != null && r.state === "done");
             for (const run of merged) assert.ok(last.updatedAt >= run.updatedAt, `${row.ending}: updatedAt not before every merged lane run's`);
           }
-        }, { stories: ["01"], commit: { "src/x.mjs": "// base\n" } });
+        }, { stories: ["01"], commit: { "packages/core/src/x.mjs": "// base\n" } });
       }
       // die with the loop (no settle), resumed → the wave run is reclaimed runtime_offline
       await withLaneRepo(async (fx) => {
@@ -1377,7 +1377,7 @@ export const loopCommandWaveTests = [
         const base03 = state.driven.find((r) => r.ref === "27/03" && r.lane != null).baseCommit;
         assert.equal((await git(["merge-base", "--is-ancestor", merge02.merge.commit, base03], fx.root)).status, 0, "27/03's base includes 27/02's merge");
         assert.ok(dispatches.slice(1).every((refs) => !refs.includes("27/04") || !refs.includes("27/02")), "a lane is re-asked for nothing it already holds");
-      }, { stories: [{ number: "02", files: ["src/cli.mjs"] }, { number: "03", files: ["src/cli.mjs"] }, { number: "04", files: ["src/d.mjs"] }, { number: "05", files: ["src/e.mjs"], status: "done" }], milestone: "27" });
+      }, { stories: [{ number: "02", files: ["packages/core/src/cli.mjs"] }, { number: "03", files: ["packages/core/src/cli.mjs"] }, { number: "04", files: ["packages/core/src/d.mjs"] }, { number: "05", files: ["packages/core/src/e.mjs"], status: "done" }], milestone: "27" });
     },
   },
   {
@@ -1408,7 +1408,7 @@ export const loopCommandWaveTests = [
           assert.deepEqual(spawned.slice(0, row.admitted.length).sort(), [...row.admitted].sort(), `${label}: the admitted are spawned before any settles`);
           for (const ref of row.refused) assert.ok(report.lines.includes(`${ref} — at capacity (${row.bound}/${row.bound}), waiting for a lane to close.`), `${label}: ${ref} refused and narrated`);
           assert.deepEqual([...new Set(spawned)].sort(), row.stories.map((n) => `27/${n}`).sort(), `${label}: the refused were re-asked and admitted after a merge`);
-        }, { stories: row.stories.map((n) => ({ number: n, files: [`src/f${n}.mjs`] })), milestone: "27", config: { dispatch: { concurrency: row.bound } } });
+        }, { stories: row.stories.map((n) => ({ number: n, files: [`packages/core/src/f${n}.mjs`] })), milestone: "27", config: { dispatch: { concurrency: row.bound } } });
       }
     },
   },
@@ -1493,7 +1493,7 @@ export const loopCommandWaveTests = [
         assert.equal(state.act.producer, "engine:wave-empty-held");
         assert.match(report.lines.at(-1), /skipped=\["27\/03"\]/u);
         assert.equal(registry.of("work:dispatch").filter((c) => c.input.refs).length, 0, "no work:dispatch ask, no lane");
-      }, { stories: [{ number: "03", files: ["src/cli.mjs"] }, { number: "04", files: ["src/d.mjs"] }], milestone: "27" });
+      }, { stories: [{ number: "03", files: ["packages/core/src/cli.mjs"] }, { number: "04", files: ["packages/core/src/d.mjs"] }], milestone: "27" });
       await withLaneRepo(async (fx) => {
         const dispatches = [];
         const registry = scriptedRegistry({ dispatch: async (input, ctx, real) => { if (input.refs) dispatches.push([...input.refs]); return await real(); } });
@@ -1501,7 +1501,7 @@ export const loopCommandWaveTests = [
         assert.equal(state.state, "done", report.lines.join("\n"));
         assert.deepEqual(dispatches[0], ["27/02"], "27/03 is held while 27/02 is in flight");
         assert.deepEqual(dispatches[1], ["27/03"], "…and dispatched after 27/02 merges");
-      }, { stories: [{ number: "02", files: ["src/cli.mjs"] }, { number: "03", files: ["src/cli.mjs"] }], milestone: "27" });
+      }, { stories: [{ number: "02", files: ["packages/core/src/cli.mjs"] }, { number: "03", files: ["packages/core/src/cli.mjs"] }], milestone: "27" });
     },
   },
   {

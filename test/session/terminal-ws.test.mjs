@@ -14,7 +14,7 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
 
 // --- fixtures ----------------------------------------------------------------
 

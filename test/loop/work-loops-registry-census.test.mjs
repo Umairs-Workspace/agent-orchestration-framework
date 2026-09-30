@@ -42,7 +42,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { EDGE_KEYS, loadLoops } from "../../src/work/loops.mjs";
+import { EDGE_KEYS, loadLoops } from "../../packages/core/src/work/loops.mjs";
 import {
   checkActuatorArbitration,
   checkGrounding,
@@ -50,7 +50,7 @@ import {
   checkReferenceOwnership,
   checkTimescale,
   decomposeLoopGraph,
-} from "../../src/work/loops-checks.mjs";
+} from "../../packages/core/src/work/loops-checks.mjs";
 import { examplesTables, scenarioTitles } from "../support/feature-parse.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { suiteFilesBelow } from "../support/registration/registration-surface.mjs";
@@ -368,21 +368,21 @@ const PHASE_LOOP_CASES = [
     loop: "loop:build-to-green",
     owner: "unknown",
     ceiling: "uncapped",
-    measurement: "prose:src/bundle/commands/continue.md",
+    measurement: "prose:packages/core/assets/commands/continue.md",
     optimizing: "true",
   },
   {
     loop: "loop:review-fix-rereview",
     owner: "unknown",
     ceiling: "uncapped",
-    measurement: "prose:src/bundle/commands/continue.md",
+    measurement: "prose:packages/core/assets/commands/continue.md",
     optimizing: "true",
   },
   {
     loop: "loop:verify-triage-accept",
     owner: "actor:product-owner",
     ceiling: "none",
-    measurement: "prose:src/bundle/commands/verify.md",
+    measurement: "prose:packages/core/assets/commands/verify.md",
     optimizing: "false",
   },
   {
@@ -821,13 +821,13 @@ export const workLoopsRegistryCensusTests = [
         findings.some((finding) => finding.message.includes(widest[0])),
         `the widest shared lever is reported: ${widest[0]}`,
       );
-      assert.ok(widest[0].includes("src/bundle/agents/"), `the shared lever is an agent definition: ${widest[0]}`);
+      assert.ok(widest[0].includes("packages/core/assets/agents/"), `the shared lever is an agent definition: ${widest[0]}`);
 
       // THE CITATION-ARTIFACT GUARD: no loop declares an orchestrating phase prompt as its actuator. If
       // one did, the finding above would be an artefact of coarse citation rather than a real collision.
       for (const actuator of actuatorUsers.keys()) {
         assert.equal(
-          actuator.includes("src/bundle/commands/"),
+          actuator.includes("packages/core/assets/commands/"),
           false,
           `${actuator}: an actuator names the artifact that acts, never the prompt that orchestrates it`,
         );
@@ -893,7 +893,7 @@ export const workLoopsRegistryCensusTests = [
 
       // The existence probe is not vacuous: a path that is not in the tree fails it.
       assert.equal(
-        (await stat(path.join(root, "src/no-such-file-52-05-04.mjs")).catch(() => null))?.isFile() ?? false,
+        (await stat(path.join(root, "packages/core/src/no-such-file-52-05-04.mjs")).catch(() => null))?.isFile() ?? false,
         false,
         "the existence probe rejects an absent path",
       );

@@ -122,9 +122,9 @@
 // surface directory rather than by naming a third `.tsx` — a gate that cannot be broken by a
 // file move is strictly better than one whose list must be maintained (m46/ADR-006).
 //
-// STRUCTURAL half: source-analysis over the REAL src/mesh/terminal-relay-bridge.mjs,
-// src/mesh/terminal-mirror.mjs, src/mesh/worker-execution.mjs, the terminal-VIEW upgrade
-// block of src/mesh/ui-serve.mjs, and the one control + fleet UI surfaces (comments
+// STRUCTURAL half: source-analysis over the REAL packages/core/src/mesh/terminal-relay-bridge.mjs,
+// packages/core/src/mesh/terminal-mirror.mjs, packages/core/src/mesh/worker-execution.mjs, the terminal-VIEW upgrade
+// block of packages/core/src/mesh/ui-serve.mjs, and the one control + fleet UI surfaces (comments
 // discounted, CRLF-normalised — the repo's tree is CRLF; an "\n"-only needle would
 // silently no-op, the failure class m38 was repeatedly burned by).
 // BEHAVIOURAL half: the REAL serveMeshUi proves (a) a keystroke arrives as a
@@ -141,9 +141,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { createTerminalMirror } from "../../../src/mesh/terminal-mirror.mjs";
-import { buildTerminalFrameEnvelope, TERMINAL_INPUT_KIND } from "../../../src/mesh/terminal-relay-bridge.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { createTerminalMirror } from "../../../packages/core/src/mesh/terminal-mirror.mjs";
+import { buildTerminalFrameEnvelope, TERMINAL_INPUT_KIND } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
 // m46/04 — INVARIANT 4's POLICY HALF is driven BEHAVIOURALLY, over the REAL modules the
 // browser imports. A source-grep could only say the words are present; running the real
 // policy over the real frozen table says the ANSWER is right, for every pair.

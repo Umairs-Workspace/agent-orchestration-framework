@@ -19,7 +19,7 @@
 // arch-test's job (acd-work-items-single-writer, armed at this cut; and the amended
 // acd-fact-projection-split), never a scenario's.
 import assert from "node:assert/strict";
-import { wholesaleDelete, readWorkspaceItems } from "../../src/global-work-store.mjs";
+import { wholesaleDelete, readWorkspaceItems } from "../../packages/core/src/global-work-store.mjs";
 import {
   withCacheFixture,
   withStore,
@@ -123,7 +123,7 @@ export const cacheAuthorityFactNotProjectionTests = [
       // nothing).
       await tick(fx);
       if (seed === "docs" || seed === "runs") {
-        const { upsertWorkItemContent } = await import("../../src/global-work-store.mjs");
+        const { upsertWorkItemContent } = await import("../../packages/core/src/global-work-store.mjs");
         await withStore(fx, (store) => upsertWorkItemContent(store, fx.workspaceId, {
           docs: [{ ref: "43/02", doc: "STORY", body: "# streamed\n" }],
           runs: [{ ref: "43/02", runId: "run-1", record: { runId: "run-1", itemRef: "43/02", state: "running" } }],

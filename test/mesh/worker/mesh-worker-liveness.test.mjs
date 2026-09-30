@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { driveInteractiveClaudeSession, listStrandedWorktreeAssignments } from "../../../src/mesh/worker-execution.mjs";
+import { driveInteractiveClaudeSession, listStrandedWorktreeAssignments } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { createFakeWhich } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 // A minimal PTY fake matching the driver's contract (onData/onExit subscriptions

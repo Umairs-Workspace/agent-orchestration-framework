@@ -2,7 +2,7 @@
 // ADR-009's no-new-sibling clause and ADR-010's R2 miss ruling) — "the index is a
 // projection, not a store, and it is not a second liveness authority".
 //
-// THE INVARIANT. `buildSessionIndex` (src/global-mesh-query.mjs) answers "what live
+// THE INVARIANT. `buildSessionIndex` (packages/core/src/global-mesh-query.mjs) answers "what live
 // sessions exist across the mesh" from the inputs it is handed and from nothing else.
 // It opens no store, writes no file, holds no state and caches nothing, so the same
 // `{ nodes, assignments }` rebuild a content-identical index every time — which is the
@@ -23,7 +23,7 @@
 // inputs; every structural detector is a PURE function over source text, so the real
 // tree and the planted violations run through the IDENTICAL code path):
 //  1. STRUCTURAL — no `CREATE TABLE`/`INSERT INTO`/`UPDATE`/`REPLACE INTO` anywhere in
-//     `src/` names a table that is a session index.
+//     `packages/core/src/` names a table that is a session index.
 //  2. STRUCTURAL — the index path performs no I/O, re-derives no session-level
 //     liveness, gates membership on the ALREADY-DERIVED `freshness`, holds no
 //     module-level cache, composes no `"${nodeId}::${sessionId}"` key, and reaches the
@@ -71,7 +71,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { shapeGlobalStatus, buildSessionIndex } from "../../../src/global-mesh-query.mjs";
+import { shapeGlobalStatus, buildSessionIndex } from "../../../packages/core/src/global-mesh-query.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
@@ -153,7 +153,7 @@ function stripComments(source) {
 }
 
 // NON-VACUITY OF THE STRIP ITSELF (TECH_DEBT item 24, fix (b)). PROOF 1 sweeps ALL of
-// `src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
+// `packages/core/src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
 // the source it was meant to read — item 24's named "silent false GREEN" shape. The
 // anchor is each module's OWN exported symbol names: a name a module `export`s at line
 // start is code by construction, so if it does not survive `stripComments` then the
@@ -784,7 +784,7 @@ export const archTests = [
       // The phantom opens in the LINE comment and closes at the next `*/` — which is an
       // unrelated block comment further down the file, so everything BETWEEN them is
       // deleted: the CREATE TABLE the absence rule was looking for, and an export that
-      // proves the deletion happened. This is the literal shape of src/work.mjs.
+      // proves the deletion happened. This is the literal shape of packages/core/src/work.mjs.
       const victim = [
         "export const before = 1;",
         "// a path glob quoted in prose: templates/work/<type>/*.md",
@@ -795,18 +795,18 @@ export const archTests = [
       ].join(eol);
 
       // The SHIPPED order reads the file: the planted table is FLAGGED.
-      const seen = persistedIndexViolations([["src/planted.mjs", victim]]);
+      const seen = persistedIndexViolations([["packages/core/src/planted.mjs", victim]]);
       assert.equal(seen.length, 1, `the shipped (line-first) stripper SEES the planted table (got ${JSON.stringify(seen)})`);
       assert.ok(seen[0].includes("global_session_index"), "…by name");
-      assert.deepEqual(strippedCorpusViolations([["src/planted.mjs", victim]]), [], "…and nothing was blinded");
+      assert.deepEqual(strippedCorpusViolations([["packages/core/src/planted.mjs", victim]]), [], "…and nothing was blinded");
 
       // The BLINDED order deletes it: the same absence rule passes for the WRONG reason.
       assert.deepEqual(
-        persistedIndexViolations([["src/planted.mjs", victim]], blockFirst),
+        persistedIndexViolations([["packages/core/src/planted.mjs", victim]], blockFirst),
         [],
         "the block-first stripper makes the SAME planted table invisible — the absence sweep goes GREEN over source it deleted itself, which is the silent false GREEN this detector exists to catch",
       );
-      const blindedFlags = strippedCorpusViolations([["src/planted.mjs", victim]], blockFirst);
+      const blindedFlags = strippedCorpusViolations([["packages/core/src/planted.mjs", victim]], blockFirst);
       assert.ok(blindedFlags.length >= 1, `…and THAT is what the blinding detector catches (got ${JSON.stringify(blindedFlags)})`);
       assert.ok(blindedFlags.some((violation) => violation.includes("afterwards")), "…naming the exported symbol the stripper deleted");
       assert.ok(blindedFlags.some((violation) => violation.includes("stripComments")), "…and naming the STRIPPER, so the next reader fixes the tool rather than the assertion");

@@ -9,8 +9,8 @@
 //
 // THE LINE IS DRAWN IN CODE, so this is a reading of the system rather than a convention.
 // The STARTING moves are the ones something else may have made first: `STARTING_PHASES` is
-// `{continue, refine}` (src/commands/continue.mjs) and the `run.started` reactor advances
-// from `not-started|blocked` on any mint (src/effects/table.mjs). The JUDGEMENT moves —
+// `{continue, refine}` (packages/core/src/commands/continue.mjs) and the `run.started` reactor advances
+// from `not-started|blocked` on any mint (packages/core/src/effects/table.mjs). The JUDGEMENT moves —
 // `in-review` and `done` — are made by nothing but this door, so a refusal there means the
 // item is not where the prompt believes it is, and must stay loud.
 //
@@ -22,9 +22,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const BUNDLE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src", "bundle");
+const BUNDLE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "assets");
 
-// Every command surface under src/bundle/ (commands, and any other prose a runtime renders
+// Every command surface under packages/core/assets/ (commands, and any other prose a runtime renders
 // verbatim — the sweep is directory-derived so a new surface is covered the day it lands).
 function bundleSurfaces(dir = BUNDLE_DIR, found = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

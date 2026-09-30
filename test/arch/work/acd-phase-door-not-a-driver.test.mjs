@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
+import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { deriveRouteTable, resolveRoute } from "../../../packages/core/src/spine/face.mjs";
 import { completingDriver, loopFixture } from "../../loop/loop-command-probe.test.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
@@ -162,7 +162,7 @@ export const archTests = [
       assert.ok(driverSource.length > 500, `NOT FOUND: ${DRIVER} read ${driverSource.length} characters — the driver module has moved, been renamed or was truncated, and no where/node decision was measured`);
       assert.deepEqual(driverProblems(DRIVER, driverSource), []);
       for (const { row, text, line, names } of [
-        { row: "`assignWork(` in `src/commands/drive.mjs`", text: driver("    return assignWork(args.ref, ctx);"), line: 4, names: "assignWork" },
+        { row: "`assignWork(` in `packages/core/src/commands/drive.mjs`", text: driver("    return assignWork(args.ref, ctx);"), line: 4, names: "assignWork" },
         { row: "a `where` field on a driver's return", text: driver('    return { where: "mesh", command: "/aof:continue" };'), line: 4, names: "where" },
         { row: "a `node` decision branch", text: driver('    if (args.node === "mac") return dispatch(args);'), line: 4, names: "node" },
       ]) {

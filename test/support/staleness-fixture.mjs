@@ -20,9 +20,9 @@
 //       race.
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
-import { invoke, loadWorkspace } from "../../src/command-core.mjs";
-import { upsertWorkItemContent } from "../../src/global-work-store.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+import { invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
+import { upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
 import { withCacheFixture, withStore, tick, stream, itemRow, rows, registerDescriptor, seedActive, settle } from "./cache-authority-fixture.mjs";
 
 export { withStore, tick, stream, itemRow, rows, registerDescriptor, seedActive, settle };

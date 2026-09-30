@@ -27,16 +27,16 @@ import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { queryGlobalMeshStatus, shapeGlobalStatus, buildSessionIndex, workspaceIdForProjectRoot } from "../../../src/global-mesh-query.mjs";
-import { publishPresenceRecord, readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { meshDir } from "../../../src/mesh/store.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../src/assignment-record.mjs";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
+import { queryGlobalMeshStatus, shapeGlobalStatus, buildSessionIndex, workspaceIdForProjectRoot } from "../../../packages/core/src/global-mesh-query.mjs";
+import { publishPresenceRecord, readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
+import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../packages/core/src/assignment-record.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

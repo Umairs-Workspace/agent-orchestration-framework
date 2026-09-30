@@ -69,10 +69,10 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { getCommand, invoke, listCommands } from "../../src/command-core.mjs";
-import { resolveRoute } from "../../src/spine/face.mjs";
-import { CHECK_FINDING_CODES, CHECK_IDS } from "../../src/work/loops-checks.mjs";
-import { LOADER_FINDING_CODES } from "../../src/work/loops.mjs";
+import { getCommand, invoke, listCommands } from "../../packages/core/src/command-core.mjs";
+import { resolveRoute } from "../../packages/core/src/spine/face.mjs";
+import { CHECK_FINDING_CODES, CHECK_IDS } from "../../packages/core/src/work/loops-checks.mjs";
+import { LOADER_FINDING_CODES } from "../../packages/core/src/work/loops.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { examplesTables, scenarioTitles } from "../support/feature-parse.mjs";
 import { suiteFilesBelow } from "../support/registration/registration-surface.mjs";
@@ -275,9 +275,9 @@ function printedPathResolves(cwd, printed, target, label) {
 const DECLARED_VALUE_CASES = [
   { key: "controlled", declared: "run state reaching a terminal value", list: false, kind: "phrase", payload: {} },
   { key: "reference", declared: "[command:work:next]", list: true, kind: "pointer", raw: "command:work:next", payload: { pointer: { scheme: "command", operand: "work:next" } } },
-  { key: "actuator", declared: "[module:src/run-store.mjs#isStale]", list: true, kind: "pointer", raw: "module:src/run-store.mjs#isStale", payload: { pointer: { scheme: "module", operand: "src/run-store.mjs", symbol: "isStale" } } },
+  { key: "actuator", declared: "[module:src/run-store.mjs#isStale]", list: true, kind: "pointer", raw: "module:src/run-store.mjs#isStale", payload: { pointer: { scheme: "module", operand: "packages/core/src/run-store.mjs", symbol: "isStale" } } },
   { key: "actuator", declared: "[command:a, command:a]", list: true, kind: "pointer", raw: "command:a", entries: 2, payload: { pointer: { scheme: "command", operand: "a" } } },
-  { key: "measurement", declared: "[prose:src/bundle/commands/continue.md]", list: true, kind: "prose", raw: "prose:src/bundle/commands/continue.md", payload: { path: "src/bundle/commands/continue.md" } },
+  { key: "measurement", declared: "[prose:packages/core/assets/commands/continue.md]", list: true, kind: "prose", raw: "prose:packages/core/assets/commands/continue.md", payload: { path: "packages/core/assets/commands/continue.md" } },
   { key: "cadence", declared: "periodic:15s", list: false, kind: "periodic", payload: { ms: 15000 } },
   { key: "cadence", declared: "event:per-item", list: false, kind: "event", payload: { trigger: "per-item" } },
   { key: "cadence", declared: "unknown", list: false, kind: "unknown", payload: {} },
@@ -324,7 +324,7 @@ const REGISTRY_STATE_CASES = [
   { state: "a well-formed loop declaring `ceiling: uncapped`", code: "loop-ceiling-uncapped", severity: "warn", errors: 0, exit: 0, subject: { fields: { ceiling: "uncapped" } } },
   { state: "a well-formed loop declaring `ceiling: unknown`", code: "loop-ceiling-unknown", severity: "warn", errors: 0, exit: 0, subject: { fields: { ceiling: "unknown" } } },
   { state: "a well-formed loop declaring `ceiling: none`", code: null, severity: null, errors: 0, exit: 0, subject: { fields: { ceiling: "none" } } },
-  { state: "a loop whose `measurement` is `prose:<path>`", code: "loop-field-prose-only", severity: "warn", errors: 0, exit: 0, subject: { fields: { measurement: "[prose:src/cli.mjs]" } } },
+  { state: "a loop whose `measurement` is `prose:<path>`", code: "loop-field-prose-only", severity: "warn", errors: 0, exit: 0, subject: { fields: { measurement: "[prose:packages/core/src/cli.mjs]" } } },
   { state: "a loop record with no `cadence:` key", code: "loop-missing-field", severity: "error", errors: 1, exit: 1, subject: { fields: { cadence: null } } },
   { state: "a loop whose `actuator` is a bare scalar, not a list", code: "loop-expected-list", severity: "error", errors: 1, exit: 1, subject: { fields: { actuator: "command:work:next" } } },
   { state: "a loop whose `controlled` is a list, not a scalar", code: "loop-expected-scalar", severity: "error", errors: 1, exit: 1, subject: { fields: { controlled: "[attempt count]" } } },
@@ -551,7 +551,7 @@ export const workLoopsCommandsTests = [
           // 58/03 — THE SIX PLUS ONE. `referenceSetters` is the seventh key, and it is on the RESULT
           // rather than only on the face because `--id` must narrow what is PRINTED and never what
           // is COMPUTED: the face adapters are handed `result` and a `{positionals, options}`
-          // faceCtx (`src/spine/face.mjs`), so a filtered result that carried no setter datum could
+          // faceCtx (`packages/core/src/spine/face.mjs`), so a filtered result that carried no setter datum could
           // not answer "who sets loop:build's reference?" once loop:mgr's own record was filtered out.
           // Measured: computing in the face instead returns `[]` there. That the six shipped before
           // 58 carry the same VALUES is a claim about values, which a key-name comparison cannot
@@ -669,7 +669,7 @@ export const workLoopsCommandsTests = [
       // The two rows whose whole point is a CONTRAST live in one registry, so "the two kinds are
       // different values" is decided rather than inferred from two separate runs.
       await withWorkspace({
-        "alpha.md": loopRecord({ fields: { measurement: "[prose:src/bundle/commands/continue.md]", owner: "unknown" } }),
+        "alpha.md": loopRecord({ fields: { measurement: "[prose:packages/core/assets/commands/continue.md]", owner: "unknown" } }),
         "beta.md": loopRecord({ fields: { actuator: "[command:a, command:a]" } }),
       }, async (fixture) => {
         const result = await runCommand(SHOW, {}, fixture.workDir);
@@ -727,7 +727,7 @@ export const workLoopsCommandsTests = [
         // compared against each other rather than against two separate literals.
         const moduleEndpoint = watch.find((endpoint) => endpoint.raw.startsWith("module:"));
         assert.deepEqual(moduleEndpoint, {
-          raw: "module:src/run-store.mjs#isStale", scheme: "module", operand: "src/run-store.mjs", symbol: "isStale", resolved: null,
+          raw: "module:src/run-store.mjs#isStale", scheme: "module", operand: "packages/core/src/run-store.mjs", symbol: "isStale", resolved: null,
         });
         const pointerField = alpha.fields.reference[0];
         assert.equal(Object.hasOwn(declared, "symbol"), false, "an endpoint with no # carries no symbol key at all");

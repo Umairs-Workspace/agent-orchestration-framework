@@ -5,7 +5,7 @@
 // THE JOURNEY IS THE GUARANTEE, so no scenario here inspects a single hop in
 // isolation: an entry produced by the REAL `readLiveSessions` is assembled by the REAL
 // `assemblePresenceRecord`, applied by the REAL control-side path
-// (`applyStreamFrame` → `applyPresenceFrame`, src/control-stream-server.mjs — a file
+// (`applyStreamFrame` → `applyPresenceFrame`, packages/core/src/control-stream-server.mjs — a file
 // this milestone does not edit), published by the REAL `publishPresenceRecord`, merged
 // by the REAL `queryGlobalRegistry` and served by the REAL `/api/mesh/status` route.
 //
@@ -22,14 +22,14 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, readdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { applyStreamFrame } from "../../../src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../src/global-node-registry.mjs";
-import { meshDir, publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { assemblePresenceRecord, readLiveSessions, readPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../packages/core/src/global-node-registry.mjs";
+import { meshDir, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { assemblePresenceRecord, readLiveSessions, readPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const WORKER_NODE_ID = "worker-a";
 const NOW = "2026-08-10T12:00:00.000Z";

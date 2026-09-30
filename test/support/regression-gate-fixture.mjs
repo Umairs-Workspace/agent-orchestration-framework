@@ -22,7 +22,7 @@ import {
   REGRESSION_HEADER,
   REGRESSION_HEADING,
   REGRESSION_RECORD_BASENAME,
-} from "../../src/regression-record.mjs";
+} from "../../packages/core/src/regression-record.mjs";
 
 const COMMIT = "0123456789abcdef0123456789abcdef01234567";
 const INSTANT = "2026-09-04T10:00:00Z";

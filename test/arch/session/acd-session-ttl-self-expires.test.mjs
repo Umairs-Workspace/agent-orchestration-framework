@@ -17,7 +17,7 @@
 //  Self-check (m03 non-vacuous): a hand-rolled >= comparator disagrees with the real
 //  predicate exactly AT the threshold — proving the assertion is not vacuously true.
 import assert from "node:assert/strict";
-import { isSessionLive, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../src/mesh/session.mjs";
+import { isSessionLive, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../packages/core/src/mesh/session.mjs";
 
 const NOW_ISO = "2026-07-10T12:00:00.000Z";
 const NOW_MS = Date.parse(NOW_ISO);

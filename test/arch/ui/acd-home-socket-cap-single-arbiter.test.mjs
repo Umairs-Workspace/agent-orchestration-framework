@@ -6,7 +6,7 @@
 //    build boundary, and it is not justified by a browser limit."
 //
 // ── THE CROSS-BUILD TIE, AND WHY IT IS A GATE RATHER THAN AN IMPORT ──────────────────────
-// `ui/src/**` is bundled by vite for a browser and `src/**` runs under node; there is no
+// `ui/src/**` is bundled by vite for a browser and `packages/core/src/**` runs under node; there is no
 // runtime at which one reads the other's constant. The only place the pair can be compared is a
 // test that reads BOTH FILES AS TEXT — the technique `acd-terminal-mirror-geometry-pinned`
 // invented for exactly this class of pair (extract each side's literal, assert the consumer

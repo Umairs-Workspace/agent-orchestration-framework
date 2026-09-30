@@ -3,8 +3,8 @@
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
 // tasks/00_boards-projection.feature, exercising the REAL in-process registry
-// (src/command-core.mjs + the EXTENDED mesh:status in src/commands/mesh-identity.mjs
-// over src/mesh/registry.mjs + src/mesh/presence.mjs) against a temp fixture repo —
+// (packages/core/src/command-core.mjs + the EXTENDED mesh:status in packages/core/src/commands/mesh-identity.mjs
+// over packages/core/src/mesh/registry.mjs + packages/core/src/mesh/presence.mjs) against a temp fixture repo —
 // loadWorkspace + invoke, real fs, in-process. `now` is an INJECTED value (white-box
 // over the inputs). One test object per scenario (outline rows folded into one entry
 // iterating the rows). node:assert/strict.
@@ -21,10 +21,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../src/mesh/store.mjs";
-import { registryPath, registryDir, emptyRegistry, admitNode, registerBoard } from "../../../src/mesh/registry.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../packages/core/src/mesh/store.mjs";
+import { registryPath, registryDir, emptyRegistry, admitNode, registerBoard } from "../../../packages/core/src/mesh/registry.mjs";
 
 const NOW = "2026-07-01T12:00:00.000Z";
 

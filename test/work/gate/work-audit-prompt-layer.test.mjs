@@ -10,7 +10,7 @@
 // `acd-duplication-rule-states-its-blindness.test.mjs`.
 //
 // EVERY CORPUS HERE IS A REAL DIRECTORY ON DISK, written into a temp project root that holds no aof
-// checkout, no `src/` tree, no configuration file and no git repository. That is the milestone's own
+// checkout, no `packages/core/src/` tree, no configuration file and no git repository. That is the milestone's own
 // thesis driven rather than asserted: these rules must run in a repository that is not this one, and
 // handing the lane an already-assembled document list would skip the two things most likely to be
 // wrong — that the installed layer is FOUND through the declared runtimes and resource kinds, and
@@ -20,14 +20,14 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import os from "node:os";
 import path from "node:path";
 
-import { readFinding, sweepDeclarationProblems } from "../../../src/work-audit/reads.mjs";
+import { readFinding, sweepDeclarationProblems } from "../../../packages/core/src/work-audit/reads.mjs";
 import {
   CAPABILITY_PROGRAMS,
   PROMPT_LAYER_SWEEPS,
   ROLE_WORDS,
   SENTENCE_FLOOR,
   runPromptLayer,
-} from "../../../src/work-audit/prompt-layer.mjs";
+} from "../../../packages/core/src/work-audit/prompt-layer.mjs";
 
 // ── FIXTURES ─────────────────────────────────────────────────────────────────────────────────
 
@@ -515,7 +515,7 @@ export const promptLayerTests = [
         [".claude/skills", 1, "the Claude runtime's local root, under the skills kind"],
         [".codex/agents", 1, "the Codex runtime's local root, under the agents kind"],
         [".opencode/commands", 1, "the OpenCode runtime's local root, under the commands kind"],
-        ["src/bundle/agents", 0, "a src/bundle/agents directory in the same project"],
+        ["packages/core/assets/agents", 0, "a packages/core/assets/agents directory in the same project"],
         ["docs", 0, "a docs/ directory of ordinary project markdown"],
       ];
       for (const [location, expected, why] of rows) {
@@ -535,8 +535,8 @@ export const promptLayerTests = [
       await withProject({
         ".claude/commands/installed-one.md": "An installed document with nothing shared.",
         ".claude/commands/installed-two.md": "A second installed document, also unshared.",
-        "src/bundle/commands/installed-one.md": OVER_FLOOR,
-        "src/bundle/commands/installed-two.md": OVER_FLOOR,
+        "packages/core/assets/commands/installed-one.md": OVER_FLOOR,
+        "packages/core/assets/commands/installed-two.md": OVER_FLOOR,
       }, async (root) => {
         assert.deepEqual(duplication(await runPromptLayer({ root })), [], "no finding is returned for a duplicate that exists only in the bundle copy");
       });
@@ -544,11 +544,11 @@ export const promptLayerTests = [
       await withProject({
         ".claude/commands/installed-one.md": OVER_FLOOR,
         ".claude/commands/installed-two.md": OVER_FLOOR,
-        "src/bundle/commands/installed-one.md": OVER_FLOOR,
+        "packages/core/assets/commands/installed-one.md": OVER_FLOOR,
       }, async (root) => {
         const found = duplication(await runPromptLayer({ root }));
         assert.equal(found.length, 1, "the same sentence appearing in two installed documents returns one finding");
-        assert.equal(found[0].message.includes("src/bundle"), false, "…naming the installed paths, never the bundle copy");
+        assert.equal(found[0].message.includes("packages/core/assets"), false, "…naming the installed paths, never the bundle copy");
       });
     },
   },

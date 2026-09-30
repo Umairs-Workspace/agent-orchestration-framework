@@ -9,16 +9,16 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { failingCountFromGrade, recordBuildProgress, runLoopBody } from "../../src/commands/loop.mjs";
+import { failingCountFromGrade, recordBuildProgress, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import {
   decideBuildProgress,
   evaluateProgressPolicy,
   progressSample,
   readProgressSamples,
   sampleWorktreeProgress,
-} from "../../src/loop-progress.mjs";
-import { readRuns } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+} from "../../packages/core/src/loop-progress.mjs";
+import { readRuns } from "../../packages/core/src/run-store.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
 import { decideLoopProgress, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
 import { completingDriver, loopFixture } from "./loop-command-probe.test.mjs";
 
@@ -29,7 +29,7 @@ function sample(at, overrides = {}) {
   return progressSample({
     at,
     runId: "run-1",
-    filesTouched: ["src/subject.mjs"],
+    filesTouched: ["packages/core/src/subject.mjs"],
     linesChanged: 4,
     commitsMade: 0,
     failingScenarios: 3,
@@ -235,7 +235,7 @@ export const loopProgressProductionTests = [
         stalls: 2,
         summary: {
           sampleCount: 3,
-          filesTouched: ["src/subject.mjs"],
+          filesTouched: ["packages/core/src/subject.mjs"],
           linesChanged: 4,
           commitsMade: 0,
           failingScenarios: 3,

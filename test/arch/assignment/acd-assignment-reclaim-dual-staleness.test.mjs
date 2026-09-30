@@ -18,19 +18,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../src/assignment-record.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { startRun, heartbeat } from "../../../src/run-store.mjs";
-import { findWork } from "../../../src/work.mjs";
-import { reclaimStaleAssignments, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../src/mesh/assignment-reclaim.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
+import { startRun, heartbeat } from "../../../packages/core/src/run-store.mjs";
+import { findWork } from "../../../packages/core/src/work.mjs";
+import { reclaimStaleAssignments, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const reclaimSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs");
 async function reclaimSource() {
   const implementation = stripComments(await readFile(reclaimSourcePath, "utf8"));
-  const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/assignment-reclaim.mjs"), "utf8"));
+  const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/assignment-reclaim.mjs"), "utf8"));
   for (const symbol of ["isNodeStale", "isStale"]) {
     assert.match(implementation, new RegExp('function createAssignmentReclaim\\(\\{[^}]*\\b' + symbol + '\\b'));
     assert.match(adapter, new RegExp('createAssignmentReclaim\\(\\{[^}]*\\b' + symbol + '\\b'));

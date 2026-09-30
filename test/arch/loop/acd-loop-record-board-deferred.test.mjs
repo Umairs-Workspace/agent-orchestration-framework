@@ -23,9 +23,9 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
-import { readDescriptor } from "../../../src/work/bundle.mjs";
+import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { deriveRouteTable, resolveRoute } from "../../../packages/core/src/spine/face.mjs";
+import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, withRepo } from "../../loop/loop-record-command.test.mjs";
 

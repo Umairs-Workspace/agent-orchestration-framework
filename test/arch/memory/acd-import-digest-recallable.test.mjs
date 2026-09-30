@@ -16,9 +16,9 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeImport, AOF_FILE } from "../../../src/import/materialize.mjs";
-import { buildRecords, resolveRecordSourcePath, isImportRecord } from "../../../src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
+import { materializeImport, AOF_FILE } from "../../../packages/core/src/import/materialize.mjs";
+import { buildRecords, resolveRecordSourcePath, isImportRecord } from "../../../packages/core/src/memory/local-indexing.mjs";
+import { MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

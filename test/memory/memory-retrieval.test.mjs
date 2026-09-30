@@ -2,7 +2,7 @@
 //
 // Every @executable scenario AND every Scenario-Outline Examples row across the
 // story's four task features is covered here, exercised DIRECTLY against the
-// retrieval module (`src/memory/local-retrieval.mjs`) over HAND-AUTHORED FIXTURE
+// retrieval module (`packages/core/src/memory/local-retrieval.mjs`) over HAND-AUTHORED FIXTURE
 // indexes of MemoryRecords (the frozen ADR-005 shape). No CLI, no disk, no
 // story-01 parser code — recall obtains its records from an injected `ctx.records`
 // array, so these tests are fully independent of stories 00/01.
@@ -26,7 +26,7 @@ import {
   brief,
   renderRecallText,
   MEMORY_RECORD_FIELDS
-} from "../../src/memory/local-retrieval.mjs";
+} from "../../packages/core/src/memory/local-retrieval.mjs";
 
 // ── fixture helpers ──────────────────────────────────────────────────────────
 // Build a full MemoryRecord (ADR-005) from a partial spec: absent-type fields are

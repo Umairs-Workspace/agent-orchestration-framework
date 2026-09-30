@@ -1,13 +1,13 @@
 // Fitness function #1: acd-sea-safe-asset-base (milestone 28 / story 00, ADR-003).
 //
 // "Every runtime bundle/UI/schema/version asset read routes through the single
-//  SEA-safe base resolver (src/asset-base.mjs); no runtime module under src/
+//  SEA-safe base resolver (packages/core/src/asset-base.mjs); no runtime module under src/
 //  joins an asset path off a bare import.meta.url / fileURLToPath(import.meta.url)
 //  root OUTSIDE that seam. Allow-list: the seam itself + the dev-only vite
 //  re-exec (cli.mjs, never on the shipped path)."
 //
 // Comment/string-stripped source-grep across src/**.mjs: assert no module (except
-// src/asset-base.mjs and the allow-listed vite re-exec line in cli.mjs) constructs
+// packages/core/src/asset-base.mjs and the allow-listed vite re-exec line in cli.mjs) constructs
 // an asset path from fileURLToPath(import.meta.url)/import.meta.dirname/
 // import.meta.url joined to "bundle"/"ui"/"dist"/"package.json"; the 7 known sites
 // reference assetBase()/the seam's export instead.
@@ -22,10 +22,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(repoRoot, "src");
+const srcRoot = path.join(repoRoot, "packages", "core", "src");
 
 // The ONE seam file — exempt from the ban (it IS the resolution).
 const SEAM_FILE = path.join(srcRoot, "asset-base.mjs");
+const CORE_ROOT_FILE = path.join(srcRoot, "application/core-root.mjs");
 
 // The allow-listed dev-only vite re-exec — re-homed for correctness (routes
 // through assetBase("version") for the repoRoot) but it no longer constructs a
@@ -88,7 +89,7 @@ export const archTests = [
       assert.ok(files.length > 10, "found src/**.mjs files to scan");
       const offenders = [];
       for (const file of files) {
-        if (file === SEAM_FILE) continue;
+        if (file === SEAM_FILE || file === CORE_ROOT_FILE) continue;
         const raw = await readFile(file, "utf8");
         const code = stripComments(raw);
         const violations = findViolations(code);

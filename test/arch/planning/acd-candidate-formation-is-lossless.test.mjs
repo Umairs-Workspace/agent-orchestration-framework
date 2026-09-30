@@ -3,15 +3,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { CORPUS_LANES, assembleCorpus } from "../../../src/work-tune/corpus.mjs";
-import { resolveCitationAtEmit } from "../../../src/work-tune/provenance.mjs";
+import { CORPUS_LANES, assembleCorpus } from "../../../packages/core/src/work-tune/corpus.mjs";
+import { resolveCitationAtEmit } from "../../../packages/core/src/work-tune/provenance.mjs";
 import {
   FORMATION_CRITERION,
   FORMATION_DEFAULT_BASIS,
   FORMATION_REFUSAL_CODES,
   formCandidates,
   measureFormationCriteria,
-} from "../../../src/work-tune/formation.mjs";
+} from "../../../packages/core/src/work-tune/formation.mjs";
 
 const modulePath = fileURLToPath(new URL("../../../packages/work/src/tune/formation.mjs", import.meta.url));
 const root = fileURLToPath(new URL("../../../", import.meta.url));

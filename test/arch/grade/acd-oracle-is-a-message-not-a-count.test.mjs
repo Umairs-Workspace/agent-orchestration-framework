@@ -3,7 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
+import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 
@@ -14,13 +14,13 @@ import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 //
 //   §1 — no module ADDED by this milestone may decide a gate's health by comparing a pass/fail
 //        tally. Its oracles compare dispositions and MESSAGES.
-//   §2 — no record in `src/bundle/loops/` may declare an arch-failure count as its `controlled:`
+//   §2 — no record in `packages/core/assets/loops/` may declare an arch-failure count as its `controlled:`
 //        or its `counter:`, because a watcher measuring that number is measuring the one metric 56
 //        proved is improved by the gaming move it exists to catch.
 //
 // SCOPE, STATED RATHER THAN IMPLIED. "Added by 57" is the four NEW modules ADR-007 §1 assigns to
-// 57/03 and 57/04. The milestone's other four subject files (`src/work/loops.mjs`,
-// `src/work/loops-checks.mjs`, `src/commands/loops-validate.mjs`, `src/feature-parse.mjs`) were
+// 57/03 and 57/04. The milestone's other four subject files (`packages/core/src/work/loops.mjs`,
+// `packages/core/src/work/loops-checks.mjs`, `packages/core/src/commands/loops-validate.mjs`, `packages/core/src/feature-parse.mjs`) were
 // WIDENED, not added, and each is pinned by its own control (FF-5701/5702/5703/5704). Widening the
 // literal here would silently take ownership of assertions those four already make.
 //
@@ -30,11 +30,11 @@ import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 // another file reads as landed while half of it is unguarded — the exact shape `F-57-03-2` found.
 //
 // OWNERSHIP. `F-57-03-4` established that FF-5706 cannot belong to 57/03: §1 spans 57/03's AND
-// 57/04's modules and §2 is over 57/05's `src/bundle/loops/`. It is a MILESTONE-level control, and
+// 57/04's modules and §2 is over 57/05's `packages/core/assets/loops/`. It is a MILESTONE-level control, and
 // it lands here, at the milestone gate, in its own labelled registration block.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const loopsDir = path.join(root, "src", "bundle", "loops");
+const loopsDir = path.join(root, "packages", "core", "assets", "loops");
 
 // ADR-007 §1: the modules milestone 57 ADDED. 57/03 owns the first two, 57/04 the second two.
 const ADDED_MODULES = Object.freeze([

@@ -3,15 +3,15 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { applyConfig } from "../../src/adapters.mjs";
-import { resolveConfig } from "../../src/dsl.mjs";
+import { applyConfig } from "../../packages/core/src/adapters.mjs";
+import { resolveConfig } from "../../packages/core/src/dsl.mjs";
 // m43 / ADR-002 — the door the claude runtime's hooks/settings take now that the
 // whole-file render is closed for the co-authored file.
-import { applyClaudeSettingsMerge, claudeSettingsPatch } from "../../src/claude-settings.mjs";
+import { applyClaudeSettingsMerge, claudeSettingsPatch } from "../../packages/core/src/claude-settings.mjs";
 // story 141 task 03 — the operator's session default, the phase commands' --thinking stop, and the
 // renders agreeing with the source.
 import { fileURLToPath } from "node:url";
-import { generateBundleManifest, serializeBundleManifest } from "../../src/work/bundle-manifest.mjs";
+import { generateBundleManifest, serializeBundleManifest } from "../../packages/core/src/work/bundle-manifest.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 
 export const adapterTests = [
@@ -150,7 +150,7 @@ function configBlocks(markdown) {
 
 async function phaseCommandsStopOnThinking() {
   for (const command of ["continue", "refine", "verify"]) {
-    const config = configBlocks(await readFile(path.join(REPO_ROOT, "src", "bundle", "commands", `${command}.md`), "utf8"));
+    const config = configBlocks(await readFile(path.join(REPO_ROOT, "packages", "core", "assets", "commands", `${command}.md`), "utf8"));
     const flat = config.replace(/\s+/gu, " ");
     assert.match(flat, /--thinking <level>/u, `${command}: names the flag`);
     assert.match(flat, /STOP before the run is minted and before any role runs/u, `${command}: stops before the mint and any role`);
@@ -169,7 +169,7 @@ async function phaseCommandsStopOnThinking() {
 async function rendersManifestAndLockAgree() {
   assert.equal(
     serializeBundleManifest(generateBundleManifest()),
-    await readFile(path.join(REPO_ROOT, "src", "bundle", "manifest.json"), "utf8"),
+    await readFile(path.join(REPO_ROOT, "packages", "core", "assets", "manifest.json"), "utf8"),
     "the shipped manifest is the regenerated one",
   );
   const home = await mkdtemp(path.join(os.tmpdir(), "aof-141-home-"));
@@ -192,7 +192,7 @@ async function rendersManifestAndLockAgree() {
     verify: [".claude/commands/aof/verify.md", ".codex/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"],
   };
   for (const [command, files] of Object.entries(renders)) {
-    const source = await readFile(path.join(REPO_ROOT, "src", "bundle", "commands", `${command}.md`), "utf8");
+    const source = await readFile(path.join(REPO_ROOT, "packages", "core", "assets", "commands", `${command}.md`), "utf8");
     const paragraph = source.slice(source.indexOf(stop), source.indexOf("</config>", source.indexOf(stop))).trim();
     assert.ok(paragraph.length > stop.length, `${command}: the source carries the stop`);
     for (const file of files) {

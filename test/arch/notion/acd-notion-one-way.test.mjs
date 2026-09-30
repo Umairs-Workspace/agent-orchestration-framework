@@ -3,7 +3,7 @@
 //    (create/patch) or an addressing metadata read; NO path reads a Notion page's
 //    status/title and writes it to disk; on divergence disk overwrites Notion."
 //
-// Source-grep of src/notion/sync.mjs + projection.mjs, CI-able offline:
+// Source-grep of packages/core/src/notion/sync.mjs + projection.mjs, CI-able offline:
 //   (a) The Notion-CLI spawn argv only ever names PAGE create / PAGE patch
 //       (`pages create` / `pages update`) — a disk→Notion write (the as-built egress,
 //       STATE story-02 note). There is no Notion READ verb whose result feeds disk.

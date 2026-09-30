@@ -2,7 +2,7 @@
 // 68/ADR-005 + 68/ADR-006 / FF-6805 + FF-6806) — "Attribution is a join, not a match"
 // and "One agent run, one item".
 //
-//   FF-6805: No attribution path in src/work/observe.mjs tests item identity against
+//   FF-6805: No attribution path in packages/core/src/work/observe.mjs tests item identity against
 //            free text; the item is resolved from the run record's sessionId. The
 //            retired text-matcher has no surviving caller.
 //   FF-6806: Across a whole work stream, no agent-run identity appears in two items'
@@ -51,7 +51,7 @@ export const archTests = [
   {
     name: "arch/68 FF-6805 (acd-observe-attribution-by-join): behaviour over the real seam — an agent whose prompt names another item is still attributed to the item its session's run belongs to",
     run: async () => {
-      const { observeMilestone, projectSlug } = await import("../../../src/work/observe.mjs");
+      const { observeMilestone, projectSlug } = await import("../../../packages/core/src/work/observe.mjs");
       const cwd = await mkdtemp(path.join(os.tmpdir(), "aof-attr-arch-"));
       const home = await mkdtemp(path.join(os.tmpdir(), "aof-attr-arch-home-"));
       try {
@@ -79,7 +79,7 @@ export const archTests = [
   {
     name: "arch/68 FF-6806 (acd-observe-attribution-by-join): across a whole work stream no agent-run identity appears in two items' attributed sets, and a no-session run is reported unattributed",
     run: async () => {
-      const { observeMilestone, projectSlug } = await import("../../../src/work/observe.mjs");
+      const { observeMilestone, projectSlug } = await import("../../../packages/core/src/work/observe.mjs");
       const cwd = await mkdtemp(path.join(os.tmpdir(), "aof-attr-arch-"));
       const home = await mkdtemp(path.join(os.tmpdir(), "aof-attr-arch-home-"));
       try {
@@ -134,7 +134,7 @@ export const archTests = [
           else if (e.name.endsWith(".mjs")) modules.push(p);
         }
       };
-      await walk(path.join(root, "src"));
+      await walk(path.join(root, "packages", "core", "src"));
       assert.ok(modules.length > 150, `src was actually walked: ${modules.length} modules`);
       const offenders = [];
       for (const file of modules) {

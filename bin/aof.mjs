@@ -1,7 +1,3 @@
 #!/usr/bin/env node
-import { run } from "../src/cli.mjs";
-
-run(process.argv.slice(2)).catch((error) => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+// Repository entry forwarder; documented consumers and removal are in Plan 06.
+import '../packages/core/bin/aof.mjs';

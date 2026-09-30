@@ -1,4 +1,4 @@
-// Traceability wiring for milestone 34 / story 03 — src/global-mesh-query.mjs, the
+// Traceability wiring for milestone 34 / story 03 — packages/core/src/global-mesh-query.mjs, the
 // ONE composition seam the fleet serve-face reaches for its GLOBAL
 // `/api/mesh/status` read (ARCHITECTURE ADR-006). Covers the shaping contract
 // tasks/01_mesh-ui-api-scope-switch.feature's global scenario needs at the module
@@ -9,13 +9,13 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../src/mesh/presence.mjs";
-import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+import { publishPresenceRecord } from "../../packages/core/src/mesh/presence.mjs";
+import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-global-mesh-query-"));

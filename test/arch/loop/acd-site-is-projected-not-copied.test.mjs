@@ -4,10 +4,10 @@
 //    projects it lives where the delivered reader-set control does not walk."
 //
 // WHY THIS EXISTS. Story 79's drift check (`acd-loop-document-current.test.mjs`, beside this file)
-// walks `src/` for `loopDocumentPath`, `LOOP_DOCUMENT_BASENAME` or a literal `loops.md` and asserts
+// walks `packages/core/src/` for `loopDocumentPath`, `LOOP_DOCUMENT_BASENAME` or a literal `loops.md` and asserts
 // the reader set is exactly its own two modules — "read by its own two modules and by no lifecycle,
-// doctor or acceptor door". A site builder placed in `src/` reds that delivered control on arrival.
-// The walk is over `src/` only, so a builder under `scripts/` may import the seam freely, which is
+// doctor or acceptor door". A site builder placed in `packages/core/src/` reds that delivered control on arrival.
+// The walk is over `packages/core/src/` only, so a builder under `scripts/` may import the seam freely, which is
 // also where this repository already keeps its build and release steps. That is the whole placement
 // argument, and it is a control rather than a note because the alternative reads as an arbitrary
 // preference until somebody moves the file and 79's suite reds for a reason nothing states.
@@ -26,7 +26,7 @@
 //   1. 79's reader-set row passes at the tip, and the builder — which the predicate DOES match — is
 //      outside the walk. (79's row passing unedited is what the story's focused set holds too; this
 //      entry says why it passes.)
-//   2. The builder REACHES the one home: it imports `loopDocumentPath` from `src/loop-document.mjs`,
+//   2. The builder REACHES the one home: it imports `loopDocumentPath` from `packages/core/src/loop-document.mjs`,
 //      spells no basename of the document, and composes no part of it — not one line of the
 //      committed document appears in the builder's source.
 //   3. Nothing under `docs/` carries the graph document's committed bytes or is the builder's
@@ -37,8 +37,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loopDocumentPath } from "../../../src/loop-document.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { loopDocumentPath } from "../../../packages/core/src/loop-document.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { SHELL_DIR, buildSite, carriesProvenanceEnvelope } from "../../../scripts/site/build-site.mjs";
 import { snapshot } from "../../support/loop-document-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
@@ -79,7 +79,7 @@ export const archTests = [
       // scope, not a builder that happens to spell nothing the predicate recognises.
       const builder = stripComments(await readFile(path.join(repoRoot, BUILDER), "utf8"));
       assert.match(builder, READER, "the reader predicate matches the builder — it is a reader of the seam");
-      assert.ok(path.relative(path.join(repoRoot, "src"), path.join(repoRoot, BUILDER)).startsWith(".."), "and the builder's path resolves outside src/, which is why the walk never reaches it");
+      assert.ok(path.relative(path.join(repoRoot, "packages", "core", "src"), path.join(repoRoot, BUILDER)).startsWith(".."), "and the builder's path resolves outside src/, which is why the walk never reaches it");
     },
   },
   {

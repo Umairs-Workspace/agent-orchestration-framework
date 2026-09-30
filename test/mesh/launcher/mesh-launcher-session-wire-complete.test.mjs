@@ -4,12 +4,12 @@
 //
 // FED BY THE REAL PRODUCER (m38/ADR-008). Every scenario drives the REAL presence
 // assembler — `startLauncher`'s first publish, the ONE production caller of
-// `assembleCurrentPresenceRecord` (src/mesh/launcher.mjs) — over a hermetic fixture
+// `assembleCurrentPresenceRecord` (packages/core/src/mesh/launcher.mjs) — over a hermetic fixture
 // repo holding REAL run records and REAL session records (written by the real
 // `startSession`). No scenario hands the assembler a pre-built sessions array; the
 // only literal in the fixture is the situation itself.
 //
-// WHAT THIS TASK CHANGED, at source: `src/mesh/launcher.mjs` used to publish
+// WHAT THIS TASK CHANGED, at source: `packages/core/src/mesh/launcher.mjs` used to publish
 // `(await readLiveSessions(...)).filter((session) => !workspacesWithRuns.has(session.workspaceId))`
 // — m38/ADR-004's DISPLAY rule implemented on the WIRE, which dropped a session at
 // exactly the moment its node picked up work. m48/ADR-004 deletes that filter and
@@ -28,11 +28,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { setDegradeSinkForTest } from "../../../src/degrade.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";
@@ -284,7 +284,7 @@ export const meshLauncherSessionWireCompleteTests = [
   // make the session read throw, and the launcher's catch would be untestable. The
   // fault therefore rides the one option the launcher passes STRAIGHT THROUGH and
   // ONLY `readLiveSessions` consumes: `options.config`, read exactly once at
-  // `resolveSessionTtlSeconds(options.config)` (src/mesh/presence.mjs). Nothing else in
+  // `resolveSessionTtlSeconds(options.config)` (packages/core/src/mesh/presence.mjs). Nothing else in
   // the launcher reads it, so the blast radius of the injected fault is exactly the
   // session read — the same "drive the fault through an existing options seam" shape
   // test/mesh/presence/mesh-presence-aggregate-workspaces.test.mjs uses for `options.listItems`.

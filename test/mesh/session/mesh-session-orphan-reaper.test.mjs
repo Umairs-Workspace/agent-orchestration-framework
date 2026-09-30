@@ -23,11 +23,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../src/commands/mesh/session.mjs";
-import { readSessionRecord, reapExpiredSessions, sessionRecordPath, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { setDegradeSinkForTest } from "../../../src/degrade.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { meshSessionCommand } from "../../../packages/core/src/commands/mesh/session.mjs";
+import { readSessionRecord, reapExpiredSessions, sessionRecordPath, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../packages/core/src/mesh/session.mjs";
+import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const NODE_ID = "node-a";
 const PEER_NODE_ID = "node-b";
@@ -256,7 +256,7 @@ export const meshSessionOrphanReaperTests = [
         // because no real filesystem fault is portable across this fleet's three
         // platforms. Driven through the REAL pingSession (the CLI supplies no
         // options, which is the production shape the fitness function pins).
-        const { pingSession } = await import("../../../src/mesh/session.mjs");
+        const { pingSession } = await import("../../../packages/core/src/mesh/session.mjs");
         const record = await pingSession(
           fixture.ws,
           { nodeId: NODE_ID, workspaceId: "ws-mine", repo: "demo", assistant: "claude-code", sessionId: "sess-mine", now: NOW },

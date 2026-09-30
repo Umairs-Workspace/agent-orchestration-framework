@@ -27,7 +27,7 @@
 //   (C) A SECOND SPELLING OF THE INSTALLED LAYER. The corpus is the prompt layer AS INSTALLED,
 //       discovered through the runtime local roots and resource-kind plurals the model already
 //       declares. A path literal here would be a second declaration that drifts from the first —
-//       and it would also quietly re-scope the rule, because `src/bundle/**` exists only in a
+//       and it would also quietly re-scope the rule, because `packages/core/assets/**` exists only in a
 //       framework checkout while what actually runs is what is installed.
 //
 // ── WHAT THE CENSUS DELIBERATELY DOES NOT READ, AND WHY ──────────────────────────────────────
@@ -45,12 +45,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { RESOURCE_KINDS, RUNTIMES } from "../../../src/model.mjs";
+import { RESOURCE_KINDS, RUNTIMES } from "../../../packages/core/src/model.mjs";
 import {
   PROMPT_LAYER_SWEEPS,
   SENTENCE_FLOOR,
   runPromptLayer,
-} from "../../../src/work-audit/prompt-layer.mjs";
+} from "../../../packages/core/src/work-audit/prompt-layer.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MODULE_REL = "packages/work/src/audit/prompt-layer.mjs";
@@ -255,7 +255,7 @@ export const archTests = [
     async run() {
       const { code, rest } = censusableSource();
 
-      assert.match(stripComments(readFileSync(new URL("../../../src/application/bindings/work-audit/prompt-layer.mjs", import.meta.url), "utf8")), /import \{[^}]*RESOURCE_KINDS[^}]*RUNTIMES[^}]*\} from "(?:\.\.\/)+model\.mjs"/u, `${MODULE_REL} takes the runtimes and the resource kinds from the model, which is their one home`);
+      assert.match(stripComments(readFileSync(new URL("../../../packages/core/src/application/bindings/work-audit/prompt-layer.mjs", import.meta.url), "utf8")), /import \{[^}]*RESOURCE_KINDS[^}]*RUNTIMES[^}]*\} from "(?:\.\.\/)+model\.mjs"/u, `${MODULE_REL} takes the runtimes and the resource kinds from the model, which is their one home`);
 
       assert.match(code, /createAuditPromptLayer\(\{ RESOURCE_KINDS, RUNTIMES \}\)/u, "the implementation receives the model vocabulary");
       // NO SECOND SPELLING. The forbidden literals are derived FROM the model rather than typed
@@ -273,14 +273,14 @@ export const archTests = [
       const shared = sentenceOfBytes(SENTENCE_FLOOR + 40, "juliet");
       const bundleOnly = await laneOver({
         ".claude/commands/one.md": "An installed document sharing nothing.",
-        "src/bundle/commands/one.md": shared,
-        "src/bundle/commands/two.md": shared,
+        "packages/core/assets/commands/one.md": shared,
+        "packages/core/assets/commands/two.md": shared,
       });
-      assert.deepEqual(bundleOnly.pairs, [], "a duplicate that exists only in a `src/bundle` copy is not reported — what runs is what is installed");
+      assert.deepEqual(bundleOnly.pairs, [], "a duplicate that exists only in a `packages/core/assets` copy is not reported — what runs is what is installed");
 
       const installed = await laneOver({ ".claude/commands/one.md": shared, ".claude/rules/two.md": shared });
       assert.equal(installed.pairs.length, 1, "…and the same sentence in two INSTALLED documents is");
-      assert.equal(installed.pairs[0].message.includes("src/bundle"), false, "naming the installed paths, never a bundle copy");
+      assert.equal(installed.pairs[0].message.includes("packages/core/assets"), false, "naming the installed paths, never a bundle copy");
     },
   },
 ];

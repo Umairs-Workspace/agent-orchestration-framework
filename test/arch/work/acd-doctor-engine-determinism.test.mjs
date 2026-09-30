@@ -15,17 +15,17 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { doctorWork } from "../../../src/work/doctor.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { doctorWork } from "../../../packages/core/src/work/doctor.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 // Every doctor module — the spine + the appended GROUP modules (coherence,
 // freshness) and any future m16 group. ADR-003's no-wall-clock invariant covers ALL
 // of them, not just the spine, so the source grep spans the whole `work-doctor*.mjs`
 // family (glob the src dir), never a hard-coded list.
-// 119/01 — the family lives in `src/work/` and its members read `doctor*.mjs`. The glob follows
+// 119/01 — the family lives in `packages/core/src/work/` and its members read `doctor*.mjs`. The glob follows
 // it; the non-vacuity leg in the wall-clock test below is what caught the move.
 async function doctorModules() {
   const files = (await readRuntimeFiles(repoRoot)).filter(file =>

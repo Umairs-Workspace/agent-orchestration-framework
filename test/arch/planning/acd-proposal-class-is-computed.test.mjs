@@ -8,7 +8,7 @@ import {
   PROPOSAL_CLASSES,
   computeProposalLane,
   laneProposals,
-} from "../../../src/work-tune/proposal.mjs";
+} from "../../../packages/core/src/work-tune/proposal.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const key = "work.fixture.roundsAllowed";

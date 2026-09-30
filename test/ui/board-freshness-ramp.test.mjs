@@ -5,7 +5,7 @@
 //   1. the PURE ramp module (ui/src/board/freshness.mjs) for its return value
 //      over injected inputs — the state, both renderings, the tooltip sentence;
 //   2. the REAL, UNMODIFIED production <Board/> tree, mounted headlessly against
-//      a REAL board face (src/board-ui.mjs) over an isolated global store, on a
+//      a REAL board face (packages/core/src/board-ui.mjs) over an isolated global store, on a
 //      CONTROLLABLE clock that owns `Date.now()`. Element text, `className`
 //      tokens, attributes, sibling ORDER and THE COUNT OF FETCHES THE APP MADE
 //      are all read off that rendered tree and the app's own traffic. No source
@@ -64,8 +64,8 @@
 // The ramp's minimal RENDERING is asserted here and its a11y contract in task 08;
 // `minimal` is RESERVED with no painter in this milestone.
 import assert from "node:assert/strict";
-import { isStale } from "../../src/run-store.mjs";
-import { cacheFreshness } from "../../src/cache-provenance.mjs";
+import { isStale } from "../../packages/core/src/run-store.mjs";
+import { cacheFreshness } from "../../packages/core/src/cache-provenance.mjs";
 import {
   BADGE_FORMS,
   FRESHNESS_GLYPH,
@@ -138,7 +138,7 @@ export const boardFreshnessRampTests = [
       for (const [label, age, state] of rows) {
         const syncedAt = at(-age);
         const client = freshnessState(syncedAt, now, WINDOW);
-        // `src/`'s ONE predicate (run-store.mjs's isStale, re-exposed as
+        // `packages/core/src/`'s ONE predicate (run-store.mjs's isStale, re-exposed as
         // isNodeStale), called over the STORAGE column the wire's `syncedAt` is
         // mapped from — the same shape the cache read boundary uses.
         const server = isStale({ updatedAt: syncedAt }, now, WINDOW * 1000) ? "stale" : "fresh";
@@ -159,8 +159,8 @@ export const boardFreshnessRampTests = [
   //
   // The lane above compares `ui/`'s ramp to the SHARED PREDICATE (`isStale`).
   // That is the comparison the threshold instant needs, but it is not the whole
-  // of AC 4: `src/` states its own verdict through `cacheFreshness`
-  // (src/cache-provenance.mjs), which is the function a future server-side reader
+  // of AC 4: `packages/core/src/` states its own verdict through `cacheFreshness`
+  // (packages/core/src/cache-provenance.mjs), which is the function a future server-side reader
   // reaches for and the one whose header claims to state the shape the browser
   // must agree with. Comparing the ramp only to `isStale` leaves the two
   // DEFINITIONS unchecked against each other, and they diverged: measured

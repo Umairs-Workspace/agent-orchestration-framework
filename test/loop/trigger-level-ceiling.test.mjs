@@ -2,7 +2,7 @@
 //
 // Every @executable scenario and every Scenario-Outline row of the story's four task features,
 // driven against the real leaf (`resolveTriggerLevel`), the real gate (`resolveLoopLevelGate`,
-// which is the SAME function `src/commands/loop.mjs` gates with at fire time) and the real
+// which is the SAME function `packages/core/src/commands/loop.mjs` gates with at fire time) and the real
 // compiler (`compileTriggerDeclaration`). Nothing here re-implements a rule it asserts — the
 // threshold, the ladder and the default are all imported from `packages/work-loop/src/engine.mjs`, so a test that
 // passed by agreeing with a copy of the gate is not available.
@@ -34,8 +34,8 @@ import {
   renderTriggerLevelResolution,
   resolveTriggerLevel,
   resolveTriggerLevels,
-} from "../../src/work-trigger/level.mjs";
-import { compileTriggerDeclaration } from "../../src/work-trigger/declaration.mjs";
+} from "../../packages/core/src/work-trigger/level.mjs";
+import { compileTriggerDeclaration } from "../../packages/core/src/work-trigger/declaration.mjs";
 import {
   L3_SCORE_THRESHOLD,
   LOOP_LEVELS,
@@ -391,7 +391,7 @@ const RESOLVED_AT_EVERY_FIRE = [
       expectAdmitted(resolution, GATED_RUNG, "the pre-flight");
 
       // The facts move before the launch, and the loop is entered. `resolveLoopLevelGate` IS the
-      // fire-time gate — `src/commands/loop.mjs` calls exactly this, which
+      // fire-time gate — `packages/core/src/commands/loop.mjs` calls exactly this, which
       // `acd-trigger-level-is-a-ceiling` pins as a source fact.
       const moved = bothFail();
       const atFire = resolveLoopLevelGate(GATED_RUNG, moved);

@@ -54,7 +54,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
 import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
 import { visibleTextOf } from "../support/mini-react.mjs";
 import { withFleetBoards, withMeshStatusBoards, BOARDS_FIXTURE_LOCAL_NODE, BOARDS_FIXTURE_PEER_NODE } from "../support/mesh-status-boards-fixture.mjs";

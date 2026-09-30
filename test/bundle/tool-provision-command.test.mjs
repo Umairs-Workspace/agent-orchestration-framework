@@ -2,10 +2,10 @@
 // tasks/00_provision-command.feature.
 //
 // Covers every @executable scenario against the REAL in-process code:
-// src/commands/project-provision.mjs (the project:provision command — its frozen
-// { id, input, run, cli } shape) registered into src/command-core.mjs's COMMANDS,
+// packages/core/src/commands/project-provision.mjs (the project:provision command — its frozen
+// { id, input, run, cli } shape) registered into packages/core/src/command-core.mjs's COMMANDS,
 // and the `aof project provision` CLI dispatch (the --json single-pass envelope
-// in src/cli.mjs). One test object per @executable scenario (Scenario-Outline
+// in packages/core/src/cli.mjs). One test object per @executable scenario (Scenario-Outline
 // rows folded into one entry), each name tracing to feature + scenario. The
 // @manual live-install row (a real `uv venv` install) is DEFERRED — not wired.
 //
@@ -20,9 +20,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../src/command-core.mjs";
-import { toolStoreRoot, toolVersionDir } from "../../src/paths.mjs";
-import { GRAPHIFY_DESCRIPTOR } from "../../src/tool-store.mjs";
+import { getCommand, listCommands } from "../../packages/core/src/command-core.mjs";
+import { toolStoreRoot, toolVersionDir } from "../../packages/core/src/paths.mjs";
+import { GRAPHIFY_DESCRIPTOR } from "../../packages/core/src/tool-store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

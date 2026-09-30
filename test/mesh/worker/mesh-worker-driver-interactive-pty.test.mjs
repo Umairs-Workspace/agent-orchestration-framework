@@ -11,8 +11,8 @@
 // the session_id transcript watch injected — never a hand-built stub of "what the
 // provider ought to emit" (the milestone's producer-fed lesson).
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL, DIRECTIVE_COMPLETE_SENTINEL } from "../../../src/mesh/worker-execution.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL, DIRECTIVE_COMPLETE_SENTINEL } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 

@@ -1,7 +1,7 @@
 // Fitness function: acd-wire-kind-has-both-ends (milestone 50 / story 04; ARCHITECTURE
 // ADR-008 FF-B — THE RATCHET).
 //
-//   "Every wire kind declared in `src/` has BOTH ends: something builds/sends it, and
+//   "Every wire kind declared in `packages/core/src/` has BOTH ends: something builds/sends it, and
 //    something reads/branches on it — and at least one of those ends lives outside the
 //    module that declares it."
 //
@@ -13,7 +13,7 @@
 //   2. TECH_DEBT item 38 — two shipped, tested RENDERING paths with no production producer.
 //   3. `SESSION_SPAWN_ACK_KIND` — a wire kind with a builder (`buildSessionSpawnAckFrame`),
 //      a sender (`worker-stream-client.sendSessionSpawnAck`), a transport, an accepted
-//      story and a passing unit test, and NO READER ANYWHERE IN `src/` across THREE
+//      story and a passing unit test, and NO READER ANYWHERE IN `packages/core/src/` across THREE
 //      accepted stories. The frame fell through the control's `applyStreamFrame` kind
 //      table into `unknown-frame-kind` and was reported to the operator as a discarded
 //      workspace payload — a sentence with three false claims in it. Every failed session
@@ -28,8 +28,8 @@
 //
 // ═══ THE RULE, AND HOW IT WAS NARROWED (this is the part to read before editing) ═══════
 // ADR-008 FF-B's own wording is "referenced by at least TWO modules other than its
-// declaring home". DRIVEN OVER THE LIVE `src/` TREE ON 2026-08-14 (the axis: every
-// `export const *_KIND` under `src/`, 15 string-valued + 1 object-valued), that literal
+// declaring home". DRIVEN OVER THE LIVE `packages/core/src/` TREE ON 2026-08-14 (the axis: every
+// `export const *_KIND` under `packages/core/src/`, 15 string-valued + 1 object-valued), that literal
 // wording is RED for roughly seven of the fifteen string-valued kinds — and every one of
 // those reds is a FALSE POSITIVE with a boring explanation:
 //   · `RECOVERY_PUSH_RESULT_KIND`, `RESYNC_KIND`, `RESYNC_RESULT_KIND`,
@@ -63,7 +63,7 @@
 // problem, so the list can only shrink by being noticed.
 //
 // IT WAS DRAFTED WITH TWO, AND THE SECOND WAS DELETED BEFORE DELIVERY (review 2026-08-14).
-// `PRESENCE_SIGNAL_KIND`'s re-spelling sat at `src/control-stream-server.mjs`'s kind table —
+// `PRESENCE_SIGNAL_KIND`'s re-spelling sat at `packages/core/src/control-stream-server.mjs`'s kind table —
 // a file THIS story already edits, and one that already imports six other `*_KIND`
 // constants — so the exemption's own stated reason ("this story may not reach into those
 // lanes") did not hold for it. It is fixed at the site instead, in the same diff that
@@ -81,7 +81,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 // LINE COMMENTS FIRST, BLOCK COMMENTS SECOND — the order is load-bearing (TECH_DEBT item
 // 24): strip blocks first and a line comment containing `/*` deletes the rest of the file
@@ -144,9 +144,9 @@ function respeltEnds(sources, value) {
 // and a gate that forces unrelated edits to land is a gate that gets reverted.
 //
 // THE BAR IS "OUT OF THE DIFF'S REACH", NOT "SOMEWHERE ELSE" — the drafted second entry
-// (`PRESENCE_SIGNAL_KIND`, re-spelled in `src/control-stream-server.mjs`) failed that bar,
+// (`PRESENCE_SIGNAL_KIND`, re-spelled in `packages/core/src/control-stream-server.mjs`) failed that bar,
 // because this story edits that file, and it was FIXED at the site and deleted from here
-// before delivery. `src/mesh/assignment-reclaim.mjs` genuinely is untouched by this diff.
+// before delivery. `packages/core/src/mesh/assignment-reclaim.mjs` genuinely is untouched by this diff.
 //
 // A stale entry is itself reported (see `wireKindProblems`), so this list cannot quietly
 // outlive its subjects.
@@ -328,16 +328,16 @@ export const archTests = [
       // The CLEAN shape: a contract home declaring the kind and owning its builder, plus a
       // far module that branches on it. This is the house shape N3 permits.
       const clean = asSweep([
-        ["src/lane-contract.mjs", 'export const LANE_KIND = "lane";\nexport function buildLaneFrame(x) { return { kind: LANE_KIND, x }; }'],
-        ["src/lane-reader.mjs", 'import { LANE_KIND } from "./lane-contract.mjs";\nif (frame?.kind === LANE_KIND) { handle(frame); }'],
+        ["packages/core/src/lane-contract.mjs", 'export const LANE_KIND = "lane";\nexport function buildLaneFrame(x) { return { kind: LANE_KIND, x }; }'],
+        ["packages/core/src/lane-reader.mjs", 'import { LANE_KIND } from "./lane-contract.mjs";\nif (frame?.kind === LANE_KIND) { handle(frame); }'],
       ]);
       assert.deepEqual(wireKindProblems(clean), [], "self-check: the clean contract-home + far-reader shape stays quiet");
 
       // PLANT — NO READER. Precisely SESSION_SPAWN_ACK_KIND's shipped shape: a builder, a
       // sender, a transport, a test, and nothing that branches.
       const noReader = asSweep([
-        ["src/lane-contract.mjs", 'export const LANE_KIND = "lane";\nexport function buildLaneFrame(x) { return { kind: LANE_KIND, x }; }'],
-        ["src/lane-sender.mjs", 'import { buildLaneFrame } from "./lane-contract.mjs";\nexport function send(x) { return sendFrame(buildLaneFrame(x)); }'],
+        ["packages/core/src/lane-contract.mjs", 'export const LANE_KIND = "lane";\nexport function buildLaneFrame(x) { return { kind: LANE_KIND, x }; }'],
+        ["packages/core/src/lane-sender.mjs", 'import { buildLaneFrame } from "./lane-contract.mjs";\nexport function send(x) { return sendFrame(buildLaneFrame(x)); }'],
       ]);
       const noReaderProblems = wireKindProblems(noReader);
       assert.equal(noReaderProblems.length, 1, `self-check: a kind with no reader trips exactly once. Got: ${JSON.stringify(noReaderProblems)}`);
@@ -347,8 +347,8 @@ export const archTests = [
       // PLANT — NO PRODUCER. The mirror image: something branches on a kind nothing ever
       // sends, which is a reader waiting forever for a frame that cannot arrive.
       const noProducer = asSweep([
-        ["src/lane-contract.mjs", 'export const LANE_KIND = "lane";'],
-        ["src/lane-reader.mjs", 'import { LANE_KIND } from "./lane-contract.mjs";\nif (frame?.kind === LANE_KIND) { handle(frame); }'],
+        ["packages/core/src/lane-contract.mjs", 'export const LANE_KIND = "lane";'],
+        ["packages/core/src/lane-reader.mjs", 'import { LANE_KIND } from "./lane-contract.mjs";\nif (frame?.kind === LANE_KIND) { handle(frame); }'],
       ]);
       const noProducerProblems = wireKindProblems(noProducer);
       assert.equal(noProducerProblems.length, 1, `self-check: a kind with no producer trips exactly once. Got: ${JSON.stringify(noProducerProblems)}`);
@@ -357,7 +357,7 @@ export const archTests = [
       // PLANT — BOTH ENDS AT HOME (N3). The `wireTerminalBridge` shape: a module that
       // builds and reads its own kind, so the lane compiles, tests and does nothing.
       const bothAtHome = asSweep([
-        ["src/lane-contract.mjs", 'export const LANE_KIND = "lane";\nexport function buildLaneFrame(x) { return { kind: LANE_KIND, x }; }\nexport function apply(frame) { if (frame?.kind === LANE_KIND) return true; return false; }'],
+        ["packages/core/src/lane-contract.mjs", 'export const LANE_KIND = "lane";\nexport function buildLaneFrame(x) { return { kind: LANE_KIND, x }; }\nexport function apply(frame) { if (frame?.kind === LANE_KIND) return true; return false; }'],
       ]);
       const bothAtHomeProblems = wireKindProblems(bothAtHome);
       assert.equal(bothAtHomeProblems.length, 1, `self-check: both ends inside the declaring home trips. Got: ${JSON.stringify(bothAtHomeProblems)}`);
@@ -368,8 +368,8 @@ export const archTests = [
       // say RE-SPELLED and point at the site, because "no reader" would send the engineer
       // to write a second one beside the reader already there.
       const respelt = asSweep([
-        ["src/lane-contract.mjs", 'export const LANE_KIND = "lane";\nexport function buildLaneFrame(x) { return { kind: LANE_KIND, x }; }'],
-        ["src/lane-reader.mjs", 'if (frame?.kind === "lane") { handle(frame); }'],
+        ["packages/core/src/lane-contract.mjs", 'export const LANE_KIND = "lane";\nexport function buildLaneFrame(x) { return { kind: LANE_KIND, x }; }'],
+        ["packages/core/src/lane-reader.mjs", 'if (frame?.kind === "lane") { handle(frame); }'],
       ]);
       const respeltProblems = wireKindProblems(respelt);
       assert.equal(respeltProblems.length, 1, `self-check: an unenumerated re-spelled end trips. Got: ${JSON.stringify(respeltProblems)}`);
@@ -412,7 +412,7 @@ export const archTests = [
 
       // …AND THE SHRINK PATH IS NOT HYPOTHETICAL: `PRESENCE_SIGNAL_KIND` was drafted as this
       // enumeration's second entry and deleted at review, because its re-spelling site
-      // (src/control-stream-server.mjs) is a file this story edits. The list is asserted to
+      // (packages/core/src/control-stream-server.mjs) is a file this story edits. The list is asserted to
       // no longer name it — a deleted exemption that crept back would mean the fix at the
       // site was reverted, and the real-tree sweep above would then be the only thing left
       // to notice.

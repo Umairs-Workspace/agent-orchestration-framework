@@ -17,10 +17,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import { BRIEF_SECTION_PRIORITY } from "../../../src/phase-brief.mjs";
+import { BRIEF_SECTION_PRIORITY } from "../../../packages/core/src/phase-brief.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(root, "src");
+const srcRoot = path.join(root, "packages", "core", "src");
 const FOUR_KEYS = ["itemRef", "worktreeCwd", "task", "command"];
 
 // The `compilePhaseBrief` input key each declared section arrives under. `item` is the one
@@ -42,7 +42,7 @@ const DISK_READS = ["readFile", "readdir", "readOptional", "readTaskContracts"];
 // THERE IS EXACTLY ONE. `callSitePairs` takes the FIRST `compilePhaseBrief(` it finds, so
 // without this the guard says nothing about a second one added later — and a second call
 // site in the reader is precisely where an unaddressed document would come back, since the
-// whole check is "what is bound at the call site". Today `src/` holds one; asserted, not
+// whole check is "what is bound at the call site". Today `packages/core/src/` holds one; asserted, not
 // assumed, and asserted as a COUNT rather than as an existence so both directions fail.
 function assertOneCallSite(reader) {
   assert.equal(
@@ -143,7 +143,7 @@ export const archTests = [
     name: "arch/70 FF-7001 (acd-phase-brief-single-bag): both callers construct the brief bag with the four existing keys and add context additively, never replacing any",
     run: async () => {
       const drive = await readFile(path.join(root, "packages/work-loop/src/commands/drive.mjs"), "utf8");
-      const mesh = await readFile(path.join(srcRoot, "../packages/mesh/src/worker-execution.mjs"), "utf8");
+      const mesh = await readFile(path.join(srcRoot, "../../mesh/src/worker-execution.mjs"), "utf8");
       for (const [name, src] of [["drive.mjs", drive], ["mesh/worker-execution.mjs", mesh]]) {
         for (const key of FOUR_KEYS) {
           assert.ok(new RegExp(`\\b${key}\\b`, "u").test(src), `${name} still constructs the brief bag with ${key}`);
@@ -230,7 +230,7 @@ export const archTests = [
       }
 
       // The pure compiler is where addressing lives, and it stays pure while it does so — as a
-      // FAMILY (119/ADR-002): the subject is `src/phase-brief/` when that directory exists and
+      // FAMILY (119/ADR-002): the subject is `packages/core/src/phase-brief/` when that directory exists and
       // `packages/work/src/phase-brief.mjs` when it does not, an intra-family specifier is admitted, and every
       // external dependency — a bare specifier, a node builtin, a relative path leaving the family —
       // is still a violation naming the file and the specifier.

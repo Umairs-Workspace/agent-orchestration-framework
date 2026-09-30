@@ -26,12 +26,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGithubAppPushMintProvider } from "../../../src/mesh/clone-credential-provider.mjs";
-import { applyWriteCredentialRequestFrame, WRITE_CREDENTIAL_NOT_HOLDER } from "../../../src/control-stream-server.mjs";
+import { createGithubAppPushMintProvider } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
+import { applyWriteCredentialRequestFrame, WRITE_CREDENTIAL_NOT_HOLDER } from "../../../packages/core/src/control-stream-server.mjs";
 import { generateThrowawayKeypair, createFakeHttpRequest, jsonResponse } from "../../support/mesh-clone-credential-mint-fixture.mjs";
 import { seedAssignment } from "../../support/mesh-assign-fixture.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const workerExecutionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");

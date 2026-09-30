@@ -5,7 +5,7 @@
 //  render; Playwright is invoked on-demand via `npx` and is NOT a dependency in package.json."
 //
 // Reads the BUNDLED designer agent (the verdict it returns) + verify/continue commands (the
-// verdict the orchestration routes) under src/bundle/ (ADR-005), and the root package.json (the
+// verdict the orchestration routes) under packages/core/assets/ (ADR-005), and the root package.json (the
 // no-Playwright-dependency assertion). The designer-side verdict text is authored by story 00;
 // the command-side text + the npx/no-dep rule by story 02 — read here by the one contract test.
 import assert from "node:assert/strict";
@@ -16,9 +16,9 @@ const root = new URL("../../../", import.meta.url);
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");
 const has = (rel, needle) => read(rel).toLowerCase().includes(needle.toLowerCase());
 
-const DESIGNER = "src/bundle/agents/aof-designer.md";
-const VERIFY = "src/bundle/commands/verify.md";
-const CONTINUE = "src/bundle/commands/continue.md";
+const DESIGNER = "packages/core/assets/agents/aof-designer.md";
+const VERIFY = "packages/core/assets/commands/verify.md";
+const CONTINUE = "packages/core/assets/commands/continue.md";
 
 export const archTests = [
   {

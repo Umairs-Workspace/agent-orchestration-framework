@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 33 / story 00 — per-install node identity.
 //
 // Covers EVERY @executable scenario in
-// tasks/00_identity-sidecar-persist.feature, exercising src/node-identity.mjs
+// tasks/00_identity-sidecar-persist.feature, exercising packages/core/src/node-identity.mjs
 // IN-PROCESS with INJECTED hostname / salt / sidecarPath (the white-box Build-notes
 // requirement — no real-machine coupling), plus a real temp committed-config file to
 // assert the "byte-unchanged" scenarios. One test object per @executable scenario
@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { deriveNodeId, installHash } from "../../src/node-identity.mjs";
+import { deriveNodeId, installHash } from "../../packages/core/src/node-identity.mjs";
 
 const ID_RE = /^[a-z0-9-]+$/;
 

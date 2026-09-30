@@ -1,8 +1,8 @@
 // Traceability wiring for milestone 20 / story 01 — the work:run-retry command.
 //
 // Covers EVERY @executable scenario in tasks/00_run-retry-command.feature,
-// exercising the REAL in-process registry (src/command-core.mjs +
-// src/commands/run-retry.mjs over story 00's src/run-store.mjs) against a temp
+// exercising the REAL in-process registry (packages/core/src/command-core.mjs +
+// packages/core/src/commands/run-retry.mjs over story 00's packages/core/src/run-store.mjs) against a temp
 // fixture repo — loadWorkspace + invoke, real fs, in-process. One test object per
 // @executable scenario (Scenario-Outline rows folded into one entry iterating the
 // rows), each name tracing to feature + scenario. node:assert/strict.
@@ -17,8 +17,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace, findWork } from "../../src/work.mjs";
-import { getCommand, listCommands, invoke } from "../../src/command-core.mjs";
+import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
+import { getCommand, listCommands, invoke } from "../../packages/core/src/command-core.mjs";
 
 const FROZEN_KEYS = ["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks"];
 

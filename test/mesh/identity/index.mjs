@@ -4,14 +4,14 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
-// milestone 22 — mesh-foundation (story 01: node-identity + commands — src/node-identity.mjs
+// milestone 22 — mesh-foundation (story 01: node-identity + commands — packages/core/src/node-identity.mjs
 // derives the stable, human-readable node id + assembles the frozen 7-key capability
-// descriptor (ADR-003); src/commands/mesh-identity.mjs registers mesh:identity (publish/
+// descriptor (ADR-003); packages/core/src/commands/mesh-identity.mjs registers mesh:identity (publish/
 // read this node) + mesh:status (the synced roster) into the SAME core (ADR-001), thin
 // over story 00's mesh-store; the aof mesh identity/status dispatch branches + meshVerbCli
 // face in cli.mjs. Three task features: 00_node-identity-descriptor (in-process node

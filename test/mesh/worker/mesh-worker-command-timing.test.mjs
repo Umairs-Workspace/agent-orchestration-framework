@@ -6,7 +6,7 @@
 // view to bind to). The delay is injected (options.commandDelayMs); the driver defaults
 // to 0 so the rest of the suite stays fast, and mesh-launcher wires the real value.
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession } from "../../../src/mesh/worker-execution.mjs";
+import { driveInteractiveClaudeSession } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 // The bracketed-paste protocol bytes, built here from char codes rather than

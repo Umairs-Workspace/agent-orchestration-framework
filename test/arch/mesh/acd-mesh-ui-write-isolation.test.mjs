@@ -14,7 +14,7 @@
 // file or shells out; the mutation is inside the verb in one case and on the WORKER
 // in the other. The gate's job is to keep the enumeration an enumeration.
 //
-// A structural grep of src/mesh/ui-serve.mjs (comments discounted) PLUS a
+// A structural grep of packages/core/src/mesh/ui-serve.mjs (comments discounted) PLUS a
 // behavioural snapshot: serving the fleet view end-to-end (a static GET, several
 // GET /api/mesh/status reads) mutates NO file under the workspace fixture.
 import assert from "node:assert/strict";
@@ -22,7 +22,7 @@ import { readFile, mkdtemp, rm, mkdir, writeFile, readdir, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
@@ -86,7 +86,7 @@ function unenumeratedRoutes(source) {
 // `pathname === "/api/mesh/status"` slice in `acd-fleet-filter-read-only`) — anchors on
 // `pathname\s*===\s*["']/api/mesh/…`. `===` is the ONLY form any of them can see.
 //
-// MEASURED, NOT INFERRED. This was planted into the REAL src/mesh/ui-serve.mjs:
+// MEASURED, NOT INFERRED. This was planted into the REAL packages/core/src/mesh/ui-serve.mjs:
 //
 //     if (pathname.startsWith("/api/mesh/session/")) {
 //       if (request.method === "POST") { sendJson(response, 200, { ok: true, killed: … }); return; }
@@ -528,7 +528,7 @@ export const archTests = [
       // Examples rows in the locked feature, which is unchanged. They are the two shapes
       // the previous `[a-zA-Z0-9-]+` capture could not see AT ALL: a route with a PATH
       // SEPARATOR in its name and one with an UNDERSCORE. Both were planted into the real
-      // src/mesh/ui-serve.mjs and confirmed to fire before the plants were reverted, so
+      // packages/core/src/mesh/ui-serve.mjs and confirmed to fire before the plants were reverted, so
       // the widened capture is armed against the real file and not just against fixtures.
       const rows = [
         { route: "assign", allowed: true },
@@ -631,7 +631,7 @@ export const archTests = [
       );
 
       // ── THE PLANT, hand-written, and it is the EXACT shape that was planted into the real
-      //    src/mesh/ui-serve.mjs during review and left all four route tables green ────────
+      //    packages/core/src/mesh/ui-serve.mjs during review and left all four route tables green ────────
       const clean = stripComments(`
         if (pathname === "/api/mesh/assign") { const result = await assignWork(ws, ref, nodeId, ctx); sendJson(response, 200, result); return; }
         if (pathname === "/api/mesh/session") { await terminalInputPush.push(envelope); sendJson(response, 200, { ok: true, sessionId }); return; }

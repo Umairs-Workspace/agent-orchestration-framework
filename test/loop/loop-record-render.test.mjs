@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { projectExecution } from "../../src/loop-record.mjs";
+import { projectExecution } from "../../packages/core/src/loop-record.mjs";
 import {
   REGENERATE_REF_PLACEHOLDER,
   regenerateCommand,
   renderExecutionGraph,
   renderExecutionDocument,
-} from "../../src/loop-record-render.mjs";
-import { renderLoopGraph, KIND_SHAPES } from "../../src/commands/loops-graph.mjs";
+} from "../../packages/core/src/loop-record-render.mjs";
+import { renderLoopGraph, KIND_SHAPES } from "../../packages/core/src/commands/loops-graph.mjs";
 
 // ------------------------------------------------------------- fixtures ----
 //
@@ -101,11 +101,11 @@ export const loopRecordRenderTests = [
     name: "loop-render/00: an engaged loop draws its actuator and its reference owner, edged by the key the registry declares them under",
     run: () => {
       const registry = [
-        loopNode("loop:the-loop", { fields: { actuator: actuator("prose:src/bundle/agents/aof-developer.md"), owner: owner("actor:operator") } }),
+        loopNode("loop:the-loop", { fields: { actuator: actuator("prose:packages/core/assets/agents/aof-developer.md"), owner: owner("actor:operator") } }),
         node("actor:operator", "actor"),
       ];
       const graph = renderExecutionGraph({ model: modelFor(registry, engagementRuns("loop:the-loop", "lr-1", 1)), registry });
-      assert.ok(graph.text.includes("prose:src/bundle/agents/aof-developer.md"), "the actuator carries a node");
+      assert.ok(graph.text.includes("prose:packages/core/assets/agents/aof-developer.md"), "the actuator carries a node");
       assert.ok(graph.text.includes("actor:operator"), "the reference owner carries a node");
       assert.match(graph.text, /-->\|actuator\| /, "the actuator edge carries the key the registry declares it under");
       assert.match(graph.text, /-->\|owner\| /, "the owner edge carries the key the registry declares it under");

@@ -40,9 +40,9 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { getCommand, invoke } from "../../src/command-core.mjs";
-import { importStoreRoot } from "../../src/import/store.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { getCommand, invoke } from "../../packages/core/src/command-core.mjs";
+import { importStoreRoot } from "../../packages/core/src/import/store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

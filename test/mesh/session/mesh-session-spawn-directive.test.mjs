@@ -16,9 +16,9 @@ import {
   SESSION_SPAWN_ACK_KIND,
   buildSessionSpawnFrame,
   buildSessionSpawnAckFrame,
-} from "../../../src/mesh/session-spawn-directive.mjs";
-import { startControlStreamServer } from "../../../src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../../src/worker-stream-client.mjs";
+} from "../../../packages/core/src/mesh/session-spawn-directive.mjs";
+import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
+import { createWorkerStreamClient, createWorkerWsTransport } from "../../../packages/core/src/worker-stream-client.mjs";
 
 function createFakeTransport() {
   const sent = [];

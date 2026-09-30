@@ -7,8 +7,8 @@
 // never filters, or a filterable field with no flag to set it) rather than
 // half-working silently.
 import assert from "node:assert/strict";
-import { SCOPE_FLAGS } from "../../src/work/memory.mjs";
-import { SCOPE_FIELDS } from "../../src/memory/local-retrieval.mjs";
+import { SCOPE_FLAGS } from "../../packages/core/src/work/memory.mjs";
+import { SCOPE_FIELDS } from "../../packages/core/src/memory/local-retrieval.mjs";
 
 export const scopeFlagsFieldsAgreeTests = [
   {

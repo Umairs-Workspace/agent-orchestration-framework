@@ -40,11 +40,11 @@ import { fileURLToPath } from "node:url";
 // comments and leave the bans below sweeping an empty string while reporting green.
 import { stripComments } from "../../support/source-slice.mjs";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
-import { bundledFrozenSet, compileFrozenSet, FROZEN_ENFORCEMENT_POINTS } from "../../../src/frozen-set.mjs";
-import { resolveInteractiveDriverLaunch } from "../../../src/agent-session-driver.mjs";
+import { bundledFrozenSet, compileFrozenSet, FROZEN_ENFORCEMENT_POINTS } from "../../../packages/core/src/frozen-set.mjs";
+import { resolveInteractiveDriverLaunch } from "../../../packages/core/src/agent-session-driver.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const COMPILER_SOURCE = path.join(repoRoot, "src", "frozen-set.mjs");
+const COMPILER_SOURCE = path.join(repoRoot, "packages", "core", "src", "frozen-set.mjs");
 const SEAM_SOURCE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
 const DELIVERED_PIN_SOURCE = path.join(repoRoot, "test", "arch", "bundle", "acd-frozen-set-compiled.test.mjs");
 

@@ -2,7 +2,7 @@
 // task 02 — 02_recall-returns-frozen-records.feature.
 //
 // Covers every @executable scenario AND every Scenario-Outline Examples row of that
-// feature against the REAL graphify backend module (../src/memory/graphify-backend.mjs),
+// feature against the REAL graphify backend module (../packages/core/src/memory/graphify-backend.mjs),
 // driven through the REAL seam (`runMemory` for the --json projection) and over a store
 // the backend's own `reindex` populated from a temp work stream. The graph-build half
 // of reindex FAILS SOFT through an injected `ctx.invoke` (binary-absent), so the recall
@@ -20,8 +20,8 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import graphifyBackend from "../../src/memory/graphify-backend.mjs";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
+import graphifyBackend from "../../packages/core/src/memory/graphify-backend.mjs";
+import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",

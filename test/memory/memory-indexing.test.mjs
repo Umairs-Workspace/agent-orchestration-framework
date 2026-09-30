@@ -2,7 +2,7 @@
 //
 // Every @executable scenario AND every Scenario-Outline Examples row across the
 // story's five executable task features (00-04) is covered here, exercised
-// against the REAL indexing module (`src/memory/local-indexing.mjs`) directly —
+// against the REAL indexing module (`packages/core/src/memory/local-indexing.mjs`) directly —
 // the CLI-phrased "I run aof work memory reindex" scenarios bind to direct
 // `reindex(only, ctx)` calls (the CLI/seam is story 00, not under test here).
 //
@@ -25,7 +25,7 @@ import {
   status,
   memoryIndexPath,
   INDEX_VERSION,
-} from "../../src/memory/local-indexing.mjs";
+} from "../../packages/core/src/memory/local-indexing.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");

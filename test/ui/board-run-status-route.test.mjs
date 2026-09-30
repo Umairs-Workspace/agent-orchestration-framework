@@ -16,9 +16,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
-import { loadWorkspace } from "../../src/command-core.mjs";
-import { invoke } from "../../src/command-core.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+import { loadWorkspace } from "../../packages/core/src/command-core.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 
 // --- fixture builders --------------------------------------------------------
 

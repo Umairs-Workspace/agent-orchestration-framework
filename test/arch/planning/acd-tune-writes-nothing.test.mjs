@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 
-import { buildTuneReport, tuneCommand } from "../../../src/commands/tune.mjs";
+import { buildTuneReport, tuneCommand } from "../../../packages/core/src/commands/tune.mjs";
 
 async function snapshot(root) {
   const files = new Map();

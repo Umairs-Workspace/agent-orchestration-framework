@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 33 / story 00 — per-install node identity.
 //
 // Covers EVERY @executable scenario in tasks/01_loadworkspace-hydration.feature,
-// exercising src/work.mjs's loadWorkspace IN-PROCESS against a real temp fixture
+// exercising packages/core/src/work.mjs's loadWorkspace IN-PROCESS against a real temp fixture
 // project (a planted committed config + an optionally-planted sidecar). One test
 // object per @executable scenario (Scenario-Outline rows folded into one entry
 // iterating the rows), each name tracing to feature + scenario. node:assert/strict.
@@ -16,8 +16,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { meshNodeIdOf } from "../../src/commands/mesh/gate.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { meshNodeIdOf } from "../../packages/core/src/commands/mesh/gate.mjs";
 
 async function fixtureProject({ committedMesh, sidecar } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-hydration-"));

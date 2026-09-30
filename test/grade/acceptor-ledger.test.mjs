@@ -25,8 +25,8 @@ import {
   defaultCriterion,
   makeCriterion,
   rulingsUnderCurrentCriterion,
-} from "../../src/work-acceptor/criterion.mjs";
-import { PAIR_OUTCOMES, deriveRule, earliestCrossing } from "../../src/work-acceptor/rule.mjs";
+} from "../../packages/core/src/work-acceptor/criterion.mjs";
+import { PAIR_OUTCOMES, deriveRule, earliestCrossing } from "../../packages/core/src/work-acceptor/rule.mjs";
 import {
   BUDGET_EXHAUSTED,
   EVIDENCE_SHORT,
@@ -42,7 +42,7 @@ import {
   makeRuling,
   observedTieRate,
   tally,
-} from "../../src/work-acceptor/ledger.mjs";
+} from "../../packages/core/src/work-acceptor/ledger.mjs";
 
 const shipped = defaultCriterion();
 const rule = deriveRule(shipped);

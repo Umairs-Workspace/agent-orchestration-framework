@@ -13,7 +13,7 @@
 //   with zero new findings, in the same codes and the same counts.
 //
 // WHY THE OUTBOUND EDGE SET IS PART OF THIS GATE AND NOT A CONVENTION. `checkPairing`
-// (`src/work/loops-checks.mjs:409-412`) adds EVERY source's `monitoring` endpoint to its `paired`
+// (`packages/core/src/work/loops-checks.mjs:409-412`) adds EVERY source's `monitoring` endpoint to its `paired`
 // set — the predicate reads the edge, not the source's kind — so an auditor declaring
 // `monitoring: [loop:x]` would clear that loop's `loop-unpaired-optimizer`, a `GATING_CODES` member,
 // **by auditing it**: the audit buying the green gate it exists to report on, and FF-5910's "zero
@@ -41,7 +41,7 @@
 // between values.
 //
 // WHY THE COMPATIBILITY LEG IS OVER THE CORPUS AND NOT OVER AN EXAMPLE — 58's reason, unchanged.
-// The sixteen records under `src/bundle/loops/` are the framework's own declaration of how it
+// The sixteen records under `packages/core/assets/loops/` are the framework's own declaration of how it
 // improves itself, installed into every project that runs aof. The oracle is the signature milestone
 // 57 froze over ELEVEN of them and 58 re-used over fourteen, copied here rather than re-measured: an
 // oracle re-derived from the tree it is measuring proves nothing. The sixteen-record signature must
@@ -55,7 +55,7 @@ import { fileURLToPath } from "node:url";
 import {
   ADMITTED_KEYS, EDGE_KEYS, ENDPOINT_SCHEMES, FIELD_KINDS, LOADER_FINDING_CODES, NODE_KINDS,
   POINTER_SCHEMES, SENTINEL_TOKENS, loadLoops,
-} from "../../../src/work/loops.mjs";
+} from "../../../packages/core/src/work/loops.mjs";
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 
@@ -359,7 +359,7 @@ export const archTests = [
       // AN AUDITOR'S MEASUREMENT REFUSES EVERY `prose:` POINTER, while a loop and a watcher keep
       // theirs — the same value, three kinds, in ONE load, so the claim is a difference between
       // kinds. This is what stands in for the `determinism` enum the kind deliberately omits.
-      const document = "prose:src/bundle/commands/verify.md";
+      const document = "prose:packages/core/assets/commands/verify.md";
       await overRegistry({
         "operator.md": actor("operator"),
         "alpha.md": loop("alpha", { measurement: `[${document}]` }),
@@ -443,7 +443,7 @@ export const archTests = [
 
       // THE HOLE `monitoring` CLOSES, decided over the model a check would read. No monitoring edge
       // exists at all, so no pairing can be derived from one — which is a claim the LOADER can make
-      // and 59/00 can therefore land, without reaching into `src/work/loops-checks.mjs`.
+      // and 59/00 can therefore land, without reaching into `packages/core/src/work/loops-checks.mjs`.
       await overRegistry({
         "operator.md": actor("operator"),
         "alpha.md": loop("alpha", { optimizing: "true" }),

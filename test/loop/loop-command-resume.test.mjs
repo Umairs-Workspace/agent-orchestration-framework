@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { completeRun, heartbeat, isStale, retryRun, startRun, readRuns } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
+import { completeRun, heartbeat, isStale, retryRun, startRun, readRuns } from "../../packages/core/src/run-store.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+import { loopCommand, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { lineageElapsedMs } from "../../packages/work-loop/src/engine.mjs";
-import { loopResumesDir, loopStopsDir, markStopHonoured, readResumeRequest, readStopRequest, requestLoopResume, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
+import { loopResumesDir, loopStopsDir, markStopHonoured, readResumeRequest, readStopRequest, requestLoopResume, requestLoopStop, stopRequestPath } from "../../packages/core/src/loop/stop-request.mjs";
 import {
   DECLARATION_L1,
   cancellableDriver,
@@ -701,7 +701,7 @@ export const loopCommandResumeTests = [
       const shell = stripComments(raw);
       assert.doesNotMatch(shell, /loop-stops/u, "the segment literal lives in stop-request.mjs and nowhere else");
       assert.doesNotMatch(shell, /\b(?:writeFile|mkdir|rename)\s*\(/u);
-      const adapter = await readFile(new URL("../../src/application/bindings/commands/loop.mjs", import.meta.url), "utf8");
+      const adapter = await readFile(new URL("../../packages/core/src/application/bindings/commands/loop.mjs", import.meta.url), "utf8");
       assert.ok(dependencySpecifiers(adapter).some(edge => edge.parameter === "loopStopRequestServices" && edge.specifier === "../loop/stop-request.mjs"), "the shell receives the request's one configured home");
       const names = [...adapter.matchAll(/const\s*\{([^}]*)\}\s*=\s*loopStopRequestServices/gu)]
         .flatMap(match => match[1].split(",").map(name => name.trim()).filter(Boolean));

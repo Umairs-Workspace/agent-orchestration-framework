@@ -12,10 +12,10 @@ import { readFile, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateWork } from "../../../src/work.mjs";
+import { validateWork } from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "src", "work.mjs");
+const workSrc = path.join(repoRoot, "packages", "core", "src", "work.mjs");
 
 async function itemTypeAlternation() {
   const src = await readFile(workSrc, "utf8");

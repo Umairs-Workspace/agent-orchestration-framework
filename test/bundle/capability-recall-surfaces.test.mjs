@@ -2,7 +2,7 @@
 // (01_capability-recall-surfaces.feature).
 //
 // Every @executable scenario AND every Scenario-Outline Examples row is covered
-// here, exercised DIRECTLY against `rankRecords` (`src/memory/local-retrieval.mjs`)
+// here, exercised DIRECTLY against `rankRecords` (`packages/core/src/memory/local-retrieval.mjs`)
 // over the feature's own FIXTURE index (the Background table) — no CLI, no disk,
 // no story-01 authoring path, so this stays independent of story 01's code.
 //
@@ -15,7 +15,7 @@
 //   pre-filters (ADRs excluded from the candidate set entirely); a query-class ->
 //   expected-top-record Scenario Outline.
 import assert from "node:assert/strict";
-import { rankRecords } from "../../src/memory/local-retrieval.mjs";
+import { rankRecords } from "../../packages/core/src/memory/local-retrieval.mjs";
 
 // ---- fixture helpers ------------------------------------------------------------
 function record(partial) {

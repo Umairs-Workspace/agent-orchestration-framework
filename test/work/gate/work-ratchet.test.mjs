@@ -5,8 +5,8 @@ import {
   classifyAssertion,
   countExecutableContract,
   evaluateRatchet,
-} from "../../../src/work/ratchet.mjs";
-import { observeRatchet, ratchetCommand, resolveRatchetBase } from "../../../src/commands/ratchet.mjs";
+} from "../../../packages/core/src/work/ratchet.mjs";
+import { observeRatchet, ratchetCommand, resolveRatchetBase } from "../../../packages/core/src/commands/ratchet.mjs";
 
 const feature = ({ lane = "executable", name = "criterion", rows = [] } = {}) => `@${lane}
 Feature: governed contract

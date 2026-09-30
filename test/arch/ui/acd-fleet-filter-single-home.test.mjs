@@ -132,7 +132,7 @@ const DECLARATION_FILE = /\.d\.(mts|ts)$/;
 // the `//` in `href="http://…/?repo=x"` onward, i.e. it hides the exact violation this file exists
 // to find) and it takes LINE COMMENTS FIRST, THEN BLOCKS (TECH_DEBT item 24 — a line comment
 // containing `/*` opens a block-comment run for a block-first stripper; measured in this
-// milestone's refine at 9,192 characters of `src/mesh/ui-serve.mjs`, including its whole route
+// milestone's refine at 9,192 characters of `packages/core/src/mesh/ui-serve.mjs`, including its whole route
 // table). The self-check at the bottom of assertion 2 pins both properties from here.
 
 const SCANNED_EXT = new Set([".ts", ".tsx", ".mjs", ".mts", ".js", ".jsx"]);
@@ -423,7 +423,7 @@ export const archTests = [
       // …and the STRIPPER itself does not blind the sweep. TECH_DEBT item 24: a line comment
       // containing `/*` deletes the rest of a file under block-first stripping, after which a
       // negative sweep passes by seeing nothing. Measured live in this milestone's refine on
-      // src/mesh/ui-serve.mjs:297-299 (`//api/*`), which cost 9,192 characters of that file.
+      // packages/core/src/mesh/ui-serve.mjs:297-299 (`//api/*`), which cost 9,192 characters of that file.
       assert.ok(
         queryKeyHits('const a = 1; // note: //api/* dodges the guard\nconst r = params.get("repo");\n', "repo").length > 0,
         "self-check: the stripper survives TECH_DEBT item 24's shape — a line comment containing `/*` must not delete the code after it, or every sweep in this file passes vacuously",

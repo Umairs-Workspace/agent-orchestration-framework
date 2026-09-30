@@ -21,7 +21,7 @@
 //
 // ── AND WHAT THE FACE INJECTS, THE FAMILY MAY NOT REACH ──────────────────────────────────────
 //
-// `59/FF-5904` forbids `src/work-audit/**` from reaching outside `src/` or holding a clock. Three
+// `59/FF-5904` forbids `packages/core/src/work-audit/**` from reaching outside `packages/core/src/` or holding a clock. Three
 // facts the rules need come from outside: the marker naming framework-authored hook entries, the
 // audited project's resolved role routing, and the subject root. All three arrive as arguments at
 // the impure boundary — and a fact read in two places has two expiry dates, so the ABSENCE of a
@@ -40,13 +40,13 @@ import {
   assertLaneRead,
   assertLaneRunnersDistinct,
   runAudit,
-} from "../../../src/work-audit/report.mjs";
-import { sweepDeclarationProblems } from "../../../src/work-audit/reads.mjs";
-import { PROMPT_LAYER_SWEEPS } from "../../../src/work-audit/prompt-layer.mjs";
-import { HOOK_WIRING_SWEEPS } from "../../../src/work-audit/hook-wiring.mjs";
-import { SEAM_LIVENESS_SWEEPS } from "../../../src/work-audit/seam-liveness.mjs";
-import { DECLARED_BOUNDS_SWEEPS } from "../../../src/work-audit/declared-bounds.mjs";
-import { auditCommand } from "../../../src/commands/audit.mjs";
+} from "../../../packages/core/src/work-audit/report.mjs";
+import { sweepDeclarationProblems } from "../../../packages/core/src/work-audit/reads.mjs";
+import { PROMPT_LAYER_SWEEPS } from "../../../packages/core/src/work-audit/prompt-layer.mjs";
+import { HOOK_WIRING_SWEEPS } from "../../../packages/core/src/work-audit/hook-wiring.mjs";
+import { SEAM_LIVENESS_SWEEPS } from "../../../packages/core/src/work-audit/seam-liveness.mjs";
+import { DECLARED_BOUNDS_SWEEPS } from "../../../packages/core/src/work-audit/declared-bounds.mjs";
+import { auditCommand } from "../../../packages/core/src/commands/audit.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -57,8 +57,8 @@ const MILESTONE_MODULES = Object.freeze([
   "packages/work/src/audit/hook-wiring.mjs",
   "packages/work/src/audit/seam-liveness.mjs",
   "packages/work/src/audit/declared-bounds.mjs",
-  "src/work-audit/toolkit.mjs",
-  "src/harness-reference.mjs",
+  "packages/core/src/work-audit/toolkit.mjs",
+  "packages/core/src/harness-reference.mjs",
 ]);
 
 // Every sweep registry milestone 77 adds, so the floor claim is made over declarations rather than
@@ -275,7 +275,7 @@ export const archTests = [
       assert.deepEqual(found, [], "no module this milestone adds holds a second route to a fact the face supplies");
 
       // …AND NO OTHER MODULE OF THE FAMILY GREW ONE EITHER.
-      const family = (await readRuntimeFiles(repoRoot)).filter((file) => (file.rel.startsWith("src/work-audit/") || file.rel.startsWith("packages/work/src/audit/")));
+      const family = (await readRuntimeFiles(repoRoot)).filter((file) => (file.rel.startsWith("packages/core/src/work-audit/") || file.rel.startsWith("packages/work/src/audit/")));
       assert.ok(family.length >= 8, `the family was walked (${family.length} modules)`);
       for (const file of family) {
         const rel = file.rel;

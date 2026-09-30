@@ -14,8 +14,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../../src/command-core.mjs";
-import { GRADE_VERDICTS } from "../../../src/work/grade.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { GRADE_VERDICTS } from "../../../packages/core/src/work/grade.mjs";
 import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
 import { makeGradeRepo, ctxFor, countingSpawn } from "../../support/grade-fixture.mjs";

@@ -19,7 +19,7 @@ import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:
 import os from "node:os";
 import path from "node:path";
 
-import { graphArtifactBuiltAt, graphJsonPath } from "../../../src/graph-normalize.mjs";
+import { graphArtifactBuiltAt, graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
 import {
   CHANGED_SET_EMPTY,
   SINCE_REV_UNRESOLVABLE,
@@ -28,8 +28,8 @@ import {
   registrationReport,
   selectSuites,
   wideningRuleProblems,
-} from "../../../src/work/test-select.mjs";
-import { changedFiles, parseNameOnly, parsePorcelain } from "../../../src/work/test-changed.mjs";
+} from "../../../packages/core/src/work/test-select.mjs";
+import { changedFiles, parseNameOnly, parsePorcelain } from "../../../packages/core/src/work/test-changed.mjs";
 
 const ROOTS = ["test", "test/arch"];
 const ALL_SUITES = ["test/a.test.mjs", "test/b.test.mjs", "test/arch/c.test.mjs"];
@@ -57,11 +57,11 @@ function writeGraph(root, { nodes = [], links = [] } = {}, raw = null) {
 // arriving at a node makes its source a DEPENDENT of that node's file.
 const edge = (fromIndex, toIndex) => ({ source: `n${fromIndex}`, target: `n${toIndex}`, relation: "imports", confidence: "EXPLICIT" });
 
-// The graph most rows want: `src/a.mjs` imported by `test/a.test.mjs`, and `src/lonely.mjs`
+// The graph most rows want: `packages/core/src/a.mjs` imported by `test/a.test.mjs`, and `packages/core/src/lonely.mjs`
 // imported only by another source module.
 function couplingGraph(root) {
   return writeGraph(root, {
-    nodes: ["src/a.mjs", "test/a.test.mjs", "src/lonely.mjs", "src/b.mjs", "test/arch/c.test.mjs"],
+    nodes: ["packages/core/src/a.mjs", "test/a.test.mjs", "packages/core/src/lonely.mjs", "packages/core/src/b.mjs", "test/arch/c.test.mjs"],
     links: [edge(1, 0), edge(3, 2), edge(4, 2)],
   });
 }
@@ -99,7 +99,7 @@ export const workTestSelectTests = [
       const root = tempRoot();
       try {
         couplingGraph(root);
-        const result = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const result = selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.deepEqual([...result.selected], ["test/a.test.mjs"], "the selected suites are the suites among its dependents");
         assert.deepEqual([...result.widened], [], "the selection did not widen");
         assert.equal(result.scope, "impacted", "…so the scope is the impacted subset");
@@ -115,12 +115,12 @@ export const workTestSelectTests = [
     run: () => {
       const rows = [
         { state: "absent — no artifact on disk", reason: "no-graph", plant: () => {} },
-        { state: "an artifact holding no node for that file", reason: "not-in-graph", plant: (root) => writeGraph(root, { nodes: ["src/other.mjs"], links: [] }) },
+        { state: "an artifact holding no node for that file", reason: "not-in-graph", plant: (root) => writeGraph(root, { nodes: ["packages/core/src/other.mjs"], links: [] }) },
         {
           state: "an artifact whose dependents for it hold no suite",
           reason: "no-registered-dependent",
-          plant: (root) => writeGraph(root, { nodes: ["src/lonely.mjs", "src/b.mjs"], links: [edge(1, 0)] }),
-          changed: "src/lonely.mjs",
+          plant: (root) => writeGraph(root, { nodes: ["packages/core/src/lonely.mjs", "packages/core/src/b.mjs"], links: [edge(1, 0)] }),
+          changed: "packages/core/src/lonely.mjs",
         },
         { state: "an artifact on disk that does not parse", reason: "graph-unreadable", plant: (root) => writeGraph(root, {}, "{ this is not json") },
       ];
@@ -129,7 +129,7 @@ export const workTestSelectTests = [
         const root = tempRoot();
         try {
           row.plant(root);
-          const changed = row.changed ?? "src/a.mjs";
+          const changed = row.changed ?? "packages/core/src/a.mjs";
           const result = selectSuites({ projectRoot: root, changed: [changed], allSuites: ALL_SUITES, roots: ROOTS });
 
           assert.equal(result.scope, "all", `${row.state}: the whole suite is selected`);
@@ -155,15 +155,15 @@ export const workTestSelectTests = [
       const produced = new Set();
       const plants = [
         () => {},
-        (root) => writeGraph(root, { nodes: ["src/other.mjs"], links: [] }),
-        (root) => writeGraph(root, { nodes: ["src/lonely.mjs", "src/b.mjs"], links: [edge(1, 0)] }),
+        (root) => writeGraph(root, { nodes: ["packages/core/src/other.mjs"], links: [] }),
+        (root) => writeGraph(root, { nodes: ["packages/core/src/lonely.mjs", "packages/core/src/b.mjs"], links: [edge(1, 0)] }),
         (root) => writeGraph(root, {}, "{ not json"),
       ];
       for (const plant of plants) {
         const root = tempRoot();
         try {
           plant(root);
-          for (const entry of selectSuites({ projectRoot: root, changed: ["src/lonely.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).widened) {
+          for (const entry of selectSuites({ projectRoot: root, changed: ["packages/core/src/lonely.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).widened) {
             produced.add(entry.reason);
           }
         } finally {
@@ -182,22 +182,22 @@ export const workTestSelectTests = [
       const rows = [
         {
           result: "widened and selected the whole suite",
-          value: { ...base, scope: "all", selected: ALL_SUITES, widened: [{ file: "src/a.mjs", reason: "no-graph" }], changed: ["src/a.mjs"], resolved: [] },
+          value: { ...base, scope: "all", selected: ALL_SUITES, widened: [{ file: "packages/core/src/a.mjs", reason: "no-graph" }], changed: ["packages/core/src/a.mjs"], resolved: [] },
           verdict: "admits",
         },
         {
           result: "widened and selected a proper subset of the whole suite",
-          value: { ...base, scope: "all", selected: ["test/a.test.mjs"], widened: [{ file: "src/a.mjs", reason: "no-graph" }], changed: ["src/a.mjs"], resolved: [] },
+          value: { ...base, scope: "all", selected: ["test/a.test.mjs"], widened: [{ file: "packages/core/src/a.mjs", reason: "no-graph" }], changed: ["packages/core/src/a.mjs"], resolved: [] },
           verdict: "refuses",
         },
         {
           result: "did not widen and resolved every changed file in the graph",
-          value: { ...base, scope: "impacted", selected: ["test/a.test.mjs"], widened: [], changed: ["src/a.mjs"], resolved: ["src/a.mjs"] },
+          value: { ...base, scope: "impacted", selected: ["test/a.test.mjs"], widened: [], changed: ["packages/core/src/a.mjs"], resolved: ["packages/core/src/a.mjs"] },
           verdict: "admits",
         },
         {
           result: "did not widen and carried a changed file that did not resolve",
-          value: { ...base, scope: "impacted", selected: ["test/a.test.mjs"], widened: [], changed: ["src/a.mjs", "src/ghost.mjs"], resolved: ["src/a.mjs"] },
+          value: { ...base, scope: "impacted", selected: ["test/a.test.mjs"], widened: [], changed: ["packages/core/src/a.mjs", "packages/core/src/ghost.mjs"], resolved: ["packages/core/src/a.mjs"] },
           verdict: "refuses",
         },
       ];
@@ -210,7 +210,7 @@ export const workTestSelectTests = [
 
       // …and a reason outside the four is refused, so the vocabulary claim is enforced and not
       // merely documented.
-      const bogus = { ...base, scope: "all", selected: ALL_SUITES, widened: [{ file: "src/a.mjs", reason: "looked-fine" }], changed: ["src/a.mjs"], resolved: [] };
+      const bogus = { ...base, scope: "all", selected: ALL_SUITES, widened: [{ file: "packages/core/src/a.mjs", reason: "looked-fine" }], changed: ["packages/core/src/a.mjs"], resolved: [] };
       assert.ok(wideningRuleProblems(bogus, ALL_SUITES).some((problem) => problem.includes("looked-fine")), "a fifth reason is refused by name");
     },
   },
@@ -220,8 +220,8 @@ export const workTestSelectTests = [
     run: () => {
       const root = tempRoot();
       try {
-        writeGraph(root, { nodes: ["src/other.mjs"], links: [] });
-        const base = { projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS };
+        writeGraph(root, { nodes: ["packages/core/src/other.mjs"], links: [] });
+        const base = { projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS };
         const widened = selectSuites(base);
         assert.equal(widened.scope, "all", "the baseline widens");
 
@@ -273,17 +273,17 @@ export const workTestSelectTests = [
         },
         {
           changedFile: "a source module with two suite dependents",
-          nodes: ["src/a.mjs", "test/a.test.mjs", "test/arch/c.test.mjs"],
+          nodes: ["packages/core/src/a.mjs", "test/a.test.mjs", "test/arch/c.test.mjs"],
           links: [edge(1, 0), edge(2, 0)],
-          changed: "src/a.mjs",
+          changed: "packages/core/src/a.mjs",
           selected: ["test/a.test.mjs", "test/arch/c.test.mjs"],
           widens: false,
         },
         {
           changedFile: "a source module whose dependents are no suite",
-          nodes: ["src/a.mjs", "src/b.mjs"],
+          nodes: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"],
           links: [edge(1, 0)],
-          changed: "src/a.mjs",
+          changed: "packages/core/src/a.mjs",
           selected: ALL_SUITES,
           widens: true,
         },
@@ -312,7 +312,7 @@ export const workTestSelectTests = [
       // way — which is why the precedence is an invariant rather than an implementation note.
       const root = tempRoot();
       try {
-        writeGraph(root, { nodes: ["src/a.mjs"], links: [] });
+        writeGraph(root, { nodes: ["packages/core/src/a.mjs"], links: [] });
         const result = selectSuites({ projectRoot: root, changed: ["test/brand-new.test.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(result.scope, "all", "it widens");
         assert.deepEqual([...result.widened], [{ file: "test/brand-new.test.mjs", reason: "not-in-graph" }], "…naming it as absent from the graph");
@@ -327,10 +327,10 @@ export const workTestSelectTests = [
     name: "72/01 task00: every result reports the ARTIFACT's own build time, widened or not — and never a clock",
     run: () => {
       const rows = [
-        { case: "resolves entirely in the graph", changed: "src/a.mjs", plant: couplingGraph, hasBuiltAt: true },
-        { case: "widens because a file is not in the graph", changed: "src/absent.mjs", plant: couplingGraph, hasBuiltAt: true },
-        { case: "widens because the artifact does not parse", changed: "src/a.mjs", plant: (root) => writeGraph(root, {}, "{ not json"), hasBuiltAt: false, reason: "graph-unreadable" },
-        { case: "widens because there is no artifact", changed: "src/a.mjs", plant: () => {}, hasBuiltAt: false, reason: "no-graph" },
+        { case: "resolves entirely in the graph", changed: "packages/core/src/a.mjs", plant: couplingGraph, hasBuiltAt: true },
+        { case: "widens because a file is not in the graph", changed: "packages/core/src/absent.mjs", plant: couplingGraph, hasBuiltAt: true },
+        { case: "widens because the artifact does not parse", changed: "packages/core/src/a.mjs", plant: (root) => writeGraph(root, {}, "{ not json"), hasBuiltAt: false, reason: "graph-unreadable" },
+        { case: "widens because there is no artifact", changed: "packages/core/src/a.mjs", plant: () => {}, hasBuiltAt: false, reason: "no-graph" },
       ];
 
       for (const row of rows) {
@@ -368,9 +368,9 @@ export const workTestSelectTests = [
         const past = new Date("2019-05-06T07:08:09.000Z");
         utimesSync(graphJsonPath(root), past, past);
 
-        const first = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const first = selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         await new Promise((resolve) => { setTimeout(resolve, 25); });
-        const second = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const second = selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(first.builtAt, second.builtAt, "both results report that same instant");
         assert.ok(Date.parse(first.builtAt) < Date.now(), "and neither reports an instant later than the artifact's");
       } finally {
@@ -382,13 +382,13 @@ export const workTestSelectTests = [
   {
     name: "72/01 task00: selection is PURE — two graphs coupling one changed set differently give two answers in one process, in either order",
     run: () => {
-      const plantA = (root) => writeGraph(root, { nodes: ["src/a.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
-      const plantB = (root) => writeGraph(root, { nodes: ["src/a.mjs", "test/b.test.mjs"], links: [edge(1, 0)] });
+      const plantA = (root) => writeGraph(root, { nodes: ["packages/core/src/a.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
+      const plantB = (root) => writeGraph(root, { nodes: ["packages/core/src/a.mjs", "test/b.test.mjs"], links: [edge(1, 0)] });
       const answer = (plant) => {
         const root = tempRoot();
         try {
           plant(root);
-          return [...selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).selected];
+          return [...selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).selected];
         } finally {
           rmSync(root, { recursive: true, force: true });
         }
@@ -466,15 +466,15 @@ export const workTestSelectTests = [
         " M src/a.mjs",
         "?? test/brand-new.test.mjs",
         "R  src/old.mjs -> src/new.mjs",
-        'A  "src/with space.mjs"',
+        'A  "packages/core/src/with space.mjs"',
         "",
       ].join("\n"));
-      assert.deepEqual(parsed, ["src/a.mjs", "test/brand-new.test.mjs", "src/old.mjs", "src/new.mjs", "src/with space.mjs"], "modified, untracked, both rename ends and a quoted path");
-      assert.deepEqual(parseNameOnly("src/a.mjs\nsrc/b.mjs\n\n"), ["src/a.mjs", "src/b.mjs"], "and the name-only reader drops blanks");
+      assert.deepEqual(parsed, ["packages/core/src/a.mjs", "test/brand-new.test.mjs", "packages/core/src/old.mjs", "packages/core/src/new.mjs", "packages/core/src/with space.mjs"], "modified, untracked, both rename ends and a quoted path");
+      assert.deepEqual(parseNameOnly("packages/core/src/a.mjs\nsrc/b.mjs\n\n"), ["packages/core/src/a.mjs", "packages/core/src/b.mjs"], "and the name-only reader drops blanks");
 
       assert.equal(isSuiteFile("test/a.test.mjs", ROOTS), true, "a suite under a declared root");
       assert.equal(isSuiteFile("test/arch/c.test.mjs", ROOTS), true, "…including a nested root");
-      assert.equal(isSuiteFile("src/a.mjs", ROOTS), false, "a source module is not a suite");
+      assert.equal(isSuiteFile("packages/core/src/a.mjs", ROOTS), false, "a source module is not a suite");
       assert.equal(isSuiteFile("test/support/helper.mjs", ROOTS), false, "…nor is a helper that is not a .test.mjs");
       assert.equal(isSuiteFile("other/a.test.mjs", ROOTS), false, "…nor a suite-shaped file outside every declared root");
     },
@@ -585,8 +585,8 @@ export const workTestSelectTests = [
       const root = tempRoot();
       try {
         couplingGraph(root);
-        const result = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
-        assert.equal(result.selected.includes("src/a.mjs"), false, "it does not appear among the selected suites");
+        const result = selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        assert.equal(result.selected.includes("packages/core/src/a.mjs"), false, "it does not appear among the selected suites");
 
         const report = registrationReport({
           selected: [...result.selected],
@@ -594,7 +594,7 @@ export const workTestSelectTests = [
           suiteNames: new Map([["test/a.test.mjs", ["a one"]]]),
           baseline: [],
         });
-        assert.equal(report.files.some((entry) => entry.file === "src/a.mjs"), false, "and it is not reported as unregistered");
+        assert.equal(report.files.some((entry) => entry.file === "packages/core/src/a.mjs"), false, "and it is not reported as unregistered");
         assert.deepEqual([...report.unregistered], [], "…the report is over the SELECTED suites and nothing else");
       } finally {
         rmSync(root, { recursive: true, force: true });

@@ -3,12 +3,12 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
-import { getCommand } from "../../../src/command-core.mjs";
+import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+import { getCommand } from "../../../packages/core/src/command-core.mjs";
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const loopsDir = path.join(root, "src", "bundle", "loops");
+const loopsDir = path.join(root, "packages", "core", "assets", "loops");
 
 // The three shipped watchers, and the registered command each measurement must resolve to.
 const WATCHERS = Object.freeze([

@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -51,7 +51,7 @@ import { stalenessCachedRowsProvenanceTests } from "./staleness-cached-rows-prov
 import { stalenessMarksNeverEvictsTests } from "./staleness-marks-never-evicts.test.mjs";
 // milestone 43 / story 06 — THE READERS MIGRATE (ADR-005 + ADR-010/R6.x), the milestone's
 // payoff: the cache stops being a write-only fact and becomes the READ surface. Task 00: a new
-// cache-first seam (`src/work/read.mjs`) that imports `work.mjs` and is NEVER imported back,
+// cache-first seam (`packages/core/src/work/read.mjs`) that imports `work.mjs` and is NEVER imported back,
 // with every degrade named on the durable sink rather than silently swallowed. Task 01: the
 // chokepoint — `commands/resolve.mjs` and its EIGHT dependents move together, with the
 // write-doors guarded by one `item-not-local` refusal. Task 02: the control-side leaves migrate

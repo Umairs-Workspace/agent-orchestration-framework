@@ -1,6 +1,6 @@
 // Executable wiring for milestone 70 / story 04, task 01 (ADR-008).
 import assert from "node:assert/strict";
-import { continueDriverCommand, refineDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand } from "../../src/commands/drive.mjs";
+import { continueDriverCommand, refineDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand } from "../../packages/core/src/commands/drive.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { loopFixture } from "./loop-command-probe.test.mjs";
 

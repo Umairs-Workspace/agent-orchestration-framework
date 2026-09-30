@@ -76,7 +76,7 @@ export const archTests = [
     run: async () => {
       const code = await source(SEAM);
       assert.deepEqual(seamFindings(code), []);
-      const adapter = await source("src/application/bindings/effects/run-transitions.mjs");
+      const adapter = await source("packages/core/src/application/bindings/effects/run-transitions.mjs");
       for (const text of [code, adapter]) assert.match(text, /createRunTransitions\(\{[^}]*claudeProjectsDir/su);
       assert.match(adapter, /const\s*\{\s*claudeProjectsDir\s*\}\s*= workObserveServices/, "the resolution is the one home's");
     },

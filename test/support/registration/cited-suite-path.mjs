@@ -5,15 +5,15 @@
 // `test/work-loops-record.test.mjs`" names a path that no longer exists the moment the suite moves.
 // Those documents are immutable — not annotable, not taggable — so there is no legal edit that
 // repairs them, and ADR-004's two declared readers do not reach them: the doctor's control probe
-// resolves paths cited in `## Fitness functions` REGISTERS, and FF-11903 sweeps **`src/`** path
+// resolves paths cited in `## Fitness functions` REGISTERS, and FF-11903 sweeps **`packages/core/src/`** path
 // citations under `wiki/work/**`. A `test/…test.mjs` citation in a `.feature` BODY is neither.
 //
 // That is chore 106's own refusal test on an axis nobody measured — the price of a fold, in stranded
 // citations, where the decay would be silent and permanent. ADR-004 broke exactly that pair of
-// conditions for the `src/` axis by RESOLVING rather than rewriting, and this module applies the
+// conditions for the `packages/core/src/` axis by RESOLVING rather than rewriting, and this module applies the
 // same medicine to the axis 119/03 needs. Nothing is repaired; the question is answered better.
 //
-// ONE RESOLVER, STILL. `resolveCitedPath` (`src/cited-path-resolve.mjs`) is imported and called —
+// ONE RESOLVER, STILL. `resolveCitedPath` (`packages/core/src/cited-path-resolve.mjs`) is imported and called —
 // this module spells no rename rule of its own. What it adds is the impure edge the resolver
 // deliberately does not carry: the `git log` read, taken ONCE per process and memoized, because a
 // control that resolves a few hundred citations must not spawn git a few hundred times.
@@ -28,7 +28,7 @@ import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { RENAME_LEDGER_PATH, RENAME_LOG_ARGS, buildRenameMap, parseRenameRecords, resolveCitedPath } from "../../../src/cited-path-resolve.mjs";
+import { RENAME_LEDGER_PATH, RENAME_LOG_ARGS, buildRenameMap, parseRenameRecords, resolveCitedPath } from "../../../packages/core/src/cited-path-resolve.mjs";
 
 const execFileAsync = promisify(execFile);
 const cache = new Map();

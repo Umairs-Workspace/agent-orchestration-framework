@@ -25,10 +25,10 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke, getCommand } from "../../src/command-core.mjs";
-import { runLoopBody, admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../src/commands/loop.mjs";
-import { CONTROL_FINDING_CODES } from "../../src/work/doctor-controls.mjs";
-import { severityFor } from "../../src/acceptance-horizon.mjs";
+import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
+import { runLoopBody, admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../packages/core/src/commands/loop.mjs";
+import { CONTROL_FINDING_CODES } from "../../packages/core/src/work/doctor-controls.mjs";
+import { severityFor } from "../../packages/core/src/acceptance-horizon.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import { stripComments, functionBody } from "../support/source-slice.mjs";
 

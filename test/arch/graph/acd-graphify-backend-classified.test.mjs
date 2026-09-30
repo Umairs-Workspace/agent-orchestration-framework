@@ -9,7 +9,7 @@
 //  chosen extraction backend + its honest egress label in `status` — the selection is
 //  visible, never silent."
 //
-// Pure-function test over the REAL exported classifiers in src/commands/graph-build.mjs
+// Pure-function test over the REAL exported classifiers in packages/core/src/commands/graph-build.mjs
 // (no live binary — the classifiers are pure functions of the backend name) PLUS a
 // behavioural read of the graphify backend's `status` surface (it reaches NO binary
 // over an isolated, empty projectRoot). The live `--backend claude-cli` build itself
@@ -23,11 +23,11 @@ import {
   classifyEgress,
   isNetworkBackend,
   isKnownNetworkBackend,
-} from "../../../src/commands/graph/build.mjs";
+} from "../../../packages/core/src/commands/graph/build.mjs";
 import graphifyBackend, {
   GRAPHIFY_EXTRACTION_BACKEND,
   GRAPHIFY_EXTRACTION_EGRESS,
-} from "../../../src/memory/graphify-backend.mjs";
+} from "../../../packages/core/src/memory/graphify-backend.mjs";
 
 async function freshProjectRoot() {
   const projectRoot = await mkdtemp(path.join(os.tmpdir(), "aof-arch-classified-"));

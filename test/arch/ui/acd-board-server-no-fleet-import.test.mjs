@@ -2,14 +2,14 @@ import { dependencySpecifiers } from "../../support/workspace/configured-source.
 import { stripComments as stripJsComments } from "../../support/source-slice.mjs";
 // Fitness function for milestone 46 / story 02 / ADR-004 (the CYCLE PROHIBITION):
 //
-//   "`src/board-serve.mjs` and `src/setup-ui.mjs` MUST NOT import
-//    `src/mesh/ui-serve.mjs`. The standalone fleet-origin fallback is resolved in the
+//   "`packages/core/src/board-serve.mjs` and `packages/core/src/setup-ui.mjs` MUST NOT import
+//    `packages/core/src/mesh/ui-serve.mjs`. The standalone fleet-origin fallback is resolved in the
 //    COMMAND layer, which is the layer already allowed to know both faces."
 //
 // WHY THIS GATE EXISTS AT ALL. ADR-004 states the prohibition in terms and NOTHING
 // caught it — checked at source at HEAD before this file was written:
-//   - `acd-command-layer-imports-downward` inverts and forbids `src/*.mjs` →
-//     `src/commands/*` edges and cycles THROUGH the command boundary. A
+//   - `acd-command-layer-imports-downward` inverts and forbids `packages/core/src/*.mjs` →
+//     `packages/core/src/commands/*` edges and cycles THROUGH the command boundary. A
 //     `board-serve.mjs` → `mesh-ui-serve.mjs` edge is src-root to src-root; that gate
 //     never looks at it.
 //   - `acd-work-ui-no-core-import`'s setup-ui clause forbids `./work.mjs`,
@@ -17,7 +17,7 @@ import { stripComments as stripJsComments } from "../../support/source-slice.mjs
 //     and silent about `./mesh-ui-serve.mjs`. It also never reads `board-serve.mjs`.
 //   - `acd-terminal-origin-not-port` (story 46/03) is scoped to socket-URL construction
 //     under `ui/src`, deliberately, so it can never fight the other origin gate over an
-//     exemption list. It does not reach `src/`.
+//     exemption list. It does not reach `packages/core/src/`.
 // A prohibition honoured only by memory is not a prohibition. It lands in its OWN file
 // rather than folded into `acd-work-ui-no-core-import` because it is a different ADR
 // over a different subject set (that gate never reads `board-serve.mjs`), and burying a
@@ -25,7 +25,7 @@ import { stripComments as stripJsComments } from "../../support/source-slice.mjs
 // find it.
 //
 // WHY THE EDGE MATTERS, measured on the codebase graph at this milestone's refine:
-// `src/mesh/ui-serve.mjs → src/board-serve.mjs` is a REAL edge (the fleet launches the
+// `packages/core/src/mesh/ui-serve.mjs → packages/core/src/board-serve.mjs` is a REAL edge (the fleet launches the
 // per-workspace board), so the reverse import closes a cycle — and it would drag the
 // fleet server, and `ws`, into `aof work ui --json`'s probe path, whose entire contract
 // is "never launches".
@@ -204,7 +204,7 @@ export const archTests = [
     name: "arch/46 ADR-004 (non-vacuity): mesh-ui-serve.mjs DOES import board-serve.mjs — the forbidden edge is the reverse of a live one",
     run: async () => {
       const implementation = await readFile(MESH_UI_SERVE, "utf8");
-      const adapter = await readFile(path.join(repoRoot, "src/application/bindings/mesh/ui-serve.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/ui-serve.mjs"), "utf8");
       for (const text of [implementation, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*serveBoard/su);
       const specifiers = specifiersOf(adapter);
       assert.ok(
@@ -221,13 +221,13 @@ export const archTests = [
     name: "arch/46 ADR-004 (positive): the standalone fleet origin IS resolved in the command layer, from DEFAULT_MESH_UI_PORT's one home",
     run: async () => {
       const source = stripComments(await readFile(WORK_UI_COMMAND, "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/commands/work-ui.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/commands/work-ui.mjs"), "utf8"));
       assert.match(source, /createWorkUiCommand\(\{[^}]*getDefaultMeshUiPort/u);
       assert.match(stripJsComments(await readFile(WORK_UI_COMMAND, "utf8")), /getDefaultMeshUiPort\(\)/u);
       assert.match(adapter, /getDefaultMeshUiPort = \(\) => DEFAULT_MESH_UI_PORT/u);
       assert.ok(
         /const\s*\{[^}]*\bDEFAULT_MESH_UI_PORT\b[^}]*\}\s*= meshUiServeServices/.test(adapter),
-        "src/commands/work-ui.mjs imports DEFAULT_MESH_UI_PORT from ../mesh/ui-serve.mjs — the layer allowed to know both faces"
+        "packages/core/src/commands/work-ui.mjs imports DEFAULT_MESH_UI_PORT from ../mesh/ui-serve.mjs — the layer allowed to know both faces"
       );
       assert.ok(
         /\bserveBoard\s*\(\s*\{[^}]*\bfleetOrigin\b/.test(source),
@@ -244,7 +244,7 @@ export const archTests = [
     // A ring is legal in ESM; DEREFERENCING ACROSS IT DURING MODULE EVALUATION is not.
     // Reading `DEFAULT_MESH_UI_PORT` at module scope in work-ui.mjs threw
     // `Cannot access 'DEFAULT_MESH_UI_PORT' before initialization` for anyone who
-    // ENTERED the graph at `mesh-ui-serve.mjs` — while `import("./src/cli.mjs")` stayed
+    // ENTERED the graph at `mesh-ui-serve.mjs` — while `import("./packages/core/src/cli.mjs")` stayed
     // green, because the CLI's load order happens to evaluate the constant first. Every
     // assembled suite entered through the green door, so 121 tests passed over a server
     // module that could not be imported on its own.
@@ -255,10 +255,10 @@ export const archTests = [
     // Windows never-ran CreateProcess, never a real exit).
     //
     // THE LIST IS THE MODULES A FRESH ENTRY IS A REAL SCENARIO FOR — the two servers,
-    // the two faces they mount, the registry and the CLI entry. `src/commands/*.mjs` is
+    // the two faces they mount, the registry and the CLI entry. `packages/core/src/commands/*.mjs` is
     // DELIBERATELY EXCLUDED and the exclusion is measured, not assumed: at HEAD, before
-    // this milestone, `import("./src/commands/mesh-ui.mjs")` and
-    // `import("./src/commands/work-ui.mjs")` BOTH already threw
+    // this milestone, `import("./packages/core/src/commands/mesh-ui.mjs")` and
+    // `import("./packages/core/src/commands/work-ui.mjs")` BOTH already threw
     // `Cannot access '<theirOwnCommand>' before initialization` — a registered command
     // that imports a server re-enters `command-core`, which reads that command's own
     // export at module scope. That is a pre-existing property of the registry ring, is
@@ -271,8 +271,8 @@ export const archTests = [
         "packages/server/src/board-serve.mjs",
         "packages/server/src/setup-ui.mjs",
         "packages/server/src/board-ui.mjs",
-        "src/application/bindings/command-core.mjs",
-        "src/cli.mjs",
+        "packages/core/src/application/bindings/command-core.mjs",
+        "packages/core/src/cli.mjs",
       ];
       for (const entry of entryPoints) {
         const result = spawnSyncHardened(

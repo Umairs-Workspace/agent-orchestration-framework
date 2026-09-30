@@ -5,7 +5,7 @@
 //    overlapping/negative/partial spend happens in the write path — not in a caller,
 //    not in a comment."
 //
-// The enforcement lives in the WRITER (src/run-store.mjs): a spend whose buckets are
+// The enforcement lives in the WRITER (packages/core/src/run-store.mjs): a spend whose buckets are
 // not all present, carries a fifth token key, or holds a negative/non-integer bucket
 // is REFUSED with a typed error and persists nothing. A caller cannot opt out of it.
 import assert from "node:assert/strict";
@@ -15,7 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(root, "src");
+const SRC = path.join(root, "packages", "core", "src");
 const RUN_STORE = path.join(SRC, "run-store.mjs");
 
 async function modulesUnder(dir) {
@@ -53,7 +53,7 @@ export const archTests = [
   {
     name: "arch/68 FF-6803 (acd-token-buckets-mutually-exclusive): the four buckets are the closed set of token keys, declared once in the writer",
     run: async () => {
-      const store = await import("../../../src/run-store.mjs");
+      const store = await import("../../../packages/core/src/run-store.mjs");
       assert.deepEqual(store.TOKEN_BUCKET_KEYS, ["input", "output", "cacheRead", "cacheCreate"], "the four mutually-exclusive buckets are exactly input/output/cacheRead/cacheCreate");
       const code = (await readFile(RUN_STORE, "utf8")).replace(/\r\n/gu, "\n");
       // The validation lives IN the writer (run-store.mjs) — the enforcement point.
@@ -83,7 +83,7 @@ export const archTests = [
     run: async () => {
       const { repo, item } = await makeItem();
       try {
-        const store = await import("../../../src/run-store.mjs");
+        const store = await import("../../../packages/core/src/run-store.mjs");
         const cases = [
           { label: "missing cacheCreate", spend: validSpend({ input: 1, output: 1, cacheRead: 1 }), code: "token-buckets-partial" },
           { label: "fifth token key", spend: validSpend({ input: 1, output: 1, cacheRead: 1, cacheCreate: 1, inclusive: 2 }), code: "token-buckets-closed-set" },

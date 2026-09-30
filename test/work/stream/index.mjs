@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -14,7 +14,7 @@
 // task 00), the depends/parent reference rewrite (task 01), the surgical
 // byte-identical frontmatter discipline (task 02), the two number-space axes
 // (task 03), and the pure count primitive (task 04) — all against
-// src/work/reindex.mjs, story 01 has no command surface.
+// packages/core/src/work/reindex.mjs, story 01 has no command surface.
 import { workReindexSlotOpenTests } from "./work-reindex-slot-open.test.mjs";
 import { workReindexDependsParentRewriteTests } from "./work-reindex-depends-parent-rewrite.test.mjs";
 import { workReindexSurgicalFrontmatterTests } from "./work-reindex-surgical-frontmatter.test.mjs";
@@ -42,7 +42,7 @@ import { workInsertAtomicPreflightTests } from "./work-insert-atomic-preflight.t
 import { workInsertCrlfTemplateStripTests } from "./work-insert-crlf-template-strip.test.mjs";
 // milestone 41 review fast-follow — QA behavioural-review coverage gap F-3: the
 // CLI-facing { ok:false, error, code, shifted } loud-failure envelope
-// (workInsertCli, src/cli.mjs), driven end-to-end as a real child process.
+// (workInsertCli, packages/core/src/cli.mjs), driven end-to-end as a real child process.
 import { workInsertCliConfirmEnvelopeTests } from "./work-insert-cli-confirm-envelope.test.mjs";
 // milestone 41 / story 03 — insert-story (ADR-002/003/004/005/006): the thin
 // command `work:insert-story` over story 01's engine's NESTED axis (task 00

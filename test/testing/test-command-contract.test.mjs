@@ -34,10 +34,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runBounded } from "../../src/work-audit/spawn.mjs";
+import { runBounded } from "../../packages/core/src/work-audit/spawn.mjs";
 // The story's own subject, and its two faces — taken from the REGISTERED command object rather
 // than from a private helper, so what these rows measure is what the runtime runs.
-import { NO_SCOPE, SCOPE_UNRECOGNISED, NO_FILES_NAMED, TEST_SCOPES, runTest, testCommand } from "../../src/commands/test.mjs";
+import { NO_SCOPE, SCOPE_UNRECOGNISED, NO_FILES_NAMED, TEST_SCOPES, runTest, testCommand } from "../../packages/core/src/commands/test.mjs";
 // The runner's own selection half, exported so its shape rows drive in-process. Importing the
 // runner from inside the suite is FREE in both paths that matter: under the full run and under
 // `--only`, this module is the entry point and is already evaluated, so the import resolves from
@@ -278,8 +278,8 @@ export const testCommandContractTests = [
       const narrow = launcher();
       const narrowResult = await runTest({ scope: "impacted" }, {
         projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: narrow.run,
-        readChanged: changedOk(["src/thing.mjs"]),
-        select: selector({ scope: "impacted", selected: ["test/b.test.mjs"], builtAt: BUILT_AT, changed: ["src/thing.mjs"] }),
+        readChanged: changedOk(["packages/core/src/thing.mjs"]),
+        select: selector({ scope: "impacted", selected: ["test/b.test.mjs"], builtAt: BUILT_AT, changed: ["packages/core/src/thing.mjs"] }),
       });
       assert.equal(narrowResult.scope, "impacted", "a narrowed run reports `impacted`");
       assert.deepEqual([...narrowResult.selected], ["test/b.test.mjs"], "…selecting the suites the changed set reaches");
@@ -292,8 +292,8 @@ export const testCommandContractTests = [
       const widened = launcher();
       const widenedResult = await runTest({ scope: "impacted" }, {
         projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: widened.run,
-        readChanged: changedOk(["src/new.mjs"]),
-        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["src/new.mjs"] }),
+        readChanged: changedOk(["packages/core/src/new.mjs"]),
+        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "packages/core/src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["packages/core/src/new.mjs"] }),
       });
       assert.equal(widenedResult.scope, "all", "a widened run reports that it ran as `all`");
       assert.deepEqual([...widenedResult.selected], [...WHOLE], "…over every registered suite");
@@ -367,8 +367,8 @@ export const testCommandContractTests = [
         const stub = launcher(observed(mixes[row.mix]));
         const result = await runTest({ scope: "impacted", verbose: row.verbose }, {
           projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run,
-          readChanged: changedOk(["src/thing.mjs"]),
-          select: selector({ scope: "impacted", selected: ["test/b.test.mjs", "test/c.test.mjs"], builtAt: BUILT_AT, changed: ["src/thing.mjs"] }),
+          readChanged: changedOk(["packages/core/src/thing.mjs"]),
+          select: selector({ scope: "impacted", selected: ["test/b.test.mjs", "test/c.test.mjs"], builtAt: BUILT_AT, changed: ["packages/core/src/thing.mjs"] }),
         });
         const text = testCommand.cli.render(result);
         const lines = text.split("\n");
@@ -393,12 +393,12 @@ export const testCommandContractTests = [
       // The widened case names the FILE that caused each widening, on that same one line.
       const widened = await runTest({ scope: "impacted" }, {
         projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher().run,
-        readChanged: changedOk(["src/new.mjs"]),
-        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["src/new.mjs"] }),
+        readChanged: changedOk(["packages/core/src/new.mjs"]),
+        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "packages/core/src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["packages/core/src/new.mjs"] }),
       });
       const summary = testCommand.cli.render(widened).split("\n").filter((line) => line.includes(" suites · scope "));
       assert.equal(summary.length, 1, "a widened run still prints exactly one summary line");
-      assert.ok(summary[0].includes("src/new.mjs (not-in-graph)"), `…naming the widening and the file that caused it — ${summary[0]}`);
+      assert.ok(summary[0].includes("packages/core/src/new.mjs (not-in-graph)"), `…naming the widening and the file that caused it — ${summary[0]}`);
     },
   },
 
@@ -413,8 +413,8 @@ export const testCommandContractTests = [
       for (const row of rows) {
         const deps = (verbose) => ({
           projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher(observed(row.output)).run,
-          readChanged: changedOk(["src/thing.mjs"]),
-          select: selector({ scope: "impacted", selected: ["test/b.test.mjs", "test/c.test.mjs"], builtAt: BUILT_AT, changed: ["src/thing.mjs"] }),
+          readChanged: changedOk(["packages/core/src/thing.mjs"]),
+          select: selector({ scope: "impacted", selected: ["test/b.test.mjs", "test/c.test.mjs"], builtAt: BUILT_AT, changed: ["packages/core/src/thing.mjs"] }),
           verbose,
         });
         const quiet = testCommand.cli.render(await runTest({ scope: "impacted" }, deps(false)));
@@ -435,8 +435,8 @@ export const testCommandContractTests = [
       const stub = launcher(observed(streams(["alpha"], ["beta"])));
       const result = await runTest({ scope: "impacted" }, {
         projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run,
-        readChanged: changedOk(["src/new.mjs"]),
-        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["src/new.mjs"] }),
+        readChanged: changedOk(["packages/core/src/new.mjs"]),
+        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "packages/core/src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["packages/core/src/new.mjs"] }),
       });
       const text = testCommand.cli.render(result);
       const machine = testCommand.cli.json(result);
@@ -465,8 +465,8 @@ export const testCommandContractTests = [
       const rows = [
         { asked: "all", ran: "all", widening: "nothing widened", gate: true },
         { asked: "impacted", ran: "impacted", widening: "nothing widened", gate: false },
-        { asked: "impacted", ran: "all", widening: "one changed file the graph does not cover", widened: [{ file: "src/new.mjs", reason: "not-in-graph" }], gate: false },
-        { asked: "impacted", ran: "all", widening: "there was no graph artifact at all", widened: [{ file: "src/thing.mjs", reason: "no-graph" }], gate: false },
+        { asked: "impacted", ran: "all", widening: "one changed file the graph does not cover", widened: [{ file: "packages/core/src/new.mjs", reason: "not-in-graph" }], gate: false },
+        { asked: "impacted", ran: "all", widening: "there was no graph artifact at all", widened: [{ file: "packages/core/src/thing.mjs", reason: "no-graph" }], gate: false },
         { asked: "file", ran: "file", widening: "nothing widened", gate: false },
       ];
       for (const row of rows) {
@@ -474,8 +474,8 @@ export const testCommandContractTests = [
         const result = row.asked === "impacted"
           ? await runTest({ scope: "impacted" }, {
             ...deps,
-            readChanged: changedOk(["src/thing.mjs"]),
-            select: selector({ scope: row.ran, selected: row.ran === "all" ? [...WHOLE] : ["test/b.test.mjs"], widened: row.widened ?? [], builtAt: row.widening.includes("no graph") ? null : BUILT_AT, changed: ["src/thing.mjs"] }),
+            readChanged: changedOk(["packages/core/src/thing.mjs"]),
+            select: selector({ scope: row.ran, selected: row.ran === "all" ? [...WHOLE] : ["test/b.test.mjs"], widened: row.widened ?? [], builtAt: row.widening.includes("no graph") ? null : BUILT_AT, changed: ["packages/core/src/thing.mjs"] }),
           })
           : await runTest({ scope: row.asked, files: ["test/c.test.mjs"] }, { ...deps, readChanged: neverRead, select: neverSelect });
         assert.equal(result.scope, row.ran, `asked ${row.asked}, ran as ${row.ran}`);

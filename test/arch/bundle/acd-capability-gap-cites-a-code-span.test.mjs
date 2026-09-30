@@ -58,7 +58,7 @@ import {
   CAPABILITY_PROGRAMS,
   ROLE_WORDS,
   runPromptLayer,
-} from "../../../src/work-audit/prompt-layer.mjs";
+} from "../../../packages/core/src/work-audit/prompt-layer.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MODULE_REL = "packages/work/src/audit/prompt-layer.mjs";

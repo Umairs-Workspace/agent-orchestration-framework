@@ -2,8 +2,8 @@
 //
 // Every @executable scenario (and every Examples row) of
 //   wiki/work/66_milestone_controls-that-run/stories/00_story_contract-parses/tasks/00_one-gherkin-parser.feature
-// against the LOCKED surface `parseFeature(text)` in ../src/feature-parse.mjs — the
-// ONE Gherkin reader under `src/` after this story (ADR-003 §1).
+// against the LOCKED surface `parseFeature(text)` in ../packages/core/src/feature-parse.mjs — the
+// ONE Gherkin reader under `packages/core/src/` after this story (ADR-003 §1).
 //
 // The Examples rows of the free-text outline cite REAL files at REAL line numbers, and
 // are driven against the actual files on disk rather than against a paraphrase of them.
@@ -22,19 +22,19 @@ import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { parseFeature } from "../../src/feature-parse.mjs";
-import { validateWork } from "../../src/work.mjs";
+import { parseFeature } from "../../packages/core/src/feature-parse.mjs";
+import { validateWork } from "../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");
-const srcWork = path.join(repoRoot, "src", "work.mjs");
+const srcWork = path.join(repoRoot, "packages", "core", "src", "work.mjs");
 const srcParser = path.join(repoRoot, "packages/work/src/feature-parse.mjs");
 const validationSource = path.join(repoRoot, "packages/work/src/validation.mjs");
 
 // ---------------------------------------------------------------------------
-// The parser as it stood at HEAD before this story (src/feature-parse.mjs:18-55),
+// The parser as it stood at HEAD before this story (packages/core/src/feature-parse.mjs:18-55),
 // held as a LOCAL constant. A test is code; the "one home under src/" invariant is
-// scoped to `src/` (and asserted by test/arch/acd-feature-parser-single-home), so a
+// scoped to `packages/core/src/` (and asserted by test/arch/acd-feature-parser-single-home), so a
 // frozen copy here is the differential's other half — the only way to prove the
 // return shape is additive VALUE-for-value over the whole corpus rather than merely
 // key-for-key. (The same instrument m66/FF-6604 uses for memory's re-home.)
@@ -73,7 +73,7 @@ function legacyParseFeature(text) {
   return { feature, scenarios };
 }
 
-// The keys `src/commands/tasks.mjs` reads, and nothing else.
+// The keys `packages/core/src/commands/tasks.mjs` reads, and nothing else.
 const consumerView = (parsed) => ({
   feature: parsed.feature,
   scenarios: parsed.scenarios.map((s) => ({ name: s.name, outline: s.outline, lane: s.lane })),
@@ -332,7 +332,7 @@ export const featureParseStrictTests = [
   // Scenario: the Gherkin grammar has exactly one home under src/
   //   → proven structurally by test/arch/work/acd-feature-parser-single-home.test.mjs
   //     (FF-6601). The half asserted HERE is the consequence the contract names:
-  //     `src/work.mjs` reaches the grammar only by IMPORTING it.
+  //     `packages/core/src/work.mjs` reaches the grammar only by IMPORTING it.
   // =====================================================================
   {
     name: "66/00 parse: `src/work.mjs` reaches the Gherkin grammar only by importing the one parser",
@@ -463,7 +463,7 @@ export const featureParseStrictTests = [
     run: async () => {
       // THE LINE-COUNT RATCHET IS RETIRED, and what it was for is asserted directly.
       //
-      // It pinned `src/work.mjs` under 1,210 lines — what 66/00 left behind after moving
+      // It pinned `packages/core/src/work.mjs` under 1,210 lines — what 66/00 left behind after moving
       // the Gherkin scanning out. As a claim about THIS story's diff that is permanently
       // true and no longer measurable: the file is shared by 262 dependents, and every
       // later milestone that legitimately extends it moved the number (1,424 today).
@@ -502,7 +502,7 @@ export const featureParseStrictTests = [
       // Runtime exports include compatibility forwards; source declarations alone hide them.
       const surface = await import(pathToFileURL(srcWork).href);
       const exported = Object.keys(surface);
-      // The exported surface measured at HEAD before 66/00 (`git show HEAD:src/work.mjs`).
+      // The exported surface measured at HEAD before 66/00 (`git show HEAD:packages/core/src/work.mjs`).
       const AT_HEAD = [
         "ITEM_RE",
         "WORK_ITEM_SCHEMA_VERSION",
@@ -539,7 +539,7 @@ export const featureParseStrictTests = [
       assert.deepEqual(
         missing,
         [],
-        "an export 66/00 INHERITED is gone from src/work.mjs — removed, renamed or re-typed. That is what breaks the 243 dependents; additions by later milestones do not",
+        "an export 66/00 INHERITED is gone from packages/core/src/work.mjs — removed, renamed or re-typed. That is what breaks the 243 dependents; additions by later milestones do not",
       );
     },
   },

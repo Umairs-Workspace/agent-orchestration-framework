@@ -7,7 +7,7 @@
 // API glob in prose, a path pattern, a regex quoted in English — opens a PHANTOM block that
 // runs to the next block terminator anywhere in the file and deletes everything between.
 //
-// IT WAS NOT HYPOTHETICAL. At the paying pass, `src/mesh/worktree.mjs:89` carried the line
+// IT WAS NOT HYPOTHETICAL. At the paying pass, `packages/core/src/mesh/worktree.mjs:89` carried the line
 // comment `// no control chars/space/~/^/:/?/[*][/][/[\, …`, whose accidental opener ran to a
 // terminator 343 lines below — inside `catch { /[*] best effort [*]/ }` at `:432`. Under the
 // old order `acd-no-new-silent-catch` could not see that catch, and reported the file clean.
@@ -37,7 +37,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ROOTS = ["src", "test", "scripts", path.join("ui", "src")];
+const ROOTS = ["packages/core/src", "test", "scripts", path.join("ui", "src")];
 const SCANNED = new Set([".mjs", ".js", ".ts", ".tsx"]);
 
 // Assembled rather than written, so this module is not its own subject (see the note above).

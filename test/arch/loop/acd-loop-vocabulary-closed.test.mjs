@@ -7,10 +7,10 @@ import {
   ADMITTED_KEYS, CADENCE_KINDS, EDGE_KEYS, ENDPOINT_SCHEMES, EVENT_TRIGGERS, FIELD_KINDS,
   GROUND_VALUES, LOADER_FINDING_CODES, NODE_KINDS, PERIODIC_UNITS, POINTER_SCHEMES,
   SENTINEL_TOKENS, loadLoops,
-} from "../../../src/work/loops.mjs";
-import * as loaderModule from "../../../src/work/loops.mjs";
-import { CHECK_FINDING_CODES, CHECK_IDS } from "../../../src/work/loops-checks.mjs";
-import { COMPOSED_CHECK_IDS } from "../../../src/work/doctor-loop-ready.mjs";
+} from "../../../packages/core/src/work/loops.mjs";
+import * as loaderModule from "../../../packages/core/src/work/loops.mjs";
+import { CHECK_FINDING_CODES, CHECK_IDS } from "../../../packages/core/src/work/loops-checks.mjs";
+import { COMPOSED_CHECK_IDS } from "../../../packages/core/src/work/doctor-loop-ready.mjs";
 
 // 59/ADR-001 §3 appends `reporting` — the SIXTH edge key, outbound from an auditor. Every literal
 // below is stated as the whole frozen set after the widening, never as a delta, so a member silently
@@ -56,7 +56,7 @@ export const archTests = [
       equalSet(CHECK_IDS, ["grounding", "anchor-grounding", "pairing", "reference-ownership", "actuator-arbitration", "timescale"]);
 
       // FF-5807 (58/ADR-005 §3, ADR-006 §Codebase health) — THE CHECK-ID CENSUS HAS ONE AUTHORITY,
-      // AND EVERY PRODUCTION COPY AGREES. `src/work/doctor-loop-ready.mjs:13` carries a SECOND copy
+      // AND EVERY PRODUCTION COPY AGREES. `packages/core/src/work/doctor-loop-ready.mjs:13` carries a SECOND copy
       // of these six ids, kept in step by nothing: doctor maps `COMPOSED_CHECK_IDS` to lanes and
       // scores what it finds, so a seventh check id added to `CHECK_IDS` alone would leave doctor
       // silently scoring six of seven and the L3 unlock computed over a check nobody ran. Identical
@@ -81,7 +81,7 @@ export const archTests = [
       // they might also live — a loader that ALSO exported them would satisfy every set-equality
       // above while re-opening exactly the lane-scoping ADR-011 §1 closed. So the loader's own
       // namespace is asserted not to carry them.
-      assert.equal("CHECK_IDS" in loaderModule, false, "the six check ids have ONE home, and it is src/work/loops-checks.mjs — the loader is never asked what the checks are called");
+      assert.equal("CHECK_IDS" in loaderModule, false, "the six check ids have ONE home, and it is packages/core/src/work/loops-checks.mjs — the loader is never asked what the checks are called");
       assert.equal("CHECK_FINDING_CODES" in loaderModule, false, "the checks' fifteen codes have ONE home — a second export of them in the loader is the duplication ADR-011 §1's lane-scoping refuses");
       assert.ok("LOADER_FINDING_CODES" in loaderModule, "…and the assertions above are about the HOME, not about an empty namespace: the loader's own lane IS exported here");
       for (const set of [EDGE_KEYS, NODE_KINDS, POINTER_SCHEMES, SENTINEL_TOKENS, CHECK_FINDING_CODES]) {

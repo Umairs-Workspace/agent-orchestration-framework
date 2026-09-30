@@ -9,8 +9,8 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnSyncHardened } from "./cli-spawn.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { workspaceIdFor } from "../../src/global-work-store.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
 
 function git(cwd, args) {
   return spawnSyncHardened("git", args, { cwd, encoding: "utf8", shell: process.platform === "win32" });

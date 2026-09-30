@@ -15,7 +15,7 @@ import { mkdtemp, mkdir, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as work from "../../../src/work.mjs";
+import * as work from "../../../packages/core/src/work.mjs";
 
 // Candidate names for the ADR-004 transform-scoped writer (exact name is a story-01
 // decision); the guard probes this set.

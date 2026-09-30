@@ -16,7 +16,7 @@
 // would send an operator to `aof:verify` on unbuilt work.
 //
 // WHY THE RULE IS NOT IN `work-ref-scope.mjs`, the declared home of the subtree-scope rule
-// (`src/work.mjs`'s parser points here for this argument). Two reasons:
+// (`packages/core/src/work.mjs`'s parser points here for this argument). Two reasons:
 //
 //   1. `work.mjs` CANNOT import that leaf. `validateWork`'s own comment records it: the
 //      import raises the session driver's root-inclusive import reach past the ADR-015 §5
@@ -27,7 +27,7 @@
 //      memory recall — REPORTING scopes, which answer "what does this ref cover?". A span is
 //      an EXECUTION scope: "drive exactly these stories". The surfaces that execute are the
 //      two this suite pins. `aof work loop`'s own frozen guard (`LOOP_SCOPE_FORMS`,
-//      `src/work/loop.mjs`) refuses story refs OUTRIGHT for the matching reason — it drives
+//      `packages/core/src/work/loop.mjs`) refuses story refs OUTRIGHT for the matching reason — it drives
 //      whole milestones through acceptance, and a slice cannot be accepted. Three lanes with
 //      three deliberate vocabularies, not three copies of one that have drifted.
 //
@@ -46,16 +46,16 @@
 //                about. These run over the ITEM-LOCK fixture, because held-ness is a
 //                store fact the pure work-layer fixture has no way to state.
 //   lanes 20-22  the PROMPT half of story 84's deliverable, which nothing asserted: the span
-//                branch of `src/bundle/commands/continue.md` could be deleted and every test
+//                branch of `packages/core/assets/commands/continue.md` could be deleted and every test
 //                stayed green, because the bundle manifest hashes the file's CONTENT and so
 //                detects a change, never the absence of a claim within it.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { findWork, nextWork } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { nextCommand } from "../../../src/commands/next.mjs";
+import { findWork, nextWork } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { nextCommand } from "../../../packages/core/src/commands/next.mjs";
 import { withStream } from "../../support/story-depends-fixture.mjs";
 import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture.mjs";
 
@@ -72,7 +72,7 @@ const EN_DASHED = "44/01\u201302";
 // ---------------------------------------------------------------------------
 // The shipped continue prompt, and the span branch it must carry (task 02).
 // ---------------------------------------------------------------------------
-const CONTINUE_PROMPT = path.join(repoRoot, "src", "bundle", "commands", "continue.md");
+const CONTINUE_PROMPT = path.join(repoRoot, "packages", "core", "assets", "commands", "continue.md");
 
 // The span branch's own region: its bullet, through to the next top-level branch bullet.
 // Used ONLY by the non-vacuity lane, to cut the claim out of a COPY.

@@ -12,7 +12,7 @@ export const archTests = [
     name: "arch/69 FF-6903 heartbeat is hook-fed consumption with one threshold and no periodic self-ping",
     run: async () => {
       const [hook, consumer, driver, reclaim] = await Promise.all([
-        readFile(path.join(root, "src/bundle/hooks/run-heartbeat-enqueue.mjs"), "utf8"),
+        readFile(path.join(root, "packages/core/assets/hooks/run-heartbeat-enqueue.mjs"), "utf8"),
         readFile(path.join(root, "packages/execution/src/heartbeats.mjs"), "utf8"),
         readFile(path.join(root, "packages/execution/src/session-driver.mjs"), "utf8"),
         readFile(path.join(root, "packages/mesh/src/assignment-reclaim.mjs"), "utf8"),
@@ -86,7 +86,7 @@ export const archTests = [
       assert.doesNotMatch(ask, /JSON\.stringify\(\{ runId, at \}\)/u, "…and spells no copy of the bytes");
       // The hook and the consumer are untouched by the extension.
       const [hook, consumer] = await Promise.all([
-        readFile(path.join(root, "src/bundle/hooks/run-heartbeat-enqueue.mjs"), "utf8"),
+        readFile(path.join(root, "packages/core/assets/hooks/run-heartbeat-enqueue.mjs"), "utf8"),
         readFile(path.join(root, "packages/execution/src/heartbeats.mjs"), "utf8"),
       ]);
       assert.doesNotMatch(hook, /setInterval|setTimeout/u);

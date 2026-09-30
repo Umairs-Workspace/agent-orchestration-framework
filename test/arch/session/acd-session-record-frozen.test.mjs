@@ -32,8 +32,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { assembleSessionRecord, startSession, sessionRecordPath } from "../../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { assembleSessionRecord, startSession, sessionRecordPath } from "../../../packages/core/src/mesh/session.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 // m50/ADR-008 decision 8 APPENDED an eighth key, `relaying` — the worker's stated fact
 // that something is bridging this session's PTY output up its stream. An APPEND is the

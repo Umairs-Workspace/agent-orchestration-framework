@@ -2,7 +2,7 @@
 // (tasks/00_registry-store-and-seam.feature).
 //
 // Covers EVERY @executable scenario in tasks/00_registry-store-and-seam.feature,
-// exercising the REAL src/mesh/registry.mjs in-process against a temp fixture
+// exercising the REAL packages/core/src/mesh/registry.mjs in-process against a temp fixture
 // (mkdtemp → a workspace-shaped { workDir } → exercise → rm in finally), with an
 // INJECTED config.mesh.nodeId / config.mesh.relay.controlNode pair driving the
 // control-node truth table (matching → control node; mismatched → non-authority).
@@ -33,7 +33,7 @@ const PEER_ID = "peer-node-b";
 // REPAIRED 2026-08-29 (milestone 59 / story 01, ADR-003 §3 — the re-arming). This suite was
 // imported by `scripts/test.mjs` and never spread from `15e0a92` (2026-07-26) until this story
 // turned it back on, and while it was dark the partition moved underneath it: milestone 34 /
-// story 00 made the mesh home MACHINE-WIDE (`src/mesh/store.mjs`'s `meshDir` now answers
+// story 00 made the mesh home MACHINE-WIDE (`packages/core/src/mesh/store.mjs`'s `meshDir` now answers
 // `globalMeshPaths().meshRoot`, honouring `AOF_GLOBAL_HOME`, and takes NO workspace anchor).
 // A synthetic `{ workDir }` therefore no longer decides where the registry lands, so two of
 // this suite's five cases — the write-scope confinement claim and the "a non-control node
@@ -103,8 +103,8 @@ export const meshRegistryStoreSeamTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { writeRegistry, readRegistry, registryDir, registryPath } = await import("../../../src/mesh/registry.mjs");
-        const { meshDir } = await import("../../../src/mesh/store.mjs");
+        const { writeRegistry, readRegistry, registryDir, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
+        const { meshDir } = await import("../../../packages/core/src/mesh/store.mjs");
         // a registry with roster, boards, pending, revocations PLUS an unknown
         // additive top-level key the store has never seen
         const registry = sampleRegistry({ futureField: { schemaRev: 2, note: "unknown to the store" } });
@@ -134,7 +134,7 @@ export const meshRegistryStoreSeamTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { readRegistry } = await import("../../../src/mesh/registry.mjs");
+        const { readRegistry } = await import("../../../packages/core/src/mesh/registry.mjs");
         // meshDir/registry/ has no registry file yet (not even the .mesh/ dir exists)
         let read;
         await assert.doesNotReject(async () => { read = await readRegistry(workspace); }, "reading an absent registry raises no error (absence is benign — the ENOENT→absent discipline)");
@@ -143,7 +143,7 @@ export const meshRegistryStoreSeamTests = [
         // registry THROWS rather than silently reading as empty — the registry is the
         // authoritative git-of-record, and a control-node read→mutate→write over a
         // silently-emptied registry would persist the wipe.
-        const { registryDir, registryPath } = await import("../../../src/mesh/registry.mjs");
+        const { registryDir, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
         await mkdir(registryDir(workspace), { recursive: true });
         await writeFile(registryPath(workspace), "{ this is not json", "utf8");
         await assert.rejects(async () => { await readRegistry(workspace); }, "a corrupt registry rejects (fail-closed) — corruption never reads as an empty registry");
@@ -163,7 +163,7 @@ export const meshRegistryStoreSeamTests = [
       for (const row of rows) {
         const { repo, workspace } = await makeWorkspace();
         try {
-          const { writeRegistry, registryPath } = await import("../../../src/mesh/registry.mjs");
+          const { writeRegistry, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
           // a pre-existing registry file on disk whose bytes I record (seeded via the
           // control-node write — the one legitimate writer)
           const prior = sampleRegistry();
@@ -195,7 +195,7 @@ export const meshRegistryStoreSeamTests = [
       // and on a FRESH workspace a non-control invocation creates nothing at all
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { writeRegistry, registryPath } = await import("../../../src/mesh/registry.mjs");
+        const { writeRegistry, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
         const result = await writeRegistry(workspace, sampleRegistry(), nonControlConfig());
         assert.equal(result.written, false, "the fresh-workspace non-control write is a structured no-op");
         await assert.rejects(() => access(registryPath(workspace)), "the non-control node neither creates nor mutates a registry file");
@@ -209,7 +209,7 @@ export const meshRegistryStoreSeamTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { writeRegistry } = await import("../../../src/mesh/registry.mjs");
+        const { writeRegistry } = await import("../../../packages/core/src/mesh/registry.mjs");
         // a workspace with real content OUTSIDE meshDir whose on-disk state I record
         await writeFile(path.join(repo, "outside-root.txt"), "workDir-root sentinel\n", "utf8");
         await mkdir(path.join(workspace.workDir, "24_milestone_group-enrollment"), { recursive: true });
@@ -247,7 +247,7 @@ export const meshRegistryStoreSeamTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { writeRegistry, readRegistry, registryDir, registryPath } = await import("../../../src/mesh/registry.mjs");
+        const { writeRegistry, readRegistry, registryDir, registryPath } = await import("../../../packages/core/src/mesh/registry.mjs");
         // a prior COMPLETE registry on disk on the control node
         const prior = sampleRegistry();
         await writeRegistry(workspace, prior, controlConfig());

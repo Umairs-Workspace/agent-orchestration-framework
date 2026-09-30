@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 import { resolveLoopLevelGate } from "../../packages/work-loop/src/engine.mjs";
-import { loopCommand } from "../../src/commands/loop.mjs";
+import { loopCommand } from "../../packages/core/src/commands/loop.mjs";
 import { loopFixture } from "./loop-command-probe.test.mjs";
 import { cleanL3Gate } from "../support/l3-gate-fixture.mjs";
 

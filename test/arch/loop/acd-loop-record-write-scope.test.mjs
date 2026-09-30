@@ -12,9 +12,9 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //      at all outside that one folder.
 //
 //   2. THE NAME IS FORCED (ADR-009) — 52/FF-5201 DISCOVERS loop modules from disk by two patterns
-//      (`src/work-loops*.mjs`, `src/commands/loops-*.mjs`), asserts the discovered set equals its
+//      (`packages/core/src/work-loops*.mjs`, `packages/core/src/commands/loops-*.mjs`), asserts the discovered set equals its
 //      expected six, and holds every discovered module free of write call forms; its own comment
-//      names "a future writer `src/commands/loops-init.mjs`" as the case it exists to catch. So this
+//      names "a future writer `packages/core/src/commands/loops-init.mjs`" as the case it exists to catch. So this
 //      milestone's modules take the EXECUTION family's name, FF-5201's expected list is UNCHANGED,
 //      and its sweep is neither widened nor weakened. Asserted here INDEPENDENTLY of FF-5201 itself:
 //      a gate that only re-ran the other gate would prove nothing about this milestone.
@@ -27,12 +27,12 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../../src/command-core.mjs";
-import { EXECUTION_RECORD_BASENAME, loopRecordCommand } from "../../../src/commands/loop-record.mjs";
-import { loopsGraphCommand } from "../../../src/commands/loops-graph.mjs";
-import { loopsShowCommand } from "../../../src/commands/loops-show.mjs";
-import { loopsValidateCommand } from "../../../src/commands/loops-validate.mjs";
-import { createLoopsGroundednessCommand } from "../../../src/commands/loops-groundedness.mjs";
+import { loadWorkspace } from "../../../packages/core/src/command-core.mjs";
+import { EXECUTION_RECORD_BASENAME, loopRecordCommand } from "../../../packages/core/src/commands/loop-record.mjs";
+import { loopsGraphCommand } from "../../../packages/core/src/commands/loops-graph.mjs";
+import { loopsShowCommand } from "../../../packages/core/src/commands/loops-show.mjs";
+import { loopsValidateCommand } from "../../../packages/core/src/commands/loops-validate.mjs";
+import { createLoopsGroundednessCommand } from "../../../packages/core/src/commands/loops-groundedness.mjs";
 import { snapshot } from "../../support/loop-document-fixture.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, ctxFor, withRepo } from "../../loop/loop-record-command.test.mjs";
@@ -47,7 +47,7 @@ const ADDED_MODULES = ["packages/work-graph/src/record.mjs", "packages/work-grap
 // of that gate's source would make this gate green whenever that one was edited, which is the
 // opposite of an independent assertion.
 // 119/01 — the first pattern was `^src/work-loops.*\.mjs$` and the family now lives in
-// `src/work/`. Restated here on purpose, as the comment above says, so the re-point is an
+// `packages/core/src/work/`. Restated here on purpose, as the comment above says, so the re-point is an
 // independent edit rather than one this gate inherits from the gate it is checking.
 const REGISTRY_FAMILY_PATTERNS = [/^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/, /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/];
 const FF_5201_EXPECTED = [

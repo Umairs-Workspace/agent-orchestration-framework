@@ -20,12 +20,12 @@ import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { invoke, listCommands } from "../../src/command-core.mjs";
-import * as discordModule from "../../src/notify/discord.mjs";
-import { CHANNELS, buildNotifyEnvelope, notify, sendTestMessage } from "../../src/notify/notify.mjs";
-import { messagingSecretPath, messagingSecretPresent, readMessagingSecret, writeMessagingSecret } from "../../src/notify/secret.mjs";
-import { messagingInitCommand, messagingStatusCommand } from "../../src/commands/messaging/messaging.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { invoke, listCommands } from "../../packages/core/src/command-core.mjs";
+import * as discordModule from "../../packages/core/src/notify/discord.mjs";
+import { CHANNELS, buildNotifyEnvelope, notify, sendTestMessage } from "../../packages/core/src/notify/notify.mjs";
+import { messagingSecretPath, messagingSecretPresent, readMessagingSecret, writeMessagingSecret } from "../../packages/core/src/notify/secret.mjs";
+import { messagingInitCommand, messagingStatusCommand } from "../../packages/core/src/commands/messaging/messaging.mjs";
 import {
   SOURCE_DIRECTORY_BUDGETS,
   SOURCE_DIRECTORY_EXEMPTIONS,
@@ -197,13 +197,13 @@ export const notifyMessagingTests = [
   {
     name: "131/08 task00 — the new directories are budgeted: src/commands/messaging an exemption naming 131/08, the src/commands row still 69, and the live tree green",
     async run() {
-      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "src/commands/messaging");
-      assert.ok(exemption, "src/commands/messaging is an exemption");
+      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/commands/messaging");
+      assert.ok(exemption, "packages/core/src/commands/messaging is an exemption");
       assert.ok(exemption.why.includes("131/08") && exemption.why.includes("messaging.mjs"), "its why names 131/08 and its member");
-      const row = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "src/commands");
+      const row = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/core/src/commands");
       assert.equal(row.ceiling, 69, "the src/commands row is still 69");
       assert.equal(row.allowance, 0);
-      for (const [dir, member] of [["src/notify", "secret.mjs"], ["test/notify", "notify-messaging"]]) {
+      for (const [dir, member] of [["packages/core/src/notify", "secret.mjs"], ["test/notify", "notify-messaging"]]) {
         assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === dir).why.includes(member), `${dir}'s why names ${member}`);
       }
       const named = sourceDirectoryBudgetViolations(await readTreeListing())

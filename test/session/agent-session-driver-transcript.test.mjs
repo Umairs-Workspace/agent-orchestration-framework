@@ -11,7 +11,7 @@
 // forever.
 //
 // THE HERMETIC SEAM IS `CLAUDE_CONFIG_DIR`. `claudeProjectsDir` reads it before it falls
-// back to the home directory (src/work/observe.mjs), so a `mkdtemp` root plus a
+// back to the home directory (packages/core/src/work/observe.mjs), so a `mkdtemp` root plus a
 // synthetic `cwd` gives every scenario below a real directory, real `.jsonl` files and
 // real mtimes with no `~/.claude` anywhere near it — the idiom
 // test/mesh/worker/mesh-worker-completion-detection.test.mjs already uses. `pollMs`, `idleMs`,
@@ -43,10 +43,10 @@ import {
   NEEDS_INPUT_INSTRUCTION,
   DIRECTIVE_COMPLETE_INSTRUCTION,
   WORKER_SESSION_INSTRUCTION,
-} from "../../src/agent-session-driver.mjs";
-import * as driverModule from "../../src/agent-session-driver.mjs";
-import { claudeProjectsDir, readLastAssistantTurn, askQuestionFromTurn, readAskQuestion } from "../../src/work/observe.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+} from "../../packages/core/src/agent-session-driver.mjs";
+import * as driverModule from "../../packages/core/src/agent-session-driver.mjs";
+import { claudeProjectsDir, readLastAssistantTurn, askQuestionFromTurn, readAskQuestion } from "../../packages/core/src/work/observe.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 import { fileURLToPath } from "node:url";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 

@@ -1,17 +1,17 @@
 // Fitness function for milestone 41 / ADR-001 — the god-node blast-radius guard.
 //
-//   "The re-index engine is a NEW module (src/work/reindex.mjs) that IMPORTS
+//   "The re-index engine is a NEW module (packages/core/src/work/reindex.mjs) that IMPORTS
 //    work.mjs's readers; work.mjs NEVER imports the engine back. The god-node's
 //    36-module blast radius does not grow."
 //
-// `src/work.mjs` is imported/called by 36 modules (codebase graph, refine 41) and
+// `packages/core/src/work.mjs` is imported/called by 36 modules (codebase graph, refine 41) and
 // imports only 3 (fs, node-identity, workspace). Bolting the renumber WRITER into
 // it would inherit that whole blast radius. This guard pins the dependency
 // DIRECTION structurally, on import specifiers (comment-stripped so a documenting
 // mention never trips it):
 //   - work.mjs imports NO reindex/insert engine module (its import list stays the
 //     sanctioned three) — asserted NOW, always live;
-//   - GUARD-IF-PRESENT: once src/work/reindex.mjs exists it MUST import ./work.mjs
+//   - GUARD-IF-PRESENT: once packages/core/src/work/reindex.mjs exists it MUST import ./work.mjs
 //     (the engine depends on the readers, never the reverse). While absent, a clean
 //     skip — the suite stays green pre-build and this arms the moment the engine
 //     lands.
@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORK = path.join(repoRoot, "src", "work.mjs");
+const WORK = path.join(repoRoot, "packages", "core", "src", "work.mjs");
 const REINDEX = path.join(repoRoot, "packages", "work", "src", "reindex.mjs");
 
 function stripComments(source) {
@@ -45,13 +45,13 @@ export const archTests = [
       assert.deepEqual(
         engineImports,
         [],
-        `src/work.mjs imports no reindex/insert engine — imports: ${specs.join(", ")}`,
+        `packages/core/src/work.mjs imports no reindex/insert engine — imports: ${specs.join(", ")}`,
       );
       // work.mjs's import list stays minimal (a canary on the god-node staying a
       // pure READER hub) — every specifier resolves within src/ (relative) and none
       // is an engine module. Self-checks (non-vacuous): the matcher catches every
       // engine-module form and does NOT flag work.mjs's legitimate dependencies.
-      for (const bad of ["./work/reindex.mjs", "./reindex.mjs", "../src/work-insert.mjs", "@aof/work/reindex"]) {
+      for (const bad of ["./work/reindex.mjs", "./reindex.mjs", "../packages/core/src/work-insert.mjs", "@aof/work/reindex"]) {
         assert.ok(ENGINE_MODULE.test(bad), `the matcher catches a real ${bad} import`);
       }
       for (const ok of ["./fs.mjs", "./node-identity.mjs", "./workspace.mjs"]) {

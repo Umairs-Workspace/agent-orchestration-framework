@@ -16,8 +16,8 @@ import {
   parseTasklistPids,
   stopDesktopApp,
   DESKTOP_APP_EXE,
-} from "../../../src/commands/mesh/desktop.mjs";
-import { getCommand } from "../../../src/command-core.mjs";
+} from "../../../packages/core/src/commands/mesh/desktop.mjs";
+import { getCommand } from "../../../packages/core/src/command-core.mjs";
 
 // A recording runner: answers a queued { stdout, code } per call and records the
 // argv it was handed, so a test can assert WHICH command the platform branch ran.

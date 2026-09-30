@@ -6,8 +6,8 @@
 // `resolveCloneCredentialProvider` seam + the launcher's literal-key wiring did not
 // exist before story 02 built — a detector authored earlier would have scanned an
 // absent call-site shape, a VACUOUS real-tree assertion. Now that the source exists
-// (src/mesh/clone-credential-provider.mjs, src/mesh/launcher.mjs,
-// src/control-stream-server.mjs), this test arms the FOUR self-check plants ADR-010
+// (packages/core/src/mesh/clone-credential-provider.mjs, packages/core/src/mesh/launcher.mjs,
+// packages/core/src/control-stream-server.mjs), this test arms the FOUR self-check plants ADR-010
 // names verbatim:
 //   (1) a hard-coded single provider (the selector ignores config and always returns
 //       the github-app OR always the env-token provider);

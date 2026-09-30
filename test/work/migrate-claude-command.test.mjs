@@ -3,7 +3,7 @@
 //
 // Covered here:
 //   tasks/00_command-body-cli-first-handoff.feature — the two @executable
-//        content/shape pins over the AUTHORED body `src/bundle/commands/migrate.md`
+//        content/shape pins over the AUTHORED body `packages/core/assets/commands/migrate.md`
 //        (grep-able marker facts + character-offset ordering, the proven
 //        acd-doctor-validate-keystone idiom). The AUTHORED file is asserted, not
 //        the render (the renderer re-emits frontmatter and injects aof-invocation —
@@ -25,18 +25,18 @@ import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadBundle, readDescriptor, renderBundleOutputs } from "../../src/work/bundle.mjs";
+import { loadBundle, readDescriptor, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 import {
   generateBundleManifest,
   serializeBundleManifest,
   readShippedManifest,
   manifestPath
-} from "../../src/work/bundle-manifest.mjs";
-import { hashContent, hashFileIfExists, writeLock } from "../../src/lock.mjs";
-import { createLockManifest, executeApplyActions, planApplyActions } from "../../src/render-plan.mjs";
-import { synthesizeBundleConfig } from "../../src/work/bundle-synthesis.mjs";
-import { updateWork, workLockPath } from "../../src/work/update.mjs";
-import { initWork } from "../../src/work/init.mjs";
+} from "../../packages/core/src/work/bundle-manifest.mjs";
+import { hashContent, hashFileIfExists, writeLock } from "../../packages/core/src/lock.mjs";
+import { createLockManifest, executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
+import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
+import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
+import { initWork } from "../../packages/core/src/work/init.mjs";
 
 const root = new URL("../../", import.meta.url);
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");
@@ -47,7 +47,7 @@ const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");
 const runnerUrl = new URL("../../scripts/test.mjs", import.meta.url).href;
 
 // The authored deliverable (the doc IS the contract) and its rendered install path.
-const BODY = "src/bundle/commands/migrate.md";
+const BODY = "packages/core/assets/commands/migrate.md";
 const MIGRATE_REL = ".claude/commands/aof/migrate.md";
 
 // The CLI-first invocation the body pins: `aof migrate` runs FIRST, --json, flags
@@ -154,7 +154,7 @@ function shippedMigrateEntry() {
 export const migrateClaudeCommandTests = [
   // ====================================================================
   // tasks/00_command-body-cli-first-handoff.feature — @executable pins
-  // over the AUTHORED src/bundle/commands/migrate.md
+  // over the AUTHORED packages/core/assets/commands/migrate.md
   // ====================================================================
 
   {
@@ -330,7 +330,7 @@ export const migrateClaudeCommandTests = [
     run: async () => {
       // When the bundle manifest is regenerated from the descriptor
       const regenerated = serializeBundleManifest(generateBundleManifest());
-      // Then the regeneration reproduces the shipped src/bundle/manifest.json byte-for-byte
+      // Then the regeneration reproduces the shipped packages/core/assets/manifest.json byte-for-byte
       const shipped = readFileSync(manifestPath(), "utf8");
       assert.equal(regenerated, shipped, "regeneration reproduces the shipped manifest byte-for-byte (ADR-002: derived, never hand-edited)");
       // And the manifest carries an entry for the rendered migrate command whose

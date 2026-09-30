@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const ROOT_GITIGNORE = path.join(repoRoot, ".gitignore");
-const bundleDir = path.join(repoRoot, "src", "bundle");
+const bundleDir = path.join(repoRoot, "packages", "core", "assets");
 
 const SEAMS = {
   architect: path.join(bundleDir, "agents", "aof-architect.md"),

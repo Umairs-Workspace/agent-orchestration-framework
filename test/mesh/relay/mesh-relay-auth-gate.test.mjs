@@ -7,7 +7,7 @@
 // the gate.
 //
 // Covers EVERY @executable scenario / Scenario Outline row, driving IN-PROCESS ws clients
-// (the m23 join-ack pattern) against the REAL serveRelay (src/mesh/relay.mjs) on an
+// (the m23 join-ack pattern) against the REAL serveRelay (packages/core/src/mesh/relay.mjs) on an
 // ephemeral port (port: 0). The registry roster/revocation is seeded via story 00's
 // writeRegistry over a temp fixture. The credential is presented on the upgrade via the
 // `ws` client options `new WebSocket(url, { headers: { Authorization } })` (the STORY.md
@@ -23,8 +23,8 @@ import { mkdtemp, rm, mkdir, readdir, readFile, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveRelay, sha256Hex } from "../../../src/mesh/relay.mjs";
-import { writeRegistry, appendRevocation, readRegistry } from "../../../src/mesh/registry.mjs";
+import { serveRelay, sha256Hex } from "../../../packages/core/src/mesh/relay.mjs";
+import { writeRegistry, appendRevocation, readRegistry } from "../../../packages/core/src/mesh/registry.mjs";
 
 const CONTROL_ID = "control-node-a";
 const CLOCK = "2026-07-01T10:00:00.000Z";

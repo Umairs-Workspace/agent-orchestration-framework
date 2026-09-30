@@ -20,9 +20,9 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { buildSnapshot, CHECK_GROUPS } from "../../src/work/doctor.mjs";
-import { rubricTraceabilityGroup, RUBRIC_REPORT_CONFIG_KEY, declaredReportFrom } from "../../src/work/doctor-rubric.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { buildSnapshot, CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
+import { rubricTraceabilityGroup, RUBRIC_REPORT_CONFIG_KEY, declaredReportFrom } from "../../packages/core/src/work/doctor-rubric.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { makeGradeRepo, ctxFor } from "../support/grade-fixture.mjs";
 
@@ -76,7 +76,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
 
       // NO CLOCK, and NO `path.resolve` — a lane that read either could not be replayed from
       // a snapshot, which is the whole determinism contract.
-      const body = stripComments(await readFile(path.join(repoRoot, "src", "work", "doctor-rubric.mjs"), "utf8"));
+      const body = stripComments(await readFile(path.join(repoRoot, "packages", "core", "src", "work", "doctor-rubric.mjs"), "utf8"));
       for (const clock of ["Date.now", "new Date", "performance.now", "process.hrtime", "Date.parse"]) {
         assert.ok(!body.includes(clock), `it read no clock (found ${clock})`);
       }
@@ -100,7 +100,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
         assert.equal(snapshot.rubricReport.format, "tap", "…with the format it was declared in");
 
         // THE LANE ITSELF PERFORMED NO READ — it holds no filesystem import at all.
-        const body = stripComments(await readFile(path.join(repoRoot, "src", "work", "doctor-rubric.mjs"), "utf8"));
+        const body = stripComments(await readFile(path.join(repoRoot, "packages", "core", "src", "work", "doctor-rubric.mjs"), "utf8"));
         for (const io of ["node:fs", "readFile", "readFileSync", "existsSync", "statSync"]) {
           assert.ok(!body.includes(io), `the lane performs no read (found ${io})`);
         }
@@ -134,7 +134,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
 
         // AND THE DOCTOR STARTED NO CHILD PROCESS — structurally, over the whole lane family.
         for (const module of ["work/doctor.mjs", "work/doctor-rubric.mjs", "work/doctor-controls.mjs"]) {
-          const body = stripComments(await readFile(path.join(repoRoot, "src", module), "utf8"));
+          const body = stripComments(await readFile(path.join(repoRoot, "packages", "core", "src", module), "utf8"));
           for (const door of ["child_process", "spawnSync", "execSync", "execFileSync", "fork("]) {
             assert.ok(!body.includes(door), `${module} names no spawn door (found ${door})`);
           }
@@ -157,7 +157,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
         const withoutRubric = CHECK_GROUPS.filter((group) => group !== rubricTraceabilityGroup);
         assert.equal(withoutRubric.length, CHECK_GROUPS.length - 1, "guard: the lane really is one registry entry");
 
-        const { doctorWork } = await import("../../src/work/doctor.mjs");
+        const { doctorWork } = await import("../../packages/core/src/work/doctor.mjs");
         const baseline = await doctorWork(ctx.workspace.workDir, ctx.workspace.config, "03/00", {
           now: Date.now(),
           projectRoot: ctx.workspace.projectRoot,

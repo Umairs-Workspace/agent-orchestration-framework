@@ -18,9 +18,9 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { DEFAULT_HEARTBEAT_MS, DEFAULT_START_TO_CLOSE_MS } from "../../src/loop-bounds.mjs";
-import { GRADE_REENTRANCY_ENV } from "../../src/commands/grade.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { DEFAULT_HEARTBEAT_MS, DEFAULT_START_TO_CLOSE_MS } from "../../packages/core/src/loop-bounds.mjs";
+import { GRADE_REENTRANCY_ENV } from "../../packages/core/src/commands/grade.mjs";
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 

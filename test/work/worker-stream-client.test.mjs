@@ -17,7 +17,7 @@ import {
   backoffDelaySeconds,
   WORKTREE_CONTENT_FRAME_KIND,
   WITHDRAW_KIND,
-} from "../../src/worker-stream-client.mjs";
+} from "../../packages/core/src/worker-stream-client.mjs";
 
 // A scriptable fake transport: connect()/send() resolve unless scripted to throw;
 // every sent frame is recorded in order (kind + items) so a test can assert the

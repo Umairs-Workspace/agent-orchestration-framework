@@ -2,7 +2,7 @@
 // isolated global store (milestone 43 / story 04 — the substrate the board mount
 // harness runs against).
 //
-// "REAL board face" means the production `handleWorkApi` (src/board-ui.mjs) — the
+// "REAL board face" means the production `handleWorkApi` (packages/core/src/board-ui.mjs) — the
 // module that owns `/api/work/*` — answering every route: list, doc, tasks,
 // run-status, next, validate. The app under test therefore speaks HTTP to the
 // same handler the desktop board speaks to, through its own api client, in its
@@ -31,11 +31,11 @@ import http from "node:http";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { handleWorkApi } from "../../src/board-ui.mjs";
-import { openGlobalWorkProjectionStore, upsertWorkItemContent, upsertWorkItems, readWorkspaceItems, workspaceIdFor } from "../../src/global-work-store.mjs";
-import { RESYNC_REQUESTED, readResync, runResyncDispatchTick } from "../../src/mesh/resync.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../src/assignment-record.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { handleWorkApi } from "../../packages/core/src/board-ui.mjs";
+import { openGlobalWorkProjectionStore, upsertWorkItemContent, upsertWorkItems, readWorkspaceItems, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
+import { RESYNC_REQUESTED, readResync, runResyncDispatchTick } from "../../packages/core/src/mesh/resync.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../packages/core/src/assignment-record.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 
 // The REAL timers, captured at MODULE LOAD — before any mounted app installs its
 // controllable clock over `globalThis.setTimeout` / `globalThis.setInterval`. The
@@ -58,7 +58,7 @@ const realSleep = (ms) => new Promise((resolve) => realSetTimeout(resolve, ms));
 
 // ── THE SECOND SEAM, AND IT IS THE FABRIC, NOT THE FACE ─────────────────────
 // `controlTick()` runs the REAL control-daemon drain (`runResyncDispatchTick`,
-// src/mesh/resync.mjs) against the REAL store on a REAL interval, and the ONLY
+// packages/core/src/mesh/resync.mjs) against the REAL store on a REAL interval, and the ONLY
 // thing the lane supplies is the socket registry it consults — which node
 // currently holds a connected admitted socket, and whether a dispatch onto it
 // completes. That is the FABRIC: a thing a single-process fixture cannot BE, and
@@ -150,12 +150,12 @@ async function writeStream(workDir, stream) {
   }
 }
 
-// The record doc each driver type carries (`recordDoc` in src/work.mjs, by type).
+// The record doc each driver type carries (`recordDoc` in packages/core/src/work.mjs, by type).
 const RECORD_DOC = { milestone: "SPEC.md", story: "STORY.md", chore: "CHORE.md", spike: "SPIKE.md", uat: "SESSION.md" };
 
 // The response shim `handleWorkApi` writes into when the fixture needs to see the
 // real face's answer before forwarding it. The face uses exactly `writeHead` +
-// `end` (src/board-ui.mjs `send`), both synchronous — so after awaiting the
+// `end` (packages/core/src/board-ui.mjs `send`), both synchronous — so after awaiting the
 // handler the capture is complete.
 function captureResponse() {
   const captured = { status: 200, headers: {}, body: "" };
@@ -179,7 +179,7 @@ function captureResponse() {
 //
 //   `stalenessSeconds` — the window CONFIGURED for this workspace, resolved by the
 //   face's own resolver off `.aof/aof.config.json`. Stated by the lane rather than
-//   inherited from `src/`'s documented default, so a tuning change there cannot
+//   inherited from `packages/core/src/`'s documented default, so a tuning change there cannot
 //   silently move what a UI lane is asserting.
 //
 //   `nodeId` — WHICH MACHINE this face is running on, configured in the same file and
@@ -283,7 +283,7 @@ export async function withBoardFace(fn, { stream = DEFAULT_STREAM, nodeId = "aof
     await mkdir(path.join(root, ".aof"), { recursive: true });
     await writeStream(workDir, stream);
     // The window is CONFIGURED here and resolved by the face's own resolver —
-    // one number, in the one place `src/` reads it from.
+    // one number, in the one place `packages/core/src/` reads it from.
     await writeFile(
       path.join(root, ".aof", "aof.config.json"),
       `${JSON.stringify({ name: "board-fixture", work: { dir: "./wiki/work" }, mesh: { nodeId, cache: { stalenessSeconds } } }, null, 2)}\n`,

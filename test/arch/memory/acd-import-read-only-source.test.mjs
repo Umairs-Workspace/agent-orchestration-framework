@@ -32,7 +32,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../../src/command-core.mjs";
+import { getCommand } from "../../../packages/core/src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC_IMPORT_DIR = path.join(repoRoot, "packages", "knowledge", "src", "import");

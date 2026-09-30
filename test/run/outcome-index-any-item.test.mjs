@@ -20,9 +20,9 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildRecords, INDEX_VERSION } from "../../src/memory/local-indexing.mjs";
+import { buildRecords, INDEX_VERSION } from "../../packages/core/src/memory/local-indexing.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
-import { applyScope, MEMORY_RECORD_FIELDS, recall } from "../../src/memory/local-retrieval.mjs";
+import { applyScope, MEMORY_RECORD_FIELDS, recall } from "../../packages/core/src/memory/local-retrieval.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DELIVERY = new Set(["capability", "gap"]);
@@ -312,13 +312,13 @@ export const outcomeIndexAnyItemTests = [
     name: "80/02 seam: no source parser lives in a backend, graphify's record source is the imported buildRecords, and INDEX_VERSION === GRAPHIFY_INDEX_VERSION, unchanged at 1",
     run: async () => {
       const parserDef = /(?:function|const)\s+(parse(?:Outcome|Architecture|Retrospective|Aof)\b)/g;
-      for (const rel of ["src/application/bindings/memory/local-backend.mjs", "src/application/bindings/memory/graphify-backend.mjs", "packages/knowledge/src/memory/local-backend.mjs", "packages/knowledge/src/memory/graphify-backend.mjs"]) {
+      for (const rel of ["packages/core/src/application/bindings/memory/local-backend.mjs", "packages/core/src/application/bindings/memory/graphify-backend.mjs", "packages/knowledge/src/memory/local-backend.mjs", "packages/knowledge/src/memory/graphify-backend.mjs"]) {
         const src = await readFile(path.join(repoRoot, rel), "utf8");
         const defs = [...src.matchAll(parserDef)].map((m) => m[1]);
         assert.deepEqual(defs, [], `${rel} defines no source parser (found: ${defs.join(", ") || "none"})`);
       }
 
-      const graphify = await readFile(path.join(repoRoot, "src/application/bindings/memory/graphify-backend.mjs"), "utf8");
+      const graphify = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/memory/graphify-backend.mjs"), "utf8");
       assert.match(
         graphify,
         /const\s*\{[^}]*\bbuildRecords\b[^}]*\}\s*=\s*memoryLocalIndexingServices/,
@@ -326,7 +326,7 @@ export const outcomeIndexAnyItemTests = [
       );
       assert.ok(dependencySpecifiers(graphify).some(edge => edge.parameter === "memoryLocalIndexingServices" && edge.specifier === "./local-indexing.mjs"), "the supplied builder comes from the shared indexing constructor");
 
-      const { GRAPHIFY_INDEX_VERSION } = await import("../../src/memory/graphify-backend.mjs");
+      const { GRAPHIFY_INDEX_VERSION } = await import("../../packages/core/src/memory/graphify-backend.mjs");
       assert.equal(INDEX_VERSION, GRAPHIFY_INDEX_VERSION, "INDEX_VERSION and GRAPHIFY_INDEX_VERSION are equal");
       assert.equal(INDEX_VERSION, 1, "…and unchanged — this story alters no record shape");
     },
@@ -391,13 +391,13 @@ export const outcomeIndexAnyItemTests = [
   // leaf and `work-doctor.mjs`'s `inScope` + `validateWork`'s closure now delegate
   // to it — so the refactor is asserted BEHAVIOUR-PRESERVING against the rule as it
   // was written, held here as a local constant (a test is code; the no-second-copy
-  // invariant is scoped to `src/`).
+  // invariant is scoped to `packages/core/src/`).
   // ==================================================================
   {
     name: "80/02 scope-rule: itemInScope is byte-for-byte the pre-story `inScope` over every ref/scope shape, and doctor's inScope now delegates to it",
     run: async () => {
-      const { itemInScope, refInScope } = await import("../../src/work/ref-scope.mjs");
-      const { inScope } = await import("../../src/work/doctor.mjs");
+      const { itemInScope, refInScope } = await import("../../packages/core/src/work/ref-scope.mjs");
+      const { inScope } = await import("../../packages/core/src/work/doctor.mjs");
 
       // The rule AS IT WAS, before the re-home (work-doctor.mjs, pre-story 80).
       const before = (item, scopeRef) => {
@@ -464,7 +464,7 @@ export const outcomeIndexAnyItemTests = [
       try {
         // The REAL shipped template, marker-stripped exactly as a scaffold would
         // instantiate it — not a hand-written stand-in that could drift from it.
-        const shipped = await readFile(path.join(repoRoot, "src", "bundle", "templates", "shared", "OUTCOME.md"), "utf8");
+        const shipped = await readFile(path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md"), "utf8");
         const dir = path.join(workDir, `${number}_${type}_${slug}`);
         await mkdir(dir, { recursive: true });
         await writeFile(path.join(dir, "OUTCOME.md"), shipped, "utf8");

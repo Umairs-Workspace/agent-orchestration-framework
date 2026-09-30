@@ -32,7 +32,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { markedRegion, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
-import { promoteFindingToChoreCommand } from "../../../src/commands/promote-finding-to-chore.mjs";
+import { promoteFindingToChoreCommand } from "../../../packages/core/src/commands/promote-finding-to-chore.mjs";
 import { PROMOTED_TYPE } from "@aof/work/promote/promotion";
 import { FINDING_ROUTINGS, LOOP_CREATED_ITEM_TYPE } from "../../../packages/work-loop/src/engine.mjs";
 
@@ -46,7 +46,7 @@ const PROMOTION_PATH = Object.freeze([
   GAP_FACE,
   FINDING_FACE,
 ]);
-const CONTINUE = "src/bundle/commands/continue.md";
+const CONTINUE = "packages/core/assets/commands/continue.md";
 // The cost question (118/00) and the depth bound (118/01), located in the block by the claims they
 // make rather than by question NUMBER — the numbers shift whenever a question is inserted, and a
 // control keyed to them would red on a renumber that changed no rule.
@@ -366,7 +366,7 @@ export const archTests = [
 
       // THE SEPARATION PROOF: the OPERATOR's face still ships `--at <P>`, and that leaves this
       // control green — the leg binds the loop's seam, not every promotion in the tree.
-      const { promoteGapToChoreCommand } = await import("../../../src/commands/promote-gap-to-chore.mjs");
+      const { promoteGapToChoreCommand } = await import("../../../packages/core/src/commands/promote-gap-to-chore.mjs");
       assert.ok("at" in promoteGapToChoreCommand.input.properties, "work:promote-gap still ships its delivered --at flag");
       assert.deepEqual(loopAppendOnlyProblems(promoteFindingToChoreCommand, findingSource), [], "…and the finding face is still green beside it");
     },
@@ -503,7 +503,7 @@ export const archTests = [
                     for (const reviewedType of reviewedTypes) {
                       combinations += 1;
                       const finding = {
-                        title: "F", location: "src/x.mjs:1",
+                        title: "F", location: "packages/core/src/x.mjs:1",
                         severity, lockedContract, cheaperThanDriver, checklistDischargeable,
                         needsNewCriteria, reproduced, outstanding,
                       };

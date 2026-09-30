@@ -2,9 +2,9 @@
 // commands.
 //
 // Covers EVERY @executable scenario in tasks/01_mesh-identity-status-commands.feature,
-// exercising the REAL in-process registry (src/command-core.mjs +
-// src/commands/mesh-identity.mjs over story 00's src/mesh/store.mjs + story 01's
-// src/node-identity.mjs) against a temp fixture repo — loadWorkspace + invoke, real fs,
+// exercising the REAL in-process registry (packages/core/src/command-core.mjs +
+// packages/core/src/commands/mesh-identity.mjs over story 00's packages/core/src/mesh/store.mjs + story 01's
+// packages/core/src/node-identity.mjs) against a temp fixture repo — loadWorkspace + invoke, real fs,
 // in-process. One test object per @executable scenario, each name tracing to feature +
 // scenario. node:assert/strict.
 //
@@ -17,9 +17,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { getCommand, invoke } from "../../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, publishNodeRecord } from "../../../src/mesh/store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
+import { meshDir, nodeRecordPath, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
 
 // 34/story 02 (operator directive): `skills` is REMOVED from the descriptor
 // (see assembleDescriptor) — six keys, until 132/02 added a seventh:

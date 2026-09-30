@@ -10,7 +10,7 @@ import {
   LOOP_LEVELS,
   resolveLoopLevelGate,
 } from "../../../packages/work-loop/src/engine.mjs";
-import { loopCommand } from "../../../src/commands/loop.mjs";
+import { loopCommand } from "../../../packages/core/src/commands/loop.mjs";
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 import { cleanL3Gate, makeQualifiedL3Repo } from "../../support/l3-gate-fixture.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";

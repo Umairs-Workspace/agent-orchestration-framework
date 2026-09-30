@@ -15,8 +15,8 @@ import { mkdtemp, mkdir, rm, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { useHeadroom, unuseHeadroom } from "../../src/work/headroom.mjs";
-import { initWork } from "../../src/work/init.mjs";
+import { useHeadroom, unuseHeadroom } from "../../packages/core/src/work/headroom.mjs";
+import { initWork } from "../../packages/core/src/work/init.mjs";
 
 const HEADROOM_REPO = "github.com/chopratejas/headroom";
 const whichPresent = (bin) => (bin === "headroom" ? "/usr/local/bin/headroom" : null);

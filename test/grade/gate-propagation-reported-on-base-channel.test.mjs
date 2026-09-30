@@ -32,7 +32,7 @@ import {
   isAncestor,
   settledFrame,
 } from "../support/gate-propagation-fixture.mjs";
-import { meshWorktreePath } from "../../src/mesh/worktree.mjs";
+import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
 import { existsSync } from "node:fs";
 
 const NOW = "2026-08-04T09:00:00.000Z";

@@ -3,7 +3,7 @@
 //  never from process.cwd() or a consumer config value."
 //
 // milestone 28 / story 00 (ADR-003) CO-TOUCH: bundleRoot() now delegates to the
-// ONE SEA-safe asset-base seam (src/asset-base.mjs) rather than joining
+// ONE SEA-safe asset-base seam (packages/core/src/asset-base.mjs) rather than joining
 // import.meta.url directly, so the import.meta.url-resolution assert below
 // re-points at asset-base.mjs (where that resolution now LIVES) and adds an
 // assert that bundleRoot() routes through assetBase(). The cwd-independence +
@@ -21,11 +21,12 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadBundle, readDescriptor, bundleRoot } from "../../../src/work/bundle.mjs";
+import { loadBundle, readDescriptor, bundleRoot } from "../../../packages/core/src/work/bundle.mjs";
 
-const loaderSourcePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src", "work", "bundle.mjs");
-const manifestSourcePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src", "work", "bundle-manifest.mjs");
-const assetBaseSourcePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src", "asset-base.mjs");
+const loaderSourcePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src", "work", "bundle.mjs");
+const manifestSourcePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src", "work", "bundle-manifest.mjs");
+const coreRootSourcePath = new URL("../../../packages/core/src/application/core-root.mjs", import.meta.url);
+const assetBaseSourcePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src", "asset-base.mjs");
 
 export const archTests = [
   {
@@ -58,7 +59,7 @@ export const archTests = [
       const code = stripComments(source);
 
       // bundleRoot() now delegates to assetBase("bundle") — the resolution
-      // ITSELF (the import.meta.url join) lives in src/asset-base.mjs, not here.
+      // ITSELF (the import.meta.url join) lives in packages/core/src/asset-base.mjs, not here.
       const bundleRootFn = extractFunction(code, "bundleRoot");
       assert.ok(/assetBase\(\s*["']bundle["']\s*\)/.test(bundleRootFn), "bundleRoot() routes through assetBase(\"bundle\")");
       assert.ok(/from\s+["'](?:\.\.?\/)+asset-base\.mjs["']/.test(code), "work-bundle.mjs imports from the asset-base seam");
@@ -66,7 +67,8 @@ export const archTests = [
       // The import.meta.url resolution the bundle root rests on now lives in
       // asset-base.mjs's dev-path resolver.
       const assetBaseSource = stripComments(await readFile(assetBaseSourcePath, "utf8"));
-      assert.ok(/import\.meta\.url/.test(assetBaseSource), "src/asset-base.mjs resolves the dev base via import.meta.url");
+      assert.match(assetBaseSource, /from "\.\/application\/core-root\.mjs"/, "asset resolution uses the declared installation location");
+      assert.match(stripComments(await readFile(coreRootSourcePath, "utf8")), /new URL\("\.\.\/\.\.\/package\.json", import\.meta\.url\)/, "the source manifest is module-relative");
 
       // No cwd dependence and no consumer-config lookup anywhere in the loader
       // CODE (comments stripped — the invariant is about the executable path).

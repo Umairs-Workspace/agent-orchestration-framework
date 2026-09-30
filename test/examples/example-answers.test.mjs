@@ -19,9 +19,9 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { HUMAN_INPUT_TOOL_NAMES } from "../../src/agent-session-driver.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { transitionRunComplete } from "../../src/effects/run-transitions.mjs";
+import { HUMAN_INPUT_TOOL_NAMES } from "../../packages/core/src/agent-session-driver.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { transitionRunComplete } from "../../packages/core/src/effects/run-transitions.mjs";
 import {
   completeRun,
   readRuns,
@@ -29,9 +29,9 @@ import {
   retryRun,
   runRecordPath,
   startRun,
-} from "../../src/run-store.mjs";
-import { collectAnswers, readAnswers } from "../../src/work-examples/answers.mjs";
-import { projectSlug } from "../../src/work/observe.mjs";
+} from "../../packages/core/src/run-store.mjs";
+import { collectAnswers, readAnswers } from "../../packages/core/src/work-examples/answers.mjs";
+import { projectSlug } from "../../packages/core/src/work/observe.mjs";
 
 // ── transcript fixtures ─────────────────────────────────────────────────────
 

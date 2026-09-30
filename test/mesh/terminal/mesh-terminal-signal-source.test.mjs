@@ -31,12 +31,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { driveInteractiveClaudeSession, createMeshWorkerTerminalResumeHandler } from "../../../src/mesh/worker-execution.mjs";
-import { meshWorktreePath } from "../../../src/mesh/worktree.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
-import { TERMINAL_FRAME_KIND } from "../../../src/mesh/terminal-relay-bridge.mjs";
-import { findWork, loadWorkspace } from "../../../src/work.mjs";
-import { startRun } from "../../../src/run-store.mjs";
+import { driveInteractiveClaudeSession, createMeshWorkerTerminalResumeHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { meshWorktreePath } from "../../../packages/core/src/mesh/worktree.mjs";
+import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
+import { TERMINAL_FRAME_KIND } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+import { findWork, loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startRun } from "../../../packages/core/src/run-store.mjs";
 import { createFakeWhich, createScriptedPty, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 import { withMeshWorkerExecFixture, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";
 

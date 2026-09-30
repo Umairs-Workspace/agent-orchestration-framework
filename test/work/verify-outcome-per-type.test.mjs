@@ -15,12 +15,12 @@ import { readFile, readdir, mkdtemp, mkdir, writeFile, rm, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { recordDoc, validateWork } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
-import { parseOutcome } from "../../src/memory/local-indexing.mjs";
+import { recordDoc, validateWork } from "../../packages/core/src/work.mjs";
+import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
+import { parseOutcome } from "../../packages/core/src/memory/local-indexing.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLE = path.join(repoRoot, "src", "bundle");
+const BUNDLE = path.join(repoRoot, "packages", "core", "assets");
 const VERIFY_PROMPT = path.join(BUNDLE, "commands", "verify.md");
 const DEVELOPER_AGENT = path.join(BUNDLE, "agents", "aof-developer.md");
 

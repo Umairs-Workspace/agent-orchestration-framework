@@ -23,12 +23,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { bundledFrozenSet, compileFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../../src/frozen-set.mjs";
-import { loadBundle } from "../../../src/work/bundle.mjs";
+import { bundledFrozenSet, compileFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../../packages/core/src/frozen-set.mjs";
+import { loadBundle } from "../../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SETTINGS_SOURCE = path.join(repoRoot, "src", "claude-settings.mjs");
-const BUNDLE_DESCRIPTOR = path.join(repoRoot, "src", "bundle", "bundle.json");
+const SETTINGS_SOURCE = path.join(repoRoot, "packages", "core", "src", "claude-settings.mjs");
+const BUNDLE_DESCRIPTOR = path.join(repoRoot, "packages", "core", "assets", "bundle.json");
 const MEMBER_CENSUS_SOURCE = path.join(repoRoot, "test", "bundle", "frozen-set-compiled.test.mjs");
 const TREE_CENSUS_SOURCE = path.join(repoRoot, "test", "bundle", "bundle-asset-manifest-complete.test.mjs");
 
@@ -213,7 +213,7 @@ export const archTests = [
       // AMENDED (TECH_DEBT item 80, `c1c5e4bd`). This read a hand-typed COUNT literal —
       // `assert.equal(direct.length, 87, …)` — and that literal was red at HEAD for the tenth
       // time, because a number nobody's diff necessarily touches goes stale every time a bundle
-      // file is added. The census now compares the tree against `git ls-files src/bundle`: a
+      // file is added. The census now compares the tree against `git ls-files packages/core/assets`: a
       // reader independent of the walker, which the author of a new bundle file necessarily
       // updates by committing it. That is a STRONGER census than the count — a set equality
       // catches a swap the count cannot see — so the leg is amended to assert the census that

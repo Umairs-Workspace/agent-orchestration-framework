@@ -18,11 +18,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment } from "../../src/assignment-record.mjs";
-import { addWorktree, meshWorktreePath, meshItemBranchName } from "../../src/mesh/worktree.mjs";
-import { createMeshRecoveryPushHandler } from "../../src/mesh/worker-execution.mjs";
-import { recoverPush } from "../../src/commands/mesh/recover-push.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment } from "../../packages/core/src/assignment-record.mjs";
+import { addWorktree, meshWorktreePath, meshItemBranchName } from "../../packages/core/src/mesh/worktree.mjs";
+import { createMeshRecoveryPushHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
+import { recoverPush } from "../../packages/core/src/commands/mesh/recover-push.mjs";
 import { withMeshWorkerPushFixture } from "../support/mesh-worker-push-fixture.mjs";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 import {
@@ -33,7 +33,7 @@ import {
   markRecoveryPushState,
   applyRecoveryPushResultFrame,
   runRecoveryPushDispatchTick,
-} from "../../src/mesh/recovery-push.mjs";
+} from "../../packages/core/src/mesh/recovery-push.mjs";
 
 // A hermetic store under a throwaway AOF_GLOBAL_HOME (the test-isolation discipline —
 // never the real ~/.aof).

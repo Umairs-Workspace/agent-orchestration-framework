@@ -37,8 +37,8 @@ import {
   buildRecords,
   memoryIndexPath,
   isImportRecord,
-} from "../../../src/memory/local-indexing.mjs";
-import { materializeImport } from "../../../src/import/materialize.mjs";
+} from "../../../packages/core/src/memory/local-indexing.mjs";
+import { materializeImport } from "../../../packages/core/src/import/materialize.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC_IMPORT_DIR = path.join(repoRoot, "packages", "knowledge", "src", "import");

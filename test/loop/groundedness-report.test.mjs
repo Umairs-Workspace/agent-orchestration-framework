@@ -3,10 +3,10 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 
-import { getCommand } from "../../src/command-core.mjs";
-import { createLoopsGroundednessCommand, resolveAnchorAuthorities } from "../../src/commands/loops-groundedness.mjs";
-import { GROUND_VERDICTS, buildGroundednessReport } from "../../src/work/loops-checks.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
+import { getCommand } from "../../packages/core/src/command-core.mjs";
+import { createLoopsGroundednessCommand, resolveAnchorAuthorities } from "../../packages/core/src/commands/loops-groundedness.mjs";
+import { GROUND_VERDICTS, buildGroundednessReport } from "../../packages/core/src/work/loops-checks.mjs";
+import { loadLoops } from "../../packages/core/src/work/loops.mjs";
 
 const endpoint = (raw) => ({ raw, scheme: raw.slice(0, raw.indexOf(":")), operand: raw.slice(raw.indexOf(":") + 1), resolved: true });
 const source = path.resolve("test-fixtures", "loops");

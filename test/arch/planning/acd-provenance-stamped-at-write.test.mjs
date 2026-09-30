@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { compileProvenance, PROVENANCE_KEYS } from "../../../src/claim-provenance.mjs";
+import { compileProvenance, PROVENANCE_KEYS } from "../../../packages/core/src/claim-provenance.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
@@ -21,7 +21,7 @@ export const archTests = [
 
       const source = stripComments(await readFile(path.join(root, "packages", "contracts", "src", "claim-provenance.mjs"), "utf8"));
       // The compiler depends on nothing outside itself, asserted over its FAMILY (119/ADR-002): the
-      // subject is `src/claim-provenance/` when that directory exists and the file when it does not,
+      // subject is `packages/core/src/claim-provenance/` when that directory exists and the file when it does not,
       // so decomposing the compiler stays legal while every external dependency stays a violation.
       await assertFamilyPurity(assert, root, "packages/contracts/src/claim-provenance.mjs");
       for (const forbidden of ["Date.now(", "new Date(", "node:fs", "child_process", "process.", "git ", "transcript", "mtime", "readdir", "readFile"]) {

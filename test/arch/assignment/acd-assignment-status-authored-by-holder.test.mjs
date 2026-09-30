@@ -19,9 +19,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyStreamFrame } from "../../../src/control-stream-server.mjs";
-import { readAssignment } from "../../../src/assignment-record.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
+import { readAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

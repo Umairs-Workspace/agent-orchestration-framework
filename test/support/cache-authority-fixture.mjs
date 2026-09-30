@@ -24,9 +24,9 @@
 // 43/04 will map onto the wire.
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { publishGlobalWorkSnapshot } from "../../src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../src/global-work-store.mjs";
-import { applyStreamFrame } from "../../src/control-stream-server.mjs";
+import { publishGlobalWorkSnapshot } from "../../packages/core/src/global-work-publisher.mjs";
+import { readWorkspaceItems } from "../../packages/core/src/global-work-store.mjs";
+import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
 import { withItemLockFixture, seedActive, settle, withStore, seedWorker, refuse } from "./item-lock-fixture.mjs";
 
 export { withItemLockFixture, seedActive, settle, withStore, seedWorker, refuse };

@@ -50,15 +50,15 @@ import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
 
-import { createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL } from "../../src/mesh/worker-execution.mjs";
-import { buildAssignmentStatusFrame } from "../../src/worker-stream-client.mjs";
-import { applyStreamFrame } from "../../src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { createTerminalMirror } from "../../src/mesh/terminal-mirror.mjs";
-import { buildTerminalFrameEnvelope, buildTerminalEndEnvelope } from "../../src/mesh/terminal-relay-bridge.mjs";
+import { createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL } from "../../packages/core/src/mesh/worker-execution.mjs";
+import { buildAssignmentStatusFrame } from "../../packages/core/src/worker-stream-client.mjs";
+import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+import { createTerminalMirror } from "../../packages/core/src/mesh/terminal-mirror.mjs";
+import { buildTerminalFrameEnvelope, buildTerminalEndEnvelope } from "../../packages/core/src/mesh/terminal-relay-bridge.mjs";
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,
@@ -270,7 +270,7 @@ export const fleetTerminalViewProducerFedTests = [
       // The agent prints. THIS is the live tail the operator wants to watch.
       emitData("Reading DESIGN.md …\r\n");
       await tick();
-      emitData("Editing src/global-mesh-query.mjs …\r\n");
+      emitData("Editing packages/core/src/global-mesh-query.mjs …\r\n");
       await tick();
 
       // PRECONDITION (the producer half): the bytes ARE flowing, keyed by the

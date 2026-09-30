@@ -4,8 +4,8 @@
 // MemoryRecord plus a numeric `score`; the `--json` CLI path emits the structured
 // `records` array (the contract), never the rendered `text` blob.
 import assert from "node:assert/strict";
-import { recall, MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
-import { runMemory } from "../../../src/work/memory.mjs";
+import { recall, MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
+import { runMemory } from "../../../packages/core/src/work/memory.mjs";
 
 // A minimal frozen-shape fixture index (ADR-005): absent-type fields present-as-"".
 function fixtureRecords() {

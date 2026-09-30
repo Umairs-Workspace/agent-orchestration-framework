@@ -13,9 +13,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { doctorWork } from "../../../src/work/doctor.mjs";
-import { budgetGroup } from "../../../src/work/doctor-budget.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { doctorWork } from "../../../packages/core/src/work/doctor.mjs";
+import { budgetGroup } from "../../../packages/core/src/work/doctor-budget.mjs";
 
 // Text whose splitLines count is exactly n (the milestone-16 convention).
 function linesText(n) {

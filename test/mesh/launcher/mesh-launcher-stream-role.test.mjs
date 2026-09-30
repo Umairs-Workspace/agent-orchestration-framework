@@ -27,15 +27,15 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { DEFAULT_HEARTBEAT_WINDOW_SECONDS } from "../../../src/control-stream-server.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
+import { DEFAULT_HEARTBEAT_WINDOW_SECONDS } from "../../../packages/core/src/control-stream-server.mjs";
+import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
 // VERIFICATION (live worktree streaming, 2026-07-26) — the driver-side registry the
 // stream ticker reads; a test drives it directly (the same module-level seam the real
 // execution handler writes through).
-import { registerActiveWorktree, clearActiveWorktree } from "../../../src/mesh/worker-execution.mjs";
+import { registerActiveWorktree, clearActiveWorktree } from "../../../packages/core/src/mesh/worker-execution.mjs";
 
 const CONTROL_ID = "control-node";
 const WORKER_ID = "worker-node";
@@ -279,7 +279,7 @@ export const meshLauncherStreamRoleTests = [
         const exec = fixturedExec(statusFixtureFor(WORKER_ID, {
           a: { HostName: CONTROL_ID, DNSName: `${CONTROL_ID}.tail1a2b.ts.net.`, TailscaleIPs: ["203.0.113.180"], Online: true },
         }));
-        const { createWorkerStreamClient: realCreateWorkerStreamClient } = await import("../../../src/worker-stream-client.mjs");
+        const { createWorkerStreamClient: realCreateWorkerStreamClient } = await import("../../../packages/core/src/worker-stream-client.mjs");
         let capturedWorkspaceId;
         const transport = fakeWorkerTransport();
         const handle = await startLauncher(ws, {

@@ -20,8 +20,8 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { GATE_ORDER } from "../../packages/work-loop/src/engine.mjs";
-import { runLoopBody } from "../../src/commands/loop.mjs";
-import { listCommands } from "../../src/command-core.mjs";
+import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+import { listCommands } from "../../packages/core/src/command-core.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 // 54/03 review finding D4 — the configured half of the ladder's cost claim needs the same
 // grading fixture 54/03's suites use, because a rubric nobody declared can launch nothing.
@@ -337,7 +337,7 @@ export const loopGateCostLadderTests = [
           report: () => {},
         };
         // The scope each rung is invoked with, read off the real registry call.
-        const { getCommand } = await import("../../src/command-core.mjs");
+        const { getCommand } = await import("../../packages/core/src/command-core.mjs");
         for (const id of ["work:validate", "work:doctor"]) {
           const command = getCommand(id);
           const original = command.run.bind(command);

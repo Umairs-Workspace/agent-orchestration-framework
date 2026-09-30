@@ -22,13 +22,13 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { upsertWorkItemContent } from "../../../src/global-work-store.mjs";
-import { listItems } from "../../../src/work.mjs";
-import { workspaceIdFromPath } from "../../../src/workspace-identity.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { upsertWorkItemContent } from "../../../packages/core/src/global-work-store.mjs";
+import { listItems } from "../../../packages/core/src/work.mjs";
+import { workspaceIdFromPath } from "../../../packages/core/src/workspace-identity.mjs";
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-10T12:00:00.000Z";
@@ -339,7 +339,7 @@ export const meshPresenceAggregateWorkspacesTests = [
           const handle = await publishOnce(fixture.root, fixture.env, {
             listItems: async (workDir) => {
               if (workDir === second.workDir) throw new Error("simulated item-enumeration fault for ws-2");
-              const { listItems: realListItems } = await import("../../../src/work.mjs");
+              const { listItems: realListItems } = await import("../../../packages/core/src/work.mjs");
               return realListItems(workDir);
             },
           });

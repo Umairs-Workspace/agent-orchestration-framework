@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 
 import {
   ADMITTED_KEYS, GROUND_VALUES, NODE_KINDS, SENTINEL_TOKENS, loadLoops,
-} from "../../src/work/loops.mjs";
-import { loadBundle, renderBundleOutputs } from "../../src/work/bundle.mjs";
+} from "../../packages/core/src/work/loops.mjs";
+import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 import { examplesTables } from "../support/feature-parse.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -173,7 +173,7 @@ export const anchorTaxonomyTests = [
       const anchors = installed.nodes.filter((node) => node.kind === "anchor");
       assert.deepEqual(anchors.map((node) => path.basename(node.path)).sort(), expected);
       for (const filename of expected) {
-        const source = await readFile(path.join(root, "src", "bundle", "loops", filename), "utf8");
+        const source = await readFile(path.join(root, "packages", "core", "assets", "loops", filename), "utf8");
         const copy = await readFile(path.join(root, ".aof", "loops", filename), "utf8");
         assert.equal(copy, source);
         assert.match(source, /^---\r?\n# aof-generated: true/m);

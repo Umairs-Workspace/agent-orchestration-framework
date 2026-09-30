@@ -27,10 +27,10 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../src/command-core.mjs";
-import { applyDeltaFrame } from "../../src/control-stream-server.mjs";
-import { publishGlobalWorkSnapshot } from "../../src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../src/global-work-store.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { applyDeltaFrame } from "../../packages/core/src/control-stream-server.mjs";
+import { publishGlobalWorkSnapshot } from "../../packages/core/src/global-work-publisher.mjs";
+import { readWorkspaceItems } from "../../packages/core/src/global-work-store.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import {
   withItemLockFixture,

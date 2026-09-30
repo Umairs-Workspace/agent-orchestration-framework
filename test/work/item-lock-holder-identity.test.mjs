@@ -23,19 +23,19 @@
 import assert from "node:assert/strict";
 import { readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../src/command-core.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { transitionRunStart } from "../../src/effects/run-transitions.mjs";
-import { runStartCommand } from "../../src/commands/run-start.mjs";
-import { readRuns } from "../../src/run-store.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+import { transitionRunStart } from "../../packages/core/src/effects/run-transitions.mjs";
+import { runStartCommand } from "../../packages/core/src/commands/run-start.mjs";
+import { readRuns } from "../../packages/core/src/run-store.mjs";
 import { mkdir } from "node:fs/promises";
-import { loadWorkspace, findWork } from "../../src/work.mjs";
-import { meshWorktreePath } from "../../src/mesh/worktree.mjs";
-import { claudeProjectsDir } from "../../src/work/observe.mjs";
-import { createMeshWorkerTerminalResumeHandler } from "../../src/mesh/worker-execution.mjs";
-import { assembleAssignmentRecord, insertAssignment } from "../../src/assignment-record.mjs";
+import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
+import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
+import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
+import { createMeshWorkerTerminalResumeHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
+import { assembleAssignmentRecord, insertAssignment } from "../../packages/core/src/assignment-record.mjs";
 import { withMeshWorkerExecFixture, createStatusRecorder } from "../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { withItemLockFixture, seedActive, settle, withStore, refuse } from "../support/item-lock-fixture.mjs";
@@ -236,7 +236,7 @@ export const itemLockHolderIdentityTests = [
         assert.deepEqual((await invoke("work:run-status", { ref: "42/03" }, fx.ctx)).runs, [], "zero runs");
 
         // The help text a face prints IS the command's own `cli.spec` (usage + flag
-        // vocabulary — `src/spine/face.mjs`'s parseSpecArgv refuses anything not
+        // vocabulary — `packages/core/src/spine/face.mjs`'s parseSpecArgv refuses anything not
         // declared there, so an undeclared override could not even be typed).
         const spec = runStartCommand.cli.spec;
         assert.deepEqual(Object.keys(spec.flags).sort(), ["brief", "session"], "run-start declares exactly two flags");
@@ -400,7 +400,7 @@ export const itemLockHolderIdentityTests = [
     name: "item-lock/03 identity (ADR-010/R1.4): `readHeldScopes` itself fails CLOSED on a torn store — a `next` that quietly reported nothing held would be the invisible-item failure with a friendly face",
     run: () =>
       withItemLockFixture(async (fx) => {
-        const { readHeldScopes } = await import("../../src/item-lock.mjs");
+        const { readHeldScopes } = await import("../../packages/core/src/item-lock.mjs");
         await tearTheStore(fx);
         const error = await refuse(() => readHeldScopes(fx.workspace, { globalWorkStoreOptions: fx.ctx.globalWorkStoreOptions }));
         assert.equal(error.code, "item-lock-undeterminable");

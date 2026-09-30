@@ -3,7 +3,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { findProjectConfig, globalMeshPaths, globalWorkspacePaths, isLegacyConfigOnlyProject, legacyConfigPath, workspacePaths } from "../../src/workspace.mjs";
+import { findProjectConfig, globalMeshPaths, globalWorkspacePaths, isLegacyConfigOnlyProject, legacyConfigPath, workspacePaths } from "../../packages/core/src/workspace.mjs";
 
 export const workspaceTests = [
   {

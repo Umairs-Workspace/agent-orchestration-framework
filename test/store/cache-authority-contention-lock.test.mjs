@@ -23,7 +23,7 @@
 // value" is observable in the cached row. Which verb is 43/01's choice, not this
 // story's; what this file pins is what the SEAM does on either side of it.
 import assert from "node:assert/strict";
-import { invoke } from "../../src/command-core.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 import {
   withCacheFixture,
   seedActive,
@@ -40,7 +40,7 @@ import {
   WORKER_A,
   WORKER_B,
 } from "../support/cache-authority-fixture.mjs";
-import { upsertWorkItems } from "../../src/global-work-store.mjs";
+import { upsertWorkItems } from "../../packages/core/src/global-work-store.mjs";
 
 const STREAM = [{ number: "43", stories: ["01", "02", "03"] }];
 const HELD_SCOPE = "43";

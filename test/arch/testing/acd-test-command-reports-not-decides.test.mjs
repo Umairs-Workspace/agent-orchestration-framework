@@ -39,7 +39,7 @@
 // ── THE DOOR CENSUS MATCHES SHAPES, NEVER A RAW SUBSTRING ────────────────────────────────────
 //
 // A raw-token census would have been wrong on the day it landed, and the row below proves it
-// rather than asserting it: `test:` appears inside prose in `src/work-audit/census.mjs`
+// rather than asserting it: `test:` appears inside prose in `packages/core/src/work-audit/census.mjs`
 // (`npm run test:smoke:cli`, in the unregistered baseline) and the bare `test` literal appears
 // there four times as the suite ROOT path. All five are legitimate. So the census matches
 // `invoke("<id>")`, `invokeRegistered("<id>")`, a `route: ["<id>" …]` declaration and a ladder
@@ -55,10 +55,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 // THE TEST ROOTS COME FROM THEIR ONE HOME. A literal `["test", "test/arch", …]` here would be the
 // FF-7203 species one directory over — a second answer that agrees until a fourth root arrives.
-import { TEST_ROOTS } from "../../../src/work-audit/census.mjs";
-import { runBounded } from "../../../src/work-audit/spawn.mjs";
-import { getCommand } from "../../../src/command-core.mjs";
-import { runTest, testCommand } from "../../../src/commands/test.mjs";
+import { TEST_ROOTS } from "../../../packages/core/src/work-audit/census.mjs";
+import { runBounded } from "../../../packages/core/src/work-audit/spawn.mjs";
+import { getCommand } from "../../../packages/core/src/command-core.mjs";
+import { runTest, testCommand } from "../../../packages/core/src/commands/test.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -71,12 +71,12 @@ const TEST_COMMAND_ID = "test";
 // this milestone owns. Restricted at run time to what exists on disk, with a non-vacuity floor, so
 // a walk that resolves nothing cannot pass.
 const PROBED_MODULES = Object.freeze([
-  "src/commands/test.mjs",
-  "src/command-core.mjs",
-  "src/work/toolchain.mjs",
-  "src/work/test-select.mjs",
-  "src/work/test-changed.mjs",
-  "src/work-audit/spawn.mjs",
+  "packages/core/src/commands/test.mjs",
+  "packages/core/src/command-core.mjs",
+  "packages/core/src/work/toolchain.mjs",
+  "packages/core/src/work/test-select.mjs",
+  "packages/core/src/work/test-changed.mjs",
+  "packages/core/src/work-audit/spawn.mjs",
   "packages/work/src/audit/census.mjs",
   "packages/knowledge/src/graph-normalize.mjs",
   "packages/knowledge/src/commands/graph-impact.mjs",
@@ -86,12 +86,12 @@ const PROBE_FLOOR = 4;
 
 // The doors where a selection must never be readable as a verdict.
 const DOOR_ROOTS = Object.freeze([
-  "src/commands/item-status.mjs",
+  "packages/core/src/commands/item-status.mjs",
   "packages/work/src/doctor/index.mjs",
   "packages/work-loop/src/engine.mjs",
-  "src/work-audit",
+  "packages/core/src/work-audit",
   "packages/work/src/audit",
-  "src/bundle",
+  "packages/core/assets",
 ]);
 
 // ── PURE CENSORS ─────────────────────────────────────────────────────────────────────────────
@@ -258,8 +258,8 @@ const deps = (extra = {}) => ({
   config: {},
   resolveToolchain: () => TOOLCHAIN,
   walk: async (_root, root) => (root === "test" ? [...WHOLE] : []),
-  readChanged: async () => ({ ok: true, changed: ["src/thing.mjs"], base: null }),
-  select: () => Object.freeze({ scope: "impacted", gate: false, selected: ["test/b.test.mjs"], widened: [], builtAt: "2026-09-02T00:00:00.000Z", graphPath: "graphify-out/graph.json", changed: ["src/thing.mjs"], resolved: ["src/thing.mjs"], refusal: null }),
+  readChanged: async () => ({ ok: true, changed: ["packages/core/src/thing.mjs"], base: null }),
+  select: () => Object.freeze({ scope: "impacted", gate: false, selected: ["test/b.test.mjs"], widened: [], builtAt: "2026-09-02T00:00:00.000Z", graphPath: "graphify-out/graph.json", changed: ["packages/core/src/thing.mjs"], resolved: ["packages/core/src/thing.mjs"], refusal: null }),
   run: async () => observed(),
   ...extra,
 });
@@ -268,10 +268,10 @@ const widening = (reason) => () => Object.freeze({
   scope: "all",
   gate: false,
   selected: [...WHOLE],
-  widened: [{ file: "src/new.mjs", reason }],
+  widened: [{ file: "packages/core/src/new.mjs", reason }],
   builtAt: null,
   graphPath: "graphify-out/graph.json",
-  changed: ["src/new.mjs"],
+  changed: ["packages/core/src/new.mjs"],
   resolved: [],
   refusal: null,
 });
@@ -396,7 +396,7 @@ export const archTests = [
     name: "arch/72 FF-7204 (acd-test-command-reports-not-decides): the family holds no dynamic import of a test module, as text",
     async run() {
       const sources = [];
-      for (const rel of PROBED_MODULES.filter((entry) => entry.startsWith("src/commands/test") || entry.startsWith("src/work/t"))) {
+      for (const rel of PROBED_MODULES.filter((entry) => entry.startsWith("packages/core/src/commands/test") || entry.startsWith("packages/core/src/work/t"))) {
         sources.push({ rel, code: await readFile(path.join(repoRoot, rel), "utf8") });
       }
       assert.ok(sources.length >= 3, `the family resolved (non-vacuous): ${sources.length} modules`);
@@ -404,8 +404,8 @@ export const archTests = [
       assert.deepEqual(problems, [], `no module in this family names a test module in a dynamic import:\n  ${problems.join("\n  ")}`);
 
       // …and the detector is not vacuous: a planted convenience import is caught, in both spellings.
-      assert.equal(testModuleReachProblems([{ rel: "src/commands/test.mjs", code: 'const s = await import("../test/arch/thing.test.mjs");' }]).length, 1, "a planted dynamic import is caught");
-      assert.equal(testModuleReachProblems([{ rel: "src/commands/test.mjs", code: 'const s = require("./test/helper.mjs");' }]).length, 1, "…and so is the older syntax");
+      assert.equal(testModuleReachProblems([{ rel: "packages/core/src/commands/test.mjs", code: 'const s = await import("../test/arch/thing.test.mjs");' }]).length, 1, "a planted dynamic import is caught");
+      assert.equal(testModuleReachProblems([{ rel: "packages/core/src/commands/test.mjs", code: 'const s = require("./test/helper.mjs");' }]).length, 1, "…and so is the older syntax");
     },
   },
 

@@ -11,7 +11,7 @@
 //
 // WHAT IS DRIVEN, NOT ASSERTED AS A STRING. A wiring story whose invocation was never
 // executed ships a typo, so scenarios 5, 7 and 8 read the command string OFF the
-// bundle member and SPAWN it through the real CLI (`src/cli.mjs`) with a hook-shaped
+// bundle member and SPAWN it through the real CLI (`packages/core/src/cli.mjs`) with a hook-shaped
 // payload on stdin — never a hand-typed argv, and never a re-implementation of the
 // verb. Scenarios 1, 3 and 4 drive the REAL co-authored settings merge
 // (`applyClaudeSettingsMerge`) against the REAL bundle descriptor, with a project
@@ -33,18 +33,18 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDescriptor, loadBundle, loadBundleHooks, renderBundleOutputs } from "../../src/work/bundle.mjs";
-import { applyClaudeSettingsMerge, AOF_HOOK_MARKER } from "../../src/claude-settings.mjs";
-import { bundledFrozenSet, compileFrozenSet } from "../../src/frozen-set.mjs";
-import { readSessionRecordsForNode } from "../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../src/mesh/presence.mjs";
-import { buildSessionIndex } from "../../src/global-mesh-query.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { defaultGlobalWorkspaceDir } from "../../src/paths.mjs";
+import { readDescriptor, loadBundle, loadBundleHooks, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
+import { applyClaudeSettingsMerge, AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
+import { bundledFrozenSet, compileFrozenSet } from "../../packages/core/src/frozen-set.mjs";
+import { readSessionRecordsForNode } from "../../packages/core/src/mesh/session.mjs";
+import { readLiveSessions } from "../../packages/core/src/mesh/presence.mjs";
+import { buildSessionIndex } from "../../packages/core/src/global-mesh-query.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { defaultGlobalWorkspaceDir } from "../../packages/core/src/paths.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "src", "cli.mjs");
-const bundleHooksDir = path.join(repoRoot, "src", "bundle", "hooks");
+const cliPath = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
+const bundleHooksDir = path.join(repoRoot, "packages", "core", "assets", "hooks");
 
 // The three members this story adds, and the codex sibling occupying the same
 // lifecycle POSITION. `mirrorsExactly: false` on the third row is the measured,
@@ -88,7 +88,7 @@ const CLAUDE_SESSION_MEMBER_IDS = MEMBER_ROWS.map((row) => row.id);
 const CODEX_SESSION_MEMBER_IDS = MEMBER_ROWS.map((row) => row.codexSibling);
 
 // The codex members' own bundle files, pinned VERBATIM (scenario 3's "byte-identical
-// to before this story"). `.gitattributes` pins `src/bundle/** text eol=lf`, so this
+// to before this story"). `.gitattributes` pins `packages/core/assets/** text eol=lf`, so this
 // is a true byte pin on every platform. It is shrink-only in effect: any edit to a
 // codex session hook file fails here naming m49/07, which is exactly the guard the
 // scenario asks for — this story does not touch them.
@@ -144,7 +144,7 @@ async function makeWorkspace(label) {
 // Run a declared hook invocation THROUGH THE REAL CLI. The command string is split
 // into argv; `aof` is asserted to be the program (the hook declares a bare
 // executable, never a shell string) and the remaining argv is handed to this repo's
-// own `src/cli.mjs`. Returns { status, stdout }.
+// own `packages/core/src/cli.mjs`. Returns { status, stdout }.
 function runDeclaredInvocation(command, { workspace, payload }) {
   const argv = String(command).trim().split(/\s+/);
   assert.equal(argv[0], "aof", `the declared invocation runs the \`aof\` program: ${command}`);
@@ -433,7 +433,7 @@ export const bundleClaudeSessionHookTests = [
           assert.equal(
             sha256(actual),
             sha256(expected),
-            `src/bundle/hooks/${file} is byte-identical to before m49/07 — this story adds members, it edits none. If this is red, a codex session hook was changed; that is a separate, unrelated behaviour change and it does not belong in this milestone's last-landing story.`,
+            `packages/core/assets/hooks/${file} is byte-identical to before m49/07 — this story adds members, it edits none. If this is red, a codex session hook was changed; that is a separate, unrelated behaviour change and it does not belong in this milestone's last-landing story.`,
           );
         }
       } finally {

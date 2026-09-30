@@ -7,22 +7,22 @@
 // createMeshWorkerExecutionHandler consumes (the SAME class of defect F12 exists to
 // catch generalizes to any newly-added credential-shaped option, not just the
 // original clone one). Every scenario is driven against the REAL
-// `createWorkerStreamClient` / `requestWriteCredential` (src/worker-stream-client.mjs)
+// `createWorkerStreamClient` / `requestWriteCredential` (packages/core/src/worker-stream-client.mjs)
 // and the REAL control-side `applyWriteCredentialRequestFrame`
-// (src/control-stream-server.mjs) — the SAME authorization gates
+// (packages/core/src/control-stream-server.mjs) — the SAME authorization gates
 // applyCloneCredentialRequestFrame keeps (SECURITY T6: holder, workspace-match,
 // active-state) — over the house bidirectional stream fixture
 // (mesh-directive-channel-fixture.mjs). No real GitHub, no network.
 import assert from "node:assert/strict";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
+import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
 import {
   applyWriteCredentialRequestFrame,
   WRITE_CREDENTIAL_NOT_HOLDER,
   WRITE_CREDENTIAL_WORKSPACE_MISMATCH,
   WRITE_CREDENTIAL_ASSIGNMENT_INACTIVE,
-} from "../../../src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
+} from "../../../packages/core/src/control-stream-server.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 import { createFakeWorkerTransport, createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 import { seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 

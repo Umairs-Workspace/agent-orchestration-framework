@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { executeFrameworkInstallPlan, frameworkPlanFromLock, gsdPackageFromConfig, planFrameworkInstall } from "../../src/frameworks.mjs";
+import { executeFrameworkInstallPlan, frameworkPlanFromLock, gsdPackageFromConfig, planFrameworkInstall } from "../../packages/core/src/frameworks.mjs";
 
 export const frameworkTests = [
   {

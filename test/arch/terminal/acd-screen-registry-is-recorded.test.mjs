@@ -18,9 +18,9 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CLAUDE_SCREENS } from "../../../src/terminal/claude-screens.mjs";
-import { readConsentMenu } from "../../../src/terminal/session-screen.mjs";
-import { createScreen } from "../../../src/terminal/screen.mjs";
+import { CLAUDE_SCREENS } from "../../../packages/core/src/terminal/claude-screens.mjs";
+import { readConsentMenu } from "../../../packages/core/src/terminal/session-screen.mjs";
+import { createScreen } from "../../../packages/core/src/terminal/screen.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const fixtureDir = path.join(repoRoot, "test", "fixtures", "claude-screens");

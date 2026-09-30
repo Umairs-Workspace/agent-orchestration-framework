@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshTerminalResumeCommand } from "../../src/commands/mesh/terminal-resume.mjs";
-import { createTerminalInputRouter } from "../../src/mesh/terminal-input.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+import { meshTerminalResumeCommand } from "../../packages/core/src/commands/mesh/terminal-resume.mjs";
+import { createTerminalInputRouter } from "../../packages/core/src/mesh/terminal-input.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 import {
   assembleAssignmentRecord,
   insertAssignment,
@@ -14,12 +14,12 @@ import {
   reserveParkedAssignmentResume,
   restoreParkedAssignmentResume,
   updateAssignmentState,
-} from "../../src/assignment-record.mjs";
+} from "../../packages/core/src/assignment-record.mjs";
 import {
   assignmentOccupiesDispatchSlot,
   countDispatchSlotsByTarget,
   runControlDispatchReclaimTick,
-} from "../../src/mesh/assignment-reclaim.mjs";
+} from "../../packages/core/src/mesh/assignment-reclaim.mjs";
 
 const NOW = "2026-08-22T10:00:00.000Z";
 const CONFIRMED_AT = "2099-01-01T00:00:00.000Z";

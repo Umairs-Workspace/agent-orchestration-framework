@@ -8,7 +8,7 @@
 // TWO KINDS OF LANE, deliberately, and the difference is the story's own thesis.
 //
 // The RULE lanes drive `registrationDecision()` — the pure decider in
-// `src/work-audit/census.mjs` — over SYNTHETIC populations, because the rule has to be
+// `packages/core/src/work-audit/census.mjs` — over SYNTHETIC populations, because the rule has to be
 // demonstrable on a tree where the answer is known in advance. That is where the retired
 // source-text rule is reconstructed and the two are made to disagree on the same suite.
 //
@@ -47,7 +47,7 @@ import {
   sweepDeclarationProblems,
   sweepLimits,
   walkSuiteFiles,
-} from "../../src/work-audit/census.mjs";
+} from "../../packages/core/src/work-audit/census.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const runnerUrl = new URL("../../scripts/test.mjs", import.meta.url).href;
@@ -71,8 +71,8 @@ function spawnAnswering(names, override = {}) {
   return async ({ deadlineMs = 1000 } = {}) => Object.freeze({
     outcome: "exited",
     command: "node",
-    args: ["src/work/audit-probe.mjs", "scripts/test.mjs"],
-    attempted: "node src/work/audit-probe.mjs scripts/test.mjs",
+    args: ["packages/core/src/work/audit-probe.mjs", "scripts/test.mjs"],
+    attempted: "node packages/core/src/work/audit-probe.mjs scripts/test.mjs",
     deadlineMs,
     exitCode: 0,
     signal: null,

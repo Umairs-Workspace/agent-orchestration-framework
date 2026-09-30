@@ -64,10 +64,10 @@ import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isNodeStale } from "../../../src/mesh/presence.mjs";
+import { isNodeStale } from "../../../packages/core/src/mesh/presence.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 const UI_SRC = path.join(repoRoot, "ui", "src");
 const FRESHNESS = path.join(repoRoot, "ui", "src", "board", "freshness.mjs");
 

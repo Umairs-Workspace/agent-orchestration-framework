@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_CACHE_STALENESS_SECONDS } from "../../src/cache-provenance.mjs";
+import { DEFAULT_CACHE_STALENESS_SECONDS } from "../../packages/core/src/cache-provenance.mjs";
 import {
   withStalenessFixture,
   setStalenessWindow,

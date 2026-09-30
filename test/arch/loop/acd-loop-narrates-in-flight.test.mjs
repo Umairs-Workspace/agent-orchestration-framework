@@ -18,18 +18,18 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { loopCommand } from "../../../src/commands/loop.mjs";
+import { loopCommand } from "../../../packages/core/src/commands/loop.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 // 129/04 (ADR-008 §3) — THE NEEDLE SCAN IS EXTENDED OVER THE FAMILY. The per-story ladder, the
-// retry ladder and the drive/settle trio moved from the shell into `src/loop/cycle.mjs`, and the
-// wave tick lives in `src/loop/wave.mjs`; `narrate` and `report` are PARAMETERS of every
+// retry ladder and the drive/settle trio moved from the shell into `packages/core/src/loop/cycle.mjs`, and the
+// wave tick lives in `packages/core/src/loop/wave.mjs`; `narrate` and `report` are PARAMETERS of every
 // function there, never a second printer. So the in-flight lines this control finds are found at
 // the narrate seam WHEREVER THEY NOW LIVE, and the family as a whole is read where the shell alone
 // was read before.
-// 131/03 (task 05, ruling 7) — `src/loop/ask.mjs` joins the family: the waiting, answered and
+// 131/03 (task 05, ruling 7) — `packages/core/src/loop/ask.mjs` joins the family: the waiting, answered and
 // parked rows and the stale-ask line are narrated there, through the parameter it is handed.
 const FAMILY = Object.freeze([SHELL, "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/work-loop/src/ask.mjs"]);
 const PRINTERS_CONTROL = "test/arch/command/acd-console-log-confined.test.mjs";
@@ -67,7 +67,7 @@ export const archTests = [
       const printers = await read(PRINTERS_CONTROL);
       assert.match(printers, /\b12\b/u, "the roster's ceiling is still 12");
       assert.equal(
-        (printers.match(/^\s*"\.\.\/packages\/work-loop\/src\/commands\/loop\.mjs":/gmu) ?? []).length,
+        (printers.match(/^\s*"\.\.\/\.\.\/work-loop\/src\/commands\/loop\.mjs":/gmu) ?? []).length,
         1,
         "the roster carries one row for this module, not a second one for progress",
       );
@@ -86,7 +86,7 @@ export const archTests = [
       // ONE site — the shell prints whatever `settleStoryCycle` answered — so the count fell by
       // three; the wave, the reconcile, the refine-end commit and the fresh gate each added one and
       // the L1 / resume sites are unchanged. The account is printed HERE and nowhere in the family:
-      // `src/loop/` returns halts, it never prints them (the wave drains its lanes first).
+      // `packages/core/src/loop/` returns halts, it never prints them (the wave drains its lanes first).
       const reportLineCalls = [...shell.matchAll(/await reportLine\(\s*(\w+)/gu)].map((m) => m[1]);
       assert.equal(reportLineCalls.length, 16, "sixteen reportLine call sites");
       for (const rel of FAMILY.slice(1)) assert.doesNotMatch(await source(rel), /reportLine\(/u, `${rel} prints no account line`);

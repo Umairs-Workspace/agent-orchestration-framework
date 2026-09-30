@@ -88,7 +88,7 @@ export const archTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { reclaimStaleRuns } = await import("../../../src/run-store.mjs");
+        const { reclaimStaleRuns } = await import("../../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T12:00:00.000Z";
 
         // a mix: stale running (2 min idle) / fresh-heartbeat running (30s) / queued / terminal done
@@ -127,7 +127,7 @@ export const archTests = [
       const { repo: r1, item: a } = await makeItem("20_milestone_autonomous-run-resilience", "20");
       const { repo: r2, item: b } = await makeItem("19_milestone_work-run-lifecycle", "19");
       try {
-        const { reclaimStaleRuns } = await import("../../../src/run-store.mjs");
+        const { reclaimStaleRuns } = await import("../../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T12:00:00.000Z";
         const aStale = await writeRecord(a, { runId: "20260630T115000000Z-0000", state: "running", heartbeatAt: "2026-06-30T11:50:00.000Z" });
         const bStale = await writeRecord(b, { runId: "20260630T115000000Z-0000", state: "running", heartbeatAt: "2026-06-30T11:50:00.000Z" });

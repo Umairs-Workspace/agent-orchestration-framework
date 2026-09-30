@@ -46,3 +46,8 @@ temporary root forwards and configured wrappers without making source guards or 
 
 Delete adapters by consumer group, with the corresponding import and guard updates in the same
 commit. Keep the pre-removal mapping in migration notes for review and rollback.
+
+Plan 03 retains root `bin/aof.mjs` solely as a development forwarder into core. Consumers are the
+documented `node bin/aof.mjs` entry and existing CLI/integration fixtures. Remove it when those
+consumers use `yarn aof` or `packages/core/bin/aof.mjs`; retain no root implementation modules.
+Core's configured compatibility entries also remain private pending this plan's consumer sweep.

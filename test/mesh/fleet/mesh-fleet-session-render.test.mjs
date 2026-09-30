@@ -5,7 +5,7 @@
 // REVIEW FIX (F1): this render helper (ui/src/fleet/runs.mjs's fleetCurrentWorkLines)
 // is fed the REAL production wire shape — `activeRuns: string[]` (bare run ids,
 // 23/ADR-002; no workspace attribution) and a `sessions[]` that is ALREADY
-// pre-subsumed by the assembler (src/mesh/launcher.mjs's
+// pre-subsumed by the assembler (packages/core/src/mesh/launcher.mjs's
 // assembleCurrentPresenceRecord — see test/mesh/presence/mesh-presence-aggregate-workspaces.test.mjs
 // for the "run AND session on the SAME workspace ⇒ the session is dropped before
 // publish" assertion, which is where that reconciliation genuinely happens). This

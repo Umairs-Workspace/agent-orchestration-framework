@@ -14,11 +14,11 @@ import { mkdtemp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 
-import { loopBoundsFromConfig } from "../../src/loop-bounds.mjs";
-import { initWork } from "../../src/work/init.mjs";
-import { loadBundle } from "../../src/work/bundle.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
-import { updateWork, workLockPath } from "../../src/work/update.mjs";
+import { loopBoundsFromConfig } from "../../packages/core/src/loop-bounds.mjs";
+import { initWork } from "../../packages/core/src/work/init.mjs";
+import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
+import { loadLoops } from "../../packages/core/src/work/loops.mjs";
+import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
 
 const LOOP_PREFIX = ".aof/loops/";
 const LOOP_ASSETS = loadBundle().assets.filter((asset) => asset.target?.startsWith(LOOP_PREFIX));

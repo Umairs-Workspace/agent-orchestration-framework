@@ -29,16 +29,16 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 import {
   assembleAssignmentRecord,
   insertAssignment,
   listAllAssignments,
   updateAssignmentState,
   ASSIGNMENT_STATES,
-} from "../../../src/assignment-record.mjs";
-import { runControlDispatchReclaimTick } from "../../../src/mesh/assignment-reclaim.mjs";
-import { buildDirectiveFrame } from "../../../src/control-stream-server.mjs";
+} from "../../../packages/core/src/assignment-record.mjs";
+import { runControlDispatchReclaimTick } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
+import { buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
 import {
   ASSIGNMENT_PHASES,
   DEFAULT_ASSIGNMENT_PHASE,
@@ -52,22 +52,22 @@ import {
   phaseRunsOnItemBranch,
   setAssignmentPhase,
   setItemBranch,
-} from "../../../src/mesh/assignment-directive.mjs";
+} from "../../../packages/core/src/mesh/assignment-directive.mjs";
 import {
   createMeshWorkerExecutionHandler,
   NEEDS_INPUT_SENTINEL,
   ASSIGNMENT_LOOP_LAUNCH_UNDECLARED,
   ASSIGNMENT_LOOP_LAUNCH_SCOPELESS,
-} from "../../../src/mesh/worker-execution.mjs";
-import { bundledFrozenSet, compileFrozenSet } from "../../../src/frozen-set.mjs";
+} from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { bundledFrozenSet, compileFrozenSet } from "../../../packages/core/src/frozen-set.mjs";
 // 63/06 (ADR-013 §1) — the SESSION-SHAPED default and the directory it reads, imported
 // so the lane below can prove the defect is reachable before proving it is gone. A leg
 // that only asserted "the seam resolves null" would pass over a watch that never had
 // anything to find.
-import { defaultWatchTranscriptSessionId } from "../../../src/agent-session-driver.mjs";
-import { claudeProjectsDir } from "../../../src/work/observe.mjs";
-import { LOOP_STOPS, LOOP_SCOPE_FORMS, resolveLoopLevel } from "../../../src/work/loop.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { defaultWatchTranscriptSessionId } from "../../../packages/core/src/agent-session-driver.mjs";
+import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
+import { LOOP_STOPS, LOOP_SCOPE_FORMS, resolveLoopLevel } from "../../../packages/core/src/work/loop.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,

@@ -7,7 +7,7 @@
 // commands/aof/<id>.md and its aof-invocation frontmatter is /aof:<id>. Assert an
 // agent member's path stays agents/<id>.md and carries no namespace.
 import assert from "node:assert/strict";
-import { loadBundle, renderBundleOutputs } from "../../../src/work/bundle.mjs";
+import { loadBundle, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
 
 function normalize(p) {
   return String(p).replaceAll("\\", "/");
@@ -68,7 +68,7 @@ export const archTests = [
       // Prove the adapter rule keys on the declared property, not a bundle branch:
       // a command WITHOUT commandNamespace still renders flat commands/<id>.md
       // invoked /<id>. (Guards against breaking existing non-namespaced commands.)
-      const { renderConfigOutputs } = await import("../../../src/adapters.mjs");
+      const { renderConfigOutputs } = await import("../../../packages/core/src/adapters.mjs");
       const flat = renderConfigOutputs(
         { resources: [{ id: "plain", kind: "command", runtimes: ["claude"], description: "x", body: "hi" }], workflows: [], packages: [] },
         { runtimes: ["claude"] }

@@ -20,7 +20,7 @@ export function slotBeforeAdmissionProblems(commandSource, meshSource, launcherS
   const problems = [];
   const localPool = command.indexOf("dispatchReadySet(");
   const localOpen = command.indexOf("resolveDispatchLane(");
-  if (localPool < 0) problems.push("src/commands/dispatch.mjs has no production dispatchReadySet(...) caller");
+  if (localPool < 0) problems.push("packages/core/src/commands/dispatch.mjs has no production dispatchReadySet(...) caller");
   if (localOpen < 0 || localPool > localOpen) problems.push("the local lane is opened before the bounded pool admits it");
   const counted = mesh.indexOf("countDispatchSlotsByTarget(rows)");
   const checked = mesh.indexOf(">= dispatchBound");
@@ -48,10 +48,10 @@ function executableCallCount(source, name) {
   return calls - declarations;
 }
 
-// 129/04 — THE LOOP SUPPLIES ITS OWN OPENER, BEHIND THE SAME DOOR. `src/loop/wave.mjs` opens a
+// 129/04 — THE LOOP SUPPLIES ITS OWN OPENER, BEHIND THE SAME DOOR. `packages/core/src/loop/wave.mjs` opens a
 // lane advanced to HEAD (129/ADR-002 §7) and reclaims a stale lane run first — neither of which
 // the door's default opener carries — so it binds its opener onto `ctx.runDispatchLane`, the seam
-// `src/commands/dispatch.mjs` calls INSIDE `dispatchReadySet`, after the admission lock and the
+// `packages/core/src/commands/dispatch.mjs` calls INSIDE `dispatchReadySet`, after the admission lock and the
 // pool have admitted the member. That is not a second admission door: the opener runs only when
 // the door invokes it. So a file other than the door may call `resolveDispatchLane(` when, and
 // only when, EVERY such call sits in the body of a function the file binds as `runDispatchLane`,
@@ -220,8 +220,8 @@ export const archTests = [
       assert.deepEqual(productionAdmissionPathProblems(homes), []);
       const bypasses = productionAdmissionPathProblems([
         ...homes,
-        { path: "src/commands/other.mjs", source: "resolveDispatchLane(root, ref);" },
-        { path: "src/other-scheduler.mjs", source: "runControlDispatchReclaimTick(ws, server);" },
+        { path: "packages/core/src/commands/other.mjs", source: "resolveDispatchLane(root, ref);" },
+        { path: "packages/core/src/other-scheduler.mjs", source: "runControlDispatchReclaimTick(ws, server);" },
       ]);
       assert.ok(bypasses.some((p) => p.includes("other.mjs")), "an added local-open door is named");
       assert.ok(bypasses.some((p) => p.includes("other-scheduler.mjs")), "an added scheduler door is named");
@@ -249,7 +249,7 @@ export const archTests = [
       const noAsk = wave.replace(/await invokeRegistered\("work:dispatch"[^\n]*\n/, "");
       assert.ok(productionAdmissionPathProblems([...homes, { path: "packages/work-loop/src/wave.mjs", source: noAsk }]).some((p) => p.includes("never asks work:dispatch")), "an opener without the ask is named");
       // leg 3: an undeclared supplier is named even when it is behind the door
-      assert.ok(productionAdmissionPathProblems([...homes, { path: "src/loop/other.mjs", source: wave }]).some((p) => p.includes("other.mjs supplies a dispatch opener without a declared reason")), "an undeclared supplier is named");
+      assert.ok(productionAdmissionPathProblems([...homes, { path: "packages/core/src/loop/other.mjs", source: wave }]).some((p) => p.includes("other.mjs supplies a dispatch opener without a declared reason")), "an undeclared supplier is named");
       // and the door count is the door's alone: the supplier's call never makes it two
       assert.ok(!productionAdmissionPathProblems([...homes, { path: "packages/work-loop/src/wave.mjs", source: wave }]).some((p) => p.includes("expected exactly one")), "the supplier does not count against the door");
       assert.ok(productionAdmissionPathProblems([{ ...homes[0], source: homes[0].source + " resolveDispatchLane(root, again);" }, ...homes.slice(1)]).some((p) => p.includes("expected exactly one production resolveDispatchLane call at the door, found 2")), "a second door-side call is still counted");
@@ -274,9 +274,9 @@ export const archTests = [
     run: () => {
       const base = [{ path: "packages/mesh/src/assignment-reclaim.mjs", source: "function assignmentOccupiesDispatchSlot(row) { return true; }" }];
       assert.deepEqual(sharedOccupancyProblems(base), []);
-      assert.ok(sharedOccupancyProblems([...base, { path: "src/other.mjs", source: "function assignmentOccupiesDispatchSlot(row) {}" }]).some((p) => p.includes("exactly one")));
-      assert.ok(sharedOccupancyProblems([...base, { path: "src/other.mjs", source: 'row.state === "accepted" || row.state === "running" && row.code !== "needs-input";' }]).some((p) => p.includes("re-spells")));
-      assert.ok(sharedOccupancyProblems([...base, { path: "src/other.mjs", source: "const occupiedByTarget = dispatchedIds;" }]).some((p) => p.includes("once-guard")));
+      assert.ok(sharedOccupancyProblems([...base, { path: "packages/core/src/other.mjs", source: "function assignmentOccupiesDispatchSlot(row) {}" }]).some((p) => p.includes("exactly one")));
+      assert.ok(sharedOccupancyProblems([...base, { path: "packages/core/src/other.mjs", source: 'row.state === "accepted" || row.state === "running" && row.code !== "needs-input";' }]).some((p) => p.includes("re-spells")));
+      assert.ok(sharedOccupancyProblems([...base, { path: "packages/core/src/other.mjs", source: "const occupiedByTarget = dispatchedIds;" }]).some((p) => p.includes("once-guard")));
       const doors = [
         { path: "packages/work-loop/src/commands/dispatch.mjs", source: "dispatchReadySet(rows, () => resolveDispatchLane());" },
         { path: "packages/mesh/src/assignment-reclaim.mjs", source: "function runControlDispatchReclaimTick() { countDispatchSlotsByTarget(rows); dispatchDirective(buildDirectiveFrame()); }" },

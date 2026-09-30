@@ -4,14 +4,14 @@
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
 // asserted against the LOCKED engine `validateWork(workDir, config, scopeRef)` in
-// ../src/work.mjs — the same engine `aof work validate --json` is a thin face
+// ../packages/core/src/work.mjs — the same engine `aof work validate --json` is a thin face
 // over. We assert on `finding.problem` VERBATIM strings the feature pins — we
 // never change the engine or the contract. Mirrors test/work/gate/work-validate.test.mjs.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateWork } from "../../../src/work.mjs";
+import { validateWork } from "../../../packages/core/src/work.mjs";
 
 function frontmatter(fields) {
   const body = Object.entries(fields)

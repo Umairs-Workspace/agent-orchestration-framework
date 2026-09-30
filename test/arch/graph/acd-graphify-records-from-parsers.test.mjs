@@ -25,8 +25,8 @@ import path from "node:path";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import graphifyBackend, { rerank } from "../../../src/memory/graphify-backend.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
+import graphifyBackend, { rerank } from "../../../packages/core/src/memory/graphify-backend.mjs";
+import { MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE_DIR = path.join(

@@ -12,7 +12,7 @@ import {
   emitProposals,
   laneProposals,
   proposalClassForTarget,
-} from "../../src/work-tune/proposal.mjs";
+} from "../../packages/core/src/work-tune/proposal.mjs";
 
 const KEY = "work.fixture.rounds";
 const OTHER = "work.fixture.other";

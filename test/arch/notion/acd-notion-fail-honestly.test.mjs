@@ -9,7 +9,7 @@
 //       config statusMap is MISSING the item's status → that item's op is `skip` with a
 //       non-empty `reason`, carries NO statusOption (no fabricated value), and emits NO
 //       `create`/`patch` op for it (the skip is decided BEFORE any write).
-//   (b) APPLY HONESTY (source-grep src/notion/sync.mjs): an op flagged `skip`/`noop`
+//   (b) APPLY HONESTY (source-grep packages/core/src/notion/sync.mjs): an op flagged `skip`/`noop`
 //       takes NO Notion spawn and NO write — the apply layer `continue`s on it before
 //       reaching the spawn seam. Self-checked non-vacuous: the guard sees the skip/noop
 //       short-circuit and the matcher fires on a planted spawn-on-skip form.
@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { projectMilestone } from "../../../src/notion/projection.mjs";
+import { projectMilestone } from "../../../packages/core/src/notion/projection.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SYNC = path.join(repoRoot, "packages", "integration-notion", "src", "sync.mjs");

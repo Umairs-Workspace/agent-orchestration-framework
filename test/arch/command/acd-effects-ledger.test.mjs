@@ -18,20 +18,20 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS, isKnownLocus } from "../../../src/effects/table.mjs";
-import { openEffectsJournal, pendingSteps, readEventSteps } from "../../../src/effects/journal.mjs";
-import { drainEffects } from "../../../src/effects/dispatch.mjs";
-import { transitionRunComplete } from "../../../src/effects/run-transitions.mjs";
-import { startRun } from "../../../src/run-store.mjs";
+import { EFFECTS, isKnownLocus } from "../../../packages/core/src/effects/table.mjs";
+import { openEffectsJournal, pendingSteps, readEventSteps } from "../../../packages/core/src/effects/journal.mjs";
+import { drainEffects } from "../../../packages/core/src/effects/dispatch.mjs";
+import { transitionRunComplete } from "../../../packages/core/src/effects/run-transitions.mjs";
+import { startRun } from "../../../packages/core/src/run-store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 // The sanctioned appendEvent CALLERS (repo-relative, forward-slashed): the
 // journal module (the definition) and the transition seam(s) — nothing else in
 // src/ may append events.
 const APPEND_EVENT_ALLOWED = new Set([
-  "src/effects/journal.mjs",
+  "packages/core/src/effects/journal.mjs",
   "packages/effects/src/journal.mjs", // extracted definition, never an additional event-raising seam
   "packages/execution/src/run-transitions.mjs",
   // m42 wave (d) leg d3 — the assignment store's transition seam, the second
@@ -67,7 +67,7 @@ const APPEND_EVENT_ALLOWED = new Set([
   "packages/execution/src/reconcile.mjs",
   // milestone 61 / ADR-007 §3 — the HARNESS store's transition seam, the sixth: a
   // ruling on a harness value and the `harness.ruled` it raises. Same rule, not an
-  // amnesty. The fact itself belongs to `src/work-acceptor/store.mjs` (the acceptor's
+  // amnesty. The fact itself belongs to `packages/core/src/work-acceptor/store.mjs` (the acceptor's
   // one I/O home, which owns BOTH the surgical knob write and the ledger append), and
   // this seam adds exactly what a seam adds: the event, and the consequence nobody may
   // forget — the ruling recorded beside the configuration it concerns.
@@ -219,7 +219,7 @@ export const archTests = [
       );
       // …and the edge the seam settles on raises a completion, so the reclaim
       // inherits the declared cascade rather than a per-call-site copy of it.
-      const seam = stripComments(await readFile(path.join(SRC_DIR, "../packages/execution/src/run-transitions.mjs"), "utf8"));
+      const seam = stripComments(await readFile(path.join(SRC_DIR, "../../execution/src/run-transitions.mjs"), "utf8"));
       const reclaimDoor = seam.slice(seam.indexOf("async function transitionRunReclaimed"));
       assert.ok(reclaimDoor.length > 0, "transitionRunReclaimed is the reclaim door");
       assert.ok(/reclaimRun\s*\(/.test(reclaimDoor.slice(0, 2000)), "…writing the fact through the shared edge");

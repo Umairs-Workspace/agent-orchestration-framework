@@ -12,11 +12,11 @@
 // So this gate binds SIX things, and each of them is a way that number could quietly stop
 // being what it claims:
 //
-//   (a) the classification has ONE home — no module outside `src/work-acceptor/observations.mjs`
+//   (a) the classification has ONE home — no module outside `packages/core/src/work-acceptor/observations.mjs`
 //       decides that an `itemDir` is a fixture or that a path is a dispatch worktree;
-//   (b) the dispatch case is DERIVED from `src/mesh/worktree.mjs`'s exported predicate and
-//       slug, and `dispatch-worktrees` remains that module's only occurrence in `src/`;
-//   (c) the read record and the floor discipline are IMPORTED from `src/work-audit/reads.mjs`
+//   (b) the dispatch case is DERIVED from `packages/core/src/mesh/worktree.mjs`'s exported predicate and
+//       slug, and `dispatch-worktrees` remains that module's only occurrence in `packages/core/src/`;
+//   (c) the read record and the floor discipline are IMPORTED from `packages/core/src/work-audit/reads.mjs`
 //       (`readRecord`, `sweepDeclarationProblems`, `SWEEP_BASES`), with no second copy here, so
 //       the shape has one home and cannot drift (59/FF-5908's ratchet, paid rather than re-opened);
 //   (d) `readFinding` is deliberately NOT imported — its code is the auditor's — and the
@@ -34,12 +34,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import * as reads from "../../../src/work-audit/reads.mjs";
+import * as reads from "../../../packages/core/src/work-audit/reads.mjs";
 import {
   dispatchWorktreeSlug,
   meshDispatchWorktreePath,
-} from "../../../src/mesh/worktree.mjs";
-import * as observations from "../../../src/work-acceptor/observations.mjs";
+} from "../../../packages/core/src/mesh/worktree.mjs";
+import * as observations from "../../../packages/core/src/work-acceptor/observations.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const CENSUS_MODULE = "packages/work/src/acceptor/observations.mjs";
@@ -47,7 +47,7 @@ const CENSUS_PATH = path.join(repoRoot, "packages", "work", "src", "acceptor", "
 const WORKSPACE = path.resolve("/aof-ff6107-workspace");
 
 // EVERY SCAN BELOW MEASURES CODE, NOT PROSE, and that is a decision rather than a
-// convenience. `src/mesh/worker-execution.mjs` carries two comments reading "NEVER
+// convenience. `packages/core/src/mesh/worker-execution.mjs` carries two comments reading "NEVER
 // os.tmpdir()" — a rule ABOUT the call, not the call — and this census's own header explains
 // at length why `dispatch-worktrees` is not spelled here and why `readFinding` is not
 // imported. A text scan that could not tell those apart would report violations that do not
@@ -80,7 +80,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6107: the fixture and dispatch classification has exactly one home in src/",
     run: async () => {
-      // (b) THE DISPATCH LITERAL. `mesh-worktree.mjs` is the only module in `src/` that spells
+      // (b) THE DISPATCH LITERAL. `mesh-worktree.mjs` is the only module in `packages/core/src/` that spells
       // the convention, and this milestone does not make it two.
       const spellsIt = await codeFilesContaining("dispatch-worktrees");
       assert.deepEqual(spellsIt, ["packages/mesh/src/worktrees.mjs"], "`dispatch-worktrees` is spelled in exactly one runtime module");
@@ -111,7 +111,7 @@ export const archTests = [
       // TEXTUAL: it does not spell the literal, and it takes BOTH the predicate and the slug
       // from the module that owns the convention.
       assert.equal(source.includes("dispatch-worktrees"), false, "the census spells no dispatch-worktrees literal of its own");
-      const adapter = await readFile(path.join(repoRoot, "src/application/bindings/work-acceptor/observations.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work-acceptor/observations.mjs"), "utf8");
       assert.match(adapter, /const\s*\{[^}]*isUnderMeshDispatchWorktreesRoot[^}]*\}\s*= meshWorktreeServices/su, "composition supplies the lane's own predicate");
       assert.match(adapter, /const\s*\{[^}]*dispatchWorktreeSlug[^}]*\}\s*= meshWorktreeServices/su, "…and the lane's own slug");
       assert.match(adapter, /createAcceptorObservations\(\{ dispatchWorktreeSlug, isUnderMeshDispatchWorktreesRoot, meshDispatchWorktreesRoot, readEvents \}\)/u, "composition supplies the actual lane services");

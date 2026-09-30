@@ -36,9 +36,9 @@ import { RECORDS, loop, snapshot, writeRegistry } from "../support/loop-document
 import { computedDynamicImports, importSpecifiers } from "../support/module-family.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { normaliseEol, readWorkflowText, stripYamlComments } from "../support/workflow/workflow-lint.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { loopDocumentCommand } from "../../src/commands/loop-document.mjs";
-import { loopDocumentPath, REGENERATE_COMMAND } from "../../src/loop-document.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { loopDocumentCommand } from "../../packages/core/src/commands/loop-document.mjs";
+import { loopDocumentPath, REGENERATE_COMMAND } from "../../packages/core/src/loop-document.mjs";
 import {
   BUILD_COMMAND,
   DEFAULT_OUT,
@@ -355,7 +355,7 @@ async function staticImportClosure(entry) {
         const manifest = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
         assert.equal(manifest.name, `${scope}/${name}`, "workspace identity matches its import");
         const target = manifest.exports[subpath.length ? `./${subpath.join("/")}` : "."];
-        assert.ok(typeof target === "string" && target.startsWith("./src/") && !target.includes("..", 2), `${specifier}: public workspace source export`);
+        assert.ok(typeof target === "string" && target.startsWith("./packages/core/src/") && !target.includes("..", 2), `${specifier}: public workspace source export`);
         workspaces.add(manifest.name);
         await walk(path.resolve(root, target));
         continue;
@@ -372,7 +372,7 @@ async function staticImportClosure(entry) {
 }
 
 // A copy of this repository's runnable tree — everything `scripts/test.mjs` reaches at LOAD (the
-// runner imports every suite before it selects, and suites import `src/`, `ui/src/` and the hook
+// runner imports every suite before it selects, and suites import `packages/core/src/`, `ui/src/` and the hook
 // under `.claude/hooks/` at module scope) — with a FIXTURE registry and its own config, placed
 // INSIDE this repository (under the git-ignored `.aof-test/`) so bare imports resolve up to this
 // tree's `node_modules` without a link or a junction. The gate is then run in it exactly as the
@@ -386,7 +386,7 @@ async function makeGateFixture() {
   // `graphify-reranking`). The fixture's OWN document is written over the copy below, from the
   // fixture's own registry, before the gate is first run. Run records and observability snapshots
   // are left out: nothing loads them, and they are the bulk of the tree.
-  for (const tree of ["src", "packages", "test", "scripts", "ui/src", ".claude/hooks", "wiki"]) {
+  for (const tree of ["packages/core/src", "packages", "test", "scripts", "ui/src", ".claude/hooks", "wiki"]) {
     await cp(path.join(repoRoot, ...tree.split("/")), path.join(root, ...tree.split("/")), {
       recursive: true,
       filter: (source) => !/[\\/](?:runs|observability|node_modules)(?:[\\/]|$)/.test(path.relative(repoRoot, source)),

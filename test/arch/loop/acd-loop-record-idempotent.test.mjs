@@ -22,7 +22,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loopRecordCommand } from "../../../src/commands/loop-record.mjs";
+import { loopRecordCommand } from "../../../packages/core/src/commands/loop-record.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import {
   ENGAGED_RUNS,

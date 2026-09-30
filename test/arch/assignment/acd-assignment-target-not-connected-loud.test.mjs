@@ -24,9 +24,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assignWork } from "../../../src/mesh/assignment.mjs";
+import { assignWork } from "../../../packages/core/src/mesh/assignment.mjs";
 import { withMeshAssignFixture, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
-import { sendDirective, buildDirectiveFrame, ASSIGNMENT_TARGET_NOT_CONNECTED } from "../../../src/control-stream-server.mjs";
+import { sendDirective, buildDirectiveFrame, ASSIGNMENT_TARGET_NOT_CONNECTED } from "../../../packages/core/src/control-stream-server.mjs";
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 

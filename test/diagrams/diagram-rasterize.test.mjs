@@ -10,7 +10,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { browserArgv, findBrowser, rasterizeSvg } from "../../src/diagrams/rasterize.mjs";
+import { browserArgv, findBrowser, rasterizeSvg } from "../../packages/core/src/diagrams/rasterize.mjs";
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";

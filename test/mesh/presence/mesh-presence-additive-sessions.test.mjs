@@ -3,7 +3,7 @@
 // additive `sessions` key without breaking the frozen m23 byte-equivalence".
 //
 // Every @executable scenario / Scenario Outline row is asserted against the real
-// src/mesh/presence.mjs `assemblePresenceRecord` assembler — a pure function, no
+// packages/core/src/mesh/presence.mjs `assemblePresenceRecord` assembler — a pure function, no
 // fs/fixture needed. node:assert/strict.
 //
 // AMENDED by milestone 48 / story 01 (ADR-005), and only where the entry's own shape
@@ -19,9 +19,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { assemblePresenceRecord, readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { assemblePresenceRecord, readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const FROZEN_FIVE = ["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVersion"];
 // m48/ADR-005 — the session ENTRY's frozen ordered six (m38's four, plus the leading
@@ -86,7 +86,7 @@ export const meshPresenceAdditiveSessionsTests = [
   // REVIEW FIX (F2): the FIRST version of this test fed pre-filtered arrays
   // directly to assemblePresenceRecord (which performs ZERO TTL filtering itself —
   // it is a pure key-shape assembler). This drives the REAL readLiveSessions
-  // (src/mesh/presence.mjs) — the function that ACTUALLY applies the TTL — against
+  // (packages/core/src/mesh/presence.mjs) — the function that ACTUALLY applies the TTL — against
   // real seeded session records with an injected `now`/`ttlSeconds`, so an
   // EXPIRED record's absence from the projected array is a genuine, non-vacuous
   // proof. Restores all 7 Scenario Outline rows from the .feature (including the

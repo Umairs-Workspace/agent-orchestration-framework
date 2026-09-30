@@ -23,9 +23,9 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { initWork } from "../../src/work/init.mjs";
-import { loadBundle } from "../../src/work/bundle.mjs";
-import { findWork, listStream, validateWork, nextWork } from "../../src/work.mjs";
+import { initWork } from "../../packages/core/src/work/init.mjs";
+import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
+import { findWork, listStream, validateWork, nextWork } from "../../packages/core/src/work.mjs";
 
 // Re-export the shipped work verbs so the proof stories resolve seeded refs
 // through the SAME code the product ships (ADR-002) — never a private copy.

@@ -10,11 +10,11 @@ import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promi
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLauncher } from "../../src/mesh/launcher.mjs";
-import { startDiscordBot } from "../../src/discord/bot.mjs";
-import { startGateway } from "../../src/discord/gateway.mjs";
-import { writeMessagingSecret } from "../../src/notify/secret.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { startLauncher } from "../../packages/core/src/mesh/launcher.mjs";
+import { startDiscordBot } from "../../packages/core/src/discord/bot.mjs";
+import { startGateway } from "../../packages/core/src/discord/gateway.mjs";
+import { writeMessagingSecret } from "../../packages/core/src/notify/secret.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import {
   SOURCE_DIRECTORY_EXEMPTIONS,
   readTreeListing,
@@ -125,7 +125,7 @@ export const discordBotTests = [
     async run() {
       const launcher = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8"));
       assert.doesNotMatch(launcher, /^\s*import\b[^;]*discord\/bot\.mjs/mu, "no static import of bot.mjs");
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/launcher.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/launcher.mjs"), "utf8"));
       assert.match(adapter, /loadMessagingBot:\s*\(\)\s*=>\s*provideDiscordBot\(\)/u);
       assert.ok(dependencySpecifiers(adapter).some(edge => edge.injected && edge.dynamic && edge.specifier === "../discord/bot.mjs"), "the callback returns the constructed messaging service");
       const at = launcher.indexOf('loadMessagingBot()');
@@ -137,12 +137,12 @@ export const discordBotTests = [
   {
     name: "131/10 task00 — the new directories are budgeted as exemptions naming their members, and the discord suite is reachable from the runner",
     async run() {
-      const src = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "src/discord");
+      const src = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/discord");
       const test = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "test/discord");
-      assert.ok(src && test, "src/discord and test/discord are exemptions");
-      for (const member of ["131/10", "gateway.mjs", "bot.mjs", "replies.mjs", "commands.mjs"]) assert.ok(src.why.includes(member), `src/discord's why names ${member}`);
+      assert.ok(src && test, "packages/core/src/discord and test/discord are exemptions");
+      for (const member of ["131/10", "gateway.mjs", "bot.mjs", "replies.mjs", "commands.mjs"]) assert.ok(src.why.includes(member), `packages/core/src/discord's why names ${member}`);
       for (const member of ["131/10", "index", "discord-fixture.mjs", "discord-bot", "discord-gateway", "discord-replies", "discord-commands"]) assert.ok(test.why.includes(member), `test/discord's why names ${member}`);
-      assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "src/notify").why.includes("ask-messages.mjs"), "src/notify's why names ask-messages.mjs");
+      assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/notify").why.includes("ask-messages.mjs"), "packages/core/src/notify's why names ask-messages.mjs");
       const named = sourceDirectoryBudgetViolations(await readTreeListing()).filter((v) => /(?:src|test)\/discord|src\/notify/u.test(v.message ?? JSON.stringify(v)));
       assert.deepEqual(named, [], "the budget over the live tree names none of them");
       const registry = stripComments(await readFile(path.join(repoRoot, "scripts", "test.mjs"), "utf8"));

@@ -25,7 +25,7 @@
 //   4. The face stays otherwise read-only: one loopback http.createServer, no
 //      low-level writer import, no /ws/terminal.
 //
-// STRUCTURAL half: source-analysis over the REAL src/mesh/ui-serve.mjs (comments
+// STRUCTURAL half: source-analysis over the REAL packages/core/src/mesh/ui-serve.mjs (comments
 // discounted, CRLF-normalised — the repo's tree is CRLF; an "\n"-only needle
 // would silently no-op against the checked-out file and leave a self-check
 // vacuous). Every plant below is a HAND-WRITTEN synthesized snippet (never a
@@ -275,7 +275,7 @@ export const archTests = [
       // neither `/` nor `_`, so a third route called `/api/mesh/session/kill` or
       // `/api/mesh/kill_session` was not merely allowed — it was INVISIBLE, and the route
       // table read as the sanctioned four. Both were planted into the real
-      // src/mesh/ui-serve.mjs and confirmed to fire before being reverted.
+      // packages/core/src/mesh/ui-serve.mjs and confirmed to fire before being reverted.
       for (const name of ["/api/mesh/session/kill", "/api/mesh/kill_session"]) {
         const oddNamePlant = stripComments(`
           if (pathname === "/api/mesh/status") { if (request.method !== "GET" && request.method !== "HEAD") return; }

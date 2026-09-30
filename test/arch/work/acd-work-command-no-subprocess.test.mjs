@@ -4,7 +4,7 @@
 //  to `aof …`. The board face calls the registry's `invoke` in-process; it never
 //  spawns the CLI to answer a work route."
 //
-// Source-grep `src/board-ui.mjs` (the board's `/api/work*` surface) with comments
+// Source-grep `packages/core/src/board-ui.mjs` (the board's `/api/work*` surface) with comments
 // and strings discounted via the call-form discipline the house tests use: assert
 // NO `child_process` import and NO `spawn(`/`spawnSync(`/`exec(`/`execSync(`/
 // `execFile(` call form, and NO `aof <…>` CLI-invocation string on the

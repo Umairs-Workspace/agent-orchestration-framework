@@ -2,7 +2,7 @@
 // + lifecycle (tasks/02_pending-invite-lifecycle.feature).
 //
 // Covers EVERY @executable scenario in tasks/02_pending-invite-lifecycle.feature,
-// exercising the REAL src/mesh/registry.mjs pure pending-invite accessors — a registry
+// exercising the REAL packages/core/src/mesh/registry.mjs pure pending-invite accessors — a registry
 // value in, a registry value / a boolean out (no fs, no relay, no git, no crypto).
 // codeHash is treated as an OPAQUE string (this story owns the durable SHAPE; the
 // hashing is story 01's + the security-owned acd-enrollment-code-hashed-at-rest
@@ -26,7 +26,7 @@ import {
   isInviteExpired,
   isInvitePending,
   emptyRegistry,
-} from "../../../src/mesh/registry.mjs";
+} from "../../../packages/core/src/mesh/registry.mjs";
 
 export const meshRegistryPendingLifecycleTests = [
   {

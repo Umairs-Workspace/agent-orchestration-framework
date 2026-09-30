@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loopsGraphCommand, renderLoopGraph } from "../../../src/commands/loops-graph.mjs";
+import { loopsGraphCommand, renderLoopGraph } from "../../../packages/core/src/commands/loops-graph.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const runFile = promisify(execFile);

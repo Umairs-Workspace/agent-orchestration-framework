@@ -6,7 +6,7 @@
 // — so an item with on-disk status in-review is an honest skip, computed BEFORE any
 // write, carrying a reason naming the missing mapping, with NO create/patch op.
 import assert from "node:assert/strict";
-import { projectMilestone } from "../../src/notion/projection.mjs";
+import { projectMilestone } from "../../packages/core/src/notion/projection.mjs";
 
 const DATA_SOURCE_ID = "ds-fixture";
 

@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 // `index.mjs` that names its own members, and this file spreads those.  A new suite is registered
 // in its own directory's index; THIS FILE IS UNCHANGED BY ITS ARRIVAL.
 //
-// WHAT DID NOT CHANGE, and must not: `registrationDecision` (`src/work-audit/census.mjs`) is still
+// WHAT DID NOT CHANGE, and must not: `registrationDecision` (`packages/core/src/work-audit/census.mjs`) is still
 // the single decider of which file contributed which entries (ADR-010 §3).  An index is an INPUT
 // to that decision, never a second answer to it: no index derives its membership by `readdir`, no
 // directory carries two indexes, and no directory's suites are spread by another's index.
@@ -17,7 +17,7 @@ import { pathToFileURL } from "node:url";
 // they read the assembled array and the files on disk, and both are what they were.
 //
 // The per-suite rationale that used to sit above each import moved WITH the suite, into its own
-// directory's index — the same move 119/02 made for `src/command-core.mjs`, for the same reason.
+// directory's index — the same move 119/02 made for `packages/core/src/command-core.mjs`, for the same reason.
 import { tests as archAssignmentTests } from "../test/arch/assignment/index.mjs";
 import { tests as archAuditTests } from "../test/arch/audit/index.mjs";
 import { tests as archBundleTests } from "../test/arch/bundle/index.mjs";
@@ -254,7 +254,7 @@ async function runSuite(tests, { lanes = true } = {}) {
 // THE ARRAY IS LEFT COMPLETELY ALONE. Nothing below reads it, reorders it, restructures it or
 // appends to it; it is read by the existing path and by nothing this change adds.
 //
-// AND THE SHAPE IS TIGHTENED against the audit probe's, deliberately. `src/work/audit-probe.mjs`
+// AND THE SHAPE IS TIGHTENED against the audit probe's, deliberately. `packages/core/src/work/audit-probe.mjs`
 // tests only `typeof entry.name === "string"`, so it admits an entry with no callable `run` - and
 // this path RUNS what it takes, so such an entry would throw inside the loop instead of being
 // reported as an unusable file. Here `run` must be a function.
@@ -264,7 +264,7 @@ export const ONLY_FLAG = "--only";
 // REQUIRED and bare positionals are never treated as suite files - which is what makes the
 // "importing the runner runs nothing, whatever the importing process's argv holds" row pass for a
 // reason rather than by luck: the registration census's own child runs
-// `node src/work/audit-probe.mjs <runner>`, whose argv carries the runner's path as a bare
+// `node packages/core/src/work/audit-probe.mjs <runner>`, whose argv carries the runner's path as a bare
 // positional, and that child imports this module for its assembled array.
 export function selectionArgv(argv) {
   const at = argv.indexOf(ONLY_FLAG);

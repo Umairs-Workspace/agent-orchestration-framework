@@ -6,7 +6,7 @@
 //  second server/port; the fleet HTTP routes live under /api/mesh* and NEVER
 //  /api/work*."
 //
-// A structural grep of src/mesh/ui-serve.mjs (comments discounted, the call-form
+// A structural grep of packages/core/src/mesh/ui-serve.mjs (comments discounted, the call-form
 // discipline) PLUS a behavioural stand-up: serveMeshUi answers GET /api/mesh/status
 // as JSON on the same 127.0.0.1 port that serves the static bundle, and a /api/work
 // request is a 404 (the namespaces are disjoint).
@@ -15,7 +15,7 @@ import { readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");

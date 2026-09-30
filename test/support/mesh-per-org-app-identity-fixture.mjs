@@ -6,14 +6,14 @@
 // `mesh.repo.credential.githubApp.*`), and a temp `AOF_GLOBAL_HOME`
 // `global_workspace_descriptors` row per "other" workspace — the ADR-003 descriptor
 // seam `createResolveWorkspaceAppIdentity`/`createResolveWorkspaceCloneUrl`
-// (src/mesh/launcher.mjs, exported) reads FOR REAL through this fixture; no hand-built
+// (packages/core/src/mesh/launcher.mjs, exported) reads FOR REAL through this fixture; no hand-built
 // stand-in for either resolver (ADR-008).
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { generateKeyPairSync } from "node:crypto";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 
 // generateThrowawayPrivateKeyPem() — a LOCAL, test-only RSA private key (PEM, PKCS#1
 // — GitHub's own App-key download format), never a real GitHub App's registered key.

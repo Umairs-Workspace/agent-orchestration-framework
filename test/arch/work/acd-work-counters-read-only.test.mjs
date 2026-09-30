@@ -9,7 +9,7 @@ import { assertFamilyPurity } from "../../support/module-family.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const engineUrl = new URL("../../../packages/work/src/counters.mjs", import.meta.url);
 const commandUrl = new URL("../../../packages/work/src/commands/counters.mjs", import.meta.url);
-const coreUrl = new URL("../../../src/application/bindings/command-core.mjs", import.meta.url);
+const coreUrl = new URL("../../../packages/core/src/application/bindings/command-core.mjs", import.meta.url);
 
 export const archTests = [
   {

@@ -6,7 +6,7 @@
 // these run fully in-process over a fixture milestone + a directly-constructed
 // sidecar mapping ({ dataSourceId, entries }, the shape readMapping returns).
 import assert from "node:assert/strict";
-import { projectMilestone } from "../../src/notion/projection.mjs";
+import { projectMilestone } from "../../packages/core/src/notion/projection.mjs";
 
 const DATA_SOURCE_ID = "ds-fixture";
 

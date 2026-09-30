@@ -18,9 +18,9 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
-import { readDescriptor } from "../../../src/work/bundle.mjs";
+import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { deriveRouteTable, resolveRoute } from "../../../packages/core/src/spine/face.mjs";
+import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -170,12 +170,12 @@ export const archTests = [
   {
     name: "arch/79/03 every registry read verb and the new writer leave a fixture registry byte-identical",
     run: async () => {
-      const { loadWorkspace } = await import("../../../src/command-core.mjs");
-      const { loopsShowCommand } = await import("../../../src/commands/loops-show.mjs");
-      const { loopsGraphCommand } = await import("../../../src/commands/loops-graph.mjs");
-      const { loopsValidateCommand } = await import("../../../src/commands/loops-validate.mjs");
-      const { createLoopsGroundednessCommand } = await import("../../../src/commands/loops-groundedness.mjs");
-      const { loopDocumentCommand } = await import("../../../src/commands/loop-document.mjs");
+      const { loadWorkspace } = await import("../../../packages/core/src/command-core.mjs");
+      const { loopsShowCommand } = await import("../../../packages/core/src/commands/loops-show.mjs");
+      const { loopsGraphCommand } = await import("../../../packages/core/src/commands/loops-graph.mjs");
+      const { loopsValidateCommand } = await import("../../../packages/core/src/commands/loops-validate.mjs");
+      const { createLoopsGroundednessCommand } = await import("../../../packages/core/src/commands/loops-groundedness.mjs");
+      const { loopDocumentCommand } = await import("../../../packages/core/src/commands/loop-document.mjs");
       const { snapshot, withRepo } = await import("../../support/loop-document-fixture.mjs");
 
       await withRepo({}, async (repo) => {

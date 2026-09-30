@@ -1,0 +1,43 @@
+{
+  "name": "aof",
+  "version": "0.1.0",
+  "description": "Portable agent orchestration framework for installing skills, commands, agents, and framework packs across coding assistants.",
+  "type": "module",
+  "keywords": [
+    "codex",
+    "claude",
+    "cli",
+    "agents",
+    "skills"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": "./bin/aof.mjs",
+  "exports": {
+    "./application": "./src/application/assemble.mjs",
+    "./cli": "./src/cli.mjs",
+    "./asset-base": "./src/asset-base.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "assets"
+  ],
+  "dependencies": {
+    "@aof/contracts": "workspace:*",
+    "@aof/effects": "workspace:*",
+    "@aof/execution": "workspace:*",
+    "@aof/foundation": "workspace:*",
+    "@aof/integration-notion": "workspace:*",
+    "@aof/knowledge": "workspace:*",
+    "@aof/mesh": "workspace:*",
+    "@aof/messaging": "workspace:*",
+    "@aof/server": "workspace:*",
+    "@aof/work": "workspace:*",
+    "@aof/work-graph": "workspace:*",
+    "@aof/work-loop": "workspace:*",
+    "@inquirer/prompts": "^8.4.2"
+  }
+}

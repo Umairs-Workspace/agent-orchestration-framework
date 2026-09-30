@@ -10,14 +10,14 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //      53/07 the registry ships in the bundle, so a generated document there would be overwritten
 //      by the next `aof work update`), and no file inside any work item folder is written.
 //   2. THE NAME IS FORCED — 52/FF-5201 DISCOVERS loop modules from disk by two patterns
-//      (`src/work-loops*.mjs`, `src/commands/loops-*.mjs`), asserts the discovered set equals its
+//      (`packages/core/src/work-loops*.mjs`, `packages/core/src/commands/loops-*.mjs`), asserts the discovered set equals its
 //      expected six, and holds every discovered module free of write call forms; its own comment
-//      names "a writer `src/commands/loops-init.mjs`" as the case it exists to catch. So this
+//      names "a writer `packages/core/src/commands/loops-init.mjs`" as the case it exists to catch. So this
 //      story's modules take the EXECUTION family name (78/ADR-009), FF-5201's expected list is
 //      unchanged, and its sweep is neither widened nor weakened. Asserted here INDEPENDENTLY of
 //      FF-5201 itself — a gate that only re-ran the other gate would prove nothing about this
 //      story.
-//   3. THE COMPOSER IS PURE — `src/loop-document.mjs` reaches no filesystem, no clock and no
+//   3. THE COMPOSER IS PURE — `packages/core/src/loop-document.mjs` reaches no filesystem, no clock and no
 //      environment through its direct imports, which is what lets byte-identity be asserted
 //      without standing up a workspace.
 import assert from "node:assert/strict";
@@ -25,9 +25,9 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../../src/command-core.mjs";
-import { loopDocumentCommand } from "../../../src/commands/loop-document.mjs";
-import { loopsGraphCommand } from "../../../src/commands/loops-graph.mjs";
+import { loadWorkspace } from "../../../packages/core/src/command-core.mjs";
+import { loopDocumentCommand } from "../../../packages/core/src/commands/loop-document.mjs";
+import { loopsGraphCommand } from "../../../packages/core/src/commands/loops-graph.mjs";
 import { snapshot, withRepo } from "../../support/loop-document-fixture.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
@@ -42,7 +42,7 @@ const ADDED_MODULES = ["packages/work-graph/src/document.mjs", "packages/work-gr
 // source would make this gate green whenever that one was edited, which is the opposite of an
 // independent assertion.
 // 119/01 — the first pattern was `^src/work-loops.*\.mjs$` and the family now lives in
-// `src/work/`. Restated here on purpose, as the comment above says, so the re-point is an
+// `packages/core/src/work/`. Restated here on purpose, as the comment above says, so the re-point is an
 // independent edit rather than one this gate inherits from the gate it is checking.
 const REGISTRY_FAMILY_PATTERNS = [/^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/, /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/];
 const FF_5201_EXPECTED = [
@@ -111,7 +111,7 @@ export const archTests = [
       // `work:loops-graph` would have been red twice over — once for writing, once for changing
       // the shape of a frozen command — which is exactly why the writer is a separate module.
       const graph = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loops-graph.mjs"), "utf8"));
-      assert.doesNotMatch(graph, WRITE_CALL_FORM, "src/commands/loops-graph.mjs: no write call form");
+      assert.doesNotMatch(graph, WRITE_CALL_FORM, "packages/core/src/commands/loops-graph.mjs: no write call form");
       assert.deepEqual(Object.keys(loopsGraphCommand.input.properties), ["format"], "and it declares no output-path input");
       assert.equal(loopsGraphCommand.input.additionalProperties, false);
     },

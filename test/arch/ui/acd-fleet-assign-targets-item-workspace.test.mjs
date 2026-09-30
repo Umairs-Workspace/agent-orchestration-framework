@@ -24,7 +24,7 @@
 // seam exercised only in the configuration where it cannot fail. Hence the
 // behavioural half below stands up TWO published workspaces.
 //
-// STRUCTURAL half: source-analysis over the REAL src/mesh/ui-serve.mjs (comments
+// STRUCTURAL half: source-analysis over the REAL packages/core/src/mesh/ui-serve.mjs (comments
 // discounted, CRLF-normalised — the tree is CRLF; an "\n"-only needle would
 // silently no-op and leave the self-check vacuous). The detector extracts the
 // POST /api/mesh/assign BRANCH BODY by brace-balancing and ASSERTS THE
@@ -43,9 +43,9 @@ import { mkdtemp, mkdir, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { seedTargetNode, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

@@ -23,7 +23,7 @@
 //     record for the same inputs — the additive evolution never disturbs the frozen four.
 //  Self-check (m03 non-vacuous): a reordered / dropped m23 key trips the SAME detector.
 import assert from "node:assert/strict";
-import { assemblePresenceRecord } from "../../../src/mesh/presence.mjs";
+import { assemblePresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
 
 const M23_FROZEN_KEYS = ["nodeId", "heartbeatAt", "activeRuns", "aofVersion"];
 

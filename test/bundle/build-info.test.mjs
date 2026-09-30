@@ -11,8 +11,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { setSeaSentinelForTest, setSidecarAnchorForTest } from "../../src/asset-base.mjs";
-import { runtimeMode, readBuildInfo, buildInfoString, setSourceBuildIdForTest, BUILD_ID_FILENAME } from "../../src/build-info.mjs";
+import { setSeaSentinelForTest, setSidecarAnchorForTest } from "../../packages/core/src/asset-base.mjs";
+import { runtimeMode, readBuildInfo, buildInfoString, setSourceBuildIdForTest, BUILD_ID_FILENAME } from "../../packages/core/src/build-info.mjs";
 
 async function withPackagedAnchor(fn) {
   const anchor = await mkdtemp(path.join(os.tmpdir(), "aof-build-info-"));

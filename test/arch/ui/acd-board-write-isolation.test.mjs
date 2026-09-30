@@ -7,7 +7,7 @@
 // exposes no restatus route, and runs in-process (no CLI shell-out).
 //
 // Milestone 08 (ADR-002/003) re-homed that sole write OUT of `board-ui.mjs` and
-// INTO the `work:feedback` command (`src/commands/feedback.mjs`): `board-ui.mjs`
+// INTO the `work:feedback` command (`packages/core/src/commands/feedback.mjs`): `board-ui.mjs`
 // is now a thin face that `invoke`s the command through the registry and itself
 // performs NO fs write. The write-isolation GUARANTEE is unchanged — it has only
 // moved with the code — so this fitness function now anchors the "sole writer"
@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../../src/setup-ui.mjs";
+import { serveSetupUi } from "../../../packages/core/src/setup-ui.mjs";
 import { matchedBraceBody } from "../../support/source-slice.mjs";
 
 const BOARD_UI = new URL("../../../packages/server/src/board-ui.mjs", import.meta.url);
@@ -70,10 +70,10 @@ export const archTests = [
       // Milestone 08 re-homed the write out of board-ui.mjs; m42 wave (d) leg d4
       // re-homed it again, out of the command and into the transition seam. NEITHER
       // the board face NOR the command performs an fs write now — the "sole writer"
-      // lens points at src/effects/doc-transitions.mjs.
+      // lens points at packages/core/src/effects/doc-transitions.mjs.
       const board = await readFile(BOARD_UI, "utf8");
       const command = await readFile(FEEDBACK_COMMAND, "utf8");
-      const composition = await readFile(new URL("../../../src/application/bindings/commands/feedback.mjs", import.meta.url), "utf8");
+      const composition = await readFile(new URL("../../../packages/core/src/application/bindings/commands/feedback.mjs", import.meta.url), "utf8");
       assert.match(composition, /createFeedbackCommand\(\{[^}]*transitionFeedbackAppended/);
       assert.match(command, /await transitionFeedbackAppended\(/);
       for (const [label, text] of [["board-ui.mjs", board], ["commands/feedback.mjs", command]]) {
@@ -143,7 +143,7 @@ export const archTests = [
       const source = await readFile(BOARD_UI, "utf8");
       // The board face invokes operations in-process THROUGH the command registry
       // (the only door, ADR-004 inv. 3) — never a per-request subprocess.
-      const binding = await readFile(new URL("../../../src/application/bindings/board-ui.mjs", import.meta.url), "utf8");
+      const binding = await readFile(new URL("../../../packages/core/src/application/bindings/board-ui.mjs", import.meta.url), "utf8");
       assert.match(binding, /const\s*\{\s*invoke\s*\}\s*=\s*commandCoreServices/);
       assert.match(binding, /createBoardApi\(\{[^}]*\binvoke\b/);
       assert.match(source, /export function createBoardApi\(\{[^}]*\binvoke\b/);

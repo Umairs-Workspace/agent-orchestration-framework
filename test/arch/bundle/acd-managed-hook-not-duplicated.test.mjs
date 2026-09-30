@@ -28,7 +28,7 @@
 //
 // ── AND THIS CONTROL DOES NOT REACH THE MERGE ────────────────────────────────────────────────
 //
-// It imports NOTHING from `src/claude-settings.mjs` — asserted over its own source — and it reads
+// It imports NOTHING from `packages/core/src/claude-settings.mjs` — asserted over its own source — and it reads
 // the settings file without writing it. The marker key is therefore spelled locally, which is a
 // second spelling and is the deliberate price of the isolation: a control that imported the module
 // it is meant not to reach would be asserting its own independence through a dependency.

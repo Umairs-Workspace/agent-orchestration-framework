@@ -23,8 +23,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveGraphifyBinary, GRAPHIFY_BINARY } from "../../../src/graphify.mjs";
-import { doctorConfig } from "../../../src/config-inspect.mjs";
+import { resolveGraphifyBinary, GRAPHIFY_BINARY } from "../../../packages/core/src/graphify.mjs";
+import { doctorConfig } from "../../../packages/core/src/config-inspect.mjs";
 
 // A minimal valid project so doctorConfig runs end-to-end (it resolves the same
 // checks[] `aof project doctor` surfaces).

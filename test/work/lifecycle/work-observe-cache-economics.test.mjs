@@ -3,9 +3,9 @@
 // Covers EVERY @executable scenario in the two task features:
 //   tasks/00_ratio-per-phase.feature
 //   tasks/01_target-and-verdict.feature
-// exercising the REAL src/work/observe.mjs pure cache-economics functions
+// exercising the REAL packages/core/src/work/observe.mjs pure cache-economics functions
 // (rollupRunsByPhase, applyCacheTarget, verdictForCacheBucket, cacheTargetIsHonourable)
-// and the REAL registered src/commands/observe.mjs --json door reading the configured
+// and the REAL registered packages/core/src/commands/observe.mjs --json door reading the configured
 // target from the workspace config (work.observability.cacheRatioTarget), against a
 // temp fixture work stream. One test object per @executable scenario (Scenario-Outline
 // rows folded into one entry iterating the rows), each name tracing to feature +
@@ -24,9 +24,9 @@ import {
   applyCacheTarget,
   verdictForCacheBucket,
   cacheTargetIsHonourable,
-} from "../../../src/work/observe.mjs";
-import { observeCommand } from "../../../src/commands/observe.mjs";
-import { getCommand, invoke } from "../../../src/command-core.mjs";
+} from "../../../packages/core/src/work/observe.mjs";
+import { observeCommand } from "../../../packages/core/src/commands/observe.mjs";
+import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
 
 const T0 = Date.parse("2026-08-21T10:00:00.000Z");
 

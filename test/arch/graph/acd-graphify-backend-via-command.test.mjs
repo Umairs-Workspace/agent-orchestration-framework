@@ -1,7 +1,7 @@
 // Fitness function for milestone 10 / ADR-002 (complements 09's acd-graph-no-face-spawn):
 // "The graphify memory backend reaches graphify EXCLUSIVELY through the registered
 //  09 `graph:*` commands via `invoke(...)` — no bespoke second integration. The
-//  backend module (src/memory/graphify-backend.mjs) imports `invoke` from
+//  backend module (packages/core/src/memory/graphify-backend.mjs) imports `invoke` from
 //  command-core.mjs and reaches the graph via `invoke('graph:…')`; it imports NEITHER
 //  `../graphify.mjs` (the SOLE graphify spawn site) NOR `node:child_process`, and has
 //  NO spawn/spawnSync/exec call-form. It reads the on-disk graph.json only through the
@@ -82,7 +82,7 @@ export const archTests = [
       const raw = await readFile(BACKEND, "utf8");
       const specs = dependencySpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
       assert.match(raw, /function createGraphifyBackend\(\{\s*coreInvoke,\s*loadWorkspace/);
-      const binding = await readFile(path.join(repoRoot, "src/application/bindings/memory/graphify-backend.mjs"), "utf8");
+      const binding = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/memory/graphify-backend.mjs"), "utf8");
       assert.match(binding, /const\s*\{\s*invoke: coreInvoke\s*\}\s*= commandCoreServices/);
       assert.match(binding, /createGraphifyBackend\(\{\s*coreInvoke,\s*loadWorkspace/);
       // It reads graph.json through the spawn-free normalizer module, NOT the driver.
@@ -97,7 +97,7 @@ export const archTests = [
     run: async () => {
       const raw = await readFile(BACKEND, "utf8");
       const specs = dependencySpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
-      // It must NOT import the SOLE graphify spawn site (src/graphify.mjs) — that would
+      // It must NOT import the SOLE graphify spawn site (packages/core/src/graphify.mjs) — that would
       // be the "bespoke second integration" SPEC §Objective forbids (it would bypass the
       // graph:build command's egress/offline/binary-absent guards).
       const importsDriver = specs.some((s) => /(^|\/)graphify\.mjs$/.test(s));

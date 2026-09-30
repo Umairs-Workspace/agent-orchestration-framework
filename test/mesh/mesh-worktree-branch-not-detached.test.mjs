@@ -7,9 +7,9 @@
 // git exec fake for the branch-existence assertions themselves (task 00's own
 // Background: "@executable over a REAL LOCAL git repo ... NO real GitHub, NO network").
 import assert from "node:assert/strict";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../src/mesh/worker-execution.mjs";
-import { meshWorktreePath, meshItemBranchName, listWorktrees, removeWorktree } from "../../src/mesh/worktree.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
+import { meshWorktreePath, meshItemBranchName, listWorktrees, removeWorktree } from "../../packages/core/src/mesh/worktree.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 
@@ -165,7 +165,7 @@ export const meshWorktreeBranchNotDetachedTests = [
       const { mkdtemp, rm, writeFile: writeFileFs } = await import("node:fs/promises");
       const os = await import("node:os");
       const path = await import("node:path");
-      const { ensureCommitAvailable } = await import("../../src/mesh/worktree.mjs");
+      const { ensureCommitAvailable } = await import("../../packages/core/src/mesh/worktree.mjs");
       const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-commit-avail-"));
       try {
         const seed = path.join(tmp, "seed");

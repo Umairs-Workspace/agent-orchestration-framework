@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readMapping, resolvePageId, recordPageId, NOTION_WORK_MAP_FILE } from "../../src/notion/mapping.mjs";
+import { readMapping, resolvePageId, recordPageId, NOTION_WORK_MAP_FILE } from "../../packages/core/src/notion/mapping.mjs";
 
 async function makeRoot() {
   return await mkdtemp(path.join(os.tmpdir(), "aof-multiboard-map-"));

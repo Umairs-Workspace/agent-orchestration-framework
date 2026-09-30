@@ -33,10 +33,10 @@ import { withBoardApp, BOARD_EPOCH, isBadgeNode, findAll, visibleTextOf, textOf 
 import { bundleSurface } from "../support/react-app-harness.mjs";
 import { withFleetApp } from "../support/fleet-app-harness.mjs";
 import { regionSummary, documentFacts, mentionsFact } from "../support/fleet-filter-readers.mjs";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const MODEL_TS = path.join(repoRoot, "ui", "src", "board", "model.ts");

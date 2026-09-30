@@ -16,10 +16,10 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readWorkspaceProjectionItems } from "../../src/global-work-store.mjs";
-import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
-import { readWorkerItems } from "../../src/cache-read.mjs";
-import { invoke } from "../../src/command-core.mjs";
+import { readWorkspaceProjectionItems } from "../../packages/core/src/global-work-store.mjs";
+import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
+import { readWorkerItems } from "../../packages/core/src/cache-read.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import {
   withCacheFixture,
@@ -187,7 +187,7 @@ export const cacheAuthorityOwnDiskReadTests = [
 
       // 43/02's own deliverable, unchanged: work.mjs's disk readers — the ones this story
       // never touched, and which 43/06 pins to disk positively — still say not-started.
-      const { findWork, listStream } = await import("../../src/work.mjs");
+      const { findWork, listStream } = await import("../../packages/core/src/work.mjs");
       assert.equal((await findWork(fx.workDir, "43/02"))[0].status, "not-started", "the control's own disk still reads not-started");
       assert.equal((await listStream(fx.workDir)).find((row) => row.ref === "43/02").status, "not-started", "…and the disk reader reports it");
 

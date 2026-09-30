@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 19 / story 00 — the derived runs/ log.
 //
 // Covers EVERY @executable scenario in tasks/02_derived-log-lifecycle.feature
-// against the REAL src/run-store.mjs in-process. Many-runs-per-item (Issue !=
+// against the REAL packages/core/src/run-store.mjs in-process. Many-runs-per-item (Issue !=
 // Task), ordered reads, absence/emptiness tolerance, file-by-file prune, and
 // wipe + regenerate. node:assert/strict.
 import assert from "node:assert/strict";
@@ -40,7 +40,7 @@ async function runFiles(item) {
 // COMPLETED records (the on-disk shape readRuns reads back), so full-record
 // assertions compare like with like.
 async function startN(startRun, item, n) {
-  const { completeRun } = await import("../../src/run-store.mjs");
+  const { completeRun } = await import("../../packages/core/src/run-store.mjs");
   const out = [];
   for (let i = 0; i < n; i += 1) {
     await startRun(item);
@@ -55,7 +55,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         await startN(startRun, item, 4);
@@ -75,7 +75,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const created = await startN(startRun, item, 3);
@@ -93,7 +93,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
         assert.equal(existsSync(path.join(item.dir, "runs")), false, "the item has no runs/ dir");
 
@@ -116,7 +116,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
         // an existing but empty runs/ dir (e.g. after every run was pruned)
         await mkdir(path.join(item.dir, "runs"), { recursive: true });
@@ -140,7 +140,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns, pruneRun } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns, pruneRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const created = await startN(startRun, item, 3);
@@ -169,7 +169,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns, pruneRun } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns, pruneRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const created = await startN(startRun, item, 3);
@@ -188,7 +188,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns, pruneRun } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns, pruneRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const [only] = await startN(startRun, item, 1);
@@ -213,7 +213,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns, pruneRun } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns, pruneRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const created = await startN(startRun, item, 2);
@@ -238,7 +238,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         await startN(startRun, item, 2);
@@ -264,7 +264,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const created = await startN(startRun, item, 2);
@@ -291,7 +291,7 @@ export const runStoreDerivedLogTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         await startN(startRun, item, 3);

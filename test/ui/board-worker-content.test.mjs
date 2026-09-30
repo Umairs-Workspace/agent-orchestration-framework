@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace, invoke } from "../../src/command-core.mjs";
+import { loadWorkspace, invoke } from "../../packages/core/src/command-core.mjs";
 // m43 / story 06 (ADR-005 rule 3) — the ONE statement of what this milestone may add to an
 // m42-era frozen envelope, and of what it may not. Three exact-key `deepEqual`s below were
 // RED against the delivered 43/06 build (found 2026-08-04, at the ADR-016 must-fix pass, and
@@ -26,7 +26,7 @@ import { loadWorkspace, invoke } from "../../src/command-core.mjs";
 // MORE than the deepEqual it replaces: every frozen key still present, the only additions the
 // three named answering-side keys, PLUS the stamp's two-value domain.
 import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.mjs";
-import { openGlobalWorkProjectionStore, upsertWorkItemContent } from "../../src/global-work-store.mjs";
+import { openGlobalWorkProjectionStore, upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
 
 const WORKSPACE_ID = "ws-board-content";
 const NOW = "2026-07-26T10:00:00.000Z";
@@ -169,7 +169,7 @@ export const boardWorkerContentTests = [
     async run() {
       await withFixture(async ({ ctx, env }) => {
         // The item row itself streams (the board lists it) — no docs, no runs yet.
-        const { upsertWorkItemContent, openGlobalWorkProjectionStore } = await import("../../src/global-work-store.mjs");
+        const { upsertWorkItemContent, openGlobalWorkProjectionStore } = await import("../../packages/core/src/global-work-store.mjs");
         const store = await openGlobalWorkProjectionStore({ env });
         try {
           store.db.prepare(
@@ -207,7 +207,7 @@ export const boardWorkerContentTests = [
   {
     name: "board-worker-content/rethink checkoutRootForWorktree inverts the worktree layout",
     async run() {
-      const { checkoutRootForWorktree } = await import("../../src/mesh/worker-execution.mjs");
+      const { checkoutRootForWorktree } = await import("../../packages/core/src/mesh/worker-execution.mjs");
       const path = (await import("node:path")).default;
       const checkout = path.resolve("/home/u/.aof/mesh/checkouts/1f164bd03ea535da");
       const worktree = path.join(checkout, ".aof", "mesh", "worktrees", "asg-1");

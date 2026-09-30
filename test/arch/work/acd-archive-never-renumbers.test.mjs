@@ -5,18 +5,18 @@
 // `aof work archive` is a verbatim MOVE: a done driver's folder goes under `archive/`, its number is
 // its identity and stays, and nothing a citation depends on is rewritten. The structural form of
 // that promise (ADR-004 §5) is what this control holds, over BOTH files the story lands — the face
-// `src/commands/archive.mjs` (the register row's subject) and the engine `src/work/archive.mjs`
+// `packages/core/src/commands/archive.mjs` (the register row's subject) and the engine `packages/core/src/work/archive.mjs`
 // (task 03's placement, ratified at refine: the seam imports its fact-writers, and a command
 // cannot be one without a cycle). Five legs:
 //
 //   (a) DIRECT IMPORTS ARE A CLOSED SET. The face's import specifiers resolve to a subset of
-//       { node:*, src/work.mjs, src/effects/stream-transitions.mjs, src/command-error.mjs }; the
-//       engine's to a subset of { node:*, src/work.mjs }. Neither names `src/work/reindex.mjs`,
-//       `src/commands/insert-shared.mjs`, `src/work-promote/promotion.mjs` or any `src/commands/*`.
-//   (b) THE TRANSITIVE PATH IS THE SEAM AND NOTHING ELSE. A breadth-first walk over `src/**` from
+//       { node:*, packages/core/src/work.mjs, packages/core/src/effects/stream-transitions.mjs, packages/core/src/command-error.mjs }; the
+//       engine's to a subset of { node:*, packages/core/src/work.mjs }. Neither names `packages/core/src/work/reindex.mjs`,
+//       `packages/core/src/commands/insert-shared.mjs`, `packages/core/src/work-promote/promotion.mjs` or any `packages/core/src/commands/*`.
+//   (b) THE TRANSITIVE PATH IS THE SEAM AND NOTHING ELSE. A breadth-first walk over `packages/core/src/**` from
 //       each file, following relative import specifiers over comment-stripped source: every path
-//       to `src/work/reindex.mjs` or `src/commands/insert-shared.mjs` passes through
-//       `src/effects/stream-transitions.mjs` — the ONE sanctioned stream-store seam, whose own
+//       to `packages/core/src/work/reindex.mjs` or `packages/core/src/commands/insert-shared.mjs` passes through
+//       `packages/core/src/effects/stream-transitions.mjs` — the ONE sanctioned stream-store seam, whose own
 //       reindex import belongs to the insert cascade (FF-12703's to hold). SOURCE-LEVEL, the
 //       acd-one-mint way, because `graphify-out/` is gitignored (m38/ADR-016) and a control that
 //       read it would be red on every clean checkout. Non-vacuous: the leg must FIND the seam path.
@@ -42,18 +42,18 @@ import { stripComments } from "../../support/source-slice.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
-import { rewriteCrossingLinks, INLINE_LINK_RE } from "../../../src/work/archive.mjs";
+import { rewriteCrossingLinks, INLINE_LINK_RE } from "../../../packages/core/src/work/archive.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const FACE = "packages/work/src/commands/archive.mjs";
-const COMPOSITION = "src/application/bindings/commands/archive.mjs";
+const COMPOSITION = "packages/core/src/application/bindings/commands/archive.mjs";
 const ENGINE = "packages/work/src/archive.mjs";
-const SEAM_COMPOSITION = "src/application/bindings/effects/stream-transitions.mjs";
+const SEAM_COMPOSITION = "packages/core/src/application/bindings/effects/stream-transitions.mjs";
 const SEAM = "packages/work/src/stream-transitions.mjs";
 const REINDEX = "packages/work/src/reindex.mjs";
 const INSERT_SHARED = "packages/work/src/insertion/scaffold.mjs";
-const PROMOTION = "src/work-promote/promotion.mjs";
+const PROMOTION = "packages/core/src/work-promote/promotion.mjs";
 
 const FACE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs", "packages/contracts/src/error.mjs"]);
 const ENGINE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs"]);
@@ -156,7 +156,7 @@ export const archTests = [
         for (const forbidden of ["reindex.mjs", "insert-shared.mjs", "promotion.mjs"]) {
           assert.ok(!dependencySpecifiers(code).some(({ specifier }) => specifier.endsWith(forbidden)), `${rel} does not import ${forbidden}`);
         }
-        assert.ok(!dependencySpecifiers(code).some(({ specifier }) => (resolveSpecifier(specifier, rel) ?? "").startsWith("src/commands/")), `${rel} imports no src/commands/* module`);
+        assert.ok(!dependencySpecifiers(code).some(({ specifier }) => (resolveSpecifier(specifier, rel) ?? "").startsWith("packages/core/src/commands/")), `${rel} imports no packages/core/src/commands/* module`);
       }
     },
   },

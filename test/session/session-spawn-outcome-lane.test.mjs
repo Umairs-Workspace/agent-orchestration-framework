@@ -32,9 +32,9 @@ import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
 import { suitePathByBasename } from "../support/registration/registration-surface.mjs";
 
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { startControlStreamServer, applyStreamFrame, applyPresenceFrame, sendDirective } from "../../src/control-stream-server.mjs";
-import { createTerminalInputRouter } from "../../src/mesh/terminal-input.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+import { startControlStreamServer, applyStreamFrame, applyPresenceFrame, sendDirective } from "../../packages/core/src/control-stream-server.mjs";
+import { createTerminalInputRouter } from "../../packages/core/src/mesh/terminal-input.mjs";
 import {
   SESSION_SPAWN_KIND,
   SESSION_SPAWN_ACK_KIND,
@@ -42,18 +42,18 @@ import {
   buildSessionSpawnAckFrame,
   buildSessionSpawnEnvelope,
   buildSessionSpawnAckEnvelope,
-} from "../../src/mesh/session-spawn-directive.mjs";
+} from "../../packages/core/src/mesh/session-spawn-directive.mjs";
 import {
   createSpawnOutcomeRegistry,
   MAX_SPAWN_OUTCOMES,
   SPAWN_OUTCOME_RETENTION_MS,
-} from "../../src/mesh/session-spawn-outcome.mjs";
-import { startSession, pingSession, endSession, readSessionRecord, assembleSessionRecord } from "../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../src/mesh/presence.mjs";
-import { buildSessionIndex } from "../../src/global-mesh-query.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerSessionSpawnHandler } from "../../src/mesh/session-spawn-handler.mjs";
-import { workerHasRepo, meshCheckoutPath } from "../../src/mesh/worker-execution.mjs";
+} from "../../packages/core/src/mesh/session-spawn-outcome.mjs";
+import { startSession, pingSession, endSession, readSessionRecord, assembleSessionRecord } from "../../packages/core/src/mesh/session.mjs";
+import { readLiveSessions } from "../../packages/core/src/mesh/presence.mjs";
+import { buildSessionIndex } from "../../packages/core/src/global-mesh-query.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { createMeshWorkerSessionSpawnHandler } from "../../packages/core/src/mesh/session-spawn-handler.mjs";
+import { workerHasRepo, meshCheckoutPath } from "../../packages/core/src/mesh/worker-execution.mjs";
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,
@@ -794,11 +794,11 @@ export const sessionSpawnOutcomeLaneTests = [
         // NODE. Read off the control-side modules: the wire hop passes it through, the index
         // reads it, and neither MINTS it.
         for (const file of ["control-stream-server.mjs", "global-mesh-query.mjs", "mesh/ui-serve.mjs"]) {
-          const source = (await readFile(path.join(repoRoot, "src", file), "utf8"))
+          const source = (await readFile(path.join(repoRoot, "packages", "core", "src", file), "utf8"))
             .replace(/\r\n/g, "\n")
             .replace(/\/\/[^\n]*/g, "")
             .replace(/\/\*[\s\S]*?\*\//g, "");
-          assert.ok(!/relaying\s*:\s*true/.test(source), `src/${file} never SETS relaying: true — the fact is stated where it is known (the worker that owns the bridge), never derived where it is read`);
+          assert.ok(!/relaying\s*:\s*true/.test(source), `packages/core/src/${file} never SETS relaying: true — the fact is stated where it is known (the worker that owns the bridge), never derived where it is read`);
         }
         startCalls.push("checked");
         pingCalls.push("checked");

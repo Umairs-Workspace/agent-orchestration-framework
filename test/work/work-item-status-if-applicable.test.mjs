@@ -1,7 +1,7 @@
 // STORY 74 — A REFUSED STATUS MOVE IS DATA, NOT A FAILURE (2026-08-20).
 //
 // THE DEFECT. The item-status door and the phase door disagreed about what a refusal is.
-// The phase door (`startedHere`, src/commands/continue.mjs) treats it as DATA — it returns
+// The phase door (`startedHere`, packages/core/src/commands/continue.mjs) treats it as DATA — it returns
 // `{ statusMoved: false, statusCode }` and the act still succeeds, under a bound its own
 // comment calls NEVER FATAL. The write door (`work:status`) throws: a
 // `status-edge-not-applicable` is a 409 and a non-zero exit. Same refusal, two answers —
@@ -22,13 +22,13 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, unlink, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { setItemStatus, rollbackItemStatus, loadWorkspace } from "../../src/work.mjs";
-import { itemStatusEdges } from "../../src/acceptance-horizon.mjs";
-import { transitionRunStart, transitionRunComplete } from "../../src/effects/run-transitions.mjs";
-import { openEffectsJournal, readEvents } from "../../src/effects/journal.mjs";
-import { invoke, getCommand } from "../../src/command-core.mjs";
-import { runCommandFace } from "../../src/spine/face.mjs";
-import { publishGlobalWorkSnapshot } from "../../src/global-work-publisher.mjs";
+import { setItemStatus, rollbackItemStatus, loadWorkspace } from "../../packages/core/src/work.mjs";
+import { itemStatusEdges } from "../../packages/core/src/acceptance-horizon.mjs";
+import { transitionRunStart, transitionRunComplete } from "../../packages/core/src/effects/run-transitions.mjs";
+import { openEffectsJournal, readEvents } from "../../packages/core/src/effects/journal.mjs";
+import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
+import { runCommandFace } from "../../packages/core/src/spine/face.mjs";
+import { publishGlobalWorkSnapshot } from "../../packages/core/src/global-work-publisher.mjs";
 
 function specDoc(status) {
   return [
@@ -338,7 +338,7 @@ export const workItemStatusIfApplicableTests = [
       // raised since m43/ADR-010 R6.4 is `item-not-local` (commands/resolve.mjs's
       // requireLocalCheckout). Same refusal, and the contract's requirement is what is
       // asserted here: it FAILS under the flag, writing nothing.
-      const { requireLocalCheckout } = await import("../../src/commands/resolve.mjs");
+      const { requireLocalCheckout } = await import("../../packages/core/src/commands/resolve.mjs");
       // The cache-answered row's shape (ADR-010/R6.4): resolvable, but `dir: null`.
       assert.throws(
         () => requireLocalCheckout({ ref: "70/00", dir: null, reportedBy: "aof-wsl" }, "70/00"),

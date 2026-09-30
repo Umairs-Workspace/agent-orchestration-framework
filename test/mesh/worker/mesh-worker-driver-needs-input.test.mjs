@@ -7,9 +7,9 @@
 // force-remove.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL } from "../../../src/mesh/worker-execution.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { meshWorktreePath, listWorktrees, removeWorktree } from "../../../src/mesh/worktree.mjs";
+import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { meshWorktreePath, listWorktrees, removeWorktree } from "../../../packages/core/src/mesh/worktree.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 

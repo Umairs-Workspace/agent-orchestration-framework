@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -31,7 +31,7 @@ import { archTests as acdLoopSuiteRegistrationTests } from "./acd-loop-suite-reg
 import { archTests as acdWatcherTaxonomyAdditiveTests } from "./acd-watcher-taxonomy-additive.test.mjs";
 // milestone 58 / story 00 — the FIFTH node kind and the timescale-layer axis: the arbiter's
 // frozen declaration vocabulary (FF-5801), and the endpoint-closed registry fixture every
-// subset copy of `src/bundle/loops/` now goes through (FF-5809). The story's behavioural
+// subset copy of `packages/core/assets/loops/` now goes through (FF-5809). The story's behavioural
 // scenarios extend the loader's own record/value suites, already registered by milestone 52's
 // story-05 block above — 58/00 adds no behavioural suite of its own.
 import { archTests as acdArbiterTaxonomyAdditiveTests } from "./acd-arbiter-taxonomy-additive.test.mjs";
@@ -108,7 +108,7 @@ import { archTests as acdLoopNarratesInFlightTests } from "./acd-loop-narrates-i
 // now: it composes the store-s verdicts and names none of them.
 import { archTests as acdDeclarationPredicateIsComposedTests } from "./acd-declaration-predicate-is-composed.test.mjs";
 // story 125 / task 01 — the PLACEMENT control on the loop document's readership: the site builder
-// (`scripts/site/build-site.mjs`) reaches `loopDocumentPath` from outside the `src/` walk story 79's
+// (`scripts/site/build-site.mjs`) reaches `loopDocumentPath` from outside the `packages/core/src/` walk story 79's
 // drift check (`acd-loop-document-current`) asserts over, spells no basename and composes nothing,
 // and nothing under `docs/` is a copy of the graph document. It lives HERE, beside the reader-set
 // control whose predicate it shares, because 124/02's FF-12405 leg 10 freezes `test/arch/bundle/`

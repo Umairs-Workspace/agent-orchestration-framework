@@ -8,9 +8,9 @@
 // recorder, an injected clock, and an injected scripted spawnRuntime (never reached on
 // a guard miss).
 import assert from "node:assert/strict";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler, workerHasRepo } from "../../../src/mesh/worker-execution.mjs";
-import { listWorktrees } from "../../../src/mesh/worktree.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler, workerHasRepo } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { listWorktrees } from "../../../packages/core/src/mesh/worktree.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

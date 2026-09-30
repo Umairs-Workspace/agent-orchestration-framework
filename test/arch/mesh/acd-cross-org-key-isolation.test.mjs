@@ -2,7 +2,7 @@
 // SECURITY T12 — architect/developer-owned)
 //
 // ARMED AT BUILD, now that the per-workspace App-identity seam exists
-// (src/mesh/clone-credential-provider.mjs, src/mesh/launcher.mjs) — a detector
+// (packages/core/src/mesh/clone-credential-provider.mjs, packages/core/src/mesh/launcher.mjs) — a detector
 // authored earlier would have scanned absent production wiring (the ADR-008 /
 // SECURITY-F5/F6 deferral precedent this milestone's own lesson pins). Arms ALL FOUR
 // ADR-011 structural invariants:

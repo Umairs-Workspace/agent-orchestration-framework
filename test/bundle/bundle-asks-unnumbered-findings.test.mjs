@@ -26,8 +26,8 @@ import {
 } from "../arch/work/acd-verification-template-shape.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SRC = path.join(repoRoot, "src");
-const bundleText = (relative) => readFileSync(path.join(SRC, "bundle", ...relative.split("/")), "utf8");
+const SRC = path.join(repoRoot, "packages", "core", "src");
+const bundleText = (relative) => readFileSync(path.join(SRC, "..", "assets", ...relative.split("/")), "utf8");
 const flat = (relative) => bundleText(relative).replace(/\s+/g, " ");
 
 const VERIFY = "commands/verify.md";
@@ -93,10 +93,10 @@ export const bundleAsksUnnumberedFindingsTests = [
   {
     name: "bundle-ask (unnumbered): exactly five of the eight declared agents report findings into a register — architect, qa, security, compliance, designer",
     run: async () => {
-      const agents = readdirSync(path.join(SRC, "bundle", "agents")).sort().map((name) => `agents/${name}`);
+      const agents = readdirSync(path.join(SRC, "..", "assets", "agents")).sort().map((name) => `agents/${name}`);
       // The floor keeps the identity below non-vacuous; the identity against the two named sets is
       // the exact check, so no count is retyped here (FF-11902).
-      assert.ok(agents.length > 0, "the sweep of src/bundle/agents found the declared agents");
+      assert.ok(agents.length > 0, "the sweep of packages/core/assets/agents found the declared agents");
       assert.deepEqual([...REVIEWING_AGENTS, ...NON_REVIEWING_AGENTS].sort(), agents, "the five reviewers + the three others are the eight");
       assert.deepEqual(
         [...REVIEWING_AGENTS].sort(),
@@ -177,7 +177,7 @@ export const bundleAsksUnnumberedFindingsTests = [
           else all.push(rel);
         }
       };
-      walk(path.join(SRC, "bundle"), "");
+      walk(path.join(SRC, "..", "assets"), "");
       const restaters = all.filter((file) => {
         if (!file.endsWith(".md")) return false;
         const text = flat(file);
@@ -231,8 +231,8 @@ export const bundleAsksUnnumberedFindingsTests = [
   {
     name: "bundle-ask (unnumbered): no module under `src/` outside `src/bundle/` changes for this rule, and no dispatcher becomes responsible for a document convention",
     run: async () => {
-      // The rule's whole surface is prose in `src/bundle/`: no module outside it names the rule, and
-      // nothing under `src/` allocates a finding id. Asserted over the real tree, not from memory.
+      // The rule's whole surface is prose in `packages/core/assets/`: no module outside it names the rule, and
+      // nothing under `packages/core/src/` allocates a finding id. Asserted over the real tree, not from memory.
       const modules = [];
       const walk = (dir) => {
         for (const name of readdirSync(dir, { withFileTypes: true })) {
@@ -246,10 +246,10 @@ export const bundleAsksUnnumberedFindingsTests = [
       assert.ok(modules.length > 100, `sanity: the walk reaches the real tree; found ${modules.length} modules`);
 
       const carriers = modules.filter((file) => readFileSync(file, "utf8").includes(ADR_LITERALS["unnumbered-findings"]));
-      assert.deepEqual(carriers, [], "the reviewer-side rule lives in the shipped prompts, and nowhere in `src/` outside `src/bundle/`");
+      assert.deepEqual(carriers, [], "the reviewer-side rule lives in the shipped prompts, and nowhere in `packages/core/src/` outside `packages/core/assets/`");
 
-      // …and no dispatcher allocates an id: nothing under `src/` writes a `F-<n>`/`FF-<n>` id into a
-      // register. (`src/declared-id.mjs` and `src/work/doctor-controls.mjs` READ the forms — they are
+      // …and no dispatcher allocates an id: nothing under `packages/core/src/` writes a `F-<n>`/`FF-<n>` id into a
+      // register. (`packages/core/src/declared-id.mjs` and `packages/core/src/work/doctor-controls.mjs` READ the forms — they are
       // the recogniser and the check, which is the opposite of an allocator.)
       const allocators = modules.filter((file) => /nextFreeId|allocateFindingId|nextFindingId/.test(readFileSync(file, "utf8")));
       assert.deepEqual(allocators, [], "no dispatcher becomes responsible for a document convention");

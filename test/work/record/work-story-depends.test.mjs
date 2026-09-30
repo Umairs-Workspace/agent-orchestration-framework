@@ -6,13 +6,13 @@
 // THE SPLIT IS THE WHOLE DESIGN, so every lane below asserts against the reader it names:
 // `validateWork` REPORTS a sibling edge that resolves to nothing; `nextWork` IGNORES the
 // same edge. Two renderings of one rule (the `next`/`item-lock` idiom,
-// src/commands/next.mjs:8-14) — and a suite that proved only one of them would be proving
+// packages/core/src/commands/next.mjs:8-14) — and a suite that proved only one of them would be proving
 // the wrong half of an amendment that deleted a locked scenario's blindness.
 //
 // Run focused and isolated (hook-enforced):
 //   AOF_GLOBAL_HOME=$(mktemp -d) node scripts/test-unit.mjs   (or the focused runner)
 import assert from "node:assert/strict";
-import { nextWork, validateWork, siblingDependencyNumber } from "../../../src/work.mjs";
+import { nextWork, validateWork, siblingDependencyNumber } from "../../../packages/core/src/work.mjs";
 import { withStream, VALIDATE_CONFIG, hasFinding } from "../../support/story-depends-fixture.mjs";
 
 const NOT_STARTED = "not-started";

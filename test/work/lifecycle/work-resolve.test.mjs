@@ -2,7 +2,7 @@
 //
 // These tests prove every @executable scenario/row in the story's two task
 // features resolve against the LOCKED engine (`findWork` / `listItems` /
-// `parseFrontmatter` in ../src/work.mjs). They author no engine code: each test
+// `parseFrontmatter` in ../packages/core/src/work.mjs). They author no engine code: each test
 // builds a temp-dir fixture whose folder layout matches the feature Background
 // EXACTLY, then asserts the resolution contract.
 //
@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listItems, findWork, parseFrontmatter } from "../../../src/work.mjs";
+import { listItems, findWork, parseFrontmatter } from "../../../packages/core/src/work.mjs";
 
 // --- fixture helpers (mirror test/work/work.test.mjs) ----------------------------
 

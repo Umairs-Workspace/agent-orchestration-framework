@@ -4,8 +4,8 @@
 //    config, NEVER the git-ignored sidecar; the sidecar entry shape gains NO routing
 //    field (board/parent/phase). The resolver DOES read the descriptor + boards."
 //
-// Source-grep of src/integrations/routing.mjs + src/notion/projection.mjs +
-// src/notion/mapping.mjs + src/commands/notion-associate.mjs, CI-able offline:
+// Source-grep of packages/core/src/integrations/routing.mjs + packages/core/src/notion/projection.mjs +
+// packages/core/src/notion/mapping.mjs + packages/core/src/commands/notion-associate.mjs, CI-able offline:
 //   (a) NO module reads a sidecar entry's routing field — no `entries[*].(board|parent
 //       |phase)` access, and no `recordPageId(... board|parent ...)` call that would
 //       persist routing onto a binding; the mapping entry shape names none of them.

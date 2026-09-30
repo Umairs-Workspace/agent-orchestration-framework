@@ -14,7 +14,7 @@
 // genuinely disjoint — so the code says `depends-edge-unwitnessed` and the word `phantom` appears
 // in none of the lane's codes, messages or exports. THE SWEEP IS SCOPED TO THE LANE MODULE, and
 // deliberately: the word already stands as prose in two comments in files this story edits
-// (`src/story-contract.mjs`, `src/work/doctor.mjs`), so a tree-wide sweep would red on arrival and
+// (`packages/core/src/story-contract.mjs`, `packages/core/src/work/doctor.mjs`), so a tree-wide sweep would red on arrival and
 // invite deleting honest prose to make a control pass. A control that teaches the next author to
 // launder their comments is worse than no control.
 //
@@ -32,16 +32,16 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildSnapshot, doctorWork, isDriver } from "../../../src/work/doctor.mjs";
+import { buildSnapshot, doctorWork, isDriver } from "../../../packages/core/src/work/doctor.mjs";
 import {
   DEPENDS_FINDING_CODES,
   classifyDependsEdges,
   dependsLane,
   resolvedDependsEdges,
-} from "../../../src/work/doctor-depends.mjs";
-import { resolveDeclaredSet } from "../../../src/story-contract.mjs";
-import { isDependNumber, loadWorkspace } from "../../../src/work.mjs";
-import { validateWork } from "../../../src/commands/validate.mjs";
+} from "../../../packages/core/src/work/doctor-depends.mjs";
+import { resolveDeclaredSet } from "../../../packages/core/src/story-contract.mjs";
+import { isDependNumber, loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { validateWork } from "../../../packages/core/src/commands/validate.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -109,9 +109,9 @@ const FIXTURES = Object.freeze([
     snapshot: snapshotOf(
       driver({ number: "00", depends: ["01"] }),
       driver({ number: "01" }),
-      story({ number: "00", files: setOf("src/b.mjs") }),
-      story({ number: "01", depends: ["00"], reads: setOf("src/b.mjs") }),
-      story({ number: "02", depends: ["00"], reads: setOf("src/z.mjs") }),
+      story({ number: "00", files: setOf("packages/core/src/b.mjs") }),
+      story({ number: "01", depends: ["00"], reads: setOf("packages/core/src/b.mjs") }),
+      story({ number: "02", depends: ["00"], reads: setOf("packages/core/src/z.mjs") }),
       story({ number: "03", depends: ["00"], reads: null }),
     ),
     considered: 4, witnessed: 1, unwitnessed: 1, type: 1, undeclared: 1,
@@ -119,9 +119,9 @@ const FIXTURES = Object.freeze([
   {
     name: "every edge evaluable",
     snapshot: snapshotOf(
-      story({ number: "00", files: setOf("src/b.mjs") }),
-      story({ number: "01", depends: ["00"], reads: setOf("src/b.mjs") }),
-      story({ number: "02", depends: ["00"], reads: setOf("src/z.mjs") }),
+      story({ number: "00", files: setOf("packages/core/src/b.mjs") }),
+      story({ number: "01", depends: ["00"], reads: setOf("packages/core/src/b.mjs") }),
+      story({ number: "02", depends: ["00"], reads: setOf("packages/core/src/z.mjs") }),
     ),
     considered: 2, witnessed: 1, unwitnessed: 1, type: 0, undeclared: 0,
   },
@@ -135,22 +135,22 @@ const FIXTURES = Object.freeze([
       driver({ number: "01" }),
       driver({ number: "02" }),
       story({ number: "00", parent: "01", files: null }),
-      story({ number: "01", parent: "01", depends: ["00"], reads: setOf("src/z.mjs") }),
+      story({ number: "01", parent: "01", depends: ["00"], reads: setOf("packages/core/src/z.mjs") }),
     ),
     considered: 3, witnessed: 0, unwitnessed: 0, type: 2, undeclared: 1,
   },
   {
     name: "every edge witnessed",
     snapshot: snapshotOf(
-      story({ number: "00", files: setOf("src/b.mjs") }),
-      story({ number: "01", depends: ["00"], reads: setOf("src/b.mjs"), files: setOf("src/c.mjs") }),
-      story({ number: "02", depends: ["01"], reads: setOf("src/c.mjs") }),
+      story({ number: "00", files: setOf("packages/core/src/b.mjs") }),
+      story({ number: "01", depends: ["00"], reads: setOf("packages/core/src/b.mjs"), files: setOf("packages/core/src/c.mjs") }),
+      story({ number: "02", depends: ["01"], reads: setOf("packages/core/src/c.mjs") }),
     ),
     considered: 2, witnessed: 2, unwitnessed: 0, type: 0, undeclared: 0,
   },
   {
     name: "no `depends:` edge in the stream",
-    snapshot: snapshotOf(driver({ number: "00" }), story({ number: "00", reads: setOf("src/a.mjs"), files: setOf("src/b.mjs") })),
+    snapshot: snapshotOf(driver({ number: "00" }), story({ number: "00", reads: setOf("packages/core/src/a.mjs"), files: setOf("packages/core/src/b.mjs") })),
     considered: 0, witnessed: 0, unwitnessed: 0, type: 0, undeclared: 0,
   },
 ]);
@@ -192,7 +192,7 @@ const verdictFaultsIn = (text, where) =>
 // ── task 02's outline: one real edge per class the walk can reach ─────────────────────────────
 const REAL_EDGES = Object.freeze([
   { from: "119/03", to: "119/00", cls: "witnessed", why: "an entry appears verbatim in both sets" },
-  { from: "119/03", to: "119/02", cls: "witnessed", why: "`src/commands/test.mjs` sits beneath 119/02's authored `src/commands/`" },
+  { from: "119/03", to: "119/02", cls: "witnessed", why: "`packages/core/src/commands/test.mjs` sits beneath 119/02's authored `packages/core/src/commands/`" },
   { from: "96/03", to: "96/01", cls: "unwitnessed", why: "both sets present, nothing covered — and a deliberate edge nonetheless" },
   { from: "61/05", to: "61/04", cls: "unwitnessed", why: "both sets present, nothing covered" },
   { from: "01", to: "00", cls: "type", why: "both endpoints are milestones, which carry no contract fields" },
@@ -230,12 +230,12 @@ const frontmatterKeys = (text) => {
 };
 
 async function templateFiles() {
-  const base = path.join(repoRoot, "src", "bundle", "templates");
+  const base = path.join(repoRoot, "packages", "core", "assets", "templates");
   const found = [];
   for (const entry of await readdir(base, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     for (const leaf of await readdir(path.join(base, entry.name))) {
-      found.push(path.join("src", "bundle", "templates", entry.name, leaf));
+      found.push(path.join("packages", "core", "assets", "templates", entry.name, leaf));
     }
   }
   return found;
@@ -258,7 +258,7 @@ export const archTests = [
         assert.deepEqual(verdictFaultsIn(entry.code, `code ${entry.code}`), []);
         assert.deepEqual(verdictFaultsIn(entry.message, `the ${entry.code} message`), [], entry.message);
       }
-      const module = await import("../../../src/work/doctor-depends.mjs");
+      const module = await import("../../../packages/core/src/work/doctor-depends.mjs");
       for (const name of Object.keys(module)) assert.deepEqual(verdictFaultsIn(name, `export ${name}`), []);
 
       // …AND THE LANE MODULE ITSELF, comment-stripped and SCOPED TO THIS ONE FILE. Tree-wide the
@@ -424,7 +424,7 @@ export const archTests = [
       // live on, so its roster is frozen: a new authored field would arrive here first.
       const templates = await templateFiles();
       assert.ok(templates.length >= 10, `the template sweep is non-vacuous (${templates.length} files)`);
-      const storyTemplate = path.join("src", "bundle", "templates", "story", "STORY.md");
+      const storyTemplate = path.join("packages", "core", "assets", "templates", "story", "STORY.md");
       assert.ok(templates.includes(storyTemplate), "the story template is in the sweep");
       assert.deepEqual(
         frontmatterKeys(await readFile(path.join(repoRoot, storyTemplate), "utf8")).sort(),

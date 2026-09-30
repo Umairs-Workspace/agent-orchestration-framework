@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dispatchDirectiveOverTargets, buildDirectiveFrame } from "../../../src/control-stream-server.mjs";
+import { dispatchDirectiveOverTargets, buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

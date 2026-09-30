@@ -13,13 +13,13 @@ import {
   extractFitnessRegister,
   normalizeAdrDeclaration,
   PHASE_BRIEF_CEILING_CHARS,
-} from "../../src/phase-brief.mjs";
-import { compileBriefForItem } from "../../src/phase-brief-read.mjs";
-import { budgetGroup } from "../../src/work/doctor-budget.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
-import { validateWork } from "../../src/commands/validate.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
+} from "../../packages/core/src/phase-brief.mjs";
+import { compileBriefForItem } from "../../packages/core/src/phase-brief-read.mjs";
+import { budgetGroup } from "../../packages/core/src/work/doctor-budget.mjs";
+import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
+import { validateWork } from "../../packages/core/src/commands/validate.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 import { seedGreenRegressionGate } from "../support/regression-gate-fixture.mjs";
 
 const ARCHITECTURE = [

@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -44,7 +44,7 @@ import { hookWiringTests } from "./work-audit-hook-wiring.test.mjs";
 // reports absent each yield zero findings plus a limit naming the reason, and the floor is taken over
 // SOURCE ON DISK so an optional tool's absence cannot red a build at error. Both false-positive
 // shapes are DERIVED every run — a zero-export module is a program, and a resolvable relative
-// dynamic-import literal swept over `src/**` is a reference, resolved against its holder and never by
+// dynamic-import literal swept over `packages/core/src/**` is a reference, resolved against its holder and never by
 // basename, which would suppress the repository's only genuine finding. All three @executable task
 // features plus FF-7704.
 import { seamLivenessTests } from "./work-audit-seam-liveness.test.mjs";

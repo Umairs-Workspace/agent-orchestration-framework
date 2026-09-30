@@ -3,7 +3,7 @@
 // WebView2 bootstrapper at $HOME/.aof/bin idempotently, refusing failures calmly.
 //
 // Exercises the core placement logic directly (installDesktopApp,
-// src/commands/mesh-desktop.mjs) over a FIXTURE install root with an injected
+// packages/core/src/commands/mesh-desktop.mjs) over a FIXTURE install root with an injected
 // $HOME (test/support/mesh-desktop-fixture.mjs) — never the real machine, never a
 // live signed artifact (the story's Build notes / RESOLVED block).
 import assert from "node:assert/strict";
@@ -13,15 +13,15 @@ import {
   installDesktopApp,
   DESKTOP_APP_EXE,
   WEBVIEW2_BOOTSTRAPPER,
-} from "../../../src/commands/mesh/desktop.mjs";
+} from "../../../packages/core/src/commands/mesh/desktop.mjs";
 // The preflight is its own module since 126/06’s post-hoc review; the verbs report it.
-import { runPreflight, PREFLIGHT_CHECKS } from "../../../src/commands/mesh/desktop-preflight.mjs";
+import { runPreflight, PREFLIGHT_CHECKS } from "../../../packages/core/src/commands/mesh/desktop-preflight.mjs";
 // m42 wave (d) leg d1 (wave-3 tail) — the CLI face is the registered
 // mesh:desktop-install command through the ONE generic face (the retired
 // meshDesktopCommand nested face's tests now drive runCommandFace with the
 // verb's declared flags — full face fidelity, no spawn).
-import { getCommand, invoke } from "../../../src/command-core.mjs";
-import { runCommandFace } from "../../../src/spine/face.mjs";
+import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
+import { runCommandFace } from "../../../packages/core/src/spine/face.mjs";
 import { withMeshDesktopFixture, seedInstalledApp } from "../../support/mesh-desktop-fixture.mjs";
 
 // Capture console.log/console.error output around a call (the CLI-face --json

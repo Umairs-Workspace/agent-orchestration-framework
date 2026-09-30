@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourceRoot = path.join(root, "src");
+const sourceRoot = path.join(root, "packages", "core", "src");
 const commandPath = path.join(root, "packages/work-loop/src/commands/dispatch.mjs");
 const policyPath = path.join(root, "packages/work-loop/src/dispatch.mjs");
 
@@ -130,19 +130,19 @@ export const archTests = [
       // The persistence leg is contextual, not a keyword grep: persistence without lane-registry
       // semantics, or lane/cache vocabulary without a persistence sink, remains clean.
       assert.deepEqual(persistedLaneOccupancyProblems([
-        { file: "src/in-memory.mjs", source: "const occupiedLaneCount = lanes.filter(Boolean).length;" },
-        { file: "src/settings.mjs", source: 'await writeFile(configPath, JSON.stringify({ theme: "dark" }));' },
-        { file: "src/users.mjs", source: "await writeFile(userRegistryPath, JSON.stringify(users));" },
-        { file: "src/report.mjs", source: "await writeFile(dispatchLaneReportPath, JSON.stringify(lanes));" },
-        { file: "src/ephemeral.mjs", source: "const dispatchLaneCache = new Map();" },
+        { file: "packages/core/src/in-memory.mjs", source: "const occupiedLaneCount = lanes.filter(Boolean).length;" },
+        { file: "packages/core/src/settings.mjs", source: 'await writeFile(configPath, JSON.stringify({ theme: "dark" }));' },
+        { file: "packages/core/src/users.mjs", source: "await writeFile(userRegistryPath, JSON.stringify(users));" },
+        { file: "packages/core/src/report.mjs", source: "await writeFile(dispatchLaneReportPath, JSON.stringify(lanes));" },
+        { file: "packages/core/src/ephemeral.mjs", source: "const dispatchLaneCache = new Map();" },
       ]), []);
       const planted = persistedLaneOccupancyProblems([
-        { file: "src/planted-lane-registry.mjs", source: "await writeFile(dispatchLaneRegistryPath, JSON.stringify(lanes));" },
-        { file: "src/planted-lane-cache.mjs", source: "await writeText(dispatchLaneCachePath, JSON.stringify(lanes));" },
+        { file: "packages/core/src/planted-lane-registry.mjs", source: "await writeFile(dispatchLaneRegistryPath, JSON.stringify(lanes));" },
+        { file: "packages/core/src/planted-lane-cache.mjs", source: "await writeText(dispatchLaneCachePath, JSON.stringify(lanes));" },
       ]);
       assert.equal(planted.length, 2, `the planted persisted lane registry and cache are each reported once\n${planted.join("\n")}`);
-      assert.ok(planted.some((problem) => problem.includes("src/planted-lane-registry.mjs:1") && problem.includes("file-backed registry/cache/counter")), planted.join("\n"));
-      assert.ok(planted.some((problem) => problem.includes("src/planted-lane-cache.mjs:1") && problem.includes("file-backed registry/cache/counter")), planted.join("\n"));
+      assert.ok(planted.some((problem) => problem.includes("packages/core/src/planted-lane-registry.mjs:1") && problem.includes("file-backed registry/cache/counter")), planted.join("\n"));
+      assert.ok(planted.some((problem) => problem.includes("packages/core/src/planted-lane-cache.mjs:1") && problem.includes("file-backed registry/cache/counter")), planted.join("\n"));
     },
   },
 ];

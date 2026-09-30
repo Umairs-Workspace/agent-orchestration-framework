@@ -18,7 +18,7 @@
 //
 // PRODUCER-FED where it matters (the milestone's earned lesson, ADR-008): the
 // envelope-shape lanes drive the REAL createTerminalMirror with a REAL subscriber open,
-// and the relay lane drives the REAL, unmodified src/mesh/relay.mjs `serveRelay()` broker
+// and the relay lane drives the REAL, unmodified packages/core/src/mesh/relay.mjs `serveRelay()` broker
 // over a REAL in-process ws socket via the REAL production
 // `createTerminalRelayPushTransport` — the SAME in-process-real-relay harness
 // test/mesh/relay/mesh-relay-broker-fanout.test.mjs and test/mesh/relay/mesh-relay-envelope-resilience.test.mjs
@@ -29,8 +29,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { WebSocket } from "ws";
-import { serveRelay } from "../../../src/mesh/relay.mjs";
-import * as bridge from "../../../src/mesh/terminal-relay-bridge.mjs";
+import { serveRelay } from "../../../packages/core/src/mesh/relay.mjs";
+import * as bridge from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
 import {
   TERMINAL_FRAME_KIND,
   TERMINAL_INPUT_KIND,
@@ -40,10 +40,10 @@ import {
   buildTerminalInputEnvelope,
   buildTerminalResumeEnvelope,
   createTerminalRelayPushTransport,
-} from "../../../src/mesh/terminal-relay-bridge.mjs";
-import { createTerminalMirror } from "../../../src/mesh/terminal-mirror.mjs";
+} from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+import { createTerminalMirror } from "../../../packages/core/src/mesh/terminal-mirror.mjs";
 
-const BRIDGE_URL = new URL("../../../src/mesh/terminal-relay-bridge.mjs", import.meta.url).href;
+const BRIDGE_URL = new URL("../../../packages/core/src/mesh/terminal-relay-bridge.mjs", import.meta.url).href;
 
 // --- the REAL in-process relay harness (mirrors test/mesh-relay-broker-fanout /
 // mesh-relay-envelope-resilience's own connect()/waitFor() shape) ---
@@ -108,7 +108,7 @@ const EXPECTED_EXPORTS = [
 ];
 
 // THE WIRE, PINNED BEFORE THE DELETION. Each string was captured by importing
-// `git show HEAD:src/mesh/terminal-relay-bridge.mjs` (i.e. the module WITH
+// `git show HEAD:packages/core/src/mesh/terminal-relay-bridge.mjs` (i.e. the module WITH
 // `wireTerminalBridge` still in it) and JSON.stringify-ing the builder's output for the
 // fixed inputs below. "Byte-identical, not merely equivalent" is the point: a deepEqual
 // would forgive a key-order change that a JSON-comparing consumer would not.
@@ -203,14 +203,14 @@ const BUILDER_ROWS = [
 // measurement (the direct-import set under src/), not by belief — and not one of them
 // takes the deleted export.
 const DEPENDENT_ROWS = [
-  { module: "packages/mesh/src/worker-stream-client.mjs", adapter: "src/application/bindings/worker-stream-client.mjs", factory: "createWorkerStreamServices", bindings: ["buildTerminalFrameEnvelope", "buildTerminalEndEnvelope", "TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
-  { module: "packages/mesh/src/ui-serve.mjs", adapter: "src/application/bindings/mesh/ui-serve.mjs", factory: "createMeshUiServer", bindings: ["buildTerminalInputEnvelope"] },
-  { module: "packages/mesh/src/terminal-mirror.mjs", adapter: "src/application/bindings/mesh/terminal-mirror.mjs", factory: "createTerminalMirroring", bindings: ["TERMINAL_FRAME_KIND", "loopbackRelayUrl"] },
-  { module: "packages/mesh/src/terminal-input.mjs", adapter: "src/application/bindings/mesh/terminal-input.mjs", factory: "createTerminalInput", bindings: ["TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
-  { module: "packages/mesh/src/control-stream-server.mjs", adapter: "src/application/bindings/control-stream-server.mjs", factory: "createControlStreamServices", bindings: ["TERMINAL_FRAME_KIND"] },
-  { module: "packages/mesh/src/launcher.mjs", adapter: "src/application/bindings/mesh/launcher.mjs", factory: "createMeshLauncher", bindings: ["createTerminalRelayPushTransport"] },
-  { module: "packages/mesh/src/commands/terminal-resume.mjs", adapter: "src/application/bindings/commands/mesh/terminal-resume.mjs", factory: "createMeshTerminalResumeCommands", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
-  { module: "packages/mesh/src/commands/ui.mjs", adapter: "src/application/bindings/commands/mesh/ui.mjs", factory: "createMeshUiCommands", bindings: ["createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/worker-stream-client.mjs", adapter: "packages/core/src/application/bindings/worker-stream-client.mjs", factory: "createWorkerStreamServices", bindings: ["buildTerminalFrameEnvelope", "buildTerminalEndEnvelope", "TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
+  { module: "packages/mesh/src/ui-serve.mjs", adapter: "packages/core/src/application/bindings/mesh/ui-serve.mjs", factory: "createMeshUiServer", bindings: ["buildTerminalInputEnvelope"] },
+  { module: "packages/mesh/src/terminal-mirror.mjs", adapter: "packages/core/src/application/bindings/mesh/terminal-mirror.mjs", factory: "createTerminalMirroring", bindings: ["TERMINAL_FRAME_KIND", "loopbackRelayUrl"] },
+  { module: "packages/mesh/src/terminal-input.mjs", adapter: "packages/core/src/application/bindings/mesh/terminal-input.mjs", factory: "createTerminalInput", bindings: ["TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
+  { module: "packages/mesh/src/control-stream-server.mjs", adapter: "packages/core/src/application/bindings/control-stream-server.mjs", factory: "createControlStreamServices", bindings: ["TERMINAL_FRAME_KIND"] },
+  { module: "packages/mesh/src/launcher.mjs", adapter: "packages/core/src/application/bindings/mesh/launcher.mjs", factory: "createMeshLauncher", bindings: ["createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/commands/terminal-resume.mjs", adapter: "packages/core/src/application/bindings/commands/mesh/terminal-resume.mjs", factory: "createMeshTerminalResumeCommands", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/commands/ui.mjs", adapter: "packages/core/src/application/bindings/commands/mesh/ui.mjs", factory: "createMeshUiCommands", bindings: ["createTerminalRelayPushTransport"] },
 ];
 
 // A dependent's own URL, DERIVED from the repo-relative `module` each row already carries. The row
@@ -312,7 +312,7 @@ export const meshTerminalRelayBridgeTests = [
       const supplied = dependencySpecifiers(composition).find(edge => edge.parameter === "meshTerminalRelayBridgeServices");
       assert.ok(supplied, "core supplies the bridge instance");
       assert.equal(new URL(supplied.specifier, compositionUrl).href,
-        dependentUrl({ module: "src/application/bindings/mesh/terminal-relay-bridge.mjs" }).href,
+        dependentUrl({ module: "packages/core/src/application/bindings/mesh/terminal-relay-bridge.mjs" }).href,
         "the supplied instance comes from the bridge's one constructor");
       {
         assert.equal(typeof loaded[row.factory], "function", "the public package factory links");
@@ -454,7 +454,7 @@ function resumeAnswerEnvelopeTests() {
     {
       name: "131/04 task03 — the mesh leg is one additive key on a closed schema, and imports no ask module",
       async run() {
-        const { meshTerminalResumeCommand } = await import("../../../src/commands/mesh/terminal-resume.mjs");
+        const { meshTerminalResumeCommand } = await import("../../../packages/core/src/commands/mesh/terminal-resume.mjs");
         const { input, cli } = meshTerminalResumeCommand;
         assert.deepEqual(Object.keys(input.properties), ["session", "node", "answer"]);
         assert.equal(input.additionalProperties, false, "the schema refuses any other key");
@@ -464,7 +464,7 @@ function resumeAnswerEnvelopeTests() {
         assert.equal(input.properties.answer.additionalProperties, false);
         assert.ok(!Object.hasOwn(cli.spec.flags, "answer"), "the CLI face has no answer flag");
         assert.deepEqual(cli.argv(["sess-89d1"], {}), { session: "sess-89d1" });
-        for (const rel of ["packages/mesh/src/terminal-input.mjs", "packages/mesh/src/terminal-relay-bridge.mjs", "packages/mesh/src/worker-execution.mjs", "src/mesh/park-resume.mjs"]) {
+        for (const rel of ["packages/mesh/src/terminal-input.mjs", "packages/mesh/src/terminal-relay-bridge.mjs", "packages/mesh/src/worker-execution.mjs", "packages/core/src/mesh/park-resume.mjs"]) {
           const source = await readFile(new URL(`../../../${rel}`, import.meta.url), "utf8");
           assert.ok(!/from\s+["'][^"']*loop\/ask(?:-request)?\.mjs["']/u.test(source), `${rel} imports no ask module`);
         }

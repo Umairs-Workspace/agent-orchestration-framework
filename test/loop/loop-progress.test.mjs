@@ -15,15 +15,15 @@ import {
   progressSample,
   readProgressSamples,
   sampleWorktreeProgress,
-} from "../../src/loop-progress.mjs";
-import { readRuns, startRun } from "../../src/run-store.mjs";
+} from "../../packages/core/src/loop-progress.mjs";
+import { readRuns, startRun } from "../../packages/core/src/run-store.mjs";
 
 const AT = "2026-08-23T10:00:00.000Z";
 
 const sample = (overrides = {}) => progressSample({
   at: AT,
   runId: "run-1",
-  filesTouched: ["src/a.mjs"],
+  filesTouched: ["packages/core/src/a.mjs"],
   linesChanged: 4,
   commitsMade: 0,
   failingScenarios: 3,
@@ -42,10 +42,10 @@ export const loopProgressTests = [
   {
     name: "69/03 task00 a sample carries only deterministic measures and no progress judgement",
     run() {
-      assert.deepEqual(sample({ filesTouched: ["src/b.mjs", "src/a.mjs", "src/a.mjs"] }), {
+      assert.deepEqual(sample({ filesTouched: ["packages/core/src/b.mjs", "packages/core/src/a.mjs", "packages/core/src/a.mjs"] }), {
         at: AT,
         runId: "run-1",
-        filesTouched: ["src/a.mjs", "src/b.mjs"],
+        filesTouched: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"],
         linesChanged: 4,
         commitsMade: 0,
         failingScenarios: 3,
@@ -71,7 +71,7 @@ export const loopProgressTests = [
         },
       });
       assert.deepEqual(sampled, sample({
-        filesTouched: ["src/a.mjs", "test/new.test.mjs"],
+        filesTouched: ["packages/core/src/a.mjs", "test/new.test.mjs"],
         linesChanged: 6,
         commitsMade: 2,
       }));
@@ -112,7 +112,7 @@ export const loopProgressTests = [
   ...[
     ["the failing-scenario count fell", { failingScenarios: 2 }, true],
     ["a commit was made", { commitsMade: 1 }, true],
-    ["new files were touched", { filesTouched: ["src/a.mjs", "src/b.mjs"] }, true],
+    ["new files were touched", { filesTouched: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"] }, true],
     ["the line count changed", { linesChanged: 5 }, true],
     ["the failing-scenario count rose", { failingScenarios: 4 }, true],
     ["nothing changed", {}, false],
@@ -132,7 +132,7 @@ export const loopProgressTests = [
       assert.equal(result.action, "reset");
       assert.equal(result.resets, 1);
       assert.equal(result.summary.sampleCount, 3);
-      assert.deepEqual(result.summary.filesTouched, ["src/a.mjs"]);
+      assert.deepEqual(result.summary.filesTouched, ["packages/core/src/a.mjs"]);
     },
   },
   {
@@ -199,7 +199,7 @@ export const loopProgressTests = [
   {
     name: "69/03 task02 the framework build loop points at the progress authority, not a numeric round count",
     run: async () => {
-      const record = await readFile(path.join(process.cwd(), "src", "bundle", "loops", "build-to-green.md"), "utf8");
+      const record = await readFile(path.join(process.cwd(), "packages", "core", "assets", "loops", "build-to-green.md"), "utf8");
       assert.match(record, /ceiling:\s*\[config:work\.loop\.buildNoProgressRounds\]/u);
       assert.doesNotMatch(record, /ceiling:\s*\[?\d/u);
     },

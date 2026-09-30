@@ -11,8 +11,8 @@ import {
   NOTION_DESCRIPTOR,
   descriptorFor,
   planProvision,
-} from "../../src/tool-store.mjs";
-import { toolVersionDir, toolStoreRoot } from "../../src/paths.mjs";
+} from "../../packages/core/src/tool-store.mjs";
+import { toolVersionDir, toolStoreRoot } from "../../packages/core/src/paths.mjs";
 
 export const notionDescriptorTests = [
   {

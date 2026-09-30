@@ -22,7 +22,7 @@
 // from a REAL `serveBoard` on an ephemeral port, or off a real `aof work ui` process's
 // stdout and exit code (the launch-and-read shape test/ui/work-ui-verb-rename.test.mjs
 // already uses). The one production module imported for a NUMBER is
-// `src/mesh/ui-serve.mjs`, and only to read `DEFAULT_MESH_UI_PORT` for comparison — the
+// `packages/core/src/mesh/ui-serve.mjs`, and only to read `DEFAULT_MESH_UI_PORT` for comparison — the
 // TEST may import both faces, which is precisely what the production modules may not do,
 // and comparing against the constant's ONE home is what stops the number being re-typed
 // into a fifth (TECH_DEBT 25).
@@ -41,11 +41,11 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveBoard, boardUiDist, boardUiProbe } from "../../src/board-serve.mjs";
-import { serveMeshUi, meshUiDist, DEFAULT_MESH_UI_PORT } from "../../src/mesh/ui-serve.mjs";
+import { serveBoard, boardUiDist, boardUiProbe } from "../../packages/core/src/board-serve.mjs";
+import { serveMeshUi, meshUiDist, DEFAULT_MESH_UI_PORT } from "../../packages/core/src/mesh/ui-serve.mjs";
 // The COMMAND layer's own resolver — the subject of this task, imported rather than
 // re-implemented so a shape row exercises the production decision, not a copy of it.
-import { resolveStandaloneFleetOrigin } from "../../src/commands/work-ui.mjs";
+import { resolveStandaloneFleetOrigin } from "../../packages/core/src/commands/work-ui.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
@@ -257,7 +257,7 @@ export const workUiFleetOriginStandaloneTests = [
         assert.equal(
           fact.fleetOrigin,
           DEFAULT_ORIGIN,
-          "`fleetOrigin` is http://127.0.0.1: followed by DEFAULT_MESH_UI_PORT exactly as src/mesh/ui-serve.mjs exports it — compared to its one home, never re-typed"
+          "`fleetOrigin` is http://127.0.0.1: followed by DEFAULT_MESH_UI_PORT exactly as packages/core/src/mesh/ui-serve.mjs exports it — compared to its one home, never re-typed"
         );
         assert.equal(fact.source, "default", "`source` is \"default\" — the board RESOLVED this rather than being told it");
         assert.notEqual(fact.fleetOrigin, null, "the value is NOT null: a standalone board never leaves a terminal surface with nothing to build a URL from");
@@ -541,7 +541,7 @@ export const workUiFleetOriginStandaloneTests = [
         assert.equal(
           resolvedPort,
           String(DEFAULT_MESH_UI_PORT),
-          "new URL(fleetOrigin).port equals DEFAULT_MESH_UI_PORT imported from src/mesh/ui-serve.mjs"
+          "new URL(fleetOrigin).port equals DEFAULT_MESH_UI_PORT imported from packages/core/src/mesh/ui-serve.mjs"
         );
         assert.notEqual(resolvedPort, new URL(boardUrl).port, "…it is not the board's own listening port");
         assert.notEqual(resolvedPort, "4180", "…it is not 4180 — boardUiProbe's default and work:ui's own");

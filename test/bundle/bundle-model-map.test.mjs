@@ -2,12 +2,12 @@
 //
 // Traceability for tasks/01_bundle-ships-default-model-map.feature. Every
 // Scenario and every Scenario-Outline Examples row is asserted against the REAL
-// loader + renderer (loadBundle + renderBundleOutputs from src/work/bundle.mjs)
+// loader + renderer (loadBundle + renderBundleOutputs from packages/core/src/work/bundle.mjs)
 // — no render logic re-implemented here. The Thens read the RENDERED Claude Code
 // agent file's `model` frontmatter (the copy the runtime honours), NOT the
 // bundle source, matching the feature's "distinct surfaces" note.
 import assert from "node:assert/strict";
-import { loadBundle, renderBundleOutputs } from "../../src/work/bundle.mjs";
+import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 
 // The default model map (STORY.md "Locked intent", REVISED): opus for every role
 // that decides "what's correct" (author / gate / review) AND for the developer —

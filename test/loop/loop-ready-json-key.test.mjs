@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { getCommand, invoke } from "../../src/command-core.mjs";
+import { getCommand, invoke } from "../../packages/core/src/command-core.mjs";
 import {
   invokeDoctor,
   parseJson,

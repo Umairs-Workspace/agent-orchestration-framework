@@ -22,23 +22,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
-import { AOF_GITIGNORE_ENTRIES, ensureAofGitignore } from "../../src/aof-gitignore.mjs";
+import { AOF_GITIGNORE_ENTRIES, ensureAofGitignore } from "../../packages/core/src/aof-gitignore.mjs";
 import {
   EFFECTS,
   EVENT_NOT_DECLARED,
   applicableReactors,
   effectsFor,
   knownEvents,
-} from "../../src/effects/table.mjs";
-import { openEffectsJournal, appendEvent, markStep, pendingSteps, readEventSteps, readEvents } from "../../src/effects/journal.mjs";
-import { drainEffects } from "../../src/effects/dispatch.mjs";
+} from "../../packages/core/src/effects/table.mjs";
+import { openEffectsJournal, appendEvent, markStep, pendingSteps, readEventSteps, readEvents } from "../../packages/core/src/effects/journal.mjs";
+import { drainEffects } from "../../packages/core/src/effects/dispatch.mjs";
 import {
   HARNESS_DRAIN_NOT_OPTIONAL,
   HARNESS_RECORD_NOT_STAMPED,
   HARNESS_RULED,
   STAMP_EVIDENCE,
   transitionHarnessRuled,
-} from "../../src/effects/harness-transitions.mjs";
+} from "../../packages/core/src/effects/harness-transitions.mjs";
 import {
   LEDGER_LINE_CONFLICT,
   LEDGER_LINE_KEY,
@@ -48,15 +48,15 @@ import {
   ledgerPath,
   readLedger,
   setKnobValue,
-} from "../../src/work-acceptor/store.mjs";
-import { LEDGER_RELPATH, criterionDigest, defaultCriterion } from "../../src/work-acceptor/criterion.mjs";
-import { PAIR_OUTCOMES, deriveRule } from "../../src/work-acceptor/rule.mjs";
+} from "../../packages/core/src/work-acceptor/store.mjs";
+import { LEDGER_RELPATH, criterionDigest, defaultCriterion } from "../../packages/core/src/work-acceptor/criterion.mjs";
+import { PAIR_OUTCOMES, deriveRule } from "../../packages/core/src/work-acceptor/rule.mjs";
 
 // One derivation of the repo root, not one per leg. Two legs below each spelled their own
 // hand-rolled URL-to-path conversion, and when 119/03 moved this suite into test/grade/ both went
 // stale at once — the same hop-count they had both written down by hand.
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
-import { RULING_INCOMPLETE, RULING_KEYS, accrue, attained } from "../../src/work-acceptor/ledger.mjs";
+import { RULING_INCOMPLETE, RULING_KEYS, accrue, attained } from "../../packages/core/src/work-acceptor/ledger.mjs";
 
 const shipped = defaultCriterion();
 const rule = deriveRule(shipped);
@@ -68,7 +68,7 @@ const T = PAIR_OUTCOMES.TIE;
 
 // The knob a ruling in these fixtures moves. Spelled in the TEST, never in an acceptor
 // module: the tunable set is the registry's `parameter-tuning:` edge, and a key held in
-// `src/work-acceptor/` would be a second home for it (FF-6110).
+// `packages/core/src/work-acceptor/` would be a second home for it (FF-6110).
 const KNOB = "work.loop.reviewRounds";
 
 // A CO-AUTHORED configuration: keys an operator chose, in an order they chose, with

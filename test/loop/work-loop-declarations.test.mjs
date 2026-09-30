@@ -17,13 +17,13 @@ import {
   decideSupervisedDeclarations,
   readLoopDeclaration,
 } from "../../packages/work-loop/src/engine.mjs";
-import { isRunning, isStale, retryReadiness } from "../../src/run-store.mjs";
-import { meshStatusCommand } from "../../src/commands/mesh/identity.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { stopLoop } from "../../src/loop/stop.mjs";
+import { isRunning, isStale, retryReadiness } from "../../packages/core/src/run-store.mjs";
+import { meshStatusCommand } from "../../packages/core/src/commands/mesh/identity.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+import { stopLoop } from "../../packages/core/src/loop/stop.mjs";
 import {
   clearStopRequest,
   loopResumesDir,
@@ -31,8 +31,8 @@ import {
   markStopHonoured,
   requestLoopStop,
   stopRequestPath,
-} from "../../src/loop/stop-request.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+} from "../../packages/core/src/loop/stop-request.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
@@ -589,7 +589,7 @@ export const workLoopDeclarationsTests = [
     name: "130/04 task03 — the producer spells no path: readStopRequest and loopStopsDir come from the one module",
     async run() {
       const here = path.dirname(fileURLToPath(import.meta.url));
-      const source = await readFile(path.join(here, "..", "..", "src/application/bindings/mesh/declarations.mjs"), "utf8");
+      const source = await readFile(path.join(here, "..", "..", "packages/core/src/application/bindings/mesh/declarations.mjs"), "utf8");
       const stripped = stripComments(source);
       assert.ok(dependencySpecifiers(source).some(edge => edge.parameter === "loopStopRequestServices" && edge.specifier === "../loop/stop-request.mjs"), "the supplied request service has one configured home");
       assert.match(stripped, /const \{[^}]*\breadStopRequest\b[^}]*\} = loopStopRequestServices/, "receives readStopRequest from the one module");

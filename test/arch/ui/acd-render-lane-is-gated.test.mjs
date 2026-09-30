@@ -24,9 +24,9 @@ const root = fileURLToPath(new URL("../../../", import.meta.url));
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
 const has = (rel, needle) => read(rel).toLowerCase().includes(needle.toLowerCase());
 
-const VERIFY = "src/bundle/commands/verify.md";
-const CONTINUE = "src/bundle/commands/continue.md";
-const QA = "src/bundle/agents/aof-qa.md";
+const VERIFY = "packages/core/assets/commands/verify.md";
+const CONTINUE = "packages/core/assets/commands/continue.md";
+const QA = "packages/core/assets/agents/aof-qa.md";
 const COMMANDS = [VERIFY, CONTINUE];
 
 // The three milestone-07 controls this milestone supersedes (ADR-009 §5 — the count is THREE; the
@@ -37,9 +37,9 @@ const SUPERSEDED = [
   "test/arch/ui/acd-design-role-split.test.mjs",
 ];
 
-// Every file under src/bundle/, walked rather than listed: a new asset joins the sweep with no edit
+// Every file under packages/core/assets/, walked rather than listed: a new asset joins the sweep with no edit
 // here, which is the only way leg (a) stays true of the BUNDLE rather than of a snapshot of it.
-function bundleFiles(dir = path.join(root, "src", "bundle"), acc = []) {
+function bundleFiles(dir = path.join(root, "packages", "core", "assets"), acc = []) {
   for (const entry of readdirSync(dir)) {
     const full = path.join(dir, entry);
     if (statSync(full).isDirectory()) bundleFiles(full, acc);
@@ -70,7 +70,7 @@ export const archTests = [
     name: "arch/FF-7102 (a): no bundled asset names `npx playwright`, and the render invocation carries the breakpoint width — while QA's own Playwright lane survives",
     run: async () => {
       const offenders = bundleFiles().filter((rel) => read(rel).toLowerCase().includes("npx playwright"));
-      assert.deepEqual(offenders, [], "no file under src/bundle/ names the superseded `npx playwright` render");
+      assert.deepEqual(offenders, [], "no file under packages/core/assets/ names the superseded `npx playwright` render");
 
       // The render invocation the commands DO name, including the token ADR-009 §C added: without
       // `--window-size` a render silently drops 07's 390/768/1280 breakpoints, which would be a real

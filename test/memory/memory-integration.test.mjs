@@ -13,8 +13,8 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
-import { memoryIndexPath } from "../../src/memory/local-indexing.mjs";
+import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
+import { memoryIndexPath } from "../../packages/core/src/memory/local-indexing.mjs";
 
 const REPO_ROOT = path.resolve(new URL("../..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
 const WORK_DIR = path.join(REPO_ROOT, "wiki", "work");

@@ -17,9 +17,9 @@ import {
   parseArchitecture,
   parseRetrospective,
   parseAof,
-} from "../../../src/memory/local-indexing.mjs";
-import { GRAPHIFY_INDEX_VERSION } from "../../../src/memory/graphify-backend.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
+} from "../../../packages/core/src/memory/local-indexing.mjs";
+import { GRAPHIFY_INDEX_VERSION } from "../../../packages/core/src/memory/graphify-backend.mjs";
+import { MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
 
 const FROZEN = [...MEMORY_RECORD_FIELDS].sort();
 const META = { item: "39", itemSlug: "39_milestone_delivery-memory-outcome", workRelPath: "39/DOC.md" };
@@ -69,7 +69,7 @@ function assertFrozen(records, label) {
 }
 
 async function outcomeParser() {
-  const mod = await import("../../../src/memory/local-indexing.mjs");
+  const mod = await import("../../../packages/core/src/memory/local-indexing.mjs");
   return typeof mod.parseOutcome === "function" ? mod.parseOutcome : null;
 }
 

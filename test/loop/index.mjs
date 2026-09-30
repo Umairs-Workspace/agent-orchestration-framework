@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -45,7 +45,7 @@ import { loopCommandResumeTests } from "./loop-command-resume.test.mjs";
 // The structural half is `test/arch/loop/acd-loop-narrates-in-flight.test.mjs`.
 import { loopCommandNarrationTests } from "./loop-command-narration.test.mjs";
 // milestone 129 / story 04 — THE WAVE TICK. Two behavioural suites over a REAL git repo: the
-// per-story ladder extracted to `src/loop/cycle.mjs`, the lanes (open → mint → child → settle →
+// per-story ladder extracted to `packages/core/src/loop/cycle.mjs`, the lanes (open → mint → child → settle →
 // ladder → commit → merge → cleanup), the per-base-commit baseline, the milestone-level wave run
 // and its heartbeat, and dispatch's admission (tasks 00, 02, 03, 04, 05); and the three phases of
 // `refine_first`, the fresh gate, the two signals, the parent deadline and the resume
@@ -122,7 +122,7 @@ import { triggerSourcesTests } from "./trigger-sources.test.mjs";
 // it resolved before. All four @executable task features, plus FF-6305.
 import { unattendedLaunchEnvelopeTests } from "./unattended-launch-envelope.test.mjs";
 // milestone 63 / story 05 — THE TRIGGER'S FACE: the milestone's one registered surface and its
-// only convergence. `work:trigger` composes the four `src/work-trigger/` leaves, obtains the two
+// only convergence. `work:trigger` composes the four `packages/core/src/work-trigger/` leaves, obtains the two
 // gate readings through the registry exactly as `work:loop` gathers them when it fires, and emits
 // the `work:loop` input each declared trigger resolves to plus the argv that carries it — and
 // LAUNCHES NOTHING, which is structural rather than careful (53/ADR-005 left the loop exactly one
@@ -150,7 +150,7 @@ import { reviewStaysColdTests } from "./review-stays-cold.test.mjs";
 // EXTENDS acd-loop-cap-single-home in its existing registered suite above, and
 // this story's own rows ride the loop-bounds suite that already declares them.
 import { loopBoundsTests, clampTests } from "./loop-bounds.test.mjs";
-// 2026-09-11 — the loop's exit-reason recorder (src/loop-diag.mjs).
+// 2026-09-11 — the loop's exit-reason recorder (packages/core/src/loop-diag.mjs).
 import { loopDiagTests } from "./loop-diag.test.mjs";
 import { workLoopReviewBoundTests } from "./work-loop-review-bound.test.mjs";
 import { workLoopProductionReviewBoundTests } from "./work-loop-production-review-bound.test.mjs";

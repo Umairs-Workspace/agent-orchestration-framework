@@ -6,7 +6,7 @@
 // scenarios this file used to cover (mesh:heartbeat's best-effort relay push,
 // ctx.relayClient) are RETIRED — the ws@8 broker is eliminated as the presence/liveness
 // transport and mesh-heartbeat.mjs no longer pushes a second bus (superseded by
-// 33/ADR-002 — the broker is eliminated; see src/commands/mesh-heartbeat.mjs). The
+// 33/ADR-002 — the broker is eliminated; see packages/core/src/commands/mesh-heartbeat.mjs). The
 // git-durability half those scenarios asserted (0 records lost, byte-identical writes)
 // is untouched and unconditional — it was NEVER dependent on the relay to begin with
 // (ADR-002.4, git stays the durable authority reused verbatim), so no coverage gap opens.
@@ -24,7 +24,7 @@ import {
   resolvePresenceCadenceSeconds,
   presenceCadenceFromConfig,
   DEFAULT_PRESENCE_CADENCE_SECONDS,
-} from "../../../src/mesh/presence-loop.mjs";
+} from "../../../packages/core/src/mesh/presence-loop.mjs";
 
 // ---- the manual ticker (the 22 task-01 injected-clock pattern) ----
 function manualTicker() {

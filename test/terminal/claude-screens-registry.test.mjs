@@ -9,10 +9,10 @@
 // case scripts it to misbehave (QA 3). A synthetic trust menu is `trust.json` followed by a chunk that
 // redraws its menu rows, so the dialog's words stay the recording's (QA 4).
 import assert from "node:assert/strict";
-import { CLAUDE_SCREENS } from "../../src/terminal/claude-screens.mjs";
-import { openSessionScreen, readConsentMenu } from "../../src/terminal/session-screen.mjs";
-import { createScreen } from "../../src/terminal/screen.mjs";
-import { isRetryable } from "../../src/run-store.mjs";
+import { CLAUDE_SCREENS } from "../../packages/core/src/terminal/claude-screens.mjs";
+import { openSessionScreen, readConsentMenu } from "../../packages/core/src/terminal/session-screen.mjs";
+import { createScreen } from "../../packages/core/src/terminal/screen.mjs";
+import { isRetryable } from "../../packages/core/src/run-store.mjs";
 import { captureDegrades, loadFixture, replay } from "./screen-model.test.mjs";
 import { BRIEF, ESC, SUBMIT_KEY, drive, pasteOf, sleep, waitUntil } from "./session-screen-ready.test.mjs";
 

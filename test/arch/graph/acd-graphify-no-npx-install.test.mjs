@@ -1,6 +1,6 @@
 // Fitness function for milestone 09 / ADR-006 inv. 6 (no npx install of graphify;
 // the load-bearing npx installer untouched; ADR-004 Option B):
-// "No aof code provisions graphify via npx, and `src/frameworks.mjs` gains no
+// "No aof code provisions graphify via npx, and `packages/core/src/frameworks.mjs` gains no
 //  Python/uv/pipx lane in this milestone — the npx installer stays npx-only."
 //
 // This is a REGRESSION guard (GREEN now): frameworks.mjs is npx-only today. It
@@ -8,7 +8,7 @@
 // by generalizing the installer.
 //
 // Two proofs (call-form, comments/strings discounted):
-//   (a) src/frameworks.mjs carries NO `graphify`/`graphifyy`/`uv`/`pipx`/
+//   (a) packages/core/src/frameworks.mjs carries NO `graphify`/`graphifyy`/`uv`/`pipx`/
 //       `pip install` reference, and its spawn argv[0] stays the npx literal — the
 //       installer is structurally incapable of installing a Python tool;
 //   (b) no module in the codebase spawns `npx graphifyy` (no aof path npx-installs
@@ -19,7 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 const FRAMEWORKS = path.join(srcDir, "frameworks.mjs");
 
 // Strip line + block comments AND string literals so the grep sees only live code.

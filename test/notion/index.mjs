@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -37,7 +37,7 @@ import { notionDescriptorTests } from "./notion-descriptor.test.mjs";
 import { notionAuthEnvTests } from "./notion-auth-env.test.mjs";
 import { notionDoctorTests } from "./notion-doctor.test.mjs";
 // milestone 18 — per-folder integration descriptor (story 00: the AUTHORING SPINE —
-// the new src/integrations/routing.mjs reader/resolver (ADR-001/002/003), the boards
+// the new packages/core/src/integrations/routing.mjs reader/resolver (ADR-001/002/003), the boards
 // registry schema oneOf with the flat m17 back-compat arm at the Ajv-2020 seam
 // (ADR-002), and the notion:associate rewrite writing/clearing the per-folder
 // .integrations.json descriptor as its ONLY mutation (ADR-004/006); all @executable).
@@ -59,7 +59,7 @@ import { integrationsProjectionBoardRoutingTests } from "./integrations-projecti
 import { integrationsProjectionParentNestingTests } from "./integrations-projection-parent-nesting.test.mjs";
 import { integrationsMultiboardSidecarTests } from "./integrations-multiboard-sidecar.test.mjs";
 // milestone 18 — per-folder integration descriptor (story 02: the CLEANUP + FITNESS
-// story — the src/work.mjs parseScalarOrCollection revert (drop the `{}` inline-flow-map
+// story — the packages/core/src/work.mjs parseScalarOrCollection revert (drop the `{}` inline-flow-map
 // branch, ADR-007) + the notion-top-level `parents` removal, locked by the two task
 // feature tests; and the SIX milestone fitness invariants FF-A..F authored here, atomically
 // with deleting the five superseded arch-tests (acd-notion-associate-frontmatter-only,

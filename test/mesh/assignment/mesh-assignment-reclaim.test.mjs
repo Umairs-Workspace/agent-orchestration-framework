@@ -7,12 +7,12 @@
 // `now` that feeds BOTH predicates. Mined from
 // reference/retired-dispatch-tests/fleet-orphan-reclaim.mjs.
 import assert from "node:assert/strict";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment, findActiveAssignment } from "../../../src/assignment-record.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { startRun, heartbeat, readRuns, isRetryable } from "../../../src/run-store.mjs";
-import { findWork } from "../../../src/work.mjs";
-import { reclaimStaleAssignments, dualStalenessDecision, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../src/mesh/assignment-reclaim.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment, findActiveAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
+import { startRun, heartbeat, readRuns, isRetryable } from "../../../packages/core/src/run-store.mjs";
+import { findWork } from "../../../packages/core/src/work.mjs";
+import { reclaimStaleAssignments, dualStalenessDecision, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const NOW = "2026-07-09T12:00:00.000Z";
@@ -144,7 +144,7 @@ export const meshAssignmentReclaimTests = [
     run: async () => {
       // Row 1: an operator-reported (not reclaimed) failed run never carries reclaimedAt.
       await withMeshWorkerExecFixture(async (fx) => {
-        const { completeRun } = await import("../../../src/run-store.mjs");
+        const { completeRun } = await import("../../../packages/core/src/run-store.mjs");
         const matches = await findWork(fx.workDir, fx.itemRef);
         const item = matches[0];
         const runRecord = await startRun(item, { now: secondsBefore(NOW, 600), node: TARGET_NODE });
@@ -191,7 +191,7 @@ export const meshAssignmentReclaimTests = [
   {
     name: "assignment-reclaim/m42-7.3 a CROSS-MACHINE run (no local record) reclaims from the STREAMED work_item_runs record — and never touches local run files",
     run: async () => {
-      const { upsertWorkItemContent } = await import("../../../src/global-work-store.mjs");
+      const { upsertWorkItemContent } = await import("../../../packages/core/src/global-work-store.mjs");
       await withMeshWorkerExecFixture(async (fx) => {
         const store = await openGlobalWorkProjectionStore({ env: fx.env });
         try {

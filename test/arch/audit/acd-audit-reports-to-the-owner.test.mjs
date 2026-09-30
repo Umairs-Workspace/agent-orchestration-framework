@@ -12,7 +12,7 @@
 // than trusting the resolution to be transitively correct". A resolver that is correct on every
 // example and one bad edge in the registry produce the same failure — a finding routed to a loop
 // that owns the instrument it is about — and only the second reading catches it. Measured on this
-// registry while building the resolver: `prose:src/bundle/agents/aof-developer.md` is the actuator
+// registry while building the resolver: `prose:packages/core/assets/agents/aof-developer.md` is the actuator
 // of FOUR loops, one of which sets the reference of two of the others, so a naive union of the
 // reference-owners makes that loop the audience for news about an actuator it shares. The
 // subtraction in `resolveAddressees` is what fixes it and THIS is the leg that would have caught it.
@@ -36,7 +36,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
+import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import {
   AUDITABLE_CODES,
   AUDIT_ENVELOPE_KEYS,
@@ -52,16 +52,16 @@ import {
   referenceSettersOf,
   resolveAddressees,
   runAudit,
-} from "../../../src/work-audit/report.mjs";
-import { CONTROL_FINDING_CODES } from "../../../src/work/doctor-controls.mjs";
+} from "../../../packages/core/src/work-audit/report.mjs";
+import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUNDLE = path.join(root, "src", "bundle");
+const BUNDLE = path.join(root, "packages", "core", "assets");
 // Named explicitly so FF-5809's sweep SEES this file and classifies it. It reads the registry in
 // place and copies nothing, so it is that gate's lane 3 — but a suite that reaches the shipped
 // records by a spelling the sweep cannot detect is unclassified by accident rather than by rule.
-const SHIPPED_LOOPS = path.join(root, "src", "bundle", "loops");
-const FAMILY = path.join(root, "src", "work-audit");
+const SHIPPED_LOOPS = path.join(root, "packages", "core", "assets", "loops");
+const FAMILY = path.join(root, "packages", "core", "src", "work-audit");
 
 const shipped = () => loadLoops(BUNDLE);
 
@@ -96,7 +96,7 @@ export const archTests = [
       const model = await shipped();
       const onDisk = (await readdir(SHIPPED_LOOPS)).filter((name) => name.endsWith(".md"));
       assert.ok(onDisk.length > 0, `the sweep of ${SHIPPED_LOOPS} found no .md record — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)`);
-      assert.equal(model.nodes.length, onDisk.length, "every record on disk in src/bundle/loops/ parsed into a node");
+      assert.equal(model.nodes.length, onDisk.length, "every record on disk in packages/core/assets/loops/ parsed into a node");
       assert.ok(model.nodes.length >= 16, `non-vacuous: ${model.nodes.length} shipped records were read`);
       const report = await runAudit({
         repoRoot: root,
@@ -158,7 +158,7 @@ export const archTests = [
       // only inside an assertion message, so both iterations executed an identical body and a
       // severity-keyed re-route planted at that site left the whole tier green.
       const model = await shipped();
-      const anchored = path.join(root, "src", "bundle", "commands", "continue.md");
+      const anchored = path.join(root, "packages", "core", "assets", "commands", "continue.md");
       const at = async (severity) => {
         const report = await runAudit({
           repoRoot: root,
@@ -180,7 +180,7 @@ export const archTests = [
       // every finding is addressed identically for a reason that has nothing to do with severity).
       assert.equal(warned.severity, "warn");
       assert.equal(errored.severity, "error");
-      assert.equal(warned.about, "prose:src/bundle/commands/continue.md", "the anchor resolved to a declared instrument");
+      assert.equal(warned.about, "prose:packages/core/assets/commands/continue.md", "the anchor resolved to a declared instrument");
       assert.ok(ownersOfInstrument(warned.about, model).length >= 2, "…owned by more than one loop");
       assert.equal(resolveAddressees(warned.about, model, escalationActorOf(model)).via, "reference-owner", "…and resolving through a reference-owner");
 
@@ -330,7 +330,7 @@ export const archTests = [
       const names = (await readdir(FAMILY)).filter((name) => name.endsWith(".mjs"));
       assert.ok(names.length >= 4, `non-vacuous: ${names.length} modules in the audit family were swept`);
       const swept = [
-        ...names.map((name) => ["src/work-audit/" + name, path.join(FAMILY, name)]),
+        ...names.map((name) => ["packages/core/src/work-audit/" + name, path.join(FAMILY, name)]),
         ["packages/work/src/commands/audit.mjs", path.join(root, "packages", "work", "src", "commands", "audit.mjs")],
       ];
       // The kind prefixes a node id can carry. A string literal spelling one of them inside a

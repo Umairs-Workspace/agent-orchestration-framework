@@ -45,7 +45,7 @@ export function installedManifests(root) {
 
 // Follow Node's actual installation layout without invoking npm or importing package code.
 // Keep installation paths (including nested versions), not just package names.
-export function productionDependencyDirs(root) {
+export function productionDependencyDirs(root, { owner = root } = {}) {
   root = realpathSync(root);
   const modulesRoot = path.join(root, 'node_modules');
   const within = (base, target) => {
@@ -104,6 +104,7 @@ export function productionDependencyDirs(root) {
       visit(target);
     }
   }
-  visit(root);
+  if (!within(root, realpathSync(owner))) throw new Error("Production owner escapes repository");
+  visit(owner);
   return [...found].sort();
 }

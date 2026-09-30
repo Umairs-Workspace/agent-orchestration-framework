@@ -14,9 +14,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, access } from "node:fs/promise
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { writeRegistry, readRegistry, registryPath } from "../../../src/mesh/registry.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { writeRegistry, readRegistry, registryPath } from "../../../packages/core/src/mesh/registry.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

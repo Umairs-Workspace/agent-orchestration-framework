@@ -27,8 +27,8 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { normaliseTap, CASE_STATUSES } from "../../../src/work/grade.mjs";
-import { joinCases, executableScenariosOf } from "../../../src/work/doctor-rubric.mjs";
+import { normaliseTap, CASE_STATUSES } from "../../../packages/core/src/work/grade.mjs";
+import { joinCases, executableScenariosOf } from "../../../packages/core/src/work/doctor-rubric.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -39,7 +39,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // otherwise walk straight past.
 const GRADE_PATH = Object.freeze([
   "packages/work/src/grade.mjs",
-  "src/commands/grade.mjs",
+  "packages/core/src/commands/grade.mjs",
   "packages/work/src/commands/grade.mjs",
   "packages/execution/src/rubric-process.mjs",
   "packages/work/src/doctor/rubric.mjs",

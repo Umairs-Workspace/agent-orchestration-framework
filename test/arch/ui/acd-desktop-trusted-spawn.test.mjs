@@ -3,7 +3,7 @@
 //  (the sibling `aof(.exe)` in the SAME install dir the desktop app was installed
 //  into — $HOME/.aof/bin, m28/ADR-006), NEVER a bare-PATH `aof` lookup. Co-location
 //  removes the PATH-order hijack ambiguity even aof's own tailscale-spawn precedent
-//  (src/mesh/fabric.mjs, PATH-first-then-pinned-fallback) cannot avoid — both binaries
+//  (packages/core/src/mesh/fabric.mjs, PATH-first-then-pinned-fallback) cannot avoid — both binaries
 //  install together, so the sibling path is unambiguous. Spawns are shell-less argv
 //  (never a `cmd /c` / shell string)."
 //

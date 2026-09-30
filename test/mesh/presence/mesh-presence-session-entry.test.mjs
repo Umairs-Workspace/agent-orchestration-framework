@@ -4,7 +4,7 @@
 // present".
 //
 // EVERY Then below reads a value off a REAL call to the REAL `readLiveSessions`
-// (src/mesh/presence.mjs) over REAL session records on disk — never a hand-built
+// (packages/core/src/mesh/presence.mjs) over REAL session records on disk — never a hand-built
 // entry (m38/ADR-008's producer-fed rule). The structural half — the key-order
 // assertion over SOURCE and the `PresenceSession` declaration — is deliberately NOT
 // here: it is the fitness function `acd-session-entry-frozen-wire`
@@ -22,10 +22,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, readdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { assemblePresenceRecord, readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { DEFAULT_SESSION_TTL_SECONDS, startSession } from "../../../src/mesh/session.mjs";
-import { meshDir } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { assemblePresenceRecord, readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { DEFAULT_SESSION_TTL_SECONDS, startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const NODE_ID = "node-a";
 const OTHER_NODE_ID = "node-b";
@@ -94,7 +94,7 @@ async function readRecordsOnDisk(ws) {
 //   sessionId undefined  → the key ABSENT ENTIRELY (a record a PRE-m48 build wrote)
 //
 // WHY THIS EXISTS, and why it is honest. Story 48/00 owns the id's PRODUCER
-// (`src/mesh/session.mjs`) and is landing in parallel, so what `startSession` records
+// (`packages/core/src/mesh/session.mjs`) and is landing in parallel, so what `startSession` records
 // is a moving target — while this story's projection is ABSENCE-TOLERANT by contract
 // (m48/ADR-005: `record.sessionId ?? null`), which is exactly what lets it land first
 // and is exactly what the third Examples row exists to prove. Pinning the record STATE

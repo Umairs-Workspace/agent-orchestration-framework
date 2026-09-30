@@ -7,7 +7,7 @@ import { readYarnPackages } from '../../../scripts/dependency-inventory.mjs';
 //
 // State now: the MANIFEST asserts (package.json / yarn.lock) are GREEN
 // immediately — headroom is not, and must never become, a dependency. The SOURCE-
-// import assert is CONDITIONAL: it is skipped until src/headroom.mjs exists, then
+// import assert is CONDITIONAL: it is skipped until packages/core/src/headroom.mjs exists, then
 // enforced. That keeps this test honest at every stage (no false red for a file
 // that isn't built yet, no false green once it is) — the no-install guarantee is
 // purely structural, so this is arch-tests only, NOT a build story (mirrors the
@@ -21,12 +21,12 @@ import path from "node:path";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const pkgPath = path.join(repoRoot, "package.json");
 const lockPath = path.join(repoRoot, "yarn.lock");
-// ADR-005 names "the plugin source (src/headroom.mjs AND any sibling)". The plugin's
+// ADR-005 names "the plugin source (packages/core/src/headroom.mjs AND any sibling)". The plugin's
 // source surface is the resolver runtime + the enable/disable surface; both must
 // reference headroom only as the PATH binary name, never an import or installer.
 const pluginSourcePaths = [
-  path.join(repoRoot, "src", "headroom.mjs"),
-  path.join(repoRoot, "src", "work", "headroom.mjs"),
+  path.join(repoRoot, "packages", "core", "src", "headroom.mjs"),
+  path.join(repoRoot, "packages", "core", "src", "work", "headroom.mjs"),
 ];
 
 function stripComments(source) {

@@ -37,8 +37,8 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
 import {
   reindex,
   buildRecords,
@@ -46,10 +46,10 @@ import {
   resolveRecordSourcePath,
   isImportRecord,
   importItem,
-} from "../../src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../src/memory/local-retrieval.mjs";
-import { materializeImport } from "../../src/import/materialize.mjs";
-import { importStoreRoot } from "../../src/import/store.mjs";
+} from "../../packages/core/src/memory/local-indexing.mjs";
+import { MEMORY_RECORD_FIELDS } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { materializeImport } from "../../packages/core/src/import/materialize.mjs";
+import { importStoreRoot } from "../../packages/core/src/import/store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

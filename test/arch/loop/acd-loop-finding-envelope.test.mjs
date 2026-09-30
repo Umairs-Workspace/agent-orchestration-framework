@@ -7,12 +7,12 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { LOADER_FINDING_CODES, loadLoops } from "../../../src/work/loops.mjs";
+import { LOADER_FINDING_CODES, loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import {
   CHECK_FINDING_CODES, CHECK_IDS, GATING_CODES, checkActuatorArbitration, checkAnchorGrounding, checkGrounding, checkPairing,
   checkReferenceOwnership, checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
-import { loopsValidateCommand } from "../../../src/commands/loops-validate.mjs";
+} from "../../../packages/core/src/work/loops-checks.mjs";
+import { loopsValidateCommand } from "../../../packages/core/src/commands/loops-validate.mjs";
 
 const runFile = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -355,7 +355,7 @@ export const archTests = [
         // and not about the product: `04_finding-envelope.feature:110-126` says the findings are
         // concatenated "the way the command concatenates them", and that "an unordered
         // concatenation fails the gate even when the finding SET is right". Measured on this tree,
-        // making `src/commands/loops-validate.mjs` iterate `[...CHECK_IDS].reverse()`, or emit the
+        // making `packages/core/src/commands/loops-validate.mjs` iterate `[...CHECK_IDS].reverse()`, or emit the
         // check lane before the loader lane, left all nineteen gates green. So the real command is
         // driven over the SAME fixture and its `findings` compared with the frozen concatenation.
         const commandResult = await loopsValidateCommand.run({}, { workspace: { workDir: temp, aofDir: temp } });

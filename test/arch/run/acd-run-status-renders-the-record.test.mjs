@@ -15,12 +15,12 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { runStatusCommand } from "../../../src/commands/run-status.mjs";
+import { runStatusCommand } from "../../../packages/core/src/commands/run-status.mjs";
 import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MODULE = "packages/work/src/commands/run-status.mjs";
-const FACE = "src/application/bindings/spine/face.mjs";
+const FACE = "packages/core/src/application/bindings/spine/face.mjs";
 const PIN_CONTROL = "test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
@@ -35,11 +35,11 @@ export const archTests = [
       assert.doesNotMatch(module, /\breadFile\b/u, "the render reads no file");
 
       assert.match(
-        await source("src/application/bindings/commands/run-status.mjs"),
+        await source("packages/core/src/application/bindings/commands/run-status.mjs"),
         /import \{ attemptElapsedMs \} from "@aof\/work-loop\/engine"/u,
         "the arithmetic has ONE home and this module imports it",
       );
-      assert.match(await source("src/application/bindings/commands/run-status.mjs"), /createRunStatusCommand\(\{[^}]*attemptElapsedMs/u,
+      assert.match(await source("packages/core/src/application/bindings/commands/run-status.mjs"), /createRunStatusCommand\(\{[^}]*attemptElapsedMs/u,
         "core supplies the imported arithmetic to the work command");
       // The second `updatedAt − createdAt` is the defect this leg exists to catch: it would print
       // eleven hours where the clock charges thirty minutes, on the very record this milestone was

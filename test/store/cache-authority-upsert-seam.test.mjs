@@ -18,7 +18,7 @@
 // storage->wire mapper that renders it as `reportedBy` on the read surface stays 43/04's;
 // what is proved here is the STAMP, which is this story's half.
 import assert from "node:assert/strict";
-import { upsertWorkItems } from "../../src/global-work-store.mjs";
+import { upsertWorkItems } from "../../packages/core/src/global-work-store.mjs";
 import {
   withCacheFixture,
   withStore,

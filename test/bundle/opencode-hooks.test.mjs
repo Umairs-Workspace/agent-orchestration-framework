@@ -6,7 +6,7 @@ import {
   opencodeHookDeclarations,
   opencodePluginFiles,
   renderOpenCodePlugin
-} from "../../src/opencode-hooks.mjs";
+} from "../../packages/core/src/opencode-hooks.mjs";
 
 export const opencodeHookTests = [
   {

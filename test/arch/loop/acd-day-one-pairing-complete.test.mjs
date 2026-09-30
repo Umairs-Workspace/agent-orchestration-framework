@@ -3,7 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
+import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import {
   GATING_CODES,
   checkActuatorArbitration,
@@ -12,11 +12,11 @@ import {
   checkPairing,
   checkReferenceOwnership,
   checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
+} from "../../../packages/core/src/work/loops-checks.mjs";
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const loopsDir = path.join(root, "src", "bundle", "loops");
+const loopsDir = path.join(root, "packages", "core", "assets", "loops");
 const CHECKS = Object.freeze([
   checkGrounding,
   checkAnchorGrounding,

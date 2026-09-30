@@ -15,8 +15,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../src/mesh/worker-execution.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 

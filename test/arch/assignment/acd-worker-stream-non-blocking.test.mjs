@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
+import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

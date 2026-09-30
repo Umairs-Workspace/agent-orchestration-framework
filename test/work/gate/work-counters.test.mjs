@@ -14,8 +14,8 @@ import {
   countInterventions,
   computeWorkCounters,
   roundsToAccept,
-} from "../../../src/work/counters.mjs";
-import { checkPairing } from "../../../src/work/loops-checks.mjs";
+} from "../../../packages/core/src/work/counters.mjs";
+import { checkPairing } from "../../../packages/core/src/work/loops-checks.mjs";
 
 const raw = (id, at) => ({ kind: "raw", id, text: id, actor: "qa", refs: "", at });
 const accepted = (ref, feedbackRecords = [], acceptedAt = "2026-08-20T12:00:00.000Z") => ({

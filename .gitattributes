@@ -14,7 +14,7 @@
 
 .aof/**/*.json text eol=lf
 # 63/ADR-010 §4 — the `.json` pin above does NOT match `.jsonc`, so an installed
-# `.aof/*.jsonc` declaration checked out CRLF against its LF-pinned `src/bundle/`
+# `.aof/*.jsonc` declaration checked out CRLF against its LF-pinned `packages/core/assets/`
 # source: git holds ONE blob for both copies, so the mismatch is invisible in a diff
 # and surfaces only as a hash the manifest disagrees with, on Windows, never in CI.
 # Measured at HEAD before milestone 63: `.aof/frozen-set.jsonc` reported `w/crlf attr/`.
@@ -34,7 +34,7 @@
 # FF-12405 leg 9 a CRLF copy the recorded hash could never match: red on every clean Windows
 # checkout, green on the one that wrote it. Pinned tree-wide for the same reason the installed
 # bundle trees below are: every file under the rendered templates is text, and a target pinned
-# narrower than its source (src/bundle/**, tree-wide) is the asymmetry that manufactured this once.
+# narrower than its source (packages/core/assets/**, tree-wide) is the asymmetry that manufactured this once.
 .aof/templates/** text eol=lf
 # Installed loop records are byte-compared with their LF-pinned bundle source.
 # Pin the dogfood copy too so core.autocrlf=true cannot manufacture drift.
@@ -47,10 +47,10 @@ test/integration/**/*.feature text eol=lf
 # member content — and therefore the content-addressed manifest hashes — are
 # byte-identical on every platform (the acd-bundle-manifest-hashes fitness
 # function re-renders from these bytes).
-src/bundle/** text eol=lf
+packages/core/assets/** text eol=lf
 
 # The INSTALLED bundle — the render targets of `aof work init` / `aof work update`
-# (chore 108). The counterpart of the `src/bundle/**` pin directly above: the source is
+# (chore 108). The counterpart of the `packages/core/assets/**` pin directly above: the source is
 # pinned LF, the renderer emits LF, and `planApplyActions` (src/render-plan.mjs) compares
 # the on-disk bytes against BOTH the desired render's hash and the install manifest's, so
 # an unpinned checkout is drift by construction. Measured at HEAD on this control node,
@@ -63,7 +63,7 @@ src/bundle/** text eol=lf
 # is already LF, so the pin changes nothing that is committed — only what a Windows
 # checkout writes. Pinned per tree rather than per member: a new bundle member is covered
 # the day it lands, and every file in these trees is text. Tree-wide rather than
-# extension-scoped BECAUSE `src/bundle/**` — the very source these render from — is pinned
+# extension-scoped BECAUSE `packages/core/assets/**` — the very source these render from — is pinned
 # tree-wide directly above, and a target pinned narrower than its source is the asymmetry
 # that manufactured this bug once already; a binary member, should one ever land here,
 # takes an explicit `-text` override on its own path.

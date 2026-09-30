@@ -1,16 +1,16 @@
 // Fitness function for milestone 40 / ADR-005 — the god-node blast-radius guard for the
 // upgrade engine (mirrors m41/ADR-001's acd-reindex-engine-blast-radius).
 //
-//   "The migration registry + engine are a NEW module (src/work/upgrade.mjs) that
+//   "The migration registry + engine are a NEW module (packages/core/src/work/upgrade.mjs) that
 //    IMPORTS work.mjs's readers + the ADR-004 writer; work.mjs NEVER imports the engine
 //    back. The god-node's 39-module blast radius does not grow."
 //
-// `aof graph impact src/work.mjs` (refine 40): imported/called by 39 modules, imports
+// `aof graph impact packages/core/src/work.mjs` (refine 40): imported/called by 39 modules, imports
 // only 3 (fs, node-identity, workspace). Bolting the upgrade engine INTO work.mjs would
 // inherit that whole blast radius. This pins the dependency DIRECTION on import
 // specifiers (comment-stripped so a documenting mention never trips it):
 //   - work.mjs imports NO upgrade engine module — asserted NOW, always live;
-//   - GUARD-IF-PRESENT: once src/work/upgrade.mjs exists it MUST import ./work.mjs (the
+//   - GUARD-IF-PRESENT: once packages/core/src/work/upgrade.mjs exists it MUST import ./work.mjs (the
 //     engine depends on the readers, never the reverse).
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORK = path.join(repoRoot, "src", "work.mjs");
+const WORK = path.join(repoRoot, "packages", "core", "src", "work.mjs");
 const UPGRADE = path.join(repoRoot, "packages", "work", "src", "upgrade.mjs");
 
 function stripComments(source) {
@@ -42,11 +42,11 @@ export const archTests = [
       assert.deepEqual(
         engineImports,
         [],
-        `src/work.mjs imports no upgrade engine — imports: ${specs.join(", ")}`,
+        `packages/core/src/work.mjs imports no upgrade engine — imports: ${specs.join(", ")}`,
       );
       // Self-checks (non-vacuous): the matcher catches the engine-module form and does
       // NOT flag work.mjs's legitimate dependencies.
-      for (const bad of ["./work/upgrade.mjs", "../src/work/upgrade.mjs", "./upgrade.mjs", "@aof/work/upgrade"]) {
+      for (const bad of ["./work/upgrade.mjs", "../packages/core/src/work/upgrade.mjs", "./upgrade.mjs", "@aof/work/upgrade"]) {
         assert.ok(ENGINE_MODULE.test(bad), `the matcher catches a real ${bad} import`);
       }
       for (const ok of ["./fs.mjs", "./node-identity.mjs", "./workspace.mjs"]) {

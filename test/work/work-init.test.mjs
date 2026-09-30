@@ -2,7 +2,7 @@
 //
 // Every @executable scenario AND every Scenario-Outline Examples row across the
 // story's four task features is covered here, exercised against the REAL init
-// implementation (`initWork` in ../src/work/init.mjs) which is itself a thin
+// implementation (`initWork` in ../packages/core/src/work/init.mjs) which is itself a thin
 // orchestrator over the locked engine (no drift logic authored in tests):
 //
 //   00_render-bundle-into-repo.feature — renders supported members; --dry-run
@@ -23,8 +23,8 @@ import { mkdtemp, rm, readFile, writeFile, mkdir, readdir } from "node:fs/promis
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { initWork, workLockPath } from "../../src/work/init.mjs";
-import { loadBundle } from "../../src/work/bundle.mjs";
+import { initWork, workLockPath } from "../../packages/core/src/work/init.mjs";
+import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
 
 // ADR-009: the install manifest is the `work` SECTION of the unified lock. Read the
 // section the same way every reader does (the top-level lock JSON's `.work` key).
@@ -481,7 +481,7 @@ export const workInitTests = [
         // carrying its invocation), so the invariant is that no flag the bundle declares
         // is dropped in the rendering. Read the hint, require each token it declares.
         // A flag added to refine.md tomorrow is covered without touching this file.
-        const refineSource = await readFile(new URL("../../src/bundle/commands/refine.md", import.meta.url), "utf8");
+        const refineSource = await readFile(new URL("../../packages/core/assets/commands/refine.md", import.meta.url), "utf8");
         const refineHint = /^argument-hint:\s*(.+)$/m.exec(refineSource)?.[1] ?? "";
         assert.ok(refineHint.length > 0, "the bundle's refine command declares an argument-hint to map");
         const declaredFlags = refineHint.match(/\[--[a-z-]+\]/g) ?? [];

@@ -8,7 +8,7 @@
 // Reframed 2026-06-19 from FILE-isolation ("touch only aof.work.lock.json") to
 // SECTION-isolation ("write only the `work` section of aof.lock.json; preserve the
 // foreign sections"). RED until the developer migrates `work init`/`update` to
-// read-merge-write the unified lock (src/work/init.mjs / src/work/update.mjs: read
+// read-merge-write the unified lock (packages/core/src/work/init.mjs / packages/core/src/work/update.mjs: read
 // the unified lock, replace only `work`, write the merged whole; drift-check keys
 // off `previousLock.work`). That red is expected and correct.
 //
@@ -24,12 +24,12 @@ import { readFile, mkdtemp, mkdir, rm, writeFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { initWork } from "../../../src/work/init.mjs";
-import { updateWork } from "../../../src/work/update.mjs";
-import { loadBundle } from "../../../src/work/bundle.mjs";
-import { workspacePaths } from "../../../src/workspace.mjs";
+import { initWork } from "../../../packages/core/src/work/init.mjs";
+import { updateWork } from "../../../packages/core/src/work/update.mjs";
+import { loadBundle } from "../../../packages/core/src/work/bundle.mjs";
+import { workspacePaths } from "../../../packages/core/src/workspace.mjs";
 
-const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src");
+const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src");
 const initSourcePath = path.join(srcDir, "application/bindings/work/init.mjs");
 const updateSourcePath = path.join(srcDir, "work/update.mjs");
 

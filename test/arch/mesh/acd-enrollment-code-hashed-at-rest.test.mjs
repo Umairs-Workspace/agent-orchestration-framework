@@ -7,13 +7,13 @@
 //    peer. A plaintext 6-digit code in that record would be pushed to the whole fleet
 //    and live forever in git history. Therefore the enrollment authority persists only
 //    a HASH of the code (via node:crypto createHash/scrypt/pbkdf2/hkdf — the same
-//    node:crypto seam src/node-identity.mjs already uses at line 31), and matches a
+//    node:crypto seam packages/core/src/node-identity.mjs already uses at line 31), and matches a
 //    presented code by hashing it and comparing against the stored hash. The raw code
 //    exists ONLY in flight (the operator reads it off `aof mesh invite`, types it into
 //    `aof mesh join`); it is NEVER a field on a durable record."
 //
 // This is the SECURITY.md control for the "code at rest" threat (T3) — grounded in the
-// real seam: src/mesh/store.mjs's presenceRecordPath/nodeRecordPath already prove the
+// real seam: packages/core/src/mesh/store.mjs's presenceRecordPath/nodeRecordPath already prove the
 // `.mesh/` partition is git-TRACKED (line 15 "git IS the bus"); a pending-invite record
 // on that same bus inherits the same commit-and-sync exposure. The invariant this gate
 // enforces is that whatever field name the invite record carries for the code
@@ -52,7 +52,7 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-// The enrollment/registry surface: whichever src/mesh-*.mjs (or src/commands/mesh-*.mjs)
+// The enrollment/registry surface: whichever src/mesh-*.mjs (or packages/core/src/commands/mesh-*.mjs)
 // modules carry the device-code invite/join/registry mechanic. Discovered by a source
 // marker so the gate does not depend on one guessed filename — it covers whatever the
 // owning story names its enrollment module (mesh-enrollment / mesh-registry / mesh-invite).
@@ -101,7 +101,7 @@ const PLAINTEXT_CODE_FIELD = /\b(?:code|deviceCode|plaintext|plainCode|rawCode)\
 async function enrollmentModules() {
   const found = [];
   for (const { rel, path: file } of await readRuntimeFiles(repoRoot)) {
-    if (!rel.startsWith("src/mesh/") && !rel.startsWith("src/commands/mesh/") && !rel.startsWith("packages/mesh/src/")) continue;
+    if (!rel.startsWith("packages/core/src/mesh/") && !rel.startsWith("packages/core/src/commands/mesh/") && !rel.startsWith("packages/mesh/src/")) continue;
     const raw = await readFile(file, "utf8");
     if (ENROLLMENT_MARKER.test(stripCommentsAndStrings(raw))) found.push({ file, raw });
   }

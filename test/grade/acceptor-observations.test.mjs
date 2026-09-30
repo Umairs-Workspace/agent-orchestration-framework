@@ -3,10 +3,10 @@
 // Covers EVERY @executable scenario and EVERY Examples row in the one task feature:
 //   tasks/00_the-census-says-what-it-filtered.feature
 //
-// It exercises the REAL `src/work-acceptor/observations.mjs` against the REAL
-// `src/effects/journal.mjs` (a genuine SQLite journal in a temp fixture, written through
+// It exercises the REAL `packages/core/src/work-acceptor/observations.mjs` against the REAL
+// `packages/core/src/effects/journal.mjs` (a genuine SQLite journal in a temp fixture, written through
 // `appendEvent` — never a hand-rolled row), and composes every dispatch-worktree path
-// through the REAL `src/mesh/worktree.mjs` seam rather than spelling the convention here.
+// through the REAL `packages/core/src/mesh/worktree.mjs` seam rather than spelling the convention here.
 //
 // One test object per scenario, one per Examples ROW, each name tracing to feature +
 // scenario. `{ name, run }` so it spreads into the runner's tests array like every other
@@ -22,8 +22,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { appendEvent, openEffectsJournal } from "../../src/effects/journal.mjs";
-import { dispatchWorktreeSlug, meshDispatchWorktreePath } from "../../src/mesh/worktree.mjs";
+import { appendEvent, openEffectsJournal } from "../../packages/core/src/effects/journal.mjs";
+import { dispatchWorktreeSlug, meshDispatchWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
 import {
   OBSERVATION_FINDING_CODES,
   OBSERVATION_SWEEPS,
@@ -31,7 +31,7 @@ import {
   countPopulation,
   observationCensus,
   readObservationCensus,
-} from "../../src/work-acceptor/observations.mjs";
+} from "../../packages/core/src/work-acceptor/observations.mjs";
 
 // The workspace this census is for, and a second one that is not it. Synthetic absolute
 // paths (never the machine's temp root — see the header), resolved so Windows and POSIX
@@ -58,7 +58,7 @@ async function withFixtureRoot(body) {
 }
 
 // One observation, as the effects journal stores it: the two payload fields that say where
-// it was written (`src/effects/run-transitions.mjs` writes both on every run event).
+// it was written (`packages/core/src/effects/run-transitions.mjs` writes both on every run event).
 const observation = (workspaceRoot, itemDir = workspaceRoot == null ? null : path.join(workspaceRoot, "wiki", "work", "61")) => ({
   name: RUN_SWEEP.event,
   payload: { workspaceRoot, itemDir },
@@ -231,7 +231,7 @@ export const acceptorObservationsTests = [
         // AND THE FOLDING DID NOT DEPEND ON THE PATH BEING SPELLED OUT BY HAND: the census
         // carries no copy of the convention, only the module that owns it. (FF-6107 asserts the
         // same fact across the whole of src/; this is the scenario's own leg.)
-        const source = await readFile(new URL("../../src/application/bindings/work-acceptor/observations.mjs", import.meta.url), "utf8");
+        const source = await readFile(new URL("../../packages/core/src/application/bindings/work-acceptor/observations.mjs", import.meta.url), "utf8");
         const code = source.split(/\r?\n/u).filter((line) => !line.trim().startsWith("//")).join("\n");
         assert.equal(code.includes("dispatch-worktrees"), false, "the census spells the worktree directory nowhere in its code");
         assert.match(code, /const \{[^}]*dispatchWorktreeSlug[^}]*\} = meshWorktreeServices/u, "the shared worktree service supplies the convention");

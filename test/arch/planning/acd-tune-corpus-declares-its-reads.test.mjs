@@ -8,17 +8,17 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { copyWorkRuntime } from "../../support/workspace/copied-work-runtime.mjs";
 
-import * as reads from "../../../src/work-audit/reads.mjs";
+import * as reads from "../../../packages/core/src/work-audit/reads.mjs";
 import {
   CORPUS_LANES,
   assembleCorpus,
   assertCorpusLanesDeclared,
   corpusFinding,
-} from "../../../src/work-tune/corpus.mjs";
+} from "../../../packages/core/src/work-tune/corpus.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const modulePath = path.join(root, "packages", "work", "src", "tune", "corpus.mjs");
-const compositionPath = path.join(root, "src/application/bindings/work-tune/corpus.mjs");
+const compositionPath = path.join(root, "packages/core/src/application/bindings/work-tune/corpus.mjs");
 
 const codeLines = (source) => source.split(/\r?\n/u)
   .filter((line) => {
@@ -132,7 +132,7 @@ export const archTests = [
         ].join("\n"));
         await writeFile(copiedScope, widened, "utf8");
 
-        const copied = await import(`${pathToFileURL(path.join(temp, "src", "work-tune", "corpus.mjs")).href}?copy=${Date.now()}`);
+        const copied = await import(`${pathToFileURL(path.join(temp, "packages", "core", "src", "work-tune", "corpus.mjs")).href}?copy=${Date.now()}`);
         const result = await copied.assembleCorpus({ cwd: temp, scope: "01-02" });
         assert.equal(result.matched, true);
         assert.deepEqual(result.items, ["01", "02"], "the copied corpus inherits whatever the copied shared rule admits");

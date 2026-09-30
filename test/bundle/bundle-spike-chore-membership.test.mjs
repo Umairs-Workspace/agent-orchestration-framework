@@ -9,9 +9,9 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { loadBundle, readDescriptor, renderBundleOutputs, bundleRoot } from "../../src/work/bundle.mjs";
-import { readShippedManifest } from "../../src/work/bundle-manifest.mjs";
-import { hashContent } from "../../src/lock.mjs";
+import { loadBundle, readDescriptor, renderBundleOutputs, bundleRoot } from "../../packages/core/src/work/bundle.mjs";
+import { readShippedManifest } from "../../packages/core/src/work/bundle-manifest.mjs";
+import { hashContent } from "../../packages/core/src/lock.mjs";
 
 function descriptorMembers() {
   return readDescriptor().members;

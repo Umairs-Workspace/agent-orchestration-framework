@@ -1,8 +1,8 @@
 // FF-13402 (milestone 134 / ADR-001 §2, §4) — THE GRAMMAR HAS ONE HOME.
 //
 // "The provenance vocabulary (`proposed`, `confirmed`, `stated`), the four question states and the
-//  two classes are frozen arrays exported once from `packages/work/src/examples/map.mjs`. No other `src/**`
-//  module spells an `E<n>`/`Q<n>`/`R<n>` map pattern. No `src/**` module writes a file named
+//  two classes are frozen arrays exported once from `packages/work/src/examples/map.mjs`. No other `packages/core/src/**`
+//  module spells an `E<n>`/`Q<n>`/`R<n>` map pattern. No `packages/core/src/**` module writes a file named
 //  `EXAMPLES.md`."
 //
 // Why it matters: the doctor lane, the continue door and the discovery prose all judge one map. A
@@ -15,7 +15,7 @@
 // bracket, a bracketed provenance label, the vocabularies respelt as a literal run, the
 // `## Questions` heading, and the map's file name.
 //
-// ONE MODULE IS ADMITTED BY NAME: `src/declared-id.mjs`. Its retrospective heading grammar
+// ONE MODULE IS ADMITTED BY NAME: `packages/core/src/declared-id.mjs`. Its retrospective heading grammar
 // (`## R<n>`, `R\d+` in its pattern registry) shares the rule heading's shape and is another
 // grammar entirely (measured at 134's feasibility, 2026-09-24). Admitting that module is narrower
 // than widening the pattern until it no longer sees a rule id at all.
@@ -31,7 +31,7 @@ import {
   PROVENANCE,
   QUESTION_CLASSES,
   QUESTION_STATES,
-} from "../../../src/work-examples/map.mjs";
+} from "../../../packages/core/src/work-examples/map.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_ONE_HOME = "packages/work/src/examples/map.mjs";
@@ -48,7 +48,7 @@ async function modules() {
 // A digit where an id's number goes: a literal one, a regex digit class in either a regex literal
 // or a string source (`\d`, `\\d`, `[0-9]`, `[1-9]`), perhaps opening a capture group, or a
 // template interpolation. `\d*` is not an id's number: an id has at least one digit, and git's
-// rename status (`R\d*` in `src/cited-path-resolve.mjs`) is the measured case of the difference.
+// rename status (`R\d*` in `packages/core/src/cited-path-resolve.mjs`) is the measured case of the difference.
 const DIGIT_CLASS = String.raw`(?:\\{1,2}d(?!\*)|\[[01]-9\])`;
 const DIGITISH = String.raw`(?:\d|\((?:\?:)?${DIGIT_CLASS}|${DIGIT_CLASS}|\$\{)`;
 const SPACE = String.raw`(?: |\\{1,2}s[*+?]?)?`;
@@ -129,14 +129,14 @@ export const archTests = [
         ["await writeFile(path.join(dir, \"EXAMPLES.md\"), body);", "spells the map's file name"],
       ];
       for (const [source, hit] of planted) {
-        assert.ok(mapSpellings("src/work/doctor-examples.mjs", source).includes(hit), `${source} → ${hit}`);
+        assert.ok(mapSpellings("packages/core/src/work/doctor-examples.mjs", source).includes(hit), `${source} → ${hit}`);
       }
       assert.deepEqual(mapSpellings("packages/knowledge/src/import/materialize.mjs", "const id = outcome.id ?? \"R1\";"), [], "a bare id is not a map shape");
-      assert.deepEqual(mapSpellings("src/x.mjs", "const t = /ADR-\\d{3}/;"), [], "an ADR id is not a map id");
+      assert.deepEqual(mapSpellings("packages/core/src/x.mjs", "const t = /ADR-\\d{3}/;"), [], "an ADR id is not a map id");
       assert.deepEqual(mapSpellings("packages/work/src/cited-path-resolve.mjs", "const m = /^R\\d*\\t([^\\t]+)$/u.exec(line);"), [], "git's rename status is not a map id");
-      assert.deepEqual(mapSpellings("src/x.mjs", "// - E1 · a → b [proposed]\nconst a = 1;"), [], "a comment is not code");
+      assert.deepEqual(mapSpellings("packages/core/src/x.mjs", "// - E1 · a → b [proposed]\nconst a = 1;"), [], "a comment is not code");
       assert.deepEqual(mapSpellings("packages/work/src/declared-id.mjs", "{ name: \"R\", id: \"R\\\\d+\" }"), [], "the admitted module");
-      assert.ok(mapSpellings("src/x.mjs", "{ name: \"R\", id: \"R\\\\d+\" }").length > 0, "the same line anywhere else fires");
+      assert.ok(mapSpellings("packages/core/src/x.mjs", "{ name: \"R\", id: \"R\\\\d+\" }").length > 0, "the same line anywhere else fires");
     },
   },
 ];

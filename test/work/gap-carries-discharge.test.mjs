@@ -10,16 +10,16 @@
 // fixture-index idiom.
 //
 // The "aof work memory recall …" steps are driven through the REAL seam
-// (`runMemory` in src/work/memory.mjs, exercising the 39/ADR-001 `--status`
+// (`runMemory` in packages/core/src/work/memory.mjs, exercising the 39/ADR-001 `--status`
 // SCOPE_FLAGS wiring) over a STUB backend whose `recall` delegates to the REAL
-// `recall` in src/memory/local-retrieval.mjs (exercising the 39/ADR-001
+// `recall` in packages/core/src/memory/local-retrieval.mjs (exercising the 39/ADR-001
 // `status` SCOPE_FIELDS wiring) against the fixture array — so both halves of
 // feasibility flag 3 (work-memory.mjs's SCOPE_FLAGS + local-retrieval.mjs's
 // SCOPE_FIELDS) are exercised together, end to end, exactly as
 // "aof work memory recall --status open" behaves for real.
 import assert from "node:assert/strict";
-import { runMemory } from "../../src/work/memory.mjs";
-import { recall as localRecall } from "../../src/memory/local-retrieval.mjs";
+import { runMemory } from "../../packages/core/src/work/memory.mjs";
+import { recall as localRecall } from "../../packages/core/src/memory/local-retrieval.mjs";
 
 // Build a full MemoryRecord (ADR-005) from a partial spec: absent-type fields
 // present as "" (the empty-string-present convention retrieval reads).

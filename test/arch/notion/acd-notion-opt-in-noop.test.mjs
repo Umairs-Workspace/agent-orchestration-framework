@@ -13,8 +13,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
 
 // A fixture project with milestone 17 + a story on disk and a config WITHOUT a
 // `work.integrations.notion` block (the unconfigured baseline — the opt-in no-op case).

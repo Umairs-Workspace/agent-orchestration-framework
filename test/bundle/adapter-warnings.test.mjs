@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { resolveConfig } from "../../src/dsl.mjs";
-import { createLockManifest, createRenderPlan, planApplyActions } from "../../src/render-plan.mjs";
+import { resolveConfig } from "../../packages/core/src/dsl.mjs";
+import { createLockManifest, createRenderPlan, planApplyActions } from "../../packages/core/src/render-plan.mjs";
 import {
   ADAPTER_WARNING_CODES,
   collectAdapterWarnings,
   hasUnsupportedCommonHookFields
-} from "../../src/adapter-warnings.mjs";
+} from "../../packages/core/src/adapter-warnings.mjs";
 
 export const adapterWarningTests = [
   {

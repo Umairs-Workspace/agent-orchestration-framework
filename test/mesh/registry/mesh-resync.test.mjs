@@ -32,12 +32,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore, upsertWorkItems } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment } from "../../../src/assignment-record.mjs";
-import { applyStreamFrame } from "../../../src/control-stream-server.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
-import { resyncCommand } from "../../../src/commands/resync.mjs";
-import { DEFAULT_SYNC_CADENCE_SECONDS } from "../../../src/mesh/sync-cadence.mjs";
+import { openGlobalWorkProjectionStore, upsertWorkItems } from "../../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
+import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
+import { resyncCommand } from "../../../packages/core/src/commands/resync.mjs";
+import { DEFAULT_SYNC_CADENCE_SECONDS } from "../../../packages/core/src/mesh/sync-cadence.mjs";
 import {
   RESYNC_KIND,
   RESYNC_RESULT_KIND,
@@ -60,7 +60,7 @@ import {
   applyResyncResultFrame,
   runResyncDispatchTick,
   resyncRequestId,
-} from "../../../src/mesh/resync.mjs";
+} from "../../../packages/core/src/mesh/resync.mjs";
 
 const WS = "ws-resync-1";
 const OTHER_WS = "ws-resync-2";

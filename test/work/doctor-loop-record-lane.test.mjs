@@ -17,8 +17,8 @@ import assert from "node:assert/strict";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { invoke } from "../../src/command-core.mjs";
-import { CHECK_GROUPS, buildSnapshot, doctorWork } from "../../src/work/doctor.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { CHECK_GROUPS, buildSnapshot, doctorWork } from "../../packages/core/src/work/doctor.mjs";
 import {
   LOOP_RECORD_FINDING_CODES,
   SIGNOFF_DIVIDER,
@@ -26,8 +26,8 @@ import {
   SIGNOFF_HEADING,
   SIGNOFF_PLACEHOLDER,
   loopRecordLane,
-} from "../../src/work/doctor-loop-record.mjs";
-import { loopRecordCommand } from "../../src/commands/loop-record.mjs";
+} from "../../packages/core/src/work/doctor-loop-record.mjs";
+import { loopRecordCommand } from "../../packages/core/src/commands/loop-record.mjs";
 import {
   ENGAGED_RUNS,
   ITEM_REF,

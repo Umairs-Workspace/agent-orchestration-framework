@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
-import { runLoopBody, runLoopLaunch, renderLoopState } from "../../src/commands/loop.mjs";
+import { runLoopBody, runLoopLaunch, renderLoopState } from "../../packages/core/src/commands/loop.mjs";
 import {
   DECLARATION_L1,
   cancellableDriver,
@@ -19,21 +19,21 @@ import {
   runCollected,
   writeDeclarationRun,
 } from "./loop-command-probe.test.mjs";
-import { answerRunAsk, completeRun, openRunAsk, parkRunAsk, readRuns, recordSessionId, retryReadiness } from "../../src/run-store.mjs";
+import { answerRunAsk, completeRun, openRunAsk, parkRunAsk, readRuns, recordSessionId, retryReadiness } from "../../packages/core/src/run-store.mjs";
 import { LOOP_STOPS, attemptElapsedMs } from "../../packages/work-loop/src/engine.mjs";
-import { PHASE_WORDS, askBlockLines, awaitAnswer, defaultAskWait, parkedHalt, phaseWord } from "../../src/loop/ask.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../src/loop/ask-request.mjs";
-import { claudeProjectsDir } from "../../src/work/observe.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { transitionRunStart } from "../../src/effects/run-transitions.mjs";
-import { installLoopDiagnostics, loopDiagLogDir } from "../../src/loop-diag.mjs";
-import { createStopSource, loopStopsDir, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
+import { PHASE_WORDS, askBlockLines, awaitAnswer, defaultAskWait, parkedHalt, phaseWord } from "../../packages/core/src/loop/ask.mjs";
+import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
+import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+import { transitionRunStart } from "../../packages/core/src/effects/run-transitions.mjs";
+import { installLoopDiagnostics, loopDiagLogDir } from "../../packages/core/src/loop-diag.mjs";
+import { createStopSource, loopStopsDir, requestLoopStop, stopRequestPath } from "../../packages/core/src/loop/stop-request.mjs";
 import { functionBody, stripComments } from "../support/source-slice.mjs";
 import { seedActive, withItemLockFixture } from "../support/item-lock-fixture.mjs";
-import { LANE_CANCEL_GRACE_MS, childDriveOutcome } from "../../src/loop/child-drive.mjs";
-import { drivePhase } from "../../src/loop/cycle.mjs";
+import { LANE_CANCEL_GRACE_MS, childDriveOutcome } from "../../packages/core/src/loop/child-drive.mjs";
+import { drivePhase } from "../../packages/core/src/loop/cycle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -759,7 +759,7 @@ aofVersion: 0.1.0
         const dir = loopStopsDir();
         let sampledDuring = null;
         let asks = 0;
-        const { invoke } = await import("../../src/command-core.mjs");
+        const { invoke } = await import("../../packages/core/src/command-core.mjs");
         const driver = completingDriver(fx);
         const ctx = {
           ...fx.ctx,
@@ -1048,7 +1048,7 @@ aofVersion: 0.1.0
         const pin = /\["packages\/execution\/src\/runs\.mjs", "([0-9a-f]{64})"\]/u.exec(await readFile(path.join(root, "test", "arch", "loop", "acd-loop-state-rides-the-run-record.test.mjs"), "utf8"));
         assert.ok(pin, "FF-5307 pins the store");
         const digest = createHash("sha256").update((await readFile(path.join(root, "packages", "execution", "src", "runs.mjs"), "utf8")).replace(/\r\n/gu, "\n")).digest("hex");
-        assert.equal(digest, pin[1], "src/run-store.mjs is untouched");
+        assert.equal(digest, pin[1], "packages/core/src/run-store.mjs is untouched");
       } finally {
         await fx.cleanup();
       }
@@ -1267,7 +1267,7 @@ aofVersion: 0.1.0
   ...primaryAskTests(),
 ];
 
-// ── milestone 131 / story 03, task 00 — ONE COMPOSER ASKS, WAITS AND ANSWERS (`src/loop/ask.mjs`;
+// ── milestone 131 / story 03, task 00 — ONE COMPOSER ASKS, WAITS AND ANSWERS (`packages/core/src/loop/ask.mjs`;
 // ADR-001 §1, §3-§5, ADR-004 §1, §6). The needs-input stop's own suite (task 00, ruling 18).
 // `awaitAnswer` is driven directly over a real run record in a temporary tree, a real transcript
 // under an isolated `CLAUDE_CONFIG_DIR`, the isolated aof home's ask file, `notify` through an

@@ -3,7 +3,7 @@
 // Every @executable scenario (and every Examples row) of
 //   wiki/work/54_milestone_verification-loop/stories/00_story_the-grade-record/tasks/00_the-frozen-vocabularies.feature
 // against the LOCKED surface: `compileGrade`, `GRADE_VERDICTS` and `GRADE_CODES` in
-// ../src/work/grade.mjs.
+// ../packages/core/src/work/grade.mjs.
 //
 // THIS IS THE BEHAVIOURAL HALF; FF-5403 (test/arch/grade/acd-grade-record-envelope.test.mjs) is
 // the structural one, and they must not be confused. The arch-test asserts that the sets
@@ -19,7 +19,7 @@
 // is proven here is that every member of the vocabulary has a DEFINED EFFECT on the
 // verdict — including the two whose effect is deliberately nothing.
 import assert from "node:assert/strict";
-import { compileGrade, GRADE_CODES, GRADE_VERDICTS } from "../../src/work/grade.mjs";
+import { compileGrade, GRADE_CODES, GRADE_VERDICTS } from "../../packages/core/src/work/grade.mjs";
 
 // A rubric declaring a TAP report — the configured baseline every observation below varies
 // from in exactly one respect.

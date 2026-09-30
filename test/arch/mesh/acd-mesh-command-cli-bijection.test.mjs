@@ -26,13 +26,13 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable } from "../../../src/spine/face.mjs";
+import { listCommands } from "../../../packages/core/src/command-core.mjs";
+import { deriveRouteTable } from "../../../packages/core/src/spine/face.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
+const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 // The mesh-surface subcommands DERIVED from the registry — every mesh:* command's op
 // segment. (NOT a hard-coded literal: a new mesh:* command is covered with no edit.

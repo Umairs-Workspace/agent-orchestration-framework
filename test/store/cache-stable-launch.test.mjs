@@ -11,10 +11,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { continueDriverCommand } from "../../src/commands/drive.mjs";
+import { continueDriverCommand } from "../../packages/core/src/commands/drive.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 
-const store = await import("../../src/run-store.mjs");
+const store = await import("../../packages/core/src/run-store.mjs");
 
 // ── a drive fixture with a session model/effort config ──
 async function driveFixture({ session }) {
@@ -117,7 +117,7 @@ export const cacheStableLaunchTests = [
           timestamp: "2026-08-20T10:00:00.000Z",
         });
         await writeFile(path.join(projectsDir, "sess-csl.jsonl"), assistant, "utf8");
-        const { settleSpendFromTranscript } = await import("../../src/run-spend-ingest.mjs");
+        const { settleSpendFromTranscript } = await import("../../packages/core/src/run-spend-ingest.mjs");
         const { stamped, envelope } = await settleSpendFromTranscript(item, { runId: record.runId, projectsDir });
         assert.equal(stamped, true, "the spend is ingested");
         assert.equal(envelope.model, passed.model, "the recorded model is the one that was passed");

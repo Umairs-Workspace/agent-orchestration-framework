@@ -4,12 +4,12 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
-// milestone 53 / story 00 — the session driver's extraction into src/agent-session-driver.mjs
+// milestone 53 / story 00 — the session driver's extraction into packages/core/src/agent-session-driver.mjs
 // (ADR-001), and the five suites its six @executable features name. They land in the SAME diff
 // as the move they mechanise, in this story's own labelled block (ADR-011 §1): a story accepted
 // on evidence the runner never invokes is TECH_DEBT item 48 exactly. Import AND spread, both —

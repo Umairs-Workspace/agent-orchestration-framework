@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ADMITTED_KEYS, loadLoops } from "../../src/work/loops.mjs";
+import { ADMITTED_KEYS, loadLoops } from "../../packages/core/src/work/loops.mjs";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 import { withShippedRegistry } from "../support/registry-fixture.mjs";
 

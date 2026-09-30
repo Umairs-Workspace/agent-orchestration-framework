@@ -3,8 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { spawnCliSync } from "./cli-spawn.mjs";
 import { renderRecord } from "./loop-registry-fixture.mjs";
 

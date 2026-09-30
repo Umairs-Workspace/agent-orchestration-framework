@@ -11,9 +11,9 @@ import {
   normalizeCitedPath,
   pathCitationsIn,
   splitPathLocator,
-} from "../../../src/work/doctor-controls.mjs";
-import { QUALIFIED_REF, qualifiedRefsIn } from "../../../src/declared-id.mjs";
-import { emitProposals, extractProvenanceCitations } from "../../../src/work-tune/provenance.mjs";
+} from "../../../packages/core/src/work/doctor-controls.mjs";
+import { QUALIFIED_REF, qualifiedRefsIn } from "../../../packages/core/src/declared-id.mjs";
+import { emitProposals, extractProvenanceCitations } from "../../../packages/core/src/work-tune/provenance.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -41,7 +41,7 @@ function makeResolutionFixture() {
 
 function copiedReader(mutator) {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "aof-grammar-copy-"));
-  const srcDir = path.join(rootDir, "src");
+  const srcDir = path.join(rootDir, "packages", "core", "src");
   const tuneDir = path.join(srcDir, "work-tune");
   copyWorkRuntime(repoRoot, rootDir);
   mutator?.(rootDir);

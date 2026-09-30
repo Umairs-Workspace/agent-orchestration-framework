@@ -22,7 +22,7 @@
 //     (only the status line changes); → done and a from-state ≠ in-progress are
 //     rejected (forbidden-rollback / rollback-not-applicable) writing nothing.
 // (b) SOURCE-GREP (per 15/R3 + 10/R2, following the function): over the module family
-//     that could write item frontmatter (packages/work/src/records.mjs + src/commands/run-*.mjs) —
+//     that could write item frontmatter (packages/work/src/records.mjs + packages/core/src/commands/run-*.mjs) —
 //     rollbackItemStatus's allowed targets are exactly not-started|blocked, the forward
 //     face takes its permission from the lifecycle table (never from an argument), both
 //     write through writeText, and the run-* command modules contain NO writeText/
@@ -33,8 +33,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { rollbackItemStatus } from "../../../src/work.mjs";
-import { ITEM_STATUS_EDGES } from "../../../src/acceptance-horizon.mjs";
+import { rollbackItemStatus } from "../../../packages/core/src/work.mjs";
+import { ITEM_STATUS_EDGES } from "../../../packages/core/src/acceptance-horizon.mjs";
 
 const WORK = new URL("../../../packages/work/src/records.mjs", import.meta.url);
 const HORIZON = new URL("../../../packages/work/src/lifecycle.mjs", import.meta.url);

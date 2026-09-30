@@ -19,11 +19,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { serveRelay, sha256Hex } from "../../../src/mesh/relay.mjs";
-import { writeRegistry, readRegistry } from "../../../src/mesh/registry.mjs";
-import { meshDir } from "../../../src/mesh/store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { serveRelay, sha256Hex } from "../../../packages/core/src/mesh/relay.mjs";
+import { writeRegistry, readRegistry } from "../../../packages/core/src/mesh/registry.mjs";
+import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

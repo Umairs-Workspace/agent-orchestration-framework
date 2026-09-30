@@ -55,7 +55,7 @@ export function runCli(context, command, input = "", options = {}) {
 }
 
 export async function runCliInProcess(context, command, input = "", options = {}) {
-  const { run } = await import("../../../src/cli.mjs");
+  const { run } = await import("../../../packages/core/src/cli.mjs");
   const previousCwd = process.cwd();
   const previousDataDir = process.env.AOF_DATA_DIR;
   const previousNoWarnings = process.env.NODE_NO_WARNINGS;

@@ -3,7 +3,7 @@
 // Every @executable scenario (and every Examples row) of
 //   wiki/work/66_milestone_controls-that-run/stories/00_story_contract-parses/tasks/01_the-acceptance-horizon.feature
 // against the LOCKED surfaces: the predicate `isOpen(status)` in
-// ../src/acceptance-horizon.mjs, `validateWork` in ../src/work.mjs, and the two FACE
+// ../packages/core/src/acceptance-horizon.mjs, `validateWork` in ../packages/core/src/work.mjs, and the two FACE
 // exit adapters (`validateCommand.cli.exit`, `doctorCommand.cli.exit`).
 //
 // ON THE DOCTOR ROWS OF THE "two renderings" OUTLINE. ADR-009/E rules that there is
@@ -18,11 +18,11 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isOpen, severityFor, VALID_STATUS } from "../../src/acceptance-horizon.mjs";
-import { validateWork, loadWorkspace } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
-import { validateCommand } from "../../src/commands/validate.mjs";
-import { doctorCommand } from "../../src/commands/doctor.mjs";
+import { isOpen, severityFor, VALID_STATUS } from "../../packages/core/src/acceptance-horizon.mjs";
+import { validateWork, loadWorkspace } from "../../packages/core/src/work.mjs";
+import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
+import { validateCommand } from "../../packages/core/src/commands/validate.mjs";
+import { doctorCommand } from "../../packages/core/src/commands/doctor.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const srcWork = path.join(repoRoot, "packages", "work", "src", "validation.mjs");
@@ -89,7 +89,7 @@ const aboutFeature = (findings, featurePath) => findings.filter((f) => f.path ==
 // The horizon's own severity ruling (ADR-002 §2/§3) is IMPORTED, not restated
 // (F-09, closed by 66/02). It lived here as a local copy only because 66/00 shipped
 // no code that emitted a severity; 66/02's controls lane is the doctor rendering the
-// three rows below describe, so the mapping now has a home in `src/` and this file
+// three rows below describe, so the mapping now has a home in `packages/core/src/` and this file
 // asserts over the shipped decision rather than over its own.
 
 // ---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ export const acceptanceHorizonTests = [
   // =====================================================================
   // Scenario: the horizon has exactly one implementation
   //   → the source scan proving no SECOND implementation exists anywhere under
-  //     `src/` is test/arch/grade/acd-acceptance-horizon-single-predicate.test.mjs
+  //     `packages/core/src/` is test/arch/grade/acd-acceptance-horizon-single-predicate.test.mjs
   //     (FF-6602). Asserted here: it is exported from exactly one module, and the
   //     caller reaches it by IMPORT.
   // =====================================================================
@@ -134,7 +134,7 @@ export const acceptanceHorizonTests = [
         "validate's home imports the predicate rather than re-deciding it",
       );
       // The leaf also took `VALID_STATUS`, so the five lifecycle words have ONE home
-      // (it was a private const at src/work.mjs:49).
+      // (it was a private const at packages/core/src/work.mjs:49).
       assert.match(work, /import\s*\{[^}]*\bVALID_STATUS\b[^}]*\}\s*from\s*"\.\/lifecycle\.mjs"/);
       assert.equal(
         /const\s+VALID_STATUS\s*=/.test(work),
@@ -159,7 +159,7 @@ export const acceptanceHorizonTests = [
   {
     name: "66/00 horizon: the frozen five are exactly the five, IN THE FROZEN ORDER (a consumer destructures it positionally)",
     run: () => {
-      // ORDERED, not sorted. `src/import/recovery.mjs` destructures this set
+      // ORDERED, not sorted. `packages/core/src/import/recovery.mjs` destructures this set
       // positionally — `const [NOT_STARTED, IN_PROGRESS, BLOCKED, IN_REVIEW, DONE] =
       // [...VALID_STATUS]` — which is what keeps the five lifecycle words out of that
       // module. That makes the ITERATION ORDER load-bearing: reordering the literal in
@@ -327,7 +327,7 @@ export const acceptanceHorizonTests = [
 
   // =====================================================================
   // Scenario: ACD never rewrites a contract an author already wrote
-  //   → the full enumeration of every `.feature` write site under `src/` is
+  //   → the full enumeration of every `.feature` write site under `packages/core/src/` is
   //     test/arch/grade/acd-acceptance-horizon-single-predicate.test.mjs (FF-6602).
   //     Asserted here: the single admitted site is create-only AT THE CALL.
   // =====================================================================

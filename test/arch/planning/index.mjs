@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -47,7 +47,7 @@ import { archTests as acdSpikeChoreNextUatShapedTests } from "./acd-spike-chore-
 import { archTests as acdChoreDodChecklistTests } from "./acd-chore-dod-checklist.test.mjs";
 import { archTests as acdDerivationProposesNeverWritesTests } from "./acd-derivation-proposes-never-writes.test.mjs";
 import { archTests as acdPlanRestatesNoDeclaredPathTests } from "./acd-plan-restates-no-declared-path.test.mjs";
-// milestone 124 / story 00 — FF-12403: the contract set has ONE home (`src/story-contract.mjs`,
+// milestone 124 / story 00 — FF-12403: the contract set has ONE home (`packages/core/src/story-contract.mjs`,
 // still a pure leaf), directory intent is AUTHORED rather than probed, and `ready-wave`'s adoption
 // of the shared coverage predicate is a strict TIGHTENING — asserted as a superset over a
 // generated corpus, because a parallelism gate that quietly widened would be invisible until two

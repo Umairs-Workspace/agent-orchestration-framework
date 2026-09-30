@@ -19,7 +19,7 @@ import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
 // 127/04 task 02 — the include-archived parameter, driven over the REAL board face on a
 // three-root stream (the m43 fixture, which learned the two roots for this story), the REAL
 // <Board/> for the client's URL composition, and the CLI as a child process for the frozen face.
@@ -27,9 +27,9 @@ import { withBoardFace, DEFAULT_STREAM } from "../support/board-face-fixture.mjs
 import { withBoardApp, findAll } from "../support/board-app-harness.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import http from "node:http";
-import { loadWorkspace } from "../../src/command-core.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
-import { loopAsksDir, openAsk, clearAsk, readAsk, answerAsk, askRequestPath } from "../../src/loop/ask-request.mjs";
+import { loadWorkspace } from "../../packages/core/src/command-core.mjs";
+import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { loopAsksDir, openAsk, clearAsk, readAsk, answerAsk, askRequestPath } from "../../packages/core/src/loop/ask-request.mjs";
 import { matchedBraceBody } from "../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -889,8 +889,8 @@ export const boardApiTests = [
       assert.match(stripped, /createBoardApi\(\{[^}]*\binvoke\b[^}]*\bloadWorkspace\b/, "the registry services enter through explicit ports");
       assert.equal((stripped.match(/intake/g) ?? []).length, 0, "the face contains the token `intake` zero times (FF-12704)");
 
-      const listSource = await readFile(path.join(repoRoot, "src", "commands", "list.mjs"), "utf8");
-      assert.ok(!listSource.includes("includeArchived"), "no `includeArchived` is spelled anywhere in src/commands/list.mjs");
+      const listSource = await readFile(path.join(repoRoot, "packages", "core", "src", "commands", "list.mjs"), "utf8");
+      assert.ok(!listSource.includes("includeArchived"), "no `includeArchived` is spelled anywhere in packages/core/src/commands/list.mjs");
 
       await withBoardFace(async (face) => {
         const result = spawnCliSync(process.execPath, [cliPath, "work", "list", "--json"], {

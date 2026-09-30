@@ -1,7 +1,7 @@
 // Fitness function: acd-run-store-mesh-free (milestone 26 / story 00 / ADR-001 /
 // fitness #4) — "Single-node zero mesh coupling (the store half)."
 //
-//   "src/run-store.mjs imports NO mesh module (mesh-store / mesh-presence /
+//   "packages/core/src/run-store.mjs imports NO mesh module (mesh-store / mesh-presence /
 //    mesh-lease / mesh-relay*) and reads no config — the node id arrives as DATA
 //    (a record key / mint argument)."
 //
@@ -67,7 +67,7 @@ export const archTests = [
       assert.deepEqual(
         meshImports,
         [],
-        `src/run-store.mjs imports no mesh module — imports: ${specs.join(", ")}`
+        `packages/core/src/run-store.mjs imports no mesh module — imports: ${specs.join(", ")}`
       );
       // Self-check (non-vacuous): the matcher catches every mesh-module form.
       for (const bad of ["./mesh/store.mjs", "./mesh/presence.mjs", "./mesh-lease.mjs", "./mesh/relay-client.mjs"]) {
@@ -82,9 +82,9 @@ export const archTests = [
       const liveCode = stripCommentsAndStrings(await readFile(RUN_STORE, "utf8"));
       assert.ok(
         !/\bconfig\b/i.test(liveCode),
-        "src/run-store.mjs's live code carries no `config` identifier (the store never reads config — 08/ADR-002 basis-neutral)"
+        "packages/core/src/run-store.mjs's live code carries no `config` identifier (the store never reads config — 08/ADR-002 basis-neutral)"
       );
-      assert.ok(!/\bloadWorkspace\b/.test(liveCode), "src/run-store.mjs never loads a workspace (it is handed items and data)");
+      assert.ok(!/\bloadWorkspace\b/.test(liveCode), "packages/core/src/run-store.mjs never loads a workspace (it is handed items and data)");
       // Self-checks (non-vacuous): the guard fires on a real config read and does
       // NOT fire on a documented mention.
       assert.ok(/\bconfig\b/i.test("const node = workspace.config.mesh.nodeId;"), "the guard catches a real config read");

@@ -5,7 +5,7 @@
 //   tasks/01_token-buckets-refused-at-write.feature
 //   tasks/02_cost-stamped-once.feature
 //   tasks/03_exit-reason-vocabulary.feature
-// exercising the REAL src/run-store.mjs in-process against a temp fixture repo
+// exercising the REAL packages/core/src/run-store.mjs in-process against a temp fixture repo
 // (mkdtemp → mkdir → startRun → settleRun → read → rm in finally). One test object
 // per @executable scenario (Scenario-Outline rows folded into one entry iterating
 // the rows), each name tracing to feature + scenario. node:assert/strict.
@@ -14,7 +14,7 @@ import { mkdtemp, rm, mkdir, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-const { SPEND_ENVELOPE_KEYS, TOKEN_BUCKET_KEYS, COST_SOURCES, EXIT_REASONS } = await import("../../src/run-store.mjs");
+const { SPEND_ENVELOPE_KEYS, TOKEN_BUCKET_KEYS, COST_SOURCES, EXIT_REASONS } = await import("../../packages/core/src/run-store.mjs");
 
 // The fifteen delivered keys (the record 68/00 amends with `spend`).
 const FIFTEEN_KEYS = ["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter"];
@@ -44,17 +44,17 @@ function validSpend(overrides = {}) {
 }
 
 async function startOne(item, { now = "2026-08-20T10:00:00.000Z" } = {}) {
-  const { startRun } = await import("../../src/run-store.mjs");
+  const { startRun } = await import("../../packages/core/src/run-store.mjs");
   return startRun(item, { now });
 }
 
 async function settle(item, runId, spend, now = "2026-08-20T11:00:00.000Z") {
-  const { settleRun } = await import("../../src/run-store.mjs");
+  const { settleRun } = await import("../../packages/core/src/run-store.mjs");
   return settleRun(item, { runId, spend, now });
 }
 
 async function readRecord(item, runId) {
-  const { readRuns } = await import("../../src/run-store.mjs");
+  const { readRuns } = await import("../../packages/core/src/run-store.mjs");
   const runs = await readRuns(item);
   return runs.find((run) => run.runId === runId);
 }
@@ -89,7 +89,7 @@ export const runStoreSpendTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
         const legacy = {
           runId: "20260630T000000000Z-0000",
           itemRef: item.ref,
@@ -133,7 +133,7 @@ export const runStoreSpendTests = [
       try {
         // A run whose spend was never ingested → spend stays null.
         const neverIngested = await startOne(item, { now: "2026-08-20T10:00:00.000Z" });
-        const { completeRun } = await import("../../src/run-store.mjs");
+        const { completeRun } = await import("../../packages/core/src/run-store.mjs");
         await completeRun(item, { runId: neverIngested.runId, outcome: "done", now: "2026-08-20T10:05:00.000Z" });
 
         // A run whose ingested spend totalled zero tokens at zero cost → a full
@@ -292,7 +292,7 @@ export const runStoreSpendTests = [
           );
           const after = await readRecord(item, record.runId);
           assert.equal(after.spend, null, `[${row.label}] spend left exactly as it was`);
-          const { completeRun } = await import("../../src/run-store.mjs");
+          const { completeRun } = await import("../../packages/core/src/run-store.mjs");
           await completeRun(item, { runId: record.runId, outcome: "done", now: "2026-08-20T11:00:00.000Z" });
         }
       } finally {
@@ -370,7 +370,7 @@ export const runStoreSpendTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { completeRun } = await import("../../src/run-store.mjs");
+        const { completeRun } = await import("../../packages/core/src/run-store.mjs");
         // A run settled at a known costUsd under a known price table.
         const first = await startOne(item, { now: "2026-08-20T10:00:00.000Z" });
         await settle(item, first.runId, validSpend({ costUsd: 1.11, priceTable: "v1", costSource: "priced" }), "2026-08-20T11:00:00.000Z");
@@ -398,7 +398,7 @@ export const runStoreSpendTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { completeRun } = await import("../../src/run-store.mjs");
+        const { completeRun } = await import("../../packages/core/src/run-store.mjs");
         // ── accepted: buckets only → priced with a price-table version
         let record = await startOne(item);
         await settle(item, record.runId, validSpend({ costSource: "priced", priceTable: "v1", costUsd: 0.5 }));
@@ -469,7 +469,7 @@ export const runStoreSpendTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { completeRun } = await import("../../src/run-store.mjs");
+        const { completeRun } = await import("../../packages/core/src/run-store.mjs");
         const record = await startOne(item);
         await completeRun(item, { runId: record.runId, outcome: "done", now: "2026-08-20T11:00:00.000Z" });
         await settle(item, record.runId, validSpend({ exitReason: "final_output" }), "2026-08-20T11:05:00.000Z");
@@ -507,7 +507,7 @@ export const runStoreSpendTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { completeRun } = await import("../../src/run-store.mjs");
+        const { completeRun } = await import("../../packages/core/src/run-store.mjs");
         const runA = await startOne(item, { now: "2026-08-20T10:00:00.000Z" });
         await settle(item, runA.runId, validSpend({ exitReason: "final_output" }));
         await completeRun(item, { runId: runA.runId, outcome: "done", now: "2026-08-20T10:05:00.000Z" });
@@ -552,7 +552,7 @@ export const runStoreSpendTests = [
         for (const row of rows) {
           const record = await startOne(item);
           await settle(item, record.runId, validSpend({ exitReason: row.reason }));
-          const { completeRun } = await import("../../src/run-store.mjs");
+          const { completeRun } = await import("../../packages/core/src/run-store.mjs");
           await completeRun(item, { runId: record.runId, outcome: "done", now: "2026-08-20T11:00:00.000Z" });
           const settled = await readRecord(item, record.runId);
           assert.equal(settled.spend.exitReason, row.reason, `[${row.how}] exitReason reads ${row.reason}`);

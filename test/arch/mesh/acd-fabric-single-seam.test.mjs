@@ -7,14 +7,14 @@
 //    the wrong abstraction for a mesh VPN — on that fabric every node has a stable,
 //    directly-dialable address the fabric already knows (tailscale status --json →
 //    Self/Peer TailscaleIPs). ADR-001/002 pin the fabric behind ONE module
-//    (src/mesh/fabric.mjs) that owns probeFabric/selfAddress/resolvePeers. The invariant:
+//    (packages/core/src/mesh/fabric.mjs) that owns probeFabric/selfAddress/resolvePeers. The invariant:
 //    the `tailscale` CLI spawn and the peer-dial-address resolution appear ONLY in that
 //    seam — no other src module spawns `tailscale`, and reachability does NOT depend on a
 //    committed/hand-derived config ws:// URL. This is the structural half of 'nodes are
 //    directly addressable on the fabric; presence + issuance ride that.'"
 //
 // ============================ UN-SKIPPED (milestone 33 / story 01) ====================
-// src/mesh/fabric.mjs now exists as the SOLE tailscale-spawn + peer-address seam
+// packages/core/src/mesh/fabric.mjs now exists as the SOLE tailscale-spawn + peer-address seam
 // (ADR-001/ADR-002), and the broker's liveness path (mesh-presence-subscriber.mjs /
 // mesh-presence-cache.mjs) is retired — the real assertion below is GREEN.
 // =====================================================================================
@@ -77,11 +77,11 @@ const TAILSCALE_SPAWN = /\b(?:spawnSync|spawn|execFileSync|execFile|execSync|exe
 // lives ONLY in it — no OTHER src module spawns the fabric CLI (a second spawn site is the
 // "the transport re-derives reachability instead of asking the fabric seam" hole).
 export async function assertFabricSingleSeam() {
-  // 119/01 — the seam moved into `src/mesh/`, so a flat `readdir(SRC_DIR)` membership test stopped
+  // 119/01 — the seam moved into `packages/core/src/mesh/`, so a flat `readdir(SRC_DIR)` membership test stopped
   // being able to see it at all. Existence is asked of the path itself, which is the claim.
   assert.ok(
     existsSync(path.join(repoRoot, FABRIC_SEAM_BASENAME)),
-    `src/${FABRIC_SEAM_BASENAME} exists — the single fabric-assumption seam (ADR-001)`
+    `packages/core/src/${FABRIC_SEAM_BASENAME} exists — the single fabric-assumption seam (ADR-001)`
   );
 
   // Include every workspace implementation, so extraction cannot hide a second spawn site.

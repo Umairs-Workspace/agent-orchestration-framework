@@ -3,7 +3,7 @@
 // Covers EVERY @executable scenario in the two task features:
 //   tasks/00_one-run-one-item.feature
 //   tasks/01_toolchain-classifier-retired.feature
-// exercising the REAL src/work/observe.mjs attribution core (the sessionId join that
+// exercising the REAL packages/core/src/work/observe.mjs attribution core (the sessionId join that
 // replaces the retired text matcher) and the REAL classifier (content-based, replacing
 // the retired command-name regex), against temp fixture work streams (mkdtemp →
 // write folders/runs/sessions → observe/collect → rm in finally). One test object per
@@ -21,7 +21,7 @@ import {
   analyzeTranscript,
   classifyToolCallResult,
   projectSlug,
-} from "../../../src/work/observe.mjs";
+} from "../../../packages/core/src/work/observe.mjs";
 
 const T0 = Date.parse("2026-08-20T10:00:00.000Z");
 const iso = (o) => new Date(T0 + o).toISOString();
@@ -370,7 +370,7 @@ export const workObserveAttributionTests = [
           ].join("\n") + "\n"
         ).diagnostics.toolchain.runs;
       // F-07 regressions: output that merely CONTAINS test-ish words is not a test run.
-      assert.equal(runsOf("git status --short", " M src/work/observe.mjs\n M test/work/lifecycle/work-observe-attribution.test.mjs\n?? test/new-spec.mjs"), 0, "a git status listing *.test.mjs files is not a test run");
+      assert.equal(runsOf("git status --short", " M packages/core/src/work/observe.mjs\n M test/work/lifecycle/work-observe-attribution.test.mjs\n?? test/new-spec.mjs"), 0, "a git status listing *.test.mjs files is not a test run");
       assert.equal(runsOf("ls test/", "work-observe.test.mjs\nwork-update.test.mjs"), 0, "an ls of the test dir is not a test run");
       assert.equal(runsOf("git diff src/x.mjs", "@@ -12,7 +12,7 @@\n-  // failing case kept deliberately\n+  // removed"), 0, "a diff hunk mentioning failing is not a test run");
       assert.equal(classifyToolCallResult("Failed to connect to the remote host"), "other", "a connection failure is not a test run");

@@ -3,8 +3,8 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp } from "node:fs/promises";
-import { doctorConfig, inspectConfig, inspectGlobalConfig, resolveWorkDiagrams, validateConfig, validateGlobalConfig } from "../../src/config-inspect.mjs";
-import { generatorIds } from "../../src/diagrams/generators.mjs";
+import { doctorConfig, inspectConfig, inspectGlobalConfig, resolveWorkDiagrams, validateConfig, validateGlobalConfig } from "../../packages/core/src/config-inspect.mjs";
+import { generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
 
 export const configInspectTests = [
   {

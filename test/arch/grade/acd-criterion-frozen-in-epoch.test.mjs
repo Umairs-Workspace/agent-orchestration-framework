@@ -39,7 +39,7 @@ import {
   compileFrozenSet,
   FROZEN_ENFORCEMENT_POINTS,
   FROZEN_OWNERSHIP_MARKER,
-} from "../../../src/frozen-set.mjs";
+} from "../../../packages/core/src/frozen-set.mjs";
 import {
   CRITERION_FROZEN_IN_EPOCH,
   CRITERION_RELPATH,
@@ -53,11 +53,11 @@ import {
   makeCriterion,
   rulingsUnderCurrentCriterion,
   writeCriterion,
-} from "../../../src/work-acceptor/criterion.mjs";
+} from "../../../packages/core/src/work-acceptor/criterion.mjs";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 
 const THE_SELECTOR_HOME = "packages/work/src/acceptor/criterion.mjs";
 const MEMBER_ID = "acceptor-criterion";
@@ -364,13 +364,13 @@ export const archTests = [
       // driven over a planted source rather than over the tree, so the probe is repeatable.
       assert.deepEqual(
         digestSelectors([
-          { file: "src/pretend-ledger.mjs", body: "export function totals(rulings, digest) { return rulings.filter((r) => r.digest === digest); }" },
+          { file: "packages/core/src/pretend-ledger.mjs", body: "export function totals(rulings, digest) { return rulings.filter((r) => r.digest === digest); }" },
         ]),
-        ["src/pretend-ledger.mjs"],
+        ["packages/core/src/pretend-ledger.mjs"],
         "a second home for the selection is visible",
       );
       assert.deepEqual(
-        digestSelectors([{ file: "src/pretend-arithmetic.mjs", body: "export function totals(rulings) { return rulings.length; }" }]),
+        digestSelectors([{ file: "packages/core/src/pretend-arithmetic.mjs", body: "export function totals(rulings) { return rulings.length; }" }]),
         [],
         "…and a module that merely sums a list it is handed is not — that leaf is ADR-006 §4a's, and it must not be dragged in here",
       );

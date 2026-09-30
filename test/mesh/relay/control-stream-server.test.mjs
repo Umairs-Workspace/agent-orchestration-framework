@@ -25,9 +25,9 @@ import {
   applyStreamFrame,
   streamLivenessLabel,
   startControlStreamServer,
-} from "../../../src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore, queryGlobalWorkProjection, readWorkItemDoc, readWorkItemRuns } from "../../../src/global-work-store.mjs";
-import { readPresenceRecord } from "../../../src/mesh/presence.mjs";
+} from "../../../packages/core/src/control-stream-server.mjs";
+import { openGlobalWorkProjectionStore, queryGlobalWorkProjection, readWorkItemDoc, readWorkItemRuns } from "../../../packages/core/src/global-work-store.mjs";
+import { readPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
 
 const NOW = "2026-07-05T10:00:00.000Z";
 

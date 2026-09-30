@@ -3,7 +3,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // PRD-command-spine-effects-ledger §command-spine-faces — "`console.log` confined to
 // the face", the third of d1's owed items).
 //
-// THE INVARIANT — printing is a FACE act, not a core act. `src/` began the wave with
+// THE INVARIANT — printing is a FACE act, not a core act. `packages/core/src/` began the wave with
 // 248 console.logs in cli.mjs alone; the verb migrations moved each one into a
 // `render()` that RETURNS lines, which the ONE generic face prints. What keeps it that
 // way is this gate: the set of modules that may call `console.log` is CLOSED and
@@ -26,7 +26,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 
 // THE CLOSED SET. Key = repo-relative path under src/; value = why it may print.
 // Adding a row is a DESIGN decision, not a fix — the ratchet below fails on growth.
@@ -40,9 +40,9 @@ const PRINTERS = {
   // posture, announces, refusals and shutdown). Their MACHINE face is the probe,
   // which never launches, so the one-document discipline is preserved where it
   // matters (`--json` is checked before cli.launch is consulted).
-  "../packages/mesh/src/commands/serve.mjs": "cli.launch body — the control/serve daemon's announce + shutdown lines",
-  "../packages/mesh/src/commands/ui.mjs": "cli.launch body — the fleet server's announce lines",
-  "../packages/server/src/commands/work-ui.mjs": "cli.launch body — the board server's announce lines",
+  "../../mesh/src/commands/serve.mjs": "cli.launch body — the control/serve daemon's announce + shutdown lines",
+  "../../mesh/src/commands/ui.mjs": "cli.launch body — the fleet server's announce lines",
+  "../../server/src/commands/work-ui.mjs": "cli.launch body — the board server's announce lines",
   "application/bindings/commands/assets/ui.mjs": "cli.launch body — the setup UI's announce + not-started print",
   // m53 — `aof work loop` is the same seam: a long-lived FOREGROUND body that owns
   // its own per-act report lines while it drives. It qualifies on category (2)'s own
@@ -50,11 +50,11 @@ const PRINTERS = {
   // read-only probe, which never launches (`--json`/`dryRun` is resolved before
   // cli.launch is consulted, FF-5304), so the one-document discipline is preserved.
   // The core itself defaults to NO_PRINT — this row licenses the launch body alone.
-  "../packages/work-loop/src/commands/loop.mjs": "cli.launch body — the loop shell's per-act report lines while it drives a range",
+  "../../work-loop/src/commands/loop.mjs": "cli.launch body — the loop shell's per-act report lines while it drives a range",
 
   // (3) Interactive + long-lived-server prints that are not a command document.
   "prompt.mjs": "interactive prompting — the question IS the output, and it is not a document",
-  "../packages/server/src/terminal-ws.mjs": "the board server's terminal socket: the spawned-PTY pid line, traceability for a running process",
+  "../../server/src/terminal-ws.mjs": "the board server's terminal socket: the spawned-PTY pid line, traceability for a running process",
 
   // (4) The ONE DELIBERATELY unrouted ladder door left (WAVE-D-MIGRATION d1 wave 2:
   // "work memory and session stay laddered by design — they delegate wholesale").
@@ -62,7 +62,7 @@ const PRINTERS = {
   // (commands/work/memory.mjs) returns data and the generic face prints — so its row
   // went, exactly as this comment said it would, and the ratchet below made that a
   // one-way door. `session` is still its own face; when it joins, its row goes too.
-  "../packages/mesh/src/commands/session.mjs": "`aof session start|ping|end` — a declared ladder face (its own envelope + exit policy)",
+  "../../mesh/src/commands/session.mjs": "`aof session start|ping|end` — a declared ladder face (its own envelope + exit policy)",
 };
 
 // The count may only fall. A migration that retires a printer should also drop its

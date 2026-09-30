@@ -5,25 +5,25 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { claudeProjectsDir } from "../../src/work/observe.mjs";
-import { readWorkerAsk } from "../../src/mesh/park-resume.mjs";
+import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
+import { readWorkerAsk } from "../../packages/core/src/mesh/park-resume.mjs";
 import {
   createMeshWorkerExecutionHandler,
   createMeshWorkerTerminalResumeHandler,
   driveInteractiveClaudeSession,
-} from "../../src/mesh/worker-execution.mjs";
-import { isLegalTransition, readRuns, runNodeRecordPath, runRecordPath } from "../../src/run-store.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { assignmentOccupiesDispatchSlot } from "../../src/mesh/assignment-reclaim.mjs";
-import { transitionRunComplete } from "../../src/effects/run-transitions.mjs";
-import { appendEvent, latestAppliedAssignmentParkEventId, openEffectsJournal, pendingSteps } from "../../src/effects/journal.mjs";
-import { drainOutbox, applyEffectAck, EFFECT_STEP_FRAME_KIND } from "../../src/effects/outbox.mjs";
-import { reportAssignmentSettled, reportTerminalResumeRefused } from "../../src/effects/assignment-transitions.mjs";
-import { applyStreamFrame } from "../../src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { readAssignment, reserveParkedAssignmentResume } from "../../src/assignment-record.mjs";
-import { meshWorktreePath } from "../../src/mesh/worktree.mjs";
-import { findWork, loadWorkspace } from "../../src/work.mjs";
+} from "../../packages/core/src/mesh/worker-execution.mjs";
+import { isLegalTransition, readRuns, runNodeRecordPath, runRecordPath } from "../../packages/core/src/run-store.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { assignmentOccupiesDispatchSlot } from "../../packages/core/src/mesh/assignment-reclaim.mjs";
+import { transitionRunComplete } from "../../packages/core/src/effects/run-transitions.mjs";
+import { appendEvent, latestAppliedAssignmentParkEventId, openEffectsJournal, pendingSteps } from "../../packages/core/src/effects/journal.mjs";
+import { drainOutbox, applyEffectAck, EFFECT_STEP_FRAME_KIND } from "../../packages/core/src/effects/outbox.mjs";
+import { reportAssignmentSettled, reportTerminalResumeRefused } from "../../packages/core/src/effects/assignment-transitions.mjs";
+import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { readAssignment, reserveParkedAssignmentResume } from "../../packages/core/src/assignment-record.mjs";
+import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
+import { findWork, loadWorkspace } from "../../packages/core/src/work.mjs";
 import {
   createStatusRecorder,
   markRepoPublished,

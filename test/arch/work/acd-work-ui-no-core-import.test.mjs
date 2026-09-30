@@ -1,11 +1,11 @@
 // Fitness function for milestone 08 / ADR-004 inv. 3 (the registry is the only
-// door): "The board surface (`src/board-ui.mjs`) imports NO work-core/operation
+// door): "The board surface (`packages/core/src/board-ui.mjs`) imports NO work-core/operation
 //  module except the command registry (`./command-core.mjs`), and performs no
 //  work-operation filesystem call itself. The bespoke `handleDoc`/`handleTasks`/
 //  `handleFeedback` logic and its direct `work.mjs`/`feature-parse.mjs` imports
 //  moved INTO the commands (story 00); story 02 strips them from the face."
 //
-// Source-grep `src/board-ui.mjs` (the import-boundary idiom of
+// Source-grep `packages/core/src/board-ui.mjs` (the import-boundary idiom of
 // acd-terminal-server-only, with comments discounted via the call-form discipline
 // of acd-board-write-isolation):
 //   - the ONLY operation-bearing import is `./command-core.mjs`;
@@ -69,7 +69,7 @@ export const archTests = [
     name: "arch/ADR-004 inv.3: the command registry (./command-core.mjs) is the ONLY operation-bearing import",
     run: async () => {
       const source = stripComments(await readFile(BOARD_UI, "utf8"));
-      const binding = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/board-ui.mjs"), "utf8"));
+      const binding = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/board-ui.mjs"), "utf8"));
       const specifiers = dependencySpecifiers(binding).map((i) => i.specifier);
       assert.match(source, /export function createBoardApi\(\{[^}]*\binvoke\b[^}]*\bloadWorkspace\b/);
       assert.match(binding, /createBoardApi\(\{[^}]*\binvoke\b[^}]*\bloadWorkspace\b/);
@@ -132,7 +132,7 @@ export const archTests = [
         "setup-ui.mjs imports no ./work.mjs, ./feature-parse.mjs, ./command-core.mjs, or ./commands/* directly"
       );
       // The one work door it DOES hold is handleWorkApi from ./board-ui.mjs.
-      const binding = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/setup-ui.mjs"), "utf8"));
+      const binding = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/setup-ui.mjs"), "utf8"));
       assert.match(binding, /const\s*\{[^}]*\bhandleWorkApi\b[^}]*\}\s*= boardUiServices/);
       assert.match(binding, /createSetupServer\(\{[^}]*\bhandleWorkApi\b/);
       assert.match(source, /export function createSetupServer\(\{[^}]*\bhandleWorkApi\b/);

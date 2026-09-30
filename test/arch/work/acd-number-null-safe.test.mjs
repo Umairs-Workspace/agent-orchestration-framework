@@ -18,10 +18,10 @@
 // `file:line`.
 //
 // THE SET IS EXACTLY ELEVEN FILES, asserted by set-equality over a comment-stripped sweep of
-// `src/**`: a twelfth file gaining a `.number` parse must be added here consciously, and a
+// `packages/core/src/**`: a twelfth file gaining a `.number` parse must be added here consciously, and a
 // file losing its last site must be removed — either way the control names the drift. The
 // contract named ten (task 04's preamble, measured at 2321dce8); 127/02 added the eleventh,
-// `src/commands/promote.mjs` — the ONE mint (127/ADR-003) reads the stream's width and the
+// `packages/core/src/commands/promote.mjs` — the ONE mint (127/ADR-003) reads the stream's width and the
 // archived-collision set over rows, and every one of its sites is guarded by the rule.
 //
 // Non-vacuous: at least ten sites must be CLASSIFIED by the rule (allow-listed sites do not

@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -140,7 +140,7 @@ import { archTests as acdUiSingleRouteTableTests } from "./acd-ui-single-route-t
 //   ADR-002/003 — no `?mode=` surface URL is minted anywhere in src/ · ui/src/ · app/desktop/;
 //                 the legacy vocabulary is read-only and only the translator reads it.
 import { archTests as acdNoSurfaceModeUrlLiteralTests } from "./acd-no-surface-mode-url-literal.test.mjs";
-//   ADR-004     — ONE shared static-serving module (src/static-serve.mjs) for BOTH servers:
+//   ADR-004     — ONE shared static-serving module (packages/core/src/static-serve.mjs) for BOTH servers:
 //                 the history fallback never shadows /api/* and never masks a missing asset
 //                 (driven against the REAL serveSetupUi handler, not a copy of its logic),
 //                 and the byte-identical, twice-defined safeStaticPath traversal guard
@@ -165,7 +165,7 @@ import { archTests as acdFleetFilterSingleHomeTests } from "./acd-fleet-filter-s
 //                 behaviour gets "unified" into the other by a later reader.
 import { archTests as acdFleetFilterEveryRegionTests } from "./acd-fleet-filter-every-region.test.mjs";
 //   ADR-002     — the filter is READ-SIDE and CLIENT-SIDE: `/api/mesh/status`'s accepted input
-//                 stays exactly `scope`, the fleet client mints no filter parameter, and `src/`
+//                 stays exactly `scope`, the fleet client mints no filter parameter, and `packages/core/src/`
 //                 grows no home for the filter at all. That last clause is what makes SPEC's "the
 //                 read-only contract stays green UNTOUCHED" checkable rather than remembered.
 import { archTests as acdFleetFilterReadOnlyTests } from "./acd-fleet-filter-read-only.test.mjs";

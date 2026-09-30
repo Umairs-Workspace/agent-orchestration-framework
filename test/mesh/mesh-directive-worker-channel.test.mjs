@@ -9,7 +9,7 @@
 // task 02 specifies, over the SAME injected bidirectional fake channel
 // (test/support/mesh-directive-channel-fixture.mjs).
 import assert from "node:assert/strict";
-import { createWorkerStreamClient } from "../../src/worker-stream-client.mjs";
+import { createWorkerStreamClient } from "../../packages/core/src/worker-stream-client.mjs";
 import { createFakeWorkerTransport } from "../support/mesh-directive-channel-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

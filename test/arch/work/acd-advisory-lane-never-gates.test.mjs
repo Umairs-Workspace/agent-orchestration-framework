@@ -13,7 +13,7 @@
 //   is disjoint from `CONTROL_FINDING_CODES`, names no `"error"` severity literal anywhere in its
 //   source, carries its severity as one module constant, and consults no acceptance horizon.*
 //
-// `src/work/doctor-controls.mjs` is the ONE exemption, because its array IS the gate's source — and
+// `packages/core/src/work/doctor-controls.mjs` is the ONE exemption, because its array IS the gate's source — and
 // it is asserted AS A NAMED EXEMPTION rather than as an absence, so a second one cannot arrive
 // silently. The point of the class is not the fourth lane; it is the FIFTH, which cannot
 // re-introduce a gateable code without reding CI.
@@ -36,14 +36,14 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { invoke } from "../../../src/command-core.mjs";
-import { CHECK_GROUPS } from "../../../src/work/doctor.mjs";
-import { CONTROL_FINDING_CODES } from "../../../src/work/doctor-controls.mjs";
-import { DEPENDS_FINDING_CODES, dependsLane } from "../../../src/work/doctor-depends.mjs";
-import { DOCTOR_GATE_CODES, admittedDoctorFindings } from "../../../src/commands/loop.mjs";
-import { ITEM_STATUS_EDGES } from "../../../src/acceptance-horizon.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { resolveDeclaredSet } from "../../../src/story-contract.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { CHECK_GROUPS } from "../../../packages/core/src/work/doctor.mjs";
+import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { DEPENDS_FINDING_CODES, dependsLane } from "../../../packages/core/src/work/doctor-depends.mjs";
+import { DOCTOR_GATE_CODES, admittedDoctorFindings } from "../../../packages/core/src/commands/loop.mjs";
+import { ITEM_STATUS_EDGES } from "../../../packages/core/src/acceptance-horizon.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { resolveDeclaredSet } from "../../../packages/core/src/story-contract.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -57,7 +57,7 @@ const GATE_SOURCE_MODULE = "../audit/controls.mjs";
 const sourceOf = async (leaf) => stripComments(await readFile(path.join(laneDir, leaf), "utf8"));
 const byCode = (findings, code) => findings.filter((entry) => entry.code === code);
 
-// Every `src/work/doctor-*.mjs`, resolved to { leaf, module, registered, codes }. A lane is matched
+// Every `packages/core/src/work/doctor-*.mjs`, resolved to { leaf, module, registered, codes }. A lane is matched
 // to its module by FUNCTION IDENTITY against the registry — not by name, which would let a rename
 // quietly empty this control instead of reding it.
 async function laneModules() {
@@ -158,11 +158,11 @@ const TEN_UNWITNESSED = [
   {
     number: "00",
     stories: [
-      { number: "00", files: ["src/written.mjs"], reads: ["src/out-01.mjs"] },
+      { number: "00", files: ["packages/core/src/written.mjs"], reads: ["packages/core/src/out-01.mjs"] },
       ...Array.from({ length: 10 }, (unused, index) => {
         const mine = String(index + 1).padStart(2, "0");
         const neighbour = String(((index + 1) % 10) + 1).padStart(2, "0");
-        return { number: mine, depends: ["00"], reads: [`src/out-${neighbour}.mjs`], files: [`src/out-${mine}.mjs`] };
+        return { number: mine, depends: ["00"], reads: [`packages/core/src/out-${neighbour}.mjs`], files: [`packages/core/src/out-${mine}.mjs`] };
       }),
     ],
   },
@@ -172,8 +172,8 @@ const TEN_UNWITNESSED = [
 const NO_DEPENDS = [{
   number: "00",
   stories: [
-    { number: "00", files: ["src/written.mjs"], reads: ["src/other.mjs"] },
-    { number: "01", reads: ["src/written.mjs"], files: ["src/other.mjs"] },
+    { number: "00", files: ["packages/core/src/written.mjs"], reads: ["packages/core/src/other.mjs"] },
+    { number: "01", reads: ["packages/core/src/written.mjs"], files: ["packages/core/src/other.mjs"] },
   ],
 }];
 
@@ -195,11 +195,11 @@ const everyCodeAt = (status) => ({
     { ref: "08", dir: path.join(NOWHERE_ROOT, "d08"), type: "milestone", number: "08", parent: null, status, meta: { status }, contract: null },
     {
       ref: "00/00", dir: path.join(NOWHERE_STORY, "00"), type: "story", number: "00", parent: "00", status,
-      meta: { status }, contract: { reads: null, files: setOf("src/b.mjs"), present: { reads: false, files: true }, malformed: { reads: false, files: false } },
+      meta: { status }, contract: { reads: null, files: setOf("packages/core/src/b.mjs"), present: { reads: false, files: true }, malformed: { reads: false, files: false } },
     },
     {
       ref: "00/01", dir: path.join(NOWHERE_STORY, "01"), type: "story", number: "01", parent: "00", status,
-      meta: { status, depends: ["00"] }, contract: { reads: setOf("src/a.mjs"), files: null, present: { reads: true, files: false }, malformed: { reads: false, files: false } },
+      meta: { status, depends: ["00"] }, contract: { reads: setOf("packages/core/src/a.mjs"), files: null, present: { reads: true, files: false }, malformed: { reads: false, files: false } },
     },
   ],
 });

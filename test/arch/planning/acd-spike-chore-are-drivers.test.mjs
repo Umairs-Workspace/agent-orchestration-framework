@@ -15,10 +15,10 @@ import { readFile, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listItems } from "../../../src/work.mjs";
+import { listItems } from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "src", "work.mjs");
+const workSrc = path.join(repoRoot, "packages", "core", "src", "work.mjs");
 
 async function itemTypeAlternation() {
   const src = await readFile(workSrc, "utf8");
@@ -61,7 +61,7 @@ export const archTests = [
       const src = await readFile(workSrc, "utf8");
       // The isDriver predicate (or an equivalent item-is-a-driver helper) must admit both.
       const isDriverLine = src.match(/const\s+isDriver\s*=\s*\(item\)\s*=>[^;]+;/);
-      assert.ok(isDriverLine, "isDriver predicate is present in src/work.mjs");
+      assert.ok(isDriverLine, "isDriver predicate is present in packages/core/src/work.mjs");
       assert.match(isDriverLine[0], /spike/, "isDriver admits `spike`");
       assert.match(isDriverLine[0], /chore/, "isDriver admits `chore`");
     },

@@ -5,7 +5,7 @@
 //  surface and do NOT invoke the workspace-local `mesh:status` command for the
 //  default global read."
 //
-// Structural half: the registered mesh:ui verb (src/commands/mesh-ui.mjs since
+// Structural half: the registered mesh:ui verb (packages/core/src/commands/mesh-ui.mjs since
 // the m42 wave-(d) launcher-seam migration; formerly cli.mjs's meshUiCommand)
 // computes scope "global" unless --local is present, and passes it straight to
 // serveMeshUi (no silent re-defaulting to "local" anywhere in between) — the
@@ -21,9 +21,9 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const CLI_PATH = path.join(repoRoot, "packages", "mesh", "src", "commands", "ui.mjs");

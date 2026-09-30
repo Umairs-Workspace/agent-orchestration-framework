@@ -2,9 +2,9 @@
 // milestone 38 / story 03, task 00
 // (00_per-workspace-app-identity-resolution.feature, ADR-011). Every @executable
 // scenario / Scenario Outline row is driven against the REAL `createGithubAppMintProvider`
-// (src/mesh/clone-credential-provider.mjs) fed the REAL, LAUNCHER-EXPORTED
+// (packages/core/src/mesh/clone-credential-provider.mjs) fed the REAL, LAUNCHER-EXPORTED
 // `createResolveWorkspaceAppIdentity`/`createResolveWorkspaceCloneUrl`
-// (src/mesh/launcher.mjs — the EXACT builders `startLauncher`'s production wiring
+// (packages/core/src/mesh/launcher.mjs — the EXACT builders `startLauncher`'s production wiring
 // site calls; not a hand-built stand-in, ADR-008) — composed over REAL committed
 // workspace configs (a temp `AOF_GLOBAL_HOME`, real `aof.config.json` files, real
 // `global_workspace_descriptors` rows) and REAL throwaway RSA keys read off REAL disk
@@ -15,8 +15,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createGithubAppMintProvider } from "../../../src/mesh/clone-credential-provider.mjs";
-import { createResolveWorkspaceAppIdentity, createResolveWorkspaceCloneUrl } from "../../../src/mesh/launcher.mjs";
+import { createGithubAppMintProvider } from "../../../packages/core/src/mesh/clone-credential-provider.mjs";
+import { createResolveWorkspaceAppIdentity, createResolveWorkspaceCloneUrl } from "../../../packages/core/src/mesh/launcher.mjs";
 import { createFakeHttpRequest, jsonResponse } from "../../support/mesh-clone-credential-mint-fixture.mjs";
 import { withPerOrgAppIdentityFixture, generateThrowawayPrivateKeyPem } from "../../support/mesh-per-org-app-identity-fixture.mjs";
 

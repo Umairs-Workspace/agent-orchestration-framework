@@ -2,7 +2,7 @@
 // task 00 — 00_claude-cli-classified-and-surfaced.feature.
 //
 // Covers EVERY @executable scenario AND every Scenario-Outline Examples row of that
-// feature against the REAL pure classifiers in ../src/commands/graph-build.mjs
+// feature against the REAL pure classifiers in ../packages/core/src/commands/graph-build.mjs
 // (isNetworkBackend / isKnownNetworkBackend / classifyEgress) and the REAL graphify
 // backend's `status` surface, driven through the REAL seam (`runMemory`). No live
 // graphify binary is touched: the classifiers are pure functions of the backend name,
@@ -24,8 +24,8 @@ import {
   isNetworkBackend,
   isKnownNetworkBackend,
   classifyEgress,
-} from "../../src/commands/graph/build.mjs";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
+} from "../../packages/core/src/commands/graph/build.mjs";
+import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
 
 // An isolated projectRoot so status reads no real store (recordCount 0, never throws,
 // reaches NO graphify binary).

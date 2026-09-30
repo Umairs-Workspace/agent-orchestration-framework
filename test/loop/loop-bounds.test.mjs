@@ -46,9 +46,9 @@ import {
   resolvesLoopBoundConfigKey,
   stepProbe,
   stepProbeFromConfig,
-} from "../../src/loop-bounds.mjs";
-import { DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../src/mesh/assignment-reclaim.mjs";
-import { dispatchConcurrencyFromConfig } from "../../src/work/dispatch.mjs";
+} from "../../packages/core/src/loop-bounds.mjs";
+import { DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../packages/core/src/mesh/assignment-reclaim.mjs";
+import { dispatchConcurrencyFromConfig } from "../../packages/core/src/work/dispatch.mjs";
 // 61/00 — the clamp is asked for at the doors it actually binds, not only at its
 // declaration: the three no-progress decisions, the attempt-retry door and the
 // drive-cycle door are all exercised through their own production surfaces.
@@ -57,10 +57,10 @@ import {
   evaluateProgressPolicy,
   progressPolicyFromConfig,
   progressSample,
-} from "../../src/loop-progress.mjs";
-import { resolveAttemptCeiling } from "../../src/commands/run-retry.mjs";
+} from "../../packages/core/src/loop-progress.mjs";
+import { resolveAttemptCeiling } from "../../packages/core/src/commands/run-retry.mjs";
 import { stripComments } from "../support/source-slice.mjs";
-import { loopCommand } from "../../src/commands/loop.mjs";
+import { loopCommand } from "../../packages/core/src/commands/loop.mjs";
 import { loopFixture } from "./loop-command-probe.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -128,7 +128,7 @@ export const loopBoundsTests = [
     name: "69/00 bounds/00 heartbeat is the reclaim threshold's one declared constant",
     async run() {
       assert.equal(loopBoundsFromConfig({ config: {} }).heartbeatMs, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS);
-      const reclaim = await readFile(path.join(root, "src", "mesh", "assignment-reclaim.mjs"), "utf8");
+      const reclaim = await readFile(path.join(root, "packages", "core", "src", "mesh", "assignment-reclaim.mjs"), "utf8");
       assert.match(reclaim, /DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS\s*=\s*DEFAULT_HEARTBEAT_MS/u);
       assert.doesNotMatch(reclaim, /DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS\s*=\s*15\s*\*/u);
     },
@@ -415,7 +415,7 @@ export const clampTests = [
   {
     name: "61/00/01 the key stays proposable — the declared tunable set still names it, and this task removes nothing from that set",
     async run() {
-      const record = await readFile(path.join(root, "src", "bundle", "loops", "speed-thoroughness-autonomy.md"), "utf8");
+      const record = await readFile(path.join(root, "packages", "core", "assets", "loops", "speed-thoroughness-autonomy.md"), "utf8");
       const declared = /^parameter-tuning:\s*\[([^\]]*)\]/mu.exec(record);
       assert.ok(declared != null, "the arbiter record declares a parameter-tuning edge");
       const keys = declared[1].split(",").map((entry) => entry.trim());

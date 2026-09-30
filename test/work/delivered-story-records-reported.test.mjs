@@ -26,9 +26,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { doctorWork, CHECK_GROUPS } from "../../src/work/doctor.mjs";
-import { lifecycleCompletenessGroup, DELIVERED_STORY_RECORDS } from "../../src/work/doctor-coherence.mjs";
-import { CONTROL_FINDING_CODES } from "../../src/work/doctor-controls.mjs";
+import { doctorWork, CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
+import { lifecycleCompletenessGroup, DELIVERED_STORY_RECORDS } from "../../packages/core/src/work/doctor-coherence.mjs";
+import { CONTROL_FINDING_CODES } from "../../packages/core/src/work/doctor-controls.mjs";
 
 const RECORDS = ["OUTCOME.md", "RETROSPECTIVE.md"];
 const CODE = "story-record-missing";

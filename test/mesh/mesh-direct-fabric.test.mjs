@@ -19,13 +19,13 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "../../src/mesh/fabric.mjs";
-import { readSidecar } from "../../src/node-identity.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { meshIdentityCommand } from "../../src/commands/mesh/identity.mjs";
-import { startControlStreamServer } from "../../src/control-stream-server.mjs";
-import { verifyCredential } from "../../src/mesh/registry.mjs";
-import { createWorkerWsTransport } from "../../src/worker-stream-client.mjs";
+import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "../../packages/core/src/mesh/fabric.mjs";
+import { readSidecar } from "../../packages/core/src/node-identity.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { meshIdentityCommand } from "../../packages/core/src/commands/mesh/identity.mjs";
+import { startControlStreamServer } from "../../packages/core/src/control-stream-server.mjs";
+import { verifyCredential } from "../../packages/core/src/mesh/registry.mjs";
+import { createWorkerWsTransport } from "../../packages/core/src/worker-stream-client.mjs";
 
 const DIRECT = { mesh: { fabric: "direct", nodeId: "control-a" } };
 const IFACES = {

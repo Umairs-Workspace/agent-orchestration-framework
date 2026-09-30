@@ -8,7 +8,7 @@
 // shell needing no registry to mint one, and the report-only level still writing nothing. The two
 // registry-facing scenarios (the id is a loop the shipped registry declares; the drift check is
 // armed) are `test/arch/mesh/acd-shell-loop-id-is-declared.test.mjs`, because they are a check over
-// `src/bundle/loops/` rather than over a driven loop.
+// `packages/core/assets/loops/` rather than over a driven loop.
 //
 // THE FIXTURE HAS NO `.aof/loops/` DIRECTORY AT ALL (`loopFixture` writes a work tree and a config
 // and nothing else), so every scenario in this file also witnesses the registry-blind claim rather
@@ -18,10 +18,10 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { SHELL_LOOP_ID, runLoopBody } from "../../src/commands/loop.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { readRuns, startRun } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+import { SHELL_LOOP_ID, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { readRuns, startRun } from "../../packages/core/src/run-store.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { completingDriver, loopFixture, replaceStatus, treeFiles } from "./loop-command-probe.test.mjs";
 

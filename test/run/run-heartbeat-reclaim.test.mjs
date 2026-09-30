@@ -2,7 +2,7 @@
 //
 // Covers EVERY @executable scenario in
 //   tasks/03_heartbeat-and-reclaim.feature
-// exercising the REAL src/run-store.mjs in-process against a temp fixture repo
+// exercising the REAL packages/core/src/run-store.mjs in-process against a temp fixture repo
 // (mkdtemp → mkdir → run → rm in finally). One test object per @executable
 // scenario (Scenario-Outline rows folded into one entry iterating the rows), each
 // name tracing to feature + scenario. node:assert/strict.
@@ -90,7 +90,7 @@ export const runHeartbeatReclaimTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, heartbeat, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, heartbeat, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const started = await startRun(item, { now: "2026-06-30T08:00:00.000Z" });
@@ -118,7 +118,7 @@ export const runHeartbeatReclaimTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { reclaimStaleRuns, readRuns } = await import("../../src/run-store.mjs");
+        const { reclaimStaleRuns, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T12:00:00.000Z";
         const threshold = 60000;
 
@@ -163,7 +163,7 @@ export const runHeartbeatReclaimTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { reclaimStaleRuns, readRuns } = await import("../../src/run-store.mjs");
+        const { reclaimStaleRuns, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
         const now = "2026-06-30T12:00:00.000Z";
 
@@ -191,7 +191,7 @@ export const runHeartbeatReclaimTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { reclaimStaleRuns, readRuns } = await import("../../src/run-store.mjs");
+        const { reclaimStaleRuns, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
         const now = "2026-06-30T12:00:00.000Z";
 
@@ -215,7 +215,7 @@ export const runHeartbeatReclaimTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { reclaimStaleRuns, readRuns } = await import("../../src/run-store.mjs");
+        const { reclaimStaleRuns, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T12:00:00.000Z";
         const fresh = isoAgo(now, 1000); // 1s old — well under the threshold
         const stale = isoAgo(now, 600000); // 10min old — well over the threshold
@@ -265,7 +265,7 @@ export const runHeartbeatReclaimTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { reclaimStaleRuns, readRuns } = await import("../../src/run-store.mjs");
+        const { reclaimStaleRuns, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T12:00:00.000Z";
         const stale = isoAgo(now, 600000);
 
@@ -297,7 +297,7 @@ export const runHeartbeatReclaimTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { reclaimStaleRuns, readRuns } = await import("../../src/run-store.mjs");
+        const { reclaimStaleRuns, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T12:00:00.000Z";
         const fresh = isoAgo(now, 1000);
 
@@ -367,7 +367,7 @@ function runWaitTests() {
     {
       name: "131/01 task05 — the stale scan skips a run waiting on an unanswered last ask, and only that run (eleven rows)",
       async run() {
-        const { staleRunningRuns } = await import("../../src/run-store.mjs");
+        const { staleRunningRuns } = await import("../../packages/core/src/run-store.mjs");
         const rows = [
           ["[]", [], true],
           ["one entry, open", [OPEN], false],
@@ -401,8 +401,8 @@ function runWaitTests() {
     {
       name: "131/01 task05 — every sweep inherits the skip and leaves a waiting run byte-unchanged; once answered, the same sweep reclaims it",
       async run() {
-        const { reclaimStaleRuns, answerRunAsk, readRuns } = await import("../../src/run-store.mjs");
-        const { transitionStaleRunsReclaimed } = await import("../../src/effects/run-transitions.mjs");
+        const { reclaimStaleRuns, answerRunAsk, readRuns } = await import("../../packages/core/src/run-store.mjs");
+        const { transitionStaleRunsReclaimed } = await import("../../packages/core/src/effects/run-transitions.mjs");
         await withItem(async (item) => {
           for (const [label, asks, sweep] of [
             ["open / reclaimStaleRuns", [OPEN], () => reclaimStaleRuns([item], { now: NOW, stalenessThreshold: FIVE_MIN })],
@@ -430,7 +430,7 @@ function runWaitTests() {
     {
       name: "131/01 task05 — the wait is charged to nobody: a three-hour answered wait, and an interval that ends at the answer, the park or now, clipped to the attempt",
       async run() {
-        const { attemptElapsedMs } = await import("../../src/work/loop.mjs");
+        const { attemptElapsedMs } = await import("../../packages/core/src/work/loop.mjs");
         const record = (over) => ({ runId: RUN_ID, createdAt: at("10:00"), updatedAt: at("10:00"), heartbeatAt: null, reclaimedAt: null, state: "running", ...over });
         const doneAt = (hhmm) => ({ state: "done", updatedAt: at(hhmm) });
 
@@ -449,8 +449,8 @@ function runWaitTests() {
     {
       name: "131/01 task05 — intervals are clipped to the attempt, merged, and never charged twice (fourteen rows)",
       async run() {
-        const { attemptElapsedMs } = await import("../../src/work/loop.mjs");
-        const { isStale } = await import("../../src/run-store.mjs");
+        const { attemptElapsedMs } = await import("../../packages/core/src/work/loop.mjs");
+        const { isStale } = await import("../../packages/core/src/run-store.mjs");
         const record = (over) => ({ runId: RUN_ID, createdAt: at("10:00"), updatedAt: at("10:00"), heartbeatAt: null, reclaimedAt: null, state: "running", ...over });
         const rows = [
           ["09:00 answered 10:30", [entry(at("09:00"), { answered: at("10:30") })], {}, 12600000],
@@ -477,7 +477,7 @@ function runWaitTests() {
     {
       name: "131/01 task05 — an answered ask on an earlier attempt is not charged to the lineage, and a record without asks answers what it answered before",
       async run() {
-        const { attemptElapsedMs, lineageElapsedMs } = await import("../../src/work/loop.mjs");
+        const { attemptElapsedMs, lineageElapsedMs } = await import("../../packages/core/src/work/loop.mjs");
         const one = { runId: "a1", createdAt: at("10:00"), updatedAt: at("11:00"), state: "failed", heartbeatAt: null, reclaimedAt: null, asks: [entry(at("10:15"), { answered: at("10:45") })] };
         const two = { runId: "a2", retryOf: "a1", createdAt: at("12:00"), updatedAt: at("13:00"), state: "done", heartbeatAt: null, reclaimedAt: null, asks: [] };
         assert.equal(lineageElapsedMs({ runs: [one, two], now: NOW }), 5400000);
@@ -498,7 +498,7 @@ function runWaitTests() {
       name: "131/01 task05 — the engine stays pure: src/work/loop.mjs has zero imports and reads no clock",
       async run() {
         const { stripComments } = await import("../support/source-slice.mjs");
-        const source = stripComments(await readFile(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "work", "loop.mjs"), "utf8"));
+        const source = stripComments(await readFile(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "core", "src", "work", "loop.mjs"), "utf8"));
         assert.doesNotMatch(source, /^\s*import\s/mu, "zero import statements");
         assert.ok(!source.includes("Date.now(") && !source.includes("new Date("), "no Date.now( and no new Date(");
       },

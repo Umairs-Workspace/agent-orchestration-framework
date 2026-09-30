@@ -4,12 +4,12 @@
 // Every @executable scenario below is confirmed by re-reading the record doc's
 // RAW BYTES from the fixture stream after the engine call (`readFile` — never
 // a source read of the engine's own code), against the LOCKED engine
-// `reindexForInsert(workDir, { at, space, parent })` (src/work/reindex.mjs).
+// `reindexForInsert(workDir, { at, space, parent })` (packages/core/src/work/reindex.mjs).
 import assert from "node:assert/strict";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
-import { findWork } from "../../../src/work.mjs";
-import { reindexForInsert } from "../../../src/work/reindex.mjs";
+import { findWork } from "../../../packages/core/src/work.mjs";
+import { reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
 import { withWork } from "../../support/work-reindex-fixture.mjs";
 
 // A hand-authored record doc: non-default frontmatter key order, a leading

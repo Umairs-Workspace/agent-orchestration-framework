@@ -27,9 +27,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, appendFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createTerminalInputRouter } from "../../../src/mesh/terminal-input.mjs";
-import { TERMINAL_INPUT_KIND, buildTerminalInputEnvelope, TERMINAL_FRAME_KIND, TERMINAL_RESUME_KIND, buildTerminalResumeEnvelope } from "../../../src/mesh/terminal-relay-bridge.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
+import { createTerminalInputRouter } from "../../../packages/core/src/mesh/terminal-input.mjs";
+import { TERMINAL_INPUT_KIND, buildTerminalInputEnvelope, TERMINAL_FRAME_KIND, TERMINAL_RESUME_KIND, buildTerminalResumeEnvelope } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
 import {
   createMeshWorkerExecutionHandler,
   createMeshWorkerTerminalInputHandler,
@@ -37,17 +37,17 @@ import {
   defaultWatchTranscriptCompletion,
   NEEDS_INPUT_SENTINEL,
   DIRECTIVE_COMPLETE_SENTINEL,
-} from "../../../src/mesh/worker-execution.mjs";
-import { meshWorktreePath } from "../../../src/mesh/worktree.mjs";
-import { meshTerminalResumeCommand } from "../../../src/commands/mesh/terminal-resume.mjs";
-import { updateAssignmentState, restoreParkedAssignmentResume } from "../../../src/assignment-record.mjs";
-import { findWork } from "../../../src/work.mjs";
-import { readRuns, startRun } from "../../../src/run-store.mjs";
-import { claudeProjectsDir } from "../../../src/work/observe.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../src/assignment-record.mjs";
-import { applyAssignmentStatusFrame } from "../../../src/control-stream-server.mjs";
+} from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { meshWorktreePath } from "../../../packages/core/src/mesh/worktree.mjs";
+import { meshTerminalResumeCommand } from "../../../packages/core/src/commands/mesh/terminal-resume.mjs";
+import { updateAssignmentState, restoreParkedAssignmentResume } from "../../../packages/core/src/assignment-record.mjs";
+import { findWork } from "../../../packages/core/src/work.mjs";
+import { readRuns, startRun } from "../../../packages/core/src/run-store.mjs";
+import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 
@@ -621,7 +621,7 @@ export const meshTerminalInputPathTests = [
   {
     name: "terminal-input/launch-env: a worker session's env is SCRUBBED of the IDE-attachment vector (CLAUDE_CODE_SSE_PORT / TERM_PROGRAM / VSCODE_*) — a daemon-spawned claude must never attach to a human's editor",
     async run() {
-      const { resolveInteractiveDriverLaunch } = await import("../../../src/mesh/worker-execution.mjs");
+      const { resolveInteractiveDriverLaunch } = await import("../../../packages/core/src/mesh/worker-execution.mjs");
       const launch = resolveInteractiveDriverLaunch("claude", {
         which: createFakeWhich(["claude"]),
         env: {

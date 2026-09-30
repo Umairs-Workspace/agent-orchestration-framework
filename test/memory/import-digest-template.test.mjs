@@ -9,10 +9,10 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { writeColocatedDigest, materializeImport, AOF_FILE } from "../../src/import/materialize.mjs";
-import { parseAof } from "../../src/memory/local-indexing.mjs";
-import { validateWork, WORK_ITEM_SCHEMA_VERSION } from "../../src/work.mjs";
-import { packageVersionString } from "../../src/asset-base.mjs";
+import { writeColocatedDigest, materializeImport, AOF_FILE } from "../../packages/core/src/import/materialize.mjs";
+import { parseAof } from "../../packages/core/src/memory/local-indexing.mjs";
+import { validateWork, WORK_ITEM_SCHEMA_VERSION } from "../../packages/core/src/work.mjs";
+import { packageVersionString } from "../../packages/core/src/asset-base.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const IMPORTED_AT = "2026-09-23";
@@ -155,7 +155,7 @@ export const importDigestTemplateTests = [
         assert.deepEqual(headings(legacy), headings(colocated), "the same `## ` headings");
 
         const offenders = [];
-        for (const file of await sourceFiles(path.join(repoRoot, "src"))) {
+        for (const file of await sourceFiles(path.join(repoRoot, "packages", "core", "src"))) {
           if ((await readFile(file, "utf8")).includes('"doc: digest"')) offenders.push(path.relative(repoRoot, file));
         }
         assert.deepEqual(offenders, [], 'no .mjs under src/ hand-writes the literal "doc: digest"');

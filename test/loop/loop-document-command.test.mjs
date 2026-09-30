@@ -2,7 +2,7 @@
 //
 // Covers EVERY @executable scenario in
 //   wiki/work/79_story_committed-loop-graph/tasks/01_the-writer-and-its-one-home.feature
-// exercising the REAL src/commands/loop-document.mjs against a temp fixture repo
+// exercising the REAL packages/core/src/commands/loop-document.mjs against a temp fixture repo
 // (mkdtemp → build a registry → run → rm in finally), through the REAL `loadWorkspace` so the
 // configured `work.dir` is genuinely read rather than assumed. One test object per @executable
 // scenario (the Scenario Outline folded into one entry iterating its rows), each name tracing to
@@ -17,9 +17,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { spawnCliSync } from "../support/cli-spawn.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { loopDocumentCommand } from "../../src/commands/loop-document.mjs";
-import { loopDocumentPath } from "../../src/loop-document.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { loopDocumentCommand } from "../../packages/core/src/commands/loop-document.mjs";
+import { loopDocumentPath } from "../../packages/core/src/loop-document.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { KIND_SHAPES } from "../../../src/commands/loops-graph.mjs";
+import { KIND_SHAPES } from "../../../packages/core/src/commands/loops-graph.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const RENDERER = "packages/work-graph/src/record-render.mjs";

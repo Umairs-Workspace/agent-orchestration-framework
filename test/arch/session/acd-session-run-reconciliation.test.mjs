@@ -9,7 +9,7 @@
 // the frozen m23 `string[]` of bare run ids (23/ADR-002; `ui/src/fleet/api.ts`),
 // carrying NO workspace id, so the fact the subsumption rule needs was not on the
 // wire. m38 therefore applied the rule UPSTREAM, in the assembler
-// (`src/mesh/launcher.mjs`), by DROPPING a same-workspace session before publishing.
+// (`packages/core/src/mesh/launcher.mjs`), by DROPPING a same-workspace session before publishing.
 // m48/ADR-004 removes that premise rather than overruling it: the missing fact now
 // rides each session entry as `workspaceHasRun` (stamped by the assembler — still
 // the only place workspace attribution exists), so the producer drops NOTHING and
@@ -51,10 +51,10 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
 import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
 
 const NODE_ID = "node-a";

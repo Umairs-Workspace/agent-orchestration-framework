@@ -27,26 +27,26 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { TABLE_CLASSIFICATION, tableClass, refRemapTables } from "../../../src/effects/stores.mjs";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { transitionStreamReindexed } from "../../../src/effects/stream-transitions.mjs";
-import { transitionRunStart } from "../../../src/effects/run-transitions.mjs";
-import { reconcileRunRecords } from "../../../src/effects/reconcile.mjs";
-import { openEffectsJournal, readEvents, readEventSteps } from "../../../src/effects/journal.mjs";
-import { drainEffects, CONTROL_LOCI } from "../../../src/effects/dispatch.mjs";
+import { TABLE_CLASSIFICATION, tableClass, refRemapTables } from "../../../packages/core/src/effects/stores.mjs";
+import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
+import { transitionStreamReindexed } from "../../../packages/core/src/effects/stream-transitions.mjs";
+import { transitionRunStart } from "../../../packages/core/src/effects/run-transitions.mjs";
+import { reconcileRunRecords } from "../../../packages/core/src/effects/reconcile.mjs";
+import { openEffectsJournal, readEvents, readEventSteps } from "../../../packages/core/src/effects/journal.mjs";
+import { drainEffects, CONTROL_LOCI } from "../../../packages/core/src/effects/dispatch.mjs";
 import {
   openGlobalWorkProjectionStore,
   remapWorkspaceFactRefs,
   wholesaleDelete,
-} from "../../../src/global-work-store.mjs";
-import { setItemBranch, readItemBranch } from "../../../src/mesh/assignment-directive.mjs";
-import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startRun, completeRun } from "../../../src/run-store.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+} from "../../../packages/core/src/global-work-store.mjs";
+import { setItemBranch, readItemBranch } from "../../../packages/core/src/mesh/assignment-directive.mjs";
+import { resolveWorkspaceId } from "../../../packages/core/src/workspace-identity.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startRun, completeRun } from "../../../packages/core/src/run-store.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

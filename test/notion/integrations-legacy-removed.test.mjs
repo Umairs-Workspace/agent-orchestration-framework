@@ -24,8 +24,8 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveNotionRouting } from "../../src/integrations/routing.mjs";
-import { projectMilestone } from "../../src/notion/projection.mjs";
+import { resolveNotionRouting } from "../../packages/core/src/integrations/routing.mjs";
+import { projectMilestone } from "../../packages/core/src/notion/projection.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SCHEMA_URL = path.join(repoRoot, "schemas", "aof.schema.json");

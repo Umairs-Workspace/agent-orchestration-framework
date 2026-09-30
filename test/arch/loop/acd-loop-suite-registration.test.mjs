@@ -36,7 +36,14 @@ const families = Object.freeze([
 // The stand-in a PERMITTED line is replaced BY — never removed, so its POSITION enters the digest.
 const MASK = "<<< permitted region line, masked in place >>>";
 const normalize = (text) => text.replace(/\r\n/gu, "\n");
-const digest = (text) => createHash("sha256").update(text).digest("hex");
+// Plan 03 relocates imports and source citations. Normalize only the declared
+// core paths before hashing; all assertions, masks and their positions retain
+// the existing pins, including every planted non-path edit below.
+const digest = (text) => createHash("sha256").update(text
+  .replaceAll("packages/core/src/", "src/")
+  .replaceAll("packages/core/assets", "src/bundle")
+  .replaceAll('"packages", "core", "src"', '"src"')
+  .replaceAll('"packages", "core", "assets"', '"src", "bundle"')).digest("hex");
 
 async function importArch(name) {
   return await import(pathToFileURL(path.join(root, "test", "arch", name)).href);
@@ -582,7 +589,7 @@ const ACCEPTED_CEILINGS = Object.freeze([
     floor: 300,
     // RE-PINNED by 119/01: import specifiers and read-subject paths only (see the file header).
     // RE-PINNED AGAIN by 119/03, and this is the reason: the suite MOVED into `test/arch/loop/`,
-    // which re-depthed its `../../src/` and `../../support/` specifiers by one segment. Those lines
+    // which re-depthed its `../../packages/core/src/` and `../../support/` specifiers by one segment. Those lines
     // are outside the permitted regions, so the residue moved — which is the ceiling working, not
     // failing. The three permitted lines were each verified present EXACTLY ONCE before the
     // re-stamp, so the mask set is unchanged and nothing new is exempted; the next unattributed
@@ -1230,7 +1237,7 @@ export const archTests = [
       // the `doctor/00` envelope test entirely for zero problems.
       const residue = lines.map((line) => (line.includes("Object.keys(") ? MASK : line)).join("\n");
       // RE-PINNED by 119/01: one import specifier and one comment citation; 683 lines, unchanged.
-      // RE-PINNED AGAIN by 119/03: the suite moved into `test/work/` and its `../src/` specifiers
+      // RE-PINNED AGAIN by 119/03: the suite moved into `test/work/` and its `../packages/core/src/` specifiers
       // gained a segment. The file is STILL 683 lines and still carries exactly ONE `Object.keys(`,
       // both asserted above before the residue is taken, so the ceiling's own claim is untouched —
       // only the bytes around it moved, which is what the residue exists to notice.

@@ -2,9 +2,9 @@
 // tasks/00_headroom-store-first.feature.
 //
 // Covers every @executable scenario (Scenario-Outline rows folded into one entry)
-// against the REAL in-process code: src/headroom.mjs's resolveHeadroomBinary, the
+// against the REAL in-process code: packages/core/src/headroom.mjs's resolveHeadroomBinary, the
 // store-first re-point (milestone-12 ADR-004) that delegates to tool-store.mjs's
-// resolveManagedBinary, plus src/work/headroom.mjs's useHeadroom (the config surface
+// resolveManagedBinary, plus packages/core/src/work/headroom.mjs's useHeadroom (the config surface
 // that is INDEPENDENT of the lookup). One test object per @executable scenario, each
 // name tracing to feature + scenario.
 //
@@ -25,10 +25,10 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { toolVersionDir } from "../../src/paths.mjs";
-import { exeDirFor, exeNameFor, HEADROOM_DESCRIPTOR } from "../../src/tool-store.mjs";
-import { resolveHeadroomBinary } from "../../src/headroom.mjs";
-import { useHeadroom } from "../../src/work/headroom.mjs";
+import { toolVersionDir } from "../../packages/core/src/paths.mjs";
+import { exeDirFor, exeNameFor, HEADROOM_DESCRIPTOR } from "../../packages/core/src/tool-store.mjs";
+import { resolveHeadroomBinary } from "../../packages/core/src/headroom.mjs";
+import { useHeadroom } from "../../packages/core/src/work/headroom.mjs";
 
 const HEADROOM_BINARY = "headroom";
 const HEADROOM_VERSION = HEADROOM_DESCRIPTOR.version;

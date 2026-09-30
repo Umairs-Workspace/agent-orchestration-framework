@@ -17,7 +17,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { startControlStreamServer } from "../../../src/control-stream-server.mjs";
+import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

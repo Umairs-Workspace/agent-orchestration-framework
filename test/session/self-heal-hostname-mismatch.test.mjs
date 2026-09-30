@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 33 / story 00 — per-install node identity.
 //
 // Covers EVERY @executable scenario in tasks/03_self-heal-hostname-mismatch.feature,
-// exercising src/work.mjs's healIdentitySidecar (the self-heal step factored out of
+// exercising packages/core/src/work.mjs's healIdentitySidecar (the self-heal step factored out of
 // loadWorkspace's own heal-site call — see work.mjs's header comment) IN-PROCESS with
 // an injected sidecar object + current hostname (+ an optional takenIds roster for
 // the collision-preserving scenario), plus a real temp sidecar file for the
@@ -25,8 +25,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { healIdentitySidecar, loadWorkspace } from "../../src/work.mjs";
-import { installHash, readSidecar } from "../../src/node-identity.mjs";
+import { healIdentitySidecar, loadWorkspace } from "../../packages/core/src/work.mjs";
+import { installHash, readSidecar } from "../../packages/core/src/node-identity.mjs";
 
 async function tempSidecar(initial) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-self-heal-"));

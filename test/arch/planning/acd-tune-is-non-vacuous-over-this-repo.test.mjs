@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { buildTuneReport } from "../../../src/commands/tune.mjs";
-import { getCommand, invoke } from "../../../src/command-core.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { PROPOSAL_CLASSES } from "../../../src/work-tune/proposal.mjs";
+import { buildTuneReport } from "../../../packages/core/src/commands/tune.mjs";
+import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { PROPOSAL_CLASSES } from "../../../packages/core/src/work-tune/proposal.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 

@@ -25,12 +25,12 @@
 import { mkdir, writeFile, readFile, rm, cp } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { invoke, loadWorkspace } from "../../src/command-core.mjs";
-import { upsertWorkItemContent } from "../../src/global-work-store.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { publishPresenceRecord } from "../../src/mesh/presence.mjs";
-import { meshWorktreePath } from "../../src/mesh/worktree.mjs";
+import { invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
+import { upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { publishPresenceRecord } from "../../packages/core/src/mesh/presence.mjs";
+import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
 import {
   withCacheFixture, withStore, tick, stream, itemRow, rows, registerDescriptor,
   seedActive, settle, writeItem, deleteItem, breakItem, removeStream, authorOf, seedWorker,

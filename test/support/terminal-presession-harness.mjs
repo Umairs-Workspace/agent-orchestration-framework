@@ -24,8 +24,8 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 
 export const GREETING = "ready\r\n";
 

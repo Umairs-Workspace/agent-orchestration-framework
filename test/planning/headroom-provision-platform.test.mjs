@@ -18,9 +18,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { toolVersionDir } from "../../src/paths.mjs";
-import { HEADROOM_DESCRIPTOR, planProvision } from "../../src/tool-store.mjs";
-import { toolPlatformCheckFor } from "../../src/config-inspect.mjs";
+import { toolVersionDir } from "../../packages/core/src/paths.mjs";
+import { HEADROOM_DESCRIPTOR, planProvision } from "../../packages/core/src/tool-store.mjs";
+import { toolPlatformCheckFor } from "../../packages/core/src/config-inspect.mjs";
 
 export const headroomProvisionPlatformTests = [
   // ═══════════════ 01_provision-and-platform.feature ══════════════════════════

@@ -5,8 +5,8 @@
 // baked into the spawn argv as a `-p` prompt — and interactive `claude` is spawned
 // ONCE for the assignment's whole run (never re-spawned to deliver the command).
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler } from "../../../src/mesh/worker-execution.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 

@@ -30,11 +30,11 @@
 // the fleet face's `/api/mesh/status` boards aggregate". Measured at HEAD, they are not
 // reachable through `serveMeshUi`: since m34/ADR-006 that route answers
 // `queryGlobalMeshStatus`, whose payload has NO `boards` key at all
-// (`src/global-mesh-query.mjs` returns scope/workspaceId/stalenessSeconds/workspaces/
+// (`packages/core/src/global-mesh-query.mjs` returns scope/workspaceId/stalenessSeconds/workspaces/
 // items/nodes/diagnostics), so `status?.boards ?? []` is ALWAYS empty on that face and
 // `BoardsRegion` always renders its "No boards registered in the group yet" placeholder.
 // The `boards` aggregate is real and still produced — by `aof mesh status --json`
-// (`src/commands/mesh-identity.mjs`'s `boardsProjection`), which is the producer
+// (`packages/core/src/commands/mesh-identity.mjs`'s `boardsProjection`), which is the producer
 // `ui/src/fleet/api.ts` documents the local `MeshStatus` shape against ("deep-equal to
 // `aof mesh status --json` for the same fixture").
 //

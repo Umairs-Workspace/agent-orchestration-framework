@@ -12,12 +12,12 @@
 // `present: false` by design), and a shell that refused to run because a record was edited would
 // turn a reporting gap into an outage. The drift that DOES matter — the framework's own shell
 // naming an id the framework's own SHIPPED registry does not declare — is caught here, before it
-// ships, over `src/bundle/loops/`, which is the copy aof controls. `.aof/loops/` is the installed
+// ships, over `packages/core/assets/loops/`, which is the copy aof controls. `.aof/loops/` is the installed
 // copy in a consumer tree and is deliberately not the subject.
 //
 // WHY IT TAKES THE CLOSING HELPER'S ROUTE AND NOT ITS OWN (58/ADR-007 §3a, FF-5809). Both
 // scenarios need the SHIPPED records, and the second needs to mutate one and reload. The first
-// shape of this file recursively copied `src/bundle` into a temp tree by hand — a SECOND route
+// shape of this file recursively copied `packages/core/assets` into a temp tree by hand — a SECOND route
 // out of the shipped registry, which is the drift FF-5809 exists to ratchet, and it turned that
 // control red the moment this file landed (102/VERIFICATION.md F-102-A). `withShippedRegistry`
 // is the one route, it reads the shipped BYTES at call time rather than a snapshot, and the whole
@@ -30,8 +30,8 @@
 // found by that same id rather than by filename, so a renamed file is not a second literal either.
 import assert from "node:assert/strict";
 
-import { SHELL_LOOP_ID } from "../../../src/commands/loop.mjs";
-import { loadLoops } from "../../../src/work/loops.mjs";
+import { SHELL_LOOP_ID } from "../../../packages/core/src/commands/loop.mjs";
+import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 
 /** The frontmatter line a record declaring the shell's id carries. */

@@ -18,8 +18,8 @@ Graph MCP is already server-owned; the older knowledge row in COMPLETION is stal
 
 The last recorded copied-payload check retains 117 command definitions; the package-test bridge
 has 217 cases. These are baseline observations, not final verification or permanent count targets.
-Root `src/` still contains real implementations, configured adapters and forwards. Core is not
-yet a workspace; UI is at `ui/`, and desktop is at `app/desktop/`.
+Core now owns the installed product under `packages/core/`; its configured compatibility adapters
+and forwards remain private pending Plan 06. UI is at `ui/`, and desktop is at `app/desktop/`.
 
 ## Execution order
 
@@ -27,7 +27,7 @@ yet a workspace; UI is at `ui/`, and desktop is at `app/desktop/`.
 | --- | --- | --- |
 | [01 — Remaining domain ownership](01-domain-ownership-PLAN.md) | Complete: domain services extracted; [452-file ownership ledger](01-module-ledger.json) and [verification notes](01-OWNERSHIP.md) recorded. | Current baseline |
 | [02 — Service assembly and CLI contributions](02-composition-and-cli-PLAN.md) | Complete: explicit application construction and CLI contributions; [scope and verification](02-ASSEMBLY.md) recorded. | 01 ownership decisions |
-| [03 — Core workspace](03-core-workspace-PLAN.md) | `packages/core` owns installed `aof`, its executable, configuration and assets; root is private. | 01–02; integrate applicable 05 changes in the same batches |
+| [03 — Core workspace](03-core-workspace-PLAN.md) | Implemented; verification in progress. [Package and installation notes](03-CORE.md). | 01–02; applicable 05 staging integrated |
 | [04 — UI and desktop applications](04-app-workspaces-PLAN.md) | `apps/ui` and `apps/desktop` own their builds and assets. | Stable core/path contract from 03; integrate applicable 05 changes |
 | [05 — Distribution and developer tooling](05-distribution-and-tooling-PLAN.md) | Source, copied installation, SEA, worktree and release paths use the final layout. | Start with 03; finish after 04 |
 | [06 — Test ownership and adapter removal](06-tests-and-boundaries-PLAN.md) | Public APIs replace compatibility paths; whole-tree boundary checks enforce the architecture. | Prepare guards during 01; remove adapters after 02–05 |

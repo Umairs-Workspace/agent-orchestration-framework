@@ -35,13 +35,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { LOCAL_LOCI } from "../../../src/effects/dispatch.mjs";
-import { reindexForInsert } from "../../../src/work/reindex.mjs";
-import { transitionStreamReindexed } from "../../../src/effects/stream-transitions.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startRun, readRuns } from "../../../src/run-store.mjs";
-import { recordPageId, readMapping, resolvePageId, remapMappingRefs } from "../../../src/notion/mapping.mjs";
+import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
+import { LOCAL_LOCI } from "../../../packages/core/src/effects/dispatch.mjs";
+import { reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { transitionStreamReindexed } from "../../../packages/core/src/effects/stream-transitions.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { startRun, readRuns } from "../../../packages/core/src/run-store.mjs";
+import { recordPageId, readMapping, resolvePageId, remapMappingRefs } from "../../../packages/core/src/notion/mapping.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

@@ -32,11 +32,11 @@ import { readFile, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ensureGraphifyOutGitignore, GRAPHIFY_OUT_DIR, GRAPHIFY_OUT_GITIGNORE } from "../../../src/aof-gitignore.mjs";
+import { ensureGraphifyOutGitignore, GRAPHIFY_OUT_DIR, GRAPHIFY_OUT_GITIGNORE } from "../../../packages/core/src/aof-gitignore.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-// lf(source) — the tree is CRLF (measured: src/control-stream-server.mjs etc.); every
+// lf(source) — the tree is CRLF (measured: packages/core/src/control-stream-server.mjs etc.); every
 // synthesized plant below is built with explicit "\n" joins so it is IMMUNE to that
 // convention (mirrors acd-write-token-scoped-to-push.test.mjs's own lf() discipline).
 function lf(source) {
@@ -111,7 +111,7 @@ const MESH_TRANSPORT_FILES = [
 
 // (b) PER-BUILDER scan — the EXHAUSTIVE real frame-builder enumeration (grepped from
 // the real tree: `grep -rnE "kind:|type:|buildDirectiveFrame|Envelope|Frame"
-// src/*stream*.mjs src/mesh/relay.mjs src/mesh-terminal-*.mjs`). Every function that
+// src/*stream*.mjs packages/core/src/mesh/relay.mjs src/mesh-terminal-*.mjs`). Every function that
 // BUILDS a frame object placed onto ANY mesh transport — the down-frames
 // (control-stream-server.mjs), the up-frames (worker-stream-client.mjs), the relay
 // envelope (mesh-relay-client.mjs), story 06's NEW terminal-frame

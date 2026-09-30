@@ -27,10 +27,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { meshSessionCommand } from "../../src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode } from "../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { runBounded } from "../../src/work-audit/spawn.mjs";
+import { meshSessionCommand } from "../../packages/core/src/commands/mesh/session.mjs";
+import { readSessionRecord, readSessionRecordsForNode } from "../../packages/core/src/mesh/session.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { runBounded } from "../../packages/core/src/work-audit/spawn.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const NODE_ID = "node-boot";

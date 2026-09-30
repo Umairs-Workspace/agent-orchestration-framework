@@ -5,14 +5,14 @@
 //
 // THE INVARIANT — the command layer is a LEAF of the module graph:
 //
-//   (1) NO src-root module (`src/*.mjs`) imports `src/commands/*` — the four measured
+//   (1) NO src-root module (`packages/core/src/*.mjs`) imports `packages/core/src/commands/*` — the four measured
 //       upward imports (mesh-launcher→mesh-identity, mesh-ui-serve→mesh-assign,
 //       mesh-worker-execution→mesh-repo, work-upgrade→commands/errors) are inverted:
 //       whatever both layers share lives BELOW `commands/`, and the command keeps only
 //       its verb. Exempt: `cli.mjs`, `command-core.mjs` and `spine/*` — the faces and
 //       the registry ARE the command layer's own doors, not lower modules.
 //
-//   (2) NO import cycle exists between `src/commands/*` and `src/*.mjs`. (1) makes a
+//   (2) NO import cycle exists between `packages/core/src/commands/*` and `packages/core/src/*.mjs`. (1) makes a
 //       cycle THROUGH the command boundary structurally impossible, so this proof is
 //       the direct one: walk every commands/* import edge and assert no target module
 //       reaches back into commands/.
@@ -35,7 +35,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 
 // The command layer's own doors — these are ALLOWED to import commands/* because they
 // ARE the layer's entry points, not modules underneath it.
@@ -57,8 +57,8 @@ async function readSrcModules(dir) {
 }
 
 // THE COMMAND LAYER, RECURSIVELY (119/ADR-003 §4). `readSrcModules` above is the SRC-ROOT walk and
-// stays flat — a family directory under `src/` is its own subject, checked on its own path. This
-// one walks `src/commands/**` because 119/02 gave that directory an interior: a flat listing here
+// stays flat — a family directory under `packages/core/src/` is its own subject, checked on its own path. This
+// one walks `packages/core/src/commands/**` because 119/02 gave that directory an interior: a flat listing here
 // stopped seeing 32 of its 99 modules WITHOUT erroring, so the cycle claim below would have been
 // asserted over two thirds of the layer and read green — the silent species, over the very
 // boundary this control exists to guard, and over the family (`commands/mesh/repo.mjs`) whose

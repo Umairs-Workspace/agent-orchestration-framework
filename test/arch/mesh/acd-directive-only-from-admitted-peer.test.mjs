@@ -19,7 +19,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { startControlStreamServer, dispatchDirectiveOverTargets, buildDirectiveFrame } from "../../../src/control-stream-server.mjs";
+import { startControlStreamServer, dispatchDirectiveOverTargets, buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { normalizePackage, packageInstallSpec, resolvedPackageEntry } from "../../src/packages.mjs";
+import { normalizePackage, packageInstallSpec, resolvedPackageEntry } from "../../packages/core/src/packages.mjs";
 
 export const packageTests = [
   {

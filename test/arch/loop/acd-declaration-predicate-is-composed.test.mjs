@@ -18,7 +18,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { decideSupervisedDeclarations, readLoopDeclaration } from "../../../packages/work-loop/src/engine.mjs";
-import { isRunning, isStale, retryReadiness } from "../../../src/run-store.mjs";
+import { isRunning, isStale, retryReadiness } from "../../../packages/core/src/run-store.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

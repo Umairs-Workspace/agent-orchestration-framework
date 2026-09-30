@@ -10,7 +10,7 @@ import {
   PROPOSAL_CLASSES,
   emitProposal,
   emitProposals,
-} from "../../../src/work-tune/proposal.mjs";
+} from "../../../packages/core/src/work-tune/proposal.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const command = { id: "work:fixture-apply" };

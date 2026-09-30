@@ -14,15 +14,15 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { recordDoc } from "../../../src/work.mjs";
+import { recordDoc } from "../../../packages/core/src/work.mjs";
 
 export const archTests = [
   {
     name: "arch/run-record-derived: pruning AND rebuilding the runs/ log leaves the item record-doc bytes byte-identical",
     async run() {
       // Lazy-import the store INSIDE run() (house discipline R4/m06): the test must
-      // reference src/run-store.mjs without coupling the suite's module graph to it.
-      const { startRun, pruneRun, readRuns, completeRun } = await import("../../../src/run-store.mjs");
+      // reference packages/core/src/run-store.mjs without coupling the suite's module graph to it.
+      const { startRun, pruneRun, readRuns, completeRun } = await import("../../../packages/core/src/run-store.mjs");
 
       const repo = await mkdtemp(path.join(os.tmpdir(), "aof-run-derived-"));
       try {

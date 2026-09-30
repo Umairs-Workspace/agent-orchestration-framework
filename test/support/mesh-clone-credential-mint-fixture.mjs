@@ -11,7 +11,7 @@
 // test/mesh/clone/mesh-worker-clone-credential-pull.test.mjs keeps.
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
-import { applyCloneCredentialRequestFrame } from "../../src/control-stream-server.mjs";
+import { applyCloneCredentialRequestFrame } from "../../packages/core/src/control-stream-server.mjs";
 
 // generateThrowawayKeypair() — a LOCAL, test-only RSA keypair (never a real GitHub
 // App's registered key) — genuinely sufficient for the REAL default `node:crypto`

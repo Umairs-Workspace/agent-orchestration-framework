@@ -4,7 +4,7 @@
 // from the three task features under
 //   wiki/work/00_milestone_work-cli/stories/01_story_validate-stream/tasks/
 // against the LOCKED engine `validateWork(workDir, config, scopeRef)` in
-// ../src/work.mjs. We assert on `finding.problem` substrings using the exact
+// ../packages/core/src/work.mjs. We assert on `finding.problem` substrings using the exact
 // wording the engine emits — we never change the engine or the contract.
 //
 // SUPERSEDED IN PART BY MILESTONE 66 / STORY 00, RECORDED IN THE ACCEPTING ITEM:
@@ -19,7 +19,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateWork } from "../../../src/work.mjs";
+import { validateWork } from "../../../packages/core/src/work.mjs";
 
 // The config supplies the closed vocabulary. @validate is the configured domain
 // tag the features lean on; @backend is a layer some fixtures decorate with.

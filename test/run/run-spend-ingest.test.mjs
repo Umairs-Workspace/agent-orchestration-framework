@@ -3,8 +3,8 @@
 // Covers EVERY @executable scenario in the two task features:
 //   tasks/00_transcript-to-spend.feature
 //   tasks/01_settle-once-and-degrade.feature
-// exercising the REAL src/run-spend-ingest.mjs (the new producer) against the REAL
-// writer seam (src/run-store.mjs's settleRun), in-process, on a temp fixture repo
+// exercising the REAL packages/core/src/run-spend-ingest.mjs (the new producer) against the REAL
+// writer seam (packages/core/src/run-store.mjs's settleRun), in-process, on a temp fixture repo
 // and a temp transcript tree. One test object per @executable scenario
 // (Scenario-Outline rows folded into one entry iterating the rows), each name
 // tracing to feature + scenario. node:assert/strict.
@@ -19,10 +19,10 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-const { readRuns, startRun, completeRun, settleRun, PRICE_TABLE_VERSION } = await import("../../src/run-store.mjs");
-const { settleSpendFromTranscript, readTranscriptTree } = await import("../../src/run-spend-ingest.mjs");
-const { transitionRunComplete } = await import("../../src/effects/run-transitions.mjs");
-const { projectSlug } = await import("../../src/work/observe.mjs");
+const { readRuns, startRun, completeRun, settleRun, PRICE_TABLE_VERSION } = await import("../../packages/core/src/run-store.mjs");
+const { settleSpendFromTranscript, readTranscriptTree } = await import("../../packages/core/src/run-spend-ingest.mjs");
+const { transitionRunComplete } = await import("../../packages/core/src/effects/run-transitions.mjs");
+const { projectSlug } = await import("../../packages/core/src/work/observe.mjs");
 
 async function makeItem() {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-ingest-"));

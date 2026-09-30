@@ -13,7 +13,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { reindex, memoryIndexPath } from "../../../src/memory/local-indexing.mjs";
+import { reindex, memoryIndexPath } from "../../../packages/core/src/memory/local-indexing.mjs";
 
 const FIXED_NAME = "aof.memory.index.json";
 // F-02: ignored via the nested .aof/.gitignore, so the entry is relative to .aof/.

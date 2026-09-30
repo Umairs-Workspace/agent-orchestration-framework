@@ -1,8 +1,8 @@
 // Traceability wiring for milestone 09 / story 01 — binary-provisioning.
 //
 // Covers every @executable scenario across the story's two task features against
-// the REAL in-process code: src/graphify.mjs's resolveGraphifyBinary (story 00's
-// ADR-002 seam) and src/config-inspect.mjs's doctorConfig graphify-binary check
+// the REAL in-process code: packages/core/src/graphify.mjs's resolveGraphifyBinary (story 00's
+// ADR-002 seam) and packages/core/src/config-inspect.mjs's doctorConfig graphify-binary check
 // (this story's ADR-004 Option B wiring). One test object per @executable
 // scenario (Scenario-Outline rows folded into one entry), each name tracing to
 // feature + scenario.
@@ -37,8 +37,8 @@ import {
   resolveGraphifyBinary,
   GRAPHIFY_SPEC,
   GRAPHIFY_BINARY,
-} from "../../src/graphify.mjs";
-import { doctorConfig } from "../../src/config-inspect.mjs";
+} from "../../packages/core/src/graphify.mjs";
+import { doctorConfig } from "../../packages/core/src/config-inspect.mjs";
 
 // --- fixtures ----------------------------------------------------------------
 

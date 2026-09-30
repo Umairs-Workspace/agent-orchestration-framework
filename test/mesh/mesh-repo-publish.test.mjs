@@ -6,11 +6,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readJson } from "../../src/fs.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { publishRepoToMesh } from "../../src/commands/mesh/repo.mjs";
-import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
-import { workspaceIdFor } from "../../src/global-work-store.mjs";
+import { readJson } from "../../packages/core/src/fs.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { publishRepoToMesh } from "../../packages/core/src/commands/mesh/repo.mjs";
+import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
+import { workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
 
 async function makeRepo(root, name, mesh) {
   const milestoneDir = path.join(root, "wiki", "work", "40_milestone_demo");

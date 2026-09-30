@@ -15,7 +15,7 @@ import {
   compilePhaseBrief, isValidPhaseBrief, composePhaseBriefInput,
   PHASE_BRIEF_CEILING_CHARS, PHASE_BRIEF_MAX_CHARS, PHASE_BRIEF_CHARS_PER_TOKEN, PHASE_BRIEF_CEILING_TOKENS,
   BRIEF_SECTION_PRIORITY,
-} from "../../src/phase-brief.mjs";
+} from "../../packages/core/src/phase-brief.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -210,7 +210,7 @@ export const phaseBriefCompileTests = [
       // phase-brief.mjs, so no src file hardcodes the numeric ceiling anywhere else.
       const { glob } = await import("node:fs/promises");
       let hardcoded = 0;
-      for await (const file of glob(path.join(root, "src", "**", "*.mjs"))) {
+      for await (const file of glob(path.join(root, "packages", "core", "src", "**", "*.mjs"))) {
         if (file.endsWith("phase-brief.mjs")) continue;
         const text = await readFile(file, "utf8");
         if (text.includes(String(PHASE_BRIEF_CEILING_CHARS))) hardcoded += 1;

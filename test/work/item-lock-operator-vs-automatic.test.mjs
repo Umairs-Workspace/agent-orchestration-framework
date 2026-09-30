@@ -22,10 +22,10 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../src/command-core.mjs";
-import { publishGlobalWorkSnapshot } from "../../src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../src/global-work-store.mjs";
-import { reportDegrade, setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { publishGlobalWorkSnapshot } from "../../packages/core/src/global-work-publisher.mjs";
+import { readWorkspaceItems } from "../../packages/core/src/global-work-store.mjs";
+import { reportDegrade, setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { withItemLockFixture, seedActive, seedWorker, settle, withStore, refuse, assertValidateCleanAfterInsert } from "../support/item-lock-fixture.mjs";
 
@@ -59,7 +59,7 @@ async function retitle(fx, number, slug, title) {
 
 // captureTickOutput(fx, body) — EVERY channel a line could come out of while `body`
 // runs, as one string: the process console (all four levels), the durable degrade sink
-// (`reportDegrade`'s injectable factory — src/degrade.mjs), and afterwards both
+// (`reportDegrade`'s injectable factory — packages/core/src/degrade.mjs), and afterwards both
 // operator-readable log reads (`aof mesh logs` local + `--node <control>`).
 //
 // The `mesh logs` reads ALONE are not a falsifiable channel in-process: no daemon runs,

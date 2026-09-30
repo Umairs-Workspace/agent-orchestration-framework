@@ -14,7 +14,7 @@ import { existsSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
-import { invoke, getCommand } from "../../src/command-core.mjs";
+import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
 // A runner that reports its own argv and environment as TAP, so "what actually reached the

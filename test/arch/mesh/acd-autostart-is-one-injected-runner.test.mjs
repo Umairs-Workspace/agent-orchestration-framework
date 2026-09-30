@@ -18,7 +18,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
-import { listCommands, getCommand } from "../../../src/command-core.mjs";
+import { listCommands, getCommand } from "../../../packages/core/src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const DESKTOP_MODULE = path.join(repoRoot, "packages", "mesh", "src", "commands", "desktop.mjs");
@@ -235,10 +235,10 @@ export const archTests = [
 
       // NOTHING IS RE-SPELLED THAT HAS A HOME (ADR-008 §1, and 126/06's own violation of
       // it three times over). The settings path, the ownership marker and the hook's own
-      // declaration are imported from `src/claude-settings.mjs`, not written out again —
+      // declaration are imported from `packages/core/src/claude-settings.mjs`, not written out again —
       // a rename of `FROZEN_OWNERSHIP_MARKER` used to break this check in silence, and the
       // hook FILE used to be a constant here rather than read from the registration found.
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/commands/mesh/desktop-preflight.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/commands/mesh/desktop-preflight.mjs"), "utf8"));
       assert.match(
         composition,
         /import \{[^}]*AOF_HOOK_MARKER[^}]*CLAUDE_SETTINGS_RELPATH[^}]*claudeHookDeclarations[^}]*claudeSettingsPath[^}]*\} from "(?:\.\.\/)+claude-settings\.mjs"/,

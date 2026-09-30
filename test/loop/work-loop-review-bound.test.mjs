@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { reviewRoundsFromConfig } from "../../src/loop-bounds.mjs";
+import { reviewRoundsFromConfig } from "../../packages/core/src/loop-bounds.mjs";
 import {
   REVIEW_BLOCKER_CLASSES,
   decideReviewRound,

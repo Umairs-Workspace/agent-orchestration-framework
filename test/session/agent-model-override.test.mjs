@@ -3,7 +3,7 @@
 // Traceability for tasks/02_per-project-config-override.feature. Two surfaces:
 //   (a) override-wins-at-render — bound to the NEW config-aware render path
 //       renderBundleOutputsWithConfig(bundle, projectConfig, opts) in
-//       src/work/bundle.mjs. Binding task 01's bundle-only renderBundleOutputs
+//       packages/core/src/work/bundle.mjs. Binding task 01's bundle-only renderBundleOutputs
 //       here would false-green (it ignores config), so these rows call the
 //       config-aware pass explicitly.
 //   (b) validation — the override KEY matrix + the override VALUE matrix, bound
@@ -15,8 +15,8 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { readdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadBundle, renderBundleOutputs, renderBundleOutputsWithConfig } from "../../src/work/bundle.mjs";
-import { validateConfig } from "../../src/config-inspect.mjs";
+import { loadBundle, renderBundleOutputs, renderBundleOutputsWithConfig } from "../../packages/core/src/work/bundle.mjs";
+import { validateConfig } from "../../packages/core/src/config-inspect.mjs";
 
 // The shipped defaults, READ FROM THE BUNDLE rather than copied from it.
 //
@@ -30,7 +30,7 @@ import { validateConfig } from "../../src/config-inspect.mjs";
 // which is true whatever the defaults happen to be. Reading them makes the check
 // independent of the values, so a future model change moves nothing here.
 function shippedDefaultModels() {
-  const agentsDir = new URL("../../src/bundle/agents/", import.meta.url);
+  const agentsDir = new URL("../../packages/core/assets/agents/", import.meta.url);
   const roles = readdirSync(agentsDir)
     .filter((name) => name.startsWith("aof-") && name.endsWith(".md"))
     .map((name) => name.slice(0, -3));

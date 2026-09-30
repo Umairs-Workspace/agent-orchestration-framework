@@ -3,15 +3,15 @@
 // depends ordering graph as top-level drivers".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
-// asserted against the LOCKED engine `nextWork` in ../src/work.mjs — the same
-// surface `aof work next --json` is a thin face over (src/commands/next.mjs
+// asserted against the LOCKED engine `nextWork` in ../packages/core/src/work.mjs — the same
+// surface `aof work next --json` is a thin face over (packages/core/src/commands/next.mjs
 // passes the raw result through, relativising only `path`). Mirrors the fixture
 // style of test/work/lifecycle/work-next.test.mjs.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { nextWork } from "../../../src/work.mjs";
+import { nextWork } from "../../../packages/core/src/work.mjs";
 
 function frontmatter(fields) {
   const body = Object.entries(fields)

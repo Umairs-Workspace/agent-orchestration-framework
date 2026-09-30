@@ -28,8 +28,8 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readMapping, resolvePageId, recordPageId, NOTION_WORK_MAP_FILE } from "../../../src/notion/mapping.mjs";
-import { AOF_GITIGNORE_ENTRIES } from "../../../src/aof-gitignore.mjs";
+import { readMapping, resolvePageId, recordPageId, NOTION_WORK_MAP_FILE } from "../../../packages/core/src/notion/mapping.mjs";
+import { AOF_GITIGNORE_ENTRIES } from "../../../packages/core/src/aof-gitignore.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC_NOTION_DIR = path.join(repoRoot, "packages", "integration-notion", "src");
@@ -76,7 +76,7 @@ const RESOLVE_BY_QUERY = /\bfilter\s*:\s*\{[^}]*\bproperty\s*:/;
 
 async function notionSourceFiles() {
   const files = await readRuntimeFiles(repoRoot);
-  const selected = files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('src/notion/') || rel.startsWith('src/commands/notion-')).map(file => file.path);
+  const selected = files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('packages/core/src/notion/') || rel.startsWith('packages/core/src/commands/notion-')).map(file => file.path);
   assert.ok(selected.length > 0, 'the Notion runtime source sweep is non-empty');
   return selected;
 }

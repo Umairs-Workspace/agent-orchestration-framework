@@ -8,7 +8,10 @@ import path from "node:path";
 // the slash-joined path relative to src/. Used to assert that a forbidden argv shape
 // (a `--system-prompt` replacement, a second claude launch builder) exists nowhere.
 export async function readSrcFiles(repoRoot) {
-  const srcDir = path.join(repoRoot, "src");
+  return readSourceDirectory(path.join(repoRoot, "packages", "core", "src"));
+}
+
+async function readSourceDirectory(srcDir) {
   const out = [];
   async function walk(dir, relPrefix) {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -28,13 +31,16 @@ export async function readSrcFiles(repoRoot) {
 // Runtime ownership now spans src/ and packages/*/src/. Keep package tests and
 // node_modules outside the scan; paths here are relative to the repository.
 export async function readRuntimeFiles(repoRoot) {
-  const files = (await readSrcFiles(repoRoot)).map(file => ({ ...file, rel: `src/${file.rel}` }));
+  const files = [];
   for (const entry of await readdir(path.join(repoRoot, "packages"), { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     const packageRoot = path.join(repoRoot, "packages", entry.name);
-    for (const file of await readSrcFiles(packageRoot)) {
+    for (const file of await readSourceDirectory(path.join(packageRoot, "src"))) {
       files.push({ ...file, rel: `packages/${entry.name}/src/${file.rel}` });
     }
+  }
+  for (const file of await readSourceDirectory(path.join(repoRoot, "packages", "core", "assets"))) {
+    files.push({ ...file, rel: `packages/core/assets/${file.rel}` });
   }
   return files;
 }
@@ -68,7 +74,7 @@ async function srcBodies(repoRoot) {
 }
 
 /**
- * Every `src/**` file whose text contains `needle`, as slash-joined paths relative to src/,
+ * Every `packages/core/src/**` file whose text contains `needle`, as slash-joined paths relative to src/,
  * excluding any whose relative path ends with one of `except`. Returns the paths rather
  * than a count so a failure names WHICH file broke the invariant.
  */

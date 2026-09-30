@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listItems, findWork, validateWork, nextWork, parseFrontmatter } from "../../src/work.mjs";
+import { listItems, findWork, validateWork, nextWork, parseFrontmatter } from "../../packages/core/src/work.mjs";
 
 const CONFIG = { work: { tags: { layers: ["@backend"], refinements: [], domains: [] } } };
 

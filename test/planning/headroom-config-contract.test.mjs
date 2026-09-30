@@ -7,10 +7,10 @@
 //
 // Each test name traces to its feature + scenario. The schema scenarios compile
 // schemas/aof.schema.json with Ajv-2020 exactly as acd-headroom-config-schema does; the
-// resolver scenarios import resolveHeadroomLaunch from ../src/headroom.mjs and stub `which`.
+// resolver scenarios import resolveHeadroomLaunch from ../packages/core/src/headroom.mjs and stub `which`.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { resolveHeadroomLaunch } from "../../src/headroom.mjs";
+import { resolveHeadroomLaunch } from "../../packages/core/src/headroom.mjs";
 
 const SCHEMA_URL = new URL("../../schemas/aof.schema.json", import.meta.url);
 

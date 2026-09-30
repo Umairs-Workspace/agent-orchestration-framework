@@ -6,18 +6,18 @@
 //    EXCLUSIVELY owns the file."
 //
 // THE DEFECT THIS GATES (verified from source at HEAD, not merely reported):
-// `src/render-plan.mjs:13-49` gates drift protection on a PRIOR LOCK ENTRY. For a file
+// `packages/core/src/render-plan.mjs:13-49` gates drift protection on a PRIOR LOCK ENTRY. For a file
 // that exists on disk with NO prior entry — exactly this repo's hand-authored
 // `.claude/settings.json`, which the bundle has never written (0 manifest entries) —
 // every guard is skipped and the code falls through to
 //   actions.push(action("update", output, prior ? "…" : "existing file will be overwritten"))
 // an UNGATED overwrite: no --force, no drift warning. The content that would be written
-// is `claudeSettingsJson({hooks, settings})` (src/runtime-config.mjs:21-28), which builds
+// is `claudeSettingsJson({hooks, settings})` (packages/core/src/runtime-config.mjs:21-28), which builds
 // the ENTIRE body from config.hooks + config.settings and nothing else — dropping the
 // operator's permissions/sandbox/plugins and four hand-wired hook events.
 //
 // It is DORMANT, not absent: `.aof/aof.config.json` has no `hooks` and no `settings`
-// key, so `renderRuntimeConfigOutputs` (src/adapters.mjs:101-111) emits nothing today.
+// key, so `renderRuntimeConfigOutputs` (packages/core/src/adapters.mjs:101-111) emits nothing today.
 // It ARMS the moment this milestone adds a claude-runtime hook — which is why proof 3
 // is keyed on exactly that condition. This is m42 leg d4's `writeLock` defect verbatim:
 // one writer assuming sole ownership of a document with several authors.
@@ -29,7 +29,7 @@
 //  2. GREEN — the 34-file bundle manifest carries ZERO `.claude/settings.json` entry: the
 //     whole-file, content-hashed installer never writes this file (and must not start).
 //  3. ARMED AT THE HAZARD — IF `.aof/aof.config.json` declares a claude-runtime hook or a
-//     `settings.claude` entry, THEN `src/adapters.mjs` must not render the file whole-file
+//     `settings.claude` entry, THEN `packages/core/src/adapters.mjs` must not render the file whole-file
 //     (no `claudeSettingsJson(` call reachable from the render pipeline) and a merge writer
 //     must exist. A clean skip while the config declares neither.
 //  Self-check (m03 non-vacuous): a planted claude-hook config trips the hazard detector,
@@ -42,14 +42,14 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SETTINGS = path.join(repoRoot, ".claude", "settings.json");
-const MANIFEST = path.join(repoRoot, "src", "bundle", "manifest.json");
+const MANIFEST = path.join(repoRoot, "packages", "core", "assets", "manifest.json");
 const AOF_CONFIG = path.join(repoRoot, ".aof", "aof.config.json");
-const ADAPTERS = path.join(repoRoot, "src", "adapters.mjs");
+const ADAPTERS = path.join(repoRoot, "packages", "core", "src", "adapters.mjs");
 
 // Candidate homes for the ADR-002 merge writer (mirroring mergeLock / writeSidecarPatch).
 const MERGE_WRITER_CANDIDATES = [
-  path.join(repoRoot, "src", "claude-settings.mjs"),
-  path.join(repoRoot, "src", "runtime-settings-merge.mjs"),
+  path.join(repoRoot, "packages", "core", "src", "claude-settings.mjs"),
+  path.join(repoRoot, "packages", "core", "src", "runtime-settings-merge.mjs"),
 ];
 
 // The operator's own top-level keys, measured at HEAD. `claudeSettingsJson` builds its
@@ -129,7 +129,7 @@ export const archTests = [
       const adapters = stripComments(await readFile(ADAPTERS, "utf8"));
       assert.ok(
         !/claudeSettingsJson\s*\(/.test(adapters),
-        "src/adapters.mjs still renders .claude/settings.json WHOLE-FILE (claudeSettingsJson) while a claude hook is configured — planApplyActions falls through to an ungated overwrite (render-plan.mjs:48)",
+        "packages/core/src/adapters.mjs still renders .claude/settings.json WHOLE-FILE (claudeSettingsJson) while a claude hook is configured — planApplyActions falls through to an ungated overwrite (render-plan.mjs:48)",
       );
       const writer = MERGE_WRITER_CANDIDATES.find((candidate) => existsSync(candidate));
       assert.ok(
@@ -154,7 +154,7 @@ export const archTests = [
       // uncalled whole-file writer for a co-authored file is a whole-file writer
       // someone will call, so the function must not EXIST.
       const declarers = [];
-      for (const file of await mjsFilesUnder(path.join(repoRoot, "src"))) {
+      for (const file of await mjsFilesUnder(path.join(repoRoot, "packages", "core", "src"))) {
         if (/\bclaudeSettingsJson\b/.test(stripComments(await readFile(file, "utf8")))) {
           declarers.push(path.relative(repoRoot, file));
         }
@@ -165,8 +165,8 @@ export const archTests = [
       // arm the hazard — a claude-runtime hook AND a settings.claude block. The old
       // renderer fired on either. `renderConfigOutputs` is the render pipeline's own
       // entry point, so this holds whatever the emitting function is renamed to.
-      const { renderConfigOutputs } = await import("../../../src/adapters.mjs");
-      const { resolveConfig } = await import("../../../src/dsl.mjs");
+      const { renderConfigOutputs } = await import("../../../packages/core/src/adapters.mjs");
+      const { resolveConfig } = await import("../../../packages/core/src/dsl.mjs");
       const config = await resolveConfig({
         name: "co-authored-canary",
         resources: [],
@@ -193,7 +193,7 @@ export const archTests = [
       );
       // …and the claude runtime's hooks/settings still reach the file — through the
       // merge, which is the half that makes the removal safe rather than lossy.
-      const { claudeSettingsPatch } = await import("../../../src/claude-settings.mjs");
+      const { claudeSettingsPatch } = await import("../../../packages/core/src/claude-settings.mjs");
       const patch = claudeSettingsPatch(config, { targetDir: repoRoot });
       // ADR-013/C1 landed AFTER this clause was written: the merge is now fed the UNION
       // of the BUNDLE's claude hooks and the project config's, through one resolver, so

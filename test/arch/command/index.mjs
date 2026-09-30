@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -22,9 +22,9 @@ import { archTests as acdRegistryFixtureClosedTests } from "./acd-registry-fixtu
 // load-bearing. superseded by 33/ADR-002 — the broker is eliminated.
 // milestone 24 — device-code group-enrollment (ARCHITECTURE.md / the STRUCTURAL fitness
 // functions — the architect's, disjoint from the SECURITY.md crypto/enforcement fitness
-// above). RED-until-built (src/mesh/registry.mjs + src/commands/mesh-{invite,join,revoke}.mjs
+// above). RED-until-built (packages/core/src/mesh/registry.mjs + packages/core/src/commands/mesh-{invite,join,revoke}.mjs
 // do not exist yet), EXCEPT acd-enroll-endpoint-http-not-ws, which runs GREEN today against
-// m23's src/mesh/relay.mjs (the ws envelope is neutral) and stays GREEN when the HTTP
+// m23's packages/core/src/mesh/relay.mjs (the ws envelope is neutral) and stays GREEN when the HTTP
 // enrollment route lands — it guards against the WRONG shape (enrollment on a ws kind), not
 // the absence of the right one. Three STRUCTURAL invariants: (ADR-1) the group registry has
 // EXACTLY ONE control-node-guarded write seam (registry write-scope + single-writer,
@@ -38,9 +38,9 @@ import { archTests as acdRegistryFixtureClosedTests } from "./acd-registry-fixtu
 import { archTests as acdRegistryWriteScopeTests } from "./acd-registry-write-scope.test.mjs";
 import { archTests as acdDeclaredProgramSingleSpellerTests } from "./acd-declared-program-single-speller.test.mjs";
 import { archTests as acdCommandNamespaceTests } from "./acd-command-namespace.test.mjs";
-// cross-cutting — the CLI entry-point contract: a direct `node src/cli.mjs …` must
+// cross-cutting — the CLI entry-point contract: a direct `node packages/core/src/cli.mjs …` must
 // dispatch like the bin (not a silent exit-0 no-op), and importing the module must
-// stay inert. Guards the main-module guard in src/cli.mjs against regression.
+// stay inert. Guards the main-module guard in packages/core/src/cli.mjs against regression.
 import { archTests as acdCliEntryExecutesTests } from "./acd-cli-entry-executes.test.mjs";
 import { archTests as acdNoOtlpReceiverTests } from "./acd-no-otlp-receiver.test.mjs";
 // milestone 71 / story 00 — the build's terminator and the free gate before review
@@ -70,11 +70,11 @@ import { archTests as acdRouteLogicFrameworkFreeTests } from "./acd-route-logic-
 import { archTests as acdDeclaredIdSingleHomeTests } from "./acd-declared-id-single-home.test.mjs";
 import { archTests as acdCitedPathResolvesTests } from "./acd-cited-path-resolves.test.mjs";
 import { archTests as acdPathIsNotBehaviourTests } from "./acd-path-is-not-behaviour.test.mjs";
-// milestone 119 / story 02 — `src/commands/` gets its interior, and the one control that story
+// milestone 119 / story 02 — `packages/core/src/commands/` gets its interior, and the one control that story
 // authors. FF-11908 (the registry CITES and does not EXPLAIN: every entry comment in
-// `src/command-core.mjs` is one line whose content is a citation, the prose lives in the command
+// `packages/core/src/command-core.mjs` is one line whose content is a citation, the prose lives in the command
 // module's own header, and the deferred-import comments documenting the TDZ ring are the one exempt
-// class — derived from `src/commands/**`, where they actually live, because the register row scopes
+// class — derived from `packages/core/src/commands/**`, where they actually live, because the register row scopes
 // them to the registry, which holds none of them). No comment-density number is asserted, and the
 // control reads its own source to keep it that way (ADR-006 §4). The controls this story RE-POINTED
 // rather than authored — the `graph-` prefix sweep, the command-layer cycle walk, the mesh:status
@@ -89,7 +89,7 @@ import { archTests as acdRegistryCitesNeverExplainsTests } from "./acd-registry-
 import { archTests as acdReadmeNamesWhatShipsTests } from "./acd-readme-names-what-ships.test.mjs";
 // story 128 — `aof work memory` joins the route table (task 01: the ladder door closes, the help
 // tail stops naming it, the four frozen lists move and the printer ratchet falls, the module
-// founds `src/commands/work/` under budget, the seam's callers are untouched, and 125's README
+// founds `packages/core/src/commands/work/` under budget, the seam's callers are untouched, and 125's README
 // control goes green). The structural half; the behavioural half is
 // test/command/work-memory-command.test.mjs.
 import { archTests as acdWorkMemoryRoutedTests } from "./acd-work-memory-routed.test.mjs";

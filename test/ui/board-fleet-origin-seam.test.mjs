@@ -37,15 +37,15 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveBoard, boardUiDist } from "../../src/board-serve.mjs";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
+import { serveBoard, boardUiDist } from "../../packages/core/src/board-serve.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
 // The workspace id is asked of its ONE home (TECH_DEBT 4's fix), never re-derived
 // here — it is the same rule the projection store keyed the published snapshot on.
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
 
 // The ONE place this file names the route the build chose. Every Then below reads a
 // value off the response it returns.

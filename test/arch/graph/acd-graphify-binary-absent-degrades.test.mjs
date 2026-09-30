@@ -22,8 +22,8 @@ import { existsSync } from "node:fs";
 import graphifyBackend, {
   GRAPH_SIGNAL_UNAVAILABLE,
   GRAPH_STATE_BINARY_ABSENT,
-} from "../../../src/memory/graphify-backend.mjs";
-import { briefDigest } from "../../../src/work/memory.mjs";
+} from "../../../packages/core/src/memory/graphify-backend.mjs";
+import { briefDigest } from "../../../packages/core/src/work/memory.mjs";
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",
@@ -34,7 +34,7 @@ const INSTALL_HINT = "Run `aof project provision graphify` to install graphify i
 // The 09 acd-graph-binary-absent idiom: resolveGraphifyBinary reports a STRUCTURED miss.
 const ABSENT_RESOLVER = () => ({ found: false, hint: INSTALL_HINT });
 // graph:build throws the structured graphify-missing (424) — exactly
-// src/commands/graph-build.mjs's commandError(resolved.hint, "graphify-missing", 424).
+// packages/core/src/commands/graph-build.mjs's commandError(resolved.hint, "graphify-missing", 424).
 function missingBinaryInvoke() {
   return async () => {
     const error = new Error(INSTALL_HINT);

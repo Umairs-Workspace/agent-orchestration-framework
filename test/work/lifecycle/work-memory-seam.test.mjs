@@ -3,7 +3,7 @@
 // Every @executable scenario AND every Scenario-Outline Examples row across the
 // story's four task features is covered here, exercised against the REAL seam
 // (`runMemory` / `parseMemoryArgv` / `resolveConfiguredBackend` in
-// ../src/work/memory.mjs) and the REAL `none` backend (../src/memory/none-backend.mjs).
+// ../packages/core/src/work/memory.mjs) and the REAL `none` backend (../packages/core/src/memory/none-backend.mjs).
 // The routing/scope/render scenarios run against an in-memory STUB backend that
 // records the call it received, echoes the scope/opts it was handed, and returns a
 // fixed RecallResult — so the seam never needs story 01/02's code or a real index.
@@ -30,8 +30,8 @@ import {
   BACKEND_REGISTRY,
   MEMORY_VERBS,
   memoryUsage
-} from "../../../src/work/memory.mjs";
-import noneBackend from "../../../src/memory/none-backend.mjs";
+} from "../../../packages/core/src/work/memory.mjs";
+import noneBackend from "../../../packages/core/src/memory/none-backend.mjs";
 
 // ------------------------------------------------------------ test rig ----
 

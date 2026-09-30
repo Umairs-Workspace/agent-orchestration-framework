@@ -38,7 +38,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, renameSync, copyFileSync, cpSync, rmSync, readdirSync, unlinkSync, writeFileSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { generateAssetManifest } from "./sea-asset-manifest.mjs";
 import { productionDependencyDirs } from './dependency-inventory.mjs';
 
@@ -134,7 +134,7 @@ function computeBuildId() {
 
 // Resolve the installed production graph directly; a missing dependency must fail packaging.
 function prodDependencyDirs() {
-  return { mode: 'closure', dirs: productionDependencyDirs(repoRoot) };
+  return { mode: 'closure', dirs: productionDependencyDirs(repoRoot, { owner: path.join(repoRoot, "packages", "core") }) };
 }
 
 const LOCKED = /EBUSY|EPERM|locked|being used/i;
@@ -209,7 +209,7 @@ function copyModuleDir(srcDir, destDir) {
 
 // ═══ A PAYLOAD DIRECTORY IS NEVER ABSENT, NOT EVEN FOR A MOMENT (2026-09-27) ══════════════════
 // `src/` used to be `rmSync` then `cpSync`, so for as long as the copy took there was no
-// `src/cli.mjs` beside the exe, and scripts/sea-entry.mjs, seeing no payload, ran its EMBEDDED
+// `packages/core/src/cli.mjs` beside the exe, and scripts/sea-entry.mjs, seeing no payload, ran its EMBEDDED
 // bundle instead. The desktop app spawns `aof.exe mesh status --json` every 3 s, so an install
 // during a working session had a fair chance of running that bundle, which was two months old.
 // Measured: an `install-local --wsl` at 16:02:43.4Z, and ~/.aof/mesh/identity.json re-minted by
@@ -264,7 +264,7 @@ function replaceDirectory(destDir, fill) {
 }
 
 // --- the payload install (the default, restart-not-rebuild path) -------------
-function installPayload(installDir) {
+export function installPayload(installDir) {
   // Validate the complete dependency closure before replacing any installed source or assets.
   const deps = prodDependencyDirs();
   console.log(`\n=== payload install into ${installDir} ===`);
@@ -275,8 +275,9 @@ function installPayload(installDir) {
   // absent (replaceDirectory). Import holds no file locks after load, so this is
   // safe under a running daemon (it keeps its in-memory graph until restart —
   // which is the point: restart picks this up).
-  replaceDirectory(path.join(installDir, "src"), (staging) => cpSync(path.join(repoRoot, "src"), staging, { recursive: true }));
+  replaceDirectory(path.join(installDir, "src"), (staging) => cpSync(path.join(repoRoot, "packages", "core", "src"), staging, { recursive: true }));
   console.log("  synced src/");
+  replaceDirectory(path.join(installDir, "bin"), (staging) => cpSync(path.join(repoRoot, "packages", "core", "bin"), staging, { recursive: true }));
 
   // 2. the asset sidecars, same layout the SEA build ships (asset-base.mjs's
   // packaged branch resolves these beside the exe in payload mode too).
@@ -288,8 +289,11 @@ function installPayload(installDir) {
       copyFileSync(path.join(fromRoot, rel), dest);
     }
   };
-  replaceDirectory(path.join(installDir, "bundle"), copyManifest(manifest.bundle, path.join(repoRoot, "src", "bundle")));
-  console.log(`  synced bundle/ (${manifest.bundle.length} files)`);
+  replaceDirectory(path.join(installDir, "assets"), copyManifest(manifest.bundle, path.join(repoRoot, "packages", "core", "assets")));
+  // A plain Node core entry reads assets/. A SEA launcher loading the same
+  // payload still reads its established bundle/ sidecar through node:sea.
+  replaceDirectory(path.join(installDir, "bundle"), copyManifest(manifest.bundle, path.join(repoRoot, "packages", "core", "assets")));
+  console.log(`  synced assets/ + SEA bundle/ (${manifest.bundle.length} files each)`);
   replaceDirectory(path.join(installDir, "ui", "dist"), copyManifest(manifest.ui, path.join(repoRoot, "ui", "dist")));
   console.log(`  synced ui/dist (${manifest.ui.length} files)`);
 
@@ -327,8 +331,8 @@ function installPayload(installDir) {
   console.log('  synced node_modules/ (' + copied + '/' + deps.dirs.length + ' prod-closure entries)');
 
   // 4. the trimmed manifest + the build stamp.
-  const pkg = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
-  writeFileSync(path.join(installDir, "package.json"), JSON.stringify({ version: pkg.version }, null, 2), "utf8");
+  const pkg = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "package.json"), "utf8"));
+  writeFileSync(path.join(installDir, "package.json"), JSON.stringify(pkg, null, 2), "utf8");
   const buildId = computeBuildId();
   writeFileSync(
     path.join(installDir, "BUILD_ID.json"),
@@ -476,7 +480,7 @@ function main() {
   console.log("(`aof --version` on the new build reports the runtime mode + build stamp.)");
 }
 
-try {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) try {
   main();
 } catch (e) {
   console.error(`\ninstall-local failed: ${e.message}`);

@@ -14,16 +14,16 @@ import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../src/assignment-record.mjs";
-import { setItemBranch } from "../../src/mesh/assignment-directive.mjs";
-import { readExecutionOverlay, applyExecutionOverlay, resolveScopedExecution } from "../../src/board-mesh-execution.mjs";
-import { resolveContinueDecision, resolveDirectivePhase } from "../../src/commands/continue.mjs";
-import { mergeWorkerItems, applyCachedProvenance } from "../../src/cache-read.mjs";
-import { listCommand, applyAskOverlay } from "../../src/commands/list.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { loopAsksDir, openAsk, parkAsk, answerAsk, clearAsk, askRequestPath } from "../../src/loop/ask-request.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../packages/core/src/assignment-record.mjs";
+import { setItemBranch } from "../../packages/core/src/mesh/assignment-directive.mjs";
+import { readExecutionOverlay, applyExecutionOverlay, resolveScopedExecution } from "../../packages/core/src/board-mesh-execution.mjs";
+import { resolveContinueDecision, resolveDirectivePhase } from "../../packages/core/src/commands/continue.mjs";
+import { mergeWorkerItems, applyCachedProvenance } from "../../packages/core/src/cache-read.mjs";
+import { listCommand, applyAskOverlay } from "../../packages/core/src/commands/list.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { loopAsksDir, openAsk, parkAsk, answerAsk, clearAsk, askRequestPath } from "../../packages/core/src/loop/ask-request.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -391,7 +391,7 @@ export const boardMeshExecutionTests = [
         // Seed the worker-streamed rows for refs the local index has NEVER held.
         const store = await openGlobalWorkProjectionStore({ env });
         try {
-          const { resolveWorkspaceId } = await import("../../src/workspace-identity.mjs");
+          const { resolveWorkspaceId } = await import("../../packages/core/src/workspace-identity.mjs");
           const workspaceId = resolveWorkspaceId(workspace);
           const insert = store.db.prepare(
             "INSERT INTO work_items (workspace_id, ref, type, slug, status, title, parent, source_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -660,7 +660,7 @@ function askOverlayTests() {
       name: "131/05 task00 — the CLI's list is byte-identical with asks on disk",
       run: () => askWorld(async ({ repo, home, dir, list, open }) => {
         await open("R1", "03/01");
-        const cli = () => spawnSync(process.execPath, [path.join(REPO_ROOT, "src", "cli.mjs"), "work", "list", "--json"], {
+        const cli = () => spawnSync(process.execPath, [path.join(REPO_ROOT, "packages", "core", "src", "cli.mjs"), "work", "list", "--json"], {
           cwd: repo, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
         });
         const withAsk = cli();
@@ -704,7 +704,7 @@ function askOverlayTests() {
     {
       name: "131/05 task00 — the list reads the ask through its one home",
       async run() {
-        const source = stripComments(await readFile(path.join(REPO_ROOT, "src/application/bindings/commands/list.mjs"), "utf8"));
+        const source = stripComments(await readFile(path.join(REPO_ROOT, "packages/core/src/application/bindings/commands/list.mjs"), "utf8"));
         assert.ok(dependencySpecifiers(source).some(edge => edge.parameter === "loopAskRequestServices" && edge.specifier === "../loop/ask-request.mjs"), "the request service is supplied from its one configured home");
         for (const name of ["ASK_STATES", "readAsks", "loopAsksDir"]) assert.match(source, new RegExp(`const \\{[^}]*\\b${name}\\b[^}]*\\} = loopAskRequestServices`, "u"), name);
         for (const word of ['"waiting"', '"parked"', '"answered"', "loop-asks"]) assert.ok(!source.includes(word), `list.mjs spells no ${word}`);

@@ -4,8 +4,8 @@
 import { mkdtemp, mkdir, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../src/global-work-store.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 
 export async function withMeshAssignFixture(fn, { seedItems = ["00"] } = {}) {
   // realpath the root: macOS's os.tmpdir() is a symlink (/var → /private/var),

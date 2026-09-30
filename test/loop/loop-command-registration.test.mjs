@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { getCommand, listCommands } from "../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../src/spine/face.mjs";
+import { getCommand, listCommands } from "../../packages/core/src/command-core.mjs";
+import { deriveRouteTable, resolveRoute } from "../../packages/core/src/spine/face.mjs";
 
 export const loopCommandRegistrationTests = [{
   name: "loop command registration — four additive ids have distinct derived routes and report-only CLI probes",

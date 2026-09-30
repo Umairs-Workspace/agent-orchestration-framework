@@ -1,11 +1,11 @@
 // Fitness function for milestone 39 / ADR-002:
-// "`buildRecords` (src/memory/local-indexing.mjs) remains the SINGLE shared
+// "`buildRecords` (packages/core/src/memory/local-indexing.mjs) remains the SINGLE shared
 //  record-source seam BOTH backends consume; `parseOutcome` is composed into it,
 //  not bolted onto one backend — so a delivery record reaches `local` AND
 //  `graphify` with no graphify-only parser."
 //
 // Graph-verified blast radius (fresh `graph build src`): `graph impact
-// src/memory/local-indexing.mjs` → `imported/called by ← (2)` = local-backend +
+// packages/core/src/memory/local-indexing.mjs` → `imported/called by ← (2)` = local-backend +
 // graphify-backend, exactly the two backends. So a source parser added HERE reaches
 // both; a source parser added in a BACKEND would fork the seam.
 //
@@ -31,7 +31,7 @@ const LOCAL_BACKEND = path.join(repoRoot, "packages", "knowledge", "src/memory/l
 const PARSER_DEF_RE = /(?:function|const)\s+(parse(?:Outcome|Architecture|Retrospective|Aof)\b)/g;
 
 async function outcomeParser() {
-  const mod = await import("../../../src/memory/local-indexing.mjs");
+  const mod = await import("../../../packages/core/src/memory/local-indexing.mjs");
   return typeof mod.parseOutcome === "function" ? mod.parseOutcome : null;
 }
 
@@ -49,7 +49,7 @@ export const archTests = [
         /function createGraphifyBackend\(\{[^}]*\bbuildRecords\b/,
         "graphify-backend receives the shared record builder",
       );
-      const binding = await readFile(path.join(repoRoot, "src/application/bindings/memory/graphify-backend.mjs"), "utf8");
+      const binding = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/memory/graphify-backend.mjs"), "utf8");
       assert.match(binding, /const\s*\{\s*buildRecords\s*\}\s*= memoryLocalIndexingServices/);
       assert.match(binding, /createGraphifyBackend\(\{[^}]*\bbuildRecords\b/);
 
@@ -78,7 +78,7 @@ export const archTests = [
 
       // Prove the parser is WIRED INTO buildRecords (not merely exported): a milestone
       // folder carrying an OUTCOME.md must yield delivery records from buildRecords.
-      const { buildRecords } = await import("../../../src/memory/local-indexing.mjs");
+      const { buildRecords } = await import("../../../packages/core/src/memory/local-indexing.mjs");
       const projectRoot = await mkdtemp(path.join(os.tmpdir(), "aof-arch-outcome-seam-"));
       const workDir = path.join(projectRoot, "wiki", "work");
       const dir = path.join(workDir, "39_milestone_delivery-memory-outcome");

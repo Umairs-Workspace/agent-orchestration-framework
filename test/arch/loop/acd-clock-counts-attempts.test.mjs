@@ -29,7 +29,7 @@ import {
   lineageElapsedMs,
   retryLineage,
 } from "../../../packages/work-loop/src/engine.mjs";
-import { isStale, startRun } from "../../../src/run-store.mjs";
+import { isStale, startRun } from "../../../packages/core/src/run-store.mjs";
 // THE COMMENT STRIPPER, FROM ITS ONE HOME (chore 106 / TECH_DEBT item 24) — a hand-rolled one is
 // what `acd-comment-stripper-order` refuses, and every absence sweep below depends on it.
 import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
@@ -220,7 +220,7 @@ export const archTests = [
       const cyclic = [mk("C", "B"), mk("B", "C")];
       assert.deepEqual(retryLineage({ runs: cyclic, record: cyclic[0] }).map((r) => r.runId), ["B", "C"]);
 
-      // 129/04 (ADR-008 §3) — the summer's callers moved with the ladder into `src/loop/cycle.mjs`
+      // 129/04 (ADR-008 §3) — the summer's callers moved with the ladder into `packages/core/src/loop/cycle.mjs`
       // (`budgetElapsedMs`, the one budget home); the shell and the wave reach the walk through it.
       // No member of the family traverses `retryOf` itself.
       for (const rel of [SHELL, "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs"]) {
@@ -354,8 +354,8 @@ export const archTests = [
     name: "arch/126/00 FF-12601 leg 8: both shell budget sites obtain elapsed from the summer, hand it the store's `isStale` and a threshold from the ONE bound home, and pass no instants",
     run: async () => {
       // 129/04 — THREE budget sites now, over the family: the shell's resume-lineage site, the
-      // ladder's in-process retry site (`src/loop/cycle.mjs`, moved with the retry ladder) and the
-      // wave's lane-resume site (`src/loop/wave.mjs`). Every one obtains its elapsed from the ONE
+      // ladder's in-process retry site (`packages/core/src/loop/cycle.mjs`, moved with the retry ladder) and the
+      // wave's lane-resume site (`packages/core/src/loop/wave.mjs`). Every one obtains its elapsed from the ONE
       // budget home (`budgetElapsedMs`, in the ladder module) and the summer is called exactly once.
       const shell = [await source(SHELL), await source("packages/work-loop/src/cycle.mjs"), await source("packages/work-loop/src/wave.mjs")].join("\n");
       const shellOnly = await source(SHELL);

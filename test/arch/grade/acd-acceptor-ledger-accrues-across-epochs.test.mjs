@@ -22,8 +22,8 @@ import { fileURLToPath } from "node:url";
 
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import { criterionDigest, defaultCriterion, makeCriterion, rulingsUnderCurrentCriterion } from "../../../src/work-acceptor/criterion.mjs";
-import { deriveRule } from "../../../src/work-acceptor/rule.mjs";
+import { criterionDigest, defaultCriterion, makeCriterion, rulingsUnderCurrentCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
+import { deriveRule } from "../../../packages/core/src/work-acceptor/rule.mjs";
 import {
   LEDGER_INCOMPLETE,
   PAIR_OUTCOMES,
@@ -34,7 +34,7 @@ import {
   attained,
   evaluateRun,
   makeRuling,
-} from "../../../src/work-acceptor/ledger.mjs";
+} from "../../../packages/core/src/work-acceptor/ledger.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const LEDGER_MODULE = "packages/work/src/acceptor/ledger.mjs";
@@ -172,10 +172,10 @@ export const archTests = [
     run: async () => {
       const source = await readFile(path.join(root, ...LEDGER_MODULE.split("/")), "utf8");
       // PURITY IS ABOUT EXTERNAL DEPENDENCIES (119/ADR-002). The leaf already lives inside a family
-      // directory — `src/work-acceptor/` — and the old token ban forbade the edge BETWEEN its own
+      // directory — `packages/core/src/work-acceptor/` — and the old token ban forbade the edge BETWEEN its own
       // members, which is exactly the decomposition a growing leaf needs. The family is the
       // containment boundary; the claim stays scoped to the leaf, because the four other members of
-      // `src/work-acceptor/` legitimately open files and no ADR ever made them pure.
+      // `packages/core/src/work-acceptor/` legitimately open files and no ADR ever made them pure.
       await assertFamilyPurity(assert, root, "packages/work/src/acceptor", { members: [LEDGER_MODULE] });
       assert.doesNotMatch(source, /\brequire\s*\(/u);
       const code = codeOnly(source);
@@ -228,7 +228,7 @@ export const archTests = [
         if (/\bMath\.pow\s*\(/u.test(code) || /\*\*/u.test(code)) derivers.push(rel);
         if (/\bfilter\s*\([\s\S]{0,80}?(?:FAVOURABLE|UNFAVOURABLE)\b/u.test(code)) talliers.push(rel);
       }
-      assert.ok(walked.length > 150, `src/**/*.mjs was actually walked: ${walked.length} modules`);
+      assert.ok(walked.length > 150, `packages/core/src/**/*.mjs was actually walked: ${walked.length} modules`);
       assert.deepEqual(derivers, [LEDGER_MODULE], "one e-value derivation in src/");
       assert.deepEqual(talliers, [LEDGER_MODULE], "one W/L/T tally in src/");
     },

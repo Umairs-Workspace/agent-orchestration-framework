@@ -6,36 +6,36 @@
 // answer that enters only through `work:answer` after the ask's own allowlist. Story 11 appends
 // FF-13113 here.
 //
-// FF-13111, structural then fixture. Over a comment-stripped sweep of `src/**`, the gateway socket is
-// constructed only in `src/discord/gateway.mjs`: no other `src/discord/**` module imports `ws` or
-// calls `new WebSocket(`, and no other `src/**` module spells the `/gateway/bot` route.
-// `src/mesh/launcher.mjs` reaches `src/discord/bot.mjs` only by a deferred import inside its
-// `if (issuanceAuthority)` branch, and imports nothing of `src/discord/` statically. Fixture over the
+// FF-13111, structural then fixture. Over a comment-stripped sweep of `packages/core/src/**`, the gateway socket is
+// constructed only in `packages/core/src/discord/gateway.mjs`: no other `packages/core/src/discord/**` module imports `ws` or
+// calls `new WebSocket(`, and no other `packages/core/src/**` module spells the `/gateway/bot` route.
+// `packages/core/src/mesh/launcher.mjs` reaches `packages/core/src/discord/bot.mjs` only by a deferred import inside its
+// `if (issuanceAuthority)` branch, and imports nothing of `packages/core/src/discord/` statically. Fixture over the
 // fake gateway (`test/discord/discord-fixture.mjs`): HELLO → IDENTIFY with intents 33280; a drop after
 // READY → RESUME carrying the `session_id` and the last `seq`, with no second IDENTIFY; close 4014 →
 // no reconnect and one `discord-intent-disallowed`; close 4004 → no reconnect and one
 // `discord-token-rejected`; `session_start_limit.remaining` 5 → no IDENTIFY and one
 // `discord-identify-budget`.
 //
-// FF-13112, structural then fixture. `src/discord/**` imports no write export of
-// `src/loop/ask-request.mjs` and nothing from `src/run-store.mjs`; its one answer call is
+// FF-13112, structural then fixture. `packages/core/src/discord/**` imports no write export of
+// `packages/core/src/loop/ask-request.mjs` and nothing from `packages/core/src/run-store.mjs`; its one answer call is
 // `invoke("work:answer", …)` carrying `via: "discord"`. The index's `discord-asks` segment is spelled
-// only in `src/notify/ask-messages.mjs`, joined beneath `messagingStoreDir(`. Fixture over the reply
+// only in `packages/core/src/notify/ask-messages.mjs`, joined beneath `messagingStoreDir(`. Fixture over the reply
 // background: a reply from an id not in `allow` leaves the ask `waiting` and posts one refusal; an
 // allowed reply makes it `answered` with `by.via: "discord"` and `by.actor` `@<username>`, and puts
 // one reaction; a reply to an unindexed message sends nothing and changes nothing; a second allowed
 // reply is refused `ask-already-answered` and names the first answerer.
 //
-// FF-13113, structural then fixture (131/11). `src/discord/**` imports no `node:child_process`; every
-// `invoke(` in `src/discord/commands.mjs` names `work:list` or `work:loop`; the `loop-resumes` segment is
-// spelled only in `src/loop/stop-request.mjs`; and `handOffLoop` writes the resume request and imports
+// FF-13113, structural then fixture (131/11). `packages/core/src/discord/**` imports no `node:child_process`; every
+// `invoke(` in `packages/core/src/discord/commands.mjs` names `work:list` or `work:loop`; the `loop-resumes` segment is
+// spelled only in `packages/core/src/loop/stop-request.mjs`; and `handOffLoop` writes the resume request and imports
 // no `child_process`. Fixture over injected fakes: each of the four commands sends its `type: 5`
 // callback before any `invoke`, the views with `flags: 64`; a user not in `allow` gets
 // `discord-command-not-allowed` and nothing is invoked; `decideSupervisedDeclarations` yields a
 // done-latest supervised declaration's row only when it is in `resumeRequested`.
 //
-// NON-VACUOUS (QA ruling 1): the sweep must find `src/discord/gateway.mjs`, `src/discord/replies.mjs`,
-// `src/discord/commands.mjs`, one `invoke("work:answer"` call and at least one command dispatch. Every
+// NON-VACUOUS (QA ruling 1): the sweep must find `packages/core/src/discord/gateway.mjs`, `packages/core/src/discord/replies.mjs`,
+// `packages/core/src/discord/commands.mjs`, one `invoke("work:answer"` call and at least one command dispatch. Every
 // sweep reports what it read.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -44,17 +44,17 @@ import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
-import { handleInteraction } from "../../../src/discord/commands.mjs";
+import { handleInteraction } from "../../../packages/core/src/discord/commands.mjs";
 import { decideSupervisedDeclarations } from "../../../packages/work-loop/src/engine.mjs";
-import { isRunning, isStale, retryReadiness } from "../../../src/run-store.mjs";
-import { startGateway } from "../../../src/discord/gateway.mjs";
-import { handleReply } from "../../../src/discord/replies.mjs";
+import { isRunning, isStale, retryReadiness } from "../../../packages/core/src/run-store.mjs";
+import { startGateway } from "../../../packages/core/src/discord/gateway.mjs";
+import { handleReply } from "../../../packages/core/src/discord/replies.mjs";
 import { ALLOWED, STRANGER, TOKEN, degradeSink, fakeClock, fakeGateway, flush, ready, releaseDegradeSink, reply, withReplyWorld } from "../../discord/discord-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-const FAMILY = "src/discord/";
+const FAMILY = "packages/core/src/discord/";
 const GATEWAY = "packages/messaging/src/gateway.mjs";
 const REPLIES = "packages/messaging/src/replies.mjs";
 const BOT = "packages/messaging/src/bot.mjs";
@@ -78,7 +78,7 @@ function assertRead(what, count, floor, unit = "file(s)") {
 
 function inDiscordFamily(rel) {
   // Include the entire package so adding a new module cannot escape the old directory-wide rules.
-  return rel.startsWith("src/application/bindings/discord/") || rel.startsWith("src/discord/") || rel.startsWith("packages/messaging/src/");
+  return rel.startsWith("packages/core/src/application/bindings/discord/") || rel.startsWith("packages/core/src/discord/") || rel.startsWith("packages/messaging/src/");
 }
 
 function resolved(fromRel, specifier) {
@@ -88,7 +88,7 @@ function resolved(fromRel, specifier) {
   if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
-  if (/^src\/loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace("src/loop/", "packages/work-loop/src/");
+  if (/^src\/loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace("packages/core/src/loop/", "packages/work-loop/src/");
   return /\.[cm]?[jt]sx?$/u.test(joined) ? joined : `${joined}.mjs`;
 }
 
@@ -101,7 +101,7 @@ async function srcUnits() {
   return units;
 }
 
-// gatewaySocketBuilders(units) → every module that builds the gateway socket: a `src/discord/**`
+// gatewaySocketBuilders(units) → every module that builds the gateway socket: a `packages/core/src/discord/**`
 // module importing `ws` or calling `new WebSocket(`, or any module spelling the `/gateway/bot`
 // route. PURE, so the red probe runs this shipped detector over a patched unit.
 export function gatewaySocketBuilders(units) {
@@ -111,7 +111,7 @@ export function gatewaySocketBuilders(units) {
   }).map(({ rel }) => rel);
 }
 
-// answerCalls(units) → every `invoke(` call in `src/discord/**` whose first argument is the literal
+// answerCalls(units) → every `invoke(` call in `packages/core/src/discord/**` whose first argument is the literal
 // `"work:answer"`, as `{ rel, via }`, `via` the literal its input carries (or null).
 export function answerCalls(units) {
   const calls = [];
@@ -126,7 +126,7 @@ export function answerCalls(units) {
   return calls;
 }
 
-// ask-request write names a `src/discord/**` module reaches, and anything it imports from the run
+// ask-request write names a `packages/core/src/discord/**` module reaches, and anything it imports from the run
 // store. The specifiers come from the one extractor (`importSpecifiers`, FF-11901); a module that
 // imports `ask-request.mjs` is then read for each write export used as an identifier.
 export function forbiddenWrites(units) {
@@ -141,7 +141,7 @@ export function forbiddenWrites(units) {
   return found;
 }
 
-// The `src/discord/**` modules that import `child_process`, by the one extractor.
+// The `packages/core/src/discord/**` modules that import `child_process`, by the one extractor.
 export function childProcessImporters(units) {
   return units
     .filter(({ rel, code }) => inDiscordFamily(rel) && dependencySpecifiers(code).some(({ specifier }) => specifier === "child_process" || specifier === "node:child_process"))
@@ -203,7 +203,7 @@ export const archTests = [
 
       const launcher = units.find(({ rel }) => rel === LAUNCHER);
       assert.ok(launcher != null, `NOT FOUND: ${LAUNCHER}`);
-      const adapter = units.find(({ rel }) => rel === "src/application/bindings/mesh/launcher.mjs");
+      const adapter = units.find(({ rel }) => rel === "packages/core/src/application/bindings/mesh/launcher.mjs");
       assert.ok(adapter);
       assert.match(adapter.code, /loadMessagingBot:\s*\(\)\s*=>\s*provideDiscordBot\(\)/u);
       const reaches = dependencySpecifiers(adapter.code).filter(({ specifier }) => inDiscordFamily(resolved(adapter.rel, specifier)));
@@ -271,10 +271,10 @@ export const archTests = [
       assertRead("the src/** sweep", units.length, 150);
       assertRead("the src/discord/** family", units.filter(({ rel }) => inDiscordFamily(rel)).length, 3);
       const writes = forbiddenWrites(units);
-      assert.deepEqual(writes, [], `src/discord/** imports no write export of ${ASK_REQUEST} and nothing from ${RUN_STORE} — found ${writes.join(", ")}. An answer from Discord enters only through work:answer (ADR-008's invariant)`);
+      assert.deepEqual(writes, [], `packages/core/src/discord/** imports no write export of ${ASK_REQUEST} and nothing from ${RUN_STORE} — found ${writes.join(", ")}. An answer from Discord enters only through work:answer (ADR-008's invariant)`);
       const calls = answerCalls(units);
       assertRead(`the invoke("work:answer" calls in ${FAMILY}`, calls.length, 1, "call(s)");
-      assert.deepEqual(calls, [{ rel: REPLIES, via: "discord" }], `src/discord/**'s one answer call is invoke("work:answer", …) in ${REPLIES} carrying via: "discord" — found ${JSON.stringify(calls)}`);
+      assert.deepEqual(calls, [{ rel: REPLIES, via: "discord" }], `packages/core/src/discord/**'s one answer call is invoke("work:answer", …) in ${REPLIES} carrying via: "discord" — found ${JSON.stringify(calls)}`);
 
       const spellers = units.filter(({ code }) => code.includes('"discord-asks"')).map(({ rel }) => rel);
       assert.deepEqual(spellers, [INDEX], `the discord-asks segment is spelled only in ${INDEX} — found ${spellers.join(", ")}`);
@@ -328,7 +328,7 @@ export const archTests = [
       const commands = units.find(({ rel }) => rel === COMMANDS_MODULE);
       assert.ok(commands != null, `NOT FOUND: ${COMMANDS_MODULE} — the module the control governs has moved`);
       const spawners = childProcessImporters(units);
-      assert.deepEqual(spawners, [], `src/discord/** imports no node:child_process — found in ${spawners.join(", ")}. A command dispatches a registered verb and starts no process (ADR-009's invariant)`);
+      assert.deepEqual(spawners, [], `packages/core/src/discord/** imports no node:child_process — found in ${spawners.join(", ")}. A command dispatches a registered verb and starts no process (ADR-009's invariant)`);
       const dispatched = commandDispatches(commands.code);
       assertRead(`the invoke( calls in ${COMMANDS_MODULE}`, dispatched.length, 1, "call(s)");
       const strays = dispatched.filter((id) => !ALLOWED_VERBS.includes(id));

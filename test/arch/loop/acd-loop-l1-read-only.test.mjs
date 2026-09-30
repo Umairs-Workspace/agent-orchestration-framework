@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { runLoopBody } from "../../../src/commands/loop.mjs";
+import { runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
 import { completingDriver, loopFixture } from "../../loop/loop-command-probe.test.mjs";
 
 async function snapshot(root) {

@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 38 / story 00
 // tasks/08_bug-web-fleet-presence-plumbing.feature — finding F6 (aof:verify 38,
 // BLOCKER): the web fleet's ONE read route (`GET /api/mesh/status`, served by
-// src/mesh/ui-serve.mjs through src/global-mesh-query.mjs's queryGlobalMeshStatus)
+// packages/core/src/mesh/ui-serve.mjs through packages/core/src/global-mesh-query.mjs's queryGlobalMeshStatus)
 // carried NO `presence` key on any node object, so ui/src/fleet/Fleet.tsx's
 // `fleetCurrentWorkLines(node.presence ?? {})` always received `{}` and row 3
 // always rendered `idle` — even with a REAL live coding-assistant session on disk.
@@ -29,12 +29,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { publishPresenceRecord, assemblePresenceRecord } from "../../../src/mesh/presence.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { publishPresenceRecord, assemblePresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
 // ui/src/fleet/runs.mjs's fleetCurrentWorkLines — the SAME pure projection
 // ui/src/fleet/Fleet.tsx:631 (NodeCard) hands `node.presence ?? {}` to. Imported
 // directly (node:test has no React harness in this repo, the house pattern —

@@ -44,7 +44,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { driveInteractiveClaudeSession, NEEDS_INPUT_SENTINEL } from "../../../src/mesh/worker-execution.mjs";
+import { driveInteractiveClaudeSession, NEEDS_INPUT_SENTINEL } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";

@@ -23,13 +23,13 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { runLoopBody } from "../../src/commands/loop.mjs";
-import { gradeCommand } from "../../src/commands/grade.mjs";
-import { PHASE_BRIEF_MAX_CHARS } from "../../src/phase-brief.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+import { gradeCommand } from "../../packages/core/src/commands/grade.mjs";
+import { PHASE_BRIEF_MAX_CHARS } from "../../packages/core/src/phase-brief.mjs";
 import {
   GRADE_FAILURE_MAX_ENTRIES, GRADE_TRUNCATION_KEY, boundGradeFailures, compileGrade,
-} from "../../src/work/grade.mjs";
+} from "../../packages/core/src/work/grade.mjs";
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../loop/loop-command-probe.test.mjs";
 import {
@@ -313,7 +313,7 @@ export const gradePayloadBoundedInTheWriterTests = [
       const strip = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 
       // EXACTLY ONE FUNCTION BOUNDS A GRADE PAYLOAD, and exactly one module declares its
-      // entry ceiling — asked of the whole `src/**` family, not of the modules this task
+      // entry ceiling — asked of the whole `packages/core/src/**` family, not of the modules this task
       // happened to edit (`m15/R3`).
       const declaring = [];
       const bounding = [];
@@ -325,7 +325,7 @@ export const gradePayloadBoundedInTheWriterTests = [
       assert.deepEqual(bounding, ["packages/work/src/grade.mjs"], "exactly one function bounds a grade payload");
       assert.deepEqual(declaring, ["packages/work/src/grade.mjs"], "…and exactly one module declares its ceiling");
 
-      // IT LIVES IN THE PURE LEAF AND IMPORTS NOTHING FROM `src/` (FF-5406, unchanged).
+      // IT LIVES IN THE PURE LEAF AND IMPORTS NOTHING FROM `packages/core/src/` (FF-5406, unchanged).
       const leaf = strip(await readFile(path.join(repoRoot, "packages", "work", "src", "grade.mjs"), "utf8"));
       const imports = [...leaf.matchAll(/\bfrom\s+["']([^"']+)["']/g)].map((match) => match[1]);
       assert.deepEqual(imports, ["@aof/contracts/claim-provenance"], "the bound lives in the pure leaf, which still imports only the pure provenance compiler");

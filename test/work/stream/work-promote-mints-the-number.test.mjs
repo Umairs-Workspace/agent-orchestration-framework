@@ -2,8 +2,8 @@
 //
 // Every @executable scenario (and every Scenario Outline Examples row) of tasks 00, 01 and 02 is
 // asserted here against the REAL registered command `work:promote`
-// (src/commands/promote.mjs), invoked in-process through the command core
-// (src/command-core.mjs) and read back black-box through findWork / listItems / listStream /
+// (packages/core/src/commands/promote.mjs), invoked in-process through the command core
+// (packages/core/src/command-core.mjs) and read back black-box through findWork / listItems / listStream /
 // nextWork / validateWork, plus the real CLI as a child process for the face's own envelope. Task
 // 04's ONE promote-side scenario — the not-found text that explains a stream-intake project —
 // lives here too, because it is a refusal of this verb and the only `intake` read in the verb.
@@ -30,11 +30,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace } from "../../../src/work.mjs";
-import { appendPosition } from "../../../src/work-promote/promotion.mjs";
-import { openEffectsJournal, readEvents } from "../../../src/effects/journal.mjs";
-import { ITEM_LOCKED_CODE } from "../../../src/item-lock.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { appendPosition } from "../../../packages/core/src/work-promote/promotion.mjs";
+import { openEffectsJournal, readEvents } from "../../../packages/core/src/effects/journal.mjs";
+import { ITEM_LOCKED_CODE } from "../../../packages/core/src/item-lock.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture.mjs";
 import { buildThreeRootFixture } from "./work-backlog-archive-enumerate.test.mjs";
@@ -255,7 +255,7 @@ export const workPromoteMintsTheNumberTests = [
       withFixture(async ({ work, workspace }) => {
         const beforeFindings = await validateWork(work, workspace.config);
         // `nextWork` with a FREE-TEXT scope falls through to the whole stream by design (`inRange` in
-        // src/work.mjs — story 86 / TECH_DEBT 49 refuses only story-grained shapes), so it answers
+        // packages/core/src/work.mjs — story 86 / TECH_DEBT 49 refuses only story-grained shapes), so it answers
         // `ready` for `10/00` here. The claim the contract makes is "a backlog row is never proposed":
         // the backlog row is NOWHERE in the answer — not the head, not a ready-set member.
         const beforeNext = await nextWork(work, "delta");

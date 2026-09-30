@@ -14,7 +14,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { reindex, memoryIndexPath } from "../../../src/memory/local-indexing.mjs";
+import { reindex, memoryIndexPath } from "../../../packages/core/src/memory/local-indexing.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");

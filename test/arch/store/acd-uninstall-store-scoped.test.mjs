@@ -12,7 +12,7 @@
 //   (b) the project:provision command's --uninstall path (run dry-run, no fs touched)
 //       → the plan's removal target is exactly the graphify version dir under the
 //       store root, and is NOT the store root / a PATH / a global / a system path.
-//   (c) SOURCE-GREP src/tool-store.mjs + src/commands/project-provision.mjs
+//   (c) SOURCE-GREP packages/core/src/tool-store.mjs + packages/core/src/commands/project-provision.mjs
 //       (comments discounted): the removal target derives from toolVersionDir, and
 //       there is no rmSync/rm/rmdir of a store ROOT, a PATH dir, or a
 //       `uv tool uninstall`.
@@ -21,12 +21,12 @@ import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { uninstall, GRAPHIFY_DESCRIPTOR } from "../../../src/tool-store.mjs";
-import { toolStoreRoot, toolVersionDir } from "../../../src/paths.mjs";
-import { projectProvisionCommand } from "../../../src/commands/project-provision.mjs";
+import { uninstall, GRAPHIFY_DESCRIPTOR } from "../../../packages/core/src/tool-store.mjs";
+import { toolStoreRoot, toolVersionDir } from "../../../packages/core/src/paths.mjs";
+import { projectProvisionCommand } from "../../../packages/core/src/commands/project-provision.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 const TOOL_STORE = path.join(srcDir, "tool-store.mjs");
 const PROJECT_PROVISION = path.join(srcDir, "commands", "project-provision.mjs");
 

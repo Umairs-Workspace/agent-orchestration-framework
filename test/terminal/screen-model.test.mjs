@@ -11,8 +11,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createScreen } from "../../src/terminal/screen.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+import { createScreen } from "../../packages/core/src/terminal/screen.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 
 const fixtureDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "claude-screens");
 

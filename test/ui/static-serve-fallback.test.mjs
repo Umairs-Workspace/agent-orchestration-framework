@@ -19,7 +19,7 @@
 // A server that kept its own hand-rolled copy would pass this file and fail that one;
 // that is the intended division of labour, not a gap.
 //
-// THE THREE ORIGINS, and why they are three and not two. `src/board-serve.mjs:20` hands
+// THE THREE ORIGINS, and why they are three and not two. `packages/core/src/board-serve.mjs:20` hands
 // the board origin to the SAME handler the config editor runs (`serveSetupUi`), so those
 // two are ONE handler observed twice — several scenarios exist purely to prove that by
 // observation rather than take the delegation on trust. The fleet origin
@@ -35,9 +35,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
-import { serveBoard, boardUiDist } from "../../src/board-serve.mjs";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+import { serveBoard, boardUiDist } from "../../packages/core/src/board-serve.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
 
 // --- fixtures ----------------------------------------------------------------
 

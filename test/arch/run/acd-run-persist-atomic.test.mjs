@@ -1,6 +1,6 @@
 // Fitness function: acd-run-persist-atomic (milestone 20, ADR-007 — closing 19/R2a).
 //
-// Every run-record write in run-store.mjs routes through the atomic src/fs.mjs:writeText
+// Every run-record write in run-store.mjs routes through the atomic packages/core/src/fs.mjs:writeText
 // temp+rename seam; there is NO raw writeFile/appendFile of a runs/<id>.json, and the
 // module imports writeText from ./fs.mjs (the previously-missing edge the graph flagged).
 // Source-analysis (call-form, comments discounted), mirroring acd-run-write-scope.

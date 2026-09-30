@@ -8,7 +8,7 @@
 // resolver path that already exists and the detector that finds the violation.
 //
 // THE DEFECT, measured. On the fleet origin a relative `/board` resolves to `:4181`, which
-// deliberately 404s `/api/work` (`src/mesh/ui-serve.mjs:583-586`, the disjoint-face rule from
+// deliberately 404s `/api/work` (`packages/core/src/mesh/ui-serve.mjs:583-586`, the disjoint-face rule from
 // m25/ADR-003) — so the board page loads and cannot load its stream. The file's own comment at
 // `:1420-1426` records this and routes it here: "That is TODAY's behaviour for the legacy
 // `?mode=board` form, byte for byte; a URL migration that also changed where the link GOES would
@@ -70,7 +70,7 @@ const HARD_CODED_BOARD_FORMS = [
 // than one per gate:
 //   - the stripper takes LINE COMMENTS FIRST, THEN BLOCKS (TECH_DEBT item 24 — a line comment
 //     containing `/*` opens a block-comment run for a block-first stripper, measured at 9,192
-//     characters of `src/mesh/ui-serve.mjs` including its whole route table), and its `[^:]` guard
+//     characters of `packages/core/src/mesh/ui-serve.mjs` including its whole route table), and its `[^:]` guard
 //     is load-bearing for exactly this file's subject: a naive //-stripper deletes from the `//`
 //     in `http://…/board` onward, i.e. it hides form (b) entirely. Fleet.tsx:1420-1426 narrates the
 //     defect in a COMMENT, which must not count as the defect;

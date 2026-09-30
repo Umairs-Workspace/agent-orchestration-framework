@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
+import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { deriveRouteTable, resolveRoute } from "../../../packages/core/src/spine/face.mjs";
 import { GATE_ORDER, LOOP_REFUSALS, LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
-import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS } from "../../../src/work/grade.mjs";
-import { gradeRoute, gradeStopCode, gradeStopProducer, runLoopBody } from "../../../src/commands/loop.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS } from "../../../packages/core/src/work/grade.mjs";
+import { gradeRoute, gradeStopCode, gradeStopProducer, runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
 import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-command-probe.test.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
@@ -193,7 +193,7 @@ export const archTests = [
         },
       };
       assert.equal(gradeStopCode(decoy), "report-unreadable", "the code decides; the prose beside it is not read");
-      // 129/04 (ADR-008 §3) — the grade helpers moved with the ladder into `src/loop/cycle.mjs`,
+      // 129/04 (ADR-008 §3) — the grade helpers moved with the ladder into `packages/core/src/loop/cycle.mjs`,
       // so the vocabulary is imported THERE as data, and the rule holds over the FAMILY: no member
       // matches rendered prose or restates an indeterminate code as a literal.
       const family = await Promise.all(["packages/work-loop/src/commands/loop.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs"].map(async (rel) => stripComments(await readFile(path.join(root, rel), "utf8"))));

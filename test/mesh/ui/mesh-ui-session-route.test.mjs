@@ -13,7 +13,7 @@
 //
 // SO "a session-spawn directive was dispatched to n1" IS PROVEN THROUGH THE PRODUCTION
 // CHAIN, not from the response body: the route's envelope is captured off the SAME
-// `terminalInputPush` seam `src/commands/mesh-ui.mjs` wires literally, then handed to
+// `terminalInputPush` seam `packages/core/src/commands/mesh-ui.mjs` wires literally, then handed to
 // the REAL `createTerminalInputRouter` (which the serve process feeds from its own
 // broker subscription, mesh-launcher.mjs), which dispatches through a REAL
 // `startControlStreamServer` to a REAL worker stream client's `onSessionSpawn` lane.
@@ -23,27 +23,27 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
 // The closed set the route validates `assistant` against, read from its ONE home so this
 // suite cannot drift from the module the face imports (ADR-002 decision 2's
 // `"claude"|"codex"|"gemini"`; ADR-007 decision 3 keeps it closed as a session-key LABEL).
-import { PROVIDER_IDS } from "../../../src/terminal-providers.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createTerminalInputRouter } from "../../../src/mesh/terminal-input.mjs";
-import { SESSION_SPAWN_KIND } from "../../../src/mesh/session-spawn-directive.mjs";
-import { startControlStreamServer } from "../../../src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../../src/worker-stream-client.mjs";
+import { PROVIDER_IDS } from "../../../packages/core/src/terminal-providers.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { createTerminalInputRouter } from "../../../packages/core/src/mesh/terminal-input.mjs";
+import { SESSION_SPAWN_KIND } from "../../../packages/core/src/mesh/session-spawn-directive.mjs";
+import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
+import { createWorkerStreamClient, createWorkerWsTransport } from "../../../packages/core/src/worker-stream-client.mjs";
 
 // A v4 UUID, the shape `crypto.randomUUID()` mints (ADR-002 decision 2 — the session's
 // routable address, minted CONTROL-side so the 200 can carry it).
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 // The fixture pins its workspace ids through `config.mesh.workspaceId` — the REAL
-// production precedence (`src/workspace-identity.mjs`: an explicit pin outranks the
+// production precedence (`packages/core/src/workspace-identity.mjs`: an explicit pin outranks the
 // path derivation, and is what a scoped clone carries), so the locked scenarios'
 // `workspaceId: "ws-aof"` is the id the projection actually holds rather than a
 // sha256 of a temp path the feature file could never name.
@@ -648,7 +648,7 @@ export const meshUiSessionRouteTests = [
   //
   // REVIEW FIX (2026-08-14): the route forwarded ANYTHING — `"not-a-provider"`,
   // `"../../../etc/passwd"`, a 4096-character string — to the worker. Traversal is closed
-  // downstream by `safeSegment` (src/mesh/session.mjs), but LENGTH is not, and the value
+  // downstream by `safeSegment` (packages/core/src/mesh/session.mjs), but LENGTH is not, and the value
   // becomes a filename segment of the worker's session leaf: an over-long `assistant` can
   // fail the worker's session-record write AFTER the PTY is already alive, i.e. a live
   // shell with no grid record. The set is validated at the door, from its one home.

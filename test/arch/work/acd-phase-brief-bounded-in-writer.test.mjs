@@ -23,10 +23,10 @@ import {
   BRIEF_SECTION_PRIORITY,
   BRIEF_SECTION_SOURCES,
   compilePhaseBrief,
-} from "../../../src/phase-brief.mjs";
+} from "../../../packages/core/src/phase-brief.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(root, "src");
+const srcRoot = path.join(root, "packages", "core", "src");
 
 // FF-7009's rival-policy detector: a module OTHER than the compiler that declares a
 // condenser map or a non-condensable set of its own. Keyed on the named constant being

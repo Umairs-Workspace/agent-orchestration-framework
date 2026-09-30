@@ -2,7 +2,7 @@
 //
 // Covers EVERY @executable scenario in
 //   tasks/02_retry-lineage.feature
-// exercising the REAL src/run-store.mjs in-process against a temp fixture repo
+// exercising the REAL packages/core/src/run-store.mjs in-process against a temp fixture repo
 // (mkdtemp → mkdir → run → rm in finally). One test object per @executable
 // scenario (Scenario-Outline rows folded into one entry iterating the rows), each
 // name tracing to feature + scenario. node:assert/strict.
@@ -94,7 +94,7 @@ export const runRetryLineageTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { retryRun, readRuns } = await import("../../src/run-store.mjs");
+        const { retryRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const prior = await writeFailedRecord(item, { runId: "20260629T090000000Z-0000", sessionId: "sess-7", attempt: 1, failureReason: "timeout" });
@@ -124,7 +124,7 @@ export const runRetryLineageTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const record = await startRun(item, { now: "2026-06-30T09:00:00.000Z" });
@@ -142,7 +142,7 @@ export const runRetryLineageTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { retryRun, startRun, completeRun } = await import("../../src/run-store.mjs");
+        const { retryRun, startRun, completeRun } = await import("../../packages/core/src/run-store.mjs");
 
         // row 1: one failed timeout run, no runId → resumes that run
         {
@@ -197,7 +197,7 @@ export const runRetryLineageTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { retryRun } = await import("../../src/run-store.mjs");
+        const { retryRun } = await import("../../packages/core/src/run-store.mjs");
 
         const rows = [
           // a non-retryable reason → not-retryable
@@ -231,7 +231,7 @@ export const runRetryLineageTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { retryRun, completeRun, readRuns } = await import("../../src/run-store.mjs");
+        const { retryRun, completeRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         // attempt 1 (the seed failed run, sessionId sess-9, timeout)

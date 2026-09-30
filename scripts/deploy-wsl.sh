@@ -39,13 +39,13 @@ case "$DST" in
 esac
 STAMP="$DST/$3"
 
-[ -d "$SRC/src" ] || { echo "no src/ at $SRC (path translation failed?)" >&2; exit 1; }
+[ -d "$SRC/packages/core/src" ] || { echo "no core source at $SRC (path translation failed?)" >&2; exit 1; }
 [ -d "$DST/.git" ] || { echo "no aof clone at $DST — provision the distro first" >&2; exit 1; }
 
 # 1. the source tree. src/bundle rides inside src/, so this covers the asset sidecars.
 #    node_modules is NEVER copied — it is the Windows tree.
-rm -rf "$DST/src"
-cp -r "$SRC/src" "$DST/src"
+mkdir -p "$DST/bin"
+cp "$SRC/bin/aof.mjs" "$DST/bin/aof.mjs"
 cp "$SRC/package.json" "$DST/package.json"
 # Focus still resolves the complete workspace graph. Carry all current manifests and the
 # pinned tool/configuration with the lock; node_modules is installed natively in the distro.
@@ -57,7 +57,7 @@ cp "$SRC/yarn.lock" "$SRC/.yarnrc.yml" "$DST/"
 cp "$SRC/.yarn/releases/yarn-4.18.1.cjs" "$DST/.yarn/releases/"
 cp "$SRC/scripts/prepare-worktree.mjs" "$SRC/scripts/yarn.mjs" "$DST/scripts/"
 rm -f "$DST/package-lock.json" "$DST/ui/package-lock.json"
-echo "  synced src/ ($(find "$DST/src" -name '*.mjs' | wc -l) modules)"
+echo "  synced workspaces ($(find "$DST/packages/core/src" -name '*.mjs' | wc -l) core modules)"
 
 # The WORKSPACE config travels too. It is machine-neutral (no paths), and it carries
 # `mesh.workspaceId` — the DURABLE CROSS-MACHINE workspace anchor. Without it both ends

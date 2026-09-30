@@ -36,8 +36,8 @@ import {
   PREFLIGHT_SEAMS,
   runPreflight,
   renderPreflight,
-} from "../../../src/commands/mesh/desktop-preflight.mjs";
-import { getCommand, invoke } from "../../../src/command-core.mjs";
+} from "../../../packages/core/src/commands/mesh/desktop-preflight.mjs";
+import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
 import { withMeshDesktopFixture, seedInstalledApp, DESKTOP_APP_EXE } from "../../support/mesh-desktop-fixture.mjs";
 
 // The argv `markedEntry` writes: the script resolved at run time through the harness's own

@@ -4,7 +4,7 @@
 // root with an item-name match of their own — so a new root (the backlog, the archive) would
 // have had to be taught to eight scanners, and would have been taught to some. This control
 // holds the cut over core and workspace runtime source. Migration 142 moves the grammar
-// into identity.mjs and the enumerator into discovery.mjs; src/work.mjs forwards both APIs.
+// into identity.mjs and the enumerator into discovery.mjs; packages/core/src/work.mjs forwards both APIs.
 //
 //   1. THE REGEX HOME. `ITEM_RE` and `BACKLOG_ITEM_RE` are each bound to a regex literal
 //      (`const … = /…/`) in exactly one file, `packages/work/src/identity.mjs`; every other reference to
@@ -19,7 +19,7 @@
 //      path whose pairing the sweep no longer finds is itself a failure — a stale keeper cannot
 //      outlive its reason.
 //
-// `src/memory/local-indexing.mjs` is asserted to hold NO item-name match at all: it walks the
+// `packages/core/src/memory/local-indexing.mjs` is asserted to hold NO item-name match at all: it walks the
 // wiki for `AOF.md` files and de-duplicates against the enumerator's row dirs, and the item
 // shape lives only in its comments — which the strip removes. The assertion is what keeps it
 // from becoming a keeper silently.
@@ -87,7 +87,7 @@ async function sweepSrc() {
   return files;
 }
 
-// Does `stripped` import `name` from src/work.mjs? Reads the import CLAUSE of a `work.mjs`
+// Does `stripped` import `name` from packages/core/src/work.mjs? Reads the import CLAUSE of a `work.mjs`
 // import (the shape `acd-cache-read-surface-boundary`'s `workImportBindings` uses) — the
 // specifier itself is matched, not captured, so this is not a second specifier extractor
 // (FF-11901 · 121: `importSpecifiers` in test/support/module-family.mjs is the one home for
@@ -97,7 +97,7 @@ function importsFromWork(rel, stripped, name) {
   for (const { specifier, dynamic, parameter } of dependencySpecifiers(stripped)) {
     if (dynamic || (!specifier.startsWith('.') && !specifier.startsWith('@aof/'))) continue;
     const target = path.relative(repoRoot, resolve.resolve(specifier)).split(path.sep).join('/');
-    if (!["src/application/bindings/work.mjs", IDENTITY, ENUMERATOR].includes(target)) continue;
+    if (!["packages/core/src/application/bindings/work.mjs", IDENTITY, ENUMERATOR].includes(target)) continue;
     const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (parameter && new RegExp('const\\s*\\{[^}]*\\b' + name + '\\b[^}]*\\}\\s*= ' + parameter).test(stripped)) return true;
     const namespace = new RegExp('import\\s*\\*\\s*as\\s+(\\w+)\\s*from\\s*["\']' + escaped + '["\']').exec(stripped)?.[1];
@@ -124,14 +124,14 @@ export const archTests = [
         if (rel === IDENTITY) continue;
         for (const name of ["ITEM_RE", "BACKLOG_ITEM_RE"]) {
           if (!new RegExp(`\\b${name}\\b`).test(stripped)) continue;
-          assert.ok(importsFromWork(rel, stripped, name), `${rel} references ${name} without importing it from src/work.mjs`);
+          assert.ok(importsFromWork(rel, stripped, name), `${rel} references ${name} without importing it from packages/core/src/work.mjs`);
         }
       }
       // The two root names are spelled once, in the enumerator's file: no other module NAMES a
       // root with the literal (a path-builder argument or a path segment — ROOT_NAMING_LITERAL_RE).
       for (const [rel, { stripped }] of files) {
         if (rel === IDENTITY) continue;
-        assert.ok(!ROOT_NAMING_LITERAL_RE.test(stripped), `${rel} names a root with a string literal — import BACKLOG_ROOT / ARCHIVE_ROOT from src/work.mjs instead`);
+        assert.ok(!ROOT_NAMING_LITERAL_RE.test(stripped), `${rel} names a root with a string literal — import BACKLOG_ROOT / ARCHIVE_ROOT from packages/core/src/work.mjs instead`);
       }
       const work = files.get(IDENTITY).stripped;
       assert.equal((work.match(/"backlog"/g) ?? []).length, 1);
@@ -158,7 +158,7 @@ export const archTests = [
       const migrate = files.get("packages/work/src/commands/migrate-folder.mjs").stripped;
       assert.ok(!IDENTIFIER_RE.test(migrate), "migrate-folder.mjs no longer references ITEM_RE (its only use was nextFreeSlot)");
       assert.ok(!/nextFreeSlot/.test(migrate), "nextFreeSlot is gone");
-      assert.ok(importsFromWork("packages/work/src/tune/provenance.mjs", files.get("packages/work/src/tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from src/work.mjs");
+      assert.ok(importsFromWork("packages/work/src/tune/provenance.mjs", files.get("packages/work/src/tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from packages/core/src/work.mjs");
       const observe = files.get("packages/work/src/observe.mjs").stripped;
       assert.ok(importsFromWork("packages/work/src/observe.mjs", observe, "listItems"), "observe.mjs takes its items from listItems");
       assert.ok(!/\/\^\(\\d\+\)_/.test(observe), "observe.mjs holds no regex literal beginning /^(\\d+)_");

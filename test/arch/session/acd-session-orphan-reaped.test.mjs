@@ -27,7 +27,7 @@
 //     `${safeSegment(nodeId)}~` prefix.
 //  3. STRUCTURAL — `startSession` AND `pingSession` invoke it (the write seam).
 //  4. STRUCTURAL (ADR-010 R5) — the `unlink` seam DEFAULTS to the module's real
-//     `unlink`, and NO `src/` call site supplies `options.unlink` IN EITHER SPELLING —
+//     `unlink`, and NO `packages/core/src/` call site supplies `options.unlink` IN EITHER SPELLING —
 //     neither `{ unlink: fn }` nor the object SHORTHAND `{ unlink }`, which is the one a
 //     production caller would actually write: a test seam may never become a production
 //     door. `endSession` does not take the seam at all.
@@ -54,13 +54,13 @@ import {
   sessionRecordPath,
   isSessionLive,
   DEFAULT_SESSION_TTL_SECONDS,
-} from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { setDegradeSinkForTest } from "../../../src/degrade.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+} from "../../../packages/core/src/mesh/session.mjs";
+import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(repoRoot, "src");
+const srcRoot = path.join(repoRoot, "packages", "core", "src");
 const sessionSourcePath = path.join(repoRoot, "packages/mesh/src/session.mjs");
 const commandSourcePath = path.join(repoRoot, "packages/mesh/src/commands/session.mjs");
 
@@ -92,7 +92,7 @@ function plant(source, needle, replacement) {
 }
 
 // NON-VACUITY OF THE STRIP ITSELF (TECH_DEBT item 24, fix (b)). Proof 4 sweeps ALL of
-// `src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
+// `packages/core/src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
 // the source it was meant to read — item 24's named "silent false GREEN" shape. The
 // anchor is each module's OWN exported symbol names: a name a module `export`s at line
 // start is code by construction, so if it does not survive `stripComments` then the
@@ -119,7 +119,7 @@ function strippedCorpusViolations(entries, strip = stripComments) {
 // code, opens the identical door, and `\bunlink\s*:` does not see it at all.
 //
 // An IMPORT/EXPORT clause is spelled identically (`import { readdir, unlink } from
-// "node:fs/promises"`, which src/mesh/session.mjs, src/run-store.mjs and src/fs.mjs all
+// "node:fs/promises"`, which packages/core/src/mesh/session.mjs, packages/core/src/run-store.mjs and packages/core/src/fs.mjs all
 // carry) and is NOT a supply: that import is precisely what ADR-010 R5's DEFAULT is
 // built ON. Module clauses are therefore removed before the scan rather than
 // special-cased inside it, so the rule stays "no object property named `unlink`".

@@ -12,8 +12,8 @@
 // for the SAME input called directly against the SAME (untouched) store —
 // producer-fed PARITY, not a re-implemented refusal (STATE.md F1/F4).
 import assert from "node:assert/strict";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { assignWork } from "../../../src/mesh/assignment.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { assignWork } from "../../../packages/core/src/mesh/assignment.mjs";
 import { withAssignRouteFixture, sameOriginAssign, seedTargetNode, readAssignmentRows } from "../../support/mesh-ui-assign-fixture.mjs";
 
 async function directAssignCode({ root, globalStoreOptions }, ref, nodeId) {

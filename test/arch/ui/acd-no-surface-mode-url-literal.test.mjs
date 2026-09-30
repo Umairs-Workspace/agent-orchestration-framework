@@ -7,9 +7,9 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //
 // EXPECTED RED until milestone 45's stories land. Seven violations exist today, and they
 // are the milestone's edit list (measured 2026-08-06 at `eacbd57`):
-//   src/board-serve.mjs:41,62                          `?mode=board`
-//   src/mesh/ui-serve.mjs:143,736                       `?mode=fleet[&scope=…]`
-//   src/commands/assets-ui.mjs:45,117                   `?mode=assets`
+//   packages/core/src/board-serve.mjs:41,62                          `?mode=board`
+//   packages/core/src/mesh/ui-serve.mjs:143,736                       `?mode=fleet[&scope=…]`
+//   packages/core/src/commands/assets-ui.mjs:45,117                   `?mode=assets`
 //   app/desktop/crates/app/src/supervisor.rs:44         `?mode=fleet&scope=global`  (COMPILED)
 //   ui/src/board/Board.tsx:416                          `http://127.0.0.1:4181/?mode=fleet`
 //   ui/src/board/DetailPanel.tsx:270                    `…/?mode=fleet&scope=global`
@@ -23,15 +23,15 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // address bar goes back to meaning two things at once. So the rule is not "clean these
 // up"; it is "the legacy vocabulary is read-only, and only the translator may read it".
 //
-// SCOPE: production code only — `src/`, `ui/src/`, `app/desktop/`. The behavioural suites
+// SCOPE: production code only — `packages/core/src/`, `ui/src/`, `app/desktop/`. The behavioural suites
 // that assert an advertised URL *contains* `mode=` (test/mesh/ui/mesh-ui-serve.test.mjs:126,303,
 // test/ui/board-serve.test.mjs:186, test/ui/work-ui-verb-rename.test.mjs:187,
 // test/mesh/ui/mesh-ui-cli-face.test.mjs:205, test/mesh/ui/mesh-ui-global-scope.test.mjs:219) change in the
 // same story that changes the producers; they are the milestone's OWN proof, and having
 // this gate also police them would report one change twice.
 //
-// COMMENTS ARE HISTORY, NOT CODE. `src/mesh/ui-serve.mjs:5,111`, `src/board-serve.mjs:61`,
-// `src/board-mesh-execution.mjs:4`, `src/commands/mesh-ui.mjs:6,25` and `supervisor.rs:37-44`
+// COMMENTS ARE HISTORY, NOT CODE. `packages/core/src/mesh/ui-serve.mjs:5,111`, `packages/core/src/board-serve.mjs:61`,
+// `packages/core/src/board-mesh-execution.mjs:4`, `packages/core/src/commands/mesh-ui.mjs:6,25` and `supervisor.rs:37-44`
 // all narrate the legacy form in prose. This repo's comments carry real load (TECH_DEBT
 // item 0.4 warns against the opposite failure), so they are stripped before matching — and
 // the stripper is URL-aware, because the violations live INSIDE `http://…` literals.
@@ -41,7 +41,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // was called "the enumeration is checkable, so a fifth producer cannot appear unseen" — but
 // its body iterates `PRODUCERS`, a hand-maintained four-entry list, so it can only ever say
 // something about those four files. MEASURED, in a sandbox copy of the 45/04 tree: dropping a
-// new `src/` module that returns `` `http://127.0.0.1:${port}/fleet?repo=demo` `` left all
+// new `packages/core/src/` module that returns `` `http://127.0.0.1:${port}/fleet?repo=demo` `` left all
 // three assertions GREEN, while the same module minting `?mode=fleet` was caught. The LEGACY
 // half of the vocabulary was ratcheted; the PATH half was not, and the name said otherwise.
 //
@@ -50,7 +50,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //   - the four listed producers each name their path (assertion 2) — a CLOSED list, and its
 //     name now says "these four" instead of claiming to see a fifth.
 //   - the CLOSING rule (assertion 3, new) — the open sweep the name was promising: every file
-//     in `src/` · `ui/src/` · `app/desktop/` that mints an ADR-002 ROUTE PATH must be one of
+//     in `packages/core/src/` · `ui/src/` · `app/desktop/` that mints an ADR-002 ROUTE PATH must be one of
 //     the eight files declared here. A fifth producer now fails CI naming its two remedies.
 // This matters because milestones 47, 49 and 50 each plausibly add a URL producer, and
 // ADR-002's "small, enumerable edit set — not a sweep" is exactly the property that decays
@@ -105,7 +105,7 @@ const ROUTE_PATH_LITERAL = /(?<=["'`}\d])\/(fleet|board|config)(?=["'`?#\s,);]|$
 const PRODUCERS = [
   { file: "packages/server/src/board-serve.mjs", path: "/board", what: "the board launcher's `boardUrl` (:41 probe, :62 serve)" },
   { file: "packages/mesh/src/ui-serve.mjs", path: "/fleet", what: "the fleet launcher's `fleetUrl` (:143 probe, :736 serve)" },
-  { file: "src/application/bindings/commands/assets/ui.mjs", path: "/config", what: "the config editor's `uiUrl` (:45 serve, :117 probe) — `/config`, NOT `/assets`, because `/assets` is the built bundle's own asset directory (ui/dist/assets/index-*.js)" },
+  { file: "packages/core/src/application/bindings/commands/assets/ui.mjs", path: "/config", what: "the config editor's `uiUrl` (:45 serve, :117 probe) — `/config`, NOT `/assets`, because `/assets` is the built bundle's own asset directory (ui/dist/assets/index-*.js)" },
   { file: "app/desktop/crates/app/src/supervisor.rs", path: "/fleet", what: "the desktop tray's COMPILED `MESH_UI_URL` (:44) — a binary constant, which is also why ADR-003 sets no expiry on the legacy translation" },
 ];
 
@@ -282,7 +282,7 @@ export const archTests = [
         "  (1) this really is a new advertised-URL producer — add it to PRODUCERS (with its path) or to",
         "      ROUTE_VOCABULARY_ALLOWED (with the reason it must name a literal), so the enumeration stays honest; or",
         "  (2) it should not be minting one at all — derive the path from `ui/src/app/routes.mjs`'s table",
-        "      (the way `ui/src/app/shell-nav.mjs` does), or, in `src/` and `app/desktop/` where that import",
+        "      (the way `ui/src/app/shell-nav.mjs` does), or, in `packages/core/src/` and `app/desktop/` where that import",
         "      direction is forbidden (ADR-004), route the URL through the producer that already owns it.",
       ].join("\n");
 
@@ -348,7 +348,7 @@ export const archTests = [
       const notRoutePaths = [
         // API namespaces — `/config` and `/board` appear INSIDE a longer path here, and the
         // leading-letter exclusion is what spares them. These are real lines from the tree
-        // (ui/src/config/App.tsx, src/mesh/ui-serve.mjs) and there are dozens more like them.
+        // (ui/src/config/App.tsx, packages/core/src/mesh/ui-serve.mjs) and there are dozens more like them.
         'const response = await fetch("/api/config");',
         'await fetch("/api/config/sections", { method: "POST" });',
         'if (pathname === "/api/mesh/board-url") {',

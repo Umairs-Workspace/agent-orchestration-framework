@@ -36,9 +36,9 @@ import {
   createMeshWorkerSessionSpawnHandler,
   resolveDefaultShell,
   SESSION_PING_INTERVAL_MS,
-} from "../../../src/mesh/session-spawn-handler.mjs";
-import { createTerminalSpawn } from "../../../src/terminal-ws.mjs";
-import { workerHasRepo, meshCheckoutPath } from "../../../src/mesh/worker-execution.mjs";
+} from "../../../packages/core/src/mesh/session-spawn-handler.mjs";
+import { createTerminalSpawn } from "../../../packages/core/src/terminal-ws.mjs";
+import { workerHasRepo, meshCheckoutPath } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import {
   addWorktree,
   meshItemBranchName,
@@ -48,20 +48,20 @@ import {
   meshSessionWorktreePath,
   meshSessionWorktreesRoot,
   isUnderMeshSessionWorktreesRoot,
-} from "../../../src/mesh/worktree.mjs";
+} from "../../../packages/core/src/mesh/worktree.mjs";
 import {
   readSessionRecord,
   reapExpiredSessions,
   sessionRecordPath,
   DEFAULT_SESSION_TTL_SECONDS,
-} from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
-import { buildSessionSpawnFrame, SESSION_SPAWN_ACK_KIND } from "../../../src/mesh/session-spawn-directive.mjs";
-import { TERMINAL_FRAME_KIND, TERMINAL_INPUT_KIND } from "../../../src/mesh/terminal-relay-bridge.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+} from "../../../packages/core/src/mesh/session.mjs";
+import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
+import { buildSessionSpawnFrame, SESSION_SPAWN_ACK_KIND } from "../../../packages/core/src/mesh/session-spawn-directive.mjs";
+import { TERMINAL_FRAME_KIND, TERMINAL_INPUT_KIND } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
+import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,
@@ -450,7 +450,7 @@ export const meshSessionSpawnHandlerTests = [
       // (a) the structural half — the registration exists, on the real lane, with the
       //     handler built by the real factory from the real sibling module.
       const implementation = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
-      const adapter = await readFile(path.join(repoRoot, "src/application/bindings/mesh/launcher.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/launcher.mjs"), "utf8");
       for (const text of [implementation, adapter]) assert.match(text, /createMeshLauncher\(\{[^}]*createMeshWorkerSessionSpawnHandler/su);
       const launcherSource = adapter + "\n" + implementation;
       assert.ok(
@@ -569,7 +569,7 @@ export const meshSessionSpawnHandlerTests = [
       assert.deepEqual(
         Object.keys(record),
         // …plus m50/ADR-008 decision 8's APPENDED eighth. This handler is the THIRD
-        // `.sendTerminalFrame(` producer in `src/`, so it is exactly the module that must
+        // `.sendTerminalFrame(` producer in `packages/core/src/`, so it is exactly the module that must
         // state `relaying: true`: story 03's locked scenario says the record "contains" the
         // seven, and an additive eighth satisfies it as written.
         ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"],

@@ -25,8 +25,8 @@ import {
   buildDirectiveFrame,
   ASSIGNMENT_TARGET_NOT_CONNECTED,
   startControlStreamServer,
-} from "../../src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../src/worker-stream-client.mjs";
+} from "../../packages/core/src/control-stream-server.mjs";
+import { createWorkerStreamClient, createWorkerWsTransport } from "../../packages/core/src/worker-stream-client.mjs";
 import { createDirectiveChannelFixture } from "../support/mesh-directive-channel-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

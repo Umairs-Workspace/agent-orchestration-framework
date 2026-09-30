@@ -9,11 +9,11 @@ import {
   buildAcceptorReport,
   reversionDecision,
   withdrawalOnHarm,
-} from "../../src/commands/acceptor.mjs";
-import { criterionDigest, defaultCriterion, makeCriterion } from "../../src/work-acceptor/criterion.mjs";
-import { PAIR_OUTCOMES } from "../../src/work-acceptor/ledger.mjs";
-import { tunableSet } from "../../src/work-acceptor/admissibility.mjs";
-import { compoundStepRefusal } from "../../src/loop-bounds.mjs";
+} from "../../packages/core/src/commands/acceptor.mjs";
+import { criterionDigest, defaultCriterion, makeCriterion } from "../../packages/core/src/work-acceptor/criterion.mjs";
+import { PAIR_OUTCOMES } from "../../packages/core/src/work-acceptor/ledger.mjs";
+import { tunableSet } from "../../packages/core/src/work-acceptor/admissibility.mjs";
+import { compoundStepRefusal } from "../../packages/core/src/loop-bounds.mjs";
 
 const KEY = "work.loop.reviewRounds";
 const W = PAIR_OUTCOMES.FAVOURABLE;
@@ -44,8 +44,8 @@ function model(keys = [KEY], dwell = "cycles:2") {
 function consumerUnits(key = KEY) {
   const leaf = key.split(".").at(-1);
   return [
-    { rel: "src/bounds.mjs", code: `export function ${leaf}FromConfig(workspace) { return workspace.config.value ?? 1; }` },
-    { rel: "src/consumer.mjs", code: `function decide(workspace) { const value = ${leaf}FromConfig(workspace); if (value > 0) return true; return false; }` },
+    { rel: "packages/core/src/bounds.mjs", code: `export function ${leaf}FromConfig(workspace) { return workspace.config.value ?? 1; }` },
+    { rel: "packages/core/src/consumer.mjs", code: `function decide(workspace) { const value = ${leaf}FromConfig(workspace); if (value > 0) return true; return false; }` },
   ];
 }
 

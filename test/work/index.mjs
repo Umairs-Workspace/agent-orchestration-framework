@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -25,7 +25,7 @@
 import { workTests } from "./work.test.mjs";
 // milestone 72 / story 00 — THE DECLARED TOOLCHAIN: the test runner aof launches is something the
 // PROJECT declares (`work.test`), compiled by ONE module with no program name spelled anywhere in
-// `src/` in an executable position, resolved through a PATH lookup that sits in FRONT of the
+// `packages/core/src/` in an executable position, resolved through a PATH lookup that sits in FRONT of the
 // bounded seam's door rather than relaxing it, expanded into an argv by the ONE `{file}` rule, and
 // launched through `runBounded` with the declaration's own deadline — where an expiry or a failure
 // to start is reported as itself and never folded into a pass. Both @executable task features,
@@ -110,7 +110,7 @@ import { backcompatMigrateDoctorTests } from "./backcompat-migrate-doctor.test.m
 import { workDelegationTests } from "./work-delegation.test.mjs";
 // story 31 — migrate-claude-command (the /aof:migrate BUNDLE BODY — the inference
 // ceiling over the story-29 mechanical CLI). Task 00's @executable content pins over
-// the AUTHORED src/bundle/commands/migrate.md (grep-able marker facts + offset
+// the AUTHORED packages/core/assets/commands/migrate.md (grep-able marker facts + offset
 // ordering, the acd-doctor-validate-keystone idiom) + task 03's distribution matrix
 // (descriptor member, derived-manifest byte-for-byte regeneration (ADR-002), work
 // update/init landing, never-inited refusal, idempotent skip, dry-run preview,
@@ -178,11 +178,11 @@ import { itemLockNextSkipsHeldTests } from "./item-lock-next-skips-held.test.mjs
 import { itemLockOperatorVsAutomaticTests } from "./item-lock-operator-vs-automatic.test.mjs";
 // milestone 66 / story 00 — CONTRACT PARSES. ACD defines the contract artifact and has
 // never parsed it: in the investigated downstream milestone 33 of 37 authored `.feature`
-// files did not parse. Task 00: `src/feature-parse.mjs` becomes the ONE Gherkin reader
-// under `src/` (the 37-line scanner in `work.mjs`'s `checkFeatureTags` is deleted, not
+// files did not parse. Task 00: `packages/core/src/feature-parse.mjs` becomes the ONE Gherkin reader
+// under `packages/core/src/` (the 37-line scanner in `work.mjs`'s `checkFeatureTags` is deleted, not
 // copied), gaining structural findings under a NEW key — the accept/reject matrix is
 // drawn from the corpus and its reject rows cite REAL files at REAL lines. Task 01: one
-// exported predicate (`src/acceptance-horizon.mjs`, a zero-import leaf carrying
+// exported predicate (`packages/core/src/acceptance-horizon.mjs`, a zero-import leaf carrying
 // `VALID_STATUS`) decides whether an item's record is still editable, so no gate ever
 // fires on a delivered contract nobody may edit. Task 02: `aof work validate` refuses an
 // unparseable contract inside the horizon — run over this repo it reports exactly ONE
@@ -196,7 +196,7 @@ import { featureParseExamplesTests } from "./feature-parse-examples.test.mjs";
 // shipped watcher records + FF-5707 (counter resolution) and FF-5708 (table complete).
 import { pairingTableTests } from "./pairing-table.test.mjs";
 // milestone 66 / story 03 — THE ASK (ADR-005, ADR-006, ADR-007 §1/§2, ADR-009/H+I, ADR-011/E).
-// A check with no ask is a trap: ACD's gates are met by agents reading `src/bundle/`, so every
+// A check with no ask is a trap: ACD's gates are met by agents reading `packages/core/assets/`, so every
 // refusal 66/02 can raise ships its ask in the same milestone. Task 00 lands the
 // `VERIFICATION.md` template ACD has never had — four frozen headings and the fitness register
 // whose `red probe` cell records what was changed to make a control fail and the message
@@ -206,7 +206,7 @@ import { pairingTableTests } from "./pairing-table.test.mjs";
 // reports UNNUMBERED, the single writer allocates on landing, because a stale read looks exactly
 // like a fresh one. FF-6608 is the story's own fitness function (ADR-007 §1) and the literal
 // discharge of the finding's measured zero — eight falsifiability terms, 0 files each across
-// `src/bundle/` at HEAD; it holds the red-probe placeholder byte-equal across the JS/markdown
+// `packages/core/assets/` at HEAD; it holds the red-probe placeholder byte-equal across the JS/markdown
 // boundary, which no import can do, and carries its own planted-defect lane per (ask, file).
 import { verificationTemplateTests } from "./verification-template.test.mjs";
 import { doctorLoopRecordLaneTests } from "./doctor-loop-record-lane.test.mjs";

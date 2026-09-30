@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listItems, findWork } from "../../../src/work.mjs";
+import { listItems, findWork } from "../../../packages/core/src/work.mjs";
 
 // A stream where IDENTITY lives only in the folder names; every record doc is
 // either garbage (no parseable frontmatter) or missing entirely.

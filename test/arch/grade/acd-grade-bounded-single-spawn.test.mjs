@@ -1,13 +1,13 @@
 // FF-5406 (milestone 54 / ADR-003 §1-§2, ADR-005 §5) — THE COMPILER IS A PURE LEAF AND THE
 // SPAWN IS BOUNDED IN ONE PLACE.
 //
-// Two halves of one shape. `src/work/grade.mjs` COMPILES a record from observations handed
-// to it — it imports nothing from `src/`, no `node:child_process`, no `node:fs`, and reads no
+// Two halves of one shape. `packages/core/src/work/grade.mjs` COMPILES a record from observations handed
+// to it — it imports nothing from `packages/core/src/`, no `node:child_process`, no `node:fs`, and reads no
 // clock — which is exactly what lets a unit test assert every verdict rule without a live
-// binary. `src/commands/grade.mjs` GATHERS them, and holds the one spawn: no shell, stdin
+// binary. `packages/core/src/commands/grade.mjs` GATHERS them, and holds the one spawn: no shell, stdin
 // closed, a RESOLVED deadline and a kill signal.
 //
-// `m15/R3`: the scan is over the whole `src/**` family, not over the two modules this
+// `m15/R3`: the scan is over the whole `packages/core/src/**` family, not over the two modules this
 // milestone happens to have written — a second spawn of the declared rubric added anywhere
 // else is exactly the regression this guards, and it would not be added here.
 import assert from "node:assert/strict";
@@ -15,7 +15,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { rubricSpawnOptions, rubricChildEnv, GRADE_REENTRANCY_ENV } from "../../../src/commands/grade.mjs";
+import { rubricSpawnOptions, rubricChildEnv, GRADE_REENTRANCY_ENV } from "../../../packages/core/src/commands/grade.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
@@ -62,7 +62,7 @@ export const archTests = [
         if (readsTheRubric && spawns) spawners.push(file.rel);
       }
       assert.deepEqual(spawners, ["packages/work/src/commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/commands/grade.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/commands/grade.mjs"), "utf8"));
       assert.match(composition, /import \{ spawnRubricAsync \} from "@aof\/execution\/rubric-process"/);
       assert.match(composition, /createGradeCommand\(\{ spawnRubricAsync,/);
       const command = stripComments(await readFile(path.join(repoRoot, spawners[0]), "utf8"));

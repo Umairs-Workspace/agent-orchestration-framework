@@ -7,14 +7,14 @@
 //     (no resolved target, the reported message, no connection attempt)
 //
 // The role predicate under test is the ONE shared mesh-role() function
-// (src/mesh/role.mjs) — this file asserts the OBSERVABLE role/address outcome, never
+// (packages/core/src/mesh/role.mjs) — this file asserts the OBSERVABLE role/address outcome, never
 // re-derives config.mesh.relay.controlNode itself (that structural invariant is the
 // acd-worker-stream-single-predicate fitness). Dial-address resolution runs over an
 // INJECTED exec returning fixtured `tailscale status --json` (the milestone-33
 // precedent) — no live tailnet.
 import assert from "node:assert/strict";
-import { meshRole, controlNodeIdFor } from "../../src/mesh/role.mjs";
-import { resolvePeers } from "../../src/mesh/fabric.mjs";
+import { meshRole, controlNodeIdFor } from "../../packages/core/src/mesh/role.mjs";
+import { resolvePeers } from "../../packages/core/src/mesh/fabric.mjs";
 
 const CONTROL_ID = "win-host-a";
 

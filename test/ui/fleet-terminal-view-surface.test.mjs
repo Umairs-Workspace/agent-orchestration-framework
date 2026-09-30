@@ -36,26 +36,26 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
 
-import { applyStreamFrame } from "../../src/control-stream-server.mjs";
-import { buildAssignmentStatusFrame } from "../../src/worker-stream-client.mjs";
+import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
+import { buildAssignmentStatusFrame } from "../../packages/core/src/worker-stream-client.mjs";
 // m49/00 — `listAllAssignments` is the SHARED reader `shapeGlobalStatus` itself
 // threads through (global-mesh-query.mjs), so scenario 1 pins the mapper's output
 // at the exact seam the fleet shaping consumes, not at a lookalike.
-import { readAssignment, listAllAssignments } from "../../src/assignment-record.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { createTerminalMirror } from "../../src/mesh/terminal-mirror.mjs";
-import { buildTerminalFrameEnvelope } from "../../src/mesh/terminal-relay-bridge.mjs";
+import { readAssignment, listAllAssignments } from "../../packages/core/src/assignment-record.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+import { createTerminalMirror } from "../../packages/core/src/mesh/terminal-mirror.mjs";
+import { buildTerminalFrameEnvelope } from "../../packages/core/src/mesh/terminal-relay-bridge.mjs";
 import { withMeshAssignFixture, seedAssignment, seedTargetNode } from "../support/mesh-assign-fixture.mjs";
 // m49/00 scenario 2 — the NODE attachment needs a node that survives the REAL
 // registry read, and `seedTargetNode`'s direct-SQL row does not: `queryGlobalRegistry`
 // silently drops a `global_nodes` row whose descriptor FILE does not resolve (the
 // asymmetry test/support/mesh-ui-assign-fixture.mjs documents at `dropNodeFromRoster`).
 // A node published through these two REAL doors is genuinely on the wire.
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
 
 // ═══ RE-POINTED BY MILESTONE 46 / STORY 04, IN THE DIFF THAT DELETED THE MODULES ═════════════
 // `ui/src/fleet/terminal-view/` is gone. Its four behaviours went to two homes, and WHICH home
@@ -1099,7 +1099,7 @@ export const fleetTerminalViewSurfaceTests = [
 
   // SCENARIO 1 — THE PREMISE, green on arrival by design: the fact is ALREADY at
   // the shared mapper's output, which is what licenses a three-line diff instead
-  // of a migration across the 38 dependents of src/assignment-record.mjs. It fails
+  // of a migration across the 38 dependents of packages/core/src/assignment-record.mjs. It fails
   // the moment anyone edits that god-node — exactly the edit this story must not
   // make — so the twelve-key shape is pinned as a TEST rather than left to review.
   {

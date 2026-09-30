@@ -2,7 +2,7 @@
 //
 // Covers EVERY @executable scenario in
 //   tasks/00_resilience-record-keys.feature
-// exercising the REAL src/run-store.mjs in-process against a temp fixture repo
+// exercising the REAL packages/core/src/run-store.mjs in-process against a temp fixture repo
 // (mkdtemp → mkdir → run → rm in finally). One test object per @executable
 // scenario (Scenario-Outline rows folded into one entry iterating the rows), each
 // name tracing to feature + scenario. node:assert/strict.
@@ -75,7 +75,7 @@ export const runResilienceRecordKeysTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const record = await startRun(item);
@@ -103,7 +103,7 @@ export const runResilienceRecordKeysTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const record = await startRun(item);
@@ -124,7 +124,7 @@ export const runResilienceRecordKeysTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         // a milestone-19 record carries ONLY the nine keys — write it directly (no
@@ -193,7 +193,7 @@ export const runResilienceRecordKeysTests = [
         await writeRecordFile(item, populated);
 
         // a FRESH store load (the in-process analogue of a fresh process)
-        const fresh = await import("../../src/run-store.mjs?fresh-reskeys");
+        const fresh = await import("../../packages/core/src/run-store.mjs?fresh-reskeys");
         const runs = await fresh.readRuns(item);
         assert.equal(runs.length, 1, "the populated record reads back as one run");
         const [record] = runs;
@@ -213,7 +213,7 @@ export const runResilienceRecordKeysTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, completeRun, readRuns, reclaimStaleRuns } = await import("../../src/run-store.mjs");
+        const { startRun, completeRun, readRuns, reclaimStaleRuns } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T09:00:00.000Z";
 
         // each row drives a run to a situation, then asserts (failureReason, reclaimedAt).
@@ -289,7 +289,7 @@ export const runResilienceRecordKeysTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, completeRun, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, completeRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T09:00:00.000Z";
 
         const rows = [
@@ -317,7 +317,7 @@ export const runResilienceRecordKeysTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, completeRun, readRuns, isRetryable } = await import("../../src/run-store.mjs");
+        const { startRun, completeRun, readRuns, isRetryable } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         await startRun(item, { now: "2026-06-30T08:00:00.000Z" });

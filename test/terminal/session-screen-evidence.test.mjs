@@ -3,13 +3,13 @@
 //
 // Every case resets the sink with `setDegradeSinkForTest` and reads the events it wrote (QA 1). "Before
 // the kill" is proved by the rows: the case draws `LAST-FRAME` on row 3 of the alternate buffer before
-// each stop, and the event's rows are that frame, not a blank screen (QA 2). `src/degrade.mjs` has no
+// each stop, and the event's rows are that frame, not a blank screen (QA 2). `packages/core/src/degrade.mjs` has no
 // suite of its own, so the throttle cases live here, beside the evidence the key exists for (QA 4).
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession } from "../../src/agent-session-driver.mjs";
-import { openSessionScreen } from "../../src/terminal/session-screen.mjs";
-import { CLAUDE_SCREENS } from "../../src/terminal/claude-screens.mjs";
-import { reportDegrade } from "../../src/degrade.mjs";
+import { driveInteractiveClaudeSession } from "../../packages/core/src/agent-session-driver.mjs";
+import { openSessionScreen } from "../../packages/core/src/terminal/session-screen.mjs";
+import { CLAUDE_SCREENS } from "../../packages/core/src/terminal/claude-screens.mjs";
+import { reportDegrade } from "../../packages/core/src/degrade.mjs";
 import { createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { captureDegrades } from "./screen-model.test.mjs";
 import { BYTE_PATH, ESC, READY_CHUNKS, drive, screenPty, sleep, waitUntil, withRegistry } from "./session-screen-ready.test.mjs";

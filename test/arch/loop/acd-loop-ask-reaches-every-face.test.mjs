@@ -7,11 +7,11 @@
 // FF-13106, structural then fixture — AMENDED at 131/09 (ADR-007): the credential is a bot token.
 // The `work.notify` schema is closed and a channel names its Discord channel by `channelId` and its
 // token override only by `tokenEnv`: no `url`, `webhook`, `token` or `urlEnv` property at any
-// level. Neither `.aof/aof.config.json` nor `src/**` holds a `discord.com/api/webhooks` literal
-// (the ban stands); inside `src/notify/` the token is read only as `env[<…tokenEnv>]` or — as
+// level. Neither `.aof/aof.config.json` nor `packages/core/src/**` holds a `discord.com/api/webhooks` literal
+// (the ban stands); inside `packages/core/src/notify/` the token is read only as `env[<…tokenEnv>]` or — as
 // amended at 131/08 — through `readMessagingSecret(`, called by `notify.mjs` alone; the `messaging`
-// store segment is joined into a path only in `src/notify/secret.mjs`, and
-// `src/commands/messaging/messaging.mjs` reaches the store only through it (its red probe: the verbs
+// store segment is joined into a path only in `packages/core/src/notify/secret.mjs`, and
+// `packages/core/src/commands/messaging/messaging.mjs` reaches the store only through it (its red probe: the verbs
 // module joining the segment itself, run against the shipped detector). No degrade call's MESSAGE
 // names the token — the redaction pass in `notify.mjs` is a backstop, so the fixture alone could
 // never see a token interpolated into the message it redacts (the register's red probe; this is
@@ -21,25 +21,25 @@
 // ask with an open fence keeps line 1, the action line and the link inside 2,000 characters,
 // balances the fence, allows no mention and sets no `username`.
 //
-// FF-13107, structural. Every `notify(` call under `src/` (comment-stripped, the definition in
-// `src/notify/notify.mjs` excluded, calls of the imported binding only — task 00 ruling 7) is one
+// FF-13107, structural. Every `notify(` call under `packages/core/src/` (comment-stripped, the definition in
+// `packages/core/src/notify/notify.mjs` excluded, calls of the imported binding only — task 00 ruling 7) is one
 // of ADR-005 §4's six sites, enumerated by file and by the event literals its envelopes are built
 // with; each site's module builds its envelope through `buildNotifyEnvelope`, whose keys
 // deep-equal the eleven, and `EVENTS` holds seven. NON-VACUOUS: the sweep finds six sites. AMENDED at
 // 131/12 (ADR-010 §4-§5): SEVEN sites — `session-needs-input` gains `announceWorkerAsk` in
-// `src/mesh/park-resume.mjs` (the control's post of a worker's ask), and `session-answered` stays ONE
-// call in `src/commands/resume.mjs`, serving both the local and the mesh leg.
+// `packages/core/src/mesh/park-resume.mjs` (the control's post of a worker's ask), and `session-answered` stays ONE
+// call in `packages/core/src/commands/resume.mjs`, serving both the local and the mesh leg.
 //
-// FF-13108, structural then fixture. `src/notify/form.mjs` imports nothing, and its direct importers
-// are `src/loop/ask.mjs`, `src/notify/discord.mjs` and `ui/src/board/action.mjs` (task 00 ruling 3:
+// FF-13108, structural then fixture. `packages/core/src/notify/form.mjs` imports nothing, and its direct importers
+// are `packages/core/src/loop/ask.mjs`, `packages/core/src/notify/discord.mjs` and `ui/src/board/action.mjs` (task 00 ruling 3:
 // the shell renders its ask block through `ask.mjs`'s `askBlockLines`, and spells no phrase of its
-// own). `waiting on you` is spelled in no other comment-stripped `src/**` or `ui/src/**` module, and
+// own). `waiting on you` is spelled in no other comment-stripped `packages/core/src/**` or `ui/src/**` module, and
 // no module but `form.mjs` DEFINES `formatElapsed` (ruling 9: the register's red probe, a second
 // ladder, imports nothing and need not spell the phrase). The one `ui/src/**` specifier that
 // resolves outside `ui/src` is the board's import of the form. Fixture: `accountLine` and the
 // Discord line 1 share a byte-identical `<ref> — <phrase> (<phase>, <elapsed>)`.
 //
-// FF-13109, structural then fixture. In `src/board-ui.mjs` every body read (`readJsonBody(`) is
+// FF-13109, structural then fixture. In `packages/core/src/board-ui.mjs` every body read (`readJsonBody(`) is
 // preceded, in its own branch, by `admitWriteRequest(`; the answer branch lifts exactly
 // `body.ref`, `body.text` and `body.actor`. Both faces' `admitWriteRequest` call `isLoopbackHost(`,
 // and a rebinding request (`Host: evil.example:1234`, its Origin matching) is refused
@@ -55,9 +55,9 @@
 // and posts once with the worker's node; re-applying the same fact posts nothing.
 //
 // FF-13110, structural then fixture (131/09, ADR-007 §4). Over a comment-stripped sweep of
-// `src/**`, a string that opens `Bot ` (the `Authorization` value) and the host `discord.com/api`
-// are spelled only in `src/notify/discord.mjs`, whose `discordRequest` is their one builder;
-// `src/discord/**` calls `fetch` nowhere and, when it exists, reaches Discord through
+// `packages/core/src/**`, a string that opens `Bot ` (the `Authorization` value) and the host `discord.com/api`
+// are spelled only in `packages/core/src/notify/discord.mjs`, whose `discordRequest` is their one builder;
+// `packages/core/src/discord/**` calls `fetch` nowhere and, when it exists, reaches Discord through
 // `discordRequest`. NON-VACUOUS: the sweep finds `discord.mjs` and at least one `discordRequest(`
 // call. `isDiscordBotToken` accepts a three-segment token whose first segment decodes to a snowflake
 // and refuses a webhook URL, and it is the `discord` entry's `accepts`. Fixture: `sendDiscord`
@@ -78,22 +78,22 @@ import { computedDynamicImports } from "../../support/module-family.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import { withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
-import { setDegradeSinkForTest } from "../../../src/degrade.mjs";
-import { isDiscordBotToken, renderDiscord, sendDiscord } from "../../../src/notify/discord.mjs";
-import { accountLine, cost, headline } from "../../../src/notify/form.mjs";
-import { CHANNELS, EVENTS, buildNotifyEnvelope, notify } from "../../../src/notify/notify.mjs";
-import { serveSetupUi } from "../../../src/setup-ui.mjs";
+import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
+import { isDiscordBotToken, renderDiscord, sendDiscord } from "../../../packages/core/src/notify/discord.mjs";
+import { accountLine, cost, headline } from "../../../packages/core/src/notify/form.mjs";
+import { CHANNELS, EVENTS, buildNotifyEnvelope, notify } from "../../../packages/core/src/notify/notify.mjs";
+import { serveSetupUi } from "../../../packages/core/src/setup-ui.mjs";
 import { withMeshAssignFixture } from "../../support/mesh-assign-fixture.mjs";
-import { reportAssignmentSettled } from "../../../src/effects/assignment-transitions.mjs";
-import { effectsFor } from "../../../src/effects/table.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { readExecutionOverlay } from "../../../src/board-mesh-execution.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+import { reportAssignmentSettled } from "../../../packages/core/src/effects/assignment-transitions.mjs";
+import { effectsFor } from "../../../packages/core/src/effects/table.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { readExecutionOverlay } from "../../../packages/core/src/board-mesh-execution.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-const NOTIFY_DIR = "src/notify/";
+const NOTIFY_DIR = "packages/core/src/notify/";
 const NOTIFY = "packages/messaging/src/notify.mjs";
 // FF-13106 as amended at 131/08: the machine-wide store's one home and the verbs that reach it.
 const SECRET_STORE = "packages/messaging/src/secret.mjs";
@@ -108,7 +108,7 @@ const FORBIDDEN_CHANNEL_KEYS = Object.freeze(["url", "webhook", "token", "urlenv
 // FF-13110 — the one authorised door (ADR-007 §4).
 const DOOR = "packages/messaging/src/discord.mjs";
 const API_HOST = "discord.com/api";
-const BOT_FAMILY = "src/discord/";
+const BOT_FAMILY = "packages/core/src/discord/";
 // FF-13114 — a worker's ask rides the park fact (131/12, ADR-010).
 const REACTOR_TABLE = "packages/mesh/src/effects.mjs";
 const REPORT_KEYS = Object.freeze(["assignmentId", "state", "runId", "sessionId", "branch", "code"]);
@@ -130,11 +130,11 @@ const SEVEN = FIRING_SITES.length;
 const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
 // Task 00 ruling 3: the form's direct importers — and, as amended at 131/11 (ADR-009 §5), the slash
 // commands' renders, which read a waiting row exactly as the terminal and the posted message do.
-const FORM_IMPORTERS = Object.freeze(["src/notify/form.mjs", "packages/messaging/src/discord-commands.mjs", "src/application/bindings/loop/ask.mjs", "packages/messaging/src/discord.mjs", "ui/src/board/action.mjs"]);
+const FORM_IMPORTERS = Object.freeze(["packages/core/src/notify/form.mjs", "packages/messaging/src/discord-commands.mjs", "packages/core/src/application/bindings/loop/ask.mjs", "packages/messaging/src/discord.mjs", "ui/src/board/action.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
-const UI_OUTSIDE = Object.freeze([{ file: "ui/src/board/action.mjs", specifier: "../../../src/notify/form.mjs" }]);
+const UI_OUTSIDE = Object.freeze([{ file: "ui/src/board/action.mjs", specifier: "@aof/messaging/form" }]);
 const UI_EXTENSIONS = /\.(?:mjs|mts|ts|tsx|js)$/u;
 const BOARD = "packages/server/src/board-ui.mjs";
 const FLEET = "packages/mesh/src/ui-serve.mjs";
@@ -148,7 +148,7 @@ function assertRead(what, count, floor, unit = "file(s)") {
 }
 
 function inDiscordFamily(rel) {
-  return rel.startsWith("src/discord/") || rel.startsWith("packages/messaging/src/");
+  return rel.startsWith("packages/core/src/discord/") || rel.startsWith("packages/messaging/src/");
 }
 
 function resolved(fromRel, specifier) {
@@ -157,16 +157,16 @@ function resolved(fromRel, specifier) {
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
   const moved = {
-    "src/application/bindings/notify/notify.mjs": "packages/messaging/src/notify.mjs",
-    "src/application/bindings/notify/secret.mjs": "packages/messaging/src/secret.mjs",
-    "src/application/bindings/notify/ask-messages.mjs": "packages/messaging/src/ask-messages.mjs",
-    "src/notify/form.mjs": "packages/messaging/src/form.mjs",
-    "src/notify/discord.mjs": "packages/messaging/src/discord.mjs",
-    "src/application/bindings/commands/messaging/messaging.mjs": "packages/messaging/src/commands.mjs",
-    "src/application/bindings/discord/gateway.mjs": "packages/messaging/src/gateway.mjs",
-    "src/application/bindings/discord/replies.mjs": "packages/messaging/src/replies.mjs",
-    "src/application/bindings/discord/bot.mjs": "packages/messaging/src/bot.mjs",
-    "src/application/bindings/discord/commands.mjs": "packages/messaging/src/discord-commands.mjs"
+    "packages/core/src/application/bindings/notify/notify.mjs": "packages/messaging/src/notify.mjs",
+    "packages/core/src/application/bindings/notify/secret.mjs": "packages/messaging/src/secret.mjs",
+    "packages/core/src/application/bindings/notify/ask-messages.mjs": "packages/messaging/src/ask-messages.mjs",
+    "packages/core/src/notify/form.mjs": "packages/messaging/src/form.mjs",
+    "packages/core/src/notify/discord.mjs": "packages/messaging/src/discord.mjs",
+    "packages/core/src/application/bindings/commands/messaging/messaging.mjs": "packages/messaging/src/commands.mjs",
+    "packages/core/src/application/bindings/discord/gateway.mjs": "packages/messaging/src/gateway.mjs",
+    "packages/core/src/application/bindings/discord/replies.mjs": "packages/messaging/src/replies.mjs",
+    "packages/core/src/application/bindings/discord/bot.mjs": "packages/messaging/src/bot.mjs",
+    "packages/core/src/application/bindings/discord/commands.mjs": "packages/messaging/src/discord-commands.mjs"
   };
   if (moved[joined]) return moved[joined];
   return /\.[cm]?[jt]sx?$/u.test(joined) ? joined : `${joined}.mjs`;
@@ -394,7 +394,7 @@ export const archTests = [
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
       const literal = units.filter(({ raw }) => raw.includes(WEBHOOK_LITERAL)).map(({ rel }) => rel);
-      assert.deepEqual(literal, [], `src/** contains no ${WEBHOOK_LITERAL} literal — found in ${literal.join(", ")}`);
+      assert.deepEqual(literal, [], `packages/core/src/** contains no ${WEBHOOK_LITERAL} literal — found in ${literal.join(", ")}`);
 
       // The CLI status face separately reports env-override presence. Every other package module
       // is inside the notification credential guard, including modules added after this migration.
@@ -420,7 +420,7 @@ export const archTests = [
       const index = family.find(({ rel }) => rel === ASK_INDEX);
       assert.ok(index != null && !/\.secret\b|messagingSecretPath|readMessagingSecret/u.test(index.code), `${ASK_INDEX} reads its own records and never the secret`);
       const processEnv = family.filter(({ code }) => /\bprocess\s*\.\s*env\s*(?:\.|\?\.|\[)/u.test(code)).map(({ rel }) => rel);
-      assert.deepEqual(processEnv, [], `src/notify/ reads no process.env member of its own — the env is handed in: ${processEnv.join(", ")}`);
+      assert.deepEqual(processEnv, [], `packages/core/src/notify/ reads no process.env member of its own — the env is handed in: ${processEnv.join(", ")}`);
 
       const naming = family.flatMap(({ rel, code }) => degradeMessagesNamingToken(code).map((call) => `${rel}: ${call}`));
       assert.deepEqual(naming, [], `no degrade message contains the token — a degrade call's message names it: ${naming.join(" | ")}. Name the channel and the cause, never the credential (ADR-007)`);
@@ -438,7 +438,7 @@ export const archTests = [
       assert.deepEqual([...new Set(joins)], [SECRET_STORE], `the messaging store's path is spelled only in ${SECRET_STORE} — a second home joins it in ${joins.filter((rel) => rel !== SECRET_STORE).join(", ")}`);
       const verbs = units.find(({ rel }) => rel === MESSAGING_VERBS);
       assert.ok(verbs != null, `NOT FOUND: ${MESSAGING_VERBS} — the module the leg governs has moved`);
-      const binding = unitOf(units, "src/application/bindings/commands/messaging/messaging.mjs");
+      const binding = unitOf(units, "packages/core/src/application/bindings/commands/messaging/messaging.mjs");
       assert.match(verbs.code, /function createMessagingCommands\(\{[^}]*messagingSecretPath,\s*messagingSecretPresent,\s*writeMessagingSecret/u);
       assert.match(binding.code, /createMessagingCommands\(\{[^}]*messagingSecretPath,\s*messagingSecretPresent,\s*writeMessagingSecret/u);
       const reached = dependencySpecifiers(binding.code).map(({ specifier }) => resolved(binding.rel, specifier));
@@ -577,7 +577,7 @@ export const archTests = [
       assert.deepEqual(strays, [], `every notify( call under src/ is one of the seven sites (ADR-005 §4, ADR-010 §4) — not one: ${strays.join(", ")}`);
       assert.deepEqual(sites, [...FIRING_SITES].sort(), `the seven sites each fire once, by file and event literal — found ${sites.join(", ")}`);
       for (const owner of new Set(FIRING_SITES.map((site) => site.split(" ")[0]))) {
-        const rel = ({ "packages/work-loop/src/commands/loop.mjs": "src/application/bindings/commands/loop.mjs", "packages/work-loop/src/ask.mjs": "src/application/bindings/loop/ask.mjs", "packages/work/src/commands/item-status.mjs": "src/application/bindings/commands/item-status.mjs", "packages/work/src/commands/resume.mjs": "src/application/bindings/commands/resume.mjs" })[owner] ?? owner;
+        const rel = ({ "packages/work-loop/src/commands/loop.mjs": "packages/core/src/application/bindings/commands/loop.mjs", "packages/work-loop/src/ask.mjs": "packages/core/src/application/bindings/loop/ask.mjs", "packages/work/src/commands/item-status.mjs": "packages/core/src/application/bindings/commands/item-status.mjs", "packages/work/src/commands/resume.mjs": "packages/core/src/application/bindings/commands/resume.mjs" })[owner] ?? owner;
         if (["packages/work/src/commands/item-status.mjs", "packages/work/src/commands/resume.mjs"].includes(owner)) {
           assert.match(unitOf(units, owner).code, /function (?:createItemStatusCommand|createReentryCommands)\(\{[^}]*buildNotifyEnvelope,\s*notify/u, `${owner}: receives notification services`);
           assert.match(unitOf(units, rel).code, /(?:createItemStatusCommand|createReentryCommands)\(\{[^}]*buildNotifyEnvelope,\s*notify/u, `${rel}: supplies the shared notification services`);
@@ -587,7 +587,7 @@ export const archTests = [
         }
         if (rel === "packages/mesh/src/park-resume.mjs") {
           const code = unitOf(units, rel).code;
-          const adapter = "src/application/bindings/mesh/park-resume.mjs";
+          const adapter = "packages/core/src/application/bindings/mesh/park-resume.mjs";
           const composition = unitOf(units, adapter).code;
           assert.match(code, /function createMeshParkResumeServices\(\{[^}]*\bloadNotifications\b/u, "mesh accepts the notification loader");
           assert.match(code, /\bloadNotifications\(\)/u, "mesh invokes the notification loader");
@@ -616,8 +616,8 @@ export const archTests = [
       const units = await srcUnits();
       const sites = notifySites(units);
       assert.ok(sites.length >= SEVEN, `the sweep finds seven sites — it found ${sites.length} (${sites.join(", ") || "none"}): a needle that finds nothing is a guard asserting over the empty set`);
-      assert.equal(notifySites([{ rel: "src/x.mjs", code: "await notify(ws, envelope);" }], "notfy").length, 0, "self-check: a misspelled needle finds no site");
-      assert.deepEqual(notifySites([{ rel: "src/x.mjs", code: 'export async function notify(a) {}\nawait ctx.notify(x);\nconst e = buildNotifyEnvelope("loop-halted", {});\nawait notify(ws, e);' }]), ["src/x.mjs loop-halted"], "self-check: the definition and a member call are not sites; the binding's call is, with its envelope's event");
+      assert.equal(notifySites([{ rel: "packages/core/src/x.mjs", code: "await notify(ws, envelope);" }], "notfy").length, 0, "self-check: a misspelled needle finds no site");
+      assert.deepEqual(notifySites([{ rel: "packages/core/src/x.mjs", code: 'export async function notify(a) {}\nawait ctx.notify(x);\nconst e = buildNotifyEnvelope("loop-halted", {});\nawait notify(ws, e);' }]), ["packages/core/src/x.mjs loop-halted"], "self-check: the definition and a member call are not sites; the binding's call is, with its envelope's event");
     },
   },
   {
@@ -625,10 +625,10 @@ export const archTests = [
     run: async () => {
       const units = [...await srcUnits(), ...await uiUnits()];
       const form = unitOf(units, FORM);
-      assert.deepEqual(dependencySpecifiers(form.code), [], "src/notify/form.mjs has zero imports");
+      assert.deepEqual(dependencySpecifiers(form.code), [], "packages/core/src/notify/form.mjs has zero imports");
       assert.deepEqual(computedDynamicImports(form.code), [], "…and no computed dynamic import");
       const importers = units.filter((unit) => !unit.declaration && dependencySpecifiers(unit.code).some(({ specifier }) => resolved(unit.rel, specifier) === FORM)).map(({ rel }) => rel).sort();
-      assert.deepEqual(importers, [...FORM_IMPORTERS].sort(), "src/notify/form.mjs's direct importers are ask.mjs, notify/discord.mjs and ui/src/board/action.mjs (ruling 3), and discord/commands.mjs (as amended at 131/11)");
+      assert.deepEqual(importers, [...FORM_IMPORTERS].sort(), "packages/core/src/notify/form.mjs's direct importers are ask.mjs, notify/discord.mjs and ui/src/board/action.mjs (ruling 3), and discord/commands.mjs (as amended at 131/11)");
       const shell = unitOf(units, SHELL);
       const phrases = PHRASES.filter((phrase) => shell.code.includes(phrase));
       assert.deepEqual(phrases, [], `${SHELL} spells no event phrase of its own — it renders the ask block through ask.mjs's askBlockLines: ${phrases.join(", ")}`);
@@ -647,16 +647,16 @@ export const archTests = [
       assert.deepEqual(spellers, [FORM], `the phrase "waiting on you" is spelled in no other comment-stripped src/** or ui/src/** module — spelled in ${spellers.join(", ")}`);
 
       const definers = units.filter(({ code }) => /(?<!declare\s+)\bfunction\s+formatElapsed\b|\b(?:const|let|var)\s+formatElapsed\s*=/u.test(code)).map(({ rel }) => rel);
-      assert.deepEqual(definers, [FORM], `formatElapsed is defined in no module but src/notify/form.mjs — defined in ${definers.join(", ")}. The elapsed ladder has one home (ADR-006 §1)`);
+      assert.deepEqual(definers, [FORM], `formatElapsed is defined in no module but packages/core/src/notify/form.mjs — defined in ${definers.join(", ")}. The elapsed ladder has one home (ADR-006 §1)`);
 
       const outside = [];
       for (const unit of ui) {
         for (const { specifier } of dependencySpecifiers(unit.code)) {
-          if (!specifier.startsWith(".")) continue;
+          if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) continue;
           if (!resolved(unit.rel, specifier).startsWith("ui/src/")) outside.push({ file: unit.rel, specifier });
         }
       }
-      assert.deepEqual(outside, [...UI_OUTSIDE], `the only import specifier in ui/src/** that resolves outside ui/src is ../../../src/notify/form.mjs in ui/src/board/action.mjs — found ${JSON.stringify(outside)}`);
+      assert.deepEqual(outside, [...UI_OUTSIDE], `the only import specifier in ui/src/** that resolves outside ui/src is ../../../packages/core/src/notify/form.mjs in ui/src/board/action.mjs — found ${JSON.stringify(outside)}`);
     },
   },
   {
@@ -761,8 +761,8 @@ export const archTests = [
       // The application forwards this service through a deferred module import.
       // Count member calls as well, so a second face cannot bypass the package port.
       const forwards = units.flatMap(({ rel, code }) => [...code.matchAll(/\.announceWorkerAsk\s*\(/gu)].map(() => rel));
-      assert.deepEqual(forwards, ["src/application/bindings/effects/table.mjs"], "only core's service adapter forwards to the notification implementation");
-      assert.match(unitOf(units, "src/application/bindings/effects/table.mjs").code, /announceWorkerAsk:\s*async\s*\(\.\.\.args\)\s*=>\s*\(await provideMeshParkResume\(\)\)\.announceWorkerAsk\(\.\.\.args\)/u);
+      assert.deepEqual(forwards, ["packages/core/src/application/bindings/effects/table.mjs"], "only core's service adapter forwards to the notification implementation");
+      assert.match(unitOf(units, "packages/core/src/application/bindings/effects/table.mjs").code, /announceWorkerAsk:\s*async\s*\(\.\.\.args\)\s*=>\s*\(await provideMeshParkResume\(\)\)\.announceWorkerAsk\(\.\.\.args\)/u);
     },
   },
   {

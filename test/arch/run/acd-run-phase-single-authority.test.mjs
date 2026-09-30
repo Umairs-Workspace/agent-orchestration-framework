@@ -15,7 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(root, "src");
+const SRC = path.join(root, "packages", "core", "src");
 
 async function modulesUnder(dir) {
   const out = [];
@@ -40,7 +40,7 @@ export const archTests = [
     run: async () => {
       const { repo, item } = await makeItem();
       try {
-        const store = await import("../../../src/run-store.mjs");
+        const store = await import("../../../packages/core/src/run-store.mjs");
         // The spend envelope's declared set has no phase.
         assert.ok(!store.SPEND_ENVELOPE_KEYS.includes("phase"), "the spend envelope declares no phase key");
         // A minted run record (in memory and on disk) has no phase key.

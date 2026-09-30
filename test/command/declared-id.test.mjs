@@ -1,8 +1,8 @@
 // Traceability wiring for milestone 66 / story 01 — BOTH task features:
 //   tasks/00_the-declaration-grammar.feature          (every row of every Outline)
 //   tasks/01_memory-parsers-share-the-one-home.feature (every row of every Outline)
-// against the LOCKED surfaces: `src/declared-id.mjs`, and the two parsers of
-// `src/memory/local-indexing.mjs` reached through the real memory stack.
+// against the LOCKED surfaces: `packages/core/src/declared-id.mjs`, and the two parsers of
+// `packages/core/src/memory/local-indexing.mjs` reached through the real memory stack.
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // WHICH SURFACE EACH OUTLINE DRIVES, AND WHY IT IS NOT THE SAME ONE.
@@ -42,10 +42,10 @@ import {
   qualifiedRefsIn,
   registerDeclarations,
   registerEntries,
-} from "../../src/declared-id.mjs";
-import { parseArchitecture, parseRetrospective } from "../../src/memory/local-indexing.mjs";
-import { rankRecords } from "../../src/memory/local-retrieval.mjs";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
+} from "../../packages/core/src/declared-id.mjs";
+import { parseArchitecture, parseRetrospective } from "../../packages/core/src/memory/local-indexing.mjs";
+import { rankRecords } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
 // THE PRE-EXTRACTION GOLDEN, from its one home. FF-6604 owns the differential and
 // therefore owns the second implementation that drives it (the 66/00 idiom — its arch
 // gates export the pure functions their lanes run). A third copy of "what the parsers
@@ -492,8 +492,8 @@ export const declaredIdTests = [
       // built for a temp fixture the rerank degrades to the local ranking, which is
       // exactly the path that isolates the RECORD SET (what this task changed) from the
       // ranking (what it did not).
-      const graphify = (await import("../../src/memory/graphify-backend.mjs")).default;
-      const local = (await import("../../src/memory/local-backend.mjs")).default;
+      const graphify = (await import("../../packages/core/src/memory/graphify-backend.mjs")).default;
+      const local = (await import("../../packages/core/src/memory/local-backend.mjs")).default;
       await graphify.reindex(undefined, { ...ctx, configMemory: { backend: "graphify" } });
       const viaGraphify = await graphify.recall("the separator set", null, { limit: 10 }, { ...ctx, configMemory: { backend: "graphify" } });
       const viaLocal = await local.recall("the separator set", null, { limit: 10 }, ctx);
@@ -503,7 +503,7 @@ export const declaredIdTests = [
       // NEITHER CONSUMER IS EDITED TO ABSORB A CHANGE — the checkable residue of that
       // claim: neither module names the declaration grammar in any form.
       for (const consumer of ["local-backend.mjs", "graphify-backend.mjs"]) {
-        const text = await readFile(path.join(repoRoot, "src", "memory", consumer), "utf8");
+        const text = await readFile(path.join(repoRoot, "packages", "core", "src", "memory", consumer), "utf8");
         assert.equal(/declared-id/.test(text), false, `${consumer} does not import the grammar`);
         assert.equal(/ADR-\\d|R\\d\+|\[:·—–-\]/.test(text), false, `${consumer} holds no id pattern either`);
       }

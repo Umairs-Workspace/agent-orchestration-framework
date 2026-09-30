@@ -24,7 +24,7 @@
 //  1. STRUCTURAL — the leaf composition carries FOUR `~`-joined segments and routes
 //     the fourth through the escaping `sessionSegment`; an anonymous key composes the
 //     trailing-`~` empty segment.
-//  2. STRUCTURAL — the key travels as ONE object: every `src/` call site of
+//  2. STRUCTURAL — the key travels as ONE object: every `packages/core/src/` call site of
 //     sessionRecordPath / readSessionRecord / startSession / pingSession / endSession
 //     passes the key as an object literal or identifier in the SECOND position, never
 //     as a spread of positional components.
@@ -46,12 +46,12 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startSession, endSession, readSessionRecord, sessionRecordPath } from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { startSession, endSession, readSessionRecord, sessionRecordPath } from "../../../packages/core/src/mesh/session.mjs";
+import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(repoRoot, "src");
+const srcRoot = path.join(repoRoot, "packages", "core", "src");
 const sessionSourcePath = path.join(repoRoot, "packages/mesh/src/session.mjs");
 const commandSourcePath = path.join(repoRoot, "packages/mesh/src/commands/session.mjs");
 
@@ -139,7 +139,7 @@ function callArgumentLists(code, fnName) {
 }
 
 // NON-VACUITY OF THE STRIP ITSELF (TECH_DEBT item 24, fix (b)). Proof 2 sweeps ALL of
-// `src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
+// `packages/core/src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
 // the source it was meant to read — item 24's named "silent false GREEN" shape. The
 // anchor is each module's OWN exported symbol names: a name a module `export`s at line
 // start is code by construction, so if it does not survive `stripComments` then the

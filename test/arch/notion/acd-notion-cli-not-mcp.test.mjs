@@ -3,7 +3,7 @@
 //    client anywhere; the sole Notion egress is the provisioned CLI spawn (argv[0] is
 //    the provisioned binary)."
 //
-// Source-grep of src/notion/* + src/commands/notion-sync-work.mjs, CI-able offline
+// Source-grep of src/notion/* + packages/core/src/commands/notion-sync-work.mjs, CI-able offline
 // (mirrors acd-headroom-no-dependency / the graph no-face-spawn idiom):
 //   (a) NO MCP import — no `@modelcontextprotocol` SDK, no Notion-MCP package, no `mcp`
 //       client/server import; and no MCP server stand-up (`McpServer`/`createServer`).
@@ -44,7 +44,7 @@ const MCP_SERVER_STANDUP = /\b(?:McpServer|MCPServer|StdioServerTransport|create
 
 async function notionSurfaceFiles() {
   const files = await readRuntimeFiles(repoRoot);
-  const selected = files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('src/notion/') || rel.startsWith('src/commands/notion-')).map(file => file.path);
+  const selected = files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('packages/core/src/notion/') || rel.startsWith('packages/core/src/commands/notion-')).map(file => file.path);
   assert.ok(selected.length > 0, 'the Notion runtime source sweep is non-empty');
   return selected;
 }

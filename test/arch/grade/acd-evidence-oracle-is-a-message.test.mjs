@@ -53,7 +53,7 @@ import {
   runEvidence,
   sizeFor,
   verdictFor,
-} from "../../../src/work-audit/evidence.mjs";
+} from "../../../packages/core/src/work-audit/evidence.mjs";
 // THE ONE HOME for the control corpus (see that module's header for why it is not written twice).
 import { EXECUTED_CASES, withControlFixtureRepo as withFixtureRepo } from "../../support/evidence-control-fixture.mjs";
 
@@ -135,7 +135,7 @@ const ITEM = {
 const observationWith = (fields) => ({
   control: "test/arch/red.test.mjs",
   status: "ran",
-  attempted: "node src/work/audit-drive.mjs test/arch/red.test.mjs",
+  attempted: "node packages/core/src/work/audit-drive.mjs test/arch/red.test.mjs",
   deadlineMs: 60_000,
   message: null,
   cases: 2,
@@ -288,7 +288,7 @@ export const archTests = [
       const body = strippedBody(THE_LANE, raw);
 
       // The single route: the seam, imported by name, and no second door.
-      assert.match(stripComments(await read("src/application/bindings/work-audit/evidence.mjs")), /import\s*\{[^}]*\brunBounded\b[^}]*\}\s*from\s*"@aof\/execution\/bounded-process"/u, "execution comes from 59/01's bounded seam");
+      assert.match(stripComments(await read("packages/core/src/application/bindings/work-audit/evidence.mjs")), /import\s*\{[^}]*\brunBounded\b[^}]*\}\s*from\s*"@aof\/execution\/bounded-process"/u, "execution comes from 59/01's bounded seam");
       assert.doesNotMatch(body, /node:child_process/u, "…and not from a second import of the spawn door");
       assert.doesNotMatch(body, /\bimport\s*\(/u, "…nor from a dynamic import(), which would execute a cited module's scope inside this process (66/ADR-004 §2)");
       for (const door of ["execSync", "execFileSync", "spawnSync", "fork("]) {
@@ -457,12 +457,12 @@ export const archTests = [
     name: "arch/59 FF-5906: the driver is a PROGRAM this family spawns, its stdout sentinel is byte-identical on both sides of the seam, and it never reaches for `node --test`",
     run: async () => {
       // The two literals are physically separate BY THE RULE that keeps them apart: FF-5904
-      // refuses a static import of a path outside `src/`, so `src/work-audit/evidence.mjs` cannot
+      // refuses a static import of a path outside `packages/core/src/`, so `packages/core/src/work-audit/evidence.mjs` cannot
       // import the driver's constant. 66/F-42 recorded exactly this shape for the red-probe
       // placeholder across the JS/markdown seam, and its answer was an assertion that reads both.
       const driverSource = await read(THE_DRIVER);
       const laneSource = await read(THE_LANE);
-      // The DRIVER's copy need not be exported and, since 77/04 moved the program under `src/`,
+      // The DRIVER's copy need not be exported and, since 77/04 moved the program under `packages/core/src/`,
       // must not be: nothing can import it (the family may not, and a test that did would execute
       // the program), and an unimportable export is the one shape 77/02's seam rule would report as
       // a stranded seam. The claim here is the BYTES, not the syntax, and it is unweakened.
@@ -512,7 +512,7 @@ export const archTests = [
       }
       // …AND THE COMPARISON IS NOT SIMPLY TRUE. A genuinely different message still differs.
       assert.equal(messagesAgree("the set may shrink, never grow", "the set may grow, never shrink"), false);
-      assert.equal(messagesAgree("src/a.mjs is not registered", "src/b.mjs is not registered"), false);
+      assert.equal(messagesAgree("packages/core/src/a.mjs is not registered", "packages/core/src/b.mjs is not registered"), false);
       // THE NUMERIC CONVERSE, WHICH LOCKS `transient-digits` TO ITS NARROW FORM. The normalisation
       // is only allowed to blur a RUN-SCOPED digit run — a pid, a port, a temp-dir suffix, all of
       // which follow a `-` or `_` or `/`. Widened to every number it would still leave every other

@@ -40,7 +40,7 @@
 // imported by neither runner, which by this file's own first invariant makes it no gate at all.
 //
 // THE DECIDER IS NOT DEFINED HERE. `registrationDecision()` lives in
-// `src/work-audit/census.mjs`, so the CLI census and this gate cannot drift into two answers
+// `packages/core/src/work-audit/census.mjs`, so the CLI census and this gate cannot drift into two answers
 // about the same suite, and so the shrink-only baseline has ONE home rather than one ledger
 // and one loophole. ADR-003 §4 settles which of the two is the authority where they could
 // disagree: THIS ONE — it runs inside the runner's own process, where every registered module
@@ -103,7 +103,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { UNREGISTERED_BASELINE, baselineProblems, registrationDecision, runnerImportedSuites, walkSuiteFiles } from "../../../src/work-audit/census.mjs";
+import { UNREGISTERED_BASELINE, baselineProblems, registrationDecision, runnerImportedSuites, walkSuiteFiles } from "../../../packages/core/src/work-audit/census.mjs";
 import { registrationSurface, suiteFilesBelow } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

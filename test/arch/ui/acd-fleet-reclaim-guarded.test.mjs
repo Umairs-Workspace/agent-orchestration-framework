@@ -1,14 +1,14 @@
 // Fitness function: acd-fleet-reclaim-guarded (milestone 26, ADR-006 / fitness #12) —
 // "fleet reclaim is guarded orchestration."
 //
-//   "In src/commands/run-start.mjs the fleet item set is built ONLY inside the
+//   "In packages/core/src/commands/run-start.mjs the fleet item set is built ONLY inside the
 //    mesh-configured branch and filtered through the presence predicate (isNodeStale)
 //    BEFORE reclaimStaleRuns is called; the store's reclaimStaleRuns keeps its
 //    items-as-argument signature and mesh-blindness (the scan is never rewritten);
 //    status rollback still routes through work.mjs's rollbackItemStatus over the
 //    returned entries (20/ADR-005 ownership verbatim). PLUS the boundary half folded in
 //    at Contract (the resolved QA flag): the releaseLease reference in
-//    src/commands/run-complete.mjs sits inside a config.mesh-gated branch. The EXISTING
+//    packages/core/src/commands/run-complete.mjs sits inside a config.mesh-gated branch. The EXISTING
 //    acd-run-reclaim-stale-only + acd-status-rollback-bounded gates re-arm GREEN over
 //    the unchanged store/rollback — enumerated here (their suite registration is
 //    asserted, not duplicated)."

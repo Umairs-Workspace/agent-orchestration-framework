@@ -3,14 +3,14 @@
 //     01_story_version-stamp-and-reader/tasks/02_transform-scoped-writer-body-preserving.feature
 // Every @executable scenario (and each Scenario Outline row) below is wired
 // against the LOCKED ADR-004 transform-scoped writer `applyItemFrontmatter`
-// (src/work.mjs) and against `rollbackItemStatus` (proving its own bound stays
+// (packages/core/src/work.mjs) and against `rollbackItemStatus` (proving its own bound stays
 // untouched — the SAME export, not widened). Confirmed by byte-diffing the
 // record doc's raw bytes before/after each call, cross-checked through the
 // story-01 reader — no source read.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { applyItemFrontmatter, rollbackItemStatus, readItemSchema } from "../../../src/work.mjs";
+import { applyItemFrontmatter, rollbackItemStatus, readItemSchema } from "../../../packages/core/src/work.mjs";
 import { withWork, writeWriterFixtureDoc } from "../../support/work-version-fixture.mjs";
 
 const bodyOf = (text) => text.slice(text.indexOf("\n---", 3) + "\n---".length);

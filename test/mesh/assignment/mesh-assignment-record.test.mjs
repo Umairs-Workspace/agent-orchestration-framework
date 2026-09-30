@@ -10,7 +10,7 @@ import {
   openGlobalWorkProjectionStore,
   publishWorkspaceSnapshot,
   GLOBAL_WORK_SCHEMA_VERSION,
-} from "../../../src/global-work-store.mjs";
+} from "../../../packages/core/src/global-work-store.mjs";
 import {
   assembleAssignmentRecord,
   ASSIGNMENT_STATE_PRODUCERS,
@@ -20,7 +20,7 @@ import {
   readAssignment,
   producerFor,
   classificationFor,
-} from "../../../src/assignment-record.mjs";
+} from "../../../packages/core/src/assignment-record.mjs";
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-assignment-record-"));

@@ -6,7 +6,7 @@
 //    generated artifact carries the aof-generated stamp and is a projection that cannot
 //    omit a registered transform nor invent one."
 //
-// GUARD-IF-PRESENT: a clean no-op until src/work/upgrade.mjs exposes both the registry
+// GUARD-IF-PRESENT: a clean no-op until packages/core/src/work/upgrade.mjs exposes both the registry
 // and a changelog generator; arms into a hard assertion on build. The proof is that the
 // generator is a projection OF the registry (every transform is represented; the output
 // reads the registry, not the reverse) — a hand edit could not survive a regenerate.
@@ -16,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UPGRADE_MODULE = path.join(repoRoot, "src", "work", "upgrade.mjs");
+const UPGRADE_MODULE = path.join(repoRoot, "packages", "core", "src", "work", "upgrade.mjs");
 
 function findGeneratorFn(mod) {
   for (const name of ["renderChangelog", "generateChangelog", "changelogFromMigrations", "renderUpgradeChangelog", "buildChangelog"]) {

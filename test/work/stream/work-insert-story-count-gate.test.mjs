@@ -10,8 +10,8 @@
 // explicitly in the fixture config so the test is resilient to any future
 // named-default change.
 import assert from "node:assert/strict";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, listItems } from "../../../src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { findWork, listItems } from "../../../packages/core/src/work.mjs";
 import { withInsertFixture, buildMilestone, writeStoryItem, SLUGS } from "../../support/work-insert-fixture.mjs";
 
 const THRESHOLD_CONFIG = { work: { insert: { confirmThreshold: 5 } } };

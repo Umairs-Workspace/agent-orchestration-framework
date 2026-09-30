@@ -1,7 +1,7 @@
 // milestone 52 / story 05 — task 02: THE CHECKS SUITE.
 //
 // Mechanises all six `@executable` features of 52/01 (115 scenarios, 8 example tables, 132 rows)
-// against the six exported subjects of `src/work/loops-checks.mjs`: `decomposeLoopGraph` and the
+// against the six exported subjects of `packages/core/src/work/loops-checks.mjs`: `decomposeLoopGraph` and the
 // five checks. Contract: stories/05_story_behavioural-suites/tasks/02_checks-suite.feature.
 //
 // THIS SUITE TOUCHES NO FILESYSTEM. Every fixture is a literal `{source, present, nodes, findings}`
@@ -45,7 +45,7 @@ import {
   checkReferenceOwnership,
   checkTimescale,
   decomposeLoopGraph,
-} from "../../src/work/loops-checks.mjs";
+} from "../../packages/core/src/work/loops-checks.mjs";
 
 // ---------------------------------------------------------------------------------------------
 // Fixture builders. Literals only — nothing below reads, writes or stats a path.
@@ -420,7 +420,7 @@ const UNPAIRED_ROWS = Object.freeze([
 const X = "command:work:run-retry";
 const Y = "command:work:run-complete";
 const Z = "module:src/run-store.mjs#reclaimStaleRuns";
-const PROSE = "prose:src/bundle/agents/aof-developer.md";
+const PROSE = "prose:packages/core/assets/agents/aof-developer.md";
 const ARBITRATION_ROWS = Object.freeze([
   { row: "a:[x] b:[x] | none", loops: { "loop:a": [X], "loop:b": [X] }, vetoes: {}, expected: [{ actuator: X, contenders: "loop:a, loop:b" }] },
   { row: "a:[x] b:[x] | operator veto [a,b]", loops: { "loop:a": [X], "loop:b": [X] }, vetoes: { "actor:operator": ["loop:a", "loop:b"] }, expected: [{ actuator: X, contenders: "loop:a, loop:b" }], supersededBy58: "an ACTOR is not entitled to arbitrate" },
@@ -1491,7 +1491,7 @@ const ENVELOPE_TESTS = [
     // self-consistency assertion — "the array equals itself re-sorted by (path, code, message)" —
     // but every fixture either instrument runs it over is one where code order and message order
     // AGREE, so neither of them decides `code`. Measured at review: dropping the `code` tiebreak
-    // from `compareFindings` (`src/work/loops-checks.mjs`) survived all six suites AND all nine
+    // from `compareFindings` (`packages/core/src/work/loops-checks.mjs`) survived all six suites AND all nine
     // gates. An exclusion whose pointer resolves by NAME while the claim is computed by nothing is
     // exactly what F-52-04-H was, one layer in.
     //

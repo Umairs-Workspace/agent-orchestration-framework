@@ -7,20 +7,20 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadBundle, readDescriptor, renderBundleOutputs } from "../../src/work/bundle.mjs";
+import { loadBundle, readDescriptor, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 import {
   generateBundleManifest,
   manifestPath,
   readShippedManifest,
   serializeBundleManifest,
-} from "../../src/work/bundle-manifest.mjs";
-import { hashContent } from "../../src/lock.mjs";
-import { executeApplyActions, planApplyActions } from "../../src/render-plan.mjs";
-import { readRuns } from "../../src/run-store.mjs";
+} from "../../packages/core/src/work/bundle-manifest.mjs";
+import { hashContent } from "../../packages/core/src/lock.mjs";
+import { executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
+import { readRuns } from "../../packages/core/src/run-store.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const cliPath = fileURLToPath(new URL("../../bin/aof.mjs", import.meta.url));
-const promptPath = path.join(repoRoot, "src", "bundle", "commands", "autonomous.md");
+const promptPath = path.join(repoRoot, "packages", "core", "assets", "commands", "autonomous.md");
 const renderedPath = ".claude/commands/aof/autonomous.md";
 const mappedSkillPath = ".codex/skills/aof-autonomous/SKILL.md";
 const autonomousPreStoryHashes = new Map([
@@ -49,12 +49,12 @@ const commandIdsBeforeStory = [
   // was not updated with it, so the leg has been red on this branch since. It surfaced here
   // because 119/03 is the run that had to get the whole tree green, not because 119 touched it.
   // `promote` ADDED AT 127/02, WITH the diff that lands it — the one verb that mints a number
-  // (127/ADR-003 §1) ships `src/bundle/commands/promote.md` as a `/aof:promote` wrapper, so the
+  // (127/ADR-003 §1) ships `packages/core/assets/commands/promote.md` as a `/aof:promote` wrapper, so the
   // pre-existing member set this leg calls COMPLETE grew by one. Recorded here the same way
   // `pay-debt` had to be, and for the same reason the residue pins above were retired: a literal
   // census only tells the truth if the diff that moves the tree moves it too.
   // `archive` ADDED AT 127/03, in the descriptor's own order (after `promote`), at the milestone door:
-  // `src/bundle/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
+  // `packages/core/assets/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
   // and it landed outside the story's declared write set — the same species as `promote`, repaired
   // at `aof:verify 127`.
   "observe", "pay-debt", "promote", "archive", "recent", "refine", "retrospective", "shatter", "validate", "verify",

@@ -4,7 +4,7 @@
 // TTL check + an attempt-cap.
 //
 // Covers EVERY @executable scenario / Scenario Outline row, driving the endpoint
-// IN-PROCESS: the REAL serveRelay (src/mesh/relay.mjs) on an ephemeral port (port: 0)
+// IN-PROCESS: the REAL serveRelay (packages/core/src/mesh/relay.mjs) on an ephemeral port (port: 0)
 // as the control node, a real HTTP POST to /enroll via fetch (the m23 in-process relay
 // pattern), the group registry seeded via story 00's writeRegistry over a temp fixture.
 // issuedAt / expiresAt and the endpoint's "now" are INJECTED (a mutable clock behind a
@@ -23,8 +23,8 @@ import {
   resolveMaxAttempts,
   DEFAULT_CODE_TTL_SECONDS,
   DEFAULT_MAX_ATTEMPTS,
-} from "../../../src/mesh/relay.mjs";
-import { writeRegistry, readRegistry } from "../../../src/mesh/registry.mjs";
+} from "../../../packages/core/src/mesh/relay.mjs";
+import { writeRegistry, readRegistry } from "../../../packages/core/src/mesh/registry.mjs";
 
 const CONTROL_ID = "control-node-a";
 const JOINER_ID = "joiner-node";

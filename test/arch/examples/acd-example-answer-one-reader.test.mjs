@@ -3,7 +3,7 @@
 //
 // "`toolUseResult` appears in `packages/work/src/examples/answers.mjs` and in no other module;
 //  `answers.mjs` does not spell the string `AskUserQuestion`; and `answers` is written onto a run's
-//  `brief` only inside `recordAnswers` in `src/run-store.mjs`."
+//  `brief` only inside `recordAnswers` in `packages/core/src/run-store.mjs`."
 //
 // Why it matters: an example labelled `confirmed` or `stated` is checked against the person's
 // answer in the harness transcript. Two readers of that record can disagree about what counts as an
@@ -27,7 +27,7 @@ const THE_WRITER = "packages/execution/src/runs.mjs";
 const WRITER_HEADER = "async function recordAnswers(";
 
 async function modules() {
-  return (await readRuntimeFiles(repoRoot)).filter(file => !file.rel.startsWith("src/bundle/")).map(file => file.path);
+  return (await readRuntimeFiles(repoRoot)).filter(file => !file.rel.startsWith("packages/core/assets/")).map(file => file.path);
 }
 
 const readsToolUseResult = (code) => /\btoolUseResult\b/.test(code);
@@ -68,7 +68,7 @@ export const archTests = [
       const code = stripComments(await readFile(path.join(repoRoot, THE_READER), "utf8"));
       assert.doesNotMatch(code, /AskUserQuestion/, "answers.mjs does not spell the tool's name");
       assert.match(code, /createExampleAnswers\(\{[^}]*HUMAN_INPUT_TOOL_NAMES/, "the reader receives the shared tool vocabulary");
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work-examples/answers.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work-examples/answers.mjs"), "utf8"));
       assert.match(adapter, /const\s*\{[^}]*HUMAN_INPUT_TOOL_NAMES[^}]*\}\s*= agentSessionDriverServices/, "core binds the list from its one home");
     },
   },

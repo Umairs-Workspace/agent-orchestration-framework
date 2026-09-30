@@ -22,8 +22,8 @@
 // (an object literal handed to `httpRequest`/`fetch`, never a sink) does NOT trip — a
 // dedicated negative control below pins that.
 //
-// Scanned across the `github-app` provider module, `src/control-stream-server.mjs`,
-// AND — L1 (this review) — `src/mesh/launcher.mjs`, the key's FIRST-materialisation
+// Scanned across the `github-app` provider module, `packages/core/src/control-stream-server.mjs`,
+// AND — L1 (this review) — `packages/core/src/mesh/launcher.mjs`, the key's FIRST-materialisation
 // site (`resolveGithubAppPrivateKey` reads the raw PEM via `readFileSync` and hands it
 // down to the provider) — so a future log/error of the key at the site it is READ, not
 // just where it is USED, also fails CI.

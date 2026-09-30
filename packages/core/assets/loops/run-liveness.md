@@ -1,0 +1,22 @@
+---
+# aof-generated: true — framework loop record; installed by `aof work update`, edit it in aof, not here.
+id: anchor:run-liveness
+kind: anchor
+title: Run liveness observation
+ground: live-soak
+observes: module:src/run-store.mjs#isStale
+data-feed: [loop:run-resilience, loop:mesh-assignment-reclaim]
+---
+# Run liveness observation
+
+Framework record source: `packages/core/assets/loops/run-liveness.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+
+`isStale` is the exported, clock-injected observation that compares a run's durable heartbeat with
+the liveness window (`packages/execution/src/runs.mjs:1188-1192`). It observes the system over time, so this anchor
+uses `ground: live-soak`; it does not turn the presence of a timer into a stronger claim.
+
+Both `data-feed` edges cite direct consumers. `loop:run-resilience` names `isStale` as a measurement
+authority in its own record. `loop:mesh-assignment-reclaim` imports the same predicate and combines
+it with node staleness before reclaiming (the core wiring at `packages/core/src/mesh/assignment-reclaim.mjs:3-4`
+and the decision at `packages/mesh/src/assignment-reclaim.mjs:129-137`). No
+edge is added to a loop that does not consume this observation.

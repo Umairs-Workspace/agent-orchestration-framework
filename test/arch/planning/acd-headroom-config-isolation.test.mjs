@@ -4,7 +4,7 @@
 //  reads or writes .aof/aof.lock.json. `unuse-headroom` keeps the block with
 //  enabled:false (it does not delete it)."
 //
-// RED-until-built and CORRECT: src/work/headroom.mjs does not export the toggle
+// RED-until-built and CORRECT: packages/core/src/work/headroom.mjs does not export the toggle
 // entry points yet, so the import below rejects with ERR_MODULE_NOT_FOUND (a
 // missing-source red, not a syntax error). The CLI story builds the read-merge-
 // write helper against this contract; the test then proves config-only isolation.
@@ -17,15 +17,15 @@ import { mkdtemp, mkdir, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-// LAZY resolution (NOT a top-level import): src/work/headroom.mjs does not exist
+// LAZY resolution (NOT a top-level import): packages/core/src/work/headroom.mjs does not exist
 // yet, so each run() dynamically imports it. A missing module is then a CLEAN
 // assertion red inside the case — not an ERR_MODULE_NOT_FOUND that crashes the whole
 // suite at scripts/test.mjs load time (the established RED-until-built idiom).
-const headroomCliUrl = new URL("../../../src/work/headroom.mjs", import.meta.url).href;
+const headroomCliUrl = new URL("../../../packages/core/src/work/headroom.mjs", import.meta.url).href;
 async function loadToggle() {
   const mod = await import(headroomCliUrl);
-  assert.equal(typeof mod.useHeadroom, "function", "src/work/headroom.mjs exports useHeadroom (RED until the CLI story builds it)");
-  assert.equal(typeof mod.unuseHeadroom, "function", "src/work/headroom.mjs exports unuseHeadroom (RED until the CLI story builds it)");
+  assert.equal(typeof mod.useHeadroom, "function", "packages/core/src/work/headroom.mjs exports useHeadroom (RED until the CLI story builds it)");
+  assert.equal(typeof mod.unuseHeadroom, "function", "packages/core/src/work/headroom.mjs exports unuseHeadroom (RED until the CLI story builds it)");
   return mod;
 }
 

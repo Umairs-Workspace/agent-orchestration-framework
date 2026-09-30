@@ -8,7 +8,7 @@
 // grade, gate and progress sample of a lane runs in the lane's own workspace, and the baseline
 // is a property of the BASE COMMIT, measured once per wave in a lane.
 //
-// STRUCTURAL LEG, over `src/loop/cycle.mjs` and `src/loop/wave.mjs` (comment-stripped, cut on
+// STRUCTURAL LEG, over `packages/core/src/loop/cycle.mjs` and `packages/core/src/loop/wave.mjs` (comment-stripped, cut on
 // the language's own structure): no `process.cwd()` anywhere in either; in `cycle.mjs` every
 // `invokeRegistered("work:grade" | "work:validate" | "work:doctor"` call hands on the `ctx` its
 // enclosing function was HANDED, and every `recordBuildProgress(` call passes the `worktreePath`
@@ -63,7 +63,7 @@ function ownerOf(code, offset) {
   return owner;
 }
 
-// PURE — the ladder's rule over `src/loop/cycle.mjs`.
+// PURE — the ladder's rule over `packages/core/src/loop/cycle.mjs`.
 export function cycleGradeScopeProblems(code) {
   const problems = [];
   const found = { gateCalls: 0, samplerCalls: 0 };
@@ -99,7 +99,7 @@ export function cycleGradeScopeProblems(code) {
   return { problems, found };
 }
 
-// PURE — the lane path's rule over `src/loop/wave.mjs`.
+// PURE — the lane path's rule over `packages/core/src/loop/wave.mjs`.
 export function waveGradeScopeProblems(code) {
   const problems = [];
   const found = { laneLadder: 0, laneBaseline: 0, keyedGets: 0, keyedSets: 0 };
@@ -136,8 +136,8 @@ export function waveGradeScopeProblems(code) {
 
 async function driveTwoMemberWaveWithFakeGrade() {
   const fixture = await import("../../support/loop/lane-fixture.mjs");
-  const { runLoopBody } = await import("../../../src/commands/loop.mjs");
-  const { meshDispatchWorktreePath } = await import("../../../src/mesh/worktree.mjs");
+  const { runLoopBody } = await import("../../../packages/core/src/commands/loop.mjs");
+  const { meshDispatchWorktreePath } = await import("../../../packages/core/src/mesh/worktree.mjs");
   const NOW = "2026-09-14T12:00:00.000Z";
   const provenance = { node: "fixture", run: null, commit: null, at: NOW };
   const passing = () => ({ configured: true, grade: { verdict: "pass", codes: [], cases: { total: 1, failed: 0, skipped: 0 }, failures: [], gradedAt: NOW, provenance: { ...provenance } } });
@@ -178,7 +178,7 @@ export const archTests = [
       assert.deepEqual(lane.problems, [], `a lane's grade is taken in the lane:\n${lane.problems.join("\n")}`);
 
       // `readGradeBaseline` answers a `{ baseCommit }` selector — behaviourally, through the leaf.
-      const { readGradeBaseline } = await import("../../../src/loop/cycle.mjs");
+      const { readGradeBaseline } = await import("../../../packages/core/src/loop/cycle.mjs");
       const runs = [
         { runId: "r1", itemRef: "07/01", createdAt: "2026-09-14T10:00:00.000Z", brief: { gradeBaseline: { measuredAt: "2026-09-14T10:00:00.000Z", priorDrives: 0, failures: ["alpha"], baseCommit: "a".repeat(40) } } },
         { runId: "r2", itemRef: "07/03", createdAt: "2026-09-14T11:00:00.000Z", brief: { gradeBaseline: { measuredAt: "2026-09-14T11:00:00.000Z", priorDrives: 0, failures: ["beta"], baseCommit: "b".repeat(40) } } },

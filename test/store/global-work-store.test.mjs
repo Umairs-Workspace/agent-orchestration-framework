@@ -17,19 +17,19 @@ import {
   publishWorkspaceSnapshot,
   readWorkspaceItems,
   GLOBAL_WORK_SCHEMA_VERSION,
-} from "../../src/global-work-store.mjs";
+} from "../../packages/core/src/global-work-store.mjs";
 // …the frame doors a worker's rows arrive through, the fleet payload, the raw runtime (to
 // write a v8 file by hand), and 127/01's three-root fixture — the ONE stream every hop is
 // measured over, imported from where its owning story left it (the 127/02 and 127/03 idiom).
-import { applySnapshotFrame, applyDeltaFrame } from "../../src/control-stream-server.mjs";
-import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
-import { importSqliteRuntime } from "../../src/sqlite-runtime.mjs";
+import { applySnapshotFrame, applyDeltaFrame } from "../../packages/core/src/control-stream-server.mjs";
+import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
+import { importSqliteRuntime } from "../../packages/core/src/sqlite-runtime.mjs";
 import { withThreeRoots } from "../work/stream/work-backlog-archive-enumerate.test.mjs";
 // m43 / ADR-012/B4 — the WORKER-side content read moved into its own module when 43/03
 // widened it to the artifact manifest (the store module's line ceiling's own escape
 // hatch). Same function, same shapes; imported from where it now lives.
-import { readWorkspaceContentRecords } from "../../src/work/content-read.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
+import { readWorkspaceContentRecords } from "../../packages/core/src/work/content-read.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 
 function frontmatter(fields) {
   return [

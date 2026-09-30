@@ -47,8 +47,8 @@ import {
   ADMITTED_KEYS, CADENCE_KINDS, EDGE_KEYS, ENDPOINT_SCHEMES, EVENT_TRIGGERS, FIELD_KINDS,
   GROUND_VALUES, LOADER_FINDING_CODES, NODE_KINDS, PERIODIC_UNITS, POINTER_SCHEMES,
   SENTINEL_TOKENS, loadLoops,
-} from "../../src/work/loops.mjs";
-import * as loaderModule from "../../src/work/loops.mjs";
+} from "../../packages/core/src/work/loops.mjs";
+import * as loaderModule from "../../packages/core/src/work/loops.mjs";
 import { examplesTables } from "../support/feature-parse.mjs";
 import {
   actorRecord, actorRecordNames, codesFor, findingsFor, identityRecord, idsOf,
@@ -231,7 +231,7 @@ const RECORD_CONTENT_CASES = [
   { content: "cadence: unknown", code: "loop-cadence-unknown", severity: "warn", file: "rc-cadence-unknown.md", spec: loopRecord({ fields: { cadence: "unknown" } }), codes: ["loop-cadence-unknown"] },
   { content: "ceiling: unknown", code: "loop-ceiling-unknown", severity: "warn", file: "rc-ceiling-unknown.md", spec: loopRecord({ fields: { ceiling: "unknown" } }), codes: ["loop-ceiling-unknown"] },
   { content: "ceiling: uncapped", code: "loop-ceiling-uncapped", severity: "warn", file: "rc-ceiling-uncapped.md", spec: loopRecord({ fields: { ceiling: "uncapped" } }), codes: ["loop-ceiling-uncapped"] },
-  { content: "measurement: [prose:src/bundle/commands/continue.md]", code: "loop-field-prose-only", severity: "warn", file: "rc-prose-measurement.md", spec: loopRecord({ fields: { measurement: "[prose:src/bundle/commands/continue.md]" } }), codes: ["loop-field-prose-only"] },
+  { content: "measurement: [prose:packages/core/assets/commands/continue.md]", code: "loop-field-prose-only", severity: "warn", file: "rc-prose-measurement.md", spec: loopRecord({ fields: { measurement: "[prose:packages/core/assets/commands/continue.md]" } }), codes: ["loop-field-prose-only"] },
   { content: "owner: actor:product-owner", code: null, severity: "—", file: "rc-owner-filled.md", spec: loopRecord(), codes: [] },
   { content: "ceiling: none", code: null, severity: "—", file: "rc-ceiling-none.md", spec: loopRecord({ fields: { ceiling: "none" } }), codes: [] },
   { content: "data-feed: [item:52/00]", code: null, severity: "—", file: "rc-item-endpoint.md", spec: loopRecord({ fields: { "data-feed": "[item:52/00]" } }), codes: [] },
@@ -926,7 +926,7 @@ export const workLoopsRecordTests = [
     run: async () => {
       await overRegistry(registry({
         "filled.md": loopRecord({ fields: { ceiling: "[config:work.autonomous.maxAttempts]" } }),
-        "gapped.md": loopRecord({ fields: { measurement: "[prose:src/bundle/commands/continue.md]", cadence: "unknown", ceiling: "uncapped", owner: "unknown" } }),
+        "gapped.md": loopRecord({ fields: { measurement: "[prose:packages/core/assets/commands/continue.md]", cadence: "unknown", ceiling: "uncapped", owner: "unknown" } }),
         "gapped-ceiling.md": loopRecord({ fields: { ceiling: "unknown" } }),
       }), (model, fixture) => {
         assert.deepEqual(codesFor(model, fixture.pathOf("gapped.md")), [
@@ -1065,7 +1065,7 @@ export const workLoopsRecordTests = [
         assert.ok("loop:run-store" < "loop:runbook", 'the node blocks: "-" precedes "b" by code unit, whatever weight a collation gives punctuation');
         // The whole findings list, byte for byte, from a process told it lives in another
         // locale. (The source-side sweep — "no comparison ANYWHERE in the load is made by a
-        // locale-aware collation" — is a claim about `src/work/loops.mjs`'s text, which no
+        // locale-aware collation" — is a claim about `packages/core/src/work/loops.mjs`'s text, which no
         // gate owns today; this is the decidable proxy, and it is the one that a reordering
         // loader would fail.)
         const fresh = loadLoopsInFreshProcess(fixture.workDir, {
@@ -1127,7 +1127,7 @@ export const workLoopsRecordTests = [
       //
       // THE FIFTEENTH EXPORT IS ALSO A FUNCTION, AND THE SCENARIO'S COUNT IS AGAIN UNMOVED
       // (63/00, ADR-002 §3). `parseCadence` is the body that WAS the private `cadenceField`,
-      // given a public name so `src/work-trigger/declaration.mjs` compiles a trigger's cadence
+      // given a public name so `packages/core/src/work-trigger/declaration.mjs` compiles a trigger's cadence
       // through the loop registry's own grammar instead of a second copy of it — the species
       // 66/FF-6604 and TECH_DEBT item 68 exist to refuse. Its answers are byte-unchanged (this
       // suite's own vocabulary table is the reader that would see it if they were not), and the
@@ -1476,7 +1476,7 @@ export const workLoopsRecordTests = [
         // ...and the loader normalises NO separator: the absolute node path and a
         // forward-slashed pointer operand coexist in the same node.
         const operand = node.fields.reference[0].pointer.operand;
-        assert.equal(operand, "src/run-store.mjs", "still exactly as authored");
+        assert.equal(operand, "packages/core/src/run-store.mjs", "still exactly as authored");
         assert.equal(operand.includes("\\"), false, "forward-slashed, whatever the platform separator is");
       });
     },
@@ -1490,14 +1490,14 @@ export const workLoopsRecordTests = [
       assert.equal(loadLoops, loaderModule.loadLoops);
       const source = await readFile(fileURLToPath(import.meta.url), "utf8");
       // 119/03 — the specifier is REPO-RELATIVE-resolved, not matched at a pinned depth. The
-      // regex was `../src/`, true only while this suite sat flat in `test/`; the suite now sits
+      // regex was `../packages/core/src/`, true only while this suite sat flat in `test/`; the suite now sits
       // in `test/loop/` and the pinned spelling matched nothing, which reported "no subject
       // module" as an empty set rather than as a red. What the leg means is the MODULE, so it
       // is the module that is named.
       const suiteDir = path.dirname(fileURLToPath(import.meta.url));
       const srcImports = [...source.matchAll(/from "((?:\.\.\/)+src\/[^"]+)"/g)]
         .map((match) => path.relative(path.resolve(suiteDir, "..", ".."), path.resolve(suiteDir, match[1])).split(path.sep).join("/"));
-      assert.deepEqual([...new Set(srcImports)], ["src/work/loops.mjs"], "one subject module, imported by its public path");
+      assert.deepEqual([...new Set(srcImports)], ["packages/core/src/work/loops.mjs"], "one subject module, imported by its public path");
       const named = source.match(/import \{([^}]*)\} from "(?:\.\.\/)+src\/work\/loops\.mjs";/);
       assert.ok(named, "the named import list is readable");
       for (const binding of named[1].split(",").map((entry) => entry.trim()).filter(Boolean)) {
@@ -2117,7 +2117,7 @@ export const workLoopsRecordTests = [
   {
     name: "loops-record/59 an auditor's reading may not be a prose authority, and a loop's still may",
     run: async () => {
-      const document = "prose:src/bundle/commands/verify.md";
+      const document = "prose:packages/core/assets/commands/verify.md";
       await overRegistry(registry({
         "gates.md": auditorRecord59("gates", { measurement: `[${document}]` }),
       }), (model, fixture) => {

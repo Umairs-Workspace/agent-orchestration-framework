@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readdir, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { writeText, sweepStaleTempFiles } from "../../src/fs.mjs";
+import { writeText, sweepStaleTempFiles } from "../../packages/core/src/fs.mjs";
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-fs-hygiene-"));

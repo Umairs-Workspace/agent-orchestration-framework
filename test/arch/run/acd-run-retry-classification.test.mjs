@@ -9,7 +9,7 @@
 // source-grep of the two function BODIES.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { isRetryable, shouldRetry } from "../../../src/run-store.mjs";
+import { isRetryable, shouldRetry } from "../../../packages/core/src/run-store.mjs";
 
 const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 

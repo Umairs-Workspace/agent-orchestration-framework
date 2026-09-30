@@ -17,7 +17,7 @@
 //       `migrate-folder.mjs` — the register's "promote family", read as that set (127/01 made the
 //       last one a caller). Non-vacuous: the sweep finds FOUR callers.
 //   (b) the TOP-LEVEL slot-open (`transitionStreamReindexed` with `space: "top-level"`) is called
-//       from `src/commands/promote.mjs` and nowhere else under `src/commands/`, and
+//       from `packages/core/src/commands/promote.mjs` and nowhere else under `packages/core/src/commands/`, and
 //       `runInsertTopLevel` is DEFINED there (the other import direction would be a cycle, so the
 //       engine moved to the verb rather than the verb to the engine). Non-vacuous: the sweep finds
 //       the ONE call.
@@ -25,12 +25,12 @@
 //       `Math.max` or a `number:` write. The mechanics module keeps `parsePosition` and the nested
 //       axis's own parses — this leg is about the FACES. Non-vacuous: the same three patterns are
 //       shown to match where they legitimately live.
-//   (d) `src/work/reindex.mjs`'s src importers, read from IMPORT SPECIFIERS over comment-stripped
-//       source, are `{ src/commands/insert-shared.mjs, src/effects/stream-transitions.mjs }` or a
+//   (d) `packages/core/src/work/reindex.mjs`'s src importers, read from IMPORT SPECIFIERS over comment-stripped
+//       source, are `{ packages/core/src/commands/insert-shared.mjs, packages/core/src/effects/stream-transitions.mjs }` or a
 //       strict subset. Four comment-only mentions of the path exist in the tree, which is exactly
 //       why this is a specifier sweep and not a grep. Non-vacuous: the resolver finds importers at
 //       all (today it finds the two).
-//   (e) no `src/bundle/commands/add-*.md` computes a number. Non-vacuous: it reads the five
+//   (e) no `packages/core/assets/commands/add-*.md` computes a number. Non-vacuous: it reads the five
 //       scaffolding prompts (six files match the glob today — `add-task` is swept too, and the floor
 //       is a floor rather than a census).
 //
@@ -69,8 +69,8 @@ const INSERT_FACES = Object.freeze([
   "packages/work/src/commands/insert-story.mjs",
   "packages/work/src/commands/insert-uat.mjs",
 ]);
-const ENGINE = "src/work/reindex.mjs";
-const ENGINE_IMPORTERS = Object.freeze(["packages/work/src/insertion/scaffold.mjs", "src/application/bindings/effects/stream-transitions.mjs", "src/work/reindex.mjs"]);
+const ENGINE = "packages/core/src/work/reindex.mjs";
+const ENGINE_IMPORTERS = Object.freeze(["packages/work/src/insertion/scaffold.mjs", "packages/core/src/application/bindings/effects/stream-transitions.mjs", "packages/core/src/work/reindex.mjs"]);
 // The five the prompts' rewrite names (task 05). The glob is the SUBJECT; these are the floor, so a
 // renamed prompt fails as missing rather than quietly shrinking the sweep.
 const NAMED_ADD_PROMPTS = Object.freeze([
@@ -111,7 +111,7 @@ function definesName(code, name) {
 }
 
 // Does `specifier`, resolved from `fromRel`, name `targetRel`? Relative specifiers only — a bare or
-// `node:` specifier can never name a file under `src/`.
+// `node:` specifier can never name a file under `packages/core/src/`.
 function resolvesTo(specifier, fromRel, targetRel) {
   const resolved = resolveRuntimeSpecifier(fromRel, specifier);
   return resolved === targetRel || (targetRel === ENGINE && resolved === "packages/work/src/reindex.mjs");
@@ -253,7 +253,7 @@ export const archTests = [
   {
     name: "arch/FF-12703 (acd-one-mint): no src/bundle/commands/add-*.md computes a top-level number",
     run: async () => {
-      const dir = path.join(repoRoot, "src", "bundle", "commands");
+      const dir = path.join(repoRoot, "packages", "core", "assets", "commands");
       const prompts = (await readdir(dir)).filter((name) => name.startsWith("add-") && name.endsWith(".md")).sort();
       assert.ok(
         prompts.length >= NAMED_ADD_PROMPTS.length,

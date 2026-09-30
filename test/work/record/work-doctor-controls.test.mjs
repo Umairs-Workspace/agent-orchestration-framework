@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 66 / story 02 — the CONTROLS LANE.
 //
 // Every `@executable` scenario (and every Examples row) of the story's four task
-// features, against the LOCKED surfaces in `src/work/doctor-controls.mjs`:
+// features, against the LOCKED surfaces in `packages/core/src/work/doctor-controls.mjs`:
 //   tasks/00_one-lane-that-reads-and-never-runs.feature
 //   tasks/01_a-register-declares-once.feature
 //   tasks/02_a-control-resolves-or-declares-itself-pending.feature
@@ -43,7 +43,7 @@ import {
   recordsARedProbe,
   redProbeRows,
   splitPathLocator,
-} from "../../../src/work/doctor-controls.mjs";
+} from "../../../packages/core/src/work/doctor-controls.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -287,7 +287,7 @@ export const workDoctorControlsTests = [
   {
     name: "66/02 lane: an ERROR gates and a WARN does not, on the exit code doctor already publishes",
     run: async () => {
-      const { doctorCommand } = await import("../../../src/commands/doctor.mjs");
+      const { doctorCommand } = await import("../../../packages/core/src/commands/doctor.mjs");
       const exitFor = (findings, strict) => doctorCommand.cli.exit({ findings }, { options: strict ? { strict: true } : {} });
       // A stream whose ONLY controls findings are warns: exits zero, and non-zero under
       // `--strict`. Driven over findings the lane really produced, not invented ones.
@@ -549,12 +549,12 @@ export const workDoctorControlsTests = [
       // THE SETTLING SCENARIO, and it is settled by measurement rather than by
       // assertion (ADR-009/A). Run over the real `wiki/work` through the shipped
       // snapshot builder, so the universe is doctor's own — not a fixture's.
-      const { buildSnapshot } = await import("../../../src/work/doctor.mjs");
+      const { buildSnapshot } = await import("../../../packages/core/src/work/doctor.mjs");
       const snapshot = await buildSnapshot(path.join(repoRoot, "wiki", "work"), { projectRoot: repoRoot });
       const findings = registerGroup(snapshot, {});
 
       // The universe, counted the way the check counts it.
-      const { qualifiedRefsIn } = await import("../../../src/declared-id.mjs");
+      const { qualifiedRefsIn } = await import("../../../packages/core/src/declared-id.mjs");
       let policed = 0;
       for (const row of snapshot.items) {
         for (const text of Object.values(row.docTexts ?? {})) policed += qualifiedRefsIn(text).length;
@@ -601,7 +601,7 @@ export const workDoctorControlsTests = [
   {
     name: "66/02 register: the two seed checks keep their own findings — this lane re-implements neither",
     run: async () => {
-      const { duplicateDriverNumberGroup, CHECK_GROUPS } = await import("../../../src/work/doctor.mjs");
+      const { duplicateDriverNumberGroup, CHECK_GROUPS } = await import("../../../packages/core/src/work/doctor.mjs");
       const snapshot = snapshotOf([
         item({ ref: "66", number: "66", slug: "a", docs: { "ARCHITECTURE.md": fitnessRegister("| **FF-01** | a | `test/arch/x.test.mjs` | ADR |", "| **FF-01** | b | `test/arch/x.test.mjs` | ADR |") } }),
         item({ ref: "66", number: "66", slug: "b" }),
@@ -713,8 +713,8 @@ export const workDoctorControlsTests = [
         "two paths in one cell, as FF-6607 carries today — the EXTRACTION half; the resolution half is the lane below",
       );
       // a path in a cell of ANY column other than enforced-by is never probed
-      const other = fitnessDeclarations(fitnessRegister("| **FF-01** | the lane at `src/work/doctor.mjs:411-426`, and `test/other.test.mjs` | `test/arch/x.test.mjs` | ADR |"), "ARCHITECTURE.md");
-      assert.deepEqual(other[0].controls, ["test/arch/x.test.mjs"], "`src/work/doctor.mjs:411-426` is never probed, and neither is a test path in the invariant column");
+      const other = fitnessDeclarations(fitnessRegister("| **FF-01** | the lane at `packages/core/src/work/doctor.mjs:411-426`, and `test/other.test.mjs` | `test/arch/x.test.mjs` | ADR |"), "ARCHITECTURE.md");
+      assert.deepEqual(other[0].controls, ["test/arch/x.test.mjs"], "`packages/core/src/work/doctor.mjs:411-426` is never probed, and neither is a test path in the invariant column");
       // no path anywhere in the cell
       const empty = controlGroup(snapshotOf([item({ docs: { "ARCHITECTURE.md": fitnessRegister("| **FF-01** | an invariant | enforced by review | ADR |") } })], { runners: {} }), {});
       assert.deepEqual(only(empty, "control-unresolved").length, 1, "there is no path a runner could see");
@@ -815,7 +815,7 @@ export const workDoctorControlsTests = [
         ["FooTest.cs", true],
         ["Tests.fs", true],
         ["FooTests.vb", true],
-        ["src/Acme.Service/Program.cs", false],
+        ["packages/core/src/Acme.Service/Program.cs", false],
         ["CallMapper.cs", false],
         ["TestSupport.cs", false],
         ["IntegrationTestBase.cs", false],
@@ -831,7 +831,7 @@ export const workDoctorControlsTests = [
       // non-test source in the same cell stays prose
       const DOTNET = "tests/Acme.Service.Tests/Architecture/ContractsBoundaryTests.cs";
       assert.deepEqual(controlPathsIn(`\`${DOTNET}\` — pending`), [DOTNET]);
-      assert.deepEqual(controlPathsIn("`src/Acme.Service/Program.cs` maps none directly"), []);
+      assert.deepEqual(controlPathsIn("`packages/core/src/Acme.Service/Program.cs` maps none directly"), []);
       // …and the resolution half, through the lane: probed present resolves, absent is leg A's miss
       const register = { "ARCHITECTURE.md": fitnessRegister(`| **FF-04** | the boundary | \`${DOTNET}\` — pending | ADR-001 |`) };
       const resolved = controlGroup(snapshotOf([item({ docs: register })], { probes: { [DOTNET]: true } }), {});

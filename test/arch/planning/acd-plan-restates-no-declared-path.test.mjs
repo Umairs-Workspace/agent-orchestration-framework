@@ -24,7 +24,7 @@
 //      exactly what it was: one code, and the warn/error pair the accepting-item ladder already
 //      shipped. The plan fires the EXISTING code.
 //   5. THE GATE HAS ONE READER. `work.plan.enabled` defaults false and is named by no module in
-//      `src/` outside its own validator — ADR-006 §4's claim that nothing needs to read it, stated
+//      `packages/core/src/` outside its own validator — ADR-006 §4's claim that nothing needs to read it, stated
 //      as a census rather than trusted to stay true.
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
@@ -34,21 +34,21 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import { restatementViolations } from "../../support/plan-restatement-ban.mjs";
-import { budgetKeyFor, budgetGroup } from "../../../src/work/doctor-budget.mjs";
-import { budgetsFromConfig } from "../../../src/work/doctor.mjs";
+import { budgetKeyFor, budgetGroup } from "../../../packages/core/src/work/doctor-budget.mjs";
+import { budgetsFromConfig } from "../../../packages/core/src/work/doctor.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const TEMPLATE = "src/bundle/templates/story/PLAN.md";
+const TEMPLATE = "packages/core/assets/templates/story/PLAN.md";
 const BUDGET_GROUP = "packages/work/src/doctor/budget.mjs";
 const BUDGET_DEFAULTS = "packages/work/src/doctor/index.mjs";
-const GATE_VALIDATOR = "src/application/bindings/config-inspect.mjs";
+const GATE_VALIDATOR = "packages/core/src/application/bindings/config-inspect.mjs";
 const WORK_DIR = path.join(repoRoot, "wiki", "work");
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 const raw = (rel) => readFile(path.join(repoRoot, rel), "utf8");
 
-// Every `.mjs` under `src/`, so the gate census is over the module set rather than over a list
+// Every `.mjs` under `packages/core/src/`, so the gate census is over the module set rather than over a list
 // someone remembered to extend.
 async function srcModules() {
   const files = await readRuntimeFiles(repoRoot);

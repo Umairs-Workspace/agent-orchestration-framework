@@ -18,10 +18,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { importSqliteRuntime } from "../../src/sqlite-runtime.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { openEffectsJournal } from "../../src/effects/journal.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
+import { importSqliteRuntime } from "../../packages/core/src/sqlite-runtime.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { openEffectsJournal } from "../../packages/core/src/effects/journal.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 
 const run = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

@@ -7,9 +7,9 @@ import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 // 119/ADR-002 — the checks leaf's purity is a claim about its EXTERNAL dependencies, resolved over
-// the family `src/work-loops-checks/` when that directory exists and `src/work/loops-checks.mjs`
+// the family `packages/core/src/work-loops-checks/` when that directory exists and `packages/core/src/work/loops-checks.mjs`
 // when it does not. The old token ban is what made this leaf's decomposition illegal (1,284 lines,
-// 380 when 52/ADR-007 was written) and what forced it to hold a BYTE-COPY of `src/work-audit/`'s
+// 380 when 52/ADR-007 was written) and what forced it to hold a BYTE-COPY of `packages/core/src/work-audit/`'s
 // sweep declarers rather than importing them: a guard whose enforcement produces a duplicated home
 // has stopped protecting the property it names.
 import { assertFamilyPurity } from "../../support/module-family.mjs";
@@ -17,9 +17,9 @@ import {
   CHECK_IDS, UNMOVED_CYCLES, assessAnchorFreshness, assessInstrumentSilence, assessLoopConsultation,
   assessMetricMovement, buildGroundednessReport, checkActuatorArbitration, checkAnchorGrounding,
   checkGrounding, checkPairing, checkReferenceOwnership, checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
-import * as checksModule from "../../../src/work/loops-checks.mjs";
-import { ADMITTED_KEYS, NODE_KINDS, loadLoops } from "../../../src/work/loops.mjs";
+} from "../../../packages/core/src/work/loops-checks.mjs";
+import * as checksModule from "../../../packages/core/src/work/loops-checks.mjs";
+import { ADMITTED_KEYS, NODE_KINDS, loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import { makeLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
@@ -367,14 +367,14 @@ export const archTests = [
       // (e) THE THRESHOLD'S HOME SURVIVES ITS OWN ESCAPE HATCH. `assessMetricMovement` takes an
       // optional `cycles` so the number can be argued with — that is what makes `UNMOVED_CYCLES` a
       // knob rather than a coincidence, and the behavioural suite drives a lower one. But an argument
-      // nothing gates is a second home reached by another route, so: no module under `src/` supplies
+      // nothing gates is a second home reached by another route, so: no module under `packages/core/src/` supplies
       // one, and the detector is driven against a planted call first.
       assert.match(
         "assessMetricMovement(counters, { root, cycles: 5 })", /assessMetricMovement\s*\([^;]*\bcycles\b/u,
         "the caller detector matches a planted call that supplies its own threshold",
       );
       const supplying = [];
-      for (const file of await sourceFiles(path.join(root, "src"))) {
+      for (const file of await sourceFiles(path.join(root, "packages", "core", "src"))) {
         if (file === checksPath) continue;
         const text = stripComments(await readFile(file, "utf8"));
         if (/assessMetricMovement\s*\([^;]*\bcycles\b/u.test(text)) supplying.push(path.relative(root, file));

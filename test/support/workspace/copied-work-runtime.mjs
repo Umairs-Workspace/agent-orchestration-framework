@@ -10,12 +10,15 @@ export function copyWorkRuntime(repoRoot, destination) {
   assert.equal(path.dirname(fs.realpathSync(destination)), fs.realpathSync(os.tmpdir()),
     "the fixture must be a newly-created directory directly under the OS temp root");
   assert.equal(fs.readdirSync(destination).length, 0, "the copy destination is empty");
-  fs.cpSync(path.join(repoRoot, "src"), path.join(destination, "src"), { recursive: true });
+  const coreCopy = path.join(destination, "packages", "core");
+  fs.cpSync(path.join(repoRoot, "packages", "core"), coreCopy, {
+    recursive: true, filter: source => path.basename(source) !== "node_modules",
+  });
   const workCopy = path.join(destination, "packages", "work");
   fs.cpSync(path.join(repoRoot, "packages", "work"), workCopy, {
     recursive: true, filter: source => path.basename(source) !== "node_modules",
   });
-  for (const dependency of productionDependencyDirs(repoRoot)) {
+  for (const dependency of productionDependencyDirs(repoRoot, { owner: path.join(repoRoot, "packages", "core") })) {
     const rel = path.relative(repoRoot, dependency);
     if (rel.split(path.sep).slice(1).includes("node_modules")) continue;
     const alias = path.join(destination, rel);

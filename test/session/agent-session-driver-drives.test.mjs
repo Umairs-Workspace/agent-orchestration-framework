@@ -38,14 +38,14 @@ import {
   resolveInteractiveDriverLaunch,
   WORKER_SESSION_INSTRUCTION,
   NEEDS_INPUT_SENTINEL,
-} from "../../src/agent-session-driver.mjs";
+} from "../../packages/core/src/agent-session-driver.mjs";
 import {
   buildOtelResourceAttributes,
   OTEL_RESOURCE_ATTRIBUTES_ENV_KEY,
   OTEL_TELEMETRY_ENV_KEY,
-} from "../../src/otel-attribution.mjs";
+} from "../../packages/core/src/otel-attribution.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
-import { openSessionScreen } from "../../src/terminal/session-screen.mjs";
+import { openSessionScreen } from "../../packages/core/src/terminal/session-screen.mjs";
 
 const BRIEF = { itemRef: "53/00", worktreeCwd: "/tmp/wt", task: "the session driver gets a home", command: "/aof:verify 53/00" };
 

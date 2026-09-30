@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import { functionBody } from "../../support/source-slice.mjs";
-import { NOT_ADMISSIBLE, HARNESS_NOT_INTROSPECTABLE, KEY_OUTSIDE_DECLARED_SET } from "../../../src/work-acceptor/admissibility.mjs";
-import { defaultCriterion, makeCriterion } from "../../../src/work-acceptor/criterion.mjs";
-import { BUDGET_EXHAUSTED, EVIDENCE_SHORT } from "../../../src/work-acceptor/ledger.mjs";
+import { NOT_ADMISSIBLE, HARNESS_NOT_INTROSPECTABLE, KEY_OUTSIDE_DECLARED_SET } from "../../../packages/core/src/work-acceptor/admissibility.mjs";
+import { defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
+import { BUDGET_EXHAUSTED, EVIDENCE_SHORT } from "../../../packages/core/src/work-acceptor/ledger.mjs";
 import {
   METRIC_UNMEASURABLE,
   NOT_AN_ORDINAL_KNOB,
@@ -12,9 +12,9 @@ import {
   STEP_IS_MORE_THAN_ONE_NOTCH,
   TRIAL_UNAFFORDABLE,
   TRIAL_UNIT_UNDECLARED,
-} from "../../../src/work-acceptor/rule.mjs";
-import { NO_DECLARED_RANGE, OUTSIDE_DECLARED_RANGE, STEP_WOULD_BE_COMPOUND, compoundStepRefusal } from "../../../src/loop-bounds.mjs";
-import { RULING_REFUSAL_ORDER, YIELD_BOUND, acceptorCommand, buildAcceptorReport } from "../../../src/commands/acceptor.mjs";
+} from "../../../packages/core/src/work-acceptor/rule.mjs";
+import { NO_DECLARED_RANGE, OUTSIDE_DECLARED_RANGE, STEP_WOULD_BE_COMPOUND, compoundStepRefusal } from "../../../packages/core/src/loop-bounds.mjs";
+import { RULING_REFUSAL_ORDER, YIELD_BOUND, acceptorCommand, buildAcceptorReport } from "../../../packages/core/src/commands/acceptor.mjs";
 
 const KEY = "config.fixture.knob";
 const census = Object.freeze({ populations: Object.freeze([]), findings: Object.freeze([]) });

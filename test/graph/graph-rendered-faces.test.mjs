@@ -2,17 +2,17 @@
 //
 // Covers every @executable scenario across the story's two task features against
 // the REAL in-process rendering + lock/drift machinery:
-//   - src/adapters.mjs renderConfigOutputs / applyConfig (renderedResource for the
+//   - packages/core/src/adapters.mjs renderConfigOutputs / applyConfig (renderedResource for the
 //     skill; renderRuntimeConfigOutputs → claudeMcpJson/.mcp.json + codexConfigToml/
 //     config.toml for the MCP entry) — ADR-005, NO new render path;
-//   - src/render-plan.mjs createRenderPlan/planApplyActions/createLockManifest and
-//     src/config-inspect.mjs doctorConfig's `generated-output-drift` check — the
+//   - packages/core/src/render-plan.mjs createRenderPlan/planApplyActions/createLockManifest and
+//     packages/core/src/config-inspect.mjs doctorConfig's `generated-output-drift` check — the
 //     existing hash/lock/drift machinery, exercised end-to-end.
 //
 // The faces themselves are the SHIPPED graphify face fragment authored in
-// src/graph-faces.mjs (graphifyFacesConfig) — a config-SHAPED object consumed by
+// packages/core/src/graph-faces.mjs (graphifyFacesConfig) — a config-SHAPED object consumed by
 // renderConfigOutputs unchanged (the work-bundle.mjs idiom). Homed there, NOT in
-// the frozen ACD src/bundle/ (whose membership is pinned by
+// the frozen ACD packages/core/assets/ (whose membership is pinned by
 // acd-bundle-membership) — see the developer return.
 //
 // One test object per @executable scenario; Scenario-Outline rows folded into one
@@ -35,24 +35,24 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { applyConfig, renderConfigOutputs } from "../../src/adapters.mjs";
-import { resolveConfig } from "../../src/dsl.mjs";
-import { doctorConfig } from "../../src/config-inspect.mjs";
-import { readLock, writeLock } from "../../src/lock.mjs";
+import { applyConfig, renderConfigOutputs } from "../../packages/core/src/adapters.mjs";
+import { resolveConfig } from "../../packages/core/src/dsl.mjs";
+import { doctorConfig } from "../../packages/core/src/config-inspect.mjs";
+import { readLock, writeLock } from "../../packages/core/src/lock.mjs";
 import {
   createLockManifest,
   createRenderPlan,
   executeApplyActions,
   planApplyActions
-} from "../../src/render-plan.mjs";
-import { workspacePaths } from "../../src/workspace.mjs";
+} from "../../packages/core/src/render-plan.mjs";
+import { workspacePaths } from "../../packages/core/src/workspace.mjs";
 import {
   graphifyFacesConfig,
   graphifyMcpServer,
   graphifySkillResource,
   GRAPHIFY_MCP_ID,
   GRAPHIFY_SKILL_ID
-} from "../../src/graph-faces.mjs";
+} from "../../packages/core/src/graph-faces.mjs";
 
 const FACE_RUNTIMES = ["claude", "codex"];
 

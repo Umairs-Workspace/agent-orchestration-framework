@@ -22,7 +22,7 @@ import assert from "node:assert/strict";
 import {
   dispatchDirectiveOverTargets,
   buildDirectiveFrame,
-} from "../../src/control-stream-server.mjs";
+} from "../../packages/core/src/control-stream-server.mjs";
 import { createDirectiveChannelFixture } from "../support/mesh-directive-channel-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

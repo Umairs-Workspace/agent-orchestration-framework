@@ -35,8 +35,8 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { NODE_KINDS } from "../../../src/work/loops.mjs";
-import { KIND_SHAPES, renderLoopGraph } from "../../../src/commands/loops-graph.mjs";
+import { NODE_KINDS } from "../../../packages/core/src/work/loops.mjs";
+import { KIND_SHAPES, renderLoopGraph } from "../../../packages/core/src/commands/loops-graph.mjs";
 
 const runFile = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

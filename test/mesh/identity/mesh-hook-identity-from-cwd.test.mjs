@@ -17,7 +17,7 @@
 // precedence Outline is the one place a payload legitimately carries those fields,
 // because the feature's own contract requires testing that precedence tier).
 //
-// Exercised against the REAL CLI face (src/commands/mesh-session.mjs's
+// Exercised against the REAL CLI face (packages/core/src/commands/mesh-session.mjs's
 // meshSessionCommand) over a hermetic fixture repo + a fixture AOF_GLOBAL_HOME (no
 // real machine state touched) — real fs, in-process. One test object per scenario /
 // Scenario Outline. node:assert/strict.
@@ -25,11 +25,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../src/commands/mesh/session.mjs";
-import { readSessionRecordsForNode } from "../../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
+import { meshSessionCommand } from "../../../packages/core/src/commands/mesh/session.mjs";
+import { readSessionRecordsForNode } from "../../../packages/core/src/mesh/session.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
+import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
 
 const NODE_ID = "node-a";
 const REPO_NAME = "aof-fixture";

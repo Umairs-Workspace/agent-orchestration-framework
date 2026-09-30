@@ -1,8 +1,8 @@
 // Traceability wiring for milestone 15 / story 00 — the doctor command core.
 //
 // Covers EVERY @executable scenario across story-00's four task features,
-// exercising the REAL in-process registry (src/command-core.mjs + the engine in
-// src/work/doctor.mjs) against temp fixture repos — loadWorkspace + invoke, real
+// exercising the REAL in-process registry (packages/core/src/command-core.mjs + the engine in
+// packages/core/src/work/doctor.mjs) against temp fixture repos — loadWorkspace + invoke, real
 // fs, in-process — mirroring command-core-contract.test.mjs's house style. One
 // test object per @executable scenario (Scenario-Outline rows folded into one
 // entry), each name tracing to feature + scenario.
@@ -24,9 +24,9 @@ import { mkdtemp, rm, mkdir, writeFile, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { getCommand, invoke } from "../../src/command-core.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { getCommand, invoke } from "../../packages/core/src/command-core.mjs";
+import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
@@ -140,7 +140,7 @@ function runCli(root, args) {
 
 let serveSetupUi;
 async function loadBoard() {
-  if (!serveSetupUi) ({ serveSetupUi } = await import("../../src/setup-ui.mjs"));
+  if (!serveSetupUi) ({ serveSetupUi } = await import("../../packages/core/src/setup-ui.mjs"));
   return serveSetupUi;
 }
 

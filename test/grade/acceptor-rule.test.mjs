@@ -12,10 +12,10 @@
 //   • the CRITERION is the shipped `defaultCriterion()` (61/01), so "the shipped
 //     criterion" means the one a project actually gets, and every derived number is
 //     re-derived from its own alpha/lambda rather than compared to a constant;
-//   • the RANGE PROBE is the real `src/loop-bounds.mjs`, so a ladder is the ladder the
+//   • the RANGE PROBE is the real `packages/core/src/loop-bounds.mjs`, so a ladder is the ladder the
 //     knob's own resolver answers with — a table here would be the second home
 //     ADR-009 §2 exists to refuse;
-//   • the METRIC REGISTRY is derived from the real `src/work/counters.mjs` namespace,
+//   • the METRIC REGISTRY is derived from the real `packages/core/src/work/counters.mjs` namespace,
 //     so "resolves to nothing" means a symbol that module genuinely does not export.
 //
 // The composed construction (`constructCriterion`) is the command boundary in
@@ -23,9 +23,9 @@
 // leaves stay zero-import and the composition lives here, which is ADR-006 §4's shape.
 import assert from "node:assert/strict";
 
-import * as bounds from "../../src/loop-bounds.mjs";
-import * as workCounters from "../../src/work/counters.mjs";
-import { defaultCriterion, makeCriterion, criterionDigest, CriterionError } from "../../src/work-acceptor/criterion.mjs";
+import * as bounds from "../../packages/core/src/loop-bounds.mjs";
+import * as workCounters from "../../packages/core/src/work/counters.mjs";
+import { defaultCriterion, makeCriterion, criterionDigest, CriterionError } from "../../packages/core/src/work-acceptor/criterion.mjs";
 import {
   COUNTER_METRIC_MISSING,
   COUNTER_METRIC_UNRESOLVABLE,
@@ -60,7 +60,7 @@ import {
   readArm,
   readStep,
   winMultiplier,
-} from "../../src/work-acceptor/rule.mjs";
+} from "../../packages/core/src/work-acceptor/rule.mjs";
 import {
   BUDGET_EXHAUSTED,
   EVIDENCE_SHORT,
@@ -69,10 +69,11 @@ import {
   attained,
   evaluateRun,
   makeRuling,
-} from "../../src/work-acceptor/ledger.mjs";
+} from "../../packages/core/src/work-acceptor/ledger.mjs";
 
 // ─── the registry, derived from the real counters leaf ─────────────────────────────────
 
+// Persisted metric identifiers remain stable across the source relocation.
 const COUNTERS_MODULE = "src/work/counters.mjs";
 const registry = deriveMetricRegistry({ [COUNTERS_MODULE]: workCounters });
 const pointerTo = (symbol) => `module:${COUNTERS_MODULE}#${symbol}`;

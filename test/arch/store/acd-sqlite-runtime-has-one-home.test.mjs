@@ -3,7 +3,7 @@
 //
 // Three claims:
 //
-//   1. `import("node:sqlite")` occurs in EXACTLY ONE module under `src/`, and both callers
+//   1. `import("node:sqlite")` occurs in EXACTLY ONE module under `packages/core/src/`, and both callers
 //      reach it by import — asserted by import, not by absence.
 //   2. The leaf installs its `emitWarning` wrap, restores the original in a `finally`, and
 //      swallows only a warning whose type is `ExperimentalWarning` AND whose message names
@@ -12,8 +12,8 @@
 //      no `finally` leaves the filter installed for the life of the process after a throwing
 //      import, and nothing else would notice.)
 //   3. NO BLANKET SUPPRESSION, TREE-WIDE: no `--no-warnings`, no `NODE_NO_WARNINGS`, no
-//      `--disable-warning` and no `NODE_OPTIONS` warning flag under `src/`, `bin/`,
-//      `scripts/`, `src/bundle/` or `package.json`.
+//      `--disable-warning` and no `NODE_OPTIONS` warning flag under `packages/core/src/`, `bin/`,
+//      `scripts/`, `packages/core/assets/` or `package.json`.
 //
 // WHY `test/` IS DELIBERATELY EXCLUDED. Sixty files there already set `NODE_NO_WARNINGS` on
 // a CLI child's env, and three also pass `--no-warnings` — a harness suppressing its own
@@ -39,7 +39,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const LEAF = path.join(repoRoot, "packages", "foundation", "src", "sqlite-runtime.mjs");
 
 // The roots a blanket suppression may not appear in. `test/` is NOT among them, by decision.
-const SWEPT_ROOTS = ["src", "bin", "scripts"];
+const SWEPT_ROOTS = ["packages/core/src", "packages/core/bin", "packages/core/assets", "bin", "scripts"];
 const SWEPT_FILES = ["package.json"];
 
 // Every form of the blanket, including the env-var twin a flag-only sweep would miss.
@@ -101,7 +101,7 @@ export const archTests = [
     name: "arch/126 FF-12608: `node:sqlite` is imported in EXACTLY ONE module under src/, and both callers reach it BY IMPORT rather than by absence",
     run: async () => {
       const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
-      assert.ok(files.length > 0, "src/ was scanned (non-vacuous)");
+      assert.ok(files.length > 0, "packages/core/src/ was scanned (non-vacuous)");
 
       const importers = [];
       for (const file of files) {
@@ -118,16 +118,16 @@ export const archTests = [
 
       // BY IMPORT, not by absence: both callers actually reach the leaf. A third caller that
       // stopped importing it and re-rolled its own body would satisfy an absence check.
-      for (const caller of ["src/application/bindings/effects/journal.mjs", "src/application/bindings/global-work-store.mjs"]) {
+      for (const caller of ["packages/core/src/application/bindings/effects/journal.mjs", "packages/core/src/application/bindings/global-work-store.mjs"]) {
         const source = stripComments(await readFile(path.join(repoRoot, caller), "utf8"));
         assert.match(source, /import \{ importSqliteRuntime \} from "@aof\/foundation\/sqlite-runtime"/, `${caller} imports the leaf`);
-        const implementation = caller === "src/application/bindings/global-work-store.mjs"
+        const implementation = caller === "packages/core/src/application/bindings/global-work-store.mjs"
           ? stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8")) : stripComments(await readFile(path.join(repoRoot, "packages/effects/src/journal-open.mjs"), "utf8"));
-        if (caller === "src/application/bindings/global-work-store.mjs") {
+        if (caller === "packages/core/src/application/bindings/global-work-store.mjs") {
           assert.match(source, /createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
           assert.match(implementation, /function createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
         }
-        if (caller === "src/application/bindings/effects/journal.mjs") {
+        if (caller === "packages/core/src/application/bindings/effects/journal.mjs") {
           assert.match(source, /createJournalOpener\(\{[^}]*importSqliteRuntime/);
           assert.match(implementation, /function createJournalOpener\(\{[^}]*importSqliteRuntime/);
         }
@@ -213,11 +213,11 @@ export const archTests = [
         { text: 'const argv = ["--disable-warning=ExperimentalWarning"];', file: "bin/x.mjs", offender: true },
         { text: 'const argv = ["--disable-warning", "DeprecationWarning"];', file: "bin/x.mjs", offender: true },
         { text: '{ "scripts": { "t": "NODE_OPTIONS=--no-warnings node x.mjs" } }', file: "package.json", offender: true },
-        { text: 'env.NODE_NO_WARNINGS = "1";', file: "src/x.mjs", offender: true },
+        { text: 'env.NODE_NO_WARNINGS = "1";', file: "packages/core/src/x.mjs", offender: true },
         { text: 'env.NODE_OPTIONS = "--max-old-space-size=4096";', file: "scripts/x.mjs", offender: false },
-        { text: '// never pass --no-warnings here\nconst x = 1;', file: "src/x.mjs", offender: false },
-        { text: "Run it:\n\n```sh\nnode --no-warnings x.mjs\n```\n", file: "src/bundle/commands/x.md", offender: true },
-        { text: "Never add --no-warnings to this command; it hides deprecations.\n", file: "src/bundle/commands/x.md", offender: false },
+        { text: '// never pass --no-warnings here\nconst x = 1;', file: "packages/core/src/x.mjs", offender: false },
+        { text: "Run it:\n\n```sh\nnode --no-warnings x.mjs\n```\n", file: "packages/core/assets/commands/x.md", offender: true },
+        { text: "Never add --no-warnings to this command; it hides deprecations.\n", file: "packages/core/assets/commands/x.md", offender: false },
       ];
 
       for (const row of rows) {

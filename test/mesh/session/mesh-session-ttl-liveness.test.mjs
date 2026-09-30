@@ -3,11 +3,11 @@
 // lastPingAt is within the TTL — reusing the ONE shared staleness predicate".
 //
 // Every @executable scenario / Scenario Outline row is asserted directly against
-// the real src/mesh/session.mjs exports (isSessionLive, resolveSessionTtlSeconds,
+// the real packages/core/src/mesh/session.mjs exports (isSessionLive, resolveSessionTtlSeconds,
 // DEFAULT_SESSION_TTL_SECONDS) — a pure, injected-clock surface, no fs/fixture
 // needed. node:assert/strict.
 import assert from "node:assert/strict";
-import { isSessionLive, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../src/mesh/session.mjs";
+import { isSessionLive, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../packages/core/src/mesh/session.mjs";
 
 const NOW_ISO = "2026-07-10T12:00:00.000Z";
 const NOW_MS = Date.parse(NOW_ISO);

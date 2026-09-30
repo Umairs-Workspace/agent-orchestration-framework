@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 43 / story 06 (the readers migrate), task
 //   .../06_story_cache-read-surface/tasks/01_resolve-chokepoint-moves-eight-commands.feature
 //
-// ADR-005 STAGE 1: `src/commands/resolve.mjs` moves onto the seam. ONE edit; the graph's
+// ADR-005 STAGE 1: `packages/core/src/commands/resolve.mjs` moves onto the seam. ONE edit; the graph's
 // eight dependents — `continue`, `doc`, `feedback`, `run-complete`, `run-retry`, `run-start`,
 // `run-status`, `tasks` — all migrate behind it.
 //

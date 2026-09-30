@@ -1,19 +1,19 @@
 // Traceability wiring for milestone 28 / story 00, task 03 —
 // tasks/03_single-entry-two-mode.feature (ADR-004).
 //
-// Drives run(argv) DIRECTLY, in-process, against the real src/cli.mjs — no
+// Drives run(argv) DIRECTLY, in-process, against the real packages/core/src/cli.mjs — no
 // built binary needed (the Build-notes developer-seat guidance: run() must be
 // invokable in-process such that the routed command id is observable). Each
 // row is a distinct real route; every one dispatches through the ONE run().
 import assert from "node:assert/strict";
-import { run } from "../../src/cli.mjs";
-import { getCommand } from "../../src/command-core.mjs";
+import { run } from "../../packages/core/src/cli.mjs";
+import { getCommand } from "../../packages/core/src/command-core.mjs";
 
 // Capture console.log output across an awaited call, restoring afterwards
 // even on throw.
 //
 // `process.exitCode` IS RESTORED FOR THE SAME REASON `console.log` IS. Every call here runs a real
-// CLI entry IN THIS PROCESS, and `src/cli.mjs` reports a refusal by setting `process.exitCode = 1`
+// CLI entry IN THIS PROCESS, and `packages/core/src/cli.mjs` reports a refusal by setting `process.exitCode = 1`
 // (ten sites) rather than by throwing — so a case that asserts only "the dispatch was reached"
 // passes while leaving the runner's own exit code set. `scripts/test.mjs` folds a truthy
 // `process.exitCode` into the run's result, which made the WHOLE 1,031-suite run exit 1 with every

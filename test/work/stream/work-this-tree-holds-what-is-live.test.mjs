@@ -45,8 +45,8 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { bundleSurface } from "../../support/react-app-harness.mjs";
-import { handleWorkApi } from "../../../src/board-ui.mjs";
-import { ITEM_RE, ARCHIVE_ROOT, BACKLOG_ROOT, parseFrontmatter, recordDoc } from "../../../src/work.mjs";
+import { handleWorkApi } from "../../../packages/core/src/board-ui.mjs";
+import { ITEM_RE, ARCHIVE_ROOT, BACKLOG_ROOT, parseFrontmatter, recordDoc } from "../../../packages/core/src/work.mjs";
 import { archTests as intakeWriteSideTests } from "../../arch/work/acd-intake-write-side-only.test.mjs";
 import { archTests as tuneReaderTests } from "../../arch/planning/acd-tune-carries-no-second-rule.test.mjs";
 import { archTests as spellerReaderTests } from "../../arch/command/acd-declared-program-single-speller.test.mjs";
@@ -82,11 +82,11 @@ const refsOf = (rows) => rows.map((row) => row.ref);
 export const LINKS_BEFORE = Object.freeze({ total: 3067, resolving: 2317, measuredAt: "2026-09-22", commit: "f820ae9" });
 export const LINKS_IN_MOVED_BEFORE = Object.freeze({ total: 2810, resolving: 2121 });
 // Of the 1,156 links that targeted a folder the move would archive, 48 did not resolve BEFORE it —
-// bare `src/work.mjs#L458`-shaped citations in OUTCOME.md files, resolving inside the item folder
+// bare `packages/core/src/work.mjs#L458`-shaped citations in OUTCOME.md files, resolving inside the item folder
 // where no such file ever was. "Every link into archive/ resolves" is therefore held as the same
 // ratchet: no more broken links into the archive than were broken into those folders before.
 // 2026-09-22 (129's gate, F-76): 48 → 51 when 127 itself was archived — its own three bare
-// `src/…#L…`-shaped citations moved under archive/ with it (broken before the move inside the root
+// `packages/core/src/…#L…`-shaped citations moved under archive/ with it (broken before the move inside the root
 // folder, broken after inside the archived one; "into archive/" is where they now resolve). Every
 // later archive of a folder carrying such citations moves this number the same way.
 // 2026-09-24 (130's door, F-23): 51 → 52 when 129 was archived. Its VERIFICATION.md:572 carries a
@@ -532,7 +532,7 @@ export const workThisTreeHoldsWhatIsLiveTests = [
             assert.equal(slash(row.dir), slash(real[index].dir).replace(slash(workRoot), slash(work)), `${row.ref}: dir differs only by the copy's root prefix`);
           });
 
-          // validate: the copy has no `src/`, `test/` or git history, so its `reads:` lane cannot
+          // validate: the copy has no `packages/core/src/`, `test/` or git history, so its `reads:` lane cannot
           // resolve what the real tree's resolves — that class is set aside on both sides and the
           // structural lanes (folder/frontmatter, tags, depends, numbering) must agree exactly.
           const copyFindings = json(root, ["validate"], home);
@@ -736,7 +736,7 @@ export const workThisTreeHoldsWhatIsLiveTests = [
 
         // `aof:recent` is a prompt over `work:list`'s default (127/01) — there is no `read` or
         // `recent` verb, so it sees no archived row either.
-        const recent = await readFile(path.join(repoRoot, "src", "bundle", "commands", "recent.md"), "utf8");
+        const recent = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "recent.md"), "utf8");
         assert.match(recent, /aof work list --json/, "the recent prompt reads through work list");
         assert.match(recent, /`--all` only when the operator asks for the archive/, "…and adds --all only on request");
       }),

@@ -1,5 +1,5 @@
 // Fitness function FF-E for milestone 18 / ADR-003 (provider-namespaced + extensible):
-//   The `.integrations.json` reader (src/integrations/routing.mjs `readRouting`)
+//   The `.integrations.json` reader (packages/core/src/integrations/routing.mjs `readRouting`)
 //   TOLERATES an unknown provider key — a planted `jira` block (a future provider) is
 //   IGNORED, not a hard failure: the reader returns the `notion` routing and does not
 //   throw. Routing is provider-namespaced; a non-`notion` peer is additive.
@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readRouting } from "../../../src/integrations/routing.mjs";
+import { readRouting } from "../../../packages/core/src/integrations/routing.mjs";
 
 // A fixture milestone folder + an `.integrations.json` whose `notion` block sits beside a
 // planted UNKNOWN provider block (jira). Returns the resolver-shaped item + a cleanup.

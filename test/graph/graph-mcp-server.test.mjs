@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 09 / story 04 — the graphify MCP server runtime.
 //
 // Covers the @executable scenarios across the two task features by exercising the
-// REAL in-process server seam (src/graph-mcp-server.mjs handleMcpMessage) against
+// REAL in-process server seam (packages/core/src/graph-mcp-server.mjs handleMcpMessage) against
 // temp fixture workspaces — loadWorkspace + handleMcpMessage, real fs, in-process,
 // exactly the command-core-contract.test.mjs idiom. The @manual live-agent-over-
 // stdio round-trip (01) is DEFERRED. One test object per @executable scenario
@@ -20,19 +20,19 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
-import { loadWorkspace } from "../../src/work.mjs";
-import { graphJsonPath } from "../../src/graphify.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { graphJsonPath } from "../../packages/core/src/graphify.mjs";
 import {
   handleMcpMessage,
   serveStdio,
   MCP_PROTOCOL_VERSION,
   MCP_SERVER_INFO,
-} from "../../src/graph-mcp-server.mjs";
+} from "../../packages/core/src/graph-mcp-server.mjs";
 import {
   graphifyMcpServer,
   GRAPHIFY_SERVE_COMMAND,
   GRAPHIFY_SERVE_ARGS,
-} from "../../src/graph-faces.mjs";
+} from "../../packages/core/src/graph-faces.mjs";
 
 const THREE_TOOLS = ["graph_build", "graph_query", "graph_triage"];
 // graphify's own MCP tool surface (RESEARCH §H) — the aof server must NOT advertise
@@ -75,7 +75,7 @@ export const graphMcpServerTests = [
     name: "graph-mcp/00 aof graph serve is the command the rendered MCP entry launches",
     async run() {
       // The entry↔server agreement: the story-02 rendered graphify MCP config entry
-      // (src/graph-faces.mjs) must target `aof graph serve` — exactly the launch
+      // (packages/core/src/graph-faces.mjs) must target `aof graph serve` — exactly the launch
       // command THIS server's `aof graph serve` dispatch implements.
       const entry = graphifyMcpServer();
       assert.equal(entry.command, "aof", "the rendered MCP entry's command is the aof bin");
@@ -259,7 +259,7 @@ export const graphMcpServerTests = [
         assert.ok(/built first/i.test(text), "the no-graph error carries the build-first guidance");
 
         // Structural proof the server reaches the graph ONLY through invoke and never
-        // the driver: the server module imports neither src/graphify.mjs nor any
+        // the driver: the server module imports neither packages/core/src/graphify.mjs nor any
         // spawn primitive (the no-face-spawn invariant's observable counterpart). The
         // checks are CALL-FORM / IMPORT-FORM (the house arch-test discipline — the
         // module's own prose deliberately says "spawns nothing", so the word in a

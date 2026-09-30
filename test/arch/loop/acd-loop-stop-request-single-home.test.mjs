@@ -4,14 +4,14 @@
 // beside the loop's other home-side records, and these are the controls on who may spell its
 // path, its state words and its write.
 //
-// FF-13001, structural. Over a comment-stripped sweep of `src/**` the segment literal
+// FF-13001, structural. Over a comment-stripped sweep of `packages/core/src/**` the segment literal
 // `loop-stops` and the state literals `"requested"`/`"honoured"` — AS A STOP-REQUEST STATE —
-// appear only in `src/loop/stop-request.mjs`; the four readers of the request (`src/loop/stop.mjs`,
-// `src/commands/loop.mjs`, `src/mesh/declarations.mjs`, `src/mesh/presence.mjs`) each import that
+// appear only in `packages/core/src/loop/stop-request.mjs`; the four readers of the request (`packages/core/src/loop/stop.mjs`,
+// `packages/core/src/commands/loop.mjs`, `packages/core/src/mesh/declarations.mjs`, `packages/core/src/mesh/presence.mjs`) each import that
 // module by RESOLVED specifier (through `test/support/module-family.mjs`, FF-11901's one
 // extractor) and contain no `path.join(` whose arguments name `meshRoot` beside a `loop`
 // literal; the shell contains no `writeFile(` / `mkdir(` / `rename(` call form (FF-5307 cited)
-// and registers no `process.once(`/`process.on(` for a signal; no `src/**` module matches
+// and registers no `process.once(`/`process.on(` for a signal; no `packages/core/src/**` module matches
 // `*loop*-store.mjs` (FF-5307's own pattern). NON-VACUOUS: the sweep finds the module and at
 // least four importers, and reds when it finds none.
 //
@@ -20,7 +20,7 @@
 //   continue-phase word — measured 2026-09-21), so the state sweep is scoped to the modules that
 //   CARRY the request — the home and every module that imports it, or that spells the segment
 //   literal — while `"honoured"` (a word only this vocabulary uses) is swept over the whole of
-//   `src/**`. A consumer that reads `record.state === "honoured"` instead of `STOP_STATES.honoured`
+//   `packages/core/src/**`. A consumer that reads `record.state === "honoured"` instead of `STOP_STATES.honoured`
 //   is the defect this leg exists to name (130/01's review close, the reason `STOP_STATES` exists).
 //
 // FF-13003, fixture then structural. Over the loop fixture with a live declaration,
@@ -30,8 +30,8 @@
 // reads `level: 2`; a call with no declaration rejects with code `loop-stop-no-declaration`; the
 // probe (`run({ scope })`) still answers its ten keys (FF-5304 cited). Structurally `stop` is a
 // key of the closed input schema and of `cli.spec.flags`, appears in `cli.argv`'s body,
-// `cli.launch`'s predicate names `options.stop`, and `stopLoop` is defined in `src/loop/stop.mjs`
-// and imported by EXACTLY `src/commands/loop.mjs` and `src/mesh/ui-serve.mjs` — the CLI face and
+// `cli.launch`'s predicate names `options.stop`, and `stopLoop` is defined in `packages/core/src/loop/stop.mjs`
+// and imported by EXACTLY `packages/core/src/commands/loop.mjs` and `packages/core/src/mesh/ui-serve.mjs` — the CLI face and
 // the fleet route reach one core below the command layer (38/ADR-012), and a route that
 // re-implemented the read would be a second home for the resolution.
 //
@@ -42,7 +42,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../../src/command-core.mjs";
+import { getCommand } from "../../../packages/core/src/command-core.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
@@ -66,11 +66,11 @@ const SEGMENT = "loop-stops";
 // 131/11 — the second segment the home owns: the resume request lives beside the stop it undoes
 // (131/ADR-009 §6).
 const RESUME_SEGMENT = "loop-resumes";
-const READERS = Object.freeze(["src/application/bindings/loop/stop.mjs", "src/application/bindings/commands/loop.mjs", "src/application/bindings/mesh/declarations.mjs", "src/application/bindings/mesh/presence.mjs"]);
+const READERS = Object.freeze(["packages/core/src/application/bindings/loop/stop.mjs", "packages/core/src/application/bindings/commands/loop.mjs", "packages/core/src/application/bindings/mesh/declarations.mjs", "packages/core/src/application/bindings/mesh/presence.mjs"]);
 const CONFIGURED_READERS = Object.freeze(["packages/mesh/src/declarations.mjs", "packages/mesh/src/presence.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
-const CORE = "src/application/bindings/loop/stop.mjs";
-const CORE_IMPORTERS = Object.freeze(["src/application/bindings/commands/loop.mjs", "src/application/bindings/mesh/ui-serve.mjs"]);
+const CORE = "packages/core/src/application/bindings/loop/stop.mjs";
+const CORE_IMPORTERS = Object.freeze(["packages/core/src/application/bindings/commands/loop.mjs", "packages/core/src/application/bindings/mesh/ui-serve.mjs"]);
 const STATE_WORDS = Object.freeze(['"requested"', '"honoured"', "'requested'", "'honoured'"]);
 // The seven keys of the verb's document (ADR-002 §4) and the ten of the probe (FF-5304).
 const DOCUMENT_KEYS = Object.freeze(["ok", "loopRunId", "scope", "live", "request", "state", "path"]);
@@ -91,11 +91,11 @@ function resolved(fromRel, specifier) {
   if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
-  if (/^src\/(?:application\/bindings\/)?loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace(/^src\/(?:application\/bindings\/)?loop\//, "packages/work-loop/src/");
+  if (/^packages\/core\/src\/(?:application\/bindings\/)?loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace(/^packages\/core\/src\/(?:application\/bindings\/)?loop\//, "packages/work-loop/src/");
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
-// ONE read of `src/**`, comment-stripped: `[{ rel, code, raw }]` with `rel` repo-relative posix.
+// ONE read of `packages/core/src/**`, comment-stripped: `[{ rel, code, raw }]` with `rel` repo-relative posix.
 async function srcUnits() {
   const units = [];
   for (const file of await readRuntimeFiles(repoRoot)) {
@@ -145,7 +145,7 @@ export const archTests = [
       const resumeSpellers = units.filter(({ code }) => code.includes(RESUME_SEGMENT)).map(({ rel }) => rel);
       assert.deepEqual(resumeSpellers, [HOME], `the literal ${JSON.stringify(RESUME_SEGMENT)} appears only in ${HOME} — spelled by: ${resumeSpellers.join(", ")}. The resume request lives beside the stop it undoes (131/ADR-009 §6); read its path through loopResumesDir()`);
       const segmentSpellers = units.filter(({ code }) => code.includes(SEGMENT)).map(({ rel }) => rel);
-      assert.deepEqual(segmentSpellers, [HOME], `the literal ${JSON.stringify(SEGMENT)} and the state literals "requested"/"honoured" (as a stop-request state) appear only in src/loop/stop-request.mjs — spelled by: ${segmentSpellers.join(", ")}. A module that composes the request's path itself is a second home for the request (ADR-001 §1); read the path through loopStopsDir()/stopRequestPath() instead`);
+      assert.deepEqual(segmentSpellers, [HOME], `the literal ${JSON.stringify(SEGMENT)} and the state literals "requested"/"honoured" (as a stop-request state) appear only in packages/core/src/loop/stop-request.mjs — spelled by: ${segmentSpellers.join(", ")}. A module that composes the request's path itself is a second home for the request (ADR-001 §1); read the path through loopStopsDir()/stopRequestPath() instead`);
 
       // THE STATE WORDS — `"honoured"` anywhere in src/** is this vocabulary; `"requested"` is
       // measured only over the modules that carry the request (see the file comment).
@@ -157,7 +157,7 @@ export const archTests = [
         const honoured = spelled.some((word) => word.includes("honoured"));
         if (honoured || carriers.has(rel)) stateSpellers.push(`${rel} spells ${spelled.join(" and ")}`);
       }
-      assert.deepEqual(stateSpellers, [], `the literal ${JSON.stringify(SEGMENT)} and the state literals "requested"/"honoured" (as a stop-request state) appear only in src/loop/stop-request.mjs — ${stateSpellers.join("; ")}. Read the word through STOP_STATES (130/01's export) rather than spelling it`);
+      assert.deepEqual(stateSpellers, [], `the literal ${JSON.stringify(SEGMENT)} and the state literals "requested"/"honoured" (as a stop-request state) appear only in packages/core/src/loop/stop-request.mjs — ${stateSpellers.join("; ")}. Read the word through STOP_STATES (130/01's export) rather than spelling it`);
 
       // NO SIDECAR STORE — FF-5307's own pattern, over the same walk.
       const stores = units.filter(({ rel }) => STORE_PATTERN.test(rel)).map(({ rel }) => rel);
@@ -171,7 +171,7 @@ export const archTests = [
       assertRead("the src/** sweep", units.length, 150);
       const importers = importersOf(units, HOME);
       for (const reader of READERS) {
-        assert.ok(importers.includes(reader), `${reader} imports src/loop/stop-request.mjs by RESOLVED specifier (through module-family.mjs) — importers found: ${importers.join(", ") || "none"}`);
+        assert.ok(importers.includes(reader), `${reader} imports packages/core/src/loop/stop-request.mjs by RESOLVED specifier (through module-family.mjs) — importers found: ${importers.join(", ") || "none"}`);
       }
       // Core imports the shared reader; configured package consumers must not compose paths either.
       for (const reader of [...READERS, ...CONFIGURED_READERS]) {
@@ -189,8 +189,8 @@ export const archTests = [
       // THE SHELL — no write call form (FF-5307 cited), no signal listener of its own (ADR-003).
       const shell = units.find(({ rel }) => rel === SHELL);
       assert.ok(shell != null, `NOT FOUND: ${SHELL}`);
-      assert.doesNotMatch(shell.code, WRITE_CALL_FORM, "src/commands/loop.mjs contains no writeFile( / mkdir( / rename( call form — every write to the request goes through stop-request.mjs's exports (FF-5307's leg holds as written)");
-      assert.doesNotMatch(shell.code, SIGNAL_LISTENER, "src/commands/loop.mjs contains no process.once( or process.on( whose first argument starts with SIG — the source owns the listeners (ADR-001 §5, ADR-003 §1)");
+      assert.doesNotMatch(shell.code, WRITE_CALL_FORM, "packages/core/src/commands/loop.mjs contains no writeFile( / mkdir( / rename( call form — every write to the request goes through stop-request.mjs's exports (FF-5307's leg holds as written)");
+      assert.doesNotMatch(shell.code, SIGNAL_LISTENER, "packages/core/src/commands/loop.mjs contains no process.once( or process.on( whose first argument starts with SIG — the source owns the listeners (ADR-001 §5, ADR-003 §1)");
       assert.equal(SIGNAL_LISTENER.test('process.once("SIGINT", () => { interrupted = "SIGINT"; });'), true, "self-check: the pre-130 `process.once(\"SIGINT\"` shape is seen");
     },
   },
@@ -207,9 +207,9 @@ export const archTests = [
       );
       // The self-check drives the same function over a planted unit whose specifier misspells
       // the home, so the answer is shown to go to zero rather than assumed to.
-      const planted = [{ rel: "src/x.mjs", code: 'import { readStopRequest } from "./loop/stop-requests.mjs";' }];
+      const planted = [{ rel: "packages/core/src/x.mjs", code: 'import { readStopRequest } from "./loop/stop-requests.mjs";' }];
       assert.equal(importersOf(planted, HOME).length, 0, "self-check: a misspelled specifier resolves to no importer");
-      assert.equal(importersOf([{ rel: "src/x.mjs", code: 'import { readStopRequest } from "./loop/stop-request.mjs";' }], HOME).length, 1, "self-check: the right specifier resolves");
+      assert.equal(importersOf([{ rel: "packages/core/src/x.mjs", code: 'import { readStopRequest } from "./loop/stop-request.mjs";' }], HOME).length, 1, "self-check: the right specifier resolves");
     },
   },
   {
@@ -326,10 +326,10 @@ export const archTests = [
       assert.deepEqual(
         importers,
         [...CORE_IMPORTERS].sort(),
-        `stopLoop is defined in src/loop/stop.mjs and imported by exactly src/commands/loop.mjs and src/mesh/ui-serve.mjs — importers found: ${importers.join(", ") || "none"}. A face that re-implements the declaration read is a second home for the stop's resolution (38/ADR-012: a second CALLER of the SAME core, never a re-implementation)`,
+        `stopLoop is defined in packages/core/src/loop/stop.mjs and imported by exactly packages/core/src/commands/loop.mjs and packages/core/src/mesh/ui-serve.mjs — importers found: ${importers.join(", ") || "none"}. A face that re-implements the declaration read is a second home for the stop's resolution (38/ADR-012: a second CALLER of the SAME core, never a re-implementation)`,
       );
       // Neither face reaches the request's writer directly: the route composes no request.
-      const route = units.find(({ rel }) => rel === "src/application/bindings/mesh/ui-serve.mjs");
+      const route = units.find(({ rel }) => rel === "packages/core/src/application/bindings/mesh/ui-serve.mjs");
       assert.doesNotMatch(route.code, /\b(?:requestLoopStop|readLoopDeclaration)\s*\(/u, "the fleet route calls stopLoop and never requestLoopStop( or readLoopDeclaration( itself");
     },
   },

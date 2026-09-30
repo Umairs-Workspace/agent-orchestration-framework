@@ -2,7 +2,7 @@
 // (tasks/01_roster-boards-revocations.feature).
 //
 // Covers EVERY @executable scenario in tasks/01_roster-boards-revocations.feature,
-// exercising the REAL src/mesh/registry.mjs pure accessors — a registry value in, a
+// exercising the REAL packages/core/src/mesh/registry.mjs pure accessors — a registry value in, a
 // registry value out (no fs, no relay, no git). Every admittedAt / revokedAt is an
 // INJECTED value, never wall-clock (the 22/R2 discipline), so order-preservation and
 // byte-unchanged assertions are deterministic. One test object per scenario (the
@@ -16,7 +16,7 @@
 //     add-only mutation leaves every OTHER entry byte-unchanged; reading the aggregate
 //     returns the full roster/boards/revocations and mutates nothing.
 import assert from "node:assert/strict";
-import { admitNode, registerBoard, appendRevocation, emptyRegistry } from "../../../src/mesh/registry.mjs";
+import { admitNode, registerBoard, appendRevocation, emptyRegistry } from "../../../packages/core/src/mesh/registry.mjs";
 
 export const meshRegistryAggregateMutationsTests = [
   {

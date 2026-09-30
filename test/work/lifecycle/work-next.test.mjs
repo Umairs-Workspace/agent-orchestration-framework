@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { nextWork } from "../../../src/work.mjs";
+import { nextWork } from "../../../packages/core/src/work.mjs";
 
 // ----------------------------------------------------------- fixture builder ----
 //

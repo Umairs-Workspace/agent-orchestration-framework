@@ -23,11 +23,11 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile, rm, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, defaultWatchTranscriptSessionId, NEEDS_INPUT_SENTINEL } from "../../../src/mesh/worker-execution.mjs";
-import { claudeProjectsDir } from "../../../src/work/observe.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { readRuns } from "../../../src/run-store.mjs";
-import { removeWorktree } from "../../../src/mesh/worktree.mjs";
+import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, defaultWatchTranscriptSessionId, NEEDS_INPUT_SENTINEL } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { readRuns } from "../../../packages/core/src/run-store.mjs";
+import { removeWorktree } from "../../../packages/core/src/mesh/worktree.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 

@@ -1,9 +1,9 @@
 // Fitness function: acd-run-node-path-single-builder (milestone 26 / story 00 /
 // ADR-001 / fitness #1) — "One run-path builder."
 //
-//   "runNodeRecordPath is defined ONCE, in src/run-store.mjs (built FROM runsDir,
+//   "runNodeRecordPath is defined ONCE, in packages/core/src/run-store.mjs (built FROM runsDir,
 //    the frozen m22 shape byte-identical: join(runsDir(item), node, runId + '.json'));
-//    src/mesh/store.mjs RE-EXPORTS it (no local redefinition); no other module joins
+//    packages/core/src/mesh/store.mjs RE-EXPORTS it (no local redefinition); no other module joins
 //    runsDir + a node segment itself; the persist path routes through the builder."
 //
 // The strongest re-export proof is FUNCTION IDENTITY (the same object reference from
@@ -18,7 +18,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 const RUN_STORE = path.join(repoRoot, "packages/execution/src/runs.mjs");
 const MESH_STORE = path.join(SRC, "mesh/store.mjs");
 
@@ -58,8 +58,8 @@ export const archTests = [
   {
     name: "arch/run-node-path-single-builder: runNodeRecordPath is defined once in run-store.mjs and mesh-store.mjs RE-EXPORTS it (function identity — the same reference from both modules)",
     run: async () => {
-      const runStore = await import("../../../src/run-store.mjs");
-      const meshStore = await import("../../../src/mesh/store.mjs");
+      const runStore = await import("../../../packages/core/src/run-store.mjs");
+      const meshStore = await import("../../../packages/core/src/mesh/store.mjs");
       assert.equal(typeof runStore.runNodeRecordPath, "function", "run-store.mjs exports runNodeRecordPath (the builder's authority home)");
       assert.equal(
         meshStore.runNodeRecordPath,
@@ -83,7 +83,7 @@ export const archTests = [
   {
     name: "arch/run-node-path-single-builder: the builder's output is byte-identical to the frozen m22 shape — join(runsDir(item), node, runId + '.json'), the run-id leaf unchanged",
     run: async () => {
-      const { runNodeRecordPath, runRecordPath, runsDir } = await import("../../../src/run-store.mjs");
+      const { runNodeRecordPath, runRecordPath, runsDir } = await import("../../../packages/core/src/run-store.mjs");
       const item = { ref: "26", dir: path.join("C:", "repo", "wiki", "work", "26_milestone_x") };
       const node = "umami-desktop";
       const runId = "20260702T100000000Z-0000";

@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { recordDoc, validateWork } from "../../src/work.mjs";
+import { recordDoc, validateWork } from "../../packages/core/src/work.mjs";
 
 // ---------------------------------------------------------------------------
 // Scenario Outline: an item's primary record doc is its identity doc — never

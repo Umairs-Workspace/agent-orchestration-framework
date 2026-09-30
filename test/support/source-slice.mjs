@@ -330,7 +330,7 @@ export function blockOrStatementAfter(code, from) {
 //
 // `declarationRe` names what counts as an owning declaration, matched per line: the default is
 // the number sweep's — a `function` (optionally exported/async) or a `const`/`let` at column 0 —
-// and a caller whose subject nests its functions (`src/loop/wave.mjs` declares `tick`, `runLane`
+// and a caller whose subject nests its functions (`packages/core/src/loop/wave.mjs` declares `tick`, `runLane`
 // and `mintWaveRun` two spaces in) passes one that admits indentation. Both capture groups name
 // the declaration; whichever matched is the owner's name.
 //

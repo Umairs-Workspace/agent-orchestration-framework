@@ -1,9 +1,9 @@
 // Fitness function for milestone 07 / ADR-005 (the bundle drift guard — NEW):
 // "The design-conformance contract markers (role-split, render→judge hand-off,
 //  CONFORMS/GAPS/INCONCLUSIVE verdict, committed-`mocks/`+binding-checklist convention) are
-//  present in the BUNDLED assets under src/bundle/ — not only in .claude/."
+//  present in the BUNDLED assets under packages/core/assets/ — not only in .claude/."
 //
-// The loop was prototyped in .claude/ while src/bundle/ shipped the stale versions (the exact
+// The loop was prototyped in .claude/ while packages/core/assets/ shipped the stale versions (the exact
 // drift ADR-005 fixes). This guard source-greps the five BUNDLED assets for the contract markers
 // each must carry, so the loop can never ship lifted-into-.claude/-only again. It is the
 // marker-PRESENCE roll-up; the per-ADR structural assertions live in their own arch-tests
@@ -22,12 +22,12 @@ import { registeredSuitePaths } from "../../support/registration/registration-su
 const root = new URL("../../../", import.meta.url);
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");
 
-const DESIGNER = "src/bundle/agents/aof-designer.md";
-const QA = "src/bundle/agents/aof-qa.md";
-const VERIFY = "src/bundle/commands/verify.md";
-const CONTINUE = "src/bundle/commands/continue.md";
-const REFINE = "src/bundle/commands/refine.md";
-const TEMPLATE = "src/bundle/templates/milestone/DESIGN.md";
+const DESIGNER = "packages/core/assets/agents/aof-designer.md";
+const QA = "packages/core/assets/agents/aof-qa.md";
+const VERIFY = "packages/core/assets/commands/verify.md";
+const CONTINUE = "packages/core/assets/commands/continue.md";
+const REFINE = "packages/core/assets/commands/refine.md";
+const TEMPLATE = "packages/core/assets/templates/milestone/DESIGN.md";
 
 // The {bundled asset × the contract marker(s) it must carry} matrix. Each marker is one or more
 // case-insensitive needles ALL of which must appear in that bundled asset. (02_..._bundled.feature.)

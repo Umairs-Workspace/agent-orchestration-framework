@@ -25,12 +25,12 @@ import {
   streamRun, runCommand, writeItem, writeDoc, itemDirOf, seedActive, settle, withStore,
   removeStore, seedStalePresence, seedWorker, CONTROL_NODE, WORKER_NODE, SYNCED_AT,
 } from "../support/cache-read-fixture.mjs";
-import { loadWorkspace } from "../../src/command-core.mjs";
-import { DEGRADE_CACHE_UNAVAILABLE, DEGRADE_NO_LOCAL_CHECKOUT } from "../../src/work/read.mjs";
-import { reclaimStaleAssignments } from "../../src/mesh/assignment-reclaim.mjs";
-import { assembleActiveRunsAndSubsumedWorkspaces } from "../../src/mesh/launcher.mjs";
-import { listItemsCacheFirst } from "../../src/work/read.mjs";
-import { buildRecords } from "../../src/memory/local-indexing.mjs";
+import { loadWorkspace } from "../../packages/core/src/command-core.mjs";
+import { DEGRADE_CACHE_UNAVAILABLE, DEGRADE_NO_LOCAL_CHECKOUT } from "../../packages/core/src/work/read.mjs";
+import { reclaimStaleAssignments } from "../../packages/core/src/mesh/assignment-reclaim.mjs";
+import { assembleActiveRunsAndSubsumedWorkspaces } from "../../packages/core/src/mesh/launcher.mjs";
+import { listItemsCacheFirst } from "../../packages/core/src/work/read.mjs";
+import { buildRecords } from "../../packages/core/src/memory/local-indexing.mjs";
 
 // The Background: the control's own disk holds "05" and "06" it authored itself, plus ONLY
 // the pre-run scaffold for "07"; no folder at all for "07/01".
@@ -324,7 +324,7 @@ export const cacheReadControlLeavesTests = [
     name: "cache-read/02 a disk-known ref's answer is byte-identical before and after the leaves migrate — provenance is added, nothing else changes",
     run: () => withCacheReadFixture(async (fx) => {
       await background(fx);
-      const { findWork, listStream, nextWork } = await import("../../src/work.mjs");
+      const { findWork, listStream, nextWork } = await import("../../packages/core/src/work.mjs");
 
       // find 05: exactly the status, type, slug, title and parent the disk holds.
       const disk05 = (await findWork(fx.workDir, "05"))[0];

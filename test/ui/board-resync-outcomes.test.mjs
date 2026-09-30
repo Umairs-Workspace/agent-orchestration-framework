@@ -8,7 +8,7 @@
 // rules that decide it.
 //
 // ── THE STATE → CODE MAPPING, VERIFIED AGAINST THE TRANSPORT ON DISK ────────
-// DESIGN names seven UI states; `src/mesh/resync.mjs` + `src/commands/resync.mjs`
+// DESIGN names seven UI states; `packages/core/src/mesh/resync.mjs` + `packages/core/src/commands/resync.mjs`
 // produce SIX coded outcomes, all at HTTP 200. The rest are CLIENT LEGS, and that
 // split is the design's own — the button reports the CALL, so only the call's
 // outcomes can come from the wire:
@@ -204,8 +204,8 @@ export const boardResyncOutcomesTests = [
       //
       // It is the ONE state whose producer was mid-flight when this file was
       // first written, and the note here used to say so. That note went stale:
-      // `src/commands/resync.mjs`'s self branch now returns
-      // `RESYNC_OWNER_IS_SELF` (src/commands/resync.mjs:146-152, re-read at
+      // `packages/core/src/commands/resync.mjs`'s self branch now returns
+      // `RESYNC_OWNER_IS_SELF` (packages/core/src/commands/resync.mjs:146-152, re-read at
       // source 2026-08-03) with the sentence below, and `test/mesh/registry/mesh-resync.test.mjs`
       // has its own green lane for the command's half. So the state is driven
       // like every other row in this table — through the REAL door, the REAL

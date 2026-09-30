@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import { runLoopBody } from "../../src/commands/loop.mjs";
+import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 
 export const loopCommandSequencingTests = [{

@@ -4,29 +4,29 @@
 //   FF-12902  "A lane drive is a child process."
 //   FF-12906  "The wave is read, never recomputed."
 //
-// THE FAMILY is `src/commands/loop.mjs` plus every `src/loop/*.mjs`, and both controls are
+// THE FAMILY is `packages/core/src/commands/loop.mjs` plus every `packages/core/src/loop/*.mjs`, and both controls are
 // boundaries on what it may reach — measured over DIRECT imports (`importSpecifiers`, resolved
-// against the importing module; never a closure walk, because `src/commands/loop.mjs`'s static
+// against the importing module; never a closure walk, because `packages/core/src/commands/loop.mjs`'s static
 // closure already reaches the session driver through the registry and a closure leg would be
 // red on the shipped tree for a reason that is not this invariant's).
 //
 // FF-12902, three legs. IMPORT — no family module imports `agent-session-driver.mjs`, `node-pty`
 // or `claude-trust.mjs`: three loop deaths on 2026-09-12 happened at the driver's kill of a
 // finished session inside the loop's own process, and N drivers in one process would multiply
-// that surface by N. SPAWN — `src/loop/child-drive.mjs` is the ONLY module under `src/loop/` that
+// that surface by N. SPAWN — `packages/core/src/loop/child-drive.mjs` is the ONLY module under `packages/core/src/loop/` that
 // reaches `runBounded` or `node:child_process` (the exclusivity leg is the family's alone —
-// `src/commands/loop.mjs`'s own git `execFile` is pre-existing and outside it, VERIFICATION F-17),
+// `packages/core/src/commands/loop.mjs`'s own git `execFile` is pre-existing and outside it, VERIFICATION F-17),
 // its spawn command is `process.execPath`, and its argument vector takes both branches of
-// ADR-005 §1's amendment: under Node the first element resolves to `src/cli.mjs`; under a SEA,
+// ADR-005 §1's amendment: under Node the first element resolves to `packages/core/src/cli.mjs`; under a SEA,
 // flipped through `setSeaSentinelForTest`, the verb words are the whole argv. SHELL — no `shell:`
-// option anywhere under `src/loop/`. NON-VACUOUS: the spawn leg must FIND the `runBounded(` call.
+// option anywhere under `packages/core/src/loop/`. NON-VACUOUS: the spawn leg must FIND the `runBounded(` call.
 //
 // FF-12906, two legs. IMPORT — the family imports neither `packages/work/src/ready-wave.mjs` nor
-// `src/story-contract.mjs`: the partition is `work:next`'s (71/ADR-006), and a loop that could
+// `packages/core/src/story-contract.mjs`: the partition is `work:next`'s (71/ADR-006), and a loop that could
 // reach the partitioner could recompute it. WAVE-READ — every `.wave` / `.heldSet` read in the
 // family is guarded by an `invokeRegistered("work:next"` call in its enclosing function (the
 // enclosing-function rule FF-12702 uses, through `classifySites`), and every `work:next` ask in
-// `src/loop/wave.mjs` carries `throughReview: true` — the walk that sees the wave (ADR-001 §3).
+// `packages/core/src/loop/wave.mjs` carries `throughReview: true` — the walk that sees the wave (ADR-001 §3).
 // `brief.wave` is the run record's declaration of what the loop DISPATCHED, not the partition,
 // and is not a site. NON-VACUOUS: the leg must FIND the `work:next` asks before it judges them.
 //
@@ -42,7 +42,7 @@ import { dependencySpecifiers } from "../../support/workspace/configured-source.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
-const FAMILY_DIR = "src/application/bindings/loop";
+const FAMILY_DIR = "packages/core/src/application/bindings/loop";
 const SPAWN_SEAM = "packages/work-loop/src/child-drive.mjs";
 const PACKAGE_FAMILY = "packages/work-loop/src";
 const WAVE = "packages/work-loop/src/wave.mjs";
@@ -74,7 +74,7 @@ export function driverImportProblems(units) {
       const target = resolved(rel, specifier);
       const leaf = target.split("/").pop();
       if (DRIVER_MODULES.includes(leaf) || DRIVER_PACKAGES.includes(target)) {
-        problems.push(`${rel} imports ${specifier} (→ ${target}) — the loop family never loads the session driver; a lane's drive is a child process through src/loop/child-drive.mjs (129/ADR-005 §5)`);
+        problems.push(`${rel} imports ${specifier} (→ ${target}) — the loop family never loads the session driver; a lane's drive is a child process through packages/core/src/loop/child-drive.mjs (129/ADR-005 §5)`);
       }
     }
   }
@@ -172,7 +172,7 @@ export const archTests = [
       assert.ok(facts.found, `${SPAWN_SEAM}: NOT FOUND — no runBounded( call; the seam spawns nothing this leg can judge`);
       assert.ok(facts.execPath, `${SPAWN_SEAM}: runBounded is given \`command: process.execPath\` — the drive is this interpreter's own CLI (129/ADR-005 §1)`);
       assert.match(stripComments(seam.code), /getCliEntry\(\)/u, "the package consumes the supplied CLI location");
-      const adapter = units.find(unit => unit.rel === "src/application/bindings/loop/child-drive.mjs");
+      const adapter = units.find(unit => unit.rel === "packages/core/src/application/bindings/loop/child-drive.mjs");
       assert.match(stripComments(adapter.code), /new URL\(\s*"(?:\.\.\/)+cli\.mjs"\s*,\s*import\.meta\.url\s*\)/u, "core resolves its own CLI location");
       assert.match(stripComments(seam.code), /\bisPackaged\(\)/u, `${SPAWN_SEAM}: the branch is decided by interpreter identity (isPackaged), never by file presence`);
 
@@ -181,8 +181,8 @@ export const archTests = [
       assert.deepEqual(route.problems.filter((problem) => !problem.includes("`shell:`")), [], `the family's one spawn seam:\n${route.problems.join("\n")}`);
 
       // THE ARGUMENT VECTOR, both branches, through the seam's injectable child — no process.
-      const { spawnLaneDrive } = await import("../../../src/loop/child-drive.mjs");
-      const { setSeaSentinelForTest } = await import("../../../src/asset-base.mjs");
+      const { spawnLaneDrive } = await import("../../../packages/core/src/loop/child-drive.mjs");
+      const { setSeaSentinelForTest } = await import("../../../packages/core/src/asset-base.mjs");
       const { EventEmitter } = await import("node:events");
       const calls = [];
       const spawnChild = (command, args, options) => {
@@ -202,7 +202,7 @@ export const archTests = [
       await spawnLaneDrive(lane);
       assert.equal(calls.length, 1, "the Node branch spawned once");
       assert.equal(calls[0].command, process.execPath, "the command is process.execPath");
-      assert.equal(path.resolve(calls[0].args[0]), path.resolve(repoRoot, "src", "cli.mjs"), "under Node the argv's first element resolves to src/cli.mjs");
+      assert.equal(path.resolve(calls[0].args[0]), path.resolve(repoRoot, "packages", "core", "src", "cli.mjs"), "under Node the argv's first element resolves to packages/core/src/cli.mjs");
       assert.deepEqual(calls[0].args.slice(1, 3), ["work", "drive"], "…followed by the verb words");
       assert.equal("shell" in (calls[0].options ?? {}), false, "no shell option reaches the child");
       setSeaSentinelForTest(true);

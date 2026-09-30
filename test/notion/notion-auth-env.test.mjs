@@ -10,7 +10,7 @@
 // spawn seam is injected (resolveBinary + spawn) so each row captures the constructed
 // env + argv hermetically — no live binary, no live token.
 import assert from "node:assert/strict";
-import { makeNotionSpawn, resolveNotionAuth, buildSpawnEnv } from "../../src/notion/cli.mjs";
+import { makeNotionSpawn, resolveNotionAuth, buildSpawnEnv } from "../../packages/core/src/notion/cli.mjs";
 
 const FIXTURE_TOKEN = "ntn_fixture_secret_value_123";
 

@@ -549,7 +549,7 @@ export const invariant4AmendedTests = [
       assert.match(identity, /→\s*\$\{far\}|\$\{owner\}\s*→/, "the identity line still names the far end in WORDS");
 
       const terminalWs = lf(stripComments(await readFile(path.join(repoRoot, "packages", "server", "src", "terminal-ws.mjs"), "utf8")));
-      assert.match(terminalWs, /term\.write\s*\(/, "and `src/terminal-ws.mjs` still writes its own PTY, untouched by this feature");
+      assert.match(terminalWs, /term\.write\s*\(/, "and `packages/core/src/terminal-ws.mjs` still writes its own PTY, untouched by this feature");
     },
   },
 

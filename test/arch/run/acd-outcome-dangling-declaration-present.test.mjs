@@ -47,7 +47,7 @@ async function assembledNames() {
 }
 
 async function parseOutcomeLanded() {
-  const mod = await import("../../../src/memory/local-indexing.mjs");
+  const mod = await import("../../../packages/core/src/memory/local-indexing.mjs");
   return typeof mod.parseOutcome === "function";
 }
 

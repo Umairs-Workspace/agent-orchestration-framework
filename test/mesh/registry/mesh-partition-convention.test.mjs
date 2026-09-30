@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 22 / story 00 — the path-partition convention.
 //
 // Covers EVERY @executable scenario in tasks/01_path-partition-convention.feature,
-// exercising the REAL src/mesh/store.mjs path seam in-process. One test object per
+// exercising the REAL packages/core/src/mesh/store.mjs path seam in-process. One test object per
 // @executable scenario (the Scenario-Outline folded into one entry looping the
 // Examples). node:assert/strict.
 //
@@ -33,7 +33,7 @@ export const meshPartitionConventionTests = [
   {
     name: "mesh-store/01 the node-record path is the single node-id-keyed seam under the partition root",
     async run() {
-      const { meshDir, nodeRecordPath } = await import("../../../src/mesh/store.mjs");
+      const { meshDir, nodeRecordPath } = await import("../../../packages/core/src/mesh/store.mjs");
       const p = nodeRecordPath(workspace, "build-server");
 
       // the path ends with nodes/build-server.json
@@ -49,7 +49,7 @@ export const meshPartitionConventionTests = [
   {
     name: "mesh-store/01 the node id is one flat filename segment directly under nodes/, never a sub-path (Scenario Outline)",
     async run() {
-      const { meshDir, nodeRecordPath } = await import("../../../src/mesh/store.mjs");
+      const { meshDir, nodeRecordPath } = await import("../../../packages/core/src/mesh/store.mjs");
       const nodesDir = path.join(meshDir(workspace), "nodes");
 
       // Examples from the feature. The two SAFE ids match their literal expected-leaf
@@ -87,7 +87,7 @@ export const meshPartitionConventionTests = [
       try {
         const ws = { workDir: path.join(repo, "wiki", "work"), globalMeshRoot: path.join(repo, "global", "mesh") };
         await mkdir(ws.workDir, { recursive: true });
-        const { publishNodeRecord, meshDir } = await import("../../../src/mesh/store.mjs");
+        const { publishNodeRecord, meshDir } = await import("../../../packages/core/src/mesh/store.mjs");
 
         await publishNodeRecord(ws, "umami-desktop", { nodeId: "umami-desktop" });
         await publishNodeRecord(ws, "umami-mbp", { nodeId: "umami-mbp" });
@@ -123,10 +123,10 @@ export const meshPartitionConventionTests = [
   {
     name: "mesh-store/01 the run-dimension convention is the additive <node>/ delta on milestone 19's runRecordPath shape",
     async run() {
-      const { runNodeRecordPath, runsDir, runRecordPath } = await import("../../../src/mesh/store.mjs");
+      const { runNodeRecordPath, runsDir, runRecordPath } = await import("../../../packages/core/src/mesh/store.mjs");
       // import 19's seam DIRECTLY too, to prove the convention adopts the SAME
       // reference (not a divergent run-path builder).
-      const runStore = await import("../../../src/run-store.mjs");
+      const runStore = await import("../../../packages/core/src/run-store.mjs");
       assert.equal(runsDir, runStore.runsDir, "the convention re-exports milestone 19's frozen runsDir seam (same reference)");
       assert.equal(runRecordPath, runStore.runRecordPath, "the convention re-exports milestone 19's frozen runRecordPath seam (same reference)");
 
@@ -160,7 +160,7 @@ export const meshPartitionConventionTests = [
   {
     name: "mesh-store/01 the presence dimension is named as a reserved shape but not built here",
     async run() {
-      const { presenceRecordPath, meshDir, publishNodeRecord } = await import("../../../src/mesh/store.mjs");
+      const { presenceRecordPath, meshDir, publishNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
       const repo = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-presence-"));
       try {
         const ws = { workDir: path.join(repo, "wiki", "work"), globalMeshRoot: path.join(repo, "global", "mesh") };

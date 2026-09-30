@@ -24,7 +24,7 @@
 // fails CI on the day the type changes, before any region is written to render it.
 //
 // THE NODE RULE IS PINNED HERE ON PURPOSE, because it DIVERGES from the server's `?scope=local`
-// and the divergence must not be "fixed". `src/global-node-registry.mjs:170-172` says in terms
+// and the divergence must not be "fixed". `packages/core/src/global-node-registry.mjs:170-172` says in terms
 // that the roster "is never workspace-filtered (a workspaceId scopes WORK ITEMS, not the node
 // roster)", and `acd-mesh-ui-local-filter-preserves-status`'s behavioural half pins exactly that.
 // m47/ADR-004 rule 2 rules the opposite for the REPO filter, and states why: under `scope=local`
@@ -423,7 +423,7 @@ export const archTests = [
       assert.deepEqual(
         keptNodes,
         ["only-alpha", "both"],
-        "a node is IN the filtered repo iff it is a member of it (m47/ADR-004 rule 2). This DIVERGES from ?scope=local, where the roster deliberately stays machine-wide (src/global-node-registry.mjs:170-172, pinned by acd-mesh-ui-local-filter-preserves-status) — because \"local\" asks about the DAEMON's workspace and a roster is a machine fact, while a repo filter asks \"which machines are working on this repo\". Both behaviours are correct and neither should be changed to match the other.",
+        "a node is IN the filtered repo iff it is a member of it (m47/ADR-004 rule 2). This DIVERGES from ?scope=local, where the roster deliberately stays machine-wide (packages/core/src/global-node-registry.mjs:170-172, pinned by acd-mesh-ui-local-filter-preserves-status) — because \"local\" asks about the DAEMON's workspace and a roster is a machine fact, while a repo filter asks \"which machines are working on this repo\". Both behaviours are correct and neither should be changed to match the other.",
       );
 
       // NON-MUTATING, and an absent filter is a total no-op — the two properties every caller of

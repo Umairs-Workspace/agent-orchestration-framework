@@ -21,8 +21,8 @@
 // scenario uses the Background stream verbatim.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { invoke } from "../../src/command-core.mjs";
-import { nextCommand } from "../../src/commands/next.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { nextCommand } from "../../packages/core/src/commands/next.mjs";
 import { withItemLockFixture, seedActive, settle, refuse } from "../support/item-lock-fixture.mjs";
 
 const HOLDER = "aof-wsl";

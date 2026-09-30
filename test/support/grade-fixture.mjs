@@ -13,7 +13,7 @@ import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 
-import { loadWorkspace } from "../../src/work.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 
 const FIXTURE_DATE = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 

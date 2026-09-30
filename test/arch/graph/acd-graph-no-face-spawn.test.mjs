@@ -2,9 +2,9 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for milestone 09 / ADR-006 inv. 2 (the load-bearing no-direct-
 // spawn guard; ADR-002 + ADR-005, amended 2026-06-21 / PO split):
 // "The ONLY spawn/exec of the `graphify` binary anywhere in src/ is in
-//  src/graphify.mjs. No rendered face (the skill/MCP asset bodies, the board),
-//  no `src/commands/graph-*.mjs`, AND no MCP server runtime (the `aof graph serve`
-//  server module, src/graph-mcp-server.mjs) spawns graphify — the faces and the
+//  packages/core/src/graphify.mjs. No rendered face (the skill/MCP asset bodies, the board),
+//  no `packages/core/src/commands/graph-*.mjs`, AND no MCP server runtime (the `aof graph serve`
+//  server module, packages/core/src/graph-mcp-server.mjs) spawns graphify — the faces and the
 //  server reach the graph ONLY through `invoke('graph:…')`."
 //
 // House discipline (mirrors acd-terminal-server-only / acd-work-command-no-
@@ -20,9 +20,9 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //       execFileSync) whose target is the graphify binary (the GRAPHIFY_BINARY
 //       constant, a `graphify`/`graphifyy` literal, or a binary handle the file
 //       obtained from resolveGraphifyBinary — `resolved.path`/`binaryPath`).
-//       Assert the ONLY file with such a spawn is src/graphify.mjs.
-//   (b) the faces + commands + server spawn NOTHING: src/graph-faces.mjs,
-//       src/graph-mcp-server.mjs, and every src/commands/graph-*.mjs contain ZERO
+//       Assert the ONLY file with such a spawn is packages/core/src/graphify.mjs.
+//   (b) the faces + commands + server spawn NOTHING: packages/core/src/graph-faces.mjs,
+//       packages/core/src/graph-mcp-server.mjs, and every packages/core/src/commands/graph-*.mjs contain ZERO
 //       child-process call-forms at all, and import NOTHING from node:child_process
 //       (they reach the graph only via the registry / the driver's pure helpers).
 import assert from "node:assert/strict";
@@ -31,13 +31,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 const DRIVER_REL = path.join("packages", "knowledge", "src", "graphify.mjs");
 
 // THE SUBJECT IS DERIVED FROM THE TREE, RECURSIVELY (119/ADR-003 §4). A non-recursive `readdir`
-// filtered by the `graph-` prefix is a claim that survives only while `src/commands/` stays flat:
-// 119/02 gives it an interior, and on the day `src/commands/graph-*.mjs` becomes
-// `src/commands/graph/*` the old walk returned NOTHING. This one was the LOUD half of the pair
+// filtered by the `graph-` prefix is a claim that survives only while `packages/core/src/commands/` stays flat:
+// 119/02 gives it an interior, and on the day `packages/core/src/commands/graph-*.mjs` becomes
+// `packages/core/src/commands/graph/*` the old walk returned NOTHING. This one was the LOUD half of the pair
 // 119/ADR-003 measures — `assert.ok(commandFiles.length >= 3, …)` below is the floor that made the
 // move red it rather than empty it — and it is re-pointed here rather than merely restored: a graph
 // command module is one whose PATH names the graph family, in either spelling.
@@ -165,9 +165,9 @@ export const archTests = [
       assert.deepEqual(
         offenders,
         [],
-        `only src/graphify.mjs may spawn the graphify binary; offenders: ${offenders.join(", ")}`
+        `only packages/core/src/graphify.mjs may spawn the graphify binary; offenders: ${offenders.join(", ")}`
       );
-      assert.ok(driverHasSpawn, "src/graphify.mjs IS the graphify spawn site (the sole driver seam)");
+      assert.ok(driverHasSpawn, "packages/core/src/graphify.mjs IS the graphify spawn site (the sole driver seam)");
     },
   },
   {

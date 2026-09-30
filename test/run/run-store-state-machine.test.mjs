@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 19 / story 00 — the run state machine.
 //
 // Covers EVERY @executable scenario in tasks/01_state-machine.feature against the
-// REAL src/run-store.mjs in-process. The full 5x5 = 25-cell transition table and
+// REAL packages/core/src/run-store.mjs in-process. The full 5x5 = 25-cell transition table and
 // the illegal-transition matrix are asserted cell-by-cell (Scenario-Outline rows
 // folded into one entry each). node:assert/strict.
 //
@@ -35,7 +35,7 @@ async function milestoneItem(workDir, slug = "work-run-lifecycle") {
 // OUT of an arbitrary (incl. terminal) state directly. Built via startRun then a
 // raw rewrite of the file's state, so the on-disk shape is a real persisted record.
 async function seedRunInState(item, state) {
-  const { startRun } = await import("../../src/run-store.mjs");
+  const { startRun } = await import("../../packages/core/src/run-store.mjs");
   const record = await startRun(item);
   const onDisk = {
     ...record,
@@ -63,7 +63,7 @@ export const runStoreStateMachineTests = [
   {
     name: "run-store/01 the transition validator accepts only the legal edges of the closed table (25-cell grid)",
     async run() {
-      const { isLegalTransition } = await import("../../src/run-store.mjs");
+      const { isLegalTransition } = await import("../../packages/core/src/run-store.mjs");
       // The full 5x5 grid — exactly the five legal cells, twenty rejected.
       let legalCount = 0;
       for (const from of STATES) {
@@ -81,7 +81,7 @@ export const runStoreStateMachineTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, applyTransition } = await import("../../src/run-store.mjs");
+        const { startRun, applyTransition } = await import("../../packages/core/src/run-store.mjs");
         for (const terminal of ["done", "failed", "cancelled"]) {
           const item = await milestoneItem(workDir, `t-${terminal}`);
           const started = await startRun(item);
@@ -105,7 +105,7 @@ export const runStoreStateMachineTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { applyTransition } = await import("../../src/run-store.mjs");
+        const { applyTransition } = await import("../../packages/core/src/run-store.mjs");
         // The matrix from the feature: re-completing each terminal to every terminal
         // (incl. itself), plus running's self-loop and backward running->queued.
         const matrix = [
@@ -134,7 +134,7 @@ export const runStoreStateMachineTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const runStore = await import("../../src/run-store.mjs");
+        const runStore = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir, "no-mint");
 
         const record = await runStore.startRun(item);

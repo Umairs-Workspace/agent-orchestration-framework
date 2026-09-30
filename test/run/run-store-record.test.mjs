@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 19 / story 00 — the run-record store.
 //
 // Covers EVERY @executable scenario in tasks/00_run-record-store.feature,
-// exercising the REAL src/run-store.mjs in-process against a temp fixture repo
+// exercising the REAL packages/core/src/run-store.mjs in-process against a temp fixture repo
 // (mkdtemp → mkdir → writeFile → run → rm in finally). One test object per
 // @executable scenario (Scenario-Outline rows folded into one entry), each name
 // tracing to feature + scenario. node:assert/strict.
@@ -64,7 +64,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
         // no runs/ directory yet
         assert.equal(existsSync(path.join(item.dir, "runs")), false, "no runs/ dir before the first start");
@@ -86,7 +86,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const record = await startRun(item, { sessionId: "sess-abc" });
@@ -114,7 +114,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const record = await startRun(item);
@@ -138,7 +138,7 @@ export const runStoreRecordTests = [
         // 20/ADR-006 dedup forbids two non-terminal runs per item, so each run is
         // completed before the next is started — they are still distinct, sortable
         // runs over the item's lifetime (the seq counts terminal files too).
-        const { startRun, completeRun } = await import("../../src/run-store.mjs");
+        const { startRun, completeRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const created = [];
@@ -159,7 +159,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, completeRun } = await import("../../src/run-store.mjs");
+        const { startRun, completeRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         // the SAME injected createdAt for both — only the seq segment disambiguates.
@@ -187,7 +187,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const brief = { workspace: "/w/space", initiator: "operator", resources: ["a", "b"] };
@@ -206,7 +206,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         // nested object + array of objects + mixed scalar types at depth 3
@@ -235,7 +235,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
 
         // Examples: with sessionId "sess-xyz" → "sess-xyz" ; with no sessionId → null
         const rows = [
@@ -258,7 +258,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun, readRuns, completeRun } = await import("../../src/run-store.mjs");
+        const { startRun, readRuns, completeRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         // 20/ADR-006 dedup: complete the first before starting the second.
@@ -278,14 +278,14 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const item = await milestoneItem(workDir);
 
         const brief = { resources: { nested: { k: "v" } } };
         await startRun(item, { sessionId: "sess-load", brief });
 
         // a FRESH store load (a re-import is the in-process analogue of a fresh process)
-        const fresh = await import("../../src/run-store.mjs?fresh-record");
+        const fresh = await import("../../packages/core/src/run-store.mjs?fresh-record");
         const runs = await fresh.readRuns(item);
         assert.equal(runs.length, 1, "I get 1 run record");
         const [record] = runs;
@@ -302,7 +302,7 @@ export const runStoreRecordTests = [
     async run() {
       const { repo, workDir } = await makeRepo();
       try {
-        const { startRun } = await import("../../src/run-store.mjs");
+        const { startRun } = await import("../../packages/core/src/run-store.mjs");
         const milestone = await milestoneItem(workDir);
         const story = await storyItem(workDir);
 
@@ -332,7 +332,7 @@ function runAskTests() {
   const MINT_AT = "2026-09-23T17:00:00.000Z";
   const BY = { actor: "you", via: "cli", node: "node-7297" };
   const ENTRY = { question: "Decision needed: X", phase: "refine", askedAt: "2026-09-23T17:01:00.000Z", parkedAt: null, answer: "b", answeredAt: "2026-09-23T17:05:00.000Z", by: BY };
-  const store = () => import("../../src/run-store.mjs");
+  const store = () => import("../../packages/core/src/run-store.mjs");
 
   // A fresh fixture with one run minted on it, torn down after `fn`.
   async function withRun(fn, { node = null } = {}) {
@@ -536,9 +536,9 @@ function runAskTests() {
         const notARecord = {
           "packages/work/src/commands/list.mjs": "{ asks: await readWorkspaceAsks(ctx),",
           // Exact service objects in the 142 composition adapters, never persisted records.
-          "src/application/bindings/commands/loop.mjs": "asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },",
-          "src/application/bindings/loop/cycle.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks },",
-          "src/application/bindings/loop/wave.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, standingAsk },",
+          "packages/core/src/application/bindings/commands/loop.mjs": "asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },",
+          "packages/core/src/application/bindings/loop/cycle.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks },",
+          "packages/core/src/application/bindings/loop/wave.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, standingAsk },",
         };
         for (const { rel, path: file } of files) {
           if (rel === "packages/execution/src/runs.mjs") continue;

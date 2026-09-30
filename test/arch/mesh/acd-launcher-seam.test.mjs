@@ -16,7 +16,7 @@
 //     probe IS the verb's --json face. (That the probe returns without blocking
 //     is proven behaviourally by the bijection gates' spawn probes.) Armed
 //     non-vacuously: mesh:ui and mesh:serve ride the seam today.
-//  C. THE PROBE RULE IS FACE POLICY: src/spine/face.mjs consults cli.launch ONLY
+//  C. THE PROBE RULE IS FACE POLICY: packages/core/src/spine/face.mjs consults cli.launch ONLY
 //     when --json was not asked for — `--json` can never launch, so a bijection
 //     spawn probe can never hang on a serve BY CONSTRUCTION, not per-command
 //     care. Self-checked with a synthetic unguarded face body.
@@ -24,11 +24,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../src/command-core.mjs";
+import { listCommands } from "../../../packages/core/src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
-const FACE_MJS = path.join(repoRoot, "src/application/bindings/spine/face.mjs");
+const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
+const FACE_MJS = path.join(repoRoot, "packages/core/src/application/bindings/spine/face.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -125,7 +125,7 @@ export const archTests = [
     // Behavioural, through the real face.
     name: "arch/m42-launcher-seam (D): an uncoded fault escaping a launcher body carries its origin frames in the message the entries print; a contract refusal passes untouched",
     run: async () => {
-      const { runCommandFace } = await import("../../../src/spine/face.mjs");
+      const { runCommandFace } = await import("../../../packages/core/src/spine/face.mjs");
       const launcher = (body) => ({
         id: "mesh:synthetic-launcher",
         run: async () => ({ probe: true }),

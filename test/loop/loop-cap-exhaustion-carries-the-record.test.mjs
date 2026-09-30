@@ -22,8 +22,8 @@ import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
 import { LOOP_REFUSALS, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
-import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+import { loopCommand, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
 import { completingDriver } from "./loop-command-probe.test.mjs";
 import {
   capturingReport, emitsFailing, emitsPassing, findingsFrom, gradingCtx, gradingFixture,
@@ -54,7 +54,7 @@ async function exhaust(fx, plan, { report = capturingReport(), driver = completi
 async function gradesInAFreshProcess(fx, ref, loopRunId) {
   const item = await resolveItemExact(fx.ctx, ref);
   const script = `
-    const { readRuns } = await import(${JSON.stringify(new URL("../../src/run-store.mjs", import.meta.url).href)});
+    const { readRuns } = await import(${JSON.stringify(new URL("../../packages/core/src/run-store.mjs", import.meta.url).href)});
     const runs = await readRuns({ dir: ${JSON.stringify(item.dir)}, ref: ${JSON.stringify(ref)} });
     const rebuilt = runs
       .filter((run) => run?.brief?.loop?.loopRunId === ${JSON.stringify(loopRunId)})
@@ -177,7 +177,7 @@ export const loopCapExhaustionCarriesTheRecordTests = [
 
         // AND IT WAS ASSEMBLED BY FILTERING RUN RECORDS ON THIS LOOP'S OWN ID: every entry
         // that names a run names one this loop minted, carrying this loop's declaration.
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
         const runs = await readRuns(await resolveItemExact(fx.ctx, "03/01"));
         const mine = new Map(runs.filter((run) => run.brief?.loop?.loopRunId === state.loopRunId).map((run) => [run.runId, run]));
         for (const entry of record.filter((row) => row.runId != null)) {
@@ -219,7 +219,7 @@ export const loopCapExhaustionCarriesTheRecordTests = [
         assert.equal(state.act.stop, "cap-exhausted", "guard: the loop still exhausted its cap");
 
         // THE LINEAGE IS REAL: two run records for one cycle, the second naming the first.
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await import("../../packages/core/src/run-store.mjs");
         const runs = await readRuns(await resolveItemExact(retried.ctx, "03/01"));
         const mine = runs.filter((run) => run.brief?.loop?.loopRunId === state.loopRunId);
         const lineage = mine.filter((run) => run.retryOf != null);
@@ -333,7 +333,7 @@ export const loopCapExhaustionCarriesTheRecordTests = [
         // AND AN ITEM THAT WAS NEVER GRADED CONTRIBUTES NOTHING RATHER THAN A FICTIONAL
         // ENTRY: the findings are the validator's, unaltered — not even a producer tag was
         // added, because there was no second producer to tell them apart from.
-        const { invoke } = await import("../../src/command-core.mjs");
+        const { invoke } = await import("../../packages/core/src/command-core.mjs");
         const validate = await invoke("work:validate", { scope: "03/01" }, fx.ctx);
         assert.deepEqual(record, validate.findings, "the record is exactly the validator's findings");
       } finally {

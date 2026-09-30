@@ -24,10 +24,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode, sessionRecordPath } from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { meshSessionCommand } from "../../../packages/core/src/commands/mesh/session.mjs";
+import { readSessionRecord, readSessionRecordsForNode, sessionRecordPath } from "../../../packages/core/src/mesh/session.mjs";
+import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";

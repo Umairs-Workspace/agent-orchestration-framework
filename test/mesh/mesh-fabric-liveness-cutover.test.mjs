@@ -15,16 +15,16 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { meshDir, presenceRecordPath, nodeRecordPath, publishNodeRecord } from "../../src/mesh/store.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { meshDir, presenceRecordPath, nodeRecordPath, publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
 import {
   mergePresence,
   resolvePeerReachability,
   assemblePresenceRecord,
   publishPresenceRecord,
   readPresenceRecord,
-} from "../../src/mesh/presence.mjs";
+} from "../../packages/core/src/mesh/presence.mjs";
 
 const NOW = "2026-07-04T10:00:00.000Z";
 

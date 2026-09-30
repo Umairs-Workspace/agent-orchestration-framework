@@ -9,8 +9,8 @@
 // documented threshold (5, pinned at this refine) is set explicitly in the fixture
 // config so the test is resilient to any future named-default change.
 import assert from "node:assert/strict";
-import { invoke } from "../../../src/command-core.mjs";
-import { listItems } from "../../../src/work.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
+import { listItems } from "../../../packages/core/src/work.mjs";
 import { withInsertFixture, buildTopLevelMilestones } from "../../support/work-insert-fixture.mjs";
 
 const THRESHOLD_CONFIG = { work: { insert: { confirmThreshold: 5 } } };
@@ -83,7 +83,7 @@ export const workInsertCountGateTests = [
         // The CLI's --force -> yes:true resolution is asserted directly (unit-level)
         // against the registered command's own argv adapter — the exact alias the
         // scenario names.
-        const { insertMilestoneCommand } = await import("../../../src/commands/insert-milestone.mjs");
+        const { insertMilestoneCommand } = await import("../../../packages/core/src/commands/insert-milestone.mjs");
         const input = insertMilestoneCommand.cli.argv(["widget-support"], { at: "2", force: true });
         assert.equal(input.yes, true, "--force resolves to yes:true");
 

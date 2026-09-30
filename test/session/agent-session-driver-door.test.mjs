@@ -2,8 +2,8 @@
 // (00_the-two-doors.feature, 01_the-importers-stay-put.feature; ADR-001 §1/§2, ADR-010
 // §17/§18).
 //
-// THE TWO DOORS. The seventeen frozen names left `src/mesh/worker-execution.mjs` for
-// `src/agent-session-driver.mjs` and are re-exported from the sink verbatim, so every
+// THE TWO DOORS. The seventeen frozen names left `packages/core/src/mesh/worker-execution.mjs` for
+// `packages/core/src/agent-session-driver.mjs` and are re-exported from the sink verbatim, so every
 // one of its recorded dependents keeps the import line it already had. What a CONSUMER can
 // observe of that is narrower and sharper than the cardinality claim FF-5302 makes
 // structurally, and it is what this suite decides:
@@ -69,7 +69,7 @@ import {
   buildDriverCommand as drvBuildDriverCommand,
   defaultSpawnRuntime as drvDefaultSpawnRuntime,
   ensureWorktreeTrusted as drvEnsureWorktreeTrusted,
-} from "../../src/agent-session-driver.mjs";
+} from "../../packages/core/src/agent-session-driver.mjs";
 
 // ── DOOR 2: the sink's re-export ────────────────────────────────────────────────────
 // Byte-for-byte the import line a pre-existing dependent already writes.
@@ -93,25 +93,25 @@ import {
   ensureWorktreeTrusted as sinkEnsureWorktreeTrusted,
   createMeshWorkerExecutionHandler,
   createMeshWorkerTerminalResumeHandler,
-} from "../../src/mesh/worker-execution.mjs";
+} from "../../packages/core/src/mesh/worker-execution.mjs";
 
-import * as driverNamespace from "../../src/agent-session-driver.mjs";
-import * as sinkNamespace from "../../src/mesh/worker-execution.mjs";
+import * as driverNamespace from "../../packages/core/src/agent-session-driver.mjs";
+import * as sinkNamespace from "../../packages/core/src/mesh/worker-execution.mjs";
 
-import { loadWorkspace } from "../../src/work.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
 import { registeredSuitePaths, registrationSurface } from "../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const DRIVER_MODULE = "src/agent-session-driver.mjs";
-const SINK_MODULE = "src/mesh/worker-execution.mjs";
-const SINK_CONSTRUCTOR = "src/application/bindings/mesh/worker-execution.mjs";
-const DRIVER_CONSTRUCTOR = "src/application/bindings/agent-session-driver.mjs";
+const DRIVER_MODULE = "packages/core/src/agent-session-driver.mjs";
+const SINK_MODULE = "packages/core/src/mesh/worker-execution.mjs";
+const SINK_CONSTRUCTOR = "packages/core/src/application/bindings/mesh/worker-execution.mjs";
+const DRIVER_CONSTRUCTOR = "packages/core/src/application/bindings/agent-session-driver.mjs";
 // Compatibility imports retain their old doors. Configured consumers receive the
 // same API through the explicit worker constructor; constructor imports themselves
 // are not API consumers and cannot inflate the census.
-const LAUNCHER_MODULE = "src/application/bindings/mesh/launcher.mjs";
+const LAUNCHER_MODULE = "packages/core/src/application/bindings/mesh/launcher.mjs";
 const SINK_SUFFIX = SINK_MODULE.split("/").slice(1).join("/");
 
 const NODE_ID = "worker-a";
@@ -317,8 +317,8 @@ function sinkDependencies(rel, source) {
   return direct;
 }
 
-// 119/01 — SINK RECOGNITION IS A RESOLUTION, NOT A SUFFIX. `src/mesh/launcher.mjs` reaches the
-// sink as `./worker-execution.mjs` now that both live in `src/mesh/`, so a tail test on the
+// 119/01 — SINK RECOGNITION IS A RESOLUTION, NOT A SUFFIX. `packages/core/src/mesh/launcher.mjs` reaches the
+// sink as `./worker-execution.mjs` now that both live in `packages/core/src/mesh/`, so a tail test on the
 // specifier misses every intra-family importer while quietly still matching the others — half a
 // census, reading green. Resolving the specifier against the file that spells it is the same
 // question asked in a way the tree's shape cannot change.
@@ -349,7 +349,7 @@ let censusCache = null;
 // headroom over the live counts, and only the real walk can say that.
 export async function census() {
   if (censusCache != null) return censusCache;
-  const files = [...(await walkMjs("test")), ...(await walkMjs("src")), ...(await walkMjs("scripts"))];
+  const files = [...(await walkMjs("test")), ...(await walkMjs("packages/core/src")), ...(await walkMjs("scripts"))];
   const members = [];
   for (const rel of files) {
     const source = await readFile(path.join(repoRoot, rel), "utf8");
@@ -374,7 +374,7 @@ export async function census() {
     preExisting,
     suites: preExisting.filter((m) => m.rel.startsWith("test/") && m.rel.endsWith(".test.mjs")),
     fixtures: preExisting.filter((m) => m.rel.startsWith("test/support/")),
-    sourceSide: preExisting.filter((m) => m.rel.startsWith("src/") || m.rel.startsWith("scripts/")),
+    sourceSide: preExisting.filter((m) => m.rel.startsWith("packages/core/src/") || m.rel.startsWith("scripts/")),
   };
   return censusCache;
 }
@@ -934,7 +934,7 @@ export const agentSessionDriverDoorTests = [
         assert.equal(source.includes("agent-session-driver"), false, `${rel} does not name the new module`);
       }
       for (const [rel, symbol, specifier] of [
-        ["src/application/bindings/global-node-registry.mjs", "resolveCloneUrl", "@aof/mesh/worker-repo-admission"],
+        ["packages/core/src/application/bindings/global-node-registry.mjs", "resolveCloneUrl", "@aof/mesh/worker-repo-admission"],
         ["packages/mesh/src/clone-credential-provider.mjs", "parseRepoFromCloneUrl", "./worker-repo-admission.mjs"],
       ]) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
@@ -948,10 +948,10 @@ export const agentSessionDriverDoorTests = [
       assert.equal(
         staticImports(driverSource).some((entry) => entry.specifier.endsWith("work.mjs")),
         false,
-        "src/agent-session-driver.mjs does not import src/work.mjs",
+        "packages/core/src/agent-session-driver.mjs does not import packages/core/src/work.mjs",
       );
-      const godNode = await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8");
-      assert.equal(godNode.includes("agent-session-driver"), false, "src/work.mjs was not touched by this story");
+      const godNode = await readFile(path.join(repoRoot, "packages", "core", "src", "work.mjs"), "utf8");
+      assert.equal(godNode.includes("agent-session-driver"), false, "packages/core/src/work.mjs was not touched by this story");
     },
   },
 ];

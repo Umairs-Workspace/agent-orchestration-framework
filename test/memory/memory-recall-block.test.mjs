@@ -3,7 +3,7 @@
 //
 // Drives the REAL recall pipeline — `recall` from local-retrieval over a
 // HAND-AUTHORED fixture index (ctx.records) — then renders the compact injection
-// block via `renderRecallBlock`/`HOOK_LIMIT` (the seam, src/work/memory.mjs). No
+// block via `renderRecallBlock`/`HOOK_LIMIT` (the seam, packages/core/src/work/memory.mjs). No
 // CLI, no on-disk index, no story-01 parser code: the block is a pure projection
 // of a frozen RecallResult (ADR-004), so the test couples to nothing but the two
 // frozen contracts.
@@ -15,8 +15,8 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, writeFile, readFile } from "node:fs/promises";
-import { recall } from "../../src/memory/local-retrieval.mjs";
-import { renderRecallBlock, HOOK_LIMIT } from "../../src/work/memory.mjs";
+import { recall } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { renderRecallBlock, HOOK_LIMIT } from "../../packages/core/src/work/memory.mjs";
 
 // Build a full MemoryRecord (ADR-005) from a partial spec: every field present,
 // absent-type fields as "" (the empty-string-present convention retrieval reads).

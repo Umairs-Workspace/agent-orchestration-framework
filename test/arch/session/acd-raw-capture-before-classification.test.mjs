@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { RAW_FEEDBACK_KEYS } from "../../../src/feedback-records.mjs";
+import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { RAW_FEEDBACK_KEYS } from "../../../packages/core/src/feedback-records.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { markedRegion, stripComments } from "../../support/source-slice.mjs";
 
@@ -27,7 +27,7 @@ export const archTests = [
       }
       assert.match(command.cli.spec.unknownFlagMessage, /classification belongs to later triage/i);
 
-      const bundle = await readFile(path.join(root, "src", "bundle", "commands", "feedback.md"), "utf8");
+      const bundle = await readFile(path.join(root, "packages", "core", "assets", "commands", "feedback.md"), "utf8");
       // The YAML frontmatter block, cut through the ONE home (milestone 47's ledger, and
       // VERIFICATION F-55-M-4 which caught this file adding a new instance). The tempting cut
       // — `bundle.slice(0, bundle.indexOf("---", 4) + 3)` — is the SENTINEL_END shape: with the

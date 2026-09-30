@@ -12,7 +12,7 @@
 // the proof is that N further control ticks against an UNCHANGED control disk never move
 // the worker's row.
 import assert from "node:assert/strict";
-import { readWorkItemDoc, upsertWorkItemContent } from "../../src/global-work-store.mjs";
+import { readWorkItemDoc, upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
 import {
   withCacheFixture,
   withStore,

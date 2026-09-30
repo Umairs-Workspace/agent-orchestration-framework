@@ -1,6 +1,6 @@
 // Traceability wiring for milestone 15 / story 02 — the freshness/date-sanity and
 // structural-integrity check-groups. Covers EVERY @executable scenario across the
-// story's two task features, exercising the REAL engine (src/work/doctor.mjs with
+// story's two task features, exercising the REAL engine (packages/core/src/work/doctor.mjs with
 // the appended groups) over temp fixture repos. The freshness tests pass a FIXED
 // `now` + `staleWindow` into doctorWork so every time relationship is deterministic
 // (matching the features' pinned-`now` Examples). One test object per @executable
@@ -14,8 +14,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PINNED_NOW = Date.parse("2026-06-25T00:00:00Z");

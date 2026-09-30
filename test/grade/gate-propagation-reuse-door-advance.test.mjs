@@ -20,7 +20,7 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { meshWorktreePath } from "../../src/mesh/worktree.mjs";
+import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
 import {
   withGatePropagationFixture,
   buildItemLine,

@@ -33,7 +33,7 @@ import {
   dispatchLaneBase,
   commitDispatchLane,
   mergeDispatchLaneHome,
-} from "../../../src/work/dispatch.mjs";
+} from "../../../packages/core/src/work/dispatch.mjs";
 import {
   meshDispatchWorktreePath,
   meshDispatchWorktreesRoot,
@@ -42,13 +42,13 @@ import {
   isUnderMeshSessionWorktreesRoot,
   meshItemBranchName,
   listWorktrees,
-} from "../../../src/mesh/worktree.mjs";
+} from "../../../packages/core/src/mesh/worktree.mjs";
 import { withDispatchRepo, git, dirtyPaths, writeRel, mergeHeadAbsent, conflictMarkers } from "../../support/dispatch-lane-fixture.mjs";
-import { dispatchCommand } from "../../../src/commands/dispatch.mjs";
-import { findWork } from "../../../src/work.mjs";
+import { dispatchCommand } from "../../../packages/core/src/commands/dispatch.mjs";
+import { findWork } from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SHARED = "src/sandbox/provisionSandboxAgent.ts";
+const SHARED = "packages/core/src/sandbox/provisionSandboxAgent.ts";
 
 // ── 129/03 tasks 02 + 03 — the lane commits and merges home ─────────────────────────────────
 //
@@ -57,9 +57,9 @@ const SHARED = "src/sandbox/provisionSandboxAgent.ts";
 //
 // Layered on `withDispatchRepo` (a real repo, a real work stream, `.aof/mesh/` ignored): the
 // merge-home fixture adds a milestone dir `wiki/work/127_m/` (a STATE.md and an `old.md`),
-// another milestone's `wiki/work/128_x/STATE.md`, `src/promote.mjs` and `README.md`, commits
+// another milestone's `wiki/work/128_x/STATE.md`, `packages/core/src/promote.mjs` and `README.md`, commits
 // B0, opens the `127/02` lane from it and — unless told otherwise — commits L1 on the lane
-// touching `src/promote.mjs`. Every Then below is read back from real git.
+// touching `packages/core/src/promote.mjs`. Every Then below is read back from real git.
 
 const MILESTONE_DIR = "wiki/work/127_m";
 const STATE_BASE = "---\ndoc: state\n---\n\n## Notes\n\n- base note\n";
@@ -83,13 +83,13 @@ async function withMergeHomeRepo(body, { laneCommit = true } = {}) {
     await writeRel(root, `${MILESTONE_DIR}/STATE.md`, STATE_BASE);
     await writeRel(root, `${MILESTONE_DIR}/old.md`, "an old record\n");
     await writeRel(root, "wiki/work/128_x/STATE.md", STATE_BASE);
-    await writeRel(root, "src/promote.mjs", "export const promote = 0;\n");
+    await writeRel(root, "packages/core/src/promote.mjs", "export const promote = 0;\n");
     await writeRel(root, "README.md", "# fixture\n");
     await git(["add", "-A"], root);
     await git(["commit", "-q", "-m", "B0"], root);
     const b0 = await rev(root, "HEAD");
     const opened = await resolveDispatchLane(root, "127/02");
-    const l1 = laneCommit ? await commitIn(opened.worktree, "src/promote.mjs", "export const promote = 1; // L1\n", "L1") : null;
+    const l1 = laneCommit ? await commitIn(opened.worktree, "packages/core/src/promote.mjs", "export const promote = 1; // L1\n", "L1") : null;
     return body({ root, lane: opened.worktree, branch: opened.branch, milestoneDir: MILESTONE_DIR, b0, l1 });
   });
 }
@@ -98,7 +98,7 @@ async function withMergeHomeRepo(body, { laneCommit = true } = {}) {
 const PRIMARY = {
   "not moved": async () => null,
   "P1 touching `README.md`": async (root) => commitIn(root, "README.md", "# P1\n", "P1"),
-  "P1 conflicting on `src/promote.mjs`": async (root) => commitIn(root, "src/promote.mjs", "export const promote = 2; // P1 conflicts with L1\n", "P1"),
+  "P1 conflicting on `packages/core/src/promote.mjs`": async (root) => commitIn(root, "packages/core/src/promote.mjs", "export const promote = 2; // P1 conflicts with L1\n", "P1"),
 };
 
 // checkAttr(attrs, paths) — git's own matcher over THIS repository, parsed to { path: { attr } }.
@@ -692,7 +692,7 @@ export const workDispatchLaneTests = [
   {
     name: "dispatch/02 the prompt fans out over the ready set instead of taking its head — continue.md asks for the ready set, dispatches its members together up to the bound, and no longer says the loop is one-at-a-time",
     run: async () => {
-      const prompt = await readFile(path.join(repoRoot, "src", "bundle", "commands", "continue.md"), "utf8");
+      const prompt = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "continue.md"), "utf8");
 
       // (a) It ASKS for the ready set, by the key the command actually answers with.
       assert.match(prompt, /aof work next[^\n]*--json/, "it asks `aof work next --json`");
@@ -756,7 +756,7 @@ export const workDispatchLaneTests = [
   ...[
     { primary: "not moved", lane: "L1", outcome: "fast-forwarded", base: "B0", tip: "L1", mainAfter: "L1" },
     { primary: "P1 touching `README.md`", lane: "L1", outcome: "merged", base: "B0", tip: "L1", mainAfter: "a new merge sha" },
-    { primary: "P1 conflicting on `src/promote.mjs`", lane: "L1", outcome: "conflict", base: "B0", tip: "L1", mainAfter: "P1" },
+    { primary: "P1 conflicting on `packages/core/src/promote.mjs`", lane: "L1", outcome: "conflict", base: "B0", tip: "L1", mainAfter: "P1" },
     { primary: "L1 already merged into `main`", lane: "L1", outcome: "already-current", base: "L1", tip: "L1", mainAfter: "unchanged" },
     { primary: "P1 touching `README.md`", lane: "no commit", outcome: "already-current", base: "B0", tip: "B0", mainAfter: "P1" },
   ].map((row) => ({
@@ -814,9 +814,9 @@ export const workDispatchLaneTests = [
     }),
   })),
   ...[
-    { dirt: "an unstaged edit to `src/promote.mjs`", plant: (root) => writeRel(root, "src/promote.mjs", "export const promote = 9; // operator\n"), files: ["src/promote.mjs"], mainAfter: "B0", after: [" M src/promote.mjs"] },
-    { dirt: "an unstaged edit to `src/promote.mjs` and one to `README.md`", plant: async (root) => { await writeRel(root, "src/promote.mjs", "export const promote = 9; // operator\n"); await writeRel(root, "README.md", "# operator\n"); }, files: ["src/promote.mjs"], mainAfter: "B0", after: [" M README.md", " M src/promote.mjs"] },
-    { dirt: "an edit to `src/promote.mjs` and one to `wiki/work/127_m/STATE.md`", plant: async (root) => { await writeRel(root, "src/promote.mjs", "export const promote = 9; // operator\n"); await writeRel(root, `${MILESTONE_DIR}/STATE.md`, `${STATE_BASE}- loop note\n`); }, files: ["src/promote.mjs"], mainAfter: "the own-writes commit (child of B0)", after: [" M src/promote.mjs"] },
+    { dirt: "an unstaged edit to `packages/core/src/promote.mjs`", plant: (root) => writeRel(root, "packages/core/src/promote.mjs", "export const promote = 9; // operator\n"), files: ["packages/core/src/promote.mjs"], mainAfter: "B0", after: [" M src/promote.mjs"] },
+    { dirt: "an unstaged edit to `packages/core/src/promote.mjs` and one to `README.md`", plant: async (root) => { await writeRel(root, "packages/core/src/promote.mjs", "export const promote = 9; // operator\n"); await writeRel(root, "README.md", "# operator\n"); }, files: ["packages/core/src/promote.mjs"], mainAfter: "B0", after: [" M README.md", " M src/promote.mjs"] },
+    { dirt: "an edit to `packages/core/src/promote.mjs` and one to `wiki/work/127_m/STATE.md`", plant: async (root) => { await writeRel(root, "packages/core/src/promote.mjs", "export const promote = 9; // operator\n"); await writeRel(root, `${MILESTONE_DIR}/STATE.md`, `${STATE_BASE}- loop note\n`); }, files: ["packages/core/src/promote.mjs"], mainAfter: "the own-writes commit (child of B0)", after: [" M src/promote.mjs"] },
   ].map((row) => ({
     name: `129/03 task 02 — operator dirt on a lane-touched path refuses by name [${row.dirt}]`,
     run: () => withMergeHomeRepo(async ({ root, milestoneDir, b0, l1 }) => {
@@ -845,7 +845,7 @@ export const workDispatchLaneTests = [
   ].map((row) => ({
     name: `129/03 task 02 — a conflict is aborted and named with everything intact [${row.dirt}]`,
     run: () => withMergeHomeRepo(async ({ root, lane, milestoneDir, b0, l1 }) => {
-      const p1 = await PRIMARY["P1 conflicting on `src/promote.mjs`"](root);
+      const p1 = await PRIMARY["P1 conflicting on `packages/core/src/promote.mjs`"](root);
       await row.plant(root);
       const answer = await mergeDispatchLaneHome(root, "127/02", { milestoneDir });
       assert.deepEqual(
@@ -950,7 +950,7 @@ export const workDispatchLaneTests = [
   {
     name: "129/03 task 02 — a reused lane that conflicts with HEAD is lane-open-failed",
     run: () => withMergeHomeRepo(async ({ root, lane, l1 }) => {
-      const b1 = await PRIMARY["P1 conflicting on `src/promote.mjs`"](root);
+      const b1 = await PRIMARY["P1 conflicting on `packages/core/src/promote.mjs`"](root);
       const answer = await resolveDispatchLane(root, "127/02", { advanceTo: b1 });
       assert.equal(answer.worktree, lane, "the same lane came back");
       assert.deepEqual({ outcome: answer.advanced?.outcome, code: answer.advanced?.code, cause: answer.advanced?.cause }, { outcome: "refused", code: "lane-open-failed", cause: "assignment-gate-propagation-conflict" }, `advanced is the lane-open-failed refusal carrying the verb's code as cause: ${JSON.stringify(answer.advanced)}`);
@@ -1260,7 +1260,7 @@ export const workDispatchLaneTests = [
       assert.ok(start >= 0 && end > start, "ADR-006 is present");
       const body = adr.slice(start, end);
       assert.ok(body.includes("AMENDED 2026-09-15 (129/07"), "a dated amendment");
-      for (const needle of ["work.loop.dispatch.concurrency", "min(bound, pool)", "src/loop-bounds.mjs", "narrowDispatchBound", "`bound`"]) assert.ok(body.includes(needle), `the amendment names ${needle}`);
+      for (const needle of ["work.loop.dispatch.concurrency", "min(bound, pool)", "packages/core/src/loop-bounds.mjs", "narrowDispatchBound", "`bound`"]) assert.ok(body.includes(needle), `the amendment names ${needle}`);
       const invariant = body.slice(body.indexOf("### Invariant"));
       assert.ok(invariant.includes("contain no read of `work.dispatch.concurrency`, spell no") && invariant.includes("`work.loop.dispatch.concurrency`"), "the invariant still holds the family to neither key");
     },

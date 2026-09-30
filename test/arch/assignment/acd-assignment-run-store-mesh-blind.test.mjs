@@ -15,7 +15,7 @@
 // bindings across milestones 22-26 (verified by diffing every imported binding
 // against every `...binding` spread in the array). Running it standalone shows 3 of
 // its 4 proofs pass; the 4th ("the run-complete lease release sits inside the
-// config.mesh-gated branch") is now STALE — `src/commands/run-complete.mjs` no
+// config.mesh-gated branch") is now STALE — `packages/core/src/commands/run-complete.mjs` no
 // longer imports `releaseLease`/`meshNodeIdOf` at all (the whole git-bus lease
 // mechanism it asserts was retired by the m33/m34 "global mesh only" correction /
 // ADR-003's no-git-bus-return). Registering that file as-is would land a KNOWN-RED,
@@ -27,7 +27,7 @@
 // Proofs:
 //  1. Re-arm — acd-run-store-mesh-free is registered in the suite (its own
 //     assertions already prove run-store.mjs imports no mesh-* module).
-//  2. Structural — src/mesh/worker-execution.mjs calls startRun(item, { ...,
+//  2. Structural — packages/core/src/mesh/worker-execution.mjs calls startRun(item, { ...,
 //     node: nodeId, ... }) — the node id travels as a DATA option, never a run-store
 //     rewrite (no new positional parameter, no mesh import added to run-store.mjs).
 //  3. Behavioural — a driven assignment's minted run carries the worker's node id
@@ -38,9 +38,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace, findWork } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../src/mesh/worker-execution.mjs";
-import { readRuns } from "../../../src/run-store.mjs";
+import { loadWorkspace, findWork } from "../../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler } from "../../../packages/core/src/mesh/worker-execution.mjs";
+import { readRuns } from "../../../packages/core/src/run-store.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";

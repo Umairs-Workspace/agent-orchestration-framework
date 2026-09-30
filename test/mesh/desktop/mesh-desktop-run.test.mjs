@@ -2,9 +2,9 @@
 // `aof mesh desktop run` discovers the installed app and launches it detached,
 // refusing calmly when it is not installed.
 //
-// Exercises discoverDesktopApp/launchDesktopApp directly (src/commands/mesh-
+// Exercises discoverDesktopApp/launchDesktopApp directly (packages/core/src/commands/mesh-
 // desktop.mjs) over a FIXTURE install root with an injected $HOME. The detached
-// spawn is asserted on SHAPE via an injected spawnFn (mirrors src/mesh/fabric.mjs's
+// spawn is asserted on SHAPE via an injected spawnFn (mirrors packages/core/src/mesh/fabric.mjs's
 // injected-exec-closure idiom) — no real Tauri app is started, no window opens
 // (the story's RESOLVED developer-amigo note).
 import assert from "node:assert/strict";
@@ -14,15 +14,15 @@ import {
   discoverDesktopApp,
   launchDesktopApp,
   DESKTOP_APP_EXE,
-} from "../../../src/commands/mesh/desktop.mjs";
+} from "../../../packages/core/src/commands/mesh/desktop.mjs";
 // m42 wave (d) leg d1 (wave-3 tail) — the CLI face is the registered
 // mesh:desktop-run command through the ONE generic face. The success envelope is
 // asserted at the core+adapter level (invoke with an injected spawnFn — the face
 // cannot inject a fake spawn, and a face-level success would launch a REAL
 // process); the refusal path drives runCommandFace whole (it refuses before any
 // spawn).
-import { getCommand, invoke } from "../../../src/command-core.mjs";
-import { runCommandFace } from "../../../src/spine/face.mjs";
+import { getCommand, invoke } from "../../../packages/core/src/command-core.mjs";
+import { runCommandFace } from "../../../packages/core/src/spine/face.mjs";
 import { withMeshDesktopFixture, seedInstalledApp } from "../../support/mesh-desktop-fixture.mjs";
 
 async function captureConsole(run) {

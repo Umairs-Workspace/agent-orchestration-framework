@@ -7,7 +7,7 @@
 //  screenshot to the designer + spawns QA. No browser-run / toHaveScreenshot ownership appears
 //  in the designer's contract."
 //
-// Reads the BUNDLED assets under src/bundle/ (ADR-005), NOT .claude/. Authored across the three
+// Reads the BUNDLED assets under packages/core/assets/ (ADR-005), NOT .claude/. Authored across the three
 // stories' slices (story 00 designer, story 01 QA, story 02 orchestration) but kept in one file —
 // it is one invariant (the split) read from the three assets that carry it.
 //
@@ -23,10 +23,10 @@ import { fileURLToPath } from "node:url";
 const root = new URL("../../../", import.meta.url);
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");
 
-const DESIGNER = "src/bundle/agents/aof-designer.md";
-const QA = "src/bundle/agents/aof-qa.md";
-const VERIFY = "src/bundle/commands/verify.md";
-const CONTINUE = "src/bundle/commands/continue.md";
+const DESIGNER = "packages/core/assets/agents/aof-designer.md";
+const QA = "packages/core/assets/agents/aof-qa.md";
+const VERIFY = "packages/core/assets/commands/verify.md";
+const CONTINUE = "packages/core/assets/commands/continue.md";
 
 // Parse the frontmatter `tools:` CSV list of an agent file.
 function toolsOf(rel) {

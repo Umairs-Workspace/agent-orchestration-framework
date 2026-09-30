@@ -10,7 +10,7 @@
 // acd-status-rollback-bounded).
 //
 // Proofs:
-//  1. Structural — src/mesh/worktree.mjs's `git worktree add` target is built ONLY
+//  1. Structural — packages/core/src/mesh/worktree.mjs's `git worktree add` target is built ONLY
 //     from meshWorktreePath(projectRoot, assignmentId), which itself joins
 //     meshWorktreesRoot (".aof/mesh/worktrees"); no os.tmpdir() join, no other
 //     hand-built path feeds a `git worktree add` call.
@@ -23,7 +23,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addWorktree, meshWorktreePath, isUnderMeshWorktreesRoot, removeWorktree } from "../../../src/mesh/worktree.mjs";
+import { addWorktree, meshWorktreePath, isUnderMeshWorktreesRoot, removeWorktree } from "../../../packages/core/src/mesh/worktree.mjs";
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

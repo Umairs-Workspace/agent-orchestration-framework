@@ -43,10 +43,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { startControlStreamServer } from "../../../src/control-stream-server.mjs";
-import { applyStreamFrame } from "../../../src/control-stream-server.mjs";
-import { buildSessionSpawnAckFrame, buildSessionSpawnAckEnvelope, SESSION_SPAWN_ACK_KIND } from "../../../src/mesh/session-spawn-directive.mjs";
-import { createSpawnOutcomeRegistry } from "../../../src/mesh/session-spawn-outcome.mjs";
+import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
+import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
+import { buildSessionSpawnAckFrame, buildSessionSpawnAckEnvelope, SESSION_SPAWN_ACK_KIND } from "../../../packages/core/src/mesh/session-spawn-directive.mjs";
+import { createSpawnOutcomeRegistry } from "../../../packages/core/src/mesh/session-spawn-outcome.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");

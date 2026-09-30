@@ -23,7 +23,7 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
-import { meshWorktreePath, meshItemBranchName, listWorktrees } from "../../src/mesh/worktree.mjs";
+import { meshWorktreePath, meshItemBranchName, listWorktrees } from "../../packages/core/src/mesh/worktree.mjs";
 import { createRecordingGitExec } from "../support/mesh-worker-push-fixture.mjs";
 import {
   withGatePropagationFixture,

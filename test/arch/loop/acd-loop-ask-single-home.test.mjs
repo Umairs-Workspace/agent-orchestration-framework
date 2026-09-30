@@ -5,23 +5,23 @@
 // `asks` key on the run record are the three records a human-in-the-loop leaves behind, and these
 // are the controls on who may spell, read and write them.
 //
-// FF-13101, structural. Over a comment-stripped sweep of `src/**` the segment literal `loop-asks`
-// appears only in `src/loop/ask-request.mjs`; no module joins `meshRoot` with an `ask` literal;
-// `src/loop/ask.mjs`, `src/commands/resume.mjs` and `src/commands/list.mjs` import the home by
+// FF-13101, structural. Over a comment-stripped sweep of `packages/core/src/**` the segment literal `loop-asks`
+// appears only in `packages/core/src/loop/ask-request.mjs`; no module joins `meshRoot` with an `ask` literal;
+// `packages/core/src/loop/ask.mjs`, `packages/core/src/commands/resume.mjs` and `packages/core/src/commands/list.mjs` import the home by
 // RESOLVED specifier (through `test/support/module-family.mjs`, FF-11901's one extractor). The
 // ask-state leg keys on `ASK_STATES` (defined in the home alone) and on an ask record's `state`
 // compared against one of the three words — never on the bare English words, which this tree
 // spells in unrelated vocabularies (`resume.mjs`'s retry row is `parked` too; task 00 ruling 6).
 // The `asks` key is written only inside `openRunAsk`, `parkRunAsk` and `answerRunAsk`: the sweep
-// of `src/run-store.mjs` (the one persister of a run record) allows exactly the mint's `asks: []`
-// and the read-forward normaliser, and no `src/**` module mutates an `asks` array in place.
+// of `packages/core/src/run-store.mjs` (the one persister of a run record) allows exactly the mint's `asks: []`
+// and the read-forward normaliser, and no `packages/core/src/**` module mutates an `asks` array in place.
 // Fixture: `answerAsk` refuses `answer-control-chars`, `answer-empty` and, on a second answer,
 // `ask-already-answered`. NON-VACUOUS: the sweep finds the home and at least three importers.
 //
-// FF-13102, structural then fixture. `readLastAssistantTurn` is defined in `src/work/observe.mjs`
+// FF-13102, structural then fixture. `readLastAssistantTurn` is defined in `packages/core/src/work/observe.mjs`
 // and imported by name by the driver; `ask.mjs` reaches it through `readAskQuestion`, imported
 // from `observe.mjs` by resolved specifier, and walks no transcript itself (task 00 ruling 2). No
-// other `src/**` module both `JSON.parse`s and reads `stop_reason` — the driver's
+// other `packages/core/src/**` module both `JSON.parse`s and reads `stop_reason` — the driver's
 // `defaultSpawnRuntime` is cut out first and named: it parses the headless runtime's ONE stdout
 // document, never transcript lines. The driver's export set stays 17 (`53/FF-5302`), and
 // `NEEDS_INPUT_INSTRUCTION` keeps the sentinel, the four labels and the threshold sentence.
@@ -42,11 +42,11 @@ import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
-import { answerAsk, openAsk } from "../../../src/loop/ask-request.mjs";
-import { answerRunAsk, readRuns, runRecordPath, startRun } from "../../../src/run-store.mjs";
-import { transitionStaleRunsReclaimed } from "../../../src/effects/run-transitions.mjs";
+import { answerAsk, openAsk } from "../../../packages/core/src/loop/ask-request.mjs";
+import { answerRunAsk, readRuns, runRecordPath, startRun } from "../../../packages/core/src/run-store.mjs";
+import { transitionStaleRunsReclaimed } from "../../../packages/core/src/effects/run-transitions.mjs";
 import { attemptElapsedMs } from "../../../packages/work-loop/src/engine.mjs";
-import { claudeProjectsDir, readAskQuestion, NEEDS_INPUT_SENTINEL } from "../../../src/work/observe.mjs";
+import { claudeProjectsDir, readAskQuestion, NEEDS_INPUT_SENTINEL } from "../../../packages/core/src/work/observe.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
@@ -56,7 +56,7 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 // reds on rather than passing over.
 const HOME = "packages/work-loop/src/ask-request.mjs";
 const SEGMENT = "loop-asks";
-const READERS = Object.freeze(["src/application/bindings/loop/ask.mjs", "src/application/bindings/commands/resume.mjs", "src/application/bindings/commands/list.mjs"]);
+const READERS = Object.freeze(["packages/core/src/application/bindings/loop/ask.mjs", "packages/core/src/application/bindings/commands/resume.mjs", "packages/core/src/application/bindings/commands/list.mjs"]);
 const STORE = "packages/execution/src/runs.mjs";
 const ASK_WRITERS = Object.freeze(["openRunAsk", "parkRunAsk", "answerRunAsk"]);
 // Task 00 ruling 6: the two `asks:` keys that are the record's SHAPE, not a write of an ask.
@@ -69,9 +69,9 @@ const STATE_WORDS = Object.freeze(["waiting", "parked", "answered"]);
 const ASK_READS_RE = /\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?(?:readAsk|readAsks|answerAsk|openAsk|parkAsk)\s*\(/gu;
 
 const OBSERVE = "packages/work/src/observe.mjs";
-const OBSERVE_ADAPTER = "src/application/bindings/work/observe.mjs";
+const OBSERVE_ADAPTER = "packages/core/src/application/bindings/work/observe.mjs";
 const DRIVER = "packages/execution/src/session-driver.mjs";
-const ASK = "src/application/bindings/loop/ask.mjs";
+const ASK = "packages/core/src/application/bindings/loop/ask.mjs";
 // The driver's one non-transcript parse: the headless runtime's stdout document (a codex run).
 const STDOUT_PARSER = "function defaultSpawnRuntime(";
 const DRIVER_EXPORTS = 17; // 53/FF-5302
@@ -89,11 +89,11 @@ function resolved(fromRel, specifier) {
   if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
-  if (/^src\/(?:application\/bindings\/)?loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace(/^src\/(?:application\/bindings\/)?loop\//, "packages/work-loop/src/");
+  if (/^packages\/core\/src\/(?:application\/bindings\/)?loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace(/^packages\/core\/src\/(?:application\/bindings\/)?loop\//, "packages/work-loop/src/");
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
-// ONE read of `src/**`, comment-stripped: `[{ rel, code, raw }]` with `rel` repo-relative posix.
+// ONE read of `packages/core/src/**`, comment-stripped: `[{ rel, code, raw }]` with `rel` repo-relative posix.
 async function srcUnits() {
   const units = [];
   for (const file of await readRuntimeFiles(repoRoot)) {
@@ -221,7 +221,7 @@ export const archTests = [
       assert.ok(home.code.includes(SEGMENT), `NOT FOUND: ${HOME} does not spell ${JSON.stringify(SEGMENT)} — the sweep must find the home before it can claim it is the only one`);
 
       const spellers = units.filter(({ code }) => code.includes(SEGMENT)).map(({ rel }) => rel);
-      assert.deepEqual(spellers, [HOME], `loop-asks appears only in src/loop/ask-request.mjs — spelled by: ${spellers.join(", ")}. A module that composes the ask's path itself is a second home for the ask (ADR-003 §1); read it through loopAsksDir()/askRequestPath()`);
+      assert.deepEqual(spellers, [HOME], `loop-asks appears only in packages/core/src/loop/ask-request.mjs — spelled by: ${spellers.join(", ")}. A module that composes the ask's path itself is a second home for the ask (ADR-003 §1); read it through loopAsksDir()/askRequestPath()`);
 
       const joins = units.flatMap(({ rel, code }) => meshRootAskJoins(code).map((join) => `${rel}: ${join}`));
       assert.deepEqual(joins, [], `no module joins meshRoot with an ask literal — found: ${joins.join(" | ")}. The ask's path has one home (ADR-003 §1): loopAsksDir()`);
@@ -230,9 +230,9 @@ export const archTests = [
 
       const importers = importersOf(units, HOME);
       for (const reader of READERS) {
-        assert.ok(importers.includes(reader), `${reader} imports src/loop/ask-request.mjs by RESOLVED specifier (through module-family.mjs) — importers found: ${importers.join(", ") || "none"}`);
+        assert.ok(importers.includes(reader), `${reader} imports packages/core/src/loop/ask-request.mjs by RESOLVED specifier (through module-family.mjs) — importers found: ${importers.join(", ") || "none"}`);
       }
-      assert.match(unitOf(units, "src/application/bindings/commands/resume.mjs").code, /createReentryCommands\(\{[^}]*answerAsk,\s*loopAsksDir/u, "core supplies the shared ask API to the work command");
+      assert.match(unitOf(units, "packages/core/src/application/bindings/commands/resume.mjs").code, /createReentryCommands\(\{[^}]*answerAsk,\s*loopAsksDir/u, "core supplies the shared ask API to the work command");
       assert.match(unitOf(units, "packages/work/src/commands/resume.mjs").code, /function createReentryCommands\(\{[^}]*answerAsk,\s*loopAsksDir/u, "the package receives the shared ask API");
     },
   },
@@ -246,7 +246,7 @@ export const archTests = [
       assert.match(composition.code, /createWorkObserver\(\{\s*reportDegrade\s*\}\)/u, "the adapter supplies only reporting policy");
       assert.match(composition.code, /const\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}/u, "the legacy adapter forwards the shared reader");
       const definers = units.filter(({ code }) => /\bASK_STATES\s*=/u.test(code)).map(({ rel }) => rel);
-      assert.deepEqual(definers, [HOME], `ASK_STATES is defined in src/loop/ask-request.mjs and nowhere else — defined in: ${definers.join(", ") || "nowhere"}`);
+      assert.deepEqual(definers, [HOME], `ASK_STATES is defined in packages/core/src/loop/ask-request.mjs and nowhere else — defined in: ${definers.join(", ") || "nowhere"}`);
 
       const carriers = importersOf(units, HOME).filter((rel) => rel !== HOME);
       assertRead("the modules that carry an ask", carriers.length, READERS.length, "importer(s)");
@@ -311,9 +311,9 @@ export const archTests = [
         home != null && importers.length >= READERS.length,
         `the sweep finds the module and at least three importers: ${HOME} ${home == null ? "was NOT found" : "found"}, ${importers.length} importer(s) resolved (${importers.join(", ") || "none"}) — a needle that resolves to nothing is a guard asserting over the empty set, not a clean tree`,
       );
-      const planted = [{ rel: "src/x.mjs", code: 'import { readAsk } from "./loop/ask-requests.mjs";' }];
+      const planted = [{ rel: "packages/core/src/x.mjs", code: 'import { readAsk } from "./loop/ask-requests.mjs";' }];
       assert.equal(importersOf(planted, HOME).length, 0, "self-check: a misspelled specifier resolves to no importer");
-      assert.equal(importersOf([{ rel: "src/x.mjs", code: 'import { readAsk } from "./loop/ask-request.mjs";' }], HOME).length, 1, "self-check: the right specifier resolves");
+      assert.equal(importersOf([{ rel: "packages/core/src/x.mjs", code: 'import { readAsk } from "./loop/ask-request.mjs";' }], HOME).length, 1, "self-check: the right specifier resolves");
     },
   },
   {
@@ -322,23 +322,23 @@ export const archTests = [
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
       const observe = unitOf(units, OBSERVE);
-      assert.match(observe.code, /\basync\s+function\s+readLastAssistantTurn\s*\(/u, "readLastAssistantTurn is defined in src/work/observe.mjs");
+      assert.match(observe.code, /\basync\s+function\s+readLastAssistantTurn\s*\(/u, "readLastAssistantTurn is defined in packages/core/src/work/observe.mjs");
       const definers = units.filter(({ code }) => /\bfunction\s+readLastAssistantTurn\s*\(/u.test(code)).map(({ rel }) => rel);
       assert.deepEqual(definers, [OBSERVE], `readLastAssistantTurn is defined once — in: ${definers.join(", ")}`);
 
-      const adapterPath = "src/application/bindings/agent-session-driver.mjs";
+      const adapterPath = "packages/core/src/application/bindings/agent-session-driver.mjs";
       const driver = unitOf(units, adapterPath);
-      assert.ok(dependencySpecifiers(driver.code).some(({ specifier }) => resolved(adapterPath, specifier) === OBSERVE_ADAPTER), "the adapter imports src/work/observe.mjs by resolved specifier");
+      assert.ok(dependencySpecifiers(driver.code).some(({ specifier }) => resolved(adapterPath, specifier) === OBSERVE_ADAPTER), "the adapter imports packages/core/src/work/observe.mjs by resolved specifier");
       assert.match(driver.code, /const\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*= workObserveServices/u, "the configured reader comes from the observer");
 
       const ask = unitOf(units, ASK);
-      assert.ok(dependencySpecifiers(ask.code).some(({ specifier }) => resolved(ASK, specifier) === OBSERVE_ADAPTER), "src/loop/ask.mjs imports its reader from src/work/observe.mjs by resolved specifier (ruling 2)");
+      assert.ok(dependencySpecifiers(ask.code).some(({ specifier }) => resolved(ASK, specifier) === OBSERVE_ADAPTER), "packages/core/src/loop/ask.mjs imports its reader from packages/core/src/work/observe.mjs by resolved specifier (ruling 2)");
       assert.match(ask.code, /const\s*\{[^}]*\breadAskQuestion\b[^}]*\}\s*= workObserveServices/u, "the configured reader comes from the observer");
       const implementation = unitOf(units, "packages/work-loop/src/ask.mjs");
       assert.match(ask.code, /transcripts:\s*\{\s*readAskQuestion/u, "the adapter supplies the shared transcript reader");
       assert.match(implementation.code, /const\s*\{\s*readAskQuestion\s*\}\s*=\s*transcripts/u, "the implementation receives that reader");
       for (const [needle, what] of [[/\bJSON\s*\.\s*parse\s*\(/u, "JSON.parse("], [/stop_reason/u, "stop_reason"], [/\.jsonl\b/u, ".jsonl"], [/\breadFile\s*\(/u, "readFile("]]) {
-        assert.doesNotMatch(ask.code, needle, `src/loop/ask.mjs walks no transcript itself — it spells ${what}`);
+        assert.doesNotMatch(ask.code, needle, `packages/core/src/loop/ask.mjs walks no transcript itself — it spells ${what}`);
         assert.doesNotMatch(implementation.code, needle, `the ask package walks no transcript itself — it spells ${what}`);
       }
     },
@@ -357,13 +357,13 @@ export const archTests = [
         const body = rel === DRIVER ? code.replace(stdout, "") : code;
         if (/\bJSON\s*\.\s*parse\s*\(/u.test(body) && /stop_reason/u.test(body)) scanners.push(rel);
       }
-      assert.deepEqual(scanners, [], `no other src/** module both JSON.parses transcript lines and reads stop_reason — found in: ${scanners.join(", ")}. The transcript has one reader (ADR-002): readLastAssistantTurn in src/work/observe.mjs`);
+      assert.deepEqual(scanners, [], `no other src/** module both JSON.parses transcript lines and reads stop_reason — found in: ${scanners.join(", ")}. The transcript has one reader (ADR-002): readLastAssistantTurn in packages/core/src/work/observe.mjs`);
     },
   },
   {
     name: "arch/131 FF-13102 (acd-loop-ask-single-home): the driver keeps its seventeen exports, and NEEDS_INPUT_INSTRUCTION embeds the sentinel, asks the four labels and keeps the genuine-judgment-call sentence",
     run: async () => {
-      const driver = await import("../../../src/agent-session-driver.mjs");
+      const driver = await import("../../../packages/core/src/agent-session-driver.mjs");
       assert.equal(Object.keys(driver).length, DRIVER_EXPORTS, `the driver's export set stays at 17 (53/FF-5302) — it has ${Object.keys(driver).length}`);
       const text = driver.NEEDS_INPUT_INSTRUCTION;
       assert.equal(typeof text, "string", "NEEDS_INPUT_INSTRUCTION is exported");

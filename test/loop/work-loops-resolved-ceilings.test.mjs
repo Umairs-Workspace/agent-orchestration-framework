@@ -5,12 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DEFAULT_REVIEW_ROUNDS } from "../../src/loop-bounds.mjs";
-import { initWork } from "../../src/work/init.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
+import { DEFAULT_REVIEW_ROUNDS } from "../../packages/core/src/loop-bounds.mjs";
+import { initWork } from "../../packages/core/src/work/init.mjs";
+import { loadLoops } from "../../packages/core/src/work/loops.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const bundleAof = path.join(root, "src", "bundle");
+const bundleAof = path.join(root, "packages", "core", "assets");
 
 function record(stem, ceiling) {
   return `---\nid: loop:${stem}\nkind: loop\ntitle: ${stem}\ncontrolled: state\nreference: [prose:README.md]\nmeasurement: [prose:README.md]\nactuator: [prose:README.md]\ncadence: event:per-item\nceiling: ${ceiling}\nowner: unknown\noptimizing: false\n---\n# ${stem}\n`;
@@ -58,7 +58,7 @@ export const workLoopsResolvedCeilingsTests = [
       const model = await loadLoops(bundleAof);
       const node = model.nodes.find((entry) => entry.id === "loop:build-to-green");
       assert.deepEqual(node.fields.ceiling.map((entry) => entry.raw), ["config:work.loop.buildNoProgressRounds"]);
-      const source = await readFile(path.join(root, "src", "bundle", "loops", "build-to-green.md"), "utf8");
+      const source = await readFile(path.join(root, "packages", "core", "assets", "loops", "build-to-green.md"), "utf8");
       const frontmatter = source.match(/^---\r?\n([\s\S]*?)\r?\n---/u)?.[1] ?? "";
       assert.doesNotMatch(frontmatter.match(/^ceiling:.*$/mu)?.[0] ?? "", /\d/u);
     },
@@ -70,7 +70,7 @@ export const workLoopsResolvedCeilingsTests = [
       const node = model.nodes.find((entry) => entry.id === "loop:review-fix-rereview");
       assert.deepEqual(node.fields.ceiling.map((entry) => entry.raw), ["config:work.loop.reviewRounds"]);
       assert.equal(DEFAULT_REVIEW_ROUNDS, 1);
-      const recordSource = await readFile(path.join(root, "src", "bundle", "loops", "review-fix-rereview.md"), "utf8");
+      const recordSource = await readFile(path.join(root, "packages", "core", "assets", "loops", "review-fix-rereview.md"), "utf8");
       assert.doesNotMatch(recordSource.match(/^ceiling:.*$/mu)?.[0] ?? "", /\b1\b/u);
     },
   },

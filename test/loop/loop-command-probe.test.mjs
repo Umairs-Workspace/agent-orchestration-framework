@@ -4,15 +4,15 @@ import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
-import { invoke } from "../../src/command-core.mjs";
+import { loopCommand, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 import { LOOP_STOPS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
 import { immediatePark } from "../support/loop/lane-fixture.mjs";
-import { completeRun, heartbeat, readRuns, retryRun, runNodeRecordPath, runRecordPath, startRun } from "../../src/run-store.mjs";
-import { heartbeatFromConfig } from "../../src/loop-bounds.mjs";
-import { loopStopsDir, readStopRequest, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
-import { stopLoop } from "../../src/loop/stop.mjs";
+import { completeRun, heartbeat, readRuns, retryRun, runNodeRecordPath, runRecordPath, startRun } from "../../packages/core/src/run-store.mjs";
+import { heartbeatFromConfig } from "../../packages/core/src/loop-bounds.mjs";
+import { loopStopsDir, readStopRequest, requestLoopStop, stopRequestPath } from "../../packages/core/src/loop/stop-request.mjs";
+import { stopLoop } from "../../packages/core/src/loop/stop.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 
@@ -449,7 +449,7 @@ export const loopCommandProbeTests = [
       const deferred = /const BOARD_DEFERRED = new Set\(\[([\s\S]*?)\]\)/u.exec(coverage);
       assert.ok(deferred, "BOARD_DEFERRED is a literal set in the route-coverage control");
       assert.match(deferred[1], /"loop"/u, "work:loop is still deferred");
-      assert.doesNotMatch(await readFile(path.join(root, "src", "board-ui.mjs"), "utf8"), /\/api\/work\/loop/u);
+      assert.doesNotMatch(await readFile(path.join(root, "packages", "core", "src", "board-ui.mjs"), "utf8"), /\/api\/work\/loop/u);
     },
   },
 

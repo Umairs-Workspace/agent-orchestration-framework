@@ -29,14 +29,14 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, DEFAULT_MESH_UI_PORT, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { queryGlobalMeshStatus } from "../../../src/global-mesh-query.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
-import { loopStopsDir, readStopRequest } from "../../../src/loop/stop-request.mjs";
+import { serveMeshUi, DEFAULT_MESH_UI_PORT, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { queryGlobalMeshStatus } from "../../../packages/core/src/global-mesh-query.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
+import { loopStopsDir, readStopRequest } from "../../../packages/core/src/loop/stop-request.mjs";
 import { publishRepoInto, withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
@@ -776,7 +776,7 @@ export const meshUiServeTests = [
     name: "loop-stop-route/02 the face imports the core and nothing from commands — ../loop/stop.mjs is among ui-serve.mjs's specifiers, none is under ../commands/, and acd-mesh-ui-no-core-import's allow-list names it as the second sanctioned write door",
     async run() {
       const source = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs"), "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
       for (const text of [source, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*stopLoop/su);
       const specifiers = dependencySpecifiers(source + "\n" + adapter).map((entry) => entry.specifier);
       assert.ok(specifiers.includes("../loop/stop.mjs"), `imports ../loop/stop.mjs — got ${JSON.stringify(specifiers)}`);
@@ -857,7 +857,7 @@ function loopbackHostTests() {
     {
       name: "131/04 task02 — the predicate answers only for a loopback name (forty-seven rows)",
       async run() {
-        const { isLoopbackHost } = await import("../../../src/static-serve.mjs");
+        const { isLoopbackHost } = await import("../../../packages/core/src/static-serve.mjs");
         const rows = [
           ["127.0.0.1", true], ["127.0.0.1:4181", true], ["localhost", true], ["localhost:4181", true], ["LOCALHOST:4181", true],
           ["[::1]", true], ["[::1]:4181", true], ["127.1.2.3:80", true], ["evil.example:1234", false], ["192.168.1.5:4181", false],

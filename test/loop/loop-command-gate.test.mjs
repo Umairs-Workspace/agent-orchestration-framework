@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { writeFileSync } from "node:fs";
-import { runLoopBody } from "../../src/commands/loop.mjs";
+import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 
 const invalidFeature = `Feature: Invalid

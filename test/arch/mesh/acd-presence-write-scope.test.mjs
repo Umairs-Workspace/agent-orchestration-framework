@@ -7,7 +7,7 @@
 // seam (19/R2) — NOT a bare writeFile/appendFile; NO write targets an item record doc
 // (SPEC.md/STORY.md/STATE.md/SESSION.md) or its frontmatter (record-doc resolution
 // lives in work.mjs, never the presence mechanic). The scan covers BOTH the presence
-// module (src/mesh/presence.mjs) AND the command (src/commands/mesh-heartbeat.mjs),
+// module (packages/core/src/mesh/presence.mjs) AND the command (packages/core/src/commands/mesh-heartbeat.mjs),
 // per ARCHITECTURE.md fitness #3.
 //
 // Per the m03 lesson (a fitness function asserts the PRESENCE of what should exist,
@@ -63,7 +63,7 @@ export const archTests = [
         );
       }
       // Non-vacuous: at least one presence source DID route a write through writeText
-      // (src/mesh/presence.mjs's publishPresenceRecord) — not an empty observed set.
+      // (packages/core/src/mesh/presence.mjs's publishPresenceRecord) — not an empty observed set.
       assert.ok(sawWriteText, "the presence mechanic persists via the atomic writeText seam (publishPresenceRecord)");
       // Self-check (non-vacuous): the bare-write detector DOES fire on a real writeFile.
       assert.equal(

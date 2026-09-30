@@ -12,9 +12,9 @@
 // spawn `worktree add` itself.
 //
 // Proofs:
-//  1. Structural — src/mesh/worktree.mjs is the ONLY module containing a literal
+//  1. Structural — packages/core/src/mesh/worktree.mjs is the ONLY module containing a literal
 //     `"worktree", "add"` (or `worktree add`) argv shape.
-//  2. Structural — src/mesh/worker-execution.mjs calls addWorktree(...) (the existing
+//  2. Structural — packages/core/src/mesh/worker-execution.mjs calls addWorktree(...) (the existing
 //     m35 seam) and contains NO second `"worktree"` / `"add"` argv pairing of its own.
 //  3. Structural — the ARCHITECTURE #8 sibling (acd-assignment-worktree-path-scoped)
 //     stays registered in the suite — this file re-arms it, never duplicates its body

@@ -3,13 +3,13 @@
 //     tasks/04_count-shifted-primitive.feature
 // Every @executable scenario (and each Scenario Outline row) below is wired
 // against the LOCKED engine `countShiftedByInsert(workDir, { at, space, parent })`
-// (src/work/reindex.mjs), cross-checked against a fresh `listItems`/`findWork`
-// read (src/work.mjs) and (for the last scenario) against
+// (packages/core/src/work/reindex.mjs), cross-checked against a fresh `listItems`/`findWork`
+// read (packages/core/src/work.mjs) and (for the last scenario) against
 // `reindexForInsert`'s own reported shift count — the ADR-004 "one source of
 // truth" guarantee.
 import assert from "node:assert/strict";
-import { listItems } from "../../../src/work.mjs";
-import { countShiftedByInsert, reindexForInsert } from "../../../src/work/reindex.mjs";
+import { listItems } from "../../../packages/core/src/work.mjs";
+import { countShiftedByInsert, reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
 import { withWork, buildTopLevelStream, writeStoryItem, folderNames } from "../../support/work-reindex-fixture.mjs";
 
 async function buildFixture(work) {

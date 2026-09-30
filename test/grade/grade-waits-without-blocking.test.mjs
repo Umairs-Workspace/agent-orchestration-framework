@@ -23,14 +23,14 @@ import { rm, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { runLoopBody } from "../../src/commands/loop.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import {
   DEFAULT_HEARTBEAT_MS,
   DEFAULT_START_TO_CLOSE_MS,
   gradeDeadlineFromConfig,
-} from "../../src/loop-bounds.mjs";
-import { rubricSpawnOptions, spawnRubricAsync, GRADE_REENTRANCY_ENV } from "../../src/commands/grade.mjs";
+} from "../../packages/core/src/loop-bounds.mjs";
+import { rubricSpawnOptions, spawnRubricAsync, GRADE_REENTRANCY_ENV } from "../../packages/core/src/commands/grade.mjs";
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../loop/loop-command-probe.test.mjs";
@@ -270,7 +270,7 @@ export const gradeWaitsWithoutBlockingTests = [
         .replace(/\/\/[^\n]*/g, "")
         .replace(/\/\*[\s\S]*?\*\//g, "");
 
-      assert.match(code, /from "@aof\/contracts\/loop-bounds"/, "it resolves its deadline through src/loop-bounds.mjs");
+      assert.match(code, /from "@aof\/contracts\/loop-bounds"/, "it resolves its deadline through packages/core/src/loop-bounds.mjs");
       // THE GUARD THAT PINNED THE OLD RESOLVER BY NAME NOW PINS THE NEW ONE.
       assert.match(code, /gradeDeadlineFromConfig/, "…by the derived resolver's name");
       assert.ok(!code.includes("startToCloseFromConfig"), "…and no longer by the unclamped one it used to");
@@ -280,7 +280,7 @@ export const gradeWaitsWithoutBlockingTests = [
 
       // NO NEW `work.loop.*` KEY IS DECLARED, so the tuner's declared ranges are unchanged.
       // Asserted over the registries themselves rather than over prose about them.
-      const bounds = await import("../../src/loop-bounds.mjs");
+      const bounds = await import("../../packages/core/src/loop-bounds.mjs");
       assert.deepEqual(
         [...bounds.LOOP_BOUND_CONFIG_KEYS].sort(),
         [...bounds.LOOP_BOUND_VALUE_KEYS].sort(),
@@ -530,7 +530,7 @@ export const gradeWaitsWithoutBlockingTests = [
       // THE PURE LEAF IS UNTOUCHED — no child process facility, no clock (FF-5406).
       const leaf = strip(await readFile(path.join(repoRoot, "packages", "work", "src", "grade.mjs"), "utf8"));
       for (const forbidden of ["node:child_process", "spawnSync", "spawn(", "Date.now(", "new Date("]) {
-        assert.ok(!leaf.includes(forbidden), `src/work/grade.mjs imports no child-process facility and reads no clock (found ${forbidden})`);
+        assert.ok(!leaf.includes(forbidden), `packages/core/src/work/grade.mjs imports no child-process facility and reads no clock (found ${forbidden})`);
       }
 
       // THE READ FACE STILL LAUNCHES NOTHING WITHOUT `--run`.

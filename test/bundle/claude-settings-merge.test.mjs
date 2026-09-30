@@ -33,12 +33,12 @@ import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyClaudeSettingsMerge, claudeSettingsPath, formatClaudeSettingsOutcome, AOF_HOOK_MARKER } from "../../src/claude-settings.mjs";
-import { bundledFrozenSet, compileFrozenSet } from "../../src/frozen-set.mjs";
-import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH } from "../../src/artifact-sync.mjs";
-import { initWork } from "../../src/work/init.mjs";
-import { updateWork } from "../../src/work/update.mjs";
-import { assetsApplyCommand } from "../../src/commands/assets/apply.mjs";
+import { applyClaudeSettingsMerge, claudeSettingsPath, formatClaudeSettingsOutcome, AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
+import { bundledFrozenSet, compileFrozenSet } from "../../packages/core/src/frozen-set.mjs";
+import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH } from "../../packages/core/src/artifact-sync.mjs";
+import { initWork } from "../../packages/core/src/work/init.mjs";
+import { updateWork } from "../../packages/core/src/work/update.mjs";
+import { assetsApplyCommand } from "../../packages/core/src/commands/assets/apply.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OPERATOR_SETTINGS = path.join(repoRoot, ".claude", "settings.json");
@@ -82,7 +82,7 @@ async function operatorFixtureText() {
   // AOF MANAGES TWO SURFACES OF THIS FILE, AND THE PROJECTION MUST COVER BOTH.
   // Hook entries carry `AOF_HOOK_MARKER`; `permissions.deny` rules carry no in-file
   // mark at all — their ownership lives in the BUNDLE's permission catalogue, which is
-  // the same authority `splicePermissions` consults (`src/claude-settings.mjs`'s
+  // the same authority `splicePermissions` consults (`packages/core/src/claude-settings.mjs`'s
   // `knownManaged`). Projecting hooks alone left this fixture presenting bundle-owned
   // deny rules as operator-owned, so the isolated merge retracted them exactly as it
   // should and the byte-identity assertions failed on the merge being RIGHT.
@@ -649,7 +649,7 @@ export const claudeSettingsMergeTests = [
         const install = await initWork({ targetDir: dir, runtimes: ["claude"] });
         const scriptPath = path.join(dir, ...ARTIFACT_SYNC_SCRIPT_RELPATH.split("/"));
         assert.ok(existsSync(scriptPath), "the enqueue script exists at its installed path");
-        const bundled = await readFile(path.join(repoRoot, "src", "bundle", "hooks", "artifact-sync-enqueue.mjs"), "utf8");
+        const bundled = await readFile(path.join(repoRoot, "packages", "core", "assets", "hooks", "artifact-sync-enqueue.mjs"), "utf8");
         assert.equal(await readFile(scriptPath, "utf8"), bundled, "…with the content the bundle recorded");
 
         const after = await readSettings(settingsPath);

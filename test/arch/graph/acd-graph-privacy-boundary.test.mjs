@@ -21,10 +21,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { graphBuildCommand, classifyEgress } from "../../../src/commands/graph/build.mjs";
+import { graphBuildCommand, classifyEgress } from "../../../packages/core/src/commands/graph/build.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 const DRIVER = path.join(repoRoot, "packages/knowledge/src/graphify.mjs");
 // The pure graph.json read/normalize helpers were extracted to graph-normalize.mjs
 // (10/01, a spawn-free module the graphify memory backend imports without touching

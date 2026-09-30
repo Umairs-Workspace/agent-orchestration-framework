@@ -29,8 +29,8 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { buildThreeRootFixture, withThreeRoots } from "./stream/work-backlog-archive-enumerate.test.mjs";
 

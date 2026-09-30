@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand } from "../../../src/command-core.mjs";
-import { evaluateRatchet } from "../../../src/work/ratchet.mjs";
+import { getCommand } from "../../../packages/core/src/command-core.mjs";
+import { evaluateRatchet } from "../../../packages/core/src/work/ratchet.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -25,7 +25,7 @@ export const archTests = [
       assert.doesNotMatch(executableEngine, /node:(?:fs|child_process)|\bprocess\b|\bexecFile\b|\bspawn\b/iu);
       assert.doesNotMatch(boundary, /node:child_process/u);
       assert.match(boundary, /await execFileAsync\("git", args,/u);
-      const composition = await readFile(path.join(root, "src/application/bindings/commands/ratchet.mjs"), "utf8");
+      const composition = await readFile(path.join(root, "packages/core/src/application/bindings/commands/ratchet.mjs"), "utf8");
       assert.match(composition, /node:child_process/u);
       assert.match(composition, /createRatchetCommand\(\{[^}]*execFileAsync/u);
       assert.match(boundary, /resolveRatchetBase/u);

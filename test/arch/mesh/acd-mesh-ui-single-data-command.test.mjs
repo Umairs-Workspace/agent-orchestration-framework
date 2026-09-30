@@ -7,24 +7,24 @@
 // The fleet aggregate = nodes (readNodeRecords) + presence/staleness + the group
 // registry (readRegistry — the roster of registered boards, milestone 24) + per-board
 // active runs. ADR-002 requires that ONE registered command (`mesh:status`, hosted in
-// src/commands/mesh-identity.mjs) is the SOLE place the registry roster is joined to
+// packages/core/src/commands/mesh-identity.mjs) is the SOLE place the registry roster is joined to
 // the node/presence reads, so the CLI mirror and the web face cannot diverge.
 //
 // TWO PHASES, both absence-tolerant so the whole test is GREEN on the current tree
 // (before milestone 25's code lands) and TIGHTENS automatically as the code appears:
 //
 //   Phase 1 (always runs): among the registered mesh:* command modules
-//   (src/commands/mesh-*.mjs), the ONLY module that reads the group registry
+//   (packages/core/src/commands/mesh-*.mjs), the ONLY module that reads the group registry
 //   (`readRegistry`) alongside the node roster is the one that hosts `mesh:status`
 //   (mesh-identity.mjs). A SECOND module co-reading readRegistry + readNodeRecords
 //   would be a second fleet-data path. Vacuously true today: readRegistry is imported
-//   nowhere yet (src/mesh/registry.mjs is authored by milestone 24; the boards
+//   nowhere yet (packages/core/src/mesh/registry.mjs is authored by milestone 24; the boards
 //   projection by milestone 25 story 02) — so the "at most one such module" bound
 //   holds with zero such modules. It tightens to "exactly mesh-identity.mjs" once the
 //   boards projection lands.
 //
 //   Phase 2 (guarded by existsSync of the fleet serve-face): when
-//   src/mesh/ui-serve.mjs exists (milestone 25 story 03), assert its ONLY reach to
+//   packages/core/src/mesh/ui-serve.mjs exists (milestone 25 story 03), assert its ONLY reach to
 //   fleet data is queryGlobalMeshStatus(…) through ./command-core.mjs — it imports NO
 //   mesh-store / mesh-presence / mesh-registry / commands/* module directly (a second
 //   data path). Skipped (a pinned green) while the module is absent — the
@@ -40,7 +40,7 @@ import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const COMMANDS_DIR = path.join(repoRoot, "src", "commands");
+const COMMANDS_DIR = path.join(repoRoot, "packages", "core", "src", "commands");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 
 // The mesh:status host, by MODULE rather than by spelling: `mesh-identity.mjs` while the directory
@@ -53,8 +53,8 @@ function stripComments(source) {
 }
 
 // THE SUBJECT IS DERIVED FROM THE TREE, RECURSIVELY (119/ADR-003 §4). A non-recursive `readdir`
-// filtered by the `mesh-` prefix is a claim that survives only while `src/commands/` stays flat:
-// 119/02 gives it an interior, and the day `src/commands/mesh-*.mjs` becomes `src/commands/mesh/*`
+// filtered by the `mesh-` prefix is a claim that survives only while `packages/core/src/commands/` stays flat:
+// 119/02 gives it an interior, and the day `packages/core/src/commands/mesh-*.mjs` becomes `packages/core/src/commands/mesh/*`
 // the old walk returned nothing and this control asserted 25/ADR-002 over the empty set forever.
 // A mesh command module is one whose PATH names the mesh family — the flat `mesh-…​.mjs` spelling
 // or the `mesh/` directory the interior gives it — so both spellings resolve to the same subject.
@@ -84,11 +84,11 @@ export const archTests = [
     run: async () => {
       // A MOVE REDS THIS CONTROL; IT NEVER EMPTIES IT (119/ADR-003 §4). The readdir used to sit in
       // a try/catch that substituted `[]`, and the filter used to be the only thing selecting the
-      // subject — so once `src/commands/mesh-*.mjs` moves into `src/commands/mesh/`, `joiners` would
+      // subject — so once `packages/core/src/commands/mesh-*.mjs` moves into `packages/core/src/commands/mesh/`, `joiners` would
       // be `[]` and `joiners.length <= 1` would assert 25/ADR-002's "at most one fleet-data path"
       // over the empty set, permanently, with no message anywhere. That is the SILENT species, and
       // this file is the specimen 119/ADR-003 names. The walk is now recursive, so the interior
-      // stories 119/02 gives `src/commands/` do not disarm it, and its own non-vacuity is asserted
+      // stories 119/02 gives `packages/core/src/commands/` do not disarm it, and its own non-vacuity is asserted
       // before anything is asserted over the set.
       const files = (await readMeshCommandModules(COMMANDS_DIR)).sort();
       assert.ok(
@@ -129,11 +129,11 @@ export const archTests = [
         // Absence-tolerant pinned green: the fleet serve-face is authored by story 03.
         // Do NOT hard-fail on the not-yet-existing module (suite hygiene) — assert the
         // deliberate skip so this is a conscious green, not an accidental one.
-        assert.ok(true, "src/mesh/ui-serve.mjs not present yet (milestone 25 story 03 authors it) — phase-2 skipped");
+        assert.ok(true, "packages/core/src/mesh/ui-serve.mjs not present yet (milestone 25 story 03 authors it) — phase-2 skipped");
         return;
       }
       const implementation = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
       for (const text of [implementation, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*queryGlobalMeshStatus[^}]*assignWork[^}]*stopLoop/su, "the configured fleet doors reach the package");
       const source = adapter + "\n" + implementation;
       // The door IS present — the face reaches fleet data through the command registry.

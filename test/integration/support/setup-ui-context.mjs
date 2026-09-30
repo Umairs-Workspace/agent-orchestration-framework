@@ -1,5 +1,5 @@
 import { mkdir } from "node:fs/promises";
-import { serveSetupUi } from "../../../src/setup-ui.mjs";
+import { serveSetupUi } from "../../../packages/core/src/setup-ui.mjs";
 
 export async function startSetupUi(context) {
   if (context.setupUi) return;

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
 
 export const setupUiTests = [
   {

@@ -4,7 +4,7 @@
 // milestone 124 / story 02, ADR-007. Four claims, and each one is a claim about a different tree:
 //
 //   1. `shatter.md` carries ONE PO recall, keyed to the seam, placed before the cut (task 00).
-//   2. Every verb and flag a recall block spells resolves in `src/work/memory.mjs`'s OWN parse
+//   2. Every verb and flag a recall block spells resolves in `packages/core/src/work/memory.mjs`'s OWN parse
 //      surface — never in `memoryUsage()`, never in `--help`, never in the command registry, which
 //      has no `work memory` entry to find (task 01).
 //   3. The cut-making roster is named and asserted in BOTH directions, so a third cutter cannot
@@ -13,7 +13,7 @@
 //      records agree where they overlap (task 03).
 //
 // WHY THE SURFACE IS READ FROM CODE. `aof work memory` WAS a deliberately-unrouted door:
-// `src/cli.mjs` dispatched it by string compare and `src/command-core.mjs` named it nowhere, so a
+// `packages/core/src/cli.mjs` dispatched it by string compare and `packages/core/src/command-core.mjs` named it nowhere, so a
 // registry lookup found nothing and a lenient one passed forever. Story 128 registered it
 // (`work:memory`, route `work memory`), and the surface is STILL the seam: the routed command's
 // `cli.argv` re-serialises the face's parse and hands it to `parseMemoryArgv`, so the module's own
@@ -28,16 +28,16 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { MEMORY_VERBS, SCOPE_FLAGS } from "../../../src/work/memory.mjs";
-import { loadBundle, renderBundleOutputs } from "../../../src/work/bundle.mjs";
-import { hashContent } from "../../../src/lock.mjs";
-import { listCommands } from "../../../src/command-core.mjs";
+import { MEMORY_VERBS, SCOPE_FLAGS } from "../../../packages/core/src/work/memory.mjs";
+import { loadBundle, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
+import { hashContent } from "../../../packages/core/src/lock.mjs";
+import { listCommands } from "../../../packages/core/src/command-core.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const slash = (value) => String(value).split("\\").join("/");
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
 
-const COMMANDS_DIR = "src/bundle/commands";
+const COMMANDS_DIR = "packages/core/assets/commands";
 const SHATTER = `${COMMANDS_DIR}/shatter.md`;
 const REFINE = `${COMMANDS_DIR}/refine.md`;
 
@@ -431,7 +431,7 @@ export const archTests = [
   {
     name: "arch/124/02 FF-12405 leg 9 (task 03): the manifest is a true content address, and it agrees with the lock on every path they both name",
     run: async () => {
-      const manifest = JSON.parse(read("src/bundle/manifest.json"));
+      const manifest = JSON.parse(read("packages/core/assets/manifest.json"));
       const bundle = await loadBundle();
       const rendered = new Map(
         renderBundleOutputs(bundle, { runtimes: manifest.runtimes }).map((output) => [slash(output.path), output]),
@@ -510,7 +510,7 @@ export const archTests = [
         ".claude/commands/aof/shatter.md",
         ".codex/skills/aof-shatter/SKILL.md",
         ".opencode/commands/aof/shatter.md",
-        "src/bundle/manifest.json",
+        "packages/core/assets/manifest.json",
         ".aof/aof.lock.json",
       ];
       const attrs = execFileSync("git", ["check-attr", "text", "eol", "--", ...six], { cwd: root, encoding: "utf8", maxBuffer: 1 << 24 });

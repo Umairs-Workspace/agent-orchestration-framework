@@ -13,7 +13,7 @@
 // Hermetic + producer-fed (the milestone's own recurring F1/F4 lesson): a REAL local
 // git checkout (test/support/mesh-memory-syncback-fixture.mjs, a real `git merge`) +
 // the REAL `runMemory`/`resolveConfiguredBackend` seam over the REAL `local` backend
-// (src/memory/local-indexing.mjs's `buildRecords`/`parseRetrospective`/
+// (packages/core/src/memory/local-indexing.mjs's `buildRecords`/`parseRetrospective`/
 // `parseArchitecture` — the SAME parsers the graphify backend also reuses, ADR-016's
 // own "RECORDS rebuild is OBSERVABLE with NO graphify binary" framing). The `local`
 // backend never attempts a graph build at all, so this suite is IMMUNE to the KNOWN
@@ -24,8 +24,8 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
-import { resolveRecordSourcePath } from "../../src/memory/local-indexing.mjs";
+import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
+import { resolveRecordSourcePath } from "../../packages/core/src/memory/local-indexing.mjs";
 import { withMeshMemorySyncbackFixture } from "../support/mesh-memory-syncback-fixture.mjs";
 
 const CONFIG = { memory: { backend: "local" } };

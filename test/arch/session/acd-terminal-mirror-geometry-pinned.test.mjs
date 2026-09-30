@@ -8,7 +8,7 @@
 //
 // WHY IT HAD TO BE A FITNESS FUNCTION AND NOT A `.feature` SCENARIO. The tie is a structural
 // assertion ACROSS TWO BUILDS THAT CANNOT IMPORT EACH OTHER: `ui/src/**` is bundled by vite
-// for a browser and `src/**` runs under node in the CLI. There is no runtime at which one
+// for a browser and `packages/core/src/**` runs under node in the CLI. There is no runtime at which one
 // could read the other's constant, so the only place the pair can be compared is a test that
 // reads BOTH FILES AS TEXT.
 //
@@ -40,7 +40,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const UI_SOURCE_TABLE = path.join("ui", "src", "terminal", "source-table.mjs");
-const WORKER_EXECUTION = path.join("src/application/bindings/mesh/worker-execution.mjs");
+const WORKER_EXECUTION = path.join("packages/core/src/application/bindings/mesh/worker-execution.mjs");
 
 async function read(rel) {
   // A hard-coded path that THROWS when the file moves is the correct behaviour here: the

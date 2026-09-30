@@ -3,7 +3,7 @@
 // over a fake socket factory and a fake clock: no real socket and no real timer runs (QA ruling 1),
 // and the token rides only the IDENTIFY and RESUME frames (QA ruling 2).
 import assert from "node:assert/strict";
-import { GATEWAY_INTENTS, startGateway } from "../../src/discord/gateway.mjs";
+import { GATEWAY_INTENTS, startGateway } from "../../packages/core/src/discord/gateway.mjs";
 import { TOKEN, TOKEN_SEGMENT, degradeSink, fakeClock, fakeGateway, flush, ready, releaseDegradeSink } from "./discord-fixture.mjs";
 
 const HALF = () => 0.5;

@@ -1,6 +1,6 @@
 // Traceability wiring for milestone 16 / story 00 — the doc-bloat / context-budget
 // check-group (`budgetGroup`). Covers EVERY @executable scenario across the story's two
-// task features, exercising the REAL engine (src/work/doctor.mjs's snapshot + the
+// task features, exercising the REAL engine (packages/core/src/work/doctor.mjs's snapshot + the
 // budgetGroup) over temp fixture repos. Runs ONLY the budget group via
 // doctorWork(..., { groups: [budgetGroup] }) so each assertion isolates the doc-bloat
 // behaviour from every other check-group. One test object per @executable scenario
@@ -15,9 +15,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
-import { budgetGroup } from "../../src/work/doctor-budget.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
+import { budgetGroup } from "../../packages/core/src/work/doctor-budget.mjs";
 
 // --- fixture builders --------------------------------------------------------
 

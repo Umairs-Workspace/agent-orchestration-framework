@@ -37,14 +37,14 @@ import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance, rememberStop
 import { POLL_MS, ASSIGN_SENT_HOLD_MS, ASSIGN_TIMEOUT_MS } from "../../ui/src/fleet/assign-affordance.mjs";
 import { removeWorkspaceFromProjection, withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
 import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
-import { assemblePresenceRecord, publishPresenceRecord } from "../../src/mesh/presence.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
-import { loopStopsDir } from "../../src/loop/stop-request.mjs";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
+import { assemblePresenceRecord, publishPresenceRecord } from "../../packages/core/src/mesh/presence.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
+import { loopStopsDir } from "../../packages/core/src/loop/stop-request.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
 // FF-11902 — "no new file under ui/src/fleet/" is the directory budget's ceiling, read from its ONE
 // home rather than retyped here as a count the next story to move a file would pay for.
 import { UI_DIRECTORY_BUDGETS } from "../arch/testing/acd-ui-directory-budget.test.mjs";
@@ -2086,7 +2086,7 @@ export const fleetScopeTests = [
         assert.ok(rePin[0].includes(file), `the re-pin names ${file}`);
       }
       assert.match(rePin[0], /nothing under `ui\/src\/board\/`/i, "…says nothing under ui/src/board/ moved");
-      assert.match(rePin[0], /src\/board-ui\.mjs/, "…and that src/board-ui.mjs's digest is unchanged");
+      assert.match(rePin[0], /packages\/core\/src\/board-ui\.mjs/, "…and that packages/core/src/board-ui.mjs's digest is unchanged");
       // 142 moves the unchanged run implementation into execution and records the source-body
       // and persisted-byte parity evidence above its replacement pin.
       assert.match(gate, /\["packages\/execution\/src\/runs\.mjs", "[0-9a-f]{64}"\]/, "the run-store pin is present");
@@ -2110,7 +2110,7 @@ export const fleetScopeTests = [
 //
 // Declared AFTER the array on purpose: function declarations hoist, and moving them above
 // it would shift the lane ADR-009 pins by line number (test/ui/fleet-scope.test.mjs:100-105).
-// The shape is the one `shapeGlobalStatus` (src/global-mesh-query.mjs:269-291) actually
+// The shape is the one `shapeGlobalStatus` (packages/core/src/global-mesh-query.mjs:269-291) actually
 // emits — `scope`, `workspaceId`, `stalenessSeconds`, `workspaces[]`, `items[]`, `nodes[]`
 // and a `diagnostics` block. Each call returns a FRESH object so a lane asserting
 // non-mutation cannot be fooled by a previous lane's leftovers.

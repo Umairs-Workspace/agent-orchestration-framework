@@ -16,8 +16,8 @@
 // "no time-predicated DELETE exists" — that is the arch-test's job
 // (acd-cache-staleness-single-predicate).
 import assert from "node:assert/strict";
-import { upsertWorkItems } from "../../src/global-work-store.mjs";
-import { invoke } from "../../src/command-core.mjs";
+import { upsertWorkItems } from "../../packages/core/src/global-work-store.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 import {
   withCacheFixture,
   withStore,

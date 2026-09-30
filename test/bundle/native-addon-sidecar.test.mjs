@@ -3,7 +3,7 @@
 //
 // Two layers:
 //   (a) the LOADER-SELECTION branch, driven directly against
-//       src/terminal-ws.mjs's createTerminalSpawn/defaultSpawn shape with the
+//       packages/core/src/terminal-ws.mjs's createTerminalSpawn/defaultSpawn shape with the
 //       asset-base SEA sentinel flipped in-process (no built binary, no real
 //       node-pty) — asserts createRequire(process.execPath) is chosen under a
 //       SEA and the dynamic import("node-pty") in dev.
@@ -16,10 +16,10 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
-import { createTerminalSpawn, loadNodePty } from "../../src/terminal-ws.mjs";
-import { setSeaSentinelForTest, isPackaged } from "../../src/asset-base.mjs";
-import { run as runCli } from "../../src/cli.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+import { createTerminalSpawn, loadNodePty } from "../../packages/core/src/terminal-ws.mjs";
+import { setSeaSentinelForTest, isPackaged } from "../../packages/core/src/asset-base.mjs";
+import { run as runCli } from "../../packages/core/src/cli.mjs";
 
 // --- fixtures ----------------------------------------------------------------
 

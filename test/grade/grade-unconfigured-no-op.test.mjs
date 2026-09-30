@@ -19,7 +19,7 @@ import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke, getCommand } from "../../src/command-core.mjs";
+import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";
 import { makeGradeRepo, writeRunner, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 import { registeredSuitePaths } from "../support/registration/registration-surface.mjs";
 

@@ -18,8 +18,8 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync
 import os from "node:os";
 import path from "node:path";
 
-import { readFinding } from "../../../src/work-audit/reads.mjs";
-import { HOOK_WIRING_SWEEPS, resolvedInvocation, runHookWiring } from "../../../src/work-audit/hook-wiring.mjs";
+import { readFinding } from "../../../packages/core/src/work-audit/reads.mjs";
+import { HOOK_WIRING_SWEEPS, resolvedInvocation, runHookWiring } from "../../../packages/core/src/work-audit/hook-wiring.mjs";
 
 const MARKER = "aofManaged";
 const SETTINGS_PATH = "/audited/project/.claude/settings.json";

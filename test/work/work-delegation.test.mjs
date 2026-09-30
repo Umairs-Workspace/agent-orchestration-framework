@@ -2,10 +2,10 @@
 //
 // Two surfaces asserted against the REAL modules:
 //   (a) the config-only read-merge-write of work.agents.delegation
-//       (src/work/delegation.mjs), incl. default-off, sibling preservation, and
-//       the validator (src/config-inspect.mjs);
+//       (packages/core/src/work/delegation.mjs), incl. default-off, sibling preservation, and
+//       the validator (packages/core/src/config-inspect.mjs);
 //   (b) the deterministic render floor — the bundled codex-* skills always render
-//       with `disable-model-invocation: true` (src/work/bundle.mjs + adapters).
+//       with `disable-model-invocation: true` (packages/core/src/work/bundle.mjs + adapters).
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
@@ -24,9 +24,9 @@ import {
   showDelegation,
   applyDelegationToResources,
   applyDelegationModelToResources
-} from "../../src/work/delegation.mjs";
-import { loadBundle, renderBundleOutputs } from "../../src/work/bundle.mjs";
-import { validateConfig } from "../../src/config-inspect.mjs";
+} from "../../packages/core/src/work/delegation.mjs";
+import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
+import { validateConfig } from "../../packages/core/src/config-inspect.mjs";
 
 const silent = () => {};
 

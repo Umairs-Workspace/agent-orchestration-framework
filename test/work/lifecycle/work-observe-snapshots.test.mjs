@@ -3,7 +3,7 @@
 // Covers EVERY @executable scenario in the two task features:
 //   tasks/00_never-overwrite.feature
 //   tasks/01_legacy-snapshots-marked.feature
-// exercising the REAL src/work/observe.mjs in-process against a temp fixture repo
+// exercising the REAL packages/core/src/work/observe.mjs in-process against a temp fixture repo
 // (mkdtemp → fake Claude transcript store → observeMilestone / markLegacySnapshot /
 // readLatestSnapshot → rm in finally). One test object per @executable scenario
 // (the Scenario-Outline rows folded into one entry iterating the rows), each name
@@ -21,7 +21,7 @@ const {
   PRE68_MINER,
   PRE68_DERIVATION_MARKER,
   PRE68_JSON_KEY,
-} = await import("../../../src/work/observe.mjs");
+} = await import("../../../packages/core/src/work/observe.mjs");
 
 // A minimal, valid transcript so observeMilestone finds one agent and renders a report.
 function fixtureTranscript() {

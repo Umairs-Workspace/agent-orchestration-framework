@@ -67,7 +67,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildDirectiveFrame } from "../../../src/control-stream-server.mjs";
+import { buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const controlSourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");

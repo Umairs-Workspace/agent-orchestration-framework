@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 127 / story 01 — "One enumerator, three roots".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) of the story's five
-// executable task features is asserted here against the LOCKED engine in src/work.mjs and its
+// executable task features is asserted here against the LOCKED engine in packages/core/src/work.mjs and its
 // consumers, driven over THE THREE-ROOT FIXTURE task 00 names once for the whole story:
 //
 //   <work>/10_milestone_alpha/SPEC.md            in-progress   + stories/00_story_alpha-one  not-started
@@ -37,18 +37,18 @@ import {
   BACKLOG_ITEM_RE,
   BACKLOG_ROOT,
   ARCHIVE_ROOT,
-} from "../../../src/work.mjs";
-import { doctorWork, buildSnapshot } from "../../../src/work/doctor.mjs";
-import { resolvedDependsEdges, classifyDependsEdges } from "../../../src/work/doctor-depends.mjs";
-import { statusCoherenceGroup } from "../../../src/work/doctor-coherence.mjs";
-import { appendPosition } from "../../../src/work-promote/promotion.mjs";
-import { countShiftedByInsert, refsTouchedByInsert } from "../../../src/work/reindex.mjs";
-import { buildRecords } from "../../../src/memory/local-indexing.mjs";
-import { resolveCitationAtEmit } from "../../../src/work-tune/provenance.mjs";
-import { resolveMilestoneFolder } from "../../../src/work/observe.mjs";
-import { migrateFolderCommand } from "../../../src/commands/migrate-folder.mjs";
-import { docCommand } from "../../../src/commands/doc.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+} from "../../../packages/core/src/work.mjs";
+import { doctorWork, buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
+import { resolvedDependsEdges, classifyDependsEdges } from "../../../packages/core/src/work/doctor-depends.mjs";
+import { statusCoherenceGroup } from "../../../packages/core/src/work/doctor-coherence.mjs";
+import { appendPosition } from "../../../packages/core/src/work-promote/promotion.mjs";
+import { countShiftedByInsert, refsTouchedByInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { buildRecords } from "../../../packages/core/src/memory/local-indexing.mjs";
+import { resolveCitationAtEmit } from "../../../packages/core/src/work-tune/provenance.mjs";
+import { resolveMilestoneFolder } from "../../../packages/core/src/work/observe.mjs";
+import { migrateFolderCommand } from "../../../packages/core/src/commands/migrate-folder.mjs";
+import { docCommand } from "../../../packages/core/src/commands/doc.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
@@ -613,7 +613,7 @@ export const workBacklogArchiveEnumerateTests = [
   {
     name: "work/backlog-archive-enumerate: 02 recent enumerates through `aof work list --json`, not through its own NN_type_slug walk",
     run: async () => {
-      const recent = await readFile(path.join(repoRoot, "src", "bundle", "commands", "recent.md"), "utf8");
+      const recent = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "recent.md"), "utf8");
       const process = recent.slice(recent.indexOf("<process>"), recent.indexOf("</process>"));
       assert.match(process, /^1\.[\s\S]*aof work list --json/m, "step 1 runs the listing");
       assert.match(process, /--all/, "…and --all when the operator asks for the archive");

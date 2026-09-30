@@ -26,14 +26,14 @@ import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyClaudeSettingsMerge, claudeSettingsPath } from "../../src/claude-settings.mjs";
-import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH, artifactSyncQueuePath } from "../../src/artifact-sync.mjs";
+import { applyClaudeSettingsMerge, claudeSettingsPath } from "../../packages/core/src/claude-settings.mjs";
+import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH, artifactSyncQueuePath } from "../../packages/core/src/artifact-sync.mjs";
 // The last scenario needs a real worker daemon (the reconciliation tick is the whole
 // point of it), so it rides the story's shared fixture.
 import { withArtifactSyncFixture } from "../support/artifact-sync-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLED_SCRIPT = path.join(repoRoot, "src", "bundle", "hooks", "artifact-sync-enqueue.mjs");
+const BUNDLED_SCRIPT = path.join(repoRoot, "packages", "core", "assets", "hooks", "artifact-sync-enqueue.mjs");
 
 // THE SCRIPT IS NEVER SPAWNED FROM THE REPO. Since ADR-013/C2 the queue is derived
 // from the script's OWN installed location, so running the repo's copy would append
@@ -154,12 +154,12 @@ export const artifactSyncEnqueueHookTests = [
         assert.doesNotMatch(arg, /\\/, `argv uses forward slashes so the same entry spawns on the Mac and WSL workers (${arg})`);
       }
       // …and the argv the entry carries really is where the bundle installs the script.
-      const installedTarget = JSON.parse(readFileSync(path.join(repoRoot, "src", "bundle", "bundle.json"), "utf8"))
+      const installedTarget = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "assets", "bundle.json"), "utf8"))
         .members.find((member) => member.id === "artifact-sync-enqueue").target;
       assert.equal(installedTarget, ARTIFACT_SYNC_SCRIPT_RELPATH, "the bundle installs the script exactly where the entry names it");
       // …and the bundle's own hook declaration spells the argv the ONE way src/ does —
       // the two are separate files, and a drift between them is a silent no-op hook.
-      const declaredArgs = JSON.parse(readFileSync(path.join(repoRoot, "src", "bundle", "hooks", "claude-artifact-sync.json"), "utf8")).claude.args;
+      const declaredArgs = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "assets", "hooks", "claude-artifact-sync.json"), "utf8")).claude.args;
       assert.deepEqual(declaredArgs, [ARTIFACT_SYNC_SCRIPT_ARGV], "the bundle hook declaration carries the run-time-resolved argv");
     }),
   },

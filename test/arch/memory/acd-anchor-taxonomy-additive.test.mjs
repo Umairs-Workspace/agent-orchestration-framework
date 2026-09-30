@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { ADMITTED_KEYS, GROUND_VALUES, NODE_KINDS, loadLoops } from "../../../src/work/loops.mjs";
+import { ADMITTED_KEYS, GROUND_VALUES, NODE_KINDS, loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 
 // The records milestone 52 shipped — the SEED of this fixture, not its contents. What is copied

@@ -3,13 +3,13 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { publishGlobalWorkSnapshot } from "../../../src/global-work-publisher.mjs";
-import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../src/global-node-registry.mjs";
-import { nodeRecordPath, publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
+import { publishGlobalWorkSnapshot } from "../../../packages/core/src/global-work-publisher.mjs";
+import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../packages/core/src/global-node-registry.mjs";
+import { nodeRecordPath, publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
+import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 const NOW = "2026-07-04T10:02:00.000Z";
 

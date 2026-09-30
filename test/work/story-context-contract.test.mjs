@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { validateWork } from "../../src/commands/validate.mjs";
-import { MAX_REVIEW_ROUNDS, reviewRoundsFromConfig } from "../../src/loop-bounds.mjs";
-import { partitionReadySetByDeclaredFiles } from "../../src/ready-wave.mjs";
+import { validateWork } from "../../packages/core/src/commands/validate.mjs";
+import { MAX_REVIEW_ROUNDS, reviewRoundsFromConfig } from "../../packages/core/src/loop-bounds.mjs";
+import { partitionReadySetByDeclaredFiles } from "../../packages/core/src/ready-wave.mjs";
 import {
   contractSetCovers,
   declaresDirectory,
@@ -15,12 +15,12 @@ import {
   resolveStoryContractPath,
   storyAnchorResolves,
   storyContractList,
-} from "../../src/story-contract.mjs";
+} from "../../packages/core/src/story-contract.mjs";
 // milestone 124 / story 00 — the census is asked the SAME coverage question the wave is asked, on
 // the one input where equality and coverage disagree. Importing the lane here is the point of
 // task 01's last scenario: two surfaces, one predicate.
-import { classifyDependsEdges } from "../../src/work/doctor-depends.mjs";
-import { listItems } from "../../src/work.mjs";
+import { classifyDependsEdges } from "../../packages/core/src/work/doctor-depends.mjs";
+import { listItems } from "../../packages/core/src/work.mjs";
 import {
   decideExecutionMode,
   decideReviewGate,
@@ -28,7 +28,7 @@ import {
   EXECUTION_MODES,
   REVIEW_BLOCKER_CLASSES,
   reviewBlockerClaim,
-} from "../../src/work/loop.mjs";
+} from "../../packages/core/src/work/loop.mjs";
 // 71/00 — the marked regions of `continue.md` are cut structurally, so a renumbered step does not
 // move what these assertions read.
 // 124/00 — `stripComments`, for the one structural clause task 01 states in terms of the module's
@@ -45,7 +45,7 @@ const region = (text, open, close) => {
 };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const bundle = path.join(root, "src", "bundle");
+const bundle = path.join(root, "packages", "core", "assets");
 const fm = (fields) => `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n`;
 
 async function withStory({ reads = "[]", files = "[]" } = {}, body) {
@@ -141,7 +141,7 @@ async function withStream(milestones, body) {
 
 // A PROJECT ROOT THAT DOES NOT EXIST. Every coverage row below is decided against paths that are
 // on no disk anywhere, so a predicate that had reached for `stat` would answer differently here
-// than on a tree where `src/commands/` is real — which is precisely the case a write-set collision
+// than on a tree where `packages/core/src/commands/` is real — which is precisely the case a write-set collision
 // matters in, since the colliding path has usually not been created yet.
 const NOWHERE_ROOT = path.join(root, "no-such-root-124-00");
 const NOWHERE_STORY = path.join(NOWHERE_ROOT, "wiki", "work", "00_milestone_m", "stories", "00_story_s");
@@ -154,15 +154,15 @@ const shapeOf = (entries) => (entries == null ? null : entries.map(({ path: entr
 
 // Task 00's coverage outline, verbatim — the rule, its boundary, and the two real 119 shapes.
 const COVERAGE_ROWS = [
-  { declared: "src/commands/test.mjs", probed: "src/commands/test.mjs", covers: true, why: "equal" },
-  { declared: "src/commands/", probed: "src/commands", covers: true, why: "equal once resolved — the leg that keeps the adoption a tightening" },
-  { declared: "src/commands/", probed: "src/commands/test.mjs", covers: true, why: "authored directory, probed path beneath it" },
-  { declared: "src/commands/", probed: "src/commands/mesh/gate.mjs", covers: true, why: "beneath it at any depth" },
-  { declared: "src/commands", probed: "src/commands/test.mjs", covers: false, why: "no authored slash, so no directory was claimed" },
-  { declared: "src/commands/", probed: "src/commands-old.mjs", covers: false, why: "a shared prefix is not containment — the separator is required" },
-  { declared: "src/commands/test.mjs", probed: "src/commands", covers: false, why: "a file covers no directory" },
+  { declared: "packages/core/src/commands/test.mjs", probed: "packages/core/src/commands/test.mjs", covers: true, why: "equal" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands", covers: true, why: "equal once resolved — the leg that keeps the adoption a tightening" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands/test.mjs", covers: true, why: "authored directory, probed path beneath it" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands/mesh/gate.mjs", covers: true, why: "beneath it at any depth" },
+  { declared: "packages/core/src/commands", probed: "packages/core/src/commands/test.mjs", covers: false, why: "no authored slash, so no directory was claimed" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands-old.mjs", covers: false, why: "a shared prefix is not containment — the separator is required" },
+  { declared: "packages/core/src/commands/test.mjs", probed: "packages/core/src/commands", covers: false, why: "a file covers no directory" },
   { declared: "test/", probed: "test/arch/work/index.mjs", covers: true, why: "119/03's declared read against 119/02's declared write" },
-  { declared: "src/", probed: "src/commands/test.mjs", covers: true, why: "119/04's declared read against 119/01's declared write" },
+  { declared: "packages/core/src/", probed: "packages/core/src/commands/test.mjs", covers: true, why: "119/04's declared read against 119/01's declared write" },
 ];
 
 // Task 00's four-answers outline. `entries: null` is UNKNOWN and `entries: []` is a real empty
@@ -206,22 +206,22 @@ const DECLARED_KEY_ROWS = [
   },
   {
     declaration: "a list of two, the second ending in `/`",
-    text: "---\nfiles: [src/a.mjs, src/commands/]\n---\n",
+    text: "---\nfiles: [src/a.mjs, packages/core/src/commands/]\n---\n",
     answer: "a set of two, the second carrying directory intent",
     present: true, malformed: false,
-    entries: [{ path: "src/a.mjs", directory: false }, { path: "src/commands", directory: true }],
+    entries: [{ path: "packages/core/src/a.mjs", directory: false }, { path: "packages/core/src/commands", directory: true }],
   },
 ];
 
 // Task 01's verdict outline, verbatim.
 const WAVE_ROWS = [
-  { earlier: "src/commands/", later: "src/commands/test.mjs", verdict: "held", why: "the file sits beneath the authored directory" },
-  { earlier: "src/commands/", later: "src/commands", verdict: "held", why: "the two resolve to one path, as they already did today" },
-  { earlier: "src/commands", later: "src/commands/test.mjs", verdict: "waved", why: "no authored slash, so one path was claimed and not a subtree" },
-  { earlier: "src/commands/", later: "src/commands-old.mjs", verdict: "waved", why: "a shared prefix is not containment" },
-  { earlier: "src/Commands/", later: "src/commands/test.mjs", verdict: "held", why: "the collision key case-folds, and still does" },
+  { earlier: "packages/core/src/commands/", later: "packages/core/src/commands/test.mjs", verdict: "held", why: "the file sits beneath the authored directory" },
+  { earlier: "packages/core/src/commands/", later: "packages/core/src/commands", verdict: "held", why: "the two resolve to one path, as they already did today" },
+  { earlier: "packages/core/src/commands", later: "packages/core/src/commands/test.mjs", verdict: "waved", why: "no authored slash, so one path was claimed and not a subtree" },
+  { earlier: "packages/core/src/commands/", later: "packages/core/src/commands-old.mjs", verdict: "waved", why: "a shared prefix is not containment" },
+  { earlier: "packages/core/src/Commands/", later: "packages/core/src/commands/test.mjs", verdict: "held", why: "the collision key case-folds, and still does" },
   { earlier: "test/", later: "test/arch/work/index.mjs", verdict: "held", why: "119/02's real declaration against 119/03's" },
-  { earlier: "src/story-contract.mjs", later: "packages/work/src/ready-wave.mjs", verdict: "waved", why: "genuinely disjoint, exactly as today" },
+  { earlier: "packages/core/src/story-contract.mjs", later: "packages/work/src/ready-wave.mjs", verdict: "waved", why: "genuinely disjoint, exactly as today" },
 ];
 
 // THE EXACT-STRING RULE THIS STORY REPLACES, re-implemented here so the adoption is measured as a
@@ -229,7 +229,7 @@ const WAVE_ROWS = [
 // verbatim: the resolved project path, case-folded, into a `Set`, and `Set.has` for the collision
 // test — no directory intent anywhere, because `path.relative` had already thrown the authored
 // slash away before the string reached the set. It lives in the TEST because the claim is about a
-// rule the tree no longer holds; keeping it in `src/` would be the second home this story removes.
+// rule the tree no longer holds; keeping it in `packages/core/src/` would be the second home this story removes.
 const collisionKey = (projectPath) => projectPath.replaceAll("\\", "/").toLowerCase();
 
 async function exactStringWriteSet(member, projectRoot) {
@@ -322,11 +322,11 @@ export const storyContextContractTests = [
   {
     name: "proposed-fixes/read-contract parses inline and block lists without widening work.mjs",
     run() {
-      assert.deepEqual(storyContractList("---\nreads: [src/a.mjs, 'src/b,c.mjs']\n---\n", "reads"), {
-        present: true, malformed: false, values: ["src/a.mjs", "src/b,c.mjs"],
+      assert.deepEqual(storyContractList("---\nreads: [src/a.mjs, 'packages/core/src/b,c.mjs']\n---\n", "reads"), {
+        present: true, malformed: false, values: ["packages/core/src/a.mjs", "packages/core/src/b,c.mjs"],
       });
       assert.deepEqual(storyContractList("---\nreads:\n  - src/a.mjs\n  - ../ARCHITECTURE.md#adr-004\nfiles: []\n---\n", "reads"), {
-        present: true, malformed: false, values: ["src/a.mjs", "../ARCHITECTURE.md#adr-004"],
+        present: true, malformed: false, values: ["packages/core/src/a.mjs", "../ARCHITECTURE.md#adr-004"],
       });
       assert.deepEqual(storyContractList("---\nfiles: nope\n---\n", "files"), {
         present: true, malformed: true, values: [],
@@ -352,7 +352,7 @@ export const storyContextContractTests = [
     }, async ({ repo, workDir, config }) => {
       const problems = contextFindings(await validateWork(workDir, config, "00/00", { projectRoot: repo })).map((finding) => finding.problem);
       assert.deepEqual(problems, [
-        'story reads path "src/missing.mjs" does not exist',
+        'story reads path "packages/core/src/missing.mjs" does not exist',
         'story reads anchor "wiki/work/00_milestone_context/ARCHITECTURE.md#adr-999" does not resolve',
       ]);
     }),
@@ -385,7 +385,7 @@ export const storyContextContractTests = [
           { number: "00", files: "[src/stage-one.mjs]" },
           { number: "01", reads: "[src/nobody-writes.mjs]", files: "[]" },
         ],
-      }], "00/01"), ['story reads path "src/nobody-writes.mjs" does not exist']);
+      }], "00/01"), ['story reads path "packages/core/src/nobody-writes.mjs" does not exist']);
 
       // Case-SENSITIVE, unlike ready-wave's collision key: a borrowed claim under a
       // different spelling passes here and reds on the Linux worker.
@@ -395,14 +395,14 @@ export const storyContextContractTests = [
           { number: "00", files: "[src/stage-one.mjs]" },
           { number: "01", reads: "[src/Stage-One.mjs]", files: "[]" },
         ],
-      }], "00/01"), ['story reads path "src/Stage-One.mjs" does not exist']);
+      }], "00/01"), ['story reads path "packages/core/src/Stage-One.mjs" does not exist']);
 
       // The claim set is the story's OWN milestone. Another milestone's write is not a
       // promise this milestone can lean on, so the finding stands.
       assert.deepEqual(await problems([
         { number: "00", stories: [{ number: "00", files: "[src/stage-one.mjs]" }] },
         { number: "01", stories: [{ number: "00", reads: "[src/stage-one.mjs]", files: "[]" }] },
-      ], "01/00"), ['story reads path "src/stage-one.mjs" does not exist']);
+      ], "01/00"), ['story reads path "packages/core/src/stage-one.mjs" does not exist']);
 
       // A read the milestone claims is clean whether or not this story is the claimant:
       // its own declared write is the strongest claim that the path will exist.
@@ -516,16 +516,16 @@ export const storyContextContractTests = [
     name: "proposed-fixes/story-contract keeps a commented entry and refuses a backslash path",
     run() {
       assert.deepEqual(storyContractList("---\nreads:\n  - src/a.mjs # the entry point\n  - '../ARCHITECTURE.md#adr-004'\n---\n", "reads"), {
-        present: true, malformed: false, values: ["src/a.mjs", "../ARCHITECTURE.md#adr-004"],
+        present: true, malformed: false, values: ["packages/core/src/a.mjs", "../ARCHITECTURE.md#adr-004"],
       });
       assert.deepEqual(storyContractList("---\nfiles: [src/a.mjs] # authored at refine\n---\n", "files"), {
-        present: true, malformed: false, values: ["src/a.mjs"],
+        present: true, malformed: false, values: ["packages/core/src/a.mjs"],
       });
       assert.deepEqual(storyContractList("---\nfiles: [src/a.mjs\n---\n", "files"), {
         present: true, malformed: true, values: [],
       });
       assert.equal(namesBackslashPath("src\\a.mjs"), true);
-      assert.equal(namesBackslashPath("src/a.mjs"), false);
+      assert.equal(namesBackslashPath("packages/core/src/a.mjs"), false);
       // The resolver refuses it on EVERY node, so a Windows-authored story cannot pass
       // here and red on the Mac or WSL worker.
       assert.equal(resolveStoryContractPath("src\\a.mjs", { storyDir: "/repo/w", projectRoot: "/repo" }), null);
@@ -541,7 +541,7 @@ export const storyContextContractTests = [
         .map((finding) => finding.problem);
       assert.deepEqual(problems, [
         'story reads entry "src\\app.mjs" must use forward slashes so it resolves on every node',
-        'story files entry "src/app.mjs#adr-004" must not name a section anchor',
+        'story files entry "packages/core/src/app.mjs#adr-004" must not name a section anchor',
       ]);
     }),
   },
@@ -700,7 +700,7 @@ export const storyContextContractTests = [
       assert.match(lanes, /In solo mode nothing is spawned at all/u, "solo spawns no lane");
       assert.match(lanes, /in this session, in turn, whether or not the story has UI/u, "…and performs every lens in turn instead");
 
-      // The stagger — stated, reasoned, and deliberately NOT a knob. FF-7101 sweeps `src/bundle/**`
+      // The stagger — stated, reasoned, and deliberately NOT a knob. FF-7101 sweeps `packages/core/assets/**`
       // for stated bounds, and this clause is the standing proof its scope is a key's neighbourhood
       // rather than a numeral hunt.
       assert.match(lanes, /Stagger the spawns by a handful of seconds/u, "a short interval between spawns");
@@ -908,13 +908,13 @@ export const storyContextContractTests = [
   {
     name: "124/00 task 00 directory intent survives the resolver that strips it",
     run: () => {
-      const withSlash = resolveStoryContractPath("src/commands/", NOWHERE_AT);
-      const without = resolveStoryContractPath("src/commands", NOWHERE_AT);
+      const withSlash = resolveStoryContractPath("packages/core/src/commands/", NOWHERE_AT);
+      const without = resolveStoryContractPath("packages/core/src/commands", NOWHERE_AT);
 
       // BOTH RESOLVE TO THE SAME PROJECT PATH — `path.relative` never returns a trailing
       // separator, so the authored slash is gone before any consumer sees the string.
-      assert.equal(withSlash.projectPath, "src/commands");
-      assert.equal(without.projectPath, "src/commands");
+      assert.equal(withSlash.projectPath, "packages/core/src/commands");
+      assert.equal(without.projectPath, "packages/core/src/commands");
 
       // …AND THE RESOLVER'S OWN RETURN KEYS AND VALUES ARE UNCHANGED FOR BOTH. Three modules
       // already read this shape (`validate.mjs`, `test-declared.mjs`, `ready-wave.mjs`), so a
@@ -924,12 +924,12 @@ export const storyContextContractTests = [
 
       // ONLY THE FIRST CARRIES A DIRECTORY'S INTENT, and it is read off the RAW entry — which is
       // the only place it still exists.
-      assert.equal(declaresDirectory("src/commands/"), true);
-      assert.equal(declaresDirectory("src/commands"), false);
+      assert.equal(declaresDirectory("packages/core/src/commands/"), true);
+      assert.equal(declaresDirectory("packages/core/src/commands"), false);
       assert.equal(declaresDirectory(withSlash.projectPath), false, "the resolved path can never answer it");
       // An anchored entry is judged on its FILE part, as the resolver judges it.
-      assert.equal(declaresDirectory("src/commands/#adr-001"), true);
-      assert.equal(declaresDirectory("src/commands#adr-001"), false);
+      assert.equal(declaresDirectory("packages/core/src/commands/#adr-001"), true);
+      assert.equal(declaresDirectory("packages/core/src/commands#adr-001"), false);
     },
   },
   {
@@ -963,10 +963,10 @@ export const storyContextContractTests = [
       }
 
       // …and it read no file and stat'd no path to decide, which is what makes every row above
-      // meaningful: `NOWHERE_ROOT` is on no disk, so `src/commands/` is not a directory anywhere
-      // and `src/commands-old.mjs` is not a file. The answers are the authored rule's, not the
+      // meaningful: `NOWHERE_ROOT` is on no disk, so `packages/core/src/commands/` is not a directory anywhere
+      // and `packages/core/src/commands-old.mjs` is not a file. The answers are the authored rule's, not the
       // tree's. (FF-12403 asserts the same claim structurally, over the module's source.)
-      assert.equal(contractSetCovers(declaredSet("---\nfiles: [src/commands/]\n---\n", "files"), "src/commands/test.mjs"), true);
+      assert.equal(contractSetCovers(declaredSet("---\nfiles: [packages/core/src/commands/]\n---\n", "files"), "packages/core/src/commands/test.mjs"), true);
     },
   },
   {
@@ -1001,16 +1001,16 @@ export const storyContextContractTests = [
       // …and an anchored entry is poison under `files:` and ordinary under `reads:`, because
       // nothing writes half a file.
       assert.equal(declaredSet("---\nfiles: [src/a.mjs#adr-001]\n---\n", "files"), null);
-      assert.deepEqual(shapeOf(declaredSet("---\nreads: [src/a.mjs#adr-001]\n---\n", "reads")), [{ path: "src/a.mjs", directory: false }]);
+      assert.deepEqual(shapeOf(declaredSet("---\nreads: [src/a.mjs#adr-001]\n---\n", "reads")), [{ path: "packages/core/src/a.mjs", directory: false }]);
     },
   },
   {
     name: "124/00 task 01 the authored directory and the file beneath it stop sharing a wave",
     run: () => withWaveStories([
-      "---\nfiles: [src/commands/]\n---\n",
-      "---\nfiles: [src/commands/test.mjs]\n---\n",
+      "---\nfiles: [packages/core/src/commands/]\n---\n",
+      "---\nfiles: [packages/core/src/commands/test.mjs]\n---\n",
     ], async ({ repo, members }) => {
-      // This partition IS `aof work next --json`'s `wave`/`heldSet`: `src/commands/next.mjs`
+      // This partition IS `aof work next --json`'s `wave`/`heldSet`: `packages/core/src/commands/next.mjs`
       // projects both keys straight off this call (`withReadyWave`), which the last clause of
       // the "one rule, not two" case below pins to this function by name.
       const partition = await partitionReadySetByDeclaredFiles(members, { projectRoot: repo });
@@ -1019,7 +1019,7 @@ export const storyContextContractTests = [
 
       // THE SAME TWO MEMBERS ARE IN ONE WAVE UNDER THE EXACT-STRING RULE THIS REPLACES — the live
       // defect, measured rather than described: `path.relative` had stripped the slash, so
-      // `src/commands` and `src/commands/test.mjs` were read as disjoint and both dispatched.
+      // `packages/core/src/commands` and `packages/core/src/commands/test.mjs` were read as disjoint and both dispatched.
       const exact = await exactStringWave(members, { projectRoot: repo });
       assert.deepEqual(refsOf(exact.wave), ["00/00", "00/01"], "the rule this replaces waved both onto one path");
       assert.deepEqual(exact.heldSet, []);
@@ -1155,8 +1155,8 @@ export const storyContextContractTests = [
       // directory. Equality and coverage disagree here, so "one rule" is observable: both
       // surfaces answer the coverage way, or one of them holds a second rule.
       await withWaveStories([
-        "---\nfiles: [src/commands/]\n---\n",
-        "---\nreads: [src/commands/test.mjs]\nfiles: [src/commands/test.mjs]\n---\n",
+        "---\nfiles: [packages/core/src/commands/]\n---\n",
+        "---\nreads: [packages/core/src/commands/test.mjs]\nfiles: [packages/core/src/commands/test.mjs]\n---\n",
       ], async ({ repo, members }) => {
         const { heldSet } = await partitionReadySetByDeclaredFiles(members, { projectRoot: repo });
         assert.deepEqual(refsOf(heldSet), ["00/01"], "the wave says the two collide");
@@ -1172,11 +1172,11 @@ export const storyContextContractTests = [
         items: [
           {
             ref: "00/00", dir: storyDir("00"), type: "story", number: "00", parent: "00", meta: {},
-            contract: { reads: null, files: declaredSet("---\nfiles: [src/commands/]\n---\n", "files", at("00")) },
+            contract: { reads: null, files: declaredSet("---\nfiles: [packages/core/src/commands/]\n---\n", "files", at("00")) },
           },
           {
             ref: "00/01", dir: storyDir("01"), type: "story", number: "01", parent: "00", meta: { depends: ["00"] },
-            contract: { reads: declaredSet("---\nreads: [src/commands/test.mjs]\nfiles: [src/x.mjs]\n---\n", "reads", at("01")), files: null },
+            contract: { reads: declaredSet("---\nreads: [packages/core/src/commands/test.mjs]\nfiles: [src/x.mjs]\n---\n", "reads", at("01")), files: null },
           },
         ],
       });
@@ -1201,7 +1201,7 @@ export const storyContextContractTests = [
       const next = stripComments(await readFile(path.join(root, "packages/work/src/commands/next.mjs"), "utf8"));
       assert.match(next, /partitionReadySetByDeclaredFiles\(/u, "`aof work next --json` partitions the ready set through this function");
       assert.match(next, /wave: wave\.map|wave,/u, "…and returns its wave");
-      const composition = stripComments(await readFile(path.join(root, "src/commands/next.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(root, "packages/core/src/commands/next.mjs"), "utf8"));
       assert.match(composition, /import \{ partitionReadySetByDeclaredFiles \} from "\.\.\/ready-wave\.mjs"/u);
       assert.match(composition, /createNextCommand\(\{[^}]*\bpartitionReadySetByDeclaredFiles\b/u, "core supplies the shared partition service");
     },

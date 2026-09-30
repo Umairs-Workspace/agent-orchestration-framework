@@ -8,7 +8,7 @@
 // the wire does not carry it.
 //
 // WHY THE DEGRADE MATTERS MORE THAN IT LOOKS. The threshold is configured ONCE in
-// `src/` and travels on the response; `ui/` carries no default and no literal
+// `packages/core/src/` and travels on the response; `ui/` carries no default and no literal
 // (that half is a structural ABSENCE and is asserted by
 // `acd-cache-staleness-single-predicate`, not restated here). The consequence is
 // that when the wire does not carry the number the UI genuinely does not know it

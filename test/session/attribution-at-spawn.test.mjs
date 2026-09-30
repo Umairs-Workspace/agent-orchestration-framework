@@ -17,10 +17,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { continueDriverCommand } from "../../src/commands/drive.mjs";
+import { continueDriverCommand } from "../../packages/core/src/commands/drive.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 
-const store = await import("../../src/run-store.mjs");
+const store = await import("../../packages/core/src/run-store.mjs");
 
 async function makeItem() {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-attrib-"));

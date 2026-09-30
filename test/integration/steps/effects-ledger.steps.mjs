@@ -16,8 +16,8 @@ import {
   pendingSteps,
   readEvents,
   readEventSteps,
-} from "../../../src/effects/journal.mjs";
-import { applicableReactors } from "../../../src/effects/table.mjs";
+} from "../../../packages/core/src/effects/journal.mjs";
+import { applicableReactors } from "../../../packages/core/src/effects/table.mjs";
 
 const registry = createStepRegistry();
 registerCommonSteps(registry);

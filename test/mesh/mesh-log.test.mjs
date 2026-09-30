@@ -9,8 +9,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createMeshLogSink, readMeshLog, meshLogPath } from "../../src/mesh/log.mjs";
-import { invoke } from "../../src/command-core.mjs";
+import { createMeshLogSink, readMeshLog, meshLogPath } from "../../packages/core/src/mesh/log.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 
 async function withHome(fn) {
   const home = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-log-"));
@@ -105,9 +105,9 @@ export const meshLogTests = [
     name: "mesh-log/item-2 REMOTE: log-entries frames land in the node_logs ring (T6-attributed, ring-bounded) and mesh:logs --node reads them",
     async run() {
       await withHome(async ({ env }) => {
-        const { openGlobalWorkProjectionStore, readNodeLogEntries } = await import("../../src/global-work-store.mjs");
-        const { applyStreamFrame } = await import("../../src/control-stream-server.mjs");
-        const { buildLogEntriesFrame } = await import("../../src/worker-stream-client.mjs");
+        const { openGlobalWorkProjectionStore, readNodeLogEntries } = await import("../../packages/core/src/global-work-store.mjs");
+        const { applyStreamFrame } = await import("../../packages/core/src/control-stream-server.mjs");
+        const { buildLogEntriesFrame } = await import("../../packages/core/src/worker-stream-client.mjs");
         const store = await openGlobalWorkProjectionStore({ env });
         try {
           const frame = buildLogEntriesFrame("spoofed-node", [
@@ -123,7 +123,7 @@ export const meshLogTests = [
           assert.equal(result.entries[0].code, "frame-skipped", "the remote node's streamed event reads back");
 
           // Ring bound: appending beyond keep retains only the newest rows.
-          const { appendNodeLogEntries } = await import("../../src/global-work-store.mjs");
+          const { appendNodeLogEntries } = await import("../../packages/core/src/global-work-store.mjs");
           appendNodeLogEntries(store, "umamis-mac-mini", Array.from({ length: 6 }, (_, i) => ({ code: `e${i}` })), { keep: 3 });
           const entries = readNodeLogEntries(store, "umamis-mac-mini", { tail: 10 });
           assert.deepEqual(entries.map((e) => e.code), ["e3", "e4", "e5"], "the ring keeps exactly the newest N, oldest-first on read");

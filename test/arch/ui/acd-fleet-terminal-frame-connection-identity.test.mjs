@@ -93,7 +93,7 @@ function sliceBalanced(code, openIndex, open = "{", close = "}") {
 // comma do not truncate a slice. `code` MUST be comment-stripped + LF-normalised.
 //
 // PLURAL SINCE m46/04, AND THAT IS A REAL HOLE CLOSED, not tidiness. This helper used to
-// `indexOf` the FIRST occurrence and return it alone. `src/mesh/launcher.mjs` carries TWO
+// `indexOf` the FIRST occurrence and return it alone. `packages/core/src/mesh/launcher.mjs` carries TWO
 // `onOutputChunk:` arrows — the assignment dispatch AND the terminal-resume handler — so the
 // credential needle below read the first and said NOTHING about the second. A token folded into
 // the RESUMED session's stream would have travelled with a green gate above it: "an assignment's

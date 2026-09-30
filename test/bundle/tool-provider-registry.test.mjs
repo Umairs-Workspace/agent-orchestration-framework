@@ -2,7 +2,7 @@
 // tasks/01_provider-registry-and-uv-lane.feature.
 //
 // Covers every @executable scenario (Scenario-Outline rows folded into one entry)
-// against the REAL in-process code: src/tool-store.mjs's provider registry —
+// against the REAL in-process code: packages/core/src/tool-store.mjs's provider registry —
 // planProvision dispatching on descriptor.provider, the uv lane (uv venv + uv pip
 // install --python into the version dir), the npx lane delegating to the untouched
 // frameworks.mjs, and the unknown/absent-provider rejection (ADR-002). One test
@@ -13,8 +13,8 @@
 // planFrameworkInstall (a pure plan emitter too) — so no binary is spawned. The
 // version dir in the expected plan is DERIVED via toolVersionDir, never hardcoded.
 import assert from "node:assert/strict";
-import { planProvision, PROVIDERS } from "../../src/tool-store.mjs";
-import { toolVersionDir } from "../../src/paths.mjs";
+import { planProvision, PROVIDERS } from "../../packages/core/src/tool-store.mjs";
+import { toolVersionDir } from "../../packages/core/src/paths.mjs";
 
 export const toolProviderRegistryTests = [
   // ═══════════ 01_provider-registry-and-uv-lane.feature ═══════════════════════

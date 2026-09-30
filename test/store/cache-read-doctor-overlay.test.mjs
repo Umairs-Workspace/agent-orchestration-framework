@@ -25,7 +25,7 @@ import {
   withCacheReadFixture, plantCacheRow, streamDoc, runCommand, writeItem, writeDoc, workerTree,
   CONTROL_NODE, WORKER_NODE, SYNCED_AT,
 } from "../support/cache-read-fixture.mjs";
-import { loadWorkspace, invoke } from "../../src/command-core.mjs";
+import { loadWorkspace, invoke } from "../../packages/core/src/command-core.mjs";
 
 // The Background: the control's work directory holds milestones 05, 06 and 07. "07" is the
 // pre-run SCAFFOLD — an empty stories/, no VERIFICATION.md, no RETROSPECTIVE.md — with
@@ -66,7 +66,7 @@ export const cacheReadDoctorOverlayTests = [
       await background(fx);
       // NON-VACUITY: without the overlay this fixture DOES fire the finding. Proven by
       // running the same doctor against a snapshot with no cache — the mechanism removed.
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await import("../../packages/core/src/work/doctor.mjs");
       const withoutOverlay = await doctorWork(fx.workDir, {}, undefined, { now: Date.parse(SYNCED_AT) });
       assert.ok(
         has(withoutOverlay, "depends-blocked-in-progress", "07_milestone"),
@@ -100,7 +100,7 @@ export const cacheReadDoctorOverlayTests = [
 
       // NON-VACUITY: a HALF-applied overlay is exactly what manufactures these. Overlaying
       // the PARENT alone (the naive implementation) fires lying-parent immediately.
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await import("../../packages/core/src/work/doctor.mjs");
       const halfApplied = await doctorWork(fx.workDir, {}, undefined, {
         now: Date.parse(SYNCED_AT),
         selfNode: CONTROL_NODE,
@@ -250,7 +250,7 @@ export const cacheReadDoctorOverlayTests = [
       // comparison, so the SAME engine call is made twice against the SAME committed-config
       // input, differing ONLY in whether the cache overlay is supplied. Comparing against a
       // run with a different `rawCommittedMesh` would be comparing two different questions.
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await import("../../packages/core/src/work/doctor.mjs");
       const identityArgs = {
         now: Date.parse(SYNCED_AT),
         rawCommittedMesh: { nodeId: CONTROL_NODE },
@@ -326,7 +326,7 @@ export const cacheReadDoctorOverlayTests = [
 
       // THE CONTROL, and it is what makes the assertion above a statement about the GATE
       // rather than about the window: the SAME fixture with no cache at all agrees.
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await import("../../packages/core/src/work/doctor.mjs");
       assert.deepEqual(
         staleFor07(await doctorWork(fx.workDir, {}, undefined, { now: Date.now() })),
         [],
@@ -373,7 +373,7 @@ export const cacheReadDoctorOverlayTests = [
       assert.ok(!codes.includes("started-story-no-tasks"), "…and no started-story-no-tasks off an OVERLAID status the worktree's own disk contradicts");
 
       // NON-VACUITY: the cache genuinely holds the disagreeing rows this read stepped over.
-      const { readCachedWorkFacts } = await import("../../src/cache-read.mjs");
+      const { readCachedWorkFacts } = await import("../../packages/core/src/cache-read.mjs");
       const raw = await readCachedWorkFacts(worker.workspace, { docNames: ["VERIFICATION.md"] }, { globalWorkStoreOptions: { env: fx.env } });
       assert.equal(raw?.rows?.get("07")?.status, "in-progress", "the unguarded read DOES see the cache's in-progress for 07 (the precondition)");
       assert.equal(raw?.rows?.get("07/01")?.status, "in-progress", "…and for 07/01");
@@ -437,7 +437,7 @@ export const cacheReadDoctorOverlayTests = [
       await background(fx);
       await plantCacheRow(fx, "07/00", { status: "done", slug: "s07-00", parent: "07", node: WORKER_NODE, at: SYNCED_AT });
 
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await import("../../packages/core/src/work/doctor.mjs");
       const options = {
         now: Date.parse(SYNCED_AT),
         selfNode: CONTROL_NODE,

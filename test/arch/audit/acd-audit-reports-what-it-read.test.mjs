@@ -20,11 +20,11 @@
 // A report naming its own sweep `undefined` is §1 failing while wearing the clothes of compliance,
 // and the three shapes looked substitutable while two of them were not. So this gate's bound
 // population is now all THREE: the census's, the checks leaf's and the evidence lane's — each
-// keyed `sweep`, each put through the SAME floor comparison, and the two `src/work-audit/` lanes
-// sharing ONE definition (`src/work-audit/reads.mjs`) rather than a copy apiece.
+// keyed `sweep`, each put through the SAME floor comparison, and the two `packages/core/src/work-audit/` lanes
+// sharing ONE definition (`packages/core/src/work-audit/reads.mjs`) rather than a copy apiece.
 //
 // THIS GATE HOLDS THE CHECKS MODULE'S FOUR LANES TO THAT CONTRACT, AND BINDS THEM TO THE CENSUS'S.
-// `src/work/loops-checks.mjs` cannot import `src/work-audit/census.mjs` — importing anything is the
+// `packages/core/src/work/loops-checks.mjs` cannot import `packages/core/src/work-audit/census.mjs` — importing anything is the
 // one thing 52/ADR-007's purity invariant forbids of that leaf — so the read/floor rule necessarily
 // exists there as a second mechanical copy. That is the same bind 58/FF-5807 made for the two copies
 // of `CHECK_IDS` a module boundary forced apart, and the response is the same: where one home is
@@ -50,12 +50,12 @@ import {
   readFinding as censusReadFinding,
   readRecord as censusReadRecord,
   sweepDeclarationProblems,
-} from "../../../src/work-audit/census.mjs";
+} from "../../../packages/core/src/work-audit/census.mjs";
 // THE ONE DEFINITION, and the evidence lane that now shares it (59/ADR-004 §1a).
 import { readFile } from "node:fs/promises";
 
-import * as reads from "../../../src/work-audit/reads.mjs";
-import { EVIDENCE_SWEEP, runEvidence } from "../../../src/work-audit/evidence.mjs";
+import * as reads from "../../../packages/core/src/work-audit/reads.mjs";
+import { EVIDENCE_SWEEP, runEvidence } from "../../../packages/core/src/work-audit/evidence.mjs";
 import {
   AUDIT_LANES,
   AUDIT_LANE_FINDING_CODES,
@@ -65,8 +65,8 @@ import {
   assessInstrumentSilence,
   assessLoopConsultation,
   assessMetricMovement,
-} from "../../../src/work/loops-checks.mjs";
-import * as checksModule from "../../../src/work/loops-checks.mjs";
+} from "../../../packages/core/src/work/loops-checks.mjs";
+import * as checksModule from "../../../packages/core/src/work/loops-checks.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SOURCE = path.join(root, "audit-lane-fixture-not-on-disk", "loops");
@@ -269,7 +269,7 @@ export const archTests = [
       assert.match(evidenceSource, /from "\.\/reads\.mjs"/u, "the evidence lane imports the one definition");
       assert.equal(
         /^\s*(?:export\s+)?function\s+read(?:Record|Finding)\s*\(/mu.test(evidenceSource), false,
-        "…and defines no second copy of either — a second copy inside src/work-audit/ is the duplication ADR-002 §2 already refuses",
+        "…and defines no second copy of either — a second copy inside packages/core/src/work-audit/ is the duplication ADR-002 §2 already refuses",
       );
       assert.equal(
         /\{\s*\.\.\.EVIDENCE_SWEEP\s*,/u.test(evidenceSource), false,
@@ -292,12 +292,12 @@ export const archTests = [
       // A green `@executable` suite did not catch it because every fixture lane in
       // `test/audit/audit-command.test.mjs` declared `limits: []`. So the bind here is not "the shapes
       // match" — it is RENDERER KEYS ⊆ DECLARED KEYS, driven over the limits the lanes really ship.
-      const { CENSUS_SWEEPS, sweepLimits } = await import("../../../src/work-audit/census.mjs");
-      const { REGISTRATION_LIMIT } = await import("../../../src/work-audit/evidence.mjs");
+      const { CENSUS_SWEEPS, sweepLimits } = await import("../../../packages/core/src/work-audit/census.mjs");
+      const { REGISTRATION_LIMIT } = await import("../../../packages/core/src/work-audit/evidence.mjs");
 
       // (1) ONE DEFINITION, by identity rather than by deep-equality — two copies would be two
       // function objects, exactly as the read record's leg above argues.
-      const census = await import("../../../src/work-audit/census.mjs");
+      const census = await import("../../../packages/core/src/work-audit/census.mjs");
       assert.equal(census.limitRecord, reads.limitRecord, "the census's limitRecord IS the shared one");
       assert.equal(census.limitDeclarationProblems, reads.limitDeclarationProblems, "…and so is its validator");
       assert.equal(census.LIMIT_KEYS, reads.LIMIT_KEYS, "…and its key set");
@@ -333,7 +333,7 @@ export const archTests = [
 
       // (4) NO SECOND VOCABULARY SURVIVES. The pre-fix cell names are gone from both lanes.
       for (const file of ["census.mjs", "evidence.mjs"]) {
-        const source = await readFile(path.join(root, "src", "work-audit", file), "utf8");
+        const source = await readFile(path.join(root, "packages", "core", "src", "work-audit", file), "utf8");
         assert.equal(/^\s*claim:/mu.test(source), false, `${file}: the \`claim:\` cell is gone — the claim is the read record's \`what\``);
         assert.equal(/^\s*limit:/mu.test(source), false, `${file}: and the \`limit:\` cell is gone — what follows from a limit is \`consequence\``);
       }

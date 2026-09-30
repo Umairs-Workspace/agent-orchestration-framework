@@ -12,10 +12,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { recordDoc } from "../../../src/work.mjs";
+import { recordDoc } from "../../../packages/core/src/work.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "src", "work.mjs");
+const workSrc = path.join(repoRoot, "packages", "core", "src", "work.mjs");
 
 async function itemTypeAlternation() {
   const src = await readFile(workSrc, "utf8");

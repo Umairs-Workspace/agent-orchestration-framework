@@ -14,14 +14,14 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 
-import { runLoopBody } from "../../src/commands/loop.mjs";
-import { readRuns, startRun, completeRun, heartbeat, recordSessionId } from "../../src/run-store.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../src/loop/ask-request.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { resolveRefInWorktree } from "../../src/work/dispatch.mjs";
-import { meshDispatchWorktreePath } from "../../src/mesh/worktree.mjs";
-import { appendProgressSample } from "../../src/loop-progress.mjs";
+import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+import { readRuns, startRun, completeRun, heartbeat, recordSessionId } from "../../packages/core/src/run-store.mjs";
+import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
+import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
+import { resolveRefInWorktree } from "../../packages/core/src/work/dispatch.mjs";
+import { meshDispatchWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
+import { appendProgressSample } from "../../packages/core/src/loop-progress.mjs";
 import {
   withLaneRepo, fakeLaneChild, stubRubric, emits, passingTap, collector, fakeTimers, fakeSignals,
   primaryDriver, verifyCompleter, laneCtx, statusOf, git, headSha, deferred, scriptedRegistry, laneStoryFile, replaceStatus, realExec,
@@ -622,7 +622,7 @@ export const loopCommandReconcileTests = [
           assert.equal(asks.length, 0, `${outcome}: before any walk`);
           assert.ok(existsSync(meshDispatchWorktreePath(fx.root, "07/01")), `${outcome}: the lane kept`);
           if (outcome === "refused") assert.match(report.lines.at(-1), /files=\["src\/x\.mjs"\]/u);
-        }, { stories: ["01"], commit: { "src/x.mjs": "// base\n" } });
+        }, { stories: ["01"], commit: { "packages/core/src/x.mjs": "// base\n" } });
       }
       // tip already an ancestor → cleaned up (a hand-merged conflict lane)
       await withLaneRepo(async (fx) => {

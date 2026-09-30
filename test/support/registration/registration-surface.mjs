@@ -12,19 +12,19 @@
 // exists to remove, and it is the argument `test/support/module-family.mjs` already won for "what is
 // this module?". The surface is assembled HERE and nowhere else.
 //
-// IT IS TEXT, DELIBERATELY. `registrationDecision` (`src/work-audit/census.mjs`) remains the single
+// IT IS TEXT, DELIBERATELY. `registrationDecision` (`packages/core/src/work-audit/census.mjs`) remains the single
 // decider of which file contributed which entries; this helper produces one of its INPUTS and
 // decides nothing. It imports no suite and spawns nothing.
 import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
-import { readRegistrationIndexes } from "../../../src/work-audit/census.mjs";
+import { readRegistrationIndexes } from "../../../packages/core/src/work-audit/census.mjs";
 
 /**
  * Every `index.mjs` beneath `root`, as `{ rel, dir, source }`.
  *
  * DELEGATED, NOT RE-WALKED. The production census needs exactly this walk — its text-level lane
  * reads the same surface — and a copy here would be the second answer this milestone exists to
- * remove. `src/work-audit/census.mjs` owns it; this is the test tree's door onto it.
+ * remove. `packages/core/src/work-audit/census.mjs` owns it; this is the test tree's door onto it.
  */
 export const readIndexes = readRegistrationIndexes;
 

@@ -16,7 +16,7 @@ export const archTests = [
     name: "arch/run-partition-ready: N runs produce N discrete files under runs/ with no monolithic aggregate",
     async run() {
       // Lazy-import the store INSIDE run() (house discipline R4/m06).
-      const { startRun, completeRun } = await import("../../../src/run-store.mjs");
+      const { startRun, completeRun } = await import("../../../packages/core/src/run-store.mjs");
 
       const repo = await mkdtemp(path.join(os.tmpdir(), "aof-run-partition-"));
       try {

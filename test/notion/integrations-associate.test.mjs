@@ -16,8 +16,8 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { notionAssociateCommand } from "../../src/commands/notion-associate.mjs";
-import { readRouting } from "../../src/integrations/routing.mjs";
+import { notionAssociateCommand } from "../../packages/core/src/commands/notion-associate.mjs";
+import { readRouting } from "../../packages/core/src/integrations/routing.mjs";
 
 const board = (parents) => ({
   dataSourceId: "ds-x",

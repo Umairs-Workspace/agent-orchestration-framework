@@ -17,7 +17,7 @@ import { mkdtemp, mkdir, writeFile, rm, cp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { frontmatter, SLUGS } from "./work-reindex-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

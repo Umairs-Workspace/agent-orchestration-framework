@@ -13,7 +13,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { examplesEnabledFromConfig, planEnabledFromConfig, validateConfig } from "../../src/config-inspect.mjs";
+import { examplesEnabledFromConfig, planEnabledFromConfig, validateConfig } from "../../packages/core/src/config-inspect.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

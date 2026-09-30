@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 // otherwise satisfy while holding nothing:
 //
 //   1 · NO FEEDBACK RECORD'S BODY IS READ — RAW CAPTURE AND LATER TRIAGE CLASSIFICATION ALIKE.
-//       Both vocabularies are READ FROM `src/feedback-records.mjs` rather than retyped here, so a
+//       Both vocabularies are READ FROM `packages/core/src/feedback-records.mjs` rather than retyped here, so a
 //       vocabulary that grows is covered with no edit to this file, and every key of both is
 //       planted on a capture and required to reach nothing. Branching on triage's verdict is the
 //       same classification wearing someone else's answer, which is why the classification record
@@ -16,7 +16,7 @@ import { createRequire } from "node:module";
 //       it with captures that THROW on any access.
 //   2 · THE FAMILY HOLDS NO CLASSIFICATION VOCABULARY OF ITS OWN, and does not re-declare or
 //       branch on the refusal capture already raises (`feedback-classification-deferred`, read out
-//       of `src/commands/feedback.mjs` rather than spelled here).
+//       of `packages/core/src/commands/feedback.mjs` rather than spelled here).
 //   3 · THE BODY-BLINDNESS IS DRIVEN POSITIVELY AND COMPARATIVELY. Two captures with identical
 //       attribution and wildly different bodies must produce BYTE-IDENTICAL resolutions — the only
 //       assertion that proves content did not reach a decision, because a body-reading source and
@@ -41,12 +41,12 @@ import { createRequire } from "node:module";
 // TWO THINGS THIS CONTROL DELIBERATELY DOES NOT BAN, AND WHY, BECAUSE AN UNEXPLAINED OMISSION
 // READS AS AN OVERSIGHT:
 //
-//   · `verdict` FAMILY-WIDE. `src/work-trigger/level.mjs` legitimately renders the groundedness
+//   · `verdict` FAMILY-WIDE. `packages/core/src/work-trigger/level.mjs` legitimately renders the groundedness
 //     component verdict the GATE handed it (a different noun from a finding's classification), and
 //     banning the token would either red a delivered file or need a per-file exclusion — the
 //     species TECH_DEBT item 81 names. The finding-side reading is banned where it is real: at
 //     runtime, over every key of both feedback vocabularies.
-//   · PATTERN MACHINERY IN A MODULE THAT READS FILES. `src/work-trigger/declaration.mjs`
+//   · PATTERN MACHINERY IN A MODULE THAT READS FILES. `packages/core/src/work-trigger/declaration.mjs`
 //     legitimately holds one regex — the JSONC banner stripper. So the pattern bans run over a
 //     DERIVED PARTITION: every family module whose whole import closure touches no `node:fs` is a
 //     pure decider over values it was handed, and holds no pattern at all. That covers the next
@@ -74,8 +74,8 @@ import {
   resolveCronSignal,
   resolveFindingSignal,
   resolveTriggerSignals,
-} from "../../../src/work-trigger/sources.mjs";
-import { RAW_FEEDBACK_KEYS, FEEDBACK_CLASSIFICATION_KEYS } from "../../../src/feedback-records.mjs";
+} from "../../../packages/core/src/work-trigger/sources.mjs";
+import { RAW_FEEDBACK_KEYS, FEEDBACK_CLASSIFICATION_KEYS } from "../../../packages/core/src/feedback-records.mjs";
 import { LOOP_SCOPE_FORMS, decideLoopScope } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — TECH_DEBT items 24 and 57. A `//` comment containing `/*`
 // opens a block-comment run for a block-first stripper, and everything to the next `*/` is
@@ -92,7 +92,7 @@ const LOOP_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.m
 
 const read = (file) => readFileSync(file, "utf8");
 
-// THE FAMILY IS DISCOVERED, NEVER LISTED. A module added to `src/work-trigger/` is covered by
+// THE FAMILY IS DISCOVERED, NEVER LISTED. A module added to `packages/core/src/work-trigger/` is covered by
 // every ban below on the day it lands, which is the only version of "no module under
 // src/work-trigger/" that stays true.
 function family() {
@@ -107,7 +107,7 @@ function moduleSpecifiers(code) {
   return [...new Set(importSpecifiers(code).map((entry) => entry.specifier))].sort();
 }
 
-// A MODULE'S CLOSURE WITHIN `src/`, and the builtins it reaches. Relative specifiers are followed
+// A MODULE'S CLOSURE WITHIN `packages/core/src/`, and the builtins it reaches. Relative specifiers are followed
 // transitively; everything else is recorded as a leaf of the walk. The partition leg 4 uses is
 // DERIVED from this — never a list of file names, which in the one control that deliberately
 // DISCOVERS its family would be the exact species (TECH_DEBT item 81 form 1) it exists to refuse.
@@ -327,7 +327,7 @@ export const archTests = [
       }
 
       // NO PATTERN MACHINERY AT ALL — over a DERIVED PARTITION of the family rather than over the
-      // leaf alone. `src/work-trigger/declaration.mjs` legitimately holds one regex (the JSONC
+      // leaf alone. `packages/core/src/work-trigger/declaration.mjs` legitimately holds one regex (the JSONC
       // banner stripper) and reaches `node:fs` to read the declaration; a module whose whole
       // closure touches no filesystem is a pure decider over values it was handed, and such a
       // module has no business owning a pattern. The partition is computed from the closures, so

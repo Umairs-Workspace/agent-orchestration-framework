@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { openCatalog, itemsToConfig } from "../../src/catalog.mjs";
+import { openCatalog, itemsToConfig } from "../../packages/core/src/catalog.mjs";
 
 export const catalogTests = [
   {

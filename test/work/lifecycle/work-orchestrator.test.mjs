@@ -1,7 +1,7 @@
 // `aof work orchestrator` — pick the model the main ACD (orchestrating) session
 // runs on (Fable 5 or Opus 4.8).
 //
-// Asserted against the REAL surface (src/work/orchestrator.mjs): the config-only
+// Asserted against the REAL surface (packages/core/src/work/orchestrator.mjs): the config-only
 // read-merge-write of settings.claude.model, the arg + interactive (env-stubbed)
 // resolution, sibling preservation, and that the choice renders into
 // .claude/settings.json through the real runtime-config projection.
@@ -16,12 +16,12 @@ import {
   readOrchestratorModel,
   selectOrchestratorModel,
   showOrchestratorModel
-} from "../../../src/work/orchestrator.mjs";
+} from "../../../packages/core/src/work/orchestrator.mjs";
 // m43 / ADR-002 AC11: the whole-file `claudeSettingsJson` renderer is GONE (a
 // co-authored file gets a surgical merge, never a whole-file render). The orchestrator
 // model still lands in `.claude/settings.json` — through the merge PATCH, which is what
 // this test now proves is functional.
-import { claudeSettingsPatch } from "../../../src/claude-settings.mjs";
+import { claudeSettingsPatch } from "../../../packages/core/src/claude-settings.mjs";
 
 async function fixture(config) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-orchestrator-"));

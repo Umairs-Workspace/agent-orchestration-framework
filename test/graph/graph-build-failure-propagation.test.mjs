@@ -22,9 +22,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, chmod } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { PINNED_GRAPHIFY_VERSION } from "../../src/graphify.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { PINNED_GRAPHIFY_VERSION } from "../../packages/core/src/graphify.mjs";
 
 const POSIX = process.platform !== "win32";
 

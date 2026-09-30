@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 
 const MESH_STORE = new URL("../../../packages/mesh/src/store.mjs", import.meta.url);
 // The mesh:* command modules the write-scope guard ALSO scans (ARCHITECTURE.md fitness
-// #2 — "source-grep src/mesh/store.mjs (+ the mesh:* command modules)"): a mesh command
+// #2 — "source-grep packages/core/src/mesh/store.mjs (+ the mesh:* command modules)"): a mesh command
 // must not write a record doc and must route every write through the atomic writeText
 // seam. mesh-identity.mjs legitimately persists per-install identity — that is allowed;
 // the gate forbids record-doc writes + bare writeFile/appendFile.
@@ -45,7 +45,7 @@ export const archTests = [
       for (const doc of RECORD_DOCS) {
         assert.ok(
           !code.includes(doc),
-          `src/mesh/store.mjs references no record-doc filename "${doc}" — a write can never target one`
+          `packages/core/src/mesh/store.mjs references no record-doc filename "${doc}" — a write can never target one`
         );
       }
     },

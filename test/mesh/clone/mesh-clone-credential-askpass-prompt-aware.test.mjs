@@ -1,13 +1,13 @@
 // test/mesh/clone/mesh-clone-credential-askpass-prompt-aware.test.mjs — traceability for
 // milestone 38 / story 02, task 03 (03_askpass-prompt-aware.feature, ADR-010 decision
 // 4). Every @executable scenario / Scenario Outline row invokes the REAL, shipped
-// `buildAskpassShim` (src/mesh/worker-execution.mjs) exactly as git would (a real,
+// `buildAskpassShim` (packages/core/src/mesh/worker-execution.mjs) exactly as git would (a real,
 // but hermetic, spawn of the generated one-shot shim with the distinguishing prompt
 // argv) — a pure process/string assertion over its stdout. No real git, no real forge.
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { buildAskpassShim, meshCheckoutsRoot } from "../../../src/mesh/worker-execution.mjs";
+import { buildAskpassShim, meshCheckoutsRoot } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { withMeshCloneFixture } from "../../support/mesh-worker-clone-fixture.mjs";
 
 const TOKEN = "MINTED-TOKEN-abc123-not-a-real-credential";

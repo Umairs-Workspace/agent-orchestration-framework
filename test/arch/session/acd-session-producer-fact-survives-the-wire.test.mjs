@@ -39,7 +39,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assembleSessionRecord } from "../../../src/mesh/session.mjs";
+import { assembleSessionRecord } from "../../../packages/core/src/mesh/session.mjs";
 import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER } from "../../../ui/src/home/feed-axis.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

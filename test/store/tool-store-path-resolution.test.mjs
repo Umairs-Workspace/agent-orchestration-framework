@@ -2,8 +2,8 @@
 // tasks/00_store-path-and-resolution.feature.
 //
 // Covers every @executable scenario (Scenario-Outline rows folded into one entry)
-// against the REAL in-process code: src/paths.mjs's toolStoreRoot/toolVersionDir
-// (the store geometry, ADR-001) and src/tool-store.mjs's resolveManagedBinary
+// against the REAL in-process code: packages/core/src/paths.mjs's toolStoreRoot/toolVersionDir
+// (the store geometry, ADR-001) and packages/core/src/tool-store.mjs's resolveManagedBinary
 // (the store-first / PATH-fallback resolver, ADR-001). One test object per
 // @executable scenario, each name tracing to feature + scenario.
 //
@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { defaultGlobalWorkspaceDir, toolStoreRoot, toolVersionDir } from "../../src/paths.mjs";
+import { defaultGlobalWorkspaceDir, toolStoreRoot, toolVersionDir } from "../../packages/core/src/paths.mjs";
 import {
   resolveManagedBinary,
   exeDirFor,
@@ -30,7 +30,7 @@ import {
   toolSpawnOptions,
   TOOL_PROBE_TIMEOUT_ENV,
   DEFAULT_TOOL_PROBE_TIMEOUT_MS,
-} from "../../src/tool-store.mjs";
+} from "../../packages/core/src/tool-store.mjs";
 
 // --- helpers -----------------------------------------------------------------
 

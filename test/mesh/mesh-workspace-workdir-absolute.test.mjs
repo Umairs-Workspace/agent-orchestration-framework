@@ -22,14 +22,14 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { startLauncher } from "../../src/mesh/launcher.mjs";
-import { resolveNodeWorkspaces } from "../../src/mesh/presence.mjs";
-import { startSession } from "../../src/mesh/session.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { meshCheckoutPath } from "../../src/mesh/worker-execution.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { startLauncher } from "../../packages/core/src/mesh/launcher.mjs";
+import { resolveNodeWorkspaces } from "../../packages/core/src/mesh/presence.mjs";
+import { startSession } from "../../packages/core/src/mesh/session.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+import { meshCheckoutPath } from "../../packages/core/src/mesh/worker-execution.mjs";
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-12T09:00:00.000Z";
@@ -146,7 +146,7 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
             aofVersion: "1.2.3", publishedAt: NOW,
           });
           await publishGlobalRegistryDescriptorsToStore(store, ws, { now: NOW });
-          const { readNodeRecord } = await import("../../src/mesh/store.mjs");
+          const { readNodeRecord } = await import("../../packages/core/src/mesh/store.mjs");
           const rewritten = await readNodeRecord(ws, NODE_ID);
           assert.equal(rewritten.hostname, "Desk-Host", "the rewritten descriptor still carries the machine name");
           assert.equal(rewritten.host, "192.0.2.10", "beside the dial address, not in place of it");

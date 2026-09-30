@@ -6,7 +6,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //
 // This is a structural (grep-style) assert on the SEAM module plus a schema check:
 //   (1) the memory-seam source reads `config.memory(?.).backend` in exactly ONE
-//       code location (comments stripped), and that location is src/work/memory.mjs;
+//       code location (comments stripped), and that location is packages/core/src/work/memory.mjs;
 //   (2) no OTHER src/*.mjs module and no bundle agent/command body branches on the
 //       backend-name literals "local"/"mempalace" as a dispatch branch (the
 //       registry in the seam is the only place a name maps to a backend; the
@@ -18,10 +18,11 @@ import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SRC_DIR = path.resolve(HERE, "..", "..", "..", "src");
+const SRC_DIR = path.resolve(HERE, "..", "..", "..", "packages", "core", "src");
 const SCHEMA_URL = new URL("../../../schemas/aof.schema.json", import.meta.url);
-const BUNDLE_DIR = path.join(SRC_DIR, "bundle");
+const BUNDLE_DIR = path.join(SRC_DIR, "..", "assets");
 
 // Strip line- and block-comments and string-quote noise enough that we test
 // CODE, not prose. (We only need to discount `// ...` and `/* ... */`, which is
@@ -81,7 +82,7 @@ export const archTests = [
   {
     name: "arch/ADR-002: config.memory.backend is read in exactly one code location, and it is the memory seam",
     run: async () => {
-      const files = (await readRuntimeFiles(path.dirname(SRC_DIR))).map(file => file.path);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const reads = [];
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
@@ -92,7 +93,7 @@ export const archTests = [
         for (let i = 0; i < matches.length; i += 1) reads.push(file);
       }
       assert.equal(reads.length, 1, `config.memory?.backend is read exactly once (found ${reads.length}: ${reads.map((f) => path.relative(SRC_DIR, f)).join(", ")})`);
-      assert.equal(path.relative(path.dirname(SRC_DIR), reads[0]).split(path.sep).join("/"), "packages/knowledge/src/memory.mjs", "the single read lives in the memory seam (src/work/memory.mjs)");
+      assert.equal(path.relative(repoRoot, reads[0]).split(path.sep).join("/"), "packages/knowledge/src/memory.mjs", "the single read lives in the memory seam (packages/core/src/work/memory.mjs)");
     }
   },
   {
@@ -100,7 +101,7 @@ export const archTests = [
     run: async () => {
       const seamPath = path.join(path.dirname(SRC_DIR), "packages/knowledge/src/memory.mjs");
       const memoryDir = path.join(path.dirname(SRC_DIR), "packages/knowledge/src/memory");
-      const files = (await readRuntimeFiles(path.dirname(SRC_DIR))).map(file => file.path);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const offenders = [];
 
       for (const file of files) {
@@ -127,7 +128,7 @@ export const archTests = [
     run: async () => {
       // "mempalace" is not a registered backend in this milestone, so ANY
       // occurrence in code/bundle bodies would be a stray dispatch branch.
-      const srcFiles = (await readRuntimeFiles(path.dirname(SRC_DIR))).map(file => file.path);
+      const srcFiles = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const bundleBodies = await listFiles(BUNDLE_DIR, (f) => f.endsWith(".md"));
       const hits = [];
       for (const file of [...srcFiles, ...bundleBodies]) {

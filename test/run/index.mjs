@@ -4,13 +4,13 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
 // milestone 26 — distributed-runs-leasing (story 00: node-dimensioned run records —
-// the git substrate; ADR-001 + ADR-002, no lease, no relay). src/run-store.mjs gains
+// the git substrate; ADR-001 + ADR-002, no lease, no relay). packages/core/src/run-store.mjs gains
 // the m22-frozen runNodeRecordPath (authority moved here; mesh-store.mjs RE-EXPORTS
 // it + RESERVES leaseClaimPath for story 01), the FOURTEEN-key record (20/ADR-001's
 // thirteen + the additive `node`, defaulting null — every legacy record reads
@@ -32,7 +32,7 @@
 // over the root-set engine). The five FROZEN_KEYS literals across the run suites
 // carry the fourteenth key ("node") — the supersede's sanctioned ripple.
 import { runNodePartitionTests } from "./run-node-partition.test.mjs";
-// milestone 19 — work-run-lifecycle (story 00: run-store — the SPINE src/run-store.mjs:
+// milestone 19 — work-run-lifecycle (story 00: run-store — the SPINE packages/core/src/run-store.mjs:
 // the per-run JSON store under runs/ (ADR-002 path seam runsDir/runRecordPath), the frozen
 // run-record schema (ADR-003), and the state-machine transition table (ADR-001). The three
 // task features (00_run-record-store / 01_state-machine / 02_derived-log-lifecycle) +
@@ -44,7 +44,7 @@ import { runStoreDerivedLogTests } from "./run-store-derived-log.test.mjs";
 // milestone 19 — work-run-lifecycle (story 01: run-commands — the three work:run-*
 // commands (run-start/run-complete/run-status, ADR-003) registered into the SAME
 // core + the CLI `work run-*` dispatch/--json face; each a thin wrapper over story
-// 00's src/run-store.mjs. The three task features (00_run-commands in-process via
+// 00's packages/core/src/run-store.mjs. The three task features (00_run-commands in-process via
 // invoke / 01_cli-face via real CLI spawn / 02_lifecycle-survives-restart via fresh
 // CLI processes); the bijection extension (fitness #4) is the EXTENDED
 // acd-work-command-cli-bijection arch-test already wired above.
@@ -92,7 +92,7 @@ import { runCompleteReasonTests } from "./run-complete-reason.test.mjs";
 // acd-run-record-node-additive, registered below) / FF-6802 / FF-6803 / FF-6804.
 import { runStoreSpendTests } from "./run-store-spend.test.mjs";
 // milestone 68 / story 02 — spend-ingest-at-settle: the transcript's own numbers,
-// copied once, priced once. The new producer module (src/run-spend-ingest.mjs)
+// copied once, priced once. The new producer module (packages/core/src/run-spend-ingest.mjs)
 // reads the session's whole transcript tree into the spend envelope and stamps it
 // once at settle through the 68/00 writer (ADR-003/004/008); a missing or unreadable
 // transcript leaves spend null, never a fabricated zero. The two @executable task

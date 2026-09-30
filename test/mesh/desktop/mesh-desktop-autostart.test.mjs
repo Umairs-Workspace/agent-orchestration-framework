@@ -18,9 +18,9 @@ import {
   AUTOSTART_RUN_KEY,
   AUTOSTART_VALUE_NAME,
   DESKTOP_APP_EXE,
-} from "../../../src/commands/mesh/desktop.mjs";
-import { getCommand, invoke, listCommands } from "../../../src/command-core.mjs";
-import { runCommandFace } from "../../../src/spine/face.mjs";
+} from "../../../packages/core/src/commands/mesh/desktop.mjs";
+import { getCommand, invoke, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { runCommandFace } from "../../../packages/core/src/spine/face.mjs";
 import { withMeshDesktopFixture } from "../../support/mesh-desktop-fixture.mjs";
 
 // `reg`'s own sentence for "no such value" — the ONE stderr text that makes a non-zero
@@ -543,7 +543,7 @@ export const meshDesktopAutostartTests = [
     name: "126/04 task02 the refusal reaches the operator as ONE { ok:false, error, code } envelope with a non-zero exit, through the real routed face",
     async run() {
       // WHY THE PLATFORM REFUSAL IS ASSERTED AT THE CORE AND THE ENVELOPE AT THE FACE.
-      // `runCommandFace(command, args)` takes NO ctx (`src/spine/face.mjs:128`), so the
+      // `runCommandFace(command, args)` takes NO ctx (`packages/core/src/spine/face.mjs:128`), so the
       // face cannot be handed an injected platform — the same limit this directory's
       // delivered run suite already documents for `spawnFn`, and the reason it asserts a
       // success envelope through `invoke` and a refusal through the face. So: the darwin

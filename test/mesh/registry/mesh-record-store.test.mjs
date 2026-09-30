@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 22 / story 00 — the mesh-record store.
 //
 // Covers EVERY @executable scenario in tasks/00_mesh-record-store.feature,
-// exercising the REAL src/mesh/store.mjs in-process against a temp fixture
+// exercising the REAL packages/core/src/mesh/store.mjs in-process against a temp fixture
 // (mkdtemp → build a workspace-shaped { workDir } → exercise → rm in finally). One
 // test object per @executable scenario. node:assert/strict.
 //
@@ -16,7 +16,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshDir } from "../../../src/mesh/store.mjs";
+import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
 
 // A workspace-shaped object: the store only needs workspace.workDir (where meshDir
 // — .aof/mesh/ — sits under the .aof home).
@@ -64,7 +64,7 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord } = await import("../../../src/mesh/store.mjs");
+        const { publishNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
         // partition root has no nodes/ directory yet
         assert.deepEqual(await listNodeFiles(workspace), [], "no nodes/ files before the first publish");
 
@@ -91,7 +91,7 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord, readNodeRecord } = await import("../../../src/mesh/store.mjs");
+        const { publishNodeRecord, readNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
         const record = nodeRecord("umami-desktop");
         await publishNodeRecord(workspace, "umami-desktop", record);
 
@@ -108,7 +108,7 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord, readNodeRecord } = await import("../../../src/mesh/store.mjs");
+        const { publishNodeRecord, readNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
         // a record carrying an unknown top-level "tags" array of objects, mixing
         // string/number/boolean/null leaf values at depth 3 — the store has never
         // seen "tags"; it must persist the record AS-IS (ADR-003 additive-friendly).
@@ -139,7 +139,7 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { readNodeRecord } = await import("../../../src/mesh/store.mjs");
+        const { readNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
         // nodes/ has no record for umami-mbp (the dir may not even exist)
         let read;
         await assert.doesNotReject(async () => { read = await readNodeRecord(workspace, "umami-mbp"); }, "reading an absent record raises no error");
@@ -154,7 +154,7 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord, readNodeRecord } = await import("../../../src/mesh/store.mjs");
+        const { publishNodeRecord, readNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
         const desktop = nodeRecord("umami-desktop");
         const mbp = nodeRecord("umami-mbp");
 
@@ -181,7 +181,7 @@ export const meshRecordStoreTests = [
     async run() {
       const { repo, workspace } = await makeWorkspace();
       try {
-        const { publishNodeRecord } = await import("../../../src/mesh/store.mjs");
+        const { publishNodeRecord } = await import("../../../packages/core/src/mesh/store.mjs");
         await publishNodeRecord(workspace, "umami-desktop", nodeRecord("umami-desktop"));
         await publishNodeRecord(workspace, "umami-mbp", nodeRecord("umami-mbp"));
         const mbpBytesBefore = await readBytes(workspace, "umami-mbp.json");

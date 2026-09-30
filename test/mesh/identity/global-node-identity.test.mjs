@@ -8,10 +8,10 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
-import { meshIdentityCommand } from "../../../src/commands/mesh/identity.mjs";
-import { migrateIdentityToGlobal, sidecarPathFor } from "../../../src/node-identity.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
+import { meshIdentityCommand } from "../../../packages/core/src/commands/mesh/identity.mjs";
+import { migrateIdentityToGlobal, sidecarPathFor } from "../../../packages/core/src/node-identity.mjs";
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-global-identity-"));

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { projectExecution } from "../../../src/loop-record.mjs";
-import { renderExecutionDocument } from "../../../src/loop-record-render.mjs";
+import { projectExecution } from "../../../packages/core/src/loop-record.mjs";
+import { renderExecutionDocument } from "../../../packages/core/src/loop-record-render.mjs";
 
 // FF-7806 — DECLARED-CEILING STATES ARE DISTINGUISHABLE IN THE RENDERED RECORD. `SPEC.md` states the
 // requirement and the failure in one line: "a `ceiling: uncapped` loop and a capped one must not

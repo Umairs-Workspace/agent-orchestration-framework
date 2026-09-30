@@ -25,9 +25,9 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { spawnSyncHardened } from "./cli-spawn.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../src/mesh/worker-execution.mjs";
-import { meshItemBranchName } from "../../src/mesh/worktree.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { createMeshWorkerExecutionHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
+import { meshItemBranchName } from "../../packages/core/src/mesh/worktree.mjs";
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,

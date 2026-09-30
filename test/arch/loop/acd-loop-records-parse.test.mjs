@@ -5,8 +5,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { listCommands } from "../../../src/command-core.mjs";
-import { FIELD_KINDS, loadLoops } from "../../../src/work/loops.mjs";
+import { listCommands } from "../../../packages/core/src/command-core.mjs";
+import { FIELD_KINDS, loadLoops } from "../../../packages/core/src/work/loops.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -100,13 +100,13 @@ export const archTests = [
         pointers += 1;
         if (entry.pointer.scheme === "command") assert.ok(commands.has(entry.pointer.operand), entry.raw);
         if (entry.pointer.scheme === "module") {
-          const source = await readFile(path.join(root, entry.pointer.operand), "utf8");
+          const source = await readFile(path.join(root, "packages", "core", entry.pointer.operand), "utf8");
           assert.ok(await declaresPublicSymbol(source, entry.pointer.symbol), `${entry.raw}: target declares symbol`);
         }
       }
       assert.ok(pointers > 10, "real pointer sweep is non-vacuous");
-      assert.equal(declaredHere(await readFile(path.join(root, "src/terminal-providers.mjs"), "utf8"), "CliProvider"), true);
-      assert.equal(declaredHere(await readFile(path.join(root, "src/application/bindings/command-core.mjs"), "utf8"), "loadWorkspace"), false);
+      assert.equal(declaredHere(await readFile(path.join(root, "packages/core/src/terminal-providers.mjs"), "utf8"), "CliProvider"), true);
+      assert.equal(declaredHere(await readFile(path.join(root, "packages/core/src/application/bindings/command-core.mjs"), "utf8"), "loadWorkspace"), false);
       assert.equal(declaredHere(await readFile(path.join(root, "packages/knowledge/src/graphify.mjs"), "utf8"), "readGraph"), false);
     },
   },

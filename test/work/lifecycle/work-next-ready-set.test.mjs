@@ -3,9 +3,9 @@
 // (@executable). One exported entry per Scenario, one per Scenario-Outline ROW.
 //
 // THE ONE PROPERTY EVERY LANE HERE PROTECTS IS ADDITIVITY. `aof work next`'s answer is
-// consumed — `src/commands/next.mjs` (the command, its human render and its `--json`
-// path-relativiser), `src/board-ui.mjs:157` (the board's `/api/work/next` route), and
-// `src/work/read.mjs:325` (whose cache attribution stamped only `if (typeof result?.ref ===
+// consumed — `packages/core/src/commands/next.mjs` (the command, its human render and its `--json`
+// path-relativiser), `packages/core/src/board-ui.mjs:157` (the board's `/api/work/next` route), and
+// `packages/core/src/work/read.mjs:325` (whose cache attribution stamped only `if (typeof result?.ref ===
 // "string")`) — plus two FROZEN contract tests and eleven bundle prompts. So the existing
 // single-item keys stay where they are and keep meaning what they mean, and the set arrives
 // beside them. Several lanes below assert the OLD shape rather than the new one; that is the
@@ -21,9 +21,9 @@
 // directly on `mergeSkipped`. Three lanes, one key, no gap.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { nextWork } from "../../../src/work.mjs";
-import { nextCommand, mergeSkipped } from "../../../src/commands/next.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+import { nextWork } from "../../../packages/core/src/work.mjs";
+import { nextCommand, mergeSkipped } from "../../../packages/core/src/commands/next.mjs";
+import { invoke } from "../../../packages/core/src/command-core.mjs";
 import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture.mjs";
 import { withStream } from "../../support/story-depends-fixture.mjs";
 import { withCacheReadFixture, plantCacheRow, runCommand, WORKER_NODE, SYNCED_AT } from "../../support/cache-read-fixture.mjs";

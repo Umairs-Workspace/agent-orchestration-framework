@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveNotionRouting } from "../../src/integrations/routing.mjs";
+import { resolveNotionRouting } from "../../packages/core/src/integrations/routing.mjs";
 
 const board = (extra = {}) => ({
   dataSourceId: "ds-x",

@@ -11,16 +11,16 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { readExecutionOverlay } from "../../src/board-mesh-execution.mjs";
-import { buildNotifyEnvelope } from "../../src/notify/notify.mjs";
-import { openEffectsJournal, appendEvent, readEventSteps, pendingSteps } from "../../src/effects/journal.mjs";
-import { drainEffects, LOCAL_LOCI, CONTROL_LOCI } from "../../src/effects/dispatch.mjs";
-import { drainOutbox, remoteSteps, applyEffectAck, EFFECT_STEP_FRAME_KIND, EFFECT_ACK_FRAME_KIND } from "../../src/effects/outbox.mjs";
-import { reportAssignmentSettled } from "../../src/effects/assignment-transitions.mjs";
-import { applyStreamFrame } from "../../src/control-stream-server.mjs";
-import { readAssignment } from "../../src/assignment-record.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
+import { readExecutionOverlay } from "../../packages/core/src/board-mesh-execution.mjs";
+import { buildNotifyEnvelope } from "../../packages/core/src/notify/notify.mjs";
+import { openEffectsJournal, appendEvent, readEventSteps, pendingSteps } from "../../packages/core/src/effects/journal.mjs";
+import { drainEffects, LOCAL_LOCI, CONTROL_LOCI } from "../../packages/core/src/effects/dispatch.mjs";
+import { drainOutbox, remoteSteps, applyEffectAck, EFFECT_STEP_FRAME_KIND, EFFECT_ACK_FRAME_KIND } from "../../packages/core/src/effects/outbox.mjs";
+import { reportAssignmentSettled } from "../../packages/core/src/effects/assignment-transitions.mjs";
+import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
+import { readAssignment } from "../../packages/core/src/assignment-record.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 import { withMeshAssignFixture, seedAssignment } from "../support/mesh-assign-fixture.mjs";
 
 const NOW = "2026-07-31T10:00:00.000Z";
@@ -367,7 +367,7 @@ export const meshEffectsOutboxTests = [
       const { readFile } = await import("node:fs/promises");
       const url = await import("node:url");
       const path = await import("node:path");
-      const src = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..", "..", "src");
+      const src = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..", "..", "packages", "core", "src");
       for (const file of ["worker-stream-client.mjs", "control-stream-server.mjs"]) {
         const source = await readFile(path.join(src, "application/bindings", file), "utf8");
         assert.ok(
@@ -583,7 +583,7 @@ function workerAskControlTests() {
         for (const [label, withAsk] of [["the column set", true], ["absent", false]]) {
           await withWorkerAskWorld(async ({ apply, workspace, env }) => {
             await apply(withAsk ? { ...PARK, ask: ASK } : { ...PARK });
-            const { invoke } = await import("../../src/command-core.mjs");
+            const { invoke } = await import("../../packages/core/src/command-core.mjs");
             const rows = await invoke("work:list", { mesh: true }, { workspace, globalWorkStoreOptions: { env } });
             const ask = rows.find((row) => row.ref === "35/00")?.ask;
             assert.ok(ask != null, `${label}: the row carries an ask`);

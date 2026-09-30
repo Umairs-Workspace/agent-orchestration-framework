@@ -15,9 +15,9 @@ import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseFeature } from "../../../src/feature-parse.mjs";
-import { validateWork, parseFrontmatter } from "../../../src/work.mjs";
-import { validateCommand } from "../../../src/commands/validate.mjs";
+import { parseFeature } from "../../../packages/core/src/feature-parse.mjs";
+import { validateWork, parseFrontmatter } from "../../../packages/core/src/work.mjs";
+import { validateCommand } from "../../../packages/core/src/commands/validate.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const realWorkDir = path.join(repoRoot, "wiki", "work");

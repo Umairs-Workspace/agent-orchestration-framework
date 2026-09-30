@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ensureWorktreeTrusted, driveInteractiveClaudeSession } from "../../../src/mesh/worker-execution.mjs";
+import { ensureWorktreeTrusted, driveInteractiveClaudeSession } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 async function tempHomeWithConfig(initial) {

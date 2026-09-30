@@ -39,7 +39,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-export const CORPUS_REL = "src/harness-reference.mjs";
+export const CORPUS_REL = "packages/core/src/harness-reference.mjs";
 // The generated view. The word in its name is the SPEC's and the story's declared write path; it is
 // a rendering, never a declaration, and no module reads it.
 export const VIEW_REL = "wiki/reference/harness-baselines.md";

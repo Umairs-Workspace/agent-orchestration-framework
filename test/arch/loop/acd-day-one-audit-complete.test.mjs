@@ -30,10 +30,10 @@ import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable } from "../../../src/spine/face.mjs";
+import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { deriveRouteTable } from "../../../packages/core/src/spine/face.mjs";
 import { GATE_ORDER } from "../../../packages/work-loop/src/engine.mjs";
-import { loadLoops } from "../../../src/work/loops.mjs";
+import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import {
   GATING_CODES,
   checkActuatorArbitration,
@@ -42,10 +42,10 @@ import {
   checkPairing,
   checkReferenceOwnership,
   checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
+} from "../../../packages/core/src/work/loops-checks.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUNDLE = path.join(root, "src", "bundle");
+const BUNDLE = path.join(root, "packages", "core", "assets");
 const LOOPS_DIR = path.join(BUNDLE, "loops");
 
 const CHECKS = Object.freeze([
@@ -96,7 +96,7 @@ export const archTests = [
     name: "arch/59 FF-5910: the framework ships exactly one auditor, and the whole registry still loads with no error",
     run: async () => {
       const names = (await readdir(LOOPS_DIR)).filter((name) => name.endsWith(".md"));
-      assert.ok(names.length >= 16, `non-vacuous: ${names.length} records ship in src/bundle/loops/`);
+      assert.ok(names.length >= 16, `non-vacuous: ${names.length} records ship in packages/core/assets/loops/`);
 
       const { model, auditor } = await theAuditor();
       assert.equal(model.nodes.length, names.length, "every shipped record parsed into a node");
@@ -132,8 +132,8 @@ export const archTests = [
         assert.equal(raw.startsWith("prose:"), false, `${raw}: a paragraph is not an instrument`);
         if (raw.startsWith("module:")) {
           const { file, symbol } = moduleParts(raw);
-          await access(path.join(root, file));
-          const source = await readFile(path.join(root, file), "utf8");
+          await access(path.join(root, "packages", "core", file));
+          const source = await readFile(path.join(root, "packages", "core", file), "utf8");
           assert.equal(exportsSymbol(source, symbol), true, `${raw}: ${file} really exports ${symbol}`);
           files += 1;
         } else if (raw.startsWith("command:")) {

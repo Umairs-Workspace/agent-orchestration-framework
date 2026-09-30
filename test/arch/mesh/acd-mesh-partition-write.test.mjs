@@ -52,7 +52,7 @@ export const archTests = [
   {
     name: "arch/mesh-partition-write: publishing N distinct ids produces N discrete files under nodes/ with no aggregate",
     async run() {
-      const { publishNodeRecord, meshDir } = await import("../../../src/mesh/store.mjs");
+      const { publishNodeRecord, meshDir } = await import("../../../packages/core/src/mesh/store.mjs");
       const repo = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-partition-arch-"));
       try {
         const workspace = { workDir: path.join(repo, "wiki", "work"), globalMeshRoot: path.join(repo, "global", "mesh") };

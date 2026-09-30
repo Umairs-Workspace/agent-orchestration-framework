@@ -9,7 +9,7 @@
 //
 // FOUR LEGS:
 //   1. each mechanic — the DoD seed, the back-reference author, the append-position resolver, the
-//      idempotence scan — has EXACTLY ONE definition site anywhere in `src/`;
+//      idempotence scan — has EXACTLY ONE definition site anywhere in `packages/core/src/`;
 //   2. both faces reach them BY IMPORT and contain no copy of any of them;
 //   3. a tree-wide sweep for a RIVAL promoter, matched by a PROMOTION SIGNATURE rather than a bare
 //      shape (ADR-009 §2), reports nothing outside the family;
@@ -18,7 +18,7 @@
 // WHY THE SIGNATURE IS A CONJUNCTION, and this is the measured part. The tempting sweep — "a
 // `## Notes` heading matcher" or "a section-range walk" — reds on two live, unrelated homes:
 // `packages/work/src/phase-brief.mjs` (`extractH2Block(text, (title) => /^notes$/i.test(title))`) and
-// `src/memory/local-indexing.mjs`'s `splitSections`. Neither has anything to do with promotion. A
+// `packages/core/src/memory/local-indexing.mjs`'s `splitSections`. Neither has anything to do with promotion. A
 // module qualifies as a rival only if it BOTH seeds a Definition of Done AND writes a chore record
 // doc, and leg 3 asserts those two files are NOT reported — which is the assertion that proves the
 // signature is doing the narrowing rather than the luck.
@@ -85,8 +85,8 @@ export function rivalPromoterProblems(units) {
     .map((unit) => `${unit.rel}: matches the promotion signature (seeds a Definition of Done AND writes a chore record doc) outside ${FAMILY}`);
 }
 
-// Leg 4 — the family is a leaf, exactly as `src/work-tune/`, `src/work-audit/` and
-// `src/work-acceptor/` are. The FACES call `runInsertTopLevel`; the engine never reaches up to them.
+// Leg 4 — the family is a leaf, exactly as `packages/core/src/work-tune/`, `packages/core/src/work-audit/` and
+// `packages/core/src/work-acceptor/` are. The FACES call `runInsertTopLevel`; the engine never reaches up to them.
 export function layeringProblems(units) {
   return units
     .filter((unit) => unit.rel.startsWith(`${FAMILY}/`))
@@ -134,11 +134,11 @@ export const archTests = [
         );
       }
 
-      // A THIRD module anywhere in `src/` that both seeds a DoD and writes a chore doc is a second
-      // promoter, and the sweep runs over all of `src/` so it is caught wherever it lands.
-      const rival = [...units, { rel: "src/some-new-thing.mjs", code: 'const h = "## Definition of Done"; await write("CHORE.md", h);' }];
+      // A THIRD module anywhere in `packages/core/src/` that both seeds a DoD and writes a chore doc is a second
+      // promoter, and the sweep runs over all of `packages/core/src/` so it is caught wherever it lands.
+      const rival = [...units, { rel: "packages/core/src/some-new-thing.mjs", code: 'const h = "## Definition of Done"; await write("CHORE.md", h);' }];
       assert.ok(
-        rivalPromoterProblems(rival).some((problem) => problem.includes("src/some-new-thing.mjs")),
+        rivalPromoterProblems(rival).some((problem) => problem.includes("packages/core/src/some-new-thing.mjs")),
         "a third promoter landing anywhere in src/ is reported",
       );
 

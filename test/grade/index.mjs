@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -21,7 +21,7 @@ import { evidenceReRunTests } from "./evidence-re-run.test.mjs";
 // milestone 77 / story 03 — THE REFERENCE CORPUS AND THE DECLARED BOUNDS: "everyone else caps at N"
 // is a research task whose answer depends on the day it ran, until it is written down with a source
 // and a date against every row — and then it is a JOIN a reviewer diffs in a pull request. The
-// corpus is a MODULE under `src/`, because the payload carries `src/` recursively and carries no
+// corpus is a MODULE under `packages/core/src/`, because the payload carries `packages/core/src/` recursively and carries no
 // `wiki/` and no `scripts/` at all: filed under `wiki/` it would make the bounds rule the one rule
 // in this milestone that cannot travel. It is frozen (a caller that can append a row can invent a
 // reference), non-vacuous, imports nothing, and is reached by module resolution, so it needs neither
@@ -33,7 +33,7 @@ import { evidenceReRunTests } from "./evidence-re-run.test.mjs";
 // audited project's fault. `loop-ceiling-uncapped` stays exactly where it is, at warn, in the
 // registry validation. The refresh is a hand-run PROGRAM under `scripts/`, not a flag: it confirms
 // and stamps rather than scrapes, it is the only thing in this milestone that touches the network,
-// and no registered command, no module under `src/` and no module of the audit family names it.
+// and no registered command, no module under `packages/core/src/` and no module of the audit family names it.
 // All three @executable task features plus FF-7705.
 import { harnessReferenceTests } from "./harness-reference.test.mjs";
 // milestone 61 / story 01 — the epoch and the frozen criterion: all four
@@ -103,7 +103,7 @@ import { gradeRubricIsDeclaredTests } from "./grade-rubric-is-declared.test.mjs"
 import { gradeUnconfiguredNoOpTests } from "./grade-unconfigured-no-op.test.mjs";
 import { gradeReadFaceNeverExecutesTests } from "./grade-read-face-never-executes.test.mjs";
 import { gradeSpawnBoundedAndSingleTests } from "./grade-spawn-bounded-and-single.test.mjs";
-// milestone 54 / story 04 — SCENARIO TRACEABILITY (ADR-006). `src/commands/validate.mjs:57`
+// milestone 54 / story 04 — SCENARIO TRACEABILITY (ADR-006). `packages/core/src/commands/validate.mjs:57`
 // has shipped the line "test-traceability … is not yet checked here" for six milestones; this
 // fills it, OUTSIDE the 256-dependent god-node, as a new `work:doctor` lane leaf. THE JOIN IS
 // DECLARED, NOT INFERRED, and the measurement is the decision: across 719 `.feature` files
@@ -133,7 +133,7 @@ import { gradePayloadBoundedInTheWriterTests } from "./grade-payload-bounded-in-
 // becomes a feedback loop, and its first move is refusing to believe an exit code. Measured
 // at HEAD: `node --test test/arch/audit/acd-controls-never-execute.test.mjs` reports one case, one
 // pass and exit 0 for a file whose arch-tests did NOT run — a grader reading that as green
-// would ship a lie into the loop's own termination decision. `src/work/grade.mjs` is the
+// would ship a lie into the loop's own termination decision. `packages/core/src/work/grade.mjs` is the
 // pure leaf that refuses it: a closed verdict triple, a frozen nine-code vocabulary, and a
 // `pass` that must be paid for in four pieces of positive evidence. Task 00 proves every
 // code has a producer and a settled verdict; task 01 removes the four pieces one at a time

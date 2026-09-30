@@ -20,7 +20,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { rubricTraceabilityGroup, executableScenariosOf, joinCases } from "../../src/work/doctor-rubric.mjs";
+import { rubricTraceabilityGroup, executableScenariosOf, joinCases } from "../../packages/core/src/work/doctor-rubric.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -166,7 +166,7 @@ export const rubricJoinIsDeclaredTests = [
       // NO AMBIGUITY CODE WAS COINED. The lane's vocabulary is the frozen three, and a
       // substring relationship between two scenario names is a naming FACT about the
       // contract — reported by joining both rather than by guessing which was meant.
-      const { RUBRIC_FINDING_CODES } = await import("../../src/work/doctor-rubric.mjs");
+      const { RUBRIC_FINDING_CODES } = await import("../../packages/core/src/work/doctor-rubric.mjs");
       assert.deepEqual([...RUBRIC_FINDING_CODES], ["case-unjoined", "scenario-unjoined", "rubric-join-unchecked"]);
       assert.ok(!RUBRIC_FINDING_CODES.some((code) => /ambig/i.test(code)), "no ambiguity code exists to have been coined");
     },

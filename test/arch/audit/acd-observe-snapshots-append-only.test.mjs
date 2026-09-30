@@ -1,7 +1,7 @@
 // Fitness function: acd-observe-snapshots-append-only (milestone 68 / story 05 /
 // 68/ADR-007 / FF-6807) — "Snapshots are append-only."
 //
-//   "No write path under src/work/observe.mjs opens an existing snapshot for
+//   "No write path under packages/core/src/work/observe.mjs opens an existing snapshot for
 //    truncation or rewrite; each run writes a new timestamped artefact."
 //
 // The pre-68 miner wrote `observability/report.md` + `observability/agents.json` IN
@@ -42,7 +42,7 @@ export const archTests = [
   {
     name: "arch/68 FF-6807 (acd-observe-snapshots-append-only): behaviour over the real seam — two observe runs produce two distinct timestamped snapshots, the first byte-identical, and legacy files are marked not rewritten",
     run: async () => {
-      const { observeMilestone, readLatestSnapshot, projectSlug, PRE68_JSON_KEY } = await import("../../../src/work/observe.mjs");
+      const { observeMilestone, readLatestSnapshot, projectSlug, PRE68_JSON_KEY } = await import("../../../packages/core/src/work/observe.mjs");
       const repo = await mkdtemp(path.join(os.tmpdir(), "aof-snap-arch-"));
       const home = await mkdtemp(path.join(os.tmpdir(), "aof-snap-arch-home-"));
       try {
@@ -94,7 +94,7 @@ export const archTests = [
       for (const file of modules) {
         // COMMENTS ARE STRIPPED FIRST, and that is the difference between a claim about what a
         // module DOES and a claim about what its prose says. Measured at 96's milestone gate: this
-        // census named `src/commands/loop-record.mjs`, whose only offence was a comment explaining
+        // census named `packages/core/src/commands/loop-record.mjs`, whose only offence was a comment explaining
         // that the writer is "a read-modify-write, not a truncate-and-emit" — a module documenting
         // that it does NOT truncate was reported as truncating. A control that reds on its own
         // subject's correct documentation teaches people to stop writing it.

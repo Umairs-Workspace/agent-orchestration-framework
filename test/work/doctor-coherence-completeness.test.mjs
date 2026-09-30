@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 15 / story 01 — the coherence & completeness
 // check-groups (status-coherence + lifecycle-completeness). Covers EVERY
 // @executable scenario across the story's two task features, exercising the REAL
-// engine (src/work/doctor.mjs with the appended groups) over temp fixture repos —
+// engine (packages/core/src/work/doctor.mjs with the appended groups) over temp fixture repos —
 // mirroring doctor-command-core.test.mjs's house style. One test object per
 // @executable scenario (Scenario-Outline rows folded into one entry).
 //
@@ -15,8 +15,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
 
 // --- fixture builders --------------------------------------------------------
 

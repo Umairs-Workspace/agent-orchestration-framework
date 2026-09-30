@@ -29,8 +29,8 @@
 // ARCHITECTURE specifies "a NAMED, explicit list of `ui/src/*` top-level directories ... plus a
 // per-directory FILE-COUNT ceiling" and says nothing about the root. Driven, that leaves the
 // cheapest possible route past the gate wide open: nine new files in `ui/src` itself breach
-// nothing. The `src/` half of this codebase already meters exactly that — ARCHITECTURE's own
-// health table records "`src/` root-level `.mjs` 109 — flat — item 10's ratchet is holding",
+// nothing. The `packages/core/src/` half of this codebase already meters exactly that — ARCHITECTURE's own
+// health table records "`packages/core/src/` root-level `.mjs` 109 — flat — item 10's ratchet is holding",
 // which is the strongest available evidence that a root counter works. One extra table row is
 // the whole cost.
 //

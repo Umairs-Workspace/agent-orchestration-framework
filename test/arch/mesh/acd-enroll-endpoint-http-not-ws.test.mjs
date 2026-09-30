@@ -22,7 +22,7 @@
 // structurally). Each proof carries an m03 non-vacuous self-check (the detector fires on a
 // planted ws enrollment kind, stays quiet on the accepted HTTP-route form).
 //
-// State: GREEN today (m23's src/mesh/relay.mjs has no enrollment surface at all — the ws
+// State: GREEN today (m23's packages/core/src/mesh/relay.mjs has no enrollment surface at all — the ws
 // envelope is neutral, the http handler only 426s), STILL GREEN when story 01 adds the
 // HTTP enrollment route (the route is on the http handler, the ws envelope is untouched),
 // and RED only if enrollment is ever put on a ws `kind`. That is the correct lifecycle for
@@ -101,7 +101,7 @@ export const archTests = [
       const wsRegion = wssMessageRegion(withStrings);
       // The ws message path exists (m23's broker) — assert it, so the region read is real,
       // not an empty vacuous pass.
-      assert.ok(wsRegion.length > 0, "src/mesh/relay.mjs has a wss.on('connection') message path (the m23 broker)");
+      assert.ok(wsRegion.length > 0, "packages/core/src/mesh/relay.mjs has a wss.on('connection') message path (the m23 broker)");
       assert.ok(
         !WS_ENROLL_KIND.test(wsRegion),
         "the ws message handler branches on NO enrollment `kind` (kind === 'enroll'/'join'/'invite') — enrollment must NOT ride the frozen { kind, nodeId, signal } ws envelope; it is an HTTP route (ADR-2). A ws enrollment kind would make the relay parse an enrollment payload, breaking the 23/ADR-001 payload-agnostic property (m26 leasing must add a kind with zero relay change)."
@@ -120,7 +120,7 @@ export const archTests = [
       const withStrings = stripCommentsOnly(await readFile(MESH_RELAY, "utf8"));
       const httpRegion = httpHandlerRegion(withStrings);
       const wsRegion = wssMessageRegion(withStrings);
-      assert.ok(httpRegion.length > 0, "src/mesh/relay.mjs has an http.createServer request handler (03/ADR-001 — ONE server)");
+      assert.ok(httpRegion.length > 0, "packages/core/src/mesh/relay.mjs has an http.createServer request handler (03/ADR-001 — ONE server)");
 
       // Whether an enrollment surface exists yet (RED-until-built: m23 has none — the loop
       // is vacuously satisfied; story 01 adds the /enroll route to the http handler).

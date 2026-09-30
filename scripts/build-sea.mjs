@@ -6,7 +6,7 @@
 //
 //   1. esbuild --bundle --platform=node --format=cjs --target=node22 the ESM
 //      app (scripts/sea-entry.mjs, which imports bin/aof.mjs's shape via
-//      src/cli.mjs's run()) into ONE CJS file — node-pty + the two asset
+//      packages/core/src/cli.mjs's run()) into ONE CJS file — node-pty + the two asset
 //      trees EXTERNALIZED (they are sidecars, ADR-002/ADR-003), asserted from
 //      the esbuild --metafile so a silently-inlined native addon / asset tree
 //      is a build-time failure, not a downstream crash.
@@ -223,10 +223,10 @@ async function main() {
   });
 
   // --- 2. the sidecar layout ---
-  step("generate the sidecar asset tree (src/bundle/** + ui/dist/**)", () => {
+  step("generate the sidecar asset tree (packages/core/assets/** + ui/dist/**)", () => {
     const manifest = generateAssetManifest(repoRoot);
     for (const rel of manifest.bundle) {
-      const src = path.join(repoRoot, "src", "bundle", rel);
+      const src = path.join(repoRoot, "packages", "core", "assets", rel);
       const dest = path.join(outDir, "bundle", rel);
       mkdirSync(path.dirname(dest), { recursive: true });
       copyFileSync(src, dest);
@@ -241,7 +241,7 @@ async function main() {
   });
 
   step("write the trimmed sidecar package.json ({ version })", () => {
-    const pkg = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+    const pkg = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "package.json"), "utf8"));
     writeFileSync(path.join(outDir, "package.json"), JSON.stringify({ version: pkg.version }, null, 2), "utf8");
   });
 

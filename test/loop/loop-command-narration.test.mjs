@@ -7,12 +7,12 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
 
-import { runLoopBody } from "../../src/commands/loop.mjs";
-import { completeRun, readRuns, startRun } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
+import { completeRun, readRuns, startRun } from "../../packages/core/src/run-store.mjs";
+import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
 import { DECLARATION_L1, completingDriver, fakeStopSource, loopFixture, replaceStatus, resetLoopStops, writeDeclarationRun } from "./loop-command-probe.test.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
-import { loopStopsDir, markStopHonoured, requestLoopStop } from "../../src/loop/stop-request.mjs";
+import { loopStopsDir, markStopHonoured, requestLoopStop } from "../../packages/core/src/loop/stop-request.mjs";
 
 // 130/02 (ADR-003 §6) — `Cleared` joins the in-flight class: the resume's clear of a standing
 // stop request rides `narrate` by the same role rule, FF-12602's eleventh line.

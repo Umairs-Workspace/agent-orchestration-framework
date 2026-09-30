@@ -2,7 +2,7 @@
 // item-frontmatter writer (ADR-005).
 //
 // Covers EVERY @executable scenario in tasks/02_status-rollback.feature. A mix of
-// DIRECT rollbackItemStatus calls (imported from ../src/work.mjs) over a controlled
+// DIRECT rollbackItemStatus calls (imported from ../packages/core/src/work.mjs) over a controlled
 // fixture, and the CLI / restart-reclaim wiring scenarios driven through the real
 // CLI. One test object per @executable scenario (Scenario-Outline rows folded into
 // one entry iterating the rows), each name tracing to feature + scenario.
@@ -19,10 +19,10 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { rollbackItemStatus } from "../../src/work.mjs";
+import { rollbackItemStatus } from "../../packages/core/src/work.mjs";
 // The reclaim SCAN this feature's reclaim scenario names — driven directly, so what the
 // reclaim does is not confounded by a fresh mint's own status move (see that lane).
-import { transitionStaleRunsReclaimed } from "../../src/effects/run-transitions.mjs";
+import { transitionStaleRunsReclaimed } from "../../packages/core/src/effects/run-transitions.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

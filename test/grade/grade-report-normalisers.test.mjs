@@ -3,7 +3,7 @@
 // Every @executable scenario (and every Examples row) of
 //   wiki/work/54_milestone_verification-loop/stories/00_story_the-grade-record/tasks/02_the-report-normalisers.feature
 // against the LOCKED surface: `normaliseReport`, `normaliseTap` and `REPORT_FORMATS` in
-// ../src/work/grade.mjs.
+// ../packages/core/src/work/grade.mjs.
 //
 // `m38/ADR-008` IS THE WHOLE POINT OF THIS FILE: *wherever we do not own the PRODUCER, the
 // contract test MUST be fed a REAL CAPTURED payload from that producer.* Not one assertion
@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normaliseReport, normaliseTap, REPORT_FORMATS } from "../../src/work/grade.mjs";
+import { normaliseReport, normaliseTap, REPORT_FORMATS } from "../../packages/core/src/work/grade.mjs";
 
 const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "rubric-reports");
 const capture = (name) => readFileSync(path.join(fixturesDir, name), "utf8");

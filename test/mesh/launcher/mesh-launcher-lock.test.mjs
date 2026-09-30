@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { acquireMeshLauncherLock, meshLauncherLockPaths } from "../../../src/mesh/launcher-lock.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
+import { acquireMeshLauncherLock, meshLauncherLockPaths } from "../../../packages/core/src/mesh/launcher-lock.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 async function withTempHome(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-launcher-lock-"));

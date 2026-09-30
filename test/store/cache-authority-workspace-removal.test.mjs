@@ -20,7 +20,7 @@ import {
   upsertWorkItemContent,
   readWorkItemDoc,
   readWorkItemRuns,
-} from "../../src/global-work-store.mjs";
+} from "../../packages/core/src/global-work-store.mjs";
 import {
   withCacheFixture,
   withStore,

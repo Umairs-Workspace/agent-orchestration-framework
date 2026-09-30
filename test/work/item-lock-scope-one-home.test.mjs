@@ -29,11 +29,11 @@
 //     the rule is observable at all.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { invoke } from "../../src/command-core.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
-import { resolveContinueDecision } from "../../src/commands/continue.mjs";
-import { readExecutionOverlay } from "../../src/board-mesh-execution.mjs";
-import { openGlobalWorkProjectionStore, upsertWorkItemContent } from "../../src/global-work-store.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
+import { resolveContinueDecision } from "../../packages/core/src/commands/continue.mjs";
+import { readExecutionOverlay } from "../../packages/core/src/board-mesh-execution.mjs";
+import { openGlobalWorkProjectionStore, upsertWorkItemContent } from "../../packages/core/src/global-work-store.mjs";
 import { withItemLockFixture, seedActive } from "../support/item-lock-fixture.mjs";
 
 const HOLDER = "aof-wsl";

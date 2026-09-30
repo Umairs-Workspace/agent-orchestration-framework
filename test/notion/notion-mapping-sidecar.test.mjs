@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readMapping, resolvePageId, recordPageId } from "../../src/notion/mapping.mjs";
+import { readMapping, resolvePageId, recordPageId } from "../../packages/core/src/notion/mapping.mjs";
 
 async function makeRoot() {
   return await mkdtemp(path.join(os.tmpdir(), "aof-notion-map-"));

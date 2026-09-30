@@ -4,9 +4,9 @@
 // worktree add` in a disposable temp fixture repo (RESEARCH.md §4/§5).
 import assert from "node:assert/strict";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { addWorktree, meshWorktreePath, meshWorktreesRoot, isUnderMeshWorktreesRoot, listWorktrees, removeWorktree } from "../../src/mesh/worktree.mjs";
-import { resolveRefInWorktree } from "../../src/mesh/worker-execution.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { addWorktree, meshWorktreePath, meshWorktreesRoot, isUnderMeshWorktreesRoot, listWorktrees, removeWorktree } from "../../packages/core/src/mesh/worktree.mjs";
+import { resolveRefInWorktree } from "../../packages/core/src/mesh/worker-execution.mjs";
 import { withMeshWorkerExecFixture } from "../support/mesh-worker-exec-fixture.mjs";
 
 export const meshWorktreeMaterializeTests = [

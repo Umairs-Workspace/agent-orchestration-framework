@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readRouting, classifyParent } from "../../src/integrations/routing.mjs";
+import { readRouting, classifyParent } from "../../packages/core/src/integrations/routing.mjs";
 
 // A fixture work item: a folder on disk plus the listItems()-shaped { dir, type } the
 // reader resolves the descriptor path from (recordDoc semantics — item.dir + the record

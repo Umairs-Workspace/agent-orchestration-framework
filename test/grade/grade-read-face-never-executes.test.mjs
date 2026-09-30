@@ -21,10 +21,10 @@ import { readFile, rm, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke, getCommand, listCommands } from "../../src/command-core.mjs";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
-import { startRun } from "../../src/run-store.mjs";
-import { resolveItem } from "../../src/commands/resolve.mjs";
+import { invoke, getCommand, listCommands } from "../../packages/core/src/command-core.mjs";
+import { serveSetupUi } from "../../packages/core/src/setup-ui.mjs";
+import { startRun } from "../../packages/core/src/run-store.mjs";
+import { resolveItem } from "../../packages/core/src/commands/resolve.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
@@ -273,8 +273,8 @@ export const gradeReadFaceNeverExecutesTests = [
         assert.deepEqual(carried[0].codes, ["case-failed"], "…and its codes");
 
         // ZERO BOARD CHANGE. Asserted as a property of the sources rather than as a diff.
-        const boardUi = await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8");
-        assert.ok(!boardUi.includes("work:grade"), "src/board-ui.mjs was not edited to make that true");
+        const boardUi = await readFile(path.join(repoRoot, "packages", "core", "src", "board-ui.mjs"), "utf8");
+        assert.ok(!boardUi.includes("work:grade"), "packages/core/src/board-ui.mjs was not edited to make that true");
         assert.ok(!boardUi.includes("/api/work/grade"), "…and it serves no grade route");
 
         const uiFiles = [];
@@ -303,12 +303,12 @@ export const gradeReadFaceNeverExecutesTests = [
     run: async () => {
       // `53/ADR-008`'s ruling, unchanged: `/aof:continue` and `/aof:verify` ARE the wrappers,
       // and the prompt-layer wording is 71's.
-      const bundleCommands = path.join(repoRoot, "src", "bundle", "commands");
+      const bundleCommands = path.join(repoRoot, "packages", "core", "assets", "commands");
       const files = await readdir(bundleCommands);
       assert.ok(!files.some((name) => /grade/i.test(name)), "no new /aof:* wrapper file exists for the grade verb");
       for (const name of files) {
         const text = await readFile(path.join(bundleCommands, name), "utf8");
-        assert.ok(!text.includes("work:grade"), `no file under src/bundle/commands/ was edited by this story (${name})`);
+        assert.ok(!text.includes("work:grade"), `no file under packages/core/assets/commands/ was edited by this story (${name})`);
         assert.ok(!text.includes("aof work grade"), `…nor spells the verb in prose (${name})`);
       }
     },

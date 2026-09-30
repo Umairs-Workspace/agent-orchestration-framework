@@ -15,7 +15,7 @@ const MODULE = "packages/work-graph/src/record.mjs";
 // rather than behind it, and what makes the whole of it testable against literal fixtures.
 //
 // THROUGH ITS DIRECT IMPORTS, not just its own body. A pure module that imports an impure one has
-// only moved the impurity one hop, so the sweep follows every local module `src/loop-record.mjs`
+// only moved the impurity one hop, so the sweep follows every local module `packages/core/src/loop-record.mjs`
 // imports and holds it to the same rule.
 const FORBIDDEN = [
   { what: "the filesystem", pattern: /node:fs|require\(\s*["']fs["']|\bfrom\s+["']fs["']/ },
@@ -75,13 +75,13 @@ export const archTests = [
   {
     name: "arch/78 FF-7810: the projection is named into the execution family, outside FF-5201's discovery patterns",
     run: async () => {
-      // ADR-009 — 52/FF-5201 discovers `src/work-loops*.mjs` and `src/commands/loops-*.mjs` and
-      // holds every discovered module read-only. `src/loop-record.mjs` matches neither, which is
+      // ADR-009 — 52/FF-5201 discovers `packages/core/src/work-loops*.mjs` and `packages/core/src/commands/loops-*.mjs` and
+      // holds every discovered module read-only. `packages/core/src/loop-record.mjs` matches neither, which is
       // the distinction the gate encodes rather than an evasion of it: the registry is framework
       // data, an execution is a per-item fact.
-      const leaf = MODULE.slice("src/".length);
+      const leaf = MODULE.slice("packages/core/src/".length);
       assert.doesNotMatch(leaf, /^work-loops.*\.mjs$/, "the projection is not discovered as a registry module");
-      assert.ok(!MODULE.startsWith("src/commands/loops-"), "the projection is not discovered as a registry command");
+      assert.ok(!MODULE.startsWith("packages/core/src/commands/loops-"), "the projection is not discovered as a registry command");
     },
   },
 ];

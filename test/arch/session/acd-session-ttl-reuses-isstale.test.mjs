@@ -12,13 +12,13 @@
 // Date.parse(b) > threshold` comparison, a `>=` off-by-one, its own predicate — is the
 // "two heartbeats" mistake the mesh guards against. This fitness function forbids it.
 //
-// STATE OF BUILD: the session module (src/mesh/session.mjs) is built by the story. This
+// STATE OF BUILD: the session module (packages/core/src/mesh/session.mjs) is built by the story. This
 // test is TOLERANT of its absence (the invariant cannot be violated by a file that does
 // not exist yet) and STRICT once it exists: the module MUST import isStale/isNodeStale
 // from the shared source and MUST NOT hand-roll a staleness comparison.
 //
 // Proofs:
-//  1. If src/mesh/session.mjs exists, it imports isStale (or isNodeStale) from the
+//  1. If packages/core/src/mesh/session.mjs exists, it imports isStale (or isNodeStale) from the
 //     shared staleness source (run-store.mjs or mesh-presence.mjs) and contains NO
 //     hand-rolled staleness comparison (`Date.parse(...) - Date.parse(...) > ...`).
 //  2. The shared predicate itself is strict `>` (a session AT the TTL is still live) —
@@ -29,7 +29,7 @@ import assert from "node:assert/strict";
 import { readFile, access } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isNodeStale } from "../../../src/mesh/presence.mjs";
+import { isNodeStale } from "../../../packages/core/src/mesh/presence.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const sessionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
@@ -71,7 +71,7 @@ export const archTests = [
     run: async () => {
       const source = await readIfExists(sessionSourcePath);
       if (source == null) return; // not-yet-built: the invariant cannot be violated by an absent file (pending)
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/session.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/session.mjs"), "utf8"));
       const implementation = stripComments(source);
       assert.match(adapter, /import\s*\{\s*createMeshSessions\s*\}\s*from\s*["']@aof\/mesh\/session["']/);
       assert.match(adapter, /createMeshSessions\(\{[^}]*\bisStale\b[^}]*\}\)/);

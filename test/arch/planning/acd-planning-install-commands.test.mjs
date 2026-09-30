@@ -32,7 +32,7 @@ import {
   planPlanningInstall,
   CORE_PLUGINS,
   MARKETPLACE_REF
-} from "../../../src/planning-init.mjs";
+} from "../../../packages/core/src/planning-init.mjs";
 
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
 // ADR-008: the clonable release tag the marketplace-add `#<ref>` must pin. The real

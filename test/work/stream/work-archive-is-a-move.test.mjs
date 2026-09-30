@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 127 / story 03 — "Archive is a move".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) of tasks 00-04 is asserted
-// here against the REAL registered command `work:archive` (src/commands/archive.mjs), invoked
+// here against the REAL registered command `work:archive` (packages/core/src/commands/archive.mjs), invoked
 // in-process through the command core or through the real CLI as a child process, and read back
 // black-box through findWork / listItems / listStream / nextWork / validateWork / doctorWork, the
 // effects journal and the global work store. The textual half of the story's control (FF-12705)
@@ -41,17 +41,17 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { invoke, listCommands } from "../../../src/command-core.mjs";
-import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace, ARCHIVE_ROOT } from "../../../src/work.mjs";
-import { doctorWork } from "../../../src/work/doctor.mjs";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { transitionStreamArchived } from "../../../src/effects/stream-transitions.mjs";
-import { openEffectsJournal, readEvents, readEventSteps } from "../../../src/effects/journal.mjs";
-import { publishGlobalWorkSnapshot } from "../../../src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../../src/global-work-store.mjs";
-import { ITEM_LOCKED_CODE } from "../../../src/item-lock.mjs";
-import { readDescriptor } from "../../../src/work/bundle.mjs";
-import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
+import { invoke, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace, ARCHIVE_ROOT } from "../../../packages/core/src/work.mjs";
+import { doctorWork } from "../../../packages/core/src/work/doctor.mjs";
+import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
+import { transitionStreamArchived } from "../../../packages/core/src/effects/stream-transitions.mjs";
+import { openEffectsJournal, readEvents, readEventSteps } from "../../../packages/core/src/effects/journal.mjs";
+import { publishGlobalWorkSnapshot } from "../../../packages/core/src/global-work-publisher.mjs";
+import { readWorkspaceItems } from "../../../packages/core/src/global-work-store.mjs";
+import { ITEM_LOCKED_CODE } from "../../../packages/core/src/item-lock.mjs";
+import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
+import { resolveWorkspaceId } from "../../../packages/core/src/workspace-identity.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
@@ -73,7 +73,7 @@ const byRef = (rows, ref) => rows.find((row) => row.ref === ref);
 const THETA_SPEC_BODY = [
   "# 12 · Theta",
   "",
-  "[alpha](../10_milestone_alpha/SPEC.md) and [roadmap](../../ROADMAP.md) and [cli](../../../src/cli.mjs)",
+  "[alpha](../10_milestone_alpha/SPEC.md) and [roadmap](../../ROADMAP.md) and [cli](../../../packages/core/src/cli.mjs)",
   "[state](./STATE.md) [story](stories/00_story_theta-one/STORY.md) [gone](../99_milestone_gone/SPEC.md)",
   "[iota](../13_chore_iota/CHORE.md) [site](https://example.com/12_milestone_theta) [abs](/wiki/work/12_milestone_theta)",
   "[tasks](#tasks) [mock](../10_milestone_alpha/mocks/a%20b.png)",
@@ -87,9 +87,9 @@ const THETA_SPEC_BODY = [
 ].join("\n");
 
 const THETA_STATE_CRLF = "# 12 · Theta state\r\n\r\n[alpha](../10_milestone_alpha/SPEC.md)\r\n";
-const THETA_STORY_BODY = "[alpha](../../../10_milestone_alpha/SPEC.md) [cli](../../../../../src/cli.mjs) [spec](../../SPEC.md)\n";
+const THETA_STORY_BODY = "[alpha](../../../10_milestone_alpha/SPEC.md) [cli](../../../../../packages/core/src/cli.mjs) [spec](../../SPEC.md)\n";
 const THETA_FEATURE = "@executable\nFeature: theta\n  # a feature is not markdown: ](../10_milestone_alpha/SPEC.md)\n  Scenario: x\n    Given y\n";
-const THETA_RETIRED = 'import "../../../../src/work.mjs";\nexport const retired = true;\n';
+const THETA_RETIRED = 'import "../../../../packages/core/src/work.mjs";\nexport const retired = true;\n';
 const THETA_HEARTBEATS = '{"at":"2026-09-11T00:00:00.000Z"}\n';
 const BETA_BODY = "[theta](../12_milestone_theta/SPEC.md) [theta tasks](../12_milestone_theta/stories/00_story_theta-one/STORY.md#tasks)\n";
 const ALPHA_STORY_BODY = "[theta](../../../12_milestone_theta/SPEC.md)\n";
@@ -255,13 +255,13 @@ async function gitInit(root) {
 const OUTWARD = [
   ["archive/12_milestone_theta/SPEC.md", "../10_milestone_alpha/SPEC.md", "../../10_milestone_alpha/SPEC.md"],
   ["archive/12_milestone_theta/SPEC.md", "../../ROADMAP.md", "../../../ROADMAP.md"],
-  ["archive/12_milestone_theta/SPEC.md", "../../../src/cli.mjs", "../../../../src/cli.mjs"],
+  ["archive/12_milestone_theta/SPEC.md", "../../../packages/core/src/cli.mjs", "../../../../packages/core/src/cli.mjs"],
   ["archive/12_milestone_theta/SPEC.md", "../99_milestone_gone/SPEC.md", "../../99_milestone_gone/SPEC.md"],
   ["archive/12_milestone_theta/SPEC.md", "../10_milestone_alpha/mocks/a%20b.png", "../../10_milestone_alpha/mocks/a%20b.png"],
   ["archive/12_milestone_theta/SPEC.md", "../13_chore_iota/CHORE.md", "../../13_chore_iota/CHORE.md"],
   ["archive/12_milestone_theta/STATE.md", "../10_milestone_alpha/SPEC.md", "../../10_milestone_alpha/SPEC.md"],
   ["archive/12_milestone_theta/stories/00_story_theta-one/STORY.md", "../../../10_milestone_alpha/SPEC.md", "../../../../10_milestone_alpha/SPEC.md"],
-  ["archive/12_milestone_theta/stories/00_story_theta-one/STORY.md", "../../../../../src/cli.mjs", "../../../../../../src/cli.mjs"],
+  ["archive/12_milestone_theta/stories/00_story_theta-one/STORY.md", "../../../../../packages/core/src/cli.mjs", "../../../../../../packages/core/src/cli.mjs"],
 ];
 const INWARD = [
   ["11_chore_beta/CHORE.md", "../12_milestone_theta/SPEC.md", "../archive/12_milestone_theta/SPEC.md"],
@@ -334,7 +334,7 @@ export async function censusItemPathMentions() {
     ...(existsSync(path.join(workRoot, ARCHIVE_ROOT)) ? await readdir(path.join(workRoot, ARCHIVE_ROOT)) : []),
   ]);
   const rows = [];
-  for (const dir of ["src", "test", "scripts"]) {
+  for (const dir of ["packages/core/src", "test", "scripts"]) {
     for (const file of await listMjs(path.join(repoRoot, dir))) {
       const lines = (await readFile(file, "utf8")).split(/\r?\n/);
       lines.forEach((line, index) => {
@@ -585,14 +585,14 @@ export const workArchiveIsAMoveTests = [
       assert.match(routes, /\r?\n\s*"archive",\r?\n/, "BOARD_DEFERRED names archive");
       assert.match(routes, /milestone 127 \/ story 03[\s\S]{0,900}\n\s*"archive",/, "…with its reason");
       const budget = await read("test/arch/testing/acd-source-directory-budget.test.mjs");
-      // `src/work` reads 43 since 127/04 landed `item-row.mjs` on the same row (the ledger is ONE
+      // `packages/core/src/work` reads 43 since 127/04 landed `item-row.mjs` on the same row (the ledger is ONE
       // table; the sibling that raises it next moves this literal with it). 03's own claim — the
       // row names 127/03 and `archive.mjs` — is unchanged. It reads 44 since 133/03 landed
       // `doctor-diagrams.mjs`, the doctor family's diagram lane, with its reason in the row's `why`.
       // It reads 45 since story 137's `digest-template.mjs`, raised at 130's door (130/VERIFICATION F-15).
       // `test/work/stream` reads 35 since 127/05 raised the row for its own suite (34 -> 35): the
       // pin is what this scenario asks for, and the raise is stated in the row's own `why`.
-      for (const [directory, ceiling, file] of [["src/commands", 69, "archive.mjs"], ["src/work", 45, "archive.mjs"], ["test/work/stream", 35, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
+      for (const [directory, ceiling, file] of [["packages/core/src/commands", 69, "archive.mjs"], ["packages/core/src/work", 45, "archive.mjs"], ["test/work/stream", 35, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
         const start = budget.indexOf(`directory: "${directory}",`);
         const block = budget.slice(start, budget.indexOf("}),", start));
         assert.match(block, new RegExp(`ceiling: ${ceiling},`), `${directory} reads ${ceiling}`);
@@ -726,7 +726,7 @@ export const workArchiveIsAMoveTests = [
         assert.ok(bytesOf(after, "archive/12_milestone_theta/tasks/00_theta.feature").equals(bytesOf(before, "12_milestone_theta/tasks/00_theta.feature")));
         assert.ok(bytesOf(after, "archive/12_milestone_theta/tasks/00_theta.feature").toString().includes("](../10_milestone_alpha/SPEC.md)"));
         assert.ok(bytesOf(after, "archive/12_milestone_theta/reference/retired.mjs").equals(bytesOf(before, "12_milestone_theta/reference/retired.mjs")));
-        assert.ok(bytesOf(after, "archive/12_milestone_theta/reference/retired.mjs").toString().includes('import "../../../../src/work.mjs"'));
+        assert.ok(bytesOf(after, "archive/12_milestone_theta/reference/retired.mjs").toString().includes('import "../../../../packages/core/src/work.mjs"'));
 
         for (const [oldFile, newFile] of [
           ["12_milestone_theta/runs/.heartbeats.ndjson", "archive/12_milestone_theta/runs/.heartbeats.ndjson"],
@@ -1086,7 +1086,7 @@ export const workArchiveIsAMoveTests = [
         const action = dry.actions.find((entry) => slash(entry.path) === file);
         assert.equal(action?.action, "skip", `${file} is current — the dry run reports nothing to write`);
       }
-      const manifest = JSON.parse(await readFile(path.join(repoRoot, "src", "bundle", "manifest.json"), "utf8"));
+      const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
       const lock = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.lock.json"), "utf8"));
       const manifestEntries = manifest.entries.filter((entry) => rendered.includes(slash(entry.path)));
       const lockEntries = (lock.work?.files ?? []).filter((entry) => rendered.includes(slash(entry.path)));
@@ -1098,7 +1098,7 @@ export const workArchiveIsAMoveTests = [
         const inLock = lockEntries.find((candidate) => slash(candidate.path) === slash(entry.path));
         assert.equal(inLock.hash, entry.hash, `${entry.path}: the lock carries the render's hash`);
       }
-      const text = await readFile(path.join(repoRoot, "src", "bundle", "commands", "archive.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "archive.md"), "utf8");
       for (const needle of ["aof work archive", "--json", "archive-confirm-required", "candidates"]) assert.ok(text.includes(needle), `archive.md contains ${needle}`);
       for (const phrase of [/rename\(/u, / mv /u, /git mv/u, /\.\.\/archive\//u]) assert.doesNotMatch(text, phrase);
     },
@@ -1114,7 +1114,7 @@ export const workArchiveIsAMoveTests = [
       await honesty.run();
       // The red probe, over a scratch copy of the wrapper: the honesty leg's own predicate fails
       // naming the phrase a hand-moving prompt would need.
-      const text = await readFile(path.join(repoRoot, "src", "bundle", "commands", "archive.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "archive.md"), "utf8");
       const probed = `${text}\nMove the folder with \`git mv <dir> <work.dir>/archive/\` when the verb refuses.\n`;
       assert.match(probed, /git mv/u, "the probe would be caught by the honesty leg's phrase list");
     },
@@ -1123,19 +1123,19 @@ export const workArchiveIsAMoveTests = [
     name: "work/archive-is-a-move: 04 verify.md gains one line and no prompt but archive.md runs the verb",
     run: async () => {
       const line = "Next, for a milestone just accepted: `aof work archive <NN>` moves its folder under `archive/` — the operator's act, never this ceremony's (127/ADR-004).";
-      const verify = await readFile(path.join(repoRoot, "src", "bundle", "commands", "verify.md"), "utf8");
+      const verify = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md"), "utf8");
       const output = verify.slice(verify.indexOf("<output>"), verify.indexOf("</output>"));
       assert.ok(output.includes(line), "the line sits inside <output>");
       assert.equal((verify.match(/aof work archive/g) ?? []).length, 1, "verify.md names the verb exactly once");
       for (const rendered of [".claude/commands/aof/verify.md", ".codex/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"]) {
         assert.ok((await readFile(path.join(repoRoot, ...rendered.split("/")), "utf8")).includes(line), `${rendered} carries the line`);
       }
-      const dir = path.join(repoRoot, "src", "bundle", "commands");
+      const dir = path.join(repoRoot, "packages", "core", "assets", "commands");
       const matches = [];
       // The walk is floored before it is narrowed (119/FF-11902; aof:verify 127): a prompt directory
       // that emptied would otherwise satisfy "exactly these two" over nothing.
       const prompts = (await readdir(dir)).filter((name) => name.endsWith(".md")).sort();
-      assert.ok(prompts.length >= 2, `src/bundle/commands was read and holds the prompts (${prompts.length})`);
+      assert.ok(prompts.length >= 2, `packages/core/assets/commands was read and holds the prompts (${prompts.length})`);
       for (const file of prompts) {
         if ((await readFile(path.join(dir, file), "utf8")).includes("aof work archive")) matches.push(file);
       }
@@ -1145,7 +1145,7 @@ export const workArchiveIsAMoveTests = [
   {
     name: "work/archive-is-a-move: 04 the wrapper's text stops where the verb stops",
     run: async () => {
-      const text = await readFile(path.join(repoRoot, "src", "bundle", "commands", "archive.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "archive.md"), "utf8");
       const process_ = text.slice(text.indexOf("<process>"), text.indexOf("</process>"));
       for (const code of ["archive-not-done", "archive-not-a-driver", "archive-backlog-ref", "archive-already-archived"]) {
         assert.ok(process_.includes(code), `names ${code}`);

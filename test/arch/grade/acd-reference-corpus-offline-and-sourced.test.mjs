@@ -45,14 +45,14 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importClosure, staticImportSpecifiers } from "../audit/acd-audit-never-imports-project-code.test.mjs";
-import { AUDIT_FINDING_CODES } from "../../../src/work-audit/census.mjs";
-import { HARNESS_REFERENCE_ROWS, REFERENCE_ROW_FLOOR, checkReferenceCorpus, referenceCorpusProblems } from "../../../src/harness-reference.mjs";
-import { DECLARED_BOUNDS_FINDING_CODES } from "../../../src/work-audit/declared-bounds.mjs";
-import { listCommands } from "../../../src/command-core.mjs";
+import { AUDIT_FINDING_CODES } from "../../../packages/core/src/work-audit/census.mjs";
+import { HARNESS_REFERENCE_ROWS, REFERENCE_ROW_FLOOR, checkReferenceCorpus, referenceCorpusProblems } from "../../../packages/core/src/harness-reference.mjs";
+import { DECLARED_BOUNDS_FINDING_CODES } from "../../../packages/core/src/work-audit/declared-bounds.mjs";
+import { listCommands } from "../../../packages/core/src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const CORPUS_REL = "src/harness-reference.mjs";
+const CORPUS_REL = "packages/core/src/harness-reference.mjs";
 const LANE_REL = "packages/work/src/audit/declared-bounds.mjs";
 const REFRESH_REL = "scripts/refresh-harness-reference.mjs";
 const VIEW_REL = "wiki/reference/harness-baselines.md";
@@ -61,7 +61,7 @@ const VIEW_REL = "wiki/reference/harness-baselines.md";
 // project's source.
 const STORY_MODULES = Object.freeze([CORPUS_REL, LANE_REL]);
 
-const FAMILY_ROOT = "src/application/bindings/work-audit";
+const FAMILY_ROOT = "packages/core/src/application/bindings/work-audit";
 const CLOSURE_FLOOR = 6;
 
 const read = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
@@ -219,7 +219,7 @@ export const archTests = [
     name: "acd-reference-corpus-offline-and-sourced: no module in src/ and no module of the family names the refresh program",
     async run() {
       const files = await readRuntimeFiles(repoRoot);
-      assert.equal(files.length > 50, true, `src/** was walked (${files.length} modules)`);
+      assert.equal(files.length > 50, true, `packages/core/src/** was walked (${files.length} modules)`);
       const offenders = [];
       for (const file of files) {
         offenders.push(...pathReaches(file.rel, stripComments(await readFile(file.path, "utf8")), REFRESH_REL));
@@ -277,12 +277,12 @@ export const archTests = [
       // THE RULE IS READ FROM THE INSTALLER, then its consequence is driven.
       const installer = read("scripts/install-local.mjs");
       const copied = [...installer.matchAll(/cpSync\(path\.join\(repoRoot,\s*"([^"]+)"\)/gu)].map((match) => match[1]);
-      assert.equal(copied.includes("src"), true, `the installer copies src/ into the payload (copies: ${copied.join(", ") || "none"})`);
+      assert.equal(/cpSync\(path\.join\(repoRoot,\s*"packages",\s*"core",\s*"src"\)/u.test(installer), true, `the installer copies src/ into the payload (copies: ${copied.join(", ") || "none"})`);
       assert.equal(copied.includes("scripts"), false, "…and copies no scripts/ directory at all");
 
       const payload = mkdtempSync(path.join(os.tmpdir(), "aof-payload-"));
       try {
-        cpSync(path.join(repoRoot, "src"), path.join(payload, "src"), { recursive: true });
+        cpSync(path.join(repoRoot, "packages", "core", "src"), path.join(payload, "packages", "core", "src"), { recursive: true });
         assert.equal(existsSync(path.join(payload, CORPUS_REL)), true, "the corpus is in the payload");
         const rows = readFileSync(path.join(payload, CORPUS_REL), "utf8");
         for (const row of HARNESS_REFERENCE_ROWS) assert.equal(rows.includes(row.id), true, `…and its rows are readable there (${row.id})`);
@@ -336,7 +336,7 @@ export const archTests = [
       }
 
       const plants = [
-        ["src/work-audit/baseline-corpus.mjs", "export const A = 1;\n", "a module named for a baseline"],
+        ["packages/core/src/work-audit/baseline-corpus.mjs", "export const A = 1;\n", "a module named for a baseline"],
         [LANE_REL, "export const REFERENCE_BASELINE = 1;\n", "an exported constant whose name contains BASELINE"],
         [LANE_REL, 'const codes = ["audit-baseline-drift"];\n', "a finding code containing the word baseline"],
         [LANE_REL, "const row = { baseline: 10 };\n", "a row field named baseline"],
@@ -374,10 +374,10 @@ export const archTests = [
       const closure = await familyClosure();
       const reaches = [];
       for (const [rel, code] of closure) reaches.push(...registryReaches(rel, stripComments(code)));
-      assert.deepEqual(reaches, [], "no module the family loads reaches src/work/loops.mjs");
+      assert.deepEqual(reaches, [], "no module the family loads reaches packages/core/src/work/loops.mjs");
 
       const lane = stripComments(read(LANE_REL));
-      const wiring = stripComments(read("src/application/bindings/work-audit/declared-bounds.mjs"));
+      const wiring = stripComments(read("packages/core/src/application/bindings/work-audit/declared-bounds.mjs"));
       assert.match(lane, /createAuditDeclaredBounds\(/u, "the implementation receives the supplied corpus and resolvers");
       assert.match(wiring, /from "@aof\/contracts\/loop-bounds"/u, "the lane resolves config: pointers through the bounds home");
       assert.match(wiring, /from "(?:\.\.\/)+harness-reference\.mjs"/u, "…and joins against the corpus by module resolution");

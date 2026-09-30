@@ -29,8 +29,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { registrationDecision, runnerImportedSuites } from "../../../src/work-audit/census.mjs";
-import { registrationReport } from "../../../src/work/test-select.mjs";
+import { registrationDecision, runnerImportedSuites } from "../../../packages/core/src/work-audit/census.mjs";
+import { registrationReport } from "../../../packages/core/src/work/test-select.mjs";
 import { IMPORT_OF, SPREAD_ROW, bindingsOf, directoryCensus, readIndexes, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -49,17 +49,17 @@ const modulesOf = (rels) => rels.map((rel) => ({ rel, code: sourceOf(rel) }));
 const RE_DERIVATIONS = Object.freeze([
   {
     derivation: "a pattern over a suite import line",
-    duplicates: "runnerImportedSuites (src/work-audit/census.mjs), which already reads which suite modules a runner's source names",
+    duplicates: "runnerImportedSuites (packages/core/src/work-audit/census.mjs), which already reads which suite modules a runner's source names",
     test: (code) => /\.test\\\.mjs|from\\s\+"\(\[\^"\]\+\\\.test/u.test(code) || /matchAll\s*\(\s*\/[^/]*\\\.test\\\.mjs/u.test(code) || /\/[^/\n]*from[^/\n]*\\\.test\\\.mjs[^/\n]*\//u.test(code),
   },
   {
     derivation: "a matcher over a spread row",
-    duplicates: "runCensus's never-spread derivation (src/work-audit/census.mjs), the text-level lane the decider deliberately sits above",
+    duplicates: "runCensus's never-spread derivation (packages/core/src/work-audit/census.mjs), the text-level lane the decider deliberately sits above",
     test: (code) => /\\s\*\\\.\\\.\\\./u.test(code) || /\/\^[^/\n]*\\\.\\\.\\\./u.test(code),
   },
   {
     derivation: "a second baseline of unregistered suites",
-    duplicates: "UNREGISTERED_BASELINE (src/work-audit/census.mjs), the shrink-only ledger with one home",
+    duplicates: "UNREGISTERED_BASELINE (packages/core/src/work-audit/census.mjs), the shrink-only ledger with one home",
     test: (code) => /UNREGISTERED_BASELINE\s*=/u.test(code) || /\b(?:unregisteredBaseline|UNREGISTERED_SUITES)\s*=/u.test(code),
   },
   {
@@ -104,7 +104,7 @@ export const archTests = [
     run: () => {
       const source = stripComments(sourceOf(REPORTER));
       assert.ok(source.length > 200, `${REPORTER} was actually read (${source.length} bytes)`);
-      const composition = stripComments(sourceOf("src/application/bindings/work/test-select.mjs"));
+      const composition = stripComments(sourceOf("packages/core/src/application/bindings/work/test-select.mjs"));
       for (const code of [source, composition]) {
         assert.match(code, /createTestSelector\(\{[^}]*\bregistrationDecision\b/u, "the shared decider is supplied to the package");
       }
@@ -246,7 +246,7 @@ export const archTests = [
 // which is one directory below the duplication this very control forbids, in the file that forbids
 // it. `test/support/registration/registration-surface.mjs` owns them; this reads them.
 //
-// WHY THERE AND NOT `src/work-audit/census.mjs`, which has readers of its own: the census's
+// WHY THERE AND NOT `packages/core/src/work-audit/census.mjs`, which has readers of its own: the census's
 // `runnerBindings` filters to `.test.mjs` specifiers, because registration is the only question it
 // asks. This control must see EVERY import — that is how it catches a registry naming a suite
 // directly, or an index importing another directory's suite — so it needs the unfiltered shape.

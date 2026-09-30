@@ -298,7 +298,7 @@ const loopConcurrencyTests = [
     },
   })),
   // Review close, 129/01 (craft pass, Important): the shell's memories arrive as a `Set` —
-  // `src/commands/loop.mjs` keeps `setAside = new Set()` — and reading a `Set` as an empty array
+  // `packages/core/src/commands/loop.mjs` keeps `setAside = new Set()` — and reading a `Set` as an empty array
   // re-dispatched every live lane and re-offered every set-aside unit. Outside the contract's
   // rows (which pass arrays or nothing), so pinned here: a `Set` is read, and a memory that is
   // present but neither an array nor a `Set` is `null`, for the same reason a malformed `wave`

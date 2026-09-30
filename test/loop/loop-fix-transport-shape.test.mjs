@@ -23,11 +23,11 @@ import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
 import {
   LOOP_FIX_TRANSPORT_KEYS, fixTransport, runLoopBody,
-} from "../../src/commands/loop.mjs";
-import { createPhaseDriverCommand } from "../../src/commands/drive.mjs";
+} from "../../packages/core/src/commands/loop.mjs";
+import { createPhaseDriverCommand } from "../../packages/core/src/commands/drive.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import {
   capturingReport, emitsFailing, gradingCtx, gradingFixture, stubRubric,
@@ -37,7 +37,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const strip = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 const loopSource = async () => strip(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
 // 129/04 (ADR-008 §3) — the sites that prepare a re-drive are split between the shell (the resume
-// path's two and the fresh gate's) and the ladder (`src/loop/cycle.mjs`: the gate re-drive, the
+// path's two and the fresh gate's) and the ladder (`packages/core/src/loop/cycle.mjs`: the gate re-drive, the
 // progress reset and the progress continue). The four causes are asserted over BOTH.
 const familySource = async () => [await loopSource(), strip(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "cycle.mjs"), "utf8"))].join("\n");
 

@@ -14,7 +14,7 @@ import {
   normalizeEffort,
   resolveSessionLaunch,
   SESSION_MODEL_CONFIG_PATH,
-} from "../../src/session-model.mjs";
+} from "../../packages/core/src/session-model.mjs";
 
 // Story 141 superseded 70/01's "absence is silence" for the EFFORT half only: an unrouted phase now
 // launches at the default effort. The model half is unchanged, so an unrouted phase still resolves

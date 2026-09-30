@@ -4,7 +4,7 @@
 // nowhere.
 //
 // THE SEAM UNDER TEST is the REAL `buildSessionIndex` exported by
-// `src/global-mesh-query.mjs` — the same function `shapeGlobalStatus` calls — driven
+// `packages/core/src/global-mesh-query.mjs` — the same function `shapeGlobalStatus` calls — driven
 // with literal inputs shaped EXACTLY as the shaper receives them (the feature's own
 // Background): each node carrying the `freshness` the registry derived and the
 // `presence` record read off disk.
@@ -23,11 +23,11 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { buildSessionIndex, shapeGlobalStatus } from "../../../src/global-mesh-query.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+import { buildSessionIndex, shapeGlobalStatus } from "../../../packages/core/src/global-mesh-query.mjs";
+import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
+import { startSession } from "../../../packages/core/src/mesh/session.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 
 // The ADR-007 entry, in its exact order: nodeId, then ADR-005's frozen six verbatim,
 // then the one derived field.

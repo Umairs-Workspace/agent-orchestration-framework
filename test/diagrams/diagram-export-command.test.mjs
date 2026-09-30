@@ -13,9 +13,9 @@ import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, invoke, loadWorkspace } from "../../src/command-core.mjs";
-import { generatorFor, generatorIds } from "../../src/diagrams/generators.mjs";
-import { renderDiagramBlock } from "../../src/diagrams/layout.mjs";
+import { getCommand, invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
+import { generatorFor, generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
+import { renderDiagramBlock } from "../../packages/core/src/diagrams/layout.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

@@ -27,17 +27,17 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveRelay } from "../../../src/mesh/relay.mjs";
-import { startControlStreamServer } from "../../../src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../../src/worker-stream-client.mjs";
+import { serveRelay } from "../../../packages/core/src/mesh/relay.mjs";
+import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
+import { createWorkerStreamClient, createWorkerWsTransport } from "../../../packages/core/src/worker-stream-client.mjs";
 import {
   createTerminalMirror,
   createTerminalMirrorSubscriberTransport,
   startTerminalMirrorSubscriber,
-} from "../../../src/mesh/terminal-mirror.mjs";
-import { createTerminalRelayPushTransport } from "../../../src/mesh/terminal-relay-bridge.mjs";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { openGlobalWorkProjectionStore, queryGlobalWorkProjection } from "../../../src/global-work-store.mjs";
+} from "../../../packages/core/src/mesh/terminal-mirror.mjs";
+import { createTerminalRelayPushTransport } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
+import { serveMeshUi, meshUiDist } from "../../../packages/core/src/mesh/ui-serve.mjs";
+import { openGlobalWorkProjectionStore, queryGlobalWorkProjection } from "../../../packages/core/src/global-work-store.mjs";
 
 const NOW = "2026-07-19T10:00:00.000Z";
 

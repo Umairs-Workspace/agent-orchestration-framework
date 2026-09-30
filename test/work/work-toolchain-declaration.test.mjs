@@ -33,7 +33,7 @@ import {
   resolveWorktreePrepare,
   selectionArgs,
   toolchainReport,
-} from "../../src/work/toolchain.mjs";
+} from "../../packages/core/src/work/toolchain.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -328,7 +328,7 @@ export const workToolchainDeclarationTests = [
       assert.equal(result.toolchain.selectArgs.some((entry) => entry.includes(FILE_TOKEN)), true, "…with a selection template carrying the file token");
       assert.equal(result.toolchain.deadlineMs > 0, true, "…and a deadline it chose for itself");
 
-      // The keys are spelled once, as data. FF-7201 censuses `src/` against this list.
+      // The keys are spelled once, as data. FF-7201 censuses `packages/core/src/` against this list.
       for (const key of ["work.test.command", "work.test.args", "work.test.selectArgs", "work.test.roots", "work.test.deadlineMs", "work.worktree.prepare"]) {
         assert.ok(TOOLCHAIN_CONFIG_KEYS.includes(key), `${key} is one of the keys this module declares it owns`);
       }

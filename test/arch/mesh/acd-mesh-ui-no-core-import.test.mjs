@@ -2,7 +2,7 @@
 // ARCHITECTURE 25/ADR-003 decision 3 — the registry is the only door, the mesh-face
 // mirror of 08/ADR-004 inv.3 / acd-work-ui-no-core-import).
 //
-// "The new fleet web face (`src/mesh/ui-serve.mjs`) imports NO mesh-core/operation
+// "The new fleet web face (`packages/core/src/mesh/ui-serve.mjs`) imports NO mesh-core/operation
 //  module — `mesh-store.mjs`, `mesh-presence.mjs`, `mesh-registry.mjs`,
 //  `mesh-sync.mjs`, `./commands/*` — except `./command-core.mjs`; it performs no
 //  operation fs write. Positive: it DOES import `./command-core.mjs` (the one door)."
@@ -33,7 +33,7 @@ export const archTests = [
     name: "arch/34 ADR-006 + 38/ADR-012: global-mesh-query.mjs is the ONLY fleet-data READ import, and ./mesh/assignment.mjs the ONE sanctioned WRITE-verb import, in mesh-ui-serve.mjs",
     run: async () => {
       const implementation = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
       for (const text of [implementation, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*queryGlobalMeshStatus[^}]*assignWork[^}]*stopLoop/su, "the configured fleet doors reach the package");
       const source = adapter + "\n" + implementation;
       const specifiers = dependencySpecifiers(source).map((i) => i.specifier);

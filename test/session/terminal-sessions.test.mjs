@@ -1,10 +1,10 @@
-// Unit tests for the running-session registry (src/terminal-sessions.mjs) — the
+// Unit tests for the running-session registry (packages/core/src/terminal-sessions.mjs) — the
 // .aof/terminal-sessions.json store of live agent-terminal PIDs.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { registerSession, unregisterSession, listSessions } from "../../src/terminal-sessions.mjs";
+import { registerSession, unregisterSession, listSessions } from "../../packages/core/src/terminal-sessions.mjs";
 
 async function tempProject() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-sessions-"));

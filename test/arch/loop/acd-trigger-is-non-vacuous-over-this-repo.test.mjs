@@ -24,11 +24,11 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 
-import { getCommand, invoke, listCommands } from "../../../src/command-core.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS } from "../../../src/commands/trigger.mjs";
-import { TRIGGER_SOURCES, bundledTriggerDeclaration, readTriggerDeclaration, triggerDeclarationPath } from "../../../src/work-trigger/declaration.mjs";
-import { resolveTriggerLevel } from "../../../src/work-trigger/level.mjs";
+import { getCommand, invoke, listCommands } from "../../../packages/core/src/command-core.mjs";
+import { loadWorkspace } from "../../../packages/core/src/work.mjs";
+import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS } from "../../../packages/core/src/commands/trigger.mjs";
+import { TRIGGER_SOURCES, bundledTriggerDeclaration, readTriggerDeclaration, triggerDeclarationPath } from "../../../packages/core/src/work-trigger/declaration.mjs";
+import { resolveTriggerLevel } from "../../../packages/core/src/work-trigger/level.mjs";
 import { LOOP_LEVELS, decideLoopScope } from "../../../packages/work-loop/src/engine.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));

@@ -1,7 +1,7 @@
 // FF-6604 (milestone 66 / ADR-001 §7, scoped by ADR-008 ruling 2) — THE GRAMMAR HAS
 // ONE HOME, THE TWO EXPORTS ARE SEPARATE, AND THE EXTRACTION CHANGED NO RECORD.
 //
-// "`src/memory/local-indexing.mjs` holds no id pattern of its own, builds both
+// "`packages/core/src/memory/local-indexing.mjs` holds no id pattern of its own, builds both
 //  `headerRe`s from `ID_FORMS`, and imports no register-block predicate. `ID_FORMS`
 //  carries the SEPARATOR CLASS `[:·—–-]` as well as the id shape (ROUND 3/6): each
 //  parser holds TWO literals — the split and the capture head — and 'holds no id
@@ -12,11 +12,11 @@
 // invariant is a MEASUREMENT and may not be frozen until it has been run against HEAD
 // and the result recorded). Run against commit `24fc181`, the tip 66/01 started from:
 //
-//   src/memory/local-indexing.mjs  →  ADR-\d   R\d+   [:·—–-]
-//   src/import/recovery.mjs        →  ADR-\d   R\d+   [:·—–-]
+//   packages/core/src/memory/local-indexing.mjs  →  ADR-\d   R\d+   [:·—–-]
+//   packages/core/src/import/recovery.mjs        →  ADR-\d   R\d+   [:·—–-]
 //
-// TWO modules, not one. ADR-001 §7's invariant says "no second copy exists in `src/`,
-// including in `src/memory/local-indexing.mjs`" and named only the one it knew about;
+// TWO modules, not one. ADR-001 §7's invariant says "no second copy exists in `packages/core/src/`,
+// including in `packages/core/src/memory/local-indexing.mjs`" and named only the one it knew about;
 // `recoverAofDecisions` (`:296-297`) and `recoverAofOutcomes` (`:321-322`) held a
 // verbatim copy of the same four literals. It was re-homed here rather than named-and-
 // excluded, because a gate that excludes the copy it found is wrong about the tree
@@ -26,8 +26,8 @@
 // the recovered shape and never imports the parsers — and importing a ZERO-IMPORT
 // GRAMMAR LEAF is not importing a parser. The algorithm stayed; the grammar left.
 //
-// AFTER: exactly ONE module under `src/` carries any of the six shapes —
-// `src/declared-id.mjs` — with 0 false positives across all 227 modules.
+// AFTER: exactly ONE module under `packages/core/src/` carries any of the six shapes —
+// `packages/core/src/declared-id.mjs` — with 0 false positives across all 227 modules.
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // THE DIFFERENTIAL CARRIES NO CONSTANT AND IS A SELF-COMPARISON (ROUND 3/7+8).
@@ -38,7 +38,7 @@
 // top-level STORY's retrospective is never read — and the adr half moved again when
 // ADR-008 and ADR-009 were appended to milestone 66's own register. So: the four
 // PRE-EXTRACTION literals are held here as local constants (a test is code; the
-// no-second-copy invariant is scoped to `src/`), the corpus is walked, and the section
+// no-second-copy invariant is scoped to `packages/core/src/`), the corpus is walked, and the section
 // splits and `(id, title, line)` captures are asserted SET-EQUAL to the shipped
 // composition, with a non-vacuity floor of `adr > 0 && lesson > 0`.
 //
@@ -62,11 +62,11 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { ID_FORMS, headingCaptureRe, headingSplitRe } from "../../../src/declared-id.mjs";
-import { parseArchitecture, parseRetrospective } from "../../../src/memory/local-indexing.mjs";
+import { ID_FORMS, headingCaptureRe, headingSplitRe } from "../../../packages/core/src/declared-id.mjs";
+import { parseArchitecture, parseRetrospective } from "../../../packages/core/src/memory/local-indexing.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 const workDir = path.join(repoRoot, "wiki", "work");
 
 const THE_ONE_HOME = "packages/work/src/declared-id.mjs";
@@ -111,7 +111,7 @@ export const BEFORE = {
 // deep-equalled against the whole shipped record.
 //
 // A second implementation in a TEST is the opposite of the debt this milestone closes:
-// the no-second-copy invariant is scoped to `src/` (ROUND 3/7), and a differential's
+// the no-second-copy invariant is scoped to `packages/core/src/` (ROUND 3/7), and a differential's
 // entire job is to be an independent reading of the same corpus. If this drifts from
 // the shipped parser, that is the differential working.
 const cleanTitle = (raw) => raw.replace(/`/g, "").trim();
@@ -323,7 +323,7 @@ export const archTests = [
     name: "arch/FF-6604: the leaf's exports partition into two halves, and memory takes only the whole-document one",
     run: async () => {
       // (a) Every export is classified. Adding one fails this until it is placed.
-      const leaf = await import("../../../src/declared-id.mjs");
+      const leaf = await import("../../../packages/core/src/declared-id.mjs");
       assert.deepEqual(
         Object.keys(leaf).sort(),
         [...DOCUMENT_HALF, ...REGISTER_HALF].sort(),
@@ -411,17 +411,17 @@ export const archTests = [
       const planted = [
         { file: THE_ONE_HOME, text: 'export const ID = ["ADR-\\\\d+", "R\\\\d+"];\n' },
         // The regex-literal spelling — a copy-paste of `local-indexing.mjs:107`.
-        { file: "src/pretend-second-parser.mjs", text: "const headerRe = /^#{2,3}\\s+R\\d+\\b/;\nconst head = /^#{2,3}\\s+(R\\d+)\\s*[:·—–-]?\\s*(.*)$/;\n" },
+        { file: "packages/core/src/pretend-second-parser.mjs", text: "const headerRe = /^#{2,3}\\s+R\\d+\\b/;\nconst head = /^#{2,3}\\s+(R\\d+)\\s*[:·—–-]?\\s*(.*)$/;\n" },
         // The string-composed spelling — invisible to a one-spelling scan, and the very
         // shape the one home itself uses, which is what makes it the likely copy.
-        { file: "src/pretend-composed.mjs", text: 'const headerRe = new RegExp("^#{2,3}\\\\s+ADR-\\\\d+");\n' },
+        { file: "packages/core/src/pretend-composed.mjs", text: 'const headerRe = new RegExp("^#{2,3}\\\\s+ADR-\\\\d+");\n' },
         // …and a module that merely MENTIONS an id is not a copy.
-        { file: "src/pretend-mentions.mjs", text: 'const note = "see ADR-001 and R1 for the rationale";\n' },
+        { file: "packages/core/src/pretend-mentions.mjs", text: 'const note = "see ADR-001 and R1 for the rationale";\n' },
       ];
       const hits = planted.filter((entry) => carriesIdPattern(stripComments(entry.text)).length > 0).map((entry) => entry.file);
       assert.deepEqual(
         hits.sort(),
-        [THE_ONE_HOME, "src/pretend-composed.mjs", "src/pretend-second-parser.mjs"],
+        [THE_ONE_HOME, "packages/core/src/pretend-composed.mjs", "packages/core/src/pretend-second-parser.mjs"].sort(),
         "both spellings of a second copy are visible, and a prose mention of an id is not",
       );
       // The separator class alone is a copy too — ROUND 3/6's whole point is that the

@@ -5,11 +5,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
-import { loopsShowCommand } from "../../../src/commands/loops-show.mjs";
-import { loopsGraphCommand } from "../../../src/commands/loops-graph.mjs";
-import { createLoopsGroundednessCommand } from "../../../src/commands/loops-groundedness.mjs";
-import { loopsValidateCommand } from "../../../src/commands/loops-validate.mjs";
+import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
+import { loopsShowCommand } from "../../../packages/core/src/commands/loops-show.mjs";
+import { loopsGraphCommand } from "../../../packages/core/src/commands/loops-graph.mjs";
+import { createLoopsGroundednessCommand } from "../../../packages/core/src/commands/loops-groundedness.mjs";
+import { loopsValidateCommand } from "../../../packages/core/src/commands/loops-validate.mjs";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -21,8 +21,8 @@ const expectedLoopModules = [
 
 // DISCOVERED FROM DISK, then compared with the expected five — never iterated as a literal.
 // A hardcoded list asserted against itself (`assert.equal(list.length, 5)`) cannot fail, and it
-// leaves a SIXTH loop module — a future `src/work-loops-anchors.mjs`, or a writer
-// `src/commands/loops-init.mjs` — scanned by neither this gate nor FF-5202's import-seam leg.
+// leaves a SIXTH loop module — a future `packages/core/src/work-loops-anchors.mjs`, or a writer
+// `packages/core/src/commands/loops-init.mjs` — scanned by neither this gate nor FF-5202's import-seam leg.
 // The equality is what makes a new module a RED here (add it to the list, deliberately) instead
 // of a silent hole in the read-only sweep below.
 async function discoverLoopModules() {
@@ -45,10 +45,10 @@ export const archTests = [
     name: "arch/52 FF-5201: loop records are not work items and loop modules expose no writer call form",
     run: async () => {
       // ONE home (milestone 127/01, 127/ADR-001 §5). This list used to name three files — the
-      // enumerator plus the two private copies `src/work/doctor.mjs` and
+      // enumerator plus the two private copies `packages/core/src/work/doctor.mjs` and
       // `packages/work/src/commands/migrate-folder.mjs` carried — and so enshrined the very duplication the
       // vocabulary had to be edited three times for. Both copies now import `ITEM_RE` from
-      // `src/work.mjs` (FF-12701 holds that a second definition cannot return), so the closed
+      // `packages/core/src/work.mjs` (FF-12701 holds that a second definition cannot return), so the closed
       // six-type vocabulary is read where it is defined and nowhere else.
       for (const rel of ["packages/work/src/identity.mjs"]) {
         assert.deepEqual(itemTypes(await readFile(path.join(root, rel), "utf8"), rel), six, `${rel}: closed six-type item vocabulary`);

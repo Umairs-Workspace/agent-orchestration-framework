@@ -46,7 +46,7 @@ export const archTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { startRun } = await import("../../../src/run-store.mjs");
+        const { startRun } = await import("../../../packages/core/src/run-store.mjs");
         const first = await startRun(item, { now: "2026-06-30T09:00:00.000Z" });
         const before = await bytes(item, first.runId);
 
@@ -64,7 +64,7 @@ export const archTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { startRun, completeRun, retryRun } = await import("../../../src/run-store.mjs");
+        const { startRun, completeRun, retryRun } = await import("../../../packages/core/src/run-store.mjs");
         // a terminal failed run (the retry target) + a separate in-flight running run
         await startRun(item, { now: "2026-06-30T09:00:00.000Z" });
         await completeRun(item, { outcome: "failed", failureReason: "timeout", now: "2026-06-30T09:01:00.000Z" });
@@ -84,7 +84,7 @@ export const archTests = [
     async run() {
       const { repo, item } = await makeItem();
       try {
-        const { startRun, completeRun } = await import("../../../src/run-store.mjs");
+        const { startRun, completeRun } = await import("../../../packages/core/src/run-store.mjs");
         const now = "2026-06-30T09:00:00.000Z";
         const first = await startRun(item, { now });
         await completeRun(item, { outcome: "done", now: "2026-06-30T09:00:30.000Z" });

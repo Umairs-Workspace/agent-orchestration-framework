@@ -10,10 +10,10 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke, loadWorkspace } from "../../src/command-core.mjs";
-import { renderDiagramBlock } from "../../src/diagrams/layout.mjs";
-import { CHECK_GROUPS } from "../../src/work/doctor.mjs";
-import { DIAGRAM_LANE_CODES, diagramsGroup } from "../../src/work/doctor-diagrams.mjs";
+import { invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
+import { renderDiagramBlock } from "../../packages/core/src/diagrams/layout.mjs";
+import { CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
+import { DIAGRAM_LANE_CODES, diagramsGroup } from "../../packages/core/src/work/doctor-diagrams.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -183,7 +183,7 @@ export const doctorDiagramsLaneTests = [
     name: "133/03 task 01: the lane is registered where the roster says lanes are registered, and its codes are its own",
     run: async () => {
       assert.equal(CHECK_GROUPS.at(-1), diagramsGroup, "diagramsGroup is the registry's last entry");
-      const spine = await readFile(path.join(repoRoot, "src/application/bindings/work/doctor.mjs"), "utf8");
+      const spine = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8");
       assert.ok(dependencySpecifiers(spine).some(edge => edge.parameter === "workDoctorDiagramsServices" && edge.specifier === "./doctor-diagrams.mjs"), "the doctor receives its configured diagrams lane");
       const roster = await readFile(path.join(repoRoot, "test", "arch", "audit", "acd-controls-never-execute.test.mjs"), "utf8");
       assert.match(roster, /"\.\/diagrams\.mjs"/, "DOCTOR_LANE_MODULES names the lane implementation");

@@ -12,10 +12,10 @@
 // FIVE CLAIMS, each failing for its own reason:
 //
 //   1. ONE JOIN. `sessionToItem.get(sessionId)` is the only transcript→item resolution in
-//      `src/work/observe.mjs`, the retired matcher's vocabulary appears nowhere, and no module
+//      `packages/core/src/work/observe.mjs`, the retired matcher's vocabulary appears nowhere, and no module
 //      96 touches matches an item ref against a session directory name or an agent's prose.
 //   2. ONE READER OF THE STORE. The `~/.aof/mesh/sessions` partition is addressed from
-//      `src/mesh/session.mjs` and from no other module in `src/` — the rung lives in the
+//      `packages/core/src/mesh/session.mjs` and from no other module in `packages/core/src/` — the rung lives in the
 //      store's own home, so "the ladder grew a rung" can never quietly mean "some other module
 //      grew a filesystem read".
 //   3. THE PURE RESOLVER STAYS PURE. `resolveSessionIdentity` still resolves over
@@ -36,14 +36,14 @@ import { fileURLToPath } from "node:url";
 
 import { runtimeFilesContaining as srcFilesContaining } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody, matchedParenSpan } from "../../support/source-slice.mjs";
-import { pingSession, resolveSessionIdFromLiveStore } from "../../../src/mesh/session.mjs";
-import { runStartCommand } from "../../../src/commands/run-start.mjs";
-import { resolveSessionIdentity } from "../../../src/commands/mesh/session.mjs";
+import { pingSession, resolveSessionIdFromLiveStore } from "../../../packages/core/src/mesh/session.mjs";
+import { runStartCommand } from "../../../packages/core/src/commands/run-start.mjs";
+import { resolveSessionIdentity } from "../../../packages/core/src/commands/mesh/session.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // The module set milestone 96 / story 00 touches. The absence is asserted over these and not
-// over `src/**` at large: a control that swept everything would be measuring other milestones'
+// over `packages/core/src/**` at large: a control that swept everything would be measuring other milestones'
 // modules and would fail for their reasons, not this one's.
 const MODULE_SET = ["packages/work/src/observe.mjs", "packages/mesh/src/session.mjs", "packages/work/src/commands/run-start.mjs"];
 
@@ -140,10 +140,10 @@ export const archTests = [
       // wanted to read it would have to name the segment or import a builder for it — and no
       // builder is exported.
       const segment = await srcFilesContaining(repoRoot, '"sessions"', { except: ["packages/mesh/src/session.mjs"] });
-      assert.deepEqual(segment, [], `only src/mesh/session.mjs names the sessions partition (also: ${segment.join(", ")})`);
+      assert.deepEqual(segment, [], `only packages/core/src/mesh/session.mjs names the sessions partition (also: ${segment.join(", ")})`);
 
       const builders = await srcFilesContaining(repoRoot, "sessionRecordPath(", { except: ["packages/mesh/src/session.mjs"] });
-      assert.deepEqual(builders, [], `only src/mesh/session.mjs composes a session record path (also: ${builders.join(", ")})`);
+      assert.deepEqual(builders, [], `only packages/core/src/mesh/session.mjs composes a session record path (also: ${builders.join(", ")})`);
 
       // The rung itself is exported from that module and from nowhere else.
       const rung = await srcFilesContaining(repoRoot, "async function resolveSessionIdFromLiveStore");
@@ -203,7 +203,7 @@ export const archTests = [
       // The rung's name never reaches the persisted record: it is spread onto the RESULT and
       // nowhere else, and the store module has never heard of it.
       const store = await source("packages/execution/src/runs.mjs");
-      assert.ok(!store.includes("sessionSource"), "src/run-store.mjs does not know the rung's name, so it cannot persist it");
+      assert.ok(!store.includes("sessionSource"), "packages/core/src/run-store.mjs does not know the rung's name, so it cannot persist it");
       const edges = runStart.match(/sessionSource/g) ?? [];
       assert.ok(edges.length > 0, "the command does name the rung — on the envelope");
       const persistedEdge = /transitionRunStart\([\s\S]{0,400}?sessionSource/;

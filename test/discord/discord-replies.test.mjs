@@ -7,9 +7,9 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { answerAsk, loopAsksDir } from "../../src/loop/ask-request.mjs";
-import { discordActor, handleReply } from "../../src/discord/replies.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+import { answerAsk, loopAsksDir } from "../../packages/core/src/loop/ask-request.mjs";
+import { discordActor, handleReply } from "../../packages/core/src/discord/replies.mjs";
+import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 import { ALLOWED, ASK_MESSAGE, CHANNEL, NODE, REPLY_MESSAGE, STRANGER, TOKEN, degradeSink, releaseDegradeSink, reply, withReplyWorld } from "./discord-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -120,7 +120,7 @@ export const discordRepliesTests = [
     name: "131/10 task03 — the reply handler's index lookup is the index's: the record names the ask message and its channel",
     async run() {
       await withReplyWorld(async () => {
-        const { readAskMessage } = await import("../../src/notify/ask-messages.mjs");
+        const { readAskMessage } = await import("../../packages/core/src/notify/ask-messages.mjs");
         const record = await readAskMessage(ASK_MESSAGE);
         assert.equal(record.channelId, CHANNEL);
         assert.equal(record.ref, "131/03");

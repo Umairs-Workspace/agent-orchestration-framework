@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -67,10 +67,10 @@ import { archTests as acdCapturedProducerFixtureTests } from "./acd-captured-pro
 // port named in config.mesh.relay.url. acd-terminal-stream-transport-wired makes that
 // hybrid producer wiring structurally REQUIRED (onOutputChunk -> client.sendTerminalFrame,
 // control's onTerminalFrame + a known-port broker, the fleet's loopback subscriber), so
-// the feature cannot ship inert again. The build lands in src/worker-stream-client.mjs
-// (sendTerminalFrame), src/mesh/launcher.mjs (the worker fabric producer + the control
-// known-port broker + onTerminalFrame bridge), src/control-stream-server.mjs (the
-// terminal-frame branch), and src/cli.mjs (the loopback subscriber).
+// the feature cannot ship inert again. The build lands in packages/core/src/worker-stream-client.mjs
+// (sendTerminalFrame), packages/core/src/mesh/launcher.mjs (the worker fabric producer + the control
+// known-port broker + onTerminalFrame bridge), packages/core/src/control-stream-server.mjs (the
+// terminal-frame branch), and packages/core/src/cli.mjs (the loopback subscriber).
 // meshTerminalStreamRelayTransportWiredTests is the PRODUCER-FED behavioural companion:
 // a REAL worker-stream-client -> a REAL control-stream-server (fabric leg; onTerminalFrame
 // gets the connection-bound nodeId, the store stays empty) -> a REAL serveRelay loopback
@@ -92,7 +92,7 @@ import { archTests as acdTerminalViewLiveObservableTests } from "./acd-terminal-
 // ── milestone 48 / story 00 — THE SESSION ID OF RECORD (ADR-001 the ordered ladder,
 // ADR-002 the 4-part key + the re-frozen SEVEN-key record, ADR-006 the orphan reaper at the
 // write seam, ADR-010 R1 the escaped 4th segment + R5 the injected unlink seam). The
-// PRODUCER dimension only: `src/mesh/session.mjs` + `src/commands/mesh-session.mjs`, no
+// PRODUCER dimension only: `packages/core/src/mesh/session.mjs` + `packages/core/src/commands/mesh-session.mjs`, no
 // wire change.
 //   the three new fitness functions — the id is READ never made (#1), one live session is
 //   one record and an `end` cannot kill a sibling (#2), and a TTL-expired record is REMOVED
@@ -103,7 +103,7 @@ import { archTests as acdSessionLeafPerSessionTests } from "./acd-session-leaf-p
 import { archTests as acdSessionOrphanReapedTests } from "./acd-session-orphan-reaped.test.mjs";
 // ── milestone 48 / story 01 — THE SESSION ON THE PRESENCE WIRE (ADR-005, with ADR-001's
 // present-and-null clause and ADR-009's one-home clause). `readLiveSessions`
-// (src/mesh/presence.mjs) projects every live session record to the FROZEN ORDERED SIX
+// (packages/core/src/mesh/presence.mjs) projects every live session record to the FROZEN ORDERED SIX
 // `{ sessionId, workspaceId, repo, assistant, lastPingAt, workspaceHasRun }` — an
 // insertion at the head and an append at the tail, so the m38 four keep their relative
 // order — and `ui/src/fleet/api.ts`'s `PresenceSession` is its typed mirror. The story is

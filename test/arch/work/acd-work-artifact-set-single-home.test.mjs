@@ -5,12 +5,12 @@
 //    so the streamed set and the requestable set can never drift."
 //
 // This invariant is not new; it is the one the existing constant's own comment already
-// states (src/global-work-store.mjs:14-16, verbatim): "The record docs a board/CLI face
+// states (packages/core/src/global-work-store.mjs:14-16, verbatim): "The record docs a board/CLI face
 // may request by NAME (work:doc's input contract) and therefore exactly the doc bodies a
 // worker streams for its active worktree — ONE home for the set … so the streamed set and
 // the requestable set can never drift." ADR-007 WIDENS the set (tasks/*.feature,
 // ARCHITECTURE.md, DESIGN.md, RESEARCH.md, STATE.md) and MOVES it to a pure-leaf module
-// (src/work/artifacts.mjs, 0 imports) so its three consumers need not travel through
+// (packages/core/src/work/artifacts.mjs, 0 imports) so its three consumers need not travel through
 // global-work-store.mjs's 6-module import closure to read a constant table. The widening
 // and the move are exactly the two moments a second literal list gets written by
 // accident. This guard makes that a CI failure instead of a drift nobody notices until a
@@ -37,7 +37,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 
 // FF-7008's per-ADR-sibling detector (milestone 70 / story 03, tightened at 70/05's
 // structural review). A sibling artifact is either a per-ADR FILE (`ADR-009.md`,
@@ -187,7 +187,7 @@ export const archTests = [
       // cannot satisfy this by deleting the compatibility view instead of deriving it.
       const initializer = declarationInitializer(carrier, "WORK_ITEM_DOC_FILES");
       assert.match(initializer, /WORK_ITEM_ARTIFACTS/, "the real derived view really does read the manifest");
-      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES } = await import("../../../src/work/artifacts.mjs");
+      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES } = await import("../../../packages/core/src/work/artifacts.mjs");
       assert.deepEqual(
         Object.entries(WORK_ITEM_DOC_FILES),
         WORK_ITEM_ARTIFACTS.filter((entry) => entry.file != null).map((entry) => [entry.name, entry.file]),
@@ -239,9 +239,9 @@ export const archTests = [
   {
     name: "arch/70 FF-7008 (acd-work-artifact-set-single-home, extended): ARCHITECTURE.md stays one artifact, owns the declaring register, and the pure ADR extractor slices that one text instead of naming sibling files",
     run: async () => {
-      const { WORK_ITEM_ARTIFACTS } = await import("../../../src/work/artifacts.mjs");
-      const { REGISTER_BLOCKS } = await import("../../../src/declared-id.mjs");
-      const { extractAdrBlocks } = await import("../../../src/phase-brief.mjs");
+      const { WORK_ITEM_ARTIFACTS } = await import("../../../packages/core/src/work/artifacts.mjs");
+      const { REGISTER_BLOCKS } = await import("../../../packages/core/src/declared-id.mjs");
+      const { extractAdrBlocks } = await import("../../../packages/core/src/phase-brief.mjs");
       assert.equal(WORK_ITEM_ARTIFACTS.filter((entry) => entry.file === "ARCHITECTURE.md").length, 1, "exactly one architecture artifact is enumerated");
       assert.deepEqual(
         REGISTER_BLOCKS.filter((entry) => entry.kind === "declaring" && entry.heading === "fitness functions").map((entry) => entry.file),
@@ -292,7 +292,7 @@ export const archTests = [
   {
     name: "arch/133 FF-13305 (acd-work-artifact-set-single-home, extended): the manifest holds one diagrams entry, SVG only, last, and the earlier entries are unchanged",
     run: async () => {
-      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES, artifactForRelativePath } = await import("../../../src/work/artifacts.mjs");
+      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES, artifactForRelativePath } = await import("../../../packages/core/src/work/artifacts.mjs");
       const diagrams = WORK_ITEM_ARTIFACTS.filter((entry) => entry.dir === "diagrams");
       assert.equal(diagrams.length, 1, "exactly one entry has dir: diagrams");
       assert.deepEqual({ ...diagrams[0] }, { name: "DIAGRAMS", dir: "diagrams", ext: ".svg" });

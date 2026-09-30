@@ -17,8 +17,8 @@ import { existsSync } from "node:fs";
 import { rm, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { withArtifactSyncFixture, writeArtifact, enqueueLine, WORKER_ID, ITEM_REF, RECORD_DOCS } from "../support/artifact-sync-fixture.mjs";
-import { WORK_ITEM_DOC_FILES } from "../../src/global-work-store.mjs";
-import { WORK_ITEM_ARTIFACTS } from "../../src/work/artifacts.mjs";
+import { WORK_ITEM_DOC_FILES } from "../../packages/core/src/global-work-store.mjs";
+import { WORK_ITEM_ARTIFACTS } from "../../packages/core/src/work/artifacts.mjs";
 
 // EVERY artifact task 02's Givens describe: every record doc the manifest names plus six
 // `tasks/*.feature` members. Both the seed and its expected COUNT are derived from the

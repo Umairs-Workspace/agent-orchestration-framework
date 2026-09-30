@@ -10,7 +10,7 @@
 //
 // ── WHY THIS IS A TEXT CENSUS AND NOT A CLOSURE WALK ─────────────────────────────────────────
 //
-// A closure walk reds on arrival and would be wrong twice over. `src/work-audit/census.mjs:49`
+// A closure walk reds on arrival and would be wrong twice over. `packages/core/src/work-audit/census.mjs:49`
 // imports `runBounded` from `./spawn.mjs`, which imports the process module at `spawn.mjs:34` — so
 // the selector's static closure holds a spawn the instant it imports the registration decider,
 // which ADR-004 §4 REQUIRES it to do. And ADR-002 §5 requires a real git child through that same
@@ -21,9 +21,9 @@
 //
 // The contract's route list ends with *"a child process of any kind"*, and its companion clause is
 // *"with nothing planted no route is found"*. Both can hold only over a subject that starts no
-// child. So `src/work/test-select.mjs` and `src/graph-impact.mjs` are the subject and stay
+// child. So `packages/core/src/work/test-select.mjs` and `packages/core/src/graph-impact.mjs` are the subject and stay
 // spawn-free, and the bounded git changed-set reader ADR-002 §5 requires lives beside them in
-// `src/work/test-changed.mjs`, governed by ADR-001 §5's one-seam rule instead — asserted here too,
+// `packages/core/src/work/test-changed.mjs`, governed by ADR-001 §5's one-seam rule instead — asserted here too,
 // so the split is a placement and not an exemption.
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
@@ -32,8 +32,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { graphArtifactBuiltAt, graphJsonPath } from "../../../src/graph-normalize.mjs";
-import { WIDENING_REASONS, selectSuites, wideningRuleProblems } from "../../../src/work/test-select.mjs";
+import { graphArtifactBuiltAt, graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
+import { WIDENING_REASONS, selectSuites, wideningRuleProblems } from "../../../packages/core/src/work/test-select.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -89,7 +89,7 @@ export function graphRouteProblems(modules) {
 }
 
 // A CLOCK. The alternative to an honest `null` is a fabricated instant, and the token is the whole
-// tell — with comments stripped, because `src/commands/graph-impact.mjs` holds it inside prose
+// tell — with comments stripped, because `packages/core/src/commands/graph-impact.mjs` holds it inside prose
 // explaining why it must not be used, and a control that reds on that is reading characters.
 export function clockProblems(modules) {
   return modules
@@ -163,7 +163,7 @@ export const archTests = [
       // …and the shared reader is genuinely how it is reached, so this is "one route" and not
       // "none". An absence over a module that never touches the graph is free.
       const selector = stripComments(sourceOf(SELECTOR));
-      const composition = stripComments(sourceOf("src/application/bindings/work/test-select.mjs"));
+      const composition = stripComments(sourceOf("packages/core/src/application/bindings/work/test-select.mjs"));
       for (const name of ["normalizeGraph", "readGraph", "graphJsonPath", "graphArtifactBuiltAt", "computeImpact"]) {
         for (const code of [selector, composition]) assert.match(code, new RegExp("createTestSelector\\(\\{[^}]*\\b" + name + "\\b", "u"), name + ": shared graph service is injected");
       }
@@ -197,7 +197,7 @@ export const archTests = [
       // rather than a hole: it starts children, it starts them through the ONE seam, and it passes
       // no shell.
       const reader = stripComments(sourceOf("packages/work/src/testing/changed.mjs"));
-      const readerComposition = stripComments(sourceOf("src/application/bindings/work/test-changed.mjs"));
+      const readerComposition = stripComments(sourceOf("packages/core/src/application/bindings/work/test-changed.mjs"));
       for (const code of [reader, readerComposition]) assert.match(code, /createChangedFilesReader\(\{[^}]*\brunBounded\b/u);
       assert.match(readerComposition, /import\s*\{\s*runBounded\s*\}\s*from\s+"@aof\/execution\/bounded-process"/u, "the changed-set reader goes through the shared bounded seam");
       assert.doesNotMatch(reader, /from\s+"node:child_process"/u, "…and reaches the process module directly nowhere");
@@ -226,10 +226,10 @@ export const archTests = [
     name: "arch/72 FF-7202 (acd-test-selection-widens-never-narrows): each of the four widening reasons is driven POSITIVELY against a planted graph, and the rule is asserted two-sided",
     run: () => {
       const rows = [
-        { reason: "no-graph", plant: () => {}, changed: "src/a.mjs" },
-        { reason: "not-in-graph", plant: (root) => plantGraph(root, { nodes: ["src/other.mjs"] }), changed: "src/a.mjs" },
-        { reason: "no-registered-dependent", plant: (root) => plantGraph(root, { nodes: ["src/a.mjs", "src/b.mjs"], links: [link(1, 0)] }), changed: "src/a.mjs" },
-        { reason: "graph-unreadable", plant: (root) => plantGraph(root, {}, "{ not json"), changed: "src/a.mjs" },
+        { reason: "no-graph", plant: () => {}, changed: "packages/core/src/a.mjs" },
+        { reason: "not-in-graph", plant: (root) => plantGraph(root, { nodes: ["packages/core/src/other.mjs"] }), changed: "packages/core/src/a.mjs" },
+        { reason: "no-registered-dependent", plant: (root) => plantGraph(root, { nodes: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"], links: [link(1, 0)] }), changed: "packages/core/src/a.mjs" },
+        { reason: "graph-unreadable", plant: (root) => plantGraph(root, {}, "{ not json"), changed: "packages/core/src/a.mjs" },
       ];
 
       for (const row of rows) {
@@ -246,9 +246,9 @@ export const archTests = [
 
       // BOTH SIDES, driven: a widened result that selected a proper subset FAILS, and a
       // non-widened result carrying an unresolved changed file FAILS.
-      const subset = { scope: "all", selected: ["test/a.test.mjs"], widened: [{ file: "src/a.mjs", reason: "no-graph" }], changed: ["src/a.mjs"], resolved: [], refusal: null };
+      const subset = { scope: "all", selected: ["test/a.test.mjs"], widened: [{ file: "packages/core/src/a.mjs", reason: "no-graph" }], changed: ["packages/core/src/a.mjs"], resolved: [], refusal: null };
       assert.ok(wideningRuleProblems(subset, ALL_SUITES).length > 0, "a widened result that selected a proper subset fails");
-      const unresolved = { scope: "impacted", selected: ["test/a.test.mjs"], widened: [], changed: ["src/a.mjs", "src/ghost.mjs"], resolved: ["src/a.mjs"], refusal: null };
+      const unresolved = { scope: "impacted", selected: ["test/a.test.mjs"], widened: [], changed: ["packages/core/src/a.mjs", "packages/core/src/ghost.mjs"], resolved: ["packages/core/src/a.mjs"], refusal: null };
       assert.ok(wideningRuleProblems(unresolved, ALL_SUITES).length > 0, "a non-widened result carrying an unresolved changed file fails");
 
       assert.equal(WIDENING_REASONS.length, 4, "and the vocabulary is exactly four");
@@ -276,8 +276,8 @@ export const archTests = [
       }
 
       // And an unknown suppressing key, passed anyway, changes nothing: the widening stands.
-      withRoot((root) => plantGraph(root, { nodes: ["src/other.mjs"] }), (root) => {
-        const base = { projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS };
+      withRoot((root) => plantGraph(root, { nodes: ["packages/core/src/other.mjs"] }), (root) => {
+        const base = { projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS };
         const plain = selectSuites(base);
         for (const banned of SUPPRESSING) {
           const result = selectSuites({ ...base, [banned]: true });
@@ -296,8 +296,8 @@ export const archTests = [
       // On the two widening paths where an artifact WAS read, the instant is present and equal to
       // the artifact's own mtime — through `graphArtifactBuiltAt`, the one derivation the tree has.
       for (const [label, plant, changed] of [
-        ["a file absent from the graph", (root) => plantGraph(root, { nodes: ["src/other.mjs"] }), "src/a.mjs"],
-        ["a file with no suite dependent", (root) => plantGraph(root, { nodes: ["src/a.mjs", "src/b.mjs"], links: [link(1, 0)] }), "src/a.mjs"],
+        ["a file absent from the graph", (root) => plantGraph(root, { nodes: ["packages/core/src/other.mjs"] }), "packages/core/src/a.mjs"],
+        ["a file with no suite dependent", (root) => plantGraph(root, { nodes: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"], links: [link(1, 0)] }), "packages/core/src/a.mjs"],
       ]) {
         withRoot(plant, (root) => {
           utimesSync(graphJsonPath(root), past, past);
@@ -312,14 +312,14 @@ export const archTests = [
       // EXISTS and has a perfectly good mtime — and that instant is DELIBERATELY DISCARDED,
       // because nothing the artifact claims is trustworthy once it does not parse.
       withRoot(() => {}, (root) => {
-        const result = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const result = selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(result.builtAt, null, "no-graph: exactly null");
         assert.equal(result.widened[0].reason, "no-graph", "…and the widening says why");
       });
       withRoot((root) => plantGraph(root, {}, "{ not json"), (root) => {
         utimesSync(graphJsonPath(root), past, past);
         assert.notEqual(graphArtifactBuiltAt(graphJsonPath(root)), null, "the unreadable artifact HAS an mtime, so discarding it is a decision");
-        const result = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const result = selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(result.builtAt, null, "graph-unreadable: exactly null, the mtime deliberately discarded");
         assert.equal(result.widened[0].reason, "graph-unreadable", "…and the widening says why");
       });
@@ -328,8 +328,8 @@ export const archTests = [
       assert.deepEqual(clocks, [], `no module in this family fabricates an instant:\n  ${clocks.join("\n  ")}`);
       // …and the detector is not asleep: it fires on the token, and stays silent on the prose that
       // describes it, which is the shape that would have made this row read characters.
-      assert.equal(clockProblems([{ rel: "src/planted.mjs", code: "const builtAt = new Date().toISOString();" }]).length, 1, "the clock detector fires on a real clock");
-      assert.deepEqual(clockProblems([{ rel: "src/planted.mjs", code: "// never a new Date() here\nconst builtAt = null;" }]), [], "…and stays silent on prose describing it");
+      assert.equal(clockProblems([{ rel: "packages/core/src/planted.mjs", code: "const builtAt = new Date().toISOString();" }]).length, 1, "the clock detector fires on a real clock");
+      assert.deepEqual(clockProblems([{ rel: "packages/core/src/planted.mjs", code: "// never a new Date() here\nconst builtAt = null;" }]), [], "…and stays silent on prose describing it");
     },
   },
 
@@ -337,18 +337,18 @@ export const archTests = [
     name: "arch/72 FF-7202 (acd-test-selection-widens-never-narrows): selection is PURE — the same changed set against two planted graphs answers twice in one process",
     run: () => {
       const answer = (nodes, links) => withRoot((root) => plantGraph(root, { nodes, links }), (root) => [
-        ...selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).selected,
+        ...selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).selected,
       ]);
 
-      const first = answer(["src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
-      const second = answer(["src/a.mjs", "test/b.test.mjs"], [link(1, 0)]);
+      const first = answer(["packages/core/src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
+      const second = answer(["packages/core/src/a.mjs", "test/b.test.mjs"], [link(1, 0)]);
       assert.deepEqual(first, ["test/a.test.mjs"], "graph A answers A");
       assert.deepEqual(second, ["test/b.test.mjs"], "graph B answers B, in the same process");
       assert.notDeepEqual(first, second, "so nothing is cached across calls — the optimisation this forbids is the one ADR-002 prices");
 
       // …and the other order too, because a cache that warms on the first call would pass one
       // direction and fail the other.
-      const third = answer(["src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
+      const third = answer(["packages/core/src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
       assert.deepEqual(third, first, "and graph A still answers A after graph B");
     },
   },

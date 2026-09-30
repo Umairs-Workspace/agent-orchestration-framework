@@ -13,12 +13,12 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { workspaceIdFor, openGlobalWorkProjectionStore, removeWorkspaceFromCache } from "../../src/global-work-store.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { updateAssignmentState } from "../../src/assignment-record.mjs";
+import { serveMeshUi, meshUiDist } from "../../packages/core/src/mesh/ui-serve.mjs";
+import { workspaceIdFor, openGlobalWorkProjectionStore, removeWorkspaceFromCache } from "../../packages/core/src/global-work-store.mjs";
+import { loadWorkspace } from "../../packages/core/src/work.mjs";
+import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
+import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
+import { updateAssignmentState } from "../../packages/core/src/assignment-record.mjs";
 
 export {
   seedTargetNode,
@@ -60,7 +60,7 @@ export async function advanceAssignmentState({ home }, assignmentId, state, opti
 // (read back from the store — never a path this fixture rebuilds itself).
 //
 // This is the codebase's own documented asymmetry, not an invented one:
-// `queryGlobalRegistry` (src/global-node-registry.mjs) silently SKIPS a
+// `queryGlobalRegistry` (packages/core/src/global-node-registry.mjs) silently SKIPS a
 // `global_nodes` row whose descriptor does not resolve, so the node vanishes
 // from GET /api/mesh/status.nodes — the roster the picker is fed — while
 // `assignWork`'s node-known gate reads `global_nodes` DIRECTLY and still accepts

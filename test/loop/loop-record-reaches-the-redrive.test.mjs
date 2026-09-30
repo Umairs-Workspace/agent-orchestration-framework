@@ -7,8 +7,8 @@
 // fix payload 70/04 already built (`pendingFixes` -> `ctx.loopDrive.fix` ->
 // `composeFixInput`'s `## REVIEW FINDINGS`), each entry naming its producer. **(2)** The
 // durable record is `brief.grade` on the run the grade DROVE, written through the seam that
-// already writes `brief.loop` — `transitionRunStart`'s `edge.brief`. `src/run-store.mjs` (46
-// dependents) and `src/effects/run-transitions.mjs` (17) are passed THROUGH, not edited.
+// already writes `brief.loop` — `transitionRunStart`'s `edge.brief`. `packages/core/src/run-store.mjs` (46
+// dependents) and `packages/core/src/effects/run-transitions.mjs` (17) are passed THROUGH, not edited.
 //
 // THE LOOP, THE STORE AND THE TRANSITION SEAM ARE ALL REAL HERE. Only two edges are injected:
 // the PTY (as every loop suite in this tree does) and the rubric's child process (as 54/01's
@@ -21,8 +21,8 @@ import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { runLoopBody } from "../../src/commands/loop.mjs";
+import { invoke } from "../../packages/core/src/command-core.mjs";
+import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import { registeredSuitePaths } from "../support/registration/registration-surface.mjs";
 import {

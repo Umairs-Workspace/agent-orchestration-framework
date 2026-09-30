@@ -37,8 +37,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { defaultSpawnRuntime, buildDriverCommand } from "../../src/agent-session-driver.mjs";
-import { defaultSpawnRuntime as sinkDefaultSpawnRuntime, buildDriverCommand as sinkBuildDriverCommand } from "../../src/mesh/worker-execution.mjs";
+import { defaultSpawnRuntime, buildDriverCommand } from "../../packages/core/src/agent-session-driver.mjs";
+import { defaultSpawnRuntime as sinkDefaultSpawnRuntime, buildDriverCommand as sinkBuildDriverCommand } from "../../packages/core/src/mesh/worker-execution.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 
 const CODEX_ARGV_HEAD = ["exec", "--json", "-o", "last-message.txt", "--sandbox", "workspace-write", "--ask-for-approval", "never"];

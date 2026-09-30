@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 33 / story 01 — fabric-native transport.
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
-// tasks/00_fabric-seam.feature, exercising src/mesh/fabric.mjs's three exported
+// tasks/00_fabric-seam.feature, exercising packages/core/src/mesh/fabric.mjs's three exported
 // functions (probeFabric / selfAddress / resolvePeers) over an INJECTED fabric-exec
 // closure (the `exec` options key) — no real tailnet, no live binary. One test object
 // per @executable scenario (Scenario-Outline rows folded into one entry iterating the
@@ -15,8 +15,8 @@
 //     non-tailscale config.mesh.fabric is a clean fabric-unsupported refusal with NO
 //     spawn attempted; an absent config.mesh.fabric is fabric-undeclared.
 import assert from "node:assert/strict";
-import { probeFabric, selfAddress, resolvePeers } from "../../src/mesh/fabric.mjs";
-import { sanitizeHostname } from "../../src/node-identity.mjs";
+import { probeFabric, selfAddress, resolvePeers } from "../../packages/core/src/mesh/fabric.mjs";
+import { sanitizeHostname } from "../../packages/core/src/node-identity.mjs";
 
 const STATUS_FIXTURE = {
   Version: "1.80.0",

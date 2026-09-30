@@ -14,7 +14,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // is the one part that must come back off disk. Nothing else may.
 //
 // Asserted three ways, because each catches a different way of getting this wrong:
-//   1. STRUCTURALLY — the basename appears in `src/` in exactly one module, and in that module the
+//   1. STRUCTURALLY — the basename appears in `packages/core/src/` in exactly one module, and in that module the
 //      only thing parsed out of the text is the sign-off table.
 //   2. BY THE DEPENDENCY DIRECTION — the execution model is COMPUTED (`projectExecution`) by every
 //      consumer that has one, and the renderer is only ever written to, never parsed.
@@ -26,7 +26,7 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { EXECUTION_RECORD_BASENAME, loopRecordCommand } from "../../../src/commands/loop-record.mjs";
+import { EXECUTION_RECORD_BASENAME, loopRecordCommand } from "../../../packages/core/src/commands/loop-record.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, ctxFor, withRepo } from "../../loop/loop-record-command.test.mjs";
 
@@ -42,7 +42,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 //     never report the writer changing it, and importing that module would drag `run-store`,
 //     `work-loops` and `fs` into the import closure of a lane whose contract is purity (52/FF-5202
 //     forbids the second outright). FF-7809 holds the two copies byte-equal.
-// Doctor's ENGINE (`src/work/doctor.mjs`) performs the snapshot read at its one impure edge and is
+// Doctor's ENGINE (`packages/core/src/work/doctor.mjs`) performs the snapshot read at its one impure edge and is
 // deliberately NOT here: it names the checker's exported constant rather than the literal, so the
 // basename still has two homes and not three. FF-7808 holds the other half of that — the engine reads
 // the record and renders no verdict about it.
@@ -133,8 +133,8 @@ export const archTests = [
         // command core's import of the COMMAND) is never mistaken for an import of the projection.
         const specifiers = [...source.matchAll(/from\s+["']((?:\.|@aof\/)[^"']+)["']/g)]
           .map((match) => path.relative(repoRoot, createRequire(file).resolve(match[1])).split(path.sep).join("/"));
-        if (specifiers.includes("packages/work-graph/src/record.mjs") || specifiers.includes("src/loop-record.mjs")) importers.projection.push(rel);
-        if (specifiers.includes("packages/work-graph/src/record-render.mjs") || specifiers.includes("src/loop-record-render.mjs")) importers.renderer.push(rel);
+        if (specifiers.includes("packages/work-graph/src/record.mjs") || specifiers.includes("packages/core/src/loop-record.mjs")) importers.projection.push(rel);
+        if (specifiers.includes("packages/work-graph/src/record-render.mjs") || specifiers.includes("packages/core/src/loop-record-render.mjs")) importers.renderer.push(rel);
       }
       // THE DEPENDENCY DIRECTION IS THE CLAIM. Both consumers of an execution fact COMPUTE it through
       // 78/00's projection, from the run records — neither reads it back out of the document:
@@ -145,10 +145,10 @@ export const archTests = [
       // the authority on what ran. It projects instead.
       assert.deepEqual(
         importers.projection.sort(),
-        ["packages/work-graph/src/commands/loop-record.mjs", "src/application/bindings/work/doctor.mjs"],
+        ["packages/work-graph/src/commands/loop-record.mjs", "packages/core/src/application/bindings/work/doctor.mjs"].sort(),
         "the execution model is COMPUTED from the run records by every consumer that has one",
       );
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work/doctor.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8"));
       assert.match(composition, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
       const doctor = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/index.mjs"), "utf8"));
       assert.match(doctor, /projectExecution\(/u, "the injected projection is called by the snapshot reader");

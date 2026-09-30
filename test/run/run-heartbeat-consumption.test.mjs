@@ -7,13 +7,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { driveInteractiveClaudeSession, resolveInteractiveDriverLaunch } from "../../src/agent-session-driver.mjs";
-import { consumeHeartbeatQueue } from "../../src/run-heartbeat-consumption.mjs";
-import { readRuns, startRun } from "../../src/run-store.mjs";
+import { driveInteractiveClaudeSession, resolveInteractiveDriverLaunch } from "../../packages/core/src/agent-session-driver.mjs";
+import { consumeHeartbeatQueue } from "../../packages/core/src/run-heartbeat-consumption.mjs";
+import { readRuns, startRun } from "../../packages/core/src/run-store.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const hook = path.join(root, "src", "bundle", "hooks", "run-heartbeat-enqueue.mjs");
+const hook = path.join(root, "packages", "core", "assets", "hooks", "run-heartbeat-enqueue.mjs");
 
 async function fixture() {
   const home = await mkdtemp(path.join(os.tmpdir(), "aof-heartbeat-consumption-"));

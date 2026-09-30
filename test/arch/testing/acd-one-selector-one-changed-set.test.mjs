@@ -10,7 +10,7 @@
 // FIVE CLAIMS, each failing for its own reason:
 //
 //   1. ONE SELECTION AUTHORITY. `selectSuites` is the only suite-selection function exported
-//      anywhere in `src/`, and no module 96 adds exports one. Stated as a census over the module
+//      anywhere in `packages/core/src/`, and no module 96 adds exports one. Stated as a census over the module
 //      set rather than a review note, because the second one always looks reasonable in its own
 //      file.
 //   2. THE DECLARATION IS READ THROUGH THE SHIPPED PARSER. The producer reaches a story's `files:`
@@ -36,10 +36,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { graphJsonPath } from "../../../src/graph-normalize.mjs";
-import { WIDENING_REASONS, selectSuites } from "../../../src/work/test-select.mjs";
-import { declaredChangedFiles } from "../../../src/work/test-declared.mjs";
-import { STORY_AND_SINCE, TEST_SCOPES, runTest } from "../../../src/commands/test.mjs";
+import { graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
+import { WIDENING_REASONS, selectSuites } from "../../../packages/core/src/work/test-select.mjs";
+import { declaredChangedFiles } from "../../../packages/core/src/work/test-declared.mjs";
+import { STORY_AND_SINCE, TEST_SCOPES, runTest } from "../../../packages/core/src/commands/test.mjs";
 
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
@@ -161,7 +161,7 @@ export const archTests = [
     name: "arch/96/03 FF-9604 (3) A DECLARED PATH THE GRAPH DOES NOT KNOW WIDENS under an existing reason and is never dropped — driven over a planted graph",
     run: withRoot(async (root) => {
       const story = await plantStory(root, "files:\n  - src/known.mjs\n  - test/not-written-yet.test.mjs");
-      await plantGraph(root, ["src/known.mjs"]);
+      await plantGraph(root, ["packages/core/src/known.mjs"]);
 
       const set = await declaredChangedFiles({ projectRoot: root, ref: "96/03", resolve: async () => story });
       assert.equal(set.ok, true);
@@ -210,7 +210,7 @@ export const archTests = [
         projectRoot: root,
         config: {},
         resolveToolchain: () => TOOLCHAIN,
-        readChanged: async () => Object.freeze({ ok: true, changed: Object.freeze(["src/known.mjs"]), base: "HEAD~1" }),
+        readChanged: async () => Object.freeze({ ok: true, changed: Object.freeze(["packages/core/src/known.mjs"]), base: "HEAD~1" }),
         resolveStory: async (ref) => (ref === "96/03" ? story : null),
         walk: async () => ["test/a.test.mjs"],
         run: async () => observed(),

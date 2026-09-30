@@ -21,7 +21,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { evaluate, unisolatedTestInvocation } from "../../.claude/hooks/aof/guard-test-isolation.mjs";
-import { AOF_HOOK_MARKER, applyClaudeSettingsMerge, claudeSettingsPath, isAofEntry } from "../../src/claude-settings.mjs";
+import { AOF_HOOK_MARKER, applyClaudeSettingsMerge, claudeSettingsPath, isAofEntry } from "../../packages/core/src/claude-settings.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SETTINGS = path.join(repoRoot, ".claude", "settings.json");
