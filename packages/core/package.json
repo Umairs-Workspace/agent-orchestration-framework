@@ -18,7 +18,12 @@
   "exports": {
     "./application": "./src/application/assemble.mjs",
     "./cli": "./src/cli.mjs",
-    "./asset-base": "./src/asset-base.mjs"
+    "./asset-base": "./src/asset-base.mjs",
+    "./default-application": "./src/application/default.mjs",
+    "./foundation-services": "./src/application/default-foundation.mjs",
+    "./workspace-services": "./src/application/default-workspace.mjs",
+    "./session-services": "./src/application/default-session-driver.mjs",
+    "./session-hooks": "./src/application/default-session-hooks.mjs"
   },
   "files": [
     "bin",

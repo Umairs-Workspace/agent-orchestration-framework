@@ -35,3 +35,15 @@ redirect table or edits to delivered work records are used.
 Local detailed receipts are under `.tmp/workspace-migration/plan06/`: `before.json`,
 `forward-case-parity.log`, `forward-final.log`, `citations.log` and `forward-budgets.log`.
 The UI and desktop remain in their current locations pending Plan 04.
+
+## Scoped application interfaces
+
+The application exposes configured operations in domain groups, with registered command
+definitions reached through `getCommand(id)`. Command-specific helper groups omit the
+registered definitions, avoiding a second command registry. Separate public foundation,
+workspace, session-driver and session-hook entries retain the lightweight startup layers.
+No feature receives these application groups: construction continues to supply named ports.
+All 1,464 exports of the remaining 215 configured entries were compared against these APIs;
+service instances retain identity, while the four registry methods retain the existing
+application lifetime proxies. All eight application startup, environment and cleanup checks
+pass. Consumer migration and removal of the old named export catalog follow this batch.
