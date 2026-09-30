@@ -116,6 +116,6 @@ fi
 cd "$DST" || exit 1
 echo "  node-pty : $(node -e "require('node:module').createRequire(require('node:path').resolve('packages/execution/package.json'))('node-pty'); process.stdout.write('loads OK')" 2>&1 | tail -1)"
 echo "  aof      : $(command -v aof || echo "NOT LINKED — link the aof package in $DST/packages/core")"
-echo "  version  : $(aof --version 2>&1 | head -1)"
+echo "  version  : $(node packages/core/bin/aof.mjs --version 2>&1 | head -1)"
 echo
 echo "  NOTE: a running worker daemon keeps its in-memory module graph — restart it to pick this up."

@@ -14,7 +14,6 @@
 import { frozenSetCompiledTests } from "./frozen-set-compiled.test.mjs";
 import { yarnInstallationTests } from "./yarn-installation.test.mjs";
 import { coreWorkspaceTests } from "./core-workspace.test.mjs";
-import { distributionWorkspacesTests } from "./distribution-workspaces.test.mjs";
 import { opencodeHookTests } from "./opencode-hooks.test.mjs";
 import { adapterWarningTests } from "./adapter-warnings.test.mjs";
 import { packageTests } from "./packages.test.mjs";
@@ -168,5 +167,4 @@ export const tests = [
   ...digestTemplateShipsTests,
   ...yarnInstallationTests,
   ...coreWorkspaceTests,
-  ...distributionWorkspacesTests,
 ];

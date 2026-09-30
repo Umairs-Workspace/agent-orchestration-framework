@@ -28,7 +28,7 @@
 // but a test can override it with no built binary (mirrors how terminal-ws.mjs
 // injects its spawn). The sidecar anchor is ALSO injectable, so an in-process test
 // can point it at a temp dir laid out like a packaged install.
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { coreRoot } from "./application/core-root.mjs";
 
@@ -112,10 +112,23 @@ function devClassBase(assetClass) {
     // core distributions carry built UI files under core/ui instead.
     const stagedUi = path.join(devRepoRoot(), "ui");
     if (existsSync(path.join(stagedUi, "dist", "index.html"))) return stagedUi;
+    // Source UI lookup is confined to this private repository. A CLI-only
+    // copied payload or focused worktree must not borrow an ancestor's UI.
+    const repository = path.resolve(devRepoRoot(), '../..');
+    const rootManifest = path.join(repository, 'package.json');
+    const rootPackage = existsSync(rootManifest) ? JSON.parse(readFileSync(rootManifest, 'utf8')) : null;
+    if (rootPackage?.name !== '@aof/repository' || rootPackage?.private !== true ||
+        path.relative(repository, devRepoRoot()).replaceAll('\\', '/') !== 'packages/core') return stagedUi;
     const packageRequire = createRequire(import.meta.url);
     for (const lookup of packageRequire.resolve.paths("@aof/ui") ?? []) {
+      const lookupRel = path.relative(repository, lookup);
+      if (lookupRel === '..' || lookupRel.startsWith('..' + path.sep) || path.isAbsolute(lookupRel)) continue;
       const manifest = path.join(lookup, "@aof", "ui", "package.json");
-      if (existsSync(manifest)) return path.dirname(packageRequire.resolve(manifest));
+      if (existsSync(manifest)) {
+        const ui = realpathSync(path.dirname(manifest));
+        const rel = path.relative(repository, ui);
+        if (rel !== '..' && !rel.startsWith('..' + path.sep) && !path.isAbsolute(rel)) return ui;
+      }
     }
     return path.join(devRepoRoot(), "ui");
   }
