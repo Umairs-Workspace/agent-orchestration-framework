@@ -16,7 +16,7 @@ import {
   SESSION_SPAWN_ACK_KIND,
   buildSessionSpawnFrame,
   buildSessionSpawnAckFrame,
-} from "../../../packages/core/src/mesh/session-spawn-directive.mjs";
+} from "@aof/mesh/session-spawn-directive";
 import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
 import { createWorkerStreamClient, createWorkerWsTransport } from "../../../packages/core/src/worker-stream-client.mjs";
 

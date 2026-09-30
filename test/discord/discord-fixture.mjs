@@ -14,7 +14,7 @@ import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 import { clearAsk, loopAsksDir, openAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
 import { recordAskMessage } from "../../packages/core/src/notify/ask-messages.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 // A synthetic bot token (131/09 QA ruling 1); its third segment is what a leak check greps for.
 export const TOKEN_SEGMENT = "gatewaySecretSegment0123456";

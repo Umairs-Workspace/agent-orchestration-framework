@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { findWork } from "../../../packages/core/src/work.mjs";
-import { reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { reindexForInsert } from "@aof/work/reindex";
 import { withWork } from "../../support/work-reindex-fixture.mjs";
 
 // A hand-authored record doc: non-default frontmatter key order, a leading

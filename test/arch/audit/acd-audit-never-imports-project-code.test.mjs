@@ -73,7 +73,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { SPAWN_OUTCOMES } from "../../../packages/core/src/work-audit/spawn.mjs";
+import { SPAWN_OUTCOMES } from "@aof/execution/bounded-process";
 import { importSpecifiers } from "../../support/module-family.mjs";
 import { applicationConstructionGraph } from "../../support/workspace/assembly-graph.mjs";
 
@@ -424,10 +424,10 @@ export const archTests = [
       // saw it. The recursive walk is real-tree; the closure's job here is to still SWEEP it.
       const nested = {
         "packages/core/src/work-audit/census.mjs": 'import { runBounded } from "./spawn.mjs";\nimport { deep } from "./lanes/qa-nested.mjs";\n',
-        "packages/core/src/work-audit/spawn.mjs": 'import { spawn } from "node:child_process";\n',
+        "packages/execution/src/bounded-process.mjs": 'import { spawn } from "node:child_process";\n',
         "packages/core/src/work-audit/lanes/qa-nested.mjs": 'import { execSync } from "node:child_process";\nimport { archTests } from "../../../test/arch/acd-thing.test.mjs";\nconst out = execSync("x", { shell: true });\n',
       };
-      const nestedClosure = await importClosure(["packages/core/src/work-audit/census.mjs", "packages/core/src/work-audit/spawn.mjs"], async (rel) => nested[rel] ?? null);
+      const nestedClosure = await importClosure(["packages/core/src/work-audit/census.mjs", "packages/execution/src/bounded-process.mjs"], async (rel) => nested[rel] ?? null);
       assert.ok(nestedClosure.closure.has("packages/core/src/work-audit/lanes/qa-nested.mjs"), "the closure reaches a NESTED module — the flat readdir this gate shipped with did not");
       const nestedModules = [...nestedClosure.closure.entries()].map(([rel, code]) => ({ rel, code }));
       const nestedProblems = [...nestedModules.flatMap((module) => projectCodeReaches(module.rel, module.code)), ...spawnRouteProblems(nestedModules)];
@@ -437,17 +437,17 @@ export const archTests = [
       assert.ok(nestedProblems.some((problem) => problem.includes("shell:")), "…and its shell");
 
       const exported = {
-        "packages/core/src/work-audit/spawn.mjs": 'export { runBounded } from "@aof/execution/bounded-process";',
+        "packages/core/src/work-audit/qa-export-probe.mjs": 'export { runBounded } from "@aof/execution/bounded-process";',
         [SEAM]: 'import { unsafe } from "./planted.mjs";',
         "packages/execution/src/planted.mjs": 'const suite = import(projectSuite);',
       };
-      const workspaceClosure = await importClosure(["packages/core/src/work-audit/spawn.mjs"], async rel => exported[rel] ?? null);
+      const workspaceClosure = await importClosure(["packages/core/src/work-audit/qa-export-probe.mjs"], async rel => exported[rel] ?? null);
       assert.deepEqual(workspaceClosure.unresolved, []);
       assert.equal(workspaceClosure.closure.size, 3, "workspace export-from and its local dependencies are traversed");
       assert.ok(projectCodeReaches("packages/execution/src/planted.mjs", workspaceClosure.closure.get("packages/execution/src/planted.mjs"))[0].includes("dynamic"));
-      assert.deepEqual(projectCodeReaches("packages/core/src/work-audit/spawn.mjs", exported["packages/core/src/work-audit/spawn.mjs"]), []);
+      assert.deepEqual(projectCodeReaches("packages/core/src/work-audit/qa-export-probe.mjs", exported["packages/core/src/work-audit/qa-export-probe.mjs"]), []);
       for (const specifier of ["@aof/missing/module", "@aof/execution/src/bounded-process.mjs"]) {
-        assert.equal(projectCodeReaches("packages/core/src/work-audit/spawn.mjs", `export * from "${specifier}";`).length, 1, "unknown/private workspace paths are refused");
+        assert.equal(projectCodeReaches("packages/execution/src/bounded-process.mjs", `export * from "${specifier}";`).length, 1, "unknown/private workspace paths are refused");
       }
       assert.equal(projectCodeReaches(SEAM, 'import suite from "../../../test/suite.mjs";').length, 1, "a package cannot import the project suite either");
 

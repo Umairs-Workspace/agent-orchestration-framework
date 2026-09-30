@@ -1,2 +1,0 @@
-// Compatibility exports; implementation belongs to work.
-export { ADMISSIBILITY_RAN_ON_NOTHING, DISPOSITIONS, HARNESS_CONDITIONS, HARNESS_KINDS, HARNESS_NOT_INTROSPECTABLE, HARNESS_OF_RECORD, KEY_OUTSIDE_DECLARED_SET, NOT_ADMISSIBLE, REFUSAL_ORDER, TUNING_EDGE, assessProposal, assessTunableSet, ceilingRecordsFor, consumptionReport, executedConsumerRefusal, harnessRefusal, isShippedAsset, tunableSet } from "@aof/work/acceptor/admissibility";

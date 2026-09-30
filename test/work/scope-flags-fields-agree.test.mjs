@@ -8,7 +8,7 @@
 // half-working silently.
 import assert from "node:assert/strict";
 import { SCOPE_FLAGS } from "../../packages/core/src/work/memory.mjs";
-import { SCOPE_FIELDS } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { SCOPE_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 export const scopeFlagsFieldsAgreeTests = [
   {

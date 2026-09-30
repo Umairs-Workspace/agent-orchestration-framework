@@ -86,7 +86,7 @@ export const archTests = [
     },
   },
   ...[
-    { plant: "`import(\"@xterm/headless\")` added to `packages/core/src/loop-bounds.mjs`", rel: "packages/core/src/loop-bounds.mjs", edit: (source) => `${source}\nexport const loadScreen = () => import("@xterm/headless");\n`, spelling: EMULATOR },
+    { plant: "`import(\"@xterm/headless\")` added to `packages/core/src/loop-bounds.mjs`", rel: "packages/contracts/src/loop-bounds.mjs", edit: (source) => `${source}\nexport const loadScreen = () => import("@xterm/headless");\n`, spelling: EMULATOR },
     { plant: "`const hasVisibleText = 0;` added to the driver", rel: DRIVER, edit: (source) => `${source}\nconst hasVisibleText = 0;\n`, spelling: "hasVisibleText" },
     { plant: "`PROVIDER_WAIT_RE` added to the driver's import from `loop-bounds.mjs`", rel: DRIVER, edit: (source) => source.replace('import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";', 'import { DEFAULT_HEARTBEAT_MS, PROVIDER_WAIT_RE } from "@aof/contracts/loop-bounds";'), spelling: "PROVIDER_WAIT_RE" },
     { plant: "the string `\"\\u001b[?2004h\"` added to `packages/core/src/terminal/screen.mjs`", rel: MODEL, edit: (source) => `${source}\nexport const PASTE_ON = "\\u001b[?2004h";\n`, spelling: "?2004h" },

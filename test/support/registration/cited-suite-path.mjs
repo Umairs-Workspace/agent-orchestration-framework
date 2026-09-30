@@ -28,7 +28,8 @@ import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { RENAME_LEDGER_PATH, RENAME_LOG_ARGS, buildRenameMap, parseRenameRecords, resolveCitedPath } from "../../../packages/core/src/cited-path-resolve.mjs";
+import { resolveCitedPath } from "@aof/work/cited-path-resolve";
+import { readCitationHistory } from "@aof/work/citation-history";
 
 const execFileAsync = promisify(execFile);
 const cache = new Map();
@@ -37,15 +38,10 @@ const cache = new Map();
 export async function renameMapFromHistory(root) {
   if (cache.has(root)) return cache.get(root);
   const promise = (async () => {
-    const ledger = await readFile(path.join(root, ...RENAME_LEDGER_PATH), "utf8").catch(() => "");
-    const { stdout } = await execFileAsync("git", [...RENAME_LOG_ARGS], {
-      cwd: root,
-      encoding: "utf8",
-      timeout: 30_000,
-      maxBuffer: 32 * 1024 * 1024,
-      windowsHide: true,
+    return readCitationHistory(root, async args => {
+      const { stdout } = await execFileAsync("git", args, { cwd: root, encoding: "utf8", timeout: 30_000, maxBuffer: 32 * 1024 * 1024, windowsHide: true });
+      return stdout;
     });
-    return buildRenameMap(parseRenameRecords(`${stdout}\n${ledger}`));
   })();
   cache.set(root, promise);
   return promise;

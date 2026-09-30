@@ -133,8 +133,8 @@ export const archTests = [
         // command core's import of the COMMAND) is never mistaken for an import of the projection.
         const specifiers = [...source.matchAll(/from\s+["']((?:\.|@aof\/)[^"']+)["']/g)]
           .map((match) => path.relative(repoRoot, createRequire(file).resolve(match[1])).split(path.sep).join("/"));
-        if (specifiers.includes("packages/work-graph/src/record.mjs") || specifiers.includes("packages/core/src/loop-record.mjs")) importers.projection.push(rel);
-        if (specifiers.includes("packages/work-graph/src/record-render.mjs") || specifiers.includes("packages/core/src/loop-record-render.mjs")) importers.renderer.push(rel);
+        if (specifiers.includes("packages/work-graph/src/record.mjs") || specifiers.includes("packages/work-graph/src/record.mjs")) importers.projection.push(rel);
+        if (specifiers.includes("packages/work-graph/src/record-render.mjs") || specifiers.includes("packages/work-graph/src/record-render.mjs")) importers.renderer.push(rel);
       }
       // THE DEPENDENCY DIRECTION IS THE CLAIM. Both consumers of an execution fact COMPUTE it through
       // 78/00's projection, from the run records — neither reads it back out of the document:

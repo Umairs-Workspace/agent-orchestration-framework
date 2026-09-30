@@ -6,7 +6,7 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { reviewRoundsFromConfig } from "../../packages/core/src/loop-bounds.mjs";
+import { reviewRoundsFromConfig } from "@aof/contracts/loop-bounds";
 import {
   REVIEW_BLOCKER_CLASSES,
   decideReviewGate,

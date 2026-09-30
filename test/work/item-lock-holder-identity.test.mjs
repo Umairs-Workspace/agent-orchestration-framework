@@ -35,7 +35,7 @@ import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
 import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
 import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
 import { createMeshWorkerTerminalResumeHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
-import { assembleAssignmentRecord, insertAssignment } from "../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment } from "@aof/mesh/assignment-record";
 import { withMeshWorkerExecFixture, createStatusRecorder } from "../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { withItemLockFixture, seedActive, settle, withStore, refuse } from "../support/item-lock-fixture.mjs";

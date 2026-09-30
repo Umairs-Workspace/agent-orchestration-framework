@@ -35,7 +35,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyClaudeSettingsMerge, claudeSettingsPath, formatClaudeSettingsOutcome, AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
 import { bundledFrozenSet, compileFrozenSet } from "../../packages/core/src/frozen-set.mjs";
-import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH } from "../../packages/core/src/artifact-sync.mjs";
+import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH } from "@aof/mesh/artifact-sync";
 import { initWork } from "../../packages/core/src/work/init.mjs";
 import { updateWork } from "../../packages/core/src/work/update.mjs";
 import { assetsApplyCommand } from "../../packages/core/src/commands/assets/apply.mjs";

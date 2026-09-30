@@ -20,11 +20,11 @@ import { fileURLToPath } from "node:url";
 import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 import { invoke } from "../../packages/core/src/command-core.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { renderDiscord, sendDiscord } from "../../packages/core/src/notify/discord.mjs";
+import { renderDiscord, sendDiscord } from "@aof/messaging/discord";
 import { CHANNELS, EVENTS, NOTIFY_TIMEOUT_MS, buildNotifyEnvelope, notify, resolveNotifyConfig } from "../../packages/core/src/notify/notify.mjs";
 import { askMessagesDir, readAskMessage, recordAskMessage } from "../../packages/core/src/notify/ask-messages.mjs";
 import { writeMessagingSecret } from "../../packages/core/src/notify/secret.mjs";
-import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   FLAT_LAYER_THRESHOLD,
   SOURCE_DIRECTORY_BUDGETS,
@@ -32,7 +32,7 @@ import {
   readTreeListing,
   sourceDirectoryBudgetViolations,
 } from "../arch/testing/acd-source-directory-budget.test.mjs";
-import { REGRESSION_DIVIDER, REGRESSION_HEADER, REGRESSION_HEADING } from "../../packages/core/src/regression-record.mjs";
+import { REGRESSION_DIVIDER, REGRESSION_HEADER, REGRESSION_HEADING } from "@aof/work/regression-record";
 import { stripComments } from "../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

@@ -17,7 +17,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import { GRADE_CODES } from "../../packages/core/src/work/grade.mjs";
+import { GRADE_CODES } from "@aof/work/grade";
 import { gradeSummary, runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { completingDriver, replaceStatus } from "./loop-command-probe.test.mjs";
 import {

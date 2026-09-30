@@ -15,7 +15,7 @@
 //   pre-filters (ADRs excluded from the candidate set entirely); a query-class ->
 //   expected-top-record Scenario Outline.
 import assert from "node:assert/strict";
-import { rankRecords } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { rankRecords } from "@aof/knowledge/memory/local-retrieval";
 
 // ---- fixture helpers ------------------------------------------------------------
 function record(partial) {

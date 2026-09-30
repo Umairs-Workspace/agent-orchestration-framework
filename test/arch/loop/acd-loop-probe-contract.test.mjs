@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
 import { deriveRouteTable, resolveRoute } from "../../../packages/core/src/spine/face.mjs";
 import { GATE_ORDER, LOOP_REFUSALS, LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
-import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS } from "../../../packages/core/src/work/grade.mjs";
+import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS } from "@aof/work/grade";
 import { gradeRoute, gradeStopCode, gradeStopProducer, runLoopBody } from "../../../packages/core/src/commands/loop.mjs";
 import { invoke } from "../../../packages/core/src/command-core.mjs";
 import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-command-probe.test.mjs";

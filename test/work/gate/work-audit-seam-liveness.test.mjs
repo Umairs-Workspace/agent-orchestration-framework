@@ -19,9 +19,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
+import { graphJsonPath } from "@aof/knowledge/graph-normalize";
 import { TEST_ROOTS } from "../../../packages/core/src/work-audit/census.mjs";
-import { readFinding } from "../../../packages/core/src/work-audit/reads.mjs";
+import { readFinding } from "@aof/work/audit/reads";
 import {
   SEAM_LIVENESS_FINDING_CODES,
   dependentsIndex,

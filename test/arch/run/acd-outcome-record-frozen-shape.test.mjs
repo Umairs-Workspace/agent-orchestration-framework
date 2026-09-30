@@ -19,7 +19,7 @@ import {
   parseAof,
 } from "../../../packages/core/src/memory/local-indexing.mjs";
 import { GRAPHIFY_INDEX_VERSION } from "../../../packages/core/src/memory/graphify-backend.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 const FROZEN = [...MEMORY_RECORD_FIELDS].sort();
 const META = { item: "39", itemSlug: "39_milestone_delivery-memory-outcome", workRelPath: "39/DOC.md" };

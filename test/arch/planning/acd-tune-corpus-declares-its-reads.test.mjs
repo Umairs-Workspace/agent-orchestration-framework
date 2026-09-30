@@ -8,7 +8,7 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { copyWorkRuntime } from "../../support/workspace/copied-work-runtime.mjs";
 
-import * as reads from "../../../packages/core/src/work-audit/reads.mjs";
+import * as reads from "@aof/work/audit/reads";
 import {
   CORPUS_LANES,
   assembleCorpus,

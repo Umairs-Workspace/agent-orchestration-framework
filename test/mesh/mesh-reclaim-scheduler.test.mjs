@@ -15,7 +15,7 @@ import path from "node:path";
 import { startLauncher } from "../../packages/core/src/mesh/launcher.mjs";
 import { loadWorkspace, findWork } from "../../packages/core/src/work.mjs";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
 import { publishPresenceRecord } from "../../packages/core/src/mesh/presence.mjs";
 import { startRun, heartbeat, readRuns, isRetryable } from "../../packages/core/src/run-store.mjs";
 import { DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../packages/core/src/mesh/assignment-reclaim.mjs";

@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CLAUDE_SCREENS } from "../../packages/core/src/terminal/claude-screens.mjs";
+import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
 import { isRetryable } from "../../packages/core/src/run-store.mjs";
 import { loadFixture } from "./screen-model.test.mjs";
 import { BRIEF, ESC, SUBMIT_KEY, READY_CHUNKS, drive, frame, pasteOf, sleep, waitUntil, withRegistry } from "./session-screen-ready.test.mjs";

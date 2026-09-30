@@ -10,7 +10,7 @@ import { LOOP_STOPS, decideLoopScope } from "../../packages/work-loop/src/engine
 import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
 import { immediatePark } from "../support/loop/lane-fixture.mjs";
 import { completeRun, heartbeat, readRuns, retryRun, runNodeRecordPath, runRecordPath, startRun } from "../../packages/core/src/run-store.mjs";
-import { heartbeatFromConfig } from "../../packages/core/src/loop-bounds.mjs";
+import { heartbeatFromConfig } from "@aof/contracts/loop-bounds";
 import { loopStopsDir, readStopRequest, requestLoopStop, stopRequestPath } from "../../packages/core/src/loop/stop-request.mjs";
 import { stopLoop } from "../../packages/core/src/loop/stop.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";

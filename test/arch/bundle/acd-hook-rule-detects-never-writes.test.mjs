@@ -46,7 +46,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { resolvedInvocation, runHookWiring } from "../../../packages/core/src/work-audit/hook-wiring.mjs";
+import { resolvedInvocation, runHookWiring } from "@aof/work/audit/hook-wiring";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

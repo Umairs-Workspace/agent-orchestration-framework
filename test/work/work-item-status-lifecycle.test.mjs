@@ -28,7 +28,7 @@ import path from "node:path";
 import { setItemStatus, rollbackItemStatus, loadWorkspace } from "../../packages/core/src/work.mjs";
 // The lifecycle TABLE lives with the frozen five words it keys on (ADR-009/F); work.mjs is
 // the writer that imports it.
-import { itemStatusEdges, ITEM_STATUS_EDGES } from "../../packages/core/src/acceptance-horizon.mjs";
+import { itemStatusEdges, ITEM_STATUS_EDGES } from "@aof/work/lifecycle";
 import { transitionRunStart } from "../../packages/core/src/effects/run-transitions.mjs";
 import { invoke } from "../../packages/core/src/command-core.mjs";
 

@@ -65,7 +65,7 @@ import { readRuns, recordSessionId } from "../../../packages/core/src/run-store.
 import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
 import { resolveRefInWorktree } from "../../../packages/core/src/work/dispatch.mjs";
 import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
-import { resolveWorkspaceId } from "../../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");

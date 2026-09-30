@@ -38,8 +38,8 @@ import {
   classifyDependsEdges,
   dependsLane,
   resolvedDependsEdges,
-} from "../../../packages/core/src/work/doctor-depends.mjs";
-import { resolveDeclaredSet } from "../../../packages/core/src/story-contract.mjs";
+} from "@aof/work/doctor/depends";
+import { resolveDeclaredSet } from "@aof/work/story-contract";
 import { isDependNumber, loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { validateWork } from "../../../packages/core/src/commands/validate.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
@@ -258,7 +258,7 @@ export const archTests = [
         assert.deepEqual(verdictFaultsIn(entry.code, `code ${entry.code}`), []);
         assert.deepEqual(verdictFaultsIn(entry.message, `the ${entry.code} message`), [], entry.message);
       }
-      const module = await import("../../../packages/core/src/work/doctor-depends.mjs");
+      const module = await import("@aof/work/doctor/depends");
       for (const name of Object.keys(module)) assert.deepEqual(verdictFaultsIn(name, `export ${name}`), []);
 
       // …AND THE LANE MODULE ITSELF, comment-stripped and SCOPED TO THIS ONE FILE. Tree-wide the

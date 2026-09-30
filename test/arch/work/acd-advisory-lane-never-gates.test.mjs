@@ -38,12 +38,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { invoke } from "../../../packages/core/src/command-core.mjs";
 import { CHECK_GROUPS } from "../../../packages/core/src/work/doctor.mjs";
-import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
-import { DEPENDS_FINDING_CODES, dependsLane } from "../../../packages/core/src/work/doctor-depends.mjs";
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
+import { DEPENDS_FINDING_CODES, dependsLane } from "@aof/work/doctor/depends";
 import { DOCTOR_GATE_CODES, admittedDoctorFindings } from "../../../packages/core/src/commands/loop.mjs";
-import { ITEM_STATUS_EDGES } from "../../../packages/core/src/acceptance-horizon.mjs";
+import { ITEM_STATUS_EDGES } from "@aof/work/lifecycle";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { resolveDeclaredSet } from "../../../packages/core/src/story-contract.mjs";
+import { resolveDeclaredSet } from "@aof/work/story-contract";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

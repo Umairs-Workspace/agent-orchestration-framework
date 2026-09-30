@@ -13,8 +13,8 @@
 // INJECTED exec returning fixtured `tailscale status --json` (the milestone-33
 // precedent) — no live tailnet.
 import assert from "node:assert/strict";
-import { meshRole, controlNodeIdFor } from "../../packages/core/src/mesh/role.mjs";
-import { resolvePeers } from "../../packages/core/src/mesh/fabric.mjs";
+import { meshRole, controlNodeIdFor } from "@aof/mesh/role";
+import { resolvePeers } from "@aof/mesh/fabric";
 
 const CONTROL_ID = "win-host-a";
 

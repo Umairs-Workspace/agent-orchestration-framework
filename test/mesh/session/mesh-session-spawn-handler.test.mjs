@@ -57,7 +57,7 @@ import {
 } from "../../../packages/core/src/mesh/session.mjs";
 import { readLiveSessions } from "../../../packages/core/src/mesh/presence.mjs";
 import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
-import { buildSessionSpawnFrame, SESSION_SPAWN_ACK_KIND } from "../../../packages/core/src/mesh/session-spawn-directive.mjs";
+import { buildSessionSpawnFrame, SESSION_SPAWN_ACK_KIND } from "@aof/mesh/session-spawn-directive";
 import { TERMINAL_FRAME_KIND, TERMINAL_INPUT_KIND } from "../../../packages/core/src/mesh/terminal-relay-bridge.mjs";
 import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
 import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";

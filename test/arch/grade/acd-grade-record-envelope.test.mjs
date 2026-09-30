@@ -16,7 +16,7 @@
 // half — which observation produces each code, and what it does to the verdict — is
 // test/grade/grade-record-vocabularies.test.mjs. Neither subsumes the other.
 import assert from "node:assert/strict";
-import { compileGrade, ADVISORY_CODES, CASE_STATUSES, GRADE_CODES, GRADE_VERDICTS } from "../../../packages/core/src/work/grade.mjs";
+import { compileGrade, ADVISORY_CODES, CASE_STATUSES, GRADE_CODES, GRADE_VERDICTS } from "@aof/work/grade";
 
 // ADR-005 §3's nine, PINNED HERE as a literal. This is the one place the vocabulary is
 // written out a second time on purpose: a set-equality gate whose expectation is imported

@@ -25,7 +25,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveNotionRouting } from "../../packages/core/src/integrations/routing.mjs";
-import { projectMilestone } from "../../packages/core/src/notion/projection.mjs";
+import { projectMilestone } from "@aof/integration-notion/projection";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SCHEMA_URL = path.join(repoRoot, "schemas", "aof.schema.json");

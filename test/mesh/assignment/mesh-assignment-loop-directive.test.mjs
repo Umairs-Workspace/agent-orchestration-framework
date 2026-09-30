@@ -36,7 +36,7 @@ import {
   listAllAssignments,
   updateAssignmentState,
   ASSIGNMENT_STATES,
-} from "../../../packages/core/src/assignment-record.mjs";
+} from "@aof/mesh/assignment-record";
 import { runControlDispatchReclaimTick } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
 import { buildDirectiveFrame } from "../../../packages/core/src/control-stream-server.mjs";
 import {
@@ -52,7 +52,7 @@ import {
   phaseRunsOnItemBranch,
   setAssignmentPhase,
   setItemBranch,
-} from "../../../packages/core/src/mesh/assignment-directive.mjs";
+} from "@aof/mesh/assignment-directive";
 import {
   createMeshWorkerExecutionHandler,
   NEEDS_INPUT_SENTINEL,
@@ -66,7 +66,7 @@ import { bundledFrozenSet, compileFrozenSet } from "../../../packages/core/src/f
 // anything to find.
 import { defaultWatchTranscriptSessionId } from "../../../packages/core/src/agent-session-driver.mjs";
 import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
-import { LOOP_STOPS, LOOP_SCOPE_FORMS, resolveLoopLevel } from "../../../packages/core/src/work/loop.mjs";
+import { LOOP_STOPS, LOOP_SCOPE_FORMS, resolveLoopLevel } from "@aof/work-loop/engine";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import {
   withMeshWorkerExecFixture,

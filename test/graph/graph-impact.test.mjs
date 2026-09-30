@@ -4,7 +4,7 @@
 // NON-VACUOUS value test: it asserts the command returns EXACT coupling, not that a
 // prompt contains certain words.
 import assert from "node:assert/strict";
-import { computeImpact, graphImpactCommand } from "../../packages/core/src/commands/graph/impact.mjs";
+import { computeImpact, graphImpactCommand } from "@aof/knowledge/commands/graph-impact";
 
 // A tiny normalized graph (the normalizeGraph output shape): nodes carry
 // id/sourceFile; edges carry source/target (node ids). Models:
@@ -156,7 +156,7 @@ export const tests = [
         // These are two different stat flavours underneath (plain rounds the float
         // mtimeMs, bigint truncates it), which is why both go through one shared
         // derivation — a build and an impact must never name two instants for one file.
-        const { graphArtifactBuiltAt } = await import("../../packages/core/src/graph-normalize.mjs");
+        const { graphArtifactBuiltAt } = await import("@aof/knowledge/graph-normalize");
         assert.equal(result.builtAt, graphArtifactBuiltAt(graphPath), "impact's builtAt IS the shared build-time derivation");
       } finally {
         await rm(repo, { recursive: true, force: true });

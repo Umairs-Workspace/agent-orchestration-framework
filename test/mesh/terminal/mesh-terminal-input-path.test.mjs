@@ -40,13 +40,13 @@ import {
 } from "../../../packages/core/src/mesh/worker-execution.mjs";
 import { meshWorktreePath } from "../../../packages/core/src/mesh/worktree.mjs";
 import { meshTerminalResumeCommand } from "../../../packages/core/src/commands/mesh/terminal-resume.mjs";
-import { updateAssignmentState, restoreParkedAssignmentResume } from "../../../packages/core/src/assignment-record.mjs";
+import { updateAssignmentState, restoreParkedAssignmentResume } from "@aof/mesh/assignment-record";
 import { findWork } from "../../../packages/core/src/work.mjs";
 import { readRuns, startRun } from "../../../packages/core/src/run-store.mjs";
 import { claudeProjectsDir } from "../../../packages/core/src/work/observe.mjs";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
 import { applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";

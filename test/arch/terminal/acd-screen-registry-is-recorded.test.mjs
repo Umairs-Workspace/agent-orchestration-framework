@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CLAUDE_SCREENS } from "../../../packages/core/src/terminal/claude-screens.mjs";
+import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
 import { readConsentMenu } from "../../../packages/core/src/terminal/session-screen.mjs";
 import { createScreen } from "../../../packages/core/src/terminal/screen.mjs";
 

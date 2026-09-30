@@ -23,8 +23,8 @@
 // leaves stay zero-import and the composition lives here, which is ADR-006 §4's shape.
 import assert from "node:assert/strict";
 
-import * as bounds from "../../packages/core/src/loop-bounds.mjs";
-import * as workCounters from "../../packages/core/src/work/counters.mjs";
+import * as bounds from "@aof/contracts/loop-bounds";
+import * as workCounters from "@aof/work/counters";
 import { defaultCriterion, makeCriterion, criterionDigest, CriterionError } from "../../packages/core/src/work-acceptor/criterion.mjs";
 import {
   COUNTER_METRIC_MISSING,
@@ -60,7 +60,7 @@ import {
   readArm,
   readStep,
   winMultiplier,
-} from "../../packages/core/src/work-acceptor/rule.mjs";
+} from "@aof/work/acceptor/rule";
 import {
   BUDGET_EXHAUSTED,
   EVIDENCE_SHORT,
@@ -69,7 +69,7 @@ import {
   attained,
   evaluateRun,
   makeRuling,
-} from "../../packages/core/src/work-acceptor/ledger.mjs";
+} from "@aof/work/acceptor/ledger";
 
 // ─── the registry, derived from the real counters leaf ─────────────────────────────────
 

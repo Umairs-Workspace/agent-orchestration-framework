@@ -47,7 +47,7 @@ import {
   isImportRecord,
   importItem,
 } from "../../packages/core/src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 import { materializeImport } from "../../packages/core/src/import/materialize.mjs";
 import { importStoreRoot } from "../../packages/core/src/import/store.mjs";
 

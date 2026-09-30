@@ -23,7 +23,7 @@ import path from "node:path";
 
 import { stripComments } from "../support/source-slice.mjs";
 import { PROPOSAL_REASONS, deriveStoryContract } from "../../packages/core/src/story-contract-derive.mjs";
-import { partitionReadySetByDeclaredFiles } from "../../packages/core/src/ready-wave.mjs";
+import { partitionReadySetByDeclaredFiles } from "@aof/work/ready-wave";
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
 

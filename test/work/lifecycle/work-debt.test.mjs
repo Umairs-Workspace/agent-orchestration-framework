@@ -13,7 +13,7 @@ import {
   evaluateDebtLedger,
   parseDebtLedger,
   pruneResolved,
-} from "../../../packages/core/src/work/debt.mjs";
+} from "@aof/work/debt";
 
 // A ledger built from parts, so each test states only what it is about. `eol` is a parameter
 // because line endings are the one thing this engine must round-trip rather than decide (item 74).

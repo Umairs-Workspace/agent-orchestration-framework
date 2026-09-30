@@ -15,7 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getCommand, invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
 import { generatorFor, generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
-import { renderDiagramBlock } from "../../packages/core/src/diagrams/layout.mjs";
+import { renderDiagramBlock } from "@aof/work/diagrams/layout";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

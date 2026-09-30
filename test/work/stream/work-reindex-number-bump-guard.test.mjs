@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { findWork } from "../../../packages/core/src/work.mjs";
-import { reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, folderNames } from "../../support/work-reindex-fixture.mjs";
 
 export const workReindexNumberBumpGuardTests = [

@@ -37,7 +37,7 @@ import path from "node:path";
 import { claudeProjectKey, ensureWorktreeTrusted } from "../../packages/core/src/claude-trust.mjs";
 import { driveInteractiveClaudeSession, resolveInteractiveDriverLaunch } from "../../packages/core/src/mesh/worker-execution.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
-import { PHASE_BRIEF_MAX_CHARS } from "../../packages/core/src/phase-brief.mjs";
+import { PHASE_BRIEF_MAX_CHARS } from "@aof/work/phase-brief";
 
 // Built from char codes so the bytes under test are unambiguous in the source.
 const SUBMIT_KEY = String.fromCharCode(13); // carriage return — the Enter key

@@ -34,7 +34,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import * as reads from "../../../packages/core/src/work-audit/reads.mjs";
+import * as reads from "@aof/work/audit/reads";
 import {
   dispatchWorktreeSlug,
   meshDispatchWorktreePath,

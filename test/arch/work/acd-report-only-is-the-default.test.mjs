@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import { functionBody } from "../../support/source-slice.mjs";
-import { NOT_ADMISSIBLE, HARNESS_NOT_INTROSPECTABLE, KEY_OUTSIDE_DECLARED_SET } from "../../../packages/core/src/work-acceptor/admissibility.mjs";
+import { NOT_ADMISSIBLE, HARNESS_NOT_INTROSPECTABLE, KEY_OUTSIDE_DECLARED_SET } from "@aof/work/acceptor/admissibility";
 import { defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
-import { BUDGET_EXHAUSTED, EVIDENCE_SHORT } from "../../../packages/core/src/work-acceptor/ledger.mjs";
+import { BUDGET_EXHAUSTED, EVIDENCE_SHORT } from "@aof/work/acceptor/ledger";
 import {
   METRIC_UNMEASURABLE,
   NOT_AN_ORDINAL_KNOB,
@@ -12,8 +12,8 @@ import {
   STEP_IS_MORE_THAN_ONE_NOTCH,
   TRIAL_UNAFFORDABLE,
   TRIAL_UNIT_UNDECLARED,
-} from "../../../packages/core/src/work-acceptor/rule.mjs";
-import { NO_DECLARED_RANGE, OUTSIDE_DECLARED_RANGE, STEP_WOULD_BE_COMPOUND, compoundStepRefusal } from "../../../packages/core/src/loop-bounds.mjs";
+} from "@aof/work/acceptor/rule";
+import { NO_DECLARED_RANGE, OUTSIDE_DECLARED_RANGE, STEP_WOULD_BE_COMPOUND, compoundStepRefusal } from "@aof/contracts/loop-bounds";
 import { RULING_REFUSAL_ORDER, YIELD_BOUND, acceptorCommand, buildAcceptorReport } from "../../../packages/core/src/commands/acceptor.mjs";
 
 const KEY = "config.fixture.knob";

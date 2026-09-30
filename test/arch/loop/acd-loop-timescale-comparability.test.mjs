@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CADENCE_KINDS, EVENT_TRIGGERS } from "../../../packages/core/src/work/loops.mjs";
-import { LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey } from "../../../packages/core/src/loop-bounds.mjs";
-import { MIN_SEPARATION_RATIO, checkReferenceOwnership, checkTimescale } from "../../../packages/core/src/work/loops-checks.mjs";
+import { LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey } from "@aof/contracts/loop-bounds";
+import { MIN_SEPARATION_RATIO, checkReferenceOwnership, checkTimescale } from "@aof/work-graph/checks";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

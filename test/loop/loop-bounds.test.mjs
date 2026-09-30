@@ -46,7 +46,7 @@ import {
   resolvesLoopBoundConfigKey,
   stepProbe,
   stepProbeFromConfig,
-} from "../../packages/core/src/loop-bounds.mjs";
+} from "@aof/contracts/loop-bounds";
 import { DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../packages/core/src/mesh/assignment-reclaim.mjs";
 import { dispatchConcurrencyFromConfig } from "../../packages/core/src/work/dispatch.mjs";
 // 61/00 — the clamp is asked for at the doors it actually binds, not only at its

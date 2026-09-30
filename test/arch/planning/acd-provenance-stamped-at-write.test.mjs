@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { compileProvenance, PROVENANCE_KEYS } from "../../../packages/core/src/claim-provenance.mjs";
+import { compileProvenance, PROVENANCE_KEYS } from "@aof/contracts/claim-provenance";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";

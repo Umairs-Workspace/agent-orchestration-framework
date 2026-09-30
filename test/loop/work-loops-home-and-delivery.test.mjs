@@ -14,7 +14,7 @@ import { mkdtemp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 
-import { loopBoundsFromConfig } from "../../packages/core/src/loop-bounds.mjs";
+import { loopBoundsFromConfig } from "@aof/contracts/loop-bounds";
 import { initWork } from "../../packages/core/src/work/init.mjs";
 import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
 import { loadLoops } from "../../packages/core/src/work/loops.mjs";

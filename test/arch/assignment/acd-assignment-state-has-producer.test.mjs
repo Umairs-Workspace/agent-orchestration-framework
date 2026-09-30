@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ASSIGNMENT_STATE_PRODUCERS, ASSIGNMENT_STATES } from "../../../packages/core/src/assignment-record.mjs";
+import { ASSIGNMENT_STATE_PRODUCERS, ASSIGNMENT_STATES } from "@aof/mesh/assignment-record";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

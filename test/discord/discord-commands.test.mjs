@@ -15,7 +15,7 @@ import { startGateway } from "../../packages/core/src/discord/gateway.mjs";
 import { recordAskMessage } from "../../packages/core/src/notify/ask-messages.mjs";
 import { loopResumesDir, loopStopsDir, readStopRequest, requestLoopStop } from "../../packages/core/src/loop/stop-request.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { TOKEN, degradeSink, fakeClock, fakeGateway, flush, releaseDegradeSink } from "./discord-fixture.mjs";
 
 const CHANNEL = "111111111111111111";

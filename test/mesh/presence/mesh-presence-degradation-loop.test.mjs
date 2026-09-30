@@ -24,7 +24,7 @@ import {
   resolvePresenceCadenceSeconds,
   presenceCadenceFromConfig,
   DEFAULT_PRESENCE_CADENCE_SECONDS,
-} from "../../../packages/core/src/mesh/presence-loop.mjs";
+} from "@aof/mesh/presence-loop";
 
 // ---- the manual ticker (the 22 task-01 injected-clock pattern) ----
 function manualTicker() {

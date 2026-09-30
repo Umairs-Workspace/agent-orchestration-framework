@@ -22,7 +22,7 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 import { invoke, listCommands } from "../../packages/core/src/command-core.mjs";
-import * as discordModule from "../../packages/core/src/notify/discord.mjs";
+import * as discordModule from "@aof/messaging/discord";
 import { CHANNELS, buildNotifyEnvelope, notify, sendTestMessage } from "../../packages/core/src/notify/notify.mjs";
 import { messagingSecretPath, messagingSecretPresent, readMessagingSecret, writeMessagingSecret } from "../../packages/core/src/notify/secret.mjs";
 import { messagingInitCommand, messagingStatusCommand } from "../../packages/core/src/commands/messaging/messaging.mjs";

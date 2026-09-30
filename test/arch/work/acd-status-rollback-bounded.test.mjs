@@ -34,7 +34,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { rollbackItemStatus } from "../../../packages/core/src/work.mjs";
-import { ITEM_STATUS_EDGES } from "../../../packages/core/src/acceptance-horizon.mjs";
+import { ITEM_STATUS_EDGES } from "@aof/work/lifecycle";
 
 const WORK = new URL("../../../packages/work/src/records.mjs", import.meta.url);
 const HORIZON = new URL("../../../packages/work/src/lifecycle.mjs", import.meta.url);

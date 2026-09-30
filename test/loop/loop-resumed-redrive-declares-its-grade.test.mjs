@@ -31,7 +31,7 @@ import { startRun, completeRun } from "../../packages/core/src/run-store.mjs";
 // A seeded `brief.grade` is a CLAIM, and the run store refuses an unstamped one
 // (`assertStampedClaim`, 55/ADR-003) — so the fixture stamps it through the same pure
 // compiler the grade command uses rather than hand-rolling a four-key object.
-import { compileProvenance } from "../../packages/core/src/claim-provenance.mjs";
+import { compileProvenance } from "@aof/contracts/claim-provenance";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import {
   capturingReport, emitsPassing, gradingCtx, gradingFixture, stubRubric,

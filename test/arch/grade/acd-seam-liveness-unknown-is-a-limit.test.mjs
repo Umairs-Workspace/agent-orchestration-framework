@@ -46,9 +46,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
+import { graphJsonPath } from "@aof/knowledge/graph-normalize";
 import { TEST_ROOTS } from "../../../packages/core/src/work-audit/census.mjs";
-import { readFinding } from "../../../packages/core/src/work-audit/reads.mjs";
+import { readFinding } from "@aof/work/audit/reads";
 import { SEAM_LIVENESS_SWEEPS, runSeamLiveness } from "../../../packages/core/src/work-audit/seam-liveness.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

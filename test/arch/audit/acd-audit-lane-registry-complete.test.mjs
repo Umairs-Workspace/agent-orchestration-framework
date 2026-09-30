@@ -41,9 +41,9 @@ import {
   assertLaneRunnersDistinct,
   runAudit,
 } from "../../../packages/core/src/work-audit/report.mjs";
-import { sweepDeclarationProblems } from "../../../packages/core/src/work-audit/reads.mjs";
+import { sweepDeclarationProblems } from "@aof/work/audit/reads";
 import { PROMPT_LAYER_SWEEPS } from "../../../packages/core/src/work-audit/prompt-layer.mjs";
-import { HOOK_WIRING_SWEEPS } from "../../../packages/core/src/work-audit/hook-wiring.mjs";
+import { HOOK_WIRING_SWEEPS } from "@aof/work/audit/hook-wiring";
 import { SEAM_LIVENESS_SWEEPS } from "../../../packages/core/src/work-audit/seam-liveness.mjs";
 import { DECLARED_BOUNDS_SWEEPS } from "../../../packages/core/src/work-audit/declared-bounds.mjs";
 import { auditCommand } from "../../../packages/core/src/commands/audit.mjs";

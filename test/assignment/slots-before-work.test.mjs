@@ -22,7 +22,7 @@ import {
   insertAssignment,
   readAssignment,
   updateAssignmentState,
-} from "../../packages/core/src/assignment-record.mjs";
+} from "@aof/mesh/assignment-record";
 import { dispatchCommand } from "../../packages/core/src/commands/dispatch.mjs";
 import { withDispatchRepo } from "../support/dispatch-lane-fixture.mjs";
 

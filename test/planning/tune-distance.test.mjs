@@ -1,14 +1,14 @@
 // Milestone 62 / story 03 — executable traceability for all five task features.
 import assert from "node:assert/strict";
 
-import { NOT_ADMISSIBLE } from "../../packages/core/src/work-acceptor/admissibility.mjs";
+import { NOT_ADMISSIBLE } from "@aof/work/acceptor/admissibility";
 import {
   DISTANCE_LIMBS,
   DISTANCE_STATES,
   attachProposalDistances,
   distanceToLive,
   runAttributionReading,
-} from "../../packages/core/src/work-tune/distance.mjs";
+} from "@aof/work/tune/distance";
 
 const KEY = "work.fixture.rounds";
 

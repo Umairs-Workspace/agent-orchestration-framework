@@ -15,8 +15,8 @@
 //     non-tailscale config.mesh.fabric is a clean fabric-unsupported refusal with NO
 //     spawn attempted; an absent config.mesh.fabric is fabric-undeclared.
 import assert from "node:assert/strict";
-import { probeFabric, selfAddress, resolvePeers } from "../../packages/core/src/mesh/fabric.mjs";
-import { sanitizeHostname } from "../../packages/core/src/node-identity.mjs";
+import { probeFabric, selfAddress, resolvePeers } from "@aof/mesh/fabric";
+import { sanitizeHostname } from "@aof/mesh/node-identity";
 
 const STATUS_FIXTURE = {
   Version: "1.80.0",

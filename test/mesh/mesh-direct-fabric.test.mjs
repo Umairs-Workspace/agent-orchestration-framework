@@ -19,8 +19,8 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "../../packages/core/src/mesh/fabric.mjs";
-import { readSidecar } from "../../packages/core/src/node-identity.mjs";
+import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "@aof/mesh/fabric";
+import { readSidecar } from "@aof/mesh/node-identity";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { meshIdentityCommand } from "../../packages/core/src/commands/mesh/identity.mjs";
 import { startControlStreamServer } from "../../packages/core/src/control-stream-server.mjs";

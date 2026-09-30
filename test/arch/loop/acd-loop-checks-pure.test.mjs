@@ -17,8 +17,8 @@ import {
   CHECK_IDS, UNMOVED_CYCLES, assessAnchorFreshness, assessInstrumentSilence, assessLoopConsultation,
   assessMetricMovement, buildGroundednessReport, checkActuatorArbitration, checkAnchorGrounding,
   checkGrounding, checkPairing, checkReferenceOwnership, checkTimescale,
-} from "../../../packages/core/src/work/loops-checks.mjs";
-import * as checksModule from "../../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
+import * as checksModule from "@aof/work-graph/checks";
 import { ADMITTED_KEYS, NODE_KINDS, loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import { makeLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";

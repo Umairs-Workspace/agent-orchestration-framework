@@ -54,7 +54,7 @@ import {
 // THE ONE DEFINITION, and the evidence lane that now shares it (59/ADR-004 §1a).
 import { readFile } from "node:fs/promises";
 
-import * as reads from "../../../packages/core/src/work-audit/reads.mjs";
+import * as reads from "@aof/work/audit/reads";
 import { EVIDENCE_SWEEP, runEvidence } from "../../../packages/core/src/work-audit/evidence.mjs";
 import {
   AUDIT_LANES,
@@ -65,8 +65,8 @@ import {
   assessInstrumentSilence,
   assessLoopConsultation,
   assessMetricMovement,
-} from "../../../packages/core/src/work/loops-checks.mjs";
-import * as checksModule from "../../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
+import * as checksModule from "@aof/work-graph/checks";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SOURCE = path.join(root, "audit-lane-fixture-not-on-disk", "loops");

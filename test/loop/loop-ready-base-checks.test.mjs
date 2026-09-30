@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { computeLoopReady } from "../../packages/core/src/work/doctor-loop-ready.mjs";
+import { computeLoopReady } from "@aof/work/doctor/loop-ready";
 import { invokeDoctor, row, withLoopReadyRepo } from "../support/loop-ready-fixture.mjs";
 
 function ready({ findings = [], config = {}, items = [], scope } = {}) {

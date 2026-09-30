@@ -60,7 +60,7 @@ import {
   TRIGGER_LEVEL_FACTS_NOT_SUPPLIED,
   resolveTriggerLevel,
   resolveTriggerLevels,
-} from "../../../packages/core/src/work-trigger/level.mjs";
+} from "@aof/work-loop/trigger/level";
 import { bundledTriggerDeclaration, compileTriggerDeclaration } from "../../../packages/core/src/work-trigger/declaration.mjs";
 import { L3_SCORE_THRESHOLD, LOOP_LEVELS, resolveLoopLevelGate } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — and that ORDER is the whole reason this is imported rather

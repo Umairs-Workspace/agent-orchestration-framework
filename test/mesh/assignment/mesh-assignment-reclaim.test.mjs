@@ -8,7 +8,7 @@
 // reference/retired-dispatch-tests/fleet-orphan-reclaim.mjs.
 import assert from "node:assert/strict";
 import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment, findActiveAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment, findActiveAssignment } from "@aof/mesh/assignment-record";
 import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
 import { startRun, heartbeat, readRuns, isRetryable } from "../../../packages/core/src/run-store.mjs";
 import { findWork } from "../../../packages/core/src/work.mjs";

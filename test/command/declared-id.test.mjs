@@ -42,9 +42,9 @@ import {
   qualifiedRefsIn,
   registerDeclarations,
   registerEntries,
-} from "../../packages/core/src/declared-id.mjs";
+} from "@aof/work/declared-id";
 import { parseArchitecture, parseRetrospective } from "../../packages/core/src/memory/local-indexing.mjs";
-import { rankRecords } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { rankRecords } from "@aof/knowledge/memory/local-retrieval";
 import { runMemory, resolveConfiguredBackend } from "../../packages/core/src/work/memory.mjs";
 // THE PRE-EXTRACTION GOLDEN, from its one home. FF-6604 owns the differential and
 // therefore owns the second implementation that drives it (the 66/00 idiom — its arch

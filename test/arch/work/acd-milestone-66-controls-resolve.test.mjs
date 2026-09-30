@@ -31,8 +31,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
-import { controlGroup, fitnessDeclarations } from "../../../packages/core/src/work/doctor-controls.mjs";
-import { resolveThroughRenames } from "../../../packages/core/src/cited-path-resolve.mjs";
+import { controlGroup, fitnessDeclarations } from "@aof/work/audit/controls";
+import { resolveThroughRenames } from "@aof/work/cited-path-resolve";
 import { registeredSuitePaths } from "../../support/registration/registration-surface.mjs";
 import { renameMapFromHistory, renameMapProblems, resolveCitedSuite } from "../../support/registration/cited-suite-path.mjs";
 

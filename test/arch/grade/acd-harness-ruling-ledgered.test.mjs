@@ -54,13 +54,13 @@ import { matchedParenSpan } from "../../support/source-slice.mjs";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { AOF_GITIGNORE_ENTRIES } from "../../../packages/core/src/aof-gitignore.mjs";
 import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
-import { tunableSet } from "../../../packages/core/src/work-acceptor/admissibility.mjs";
+import { tunableSet } from "@aof/work/acceptor/admissibility";
 import { EFFECTS, EVENT_NOT_DECLARED, applicableReactors, isKnownLocus, knownEvents } from "../../../packages/core/src/effects/table.mjs";
 import { appendEvent, openEffectsJournal } from "../../../packages/core/src/effects/journal.mjs";
 import { HARNESS_RULED, STAMP_EVIDENCE } from "../../../packages/core/src/effects/harness-transitions.mjs";
 import { LEDGER_RELPATH, criterionDigest, defaultCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
 import { STORE_REFUSALS, appendRuling, readLedger, setKnobValue } from "../../../packages/core/src/work-acceptor/store.mjs";
-import { PAIR_OUTCOMES } from "../../../packages/core/src/work-acceptor/rule.mjs";
+import { PAIR_OUTCOMES } from "@aof/work/acceptor/rule";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

@@ -26,10 +26,10 @@ import { fileURLToPath } from "node:url";
 import { invoke } from "../../packages/core/src/command-core.mjs";
 import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { gradeCommand } from "../../packages/core/src/commands/grade.mjs";
-import { PHASE_BRIEF_MAX_CHARS } from "../../packages/core/src/phase-brief.mjs";
+import { PHASE_BRIEF_MAX_CHARS } from "@aof/work/phase-brief";
 import {
   GRADE_FAILURE_MAX_ENTRIES, GRADE_TRUNCATION_KEY, boundGradeFailures, compileGrade,
-} from "../../packages/core/src/work/grade.mjs";
+} from "@aof/work/grade";
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../loop/loop-command-probe.test.mjs";
 import {

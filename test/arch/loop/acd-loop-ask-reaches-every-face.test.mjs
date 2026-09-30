@@ -79,8 +79,8 @@ import { dependencySpecifiers } from "../../support/workspace/configured-source.
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import { withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { setDegradeSinkForTest } from "../../../packages/core/src/degrade.mjs";
-import { isDiscordBotToken, renderDiscord, sendDiscord } from "../../../packages/core/src/notify/discord.mjs";
-import { accountLine, cost, headline } from "../../../packages/core/src/notify/form.mjs";
+import { isDiscordBotToken, renderDiscord, sendDiscord } from "@aof/messaging/discord";
+import { accountLine, cost, headline } from "@aof/messaging/form";
 import { CHANNELS, EVENTS, buildNotifyEnvelope, notify } from "../../../packages/core/src/notify/notify.mjs";
 import { serveSetupUi } from "../../../packages/core/src/setup-ui.mjs";
 import { withMeshAssignFixture } from "../../support/mesh-assign-fixture.mjs";
@@ -130,7 +130,7 @@ const SEVEN = FIRING_SITES.length;
 const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
 // Task 00 ruling 3: the form's direct importers — and, as amended at 131/11 (ADR-009 §5), the slash
 // commands' renders, which read a waiting row exactly as the terminal and the posted message do.
-const FORM_IMPORTERS = Object.freeze(["packages/core/src/notify/form.mjs", "packages/messaging/src/discord-commands.mjs", "packages/core/src/application/bindings/loop/ask.mjs", "packages/messaging/src/discord.mjs", "ui/src/board/action.mjs"]);
+const FORM_IMPORTERS = Object.freeze(["packages/messaging/src/discord-commands.mjs", "packages/core/src/application/bindings/loop/ask.mjs", "packages/messaging/src/discord.mjs", "ui/src/board/action.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
@@ -160,8 +160,8 @@ function resolved(fromRel, specifier) {
     "packages/core/src/application/bindings/notify/notify.mjs": "packages/messaging/src/notify.mjs",
     "packages/core/src/application/bindings/notify/secret.mjs": "packages/messaging/src/secret.mjs",
     "packages/core/src/application/bindings/notify/ask-messages.mjs": "packages/messaging/src/ask-messages.mjs",
-    "packages/core/src/notify/form.mjs": "packages/messaging/src/form.mjs",
-    "packages/core/src/notify/discord.mjs": "packages/messaging/src/discord.mjs",
+    "packages/messaging/src/form.mjs": "packages/messaging/src/form.mjs",
+    "packages/messaging/src/discord.mjs": "packages/messaging/src/discord.mjs",
     "packages/core/src/application/bindings/commands/messaging/messaging.mjs": "packages/messaging/src/commands.mjs",
     "packages/core/src/application/bindings/discord/gateway.mjs": "packages/messaging/src/gateway.mjs",
     "packages/core/src/application/bindings/discord/replies.mjs": "packages/messaging/src/replies.mjs",

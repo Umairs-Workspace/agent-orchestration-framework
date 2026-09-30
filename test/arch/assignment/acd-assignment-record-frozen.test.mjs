@@ -7,7 +7,7 @@
 // (m03 non-vacuous): a planted assembler returning an extra/missing/reordered key
 // fails the SAME order-sensitive assertion the real assembler passes.
 import assert from "node:assert/strict";
-import { assembleAssignmentRecord } from "../../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord } from "@aof/mesh/assignment-record";
 
 const FROZEN_KEYS = [
   "assignmentId", "itemRef", "workspaceId", "targetNodeId", "issuer",

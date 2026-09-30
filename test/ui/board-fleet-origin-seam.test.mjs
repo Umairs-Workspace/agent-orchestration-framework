@@ -45,7 +45,7 @@ import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src
 import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
 // The workspace id is asked of its ONE home (TECH_DEBT 4's fix), never re-derived
 // here — it is the same rule the projection store keyed the published snapshot on.
-import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 // The ONE place this file names the route the build chose. Every Then below reads a
 // value off the response it returns.

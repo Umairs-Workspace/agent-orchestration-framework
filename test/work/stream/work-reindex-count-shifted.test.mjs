@@ -9,7 +9,7 @@
 // truth" guarantee.
 import assert from "node:assert/strict";
 import { listItems } from "../../../packages/core/src/work.mjs";
-import { countShiftedByInsert, reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { countShiftedByInsert, reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, writeStoryItem, folderNames } from "../../support/work-reindex-fixture.mjs";
 
 async function buildFixture(work) {

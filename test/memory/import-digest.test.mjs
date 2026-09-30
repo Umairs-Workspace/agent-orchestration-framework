@@ -23,7 +23,7 @@ import {
   resolveRecordSourcePath,
   isImportRecord,
 } from "../../packages/core/src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 import { materializeImport, AOF_FILE } from "../../packages/core/src/import/materialize.mjs";
 
 // memory.backend = "local" so reindex/recall actually run the local backend.

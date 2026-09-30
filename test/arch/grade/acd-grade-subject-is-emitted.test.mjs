@@ -27,8 +27,8 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { normaliseTap, CASE_STATUSES } from "../../../packages/core/src/work/grade.mjs";
-import { joinCases, executableScenariosOf } from "../../../packages/core/src/work/doctor-rubric.mjs";
+import { normaliseTap, CASE_STATUSES } from "@aof/work/grade";
+import { joinCases, executableScenariosOf } from "@aof/work/doctor/rubric";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

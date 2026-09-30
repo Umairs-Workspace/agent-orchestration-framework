@@ -26,7 +26,7 @@ import {
   brief,
   renderRecallText,
   MEMORY_RECORD_FIELDS
-} from "../../packages/core/src/memory/local-retrieval.mjs";
+} from "@aof/knowledge/memory/local-retrieval";
 
 // ── fixture helpers ──────────────────────────────────────────────────────────
 // Build a full MemoryRecord (ADR-005) from a partial spec: absent-type fields are

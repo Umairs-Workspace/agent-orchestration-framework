@@ -45,7 +45,7 @@ import {
   parseRegressionRows,
   regressionRecordPath,
   satisfiesDoor,
-} from "../../../packages/core/src/regression-record.mjs";
+} from "@aof/work/regression-record";
 import { runRegressionGate } from "../../../packages/core/src/commands/regression-gate.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

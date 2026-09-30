@@ -37,7 +37,7 @@ import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
 import { LOCAL_LOCI } from "../../../packages/core/src/effects/dispatch.mjs";
-import { reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { reindexForInsert } from "@aof/work/reindex";
 import { transitionStreamReindexed } from "../../../packages/core/src/effects/stream-transitions.mjs";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { startRun, readRuns } from "../../../packages/core/src/run-store.mjs";

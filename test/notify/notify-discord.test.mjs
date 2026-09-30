@@ -9,7 +9,7 @@
 // one. The truncation rows are measured to the unit: line 1 is 50 units, the action line 36 and the
 // link 27, so the body's room is 1,884 with the link and 1,912 without.
 import assert from "node:assert/strict";
-import { renderDiscord } from "../../packages/core/src/notify/discord.mjs";
+import { renderDiscord } from "@aof/messaging/discord";
 import { buildNotifyEnvelope } from "../../packages/core/src/notify/notify.mjs";
 
 const NOW = () => new Date("2026-09-23T17:00:00.000Z");

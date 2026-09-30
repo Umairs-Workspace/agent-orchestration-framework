@@ -41,7 +41,7 @@ import { buildAssignmentStatusFrame } from "../../packages/core/src/worker-strea
 // m49/00 — `listAllAssignments` is the SHARED reader `shapeGlobalStatus` itself
 // threads through (global-mesh-query.mjs), so scenario 1 pins the mapper's output
 // at the exact seam the fleet shaping consumes, not at a lookalike.
-import { readAssignment, listAllAssignments } from "../../packages/core/src/assignment-record.mjs";
+import { readAssignment, listAllAssignments } from "@aof/mesh/assignment-record";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";

@@ -26,7 +26,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { healIdentitySidecar, loadWorkspace } from "../../packages/core/src/work.mjs";
-import { installHash, readSidecar } from "../../packages/core/src/node-identity.mjs";
+import { installHash, readSidecar } from "@aof/mesh/node-identity";
 
 async function tempSidecar(initial) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-self-heal-"));

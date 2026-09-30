@@ -22,7 +22,7 @@ import {
   checkReferenceOwnership,
   checkTimescale,
   decomposeLoopGraph,
-} from "../../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SOURCE = path.join(root, "arbiter-fixture-not-on-disk", "loops");

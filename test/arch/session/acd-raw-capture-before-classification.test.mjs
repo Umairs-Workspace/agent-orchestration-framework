@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { RAW_FEEDBACK_KEYS } from "../../../packages/core/src/feedback-records.mjs";
+import { RAW_FEEDBACK_KEYS } from "@aof/work/feedback-records";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { markedRegion, stripComments } from "../../support/source-slice.mjs";
 

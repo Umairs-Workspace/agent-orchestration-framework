@@ -38,7 +38,7 @@ import { stripComments } from "../support/source-slice.mjs";
 import { normaliseEol, readWorkflowText, stripYamlComments } from "../support/workflow/workflow-lint.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { loopDocumentCommand } from "../../packages/core/src/commands/loop-document.mjs";
-import { loopDocumentPath, REGENERATE_COMMAND } from "../../packages/core/src/loop-document.mjs";
+import { loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
 import {
   BUILD_COMMAND,
   DEFAULT_OUT,

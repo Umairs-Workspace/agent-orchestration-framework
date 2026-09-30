@@ -8,7 +8,7 @@ import {
   resolveCloneUrl,
   createMeshWorkerExecutionHandler,
 } from "../../../packages/core/src/mesh/worker-execution.mjs";
-import { isWellFormedCloneUrl } from "../../../packages/core/src/mesh/repo-marker.mjs";
+import { isWellFormedCloneUrl } from "@aof/mesh/repo-marker";
 import {
   withMeshCloneFixture,
   createStatusRecorder,

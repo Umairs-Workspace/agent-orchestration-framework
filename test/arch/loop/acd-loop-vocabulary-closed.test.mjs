@@ -9,8 +9,8 @@ import {
   SENTINEL_TOKENS, loadLoops,
 } from "../../../packages/core/src/work/loops.mjs";
 import * as loaderModule from "../../../packages/core/src/work/loops.mjs";
-import { CHECK_FINDING_CODES, CHECK_IDS } from "../../../packages/core/src/work/loops-checks.mjs";
-import { COMPOSED_CHECK_IDS } from "../../../packages/core/src/work/doctor-loop-ready.mjs";
+import { CHECK_FINDING_CODES, CHECK_IDS } from "@aof/work-graph/checks";
+import { COMPOSED_CHECK_IDS } from "@aof/work/doctor/loop-ready";
 
 // 59/ADR-001 §3 appends `reporting` — the SIXTH edge key, outbound from an auditor. Every literal
 // below is stated as the whole frozen set after the widening, never as a delta, so a member silently

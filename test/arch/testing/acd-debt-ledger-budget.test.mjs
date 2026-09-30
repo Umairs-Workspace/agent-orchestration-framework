@@ -41,7 +41,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DEBT_BUDGET, DEBT_LEDGER_BASENAME, evaluateDebtLedger, parseDebtLedger } from "../../../packages/core/src/work/debt.mjs";
+import { DEBT_BUDGET, DEBT_LEDGER_BASENAME, evaluateDebtLedger, parseDebtLedger } from "@aof/work/debt";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const LEDGER = path.join(repoRoot, "wiki", "work", DEBT_LEDGER_BASENAME);
@@ -100,7 +100,7 @@ export const archTests = [
       // The gate that keeps the gate honest. Two homes for the ceiling is exactly the species the
       // ledger's own items 25, 44, 57, 59, 81 and 89 record, and shipping a seventh instance
       // inside the instrument built to bound them would be its own entry within the week.
-      const { debtCommand } = await import("../../../packages/core/src/commands/debt.mjs");
+      const { debtCommand } = await import("@aof/work/commands/debt");
       const face = await debtCommand.run({}, { workspace: { workDir: path.join(repoRoot, "wiki", "work") } });
       assert.equal(face.budget, DEBT_BUDGET, "the command reports the same frozen budget object this gate asserts on");
 

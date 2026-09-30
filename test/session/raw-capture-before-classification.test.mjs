@@ -12,7 +12,7 @@ import {
   feedbackRecordPath,
   readFeedbackRecords,
   recordFeedbackClassification,
-} from "../../packages/core/src/feedback-records.mjs";
+} from "@aof/work/feedback-records";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 
 const AT = "2026-08-26T16:00:00.000Z";

@@ -8,7 +8,7 @@ import {
   CHECK_FINDING_CODES,
   GATING_CODES,
   checkPairing,
-} from "../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 import { examplesTables, scenarioTitles } from "../support/feature-parse.mjs";
 

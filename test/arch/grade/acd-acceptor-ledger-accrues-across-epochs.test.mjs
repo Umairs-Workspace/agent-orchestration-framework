@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 import { criterionDigest, defaultCriterion, makeCriterion, rulingsUnderCurrentCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
-import { deriveRule } from "../../../packages/core/src/work-acceptor/rule.mjs";
+import { deriveRule } from "@aof/work/acceptor/rule";
 import {
   LEDGER_INCOMPLETE,
   PAIR_OUTCOMES,
@@ -34,7 +34,7 @@ import {
   attained,
   evaluateRun,
   makeRuling,
-} from "../../../packages/core/src/work-acceptor/ledger.mjs";
+} from "@aof/work/acceptor/ledger";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const LEDGER_MODULE = "packages/work/src/acceptor/ledger.mjs";

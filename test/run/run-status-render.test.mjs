@@ -12,7 +12,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 
 import { runStatusCommand } from "../../packages/core/src/commands/run-status.mjs";
-import { attemptElapsedMs } from "../../packages/core/src/work/loop.mjs";
+import { attemptElapsedMs } from "@aof/work-loop/engine";
 import { startRun } from "../../packages/core/src/run-store.mjs";
 import { invoke } from "../../packages/core/src/command-core.mjs";
 

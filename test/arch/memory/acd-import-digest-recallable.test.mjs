@@ -18,7 +18,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { materializeImport, AOF_FILE } from "../../../packages/core/src/import/materialize.mjs";
 import { buildRecords, resolveRecordSourcePath, isImportRecord } from "../../../packages/core/src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

@@ -25,7 +25,7 @@ import {
   SIGNOFF_PLACEHOLDER,
   isSignedRow,
   readSignoff,
-} from "../../packages/core/src/work/doctor-loop-record.mjs";
+} from "@aof/work/doctor/loop-record";
 import { loopRecordCommand } from "../../packages/core/src/commands/loop-record.mjs";
 import { BARE_RUNS, ITEM_REF, ctxFor, signInPlace, signedRow, withRepo } from "./loop-record-command.test.mjs";
 

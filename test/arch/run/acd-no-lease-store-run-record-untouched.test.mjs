@@ -23,7 +23,7 @@ const dispatchFiles = [
   "packages/core/src/commands/dispatch.mjs",
   "packages/mesh/src/assignment-reclaim.mjs",
   "packages/mesh/src/commands/terminal-resume.mjs",
-  "packages/core/src/assignment-record.mjs",
+  "packages/mesh/src/assignment-record.mjs",
 ];
 
 async function sourceModules(dir = path.join(root, "packages", "core", "src")) {

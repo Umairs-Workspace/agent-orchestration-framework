@@ -38,7 +38,7 @@ import {
   parseArchitecture,
   parseRetrospective,
 } from "../../../packages/core/src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 import { materializeImport, ARCHITECTURE_FILE, RETROSPECTIVE_FILE, SPEC_FILE } from "../../../packages/core/src/import/materialize.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

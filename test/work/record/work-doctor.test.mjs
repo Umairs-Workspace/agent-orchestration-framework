@@ -18,7 +18,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 import { buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
-import { controlGroup } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { controlGroup } from "@aof/work/audit/controls";
 import { readRenameMap } from "../../../packages/core/src/commands/doctor.mjs";
 
 const execFileAsync = promisify(execFile);

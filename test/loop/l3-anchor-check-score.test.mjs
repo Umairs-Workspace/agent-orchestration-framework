@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { COMPOSED_CHECK_IDS, computeLoopReady } from "../../packages/core/src/work/doctor-loop-ready.mjs";
+import { COMPOSED_CHECK_IDS, computeLoopReady } from "@aof/work/doctor/loop-ready";
 
 const base = ["stream-coherent", "cap-declared", "memory-on", "tasks-authored"];
 

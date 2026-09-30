@@ -430,7 +430,7 @@ function runWaitTests() {
     {
       name: "131/01 task05 — the wait is charged to nobody: a three-hour answered wait, and an interval that ends at the answer, the park or now, clipped to the attempt",
       async run() {
-        const { attemptElapsedMs } = await import("../../packages/core/src/work/loop.mjs");
+        const { attemptElapsedMs } = await import("@aof/work-loop/engine");
         const record = (over) => ({ runId: RUN_ID, createdAt: at("10:00"), updatedAt: at("10:00"), heartbeatAt: null, reclaimedAt: null, state: "running", ...over });
         const doneAt = (hhmm) => ({ state: "done", updatedAt: at(hhmm) });
 
@@ -449,7 +449,7 @@ function runWaitTests() {
     {
       name: "131/01 task05 — intervals are clipped to the attempt, merged, and never charged twice (fourteen rows)",
       async run() {
-        const { attemptElapsedMs } = await import("../../packages/core/src/work/loop.mjs");
+        const { attemptElapsedMs } = await import("@aof/work-loop/engine");
         const { isStale } = await import("../../packages/core/src/run-store.mjs");
         const record = (over) => ({ runId: RUN_ID, createdAt: at("10:00"), updatedAt: at("10:00"), heartbeatAt: null, reclaimedAt: null, state: "running", ...over });
         const rows = [
@@ -477,7 +477,7 @@ function runWaitTests() {
     {
       name: "131/01 task05 — an answered ask on an earlier attempt is not charged to the lineage, and a record without asks answers what it answered before",
       async run() {
-        const { attemptElapsedMs, lineageElapsedMs } = await import("../../packages/core/src/work/loop.mjs");
+        const { attemptElapsedMs, lineageElapsedMs } = await import("@aof/work-loop/engine");
         const one = { runId: "a1", createdAt: at("10:00"), updatedAt: at("11:00"), state: "failed", heartbeatAt: null, reclaimedAt: null, asks: [entry(at("10:15"), { answered: at("10:45") })] };
         const two = { runId: "a2", retryOf: "a1", createdAt: at("12:00"), updatedAt: at("13:00"), state: "done", heartbeatAt: null, reclaimedAt: null, asks: [] };
         assert.equal(lineageElapsedMs({ runs: [one, two], now: NOW }), 5400000);

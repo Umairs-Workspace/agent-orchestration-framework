@@ -26,7 +26,7 @@ import { resolveRefInWorktree } from "../../packages/core/src/work/dispatch.mjs"
 import { meshDispatchWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
 import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
 import { loopStopsDir, requestLoopStop } from "../../packages/core/src/loop/stop-request.mjs";
-import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   withLaneRepo, fakeLaneChild, stubRubric, emits, passingTap, failingTap, collector, fakeTimers, fakeSignals,
   primaryDriver, verifyCompleter, laneCtx, statusOf, git, headSha, deferred, scriptedRegistry, laneStoryFile, replaceStatus,

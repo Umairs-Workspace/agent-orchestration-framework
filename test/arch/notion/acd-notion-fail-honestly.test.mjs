@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { projectMilestone } from "../../../packages/core/src/notion/projection.mjs";
+import { projectMilestone } from "@aof/integration-notion/projection";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SYNC = path.join(repoRoot, "packages", "integration-notion", "src", "sync.mjs");

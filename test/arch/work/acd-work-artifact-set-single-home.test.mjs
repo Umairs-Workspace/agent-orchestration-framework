@@ -187,7 +187,7 @@ export const archTests = [
       // cannot satisfy this by deleting the compatibility view instead of deriving it.
       const initializer = declarationInitializer(carrier, "WORK_ITEM_DOC_FILES");
       assert.match(initializer, /WORK_ITEM_ARTIFACTS/, "the real derived view really does read the manifest");
-      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES } = await import("../../../packages/core/src/work/artifacts.mjs");
+      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES } = await import("@aof/work/artifacts");
       assert.deepEqual(
         Object.entries(WORK_ITEM_DOC_FILES),
         WORK_ITEM_ARTIFACTS.filter((entry) => entry.file != null).map((entry) => [entry.name, entry.file]),
@@ -239,9 +239,9 @@ export const archTests = [
   {
     name: "arch/70 FF-7008 (acd-work-artifact-set-single-home, extended): ARCHITECTURE.md stays one artifact, owns the declaring register, and the pure ADR extractor slices that one text instead of naming sibling files",
     run: async () => {
-      const { WORK_ITEM_ARTIFACTS } = await import("../../../packages/core/src/work/artifacts.mjs");
-      const { REGISTER_BLOCKS } = await import("../../../packages/core/src/declared-id.mjs");
-      const { extractAdrBlocks } = await import("../../../packages/core/src/phase-brief.mjs");
+      const { WORK_ITEM_ARTIFACTS } = await import("@aof/work/artifacts");
+      const { REGISTER_BLOCKS } = await import("@aof/work/declared-id");
+      const { extractAdrBlocks } = await import("@aof/work/phase-brief");
       assert.equal(WORK_ITEM_ARTIFACTS.filter((entry) => entry.file === "ARCHITECTURE.md").length, 1, "exactly one architecture artifact is enumerated");
       assert.deepEqual(
         REGISTER_BLOCKS.filter((entry) => entry.kind === "declaring" && entry.heading === "fitness functions").map((entry) => entry.file),
@@ -250,7 +250,7 @@ export const archTests = [
       );
       const source = "## ADR-001 — one\nONE\n## ADR-002 — two\nTWO\n";
       assert.deepEqual(extractAdrBlocks(source, ["ADR-002"]).blocks.map((block) => block.text), ["## ADR-002 — two\nTWO\n"], "the extractor consumes the single document's text");
-      const compilerSource = await readFile(path.join(SRC, "phase-brief.mjs"), "utf8");
+      const compilerSource = await readFile(path.join(repoRoot, "packages/work/src/phase-brief.mjs"), "utf8");
       assert.doesNotMatch(compilerSource, SIBLING_ADR_ARTIFACT, "the extractor expects no sibling per-ADR file or directory");
     },
   },
@@ -292,7 +292,7 @@ export const archTests = [
   {
     name: "arch/133 FF-13305 (acd-work-artifact-set-single-home, extended): the manifest holds one diagrams entry, SVG only, last, and the earlier entries are unchanged",
     run: async () => {
-      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES, artifactForRelativePath } = await import("../../../packages/core/src/work/artifacts.mjs");
+      const { WORK_ITEM_ARTIFACTS, WORK_ITEM_DOC_FILES, artifactForRelativePath } = await import("@aof/work/artifacts");
       const diagrams = WORK_ITEM_ARTIFACTS.filter((entry) => entry.dir === "diagrams");
       assert.equal(diagrams.length, 1, "exactly one entry has dir: diagrams");
       assert.deepEqual({ ...diagrams[0] }, { name: "DIAGRAMS", dir: "diagrams", ext: ".svg" });

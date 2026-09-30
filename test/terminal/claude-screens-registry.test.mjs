@@ -9,7 +9,7 @@
 // case scripts it to misbehave (QA 3). A synthetic trust menu is `trust.json` followed by a chunk that
 // redraws its menu rows, so the dialog's words stay the recording's (QA 4).
 import assert from "node:assert/strict";
-import { CLAUDE_SCREENS } from "../../packages/core/src/terminal/claude-screens.mjs";
+import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
 import { openSessionScreen, readConsentMenu } from "../../packages/core/src/terminal/session-screen.mjs";
 import { createScreen } from "../../packages/core/src/terminal/screen.mjs";
 import { isRetryable } from "../../packages/core/src/run-store.mjs";

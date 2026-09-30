@@ -26,9 +26,9 @@ import { fileURLToPath } from "node:url";
 
 import { invoke } from "../../../packages/core/src/command-core.mjs";
 import { CHECK_GROUPS, doctorWork } from "../../../packages/core/src/work/doctor.mjs";
-import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import { DOCTOR_GATE_CODES } from "../../../packages/core/src/commands/loop.mjs";
-import { LOOP_RECORD_FINDING_CODES, loopRecordLane } from "../../../packages/core/src/work/doctor-loop-record.mjs";
+import { LOOP_RECORD_FINDING_CODES, loopRecordLane } from "@aof/work/doctor/loop-record";
 import { loopRecordCommand } from "../../../packages/core/src/commands/loop-record.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, ctxFor, signInPlace, withRepo } from "../../loop/loop-record-command.test.mjs";
@@ -187,7 +187,7 @@ export const archTests = [
       // not as being LAST: the next milestone to append a lane would red on `at(-1)`, and a gate that
       // reds on a sanctioned append is a gate the next author deletes rather than reads.
       assert.equal(CHECK_GROUPS.filter((group) => group === loopRecordLane).length, 1, "registered exactly once");
-      const { rubricTraceabilityGroup } = await import("../../../packages/core/src/work/doctor-rubric.mjs");
+      const { rubricTraceabilityGroup } = await import("@aof/work/doctor/rubric");
       assert.ok(
         CHECK_GROUPS.indexOf(loopRecordLane) > CHECK_GROUPS.indexOf(rubricTraceabilityGroup),
         "and appended after the lanes that existed before it, never inserted among them",

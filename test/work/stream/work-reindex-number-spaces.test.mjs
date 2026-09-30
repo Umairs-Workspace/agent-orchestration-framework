@@ -7,7 +7,7 @@
 // fixture stream after the engine call.
 import assert from "node:assert/strict";
 import { findWork, listItems } from "../../../packages/core/src/work.mjs";
-import { reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, writeStoryItem } from "../../support/work-reindex-fixture.mjs";
 
 async function buildFixture(work) {

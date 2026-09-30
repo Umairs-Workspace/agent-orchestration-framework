@@ -114,9 +114,9 @@ export const archTests = [
 
       // 129/07 — the bounds home reading ITS OWN `work.loop.dispatch.concurrency` (and spelling it as
       // a map entry) is not a second site of the pool key; the same file reading the pool key is.
-      const loopHome = { path: "packages/core/src/loop-bounds.mjs", source: 'const loopConfig = (w) => w?.config?.work?.loop;\nexport function loopDispatchConcurrencyFromConfig(workspace) { return positiveInteger(loopConfig(workspace)?.dispatch?.concurrency, null); }\nexport const M = { "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig };' };
+      const loopHome = { path: "packages/contracts/src/loop-bounds.mjs", source: 'const loopConfig = (w) => w?.config?.work?.loop;\nexport function loopDispatchConcurrencyFromConfig(workspace) { return positiveInteger(loopConfig(workspace)?.dispatch?.concurrency, null); }\nexport const M = { "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig };' };
       assert.deepEqual(boundSiteOffenders([home, consumer, loopHome]), [], "self-check: the loop key's own home is not a second site of the pool key");
-      const annexing = { path: "packages/core/src/loop-bounds.mjs", source: `${loopHome.source}\nconst pool = workspace?.config?.work?.dispatch?.concurrency;` };
+      const annexing = { path: "packages/contracts/src/loop-bounds.mjs", source: `${loopHome.source}\nconst pool = workspace?.config?.work?.dispatch?.concurrency;` };
       const annexed = boundSiteOffenders([home, consumer, annexing]);
       assert.equal(annexed.length, 1, `self-check: the same file reading the pool key is reported (got ${JSON.stringify(annexed)})`);
 

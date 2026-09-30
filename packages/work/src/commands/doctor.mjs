@@ -1,7 +1,7 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { RENAME_LEDGER_PATH, RENAME_LOG_ARGS, buildRenameMap, parseRenameRecords } from "../cited-path-resolve.mjs";
+import { readCitationHistory } from "../citation-history.mjs";
 import { declaredReportFrom } from "../doctor/rubric.mjs";
 import { computeLoopReady } from "../doctor/loop-ready.mjs";
 import { readJson } from "@aof/foundation/fs";
@@ -79,12 +79,7 @@ async function readRenameMap(projectRoot, runGit = null) {
     return stdout;
   });
   try {
-    const live = await run([...RENAME_LOG_ARGS]);
-    // The ledger of the history the public root cannot carry (RENAME_LEDGER_PATH's own note): read
-    // AFTER git's records so the live history wins for a name renamed again since the cut, and an
-    // absent ledger is simply no records — the resolver's parser ignores what is not a record.
-    const ledger = await readFile(path.join(projectRoot, ...RENAME_LEDGER_PATH), "utf8").catch(() => "");
-    return buildRenameMap(parseRenameRecords(`${live}\n${ledger}`));
+    return await readCitationHistory(projectRoot, run);
   } catch {
     // Not a checkout, no git on PATH, a shallow clone with no history — every one of them means
     // "history records no rename from here", which is exactly an empty map.

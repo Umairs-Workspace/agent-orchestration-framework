@@ -32,8 +32,8 @@ import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
 import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { insertAssignment } from "../../../packages/core/src/assignment-record.mjs";
-import { assembleAssignmentRecord } from "../../../packages/core/src/assignment-record.mjs";
+import { insertAssignment } from "@aof/mesh/assignment-record";
+import { assembleAssignmentRecord } from "@aof/mesh/assignment-record";
 
 async function makeRepo() {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-ui-assign-ro-"));

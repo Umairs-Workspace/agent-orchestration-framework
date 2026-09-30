@@ -169,7 +169,7 @@ export const archTests = [
     run: async () => {
       // Lazily — the harness's entry-key sweep (FF-5311) imports every arch file, and a leaf
       // imported at module scope is a leaf whose absence takes the whole index down.
-      const loopBounds = await import("../../../packages/core/src/loop-bounds.mjs");
+      const loopBounds = await import("@aof/contracts/loop-bounds");
       assert.equal(typeof loopBounds.resolveLoopConcurrency, "function", `${BOUNDS_HOME}: NOT FOUND — resolveLoopConcurrency is not exported`);
       assert.equal(typeof loopBounds.loopConcurrencyFromConfig, "function", `${BOUNDS_HOME}: NOT FOUND — loopConcurrencyFromConfig is not exported`);
       assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS[KEY], loopBounds.resolveLoopConcurrency, `LOOP_BOUND_VALUE_RESOLVERS["${KEY}"] is resolveLoopConcurrency by identity`);

@@ -21,7 +21,7 @@ import { drainOutbox, applyEffectAck, EFFECT_STEP_FRAME_KIND } from "../../packa
 import { reportAssignmentSettled, reportTerminalResumeRefused } from "../../packages/core/src/effects/assignment-transitions.mjs";
 import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { readAssignment, reserveParkedAssignmentResume } from "../../packages/core/src/assignment-record.mjs";
+import { readAssignment, reserveParkedAssignmentResume } from "@aof/mesh/assignment-record";
 import { meshWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";
 import { findWork, loadWorkspace } from "../../packages/core/src/work.mjs";
 import {

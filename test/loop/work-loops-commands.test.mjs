@@ -71,7 +71,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { getCommand, invoke, listCommands } from "../../packages/core/src/command-core.mjs";
 import { resolveRoute } from "../../packages/core/src/spine/face.mjs";
-import { CHECK_FINDING_CODES, CHECK_IDS } from "../../packages/core/src/work/loops-checks.mjs";
+import { CHECK_FINDING_CODES, CHECK_IDS } from "@aof/work-graph/checks";
 import { LOADER_FINDING_CODES } from "../../packages/core/src/work/loops.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { examplesTables, scenarioTitles } from "../support/feature-parse.mjs";

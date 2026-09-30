@@ -31,7 +31,7 @@ import {
   MEMORY_VERBS,
   memoryUsage
 } from "../../../packages/core/src/work/memory.mjs";
-import noneBackend from "../../../packages/core/src/memory/none-backend.mjs";
+import noneBackend from "@aof/knowledge/memory/none-backend";
 
 // ------------------------------------------------------------ test rig ----
 

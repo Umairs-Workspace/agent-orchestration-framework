@@ -27,8 +27,8 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { doctorWork, CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
-import { lifecycleCompletenessGroup, DELIVERED_STORY_RECORDS } from "../../packages/core/src/work/doctor-coherence.mjs";
-import { CONTROL_FINDING_CODES } from "../../packages/core/src/work/doctor-controls.mjs";
+import { lifecycleCompletenessGroup, DELIVERED_STORY_RECORDS } from "@aof/work/doctor/coherence";
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 
 const RECORDS = ["OUTCOME.md", "RETROSPECTIVE.md"];
 const CODE = "story-record-missing";

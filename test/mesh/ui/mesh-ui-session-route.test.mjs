@@ -34,7 +34,7 @@ import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
 import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { createTerminalInputRouter } from "../../../packages/core/src/mesh/terminal-input.mjs";
-import { SESSION_SPAWN_KIND } from "../../../packages/core/src/mesh/session-spawn-directive.mjs";
+import { SESSION_SPAWN_KIND } from "@aof/mesh/session-spawn-directive";
 import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
 import { createWorkerStreamClient, createWorkerWsTransport } from "../../../packages/core/src/worker-stream-client.mjs";
 

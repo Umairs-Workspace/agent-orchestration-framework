@@ -27,7 +27,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyClaudeSettingsMerge, claudeSettingsPath } from "../../packages/core/src/claude-settings.mjs";
-import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH, artifactSyncQueuePath } from "../../packages/core/src/artifact-sync.mjs";
+import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH, artifactSyncQueuePath } from "@aof/mesh/artifact-sync";
 // The last scenario needs a real worker daemon (the reconciliation tick is the whole
 // point of it), so it rides the story's shared fixture.
 import { withArtifactSyncFixture } from "../support/artifact-sync-fixture.mjs";

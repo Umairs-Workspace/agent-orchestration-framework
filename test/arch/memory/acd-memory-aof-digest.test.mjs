@@ -15,7 +15,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { reindex } from "../../../packages/core/src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../packages/core/src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 // A digest with three `## ` sections + an h3 subsection (which must NOT be a record
 // root) — the same shape an aof digest takes for a milestone with no ADR/retro docs.

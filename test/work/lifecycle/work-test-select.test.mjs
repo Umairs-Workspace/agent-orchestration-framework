@@ -19,7 +19,7 @@ import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:
 import os from "node:os";
 import path from "node:path";
 
-import { graphArtifactBuiltAt, graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
+import { graphArtifactBuiltAt, graphJsonPath } from "@aof/knowledge/graph-normalize";
 import {
   CHANGED_SET_EMPTY,
   SINCE_REV_UNRESOLVABLE,

@@ -5,11 +5,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { REFUSAL_REMOVALS, RULING_REFUSAL_ORDER } from "../../../packages/core/src/commands/acceptor.mjs";
-import { NOT_ADMISSIBLE } from "../../../packages/core/src/work-acceptor/admissibility.mjs";
+import { NOT_ADMISSIBLE } from "@aof/work/acceptor/admissibility";
 import {
   DISTANCE_LIMBS,
   distanceToLive,
-} from "../../../packages/core/src/work-tune/distance.mjs";
+} from "@aof/work/tune/distance";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const familyDir = path.join(root, "packages", "work", "src", "tune");

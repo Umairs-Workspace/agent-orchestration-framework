@@ -28,7 +28,7 @@ import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global
 import { startSession } from "../../../packages/core/src/mesh/session.mjs";
 import { upsertWorkItemContent } from "../../../packages/core/src/global-work-store.mjs";
 import { listItems } from "../../../packages/core/src/work.mjs";
-import { workspaceIdFromPath } from "../../../packages/core/src/workspace-identity.mjs";
+import { workspaceIdFromPath } from "@aof/mesh/workspace-identity";
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-10T12:00:00.000Z";

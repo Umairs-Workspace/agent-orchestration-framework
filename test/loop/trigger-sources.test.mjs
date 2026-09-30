@@ -50,7 +50,7 @@ import {
   resolveFindingSignal,
   resolveTriggerSignal,
   resolveTriggerSignals,
-} from "../../packages/core/src/work-trigger/sources.mjs";
+} from "@aof/work-loop/trigger/sources";
 import { TRIGGER_SOURCES } from "../../packages/core/src/work-trigger/declaration.mjs";
 import { LOOP_LEVELS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 // The two vocabularies the "a refusal carries no more than a resolution does" sweep recognises a

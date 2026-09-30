@@ -22,7 +22,7 @@
 // neither.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { CONTROL_FINDING_CODES, controlsLane, registerGroup, verificationGroup, controlGroup } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { CONTROL_FINDING_CODES, controlsLane, registerGroup, verificationGroup, controlGroup } from "@aof/work/audit/controls";
 import { allEightFixture } from "../../work/record/work-doctor-controls.test.mjs";
 
 // ADR-003 §5's three lanes, spelled out here so the gate compares the SHIPPED array

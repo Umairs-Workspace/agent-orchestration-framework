@@ -22,7 +22,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { parseDiagramLinks, renderDiagramBlock } from "../../../packages/core/src/diagrams/layout.mjs";
+import { parseDiagramLinks, renderDiagramBlock } from "@aof/work/diagrams/layout";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_ONE_HOME = "packages/work/src/diagrams/layout.mjs";
@@ -67,7 +67,7 @@ const LAYOUT_IMPORT = /from\s*["']([^"']*diagrams\/layout\.mjs)["']/g;
 function importsTheLayout(file, text) {
   const code = stripComments(text);
   return [...code.matchAll(LAYOUT_IMPORT)].some((match) =>
-    [THE_ONE_HOME, "packages/core/src/diagrams/layout.mjs"].some(owner =>
+    [THE_ONE_HOME, "packages/work/src/diagrams/layout.mjs"].some(owner =>
       path.resolve(repoRoot, path.dirname(file), match[1]) === path.join(repoRoot, owner)));
 }
 
@@ -89,9 +89,8 @@ export const archTests = [
   {
     name: "arch/133 FF-13302: every module that handles a diagram path imports the layout by resolved specifier",
     run: async () => {
-      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/diagrams/layout.mjs"), "utf8"));
-      assert.match(adapter, /^\s*export\s*\{[^}]+\}\s*from "@aof\/work\/diagrams\/layout";\s*$/u,
-        "the admitted legacy path only forwards to the package owner");
+      assert.equal(existsSync(path.join(repoRoot, "packages/core/src/work-diagrams/layout.mjs")), false,
+        "the retired forward is absent; handlers reach the owned implementation");
       const handlers = [];
       const family = path.join(repoRoot, "packages", "work", "src", "commands", "diagram");
       if (existsSync(family)) {

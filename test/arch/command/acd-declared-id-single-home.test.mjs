@@ -62,7 +62,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { ID_FORMS, headingCaptureRe, headingSplitRe } from "../../../packages/core/src/declared-id.mjs";
+import { ID_FORMS, headingCaptureRe, headingSplitRe } from "@aof/work/declared-id";
 import { parseArchitecture, parseRetrospective } from "../../../packages/core/src/memory/local-indexing.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -323,7 +323,7 @@ export const archTests = [
     name: "arch/FF-6604: the leaf's exports partition into two halves, and memory takes only the whole-document one",
     run: async () => {
       // (a) Every export is classified. Adding one fails this until it is placed.
-      const leaf = await import("../../../packages/core/src/declared-id.mjs");
+      const leaf = await import("@aof/work/declared-id");
       assert.deepEqual(
         Object.keys(leaf).sort(),
         [...DOCUMENT_HALF, ...REGISTER_HALF].sort(),

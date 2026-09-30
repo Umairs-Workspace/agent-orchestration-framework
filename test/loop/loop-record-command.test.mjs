@@ -225,7 +225,7 @@ export const loopRecordFixtureShapeTests = [
     name: "loop-record-command/fixture the real loader parses this registry's two ceiling states",
     async run() {
       const { loadLoops } = await import("../../packages/core/src/work/loops.mjs");
-      const { LOOP_BOUND_CONFIG_RESOLVERS } = await import("../../packages/core/src/loop-bounds.mjs");
+      const { LOOP_BOUND_CONFIG_RESOLVERS } = await import("@aof/contracts/loop-bounds");
       await withRepo({}, async (repo) => {
         const registry = await loadLoops((await ctxFor(repo)).workspace);
         assert.equal(registry.present, true, "the fixture registry is found where 53/07 puts one");

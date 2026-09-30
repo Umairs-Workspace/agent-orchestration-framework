@@ -34,9 +34,9 @@ import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
 import { registerActiveWorktree, clearActiveWorktree } from "../../packages/core/src/mesh/worker-execution.mjs";
 import { docCommand } from "../../packages/core/src/commands/doc.mjs";
 import { tasksCommand } from "../../packages/core/src/commands/tasks.mjs";
-import { artifactSyncQueuePath } from "../../packages/core/src/artifact-sync.mjs";
+import { artifactSyncQueuePath } from "@aof/mesh/artifact-sync";
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
-import { WORK_ITEM_DOC_FILES } from "../../packages/core/src/work/artifacts.mjs";
+import { WORK_ITEM_DOC_FILES } from "@aof/work/artifacts";
 
 export const WORKER_ID = "worker-a";
 export const CONTROL_ID = "control-1";

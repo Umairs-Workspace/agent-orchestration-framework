@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { driveInteractiveClaudeSession } from "../../packages/core/src/agent-session-driver.mjs";
 import { openSessionScreen } from "../../packages/core/src/terminal/session-screen.mjs";
-import { CLAUDE_SCREENS } from "../../packages/core/src/terminal/claude-screens.mjs";
+import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
 import { reportDegrade } from "../../packages/core/src/degrade.mjs";
 import { createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { captureDegrades } from "./screen-model.test.mjs";

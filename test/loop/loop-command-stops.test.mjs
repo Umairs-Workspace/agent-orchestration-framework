@@ -22,7 +22,7 @@ import {
 import { answerRunAsk, completeRun, openRunAsk, parkRunAsk, readRuns, recordSessionId, retryReadiness } from "../../packages/core/src/run-store.mjs";
 import { LOOP_STOPS, attemptElapsedMs } from "../../packages/work-loop/src/engine.mjs";
 import { PHASE_WORDS, askBlockLines, awaitAnswer, defaultAskWait, parkedHalt, phaseWord } from "../../packages/core/src/loop/ask.mjs";
-import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
 import { claudeProjectsDir } from "../../packages/core/src/work/observe.mjs";
 import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";

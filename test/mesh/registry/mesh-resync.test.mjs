@@ -33,11 +33,11 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { openGlobalWorkProjectionStore, upsertWorkItems } from "../../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment } from "@aof/mesh/assignment-record";
 import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
 import { createWorkerStreamClient } from "../../../packages/core/src/worker-stream-client.mjs";
 import { resyncCommand } from "../../../packages/core/src/commands/resync.mjs";
-import { DEFAULT_SYNC_CADENCE_SECONDS } from "../../../packages/core/src/mesh/sync-cadence.mjs";
+import { DEFAULT_SYNC_CADENCE_SECONDS } from "@aof/mesh/sync-cadence";
 import {
   RESYNC_KIND,
   RESYNC_RESULT_KIND,

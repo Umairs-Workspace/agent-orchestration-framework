@@ -45,7 +45,7 @@ import {
   checkReferenceOwnership,
   checkTimescale,
   decomposeLoopGraph,
-} from "../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 
 // ---------------------------------------------------------------------------------------------
 // Fixture builders. Literals only — nothing below reads, writes or stats a path.

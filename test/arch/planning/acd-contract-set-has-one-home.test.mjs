@@ -46,7 +46,7 @@ import {
   declaresDirectory,
   resolveDeclaredSet,
   resolveStoryContractPath,
-} from "../../../packages/core/src/story-contract.mjs";
+} from "@aof/work/story-contract";
 import { listItems } from "../../../packages/core/src/work.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";

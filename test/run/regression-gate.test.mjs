@@ -47,7 +47,7 @@ import {
   REGRESSION_HEADING,
   REGRESSION_RECORD_BASENAME,
   parseRegressionRows,
-} from "../../packages/core/src/regression-record.mjs";
+} from "@aof/work/regression-record";
 import { DIRTY_TREE, runRegressionGate } from "../../packages/core/src/commands/regression-gate.mjs";
 import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../packages/core/src/commands/item-status.mjs";
 

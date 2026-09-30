@@ -31,7 +31,7 @@ import { updateWork, workLockPath } from "../../packages/core/src/work/update.mj
 import { writeLock } from "../../packages/core/src/lock.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
-import { budgetGroup, budgetKeyFor } from "../../packages/core/src/work/doctor-budget.mjs";
+import { budgetGroup, budgetKeyFor } from "@aof/work/doctor/budget";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

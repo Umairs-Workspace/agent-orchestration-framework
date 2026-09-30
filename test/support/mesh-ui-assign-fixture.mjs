@@ -18,7 +18,7 @@ import { workspaceIdFor, openGlobalWorkProjectionStore, removeWorkspaceFromCache
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { publishGlobalRegistryDescriptorsToStore } from "../../packages/core/src/global-node-registry.mjs";
 import { publishNodeRecord } from "../../packages/core/src/mesh/store.mjs";
-import { updateAssignmentState } from "../../packages/core/src/assignment-record.mjs";
+import { updateAssignmentState } from "@aof/mesh/assignment-record";
 
 export {
   seedTargetNode,

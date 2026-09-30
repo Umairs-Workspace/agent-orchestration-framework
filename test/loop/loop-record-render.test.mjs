@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { projectExecution } from "../../packages/core/src/loop-record.mjs";
+import { projectExecution } from "@aof/work-graph/record";
 import {
   REGENERATE_REF_PLACEHOLDER,
   regenerateCommand,
   renderExecutionGraph,
   renderExecutionDocument,
-} from "../../packages/core/src/loop-record-render.mjs";
+} from "@aof/work-graph/record-render";
 import { renderLoopGraph, KIND_SHAPES } from "../../packages/core/src/commands/loops-graph.mjs";
 
 // ------------------------------------------------------------- fixtures ----

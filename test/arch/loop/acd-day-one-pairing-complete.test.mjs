@@ -12,7 +12,7 @@ import {
   checkPairing,
   checkReferenceOwnership,
   checkTimescale,
-} from "../../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

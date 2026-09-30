@@ -31,7 +31,7 @@ import {
   PROVENANCE,
   QUESTION_CLASSES,
   QUESTION_STATES,
-} from "../../../packages/core/src/work-examples/map.mjs";
+} from "@aof/work/examples/map";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_ONE_HOME = "packages/work/src/examples/map.mjs";

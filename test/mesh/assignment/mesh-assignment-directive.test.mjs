@@ -13,7 +13,7 @@ import os from "node:os";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
 import { runControlDispatchReclaimTick } from "../../../packages/core/src/mesh/assignment-reclaim.mjs";
 import { buildDirectiveFrame, applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
 import { applyRecoveryPushResultFrame, buildRecoveryPushResultFrame } from "../../../packages/core/src/mesh/recovery-push.mjs";
@@ -30,7 +30,7 @@ import {
   readAssignmentPhase,
   setItemBranch,
   readItemBranch,
-} from "../../../packages/core/src/mesh/assignment-directive.mjs";
+} from "@aof/mesh/assignment-directive";
 import { withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { withMeshWorkerPushFixture } from "../../support/mesh-worker-push-fixture.mjs";
 import { markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";

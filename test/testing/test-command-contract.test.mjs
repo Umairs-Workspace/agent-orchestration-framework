@@ -34,7 +34,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runBounded } from "../../packages/core/src/work-audit/spawn.mjs";
+import { runBounded } from "@aof/execution/bounded-process";
 // The story's own subject, and its two faces — taken from the REGISTERED command object rather
 // than from a private helper, so what these rows measure is what the runtime runs.
 import { NO_SCOPE, SCOPE_UNRECOGNISED, NO_FILES_NAMED, TEST_SCOPES, runTest, testCommand } from "../../packages/core/src/commands/test.mjs";

@@ -14,7 +14,7 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { resolveNotionRouting } from "../../packages/core/src/integrations/routing.mjs";
-import { projectMilestone } from "../../packages/core/src/notion/projection.mjs";
+import { projectMilestone } from "@aof/integration-notion/projection";
 
 const FULL_STATUS_MAP = {
   "not-started": "Not started",

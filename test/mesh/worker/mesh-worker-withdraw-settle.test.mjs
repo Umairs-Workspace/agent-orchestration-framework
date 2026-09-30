@@ -37,7 +37,7 @@ import { loadWorkspace, listItems } from "../../../packages/core/src/work.mjs";
 import { readRuns } from "../../../packages/core/src/run-store.mjs";
 import { transitionRunStart } from "../../../packages/core/src/effects/run-transitions.mjs";
 import { openEffectsJournal, readEvents } from "../../../packages/core/src/effects/journal.mjs";
-import { resolveWorkspaceId } from "../../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,

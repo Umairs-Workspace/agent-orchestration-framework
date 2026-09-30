@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loopConcurrencyFromConfig } from "../../packages/core/src/loop-bounds.mjs";
-import { projectExecution, GAP_CLASSES } from "../../packages/core/src/loop-record.mjs";
+import { loopConcurrencyFromConfig } from "@aof/contracts/loop-bounds";
+import { projectExecution, GAP_CLASSES } from "@aof/work-graph/record";
 import { loadLoops } from "../../packages/core/src/work/loops.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

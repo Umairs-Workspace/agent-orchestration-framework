@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { migrateIdentity } from "../../packages/core/src/node-identity.mjs";
+import { migrateIdentity } from "@aof/mesh/node-identity";
 import { invoke } from "../../packages/core/src/command-core.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 

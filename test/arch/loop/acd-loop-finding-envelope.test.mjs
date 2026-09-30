@@ -11,7 +11,7 @@ import { LOADER_FINDING_CODES, loadLoops } from "../../../packages/core/src/work
 import {
   CHECK_FINDING_CODES, CHECK_IDS, GATING_CODES, checkActuatorArbitration, checkAnchorGrounding, checkGrounding, checkPairing,
   checkReferenceOwnership, checkTimescale,
-} from "../../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { loopsValidateCommand } from "../../../packages/core/src/commands/loops-validate.mjs";
 
 const runFile = promisify(execFile);

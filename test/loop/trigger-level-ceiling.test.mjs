@@ -34,7 +34,7 @@ import {
   renderTriggerLevelResolution,
   resolveTriggerLevel,
   resolveTriggerLevels,
-} from "../../packages/core/src/work-trigger/level.mjs";
+} from "@aof/work-loop/trigger/level";
 import { compileTriggerDeclaration } from "../../packages/core/src/work-trigger/declaration.mjs";
 import {
   L3_SCORE_THRESHOLD,

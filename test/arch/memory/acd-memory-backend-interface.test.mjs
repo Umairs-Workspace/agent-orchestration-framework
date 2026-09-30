@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import localBackend from "../../../packages/core/src/memory/local-backend.mjs";
-import noneBackend from "../../../packages/core/src/memory/none-backend.mjs";
+import noneBackend from "@aof/knowledge/memory/none-backend";
 import { runMemory } from "../../../packages/core/src/work/memory.mjs";
 
 const INTERFACE_KEYS = ["name", "recall", "reindex", "status"];

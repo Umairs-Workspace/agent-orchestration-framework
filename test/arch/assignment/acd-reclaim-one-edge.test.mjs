@@ -34,7 +34,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
 import { publishPresenceRecord } from "../../../packages/core/src/mesh/presence.mjs";
 import { startRun, heartbeat, readRuns } from "../../../packages/core/src/run-store.mjs";
 import { findWork } from "../../../packages/core/src/work.mjs";

@@ -62,8 +62,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadBundle, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
-import { storyContractList } from "../../../packages/core/src/story-contract.mjs";
-import { isOpen } from "../../../packages/core/src/acceptance-horizon.mjs";
+import { storyContractList } from "@aof/work/story-contract";
+import { isOpen } from "@aof/work/lifecycle";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const workDir = path.join(root, "wiki", "work");

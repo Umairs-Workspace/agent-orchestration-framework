@@ -41,8 +41,8 @@ import {
   declaredIdOn,
   normalizeOpener,
   qualifiedRefsIn,
-} from "../../../packages/core/src/declared-id.mjs";
-import { RED_PROBE_PLACEHOLDER, CONTROL_FINDING_CODES, recordsARedProbe } from "../../../packages/core/src/work/doctor-controls.mjs";
+} from "@aof/work/declared-id";
+import { RED_PROBE_PLACEHOLDER, CONTROL_FINDING_CODES, recordsARedProbe } from "@aof/work/audit/controls";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BUNDLE = path.join(repoRoot, "packages", "core", "assets");

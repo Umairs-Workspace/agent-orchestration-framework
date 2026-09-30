@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url";
 import { restatementViolations } from "../support/plan-restatement-ban.mjs";
 import { loadWorkspace, parseFrontmatter } from "../../packages/core/src/work.mjs";
 import { budgetsFromConfig, doctorWork } from "../../packages/core/src/work/doctor.mjs";
-import { budgetGroup, PLAN_BASENAME } from "../../packages/core/src/work/doctor-budget.mjs";
+import { budgetGroup, PLAN_BASENAME } from "@aof/work/doctor/budget";
 import { planEnabledFromConfig, validateConfig } from "../../packages/core/src/config-inspect.mjs";
 import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 

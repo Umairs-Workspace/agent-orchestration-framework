@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import * as workCounters from "../../../packages/core/src/work/counters.mjs";
+import * as workCounters from "@aof/work/counters";
 import { CriterionError, defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
 import {
   COUNTER_METRIC_UNRESOLVABLE,
@@ -37,11 +37,11 @@ import {
   metricPopulation,
   parsePointer,
   readArm,
-} from "../../../packages/core/src/work-acceptor/rule.mjs";
+} from "@aof/work/acceptor/rule";
 import {
   PAIR_OUTCOMES as LEDGER_PAIR_OUTCOMES,
   evaluateRun,
-} from "../../../packages/core/src/work-acceptor/ledger.mjs";
+} from "@aof/work/acceptor/ledger";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COUNTERS_LEAF = "src/work/counters.mjs";

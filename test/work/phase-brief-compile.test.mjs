@@ -15,7 +15,7 @@ import {
   compilePhaseBrief, isValidPhaseBrief, composePhaseBriefInput,
   PHASE_BRIEF_CEILING_CHARS, PHASE_BRIEF_MAX_CHARS, PHASE_BRIEF_CHARS_PER_TOKEN, PHASE_BRIEF_CEILING_TOKENS,
   BRIEF_SECTION_PRIORITY,
-} from "../../packages/core/src/phase-brief.mjs";
+} from "@aof/work/phase-brief";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

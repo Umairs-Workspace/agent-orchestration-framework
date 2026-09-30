@@ -15,7 +15,7 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { LEVEL_FLAG, RESUME_FLAG, argvFor, loopInputOf } from "../../../packages/core/src/loop-argv.mjs";
+import { LEVEL_FLAG, RESUME_FLAG, argvFor, loopInputOf } from "@aof/work-loop/argv";
 import { loopCommand } from "../../../packages/core/src/commands/loop.mjs";
 import { meshStatusCommand } from "../../../packages/core/src/commands/mesh/identity.mjs";
 import { listCommands } from "../../../packages/core/src/command-core.mjs";
@@ -77,7 +77,7 @@ export const archTests = [
       assert.doesNotMatch(stripComments(raw), /\bimport\s*\(/u, "and no dynamic import — TECH_DEBT 26's ring stays open");
       // It imports cleanly in a fresh process, which is the property that makes it reachable from
       // a registered command module without joining a cycle.
-      const fresh = await import(`../../../packages/core/src/loop-argv.mjs?fresh=${Date.now()}`);
+      const fresh = await import(`../../../packages/work-loop/src/argv.mjs?fresh=${Date.now()}`);
       assert.equal(typeof fresh.argvFor, "function");
 
       // `--level` and `--resume` are each BOUND TO A CONSTANT in exactly one module: this leaf.

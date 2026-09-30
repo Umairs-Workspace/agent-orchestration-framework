@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import { restatementViolations } from "../../support/plan-restatement-ban.mjs";
-import { budgetKeyFor, budgetGroup } from "../../../packages/core/src/work/doctor-budget.mjs";
+import { budgetKeyFor, budgetGroup } from "@aof/work/doctor/budget";
 import { budgetsFromConfig } from "../../../packages/core/src/work/doctor.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

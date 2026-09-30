@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { loopDocumentCommand } from "../../packages/core/src/commands/loop-document.mjs";
-import { loopDocumentPath } from "../../packages/core/src/loop-document.mjs";
+import { loopDocumentPath } from "@aof/work-graph/document";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

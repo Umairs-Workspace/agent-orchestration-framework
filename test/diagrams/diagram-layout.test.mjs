@@ -9,7 +9,7 @@ import {
   parseDiagramLinks,
   readDiagramBrief,
   renderDiagramBlock,
-} from "../../packages/core/src/diagrams/layout.mjs";
+} from "@aof/work/diagrams/layout";
 
 const refusal = (fn) => {
   try {

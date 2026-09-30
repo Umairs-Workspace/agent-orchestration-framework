@@ -43,11 +43,11 @@ import { fileURLToPath } from "node:url";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
-import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import { AUDIT_FINDING_CODES } from "../../../packages/core/src/work-audit/census.mjs";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { invoke } from "../../../packages/core/src/command-core.mjs";
-import { REGRESSION_RECORD_BASENAME, parseRegressionRows } from "../../../packages/core/src/regression-record.mjs";
+import { REGRESSION_RECORD_BASENAME, parseRegressionRows } from "@aof/work/regression-record";
 import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../../packages/core/src/commands/item-status.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

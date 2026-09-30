@@ -34,8 +34,8 @@ import {
   assignmentDirectiveCommand,
   assignmentDirectiveResolution,
   assignmentDirectiveLaunch,
-} from "../../../packages/core/src/mesh/assignment-directive.mjs";
-import { assembleAssignmentRecord } from "../../../packages/core/src/assignment-record.mjs";
+} from "@aof/mesh/assignment-directive";
+import { assembleAssignmentRecord } from "@aof/mesh/assignment-record";
 import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 // The launch seam is reached through the door the WORKER itself re-exports, not through the
 // driver's own module. That is the honest door for this leg — the claim is about the

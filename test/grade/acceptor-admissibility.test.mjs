@@ -47,7 +47,7 @@ import {
   consumptionReport,
   harnessRefusal,
   tunableSet,
-} from "../../packages/core/src/work-acceptor/admissibility.mjs";
+} from "@aof/work/acceptor/admissibility";
 import { readSrcFiles } from "../support/read-src-files.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

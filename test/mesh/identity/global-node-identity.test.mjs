@@ -11,7 +11,7 @@ import path from "node:path";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 import { meshIdentityCommand } from "../../../packages/core/src/commands/mesh/identity.mjs";
-import { migrateIdentityToGlobal, sidecarPathFor } from "../../../packages/core/src/node-identity.mjs";
+import { migrateIdentityToGlobal, sidecarPathFor } from "@aof/mesh/node-identity";
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-global-identity-"));

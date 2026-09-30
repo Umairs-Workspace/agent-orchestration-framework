@@ -42,12 +42,12 @@ import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { withControlFixtureRepo } from "../../support/evidence-control-fixture.mjs";
 import { spawnRouteProblems } from "./acd-audit-never-imports-project-code.test.mjs";
-import { DEFAULT_DEADLINE_MS, runBounded } from "../../../packages/core/src/work-audit/spawn.mjs";
+import { DEFAULT_DEADLINE_MS, runBounded } from "@aof/execution/bounded-process";
 import { TOOLKIT_PROGRAM_DIR, isToolkitRoot, toolkitProgram, toolkitProgramProblems, toolkitRoot } from "../../../packages/core/src/work-audit/toolkit.mjs";
 import { AUDIT_FINDING_CODES, LEDGER_PROJECT, PROBE_PROGRAM, UNREGISTERED_BASELINE, assembledSuite, ledgerApplies, runCensus } from "../../../packages/core/src/work-audit/census.mjs";
 import { DRIVE_PROGRAM, EVIDENCE_FINDING_CODES, driveControl, runEvidence } from "../../../packages/core/src/work-audit/evidence.mjs";
 import { PROMPT_LAYER_FINDING_CODES } from "../../../packages/core/src/work-audit/prompt-layer.mjs";
-import { HOOK_WIRING_FINDING_CODES } from "../../../packages/core/src/work-audit/hook-wiring.mjs";
+import { HOOK_WIRING_FINDING_CODES } from "@aof/work/audit/hook-wiring";
 import { SEAM_LIVENESS_FINDING_CODES } from "../../../packages/core/src/work-audit/seam-liveness.mjs";
 import { DECLARED_BOUNDS_FINDING_CODES } from "../../../packages/core/src/work-audit/declared-bounds.mjs";
 

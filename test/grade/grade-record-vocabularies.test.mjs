@@ -19,7 +19,7 @@
 // is proven here is that every member of the vocabulary has a DEFINED EFFECT on the
 // verdict — including the two whose effect is deliberately nothing.
 import assert from "node:assert/strict";
-import { compileGrade, GRADE_CODES, GRADE_VERDICTS } from "../../packages/core/src/work/grade.mjs";
+import { compileGrade, GRADE_CODES, GRADE_VERDICTS } from "@aof/work/grade";
 
 // A rubric declaring a TAP report — the configured baseline every observation below varies
 // from in exactly one respect.

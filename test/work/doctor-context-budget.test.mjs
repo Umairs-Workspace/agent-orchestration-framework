@@ -17,7 +17,7 @@ import os from "node:os";
 import path from "node:path";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
-import { budgetGroup } from "../../packages/core/src/work/doctor-budget.mjs";
+import { budgetGroup } from "@aof/work/doctor/budget";
 
 // --- fixture builders --------------------------------------------------------
 

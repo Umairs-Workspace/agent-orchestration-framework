@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { computeLoopReady } from "../../packages/core/src/work/doctor-loop-ready.mjs";
+import { computeLoopReady } from "@aof/work/doctor/loop-ready";
 
 const IDS = ["stream-coherent", "cap-declared", "memory-on", "tasks-authored", "grounding", "anchor-grounding", "pairing", "reference-ownership", "actuator-arbitration", "timescale"];
 const registry = { present: false, composed: false, error: 0, warn: 0 };

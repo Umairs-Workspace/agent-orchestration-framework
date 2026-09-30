@@ -63,7 +63,7 @@ import { readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ITEM_STATUS_EDGES, closesEpoch, isOpen, severityFor, VALID_STATUS } from "../../../packages/core/src/acceptance-horizon.mjs";
+import { ITEM_STATUS_EDGES, closesEpoch, isOpen, severityFor, VALID_STATUS } from "@aof/work/lifecycle";
 import { validateWork } from "../../../packages/core/src/work.mjs";
 import { ACCEPTOR_EPOCH_CADENCE, criterionRevisionWindow } from "../../../packages/core/src/work-acceptor/criterion.mjs";
 // THE ONE HOME for cutting source (milestone 47 / F-47-04-ARCH-2). Its `stripComments`

@@ -15,7 +15,7 @@ import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseFeature } from "../../../packages/core/src/feature-parse.mjs";
+import { parseFeature } from "@aof/work/feature-parse";
 import { validateWork, parseFrontmatter } from "../../../packages/core/src/work.mjs";
 import { validateCommand } from "../../../packages/core/src/commands/validate.mjs";
 

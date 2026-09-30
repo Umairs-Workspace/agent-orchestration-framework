@@ -24,13 +24,13 @@ import {
   resolveCitedPath,
   resolveThroughRenames,
   splitLocator,
-} from "../../packages/core/src/cited-path-resolve.mjs";
+} from "@aof/work/cited-path-resolve";
 import { readRenameMap } from "../../packages/core/src/commands/doctor.mjs";
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const KNOWN_RENAME = Object.freeze({ from: "src/commands/errors.mjs", to: "packages/core/src/command-error.mjs" });
+const KNOWN_RENAME = Object.freeze({ from: "src/commands/errors.mjs", to: "packages/contracts/src/error.mjs" });
 
 async function realRenameMap() {
   const ledger = await readFile(path.join(repoRoot, ...RENAME_LEDGER_PATH), "utf8").catch(() => "");
@@ -103,7 +103,7 @@ export const citedPathResolveTests = [
     name: "119/00 task02 — one resolver answers every citation: two ways to resolve, and four ways not to",
     run: async () => {
       const renameMap = await realRenameMap();
-      const present = new Set(["src/work/doctor.mjs", "packages/core/src/command-error.mjs", "ui/src/fleet/scope.mjs"]);
+      const present = new Set(["src/work/doctor.mjs", "packages/contracts/src/error.mjs", "ui/src/fleet/scope.mjs"]);
       const existsAtHead = (candidate) => present.has(candidate);
       const answer = (cited, map = renameMap) => resolveCitedPath(cited, { existsAtHead, renameMap: map });
 

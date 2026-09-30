@@ -30,7 +30,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { guardAssignmentTransition } from "../../../packages/core/src/effects/assignment-transitions.mjs";
 import { EFFECTS } from "../../../packages/core/src/effects/table.mjs";
-import { ACTIVE_ASSIGNMENT_STATES, TERMINAL_ASSIGNMENT_STATES } from "../../../packages/core/src/assignment-record.mjs";
+import { ACTIVE_ASSIGNMENT_STATES, TERMINAL_ASSIGNMENT_STATES } from "@aof/mesh/assignment-record";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "packages", "core", "src");

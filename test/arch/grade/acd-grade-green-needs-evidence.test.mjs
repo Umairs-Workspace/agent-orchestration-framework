@@ -28,7 +28,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileGrade, evidenceFloor, GRADE_VERDICTS } from "../../../packages/core/src/work/grade.mjs";
+import { compileGrade, evidenceFloor, GRADE_VERDICTS } from "@aof/work/grade";
 // THE ONE HOME for cutting source (TECH_DEBT item 24 — its `stripComments` strips LINE
 // comments FIRST, so a `//` comment containing `/*` cannot open a phantom block that blinds
 // every sweep below). A second brace balancer written beside it is the species this repo has

@@ -15,7 +15,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, writeFile, readFile } from "node:fs/promises";
-import { recall } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { recall } from "@aof/knowledge/memory/local-retrieval";
 import { renderRecallBlock, HOOK_LIMIT } from "../../packages/core/src/work/memory.mjs";
 
 // Build a full MemoryRecord (ADR-005) from a partial spec: every field present,

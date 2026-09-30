@@ -30,7 +30,7 @@ import {
   controlsLane,
   citedControlPathsIn,
   isControlFileName,
-} from "../../../packages/core/src/work/doctor-controls.mjs";
+} from "@aof/work/audit/controls";
 // THE ONE HOME for cutting source (milestone 47 / F-47-04-ARCH-2). Its `stripComments`
 // strips LINE COMMENTS FIRST — TECH_DEBT item 24's trap order, which 66/00's review
 // found as this repo's first LIVE false green (F-01). A second stripper written beside
@@ -74,7 +74,7 @@ import { resolveSpecifier } from "./acd-audit-never-imports-project-code.test.mj
 // The load-bearing half is the last clause: **59 adds no doctor lane at all.**
 import { AUDIT_FINDING_CODES } from "../../../packages/core/src/work-audit/census.mjs";
 import { EVIDENCE_FINDING_CODES } from "../../../packages/core/src/work-audit/evidence.mjs";
-import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import { CHECK_GROUPS } from "../../../packages/core/src/work/doctor.mjs";
 // EXTENDED BY 77/05 (FF-7707). The checked code space is `AUDITABLE_CODES` — a fold over the
 // REGISTERED lanes — rather than two constants named here. The two imports above stay: they are the
@@ -364,20 +364,13 @@ export const archTests = [
         assert.equal(laneTargets.includes(forbidden), false, `the lane must not import ${forbidden} — the grade's SHAPE is copied into this lane's idiom; the FILE is not (FF-5407)`);
       }
 
-      // The lifecycle compatibility surface forwards only to the package's pure leaf.
-      // Include re-exports and dynamic imports so forwarding cannot hide an I/O dependency.
+      // Include re-exports and dynamic imports when proving each owned leaf has no dependencies.
       for (const leaf of LEAF_ALLOWLIST) {
         const relative = resolveRelative(THE_LANE, leaf);
         const source = await read(relative);
         const leafBody = strippedBody(source.file, source.text);
         const edges = dependencySpecifiers(leafBody);
-        if (relative === "packages/core/src/acceptance-horizon.mjs") {
-          assert.deepEqual(edges, [{ specifier: "@aof/work/lifecycle", dynamic: false }]);
-          const implementation = await read("packages/work/src/lifecycle.mjs");
-          assert.deepEqual(dependencySpecifiers(implementation.text), [], "the lifecycle implementation remains a zero-import leaf");
-        } else {
-          assert.deepEqual(edges, [], `${relative} remains a zero-import leaf`);
-        }
+        assert.deepEqual(edges, [], `${relative} remains a zero-import leaf`);
       }
     },
   },
@@ -464,7 +457,7 @@ export const archTests = [
       const dir = await mkdtemp(path.join(os.tmpdir(), "aof-ff6605-"));
       try {
         const child = path.join(dir, "child.mjs");
-        const laneUrl = new URL("../../../packages/core/src/work/doctor-controls.mjs", import.meta.url).href;
+        const laneUrl = new URL("../../../packages/work/src/audit/controls.mjs", import.meta.url).href;
         await writeFile(
           child,
           [
@@ -706,7 +699,7 @@ export const archTests = [
 
       // …and the extractors really are functions of text, so the admitted edge carries no I/O.
       for (const name of ADMITTED_EXTRACTORS) {
-        assert.equal(typeof (await import("../../../packages/core/src/work/doctor-controls.mjs"))[name], "function", `${name} is exported and is a function`);
+        assert.equal(typeof (await import("@aof/work/audit/controls"))[name], "function", `${name} is exported and is a function`);
       }
     },
   },

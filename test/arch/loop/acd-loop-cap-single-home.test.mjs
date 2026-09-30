@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { blockOrStatementAfter, markedRegion, matchedBraceBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 // 61/FF-6111 — the leaf whose clamp and whose derived refusal this guard now also keeps.
-import * as loopBounds from "../../../packages/core/src/loop-bounds.mjs";
+import * as loopBounds from "@aof/contracts/loop-bounds";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const EXPECTED_READERS = Object.freeze([

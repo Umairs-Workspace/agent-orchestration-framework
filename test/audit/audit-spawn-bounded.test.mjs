@@ -24,7 +24,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { EventEmitter } from "node:events";
-import { runBounded, argumentVectorProblem, attemptedCommand, DEFAULT_DEADLINE_MS, DEFAULT_GRACE_MS, SPAWN_OUTCOMES, SPAWN_RESULT_KEYS } from "../../packages/core/src/work-audit/spawn.mjs";
+import { runBounded, argumentVectorProblem, attemptedCommand, DEFAULT_DEADLINE_MS, DEFAULT_GRACE_MS, SPAWN_OUTCOMES, SPAWN_RESULT_KEYS } from "@aof/execution/bounded-process";
 import { assembledSuite } from "../../packages/core/src/work-audit/census.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

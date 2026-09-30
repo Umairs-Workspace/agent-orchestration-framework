@@ -50,13 +50,13 @@ import {
   setKnobValue,
 } from "../../packages/core/src/work-acceptor/store.mjs";
 import { LEDGER_RELPATH, criterionDigest, defaultCriterion } from "../../packages/core/src/work-acceptor/criterion.mjs";
-import { PAIR_OUTCOMES, deriveRule } from "../../packages/core/src/work-acceptor/rule.mjs";
+import { PAIR_OUTCOMES, deriveRule } from "@aof/work/acceptor/rule";
 
 // One derivation of the repo root, not one per leg. Two legs below each spelled their own
 // hand-rolled URL-to-path conversion, and when 119/03 moved this suite into test/grade/ both went
 // stale at once — the same hop-count they had both written down by hand.
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
-import { RULING_INCOMPLETE, RULING_KEYS, accrue, attained } from "../../packages/core/src/work-acceptor/ledger.mjs";
+import { RULING_INCOMPLETE, RULING_KEYS, accrue, attained } from "@aof/work/acceptor/ledger";
 
 const shipped = defaultCriterion();
 const rule = deriveRule(shipped);

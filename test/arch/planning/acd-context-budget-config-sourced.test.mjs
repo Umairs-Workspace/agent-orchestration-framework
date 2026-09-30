@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { doctorWork } from "../../../packages/core/src/work/doctor.mjs";
-import { budgetGroup } from "../../../packages/core/src/work/doctor-budget.mjs";
+import { budgetGroup } from "@aof/work/doctor/budget";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BUDGET_MODULE = path.join(repoRoot, "packages", "work", "src", "doctor", "budget.mjs");

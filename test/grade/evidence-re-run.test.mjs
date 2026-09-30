@@ -266,7 +266,7 @@ export const evidenceReRunTests = [
         ];
         // The SEAM is counted, not stubbed: the children are real, and the count is what proves
         // no memoisation by control path crept in.
-        const { runBounded } = await import("../../packages/core/src/work-audit/spawn.mjs");
+        const { runBounded } = await import("@aof/execution/bounded-process");
         const started = [];
         const spawn = async (options) => {
           started.push(options.args[options.args.length - 1]);

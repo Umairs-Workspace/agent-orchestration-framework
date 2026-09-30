@@ -45,8 +45,8 @@ import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
 import { startControlStreamServer } from "../../../packages/core/src/control-stream-server.mjs";
 import { applyStreamFrame } from "../../../packages/core/src/control-stream-server.mjs";
-import { buildSessionSpawnAckFrame, buildSessionSpawnAckEnvelope, SESSION_SPAWN_ACK_KIND } from "../../../packages/core/src/mesh/session-spawn-directive.mjs";
-import { createSpawnOutcomeRegistry } from "../../../packages/core/src/mesh/session-spawn-outcome.mjs";
+import { buildSessionSpawnAckFrame, buildSessionSpawnAckEnvelope, SESSION_SPAWN_ACK_KIND } from "@aof/mesh/session-spawn-directive";
+import { createSpawnOutcomeRegistry } from "@aof/mesh/session-spawn-outcome";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");

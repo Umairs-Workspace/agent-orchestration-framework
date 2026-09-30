@@ -36,9 +36,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
+import { graphJsonPath } from "@aof/knowledge/graph-normalize";
 import { WIDENING_REASONS, selectSuites } from "../../../packages/core/src/work/test-select.mjs";
-import { declaredChangedFiles } from "../../../packages/core/src/work/test-declared.mjs";
+import { declaredChangedFiles } from "@aof/work/testing/declared";
 import { STORY_AND_SINCE, TEST_SCOPES, runTest } from "../../../packages/core/src/commands/test.mjs";
 
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";

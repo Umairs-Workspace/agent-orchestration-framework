@@ -26,9 +26,9 @@ import { createLockManifest, executeApplyActions, planApplyActions } from "../..
 import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
 import { updateWork } from "../../packages/core/src/work/update.mjs";
 import { writeLock } from "../../packages/core/src/lock.mjs";
-import { registerDeclarations, registerEntries } from "../../packages/core/src/declared-id.mjs";
-import { RED_PROBE_PLACEHOLDER, recordsARedProbe } from "../../packages/core/src/work/doctor-controls.mjs";
-import { severityFor } from "../../packages/core/src/acceptance-horizon.mjs";
+import { registerDeclarations, registerEntries } from "@aof/work/declared-id";
+import { RED_PROBE_PLACEHOLDER, recordsARedProbe } from "@aof/work/audit/controls";
+import { severityFor } from "@aof/work/lifecycle";
 // The frozen literals have ONE home (FF-6608). Re-transcribing them here would be the second copy
 // this milestone exists to refuse — and the wording moved once already, in fix round 1.
 import { ADR_LITERALS } from "../arch/work/acd-verification-template-shape.test.mjs";

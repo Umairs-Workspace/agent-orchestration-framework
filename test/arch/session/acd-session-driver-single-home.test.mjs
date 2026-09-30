@@ -307,7 +307,7 @@ export const archTests = [
     run: async () => {
       const [driverModule, phaseBriefModule] = await Promise.all([
         import("../../../packages/core/src/agent-session-driver.mjs"),
-        import("../../../packages/core/src/phase-brief.mjs"),
+        import("@aof/work/phase-brief"),
       ]);
       // the driver's export set is STILL exactly the frozen seventeen (phase-brief is NOT re-exported)
       const actual = Object.keys(driverModule).sort();
@@ -492,7 +492,7 @@ export const archTests = [
         "a child that reaches its parent is named",
       );
       assert.ok(
-        importBackProblems([{ rel: "packages/mesh/src/worker-launch.mjs", reaches: new Set(["packages/core/src/mesh/repo-marker.mjs"]), reexportsParent: true }]).some((problem) => /re-exports the parent's names/u.test(problem)),
+        importBackProblems([{ rel: "packages/mesh/src/worker-launch.mjs", reaches: new Set(["packages/mesh/src/repo-marker.mjs"]), reexportsParent: true }]).some((problem) => /re-exports the parent's names/u.test(problem)),
         "…and so is one that re-exports them",
       );
 

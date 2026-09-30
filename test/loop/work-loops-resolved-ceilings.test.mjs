@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DEFAULT_REVIEW_ROUNDS } from "../../packages/core/src/loop-bounds.mjs";
+import { DEFAULT_REVIEW_ROUNDS } from "@aof/contracts/loop-bounds";
 import { initWork } from "../../packages/core/src/work/init.mjs";
 import { loadLoops } from "../../packages/core/src/work/loops.mjs";
 

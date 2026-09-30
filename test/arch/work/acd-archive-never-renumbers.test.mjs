@@ -42,7 +42,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
-import { rewriteCrossingLinks, INLINE_LINK_RE } from "../../../packages/core/src/work/archive.mjs";
+import { rewriteCrossingLinks, INLINE_LINK_RE } from "@aof/work/archive";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -53,7 +53,7 @@ const SEAM_COMPOSITION = "packages/core/src/application/bindings/effects/stream-
 const SEAM = "packages/work/src/stream-transitions.mjs";
 const REINDEX = "packages/work/src/reindex.mjs";
 const INSERT_SHARED = "packages/work/src/insertion/scaffold.mjs";
-const PROMOTION = "packages/core/src/work-promote/promotion.mjs";
+const PROMOTION = "packages/work/src/promote/promotion.mjs";
 
 const FACE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs", "packages/contracts/src/error.mjs"]);
 const ENGINE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs"]);

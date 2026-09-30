@@ -6,12 +6,12 @@ import os from "node:os";
 import path from "node:path";
 
 import { driveInteractiveClaudeSession } from "../../packages/core/src/agent-session-driver.mjs";
-import { PROVIDER_WAIT_RE } from "../../packages/core/src/loop-bounds.mjs";
+import { PROVIDER_WAIT_RE } from "@aof/contracts/loop-bounds";
 import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { runControlDispatchReclaimTick } from "../../packages/core/src/mesh/assignment-reclaim.mjs";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../packages/core/src/assignment-record.mjs";
-import { decideScheduleToClose } from "../../packages/core/src/work/loop.mjs";
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
+import { decideScheduleToClose } from "@aof/work-loop/engine";
 import { completeRun, readRuns, startRun } from "../../packages/core/src/run-store.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { completingDriver, loopFixture } from "../loop/loop-command-probe.test.mjs";

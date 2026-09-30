@@ -857,7 +857,7 @@ function loopbackHostTests() {
     {
       name: "131/04 task02 — the predicate answers only for a loopback name (forty-seven rows)",
       async run() {
-        const { isLoopbackHost } = await import("../../../packages/core/src/static-serve.mjs");
+        const { isLoopbackHost } = await import("@aof/server/static-serve");
         const rows = [
           ["127.0.0.1", true], ["127.0.0.1:4181", true], ["localhost", true], ["localhost:4181", true], ["LOCALHOST:4181", true],
           ["[::1]", true], ["[::1]:4181", true], ["127.1.2.3:80", true], ["evil.example:1234", false], ["192.168.1.5:4181", false],

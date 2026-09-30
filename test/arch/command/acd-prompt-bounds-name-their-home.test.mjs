@@ -41,7 +41,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as loopBounds from "../../../packages/core/src/loop-bounds.mjs";
+import * as loopBounds from "@aof/contracts/loop-bounds";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BUNDLE = path.join(root, "packages", "core", "assets");

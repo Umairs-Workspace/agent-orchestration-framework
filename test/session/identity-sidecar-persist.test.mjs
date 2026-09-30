@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { deriveNodeId, installHash } from "../../packages/core/src/node-identity.mjs";
+import { deriveNodeId, installHash } from "@aof/mesh/node-identity";
 
 const ID_RE = /^[a-z0-9-]+$/;
 

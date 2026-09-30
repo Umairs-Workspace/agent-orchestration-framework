@@ -51,7 +51,7 @@ import { publishGlobalWorkSnapshot } from "../../../packages/core/src/global-wor
 import { readWorkspaceItems } from "../../../packages/core/src/global-work-store.mjs";
 import { ITEM_LOCKED_CODE } from "../../../packages/core/src/item-lock.mjs";
 import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
-import { resolveWorkspaceId } from "../../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";

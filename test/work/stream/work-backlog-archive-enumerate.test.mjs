@@ -39,12 +39,12 @@ import {
   ARCHIVE_ROOT,
 } from "../../../packages/core/src/work.mjs";
 import { doctorWork, buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
-import { resolvedDependsEdges, classifyDependsEdges } from "../../../packages/core/src/work/doctor-depends.mjs";
-import { statusCoherenceGroup } from "../../../packages/core/src/work/doctor-coherence.mjs";
-import { appendPosition } from "../../../packages/core/src/work-promote/promotion.mjs";
-import { countShiftedByInsert, refsTouchedByInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { resolvedDependsEdges, classifyDependsEdges } from "@aof/work/doctor/depends";
+import { statusCoherenceGroup } from "@aof/work/doctor/coherence";
+import { appendPosition } from "@aof/work/promote/promotion";
+import { countShiftedByInsert, refsTouchedByInsert } from "@aof/work/reindex";
 import { buildRecords } from "../../../packages/core/src/memory/local-indexing.mjs";
-import { resolveCitationAtEmit } from "../../../packages/core/src/work-tune/provenance.mjs";
+import { resolveCitationAtEmit } from "@aof/work/tune/provenance";
 import { resolveMilestoneFolder } from "../../../packages/core/src/work/observe.mjs";
 import { migrateFolderCommand } from "../../../packages/core/src/commands/migrate-folder.mjs";
 import { docCommand } from "../../../packages/core/src/commands/doc.mjs";

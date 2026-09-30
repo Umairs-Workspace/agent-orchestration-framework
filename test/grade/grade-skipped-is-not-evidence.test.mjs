@@ -23,7 +23,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileGrade } from "../../packages/core/src/work/grade.mjs";
+import { compileGrade } from "@aof/work/grade";
 
 const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "rubric-reports");
 const capture = (name) => readFileSync(path.join(fixturesDir, name), "utf8");

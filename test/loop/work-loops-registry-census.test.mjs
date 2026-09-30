@@ -50,7 +50,7 @@ import {
   checkReferenceOwnership,
   checkTimescale,
   decomposeLoopGraph,
-} from "../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { examplesTables, scenarioTitles } from "../support/feature-parse.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { suiteFilesBelow } from "../support/registration/registration-surface.mjs";

@@ -37,7 +37,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loopDocumentPath } from "../../../packages/core/src/loop-document.mjs";
+import { loopDocumentPath } from "@aof/work-graph/document";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { SHELL_DIR, buildSite, carriesProvenanceEnvelope } from "../../../scripts/site/build-site.mjs";
 import { snapshot } from "../../support/loop-document-fixture.mjs";
@@ -93,7 +93,7 @@ export const archTests = [
       // off the statement that carries that specifier, which is a claim about the builder's import
       // clause rather than a second extractor (aof:verify 127).
       const documentSpecifiers = importSpecifiers(source)
-        .filter((entry) => !entry.dynamic && entry.specifier.endsWith("/loop-document.mjs") && !entry.specifier.includes("/commands/"))
+        .filter((entry) => !entry.dynamic && entry.specifier === "@aof/work-graph/document")
         .map((entry) => entry.specifier);
       assert.ok(documentSpecifiers.length >= 1, "the builder imports the one loop-document home");
       const bindings = documentSpecifiers.flatMap((specifier) => {

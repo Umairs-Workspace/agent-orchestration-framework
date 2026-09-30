@@ -15,8 +15,8 @@ import { dependencySpecifiers } from "../support/workspace/configured-source.mjs
 import os from "node:os";
 import path from "node:path";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../packages/core/src/assignment-record.mjs";
-import { setItemBranch } from "../../packages/core/src/mesh/assignment-directive.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
+import { setItemBranch } from "@aof/mesh/assignment-directive";
 import { readExecutionOverlay, applyExecutionOverlay, resolveScopedExecution } from "../../packages/core/src/board-mesh-execution.mjs";
 import { resolveContinueDecision, resolveDirectivePhase } from "../../packages/core/src/commands/continue.mjs";
 import { mergeWorkerItems, applyCachedProvenance } from "../../packages/core/src/cache-read.mjs";
@@ -391,7 +391,7 @@ export const boardMeshExecutionTests = [
         // Seed the worker-streamed rows for refs the local index has NEVER held.
         const store = await openGlobalWorkProjectionStore({ env });
         try {
-          const { resolveWorkspaceId } = await import("../../packages/core/src/workspace-identity.mjs");
+          const { resolveWorkspaceId } = await import("@aof/mesh/workspace-identity");
           const workspaceId = resolveWorkspaceId(workspace);
           const insert = store.db.prepare(
             "INSERT INTO work_items (workspace_id, ref, type, slug, status, title, parent, source_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

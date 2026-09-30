@@ -74,8 +74,8 @@ import {
   resolveCronSignal,
   resolveFindingSignal,
   resolveTriggerSignals,
-} from "../../../packages/core/src/work-trigger/sources.mjs";
-import { RAW_FEEDBACK_KEYS, FEEDBACK_CLASSIFICATION_KEYS } from "../../../packages/core/src/feedback-records.mjs";
+} from "@aof/work-loop/trigger/sources";
+import { RAW_FEEDBACK_KEYS, FEEDBACK_CLASSIFICATION_KEYS } from "@aof/work/feedback-records";
 import { LOOP_SCOPE_FORMS, decideLoopScope } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — TECH_DEBT items 24 and 57. A `//` comment containing `/*`
 // opens a block-comment run for a block-first stripper, and everything to the next `*/` is

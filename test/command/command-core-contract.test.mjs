@@ -411,7 +411,7 @@ export const commandCoreContractTests = [
     name: "command-core/workspace packages pass their package-local suites",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      const result = spawnSync(process.execPath, ["--test", "packages/work/test/domain-services.test.mjs",
+      const result = spawnSync(process.execPath, ["--test", "packages/work/test/citation-history.test.mjs", "packages/work/test/domain-services.test.mjs",
       "packages/execution/test/domain-services.test.mjs",
       "packages/effects/test/ownership-services.test.mjs",
       "packages/integration-notion/test/routing.test.mjs",

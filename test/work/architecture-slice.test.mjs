@@ -13,9 +13,9 @@ import {
   extractFitnessRegister,
   normalizeAdrDeclaration,
   PHASE_BRIEF_CEILING_CHARS,
-} from "../../packages/core/src/phase-brief.mjs";
-import { compileBriefForItem } from "../../packages/core/src/phase-brief-read.mjs";
-import { budgetGroup } from "../../packages/core/src/work/doctor-budget.mjs";
+} from "@aof/work/phase-brief";
+import { compileBriefForItem } from "@aof/work/phase-brief-read";
+import { budgetGroup } from "@aof/work/doctor/budget";
 import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
 import { validateWork } from "../../packages/core/src/commands/validate.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";

@@ -29,8 +29,8 @@ import { fileURLToPath } from "node:url";
 
 import { invoke } from "../../packages/core/src/command-core.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { classifyDependsEdges, dependsLane, DEPENDS_FINDING_CODES } from "../../packages/core/src/work/doctor-depends.mjs";
-import { resolveDeclaredSet } from "../../packages/core/src/story-contract.mjs";
+import { classifyDependsEdges, dependsLane, DEPENDS_FINDING_CODES } from "@aof/work/doctor/depends";
+import { resolveDeclaredSet } from "@aof/work/story-contract";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -251,7 +251,7 @@ export const doctorDependsLaneTests = [
       );
       const script = [
         "const [json] = process.argv.slice(1);",
-        `const lane = await import(${JSON.stringify(new URL("../../packages/core/src/work/doctor-depends.mjs", import.meta.url).href)});`,
+        `const lane = await import(${JSON.stringify(new URL("../../packages/work/src/doctor/depends.mjs", import.meta.url).href)});`,
         "process.stdout.write(JSON.stringify(lane.dependsLane(JSON.parse(json))));",
       ].join("\n");
       const runFrom = (cwd) => execFileSync(

@@ -23,7 +23,7 @@ import {
   BRIEF_SECTION_PRIORITY,
   BRIEF_SECTION_SOURCES,
   compilePhaseBrief,
-} from "../../../packages/core/src/phase-brief.mjs";
+} from "@aof/work/phase-brief";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(root, "packages", "core", "src");

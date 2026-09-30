@@ -28,7 +28,7 @@ import { withBoardApp, findAll } from "../support/board-app-harness.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import http from "node:http";
 import { loadWorkspace } from "../../packages/core/src/command-core.mjs";
-import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { loopAsksDir, openAsk, clearAsk, readAsk, answerAsk, askRequestPath } from "../../packages/core/src/loop/ask-request.mjs";
 import { matchedBraceBody } from "../support/source-slice.mjs";
 

@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 import { loopRecord, makeLoopRegistry, withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
-import { readFinding } from "../../../packages/core/src/work-audit/reads.mjs";
+import { readFinding } from "@aof/work/audit/reads";
 import {
   BOUND_CONFIG_KEYS,
   DECLARED_BOUNDS_FINDING_CODES,

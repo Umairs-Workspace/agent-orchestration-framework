@@ -56,7 +56,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 // THE TEST ROOTS COME FROM THEIR ONE HOME. A literal `["test", "test/arch", …]` here would be the
 // FF-7203 species one directory over — a second answer that agrees until a fourth root arrives.
 import { TEST_ROOTS } from "../../../packages/core/src/work-audit/census.mjs";
-import { runBounded } from "../../../packages/core/src/work-audit/spawn.mjs";
+import { runBounded } from "@aof/execution/bounded-process";
 import { getCommand } from "../../../packages/core/src/command-core.mjs";
 import { runTest, testCommand } from "../../../packages/core/src/commands/test.mjs";
 
@@ -76,7 +76,7 @@ const PROBED_MODULES = Object.freeze([
   "packages/core/src/work/toolchain.mjs",
   "packages/core/src/work/test-select.mjs",
   "packages/core/src/work/test-changed.mjs",
-  "packages/core/src/work-audit/spawn.mjs",
+  "packages/execution/src/bounded-process.mjs",
   "packages/work/src/audit/census.mjs",
   "packages/knowledge/src/graph-normalize.mjs",
   "packages/knowledge/src/commands/graph-impact.mjs",

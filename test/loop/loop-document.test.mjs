@@ -17,7 +17,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { composeLoopDocument, loopDocumentPath, REGENERATE_COMMAND } from "../../packages/core/src/loop-document.mjs";
+import { composeLoopDocument, loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
 import { renderLoopGraph } from "../../packages/core/src/commands/loops-graph.mjs";
 import { loopsGraphCommand } from "../../packages/core/src/commands/loops-graph.mjs";
 import { parseFrontmatter } from "../../packages/core/src/work.mjs";

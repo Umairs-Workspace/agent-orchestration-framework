@@ -28,10 +28,10 @@ import { answerCommand, resumeCommand } from "../../packages/core/src/commands/r
 import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
 import { loopAsksDir, openAsk, parkAsk, readAsk, answerAsk, askRequestPath } from "../../packages/core/src/loop/ask-request.mjs";
 import { buildNotifyEnvelope } from "../../packages/core/src/notify/notify.mjs";
-import { renderDiscord } from "../../packages/core/src/notify/discord.mjs";
+import { renderDiscord } from "@aof/messaging/discord";
 import { setDegradeSinkForTest } from "../../packages/core/src/degrade.mjs";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { withCacheReadFixture, plantCacheRow, runCommand, streamRun, WORKER_NODE } from "../support/cache-read-fixture.mjs";
 

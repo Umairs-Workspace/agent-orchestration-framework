@@ -17,7 +17,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ITEM_STATUS_EDGES, closesEpoch, isOpen } from "../../packages/core/src/acceptance-horizon.mjs";
+import { ITEM_STATUS_EDGES, closesEpoch, isOpen } from "@aof/work/lifecycle";
 import { setItemStatus } from "../../packages/core/src/work.mjs";
 import { bundledFrozenSet, compileFrozenSet, readFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../packages/core/src/frozen-set.mjs";
 import { initWork } from "../../packages/core/src/work/init.mjs";

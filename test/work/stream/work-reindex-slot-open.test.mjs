@@ -10,7 +10,7 @@
 // ("a fresh `aof work find|validate --json`").
 import assert from "node:assert/strict";
 import { findWork, listItems, validateWork } from "../../../packages/core/src/work.mjs";
-import { reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, folderNames, SLUGS } from "../../support/work-reindex-fixture.mjs";
 
 const CONFIG = {};

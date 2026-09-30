@@ -3,8 +3,8 @@ import { mkdtemp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { compileProvenance, PROVENANCE_KEYS } from "../../packages/core/src/claim-provenance.mjs";
-import { compileGrade } from "../../packages/core/src/work/grade.mjs";
+import { compileProvenance, PROVENANCE_KEYS } from "@aof/contracts/claim-provenance";
+import { compileGrade } from "@aof/work/grade";
 import { readRuns, recordAnchorReading, runRecordPath, startRun } from "../../packages/core/src/run-store.mjs";
 import { gradeCommand } from "../../packages/core/src/commands/grade.mjs";
 import { makeGradeRepo, rubricFor, writeRunner, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";

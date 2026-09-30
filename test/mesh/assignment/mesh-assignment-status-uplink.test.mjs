@@ -15,7 +15,7 @@
 // 00 minted.
 import assert from "node:assert/strict";
 import { applyStreamFrame, applyAssignmentStatusFrame } from "../../../packages/core/src/control-stream-server.mjs";
-import { readAssignment } from "../../../packages/core/src/assignment-record.mjs";
+import { readAssignment } from "@aof/mesh/assignment-record";
 import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 

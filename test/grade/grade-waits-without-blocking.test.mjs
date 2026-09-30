@@ -29,7 +29,7 @@ import {
   DEFAULT_HEARTBEAT_MS,
   DEFAULT_START_TO_CLOSE_MS,
   gradeDeadlineFromConfig,
-} from "../../packages/core/src/loop-bounds.mjs";
+} from "@aof/contracts/loop-bounds";
 import { rubricSpawnOptions, spawnRubricAsync, GRADE_REENTRANCY_ENV } from "../../packages/core/src/commands/grade.mjs";
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
@@ -280,7 +280,7 @@ export const gradeWaitsWithoutBlockingTests = [
 
       // NO NEW `work.loop.*` KEY IS DECLARED, so the tuner's declared ranges are unchanged.
       // Asserted over the registries themselves rather than over prose about them.
-      const bounds = await import("../../packages/core/src/loop-bounds.mjs");
+      const bounds = await import("@aof/contracts/loop-bounds");
       assert.deepEqual(
         [...bounds.LOOP_BOUND_CONFIG_KEYS].sort(),
         [...bounds.LOOP_BOUND_VALUE_KEYS].sort(),

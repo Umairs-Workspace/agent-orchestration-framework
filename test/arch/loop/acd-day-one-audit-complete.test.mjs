@@ -42,7 +42,7 @@ import {
   checkPairing,
   checkReferenceOwnership,
   checkTimescale,
-} from "../../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BUNDLE = path.join(root, "packages", "core", "assets");

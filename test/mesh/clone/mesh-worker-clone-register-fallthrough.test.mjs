@@ -141,7 +141,7 @@ export const meshWorkerCloneRegisterFallthroughTests = [
   {
     name: "task02/38 worker-repo-checkout: Examples — workerHasRepo reflects EXACTLY which facts are present (the join semantics)",
     run: async () => withMeshCloneFixture(async ({ workspace, workspaceId, env }) => {
-      const { writeRepoPublishedMarker } = await import("../../../packages/core/src/mesh/repo-marker.mjs");
+      const { writeRepoPublishedMarker } = await import("@aof/mesh/repo-marker");
       const configPath = path.join(workspace.projectRoot, ".aof", "aof.config.json");
 
       async function writeRow() {
@@ -163,7 +163,7 @@ export const meshWorkerCloneRegisterFallthroughTests = [
   {
     name: "task02/38 worker-repo-checkout: Examples — marker written, row absent -> false (half-registered never reads as available)",
     run: async () => withMeshCloneFixture(async ({ workspace, workspaceId, env }) => {
-      const { writeRepoPublishedMarker } = await import("../../../packages/core/src/mesh/repo-marker.mjs");
+      const { writeRepoPublishedMarker } = await import("@aof/mesh/repo-marker");
       const configPath = path.join(workspace.projectRoot, ".aof", "aof.config.json");
       await writeRepoPublishedMarker({ configPath, workspaceId, now: "2026-07-10T09:00:00.000Z" });
       const ws = await import("../../../packages/core/src/work.mjs").then((m) => m.loadWorkspace(workspace.projectRoot, undefined, { env }));

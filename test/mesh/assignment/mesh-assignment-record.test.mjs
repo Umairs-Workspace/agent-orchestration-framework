@@ -20,7 +20,7 @@ import {
   readAssignment,
   producerFor,
   classificationFor,
-} from "../../../packages/core/src/assignment-record.mjs";
+} from "@aof/mesh/assignment-record";
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-assignment-record-"));

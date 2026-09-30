@@ -19,7 +19,7 @@
 // "aof work memory recall --status open" behaves for real.
 import assert from "node:assert/strict";
 import { runMemory } from "../../packages/core/src/work/memory.mjs";
-import { recall as localRecall } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { recall as localRecall } from "@aof/knowledge/memory/local-retrieval";
 
 // Build a full MemoryRecord (ADR-005) from a partial spec: absent-type fields
 // present as "" (the empty-string-present convention retrieval reads).

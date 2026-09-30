@@ -17,7 +17,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
-import { meshNodeIdOf } from "../../packages/core/src/commands/mesh/gate.mjs";
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 
 async function fixtureProject({ committedMesh, sidecar } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-hydration-"));

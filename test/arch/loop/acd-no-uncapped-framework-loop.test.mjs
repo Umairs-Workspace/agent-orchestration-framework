@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { LOOP_BOUND_CONFIG_RESOLVERS } from "../../../packages/core/src/loop-bounds.mjs";
+import { LOOP_BOUND_CONFIG_RESOLVERS } from "@aof/contracts/loop-bounds";
 import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

@@ -39,8 +39,8 @@ import {
   remapWorkspaceFactRefs,
   wholesaleDelete,
 } from "../../../packages/core/src/global-work-store.mjs";
-import { setItemBranch, readItemBranch } from "../../../packages/core/src/mesh/assignment-directive.mjs";
-import { resolveWorkspaceId } from "../../../packages/core/src/workspace-identity.mjs";
+import { setItemBranch, readItemBranch } from "@aof/mesh/assignment-directive";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { startRun, completeRun } from "../../../packages/core/src/run-store.mjs";
 import { invoke } from "../../../packages/core/src/command-core.mjs";

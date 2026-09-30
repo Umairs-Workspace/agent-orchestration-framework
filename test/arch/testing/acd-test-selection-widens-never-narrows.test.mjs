@@ -32,7 +32,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { graphArtifactBuiltAt, graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
+import { graphArtifactBuiltAt, graphJsonPath } from "@aof/knowledge/graph-normalize";
 import { WIDENING_REASONS, selectSuites, wideningRuleProblems } from "../../../packages/core/src/work/test-select.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));

@@ -36,8 +36,8 @@ import {
   PHASE_BRIEF_CEILING_TOKENS,
   PHASE_BRIEF_CHARS_PER_TOKEN,
   PHASE_BRIEF_MAX_CHARS,
-} from "../../packages/core/src/phase-brief.mjs";
-import { compileBriefForItem } from "../../packages/core/src/phase-brief-read.mjs";
+} from "@aof/work/phase-brief";
+import { compileBriefForItem } from "@aof/work/phase-brief-read";
 // The `.feature` parse has ONE home (52/05, F-52-05-D — three copies that disagreed),
 // and reading a compiled brief has one too. Neither is re-derived here.
 import { scenarioTitles } from "../support/feature-parse.mjs";

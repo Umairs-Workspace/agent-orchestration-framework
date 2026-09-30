@@ -10,7 +10,7 @@ import {
   pathIsWithinRoot,
   resolveCitationAtEmit,
   resolveProvenanceAtEmit,
-} from "../../packages/core/src/work-tune/provenance.mjs";
+} from "@aof/work/tune/provenance";
 
 function fixture() {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "aof-provenance-"));

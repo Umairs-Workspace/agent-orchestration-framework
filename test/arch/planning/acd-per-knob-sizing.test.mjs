@@ -32,7 +32,7 @@ import {
   crossingLattice,
   knobReport,
   rawPairsFor,
-} from "../../../packages/core/src/work-acceptor/rule.mjs";
+} from "@aof/work/acceptor/rule";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const RULE_MODULE = "packages/work/src/acceptor/rule.mjs";

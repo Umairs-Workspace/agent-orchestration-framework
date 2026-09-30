@@ -33,8 +33,8 @@ import { spawnCliSync } from "../../support/cli-spawn.mjs";
 // TECH_DEBT 24 and 57's species, in the milestone that indicts it.
 import { CLOSURE, familySource } from "./acd-trigger-holds-no-clock.test.mjs";
 import { getCommand, listCommands } from "../../../packages/core/src/command-core.mjs";
-import { resolveTriggerLevel } from "../../../packages/core/src/work-trigger/level.mjs";
-import { ASSIGNMENT_PHASES } from "../../../packages/core/src/mesh/assignment-directive.mjs";
+import { resolveTriggerLevel } from "@aof/work-loop/trigger/level";
+import { ASSIGNMENT_PHASES } from "@aof/mesh/assignment-directive";
 import { RESOLVED_TRIGGER_KEYS, LOOP_INPUT_KEYS, LEVEL_FLAG } from "../../../packages/core/src/commands/trigger.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));

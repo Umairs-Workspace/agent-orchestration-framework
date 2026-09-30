@@ -18,7 +18,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isOpen, severityFor, VALID_STATUS } from "../../packages/core/src/acceptance-horizon.mjs";
+import { isOpen, severityFor, VALID_STATUS } from "@aof/work/lifecycle";
 import { validateWork, loadWorkspace } from "../../packages/core/src/work.mjs";
 import { doctorWork } from "../../packages/core/src/work/doctor.mjs";
 import { validateCommand } from "../../packages/core/src/commands/validate.mjs";

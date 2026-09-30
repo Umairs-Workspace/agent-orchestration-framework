@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { getCommand } from "../../packages/core/src/command-core.mjs";
 import { createLoopsGroundednessCommand, resolveAnchorAuthorities } from "../../packages/core/src/commands/loops-groundedness.mjs";
-import { GROUND_VERDICTS, buildGroundednessReport } from "../../packages/core/src/work/loops-checks.mjs";
+import { GROUND_VERDICTS, buildGroundednessReport } from "@aof/work-graph/checks";
 import { loadLoops } from "../../packages/core/src/work/loops.mjs";
 
 const endpoint = (raw) => ({ raw, scheme: raw.slice(0, raw.indexOf(":")), operand: raw.slice(raw.indexOf(":") + 1), resolved: true });

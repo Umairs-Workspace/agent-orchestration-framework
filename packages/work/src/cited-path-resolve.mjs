@@ -141,12 +141,18 @@ export function archivedCitationOf(citedPath, workDir, archiveRoot) {
 export function resolveCitedPath(cited, { existsAtHead = null, renameMap = null } = {}) {
   const { path: file, locator } = splitLocator(cited);
   const renamed = resolveThroughRenames(file, renameMap);
+  // Recorded declarative forwards have an implementation destination, separately
+  // derived by the impure history reader. They are deliberately not rename records.
+  const implementation = renameMap?.moduleLinks?.get(renamed ?? file) ?? null;
   if (typeof existsAtHead !== "function") {
-    return { cited: String(cited ?? ""), path: file, locator, resolved: renamed != null, at: renamed, via: renamed == null ? null : "rename" };
+    return { cited: String(cited ?? ""), path: file, locator, resolved: implementation != null || renamed != null, at: implementation ?? renamed, via: implementation != null ? "module" : renamed == null ? null : "rename" };
   }
   if (existsAtHead(file)) return { cited: String(cited ?? ""), path: file, locator, resolved: true, at: file, via: "head" };
   if (renamed != null && existsAtHead(renamed)) {
     return { cited: String(cited ?? ""), path: file, locator, resolved: true, at: renamed, via: "rename" };
+  }
+  if (implementation != null && existsAtHead(implementation)) {
+    return { cited: String(cited ?? ""), path: file, locator, resolved: true, at: implementation, via: "module" };
   }
   return { cited: String(cited ?? ""), path: file, locator, resolved: false, at: null, via: null };
 }

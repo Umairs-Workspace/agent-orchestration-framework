@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { parseFeature } from "../../../packages/core/src/feature-parse.mjs";
+import { parseFeature } from "@aof/work/feature-parse";
 import { featureFiles, loadPreExamplesParser, withoutExamples } from "../../support/feature-parse-pre-examples.mjs";
 
 export const archTests = [

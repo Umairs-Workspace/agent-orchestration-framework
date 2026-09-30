@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url";
 
 import { SHELL_LOOP_ID } from "../../packages/core/src/commands/loop.mjs";
 import { buildLoopDeclaration } from "../../packages/work-loop/src/engine.mjs";
-import { projectExecution } from "../../packages/core/src/loop-record.mjs";
+import { projectExecution } from "@aof/work-graph/record";
 import { completeRun, readRuns, startRun } from "../../packages/core/src/run-store.mjs";
 import { loadLoops } from "../../packages/core/src/work/loops.mjs";
 

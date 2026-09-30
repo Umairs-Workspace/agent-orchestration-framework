@@ -28,21 +28,21 @@ import { fileURLToPath } from "node:url";
 
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import * as bounds from "../../../packages/core/src/loop-bounds.mjs";
+import * as bounds from "@aof/contracts/loop-bounds";
 import { CriterionError, defaultCriterion, makeCriterion } from "../../../packages/core/src/work-acceptor/criterion.mjs";
 import {
   NOT_AN_ORDINAL_KNOB,
   crossingLattice,
   deriveRule,
   readStep,
-} from "../../../packages/core/src/work-acceptor/rule.mjs";
+} from "@aof/work/acceptor/rule";
 import {
   BUDGET_EXHAUSTED,
   EVIDENCE_SHORT,
   PAIR_OUTCOMES,
   attained,
   evaluateRun,
-} from "../../../packages/core/src/work-acceptor/ledger.mjs";
+} from "@aof/work/acceptor/ledger";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

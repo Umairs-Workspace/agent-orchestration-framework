@@ -42,7 +42,7 @@ import {
   assessLoopConsultation,
   assessMetricMovement,
   buildGroundednessReport,
-} from "../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { makeLoopRegistry } from "../support/loop-registry-fixture.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));

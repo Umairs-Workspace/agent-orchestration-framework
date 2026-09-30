@@ -30,7 +30,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { graphJsonPath } from "../../../packages/core/src/graph-normalize.mjs";
+import { graphJsonPath } from "@aof/knowledge/graph-normalize";
 import { WIDENING_REASONS } from "../../../packages/core/src/work/test-select.mjs";
 import {
   DECLARED_SET_EMPTY,
@@ -39,7 +39,7 @@ import {
   STORY_REF_NOT_A_STORY,
   STORY_REF_UNRESOLVABLE,
   declaredChangedFiles,
-} from "../../../packages/core/src/work/test-declared.mjs";
+} from "@aof/work/testing/declared";
 import {
   NO_SCOPE,
   SCOPE_UNRECOGNISED,

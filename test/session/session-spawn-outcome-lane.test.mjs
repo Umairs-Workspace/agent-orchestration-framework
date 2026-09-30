@@ -42,12 +42,12 @@ import {
   buildSessionSpawnAckFrame,
   buildSessionSpawnEnvelope,
   buildSessionSpawnAckEnvelope,
-} from "../../packages/core/src/mesh/session-spawn-directive.mjs";
+} from "@aof/mesh/session-spawn-directive";
 import {
   createSpawnOutcomeRegistry,
   MAX_SPAWN_OUTCOMES,
   SPAWN_OUTCOME_RETENTION_MS,
-} from "../../packages/core/src/mesh/session-spawn-outcome.mjs";
+} from "@aof/mesh/session-spawn-outcome";
 import { startSession, pingSession, endSession, readSessionRecord, assembleSessionRecord } from "../../packages/core/src/mesh/session.mjs";
 import { readLiveSessions } from "../../packages/core/src/mesh/presence.mjs";
 import { buildSessionIndex } from "../../packages/core/src/global-mesh-query.mjs";

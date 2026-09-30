@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 import { loadWorkspace } from "../../../packages/core/src/command-core.mjs";
 import { loopDocumentCommand } from "../../../packages/core/src/commands/loop-document.mjs";
-import { loopDocumentPath } from "../../../packages/core/src/loop-document.mjs";
+import { loopDocumentPath } from "@aof/work-graph/document";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { RECORDS, loop, withRepo, writeRegistry } from "../../support/loop-document-fixture.mjs";
 

@@ -23,7 +23,7 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, unlink, realpath } from "node:
 import os from "node:os";
 import path from "node:path";
 import { setItemStatus, rollbackItemStatus, loadWorkspace } from "../../packages/core/src/work.mjs";
-import { itemStatusEdges } from "../../packages/core/src/acceptance-horizon.mjs";
+import { itemStatusEdges } from "@aof/work/lifecycle";
 import { transitionRunStart, transitionRunComplete } from "../../packages/core/src/effects/run-transitions.mjs";
 import { openEffectsJournal, readEvents } from "../../packages/core/src/effects/journal.mjs";
 import { invoke, getCommand } from "../../packages/core/src/command-core.mjs";

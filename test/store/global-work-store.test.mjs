@@ -23,7 +23,7 @@ import {
 // measured over, imported from where its owning story left it (the 127/02 and 127/03 idiom).
 import { applySnapshotFrame, applyDeltaFrame } from "../../packages/core/src/control-stream-server.mjs";
 import { queryGlobalMeshStatus } from "../../packages/core/src/global-mesh-query.mjs";
-import { importSqliteRuntime } from "../../packages/core/src/sqlite-runtime.mjs";
+import { importSqliteRuntime } from "@aof/foundation/sqlite-runtime";
 import { withThreeRoots } from "../work/stream/work-backlog-archive-enumerate.test.mjs";
 // m43 / ADR-012/B4 — the WORKER-side content read moved into its own module when 43/03
 // widened it to the artifact manifest (the store module's line ceiling's own escape

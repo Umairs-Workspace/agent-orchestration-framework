@@ -43,7 +43,7 @@ import {
   buildOtelResourceAttributes,
   OTEL_RESOURCE_ATTRIBUTES_ENV_KEY,
   OTEL_TELEMETRY_ENV_KEY,
-} from "../../packages/core/src/otel-attribution.mjs";
+} from "@aof/execution/otel-attribution";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { openSessionScreen } from "../../packages/core/src/terminal/session-screen.mjs";
 

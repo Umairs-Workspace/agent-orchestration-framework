@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { EDGE_KEYS, GROUND_VALUES } from "../../../packages/core/src/work/loops.mjs";
-import { GROUND_VERDICTS, buildGroundednessReport } from "../../../packages/core/src/work/loops-checks.mjs";
+import { GROUND_VERDICTS, buildGroundednessReport } from "@aof/work-graph/checks";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

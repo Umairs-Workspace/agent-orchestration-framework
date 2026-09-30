@@ -14,7 +14,7 @@
 // Prints the before/after resolution. The daemon owning the checkout must be
 // restarted to publish under the pinned id.
 import { loadWorkspace } from "../packages/core/src/work.mjs";
-import { resolveWorkspaceId } from "../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { pinWorkspaceIdInCheckout } from "../packages/core/src/mesh/worker-execution.mjs";
 
 const [checkoutPath, workspaceId] = process.argv.slice(2);

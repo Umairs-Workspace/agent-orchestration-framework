@@ -17,7 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import { BRIEF_SECTION_PRIORITY } from "../../../packages/core/src/phase-brief.mjs";
+import { BRIEF_SECTION_PRIORITY } from "@aof/work/phase-brief";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(root, "packages", "core", "src");

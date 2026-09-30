@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { getCommand } from "../../../packages/core/src/command-core.mjs";
-import { evaluateRatchet } from "../../../packages/core/src/work/ratchet.mjs";
+import { evaluateRatchet } from "@aof/work/ratchet";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

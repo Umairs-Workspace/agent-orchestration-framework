@@ -26,7 +26,7 @@ import path from "node:path";
 // is read here rather than restated, so the declaration and the command that runs it can
 // never disagree about what usable means.
 import { usableCommand } from "../../../packages/core/src/commands/grade.mjs";
-import { LOOP_BOUND_CONFIG_RESOLVERS, resolvesLoopBoundConfigKey } from "../../../packages/core/src/loop-bounds.mjs";
+import { LOOP_BOUND_CONFIG_RESOLVERS, resolvesLoopBoundConfigKey } from "@aof/contracts/loop-bounds";
 import { loadLoops } from "../../../packages/core/src/work/loops.mjs";
 // 61/FF-6109 — the DECISION-SITE half is the acceptor's own predicate, imported rather than
 // restated. Two implementations of "does this bound have a consumer?" would be two answers
@@ -39,7 +39,7 @@ import {
   executedConsumerRefusal,
   harnessRefusal,
   tunableSet,
-} from "../../../packages/core/src/work-acceptor/admissibility.mjs";
+} from "@aof/work/acceptor/admissibility";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedParenSpan } from "../../support/source-slice.mjs";
 

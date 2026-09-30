@@ -12,7 +12,7 @@
 // type-boost boundaries + the four-ADR acceptance self-activate once story 02 lands
 // the `TYPE_BOOST_CAPABILITY` (ADR-003 mechanism #2), detected by a live probe.
 import assert from "node:assert/strict";
-import { rankRecords, TYPE_BOOST_CAPABILITY, TITLE_BOOST_PER_TERM } from "../../../packages/core/src/memory/local-retrieval.mjs";
+import { rankRecords, TYPE_BOOST_CAPABILITY, TITLE_BOOST_PER_TERM } from "@aof/knowledge/memory/local-retrieval";
 
 function record(partial) {
   return {

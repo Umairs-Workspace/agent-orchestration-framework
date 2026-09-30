@@ -38,7 +38,7 @@ import {
   isDerivationOf,
   isOpaqueNodeId,
 } from "../../../packages/mesh/src/node-identity.mjs";
-import { resolvePeers } from "../../../packages/core/src/mesh/fabric.mjs";
+import { resolvePeers } from "@aof/mesh/fabric";
 import { readRuns } from "../../../packages/core/src/run-store.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";

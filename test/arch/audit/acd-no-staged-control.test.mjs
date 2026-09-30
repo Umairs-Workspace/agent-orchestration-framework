@@ -34,8 +34,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildSnapshot } from "../../../packages/core/src/work/doctor.mjs";
-import { controlGroup, isControlFileName } from "../../../packages/core/src/work/doctor-controls.mjs";
-import { registerBlockKind, registerDeclarations, registerEntries } from "../../../packages/core/src/declared-id.mjs";
+import { controlGroup, isControlFileName } from "@aof/work/audit/controls";
+import { registerBlockKind, registerDeclarations, registerEntries } from "@aof/work/declared-id";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");

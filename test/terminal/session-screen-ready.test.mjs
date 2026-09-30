@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import { driveInteractiveClaudeSession } from "../../packages/core/src/agent-session-driver.mjs";
 import { openSessionScreen } from "../../packages/core/src/terminal/session-screen.mjs";
-import { CLAUDE_SCREENS } from "../../packages/core/src/terminal/claude-screens.mjs";
+import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
 import { createScreen } from "../../packages/core/src/terminal/screen.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { captureDegrades, loadFixture, replay } from "./screen-model.test.mjs";

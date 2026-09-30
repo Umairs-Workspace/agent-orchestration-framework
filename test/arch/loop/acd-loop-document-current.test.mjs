@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 
 import { invoke, loadWorkspace } from "../../../packages/core/src/command-core.mjs";
 import { loopDocumentCommand } from "../../../packages/core/src/commands/loop-document.mjs";
-import { loopDocumentPath, REGENERATE_COMMAND } from "../../../packages/core/src/loop-document.mjs";
+import { loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
 import { RECORDS, loop, record, snapshot, withRepo, writeRegistry } from "../../support/loop-document-fixture.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
@@ -170,7 +170,7 @@ export const archTests = [
       // grepping for the composer's name — a whole-file grep for a symbol would be satisfied by
       // the assertion that spells it, which is a gate that can only pass.
       const bindings = [...self.matchAll(/^import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/gm)]
-        .filter(([, , from]) => from.endsWith("/loop-document.mjs") && !from.includes("/commands/"))
+        .filter(([, , from]) => from === "@aof/work-graph/document")
         .flatMap(([, names]) => names.split(",").map((name) => name.trim()).filter(Boolean));
       assert.deepEqual(bindings.sort(), ["REGENERATE_COMMAND", "loopDocumentPath"], "it takes the path and the remedy from the one home, and no composer");
 

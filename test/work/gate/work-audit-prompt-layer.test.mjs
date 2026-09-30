@@ -20,7 +20,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import os from "node:os";
 import path from "node:path";
 
-import { readFinding, sweepDeclarationProblems } from "../../../packages/core/src/work-audit/reads.mjs";
+import { readFinding, sweepDeclarationProblems } from "@aof/work/audit/reads";
 import {
   CAPABILITY_PROGRAMS,
   PROMPT_LAYER_SWEEPS,

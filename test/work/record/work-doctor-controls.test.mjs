@@ -43,7 +43,7 @@ import {
   recordsARedProbe,
   redProbeRows,
   splitPathLocator,
-} from "../../../packages/core/src/work/doctor-controls.mjs";
+} from "@aof/work/audit/controls";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -554,7 +554,7 @@ export const workDoctorControlsTests = [
       const findings = registerGroup(snapshot, {});
 
       // The universe, counted the way the check counts it.
-      const { qualifiedRefsIn } = await import("../../../packages/core/src/declared-id.mjs");
+      const { qualifiedRefsIn } = await import("@aof/work/declared-id");
       let policed = 0;
       for (const row of snapshot.items) {
         for (const text of Object.values(row.docTexts ?? {})) policed += qualifiedRefsIn(text).length;

@@ -28,7 +28,7 @@ import { getCommand, invoke, listCommands } from "../../../packages/core/src/com
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS } from "../../../packages/core/src/commands/trigger.mjs";
 import { TRIGGER_SOURCES, bundledTriggerDeclaration, readTriggerDeclaration, triggerDeclarationPath } from "../../../packages/core/src/work-trigger/declaration.mjs";
-import { resolveTriggerLevel } from "../../../packages/core/src/work-trigger/level.mjs";
+import { resolveTriggerLevel } from "@aof/work-loop/trigger/level";
 import { LOOP_LEVELS, decideLoopScope } from "../../../packages/work-loop/src/engine.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));

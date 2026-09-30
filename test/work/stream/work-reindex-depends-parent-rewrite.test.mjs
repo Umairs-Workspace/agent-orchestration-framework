@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { findWork, validateWork, loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { reindexForInsert } from "../../../packages/core/src/work/reindex.mjs";
+import { reindexForInsert } from "@aof/work/reindex";
 import { invoke } from "../../../packages/core/src/command-core.mjs";
 import { withWork, buildTopLevelStream, writeMilestoneItem, writeStoryItem, writeUatItem, readDocText } from "../../support/work-reindex-fixture.mjs";
 import { buildThreeRootFixture, writeItem } from "./work-backlog-archive-enumerate.test.mjs";

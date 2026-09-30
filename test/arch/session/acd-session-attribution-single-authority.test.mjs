@@ -58,7 +58,7 @@ import { meshDir, publishNodeRecord } from "../../../packages/core/src/mesh/stor
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { openGlobalWorkProjectionStore } from "../../../packages/core/src/global-work-store.mjs";
 import { publishGlobalRegistryDescriptorsToStore } from "../../../packages/core/src/global-node-registry.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");

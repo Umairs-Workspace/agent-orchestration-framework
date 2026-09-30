@@ -18,7 +18,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { importSqliteRuntime } from "../../packages/core/src/sqlite-runtime.mjs";
+import { importSqliteRuntime } from "@aof/foundation/sqlite-runtime";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 import { openEffectsJournal } from "../../packages/core/src/effects/journal.mjs";
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";

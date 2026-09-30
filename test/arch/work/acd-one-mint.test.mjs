@@ -69,8 +69,8 @@ const INSERT_FACES = Object.freeze([
   "packages/work/src/commands/insert-story.mjs",
   "packages/work/src/commands/insert-uat.mjs",
 ]);
-const ENGINE = "packages/core/src/work/reindex.mjs";
-const ENGINE_IMPORTERS = Object.freeze(["packages/work/src/insertion/scaffold.mjs", "packages/core/src/application/bindings/effects/stream-transitions.mjs", "packages/core/src/work/reindex.mjs"]);
+const ENGINE = "packages/work/src/reindex.mjs";
+const ENGINE_IMPORTERS = Object.freeze(["packages/work/src/insertion/scaffold.mjs", "packages/core/src/application/bindings/effects/stream-transitions.mjs", "packages/work/src/reindex.mjs"]);
 // The five the prompts' rewrite names (task 05). The glob is the SUBJECT; these are the floor, so a
 // renamed prompt fails as missing rather than quietly shrinking the sweep.
 const NAMED_ADD_PROMPTS = Object.freeze([

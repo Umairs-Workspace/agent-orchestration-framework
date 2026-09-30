@@ -125,7 +125,8 @@
     "./commands/diagram/file": "./src/commands/diagram/file.mjs",
     "./integration-routing": "./src/integration-routing.mjs",
     "./legacy-milestone-discovery": "./src/legacy-milestone-discovery.mjs",
-    "./store-metadata": "./src/store-metadata.mjs"
+    "./store-metadata": "./src/store-metadata.mjs",
+    "./citation-history": "./src/citation-history.mjs"
   },
   "files": [
     "src"

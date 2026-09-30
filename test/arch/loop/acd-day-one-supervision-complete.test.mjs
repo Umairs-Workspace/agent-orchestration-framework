@@ -46,7 +46,7 @@ import {
   checkPairing,
   checkReferenceOwnership,
   checkTimescale,
-} from "../../../packages/core/src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { withShippedRegistry, SHIPPED_LOOPS_DIR } from "../../support/registry-fixture.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";

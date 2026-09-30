@@ -11,7 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { invoke, loadWorkspace } from "../../packages/core/src/command-core.mjs";
-import { renderDiagramBlock } from "../../packages/core/src/diagrams/layout.mjs";
+import { renderDiagramBlock } from "@aof/work/diagrams/layout";
 import { CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
 import { DIAGRAM_LANE_CODES, diagramsGroup } from "../../packages/core/src/work/doctor-diagrams.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";

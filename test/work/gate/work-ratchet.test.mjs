@@ -5,7 +5,7 @@ import {
   classifyAssertion,
   countExecutableContract,
   evaluateRatchet,
-} from "../../../packages/core/src/work/ratchet.mjs";
+} from "@aof/work/ratchet";
 import { observeRatchet, ratchetCommand, resolveRatchetBase } from "../../../packages/core/src/commands/ratchet.mjs";
 
 const feature = ({ lane = "executable", name = "criterion", rows = [] } = {}) => `@${lane}

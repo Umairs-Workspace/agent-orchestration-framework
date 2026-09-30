@@ -39,7 +39,7 @@ import { startLauncher } from "../../../packages/core/src/mesh/launcher.mjs";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../packages/core/src/global-work-store.mjs";
 import { publishNodeRecord } from "../../../packages/core/src/mesh/store.mjs";
-import { TERMINAL_ASSIGNMENT_STATES } from "../../../packages/core/src/assignment-record.mjs";
+import { TERMINAL_ASSIGNMENT_STATES } from "@aof/mesh/assignment-record";
 import {
   withMeshCloneFixture,
   createStatusRecorder,
@@ -149,7 +149,7 @@ async function withStore({ env }, fn) {
 // facts directly (bypassing a clone) so workerHasRepo() is TRUE and the clone-miss
 // branch never runs — the precondition for the "already HAS the repo" scenario.
 async function markRepoAlreadyPresent({ workspace, workspaceId, env, nodeId = "worker-a" }) {
-  const { writeRepoPublishedMarker } = await import("../../../packages/core/src/mesh/repo-marker.mjs");
+  const { writeRepoPublishedMarker } = await import("@aof/mesh/repo-marker");
   const configPath = path.join(workspace.projectRoot, ".aof", "aof.config.json");
   await writeRepoPublishedMarker({ configPath, workspaceId, now: NOW });
   await withStore({ env }, async (store) => {
@@ -536,7 +536,7 @@ export const meshWorkerCloneCredentialPullTests = [
   {
     name: "task05/38 clone-credential-pull (SECURITY F16): Examples — every ACTIVE state (assigned/accepted/running) is authorized to mint (the inactive gate refuses ONLY terminal states, not the whole active lifecycle)",
     run: async () => {
-      const { ACTIVE_ASSIGNMENT_STATES } = await import("../../../packages/core/src/assignment-record.mjs");
+      const { ACTIVE_ASSIGNMENT_STATES } = await import("@aof/mesh/assignment-record");
       for (const state of ACTIVE_ASSIGNMENT_STATES) {
         await withMeshCloneFixture(async ({ env, workspaceId }) => {
           await seedAssignment({ home: env.AOF_GLOBAL_HOME }, {

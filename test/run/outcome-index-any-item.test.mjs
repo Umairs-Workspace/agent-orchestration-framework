@@ -22,7 +22,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildRecords, INDEX_VERSION } from "../../packages/core/src/memory/local-indexing.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
-import { applyScope, MEMORY_RECORD_FIELDS, recall } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { applyScope, MEMORY_RECORD_FIELDS, recall } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DELIVERY = new Set(["capability", "gap"]);
@@ -396,7 +396,7 @@ export const outcomeIndexAnyItemTests = [
   {
     name: "80/02 scope-rule: itemInScope is byte-for-byte the pre-story `inScope` over every ref/scope shape, and doctor's inScope now delegates to it",
     run: async () => {
-      const { itemInScope, refInScope } = await import("../../packages/core/src/work/ref-scope.mjs");
+      const { itemInScope, refInScope } = await import("@aof/work/ref-scope");
       const { inScope } = await import("../../packages/core/src/work/doctor.mjs");
 
       // The rule AS IT WAS, before the re-home (work-doctor.mjs, pre-story 80).

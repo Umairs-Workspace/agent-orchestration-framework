@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 
 import * as writer from "../../../packages/core/src/commands/loop-record.mjs";
-import * as checker from "../../../packages/core/src/work/doctor-loop-record.mjs";
+import * as checker from "@aof/work/doctor/loop-record";
 import { ITEM_REF, ctxFor, signInPlace, signedRow, withRepo } from "../../loop/loop-record-command.test.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
@@ -134,7 +134,7 @@ export const archTests = [
       // 78/ADR-001 answered the "invisible to every register check" objection BY SCOPE rather than by
       // widening it: adding `EXECUTION.md` would make every item owe the document, and only items that
       // ran loops owe one. So the frozen set must be untouched, and this gate is where that is held.
-      const { REGISTER_BLOCKS, ID_FORMS } = await import("../../../packages/core/src/declared-id.mjs");
+      const { REGISTER_BLOCKS, ID_FORMS } = await import("@aof/work/declared-id");
       assert.ok(!REGISTER_BLOCKS.some((entry) => entry.file === FROZEN.basename), "EXECUTION.md is not a register file");
       assert.ok(!REGISTER_BLOCKS.some((entry) => entry.heading === "sign-off"), "and `## Sign-off` is not a register block");
       assert.equal(REGISTER_BLOCKS.length, 4, "the frozen set is still the four entries m66 froze");

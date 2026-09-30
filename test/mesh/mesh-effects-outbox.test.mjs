@@ -19,7 +19,7 @@ import { drainEffects, LOCAL_LOCI, CONTROL_LOCI } from "../../packages/core/src/
 import { drainOutbox, remoteSteps, applyEffectAck, EFFECT_STEP_FRAME_KIND, EFFECT_ACK_FRAME_KIND } from "../../packages/core/src/effects/outbox.mjs";
 import { reportAssignmentSettled } from "../../packages/core/src/effects/assignment-transitions.mjs";
 import { applyStreamFrame } from "../../packages/core/src/control-stream-server.mjs";
-import { readAssignment } from "../../packages/core/src/assignment-record.mjs";
+import { readAssignment } from "@aof/mesh/assignment-record";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
 import { withMeshAssignFixture, seedAssignment } from "../support/mesh-assign-fixture.mjs";
 

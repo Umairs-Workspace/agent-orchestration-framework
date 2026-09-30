@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 import { invoke } from "../../packages/core/src/command-core.mjs";
 import { readMapping } from "../../packages/core/src/notion/mapping.mjs";
-import { projectMilestone } from "../../packages/core/src/notion/projection.mjs";
+import { projectMilestone } from "@aof/integration-notion/projection";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");

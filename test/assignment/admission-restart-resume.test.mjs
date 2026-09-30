@@ -14,7 +14,7 @@ import {
   reserveParkedAssignmentResume,
   restoreParkedAssignmentResume,
   updateAssignmentState,
-} from "../../packages/core/src/assignment-record.mjs";
+} from "@aof/mesh/assignment-record";
 import {
   assignmentOccupiesDispatchSlot,
   countDispatchSlotsByTarget,

@@ -26,7 +26,7 @@ import {
   SIGNOFF_HEADING,
   SIGNOFF_PLACEHOLDER,
   loopRecordLane,
-} from "../../packages/core/src/work/doctor-loop-record.mjs";
+} from "@aof/work/doctor/loop-record";
 import { loopRecordCommand } from "../../packages/core/src/commands/loop-record.mjs";
 import {
   ENGAGED_RUNS,

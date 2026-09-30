@@ -5,8 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { validateWork } from "../../packages/core/src/commands/validate.mjs";
-import { MAX_REVIEW_ROUNDS, reviewRoundsFromConfig } from "../../packages/core/src/loop-bounds.mjs";
-import { partitionReadySetByDeclaredFiles } from "../../packages/core/src/ready-wave.mjs";
+import { MAX_REVIEW_ROUNDS, reviewRoundsFromConfig } from "@aof/contracts/loop-bounds";
+import { partitionReadySetByDeclaredFiles } from "@aof/work/ready-wave";
 import {
   contractSetCovers,
   declaresDirectory,
@@ -15,11 +15,11 @@ import {
   resolveStoryContractPath,
   storyAnchorResolves,
   storyContractList,
-} from "../../packages/core/src/story-contract.mjs";
+} from "@aof/work/story-contract";
 // milestone 124 / story 00 — the census is asked the SAME coverage question the wave is asked, on
 // the one input where equality and coverage disagree. Importing the lane here is the point of
 // task 01's last scenario: two surfaces, one predicate.
-import { classifyDependsEdges } from "../../packages/core/src/work/doctor-depends.mjs";
+import { classifyDependsEdges } from "@aof/work/doctor/depends";
 import { listItems } from "../../packages/core/src/work.mjs";
 import {
   decideExecutionMode,
@@ -28,7 +28,7 @@ import {
   EXECUTION_MODES,
   REVIEW_BLOCKER_CLASSES,
   reviewBlockerClaim,
-} from "../../packages/core/src/work/loop.mjs";
+} from "@aof/work-loop/engine";
 // 71/00 — the marked regions of `continue.md` are cut structurally, so a renumbered step does not
 // move what these assertions read.
 // 124/00 — `stripComments`, for the one structural clause task 01 states in terms of the module's

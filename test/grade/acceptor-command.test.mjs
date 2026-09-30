@@ -11,9 +11,9 @@ import {
   withdrawalOnHarm,
 } from "../../packages/core/src/commands/acceptor.mjs";
 import { criterionDigest, defaultCriterion, makeCriterion } from "../../packages/core/src/work-acceptor/criterion.mjs";
-import { PAIR_OUTCOMES } from "../../packages/core/src/work-acceptor/ledger.mjs";
-import { tunableSet } from "../../packages/core/src/work-acceptor/admissibility.mjs";
-import { compoundStepRefusal } from "../../packages/core/src/loop-bounds.mjs";
+import { PAIR_OUTCOMES } from "@aof/work/acceptor/ledger";
+import { tunableSet } from "@aof/work/acceptor/admissibility";
+import { compoundStepRefusal } from "@aof/contracts/loop-bounds";
 
 const KEY = "work.loop.reviewRounds";
 const W = PAIR_OUTCOMES.FAVOURABLE;

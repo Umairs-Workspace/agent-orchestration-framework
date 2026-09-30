@@ -36,7 +36,7 @@ import {
   TUNING_EDGE,
   assessProposal,
   tunableSet,
-} from "../../../packages/core/src/work-acceptor/admissibility.mjs";
+} from "@aof/work/acceptor/admissibility";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");

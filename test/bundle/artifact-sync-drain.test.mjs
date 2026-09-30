@@ -27,7 +27,7 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { withArtifactSyncFixture, writeArtifact, enqueueLine, WORKER_ID, ITEM_REF, ASSIGNMENT_WORKSPACE_ID, RECORD_DOCS } from "../support/artifact-sync-fixture.mjs";
-import { artifactSyncBatchPath, drainArtifactQueue } from "../../packages/core/src/artifact-sync.mjs";
+import { artifactSyncBatchPath, drainArtifactQueue } from "@aof/mesh/artifact-sync";
 import { readWorkspaceContentRecords } from "../../packages/core/src/work/content-read.mjs";
 import { buildWorktreeContentFrame } from "../../packages/core/src/worker-stream-client.mjs";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
@@ -152,7 +152,7 @@ export const artifactSyncDrainTests = [
             const p = path.join(fx.itemDir, "STORY.md");
             const items = [{ ref: ITEM_REF, dir: fx.itemDir }];
             const entries = [{ tool: "Write", path: p.replaceAll("\\", "/") }, { tool: "Write", path: p.replaceAll("/", "\\") }];
-            const { resolveDrainedArtifacts } = await import("../../packages/core/src/artifact-sync.mjs");
+            const { resolveDrainedArtifacts } = await import("@aof/mesh/artifact-sync");
             const resolved = resolveDrainedArtifacts(entries, { items });
             assert.deepEqual(resolved.named.map((entry) => entry.docKey), ["STORY"], "the same file is named ONCE despite the two path separators");
           },

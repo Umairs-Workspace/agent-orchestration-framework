@@ -17,7 +17,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { runLoopBody } from "../../packages/core/src/commands/loop.mjs";
 import { readRuns, startRun, completeRun, heartbeat, recordSessionId } from "../../packages/core/src/run-store.mjs";
 import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../packages/core/src/loop/ask-request.mjs";
-import { resolveWorkspaceId } from "../../packages/core/src/workspace-identity.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import { resolveItemExact } from "../../packages/core/src/commands/resolve.mjs";
 import { resolveRefInWorktree } from "../../packages/core/src/work/dispatch.mjs";
 import { meshDispatchWorktreePath } from "../../packages/core/src/mesh/worktree.mjs";

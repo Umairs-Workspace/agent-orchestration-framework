@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 
 import { invoke } from "../../packages/core/src/command-core.mjs";
 import { buildSnapshot, CHECK_GROUPS } from "../../packages/core/src/work/doctor.mjs";
-import { rubricTraceabilityGroup, RUBRIC_REPORT_CONFIG_KEY, declaredReportFrom } from "../../packages/core/src/work/doctor-rubric.mjs";
+import { rubricTraceabilityGroup, RUBRIC_REPORT_CONFIG_KEY, declaredReportFrom } from "@aof/work/doctor/rubric";
 import { stripComments } from "../support/source-slice.mjs";
 import { makeGradeRepo, ctxFor } from "../support/grade-fixture.mjs";
 

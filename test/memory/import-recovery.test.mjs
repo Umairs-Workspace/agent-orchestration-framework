@@ -38,7 +38,7 @@ import path from "node:path";
 import { recoverMilestone } from "../../packages/core/src/import/recovery.mjs";
 import { materializeImport, INTENT_NOT_RECOVERABLE } from "../../packages/core/src/import/materialize.mjs";
 import { parseArchitecture, parseRetrospective } from "../../packages/core/src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../packages/core/src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 // --- fixture builders -----------------------------------------------------------
 

@@ -19,7 +19,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { openGlobalWorkProjectionStore } from "../../packages/core/src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment } from "../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment } from "@aof/mesh/assignment-record";
 import { addWorktree, meshWorktreePath, meshItemBranchName } from "../../packages/core/src/mesh/worktree.mjs";
 import { createMeshRecoveryPushHandler } from "../../packages/core/src/mesh/worker-execution.mjs";
 import { recoverPush } from "../../packages/core/src/commands/mesh/recover-push.mjs";

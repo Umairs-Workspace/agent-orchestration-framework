@@ -1,2 +1,0 @@
-// Compatibility export; work-graph owns this implementation.
-export { ANCHOR_FRESHNESS_VERDICTS, AUDIT_LANES, AUDIT_LANE_FINDING_CODES, CHECK_FINDING_CODES, CHECK_IDS, GATING_CODES, GROUND_VERDICTS, MIN_SEPARATION_RATIO, UNMOVED_CYCLES, assessAnchorFreshness, assessInstrumentSilence, assessLoopConsultation, assessMetricMovement, buildGroundednessReport, checkActuatorArbitration, checkAnchorGrounding, checkGrounding, checkPairing, checkReferenceOwnership, checkTimescale, decomposeLoopGraph } from "@aof/work-graph/checks";

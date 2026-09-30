@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { invoke } from "../../../packages/core/src/command-core.mjs";
 import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace } from "../../../packages/core/src/work.mjs";
-import { appendPosition } from "../../../packages/core/src/work-promote/promotion.mjs";
+import { appendPosition } from "@aof/work/promote/promotion";
 import { openEffectsJournal, readEvents } from "../../../packages/core/src/effects/journal.mjs";
 import { ITEM_LOCKED_CODE } from "../../../packages/core/src/item-lock.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";

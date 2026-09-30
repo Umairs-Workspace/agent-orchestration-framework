@@ -53,7 +53,7 @@ import {
   resolveAddressees,
   runAudit,
 } from "../../../packages/core/src/work-audit/report.mjs";
-import { CONTROL_FINDING_CODES } from "../../../packages/core/src/work/doctor-controls.mjs";
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BUNDLE = path.join(root, "packages", "core", "assets");

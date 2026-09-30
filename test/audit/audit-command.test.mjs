@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 
 import { auditCommand, anchorWindowFromConfig, resolveRoleRouting, DEFAULT_ANCHOR_STALE_DAYS } from "../../packages/core/src/commands/audit.mjs";
 import { AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
-import { runHookWiring } from "../../packages/core/src/work-audit/hook-wiring.mjs";
+import { runHookWiring } from "@aof/work/audit/hook-wiring";
 import { runDeclaredBounds } from "../../packages/core/src/work-audit/declared-bounds.mjs";
 import { getCommand, listCommands } from "../../packages/core/src/command-core.mjs";
 import { deriveRouteTable } from "../../packages/core/src/spine/face.mjs";
@@ -44,7 +44,7 @@ import {
   runAudit,
 } from "../../packages/core/src/work-audit/report.mjs";
 import { CENSUS_SWEEPS, sweepLimits } from "../../packages/core/src/work-audit/census.mjs";
-import { LIMIT_KEYS, limitRecord } from "../../packages/core/src/work-audit/reads.mjs";
+import { LIMIT_KEYS, limitRecord } from "@aof/work/audit/reads";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -621,7 +621,7 @@ export const auditCommandTests = [
       // own fixture constructor (which is what it did before review, and proved nothing). Every
       // finding the checks leaf raises carries doctor's four keys and no escalation flag, so there
       // is no field at the raising site through which a lane could elect its own bypass.
-      const { assessAnchorFreshness } = await import("../../packages/core/src/work/loops-checks.mjs");
+      const { assessAnchorFreshness } = await import("@aof/work-graph/checks");
       const stale = assessAnchorFreshness(
         { source: "/probe/loops", present: true, findings: [], nodes: [{
           id: "anchor:probe", kind: "anchor", title: "probe", path: "/probe/loops/probe.md",
@@ -923,7 +923,7 @@ export const auditCommandTests = [
     name: "59/04 03.7: the shipped registry, the auditor included, still produces no gating finding",
     run: async () => {
       const { GATING_CODES, checkActuatorArbitration, checkAnchorGrounding, checkGrounding, checkPairing, checkReferenceOwnership, checkTimescale } =
-        await import("../../packages/core/src/work/loops-checks.mjs");
+        await import("@aof/work-graph/checks");
       const model = await loadLoops(BUNDLE);
       const findings = [checkGrounding, checkAnchorGrounding, checkPairing, checkReferenceOwnership, checkActuatorArbitration, checkTimescale]
         .flatMap((check) => check(model));
@@ -935,7 +935,7 @@ export const auditCommandTests = [
   {
     name: "59/04 03.8: the cadence is declared even though nothing schedules it yet, and the audit is runnable on demand",
     run: async () => {
-      const { GATE_ORDER } = await import("../../packages/core/src/work/loop.mjs");
+      const { GATE_ORDER } = await import("@aof/work-loop/engine");
       const model = await loadLoops(BUNDLE);
       const auditor = model.nodes.find((node) => node.kind === "auditor");
       assert.ok(auditor.fields.cadence != null, "it declares one");

@@ -17,8 +17,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { registerDeclarations, registerEntries, qualifiedRefsIn, declaredIdOn } from "../../packages/core/src/declared-id.mjs";
-import { CONTROL_FINDING_CODES, fitnessDeclarations } from "../../packages/core/src/work/doctor-controls.mjs";
+import { registerDeclarations, registerEntries, qualifiedRefsIn, declaredIdOn } from "@aof/work/declared-id";
+import { CONTROL_FINDING_CODES, fitnessDeclarations } from "@aof/work/audit/controls";
 import {
   ADR_LITERALS,
   FROZEN_ASKS,

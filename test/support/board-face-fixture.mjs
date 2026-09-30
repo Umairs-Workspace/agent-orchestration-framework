@@ -34,7 +34,7 @@ import path from "node:path";
 import { handleWorkApi } from "../../packages/core/src/board-ui.mjs";
 import { openGlobalWorkProjectionStore, upsertWorkItemContent, upsertWorkItems, readWorkspaceItems, workspaceIdFor } from "../../packages/core/src/global-work-store.mjs";
 import { RESYNC_REQUESTED, readResync, runResyncDispatchTick } from "../../packages/core/src/mesh/resync.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../packages/core/src/assignment-record.mjs";
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
 import { loadWorkspace } from "../../packages/core/src/work.mjs";
 
 // The REAL timers, captured at MODULE LOAD — before any mounted app installs its

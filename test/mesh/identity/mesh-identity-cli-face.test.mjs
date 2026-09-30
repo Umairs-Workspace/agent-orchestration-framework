@@ -19,7 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { meshDir } from "../../../packages/core/src/mesh/store.mjs";
-import { installHash, sanitizeHostname } from "../../../packages/core/src/node-identity.mjs";
+import { installHash, sanitizeHostname } from "@aof/mesh/node-identity";
 import { loadWorkspace } from "../../../packages/core/src/work.mjs";
 import { keyedByOldId } from "../../../packages/core/src/commands/mesh/identity.mjs";
 
