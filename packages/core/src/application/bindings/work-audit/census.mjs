@@ -1,7 +1,7 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createAuditCensus } from "@aof/work/audit/census";
 import { runBounded, DEFAULT_DEADLINE_MS } from "@aof/execution/bounded-process";
-import { isToolkitRoot, toolkitProgram } from "../../../work-audit/toolkit.mjs";
+import { isToolkitRoot, toolkitProgram, toolkitNode } from "../../../work-audit/toolkit.mjs";
 
 export function assembleWorkAuditCensus({  } = {}) {
   // Core composition for work-owned audit services.
@@ -34,7 +34,7 @@ export function assembleWorkAuditCensus({  } = {}) {
     sweepDeclarationProblems,
     sweepLimits,
     walkSuiteFiles,
-  } = createAuditCensus({ runBounded, DEFAULT_DEADLINE_MS, isToolkitRoot, toolkitProgram });
+  } = createAuditCensus({ runBounded, DEFAULT_DEADLINE_MS, isToolkitRoot, toolkitProgram, nodeExecutable: toolkitNode });
 
   return { AUDIT_FINDING_CODES, CENSUS_SWEEPS, LEDGER_PROJECT, LIMIT_KEYS, PROBE_PROGRAM, SWEEP_BASES, TEST_ROOTS, UNREGISTERED_BASELINE, assembledSuite, assertSweepsDeclared, baselineProblems, ledgerApplies, limitDeclarationProblems, limitRecord, readFinding, readRecord, readRegistrationIndexes, registrationDecision, registrationSources, runCensus, runnerBindings, runnerImportedSuites, runnerSpreadNames, spreadClaimLimit, sweepDeclarationProblems, sweepLimits, walkSuiteFiles };
 }

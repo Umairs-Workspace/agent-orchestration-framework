@@ -4,7 +4,7 @@ import { fitnessDeclarations, redProbeRows } from "./controls.mjs";
 import { limitRecord, readFinding, readRecord } from "./reads.mjs";
 
 // The application supplies execution, installation, vocabulary and graph collaborators.
-export function createAuditEvidence({ runBounded, DEFAULT_DEADLINE_MS, attemptedCommand, toolkitProgram }) {
+export function createAuditEvidence({ runBounded, DEFAULT_DEADLINE_MS, attemptedCommand, toolkitProgram, nodeExecutable = () => process.execPath }) {
 // THE EVIDENCE LANE — milestone 59 / story 02. ADR-002 §2/§3, ADR-004 §1/§3. FF-5906.
 //
 // A milestone's fitness register says, row by row, which control enforces which invariant and
@@ -526,7 +526,7 @@ async function driveControl({
   control,
   deadlineMs = DEFAULT_DEADLINE_MS,
   spawn = runBounded,
-  execPath = process.execPath,
+  execPath = nodeExecutable(),
   driveProgram = DRIVE_PROGRAM,
 } = {}) {
   // TWO ROOTS, NAMED APART (77/ADR-002 §1). The DRIVER comes from the toolkit root — where aof was
@@ -594,7 +594,7 @@ async function observeControl({
   registration = null,
   deadlineMs = DEFAULT_DEADLINE_MS,
   spawn = runBounded,
-  execPath = process.execPath,
+  execPath = nodeExecutable(),
   driveProgram = DRIVE_PROGRAM,
   exists = onDisk,
 } = {}) {
@@ -681,7 +681,7 @@ async function runEvidence({
   deadlineMs = DEFAULT_DEADLINE_MS,
   deadlines = null,
   spawn = runBounded,
-  execPath = process.execPath,
+  execPath = nodeExecutable(),
   driveProgram = DRIVE_PROGRAM,
   exists = onDisk,
   observe = observeControl,

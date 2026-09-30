@@ -40,6 +40,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { generateAssetManifest } from "./sea-asset-manifest.mjs";
+import { workspaceDirectory } from './workspace-paths.mjs';
 import { productionDependencyDirs } from './dependency-inventory.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -294,7 +295,7 @@ export function installPayload(installDir) {
   // payload still reads its established bundle/ sidecar through node:sea.
   replaceDirectory(path.join(installDir, "bundle"), copyManifest(manifest.bundle, path.join(repoRoot, "packages", "core", "assets")));
   console.log(`  synced assets/ + SEA bundle/ (${manifest.bundle.length} files each)`);
-  replaceDirectory(path.join(installDir, "ui", "dist"), copyManifest(manifest.ui, path.join(repoRoot, "ui", "dist")));
+  replaceDirectory(path.join(installDir, "ui", "dist"), copyManifest(manifest.ui, path.join(workspaceDirectory(repoRoot, '@aof/ui'), "dist")));
   console.log(`  synced ui/dist (${manifest.ui.length} files)`);
 
   // 3. node_modules — the prod closure, entry-by-entry with lock tolerance.
@@ -329,6 +330,14 @@ export function installPayload(installDir) {
     if (copyModuleDir(dir, path.join(installDir, 'node_modules', rel))) copied += 1;
   }
   console.log('  synced node_modules/ (' + copied + '/' + deps.dirs.length + ' prod-closure entries)');
+
+  // The SEA launcher cannot execute ESM audit children as Node. Keep a real
+  // Node beside every payload as well as every standalone release.
+  const nodeDir = path.join(installDir, 'node-runtime');
+  const nodeName = process.platform === 'win32' ? 'node.exe' : 'node';
+  mkdirSync(nodeDir, { recursive: true });
+  backupThenPlace(process.execPath, path.join(nodeDir, nodeName));
+  pruneBaks(nodeDir, nodeName);
 
   // 4. the trimmed manifest + the build stamp.
   const pkg = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "package.json"), "utf8"));

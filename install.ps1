@@ -287,6 +287,14 @@ function Expand-AofSidecar {
         Copy-Item -Path $sidecarSrc -Destination (Join-Path $InstallDir "node-pty-sidecar") -Recurse -Force
         New-Item -ItemType Directory -Path (Join-Path $InstallDir "node_modules") -Force | Out-Null
         Copy-Item -Path $moduleSrc -Destination (Join-Path (Join-Path $InstallDir "node_modules") "node-pty") -Recurse -Force
+        # Older releases carried PTY files only. New archives also carry the
+        # directory assets read by the SEA; preserve that layout when present.
+        foreach ($member in @("bundle", "ui", "package.json", "src", "node-runtime")) {
+            $assetSrc = Join-Path $stagingDir $member
+            if (Test-Path -LiteralPath $assetSrc) {
+                Copy-Item -LiteralPath $assetSrc -Destination (Join-Path $InstallDir $member) -Recurse -Force
+            }
+        }
     } finally {
         Remove-Item -Path $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
     }
@@ -350,6 +358,23 @@ function Install-AofFiles {
             throw ("aof install: could not remove the prior install at '$InstallDir' -- a file may be locked by a " +
                 "running aof process (e.g. an open terminal session holding node-pty's pty.node). Close all aof " +
                 "terminal sessions and re-run the installer.")
+        }
+
+        foreach ($member in @("bundle", "ui", "package.json", "src", "node-runtime")) {
+            $assetSrc = Join-Path $stagingDir $member
+            if (Test-Path -LiteralPath $assetSrc) {
+                $assetDest = Join-Path $InstallDir $member
+                Remove-Item -LiteralPath $assetDest -Recurse -Force -ErrorAction SilentlyContinue
+                if (Test-Path -LiteralPath $assetDest) { throw "aof install: could not replace the prior sidecar '$assetDest'. Close running aof processes and retry." }
+                Move-Item -LiteralPath $assetSrc -Destination $assetDest -Force
+            }
+        }
+
+        # A standalone release supersedes a prior developer payload. Its audit
+        # children are under src/, but it deliberately has no src/cli.mjs.
+        if ((Test-Path -LiteralPath (Join-Path $InstallDir "node-runtime")) -and
+            -not (Test-Path -LiteralPath (Join-Path $InstallDir "src/cli.mjs"))) {
+            Remove-Item -LiteralPath (Join-Path $InstallDir "BUILD_ID.json") -Force -ErrorAction SilentlyContinue
         }
 
         Move-Item -Path (Join-Path $stagingDir "aof.exe") -Destination (Join-Path $InstallDir "aof.exe") -Force

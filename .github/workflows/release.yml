@@ -85,6 +85,9 @@ jobs:
       - name: Stage pinned asset + sidecar names
         run: node scripts/release/stage-release-assets.mjs --sea-out dist-sea --stage-dir stage --os macos --arch ${{ matrix.arch }}
 
+      - name: Verify extracted release (assets, UI, audit children and real PTY)
+        run: node scripts/release/verify-distribution.mjs --stage-dir stage --os macos --arch ${{ matrix.arch }}
+
       # --- Sign runs AFTER the build step above (postject already ran) ---
       - name: Sign (codesign --options runtime --timestamp -> notarytool submit --wait -> stapler staple)
         env:
@@ -153,6 +156,9 @@ jobs:
       - name: Stage pinned asset + sidecar names
         run: node scripts/release/stage-release-assets.mjs --sea-out dist-sea --stage-dir stage --os windows --arch ${{ matrix.arch }}
 
+      - name: Verify extracted release (assets, UI, audit children and real PTY)
+        run: node scripts/release/verify-distribution.mjs --stage-dir stage --os windows --arch ${{ matrix.arch }}
+
       - name: Sign (AzureSignTool — HSM/cloud OV/EV cert, CA/B June-2023 rule; no file .pfx)
         env:
           AOF_AZURE_SIGN_KEY_VAULT_URL: ${{ secrets.AOF_AZURE_SIGN_KEY_VAULT_URL }}
@@ -196,9 +202,8 @@ jobs:
         with:
           node-version: "22"
 
-      # No linux-* node-pty prebuild is shipped (RESEARCH §2) — a plain
-      # `Yarn immutable install` falls through node-pty's own install script to `node-gyp
-      # rebuild`, compiling the .node from source on THIS runner. A C++
+      # No linux-* node-pty prebuild is shipped. Preparation skips lifecycle
+      # scripts; the reviewed explicit rebuild below compiles on THIS runner. A C++
       # toolchain (build-essential/python3) ships on ubuntu-latest /
       # ubuntu-24.04-arm images by default; make it explicit rather than
       # relying on an unstated image default.
@@ -207,8 +212,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential python3
 
-      - name: Yarn immutable install (compiles node-pty from source — no linux-* prebuild is shipped)
+      - name: Yarn immutable install (lifecycle scripts skipped)
         run: node scripts/prepare-worktree.mjs
+
+      - name: Build reviewed native dependency (ordinary preparation skips lifecycle scripts)
+        run: node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty
 
       - name: Audit dependencies
         run: node scripts/supply-chain-audit.mjs
@@ -241,6 +249,9 @@ jobs:
 
       - name: Stage pinned asset + sidecar names
         run: node scripts/release/stage-release-assets.mjs --sea-out dist-sea --stage-dir stage --os linux --arch ${{ matrix.arch }}
+
+      - name: Verify extracted release (assets, UI, audit children and real PTY)
+        run: node scripts/release/verify-distribution.mjs --stage-dir stage --os linux --arch ${{ matrix.arch }}
 
       - uses: actions/upload-artifact@v4
         with:

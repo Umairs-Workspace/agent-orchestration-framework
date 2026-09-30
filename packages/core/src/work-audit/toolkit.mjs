@@ -45,6 +45,14 @@ export function toolkitRoot() {
   return coreRoot();
 }
 
+// A SEA executable cannot interpret a JavaScript child as Node does. Releases
+// carry the build host's unmodified Node for the declared audit child programs.
+// Source and copied installations continue to use their running Node.
+export function toolkitNode() {
+  const node = path.join(toolkitRoot(), 'node-runtime', process.platform === 'win32' ? 'node.exe' : 'node');
+  return existsSync(node) ? node : process.execPath;
+}
+
 /**
  * PURE. The reasons a spawn target is not admissible, as sentences naming the path. Empty means the
  * target may be started. Driven from both sides by the control, so "no offender found" is never a

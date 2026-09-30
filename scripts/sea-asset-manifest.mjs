@@ -16,6 +16,7 @@
 //     omitted from the binary)
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
+import { workspaceDirectory } from './workspace-paths.mjs';
 
 // Recursively list every FILE under `dir`, returned as POSIX-style paths
 // relative to `dir`, sorted. Symlinks are treated as regular files/dirs via
@@ -39,13 +40,13 @@ function walkFiles(dir) {
 }
 
 // generateAssetManifest(repoRoot) -> { bundle: string[], ui: string[] }
-//   bundle — every file under <repoRoot>/src/bundle/**, relative to that root
+//   bundle — every file under the locked aof owner's assets/, relative to it
 //            (e.g. "bundle.json", "commands/next.md").
-//   ui     — every file under <repoRoot>/ui/dist/**, relative to that root
+//   ui     — every file under the locked @aof/ui owner's dist/, relative to it
 //            (e.g. "index.html", "assets/index.js").
 export function generateAssetManifest(repoRoot) {
-  const bundleDir = path.join(repoRoot, "packages", "core", "assets");
-  const uiDistDir = path.join(repoRoot, "ui", "dist");
+  const bundleDir = path.join(workspaceDirectory(repoRoot, 'aof'), 'assets');
+  const uiDistDir = path.join(workspaceDirectory(repoRoot, '@aof/ui'), 'dist');
   return {
     bundle: walkFiles(bundleDir),
     ui: walkFiles(uiDistDir),

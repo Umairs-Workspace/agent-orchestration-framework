@@ -44,6 +44,25 @@ function readScript(name) {
 
 export const releaseWorkflowLintTests = [
   {
+    name: 'release-workflow-lint/extracted runtime and real PTY gate runs before each leg signs or uploads',
+    async run() {
+      const text = stripYamlComments(readWorkflow());
+      for (const os of ['macos', 'windows', 'linux']) {
+        const job = text.match(new RegExp(`  build-${os}:[\\s\\S]*?(?=\\n  [a-z][a-z-]*:|$)`))?.[0];
+        assert.ok(job, os);
+        const prepare = job.indexOf('node scripts/prepare-worktree.mjs');
+        const build = job.indexOf('node scripts/build-sea.mjs');
+        const stage = job.indexOf('node scripts/release/stage-release-assets.mjs');
+        const gate = job.indexOf('node scripts/release/verify-distribution.mjs');
+        const upload = job.indexOf('actions/upload-artifact@');
+        assert.ok(prepare < build && build < stage && stage < gate && gate < upload, os + ': prepare, build, stage, execute, upload');
+        const sign = job.search(/node scripts\/release\/sign-/u);
+        if (sign !== -1) assert.ok(gate < sign, os + ': execute before signing');
+        if (os === 'linux') assert.ok(job.indexOf('rebuild node-pty') > prepare && job.indexOf('rebuild node-pty') < build);
+      }
+    },
+  },
+  {
     name: "release-workflow-lint/00 the workflow file exists and is non-empty",
     run: async () => {
       const text = readWorkflow();

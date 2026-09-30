@@ -31,23 +31,33 @@ Requires **Node ≥ 20**; release builds use Node 22.
 
 ```sh
 # from the repo root
-node scripts/prepare-worktree.mjs  # immutable install with the checked-in Yarn version
+node scripts/prepare-worktree.mjs  # immutable install; lifecycle scripts skipped
 
 # verify
-node bin/aof.mjs --help
-node bin/aof.mjs project doctor
+node packages/core/bin/aof.mjs --help
+node packages/core/bin/aof.mjs project doctor
 ```
 
 CLI source edits take effect immediately. From another repository, invoke
-`node /path/to/aof/bin/aof.mjs …` with that repository as the working directory.
+`node /path/to/aof/packages/core/bin/aof.mjs …` with that repository as the working directory.
 For an installed `aof` executable, use `node scripts/install-local.mjs`.
 
 Use `yarn` through Corepack, or invoke `node .yarn/releases/yarn-4.18.1.cjs` directly.
 Lifecycle scripts are disabled by default; version-pinned exceptions in `package.json` permit the
 reviewed esbuild, node-pty, and fsevents builds. Linux native builds require Python and a C++ toolchain.
+After ordinary preparation on Linux, explicitly build the reviewed native dependency with
+`node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty` when PTY sessions are needed.
 Run `node scripts/supply-chain-audit.mjs` after dependency changes. npm lockfiles are no longer used.
 
 The setup UI (`aof assets ui`) and the work board (`aof work ui`) serve a built front-end — build it once with `yarn ui:build` (see [Tests](#tests)).
+
+Before installing a changed launcher, validate its complete release in temporary locations:
+`node scripts/build-sea.mjs --out <temporary-build-dir>`, then
+`node scripts/release/stage-release-assets.mjs --sea-out <temporary-build-dir> --stage-dir <temporary-stage-dir> --os <windows|macos|linux> --arch <x64|arm64>`, and
+`node scripts/release/verify-distribution.mjs --stage-dir <temporary-stage-dir> --os <windows|macos|linux> --arch <x64|arm64>`.
+Run on the target host; this verifies extracted assets, UI, audit children and real terminal I/O.
+The existing `node-pty-<platform>-<arch>` archive carries all directory sidecars, including the
+unmodified Node runtime used for audit children. It travels with the matching executable and checksum.
 
 ---
 

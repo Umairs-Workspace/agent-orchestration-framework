@@ -92,6 +92,16 @@ function buildSeaOutFixture(baseDir, ptyPlatformArch) {
   const moduleSrc = path.join(seaOut, "node_modules", "node-pty", "lib");
   mkdirSync(sidecarSrc, { recursive: true });
   mkdirSync(moduleSrc, { recursive: true });
+  mkdirSync(path.join(seaOut, 'bundle'), { recursive: true });
+  mkdirSync(path.join(seaOut, 'ui', 'dist'), { recursive: true });
+  writeFileSync(path.join(seaOut, 'bundle', 'bundle.json'), '{}');
+  writeFileSync(path.join(seaOut, 'ui', 'dist', 'index.html'), '<main>installed UI</main>');
+  writeFileSync(path.join(seaOut, 'package.json'), '{"version":"0.1.0"}');
+  mkdirSync(path.join(seaOut, 'src', 'work'), { recursive: true });
+  mkdirSync(path.join(seaOut, 'node-runtime'), { recursive: true });
+  writeFileSync(path.join(seaOut, 'src', 'work', 'audit-probe.mjs'), '// child');
+  writeFileSync(path.join(seaOut, 'src', 'work', 'audit-drive.mjs'), '// child');
+  writeFileSync(path.join(seaOut, 'node-runtime', 'node'), 'fixture node runtime');
   writeFileSync(path.join(sidecarSrc, "pty.node"), "fixture-pty-node-bytes", "utf8");
   writeFileSync(path.join(seaOut, "node_modules", "node-pty", "package.json"), JSON.stringify({ name: "node-pty", version: "1.1.0" }), "utf8");
   writeFileSync(path.join(moduleSrc, "index.js"), "module.exports = {};", "utf8");

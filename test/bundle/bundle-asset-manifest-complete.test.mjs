@@ -96,6 +96,9 @@ export const bundleAssetManifestCompleteTests = [
         await mkdir(path.join(fixtureRepo, "ui"), { recursive: true });
         await cp(path.join(repoRoot, "packages", "core", "assets"), path.join(fixtureRepo, "packages", "core", "assets"), { recursive: true });
         await cp(path.join(repoRoot, "ui", "dist"), path.join(fixtureRepo, "ui", "dist"), { recursive: true });
+        await cp(path.join(repoRoot, 'yarn.lock'), path.join(fixtureRepo, 'yarn.lock'));
+        await cp(path.join(repoRoot, 'packages/core/package.json'), path.join(fixtureRepo, 'packages/core/package.json'));
+        await cp(path.join(repoRoot, 'ui/package.json'), path.join(fixtureRepo, 'ui/package.json'));
 
         // Generate the manifest BEFORE planting the un-manifested file — it
         // freezes the member set at that moment, exactly like a real build

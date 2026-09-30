@@ -11,7 +11,7 @@ import {
 } from "./reads.mjs";
 
 // The application supplies execution, installation, vocabulary and graph collaborators.
-export function createAuditCensus({ runBounded, DEFAULT_DEADLINE_MS, isToolkitRoot, toolkitProgram }) {
+export function createAuditCensus({ runBounded, DEFAULT_DEADLINE_MS, isToolkitRoot, toolkitProgram, nodeExecutable = () => process.execPath }) {
 // THE INSTRUMENT CENSUS — milestone 59 / story 01. ADR-003 §2 and §4, ADR-004 §1.
 //
 // "Is this fitness function actually wired into CI?" has had a WRONG ANSWER in this
@@ -514,7 +514,7 @@ const PROBE_PROGRAM = "src/work/audit-probe.mjs";
 // evaluates 880 test modules inside the aof process, which is 66/ADR-004 §2's refusal exactly.
 //
 // `spawn` is injected so the truncated-read path is drivable without breaking a real runner.
-async function assembledSuite({ repoRoot, runner = "scripts/test.mjs", deadlineMs = DEFAULT_DEADLINE_MS, spawn = runBounded, execPath = process.execPath } = {}) {
+async function assembledSuite({ repoRoot, runner = "scripts/test.mjs", deadlineMs = DEFAULT_DEADLINE_MS, spawn = runBounded, execPath = nodeExecutable() } = {}) {
   // TWO ROOTS, NAMED APART (77/ADR-002 §1). The PROBE is one of aof's own programs and comes from
   // the toolkit root — where aof was installed. The RUNNER is the subject and stays resolved
   // against `repoRoot`, as does the child's working directory. Until 77/04 the probe was joined
@@ -565,7 +565,7 @@ async function runCensus({
   baseline = null,
   deadlineMs = DEFAULT_DEADLINE_MS,
   spawn = runBounded,
-  execPath = process.execPath,
+  execPath = nodeExecutable(),
 } = {}) {
   assertSweepsDeclared(sweeps);
   // THE LEDGER THAT APPLIES HERE (chore 99). A caller that NAMED one is naming its own and gets

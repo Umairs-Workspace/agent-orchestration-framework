@@ -16,6 +16,15 @@ export const coreWorkspaceTests = [
     try {
       await mkdir(unrelated);
       installPayload(payload);
+      // An update removes retired source, assets and dependencies; workspace
+      // copies remain real directories, including when the target has spaces.
+      await writeFile(path.join(payload, 'src', 'retired.mjs'), '// stale');
+      await writeFile(path.join(payload, 'assets', 'retired.md'), 'stale');
+      await mkdir(path.join(payload, 'node_modules', 'retired-dependency'));
+      installPayload(payload);
+      assert.ok(!(await readdir(path.join(payload, 'src'))).includes('retired.mjs'));
+      assert.ok(!(await readdir(path.join(payload, 'assets'))).includes('retired.md'));
+      assert.ok(!(await readdir(path.join(payload, 'node_modules'))).includes('retired-dependency'));
       assert.ok(!(await readdir(path.join(payload, 'node_modules', '@aof'))).includes('ui'));
       // A staged application wins over a package visible in an ancestor directory.
       await mkdir(path.join(payload, 'ui', 'dist'), { recursive: true });

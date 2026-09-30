@@ -47,16 +47,21 @@ STAMP="$DST/$3"
 mkdir -p "$DST/bin"
 cp "$SRC/bin/aof.mjs" "$DST/bin/aof.mjs"
 cp "$SRC/package.json" "$DST/package.json"
-# Focus still resolves the complete workspace graph. Carry all current manifests and the
-# pinned tool/configuration with the lock; node_modules is installed natively in the distro.
-mkdir -p "$DST/ui" "$DST/.yarn/releases" "$DST/scripts"
-cp "$SRC/ui/package.json" "$DST/ui/package.json"
-# Carry workspace code as real Linux files; never copy Windows dependency trees.
-tar -C "$SRC" --exclude=node_modules --exclude=.git -cf - packages | tar -C "$DST" -xf -
+# Focus still resolves the complete workspace graph. Follow locked owners,
+# including relocated apps, and remove retired source files on updates. rsync
+# keeps the distro's own nested dependencies and Rust build outputs untouched.
+command -v rsync >/dev/null || { echo "rsync is required for workspace synchronization" >&2; exit 1; }
+WORKSPACES="$(node "$SRC/scripts/workspace-paths.mjs" --list)"
+while IFS= read -r workspace; do
+  [ -n "$workspace" ] || continue
+  mkdir -p "$DST/$workspace"
+  rsync -a --delete --exclude=node_modules --exclude=target --exclude=.git "$SRC/$workspace/" "$DST/$workspace/"
+done <<< "$WORKSPACES"
+mkdir -p "$DST/.yarn/releases" "$DST/scripts"
 cp "$SRC/yarn.lock" "$SRC/.yarnrc.yml" "$DST/"
 cp "$SRC/.yarn/releases/yarn-4.18.1.cjs" "$DST/.yarn/releases/"
 cp "$SRC/scripts/prepare-worktree.mjs" "$SRC/scripts/yarn.mjs" "$DST/scripts/"
-rm -f "$DST/package-lock.json" "$DST/ui/package-lock.json"
+rm -f "$DST/package-lock.json"
 echo "  synced workspaces ($(find "$DST/packages/core/src" -name '*.mjs' | wc -l) core modules)"
 
 # The WORKSPACE config travels too. It is machine-neutral (no paths), and it carries
@@ -77,22 +82,26 @@ fi
 #    a stale native binary that fails at daemon start, far from its cause.
 HASH="$(
   {
-    cat "$SRC/yarn.lock" "$SRC/package.json" "$SRC/ui/package.json" "$SRC/.yarnrc.yml" "$SRC/.yarn/releases/yarn-4.18.1.cjs"
-    find "$SRC/packages" -name node_modules -prune -o -name package.json -type f -print0 | sort -z | xargs -0 cat
+    cat "$SRC/yarn.lock" "$SRC/package.json" "$SRC/.yarnrc.yml" "$SRC/.yarn/releases/yarn-4.18.1.cjs"
+    while IFS= read -r workspace; do cat "$SRC/$workspace/package.json"; done <<< "$WORKSPACES"
   } | sha256sum | cut -d' ' -f1
 )"
 PREV="$(cat "$STAMP" 2>/dev/null || echo none)"
-PTY="$DST/node_modules/node-pty/build/Release/pty.node"
+# Resolve from execution's actual install, not an assumed root-hoisted copy.
+PTY_DIR="$(cd "$DST" && node -e "const {createRequire}=require('node:module'); const path=require('node:path'); try { console.log(path.dirname(createRequire(path.resolve('packages/execution/package.json')).resolve('node-pty/package.json'))); } catch {}")"
+PTY="$PTY_DIR/build/Release/pty.node"
 if [ "$HASH" != "$PREV" ] || [ ! -f "$PTY" ]; then
   echo "  lockfile changed (or node-pty absent) — reinstalling natively"
   cd "$DST" || exit 1
   # Install only core's runtime closure; the worker does not need UI build tools.
   # A failed install writes NO stamp: stamping it would report "lockfile unchanged" on every
   # later deploy, over a tree that never received the new dependency.
-  if ! YARN_ENABLE_IMMUTABLE_INSTALLS=true node .yarn/releases/yarn-4.18.1.cjs workspaces focus aof --production 2>&1 | tail -3; then
+  if ! YARN_ENABLE_SCRIPTS=false YARN_ENABLE_IMMUTABLE_INSTALLS=true node .yarn/releases/yarn-4.18.1.cjs workspaces focus aof --production 2>&1 | tail -3; then
     echo "  Yarn install failed — the stamp is left as it was, so the next deploy retries" >&2
     exit 1
   fi
+  PTY_DIR="$(node -e "const {createRequire}=require('node:module'); const path=require('node:path'); console.log(path.dirname(createRequire(path.resolve('packages/execution/package.json')).resolve('node-pty/package.json')))")"
+  PTY="$PTY_DIR/build/Release/pty.node"
   if [ ! -f "$PTY" ]; then
     echo "  building node-pty from source (no linux-x64 prebuild ships)"
     node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty
@@ -105,7 +114,7 @@ fi
 
 # 3. report what the distro ACTUALLY runs now, read from the distro itself.
 cd "$DST" || exit 1
-echo "  node-pty : $(node -e "require('node-pty'); process.stdout.write('loads OK')" 2>&1 | tail -1)"
+echo "  node-pty : $(node -e "require('node:module').createRequire(require('node:path').resolve('packages/execution/package.json'))('node-pty'); process.stdout.write('loads OK')" 2>&1 | tail -1)"
 echo "  aof      : $(command -v aof || echo "NOT LINKED — link the aof package in $DST/packages/core")"
 echo "  version  : $(aof --version 2>&1 | head -1)"
 echo

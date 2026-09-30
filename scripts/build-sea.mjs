@@ -43,6 +43,7 @@ import { fileURLToPath } from "node:url";
 import esbuild from "esbuild";
 import { inject as postjectInject } from "postject";
 import { generateAssetManifest } from "./sea-asset-manifest.mjs";
+import { workspaceDirectory, dependencyDirectory } from './workspace-paths.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -115,7 +116,7 @@ export function assertSafeOutDir(outDir, { repoRoot: root = repoRoot, cwd = proc
 function ptyPrebuildDir() {
   const platform = process.platform;
   const arch = process.arch;
-  const dir = path.join(repoRoot, "node_modules", "node-pty", "prebuilds", `${platform}-${arch}`);
+  const dir = path.join(dependencyDirectory(repoRoot, '@aof/execution', 'node-pty'), "prebuilds", `${platform}-${arch}`);
   if (!existsSync(dir)) {
     throw new Error(
       `No node-pty prebuild for ${platform}-${arch} at ${dir}. ` +
@@ -172,6 +173,15 @@ function runMacCodesignSteps(steps, when) {
   }
 }
 
+export function assertSeaBundle(metafile, root = repoRoot, requiredEntries = ['packages/core/src/cli.mjs', 'packages/core/src/application/assemble.mjs']) {
+  const inputs = Object.keys(metafile.inputs).map(file => path.relative(root, path.resolve(root, file)).replaceAll('\\', '/'));
+  for (const required of requiredEntries) {
+    if (!inputs.includes(required)) throw new Error(`SEA bundle is missing core entry ${required}`);
+  }
+  const forbidden = inputs.filter(file => file.startsWith('../') || /^(src\/|apps\/|ui\/|packages\/core\/assets\/)/u.test(file) || /(?:^|\/)node-pty\//u.test(file));
+  if (forbidden.length) throw new Error(`SEA bundle contains inputs outside its runtime closure: ${forbidden.join(', ')}`);
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const outDir = assertSafeOutDir(options.out);
@@ -184,6 +194,7 @@ async function main() {
   // --- 1. esbuild -> one CJS bundle, node-pty + asset trees externalized ---
   const buildResult = step("esbuild bundle (ESM -> CJS, node22, externalized node-pty + asset trees)", () =>
     esbuild.buildSync({
+      absWorkingDir: repoRoot,
       entryPoints: [path.join(repoRoot, "scripts", "sea-entry.mjs")],
       bundle: true,
       platform: "node",
@@ -204,6 +215,24 @@ async function main() {
     })
   );
   writeFileSync(metafileOut, JSON.stringify(buildResult.metafile, null, 2), "utf8");
+  assertSeaBundle(buildResult.metafile);
+
+  step('bundle declared audit child programs and stage their Node runtime', () => {
+    for (const name of ['audit-probe', 'audit-drive']) {
+      const child = esbuild.buildSync({
+        absWorkingDir: repoRoot,
+        entryPoints: [path.join(repoRoot, 'scripts', `sea-${name}-entry.mjs`)],
+        bundle: true, platform: 'node', format: 'esm', target: 'node22',
+        outfile: path.join(outDir, 'src', 'work', `${name}.mjs`), metafile: true,
+      });
+      assertSeaBundle(child.metafile, repoRoot, [`packages/core/src/work/${name}.mjs`]);
+      writeFileSync(path.join(outDir, `${name}-meta.json`), JSON.stringify(child.metafile, null, 2));
+    }
+    const node = path.join(outDir, 'node-runtime', process.platform === 'win32' ? 'node.exe' : 'node');
+    mkdirSync(path.dirname(node), { recursive: true });
+    copyFileSync(process.execPath, node);
+    if (process.platform !== 'win32') chmodSync(node, 0o755);
+  });
 
   // --- assert externalization from the --metafile (fail loudly at build time) ---
   step("assert node-pty is externalized (not inlined)", () => {
@@ -232,7 +261,7 @@ async function main() {
       copyFileSync(src, dest);
     }
     for (const rel of manifest.ui) {
-      const src = path.join(repoRoot, "ui", "dist", rel);
+      const src = path.join(workspaceDirectory(repoRoot, '@aof/ui'), "dist", rel);
       const dest = path.join(outDir, "ui", "dist", rel);
       mkdirSync(path.dirname(dest), { recursive: true });
       copyFileSync(src, dest);
@@ -254,13 +283,19 @@ async function main() {
     // to ITS OWN install; under a SEA it is reached via
     // createRequire(process.execPath)("node-pty") (ADR-002), so the sidecar
     // also needs node-pty's package.json + lib/ so createRequire can resolve
-    // the module id at all. Copy the whole installed package next to the
-    // binary as the sidecar module tree; the prebuilds/ subdir above is kept
+    // the module id at all. Copy its runtime files and target prebuild next to
+    // the binary; the prebuilds/ subdir above is kept
     // for direct addon inspection/verification too.
-    const nodePtyPkgDir = path.join(repoRoot, "node_modules", "node-pty");
+    const nodePtyPkgDir = dependencyDirectory(repoRoot, '@aof/execution', 'node-pty');
     const sidecarModuleDir = path.join(outDir, "node_modules", "node-pty");
     mkdirSync(path.dirname(sidecarModuleDir), { recursive: true });
-    cpSync(nodePtyPkgDir, sidecarModuleDir, { recursive: true });
+    mkdirSync(sidecarModuleDir, { recursive: true });
+    copyFileSync(path.join(nodePtyPkgDir, 'package.json'), path.join(sidecarModuleDir, 'package.json'));
+    copyFileSync(path.join(nodePtyPkgDir, 'LICENSE'), path.join(sidecarModuleDir, 'LICENSE'));
+    cpSync(path.join(nodePtyPkgDir, 'lib'), path.join(sidecarModuleDir, 'lib'), { recursive: true });
+    // Carry only this target's native binaries and companions, never foreign
+    // prebuilds, build tooling or another workspace's local dependencies.
+    cpSync(prebuildDir, path.join(sidecarModuleDir, 'prebuilds', `${process.platform}-${process.arch}`), { recursive: true });
     console.log(`node-pty sidecar copied from ${prebuildDir}`);
   });
 
