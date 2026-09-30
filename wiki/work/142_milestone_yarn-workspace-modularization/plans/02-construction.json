@@ -1,0 +1,5345 @@
+{
+  "baseline": "6a04b43",
+  "scope": "Actual core-owned constructor calls and supplied collaborators. Each entry is a temporary compatibility export; each collaborator names its implementation constructor, not an import through that entry. Paths is the application policy. This ledger is review documentation, never runtime discovery.",
+  "bindings": [
+    {
+      "entry": "src/agent-session-driver.mjs",
+      "constructor": "src/application/bindings/agent-session-driver.mjs",
+      "instance": "agentSessionDriver",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/claude-trust.mjs",
+          "port": "claudeTrustServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/observe.mjs",
+          "port": "workObserveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/terminal-providers.mjs",
+          "port": "terminalProvidersServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/terminal/session-screen.mjs",
+          "port": "terminalSessionScreenServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/board-mesh-execution.mjs",
+      "constructor": "src/application/bindings/board-mesh-execution.mjs",
+      "instance": "boardMeshExecution",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/board-serve.mjs",
+      "constructor": "src/application/bindings/board-serve.mjs",
+      "instance": "boardServe",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/setup-ui.mjs",
+          "port": "setupUiServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/claude-trust.mjs",
+          "port": "claudeTrustServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/board-ui.mjs",
+      "constructor": "src/application/bindings/board-ui.mjs",
+      "instance": "boardUi",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "commandCoreServices",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/cache-read.mjs",
+      "constructor": "src/application/bindings/cache-read.mjs",
+      "instance": "cacheRead",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/claude-trust.mjs",
+      "constructor": "src/application/bindings/claude-trust.mjs",
+      "instance": "claudeTrust",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/acceptor.mjs",
+      "constructor": "src/application/bindings/commands/acceptor.mjs",
+      "instance": "commandsAcceptor",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-acceptor/criterion.mjs",
+          "port": "workAcceptorCriterionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-acceptor/observations.mjs",
+          "port": "workAcceptorObservationsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/harness-transitions.mjs",
+          "port": "effectsHarnessTransitionsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/archive.mjs",
+      "constructor": "src/application/bindings/commands/archive.mjs",
+      "instance": "commandsArchive",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/effects/stream-transitions.mjs",
+          "port": "effectsStreamTransitionsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/audit.mjs",
+      "constructor": "src/application/bindings/commands/audit.mjs",
+      "instance": "commandsAudit",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-audit/report.mjs",
+          "port": "workAuditReportServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-audit/prompt-layer.mjs",
+          "port": "workAuditPromptLayerServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-audit/declared-bounds.mjs",
+          "port": "workAuditDeclaredBoundsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/continue.mjs",
+      "constructor": "src/application/bindings/commands/continue.mjs",
+      "instance": "commandsContinue",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/assignment.mjs",
+          "port": "meshAssignmentServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/item-transitions.mjs",
+          "port": "effectsItemTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/board-mesh-execution.mjs",
+          "port": "boardMeshExecutionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/counters.mjs",
+      "constructor": "src/application/bindings/commands/counters.mjs",
+      "instance": "commandsCounters",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/run-retry.mjs",
+          "port": "commandsRunRetryServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/diagram/export.mjs",
+      "constructor": "src/application/bindings/commands/diagram/export.mjs",
+      "instance": "commandsDiagramExport",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/diagrams/rasterize.mjs",
+          "port": "diagramsRasterizeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/diagram/file.mjs",
+      "constructor": "src/application/bindings/commands/diagram/file.mjs",
+      "instance": "commandsDiagramFile",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/diagram/plan.mjs",
+      "constructor": "src/application/bindings/commands/diagram/plan.mjs",
+      "instance": "commandsDiagramPlan",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/dispatch.mjs",
+      "constructor": "src/application/bindings/commands/dispatch.mjs",
+      "instance": "commandsDispatch",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/dispatch.mjs",
+          "port": "workDispatchServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/doc.mjs",
+      "constructor": "src/application/bindings/commands/doc.mjs",
+      "instance": "commandsDoc",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/doctor.mjs",
+      "constructor": "src/application/bindings/commands/doctor.mjs",
+      "instance": "commandsDoctor",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/doctor.mjs",
+          "port": "workDoctorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/reconcile.mjs",
+          "port": "effectsReconcileServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/drive.mjs",
+      "constructor": "src/application/bindings/commands/drive.mjs",
+      "instance": "commandsDrive",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/agent-session-driver.mjs",
+          "port": "agentSessionDriverServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/claude-trust.mjs",
+          "port": "claudeTrustServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/ask-request.mjs",
+          "port": "loopAskRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-heartbeat-consumption.mjs",
+          "port": "runHeartbeatConsumptionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-session-capture.mjs",
+          "port": "runSessionCaptureServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/observe.mjs",
+          "port": "workObserveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-spend-ingest.mjs",
+          "port": "runSpendIngestServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/feedback.mjs",
+      "constructor": "src/application/bindings/commands/feedback.mjs",
+      "instance": "commandsFeedback",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/doc-transitions.mjs",
+          "port": "effectsDocTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "globalWorkPublisherServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/find.mjs",
+      "constructor": "src/application/bindings/commands/find.mjs",
+      "instance": "commandsFind",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/grade.mjs",
+      "constructor": "src/application/bindings/commands/grade.mjs",
+      "instance": "commandsGrade",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/graph/build.mjs",
+      "constructor": "src/application/bindings/commands/graph/build.mjs",
+      "instance": "commandsGraphBuild",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/graphify.mjs",
+          "port": "graphifyServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/graph/query.mjs",
+      "constructor": "src/application/bindings/commands/graph/query.mjs",
+      "instance": "commandsGraphQuery",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/graphify.mjs",
+          "port": "graphifyServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/graph/serve.mjs",
+      "constructor": "src/application/bindings/commands/graph/serve.mjs",
+      "instance": "commandsGraphServe",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/graph-mcp-server.mjs",
+          "port": "graphMcpServerServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/graph/triage.mjs",
+      "constructor": "src/application/bindings/commands/graph/triage.mjs",
+      "instance": "commandsGraphTriage",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/graphify.mjs",
+          "port": "graphifyServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/import-milestone.mjs",
+      "constructor": "src/application/bindings/commands/import-milestone.mjs",
+      "instance": "commandsImportMilestone",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/import/recovery.mjs",
+          "port": "importRecoveryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/import/materialize.mjs",
+          "port": "importMaterializeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/import/store.mjs",
+          "port": "importStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/memory.mjs",
+          "port": "workMemoryServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/insert-chore.mjs",
+      "constructor": "src/application/bindings/commands/insert-chore.mjs",
+      "instance": "commandsInsertChore",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/insert-shared.mjs",
+          "port": "commandsInsertSharedServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/promote.mjs",
+          "port": "commandsPromoteServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/insert-milestone.mjs",
+      "constructor": "src/application/bindings/commands/insert-milestone.mjs",
+      "instance": "commandsInsertMilestone",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/insert-shared.mjs",
+          "port": "commandsInsertSharedServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/promote.mjs",
+          "port": "commandsPromoteServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/insert-shared.mjs",
+      "constructor": "src/application/bindings/commands/insert-shared.mjs",
+      "instance": "commandsInsertShared",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/effects/stream-transitions.mjs",
+          "port": "effectsStreamTransitionsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/insert-story.mjs",
+      "constructor": "src/application/bindings/commands/insert-story.mjs",
+      "instance": "commandsInsertStory",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/insert-shared.mjs",
+          "port": "commandsInsertSharedServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/insert-uat.mjs",
+      "constructor": "src/application/bindings/commands/insert-uat.mjs",
+      "instance": "commandsInsertUat",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/insert-shared.mjs",
+          "port": "commandsInsertSharedServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/promote.mjs",
+          "port": "commandsPromoteServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/item-status.mjs",
+      "constructor": "src/application/bindings/commands/item-status.mjs",
+      "instance": "commandsItemStatus",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/item-transitions.mjs",
+          "port": "effectsItemTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "globalWorkPublisherServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/doctor.mjs",
+          "port": "workDoctorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/notify.mjs",
+          "port": "notifyNotifyServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/list.mjs",
+      "constructor": "src/application/bindings/commands/list.mjs",
+      "instance": "commandsList",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/board-mesh-execution.mjs",
+          "port": "boardMeshExecutionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/ask-request.mjs",
+          "port": "loopAskRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/loop-document.mjs",
+      "constructor": "src/application/bindings/commands/loop-document.mjs",
+      "instance": "commandsLoopDocument",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/loop-record.mjs",
+      "constructor": "src/application/bindings/commands/loop-record.mjs",
+      "instance": "commandsLoopRecord",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/loop.mjs",
+      "constructor": "src/application/bindings/commands/loop.mjs",
+      "instance": "commandsLoop",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop-progress.mjs",
+          "port": "loopProgressServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/cycle.mjs",
+          "port": "loopCycleServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/grade.mjs",
+          "port": "commandsGradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/wave.mjs",
+          "port": "loopWaveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/child-drive.mjs",
+          "port": "loopChildDriveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/ask.mjs",
+          "port": "loopAskServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop-diag.mjs",
+          "port": "loopDiagServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/notify.mjs",
+          "port": "notifyNotifyServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/stop.mjs",
+          "port": "loopStopServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/stop-request.mjs",
+          "port": "loopStopRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/loops-graph.mjs",
+      "constructor": "src/application/bindings/commands/loops-graph.mjs",
+      "instance": "commandsLoopsGraph",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/loops-groundedness.mjs",
+      "constructor": "src/application/bindings/commands/loops-groundedness.mjs",
+      "instance": "commandsLoopsGroundedness",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/loops-show.mjs",
+      "constructor": "src/application/bindings/commands/loops-show.mjs",
+      "instance": "commandsLoopsShow",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/loops-validate.mjs",
+      "constructor": "src/application/bindings/commands/loops-validate.mjs",
+      "instance": "commandsLoopsValidate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/assign.mjs",
+      "constructor": "src/application/bindings/commands/mesh/assign.mjs",
+      "instance": "commandsMeshAssign",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/assignment.mjs",
+          "port": "meshAssignmentServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/contribution.mjs",
+      "constructor": "src/application/bindings/commands/mesh/contribution.mjs",
+      "instance": "commandsMeshContribution",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/mesh/identity.mjs",
+          "port": "commandsMeshIdentityServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/heartbeat.mjs",
+          "port": "commandsMeshHeartbeatServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/relay.mjs",
+          "port": "commandsMeshRelayServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/invite.mjs",
+          "port": "commandsMeshInviteServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/join.mjs",
+          "port": "commandsMeshJoinServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/revoke.mjs",
+          "port": "commandsMeshRevokeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/serve.mjs",
+          "port": "commandsMeshServeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/logs.mjs",
+          "port": "commandsMeshLogsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/terminal-resume.mjs",
+          "port": "commandsMeshTerminalResumeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/assign.mjs",
+          "port": "commandsMeshAssignServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/recover-push.mjs",
+          "port": "commandsMeshRecoverPushServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/repo.mjs",
+          "port": "commandsMeshRepoServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/ui.mjs",
+          "port": "commandsMeshUiServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/desktop.mjs",
+          "port": "commandsMeshDesktopServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/desktop-preflight.mjs",
+      "constructor": "src/application/bindings/commands/mesh/desktop-preflight.mjs",
+      "instance": "commandsMeshDesktopPreflight",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/desktop.mjs",
+      "constructor": "src/application/bindings/commands/mesh/desktop.mjs",
+      "instance": "commandsMeshDesktop",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/mesh/desktop-preflight.mjs",
+          "port": "commandsMeshDesktopPreflightServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/heartbeat.mjs",
+      "constructor": "src/application/bindings/commands/mesh/heartbeat.mjs",
+      "instance": "commandsMeshHeartbeat",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/mesh/identity.mjs",
+          "port": "commandsMeshIdentityServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/identity.mjs",
+      "constructor": "src/application/bindings/commands/mesh/identity.mjs",
+      "instance": "commandsMeshIdentity",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/store.mjs",
+          "port": "meshStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/registry.mjs",
+          "port": "meshRegistryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/declarations.mjs",
+          "port": "provideMeshDeclarations",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/invite.mjs",
+      "constructor": "src/application/bindings/commands/mesh/invite.mjs",
+      "instance": "commandsMeshInvite",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/registry.mjs",
+          "port": "meshRegistryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/relay.mjs",
+          "port": "meshRelayServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/join.mjs",
+      "constructor": "src/application/bindings/commands/mesh/join.mjs",
+      "instance": "commandsMeshJoin",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/store.mjs",
+          "port": "meshStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/logs.mjs",
+      "constructor": "src/application/bindings/commands/mesh/logs.mjs",
+      "instance": "commandsMeshLogs",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/diagnostics/log.mjs",
+          "port": "diagnosticsLogServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/recover-push.mjs",
+      "constructor": "src/application/bindings/commands/mesh/recover-push.mjs",
+      "instance": "commandsMeshRecoverPush",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/recovery-push.mjs",
+          "port": "meshRecoveryPushServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/relay.mjs",
+      "constructor": "src/application/bindings/commands/mesh/relay.mjs",
+      "instance": "commandsMeshRelay",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/relay.mjs",
+          "port": "meshRelayServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/repo.mjs",
+      "constructor": "src/application/bindings/commands/mesh/repo.mjs",
+      "instance": "commandsMeshRepo",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "globalWorkPublisherServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/revoke.mjs",
+      "constructor": "src/application/bindings/commands/mesh/revoke.mjs",
+      "instance": "commandsMeshRevoke",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/registry.mjs",
+          "port": "meshRegistryServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/serve.mjs",
+      "constructor": "src/application/bindings/commands/mesh/serve.mjs",
+      "instance": "commandsMeshServe",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/launcher.mjs",
+          "port": "meshLauncherServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/launcher-lock.mjs",
+          "port": "meshLauncherLockServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/diagnostics/log.mjs",
+          "port": "diagnosticsLogServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/session.mjs",
+      "constructor": "src/application/bindings/commands/mesh/session.mjs",
+      "instance": "commandsMeshSession",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/session.mjs",
+          "port": "meshSessionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/terminal-resume.mjs",
+      "constructor": "src/application/bindings/commands/mesh/terminal-resume.mjs",
+      "instance": "commandsMeshTerminalResume",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/assignment-reclaim.mjs",
+          "port": "meshAssignmentReclaimServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/dispatch.mjs",
+          "port": "workDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+          "port": "meshTerminalRelayBridgeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/mesh/ui.mjs",
+      "constructor": "src/application/bindings/commands/mesh/ui.mjs",
+      "instance": "commandsMeshUi",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/ui-serve.mjs",
+          "port": "meshUiServeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-mirror.mjs",
+          "port": "meshTerminalMirrorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+          "port": "meshTerminalRelayBridgeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/diagnostics/log.mjs",
+          "port": "diagnosticsLogServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/messaging/messaging.mjs",
+      "constructor": "src/application/bindings/commands/messaging/messaging.mjs",
+      "instance": "commandsMessagingMessaging",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/notify/notify.mjs",
+          "port": "notifyNotifyServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/secret.mjs",
+          "port": "notifySecretServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/migrate-folder.mjs",
+      "constructor": "src/application/bindings/commands/migrate-folder.mjs",
+      "instance": "commandsMigrateFolder",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/import/recovery.mjs",
+          "port": "importRecoveryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/import/store.mjs",
+          "port": "importStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/next.mjs",
+      "constructor": "src/application/bindings/commands/next.mjs",
+      "instance": "commandsNext",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/item-lock.mjs",
+          "port": "itemLockServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/notion-associate.mjs",
+      "constructor": "src/application/bindings/commands/notion-associate.mjs",
+      "instance": "commandsNotionAssociate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/integrations/routing.mjs",
+          "port": "integrationsRoutingServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/notion-sync-work.mjs",
+      "constructor": "src/application/bindings/commands/notion-sync-work.mjs",
+      "instance": "commandsNotionSyncWork",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/notion/sync-work.mjs",
+          "port": "notionSyncWorkServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/observe.mjs",
+      "constructor": "src/application/bindings/commands/observe.mjs",
+      "instance": "commandsObserve",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/observe.mjs",
+          "port": "workObserveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/promote-finding-to-chore.mjs",
+      "constructor": "src/application/bindings/commands/promote-finding-to-chore.mjs",
+      "instance": "commandsPromoteFindingToChore",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/promote.mjs",
+          "port": "commandsPromoteServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/promote-gap-to-chore.mjs",
+      "constructor": "src/application/bindings/commands/promote-gap-to-chore.mjs",
+      "instance": "commandsPromoteGapToChore",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/insert-shared.mjs",
+          "port": "commandsInsertSharedServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/promote.mjs",
+          "port": "commandsPromoteServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/promote.mjs",
+      "constructor": "src/application/bindings/commands/promote.mjs",
+      "instance": "commandsPromote",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/effects/stream-transitions.mjs",
+          "port": "effectsStreamTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/insert-shared.mjs",
+          "port": "commandsInsertSharedServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/ratchet.mjs",
+      "constructor": "src/application/bindings/commands/ratchet.mjs",
+      "instance": "commandsRatchet",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/regression-gate.mjs",
+      "constructor": "src/application/bindings/commands/regression-gate.mjs",
+      "instance": "commandsRegressionGate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/test.mjs",
+          "port": "commandsTestServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/resolve.mjs",
+      "constructor": "src/application/bindings/commands/resolve.mjs",
+      "instance": "commandsResolve",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/resume.mjs",
+      "constructor": "src/application/bindings/commands/resume.mjs",
+      "instance": "commandsResume",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/item-lock.mjs",
+          "port": "itemLockServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/ask-request.mjs",
+          "port": "loopAskRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/ask.mjs",
+          "port": "loopAskServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/board-mesh-execution.mjs",
+          "port": "boardMeshExecutionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/notify.mjs",
+          "port": "notifyNotifyServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/resync.mjs",
+      "constructor": "src/application/bindings/commands/resync.mjs",
+      "instance": "commandsResync",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/resync.mjs",
+          "port": "meshResyncServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/run-complete.mjs",
+      "constructor": "src/application/bindings/commands/run-complete.mjs",
+      "instance": "commandsRunComplete",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "globalWorkPublisherServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/run-retry.mjs",
+      "constructor": "src/application/bindings/commands/run-retry.mjs",
+      "instance": "commandsRunRetry",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/item-lock.mjs",
+          "port": "itemLockServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/run-start.mjs",
+      "constructor": "src/application/bindings/commands/run-start.mjs",
+      "instance": "commandsRunStart",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "globalWorkPublisherServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/item-lock.mjs",
+          "port": "itemLockServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/session.mjs",
+          "port": "meshSessionServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/run-status.mjs",
+      "constructor": "src/application/bindings/commands/run-status.mjs",
+      "instance": "commandsRunStatus",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/board-mesh-execution.mjs",
+          "port": "boardMeshExecutionServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/tasks.mjs",
+      "constructor": "src/application/bindings/commands/tasks.mjs",
+      "instance": "commandsTasks",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/test.mjs",
+      "constructor": "src/application/bindings/commands/test.mjs",
+      "instance": "commandsTest",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work-audit/census.mjs",
+          "port": "workAuditCensusServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/test-changed.mjs",
+          "port": "workTestChangedServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/test-select.mjs",
+          "port": "workTestSelectServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/toolchain.mjs",
+          "port": "workToolchainServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/trigger.mjs",
+      "constructor": "src/application/bindings/commands/trigger.mjs",
+      "instance": "commandsTrigger",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work-trigger/declaration.mjs",
+          "port": "workTriggerDeclarationServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/tune.mjs",
+      "constructor": "src/application/bindings/commands/tune.mjs",
+      "instance": "commandsTune",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work-tune/corpus.mjs",
+          "port": "workTuneCorpusServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-tune/proposal.mjs",
+          "port": "workTuneProposalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/upgrade.mjs",
+      "constructor": "src/application/bindings/commands/upgrade.mjs",
+      "instance": "commandsUpgrade",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/upgrade.mjs",
+          "port": "workUpgradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/validate.mjs",
+      "constructor": "src/application/bindings/commands/validate.mjs",
+      "instance": "commandsValidate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/doctor.mjs",
+          "port": "commandsDoctorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/work/memory.mjs",
+      "constructor": "src/application/bindings/commands/work/memory.mjs",
+      "instance": "commandsWorkMemory",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/memory.mjs",
+          "port": "workMemoryServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/work-ui.mjs",
+      "constructor": "src/application/bindings/commands/work-ui.mjs",
+      "instance": "commandsWorkUi",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/board-serve.mjs",
+          "port": "boardServeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/ui-serve.mjs",
+          "port": "meshUiServeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/control-stream-server.mjs",
+      "constructor": "src/application/bindings/control-stream-server.mjs",
+      "instance": "controlStreamServer",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-node-registry.mjs",
+          "port": "globalNodeRegistryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/assignment-transitions.mjs",
+          "port": "effectsAssignmentTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+          "port": "meshTerminalRelayBridgeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/relay-client.mjs",
+          "port": "meshRelayClientServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/recovery-push.mjs",
+          "port": "meshRecoveryPushServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/resync.mjs",
+          "port": "meshResyncServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/degrade.mjs",
+      "constructor": "src/application/bindings/degrade.mjs",
+      "instance": "degrade",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/diagnostics/log.mjs",
+          "port": "diagnosticsLogServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/diagnostics/log.mjs",
+      "constructor": "src/application/bindings/diagnostics/log.mjs",
+      "instance": "diagnosticsLog",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/diagrams/rasterize.mjs",
+      "constructor": "src/application/bindings/diagrams/rasterize.mjs",
+      "instance": "diagramsRasterize",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/discord/bot.mjs",
+      "constructor": "src/application/bindings/discord/bot.mjs",
+      "instance": "discordBot",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/discord/commands.mjs",
+          "port": "discordCommandsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/discord/gateway.mjs",
+          "port": "discordGatewayServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/discord/replies.mjs",
+          "port": "discordRepliesServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "provideWork",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "provideMeshPresence",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/work-acceptor/observations.mjs",
+          "port": "provideWorkAcceptorObservations",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/discord/commands.mjs",
+      "constructor": "src/application/bindings/discord/commands.mjs",
+      "instance": "discordCommands",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/ask-messages.mjs",
+          "port": "notifyAskMessagesServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/stop-request.mjs",
+          "port": "loopStopRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/stop.mjs",
+          "port": "provideLoopStop",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/discord/gateway.mjs",
+      "constructor": "src/application/bindings/discord/gateway.mjs",
+      "instance": "discordGateway",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/discord/replies.mjs",
+      "constructor": "src/application/bindings/discord/replies.mjs",
+      "instance": "discordReplies",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/loop/ask-request.mjs",
+          "port": "loopAskRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/ask-messages.mjs",
+          "port": "notifyAskMessagesServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/assignment-transitions.mjs",
+      "constructor": "src/application/bindings/effects/assignment-transitions.mjs",
+      "instance": "effectsAssignmentTransitions",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/outbox.mjs",
+          "port": "effectsOutboxServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/doc-transitions.mjs",
+      "constructor": "src/application/bindings/effects/doc-transitions.mjs",
+      "instance": "effectsDocTransitions",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/harness-transitions.mjs",
+      "constructor": "src/application/bindings/effects/harness-transitions.mjs",
+      "instance": "effectsHarnessTransitions",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-acceptor/store.mjs",
+          "port": "workAcceptorStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/item-transitions.mjs",
+      "constructor": "src/application/bindings/effects/item-transitions.mjs",
+      "instance": "effectsItemTransitions",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/journal.mjs",
+      "constructor": "src/application/bindings/effects/journal.mjs",
+      "instance": "effectsJournal",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/outbox.mjs",
+      "constructor": "src/application/bindings/effects/outbox.mjs",
+      "instance": "effectsOutbox",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/reconcile.mjs",
+      "constructor": "src/application/bindings/effects/reconcile.mjs",
+      "instance": "effectsReconcile",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/run-transitions.mjs",
+      "constructor": "src/application/bindings/effects/run-transitions.mjs",
+      "instance": "effectsRunTransitions",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-heartbeat-consumption.mjs",
+          "port": "runHeartbeatConsumptionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/item-lock.mjs",
+          "port": "itemLockServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/observe.mjs",
+          "port": "workObserveServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/stream-transitions.mjs",
+      "constructor": "src/application/bindings/effects/stream-transitions.mjs",
+      "instance": "effectsStreamTransitions",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/item-lock.mjs",
+          "port": "itemLockServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/fs.mjs",
+      "constructor": "src/application/bindings/fs.mjs",
+      "instance": "fs",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/global-mesh-query.mjs",
+      "constructor": "src/application/bindings/global-mesh-query.mjs",
+      "instance": "globalMeshQuery",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-node-registry.mjs",
+          "port": "globalNodeRegistryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "globalWorkPublisherServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/global-node-registry.mjs",
+      "constructor": "src/application/bindings/global-node-registry.mjs",
+      "instance": "globalNodeRegistry",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/store.mjs",
+          "port": "meshStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/global-work-publisher.mjs",
+      "constructor": "src/application/bindings/global-work-publisher.mjs",
+      "instance": "globalWorkPublisher",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/content-read.mjs",
+          "port": "workContentReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-node-registry.mjs",
+          "port": "globalNodeRegistryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/global-work-store.mjs",
+      "constructor": "src/application/bindings/global-work-store.mjs",
+      "instance": "globalWorkStore",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/graph-mcp-server.mjs",
+      "constructor": "src/application/bindings/graph-mcp-server.mjs",
+      "instance": "graphMcpServer",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "commandCoreServices",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/graphify.mjs",
+      "constructor": "src/application/bindings/graphify.mjs",
+      "instance": "graphify",
+      "collaborators": []
+    },
+    {
+      "entry": "src/import/materialize.mjs",
+      "constructor": "src/application/bindings/import/materialize.mjs",
+      "instance": "importMaterialize",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/import/store.mjs",
+          "port": "importStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/digest-template.mjs",
+          "port": "workDigestTemplateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/import/recovery.mjs",
+      "constructor": "src/application/bindings/import/recovery.mjs",
+      "instance": "importRecovery",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/import/store.mjs",
+          "port": "importStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/import/store.mjs",
+      "constructor": "src/application/bindings/import/store.mjs",
+      "instance": "importStore",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/integrations/routing.mjs",
+      "constructor": "src/application/bindings/integrations/routing.mjs",
+      "instance": "integrationsRouting",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/item-lock.mjs",
+      "constructor": "src/application/bindings/item-lock.mjs",
+      "instance": "itemLock",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "globalWorkPublisherServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/loop/ask-request.mjs",
+      "constructor": "src/application/bindings/loop/ask-request.mjs",
+      "instance": "loopAskRequest",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/loop/ask.mjs",
+      "constructor": "src/application/bindings/loop/ask.mjs",
+      "instance": "loopAsk",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/loop/ask-request.mjs",
+          "port": "loopAskRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-heartbeat-consumption.mjs",
+          "port": "runHeartbeatConsumptionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/observe.mjs",
+          "port": "workObserveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/notify.mjs",
+          "port": "notifyNotifyServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/loop/child-drive.mjs",
+      "constructor": "src/application/bindings/loop/child-drive.mjs",
+      "instance": "loopChildDrive",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/loop/cycle.mjs",
+      "constructor": "src/application/bindings/loop/cycle.mjs",
+      "instance": "loopCycle",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/resolve.mjs",
+          "port": "commandsResolveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/child-drive.mjs",
+          "port": "loopChildDriveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/ask.mjs",
+          "port": "loopAskServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/ask-request.mjs",
+          "port": "loopAskRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/dispatch.mjs",
+          "port": "workDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop-progress.mjs",
+          "port": "loopProgressServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/grade.mjs",
+          "port": "commandsGradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/item-lock.mjs",
+          "port": "itemLockServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-spend-ingest.mjs",
+          "port": "runSpendIngestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/loop/stop-request.mjs",
+      "constructor": "src/application/bindings/loop/stop-request.mjs",
+      "instance": "loopStopRequest",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/loop/stop.mjs",
+      "constructor": "src/application/bindings/loop/stop.mjs",
+      "instance": "loopStop",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/stop-request.mjs",
+          "port": "loopStopRequestServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/loop/wave.mjs",
+      "constructor": "src/application/bindings/loop/wave.mjs",
+      "instance": "loopWave",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-heartbeat-consumption.mjs",
+          "port": "runHeartbeatConsumptionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/dispatch.mjs",
+          "port": "workDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/child-drive.mjs",
+          "port": "loopChildDriveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/ask.mjs",
+          "port": "loopAskServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/cycle.mjs",
+          "port": "loopCycleServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/loop-diag.mjs",
+      "constructor": "src/application/bindings/loop-diag.mjs",
+      "instance": "loopDiag",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/loop-progress.mjs",
+      "constructor": "src/application/bindings/loop-progress.mjs",
+      "instance": "loopProgress",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/dispatch.mjs",
+          "port": "workDispatchServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/memory/graphify-backend.mjs",
+      "constructor": "src/application/bindings/memory/graphify-backend.mjs",
+      "instance": "memoryGraphifyBackend",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "commandCoreServices",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/memory/local-indexing.mjs",
+          "port": "memoryLocalIndexingServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/memory/local-backend.mjs",
+      "constructor": "src/application/bindings/memory/local-backend.mjs",
+      "instance": "memoryLocalBackend",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/memory/local-indexing.mjs",
+          "port": "memoryLocalIndexingServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/memory/local-indexing.mjs",
+      "constructor": "src/application/bindings/memory/local-indexing.mjs",
+      "instance": "memoryLocalIndexing",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/import/store.mjs",
+          "port": "importStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/import/materialize.mjs",
+          "port": "importMaterializeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/assignment-reclaim.mjs",
+      "constructor": "src/application/bindings/mesh/assignment-reclaim.mjs",
+      "instance": "meshAssignmentReclaim",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-heartbeat-consumption.mjs",
+          "port": "runHeartbeatConsumptionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/assignment-transitions.mjs",
+          "port": "effectsAssignmentTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/dispatch.mjs",
+          "port": "workDispatchServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/assignment.mjs",
+      "constructor": "src/application/bindings/mesh/assignment.mjs",
+      "instance": "meshAssignment",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/assignment-transitions.mjs",
+          "port": "effectsAssignmentTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/item-lock.mjs",
+          "port": "itemLockServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/clone-credential-provider.mjs",
+      "constructor": "src/application/bindings/mesh/clone-credential-provider.mjs",
+      "instance": "meshCloneCredentialProvider",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/control-stream-server.mjs",
+          "port": "controlStreamServerServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/declarations.mjs",
+      "constructor": "src/application/bindings/mesh/declarations.mjs",
+      "instance": "meshDeclarations",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/run-retry.mjs",
+          "port": "commandsRunRetryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/stop-request.mjs",
+          "port": "loopStopRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "provideCommandCore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/launcher-lock.mjs",
+      "constructor": "src/application/bindings/mesh/launcher-lock.mjs",
+      "instance": "meshLauncherLock",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/launcher.mjs",
+      "constructor": "src/application/bindings/mesh/launcher.mjs",
+      "instance": "meshLauncher",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/store.mjs",
+          "port": "meshStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "globalWorkPublisherServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/worker-stream-client.mjs",
+          "port": "workerStreamClientServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/control-stream-server.mjs",
+          "port": "controlStreamServerServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worker-execution.mjs",
+          "port": "meshWorkerExecutionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/session-spawn-handler.mjs",
+          "port": "meshSessionSpawnHandlerServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/recovery-push.mjs",
+          "port": "meshRecoveryPushServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/resync.mjs",
+          "port": "meshResyncServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/relay.mjs",
+          "port": "meshRelayServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/registry.mjs",
+          "port": "meshRegistryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/launcher-lock.mjs",
+          "port": "meshLauncherLockServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+          "port": "meshTerminalRelayBridgeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-mirror.mjs",
+          "port": "meshTerminalMirrorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-input.mjs",
+          "port": "meshTerminalInputServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/assignment-reclaim.mjs",
+          "port": "meshAssignmentReclaimServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/clone-credential-provider.mjs",
+          "port": "meshCloneCredentialProviderServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/outbox.mjs",
+          "port": "effectsOutboxServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/assignment-transitions.mjs",
+          "port": "effectsAssignmentTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/notify.mjs",
+          "port": "provideNotifyNotify",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/discord/bot.mjs",
+          "port": "provideDiscordBot",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/park-resume.mjs",
+      "constructor": "src/application/bindings/mesh/park-resume.mjs",
+      "instance": "meshParkResume",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/observe.mjs",
+          "port": "workObserveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/assignment-transitions.mjs",
+          "port": "effectsAssignmentTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "provideMeshPresence",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "provideWork",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/notify/notify.mjs",
+          "port": "provideNotifyNotify",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/presence.mjs",
+      "constructor": "src/application/bindings/mesh/presence.mjs",
+      "instance": "meshPresence",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/store.mjs",
+          "port": "meshStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/stop-request.mjs",
+          "port": "loopStopRequestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/session.mjs",
+          "port": "meshSessionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/recovery-push.mjs",
+      "constructor": "src/application/bindings/mesh/recovery-push.mjs",
+      "instance": "meshRecoveryPush",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "provideGlobalWorkStore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/registry.mjs",
+      "constructor": "src/application/bindings/mesh/registry.mjs",
+      "instance": "meshRegistry",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/store.mjs",
+          "port": "meshStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/relay-client.mjs",
+      "constructor": "src/application/bindings/mesh/relay-client.mjs",
+      "instance": "meshRelayClient",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/relay.mjs",
+      "constructor": "src/application/bindings/mesh/relay.mjs",
+      "instance": "meshRelay",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/registry.mjs",
+          "port": "meshRegistryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/store.mjs",
+          "port": "meshStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/resync.mjs",
+      "constructor": "src/application/bindings/mesh/resync.mjs",
+      "instance": "meshResync",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "provideGlobalWorkStore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/session-spawn-handler.mjs",
+      "constructor": "src/application/bindings/mesh/session-spawn-handler.mjs",
+      "instance": "meshSessionSpawnHandler",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/terminal-ws.mjs",
+          "port": "terminalWsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/session.mjs",
+          "port": "meshSessionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/session.mjs",
+      "constructor": "src/application/bindings/mesh/session.mjs",
+      "instance": "meshSession",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/store.mjs",
+          "port": "meshStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/store.mjs",
+      "constructor": "src/application/bindings/mesh/store.mjs",
+      "instance": "meshStore",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/terminal-input.mjs",
+      "constructor": "src/application/bindings/mesh/terminal-input.mjs",
+      "instance": "meshTerminalInput",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+          "port": "meshTerminalRelayBridgeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/terminal-mirror.mjs",
+      "constructor": "src/application/bindings/mesh/terminal-mirror.mjs",
+      "instance": "meshTerminalMirror",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/relay.mjs",
+          "port": "meshRelayServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+          "port": "meshTerminalRelayBridgeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/worker-stream-client.mjs",
+          "port": "workerStreamClientServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/terminal-relay-bridge.mjs",
+      "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+      "instance": "meshTerminalRelayBridge",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/ui-serve.mjs",
+      "constructor": "src/application/bindings/mesh/ui-serve.mjs",
+      "instance": "meshUiServe",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/board-serve.mjs",
+          "port": "boardServeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-mesh-query.mjs",
+          "port": "globalMeshQueryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/assignment.mjs",
+          "port": "meshAssignmentServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/loop/stop.mjs",
+          "port": "loopStopServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-mirror.mjs",
+          "port": "meshTerminalMirrorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+          "port": "meshTerminalRelayBridgeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/terminal-providers.mjs",
+          "port": "terminalProvidersServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/worker-execution.mjs",
+      "constructor": "src/application/bindings/mesh/worker-execution.mjs",
+      "instance": "meshWorkerExecution",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-session-capture.mjs",
+          "port": "runSessionCaptureServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/run-transitions.mjs",
+          "port": "effectsRunTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/assignment-transitions.mjs",
+          "port": "effectsAssignmentTransitionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/park-resume.mjs",
+          "port": "meshParkResumeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/dispatch.mjs",
+          "port": "workDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/presence.mjs",
+          "port": "meshPresenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/agent-session-driver.mjs",
+          "port": "agentSessionDriverServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-heartbeat-consumption.mjs",
+          "port": "runHeartbeatConsumptionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worker-launch.mjs",
+          "port": "meshWorkerLaunchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worker-repo-admission.mjs",
+          "port": "meshWorkerRepoAdmissionServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/worker-launch.mjs",
+      "constructor": "src/application/bindings/mesh/worker-launch.mjs",
+      "instance": "meshWorkerLaunch",
+      "collaborators": []
+    },
+    {
+      "entry": "src/mesh/worker-repo-admission.mjs",
+      "constructor": "src/application/bindings/mesh/worker-repo-admission.mjs",
+      "instance": "meshWorkerRepoAdmission",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "globalWorkStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/mesh/worktree.mjs",
+      "constructor": "src/application/bindings/mesh/worktree.mjs",
+      "instance": "meshWorktree",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/toolchain.mjs",
+          "port": "provideWorkToolchain",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/notify/ask-messages.mjs",
+      "constructor": "src/application/bindings/notify/ask-messages.mjs",
+      "instance": "notifyAskMessages",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/notify/secret.mjs",
+          "port": "notifySecretServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/notify/notify.mjs",
+      "constructor": "src/application/bindings/notify/notify.mjs",
+      "instance": "notifyNotify",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/ask-messages.mjs",
+          "port": "notifyAskMessagesServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notify/secret.mjs",
+          "port": "notifySecretServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/notify/secret.mjs",
+      "constructor": "src/application/bindings/notify/secret.mjs",
+      "instance": "notifySecret",
+      "collaborators": []
+    },
+    {
+      "entry": "src/notion/cli.mjs",
+      "constructor": "src/application/bindings/notion/cli.mjs",
+      "instance": "notionCli",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/notion/mapping.mjs",
+      "constructor": "src/application/bindings/notion/mapping.mjs",
+      "instance": "notionMapping",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/notion/sync-work.mjs",
+      "constructor": "src/application/bindings/notion/sync-work.mjs",
+      "instance": "notionSyncWork",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/read.mjs",
+          "port": "workReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notion/mapping.mjs",
+          "port": "notionMappingServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notion/sync.mjs",
+          "port": "notionSyncServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/notion/cli.mjs",
+          "port": "notionCliServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/integrations/routing.mjs",
+          "port": "integrationsRoutingServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/notion/sync.mjs",
+      "constructor": "src/application/bindings/notion/sync.mjs",
+      "instance": "notionSync",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/notion/mapping.mjs",
+          "port": "notionMappingServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/run-heartbeat-consumption.mjs",
+      "constructor": "src/application/bindings/run-heartbeat-consumption.mjs",
+      "instance": "runHeartbeatConsumption",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/run-session-capture.mjs",
+      "constructor": "src/application/bindings/run-session-capture.mjs",
+      "instance": "runSessionCapture",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/run-spend-ingest.mjs",
+      "constructor": "src/application/bindings/run-spend-ingest.mjs",
+      "instance": "runSpendIngest",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/run-store.mjs",
+      "constructor": "src/application/bindings/run-store.mjs",
+      "instance": "runStore",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-examples/answers.mjs",
+          "port": "provideWorkExamplesAnswers",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/setup-ui.mjs",
+      "constructor": "src/application/bindings/setup-ui.mjs",
+      "instance": "setupUi",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-editor.mjs",
+          "port": "configEditorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/board-ui.mjs",
+          "port": "boardUiServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/terminal-ws.mjs",
+          "port": "terminalWsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/story-contract-derive.mjs",
+      "constructor": "src/application/bindings/story-contract-derive.mjs",
+      "instance": "storyContractDerive",
+      "collaborators": []
+    },
+    {
+      "entry": "src/terminal/screen.mjs",
+      "constructor": "src/application/bindings/terminal/screen.mjs",
+      "instance": "terminalScreen",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/terminal/session-screen.mjs",
+      "constructor": "src/application/bindings/terminal/session-screen.mjs",
+      "instance": "terminalSessionScreen",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/terminal/screen.mjs",
+          "port": "terminalScreenServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/terminal-providers.mjs",
+      "constructor": "src/application/bindings/terminal-providers.mjs",
+      "instance": "terminalProviders",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/terminal-sessions.mjs",
+      "constructor": "src/application/bindings/terminal-sessions.mjs",
+      "instance": "terminalSessions",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/terminal-ws.mjs",
+      "constructor": "src/application/bindings/terminal-ws.mjs",
+      "instance": "terminalWs",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/claude-trust.mjs",
+          "port": "claudeTrustServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/terminal-providers.mjs",
+          "port": "terminalProvidersServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/terminal-sessions.mjs",
+          "port": "terminalSessionsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/content-read.mjs",
+      "constructor": "src/application/bindings/work/content-read.mjs",
+      "instance": "workContentRead",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/digest-template.mjs",
+      "constructor": "src/application/bindings/work/digest-template.mjs",
+      "instance": "workDigestTemplate",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work/dispatch.mjs",
+      "constructor": "src/application/bindings/work/dispatch.mjs",
+      "instance": "workDispatch",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/launcher-lock.mjs",
+          "port": "meshLauncherLockServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/doctor-diagrams.mjs",
+      "constructor": "src/application/bindings/work/doctor-diagrams.mjs",
+      "instance": "workDoctorDiagrams",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/doctor.mjs",
+      "constructor": "src/application/bindings/work/doctor.mjs",
+      "instance": "workDoctor",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/doctor-diagrams.mjs",
+          "port": "workDoctorDiagramsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/loops.mjs",
+      "constructor": "src/application/bindings/work/loops.mjs",
+      "instance": "workLoops",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work/memory.mjs",
+      "constructor": "src/application/bindings/work/memory.mjs",
+      "instance": "workMemory",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/memory/local-backend.mjs",
+          "port": "provideMemoryLocalBackend",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/memory/graphify-backend.mjs",
+          "port": "provideMemoryGraphifyBackend",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/work/observe.mjs",
+      "constructor": "src/application/bindings/work/observe.mjs",
+      "instance": "workObserve",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/read.mjs",
+      "constructor": "src/application/bindings/work/read.mjs",
+      "instance": "workRead",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/cache-read.mjs",
+          "port": "cacheReadServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/test-changed.mjs",
+      "constructor": "src/application/bindings/work/test-changed.mjs",
+      "instance": "workTestChanged",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/test-select.mjs",
+          "port": "workTestSelectServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/test-select.mjs",
+      "constructor": "src/application/bindings/work/test-select.mjs",
+      "instance": "workTestSelect",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work-audit/census.mjs",
+          "port": "workAuditCensusServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/toolchain.mjs",
+      "constructor": "src/application/bindings/work/toolchain.mjs",
+      "instance": "workToolchain",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work/upgrade.mjs",
+      "constructor": "src/application/bindings/work/upgrade.mjs",
+      "instance": "workUpgrade",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work-acceptor/criterion.mjs",
+      "constructor": "src/application/bindings/work-acceptor/criterion.mjs",
+      "instance": "workAcceptorCriterion",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work-acceptor/observations.mjs",
+      "constructor": "src/application/bindings/work-acceptor/observations.mjs",
+      "instance": "workAcceptorObservations",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/worktree.mjs",
+          "port": "meshWorktreeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work-acceptor/store.mjs",
+      "constructor": "src/application/bindings/work-acceptor/store.mjs",
+      "instance": "workAcceptorStore",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work-acceptor/criterion.mjs",
+          "port": "workAcceptorCriterionServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work-audit/census.mjs",
+      "constructor": "src/application/bindings/work-audit/census.mjs",
+      "instance": "workAuditCensus",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work-audit/declared-bounds.mjs",
+      "constructor": "src/application/bindings/work-audit/declared-bounds.mjs",
+      "instance": "workAuditDeclaredBounds",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work-audit/evidence.mjs",
+      "constructor": "src/application/bindings/work-audit/evidence.mjs",
+      "instance": "workAuditEvidence",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work-audit/prompt-layer.mjs",
+      "constructor": "src/application/bindings/work-audit/prompt-layer.mjs",
+      "instance": "workAuditPromptLayer",
+      "collaborators": []
+    },
+    {
+      "entry": "src/work-audit/report.mjs",
+      "constructor": "src/application/bindings/work-audit/report.mjs",
+      "instance": "workAuditReport",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work-audit/census.mjs",
+          "port": "workAuditCensusServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-audit/evidence.mjs",
+          "port": "workAuditEvidenceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-audit/prompt-layer.mjs",
+          "port": "workAuditPromptLayerServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-audit/seam-liveness.mjs",
+          "port": "workAuditSeamLivenessServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work-audit/declared-bounds.mjs",
+          "port": "workAuditDeclaredBoundsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work-audit/seam-liveness.mjs",
+      "constructor": "src/application/bindings/work-audit/seam-liveness.mjs",
+      "instance": "workAuditSeamLiveness",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work-audit/census.mjs",
+          "port": "workAuditCensusServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work-examples/answers.mjs",
+      "constructor": "src/application/bindings/work-examples/answers.mjs",
+      "instance": "workExamplesAnswers",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/agent-session-driver.mjs",
+          "port": "agentSessionDriverServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-spend-ingest.mjs",
+          "port": "runSpendIngestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/observe.mjs",
+          "port": "workObserveServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work-trigger/declaration.mjs",
+      "constructor": "src/application/bindings/work-trigger/declaration.mjs",
+      "instance": "workTriggerDeclaration",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work-tune/corpus.mjs",
+      "constructor": "src/application/bindings/work-tune/corpus.mjs",
+      "instance": "workTuneCorpus",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/memory/local-indexing.mjs",
+          "port": "memoryLocalIndexingServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "runStoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/observe.mjs",
+          "port": "workObserveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/loops.mjs",
+          "port": "workLoopsServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work-tune/proposal.mjs",
+      "constructor": "src/application/bindings/work-tune/proposal.mjs",
+      "instance": "workTuneProposal",
+      "collaborators": []
+    },
+    {
+      "entry": "src/worker-stream-client.mjs",
+      "constructor": "src/application/bindings/worker-stream-client.mjs",
+      "instance": "workerStreamClient",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/mesh/terminal-relay-bridge.mjs",
+          "port": "meshTerminalRelayBridgeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/recovery-push.mjs",
+          "port": "meshRecoveryPushServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/mesh/resync.mjs",
+          "port": "meshResyncServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/table.mjs",
+      "constructor": "src/application/bindings/effects/table.mjs",
+      "instance": "effectsTable",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "provideWork",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/run-store.mjs",
+          "port": "provideRunStore",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/work-acceptor/store.mjs",
+          "port": "provideWorkAcceptorStore",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/global-work-publisher.mjs",
+          "port": "provideGlobalWorkPublisher",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "provideGlobalWorkStore",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/effects/assignment-transitions.mjs",
+          "port": "provideEffectsAssignmentTransitions",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/mesh/park-resume.mjs",
+          "port": "provideMeshParkResume",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/notion/sync-work.mjs",
+          "port": "provideNotionSyncWork",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/notion/mapping.mjs",
+          "port": "provideNotionMapping",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/effects/dispatch.mjs",
+      "constructor": "src/application/bindings/effects/dispatch.mjs",
+      "instance": "effectsDispatch",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/effects/table.mjs",
+          "port": "effectsTableServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work.mjs",
+      "constructor": "src/application/bindings/work.mjs",
+      "instance": "work",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/digest-template.mjs",
+          "port": "workDigestTemplateServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/work/init.mjs",
+      "constructor": "src/application/bindings/work/init.mjs",
+      "instance": "workInit",
+      "collaborators": [
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/memory.mjs",
+          "port": "workMemoryServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/init-update.mjs",
+      "constructor": "src/application/bindings/commands/init-update.mjs",
+      "instance": "commandsInitUpdate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/work/init.mjs",
+          "port": "workInitServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work/memory.mjs",
+          "port": "workMemoryServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/assets/ui.mjs",
+      "constructor": "src/application/bindings/commands/assets/ui.mjs",
+      "instance": "commandsAssetsUi",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/setup-ui.mjs",
+          "port": "provideSetupUi",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/command-core.mjs",
+      "constructor": "src/application/bindings/command-core.mjs",
+      "instance": "commandCore",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/mesh/contribution.mjs",
+          "port": "commandsMeshContributionServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/work.mjs",
+          "port": "workServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/list.mjs",
+          "port": "commandsListServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/loops-show.mjs",
+          "port": "commandsLoopsShowServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/loops-graph.mjs",
+          "port": "commandsLoopsGraphServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/loops-validate.mjs",
+          "port": "commandsLoopsValidateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/loops-groundedness.mjs",
+          "port": "commandsLoopsGroundednessServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/loop-document.mjs",
+          "port": "commandsLoopDocumentServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/loop-record.mjs",
+          "port": "commandsLoopRecordServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/continue.mjs",
+          "port": "commandsContinueServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/drive.mjs",
+          "port": "commandsDriveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/loop.mjs",
+          "port": "commandsLoopServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resync.mjs",
+          "port": "commandsResyncServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/doc.mjs",
+          "port": "commandsDocServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/tasks.mjs",
+          "port": "commandsTasksServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/validate.mjs",
+          "port": "commandsValidateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/next.mjs",
+          "port": "commandsNextServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/dispatch.mjs",
+          "port": "commandsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/feedback.mjs",
+          "port": "commandsFeedbackServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/doctor.mjs",
+          "port": "commandsDoctorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/audit.mjs",
+          "port": "commandsAuditServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/acceptor.mjs",
+          "port": "commandsAcceptorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/tune.mjs",
+          "port": "commandsTuneServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/trigger.mjs",
+          "port": "commandsTriggerServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/grade.mjs",
+          "port": "commandsGradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/ratchet.mjs",
+          "port": "commandsRatchetServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/counters.mjs",
+          "port": "commandsCountersServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/graph/build.mjs",
+          "port": "commandsGraphBuildServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/graph/query.mjs",
+          "port": "commandsGraphQueryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/graph/triage.mjs",
+          "port": "commandsGraphTriageServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/test.mjs",
+          "port": "commandsTestServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/import-milestone.mjs",
+          "port": "commandsImportMilestoneServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/migrate-folder.mjs",
+          "port": "commandsMigrateFolderServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/notion-sync-work.mjs",
+          "port": "commandsNotionSyncWorkServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/notion-associate.mjs",
+          "port": "commandsNotionAssociateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/run-start.mjs",
+          "port": "commandsRunStartServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/run-complete.mjs",
+          "port": "commandsRunCompleteServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/run-status.mjs",
+          "port": "commandsRunStatusServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/item-status.mjs",
+          "port": "commandsItemStatusServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/regression-gate.mjs",
+          "port": "commandsRegressionGateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/run-retry.mjs",
+          "port": "commandsRunRetryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/resume.mjs",
+          "port": "commandsResumeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/graph/serve.mjs",
+          "port": "commandsGraphServeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/diagram/plan.mjs",
+          "port": "commandsDiagramPlanServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/diagram/export.mjs",
+          "port": "commandsDiagramExportServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/diagram/file.mjs",
+          "port": "commandsDiagramFileServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/messaging/messaging.mjs",
+          "port": "commandsMessagingMessagingServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/work-ui.mjs",
+          "port": "commandsWorkUiServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/assets/ui.mjs",
+          "port": "commandsAssetsUiServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/find.mjs",
+          "port": "commandsFindServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/observe.mjs",
+          "port": "commandsObserveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/work/memory.mjs",
+          "port": "commandsWorkMemoryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/init-update.mjs",
+          "port": "commandsInitUpdateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/project-init.mjs",
+          "port": "commandsProjectInitServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/insert-milestone.mjs",
+          "port": "commandsInsertMilestoneServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/insert-uat.mjs",
+          "port": "commandsInsertUatServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/insert-story.mjs",
+          "port": "commandsInsertStoryServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/insert-chore.mjs",
+          "port": "commandsInsertChoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/promote.mjs",
+          "port": "commandsPromoteServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/archive.mjs",
+          "port": "commandsArchiveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/promote-gap-to-chore.mjs",
+          "port": "commandsPromoteGapToChoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/promote-finding-to-chore.mjs",
+          "port": "commandsPromoteFindingToChoreServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/upgrade.mjs",
+          "port": "commandsUpgradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/assets/list.mjs",
+          "port": "commandsAssetsListServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/packages-list.mjs",
+          "port": "commandsPackagesListServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/project-show.mjs",
+          "port": "commandsProjectShowServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/assets/show.mjs",
+          "port": "commandsAssetsShowServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/assets/add.mjs",
+          "port": "commandsAssetsAddServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/assets/remove.mjs",
+          "port": "commandsAssetsRemoveServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/assets/refs.mjs",
+          "port": "commandsAssetsRefsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/assets/validate.mjs",
+          "port": "commandsAssetsValidateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/assets/apply.mjs",
+          "port": "commandsAssetsApplyServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/packages-show.mjs",
+          "port": "commandsPackagesShowServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/packages-validate.mjs",
+          "port": "commandsPackagesValidateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/packages-install.mjs",
+          "port": "commandsPackagesInstallServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/project-validate.mjs",
+          "port": "commandsProjectValidateServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/project-doctor.mjs",
+          "port": "commandsProjectDoctorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/project-migrate.mjs",
+          "port": "commandsProjectMigrateServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/spine/face.mjs",
+      "constructor": "src/application/bindings/spine/face.mjs",
+      "instance": "spineFace",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/command-core.mjs",
+          "port": "commandCoreServices",
+          "readyCallback": true
+        },
+        {
+          "constructor": "src/application/bindings/effects/journal.mjs",
+          "port": "effectsJournalServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/effects/dispatch.mjs",
+          "port": "effectsDispatchServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/global-work-store.mjs",
+          "port": "provideGlobalWorkStore",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/config-inspect.mjs",
+      "constructor": "src/application/bindings/config-inspect.mjs",
+      "instance": "configInspect",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/dsl.mjs",
+          "port": "dslServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/degrade.mjs",
+          "port": "degradeServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/config-editor.mjs",
+      "constructor": "src/application/bindings/config-editor.mjs",
+      "instance": "configEditor",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/dsl.mjs",
+          "port": "dslServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/dsl.mjs",
+      "constructor": "src/application/bindings/dsl.mjs",
+      "instance": "dsl",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/scaffold.mjs",
+      "constructor": "src/application/bindings/scaffold.mjs",
+      "instance": "scaffold",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/assets/show.mjs",
+      "constructor": "src/application/bindings/commands/assets/show.mjs",
+      "instance": "commandsAssetsShow",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/assets/remove.mjs",
+      "constructor": "src/application/bindings/commands/assets/remove.mjs",
+      "instance": "commandsAssetsRemove",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/assets/add.mjs",
+      "constructor": "src/application/bindings/commands/assets/add.mjs",
+      "instance": "commandsAssetsAdd",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/scaffold.mjs",
+          "port": "provideScaffold",
+          "readyCallback": true
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/assets/apply.mjs",
+      "constructor": "src/application/bindings/commands/assets/apply.mjs",
+      "instance": "commandsAssetsApply",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/dsl.mjs",
+          "port": "dslServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/validate-shared.mjs",
+          "port": "commandsValidateSharedServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/assets/list.mjs",
+      "constructor": "src/application/bindings/commands/assets/list.mjs",
+      "instance": "commandsAssetsList",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/assets/refs.mjs",
+      "constructor": "src/application/bindings/commands/assets/refs.mjs",
+      "instance": "commandsAssetsRefs",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-editor.mjs",
+          "port": "configEditorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/packages-install.mjs",
+      "constructor": "src/application/bindings/commands/packages-install.mjs",
+      "instance": "commandsPackagesInstall",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/dsl.mjs",
+          "port": "dslServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/packages-list.mjs",
+      "constructor": "src/application/bindings/commands/packages-list.mjs",
+      "instance": "commandsPackagesList",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/dsl.mjs",
+          "port": "dslServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/packages-show.mjs",
+      "constructor": "src/application/bindings/commands/packages-show.mjs",
+      "instance": "commandsPackagesShow",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/dsl.mjs",
+          "port": "dslServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/project-doctor.mjs",
+      "constructor": "src/application/bindings/commands/project-doctor.mjs",
+      "instance": "commandsProjectDoctor",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/validate-shared.mjs",
+          "port": "commandsValidateSharedServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/project-migrate.mjs",
+      "constructor": "src/application/bindings/commands/project-migrate.mjs",
+      "instance": "commandsProjectMigrate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/dsl.mjs",
+          "port": "dslServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/workspace-writer.mjs",
+          "port": "workspaceWriterServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/project-show.mjs",
+      "constructor": "src/application/bindings/commands/project-show.mjs",
+      "instance": "commandsProjectShow",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/validate-shared.mjs",
+      "constructor": "src/application/bindings/commands/validate-shared.mjs",
+      "instance": "commandsValidateShared",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/config-inspect.mjs",
+          "port": "configInspectServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/sync.mjs",
+      "constructor": "src/application/bindings/sync.mjs",
+      "instance": "sync",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/dsl.mjs",
+          "port": "dslServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/workspace-writer.mjs",
+      "constructor": "src/application/bindings/workspace-writer.mjs",
+      "instance": "workspaceWriter",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/config-editor.mjs",
+          "port": "configEditorServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/assets/validate.mjs",
+      "constructor": "src/application/bindings/commands/assets/validate.mjs",
+      "instance": "commandsAssetsValidate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/validate-shared.mjs",
+          "port": "commandsValidateSharedServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/packages-validate.mjs",
+      "constructor": "src/application/bindings/commands/packages-validate.mjs",
+      "instance": "commandsPackagesValidate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/commands/validate-shared.mjs",
+          "port": "commandsValidateSharedServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/project-init.mjs",
+      "constructor": "src/application/bindings/commands/project-init.mjs",
+      "instance": "commandsProjectInit",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/fs.mjs",
+          "port": "fsServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/bindings/workspace-writer.mjs",
+          "port": "workspaceWriterServices",
+          "readyCallback": false
+        },
+        {
+          "constructor": "src/application/paths.mjs",
+          "port": "workspaceServices",
+          "readyCallback": false
+        }
+      ]
+    },
+    {
+      "entry": "src/commands/project-validate.mjs",
+      "constructor": "src/application/bindings/commands/project-validate.mjs",
+      "instance": "commandsProjectValidate",
+      "collaborators": [
+        {
+          "constructor": "src/application/bindings/commands/validate-shared.mjs",
+          "port": "commandsValidateSharedServices",
+          "readyCallback": false
+        }
+      ]
+    }
+  ]
+}

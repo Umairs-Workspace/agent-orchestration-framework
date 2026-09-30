@@ -2,7 +2,7 @@
 
 Planning baseline: `e343d50` (`refactor: move domain transitions into owning workspaces`),
 2026-09-29. These are ordinary engineering plans, outside the AOF workflow. They do not
-create managed stories, runs, or acceptance state. Plan 01 is complete; Plans 02–08 remain pending.
+create managed stories, runs, or acceptance state. Plans 01–02 are complete; Plans 03–08 remain pending.
 
 The agreed boundaries remain in [SPEC](../SPEC.md) and [MIGRATION](../MIGRATION.md).
 [IMPLEMENTATION](../IMPLEMENTATION.md) records completed batches;
@@ -26,7 +26,7 @@ yet a workspace; UI is at `ui/`, and desktop is at `app/desktop/`.
 | Plan | Result | Prerequisites |
 | --- | --- | --- |
 | [01 — Remaining domain ownership](01-domain-ownership-PLAN.md) | Complete: domain services extracted; [452-file ownership ledger](01-module-ledger.json) and [verification notes](01-OWNERSHIP.md) recorded. | Current baseline |
-| [02 — Service assembly and CLI contributions](02-composition-and-cli-PLAN.md) | Core constructs services explicitly and registers complete package contributions. | 01 ownership decisions; proceed by completed domain |
+| [02 — Service assembly and CLI contributions](02-composition-and-cli-PLAN.md) | Complete: explicit application construction and CLI contributions; [scope and verification](02-ASSEMBLY.md) recorded. | 01 ownership decisions |
 | [03 — Core workspace](03-core-workspace-PLAN.md) | `packages/core` owns installed `aof`, its executable, configuration and assets; root is private. | 01–02; integrate applicable 05 changes in the same batches |
 | [04 — UI and desktop applications](04-app-workspaces-PLAN.md) | `apps/ui` and `apps/desktop` own their builds and assets. | Stable core/path contract from 03; integrate applicable 05 changes |
 | [05 — Distribution and developer tooling](05-distribution-and-tooling-PLAN.md) | Source, copied installation, SEA, worktree and release paths use the final layout. | Start with 03; finish after 04 |
