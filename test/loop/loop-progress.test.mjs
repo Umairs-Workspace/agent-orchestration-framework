@@ -23,7 +23,7 @@ const AT = "2026-08-23T10:00:00.000Z";
 const sample = (overrides = {}) => progressSample({
   at: AT,
   runId: "run-1",
-  filesTouched: ["packages/core/src/a.mjs"],
+  filesTouched: ["src/a.mjs"],
   linesChanged: 4,
   commitsMade: 0,
   failingScenarios: 3,
@@ -42,10 +42,10 @@ export const loopProgressTests = [
   {
     name: "69/03 task00 a sample carries only deterministic measures and no progress judgement",
     run() {
-      assert.deepEqual(sample({ filesTouched: ["packages/core/src/b.mjs", "packages/core/src/a.mjs", "packages/core/src/a.mjs"] }), {
+      assert.deepEqual(sample({ filesTouched: ["src/b.mjs", "src/a.mjs", "src/a.mjs"] }), {
         at: AT,
         runId: "run-1",
-        filesTouched: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"],
+        filesTouched: ["src/a.mjs", "src/b.mjs"],
         linesChanged: 4,
         commitsMade: 0,
         failingScenarios: 3,
@@ -71,7 +71,7 @@ export const loopProgressTests = [
         },
       });
       assert.deepEqual(sampled, sample({
-        filesTouched: ["packages/core/src/a.mjs", "test/new.test.mjs"],
+        filesTouched: ["src/a.mjs", "test/new.test.mjs"],
         linesChanged: 6,
         commitsMade: 2,
       }));
@@ -112,7 +112,7 @@ export const loopProgressTests = [
   ...[
     ["the failing-scenario count fell", { failingScenarios: 2 }, true],
     ["a commit was made", { commitsMade: 1 }, true],
-    ["new files were touched", { filesTouched: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"] }, true],
+    ["new files were touched", { filesTouched: ["src/a.mjs", "src/b.mjs"] }, true],
     ["the line count changed", { linesChanged: 5 }, true],
     ["the failing-scenario count rose", { failingScenarios: 4 }, true],
     ["nothing changed", {}, false],
@@ -132,7 +132,7 @@ export const loopProgressTests = [
       assert.equal(result.action, "reset");
       assert.equal(result.resets, 1);
       assert.equal(result.summary.sampleCount, 3);
-      assert.deepEqual(result.summary.filesTouched, ["packages/core/src/a.mjs"]);
+      assert.deepEqual(result.summary.filesTouched, ["src/a.mjs"]);
     },
   },
   {

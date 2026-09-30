@@ -105,7 +105,7 @@ async function withMoveFixture(body) {
     await git(["init", "-b", "main"], root);
     await git(["config", "user.email", "fixture@aof.test"], root);
     await git(["config", "user.name", "aof fixture"], root);
-    await writeUnder(root, "packages/core/src/a.mjs", "export const a = 1;\n");
+    await writeUnder(root, "src/a.mjs", "export const a = 1;\n");
     await writeUnder(root, "README.md", "# fixture\n");
     await writeUnder(root, "wiki/work/07_m/STATE.md", "---\ndoc: state\n---\n\n## Notes\n\n- base note\n");
     await writeUnder(root, "wiki/work/07_milestone_m/SPEC.md", frontmatter({
@@ -144,42 +144,42 @@ function recordingDouble() {
 
 const DIRT_ROWS = [
   {
-    dirt: "one unstaged edit to a tracked file `packages/core/src/a.mjs`",
-    apply: async (wt) => writeUnder(wt, "packages/core/src/a.mjs", "export const a = 2;\n"),
+    dirt: "one unstaged edit to a tracked file `src/a.mjs`",
+    apply: async (wt) => writeUnder(wt, "src/a.mjs", "export const a = 2;\n"),
     committedAs: ["M src/a.mjs"],
   },
   {
-    dirt: "one untracked file `packages/core/src/b.mjs`",
-    apply: async (wt) => writeUnder(wt, "packages/core/src/b.mjs", "export const b = 1;\n"),
+    dirt: "one untracked file `src/b.mjs`",
+    apply: async (wt) => writeUnder(wt, "src/b.mjs", "export const b = 1;\n"),
     committedAs: ["A src/b.mjs"],
   },
   {
-    dirt: "one unstaged deletion of a tracked file `packages/core/src/a.mjs`",
+    dirt: "one unstaged deletion of a tracked file `src/a.mjs`",
     apply: async (wt) => unlink(path.join(wt, "src", "a.mjs")),
     committedAs: ["D src/a.mjs"],
   },
   {
-    dirt: "one staged rename of `packages/core/src/a.mjs` to `packages/core/src/c.mjs`",
-    apply: async (wt) => { await git(["mv", "packages/core/src/a.mjs", "packages/core/src/c.mjs"], wt); },
+    dirt: "one staged rename of `src/a.mjs` to `src/c.mjs`",
+    apply: async (wt) => { await git(["mv", "src/a.mjs", "src/c.mjs"], wt); },
     committedAs: ["R100 src/a.mjs src/c.mjs"],
   },
   {
-    dirt: "an edit to `packages/core/src/a.mjs` and an untracked `runs/n/r1.json`",
-    apply: async (wt) => { await writeUnder(wt, "packages/core/src/a.mjs", "export const a = 3;\n"); await writeUnder(wt, "runs/n/r1.json", "{}\n"); },
+    dirt: "an edit to `src/a.mjs` and an untracked `runs/n/r1.json`",
+    apply: async (wt) => { await writeUnder(wt, "src/a.mjs", "export const a = 3;\n"); await writeUnder(wt, "runs/n/r1.json", "{}\n"); },
     committedAs: ["A runs/n/r1.json", "M src/a.mjs"],
   },
 ];
 
 const AOF_ROWS = [
   {
-    dirt: "an edit to `.aof/aof.config.json` and an edit to `packages/core/src/a.mjs`",
-    apply: async (wt) => { await writeUnder(wt, ".aof/aof.config.json", "{ \"name\": \"edited\" }\n"); await writeUnder(wt, "packages/core/src/a.mjs", "export const a = 9;\n"); },
-    answer: { committed: true }, committed: ["packages/core/src/a.mjs"], porcelainAfter: [" M .aof/aof.config.json"],
+    dirt: "an edit to `.aof/aof.config.json` and an edit to `src/a.mjs`",
+    apply: async (wt) => { await writeUnder(wt, ".aof/aof.config.json", "{ \"name\": \"edited\" }\n"); await writeUnder(wt, "src/a.mjs", "export const a = 9;\n"); },
+    answer: { committed: true }, committed: ["src/a.mjs"], porcelainAfter: [" M .aof/aof.config.json"],
   },
   {
-    dirt: "an untracked `.aof/notes.json` and an untracked `packages/core/src/b.mjs`",
-    apply: async (wt) => { await writeUnder(wt, ".aof/notes.json", "{}\n"); await writeUnder(wt, "packages/core/src/b.mjs", "export const b = 1;\n"); },
-    answer: { committed: true }, committed: ["packages/core/src/b.mjs"], porcelainAfter: ["?? .aof/notes.json"],
+    dirt: "an untracked `.aof/notes.json` and an untracked `src/b.mjs`",
+    apply: async (wt) => { await writeUnder(wt, ".aof/notes.json", "{}\n"); await writeUnder(wt, "src/b.mjs", "export const b = 1;\n"); },
+    answer: { committed: true }, committed: ["src/b.mjs"], porcelainAfter: ["?? .aof/notes.json"],
   },
   {
     dirt: "an edit to `.aof/aof.config.json` alone",
@@ -342,7 +342,7 @@ export const meshWorkerCommitDiffTests = [
     name: `129/03 task 00 — the runner is resolved from exec first, then pushExec [${row.label}]`,
     run: () => withMoveFixture(async ({ worktree, t0 }) => {
       // Real dirt in the real tree: if the real runner received anything, the tree would change.
-      await writeUnder(worktree, "packages/core/src/a.mjs", "export const a = 2;\n");
+      await writeUnder(worktree, "src/a.mjs", "export const a = 2;\n");
       const before = await porcelainLines(worktree);
       const double = recordingDouble();
       const other = recordingDouble();
@@ -364,7 +364,7 @@ export const meshWorkerCommitDiffTests = [
   })),
   ...[
     { verb: "add", stderr: "index locked", names: ["git add", "index locked"], script: { add: { status: 1, stderr: "index locked" } } },
-    { verb: "commit", stderr: "hook rejected", names: ["git commit", "hook rejected"], script: { diff: { status: 0, stdout: "packages/core/src/a.mjs\n" }, commit: { status: 1, stderr: "hook rejected" } } },
+    { verb: "commit", stderr: "hook rejected", names: ["git commit", "hook rejected"], script: { diff: { status: 0, stdout: "src/a.mjs\n" }, commit: { status: 1, stderr: "hook rejected" } } },
   ].map((row) => ({
     name: `129/03 task 00 — a failing add or commit throws commit-failed with the verb named [${row.verb} / ${row.stderr}]`,
     run: async () => {
@@ -384,7 +384,7 @@ export const meshWorkerCommitDiffTests = [
   {
     name: "129/03 task 00 — a failing reset of the .aof home is best-effort and does not fail the commit",
     run: async () => {
-      const { exec, calls } = scriptedExec({ reset: { status: 1, stderr: "pathspec did not match" }, diff: { status: 0, stdout: "packages/core/src/a.mjs\n" } });
+      const { exec, calls } = scriptedExec({ reset: { status: 1, stderr: "pathspec did not match" }, diff: { status: 0, stdout: "src/a.mjs\n" } });
       const answer = await commitWorktreeChanges("/tmp/wt", { message: "m", node: "n", exec });
       assert.deepEqual(answer, { committed: true }, "the answer is { committed: true }");
       assert.ok(calls.some((call) => call.args.includes("commit")), "the commit invocation was made");

@@ -576,7 +576,7 @@ export const autonomousShellOutPromptTests = [
       assert.match(config, /`--orchestrated` OVERRIDES a solo config to orchestrated for this run/u);
       assert.match(config, /The two together are contradictory: STOP before any role runs/u);
       assert.match(config, new RegExp(`work\\.loop\\.agents\\.${prompt}\\.mode`, "u"), "the loop key the drive composes the flag from is named");
-      assert.match(config, /src\/loop-bounds\.mjs/u, "…and its home");
+      assert.match(config, /packages\/core\/src\/loop-bounds\.mjs/u, "…and its home");
       for (const runtime of ["claude", "codex", "opencode"]) {
         const rendered = renderBundleOutputs(bundle, { runtimes: [runtime] }).find((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
         assert.ok(rendered, `${prompt} renders for ${runtime}`);
@@ -634,7 +634,7 @@ export const autonomousShellOutPromptTests = [
       assert.match(config, new RegExp(`The loop composes a flag on every ${prompt} it drives: \`work\\.loop\\.agents\\.${prompt}\\.mode\` when set, \`--solo\` when unset`, "u"));
       assert.match(config, new RegExp(`A loop-driven ${prompt} therefore never reads \`work\\.agents\\.mode\``, "u"));
       assert.doesNotMatch(config, /composes nothing when it is unset/u);
-      assert.match(config, /the loop's own default, whose home is `src\/loop-bounds\.mjs`/u);
+      assert.match(config, /the loop's own default, whose home is `packages\/core\/src\/loop-bounds\.mjs`/u);
     },
   })),
   {

@@ -622,7 +622,7 @@ export const loopCommandReconcileTests = [
           assert.equal(asks.length, 0, `${outcome}: before any walk`);
           assert.ok(existsSync(meshDispatchWorktreePath(fx.root, "07/01")), `${outcome}: the lane kept`);
           if (outcome === "refused") assert.match(report.lines.at(-1), /files=\["src\/x\.mjs"\]/u);
-        }, { stories: ["01"], commit: { "packages/core/src/x.mjs": "// base\n" } });
+        }, { stories: ["01"], commit: { "src/x.mjs": "// base\n" } });
       }
       // tip already an ancestor → cleaned up (a hand-merged conflict lane)
       await withLaneRepo(async (fx) => {
