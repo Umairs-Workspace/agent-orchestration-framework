@@ -32,7 +32,7 @@ export const coreWorkspaceTests = [
   { name: 'core-workspace/copied core runs without source aliases or optional app packages', async run() {
     const parent = await realpath(os.tmpdir());
     const fixture = await mkdtemp(path.join(parent, 'aof core distribution '));
-    const payload = path.join(fixture, 'copied core');
+    const payload = path.join(fixture, 'installed', 'copied core');
     const unrelated = path.join(fixture, 'unrelated project');
     try {
       await mkdir(unrelated);
@@ -90,7 +90,9 @@ export const coreWorkspaceTests = [
       assert.equal(report.version, manifest.version);
       assert.equal(report.ui, path.join(payload, 'ui'));
       await rm(path.join(payload, 'ui', 'dist'), { recursive: true, force: true });
+      await writeFile(path.join(fixture, 'package.json'), 'invalid foreign manifest');
       assert.equal(JSON.parse(run([probe])).ui, path.join(payload, 'ui'), 'CLI-only copy cannot borrow the ancestor UI package');
+      await rm(path.join(fixture, 'package.json'));
       for (const resolved of [report.assets, report.ui, report.program, ...report.dependencies]) {
         assert.ok(path.relative(payload, resolved) && !path.relative(payload, resolved).startsWith('..'), resolved);
       }

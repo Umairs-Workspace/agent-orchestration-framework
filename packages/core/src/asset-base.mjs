@@ -115,10 +115,10 @@ function devClassBase(assetClass) {
     // Source UI lookup is confined to this private repository. A CLI-only
     // copied payload or focused worktree must not borrow an ancestor's UI.
     const repository = path.resolve(devRepoRoot(), '../..');
+    if (path.relative(repository, devRepoRoot()).replaceAll('\\', '/') !== 'packages/core') return stagedUi;
     const rootManifest = path.join(repository, 'package.json');
     const rootPackage = existsSync(rootManifest) ? JSON.parse(readFileSync(rootManifest, 'utf8')) : null;
-    if (rootPackage?.name !== '@aof/repository' || rootPackage?.private !== true ||
-        path.relative(repository, devRepoRoot()).replaceAll('\\', '/') !== 'packages/core') return stagedUi;
+    if (rootPackage?.name !== '@aof/repository' || rootPackage?.private !== true) return stagedUi;
     const packageRequire = createRequire(import.meta.url);
     for (const lookup of packageRequire.resolve.paths("@aof/ui") ?? []) {
       const lookupRel = path.relative(repository, lookup);
