@@ -2033,3 +2033,55 @@ Commands run include pinned Yarn 4.18.1 test:unit and test; node scripts/test.mj
 Inherited findings and their baseline evidence are listed in plans/02-ASSEMBLY.md, including installed asset/citation drift, old source readers/fixtures, debt filtering, Windows Yarn node.CMD resolution and repository work-record expectations. No dependency, lockfile, generated assistant asset or managed lifecycle state changed. Windows/Node 22.22.2 is verified here; native SEA injection/signing and the cross-platform release matrix remain later-plan work. Implementation commits: 0a2bc43 (extensions), 02082a9 (assembly), c173746 (salt writer), 3cc1852 (source guards).
 
 Plan 02 is complete. Plan 03 core-workspace relocation is next; Plans 04–08 retain application/distribution relocation, compatibility removal, installed-asset reconciliation and final cross-platform acceptance.
+
+## Plan 03 — installed core workspace and distribution roots (2026-09-30)
+
+The installed `aof` product now lives in `packages/core`: its executable, explicit application assembly,
+configuration/rendering implementation and canonical assets. Root is the private `@aof/repository`
+workspace. Core exposes only application, CLI and asset-base APIs, owns its actual runtime dependencies,
+and reads product version from its manifest. UI uses messaging's public form API and declares that dependency.
+Third-party lock resolutions, pinned Yarn and reviewed native build exceptions are unchanged.
+
+Source/plain-Node copies resolve core from its declared manifest; SEA retains executable-relative sidecars.
+Audit child programs use the pure core locator and keep toolkit and subject roots distinct. Staging copies
+core's executable, complete manifest, source, assets and 44-entry production closure with links dereferenced,
+plus the SEA bundle and optional UI. Staged UI wins over an ancestor's optional UI package. Build-SEA,
+manifest generation and WSL source staging use canonical core paths. The temporary root executable forwarder
+has concrete consumers and a Plan 06 removal condition.
+
+Changed families: the 599-module core source tree, 91 canonical assets and executable; root/core/UI manifests
+and workspace-only lock edges; install/build/manifest/deployment tools; pure toolkit and dependency-inventory
+roots; asset classification and harness citation; public UI formatter import; registered copied-core proof;
+and affected source readers/guards and project fixtures. Generic subject `src/...` paths and package-relative
+`module:src/...` pointers remain generic. Source scans retain floors, planted violations and ceilings, apart
+from the single added pure location module and registered copied-core test. Canonical comparison finds only
+22 citation-edited assets plus the regenerated manifest. No checked-in generated assets, managed work state
+or persisted application formats changed.
+
+Verification: copied core runs from an unrelated directory in a path containing spaces, refuses external
+module loads, matches all 117 frozen command descriptors, resolves public dependencies internally, and runs
+source/copy help/version, session/heartbeat hooks and both real audit child programs. The final 45-case
+asset/distribution/board selection includes an ancestor UI conflict and passes. Immutable Yarn linking,
+supply-chain audit (zero warnings), UI build and the final 699-input JavaScript SEA compile pass; native PTY
+remains external. Focused source/behavior results include 13 dependency, 20 site, 11 citation, 12 registration,
+49 wave, 18 reconciliation, 29 worker, 72 finding/resume, 49 session/regression and 86 dispatch passes.
+The final work-fixture selection has 96 passes and one inherited source-reader failure.
+
+Pinned unit tests have 997 passes and one inherited render failure. The broad run ends early at a fixture
+promise after 4,039 passes and 38 failures. A separate remainder completes 7,420 registered cases with 7,357
+passes and 63 failures, followed by all 134 CLI integration cases, all 118 Rust tests and the desktop shell
+cargo check passing. Coverage is 4,077 initial cases + 49 complete wave cases - 19 overlapping cases + 7,420
+remainder cases = all 11,527 registered cases. Of the 101 observed failures, 78 pass corrected focused reruns;
+20 remaining checks belong to recorded inherited families and three are new citation checks. Results are
+separate and reconciled, rather than a full-suite-green claim. The final runtime root correction has fresh
+focused/compile evidence; broad runs precede final corrections. Exact commands, context, counts and the
+remaining ledger are in `plans/03-CORE.md` and `.tmp/workspace-migration/plan03/`.
+
+New citation drift comprises installed prose paths, historical tuning provenance (the repository census
+currently emits only advisory proposals), and the historical wiki link floor (2,176 resolving versus 2,317).
+Plan 07 owns reconciliation; inherited source-reader/fixture and repository-record findings retain their
+Plans 06/08 assignments. UI/desktop relocation is Plan 04, native/platform distribution remains Plans 05/08,
+and private adapter/forwarder removal remains Plan 06. No real local installation or WSL deployment changed.
+Code commits: `1e8976ee`, `78be5372`, `6ef52f65`, `4a341b73`, `2a80686d`, `f8fd4f88`.
+
+Plan 03 is complete. Plan 04 is next; the overall workspace migration retains its later-plan acceptance gates.
