@@ -398,8 +398,8 @@ function askCardTests() {
       name: "131/05 task01 — the card's words come from the one formatter, and the board spells no second one",
       async run() {
         const source = await readUi("action.mjs");
-        assert.match(source, /import \{[^}]*\bformatElapsed\b[^}]*\} from "\.\.\/\.\.\/\.\.\/src\/notify\/form\.mjs"/u);
-        assert.match(source, /import \{[^}]*\beventPhrase\b[^}]*\} from "\.\.\/\.\.\/\.\.\/src\/notify\/form\.mjs"/u);
+        assert.match(source, /import \{[^}]*\bformatElapsed\b[^}]*\} from "@aof\/messaging\/form"/u);
+        assert.match(source, /import \{[^}]*\beventPhrase\b[^}]*\} from "@aof\/messaging\/form"/u);
         assert.ok(!/waiting on you/iu.test(source), "action.mjs spells no `waiting on you`");
         for (const ladder of ["60000", "3600000", "86400000", "% 60", "/ 60"]) assert.ok(!source.includes(ladder), `no ${ladder}`);
         assert.ok(!/\}[smhd]`/u.test(source), "no template literal ending }s, }m, }h or }d");

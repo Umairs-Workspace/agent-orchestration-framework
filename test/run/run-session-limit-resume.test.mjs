@@ -876,7 +876,7 @@ function answerVerbTests() {
         assert.equal(Object.keys(before).length, 1, "R1's record is on disk");
         await invoke("work:answer", { ref: "03/01", text: "take b", now: ANSWER_NOW }, ctx);
         assert.deepEqual(await snapshotFiles(runs), before, "every file under runs/ is byte-unchanged");
-        const source = (await readFile(path.join(ANSWER_REPO_ROOT, "src", "commands", "resume.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
+        const source = (await readFile(path.join(ANSWER_REPO_ROOT, "packages", "core", "src", "commands", "resume.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
         for (const writer of ["openRunAsk", "parkRunAsk", "answerRunAsk"]) assert.ok(!source.includes(writer), `resume.mjs calls no ${writer}`);
       }),
     },

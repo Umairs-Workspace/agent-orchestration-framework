@@ -731,7 +731,7 @@ export const agentSessionDriverDoorTests = [
       assert.ok(fixtures.length >= FIXTURE_FLOOR, `at least ${FIXTURE_FLOOR} test/support/*.mjs fixture modules do (got ${fixtures.length}): ${fixtures.map((m) => m.rel).join(", ")}`);
 
       for (const member of sourceSide) {
-        assert.match(member.rel, /^(?:src|scripts)\/.*\.mjs$/u, `${member.rel} is a file under src/ or scripts/`);
+        assert.match(member.rel, /^(?:packages\/core\/src|scripts)\/.*\.mjs$/u, `${member.rel} is a file under src/ or scripts/`);
         assert.ok(await importsTheSink(member.rel), `${member.rel} statically imports the sink`);
       }
       assert.ok(sourceSide.length >= SOURCE_SIDE_FLOOR, `at least ${SOURCE_SIDE_FLOOR} files under src/ or scripts/ do (got ${sourceSide.length}): ${sourceSide.map((m) => m.rel).join(", ")}`);
@@ -879,7 +879,7 @@ export const agentSessionDriverDoorTests = [
       assert.equal(importable.length, preExisting.length - 1, "exactly the one named CLI entry point is held out of the fresh-import probe");
       assert.ok(importable.length >= 52, `the probe links at least 52 members (got ${importable.length})`);
       const probe = [
-        'const sink = await import("file:///" + process.argv[2] + "/src/mesh/worker-execution.mjs");',
+        'const sink = await import("file:///" + process.argv[2] + "/packages/core/src/mesh/worker-execution.mjs");',
         "const rels = JSON.parse(process.argv[3]);",
         "for (const rel of rels) { await import(\"file:///\" + process.argv[2] + \"/\" + rel); }",
         "const wanted = JSON.parse(process.argv[4]);",

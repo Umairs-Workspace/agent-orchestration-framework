@@ -251,10 +251,10 @@ export const regressionGateTests = [
     run: () => withGateFixture(async ({ recordPath, run }) => {
       for (const [state, dirty, expected] of [
         ["clean", "", "runs"],
-        ["carrying uncommitted tracked changes", " M packages/core/src/regression-record.mjs\n", "packages/core/src/regression-record.mjs"],
-        ["carrying untracked files under a source root", "?? src/smuggled.mjs\n", "packages/core/src/smuggled.mjs"],
+        ["carrying uncommitted tracked changes", " M src/regression-record.mjs\n", "src/regression-record.mjs"],
+        ["carrying untracked files under a source root", "?? src/smuggled.mjs\n", "src/smuggled.mjs"],
         // A rename reports `XY <old> -> <new>`; the NEW path is the one the tree now holds.
-        ["carrying a rename", "R  src/old.mjs -> src/new.mjs\n", "packages/core/src/new.mjs"],
+        ["carrying a rename", "R  src/old.mjs -> src/new.mjs\n", "src/new.mjs"],
         // A git that cannot answer is NOT a clean tree — this seam fails CLOSED, which is the one
         // way it differs from `laneChanges`, whose sweep must never delete a lane on a git fault.
         ["unreadable by git", null, "git status"],
@@ -299,7 +299,7 @@ export const regressionGateTests = [
     run: () => withGateFixture(async ({ recordPath, run }) => {
       for (const [property, suite, cell] of [
         ["scope was not `all`", suiteResult({ scope: "impacted" }), "impacted"],
-        ["selection widened during the run", suiteResult({ widened: [{ file: "packages/core/src/x.mjs", reason: "graph-unknown" }] }), "all+widened"],
+        ["selection widened during the run", suiteResult({ widened: [{ file: "src/x.mjs", reason: "graph-unknown" }] }), "all+widened"],
       ]) {
         await rm(recordPath, { force: true });
         const out = await run({ suite });

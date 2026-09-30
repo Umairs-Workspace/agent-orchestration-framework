@@ -154,7 +154,7 @@ export const promoteFindingToChoreTests = [
 
       // One finding raised by two lenses is routed ONCE, after deduplication.
       const twice = routeFindings([
-        finding({ title: "F-a", location: "packages/core/src/x.mjs:10", checklistDischargeable: true }),
+        finding({ title: "F-a", location: "src/x.mjs:10", checklistDischargeable: true }),
         finding({ title: " f-A ", location: "SRC/X.MJS:10", checklistDischargeable: true }),
       ]);
       assert.equal(twice.routed.length, 1, "deduplicated to one routing");
