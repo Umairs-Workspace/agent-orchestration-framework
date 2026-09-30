@@ -419,8 +419,8 @@ export const commandCoreContractTests = [
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
       const result = runNativeWorkspaceTests(root);
-      assert.ok(result.files >= 62, "all owned native files were discovered");
-      assert.ok(result.cases >= 222, `executed ${result.cases} native cases`);
+      assert.ok(result.files >= 64, "all owned native files were discovered, including Plan 06's public application and citation checks");
+      assert.ok(result.cases >= 246, `executed ${result.cases} native cases`);
       assert.equal(result.owners.length, 13, "every package has an executed native surface");
       console.log(`# aggregate bridge: ${result.cases} native cases in ${result.files} files`);
     },

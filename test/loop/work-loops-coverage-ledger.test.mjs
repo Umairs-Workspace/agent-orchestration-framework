@@ -160,7 +160,7 @@ const NINE_GATES = Object.freeze([
 const SUITES = [
   { key: "record", task: "00", file: "test/loop/work-loops-record.test.mjs", alias: "workLoopsRecordTests", tests: workLoopsRecordTests, coverage: recordCoverage },
   { key: "value", task: "01", file: "test/loop/work-loops-value.test.mjs", alias: "workLoopsValueTests", tests: workLoopsValueTests, coverage: valueCoverage },
-  { key: "checks", task: "02", file: "test/loop/work-loops-checks.test.mjs", alias: "workLoopsChecksTests", tests: workLoopsChecksTests, coverage: checksCoverage },
+  { key: "checks", task: "02", file: "packages/work-graph/test/work-loops-checks.suite.mjs", alias: "workLoopsChecksTests", tests: workLoopsChecksTests, coverage: checksCoverage },
   { key: "commands", task: "03", file: "test/loop/work-loops-commands.test.mjs", alias: "workLoopsCommandsTests", tests: workLoopsCommandsTests, coverage: commandsCoverage },
   { key: "census", task: "04", file: "test/loop/work-loops-registry-census.test.mjs", alias: "workLoopsRegistryCensusTests", tests: workLoopsRegistryCensusTests, coverage: censusCoverage },
 ];
@@ -825,7 +825,7 @@ export const workLoopsCoverageLedgerTests = [
       assert.ok(box, "…with an @executable suite box");
       assert.match(box, /^\s*- \[x\]/, "the @executable suite box is ticked");
       for (const file of REGISTERED) {
-        assert.ok(box.includes(path.basename(file, ".test.mjs")), `STATE.md's verification box names ${file}`);
+        assert.ok(box.includes(path.basename(file).replace(/\.(?:test|suite)\.mjs$/u, "")), `STATE.md's verification box names ${file}`);
       }
 
       // THE TECH_DEBT CLAUSE IS GONE (2026-09-06), and its removal is this leg's own lesson.

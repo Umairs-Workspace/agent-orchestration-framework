@@ -988,7 +988,7 @@ const ONE_GRAMMAR = [
       ];
 
       const loopSource = await readFile(path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs"), "utf8");
-      const familySource = await readFile(path.join(REPO_ROOT, "packages", "core", "src", "work-trigger", "sources.mjs"), "utf8");
+      const familySource = await readFile(path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger", "sources.mjs"), "utf8");
 
       for (const [change, scope, expected, patches, probe] of rows) {
         // In THIS tree the row's scope answers the other way, so the row measures movement rather
@@ -1011,8 +1011,8 @@ const ONE_GRAMMAR = [
           }
           assert.notEqual(patched, loopSource, `${change}: the copy really was changed`);
 
-          await writeFile(path.join(src, "work/loop.mjs"), patched, "utf8");
-          await cp(path.join(REPO_ROOT, "packages", "core", "src", "work-trigger", "sources.mjs"), path.join(src, "work-trigger", "sources.mjs"));
+          await writeFile(path.join(src, "engine.mjs"), patched, "utf8");
+          await cp(path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger", "sources.mjs"), path.join(src, "work-trigger", "sources.mjs"));
 
           // No file in this family was edited to bring it about.
           assert.equal(await readFile(path.join(src, "work-trigger", "sources.mjs"), "utf8"), familySource,

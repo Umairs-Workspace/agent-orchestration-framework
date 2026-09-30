@@ -1574,12 +1574,12 @@ export const driveCommandPhaseDriverTests = [
   {
     name: "129/02 task03 src/loop is a declared exemption — in SOURCE_DIRECTORY_EXEMPTIONS with a why naming the ninth file or the loop-* root-leaf move, and holding its members under the threshold",
     async run() {
-      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/loop");
+      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/application/bindings/loop");
       assert.ok(exemption != null, "packages/core/src/loop appears in SOURCE_DIRECTORY_EXEMPTIONS");
       assert.match(exemption.why, /ninth file/u, "the why names the ninth file");
       assert.match(exemption.why, /loop-\*.*root-leaf move|root-leaf move/u, "…and the loop-* root-leaf move");
       assert.match(exemption.why, /129\/02/u, "…and the story that bore it");
-      const loopDir = fileURLToPath(new URL("../../packages/core/src/loop/", import.meta.url));
+      const loopDir = fileURLToPath(new URL("../../packages/core/src/application/bindings/loop/", import.meta.url));
       const members = (await readdir(loopDir, { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name);
       assert.ok(members.includes("child-drive.mjs"), `packages/core/src/loop/ holds child-drive.mjs (${members.join(", ")})`);
       assert.ok(members.length <= FLAT_LAYER_THRESHOLD, `packages/core/src/loop/ holds ${members.length} members, under FLAT_LAYER_THRESHOLD (${FLAT_LAYER_THRESHOLD}) — the size claim leg 6 re-checks`);

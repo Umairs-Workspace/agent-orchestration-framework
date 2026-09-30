@@ -101,7 +101,7 @@ const F_ROUTING = `${FEATURE_DIR}/03_registration-and-routing.feature`;
 const F_CODES =
   "wiki/work/archive/52_milestone_loop-registry-and-graph/stories/01_story_structural-checks/tasks/05_frozen-finding-codes.feature";
 const MIGRATED_IN = "the three `ran` cases, pinned at the seam";
-const CHECKS_SUITE = "./work-loops-checks.test.mjs";
+const CHECKS_SUITE = "../../packages/work-graph/test/work-loops-checks.suite.mjs";
 
 // The two gates whose assertions this suite refuses to duplicate. Every `structural-duplicate`
 // pointer names one of these, and the ledger case RESOLVES both against `test/arch/` on disk — a

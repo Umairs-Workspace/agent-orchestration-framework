@@ -113,12 +113,16 @@ SEA keeps this helper outside its runtime bundle. The built installed UI and the
 startup need no development-server dependency. The UI build, immutable install and required
 supply-chain audit pass; third-party versions and lifecycle policy remain unchanged.
 
-## Verification receipts in progress
+## Native verification and remaining reconciliation
 
 Windows x64 native build/staging and all eight isolated distribution checks pass after the final
 removals: installer layout/update, source-help parity, both-runtime work-init assets, isolated
 module loading, SEA census, bundled audit children, built UI and real PTY input/output.
-Linux x64 verification and the full repository failure reconciliation remain in progress.
+Linux x64 passes the same eight checks from a clean disposable Ubuntu 22.04 clone at
+`84aabf7d`, using Node 22.23.1, immutable pinned Yarn, the reviewed native rebuild and a
+fresh UI build. Its source boundary census and supply-chain audit pass, and the clone has
+no tracked changes. Windows uses Node 22.22.2. Remaining source-guard fixes change tests
+only. The full repository failure reconciliation remains in progress.
 Plan 04's UI/desktop relocation, Plan 07's documentation refresh and Plan 08's broader native
 matrix/signing are still separate work. No real workflow state or generated assistant assets
 are refreshed to quiet inherited verification failures.

@@ -187,7 +187,7 @@ export const coreWorkspaceTests = [
     }
     assert.ok(suiteFiles >= 18); assert.ok(cases >= 254);
     assert.ok(inventory.filter(owner => owner.native.length).length >= 13);
-    assert.ok(inventory.flatMap(owner => owner.native).length >= 63);
+    assert.ok(inventory.flatMap(owner => owner.native).length >= 64);
   } },
 
   { name: 'workspace-tests/selected root runs execute cases and propagate a planted failure through the shared harness', run() {

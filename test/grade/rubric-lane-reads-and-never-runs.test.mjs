@@ -78,7 +78,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
 
       // NO CLOCK, and NO `path.resolve` — a lane that read either could not be replayed from
       // a snapshot, which is the whole determinism contract.
-      const body = stripComments(await readFile(path.join(repoRoot, "packages", "core", "src", "work", "doctor-rubric.mjs"), "utf8"));
+      const body = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/rubric.mjs"), "utf8"));
       for (const clock of ["Date.now", "new Date", "performance.now", "process.hrtime", "Date.parse"]) {
         assert.ok(!body.includes(clock), `it read no clock (found ${clock})`);
       }
@@ -102,7 +102,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
         assert.equal(snapshot.rubricReport.format, "tap", "…with the format it was declared in");
 
         // THE LANE ITSELF PERFORMED NO READ — it holds no filesystem import at all.
-        const body = stripComments(await readFile(path.join(repoRoot, "packages", "core", "src", "work", "doctor-rubric.mjs"), "utf8"));
+        const body = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/rubric.mjs"), "utf8"));
         for (const io of ["node:fs", "readFile", "readFileSync", "existsSync", "statSync"]) {
           assert.ok(!body.includes(io), `the lane performs no read (found ${io})`);
         }
@@ -135,8 +135,8 @@ export const rubricLaneReadsAndNeverRunsTests = [
         assert.equal(existsSync(witness), false, "the rubric command produced none of its effects");
 
         // AND THE DOCTOR STARTED NO CHILD PROCESS — structurally, over the whole lane family.
-        for (const module of ["work/doctor.mjs", "work/doctor-rubric.mjs", "work/doctor-controls.mjs"]) {
-          const body = stripComments(await readFile(path.join(repoRoot, "packages", "core", "src", module), "utf8"));
+        for (const module of ["doctor/index.mjs", "doctor/rubric.mjs", "audit/controls.mjs"]) {
+          const body = stripComments(await readFile(path.join(repoRoot, "packages/work/src", module), "utf8"));
           for (const door of ["child_process", "spawnSync", "execSync", "execFileSync", "fork("]) {
             assert.ok(!body.includes(door), `${module} names no spawn door (found ${door})`);
           }

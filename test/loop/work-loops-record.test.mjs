@@ -40,6 +40,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // lines, empty lists, the normalised model), ADR-013 §1–§4 (the total order, `kind`
 // suspension, no dedup).
 import assert from "node:assert/strict";
+import { moduleReferences } from "../../scripts/workspace-boundaries.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1519,14 +1520,13 @@ export const workLoopsRecordTests = [
       // in `test/loop/` and the pinned spelling matched nothing, which reported "no subject
       // module" as an empty set rather than as a red. What the leg means is the MODULE, so it
       // is the module that is named.
-      const suiteDir = path.dirname(fileURLToPath(import.meta.url));
-      const srcImports = [...source.matchAll(/from "((?:\.\.\/)+packages\/core\/src\/[^"]+)"/g)]
-        .map((match) => path.relative(path.resolve(suiteDir, "..", ".."), path.resolve(suiteDir, match[1])).split(path.sep).join("/"));
-      assert.deepEqual([...new Set(srcImports)], ["packages/core/src/application/bindings/work/loops.mjs"], "one subject module, imported by its public path");
-      const named = source.match(/import \{([^}]*)\} from "(?:\.\.\/)+packages\/core\/src\/work\/loops\.mjs";/);
-      assert.ok(named, "the named import list is readable");
-      for (const binding of named[1].split(",").map((entry) => entry.trim()).filter(Boolean)) {
+      const srcImports = moduleReferences(source).references.filter(entry => entry.specifier.startsWith("aof/")).map(entry => entry.specifier);
+      assert.deepEqual([...new Set(srcImports)], ["aof/default-application"], "one public core entry supplies the subject");
+      const named = [...source.matchAll(/^const (\w+) = _aofApplication\.graph\.work\.loops\.\1;/gmu)].map(match => match[1]);
+      assert.ok(named.length >= 13 && named.includes("loadLoops"), "the thirteen scoped public loader bindings are readable");
+      for (const binding of named) {
         assert.ok(Object.hasOwn(loaderModule, binding), `${binding} is an exported name, never a module-private one`);
+        assert.equal(loaderModule[binding], _aofApplication.graph.work.loops[binding], `${binding} retains public service identity`);
       }
 
       // (2) EVERY FIXTURE GOES THROUGH `registry()`, which is what makes the Background —
