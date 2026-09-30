@@ -21,7 +21,7 @@
 // the rows. node:assert/strict, `{ name, run }` shape.
 //
 // The scenarios this file does not drive are the four that are properties of the TREE rather than
-// of a behaviour — `selectSuites` being the only selection function in `packages/core/src/`, the producer
+// of a behaviour — `selectSuites` being the only selection function in `src/`, the producer
 // reaching the declaration through the shipped parser and through no second frontmatter parse, and
 // the absence of any narrowing path or widening-suppressing option. Those are FF-9604's, in
 // test/arch/testing/acd-one-selector-one-changed-set.test.mjs.
@@ -153,13 +153,13 @@ export const workTestDeclaredTests = [
     name: "96/03-00 the declared write set becomes the changed set, and no git command is invoked to produce it",
     run: withRoot(async (root) => {
       const story = await storyRecord(root, { declaration: "files:\n  - src/one.mjs\n  - src/two.mjs" });
-      await writeGraph(root, { nodes: ["packages/core/src/one.mjs", "packages/core/src/two.mjs", "test/a.test.mjs"], links: [edge(2, 0), edge(2, 1)] });
+      await writeGraph(root, { nodes: ["src/one.mjs", "src/two.mjs", "test/a.test.mjs"], links: [edge(2, 0), edge(2, 1)] });
 
       // `readChanged` throws if reached, so reaching this line at all is the second assertion.
       const out = await invoke(root, { scope: "impacted", story: "96/03" }, { resolveStory: exactly(story) });
 
       assert.equal(out.refusal, null, out.refusal?.message);
-      assert.deepEqual([...out.changed], ["packages/core/src/one.mjs", "packages/core/src/two.mjs"]);
+      assert.deepEqual([...out.changed], ["src/one.mjs", "src/two.mjs"]);
       assert.equal(out.story, "96/03");
     }),
   },
@@ -170,17 +170,17 @@ export const workTestDeclaredTests = [
         {
           entry: "a plain path in a block list",
           declaration: "files:\n  - src/one.mjs",
-          expect: (set) => assert.deepEqual([...set.changed], ["packages/core/src/one.mjs"]),
+          expect: (set) => assert.deepEqual([...set.changed], ["src/one.mjs"]),
         },
         {
           entry: "a plain path in an inline list",
           declaration: "files: [src/one.mjs, src/two.mjs]",
-          expect: (set) => assert.deepEqual([...set.changed], ["packages/core/src/one.mjs", "packages/core/src/two.mjs"]),
+          expect: (set) => assert.deepEqual([...set.changed], ["src/one.mjs", "src/two.mjs"]),
         },
         {
           entry: "a path followed by a YAML comment",
           declaration: "files:\n  - src/one.mjs # the seam this story hangs off",
-          expect: (set) => assert.deepEqual([...set.changed], ["packages/core/src/one.mjs"]),
+          expect: (set) => assert.deepEqual([...set.changed], ["src/one.mjs"]),
         },
         {
           entry: "a path written with backslashes",
@@ -206,13 +206,13 @@ export const workTestDeclaredTests = [
     name: "96/03-00 two sources are refused and an unresolvable one is named (Examples: a refusal, never a silently chosen source)",
     run: withRoot(async (root) => {
       const story = await storyRecord(root, { declaration: "files:\n  - src/one.mjs" });
-      await writeGraph(root, { nodes: ["packages/core/src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
-      const gitChanged = async () => Object.freeze({ ok: true, changed: Object.freeze(["packages/core/src/one.mjs"]), base: "HEAD~1" });
+      await writeGraph(root, { nodes: ["src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
+      const gitChanged = async () => Object.freeze({ ok: true, changed: Object.freeze(["src/one.mjs"]), base: "HEAD~1" });
 
       // `--scope impacted --story <ref>` — selects from the story's declared set.
       const declared = await invoke(root, { scope: "impacted", story: "96/03" }, { resolveStory: exactly(story) });
       assert.equal(declared.refusal, null);
-      assert.deepEqual([...declared.changed], ["packages/core/src/one.mjs"]);
+      assert.deepEqual([...declared.changed], ["src/one.mjs"]);
       assert.equal(declared.story, "96/03");
 
       // `--scope impacted --since <rev>` — selects from git's changed set.
@@ -300,7 +300,7 @@ export const workTestDeclaredTests = [
       // The test the developer is about to write: declared, and absent from a graph built before
       // it existed.
       const story = await storyRecord(root, { declaration: "files:\n  - src/one.mjs\n  - test/new.test.mjs" });
-      await writeGraph(root, { nodes: ["packages/core/src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
+      await writeGraph(root, { nodes: ["src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
 
       const out = await invoke(root, { scope: "impacted", story: "96/03" }, { resolveStory: exactly(story) });
 
@@ -314,12 +314,12 @@ export const workTestDeclaredTests = [
     name: "96/03-01 a declared source module the graph has never seen widens the run, naming that file",
     run: withRoot(async (root) => {
       const story = await storyRecord(root, { declaration: "files:\n  - src/brand-new.mjs" });
-      await writeGraph(root, { nodes: ["packages/core/src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
+      await writeGraph(root, { nodes: ["src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
 
       const out = await invoke(root, { scope: "impacted", story: "96/03" }, { resolveStory: exactly(story) });
 
       assert.equal(out.scope, "all");
-      assert.deepEqual(out.widened.map((entry) => entry.file), ["packages/core/src/brand-new.mjs"]);
+      assert.deepEqual(out.widened.map((entry) => entry.file), ["src/brand-new.mjs"]);
       assert.equal(out.widened[0].reason, "not-in-graph");
     }),
   },
@@ -330,7 +330,7 @@ export const workTestDeclaredTests = [
         {
           coverage: "all covered, each with a registered dependent suite",
           declaration: "files:\n  - src/one.mjs\n  - src/two.mjs",
-          graph: { nodes: ["packages/core/src/one.mjs", "packages/core/src/two.mjs", "test/a.test.mjs", "test/b.test.mjs"], links: [edge(2, 0), edge(3, 1)] },
+          graph: { nodes: ["src/one.mjs", "src/two.mjs", "test/a.test.mjs", "test/b.test.mjs"], links: [edge(2, 0), edge(3, 1)] },
           expect: (out) => {
             assert.equal(out.scope, "impacted");
             assert.deepEqual(out.widened, []);
@@ -340,29 +340,29 @@ export const workTestDeclaredTests = [
         {
           coverage: "all covered, one with no dependent suite at all",
           declaration: "files:\n  - src/one.mjs\n  - src/lonely.mjs",
-          graph: { nodes: ["packages/core/src/one.mjs", "packages/core/src/lonely.mjs", "test/a.test.mjs"], links: [edge(2, 0)] },
+          graph: { nodes: ["src/one.mjs", "src/lonely.mjs", "test/a.test.mjs"], links: [edge(2, 0)] },
           expect: (out) => {
             assert.equal(out.scope, "all");
-            assert.deepEqual(out.widened.map((e) => e.file), ["packages/core/src/lonely.mjs"]);
+            assert.deepEqual(out.widened.map((e) => e.file), ["src/lonely.mjs"]);
             assert.equal(out.widened[0].reason, "no-registered-dependent");
           },
         },
         {
           coverage: "one not covered by the graph",
           declaration: "files:\n  - src/one.mjs\n  - src/unseen.mjs",
-          graph: { nodes: ["packages/core/src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] },
+          graph: { nodes: ["src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] },
           expect: (out) => {
             assert.equal(out.scope, "all");
-            assert.deepEqual(out.widened.map((e) => e.file), ["packages/core/src/unseen.mjs"]);
+            assert.deepEqual(out.widened.map((e) => e.file), ["src/unseen.mjs"]);
           },
         },
         {
           coverage: "none covered by the graph",
           declaration: "files:\n  - src/unseen.mjs\n  - src/also-unseen.mjs",
-          graph: { nodes: ["packages/core/src/other.mjs"], links: [] },
+          graph: { nodes: ["src/other.mjs"], links: [] },
           expect: (out) => {
             assert.equal(out.scope, "all");
-            assert.deepEqual(out.widened.map((e) => e.file).sort(), ["packages/core/src/also-unseen.mjs", "packages/core/src/unseen.mjs"]);
+            assert.deepEqual(out.widened.map((e) => e.file).sort(), ["src/also-unseen.mjs", "src/unseen.mjs"]);
           },
         },
       ];
@@ -414,7 +414,7 @@ export const workTestDeclaredTests = [
     name: "96/03-01 the run reports the scope it actually ran as — a widened run says it widened, names each file, and is not a gate",
     run: withRoot(async (root) => {
       const story = await storyRecord(root, { declaration: "files:\n  - src/unseen.mjs" });
-      await writeGraph(root, { nodes: ["packages/core/src/other.mjs"], links: [] });
+      await writeGraph(root, { nodes: ["src/other.mjs"], links: [] });
 
       const out = await invoke(root, { scope: "impacted", story: "96/03" }, { resolveStory: exactly(story) });
       const rendered = testCommand.cli.render(out);
@@ -459,7 +459,7 @@ export const workTestDeclaredTests = [
       const story = await storyRecord(root, { declaration: "files:\n  - src/one.mjs\n  - test/a.test.mjs" });
       // The graph knows both, so nothing widens and the selection is genuinely narrow — which is
       // the only case in which "its own suites are among the selected" says anything.
-      await writeGraph(root, { nodes: ["packages/core/src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
+      await writeGraph(root, { nodes: ["src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
 
       const out = await invoke(root, { scope: "impacted", story: "96/03" }, { resolveStory: exactly(story) });
 
@@ -496,7 +496,7 @@ export const workTestDeclaredTests = [
     name: "96/03-02 a narrowed run is never rendered as a whole one — it states the scope it ran as and does not report itself as a gate",
     run: withRoot(async (root) => {
       const story = await storyRecord(root, { declaration: "files:\n  - src/one.mjs" });
-      await writeGraph(root, { nodes: ["packages/core/src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
+      await writeGraph(root, { nodes: ["src/one.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
 
       const out = await invoke(root, { scope: "impacted", story: "96/03" }, { resolveStory: exactly(story) });
       const rendered = testCommand.cli.render(out);

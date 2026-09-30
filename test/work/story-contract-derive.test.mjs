@@ -33,20 +33,20 @@ const link = (source, target) => ({ source, target, relation: "IMPORTS", confide
 // The coupling every graph scenario is measured against: two modules import the subject, and the
 // subject imports one other. Three answers, three reasons.
 const COUPLED = {
-  nodes: [node("n_x", "packages/core/src/x.mjs"), node("n_a", "packages/core/src/a.mjs"), node("n_b", "packages/core/src/b.mjs"), node("n_c", "packages/core/src/c.mjs")],
+  nodes: [node("n_x", "src/x.mjs"), node("n_a", "src/a.mjs"), node("n_b", "src/b.mjs"), node("n_c", "src/c.mjs")],
   links: [link("n_a", "n_x"), link("n_b", "n_x"), link("n_x", "n_c")],
 };
 
 // The same shape with different coupling — so "stable" can be shown to mean "a function of its
 // inputs" rather than "constant".
 const OTHER = {
-  nodes: [node("n_x", "packages/core/src/x.mjs"), node("n_d", "packages/core/src/d.mjs")],
+  nodes: [node("n_x", "src/x.mjs"), node("n_d", "src/d.mjs")],
   links: [link("n_d", "n_x")],
 };
 
 // A graph that carries no node for the subject at all: its coupling is UNKNOWN, which is not the
 // same fact as having none.
-const WITHOUT_SUBJECT = { nodes: [node("n_a", "packages/core/src/a.mjs")], links: [] };
+const WITHOUT_SUBJECT = { nodes: [node("n_a", "src/a.mjs")], links: [] };
 
 async function project({ graph = null, graphText = null } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-derive-"));
@@ -76,12 +76,12 @@ export const storyContractDeriveTests = [
   {
     name: "96/01/00 the graph's coupling around a subject file is proposed, with its reason — two importers and one import, each naming the graph as its source",
     run: withProject({ graph: COUPLED }, async (root) => {
-      const proposal = deriveStoryContract({ projectRoot: root, subjects: ["packages/core/src/x.mjs"] });
+      const proposal = deriveStoryContract({ projectRoot: root, subjects: ["src/x.mjs"] });
       assert.ok(proposal.graph.available, "the graph was found and read");
-      assert.deepEqual(paths(proposal.reads), ["packages/core/src/a.mjs", "packages/core/src/b.mjs", "packages/core/src/c.mjs"], "the two importers and the one import are proposed");
-      assert.equal(reasonFor(proposal.reads, "packages/core/src/a.mjs"), "graph-dependent", "an importer names the graph as its source");
-      assert.equal(reasonFor(proposal.reads, "packages/core/src/b.mjs"), "graph-dependent");
-      assert.equal(reasonFor(proposal.reads, "packages/core/src/c.mjs"), "graph-dependency", "…and so does an import");
+      assert.deepEqual(paths(proposal.reads), ["src/a.mjs", "src/b.mjs", "src/c.mjs"], "the two importers and the one import are proposed");
+      assert.equal(reasonFor(proposal.reads, "src/a.mjs"), "graph-dependent", "an importer names the graph as its source");
+      assert.equal(reasonFor(proposal.reads, "src/b.mjs"), "graph-dependent");
+      assert.equal(reasonFor(proposal.reads, "src/c.mjs"), "graph-dependency", "…and so does an import");
       assert.equal(proposal.complete, true, "the coupling was learned, so the proposal is complete");
     }),
   },
@@ -90,13 +90,13 @@ export const storyContractDeriveTests = [
     run: withProject({ graph: COUPLED }, async (root) => {
       const proposal = deriveStoryContract({
         projectRoot: root,
-        subjects: ["packages/core/src/x.mjs"],
-        documents: [{ path: "SPEC.md", text: "measured at `packages/core/src/cited.mjs:41`" }, { path: "ARCHITECTURE.md", text: "see src/adr-cited.mjs:12-19" }],
+        subjects: ["src/x.mjs"],
+        documents: [{ path: "SPEC.md", text: "measured at `src/cited.mjs:41`" }, { path: "ARCHITECTURE.md", text: "see src/adr-cited.mjs:12-19" }],
       });
-      assert.ok(paths(proposal.reads).includes("packages/core/src/cited.mjs"), "the SPEC's citation is proposed for reads");
-      assert.ok(paths(proposal.reads).includes("packages/core/src/adr-cited.mjs"), "…and the ADR's");
-      assert.equal(reasonFor(proposal.reads, "packages/core/src/cited.mjs"), "citation", "it carries a reason naming the citation as its source");
-      assert.equal(reasonFor(proposal.reads, "packages/core/src/adr-cited.mjs"), "citation");
+      assert.ok(paths(proposal.reads).includes("src/cited.mjs"), "the SPEC's citation is proposed for reads");
+      assert.ok(paths(proposal.reads).includes("src/adr-cited.mjs"), "…and the ADR's");
+      assert.equal(reasonFor(proposal.reads, "src/cited.mjs"), "citation", "it carries a reason naming the citation as its source");
+      assert.equal(reasonFor(proposal.reads, "src/adr-cited.mjs"), "citation");
       // A MENTION IS NOT A CITATION. The line number is what makes it one, and it is what ADR-004
       // §3 names — without it a proposal fills with every filename any document happens to say.
       const mention = deriveStoryContract({ projectRoot: root, subjects: [], documents: [{ path: "SPEC.md", text: "we changed src/mentioned.mjs a lot" }] });
@@ -108,8 +108,8 @@ export const storyContractDeriveTests = [
     run: withProject({ graph: COUPLED }, async (root) => {
       const proposal = deriveStoryContract({
         projectRoot: root,
-        subjects: ["packages/core/src/x.mjs"],
-        documents: [{ path: "SPEC.md", text: "`packages/core/src/cited.mjs:41`" }],
+        subjects: ["src/x.mjs"],
+        documents: [{ path: "SPEC.md", text: "`src/cited.mjs:41`" }],
       });
       const seen = [...proposal.reads, ...proposal.files];
       assert.ok(seen.length > 0, "there are entries to read");
@@ -134,10 +134,10 @@ export const storyContractDeriveTests = [
         try {
           const proposal = deriveStoryContract({
             projectRoot: root,
-            subjects: ["packages/core/src/x.mjs"],
-            documents: [{ path: "SPEC.md", text: "`packages/core/src/cited.mjs:41`" }],
+            subjects: ["src/x.mjs"],
+            documents: [{ path: "SPEC.md", text: "`src/cited.mjs:41`" }],
           });
-          assert.deepEqual(paths(proposal.reads), ["packages/core/src/cited.mjs"], `${row.artifact}: the citation-derived entries are proposed`);
+          assert.deepEqual(paths(proposal.reads), ["src/cited.mjs"], `${row.artifact}: the citation-derived entries are proposed`);
           assert.equal(proposal.graph.available, false, `${row.artifact}: the proposal states that graph coupling was unavailable`);
           assert.equal(proposal.graph.unavailable, row.unavailable, `${row.artifact}: …and which way it was unavailable, because the repairs differ`);
           assert.equal(proposal.complete, false, `${row.artifact}: it is not reported as a complete proposal`);
@@ -150,8 +150,8 @@ export const storyContractDeriveTests = [
   {
     name: "96/01/00 a subject file the graph does not cover is reported as unknown, never as uncoupled",
     run: withProject({ graph: WITHOUT_SUBJECT }, async (root) => {
-      const proposal = deriveStoryContract({ projectRoot: root, subjects: ["packages/core/src/x.mjs"] });
-      assert.deepEqual(proposal.unknownCoupling, ["packages/core/src/x.mjs"], "the proposal states that the file's coupling is unknown");
+      const proposal = deriveStoryContract({ projectRoot: root, subjects: ["src/x.mjs"] });
+      assert.deepEqual(proposal.unknownCoupling, ["src/x.mjs"], "the proposal states that the file's coupling is unknown");
       assert.equal(proposal.complete, false, "…so the proposal is not complete");
       const graphDerived = proposal.reads.filter((e) => e.reason.startsWith("graph-"));
       assert.deepEqual(graphDerived, [], "it does not report that file as having no dependents — it reports that it does not know");
@@ -163,7 +163,7 @@ export const storyContractDeriveTests = [
       const one = await project({ graph: COUPLED });
       const two = await project({ graph: OTHER });
       try {
-        const inputs = { subjects: ["packages/core/src/x.mjs"], documents: [{ path: "SPEC.md", text: "`packages/core/src/cited.mjs:41` `packages/core/src/also.mjs:2`" }] };
+        const inputs = { subjects: ["src/x.mjs"], documents: [{ path: "SPEC.md", text: "`src/cited.mjs:41` `src/also.mjs:2`" }] };
         const first = deriveStoryContract({ projectRoot: one, ...inputs });
         const again = deriveStoryContract({ projectRoot: one, ...inputs });
         assert.deepEqual(again, first, "two derivations in one process are identical");
@@ -183,7 +183,7 @@ export const storyContractDeriveTests = [
   {
     name: "96/01/01 a source file with no declared suite proposes one, naming the test lane as its source",
     run: withProject({ graph: COUPLED }, async (root) => {
-      const proposal = deriveStoryContract({ projectRoot: root, subjects: ["packages/core/src/x.mjs"], declaredFiles: ["packages/core/src/x.mjs"] });
+      const proposal = deriveStoryContract({ projectRoot: root, subjects: ["src/x.mjs"], declaredFiles: ["src/x.mjs"] });
       assert.ok(paths(proposal.files).includes("test/x.test.mjs"), "the suite owning that module is proposed for files:");
       assert.equal(reasonFor(proposal.files, "test/x.test.mjs"), "test-lane", "it carries a reason naming the test lane as its source");
       assert.equal(proposal.files.find((e) => e.path === "test/x.test.mjs").declared, false, "…and it is new, not already the author's");
@@ -192,7 +192,7 @@ export const storyContractDeriveTests = [
   {
     name: "96/01/01 a source file whose suite is already declared proposes nothing further for that module",
     run: withProject({ graph: COUPLED }, async (root) => {
-      const declaredFiles = ["packages/core/src/x.mjs", "test/x.test.mjs"];
+      const declaredFiles = ["src/x.mjs", "test/x.test.mjs"];
       const proposal = deriveStoryContract({ projectRoot: root, subjects: declaredFiles, declaredFiles });
       const newlyProposed = proposal.files.filter((e) => !e.declared);
       assert.deepEqual(newlyProposed, [], "no additional suite is proposed for that module");
@@ -203,11 +203,11 @@ export const storyContractDeriveTests = [
     name: "96/01/01 what owes a suite, and what does not — the rule applies to source, once, and to nothing else",
     run: withProject({ graph: COUPLED }, async (root) => {
       const rows = [
-        { declared: "one source module under a source root", subjects: ["packages/core/src/x.mjs"], suites: ["test/x.test.mjs"] },
-        { declared: "two source modules under a source root", subjects: ["packages/core/src/x.mjs", "packages/core/src/y.mjs"], suites: ["test/x.test.mjs", "test/y.test.mjs"] },
+        { declared: "one source module under a source root", subjects: ["src/x.mjs"], suites: ["test/x.test.mjs"] },
+        { declared: "two source modules under a source root", subjects: ["src/x.mjs", "src/y.mjs"], suites: ["test/x.test.mjs", "test/y.test.mjs"] },
         { declared: "a suite file under a declared test root", subjects: ["test/x.test.mjs"], suites: [] },
         { declared: "a markdown document in the work tree", subjects: ["wiki/work/96_milestone_x/SPEC.md"], suites: [] },
-        { declared: "a bundle template", subjects: ["packages/core/assets/templates/story/PLAN.md"], suites: [] },
+        { declared: "a bundle template", subjects: ["src/bundle/templates/story/PLAN.md"], suites: [] },
         { declared: "nothing at all", subjects: [], suites: [] },
       ];
       for (const row of rows) {
@@ -240,8 +240,8 @@ export const storyContractDeriveTests = [
     run: withProject({ graph: COUPLED }, async (root) => {
       const proposal = deriveStoryContract({
         projectRoot: root,
-        subjects: ["packages/core/src/x.mjs"],
-        declaredFiles: ["packages/core/src/x.mjs"],
+        subjects: ["src/x.mjs"],
+        declaredFiles: ["src/x.mjs"],
         allSuites: ["test/arch/x.test.mjs"],
       });
       assert.ok(paths(proposal.files).includes("test/arch/x.test.mjs"), "the existing suite's path is proposed");
@@ -275,10 +275,10 @@ export const storyContractDeriveTests = [
 
       const inputs = {
         projectRoot: root,
-        subjects: ["packages/core/src/x.mjs"],
-        declaredReads: ["packages/core/src/a.mjs"],
-        declaredFiles: ["packages/core/src/x.mjs"],
-        documents: [{ path: "SPEC.md", text: "`packages/core/src/cited.mjs:1` `packages/core/src/second.mjs:2` `packages/core/src/third.mjs:3`" }],
+        subjects: ["src/x.mjs"],
+        declaredReads: ["src/a.mjs"],
+        declaredFiles: ["src/x.mjs"],
+        documents: [{ path: "SPEC.md", text: "`src/cited.mjs:1` `src/second.mjs:2` `src/third.mjs:3`" }],
       };
       const first = deriveStoryContract(inputs);
       const second = deriveStoryContract(inputs);
@@ -288,10 +288,10 @@ export const storyContractDeriveTests = [
       const notDeclared = paths(second.reads.filter((e) => !e.declared)).sort();
       assert.deepEqual(
         notDeclared,
-        ["packages/core/src/b.mjs", "packages/core/src/c.mjs", "packages/core/src/cited.mjs", "packages/core/src/second.mjs", "packages/core/src/third.mjs"],
+        ["src/b.mjs", "src/c.mjs", "src/cited.mjs", "src/second.mjs", "src/third.mjs"],
         "the entries the author did not take are reported as proposed-and-not-declared, never restored",
       );
-      assert.equal(second.reads.find((e) => e.path === "packages/core/src/a.mjs").declared, true, "…and the one they kept is reported as theirs");
+      assert.equal(second.reads.find((e) => e.path === "src/a.mjs").declared, true, "…and the one they kept is reported as theirs");
     }),
   },
   {
@@ -299,27 +299,27 @@ export const storyContractDeriveTests = [
     run: withProject({ graph: COUPLED }, async (root) => {
       const proposal = deriveStoryContract({
         projectRoot: root,
-        subjects: ["packages/core/src/x.mjs"],
-        declaredFiles: ["packages/core/src/x.mjs", "test/x.test.mjs"],
-        declaredReads: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"],
+        subjects: ["src/x.mjs"],
+        declaredFiles: ["src/x.mjs", "test/x.test.mjs"],
+        declaredReads: ["src/a.mjs", "src/b.mjs"],
       });
       const declared = paths(proposal.reads.filter((e) => e.declared)).sort();
       const fresh = paths(proposal.reads.filter((e) => !e.declared)).sort();
-      assert.deepEqual(declared, ["packages/core/src/a.mjs", "packages/core/src/b.mjs"], "the two the author already names are reported as already declared");
-      assert.deepEqual(fresh, ["packages/core/src/c.mjs"], "…and the remaining entries are reported as newly proposed");
+      assert.deepEqual(declared, ["src/a.mjs", "src/b.mjs"], "the two the author already names are reported as already declared");
+      assert.deepEqual(fresh, ["src/c.mjs"], "…and the remaining entries are reported as newly proposed");
     }),
   },
   {
     name: "96/01/02 an over-broad set costs a wave and never a refusal — sharing a file serialises, sharing none does not",
     run: async () => {
       const rows = [
-        { relation: "share a file", second: ["packages/core/src/x.mjs", "packages/core/src/shared.mjs"], sameWave: false },
-        { relation: "share no file", second: ["packages/core/src/y.mjs"], sameWave: true },
+        { relation: "share a file", second: ["src/x.mjs", "src/shared.mjs"], sameWave: false },
+        { relation: "share no file", second: ["src/y.mjs"], sameWave: true },
       ];
       for (const row of rows) {
         const story = (files) => ["---", "type: story", "reads:", "  - src/r.mjs", "files:", ...files.map((f) => `  - ${f}`), "---", "# s", ""].join("\n");
         const texts = new Map([
-          ["a/STORY.md", story(["packages/core/src/x.mjs", "packages/core/src/shared.mjs"])],
+          ["a/STORY.md", story(["src/x.mjs", "src/shared.mjs"])],
           ["b/STORY.md", story(row.second)],
         ]);
         const readText = async (file) => {
@@ -347,7 +347,7 @@ export const storyContractDeriveTests = [
     run: withProject({ graph: COUPLED }, async (root) => {
       const outside = path.join(root, "outside.txt");
       await writeFile(outside, "a file no story declared", "utf8");
-      const proposal = deriveStoryContract({ projectRoot: root, subjects: ["packages/core/src/x.mjs"], declaredReads: [] });
+      const proposal = deriveStoryContract({ projectRoot: root, subjects: ["src/x.mjs"], declaredReads: [] });
       assert.equal(paths(proposal.reads).includes("outside.txt"), false, "the file is outside the declared set and outside the proposal");
       // The read succeeds anyway — the derivation changes how a set is AUTHORED and nothing about
       // how it is ENFORCED, which is what makes a wrong set degrade rather than block.

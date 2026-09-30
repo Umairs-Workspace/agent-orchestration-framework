@@ -94,15 +94,15 @@ export const seamLivenessTests = [
     name: "seam-liveness: an exported module the graph gives no dependents is named, with what it strands",
     async run() {
       const { result, findings } = await laneOver(
-        { "packages/core/src/seam.mjs": EXPORTS_ONE, "packages/core/src/caller.mjs": "export function other() { return 2; }\n" },
-        { files: ["packages/core/src/seam.mjs", "packages/core/src/caller.mjs"], edges: [] },
+        { "src/seam.mjs": EXPORTS_ONE, "src/caller.mjs": "export function other() { return 2; }\n" },
+        { files: ["src/seam.mjs", "src/caller.mjs"], edges: [] },
       );
       assert.equal(findings.length, 2, "both exported modules with no dependent are named");
       for (const finding of findings) {
         assert.equal(finding.code, "audit-seam-unwired", "coded audit-seam-unwired");
         assert.equal(finding.severity, "warn", "…at warn");
       }
-      const seam = findings.find((finding) => finding.path === "packages/core/src/seam.mjs");
+      const seam = findings.find((finding) => finding.path === "src/seam.mjs");
       assert.notEqual(seam, undefined, "it names that module");
       assert.match(seam.message, /`reach`/u, "and it names the export it strands");
       assert.equal(result.findings.length, findings.length, "and no other finding is reported");
@@ -116,18 +116,18 @@ export const seamLivenessTests = [
         [["test/arch/acd-seam.test.mjs"], true, "one file under test/arch/"],
         [["test/integration/seam.test.mjs"], true, "one file under test/integration/"],
         [["test/a.test.mjs", "test/arch/b.test.mjs", "test/integration/c.test.mjs"], true, "files under all three declared test roots"],
-        [["packages/core/src/caller.mjs"], false, "one module under src/"],
-        [["packages/core/src/caller.mjs", "test/arch/b.test.mjs"], false, "one module under src/ and one under test/arch/"],
-        [["packages/core/src/work/test-changed.mjs"], false, "one module under src/ whose own name holds \"test\""],
+        [["src/caller.mjs"], false, "one module under src/"],
+        [["src/caller.mjs", "test/arch/b.test.mjs"], false, "one module under src/ and one under test/arch/"],
+        [["src/work/test-changed.mjs"], false, "one module under src/ whose own name holds \"test\""],
         [["docs/example.mjs"], false, "one file under a root that is declared nowhere"],
       ];
       for (const [dependents, expectNamed, why] of rows) {
         const { findings } = await laneOver(
-          { "packages/core/src/seam.mjs": EXPORTS_ONE },
-          { files: ["packages/core/src/seam.mjs", ...dependents], edges: dependents.map((file) => imports(file, "packages/core/src/seam.mjs")) },
+          { "src/seam.mjs": EXPORTS_ONE },
+          { files: ["src/seam.mjs", ...dependents], edges: dependents.map((file) => imports(file, "src/seam.mjs")) },
         );
         assert.equal(
-          findings.some((finding) => finding.path === "packages/core/src/seam.mjs"),
+          findings.some((finding) => finding.path === "src/seam.mjs"),
           expectNamed,
           `${why}: the module ${expectNamed ? "is named as an unwired seam at warn" : "is not named"}`,
         );
@@ -139,17 +139,17 @@ export const seamLivenessTests = [
     name: "seam-liveness: a dependency is not a dependent, so the graph's observed noise cannot wire a seam",
     async run() {
       const rows = [
-        [imports("packages/core/src/caller.mjs", "packages/core/src/seam.mjs"), false, "a dependent under src/"],
-        [imports("packages/core/src/seam.mjs", "packages/core/src/other.mjs"), true, "a dependency under src/"],
-        [imports("packages/core/src/seam.mjs", "test/arch/acd-migrate.test.mjs"), true, "a dependency that is a test file — the noise as observed"],
-        [imports("test/seam.test.mjs", "packages/core/src/seam.mjs"), true, "a dependent that is a test file"],
+        [imports("src/caller.mjs", "src/seam.mjs"), false, "a dependent under src/"],
+        [imports("src/seam.mjs", "src/other.mjs"), true, "a dependency under src/"],
+        [imports("src/seam.mjs", "test/arch/acd-migrate.test.mjs"), true, "a dependency that is a test file — the noise as observed"],
+        [imports("test/seam.test.mjs", "src/seam.mjs"), true, "a dependent that is a test file"],
       ];
       for (const [edge, expectNamed, why] of rows) {
         const { findings } = await laneOver(
-          { "packages/core/src/seam.mjs": EXPORTS_ONE },
-          { files: ["packages/core/src/seam.mjs", "packages/core/src/caller.mjs", "packages/core/src/other.mjs", "test/seam.test.mjs", "test/arch/acd-migrate.test.mjs"], edges: [edge] },
+          { "src/seam.mjs": EXPORTS_ONE },
+          { files: ["src/seam.mjs", "src/caller.mjs", "src/other.mjs", "test/seam.test.mjs", "test/arch/acd-migrate.test.mjs"], edges: [edge] },
         );
-        assert.equal(findings.some((finding) => finding.path === "packages/core/src/seam.mjs"), expectNamed, `${why}: the module ${expectNamed ? "is named" : "is not named"}`);
+        assert.equal(findings.some((finding) => finding.path === "src/seam.mjs"), expectNamed, `${why}: the module ${expectNamed ? "is named" : "is not named"}`);
       }
     },
   },
@@ -163,7 +163,7 @@ export const seamLivenessTests = [
         ["export default function () {}\n", ["default"], "has only a default export"],
       ];
       for (const [source, expected, why] of rows) {
-        const { findings } = await laneOver({ "packages/core/src/seam.mjs": source }, { files: ["packages/core/src/seam.mjs"], edges: [] });
+        const { findings } = await laneOver({ "src/seam.mjs": source }, { files: ["src/seam.mjs"], edges: [] });
         assert.equal(findings.length, 1, `${why}: one finding`);
         for (const name of expected) {
           assert.equal(findings[0].message.includes(`\`${name}\``), true, `${why}: the finding names \`${name}\``);
@@ -176,9 +176,9 @@ export const seamLivenessTests = [
     name: "seam-liveness: the finding names the module by a project-root-relative path with forward slashes",
     async run() {
       const rows = [
-        ["packages/core/src/sync.mjs", "the top of src/"],
-        ["packages/core/src/notion/sync.mjs", "a subdirectory of src/"],
-        ["packages/core/src/a/b/seam.mjs", "two directories deep under src/"],
+        ["src/sync.mjs", "the top of src/"],
+        ["src/notion/sync.mjs", "a subdirectory of src/"],
+        ["src/a/b/seam.mjs", "two directories deep under src/"],
       ];
       for (const [location, why] of rows) {
         const { root, findings } = await laneOver({ [location]: EXPORTS_ONE }, { files: [location], edges: [] });
@@ -192,11 +192,11 @@ export const seamLivenessTests = [
   {
     name: "seam-liveness: fifty candidates give the answer of fifty single-candidate runs",
     async run() {
-      const many = Object.fromEntries(Array.from({ length: 50 }, (_, index) => [`packages/core/src/m${index}.mjs`, EXPORTS_ONE]));
+      const many = Object.fromEntries(Array.from({ length: 50 }, (_, index) => [`src/m${index}.mjs`, EXPORTS_ONE]));
       const files = Object.keys(many);
       // Half are wired by a production caller, half by a test file only.
-      const edges = files.map((file, index) => (index % 2 === 0 ? imports("packages/core/src/hub.mjs", file) : imports("test/hub.test.mjs", file)));
-      const graph = { files: [...files, "packages/core/src/hub.mjs", "test/hub.test.mjs"], edges };
+      const edges = files.map((file, index) => (index % 2 === 0 ? imports("src/hub.mjs", file) : imports("test/hub.test.mjs", file)));
+      const graph = { files: [...files, "src/hub.mjs", "test/hub.test.mjs"], edges };
 
       const together = await laneOver(many, graph);
 
@@ -215,7 +215,7 @@ export const seamLivenessTests = [
     name: "seam-liveness: the graph is walked ONCE for the whole candidate set, never once per candidate",
     run() {
       for (const count of [50, 150]) {
-        const files = Array.from({ length: count }, (_, index) => `packages/core/src/m${index}.mjs`);
+        const files = Array.from({ length: count }, (_, index) => `src/m${index}.mjs`);
         let walks = 0;
         const edges = [];
         const graph = {
@@ -237,8 +237,8 @@ export const seamLivenessTests = [
   {
     name: "seam-liveness: the sweep counts source modules on disk, never modules the graph covers",
     async run() {
-      const twenty = Object.fromEntries(Array.from({ length: 20 }, (_, index) => [`packages/core/src/m${index}.mjs`, EXPORTS_ONE]));
-      const { result } = await laneOver(twenty, { files: ["packages/core/src/m0.mjs", "packages/core/src/m1.mjs", "packages/core/src/m2.mjs"], edges: [] });
+      const twenty = Object.fromEntries(Array.from({ length: 20 }, (_, index) => [`src/m${index}.mjs`, EXPORTS_ONE]));
+      const { result } = await laneOver(twenty, { files: ["src/m0.mjs", "src/m1.mjs", "src/m2.mjs"], edges: [] });
       assert.equal(result.reads[0].count, 20, "the read record counts twenty");
       assert.equal(result.reads[0].floor > 0, true, "its floor is greater than zero");
       assert.equal(readFinding(result.reads[0]), null, "and no audit-ran-on-nothing finding is reported");
@@ -248,8 +248,8 @@ export const seamLivenessTests = [
     name: "seam-liveness: this lane's OWN vocabulary is one code at one severity",
     async run() {
       const { result } = await laneOver(
-        { "packages/core/src/a.mjs": EXPORTS_ONE, "packages/core/src/b.mjs": EXPORTS_ONE, "packages/core/src/c.mjs": EXPORTS_ONE },
-        { files: ["packages/core/src/a.mjs", "packages/core/src/b.mjs", "packages/core/src/c.mjs"], edges: [] },
+        { "src/a.mjs": EXPORTS_ONE, "src/b.mjs": EXPORTS_ONE, "src/c.mjs": EXPORTS_ONE },
+        { files: ["src/a.mjs", "src/b.mjs", "src/c.mjs"], edges: [] },
       );
       for (const finding of result.findings) {
         assert.equal(finding.code, "audit-seam-unwired", "its code is audit-seam-unwired");
@@ -265,7 +265,7 @@ export const seamLivenessTests = [
   {
     name: "seam-liveness: an artifact that cannot answer produces no finding and a limit that says why",
     async run() {
-      const source = { "packages/core/src/a.mjs": EXPORTS_ONE, "packages/core/src/b.mjs": EXPORTS_ONE };
+      const source = { "src/a.mjs": EXPORTS_ONE, "src/b.mjs": EXPORTS_ONE };
       const rows = [
         [null, /no code graph was available/u, "no graph artifact on disk"],
         // A DIRECTORY where the artifact should be: on disk, and genuinely unreadable.
@@ -290,11 +290,11 @@ export const seamLivenessTests = [
     name: "seam-liveness: a candidate the graph does not hold is counted in the limit, never reported as unwired",
     async run() {
       const { result, findings } = await laneOver(
-        { "packages/core/src/held.mjs": EXPORTS_ONE, "packages/core/src/absent.mjs": EXPORTS_ONE },
-        { files: ["packages/core/src/held.mjs"], edges: [] },
+        { "src/held.mjs": EXPORTS_ONE, "src/absent.mjs": EXPORTS_ONE },
+        { files: ["src/held.mjs"], edges: [] },
       );
-      assert.deepEqual(named(findings), ["packages/core/src/held.mjs"], "exactly one finding is reported, naming the first");
-      assert.equal(findings.some((finding) => finding.path === "packages/core/src/absent.mjs"), false, "and no finding names the second");
+      assert.deepEqual(named(findings), ["src/held.mjs"], "exactly one finding is reported, naming the first");
+      assert.equal(findings.some((finding) => finding.path === "src/absent.mjs"), false, "and no finding names the second");
 
       const said = result.limits.map((limit) => limit.consequence).join(" ");
       assert.match(said, /1 candidate\(s\) whose coupling could not be resolved/u, "the result carries a limit counting one candidate whose coupling could not be resolved");
@@ -305,10 +305,10 @@ export const seamLivenessTests = [
   {
     name: "seam-liveness: the floor is taken over source on disk, so an optional tool's absence cannot red a run",
     async run() {
-      const many = (count) => Object.fromEntries(Array.from({ length: count }, (_, index) => [`packages/core/src/m${index}.mjs`, EXPORTS_ONE]));
+      const many = (count) => Object.fromEntries(Array.from({ length: count }, (_, index) => [`src/m${index}.mjs`, EXPORTS_ONE]));
       const rows = [
         [many(148), { files: Object.keys(many(148)), edges: [] }, 148, false, "148 modules, an artifact holding all 148"],
-        [many(148), { files: ["packages/core/src/m0.mjs", "packages/core/src/m1.mjs", "packages/core/src/m2.mjs"], edges: [] }, 148, false, "148 modules, an artifact holding three"],
+        [many(148), { files: ["src/m0.mjs", "src/m1.mjs", "src/m2.mjs"], edges: [] }, 148, false, "148 modules, an artifact holding three"],
         [many(148), { files: [], edges: [] }, 148, false, "148 modules, an artifact holding none"],
         [many(148), null, 148, false, "148 modules, no artifact at all"],
         [{ "README.md": "no source at all" }, { files: Object.keys(many(148)), edges: [] }, 0, true, "no module at all, an artifact holding 148"],
@@ -330,8 +330,8 @@ export const seamLivenessTests = [
   {
     name: "seam-liveness: every result reports the artifact's own recorded build time",
     async run() {
-      const source = { "packages/core/src/a.mjs": EXPORTS_ONE };
-      const resolving = await laneOver(source, { files: ["packages/core/src/a.mjs"], edges: [] });
+      const source = { "src/a.mjs": EXPORTS_ONE };
+      const resolving = await laneOver(source, { files: ["src/a.mjs"], edges: [] });
       assert.notEqual(resolving.result.builtAt, null, "a graph resolving every candidate reports the artifact's instant");
       assert.equal(Number.isFinite(Date.parse(resolving.result.builtAt)), true, "…as a parseable instant");
       assert.equal(Date.parse(resolving.result.builtAt) <= Date.now(), true, "and it reports no instant later than the artifact's");
@@ -349,9 +349,9 @@ export const seamLivenessTests = [
   {
     name: "seam-liveness: the build time is the artifact's, never the moment of the call",
     async run() {
-      const root = project({ "packages/core/src/a.mjs": EXPORTS_ONE });
+      const root = project({ "src/a.mjs": EXPORTS_ONE });
       try {
-        writeGraph(root, { files: ["packages/core/src/a.mjs"], edges: [] });
+        writeGraph(root, { files: ["src/a.mjs"], edges: [] });
         const first = await runSeamLiveness({ root });
         await new Promise((resolve) => { setTimeout(resolve, 30); });
         const second = await runSeamLiveness({ root });
@@ -366,8 +366,8 @@ export const seamLivenessTests = [
     name: "seam-liveness: a clean run still states what it could not see",
     async run() {
       const { result, findings } = await laneOver(
-        { "packages/core/src/a.mjs": EXPORTS_ONE, "packages/core/src/b.mjs": EXPORTS_ONE },
-        { files: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"], edges: [imports("packages/core/src/b.mjs", "packages/core/src/a.mjs"), imports("packages/core/src/a.mjs", "packages/core/src/b.mjs")] },
+        { "src/a.mjs": EXPORTS_ONE, "src/b.mjs": EXPORTS_ONE },
+        { files: ["src/a.mjs", "src/b.mjs"], edges: [imports("src/b.mjs", "src/a.mjs"), imports("src/a.mjs", "src/b.mjs")] },
       );
       assert.deepEqual(findings, [], "no audit-seam-unwired finding is reported");
       assert.equal(result.limits.length > 0, true, "the result still carries the limits this lane can state");
@@ -393,12 +393,12 @@ export const seamLivenessTests = [
       ];
       for (const [source, expectNamed, why] of rows) {
         const { result, findings } = await laneOver(
-          { "packages/core/src/subject.mjs": source, "packages/core/src/spawner.mjs": 'export const program = "packages/core/src/subject.mjs";\n' },
-          { files: ["packages/core/src/subject.mjs", "packages/core/src/spawner.mjs"], edges: [] },
+          { "src/subject.mjs": source, "src/spawner.mjs": 'export const program = "src/subject.mjs";\n' },
+          { files: ["src/subject.mjs", "src/spawner.mjs"], edges: [] },
         );
-        assert.equal(findings.some((finding) => finding.path === "packages/core/src/subject.mjs"), expectNamed, `${why}: the module ${expectNamed ? "is named as an unwired seam at warn" : "is not a candidate and is not named"}`);
+        assert.equal(findings.some((finding) => finding.path === "src/subject.mjs"), expectNamed, `${why}: the module ${expectNamed ? "is named as an unwired seam at warn" : "is not a candidate and is not named"}`);
         if (!expectNamed) {
-          assert.equal(JSON.stringify(result).includes("packages/core/src/subject.mjs"), false, "and no exemption entry anywhere in the result names it");
+          assert.equal(JSON.stringify(result).includes("src/subject.mjs"), false, "and no exemption entry anywhere in the result names it");
         }
       }
     },
@@ -407,17 +407,17 @@ export const seamLivenessTests = [
     name: "seam-liveness: a resolvable dynamic-import literal is a reference, swept at every depth under src/",
     async run() {
       const rows = [
-        ["./scaffold.mjs", "packages/core/src/holder.mjs", false, "a module at the top of src/"],
-        ["../scaffold.mjs", "packages/core/src/commands/holder.mjs", false, "a module one directory under src/"],
-        ["../../scaffold.mjs", "packages/core/src/a/b/holder.mjs", false, "a module two directories under src/"],
+        ["./scaffold.mjs", "src/holder.mjs", false, "a module at the top of src/"],
+        ["../scaffold.mjs", "src/commands/holder.mjs", false, "a module one directory under src/"],
+        ["../../scaffold.mjs", "src/a/b/holder.mjs", false, "a module two directories under src/"],
         ["../packages/core/src/scaffold.mjs", "test/holder.test.mjs", true, "a file under test/"],
       ];
       for (const [literal, holder, expectNamed, why] of rows) {
         const { findings } = await laneOver(
-          { "packages/core/src/scaffold.mjs": EXPORTS_ONE, [holder]: `export async function go() { await import("${literal}"); }\n` },
-          { files: ["packages/core/src/scaffold.mjs", holder], edges: [] },
+          { "src/scaffold.mjs": EXPORTS_ONE, [holder]: `export async function go() { await import("${literal}"); }\n` },
+          { files: ["src/scaffold.mjs", holder], edges: [] },
         );
-        assert.equal(findings.some((finding) => finding.path === "packages/core/src/scaffold.mjs"), expectNamed, `${why}: the module ${expectNamed ? "is named as an unwired seam at warn" : "is not named"}`);
+        assert.equal(findings.some((finding) => finding.path === "src/scaffold.mjs"), expectNamed, `${why}: the module ${expectNamed ? "is named as an unwired seam at warn" : "is not named"}`);
       }
     },
   },
@@ -425,18 +425,18 @@ export const seamLivenessTests = [
     name: "seam-liveness: a literal is resolved against the file that holds it, never matched by basename",
     async run() {
       const rows = [
-        ["./sync.mjs", "packages/core/src/notion/sync-work.mjs", "packages/core/src/notion/sync.mjs", "packages/core/src/sync.mjs"],
-        ["../sync.mjs", "packages/core/src/notion/sync-work.mjs", "packages/core/src/sync.mjs", "packages/core/src/notion/sync.mjs"],
-        ["./sync.mjs", "packages/core/src/dsl.mjs", "packages/core/src/sync.mjs", "packages/core/src/notion/sync.mjs"],
+        ["./sync.mjs", "src/notion/sync-work.mjs", "src/notion/sync.mjs", "src/sync.mjs"],
+        ["../sync.mjs", "src/notion/sync-work.mjs", "src/sync.mjs", "src/notion/sync.mjs"],
+        ["./sync.mjs", "src/dsl.mjs", "src/sync.mjs", "src/notion/sync.mjs"],
       ];
       for (const [literal, holder, suppressed, stillNamed] of rows) {
         const { findings } = await laneOver(
           {
-            "packages/core/src/sync.mjs": EXPORTS_ONE,
-            "packages/core/src/notion/sync.mjs": EXPORTS_ONE,
+            "src/sync.mjs": EXPORTS_ONE,
+            "src/notion/sync.mjs": EXPORTS_ONE,
             [holder]: `export async function go() { await import("${literal}"); }\n`,
           },
-          { files: ["packages/core/src/sync.mjs", "packages/core/src/notion/sync.mjs", holder], edges: [] },
+          { files: ["src/sync.mjs", "src/notion/sync.mjs", holder], edges: [] },
         );
         const reported = named(findings);
         assert.equal(reported.includes(suppressed), false, `import("${literal}") in ${holder}: ${suppressed} is not named`);
@@ -455,10 +455,10 @@ export const seamLivenessTests = [
       ];
       for (const [statement, why] of rows) {
         const { findings } = await laneOver(
-          { "packages/core/src/seam.mjs": EXPORTS_ONE, "packages/core/src/holder.mjs": `export async function go() { ${statement} }\n` },
-          { files: ["packages/core/src/seam.mjs", "packages/core/src/holder.mjs"], edges: [] },
+          { "src/seam.mjs": EXPORTS_ONE, "src/holder.mjs": `export async function go() { ${statement} }\n` },
+          { files: ["src/seam.mjs", "src/holder.mjs"], edges: [] },
         );
-        assert.equal(findings.some((finding) => finding.path === "packages/core/src/seam.mjs"), true, `${why}: the module is named as an unwired seam at warn`);
+        assert.equal(findings.some((finding) => finding.path === "src/seam.mjs"), true, `${why}: the module is named as an unwired seam at warn`);
       }
     },
   },
@@ -472,10 +472,10 @@ export const seamLivenessTests = [
       ];
       for (const [statement, why] of rows) {
         const { result, findings } = await laneOver(
-          { "packages/core/src/seam.mjs": EXPORTS_ONE, "packages/core/src/holder.mjs": `export async function go(name) { void name; ${statement} }\n` },
-          { files: ["packages/core/src/seam.mjs", "packages/core/src/holder.mjs"], edges: [] },
+          { "src/seam.mjs": EXPORTS_ONE, "src/holder.mjs": `export async function go(name) { void name; ${statement} }\n` },
+          { files: ["src/seam.mjs", "src/holder.mjs"], edges: [] },
         );
-        assert.equal(findings.some((finding) => finding.path === "packages/core/src/seam.mjs"), true, `${why}: the module is named as an unwired seam at warn`);
+        assert.equal(findings.some((finding) => finding.path === "src/seam.mjs"), true, `${why}: the module is named as an unwired seam at warn`);
         assert.match(
           result.limits.map((limit) => limit.consequence).join(" "),
           /cannot read as a literal|INVISIBLE to this rule/u,
@@ -490,14 +490,14 @@ export const seamLivenessTests = [
       // No name here appears in this repository, so nothing the lane could have stored can help it.
       const { result, findings } = await laneOver(
         {
-          "packages/core/src/zephyr-program.mjs": NO_EXPORTS,
-          "packages/core/src/quill-reached.mjs": EXPORTS_ONE,
-          "packages/core/src/deep/tessel-holder.mjs": 'export async function go() { await import("../quill-reached.mjs"); }\n',
-          "packages/core/src/marlow-stranded.mjs": EXPORTS_ONE,
+          "src/zephyr-program.mjs": NO_EXPORTS,
+          "src/quill-reached.mjs": EXPORTS_ONE,
+          "src/deep/tessel-holder.mjs": 'export async function go() { await import("../quill-reached.mjs"); }\n',
+          "src/marlow-stranded.mjs": EXPORTS_ONE,
         },
-        { files: ["packages/core/src/zephyr-program.mjs", "packages/core/src/quill-reached.mjs", "packages/core/src/deep/tessel-holder.mjs", "packages/core/src/marlow-stranded.mjs"], edges: [imports("packages/core/src/marlow-stranded.mjs", "packages/core/src/deep/tessel-holder.mjs")] },
+        { files: ["src/zephyr-program.mjs", "src/quill-reached.mjs", "src/deep/tessel-holder.mjs", "src/marlow-stranded.mjs"], edges: [imports("src/marlow-stranded.mjs", "src/deep/tessel-holder.mjs")] },
       );
-      assert.deepEqual(named(findings), ["packages/core/src/marlow-stranded.mjs"], "exactly one finding is reported, naming the third module");
+      assert.deepEqual(named(findings), ["src/marlow-stranded.mjs"], "exactly one finding is reported, naming the third module");
       assert.equal(findings.some((finding) => /zephyr|quill/u.test(finding.path)), false, "and neither of the first two is named");
       for (const foreign of ["scaffold.mjs", "work/audit-probe.mjs", "sync.mjs", "clean.mjs"]) {
         assert.equal(JSON.stringify(result).includes(foreign), false, `no name from any other project appears anywhere in the result (${foreign})`);
@@ -508,15 +508,15 @@ export const seamLivenessTests = [
     name: "seam-liveness: the suppression is recomputed for each corpus and never remembered between them",
     async run() {
       const withImport = await laneOver(
-        { "packages/core/src/seam.mjs": EXPORTS_ONE, "packages/core/src/holder.mjs": 'export async function go() { await import("./seam.mjs"); }\n' },
-        { files: ["packages/core/src/seam.mjs", "packages/core/src/holder.mjs"], edges: [] },
+        { "src/seam.mjs": EXPORTS_ONE, "src/holder.mjs": 'export async function go() { await import("./seam.mjs"); }\n' },
+        { files: ["src/seam.mjs", "src/holder.mjs"], edges: [] },
       );
       const withoutImport = await laneOver(
-        { "packages/core/src/seam.mjs": EXPORTS_ONE, "packages/core/src/holder.mjs": "export async function go() { return 1; }\n" },
-        { files: ["packages/core/src/seam.mjs", "packages/core/src/holder.mjs"], edges: [] },
+        { "src/seam.mjs": EXPORTS_ONE, "src/holder.mjs": "export async function go() { return 1; }\n" },
+        { files: ["src/seam.mjs", "src/holder.mjs"], edges: [] },
       );
-      assert.equal(named(withImport.findings).includes("packages/core/src/seam.mjs"), false, "that module is not named in the first result");
-      assert.equal(named(withoutImport.findings).includes("packages/core/src/seam.mjs"), true, "and it is named as an unwired seam at warn in the second");
+      assert.equal(named(withImport.findings).includes("src/seam.mjs"), false, "that module is not named in the first result");
+      assert.equal(named(withoutImport.findings).includes("src/seam.mjs"), true, "and it is named as an unwired seam at warn in the second");
       assert.notDeepEqual(named(withoutImport.findings), named(withImport.findings), "so the second answer is not the first repeated");
     },
   },
