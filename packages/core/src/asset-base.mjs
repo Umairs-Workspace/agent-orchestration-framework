@@ -110,6 +110,8 @@ function devClassBase(assetClass) {
   if (assetClass === "ui") {
     // The optional source application declares its own package location. Copied
     // core distributions carry built UI files under core/ui instead.
+    const stagedUi = path.join(devRepoRoot(), "ui");
+    if (existsSync(path.join(stagedUi, "dist", "index.html"))) return stagedUi;
     const packageRequire = createRequire(import.meta.url);
     for (const lookup of packageRequire.resolve.paths("@aof/ui") ?? []) {
       const manifest = path.join(lookup, "@aof", "ui", "package.json");

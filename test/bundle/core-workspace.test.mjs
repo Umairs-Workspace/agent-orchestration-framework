@@ -17,6 +17,11 @@ export const coreWorkspaceTests = [
       await mkdir(unrelated);
       installPayload(payload);
       assert.ok(!(await readdir(path.join(payload, 'node_modules', '@aof'))).includes('ui'));
+      // A staged application wins over a package visible in an ancestor directory.
+      await mkdir(path.join(payload, 'ui', 'dist'), { recursive: true });
+      await writeFile(path.join(payload, 'ui', 'dist', 'index.html'), '<main>copied UI</main>');
+      await mkdir(path.join(fixture, 'node_modules', '@aof', 'ui'), { recursive: true });
+      await writeFile(path.join(fixture, 'node_modules', '@aof', 'ui', 'package.json'), '{"name":"@aof/ui"}');
       const expected = JSON.parse(await readFile(path.join(repoRoot, 'test/fixtures/application/command-inventory.json'), 'utf8'));
       const manifest = JSON.parse(await readFile(path.join(payload, 'package.json'), 'utf8'));
       const publicEntries = await Promise.all(Object.keys(manifest.dependencies).map(async name => {
@@ -44,7 +49,7 @@ export const coreWorkspaceTests = [
         const require = createRequire(import.meta.url);
         const app = createApplication();
         console.log(JSON.stringify({ commands: app.listCommands(), version: packageVersionString(),
-          assets: assetBase('bundle'), program: toolkitProgram('src/work/audit-probe.mjs'),
+          assets: assetBase('bundle'), ui: assetBase('ui'), program: toolkitProgram('src/work/audit-probe.mjs'),
           dependencies: ${JSON.stringify(publicEntries)}.map(name => realpathSync(require.resolve(name))) }));
         await app.close();
       `);
@@ -53,7 +58,8 @@ export const coreWorkspaceTests = [
       const report = JSON.parse(run([probe]));
       assert.deepEqual(report.commands, expected);
       assert.equal(report.version, manifest.version);
-      for (const resolved of [report.assets, report.program, ...report.dependencies]) {
+      assert.equal(report.ui, path.join(payload, 'ui'));
+      for (const resolved of [report.assets, report.ui, report.program, ...report.dependencies]) {
         assert.ok(path.relative(payload, resolved) && !path.relative(payload, resolved).startsWith('..'), resolved);
       }
       assert.match(run([path.join(payload, 'bin/aof.mjs'), '--version']), new RegExp('^' + manifest.version.replaceAll('.', '\\.')));
