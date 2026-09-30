@@ -1,6 +1,6 @@
-// Transitional core composition for server-owned transports.
-import { createBoardApi } from "@aof/server/board-ui";
-import { invoke, loadWorkspace } from "./command-core.mjs";
-import { resolveCacheStalenessSeconds } from "@aof/mesh/cache-policy";
-
-export const { handleWorkApi, handleDiagramApi } = createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds });
+// Compatibility entry; construction belongs to core application assembly.
+import { boardUi } from "./application/default.mjs";
+export const {
+  handleWorkApi,
+  handleDiagramApi,
+} = boardUi;

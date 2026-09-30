@@ -288,7 +288,7 @@ export const archTests = [
       const body = strippedBody(THE_LANE, raw);
 
       // The single route: the seam, imported by name, and no second door.
-      assert.match(stripComments(await read("src/work-audit/evidence.mjs")), /import\s*\{[^}]*\brunBounded\b[^}]*\}\s*from\s*"@aof\/execution\/bounded-process"/u, "execution comes from 59/01's bounded seam");
+      assert.match(stripComments(await read("src/application/bindings/work-audit/evidence.mjs")), /import\s*\{[^}]*\brunBounded\b[^}]*\}\s*from\s*"@aof\/execution\/bounded-process"/u, "execution comes from 59/01's bounded seam");
       assert.doesNotMatch(body, /node:child_process/u, "…and not from a second import of the spawn door");
       assert.doesNotMatch(body, /\bimport\s*\(/u, "…nor from a dynamic import(), which would execute a cited module's scope inside this process (66/ADR-004 §2)");
       for (const door of ["execSync", "execFileSync", "spawnSync", "fork("]) {

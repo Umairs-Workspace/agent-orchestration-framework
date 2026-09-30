@@ -1,5 +1,43 @@
-// Transitional core composition for work-owned observation.
-import { createWorkObserver } from "@aof/work/observe";
-import { reportDegrade } from "../degrade.mjs";
-
-export const { BUILD_ROLES, DEFAULT_HUMAN_WAIT_MS, DEFAULT_STALL_MS, HUMAN_INPUT_TOOL_NAMES, NEEDS_INPUT_SENTINEL, PRE68_DERIVATION_MARKER, PRE68_JSON_KEY, PRE68_MINER, analyzeSessionThread, analyzeTranscript, analyzeWaves, applyCacheTarget, askQuestionFromTurn, buildSessionItemIndex, cacheTargetIsHonourable, classifyToolCallResult, claudeProjectsDir, clusterInfraKills, collectMilestoneAgents, collectSessionSignals, fmtDur, humanTurnText, markLegacySnapshot, markLegacySnapshots, mergeIntervals, observabilityEnabled, observeMilestone, overlapMs, pre68DerivationHeader, pre68JsonHeader, projectSlug, readAskQuestion, readLastAssistantTurn, readLatestSnapshot, renderReportMarkdown, resolveMilestoneFolder, rollupRunsByPhase, snapshotTimestamp, tokenSplit, unionMs, verdictForCacheBucket } = createWorkObserver({ reportDegrade });
+// Compatibility entry; construction belongs to core application assembly.
+import { defaultSessionDriver } from "../application/default-session-driver.mjs";
+export const BUILD_ROLES = defaultSessionDriver.workObserve.BUILD_ROLES;
+export const DEFAULT_HUMAN_WAIT_MS = defaultSessionDriver.workObserve.DEFAULT_HUMAN_WAIT_MS;
+export const DEFAULT_STALL_MS = defaultSessionDriver.workObserve.DEFAULT_STALL_MS;
+export const HUMAN_INPUT_TOOL_NAMES = defaultSessionDriver.workObserve.HUMAN_INPUT_TOOL_NAMES;
+export const NEEDS_INPUT_SENTINEL = defaultSessionDriver.workObserve.NEEDS_INPUT_SENTINEL;
+export const PRE68_DERIVATION_MARKER = defaultSessionDriver.workObserve.PRE68_DERIVATION_MARKER;
+export const PRE68_JSON_KEY = defaultSessionDriver.workObserve.PRE68_JSON_KEY;
+export const PRE68_MINER = defaultSessionDriver.workObserve.PRE68_MINER;
+export const analyzeSessionThread = defaultSessionDriver.workObserve.analyzeSessionThread;
+export const analyzeTranscript = defaultSessionDriver.workObserve.analyzeTranscript;
+export const analyzeWaves = defaultSessionDriver.workObserve.analyzeWaves;
+export const applyCacheTarget = defaultSessionDriver.workObserve.applyCacheTarget;
+export const askQuestionFromTurn = defaultSessionDriver.workObserve.askQuestionFromTurn;
+export const buildSessionItemIndex = defaultSessionDriver.workObserve.buildSessionItemIndex;
+export const cacheTargetIsHonourable = defaultSessionDriver.workObserve.cacheTargetIsHonourable;
+export const classifyToolCallResult = defaultSessionDriver.workObserve.classifyToolCallResult;
+export const claudeProjectsDir = defaultSessionDriver.workObserve.claudeProjectsDir;
+export const clusterInfraKills = defaultSessionDriver.workObserve.clusterInfraKills;
+export const collectMilestoneAgents = defaultSessionDriver.workObserve.collectMilestoneAgents;
+export const collectSessionSignals = defaultSessionDriver.workObserve.collectSessionSignals;
+export const fmtDur = defaultSessionDriver.workObserve.fmtDur;
+export const humanTurnText = defaultSessionDriver.workObserve.humanTurnText;
+export const markLegacySnapshot = defaultSessionDriver.workObserve.markLegacySnapshot;
+export const markLegacySnapshots = defaultSessionDriver.workObserve.markLegacySnapshots;
+export const mergeIntervals = defaultSessionDriver.workObserve.mergeIntervals;
+export const observabilityEnabled = defaultSessionDriver.workObserve.observabilityEnabled;
+export const observeMilestone = defaultSessionDriver.workObserve.observeMilestone;
+export const overlapMs = defaultSessionDriver.workObserve.overlapMs;
+export const pre68DerivationHeader = defaultSessionDriver.workObserve.pre68DerivationHeader;
+export const pre68JsonHeader = defaultSessionDriver.workObserve.pre68JsonHeader;
+export const projectSlug = defaultSessionDriver.workObserve.projectSlug;
+export const readAskQuestion = defaultSessionDriver.workObserve.readAskQuestion;
+export const readLastAssistantTurn = defaultSessionDriver.workObserve.readLastAssistantTurn;
+export const readLatestSnapshot = defaultSessionDriver.workObserve.readLatestSnapshot;
+export const renderReportMarkdown = defaultSessionDriver.workObserve.renderReportMarkdown;
+export const resolveMilestoneFolder = defaultSessionDriver.workObserve.resolveMilestoneFolder;
+export const rollupRunsByPhase = defaultSessionDriver.workObserve.rollupRunsByPhase;
+export const snapshotTimestamp = defaultSessionDriver.workObserve.snapshotTimestamp;
+export const tokenSplit = defaultSessionDriver.workObserve.tokenSplit;
+export const unionMs = defaultSessionDriver.workObserve.unionMs;
+export const verdictForCacheBucket = defaultSessionDriver.workObserve.verdictForCacheBucket;

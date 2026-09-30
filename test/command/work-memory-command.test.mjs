@@ -53,7 +53,7 @@ import { parseFeature } from "../integration/support/feature-runner.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const FACE = path.join(repoRoot, "src", "spine", "face.mjs");
+const FACE = path.join(repoRoot, "src/application/bindings/spine/face.mjs");
 const FEATURE = path.join(repoRoot, "test", "integration", "features", "work-memory.feature");
 
 // ----------------------------------------------------------- fixtures ----
@@ -362,7 +362,7 @@ export const workMemoryCommandTests = [
       // the render and prints it only when it is not null. Comment-stripped, so a comment
       // describing the rule cannot satisfy it.
       const face = stripComments(await readFile(FACE, "utf8"));
-      const body = functionBody(face, "export async function runCommandFace(");
+      const body = functionBody(face, "async function runCommandFace(");
       assert.ok(body, "runCommandFace was located in src/spine/face.mjs");
       assert.match(
         body,

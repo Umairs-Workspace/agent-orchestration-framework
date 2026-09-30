@@ -255,7 +255,7 @@ export const archTests = [
     async run() {
       const { code, rest } = censusableSource();
 
-      assert.match(stripComments(readFileSync(new URL("../../../src/work-audit/prompt-layer.mjs", import.meta.url), "utf8")), /import \{[^}]*RESOURCE_KINDS[^}]*RUNTIMES[^}]*\} from "\.\.\/model\.mjs"/u, `${MODULE_REL} takes the runtimes and the resource kinds from the model, which is their one home`);
+      assert.match(stripComments(readFileSync(new URL("../../../src/application/bindings/work-audit/prompt-layer.mjs", import.meta.url), "utf8")), /import \{[^}]*RESOURCE_KINDS[^}]*RUNTIMES[^}]*\} from "(?:\.\.\/)+model\.mjs"/u, `${MODULE_REL} takes the runtimes and the resource kinds from the model, which is their one home`);
 
       assert.match(code, /createAuditPromptLayer\(\{ RESOURCE_KINDS, RUNTIMES \}\)/u, "the implementation receives the model vocabulary");
       // NO SECOND SPELLING. The forbidden literals are derived FROM the model rather than typed

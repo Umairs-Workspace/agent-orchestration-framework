@@ -14,7 +14,7 @@ const facePath = fileURLToPath(new URL("../../../packages/work/src/commands/tune
 const face = readFileSync(facePath, "utf8");
 const family = [
   "packages/work/src/commands/tune.mjs",
-  "src/commands/tune.mjs",
+  "src/application/bindings/commands/tune.mjs",
   "packages/work/src/tune/corpus.mjs",
   "packages/work/src/tune/formation.mjs",
   "packages/work/src/tune/proposal.mjs",
@@ -37,8 +37,8 @@ export const archTests = [
     run: () => {
       assert.equal((face.match(/work:acceptor/gu) ?? []).length, 1);
       assert.match(face, /return await getRegistry\(\)/u);
-      const composition = readFileSync(path.join(root, "src/commands/tune.mjs"), "utf8");
-      assert.match(composition, /const getRegistry = \(\) => import\("\.\.\/command-core\.mjs"\)/u);
+      const composition = readFileSync(path.join(root, "src/application/bindings/commands/tune.mjs"), "utf8");
+      assert.match(composition, /const getRegistry = \(\) => provideCommandCore\(\)/u);
       assert.match(composition, /createTuneCommand\(\{[^}]*getRegistry \}\)/u);
       assert.doesNotMatch(face, /^import .*command-core\.mjs/mu);
       assert.match(face, /resolveCommand/u);
@@ -59,7 +59,7 @@ export const archTests = [
   {
     name: "architecture: FF-6201 every family member and command-core import cleanly in a fresh process",
     run: () => {
-      for (const file of [...family, "src/command-core.mjs"]) {
+      for (const file of [...family, "src/application/bindings/command-core.mjs"]) {
         const url = pathToFileURL(`${root}/${file}`).href;
         const child = spawnSync(process.execPath, ["--input-type=module", "--eval", `await import(${JSON.stringify(url)})`], {
           cwd: root,

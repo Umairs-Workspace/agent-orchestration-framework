@@ -105,7 +105,7 @@ const ROUTE_PATH_LITERAL = /(?<=["'`}\d])\/(fleet|board|config)(?=["'`?#\s,);]|$
 const PRODUCERS = [
   { file: "packages/server/src/board-serve.mjs", path: "/board", what: "the board launcher's `boardUrl` (:41 probe, :62 serve)" },
   { file: "packages/mesh/src/ui-serve.mjs", path: "/fleet", what: "the fleet launcher's `fleetUrl` (:143 probe, :736 serve)" },
-  { file: "src/commands/assets/ui.mjs", path: "/config", what: "the config editor's `uiUrl` (:45 serve, :117 probe) — `/config`, NOT `/assets`, because `/assets` is the built bundle's own asset directory (ui/dist/assets/index-*.js)" },
+  { file: "src/application/bindings/commands/assets/ui.mjs", path: "/config", what: "the config editor's `uiUrl` (:45 serve, :117 probe) — `/config`, NOT `/assets`, because `/assets` is the built bundle's own asset directory (ui/dist/assets/index-*.js)" },
   { file: "app/desktop/crates/app/src/supervisor.rs", path: "/fleet", what: "the desktop tray's COMPILED `MESH_UI_URL` (:44) — a binary constant, which is also why ADR-003 sets no expiry on the legacy translation" },
 ];
 

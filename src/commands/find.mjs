@@ -1,5 +1,5 @@
-// Transitional core composition for work-owned reads.
-import { createFindCommand } from "@aof/work/commands/find";
-import { findWorkCacheFirst } from "../work/read.mjs";
-
-export const { findCommand } = createFindCommand({ findWorkCacheFirst });
+// Compatibility entry; construction belongs to core application assembly.
+import { commandsFind } from "../application/default.mjs";
+export const {
+  findCommand,
+} = commandsFind;

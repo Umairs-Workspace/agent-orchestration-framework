@@ -716,20 +716,20 @@ export const workInsertAliasTests = [
       const definers = [...sources].filter(([, code]) => /(?:export\s+)?async\s+function\s+runInsertTopLevel\b/u.test(code)).map(([relPath]) => relPath);
       assert.deepEqual(definers, ["packages/work/src/commands/promote.mjs"], `runInsertTopLevel is defined in promote.mjs: ${definers.join(", ") || "none"}`);
       const importers = [...sources]
-        .filter(([, code]) => /import\s*\{[^}]*\brunInsertTopLevel\b[^}]*\}\s*from\s*["']\.\/promote\.mjs["']/u.test(code))
+        .filter(([, code]) => /const\s*\{[^}]*\brunInsertTopLevel\b[^}]*\}\s*= commandsPromoteServices/u.test(code))
         .map(([relPath]) => relPath)
         .sort();
       assert.deepEqual(
         importers,
-        ["src/commands/insert-chore.mjs", "src/commands/insert-milestone.mjs", "src/commands/insert-uat.mjs", "src/commands/promote-finding-to-chore.mjs", "src/commands/promote-gap-to-chore.mjs"],
+        ["src/application/bindings/commands/insert-chore.mjs", "src/application/bindings/commands/insert-milestone.mjs", "src/application/bindings/commands/insert-uat.mjs", "src/application/bindings/commands/promote-finding-to-chore.mjs", "src/application/bindings/commands/promote-gap-to-chore.mjs"],
         `…and imported from ./promote.mjs by exactly the five: ${importers.join(", ")}`,
       );
       const anyImporters = [...sources].filter(([, code]) => /\brunInsertTopLevel\b/u.test(code) && !/function\s+runInsertTopLevel\b/u.test(code)).map(([relPath]) => relPath).sort();
-      const packageFaces = importers.map(file => file.replace("src/commands/", "packages/work/src/commands/"));
-      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "src/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
+      const packageFaces = importers.map(file => file.replace("src/application/bindings/commands/", "packages/work/src/commands/"));
+      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "src/application/bindings/commands/promote.mjs", "src/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
       for (const face of packageFaces) {
         assert.match(sources.get(face), /\brunInsertTopLevel\s*\(/u, `${face}: the injected insertion service is called`);
-        const adapter = sources.get(face.replace("packages/work/src/", "src/"));
+        const adapter = sources.get(face.replace("packages/work/src/", "src/application/bindings/"));
         assert.match(adapter, /create\w+\(\{[^}]*\brunInsertTopLevel\b/u, `${face}: core supplies the shared insertion service`);
       }
 

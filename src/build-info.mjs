@@ -22,7 +22,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { isPackaged, sidecarAnchor } from "./asset-base.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
-import { reportDegrade } from "./degrade.mjs";
+import { reportDegrade } from "./application/default-foundation.mjs";
 
 export const BUILD_ID_FILENAME = "BUILD_ID.json";
 

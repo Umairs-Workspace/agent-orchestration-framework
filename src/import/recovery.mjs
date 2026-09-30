@@ -1,5 +1,7 @@
-// Transitional core composition for knowledge-owned import services.
-import { createImportRecovery } from "@aof/knowledge/import/recovery";
-import { slugifySource } from "./store.mjs";
-
-export const { listRecoverableMilestones, resolveCandidate, recoverMilestone } = createImportRecovery({ slugifySource });
+// Compatibility entry; construction belongs to core application assembly.
+import { importRecovery } from "../application/default.mjs";
+export const {
+  listRecoverableMilestones,
+  resolveCandidate,
+  recoverMilestone,
+} = importRecovery;

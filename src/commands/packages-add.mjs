@@ -4,7 +4,7 @@
 // selection resolves in the argv adapter, the face's domain). Byte-identical
 // output.
 import path from "node:path";
-import { readJson, writeText } from "../fs.mjs";
+import { readJson, writeText } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 import { normalizePackage } from "../packages.mjs";
 import { hasRuntimeOptions, parseRuntimes, RUNTIME_FLAGS } from "../spine/flags.mjs";

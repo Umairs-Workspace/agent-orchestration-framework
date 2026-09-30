@@ -1,10 +1,7 @@
-// Compatibility composition; implementation is owned by @aof/work-loop.
-import { createAskRequests } from "@aof/work-loop/ask-request";
-import { globalMeshPaths } from "../workspace.mjs";
-import { reportDegrade } from "../degrade.mjs";
-export { ASK_STATES } from "@aof/work-loop/ask-request";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { loopAskRequest } from "../application/default.mjs";
 export const {
+  ASK_STATES,
   loopAsksDir,
   askRequestPath,
   readAsk,
@@ -13,8 +10,5 @@ export const {
   parkAsk,
   clearAsk,
   answerAsk,
-  createAskPoll
-} = createAskRequests({
-  getRuntimeRoot: (env) => globalMeshPaths({ env }).meshRoot,
-  reportDegrade,
-});
+  createAskPoll,
+} = loopAskRequest;

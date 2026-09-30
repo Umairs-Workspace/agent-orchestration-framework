@@ -32,7 +32,7 @@
 // while the worker still spawns 80x24 — the exact drift that produced the unreadable render in
 // the first place.
 import assert from "node:assert/strict";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers, configuredPortSources } from "../../support/workspace/configured-source.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,7 +40,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const UI_SOURCE_TABLE = path.join("ui", "src", "terminal", "source-table.mjs");
-const WORKER_EXECUTION = path.join("src", "mesh", "worker-execution.mjs");
+const WORKER_EXECUTION = path.join("src/application/bindings/mesh/worker-execution.mjs");
 
 async function read(rel) {
   // A hard-coded path that THROWS when the file moves is the correct behaviour here: the
@@ -57,18 +57,9 @@ async function read(rel) {
 // read alongside it. No second filename is typed here, which is what makes the NEXT
 // extraction followed too rather than merely this one repaired.
 async function workerDriverSource() {
-  const sink = await read(WORKER_EXECUTION);
-  // 119/01 — the specifier is resolved against the SINK's own directory. Joining it onto `src/`
-  // assumed the sink sat at the root, and the driver is one directory up from `src/mesh/`.
-  const reExported = [...sink.matchAll(/export\s*\{[\s\S]*?\}\s*from\s*["'](\.\.?\/[^"']+)["']/g)].map((m) => m[1]);
-  const parts = await Promise.all(reExported.map((spec) => read(path.join(path.dirname(WORKER_EXECUTION), spec))));
-  for (const part of [...parts]) {
-    for (const { specifier } of importSpecifiers(part).filter(entry => entry.specifier.startsWith("@aof/execution/"))) {
-      parts.push(await readFile(new URL(import.meta.resolve(specifier)), "utf8"));
-    }
-  }
-  assert.ok(parts.some(text => text.includes("function driveInteractiveClaudeSession(")), "the configured worker reaches the driver implementation");
-  return [sink, ...parts].join("\n");
+  const source = await configuredPortSources(repoRoot, WORKER_EXECUTION, "agentSessionDriverServices");
+  assert.ok(source.includes("function driveInteractiveClaudeSession("), "the configured worker reaches the driver implementation");
+  return source;
 }
 
 export const archTests = [

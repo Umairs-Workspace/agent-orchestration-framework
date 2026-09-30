@@ -22,6 +22,7 @@
 import { cliSessionBootClosureTests } from "./cli-session-boot-closure.test.mjs";
 // milestone 08 — CLI command core (story 00: the in-process registry of the six work operations)
 import { commandCoreContractTests } from "./command-core-contract.test.mjs";
+import { applicationAssemblyTests } from "./application-assembly.test.mjs";
 // milestone 08 — CLI command core (story 01: the CLI face; story 02: the board face; story 03: the
 // enforcing fitness functions — the route↔command/command↔CLI bijection + the no-UI-core-import / no-subprocess guards)
 import { cliFaceContractTests } from "./cli-face-contract.test.mjs";
@@ -67,6 +68,7 @@ export const tests = [
   // milestone 72 / story 03 - the cold boot (tasks 00-01) plus FF-7205 and FF-7206.
   ...cliSessionBootClosureTests,
   ...commandCoreContractTests,
+  ...applicationAssemblyTests,
   ...cliFaceContractTests,
   ...configInspectTests,
   ...configEditorTests,

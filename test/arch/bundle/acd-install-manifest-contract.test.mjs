@@ -30,7 +30,7 @@ import { loadBundle } from "../../../src/work/bundle.mjs";
 import { workspacePaths } from "../../../src/workspace.mjs";
 
 const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src");
-const initSourcePath = path.join(srcDir, "work/init.mjs");
+const initSourcePath = path.join(srcDir, "application/bindings/work/init.mjs");
 const updateSourcePath = path.join(srcDir, "work/update.mjs");
 
 function stripComments(source) {

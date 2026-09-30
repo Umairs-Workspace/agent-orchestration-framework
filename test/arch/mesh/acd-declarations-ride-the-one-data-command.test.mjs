@@ -165,8 +165,8 @@ export const archTests = [
         "the walk, and the module that performs it, are reached only through the flag",
       );
       assert.doesNotMatch(identity, /^import .*declarations\.mjs/mu, "…never statically");
-      const adapter = await source("src/commands/mesh/identity.mjs");
-      assert.match(adapter, /loadDeclarations:\s*\(\)\s*=>\s*import\("\.\.\/\.\.\/mesh\/declarations\.mjs"\)/u, "core supplies the deferred declaration loader");
+      const adapter = await source("src/application/bindings/commands/mesh/identity.mjs");
+      assert.match(adapter, /loadDeclarations:\s*\(\)\s*=>\s*provideMeshDeclarations\(\)/u, "core supplies the ready declaration callback");
       assert.match(identity, /function createMeshIdentityCommands\(\{[^}]*\bloadDeclarations\b/u, "the package accepts the loader");
       const producer = await source(PRODUCER);
       assert.match(producer, /resolveNodeWorkspaces\(/u, "the workspace set comes from the resolver");

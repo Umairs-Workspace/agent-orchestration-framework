@@ -104,14 +104,14 @@ export const archTests = [
     run: () => {
       const source = stripComments(sourceOf(REPORTER));
       assert.ok(source.length > 200, `${REPORTER} was actually read (${source.length} bytes)`);
-      const composition = stripComments(sourceOf("src/work/test-select.mjs"));
+      const composition = stripComments(sourceOf("src/application/bindings/work/test-select.mjs"));
       for (const code of [source, composition]) {
         assert.match(code, /createTestSelector\(\{[^}]*\bregistrationDecision\b/u, "the shared decider is supplied to the package");
       }
 
       assert.match(
         composition,
-        /import\s*\{[^}]*registrationDecision[^}]*\}\s*from\s+"(?:\.\.?\/)+work-audit\/census\.mjs"/u,
+        /const\s*\{[^}]*registrationDecision[^}]*\}\s*= workAuditCensusServices/u,
         "the decision comes from the shared census module, by import",
       );
       // …and the import is live, not decorative: the function this module calls IS the census's.

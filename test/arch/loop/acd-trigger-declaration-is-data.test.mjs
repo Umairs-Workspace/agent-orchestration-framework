@@ -141,7 +141,7 @@ export const archTests = [
     name: "FF-6302/3 the cadence grammar is reached by IMPORT and no equivalent literal is authored in the family",
     run: () => {
       const files = familyFiles();
-      const importers = [...files, path.join(REPO_ROOT, "src/work-trigger/declaration.mjs")].filter((file) => /from\s+["'][^"']*work\/loops\.mjs["']/.test(read(file)) && /\bparseCadence\b/.test(read(file)));
+      const importers = [...files, path.join(REPO_ROOT, "src/application/bindings/work-trigger/declaration.mjs")].filter((file) => /const\s*\{\s*parseCadence\s*\}\s*= workLoopsServices/.test(read(file)));
       assert.ok(importers.length > 0, "the family reaches the grammar through the imported `parseCadence`");
       assert.equal(typeof loaderModule.parseCadence, "function", "…and it is a real export of the loader");
 
@@ -301,7 +301,7 @@ export const archTests = [
 
       // Non-vacuity: a path the pins do not cover answers `unspecified`, so the assertion above
       // is deciding something rather than matching whatever git happens to print.
-      const unpinned = git(["check-attr", "eol", "--", "src/work-trigger/declaration.mjs"]);
+      const unpinned = git(["check-attr", "eol", "--", "src/application/bindings/work-trigger/declaration.mjs"]);
       assert.match(unpinned.stdout.trim(), /: eol: unspecified$/, "an unpinned path is distinguishable from a pinned one");
     },
   },

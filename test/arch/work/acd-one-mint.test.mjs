@@ -48,7 +48,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
@@ -70,7 +70,7 @@ const INSERT_FACES = Object.freeze([
   "packages/work/src/commands/insert-uat.mjs",
 ]);
 const ENGINE = "src/work/reindex.mjs";
-const ENGINE_IMPORTERS = Object.freeze(["packages/work/src/insertion/scaffold.mjs", "src/effects/stream-transitions.mjs", "src/work/reindex.mjs"]);
+const ENGINE_IMPORTERS = Object.freeze(["packages/work/src/insertion/scaffold.mjs", "src/application/bindings/effects/stream-transitions.mjs", "src/work/reindex.mjs"]);
 // The five the prompts' rewrite names (task 05). The glob is the SUBJECT; these are the floor, so a
 // renamed prompt fails as missing rather than quietly shrinking the sweep.
 const NAMED_ADD_PROMPTS = Object.freeze([
@@ -226,7 +226,7 @@ export const archTests = [
     run: async () => {
       const sources = await strippedSources();
       const importers = [...sources]
-        .filter(([rel, code]) => rel !== ENGINE && importSpecifiers(code).some(({ specifier }) => resolvesTo(specifier, rel, ENGINE)))
+        .filter(([rel, code]) => rel !== ENGINE && dependencySpecifiers(code).some(({ specifier }) => resolvesTo(specifier, rel, ENGINE)))
         .map(([rel]) => rel)
         .sort();
 

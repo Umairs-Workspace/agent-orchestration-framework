@@ -1,9 +1,5 @@
-// Transitional core composition for work-owned doctor services.
-import { createWorkDoctor } from "@aof/work/doctor";
-import { projectExecution } from "@aof/work-graph/record";
-import { readRuns } from "../run-store.mjs";
-import { diagramsGroup } from "./doctor-diagrams.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workDoctor } from "../application/default.mjs";
 export const {
   CHECK_GROUPS,
   CONVENTION_DOCS,
@@ -17,4 +13,4 @@ export const {
   orphanFolderGroup,
   siblingDependencyNumber,
   staleWindowFromConfig,
-} = createWorkDoctor({ projectExecution, readRuns, diagramsGroup });
+} = workDoctor;

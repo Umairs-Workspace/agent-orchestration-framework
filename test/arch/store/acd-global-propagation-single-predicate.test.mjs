@@ -6,10 +6,10 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const CALLER_FILES = [
-  path.join("src", "commands", "run-start.mjs"),
-  path.join("src", "commands", "run-complete.mjs"),
-  path.join("src", "commands", "feedback.mjs"),
-  path.join("src", "mesh", "launcher.mjs"),
+  path.join("src/application/bindings/commands/run-start.mjs"),
+  path.join("src/application/bindings/commands/run-complete.mjs"),
+  path.join("src/application/bindings/commands/feedback.mjs"),
+  path.join("src/application/bindings/mesh/launcher.mjs"),
 ];
 
 export const archTests = [
@@ -22,12 +22,12 @@ export const archTests = [
 
       for (const rel of CALLER_FILES) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
-        assert.ok(source.includes("global-work-publisher.mjs"), `${rel} uses the shared global-work-publisher seam`);
+        assert.ok(source.includes("globalWorkPublisherServices"), `${rel} uses the shared global-work-publisher seam`);
         assert.ok(!source.includes("mesh.enabled"), `${rel} does not make its own mesh.enabled decision`);
         assert.ok(!source.includes("config?.mesh?.enabled"), `${rel} does not duplicate the optional-chain predicate`);
       }
       const launcher = await readFile(path.join(repoRoot, "packages/mesh/src/launcher.mjs"), "utf8");
-      const adapter = await readFile(path.join(repoRoot, "src/mesh/launcher.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, "src/application/bindings/mesh/launcher.mjs"), "utf8");
       for (const text of [launcher, adapter]) assert.match(text, /createMeshLauncher\(\{[^}]*publishGlobalWorkSnapshot/su);
       for (const forbidden of ["mesh.enabled", "config?.mesh?.enabled", "openGlobalWorkProjectionStore", "publishWorkspaceSnapshot"]) assert.ok(!launcher.includes(forbidden), forbidden);
       for (const name of ["feedback", "run-start", "run-complete"]) {

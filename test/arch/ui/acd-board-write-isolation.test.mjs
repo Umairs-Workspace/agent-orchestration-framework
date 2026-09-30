@@ -73,7 +73,7 @@ export const archTests = [
       // lens points at src/effects/doc-transitions.mjs.
       const board = await readFile(BOARD_UI, "utf8");
       const command = await readFile(FEEDBACK_COMMAND, "utf8");
-      const composition = await readFile(new URL("../../../src/commands/feedback.mjs", import.meta.url), "utf8");
+      const composition = await readFile(new URL("../../../src/application/bindings/commands/feedback.mjs", import.meta.url), "utf8");
       assert.match(composition, /createFeedbackCommand\(\{[^}]*transitionFeedbackAppended/);
       assert.match(command, /await transitionFeedbackAppended\(/);
       for (const [label, text] of [["board-ui.mjs", board], ["commands/feedback.mjs", command]]) {
@@ -87,7 +87,7 @@ export const archTests = [
       // The command reaches the fact ONLY through the seam, so it cannot append the
       // bullet without raising the event the ledger hangs its cascade on.
       assert.ok(
-        /from\s+["']\.\.\/effects\/doc-transitions\.mjs["']/.test(composition),
+        /const\s*\{\s*transitionFeedbackAppended\s*\}\s*=\s*effectsDocTransitionsServices/.test(composition),
         "the work:feedback command writes through the record-doc transition seam"
       );
 
@@ -143,8 +143,8 @@ export const archTests = [
       const source = await readFile(BOARD_UI, "utf8");
       // The board face invokes operations in-process THROUGH the command registry
       // (the only door, ADR-004 inv. 3) — never a per-request subprocess.
-      const binding = await readFile(new URL("../../../src/board-ui.mjs", import.meta.url), "utf8");
-      assert.match(binding, /import\s*\{[^}]*\binvoke\b[^}]*\}\s*from\s*["']\.\/command-core\.mjs["']/);
+      const binding = await readFile(new URL("../../../src/application/bindings/board-ui.mjs", import.meta.url), "utf8");
+      assert.match(binding, /const\s*\{\s*invoke\s*\}\s*=\s*commandCoreServices/);
       assert.match(binding, /createBoardApi\(\{[^}]*\binvoke\b/);
       assert.match(source, /export function createBoardApi\(\{[^}]*\binvoke\b/);
       assert.match(source, /await invoke\(/, "the transport uses supplied in-process command invocation");

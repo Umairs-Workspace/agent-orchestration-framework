@@ -28,7 +28,7 @@ import { listCommands } from "../../../src/command-core.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
-const FACE_MJS = path.join(repoRoot, "src", "spine", "face.mjs");
+const FACE_MJS = path.join(repoRoot, "src/application/bindings/spine/face.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

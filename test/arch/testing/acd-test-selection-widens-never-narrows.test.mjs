@@ -163,7 +163,7 @@ export const archTests = [
       // …and the shared reader is genuinely how it is reached, so this is "one route" and not
       // "none". An absence over a module that never touches the graph is free.
       const selector = stripComments(sourceOf(SELECTOR));
-      const composition = stripComments(sourceOf("src/work/test-select.mjs"));
+      const composition = stripComments(sourceOf("src/application/bindings/work/test-select.mjs"));
       for (const name of ["normalizeGraph", "readGraph", "graphJsonPath", "graphArtifactBuiltAt", "computeImpact"]) {
         for (const code of [selector, composition]) assert.match(code, new RegExp("createTestSelector\\(\\{[^}]*\\b" + name + "\\b", "u"), name + ": shared graph service is injected");
       }
@@ -197,7 +197,7 @@ export const archTests = [
       // rather than a hole: it starts children, it starts them through the ONE seam, and it passes
       // no shell.
       const reader = stripComments(sourceOf("packages/work/src/testing/changed.mjs"));
-      const readerComposition = stripComments(sourceOf("src/work/test-changed.mjs"));
+      const readerComposition = stripComments(sourceOf("src/application/bindings/work/test-changed.mjs"));
       for (const code of [reader, readerComposition]) assert.match(code, /createChangedFilesReader\(\{[^}]*\brunBounded\b/u);
       assert.match(readerComposition, /import\s*\{\s*runBounded\s*\}\s*from\s+"@aof\/execution\/bounded-process"/u, "the changed-set reader goes through the shared bounded seam");
       assert.doesNotMatch(reader, /from\s+"node:child_process"/u, "…and reaches the process module directly nowhere");

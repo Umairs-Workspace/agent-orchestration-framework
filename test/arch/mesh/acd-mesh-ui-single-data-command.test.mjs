@@ -37,7 +37,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COMMANDS_DIR = path.join(repoRoot, "src", "commands");
@@ -133,11 +133,11 @@ export const archTests = [
         return;
       }
       const implementation = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/ui-serve.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
       for (const text of [implementation, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*queryGlobalMeshStatus[^}]*assignWork[^}]*stopLoop/su, "the configured fleet doors reach the package");
       const source = adapter + "\n" + implementation;
       // The door IS present — the face reaches fleet data through the command registry.
-      const specifiers = importSpecifiers(source).map((i) => i.specifier);
+      const specifiers = dependencySpecifiers(source).map((i) => i.specifier);
       assert.ok(
         specifiers.includes("../global-mesh-query.mjs"),
         "mesh-ui-serve.mjs imports the global query surface (./global-mesh-query.mjs) — the only door to fleet data"
@@ -148,7 +148,7 @@ export const archTests = [
       // ./commands/mesh-assign.mjs, the read-only face's first and only mutation
       // carve-out (POST /api/mesh/assign, wrapping assignWork verbatim — armed by the
       // dedicated acd-fleet-face-single-mutation-route fitness, not duplicated here).
-      const secondPath = importSpecifiers(source).filter((i) => {
+      const secondPath = dependencySpecifiers(source).filter((i) => {
         const spec = i.specifier;
         if (!spec.startsWith(".")) return false;
         if (spec === "./global-mesh-query.mjs") return false; // the read door

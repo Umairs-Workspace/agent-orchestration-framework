@@ -361,7 +361,7 @@ export const commandCoreContractTests = [
     name: "command-core/effect registration has no static domain or transition cycle",
     async run() {
       const root = fileURLToPath(new URL("../../", import.meta.url));
-      const entry = path.join(root, "src/effects/table.mjs");
+      const entry = path.join(root, "src/application/bindings/effects/table.mjs");
       async function closure(planted = false) {
         const seen = new Set(), visiting = new Set();
         async function visit(file) {
@@ -369,7 +369,7 @@ export const commandCoreContractTests = [
           if (seen.has(file)) return;
           visiting.add(file);
           let source = await readFile(file, "utf8");
-          if (planted && file === entry) source += '\nimport "./dispatch.mjs";';
+          if (planted && file === entry) source += '\nimport "./table.mjs";';
           for (const { specifier, dynamic } of importSpecifiers(source)) {
             if (dynamic || specifier.startsWith("node:")) continue;
             const target = createRequire(file).resolve(specifier);

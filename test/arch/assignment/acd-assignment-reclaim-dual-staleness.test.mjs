@@ -30,7 +30,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const reclaimSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs");
 async function reclaimSource() {
   const implementation = stripComments(await readFile(reclaimSourcePath, "utf8"));
-  const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/assignment-reclaim.mjs"), "utf8"));
+  const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/assignment-reclaim.mjs"), "utf8"));
   for (const symbol of ["isNodeStale", "isStale"]) {
     assert.match(implementation, new RegExp('function createAssignmentReclaim\\(\\{[^}]*\\b' + symbol + '\\b'));
     assert.match(adapter, new RegExp('createAssignmentReclaim\\(\\{[^}]*\\b' + symbol + '\\b'));
@@ -44,10 +44,10 @@ function stripComments(source) {
 
 function assertStructural(code) {
   const problems = [];
-  if (!/import\s*\{[^}]*\bisNodeStale\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+presence\.mjs["']/.test(code)) {
+  if (!/const\s*\{[^}]*\bisNodeStale\b[^}]*\}\s*=\s*meshPresenceServices/.test(code)) {
     problems.push("isNodeStale is not imported from ./mesh/presence.mjs");
   }
-  if (!/import\s*\{[^}]*\bisStale\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+run-store\.mjs["']/.test(code)) {
+  if (!/const\s*\{[^}]*\bisStale\b[^}]*\}\s*=\s*runStoreServices/.test(code)) {
     problems.push("isStale is not imported from ./run-store.mjs");
   }
   // The decision must be a CONJUNCTION: presenceStale is checked and, only when true,

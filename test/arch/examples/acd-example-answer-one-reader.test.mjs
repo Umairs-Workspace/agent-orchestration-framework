@@ -68,8 +68,8 @@ export const archTests = [
       const code = stripComments(await readFile(path.join(repoRoot, THE_READER), "utf8"));
       assert.doesNotMatch(code, /AskUserQuestion/, "answers.mjs does not spell the tool's name");
       assert.match(code, /createExampleAnswers\(\{[^}]*HUMAN_INPUT_TOOL_NAMES/, "the reader receives the shared tool vocabulary");
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/work-examples/answers.mjs"), "utf8"));
-      assert.match(adapter, /import\s*\{[^}]*HUMAN_INPUT_TOOL_NAMES[^}]*\}\s*from\s*["']\.\.\/agent-session-driver\.mjs["']/, "core binds the list from its one home");
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work-examples/answers.mjs"), "utf8"));
+      assert.match(adapter, /const\s*\{[^}]*HUMAN_INPUT_TOOL_NAMES[^}]*\}\s*= agentSessionDriverServices/, "core binds the list from its one home");
     },
   },
   {

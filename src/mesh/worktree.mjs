@@ -1,13 +1,5 @@
-// Transitional core composition; mesh owns policy and execution owns Git mechanisms.
-import { createMeshWorktrees } from "@aof/mesh/worktrees";
-import { reportDegrade } from "../degrade.mjs";
-import { loadWorkspace } from "../work.mjs";
-
-const worktrees = createMeshWorktrees({
-  reportDegrade,
-  loadWorkspace,
-  toolchain: () => import("../work/toolchain.mjs"),
-});
+// Compatibility entry; construction belongs to core application assembly.
+import { meshWorktree } from "../application/default.mjs";
 export const {
   DEFAULT_WORKTREE_RETENTION_MS,
   WORKTREE_PREPARE_DEADLINE_EXPIRED,
@@ -46,4 +38,4 @@ export const {
   reuseWorktreeOnBranch,
   sessionWorktreeSlug,
   sweepRetainedWorktrees,
-} = worktrees;
+} = meshWorktree;

@@ -43,7 +43,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-05: loadWorkspace reads identity from globalMeshPaths, and the minting callers write to ws.identityPath (not the per-workspace sidecar as primary)",
     run: async () => {
-      const work = stripComments(await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8"));
+      const work = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work.mjs"), "utf8"));
       // The PRIMARY identity read in loadWorkspace routes through the global home.
       assert.ok(/const\s+globalMesh\s*=\s*globalMeshPaths\(\s*\{\s*env\s*\}\s*\)/.test(work), "loadWorkspace resolves global mesh paths via globalMeshPaths({ env })");
       assert.ok(/const\s+globalIdentityPath\s*=\s*globalMesh\.identityPath/.test(work), "loadWorkspace reads identityPath from the resolved global mesh paths");

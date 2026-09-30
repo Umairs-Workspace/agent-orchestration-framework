@@ -72,7 +72,7 @@ export function legacyConfigPath(projectDir = process.cwd()) {
 // Both are skipped, never returned. Discovery FROM either directory, asked for
 // directly, is unchanged: the fallback below answers with that directory's own config
 // path, exactly as it did before the walk existed.
-export async function findProjectConfig(projectDir = process.cwd(), explicitConfigPath) {
+export async function findProjectConfig(projectDir = process.cwd(), explicitConfigPath, options = {}) {
   if (explicitConfigPath) {
     return path.resolve(projectDir, explicitConfigPath);
   }
@@ -85,7 +85,7 @@ export async function findProjectConfig(projectDir = process.cwd(), explicitConf
   // chore's own regression test: a fixture under `os.tmpdir()` resolved its work dir to
   // `~/wiki/work`. That is the isolation breach AOF_GLOBAL_HOME exists to prevent,
   // arriving through the back door.
-  const aofHomes = new Set([globalWorkspacePaths().workspaceDir, defaultGlobalWorkspaceDir({})]);
+  const aofHomes = new Set([globalWorkspacePaths(options).workspaceDir, defaultGlobalWorkspaceDir({})]);
 
   let dir = start;
   for (;;) {

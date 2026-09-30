@@ -1,5 +1,6 @@
-// Compatibility adapter for the shared filesystem API. Core supplies diagnostics only.
-import { createTempFileSweeper } from '@aof/foundation/fs';
-import { reportDegrade } from './degrade.mjs';
-export { readJson, writeText, normalizeId } from '@aof/foundation/fs';
-export const sweepStaleTempFiles = createTempFileSweeper({ reportDegrade });
+// Compatibility entry; construction belongs to core application assembly.
+import { defaultFoundation } from "./application/default-foundation.mjs";
+export const readJson = defaultFoundation.fs.readJson;
+export const writeText = defaultFoundation.fs.writeText;
+export const normalizeId = defaultFoundation.fs.normalizeId;
+export const sweepStaleTempFiles = defaultFoundation.fs.sweepStaleTempFiles;

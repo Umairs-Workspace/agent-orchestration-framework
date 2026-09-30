@@ -22,9 +22,9 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const INDEXING = path.join(repoRoot, "packages", "knowledge", "src", "memory", "local-indexing.mjs");
-const GRAPHIFY_BACKEND = path.join(repoRoot, "packages", "knowledge", "src", "memory", "graphify-backend.mjs");
-const LOCAL_BACKEND = path.join(repoRoot, "packages", "knowledge", "src", "memory", "local-backend.mjs");
+const INDEXING = path.join(repoRoot, "packages", "knowledge", "src/memory/local-indexing.mjs");
+const GRAPHIFY_BACKEND = path.join(repoRoot, "packages", "knowledge", "src/memory/graphify-backend.mjs");
+const LOCAL_BACKEND = path.join(repoRoot, "packages", "knowledge", "src/memory/local-backend.mjs");
 
 // A parser DEFINITION (not a re-export / import): `function parseX(` or
 // `const parseX =`. Used to prove the source parsers live only in local-indexing.
@@ -49,8 +49,8 @@ export const archTests = [
         /function createGraphifyBackend\(\{[^}]*\bbuildRecords\b/,
         "graphify-backend receives the shared record builder",
       );
-      const binding = await readFile(path.join(repoRoot, "src/memory/graphify-backend.mjs"), "utf8");
-      assert.match(binding, /import\s*\{\s*buildRecords\s*\}\s*from\s*"\.\/local-indexing\.mjs"/);
+      const binding = await readFile(path.join(repoRoot, "src/application/bindings/memory/graphify-backend.mjs"), "utf8");
+      assert.match(binding, /const\s*\{\s*buildRecords\s*\}\s*= memoryLocalIndexingServices/);
       assert.match(binding, /createGraphifyBackend\(\{[^}]*\bbuildRecords\b/);
 
       // (b) NO source parser is defined inside a backend — they all live in local-indexing.

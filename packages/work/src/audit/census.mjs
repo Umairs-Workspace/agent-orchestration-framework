@@ -353,7 +353,7 @@ function baselineProblems(baseline, files) {
       findings.push(Object.freeze({
         code: "audit-baseline-unreasoned",
         severity: "error",
-        path: "src/work-audit/census.mjs",
+        path: "packages/work/src/audit/census.mjs",
         message: "a baseline entry names no suite — an exemption that names no subject exempts everything",
       }));
       continue;

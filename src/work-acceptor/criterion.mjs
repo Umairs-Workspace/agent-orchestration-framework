@@ -1,7 +1,5 @@
-// Transitional application composition for the work-owned acceptor service.
-import { createAcceptorCriterion } from "@aof/work/acceptor/criterion";
-import { bundledFrozenSet, readFrozenSet } from "../frozen-set.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workAcceptorCriterion } from "../application/default.mjs";
 export const {
   ACCEPTOR_EPOCH_CADENCE,
   ACCEPTOR_EPOCH_SPAN,
@@ -30,4 +28,4 @@ export const {
   reviseCriterion,
   rulingsUnderCurrentCriterion,
   writeCriterion,
-} = createAcceptorCriterion({ bundledFrozenSet, readFrozenSet });
+} = workAcceptorCriterion;

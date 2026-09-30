@@ -6,14 +6,14 @@ import { CHECK_GROUPS } from "../../../src/work/doctor.mjs";
 import { invoke } from "../../../src/command-core.mjs";
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const scorerPath = path.join(root, "packages", "work", "src", "doctor", "loop-ready.mjs");
 const COMPOSED = Object.freeze(["grounding", "anchor-grounding", "pairing", "reference-ownership", "actuator-arbitration", "timescale"]);
 
 function specifiers(source) {
-  return importSpecifiers(source).map((entry) => entry.specifier);
+  return dependencySpecifiers(source).map((entry) => entry.specifier);
 }
 
 async function importGraph(entry) {
@@ -67,15 +67,15 @@ export const archTests = [
   {
     name: "arch/53 FF-5309 (acd-loop-ready-registry-optional): doctor reaches the registry only through its deferred command invocation",
     run: async () => {
-      const doctor = stripComments(await readFile(path.join(root, "src", "commands", "doctor.mjs"), "utf8"));
+      const doctor = stripComments(await readFile(path.join(root, "src/application/bindings/commands/doctor.mjs"), "utf8"));
       assert.doesNotMatch(doctor, /^import[^\n]+command-core\.mjs/mu, "a static command-core import closes the registry ring");
-      assert.match(doctor, /const loadCommandCore = \(\) => import\("\.\.\/command-core\.mjs"\)/u);
+      assert.match(doctor, /const loadCommandCore = \(\) => provideCommandCore\(\)/u);
       assert.match(doctor, /createDoctorCommand\(\{[^}]*loadCommandCore/u);
       const implementation = stripComments(await readFile(path.join(root, "packages/work/src/commands/doctor.mjs"), "utf8"));
       assert.doesNotMatch(implementation, /command-core\.mjs/u);
       assert.match(implementation, /await loadCommandCore\(\)/u);
       assert.match(implementation, /invoke\s*\(\s*["']work:loops-validate["']/u);
-      const command = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
+      const command = stripComments(await readFile(path.join(root, "packages", "work-loop", "src/commands/loop.mjs"), "utf8"));
       assert.match(command, /invokeRegistered\(\s*["']work:doctor["']/u);
       assert.match(command, /resolveLoopLevelGate\(resolved\.level, l3Gate\)/u);
     },

@@ -42,7 +42,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import { handleInteraction } from "../../../src/discord/commands.mjs";
 import { decideSupervisedDeclarations } from "../../../packages/work-loop/src/engine.mjs";
@@ -78,7 +78,7 @@ function assertRead(what, count, floor, unit = "file(s)") {
 
 function inDiscordFamily(rel) {
   // Include the entire package so adding a new module cannot escape the old directory-wide rules.
-  return rel.startsWith("src/discord/") || rel.startsWith("packages/messaging/src/");
+  return rel.startsWith("src/application/bindings/discord/") || rel.startsWith("src/discord/") || rel.startsWith("packages/messaging/src/");
 }
 
 function resolved(fromRel, specifier) {
@@ -106,7 +106,7 @@ async function srcUnits() {
 // route. PURE, so the red probe runs this shipped detector over a patched unit.
 export function gatewaySocketBuilders(units) {
   return units.filter(({ rel, code }) => {
-    const inFamily = inDiscordFamily(rel) && (importSpecifiers(code).some(({ specifier }) => specifier === "ws") || /\bnew\s+WebSocket\s*\(/u.test(code));
+    const inFamily = inDiscordFamily(rel) && (dependencySpecifiers(code).some(({ specifier }) => specifier === "ws") || /\bnew\s+WebSocket\s*\(/u.test(code));
     return inFamily || code.includes("/gateway/bot");
   }).map(({ rel }) => rel);
 }
@@ -132,7 +132,7 @@ export function answerCalls(units) {
 export function forbiddenWrites(units) {
   const found = [];
   for (const { rel, code } of units.filter((unit) => inDiscordFamily(unit.rel))) {
-    const targets = importSpecifiers(code).map(({ specifier }) => resolved(rel, specifier));
+    const targets = dependencySpecifiers(code).map(({ specifier }) => resolved(rel, specifier));
     if (targets.includes(ASK_REQUEST)) {
       for (const name of ASK_WRITES) if (new RegExp(`(?<![\\w$.])${name}(?![\\w$])`, "u").test(code)) found.push(`${rel}: ${name} from ${ASK_REQUEST}`);
     }
@@ -144,7 +144,7 @@ export function forbiddenWrites(units) {
 // The `src/discord/**` modules that import `child_process`, by the one extractor.
 export function childProcessImporters(units) {
   return units
-    .filter(({ rel, code }) => inDiscordFamily(rel) && importSpecifiers(code).some(({ specifier }) => specifier === "child_process" || specifier === "node:child_process"))
+    .filter(({ rel, code }) => inDiscordFamily(rel) && dependencySpecifiers(code).some(({ specifier }) => specifier === "child_process" || specifier === "node:child_process"))
     .map(({ rel }) => rel);
 }
 
@@ -203,10 +203,10 @@ export const archTests = [
 
       const launcher = units.find(({ rel }) => rel === LAUNCHER);
       assert.ok(launcher != null, `NOT FOUND: ${LAUNCHER}`);
-      const adapter = units.find(({ rel }) => rel === "src/mesh/launcher.mjs");
+      const adapter = units.find(({ rel }) => rel === "src/application/bindings/mesh/launcher.mjs");
       assert.ok(adapter);
-      assert.match(adapter.code, /loadMessagingBot:\s*\(\)\s*=>\s*import\("\.\.\/discord\/bot\.mjs"\)/u);
-      const reaches = importSpecifiers(adapter.code).filter(({ specifier }) => inDiscordFamily(resolved(adapter.rel, specifier)));
+      assert.match(adapter.code, /loadMessagingBot:\s*\(\)\s*=>\s*provideDiscordBot\(\)/u);
+      const reaches = dependencySpecifiers(adapter.code).filter(({ specifier }) => inDiscordFamily(resolved(adapter.rel, specifier)));
       assert.deepEqual(reaches.map(({ specifier, dynamic }) => `${specifier}${dynamic ? " (deferred)" : ""}`), ["../discord/bot.mjs (deferred)"], `${LAUNCHER} reaches src/discord/ only by ONE deferred import of bot.mjs`);
       const branch = launcher.code.indexOf("if (issuanceAuthority)");
       assert.ok(branch !== -1, `NOT FOUND: the control-node branch in ${LAUNCHER}`);
@@ -337,7 +337,7 @@ export const archTests = [
       const resumeSpellers = units.filter(({ code }) => code.includes(RESUME_SEGMENT)).map(({ rel }) => rel);
       assert.deepEqual(resumeSpellers, [STOP_HOME], `the literal "${RESUME_SEGMENT}" is spelled only in ${STOP_HOME} — spelled in ${resumeSpellers.join(", ")}. Read the path through loopResumesDir() (ADR-009 §6)`);
       const core = units.find(({ rel }) => rel === STOP_CORE);
-      assert.ok(core != null && !importSpecifiers(core.code).some(({ specifier }) => /child_process/u.test(specifier)), `${STOP_CORE} imports no child_process`);
+      assert.ok(core != null && !dependencySpecifiers(core.code).some(({ specifier }) => /child_process/u.test(specifier)), `${STOP_CORE} imports no child_process`);
       const handOff = functionBody(core.code, "async function handOffLoop(");
       assert.ok(handOff != null && /\brequestLoopResume\s*\(/u.test(handOff), "handOffLoop writes the resume request through requestLoopResume(");
 

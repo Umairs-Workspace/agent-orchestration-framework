@@ -1,8 +1,4 @@
-// Compatibility composition; execution owns terminal/session-screen.
-import { createSessionScreens } from "@aof/execution/terminal/session-screen";
-import { reportDegrade } from "../degrade.mjs";
-import { createScreen } from "./screen.mjs";
-
-const implementation = createSessionScreens({ createScreen, reportDegrade });
-export const openSessionScreen = implementation.openSessionScreen;
-export const readConsentMenu = implementation.readConsentMenu;
+// Compatibility entry; construction belongs to core application assembly.
+import { defaultSessionDriver } from "../application/default-session-driver.mjs";
+export const openSessionScreen = defaultSessionDriver.terminalSessionScreen.openSessionScreen;
+export const readConsentMenu = defaultSessionDriver.terminalSessionScreen.readConsentMenu;

@@ -1,8 +1,5 @@
-// Transitional core composition for work-owned audit services.
-import { createAuditDeclaredBounds } from "@aof/work/audit/declared-bounds";
-import { HARNESS_REFERENCE_ROWS, parseCheckedDate } from "../harness-reference.mjs";
-import { LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey, LOOP_BOUND_CONFIG_RESOLVERS } from "@aof/contracts/loop-bounds";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workAuditDeclaredBounds } from "../application/default.mjs";
 export const {
   BOUND_CONFIG_KEYS,
   DECLARED_BOUNDS_FINDING_CODES,
@@ -12,4 +9,4 @@ export const {
   boundRange,
   declaredBoundValues,
   runDeclaredBounds,
-} = createAuditDeclaredBounds({ HARNESS_REFERENCE_ROWS, parseCheckedDate, LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey, LOOP_BOUND_CONFIG_RESOLVERS });
+} = workAuditDeclaredBounds;

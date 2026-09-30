@@ -31,7 +31,7 @@ import { functionBody, stripComments } from "../../support/source-slice.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { getCommand } from "../../../src/command-core.mjs";
 import { buildTriggerReport, triggerCommand } from "../../../src/commands/trigger.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const cliPath = path.join(root, "bin", "aof.mjs");
@@ -64,7 +64,7 @@ function importClosure(entries) {
     seen.add(relative);
     const absolute = path.join(root, relative);
     if (!existsSync(absolute)) continue;
-    for (const { specifier } of importSpecifiers(sourceOf(relative)).filter((entry) => !entry.dynamic)) {
+    for (const { specifier } of dependencySpecifiers(sourceOf(relative)).filter((entry) => !entry.dynamic)) {
       if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) continue;
       queue.push(path.relative(root, createRequire(absolute).resolve(specifier)).split(path.sep).join("/"));
     }
@@ -72,7 +72,7 @@ function importClosure(entries) {
   return [...seen].sort();
 }
 
-export const CLOSURE = importClosure([...FAMILY, "src/commands/trigger.mjs"]);
+export const CLOSURE = importClosure([...FAMILY, "src/application/bindings/commands/trigger.mjs"]);
 export const familySource = (file) => sourceOf(file);
 const CLOSURE_TEXT = CLOSURE.map((file) => sourceOf(file)).join("\n");
 const FAMILY_TEXT = FAMILY.map((file) => sourceOf(file)).join("\n");

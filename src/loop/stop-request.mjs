@@ -1,10 +1,8 @@
-// Compatibility composition; implementation is owned by @aof/work-loop.
-import { createStopRequests } from "@aof/work-loop/stop-request";
-import { globalMeshPaths } from "../workspace.mjs";
-import { reportDegrade } from "../degrade.mjs";
-export { STOP_LEVELS, STOP_STATES } from "@aof/work-loop/stop-request";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { loopStopRequest } from "../application/default.mjs";
 export const {
+  STOP_LEVELS,
+  STOP_STATES,
   loopStopsDir,
   loopResumesDir,
   stopRequestPath,
@@ -16,8 +14,5 @@ export const {
   readResumeRequest,
   requestLoopResume,
   clearResumeRequest,
-  createStopSource
-} = createStopRequests({
-  getRuntimeRoot: (env) => globalMeshPaths({ env }).meshRoot,
-  reportDegrade,
-});
+  createStopSource,
+} = loopStopRequest;

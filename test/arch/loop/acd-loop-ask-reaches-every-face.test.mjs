@@ -74,7 +74,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { computedDynamicImports, importSpecifiers } from "../../support/module-family.mjs";
+import { computedDynamicImports } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import { withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { setDegradeSinkForTest } from "../../../src/degrade.mjs";
@@ -129,7 +130,7 @@ const SEVEN = FIRING_SITES.length;
 const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
 // Task 00 ruling 3: the form's direct importers — and, as amended at 131/11 (ADR-009 §5), the slash
 // commands' renders, which read a waiting row exactly as the terminal and the posted message do.
-const FORM_IMPORTERS = Object.freeze(["src/notify/form.mjs", "packages/messaging/src/discord-commands.mjs", "src/loop/ask.mjs", "packages/messaging/src/discord.mjs", "ui/src/board/action.mjs"]);
+const FORM_IMPORTERS = Object.freeze(["src/notify/form.mjs", "packages/messaging/src/discord-commands.mjs", "src/application/bindings/loop/ask.mjs", "packages/messaging/src/discord.mjs", "ui/src/board/action.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
@@ -156,16 +157,16 @@ function resolved(fromRel, specifier) {
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
   const moved = {
-    "src/notify/notify.mjs": "packages/messaging/src/notify.mjs",
-    "src/notify/secret.mjs": "packages/messaging/src/secret.mjs",
-    "src/notify/ask-messages.mjs": "packages/messaging/src/ask-messages.mjs",
+    "src/application/bindings/notify/notify.mjs": "packages/messaging/src/notify.mjs",
+    "src/application/bindings/notify/secret.mjs": "packages/messaging/src/secret.mjs",
+    "src/application/bindings/notify/ask-messages.mjs": "packages/messaging/src/ask-messages.mjs",
     "src/notify/form.mjs": "packages/messaging/src/form.mjs",
     "src/notify/discord.mjs": "packages/messaging/src/discord.mjs",
-    "src/commands/messaging/messaging.mjs": "packages/messaging/src/commands.mjs",
-    "src/discord/gateway.mjs": "packages/messaging/src/gateway.mjs",
-    "src/discord/replies.mjs": "packages/messaging/src/replies.mjs",
-    "src/discord/bot.mjs": "packages/messaging/src/bot.mjs",
-    "src/discord/commands.mjs": "packages/messaging/src/discord-commands.mjs"
+    "src/application/bindings/commands/messaging/messaging.mjs": "packages/messaging/src/commands.mjs",
+    "src/application/bindings/discord/gateway.mjs": "packages/messaging/src/gateway.mjs",
+    "src/application/bindings/discord/replies.mjs": "packages/messaging/src/replies.mjs",
+    "src/application/bindings/discord/bot.mjs": "packages/messaging/src/bot.mjs",
+    "src/application/bindings/discord/commands.mjs": "packages/messaging/src/discord-commands.mjs"
   };
   if (moved[joined]) return moved[joined];
   return /\.[cm]?[jt]sx?$/u.test(joined) ? joined : `${joined}.mjs`;
@@ -437,10 +438,10 @@ export const archTests = [
       assert.deepEqual([...new Set(joins)], [SECRET_STORE], `the messaging store's path is spelled only in ${SECRET_STORE} — a second home joins it in ${joins.filter((rel) => rel !== SECRET_STORE).join(", ")}`);
       const verbs = units.find(({ rel }) => rel === MESSAGING_VERBS);
       assert.ok(verbs != null, `NOT FOUND: ${MESSAGING_VERBS} — the module the leg governs has moved`);
-      const binding = unitOf(units, "src/commands/messaging/messaging.mjs");
+      const binding = unitOf(units, "src/application/bindings/commands/messaging/messaging.mjs");
       assert.match(verbs.code, /function createMessagingCommands\(\{[^}]*messagingSecretPath,\s*messagingSecretPresent,\s*writeMessagingSecret/u);
       assert.match(binding.code, /createMessagingCommands\(\{[^}]*messagingSecretPath,\s*messagingSecretPresent,\s*writeMessagingSecret/u);
-      const reached = importSpecifiers(binding.code).map(({ specifier }) => resolved(binding.rel, specifier));
+      const reached = dependencySpecifiers(binding.code).map(({ specifier }) => resolved(binding.rel, specifier));
       assert.ok(reached.includes(SECRET_STORE), `${MESSAGING_VERBS} reaches the store through ${SECRET_STORE} — it imports ${reached.join(", ")}`);
       assert.ok(!/\.secret\b/u.test(verbs.code), `${MESSAGING_VERBS} names no store file of its own`);
       // The red probe runs against the SHIPPED detector: the verbs module joining the segment itself.
@@ -521,7 +522,7 @@ export const archTests = [
       const fetching = family.filter(({ code }) => /(?<![\w$.])fetch\s*\(/u.test(code)).map(({ rel }) => rel);
       assert.deepEqual(fetching, [], `${BOT_FAMILY}** calls fetch nowhere — it reaches Discord through discordRequest: ${fetching.join(", ")}`);
       if (family.length > 0) {
-        const through = family.filter(({ rel, code }) => importSpecifiers(code).some(({ specifier }) => resolved(rel, specifier) === DOOR));
+        const through = family.filter(({ rel, code }) => dependencySpecifiers(code).some(({ specifier }) => resolved(rel, specifier) === DOOR));
         assert.ok(through.length > 0, `${BOT_FAMILY}** reaches Discord through ${DOOR} — none of ${family.map(({ rel }) => rel).join(", ")} imports it`);
       }
 
@@ -576,7 +577,7 @@ export const archTests = [
       assert.deepEqual(strays, [], `every notify( call under src/ is one of the seven sites (ADR-005 §4, ADR-010 §4) — not one: ${strays.join(", ")}`);
       assert.deepEqual(sites, [...FIRING_SITES].sort(), `the seven sites each fire once, by file and event literal — found ${sites.join(", ")}`);
       for (const owner of new Set(FIRING_SITES.map((site) => site.split(" ")[0]))) {
-        const rel = ({ "packages/work-loop/src/commands/loop.mjs": "src/commands/loop.mjs", "packages/work-loop/src/ask.mjs": "src/loop/ask.mjs", "packages/work/src/commands/item-status.mjs": "src/commands/item-status.mjs", "packages/work/src/commands/resume.mjs": "src/commands/resume.mjs" })[owner] ?? owner;
+        const rel = ({ "packages/work-loop/src/commands/loop.mjs": "src/application/bindings/commands/loop.mjs", "packages/work-loop/src/ask.mjs": "src/application/bindings/loop/ask.mjs", "packages/work/src/commands/item-status.mjs": "src/application/bindings/commands/item-status.mjs", "packages/work/src/commands/resume.mjs": "src/application/bindings/commands/resume.mjs" })[owner] ?? owner;
         if (["packages/work/src/commands/item-status.mjs", "packages/work/src/commands/resume.mjs"].includes(owner)) {
           assert.match(unitOf(units, owner).code, /function (?:createItemStatusCommand|createReentryCommands)\(\{[^}]*buildNotifyEnvelope,\s*notify/u, `${owner}: receives notification services`);
           assert.match(unitOf(units, rel).code, /(?:createItemStatusCommand|createReentryCommands)\(\{[^}]*buildNotifyEnvelope,\s*notify/u, `${rel}: supplies the shared notification services`);
@@ -586,14 +587,14 @@ export const archTests = [
         }
         if (rel === "packages/mesh/src/park-resume.mjs") {
           const code = unitOf(units, rel).code;
-          const adapter = "src/mesh/park-resume.mjs";
+          const adapter = "src/application/bindings/mesh/park-resume.mjs";
           const composition = unitOf(units, adapter).code;
           assert.match(code, /function createMeshParkResumeServices\(\{[^}]*\bloadNotifications\b/u, "mesh accepts the notification loader");
           assert.match(code, /\bloadNotifications\(\)/u, "mesh invokes the notification loader");
-          assert.match(composition, /loadNotifications:\s*\(\)\s*=>\s*import\(/u, "core supplies a deferred loader");
-          assert.ok(importSpecifiers(composition).some(({ specifier }) => resolved(adapter, specifier) === NOTIFY), "core loads the shared notification implementation");
+          assert.match(composition, /loadNotifications:\s*\(\)\s*=>\s*provideNotifyNotify\(\)/u, "core supplies the ready notification callback");
+          assert.ok(dependencySpecifiers(composition).some(({ specifier }) => resolved(adapter, specifier) === NOTIFY), "core loads the shared notification implementation");
         } else {
-          assert.ok(importSpecifiers(unitOf(units, rel).code).some(({ specifier }) => resolved(rel, specifier) === NOTIFY), `${rel} imports buildNotifyEnvelope and notify from ${NOTIFY}`);
+          assert.ok(dependencySpecifiers(unitOf(units, rel).code).some(({ specifier }) => resolved(rel, specifier) === NOTIFY), `${rel} imports buildNotifyEnvelope and notify from ${NOTIFY}`);
         }
       }
       const covered = [...new Set(FIRING_SITES.flatMap((site) => site.split(" ")[1].split("/")))].sort();
@@ -624,9 +625,9 @@ export const archTests = [
     run: async () => {
       const units = [...await srcUnits(), ...await uiUnits()];
       const form = unitOf(units, FORM);
-      assert.deepEqual(importSpecifiers(form.code), [], "src/notify/form.mjs has zero imports");
+      assert.deepEqual(dependencySpecifiers(form.code), [], "src/notify/form.mjs has zero imports");
       assert.deepEqual(computedDynamicImports(form.code), [], "…and no computed dynamic import");
-      const importers = units.filter((unit) => !unit.declaration && importSpecifiers(unit.code).some(({ specifier }) => resolved(unit.rel, specifier) === FORM)).map(({ rel }) => rel).sort();
+      const importers = units.filter((unit) => !unit.declaration && dependencySpecifiers(unit.code).some(({ specifier }) => resolved(unit.rel, specifier) === FORM)).map(({ rel }) => rel).sort();
       assert.deepEqual(importers, [...FORM_IMPORTERS].sort(), "src/notify/form.mjs's direct importers are ask.mjs, notify/discord.mjs and ui/src/board/action.mjs (ruling 3), and discord/commands.mjs (as amended at 131/11)");
       const shell = unitOf(units, SHELL);
       const phrases = PHRASES.filter((phrase) => shell.code.includes(phrase));
@@ -650,7 +651,7 @@ export const archTests = [
 
       const outside = [];
       for (const unit of ui) {
-        for (const { specifier } of importSpecifiers(unit.code)) {
+        for (const { specifier } of dependencySpecifiers(unit.code)) {
           if (!specifier.startsWith(".")) continue;
           if (!resolved(unit.rel, specifier).startsWith("ui/src/")) outside.push({ file: unit.rel, specifier });
         }
@@ -726,7 +727,7 @@ export const archTests = [
       assert.deepEqual(fetches, ["ui/src/board/api.ts"], `ui/src/** holds exactly one fetch("/api/work/answer" — found in ${fetches.join(", ") || "nothing"}`);
 
       const card = unitOf(ui, ASK_CARD);
-      const markdown = importSpecifiers(card.code).filter(({ specifier }) => /markdown/iu.test(specifier));
+      const markdown = dependencySpecifiers(card.code).filter(({ specifier }) => /markdown/iu.test(specifier));
       assert.deepEqual(markdown, [], `AskCard.tsx imports no Markdown — the question is plain text: ${markdown.map(({ specifier }) => specifier).join(", ")}`);
       assert.doesNotMatch(card.code, /<Markdown\b/u, "AskCard.tsx renders no <Markdown>");
       assert.doesNotMatch(card.code, /\bplaceholder\b/u, "AskCard.tsx sets no placeholder — there is no default answer");
@@ -760,8 +761,8 @@ export const archTests = [
       // The application forwards this service through a deferred module import.
       // Count member calls as well, so a second face cannot bypass the package port.
       const forwards = units.flatMap(({ rel, code }) => [...code.matchAll(/\.announceWorkerAsk\s*\(/gu)].map(() => rel));
-      assert.deepEqual(forwards, ["src/effects/table.mjs"], "only core's service adapter forwards to the notification implementation");
-      assert.match(unitOf(units, "src/effects/table.mjs").code, /announceWorkerAsk:\s*async\s*\(\.\.\.args\)\s*=>\s*\(await import\("\.\.\/mesh\/park-resume\.mjs"\)\)\.announceWorkerAsk\(\.\.\.args\)/u);
+      assert.deepEqual(forwards, ["src/application/bindings/effects/table.mjs"], "only core's service adapter forwards to the notification implementation");
+      assert.match(unitOf(units, "src/application/bindings/effects/table.mjs").code, /announceWorkerAsk:\s*async\s*\(\.\.\.args\)\s*=>\s*\(await provideMeshParkResume\(\)\)\.announceWorkerAsk\(\.\.\.args\)/u);
     },
   },
   {

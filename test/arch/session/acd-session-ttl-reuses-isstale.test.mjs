@@ -51,6 +51,7 @@ async function readIfExists(file) {
 function assertStructural(code) {
   const problems = [];
   const importsShared =
+    /import\s*\{[^}]*\bisStale\b[^}]*\}\s*from\s*["']@aof\/contracts\/freshness["']/.test(code) ||
     /import\s*\{[^}]*\bisStale\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+run-store\.mjs["']/.test(code) ||
     /import\s*\{[^}]*\bisNodeStale\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+presence\.mjs["']/.test(code) ||
     /import\s*\{[^}]*\bisStale\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+presence\.mjs["']/.test(code);
@@ -70,7 +71,7 @@ export const archTests = [
     run: async () => {
       const source = await readIfExists(sessionSourcePath);
       if (source == null) return; // not-yet-built: the invariant cannot be violated by an absent file (pending)
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/session.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/session.mjs"), "utf8"));
       const implementation = stripComments(source);
       assert.match(adapter, /import\s*\{\s*createMeshSessions\s*\}\s*from\s*["']@aof\/mesh\/session["']/);
       assert.match(adapter, /createMeshSessions\(\{[^}]*\bisStale\b[^}]*\}\)/);

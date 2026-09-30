@@ -83,7 +83,7 @@ export const archTests = [
     name: "arch/96/01 FF-9602 (3) THE GRAPH IS READ, NEVER BUILT — the shipped reader and impact core only, with no second parse, no build and no child process",
     run: async () => {
       const derive = await source(DERIVE);
-      const specifiers = importsOf(await source("src/story-contract-derive.mjs"));
+      const specifiers = importsOf(await source("src/application/bindings/story-contract-derive.mjs"));
       assert.ok(specifiers.includes("@aof/knowledge/graph-normalize"), "it reaches the artifact through the shipped normaliser");
       assert.ok(specifiers.includes("@aof/knowledge/graph-impact"), "…and the shipped impact reader");
       assert.match(derive, /createStoryContractDeriver\(\{[^}]*readGraph[^}]*computeImpact/, "the implementation receives the configured readers");

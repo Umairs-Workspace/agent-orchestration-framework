@@ -39,7 +39,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 // THE ONE HOME for "what does this module import?" (119/ADR-002; chore 121). The extractor this
 // file used to spell was line-bounded (`[^;\n]*?`) and so blind to a multi-line import clause —
 // the defect the home documents and fixed once, for every caller.
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { resolveSpecifier } from "./acd-audit-never-imports-project-code.test.mjs";
 // ─────────────────────────────────────────────────────────────────────────────
 // EXTENDED BY MILESTONE 59 / STORY 02 (FF-5905, 59/ADR-002 §1 + §2).
@@ -87,7 +87,7 @@ const srcDir = path.join(repoRoot, "src");
 
 // ── FF-5905's OWN CONSTANTS ──────────────────────────────────────────────────────────────────
 
-const AUDIT_FAMILY = "src/work-audit/";
+const AUDIT_FAMILY = "src/application/bindings/work-audit/";
 // The doctor family, as a PATH PREFIX rather than a filename prefix (119/01). It was
 // `leaf.startsWith("work-doctor")` — a filename-shaped rule that went vacuous the moment the
 // family moved into `src/work/`, and the `edges >= 1` leg below is what turned that into a RED
@@ -123,10 +123,10 @@ const DOCTOR_LANE_MODULES = Object.freeze([
 
 async function assertDiagramsPort(spineBody) {
   assert.match(spineBody, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
-  const core = stripComments(await readFile(path.join(repoRoot, "src/work/doctor.mjs"), "utf8"));
-  assert.match(core, /import\s*\{ diagramsGroup \}\s*from "\.\/doctor-diagrams\.mjs"/u);
+  const core = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work/doctor.mjs"), "utf8"));
+  assert.match(core, /const\s*\{ diagramsGroup \}\s*= workDoctorDiagramsServices/u);
   assert.match(core, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
-  const adapter = stripComments(await readFile(path.join(repoRoot, "src/work/doctor-diagrams.mjs"), "utf8"));
+  const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work/doctor-diagrams.mjs"), "utf8"));
   assert.match(adapter, /from "@aof\/work\/doctor\/diagrams"/u);
   assert.match(adapter, /createDoctorDiagrams\(\{ resolveWorkDiagrams \}\)/u);
 }
@@ -227,7 +227,7 @@ const FORBIDDEN_BUILTINS = ["node:child_process", "node:fs", "node:fs/promises",
 // already carried meaning a DIFFERENT module, so the rule would have been vacuous and wrong at
 // once. The forbidden set is now the RESOLVED module each spelling was reaching for, which is
 // ADR-003 exactly: the decision is WHICH modules are forbidden; where they sit is derived.
-const FORBIDDEN_MODULES = ["packages/work/src/grade.mjs", "src/commands/grade.mjs", "packages/work/src/commands/grade.mjs", "packages/execution/src/rubric-process.mjs"];
+const FORBIDDEN_MODULES = ["packages/work/src/grade.mjs", "src/application/bindings/commands/grade.mjs", "packages/work/src/commands/grade.mjs", "packages/execution/src/rubric-process.mjs"];
 
 // THE FAMILY'S set is NARROWER than the lane's, and the difference is deliberate — corrected
 // at 54/04's build, where the first reading of FF-5407 would have forced a SECOND report
@@ -239,14 +239,15 @@ const FORBIDDEN_MODULES = ["packages/work/src/grade.mjs", "src/commands/grade.mj
 // Forbidding it to the whole family would have made 54/04's traceability lane write its own
 // copy of the TAP normaliser — a second parser, which is the defect `66/ADR-003` and this
 // milestone both refuse by name.
-const FORBIDDEN_RUNNER_MODULES = ["src/commands/grade.mjs", "packages/work/src/commands/grade.mjs", "packages/execution/src/rubric-process.mjs"];
+const FORBIDDEN_RUNNER_MODULES = ["src/commands/grade.mjs", "src/application/bindings/commands/grade.mjs", "packages/work/src/commands/grade.mjs", "packages/execution/src/rubric-process.mjs"];
 
 // The deterministic engines FF-5407 covers beyond the lane itself: `work.mjs`'s
 // `validateWork` and the whole `work-doctor*` family. A guard that read only the one lane
 // would pass on the day the runner was imported into a SIBLING (`m15/R3`: a fitness grep
 // must scan the whole module family it governs).
 const DETERMINISTIC_ENGINES = [
-  "src/work.mjs",
+  "src/application/bindings/work.mjs",
+  "packages/work/src/validation.mjs",
   "packages/work/src/doctor/index.mjs",
   "packages/work/src/audit/controls.mjs",
   "packages/work/src/doctor/coherence.mjs",
@@ -263,7 +264,7 @@ const DETERMINISTIC_ENGINES = [
 // `import()` is not a direct import and is left out, exactly as before; the extraction itself is
 // the one home's.
 function directImports(code) {
-  return importSpecifiers(code).filter((entry) => !entry.dynamic).map((entry) => entry.specifier);
+  return dependencySpecifiers(code).filter((entry) => !entry.dynamic).map((entry) => entry.specifier);
 }
 
 // A DYNAMIC import — the door that would let the lane execute a cited module's scope,
@@ -369,11 +370,11 @@ export const archTests = [
         const relative = resolveRelative(THE_LANE, leaf);
         const source = await read(relative);
         const leafBody = strippedBody(source.file, source.text);
-        const edges = importSpecifiers(leafBody);
+        const edges = dependencySpecifiers(leafBody);
         if (relative === "src/acceptance-horizon.mjs") {
           assert.deepEqual(edges, [{ specifier: "@aof/work/lifecycle", dynamic: false }]);
           const implementation = await read("packages/work/src/lifecycle.mjs");
-          assert.deepEqual(importSpecifiers(implementation.text), [], "the lifecycle implementation remains a zero-import leaf");
+          assert.deepEqual(dependencySpecifiers(implementation.text), [], "the lifecycle implementation remains a zero-import leaf");
         } else {
           assert.deepEqual(edges, [], `${relative} remains a zero-import leaf`);
         }
@@ -529,7 +530,7 @@ export const archTests = [
 
       // NON-VACUITY: the family really was read, and `validateWork` really is in it —
       // otherwise the empty offender list above is a statement about nothing.
-      const spine = await read("src/work.mjs");
+      const spine = await read("packages/work/src/validation.mjs");
       assert.match(strippedBody(spine.file, spine.text), /export (?:async )?function validateWork/, "validateWork really is in the scanned family");
       assert.ok(DETERMINISTIC_ENGINES.length >= 8, "…and the family is the whole work-doctor* set, not one module");
 
@@ -672,15 +673,15 @@ export const archTests = [
       }
 
       // (c) NON-VACUITY: the closure's detector fires on a planted edge.
-      assert.equal(resolveRelative(THE_SPINE, "../../../../src/work-audit/evidence.mjs"), "src/work-audit/evidence.mjs");
-      assert.ok(resolveRelative(THE_SPINE, "../../../../src/work-audit/evidence.mjs").startsWith(AUDIT_FAMILY), "a planted edge would resolve into the family and be caught");
+      assert.equal(resolveRelative(THE_SPINE, "../../../../src/application/bindings/work-audit/evidence.mjs"), "src/application/bindings/work-audit/evidence.mjs");
+      assert.ok(resolveRelative(THE_SPINE, "../../../../src/application/bindings/work-audit/evidence.mjs").startsWith(AUDIT_FAMILY), "a planted edge would resolve into the family and be caught");
     },
   },
 
   {
     name: "arch/59 FF-5905: the ONE edge the other way is to ADR-002 §2's pure register extractors — the audit reads the register through one home and imports nothing else out of the doctor family",
     run: async () => {
-      const family = [...await walkModules("src/work-audit"), ...await walkModules("packages/work/src/audit")];
+      const family = [...await walkModules("src/application/bindings/work-audit"), ...await walkModules("packages/work/src/audit")];
       assert.ok(family.length >= 2, `non-vacuity: ${family.length} modules under src/work-audit/ were walked`);
 
       let edges = 0;

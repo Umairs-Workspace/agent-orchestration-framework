@@ -39,7 +39,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
 import { rewriteCrossingLinks, INLINE_LINK_RE } from "../../../src/work/archive.mjs";
@@ -47,9 +47,9 @@ import { rewriteCrossingLinks, INLINE_LINK_RE } from "../../../src/work/archive.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const FACE = "packages/work/src/commands/archive.mjs";
-const COMPOSITION = "src/commands/archive.mjs";
+const COMPOSITION = "src/application/bindings/commands/archive.mjs";
 const ENGINE = "packages/work/src/archive.mjs";
-const SEAM_COMPOSITION = "src/effects/stream-transitions.mjs";
+const SEAM_COMPOSITION = "src/application/bindings/effects/stream-transitions.mjs";
 const SEAM = "packages/work/src/stream-transitions.mjs";
 const REINDEX = "packages/work/src/reindex.mjs";
 const INSERT_SHARED = "packages/work/src/insertion/scaffold.mjs";
@@ -73,7 +73,7 @@ async function srcGraph() {
   for (const file of await readRuntimeFiles(repoRoot)) {
     const rel = file.rel;
     const code = await readFile(file.path, "utf8");
-    const edges = importSpecifiers(code)
+    const edges = dependencySpecifiers(code)
       .map(({ specifier }) => resolveSpecifier(specifier, rel))
       .filter((target) => target != null && /^(src|packages)\//.test(target));
     graph.set(rel, edges);
@@ -128,7 +128,7 @@ function chainThrough(graph, from, target, through) {
 
 function closedSetProblems(rel, code, allowed) {
   const problems = [];
-  for (const { specifier } of importSpecifiers(code)) {
+  for (const { specifier } of dependencySpecifiers(code)) {
     if (specifier.startsWith("node:")) continue;
     const resolved = resolveSpecifier(specifier, rel);
     if (resolved == null || !allowed.has(resolved)) {
@@ -150,13 +150,13 @@ export const archTests = [
       const problems = [...closedSetProblems(FACE, face, FACE_ALLOWED), ...closedSetProblems(ENGINE, engine, ENGINE_ALLOWED), ...closedSetProblems(COMPOSITION, stripComments(await readRel(COMPOSITION)), new Set([FACE, SEAM_COMPOSITION]))];
       assert.deepEqual(problems, [], problems.join("\n"));
       // Non-vacuous: each file imports something, and the forbidden names are absent by name too.
-      assert.ok(importSpecifiers(face).length >= 3, "the face imports its readers, the seam and the error contract");
-      assert.ok(importSpecifiers(engine).length >= 2, "the engine imports node:* and the readers");
+      assert.ok(dependencySpecifiers(face).length >= 3, "the face imports its readers, the seam and the error contract");
+      assert.ok(dependencySpecifiers(engine).length >= 2, "the engine imports node:* and the readers");
       for (const [rel, code] of [[FACE, face], [ENGINE, engine], [COMPOSITION, stripComments(await readRel(COMPOSITION))]]) {
         for (const forbidden of ["reindex.mjs", "insert-shared.mjs", "promotion.mjs"]) {
-          assert.ok(!importSpecifiers(code).some(({ specifier }) => specifier.endsWith(forbidden)), `${rel} does not import ${forbidden}`);
+          assert.ok(!dependencySpecifiers(code).some(({ specifier }) => specifier.endsWith(forbidden)), `${rel} does not import ${forbidden}`);
         }
-        assert.ok(!importSpecifiers(code).some(({ specifier }) => (resolveSpecifier(specifier, rel) ?? "").startsWith("src/commands/")), `${rel} imports no src/commands/* module`);
+        assert.ok(!dependencySpecifiers(code).some(({ specifier }) => (resolveSpecifier(specifier, rel) ?? "").startsWith("src/commands/")), `${rel} imports no src/commands/* module`);
       }
     },
   },

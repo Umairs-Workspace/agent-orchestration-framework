@@ -1,5 +1,5 @@
-// Transitional core composition for work-owned reads.
-import { createWorkContentReader } from "@aof/work/content-read";
-import { readRuns } from "../run-store.mjs";
-
-export const { readWorkspaceContentRecords } = createWorkContentReader({ readRuns });
+// Compatibility entry; construction belongs to core application assembly.
+import { workContentRead } from "../application/default.mjs";
+export const {
+  readWorkspaceContentRecords,
+} = workContentRead;

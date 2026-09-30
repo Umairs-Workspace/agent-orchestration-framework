@@ -442,9 +442,9 @@ export const archTests = [
       // is the only probe that sees this class, because every suite in this tree reaches these
       // modules through a warmed cache.
       assert.doesNotMatch(FAMILY_TEXT, /^import[^\n]*command-core\.mjs/mu, "no family module imports the registry at module scope");
-      assert.match(sourceOf("src/commands/trigger.mjs"), /\(\) => import\("\.\.\/command-core\.mjs"\)/u, "core supplies a deferred registry loader");
+      assert.match(sourceOf("src/application/bindings/commands/trigger.mjs"), /\(\) => provideCommandCore\(\)/u, "core supplies the ready registry callback");
       assert.match(sourceOf("packages/work-loop/src/commands/trigger.mjs"), /await loadCommandCore\(\)/u, "the face calls the supplied loader lazily");
-      for (const file of [...FAMILY, "src/commands/trigger.mjs", "src/command-core.mjs"]) {
+      for (const file of [...FAMILY, "src/application/bindings/commands/trigger.mjs", "src/application/bindings/command-core.mjs"]) {
         const url = pathToFileURL(`${root}/${file}`).href;
         const child = spawnSync(process.execPath, ["--input-type=module", "--eval", `await import(${JSON.stringify(url)})`], {
           cwd: root,

@@ -25,7 +25,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "src");
@@ -48,12 +48,13 @@ const SEAMS = {
 // (the registered command), never by reading graph.json / importing the normalizer
 // (09/ADR-005). Its only `graph.json` mentions are in comments/strings (discounted).
 const GRAPH_READER_ALLOWLIST = new Set([
+  path.join("src/graphify.mjs"), // Compatibility export of the same configured reader.
   // Transitional core adapters supply the configured graph services.
-  path.join("src", "graphify.mjs"),
-  path.join("src", "commands", "graph", "build.mjs"),
-  path.join("src", "commands", "graph", "query.mjs"),
-  path.join("src", "commands", "graph", "triage.mjs"),
-  path.join("packages", "knowledge", "src", "graphify.mjs"),           // imports + re-exports the normalizer
+  path.join("src/application/bindings/graphify.mjs"),
+  path.join("src/application/bindings/commands/graph/build.mjs"),
+  path.join("src/application/bindings/commands/graph/query.mjs"),
+  path.join("src/application/bindings/commands/graph/triage.mjs"),
+  path.join("packages", "knowledge", "src/graphify.mjs"),           // imports + re-exports the normalizer
   path.join("packages", "knowledge", "src", "graph-normalize.mjs"),    // DEFINES readGraph/normalizeGraph; reads graph.json
   path.join("packages", "knowledge", "src", "commands", "graph-build.mjs"),
   path.join("packages", "knowledge", "src", "commands", "graph-query.mjs"),
@@ -63,16 +64,16 @@ const GRAPH_READER_ALLOWLIST = new Set([
                                                     // STRUCTURED graph.json via the pure normalizer (the
                                                     // 09/ADR-001 permitted handle, exactly as 10's backend
                                                     // does), NOT graphify's opaque markdown stdout. No spawn.
-  path.join("src", "work", "test-select.mjs"), // Composition supplies shared graph services.
+  path.join("src/application/bindings/work/test-select.mjs"), // Composition supplies shared graph services.
   path.join("packages", "work", "src", "testing", "select.mjs"), // 72/ADR-002 §1: test selection READS the artifact, through the
                                             // SAME normalizeGraph + computeImpact the shipped command uses,
                                             // and authors no second reader. src/graph-impact.mjs — the pure
                                             // core moved down out of commands/ so a src-level selector could
                                             // legally import it — is deliberately NOT listed: it takes an
                                             // already-normalized graph and names no reader symbol at all.
-  path.join("packages", "knowledge", "src", "memory", "graphify-backend.mjs"),
-  path.join("src", "story-contract-derive.mjs"), // configured knowledge ports
-  path.join("packages", "work", "src", "story-contract-derive.mjs"), // 96/ADR-004: the read/write-set derivation READS the artifact
+  path.join("packages", "knowledge", "src/memory/graphify-backend.mjs"),
+  path.join("src/application/bindings/story-contract-derive.mjs"), // configured knowledge ports
+  path.join("packages", "work", "src/story-contract-derive.mjs"), // 96/ADR-004: the read/write-set derivation READS the artifact
                                                  // through the SAME normalizeGraph + computeImpact the shipped
                                                  // command uses, and is asserted by its OWN control (FF-9602) to
                                                  // reach the graph through those two and nothing else — no second
@@ -82,7 +83,7 @@ const GRAPH_READER_ALLOWLIST = new Set([
                                                  // the same beat that made the read legal: an ADR that sanctions a
                                                  // new reader without extending this census leaves the decision and
                                                  // the control disagreeing, which is 96/F-96-A.
-  path.join("src", "work-audit", "seam-liveness.mjs"), // Core supplies the existing graph adapter.
+  path.join("src/application/bindings/work-audit/seam-liveness.mjs"), // Core supplies the existing graph adapter.
   path.join("packages", "work", "src", "audit", "seam-liveness.mjs"), // 77/ADR-006 §1: the seam-liveness audit lane READS the
                                                        // artifact through this same shipped reader and never
                                                        // builds one — a build is minutes even on the unchanged
@@ -242,7 +243,7 @@ export const archTests = [
         const rel = path.relative(repoRoot, file);
         const raw = await readFile(file, "utf8");
         const code = stripCommentsAndStrings(raw);
-        const specs = importSpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
+        const specs = dependencySpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
 
         // Does this module reach graph.json / the pure normalizer in LIVE code?
         const importsNormalizer = specs.some((s) => /(^|\/)graph-normalize\.mjs$/.test(s));
@@ -272,7 +273,7 @@ export const archTests = [
       for (const rel of GRAPH_READER_ALLOWLIST) {
         const raw = await readFile(path.join(repoRoot, rel), "utf8");
         const code = stripCommentsAndStrings(raw);
-        const specs = importSpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
+        const specs = dependencySpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
         const isReader =
           specs.some((s) => /(^|\/)graph-normalize\.mjs$/.test(s)) ||
           /\bnormalizeGraph\b|\breadGraph\b|\bgraphJsonPath\b/.test(code);

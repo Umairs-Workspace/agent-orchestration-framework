@@ -43,7 +43,7 @@ export const archTests = [
     run: async () => {
       const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs"), "utf8");
       const leaf = await readFile(path.join(repoRoot, "packages", "foundation", "src", "sqlite-runtime.mjs"), "utf8");
-      const composition = await readFile(path.join(repoRoot, "src/global-work-store.mjs"), "utf8");
+      const composition = await readFile(path.join(repoRoot, "src/application/bindings/global-work-store.mjs"), "utf8");
 
       // The store's half: it reaches the runtime through the one home, and it still resolves
       // it lazily — an `await` inside `resolveSqlite`, never a module-load-time dependency.

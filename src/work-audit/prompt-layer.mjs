@@ -1,7 +1,5 @@
-// Transitional core composition for work-owned audit services.
-import { createAuditPromptLayer } from "@aof/work/audit/prompt-layer";
-import { RESOURCE_KINDS, RUNTIMES } from "../model.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workAuditPromptLayer } from "../application/default.mjs";
 export const {
   CAPABILITY_PROGRAMS,
   PROMPT_LAYER_FINDING_CODES,
@@ -9,4 +7,4 @@ export const {
   ROLE_WORDS,
   SENTENCE_FLOOR,
   runPromptLayer,
-} = createAuditPromptLayer({ RESOURCE_KINDS, RUNTIMES });
+} = workAuditPromptLayer;

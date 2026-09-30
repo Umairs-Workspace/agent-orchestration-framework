@@ -1,10 +1,6 @@
-// Transitional core composition for mesh-owned commands.
-import { createMeshSessionCommands } from "@aof/mesh/commands/session";
-import { loadWorkspace } from "../../work.mjs";
-import { resolveInstallSalt } from "./identity.mjs";
-import { deriveNodeId, sidecarPathFor } from "@aof/mesh/node-identity";
-import { startSession, pingSession, endSession } from "../../mesh/session.mjs";
-import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
-import { reportDegrade } from "../../degrade.mjs";
-
-export const { resolveSessionIdentity, meshSessionCommand, readStdinText, resolveNodeId } = createMeshSessionCommands({ loadWorkspace, resolveInstallSalt, deriveNodeId, sidecarPathFor, startSession, pingSession, endSession, resolveWorkspaceId, reportDegrade });
+// Compatibility entry; construction belongs to core application assembly.
+import { defaultSessionHooks } from "../../application/default-session-hooks.mjs";
+export const resolveSessionIdentity = defaultSessionHooks.commandsMeshSession.resolveSessionIdentity;
+export const meshSessionCommand = defaultSessionHooks.commandsMeshSession.meshSessionCommand;
+export const readStdinText = defaultSessionHooks.commandsMeshSession.readStdinText;
+export const resolveNodeId = defaultSessionHooks.commandsMeshSession.resolveNodeId;

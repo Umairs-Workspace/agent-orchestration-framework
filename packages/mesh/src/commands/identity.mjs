@@ -1,5 +1,5 @@
+import { resolveInstallSalt } from "../node-identity.mjs";
 import os from "node:os";
-import crypto from "node:crypto";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals, refuseReadMiss } from "./face-shared.mjs";
 import { resolvePeers } from "../fabric.mjs";
 
@@ -65,25 +65,6 @@ export function createMeshIdentityCommands({ publishNodeRecord, readNodeRecord, 
 // asset-base seam landed. A second door to one fact, and the one that dragged
 // mesh-launcher.mjs into an upward import of this module. Every publisher now
 // reads the provenance string ONE way: `packageVersionString()` from asset-base.
-
-// Resolve a STABLE per-install salt for the id-hash (the empty-stem fallback +
-// collision suffix). Read config.mesh.salt (post milestone-33/ADR-004, this is the
-// HYDRATED value — the sidecar's, when one exists, via loadWorkspace's overlay); mint
-// + persist one to the git-ignored SIDECAR (never the committed config — the
-// re-point, ADR-004.2) when absent, so the install-hash is stable across publishes,
-// via the ONE sidecar read-merge-write (writeSidecarPatch, 22/R2 — one writer per
-// subtree, shared with persistNodeId/migrateIdentity). Returns the salt string.
-// EXPORTED so mesh:heartbeat (milestone 23 / story 00) resolves the SAME stable id the
-// node record carries via the SAME salt → deriveNodeId path — read the id ONE way.
-async function resolveInstallSalt(sidecarPath, config) {
-  const existing = config?.mesh?.salt;
-  if (typeof existing === "string" && existing.length > 0) return existing;
-  const salt = crypto.randomUUID();
-  if (sidecarPath) {
-    await writeSidecarPatch(sidecarPath, { salt });
-  }
-  return salt;
-}
 
 // A structured command error the mesh face renders as ONE { ok:false, error, code }
 // envelope (the mesh-join.mjs faceError shape — the property is assigned, not an

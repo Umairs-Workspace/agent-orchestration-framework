@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6910 / ADR-006 (2026-08-22 amendment) — local occupancy is git's
 // dispatch-lane set, read before the pool/opener, with per-member coded refusal.
 import assert from "node:assert/strict";
@@ -8,8 +9,8 @@ import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const sourceRoot = path.join(root, "src");
-const commandPath = path.join(root, "src", "commands", "dispatch.mjs");
-const policyPath = path.join(root, "src", "work", "dispatch.mjs");
+const commandPath = path.join(root, "packages/work-loop/src/commands/dispatch.mjs");
+const policyPath = path.join(root, "packages/work-loop/src/dispatch.mjs");
 
 async function listSourceFiles(dir = sourceRoot) {
   const files = [];
@@ -100,7 +101,7 @@ export const archTests = [
   {
     name: "arch/69 FF-6910 (acd-lane-is-the-local-slot): git-reported working and quiet lanes are the only source-wide local slot registry and are counted before pool and opener",
     run: async () => {
-      const files = await listSourceFiles();
+      const files = (await readRuntimeFiles(root)).map(file => file.path);
       assert.ok(files.length >= 100, `the source-wide persisted-occupancy sweep is non-vacuous (${files.length} src/**/*.mjs files)`);
       assert.ok(files.includes(commandPath) && files.includes(policyPath), "the source-wide sweep includes both local dispatch homes");
       const sources = await Promise.all(files.map(async (file) => ({

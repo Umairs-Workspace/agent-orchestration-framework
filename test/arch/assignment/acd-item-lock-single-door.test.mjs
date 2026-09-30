@@ -44,7 +44,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers as importSpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "src");
@@ -54,7 +54,7 @@ const COMMANDS = path.join(repoRoot, "src", "commands");
 
 // Candidate homes for the ADR-003 lock predicate (a near-leaf beside the record).
 const LOCK_MODULE_CANDIDATES = [
-  path.join(repoRoot, "packages", "mesh", "src", "item-lock.mjs"),
+  path.join(repoRoot, "packages", "mesh", "src/item-lock.mjs"),
   path.join(repoRoot, "src", "assignment-item-lock.mjs"),
 ];
 
@@ -111,7 +111,7 @@ export const archTests = [
 
       const base = path.basename(lockModule);
       const seam = stripComments(await readFile(MINT_SEAM, "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/effects/run-transitions.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/effects/run-transitions.mjs"), "utf8"));
       for (const source of [seam, adapter]) assert.match(source, /createRunTransitions\(\{[^}]*guardItemLock/su);
       const seamSpecs = importSpecifiers(adapter).map((entry) => entry.specifier);
       assert.ok(

@@ -42,7 +42,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const TEMPLATE = "src/bundle/templates/story/PLAN.md";
 const BUDGET_GROUP = "packages/work/src/doctor/budget.mjs";
 const BUDGET_DEFAULTS = "packages/work/src/doctor/index.mjs";
-const GATE_VALIDATOR = "src/config-inspect.mjs";
+const GATE_VALIDATOR = "src/application/bindings/config-inspect.mjs";
 const WORK_DIR = path.join(repoRoot, "wiki", "work");
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
@@ -160,7 +160,7 @@ export const archTests = [
 
       // …and its documented default is OFF, asserted at the resolver rather than in a comment.
       const validator = await source(GATE_VALIDATOR);
-      assert.match(validator, /export function planEnabledFromConfig/, "the gate's one resolver lives with its validator");
+      assert.match(validator, /function planEnabledFromConfig/, "the gate's one resolver lives with its validator");
       assert.match(
         validator,
         /config\?\.work\?\.plan\?\.enabled === true/,

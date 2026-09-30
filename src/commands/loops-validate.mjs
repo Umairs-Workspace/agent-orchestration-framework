@@ -1,5 +1,6 @@
-// Compatibility composition; the work-graph package owns the command.
-import { createLoopsValidateCommand } from "@aof/work-graph/commands/loops-validate";
+// Compatibility entry; construction belongs to core application assembly.
+import { commandsLoopsValidate } from "../application/default.mjs";
 export * from "@aof/work-graph/commands/loops-validate";
-import { loadLoops } from "../work/loops.mjs";
-export const loopsValidateCommand = createLoopsValidateCommand({ loadLoops });
+export const {
+  loopsValidateCommand,
+} = commandsLoopsValidate;

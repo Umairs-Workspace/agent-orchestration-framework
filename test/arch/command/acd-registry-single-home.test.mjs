@@ -68,7 +68,7 @@ export const archTests = [
       }
       const modules = (await readRuntimeFiles(root)).map(file => file.path);
       for (const file of modules) {
-        if (file === path.join(root, "src", "work", "loops.mjs")) continue;
+        if (file === path.join(root, "src/application/bindings/work/loops.mjs")) continue;
         const source = await readFile(file, "utf8");
         assert.doesNotMatch(source, /loadLoops\(\s*(?:["'`]|ctx\.workspace\.workDir)/, `${path.relative(root, file)}: no production string door`);
       }

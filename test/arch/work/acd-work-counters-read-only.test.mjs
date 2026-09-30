@@ -9,7 +9,7 @@ import { assertFamilyPurity } from "../../support/module-family.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const engineUrl = new URL("../../../packages/work/src/counters.mjs", import.meta.url);
 const commandUrl = new URL("../../../packages/work/src/commands/counters.mjs", import.meta.url);
-const coreUrl = new URL("../../../src/command-core.mjs", import.meta.url);
+const coreUrl = new URL("../../../src/application/bindings/command-core.mjs", import.meta.url);
 
 export const archTests = [
   {
@@ -39,7 +39,7 @@ export const archTests = [
       assert.match(engine, /export function countInterventions/u);
       assert.match(command, /id:\s*"work:counters"/u);
       assert.match(command, /route:\s*\["work",\s*"counters"\]/u);
-      assert.equal((core.match(/import\s*\{\s*countersCommand\s*\}/gu) ?? []).length, 1);
+      assert.equal((core.match(/const\s*\{\s*countersCommand\s*\}\s*= commandsCountersServices/gu) ?? []).length, 1);
       assert.equal((core.match(/^\s*countersCommand,\s*$/gmu) ?? []).length, 1);
     },
   },

@@ -75,9 +75,10 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { SPAWN_OUTCOMES } from "../../../src/work-audit/spawn.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
+import { applicationConstructionGraph } from "../../support/workspace/assembly-graph.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_ROOT = "src/work-audit";
+const FAMILY_ROOT = "src/application/bindings/work-audit";
 // The seam is named by PATH, not by basename: a nested `lanes/spawn.mjs` would otherwise
 // inherit the one exemption this gate grants.
 const SEAM = "packages/execution/src/bounded-process.mjs";
@@ -148,7 +149,7 @@ export function resolveSpecifier(rel, specifier) {
 // THE IMPORT CLOSURE, over an injected `load(rel) -> code | null`. Breadth-first from the
 // family's own modules, following every relative static import, so a module one directory up is
 // swept exactly as a module inside the directory is.
-export async function importClosure(roots, load) {
+export async function importClosure(roots, load, construction = new Map()) {
   const closure = new Map();
   const unresolved = [];
   const queue = [...roots];
@@ -161,6 +162,7 @@ export async function importClosure(roots, load) {
       continue;
     }
     closure.set(rel, code);
+    queue.push(...(construction.get(rel) ?? []));
     for (const specifier of staticImportSpecifiers(code)) {
       const resolved = resolveSpecifier(rel, specifier);
       if (resolved != null) queue.push(resolved);
@@ -262,7 +264,7 @@ async function loadStripped(rel) {
 // The family's closure as `[{ rel, code }]`, sorted, plus the roots it started from.
 async function familyClosure() {
   const roots = (await walkMjs(FAMILY_ROOT)).sort();
-  const { closure, unresolved } = await importClosure(roots, loadStripped);
+  const { closure, unresolved } = await importClosure(roots, loadStripped, await applicationConstructionGraph(repoRoot));
   const modules = [...closure.entries()].map(([rel, code]) => ({ rel, code })).sort((a, b) => (a.rel < b.rel ? -1 : 1));
   return { roots, modules, closure, unresolved };
 }

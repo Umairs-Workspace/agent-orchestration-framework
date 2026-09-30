@@ -54,7 +54,7 @@ import { readDescriptor } from "../../../src/work/bundle.mjs";
 import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { withItemLockFixture, seedActive, withStore, refuse } from "../../support/item-lock-fixture.mjs";
 import { buildThreeRootFixture, writeItem } from "./work-backlog-archive-enumerate.test.mjs";
 import { archTests as tuneReaderTests } from "../../arch/planning/acd-tune-carries-no-second-rule.test.mjs";
@@ -570,7 +570,7 @@ export const workArchiveIsAMoveTests = [
       assert.ok(command, "work:archive is registered");
       assert.deepEqual(command.cli.route, ["work", "archive"]);
       assert.deepEqual(Object.keys(command.cli.spec.flags).sort(), ["done", "force", "yes"]);
-      const face = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "archive.mjs"), "utf8"));
+      const face = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src/commands/archive.mjs"), "utf8"));
       assert.doesNotMatch(face, /insert-shared\.mjs/, "the face carries no import of insert-shared.mjs");
       assert.match(face, /const ARCHIVE_FLAGS/, "the flags are declared in the module");
 
@@ -989,12 +989,12 @@ export const workArchiveIsAMoveTests = [
           if (/\barchiveItems\s*\(/.test(code)) callers.push(file.rel);
         }
         assert.deepEqual(callers, ["packages/work/src/stream-transitions.mjs"], "archiveItems( is called from the seam and nowhere else");
-        const face = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "archive.mjs"), "utf8"));
+        const face = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src/commands/archive.mjs"), "utf8"));
         assert.match(face, /transitionStreamArchived\(/);
         assert.doesNotMatch(face, /archiveItems\s*\(/);
 
         const engine = await readFile(path.join(repoRoot, "packages", "work", "src", "archive.mjs"), "utf8");
-        const specifiers = importSpecifiers(engine).map((entry) => entry.specifier);
+        const specifiers = dependencySpecifiers(engine).map((entry) => entry.specifier);
         for (const specifier of specifiers) {
           assert.ok(specifier.startsWith("node:") || ["./discovery.mjs", "./identity.mjs"].includes(specifier), `the engine imports node:* and work readers at most (${specifier})`);
         }

@@ -767,7 +767,7 @@ export const archTests = [
       assert.match(clean, /no dependent is counted in two classes/u, "…and disjointly, which the arithmetic never said");
       // 129/02 (2026-09-13): the door's SUITE_FLOOR / CENSUS_FLOOR ratcheted 48 -> 49 / 54 -> 55 with the
       // census (see the no-headroom probe below), so the literals kept here move with them.
-      for (const floor of ["SUITE_FLOOR = 49", "FIXTURE_FLOOR = 2", "SOURCE_SIDE_FLOOR = 2", "CENSUS_FLOOR = 53"]) {
+      for (const floor of ["SUITE_FLOOR = 50", "FIXTURE_FLOOR = 2", "SOURCE_SIDE_FLOOR = 2", "CENSUS_FLOOR = 54"]) {
         assert.ok(clean.includes(floor), `the non-vacuity floor ${floor} is kept — a floor is a declared bound, and stays stored`);
       }
       for (const floor of [/zeroMention\.length >= 44/u, /importable\.length >= 52/u, /suites\.length >= 49/u]) {
@@ -789,7 +789,8 @@ export const archTests = [
       // driver's own path), so the door's census gained one dependent and the no-headroom floors
       // below ratchet with it — in step with the door's own SUITE_FLOOR / CENSUS_FLOOR.
       // 142 moves the two URL-only consumers to the pure repo-admission API.
-      const floors = { suites: 49, fixtures: 2, sourceSide: 2, preExisting: 53 };
+      // Plan 02 adds the two-application assembly suite as a worker-state consumer.
+      const floors = { suites: 50, fixtures: 2, sourceSide: 2, preExisting: 54 };
       const live = { suites: suites.length, fixtures: fixtures.length, sourceSide: sourceSide.length, preExisting: preExisting.length };
       for (const [name, floor] of Object.entries(floors)) {
         // A NEW dependent needs no edit to the control…

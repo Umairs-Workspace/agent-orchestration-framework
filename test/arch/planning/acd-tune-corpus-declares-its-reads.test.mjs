@@ -18,7 +18,7 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const modulePath = path.join(root, "packages", "work", "src", "tune", "corpus.mjs");
-const compositionPath = path.join(root, "src", "work-tune", "corpus.mjs");
+const compositionPath = path.join(root, "src/application/bindings/work-tune/corpus.mjs");
 
 const codeLines = (source) => source.split(/\r?\n/u)
   .filter((line) => {
@@ -98,10 +98,10 @@ export const archTests = [
       const composition = codeLines(await readFile(compositionPath, "utf8"));
       assert.match(source, /createTuneCorpus\(\{ parseRetrospective, readRuns, runNodeRecordPath, runRecordPath, readLatestSnapshot, loopPointersIn \}\)/u);
       assert.match(composition, /createTuneCorpus\(\{ parseRetrospective, readRuns, runNodeRecordPath, runRecordPath, readLatestSnapshot, loopPointersIn \}\)/u);
-      assert.match(composition, /import \{ parseRetrospective \} from "\.\.\/memory\/local-indexing\.mjs"/u);
-      assert.match(composition, /import \{ readRuns, runNodeRecordPath, runRecordPath \} from "\.\.\/run-store\.mjs"/u);
+      assert.match(composition, /const \{ parseRetrospective \} = memoryLocalIndexingServices/u);
+      for (const name of ['readRuns', 'runNodeRecordPath', 'runRecordPath']) assert.match(composition, new RegExp('const \\{ '+name+' \\} = runStoreServices', 'u'));
       assert.match(source, /run\.node == null\s*\? runRecordPath\(item, run\.runId\)\s*: runNodeRecordPath\(item, run\.node, run\.runId\)/u);
-      assert.match(composition, /import \{ readLatestSnapshot \} from "\.\.\/work\/observe\.mjs"/u);
+      assert.match(composition, /const \{ readLatestSnapshot \} = workObserveServices/u);
       assert.match(source, /import \{ itemInScope \} from "\.\.\/ref-scope\.mjs"/u);
       assert.doesNotMatch(source, /agents\.json|snapshots[\\/]|runs[\\/].*\.json/iu);
       assert.doesNotMatch(source, /new RegExp|\/\^\\d/u, "the tune family authors no scope grammar");

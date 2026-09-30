@@ -1,5 +1,8 @@
-// Transitional core composition for work-owned archive commands.
-import { createArchiveCommand } from "@aof/work/commands/archive";
-import { transitionStreamArchived } from "../effects/stream-transitions.mjs";
-
-export const { ARCHIVE_FLAGS, archiveCommand, renderArchive, runArchive } = createArchiveCommand({ transitionStreamArchived });
+// Compatibility entry; construction belongs to core application assembly.
+import { commandsArchive } from "../application/default.mjs";
+export const {
+  ARCHIVE_FLAGS,
+  archiveCommand,
+  renderArchive,
+  runArchive,
+} = commandsArchive;

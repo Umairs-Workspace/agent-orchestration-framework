@@ -1,7 +1,7 @@
-import { normalizeId } from "./fs.mjs";
+import { normalizeId } from "@aof/foundation/fs";
 import { RUNTIMES, supportedRuntimes } from "./model.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
-import { reportDegrade } from "./degrade.mjs";
+import { reportDegrade } from "./application/default-foundation.mjs";
 
 const VALID_NAMESPACES = new Set(["skills", "workflows"]);
 const UNSUPPORTED_NAMESPACES = new Set(["skill", "workflow", "command", "commands"]);

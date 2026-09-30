@@ -9,7 +9,7 @@ import { matchedBraceBody, matchedParenSpan, stripComments } from "../../support
 import { boundSiteOffenders } from "./acd-dispatch-bound-single-home.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const commandPath = path.join(root, "packages", "work-loop", "src", "commands", "dispatch.mjs");
+const commandPath = path.join(root, "packages", "work-loop", "src/commands/dispatch.mjs");
 const meshPath = path.join(root, "packages", "mesh", "src", "assignment-reclaim.mjs");
 const launcherPath = path.join(root, "packages", "mesh", "src", "launcher.mjs");
 const resumePath = path.join(root, "packages", "mesh", "src", "commands", "terminal-resume.mjs");

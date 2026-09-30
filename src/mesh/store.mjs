@@ -1,8 +1,10 @@
-// Transitional core composition for mesh-owned persistence.
-import { createMeshStore } from "@aof/mesh/store";
-import { globalMeshPaths } from "../workspace.mjs";
-
-export const { aofHome, meshDir, nodeRecordPath, presenceRecordPath, publishNodeRecord, readNodeRecord, readNodeRecords } = createMeshStore({ globalMeshPaths });
-
-// Preserve the historical run API while execution owns its implementation.
+// Compatibility entry; construction belongs to core application assembly.
+import { defaultSessionHooks } from "../application/default-session-hooks.mjs";
+export const aofHome = defaultSessionHooks.meshStore.aofHome;
+export const meshDir = defaultSessionHooks.meshStore.meshDir;
+export const nodeRecordPath = defaultSessionHooks.meshStore.nodeRecordPath;
+export const presenceRecordPath = defaultSessionHooks.meshStore.presenceRecordPath;
+export const publishNodeRecord = defaultSessionHooks.meshStore.publishNodeRecord;
+export const readNodeRecord = defaultSessionHooks.meshStore.readNodeRecord;
+export const readNodeRecords = defaultSessionHooks.meshStore.readNodeRecords;
 export { runsDir, runRecordPath, runNodeRecordPath } from "../run-store.mjs";

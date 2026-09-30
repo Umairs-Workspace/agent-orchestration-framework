@@ -118,16 +118,16 @@ export const archTests = [
 
       // BY IMPORT, not by absence: both callers actually reach the leaf. A third caller that
       // stopped importing it and re-rolled its own body would satisfy an absence check.
-      for (const caller of ["src/effects/journal.mjs", "src/global-work-store.mjs"]) {
+      for (const caller of ["src/application/bindings/effects/journal.mjs", "src/application/bindings/global-work-store.mjs"]) {
         const source = stripComments(await readFile(path.join(repoRoot, caller), "utf8"));
         assert.match(source, /import \{ importSqliteRuntime \} from "@aof\/foundation\/sqlite-runtime"/, `${caller} imports the leaf`);
-        const implementation = caller === "src/global-work-store.mjs"
+        const implementation = caller === "src/application/bindings/global-work-store.mjs"
           ? stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8")) : stripComments(await readFile(path.join(repoRoot, "packages/effects/src/journal-open.mjs"), "utf8"));
-        if (caller === "src/global-work-store.mjs") {
+        if (caller === "src/application/bindings/global-work-store.mjs") {
           assert.match(source, /createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
           assert.match(implementation, /function createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
         }
-        if (caller === "src/effects/journal.mjs") {
+        if (caller === "src/application/bindings/effects/journal.mjs") {
           assert.match(source, /createJournalOpener\(\{[^}]*importSqliteRuntime/);
           assert.match(implementation, /function createJournalOpener\(\{[^}]*importSqliteRuntime/);
         }

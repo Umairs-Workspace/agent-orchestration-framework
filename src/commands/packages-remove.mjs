@@ -3,7 +3,7 @@
 // `packagesRemoveCommand`; byte-identical output. Runtime files and lock
 // install attempts stay untouched by contract.
 import path from "node:path";
-import { readJson, writeText } from "../fs.mjs";
+import { readJson, writeText } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 
 export const packagesRemoveCommand = {

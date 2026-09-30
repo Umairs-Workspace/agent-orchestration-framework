@@ -20,6 +20,7 @@ import {
 } from "./loop-command-probe.test.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { stripComments } from "../support/source-slice.mjs";
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 // 130/02 — the closing commands: a verify drive moves its item to done, so a resumed walk under a
 // level-0 source reaches `done`.
@@ -700,10 +701,10 @@ export const loopCommandResumeTests = [
       const shell = stripComments(raw);
       assert.doesNotMatch(shell, /loop-stops/u, "the segment literal lives in stop-request.mjs and nowhere else");
       assert.doesNotMatch(shell, /\b(?:writeFile|mkdir|rename)\s*\(/u);
-      const adapter = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
-      const imported = /import \{([^}]*)\} from "\.\.\/loop\/stop-request\.mjs";/u.exec(adapter);
-      assert.ok(imported, "the shell adapter imports the request's one home");
-      const names = imported[1].split(",").map((name) => name.trim()).filter(Boolean);
+      const adapter = await readFile(new URL("../../src/application/bindings/commands/loop.mjs", import.meta.url), "utf8");
+      assert.ok(dependencySpecifiers(adapter).some(edge => edge.parameter === "loopStopRequestServices" && edge.specifier === "../loop/stop-request.mjs"), "the shell receives the request's one configured home");
+      const names = [...adapter.matchAll(/const\s*\{([^}]*)\}\s*=\s*loopStopRequestServices/gu)]
+        .flatMap(match => match[1].split(",").map(name => name.trim()).filter(Boolean));
       const supplied = /stopRequests:\s*\{([^}]*)\}/u.exec(adapter);
       const received = /const\s*\{([^}]*)\}\s*=\s*stopRequests/u.exec(raw);
       assert.ok(supplied && received, "the adapter supplies and the implementation receives the request services");

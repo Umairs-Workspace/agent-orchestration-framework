@@ -31,7 +31,7 @@ import { statSync, rmSync } from "node:fs";
 import { toolStoreRoot, toolVersionDir } from "./paths.mjs";
 import { planFrameworkInstall } from "./frameworks.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
-import { reportDegrade } from "./degrade.mjs";
+import { reportDegrade } from "./application/default-foundation.mjs";
 
 // The package→binary map (ADR-001). One install spec can ship several binaries;
 // the spec name (graphifyy/headroom-ai) ≠ the binary name (graphify/headroom). A

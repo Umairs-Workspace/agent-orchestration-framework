@@ -1,5 +1,5 @@
-// Transitional core composition for work-owned upgrade commands.
-import { createUpgradeCommand } from "@aof/work/commands/upgrade";
-import { runUpgrade, renderChangelog } from "../work/upgrade.mjs";
-
-export const { upgradeCommand } = createUpgradeCommand({ runUpgrade, renderChangelog });
+// Compatibility entry; construction belongs to core application assembly.
+import { commandsUpgrade } from "../application/default.mjs";
+export const {
+  upgradeCommand,
+} = commandsUpgrade;

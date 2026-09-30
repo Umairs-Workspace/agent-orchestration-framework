@@ -18,7 +18,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { generatorFor, generatorIds } from "../../../src/diagrams/generators.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -43,7 +43,7 @@ async function sourceFiles(dir = path.join(repoRoot, "src")) {
 // the quoted literal of a specifier that resolves to the home is blanked.
 function withoutImportsOfTheHome(file, code) {
   let out = code;
-  for (const { specifier } of importSpecifiers(code)) {
+  for (const { specifier } of dependencySpecifiers(code)) {
     if (path.posix.join(path.posix.dirname(file), specifier) !== THE_ONE_HOME) continue;
     for (const quote of ['"', "'", "`"]) out = out.split(`${quote}${specifier}${quote}`).join("");
   }
@@ -75,8 +75,8 @@ export const archTests = [
   {
     name: "arch/133 FF-13301: the config validator takes its ids from the registry, and the registry is keyed by each adapter's own id",
     run: async () => {
-      const config = stripComments(await readFile(path.join(repoRoot, "src", "config-inspect.mjs"), "utf8"));
-      assert.match(config, /import\s*\{[^}]*\bgeneratorIds\b[^}]*\}\s*from\s*["']\.\/diagrams\/generators\.mjs["']/);
+      const config = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/config-inspect.mjs"), "utf8"));
+      assert.match(config, /import\s*\{[^}]*\bgeneratorIds\b[^}]*\}\s*from\s*["'](?:\.\.\/)+diagrams\/generators\.mjs["']/);
       assert.match(config, /\bgeneratorIds\(\)/, "the validator calls generatorIds()");
       const registry = stripComments(await readFile(path.join(repoRoot, "src", "diagrams", "generators.mjs"), "utf8"));
       assert.match(registry, /\.map\(\(adapter\)\s*=>\s*\[adapter\.id,\s*adapter\]\)/, "the map is built from adapter.id");
@@ -103,15 +103,15 @@ export const archTests = [
     run: () => {
       const planted = [
         { file: THE_ONE_HOME, text: `export const id = "${NEEDLE}";` },
-        { file: "src/config-inspect.mjs", text: `const legal = ["${NEEDLE}", "off"];` },
+        { file: "src/application/bindings/config-inspect.mjs", text: `const legal = ["${NEEDLE}", "off"];` },
         { file: "src/bundle/agents/aof-architect.md", text: `Draw with the ${NEEDLE} plugin.` },
-        { file: "src/work.mjs", text: `// the ${NEEDLE} plugin draws\nexport const x = 1;` },
+        { file: "src/application/bindings/work.mjs", text: `// the ${NEEDLE} plugin draws\nexport const x = 1;` },
         { file: "src/diagrams/generators.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
         { file: "src/work/other.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
       ];
       assert.deepEqual(
         filesNamingTheGenerator(planted),
-        [THE_ONE_HOME, "src/config-inspect.mjs", "src/bundle/agents/aof-architect.md", "src/work/other.mjs"],
+        [THE_ONE_HOME, "src/application/bindings/config-inspect.mjs", "src/bundle/agents/aof-architect.md", "src/work/other.mjs"],
         "only the registry's import of the adapter file is not a naming",
       );
     },

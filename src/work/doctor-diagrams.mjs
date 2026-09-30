@@ -1,8 +1,6 @@
-// Transitional core composition for work-owned doctor services.
-import { createDoctorDiagrams } from "@aof/work/doctor/diagrams";
-import { resolveWorkDiagrams } from "../config-inspect.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workDoctorDiagrams } from "../application/default.mjs";
 export const {
   DIAGRAM_LANE_CODES,
   diagramsGroup,
-} = createDoctorDiagrams({ resolveWorkDiagrams });
+} = workDoctorDiagrams;

@@ -1,7 +1,5 @@
-// Transitional application composition for the work-owned acceptor service.
-import { createAcceptorStore } from "@aof/work/acceptor/store";
-import { LEDGER_RELPATH } from "./criterion.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workAcceptorStore } from "../application/default.mjs";
 export const {
   CONFIG_NOT_AN_OBJECT,
   CONFIG_RELPATH,
@@ -24,4 +22,4 @@ export const {
   requireProjectDir,
   setKnobValue,
   writeKnobValue,
-} = createAcceptorStore({ LEDGER_RELPATH });
+} = workAcceptorStore;

@@ -111,7 +111,7 @@ export const archTests = [
         path.join("commands", "mesh", "identity.mjs"),
       ];
       for (const rel of sites) {
-        const file = path.join(srcRoot, rel);
+        const file = path.join(srcRoot, ["board-serve.mjs", "setup-ui.mjs", "mesh/ui-serve.mjs", path.join("commands", "mesh", "identity.mjs")].includes(rel) ? "application/bindings" : "", rel);
         const code = stripComments(await readFile(file, "utf8"));
         assert.ok(
           /from\s+["'](\.\.?\/)*asset-base\.mjs["']/.test(code),

@@ -231,10 +231,10 @@ export const acceptorObservationsTests = [
         // AND THE FOLDING DID NOT DEPEND ON THE PATH BEING SPELLED OUT BY HAND: the census
         // carries no copy of the convention, only the module that owns it. (FF-6107 asserts the
         // same fact across the whole of src/; this is the scenario's own leg.)
-        const source = await readFile(new URL("../../src/work-acceptor/observations.mjs", import.meta.url), "utf8");
+        const source = await readFile(new URL("../../src/application/bindings/work-acceptor/observations.mjs", import.meta.url), "utf8");
         const code = source.split(/\r?\n/u).filter((line) => !line.trim().startsWith("//")).join("\n");
         assert.equal(code.includes("dispatch-worktrees"), false, "the census spells the worktree directory nowhere in its code");
-        assert.match(code, /from "\.\.\/mesh\/worktree\.mjs"/u, "…it reads the module that owns the convention instead");
+        assert.match(code, /const \{[^}]*dispatchWorktreeSlug[^}]*\} = meshWorktreeServices/u, "the shared worktree service supplies the convention");
       });
     },
   },

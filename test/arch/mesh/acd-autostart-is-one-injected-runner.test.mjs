@@ -238,10 +238,10 @@ export const archTests = [
       // declaration are imported from `src/claude-settings.mjs`, not written out again —
       // a rename of `FROZEN_OWNERSHIP_MARKER` used to break this check in silence, and the
       // hook FILE used to be a constant here rather than read from the registration found.
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/commands/mesh/desktop-preflight.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/commands/mesh/desktop-preflight.mjs"), "utf8"));
       assert.match(
         composition,
-        /import \{[^}]*AOF_HOOK_MARKER[^}]*CLAUDE_SETTINGS_RELPATH[^}]*claudeHookDeclarations[^}]*claudeSettingsPath[^}]*\} from "\.\.\/\.\.\/claude-settings\.mjs"/,
+        /import \{[^}]*AOF_HOOK_MARKER[^}]*CLAUDE_SETTINGS_RELPATH[^}]*claudeHookDeclarations[^}]*claudeSettingsPath[^}]*\} from "(?:\.\.\/)+claude-settings\.mjs"/,
         "the four facts with one home are imported from it",
       );
       for (const binding of ["AOF_HOOK_MARKER", "CLAUDE_SETTINGS_RELPATH", "claudeHookDeclarations", "claudeSettingsPath"]) {

@@ -1,3 +1,4 @@
+import { applicationConstructionGraph } from "../../support/workspace/assembly-graph.mjs";
 // Fitness function: acd-reference-corpus-offline-and-sourced (milestone 77 / story 03, FF-7705;
 // ADR-007 §1, §2, §2b, §3; ADR-008 §1, §3).
 //
@@ -60,7 +61,7 @@ const VIEW_REL = "wiki/reference/harness-baselines.md";
 // project's source.
 const STORY_MODULES = Object.freeze([CORPUS_REL, LANE_REL]);
 
-const FAMILY_ROOT = "src/work-audit";
+const FAMILY_ROOT = "src/application/bindings/work-audit";
 const CLOSURE_FLOOR = 6;
 
 const read = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
@@ -142,7 +143,7 @@ async function familyClosure() {
     } catch {
       return null;
     }
-  });
+  }, await applicationConstructionGraph(repoRoot));
   assert.deepEqual(unresolved, [], "every audit dependency is readable");
   return closure;
 }
@@ -376,10 +377,10 @@ export const archTests = [
       assert.deepEqual(reaches, [], "no module the family loads reaches src/work/loops.mjs");
 
       const lane = stripComments(read(LANE_REL));
-      const wiring = stripComments(read("src/work-audit/declared-bounds.mjs"));
+      const wiring = stripComments(read("src/application/bindings/work-audit/declared-bounds.mjs"));
       assert.match(lane, /createAuditDeclaredBounds\(/u, "the implementation receives the supplied corpus and resolvers");
       assert.match(wiring, /from "@aof\/contracts\/loop-bounds"/u, "the lane resolves config: pointers through the bounds home");
-      assert.match(wiring, /from "\.\.\/harness-reference\.mjs"/u, "…and joins against the corpus by module resolution");
+      assert.match(wiring, /from "(?:\.\.\/)+harness-reference\.mjs"/u, "…and joins against the corpus by module resolution");
       assert.equal(/from "node:/u.test(lane), false, "…and imports no node builtin, so it touches no filesystem and no clock");
       assert.equal(/Date\.now\(\)|new Date\(\)/u.test(lane), false, "…and reads no clock: the instant arrives on the call");
 

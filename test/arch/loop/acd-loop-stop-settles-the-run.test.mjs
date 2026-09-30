@@ -54,7 +54,8 @@ import {
   requestLoopStop,
   stopRequestPath,
 } from "../../../src/loop/stop-request.mjs";
-import { importSpecifiers, computedDynamicImports } from "../../support/module-family.mjs";
+import { computedDynamicImports } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { NESTED_FUNCTION_DECLARATION_RE, classifySites, functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import {
   DECLARATION_L1,
@@ -92,7 +93,7 @@ function resolved(fromRel, specifier) {
   if (specifier === "@aof/work-loop/stop-request") return "packages/work-loop/src/stop-request.mjs";
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
-  if (joined === "src/loop/stop-request.mjs") joined = "packages/work-loop/src/stop-request.mjs";
+  if (joined === "src/application/bindings/loop/stop-request.mjs") joined = "packages/work-loop/src/stop-request.mjs";
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
@@ -386,9 +387,9 @@ export const archTests = [
     name: "arch/130 FF-13004 (acd-loop-stop-settles-the-run): structural — the producer imports readStopRequest from the one home by resolved specifier and passes stopped to the engine, and the engine imports nothing",
     run: async () => {
       const producer = await source(PRODUCER);
-      const adapterPath = "src/mesh/declarations.mjs";
+      const adapterPath = "src/application/bindings/mesh/declarations.mjs";
       const adapter = await source(adapterPath);
-      const imports = importSpecifiers(adapter);
+      const imports = dependencySpecifiers(adapter);
       assertRead("the producer's import clauses", imports.length, 3, "specifier(s)");
       assert.ok(imports.some(({ specifier }) => resolved(adapterPath, specifier) === HOME), `core imports the shared stop-request reader — specifiers: ${imports.map((entry) => entry.specifier).join(", ")}`);
       assert.match(adapter, /createSupervisedDeclarations\(\{[^}]*\breadStopRequest\b/u, "core supplies the shared reader");
@@ -404,7 +405,7 @@ export const archTests = [
       // THE ENGINE IMPORTS NOTHING (cited: acd-clock-counts-attempts keeps its zero).
       const engine = await source(ENGINE);
       assertRead("the engine", engine.length, 10_000, "bytes");
-      assert.deepEqual(importSpecifiers(engine), [], "packages/work-loop/src/engine.mjs has zero import statements — Set is a global, and the stopped input adds no dependency");
+      assert.deepEqual(dependencySpecifiers(engine), [], "packages/work-loop/src/engine.mjs has zero import statements — Set is a global, and the stopped input adds no dependency");
       assert.deepEqual(computedDynamicImports(engine), [], "…and no computed dynamic import either");
       assert.match(engine, /stopped instanceof Set \? stopped : EMPTY_STOPPED/u, "the default-absent discipline is spelled once: an absent or ill-typed input drops nothing");
     },

@@ -145,10 +145,10 @@ export const archTests = [
       // the authority on what ran. It projects instead.
       assert.deepEqual(
         importers.projection.sort(),
-        ["packages/work-graph/src/commands/loop-record.mjs", "src/work/doctor.mjs"],
+        ["packages/work-graph/src/commands/loop-record.mjs", "src/application/bindings/work/doctor.mjs"],
         "the execution model is COMPUTED from the run records by every consumer that has one",
       );
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/work/doctor.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work/doctor.mjs"), "utf8"));
       assert.match(composition, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
       const doctor = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/index.mjs"), "utf8"));
       assert.match(doctor, /projectExecution\(/u, "the injected projection is called by the snapshot reader");

@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 
 import { rubricSpawnOptions, rubricChildEnv, GRADE_REENTRANCY_ENV } from "../../../src/commands/grade.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -30,7 +30,7 @@ export const archTests = [
       const text = await readFile(path.join(repoRoot, "packages", "work", "src", "grade.mjs"), "utf8");
       const code = stripComments(text);
 
-      const imports = importSpecifiers(code).map((entry) => entry.specifier);
+      const imports = dependencySpecifiers(code).map((entry) => entry.specifier);
       assert.deepEqual(imports, ["@aof/contracts/claim-provenance"], `the pure leaf imports only the pure provenance compiler (found: ${imports.join(", ")})`);
       assert.ok(!/\bimport\s*\(/.test(code), "…and performs no dynamic import either");
 
@@ -62,7 +62,7 @@ export const archTests = [
         if (readsTheRubric && spawns) spawners.push(file.rel);
       }
       assert.deepEqual(spawners, ["packages/work/src/commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/commands/grade.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/commands/grade.mjs"), "utf8"));
       assert.match(composition, /import \{ spawnRubricAsync \} from "@aof\/execution\/rubric-process"/);
       assert.match(composition, /createGradeCommand\(\{ spawnRubricAsync,/);
       const command = stripComments(await readFile(path.join(repoRoot, spawners[0]), "utf8"));
@@ -110,7 +110,7 @@ export const archTests = [
       // 54 ENFORCES A BOUND AND CHOOSES NONE (`53/ADR-009` §1). A literal here would be a
       // rival home for `69/ADR-002`'s `startToClose`, and `acd-loop-cap-single-home` plus
       // 69/ADR-001's non-annexation rule are the authority it would be breaking.
-      const code = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8"));
+      const code = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src/commands/grade.mjs"), "utf8"));
       // 81/00 — THE GUARD THAT PINNED THE OLD RESOLVER BY NAME NOW PINS THE NEW ONE. The
       // deadline is `min(startToClose, heartbeat)`, DERIVED in the same single home, so the
       // property this rung protects is unchanged and only the name it protects moved.

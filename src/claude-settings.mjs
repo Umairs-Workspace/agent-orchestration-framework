@@ -39,7 +39,7 @@
 // change is written (and never otherwise — an unchanged merge writes nothing at all).
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { writeText } from "./fs.mjs";
+import { writeText } from "@aof/foundation/fs";
 // m43 / ADR-013/C1 — the bundle's own hook declarations. The merge is fed the UNION of
 // these and the project config's claude hooks through the ONE resolver below, because
 // two config sources answering "which hooks does aof install" is the drift this

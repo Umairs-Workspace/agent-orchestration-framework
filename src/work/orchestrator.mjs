@@ -31,7 +31,7 @@
 // of the two), and per-role sub-agent models remain independent via
 // `work.agents.models`.
 import { existsSync } from "node:fs";
-import { readJson, writeText } from "../fs.mjs";
+import { readJson, writeText } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 
 // A core never prints: it REPORTS through the collector its caller injects, and the

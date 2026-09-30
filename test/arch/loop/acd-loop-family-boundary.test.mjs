@@ -38,11 +38,11 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { NESTED_FUNCTION_DECLARATION_RE, classifySites, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
-const FAMILY_DIR = "src/loop";
+const FAMILY_DIR = "src/application/bindings/loop";
 const SPAWN_SEAM = "packages/work-loop/src/child-drive.mjs";
 const PACKAGE_FAMILY = "packages/work-loop/src";
 const WAVE = "packages/work-loop/src/wave.mjs";
@@ -70,7 +70,7 @@ function resolved(fromRel, specifier) {
 export function driverImportProblems(units) {
   const problems = [];
   for (const { rel, code } of units) {
-    for (const { specifier } of importSpecifiers(code)) {
+    for (const { specifier } of dependencySpecifiers(code)) {
       const target = resolved(rel, specifier);
       const leaf = target.split("/").pop();
       if (DRIVER_MODULES.includes(leaf) || DRIVER_PACKAGES.includes(target)) {
@@ -84,7 +84,7 @@ export function driverImportProblems(units) {
 export function partitionImportProblems(units) {
   const problems = [];
   for (const { rel, code } of units) {
-    for (const { specifier } of importSpecifiers(code)) {
+    for (const { specifier } of dependencySpecifiers(code)) {
       const target = resolved(rel, specifier);
       if (PARTITION_MODULES.includes(target.split("/").pop())) {
         problems.push(`${rel} imports ${specifier} (→ ${target}) — the wave is read off work:next's answer and never recomputed (129/ADR-001 §3, 71/ADR-006)`);
@@ -101,7 +101,7 @@ export function spawnRouteProblems(units) {
   for (const { rel, code } of units) {
     const stripped = stripComments(code);
     const viaSeam = /\brunBounded\s*\(/u.test(stripped);
-    const viaBuiltin = importSpecifiers(code).some(({ specifier }) => specifier === "node:child_process" || specifier === "child_process");
+    const viaBuiltin = dependencySpecifiers(code).some(({ specifier }) => specifier === "node:child_process" || specifier === "child_process");
     if (viaSeam || viaBuiltin) reaching.push(rel);
     if (rel !== SPAWN_SEAM && (viaSeam || viaBuiltin)) {
       problems.push(`${rel} reaches ${viaSeam ? "runBounded(" : "node:child_process"} — ${SPAWN_SEAM} is the family's one spawn seam (129/ADR-005 §1)`);
@@ -157,7 +157,7 @@ export const archTests = [
     run: async () => {
       const units = await familyUnits();
       assert.ok(units.length >= 4, `the family was read: ${units.map((unit) => unit.rel).join(", ")}`);
-      assert.ok(units.every((unit) => importSpecifiers(unit.code).length > 0), "every family module imports something — the specifier reader is reading");
+      assert.ok(units.every((unit) => dependencySpecifiers(unit.code).length > 0), "every family module imports something — the specifier reader is reading");
       const problems = driverImportProblems(units);
       assert.deepEqual(problems, [], `no PTY driver in the loop family:\n${problems.join("\n")}`);
     },
@@ -172,8 +172,8 @@ export const archTests = [
       assert.ok(facts.found, `${SPAWN_SEAM}: NOT FOUND — no runBounded( call; the seam spawns nothing this leg can judge`);
       assert.ok(facts.execPath, `${SPAWN_SEAM}: runBounded is given \`command: process.execPath\` — the drive is this interpreter's own CLI (129/ADR-005 §1)`);
       assert.match(stripComments(seam.code), /getCliEntry\(\)/u, "the package consumes the supplied CLI location");
-      const adapter = units.find(unit => unit.rel === "src/loop/child-drive.mjs");
-      assert.match(stripComments(adapter.code), /new URL\(\s*"\.\.\/cli\.mjs"\s*,\s*import\.meta\.url\s*\)/u, "core resolves its own CLI location");
+      const adapter = units.find(unit => unit.rel === "src/application/bindings/loop/child-drive.mjs");
+      assert.match(stripComments(adapter.code), /new URL\(\s*"(?:\.\.\/)+cli\.mjs"\s*,\s*import\.meta\.url\s*\)/u, "core resolves its own CLI location");
       assert.match(stripComments(seam.code), /\bisPackaged\(\)/u, `${SPAWN_SEAM}: the branch is decided by interpreter identity (isPackaged), never by file presence`);
 
       const route = spawnRouteProblems(units);

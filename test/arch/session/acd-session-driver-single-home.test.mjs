@@ -5,11 +5,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { assertFamilyPurity, importSpecifiers } from "../../support/module-family.mjs";
+import { assertFamilyPurity } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const driverPath = path.join(root, "src", "agent-session-driver.mjs");
-const adapterPath = path.join(root, "src", "mesh", "worker-execution.mjs");
+const driverPath = path.join(root, "src/application/bindings/agent-session-driver.mjs");
+const adapterPath = path.join(root, "src/application/bindings/mesh/worker-execution.mjs");
 const sinkPath = path.join(root, "packages", "mesh", "src", "worker-execution.mjs");
 const MOVED = Object.freeze([
   "NEEDS_INPUT_SENTINEL", "NEEDS_INPUT_INSTRUCTION", "DIRECTIVE_COMPLETE_SENTINEL",
@@ -157,7 +158,7 @@ function reachesFrom(rel, readRel) {
   const queue = [rel];
   while (queue.length > 0) {
     const current = queue.shift();
-    for (const { specifier } of importSpecifiers(readRel(current) ?? "")) {
+    for (const { specifier } of dependencySpecifiers(readRel(current) ?? "")) {
       if (!specifier.startsWith(".")) continue;
       const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(current), specifier));
       if (seen.has(resolved)) continue;
@@ -229,7 +230,7 @@ async function sinkImporters() {
       if (!entry.name.endsWith(".mjs")) continue;
       if (rel === SINK_REL) continue;
       const source = await readFile(path.join(root, ...rel.split("/")), "utf8");
-      if (/\bfrom\s*["'][^"']*worker-execution\.mjs["']|\bimport\s*\(\s*["'][^"']*worker-execution\.mjs["']/u.test(source)) found.push(rel);
+      if (dependencySpecifiers(source).some(({ specifier, injected }) => specifier.endsWith("worker-execution.mjs") && (injected || !specifier.includes("bindings/")))) found.push(rel);
     }
   };
   for (const dir of ["src", "scripts", "test"]) await walk(dir);
@@ -277,7 +278,7 @@ export const archTests = [
     run: async () => {
       const source = stripComments(await readFile(adapterPath, "utf8"));
       const implementation = stripComments(await readFile(sinkPath, "utf8"));
-      assert.match(source, /from\s+["'](?:\.\.?\/)+agent-session-driver\.mjs["']/u, "the sink's re-export/import source remains explicit");
+      assert.match(source, /const\s*\{[^}]*driveInteractiveClaudeSession[^}]*\}\s*= agentSessionDriverServices/u, "the sink receives the shared driver explicitly");
       for (const name of MOVED) {
         const definition = new RegExp(`(?:export\\s+)?(?:async\\s+)?(?:function|const|let|class)\\s+${name}\\b`, "u");
         assert.doesNotMatch(source + "\n" + implementation, definition, `${name} was copied back into the sink`);
@@ -376,7 +377,7 @@ export const archTests = [
         dependents.push({ rel, names: namedImportsOf(source, "worker-execution\\.mjs") });
       }
       assert.ok(dependents.length >= 4, `the importer sweep found ${dependents.length} dependents — it must at least find the four non-test ones`);
-      for (const rel of ["src/mesh/launcher.mjs", "scripts/pin-checkout-id.mjs"]) {
+      for (const rel of ["src/application/bindings/mesh/launcher.mjs", "scripts/pin-checkout-id.mjs"]) {
         assert.ok(dependents.some((dependent) => dependent.rel === rel), `${rel} is one of the four non-test dependents and the sweep must see it`);
       }
       assert.deepEqual(dependentBindingProblems([...SINK_SURFACE], dependents), [], "every binding every dependent takes from the sink is still on its surface");
@@ -530,9 +531,9 @@ export const archTests = [
 
       // …and it OBTAINS them from that home. Absence alone would also be satisfied by the reads
       // simply having been deleted, which is a different story with the same diff shape.
-      assert.match(parent, /import\s*\{[^}]*\breadDirectiveCommand\b[^}]*\}\s*from\s*["']\.\/worker-launch\.mjs["']/u, "the command comes from the extracted reader");
-      assert.match(parent, /import\s*\{[^}]*\breadDirectiveLaunch\b[^}]*\}\s*from\s*["']\.\/worker-launch\.mjs["']/u, "…and so do the launch's presence and value, as a pair");
-      assert.match(parent, /import\s*\{[^}]*\bcomposeDirectiveLaunchOptions\b[^}]*\}\s*from\s*["']\.\/worker-launch\.mjs["']/u, "…and the composer is called, not re-defined");
+      assert.match(parent, /const\s*\{[^}]*\breadDirectiveCommand\b[^}]*\}\s*= meshWorkerLaunchServices/u, "the directive reader is supplied from its own service");
+      assert.match(parent, /const\s*\{[^}]*\breadDirectiveLaunch\b[^}]*\}\s*= meshWorkerLaunchServices/u, "the directive reader is supplied from its own service");
+      assert.match(parent, /const\s*\{[^}]*\bcomposeDirectiveLaunchOptions\b[^}]*\}\s*= meshWorkerLaunchServices/u, "the directive reader is supplied from its own service");
 
       // `phaseBriefContext` still takes the ALREADY-READ command string as an argument. It reading
       // the frame itself would be a second directive reader wearing a different name — the exact
@@ -548,7 +549,7 @@ export const archTests = [
       for (const name of inward) {
         assert.match(
           parent,
-          new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*["']\\./worker-repo-admission\\.mjs["']`, "u"),
+          new RegExp('const\\s*\\{[^}]*\\b'+name+'\\b[^}]*\\}\\s*= meshWorkerRepoAdmissionServices', 'u'),
           `${name} is imported inward from the module it moved to`,
         );
         assert.doesNotMatch(parent, definitionPattern(name), `…and is not defined here as well, which would be a copy`);

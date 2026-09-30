@@ -35,10 +35,10 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORK = path.join(repoRoot, "src", "work.mjs");
+const WORK = path.join(repoRoot, "src/application/bindings/work.mjs");
 const READ_SEAM = path.join(repoRoot, "packages", "work", "src", "read.mjs");
 
 const DISK_READERS = ["listItems", "findWork", "nextWork", "listStream", "readWorkDirectory"];
@@ -63,7 +63,7 @@ const declares = (name) => new RegExp(`(?:function|const|let|class)\\s+${name}\\
 const WORKER_SIDE = [
   // The worker's five execution reads (`:258`, `:2510`, `:2790`, `:2863`, `:3007`) — the
   // ref it was dispatched, resolved against the worktree it is actually working in.
-  { file: path.join("packages", "mesh", "src", "worker-execution.mjs"), symbols: ["findWork", "listItems"], subject: "createMeshWorkerExecutionHandler", factory: "createWorkerExecutionServices", adapter: "src/mesh/worker-execution.mjs" },
+  { file: path.join("packages", "mesh", "src", "worker-execution.mjs"), symbols: ["findWork", "listItems"], subject: "createMeshWorkerExecutionHandler", factory: "createWorkerExecutionServices", adapter: "src/application/bindings/mesh/worker-execution.mjs" },
   // ADR-005 (b) names this read as `global-work-store:601`. It MOVED to its own module at
   // 43/03 and is re-pointed here at 43/06's review (ADR-016/G2). It is the read that turns
   // a worker's own worktree into the artifact bodies it streams: it must never be answered
@@ -73,14 +73,14 @@ const WORKER_SIDE = [
   // state"). Not a reader that must migrate, and not a worker-side read either — it is the
   // publish path's own disk scan, and a cache-first version of it would make a node report
   // someone else's opinion as its own observation.
-  { file: path.join("packages", "mesh", "src", "projection-store.mjs"), symbols: ["listItems"], subject: "readWorkspaceProjectionItems", factory: "createGlobalWorkProjectionStore", adapter: "src/global-work-store.mjs" },
+  { file: path.join("packages", "mesh", "src", "projection-store.mjs"), symbols: ["listItems"], subject: "readWorkspaceProjectionItems", factory: "createGlobalWorkProjectionStore", adapter: "src/application/bindings/global-work-store.mjs" },
   // FOUND at 43/06's review (ADR-016/G2): the launcher's stream tick reads the ACTIVE
   // WORKTREE's own items (`mesh-launcher.mjs:1532`) to build the frame it pushes. The
   // module's own comment already says the import "must stay" — a rule living in a comment
   // is not a rule, and this is the assertion that makes it one. The launcher's OTHER read
   // (the control-side presence aggregation) correctly migrated; the two must not be
   // conflated on a later tidy-up.
-  { file: path.join("packages", "mesh", "src", "launcher.mjs"), symbols: ["listItems"], subject: "startLauncher", factory: "createMeshLauncher", adapter: "src/mesh/launcher.mjs" },
+  { file: path.join("packages", "mesh", "src", "launcher.mjs"), symbols: ["listItems"], subject: "startLauncher", factory: "createMeshLauncher", adapter: "src/application/bindings/mesh/launcher.mjs" },
 ];
 
 // (c) STRUCTURAL reads — the disk is the SUBJECT of the operation (SPEC's out-of-scope
@@ -99,10 +99,10 @@ const STRUCTURAL = [
   // destination-exists check and the archived-collision set from the disk that is the subject of
   // the move it is about to make (a rename into the numbered stream); answered from a cache it
   // could mint a number an archived row already holds, or rename onto a folder that is there.
-  { file: path.join("packages", "work", "src", "commands", "promote.mjs"), symbols: ["listItems"], subject: "promoteRow", diskSource: "../discovery.mjs" },
+  { file: path.join("packages", "work", "src/commands/promote.mjs"), symbols: ["listItems"], subject: "promoteRow", diskSource: "../discovery.mjs" },
   { file: path.join("packages", "work", "src", "upgrade.mjs"), symbols: ["listItems"], subject: "planUpgrade", diskSource: "./discovery.mjs" },
   { file: path.join("packages", "work", "src", "effects.mjs"), symbols: ["listItems"], subject: "remapRunRecordRefs", injected: true },
-  { file: path.join("packages", "execution", "src", "reconcile.mjs"), symbols: ["listItems"], subject: "reconcileRunRecords", factory: "createRunReconciliation", adapter: "src/effects/reconcile.mjs" },
+  { file: path.join("packages", "execution", "src", "reconcile.mjs"), symbols: ["listItems"], subject: "reconcileRunRecords", factory: "createRunReconciliation", adapter: "src/application/bindings/effects/reconcile.mjs" },
   // work-doctor keeps ONE disk snapshot; ADR-005 overlays cache facts onto it in the
   // snapshot BUILDER (per-fact, ADR-010/R6.1) rather than splitting the snapshot's
   // source per check-group. The ITEM SET stays the disk's — that is what makes doctor's
@@ -143,13 +143,13 @@ const STRUCTURAL = [
 // RE-POINT the entry, never to delete it. ONE entry per SUBJECT, so a module with two migrated reads
 // carries two, exactly as STRUCTURAL does for `promotion.mjs`.
 const CONTROL_SIDE = [
-  { file: path.join("packages", "work", "src", "commands", "next.mjs"), subject: "nextCommand", adapter: "src/commands/next.mjs", cacheSymbols: ["nextWorkCacheFirst","listItemsCacheFirst"], factory: "createNextCommand" },
-  { file: path.join("packages", "work", "src", "commands", "find.mjs"), subject: "findCommand", adapter: "src/commands/find.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createFindCommand" },
-  { file: path.join("packages", "work", "src", "commands", "resolve.mjs"), subject: "resolveItem", adapter: "src/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
-  { file: path.join("packages", "work", "src", "commands", "resolve.mjs"), subject: "resolveItemExact", adapter: "src/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
-  { file: path.join("packages", "work", "src", "commands", "list.mjs"), subject: "listCommand", adapter: "src/commands/list.mjs", cacheSymbols: ["listStreamCacheFirst"], factory: "createListCommand" },
-  { file: path.join("packages", "work", "src", "commands", "run-start.mjs"), subject: "runStartCommand" },
-  { file: path.join("packages", "mesh", "src", "commands", "heartbeat.mjs"), subject: "meshHeartbeatCommand", adapter: "src/commands/mesh/heartbeat.mjs", factory: "createMeshHeartbeatCommands", cacheSymbols: ["listItemsCacheFirst"] },
+  { file: path.join("packages", "work", "src/commands/next.mjs"), subject: "nextCommand", adapter: "src/application/bindings/commands/next.mjs", cacheSymbols: ["nextWorkCacheFirst","listItemsCacheFirst"], factory: "createNextCommand" },
+  { file: path.join("packages", "work", "src/commands/find.mjs"), subject: "findCommand", adapter: "src/application/bindings/commands/find.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createFindCommand" },
+  { file: path.join("packages", "work", "src/commands/resolve.mjs"), subject: "resolveItem", adapter: "src/application/bindings/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
+  { file: path.join("packages", "work", "src/commands/resolve.mjs"), subject: "resolveItemExact", adapter: "src/application/bindings/commands/resolve.mjs", cacheSymbols: ["findWorkCacheFirst"], factory: "createWorkResolvers" },
+  { file: path.join("packages", "work", "src/commands/list.mjs"), subject: "listCommand", adapter: "src/application/bindings/commands/list.mjs", cacheSymbols: ["listStreamCacheFirst"], factory: "createListCommand" },
+  { file: path.join("packages", "work", "src/commands/run-start.mjs"), subject: "runStartCommand" },
+  { file: path.join("packages", "mesh", "src", "commands", "heartbeat.mjs"), subject: "meshHeartbeatCommand", adapter: "src/application/bindings/commands/mesh/heartbeat.mjs", factory: "createMeshHeartbeatCommands", cacheSymbols: ["listItemsCacheFirst"] },
   // (promote-gap-to-chore.mjs moved to STRUCTURAL — ADR-010/R6.3)
   //
   // CLASSIFIED at 110, the third read of the promotion family and the only one of the three that is
@@ -158,13 +158,13 @@ const CONTROL_SIDE = [
   // reach through neither a row's `dir` nor its `number`, which is exactly what separates it from
   // its two structural neighbours in `promotion.mjs`. The category is a property of the READ, not of
   // the module or the family: one function here makes all three, and they are classified apart.
-  { file: path.join("packages", "work", "src", "commands", "promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore", adapter: "src/commands/promote-finding-to-chore.mjs" },
-  { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "src/commands/notion-associate.mjs" },
-  { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "src/notion/sync-work.mjs" },
-  { file: path.join("packages", "knowledge", "src", "memory", "local-indexing.mjs"), subject: "buildRecords", adapter: "src/memory/local-indexing.mjs", cacheSymbols: ["listItemsCacheFirst"], factory: "createLocalIndexing" },
-  { file: path.join("packages", "mesh", "src", "assignment.mjs"), subject: "assignWork", adapter: "src/mesh/assignment.mjs", factory: "createMeshAssignments", cacheSymbols: ["findWorkCacheFirst"] },
-  { file: path.join("packages", "mesh", "src", "assignment.mjs"), subject: "withdrawWork", adapter: "src/mesh/assignment.mjs", factory: "createMeshAssignments", cacheSymbols: ["findWorkCacheFirst"] },
-  { file: path.join("packages", "mesh", "src", "assignment-reclaim.mjs"), subject: "reclaimStaleAssignments", adapter: "src/mesh/assignment-reclaim.mjs", factory: "createAssignmentReclaim", cacheSymbols: ["findWorkCacheFirst"] },
+  { file: path.join("packages", "work", "src/commands/promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore", adapter: "src/application/bindings/commands/promote-finding-to-chore.mjs" },
+  { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "src/application/bindings/commands/notion-associate.mjs" },
+  { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "src/application/bindings/notion/sync-work.mjs" },
+  { file: path.join("packages", "knowledge", "src/memory/local-indexing.mjs"), subject: "buildRecords", adapter: "src/application/bindings/memory/local-indexing.mjs", cacheSymbols: ["listItemsCacheFirst"], factory: "createLocalIndexing" },
+  { file: path.join("packages", "mesh", "src", "assignment.mjs"), subject: "assignWork", adapter: "src/application/bindings/mesh/assignment.mjs", factory: "createMeshAssignments", cacheSymbols: ["findWorkCacheFirst"] },
+  { file: path.join("packages", "mesh", "src", "assignment.mjs"), subject: "withdrawWork", adapter: "src/application/bindings/mesh/assignment.mjs", factory: "createMeshAssignments", cacheSymbols: ["findWorkCacheFirst"] },
+  { file: path.join("packages", "mesh", "src", "assignment-reclaim.mjs"), subject: "reclaimStaleAssignments", adapter: "src/application/bindings/mesh/assignment-reclaim.mjs", factory: "createAssignmentReclaim", cacheSymbols: ["findWorkCacheFirst"] },
 ];
 
 function stripComments(source) {
@@ -181,6 +181,9 @@ function workImportBindings(commentStrippedSource) {
       const name = raw.trim().split(/\s+as\s+/)[0].trim();
       if (name.length > 0) bindings.add(name);
     }
+  }
+  for (const match of commentStrippedSource.matchAll(/const\s*\{([^}]*)\}\s*=\s*workServices/g)) {
+    for (const name of match[1].split(",")) bindings.add(name.trim().split(":")[0]);
   }
   return bindings;
 }
@@ -218,8 +221,8 @@ async function assertPinned(group, label) {
     if (injected) {
       // The package reads through a port; core must still bind that port to the
       // disk enumerator. Check both ends so moving the read cannot hide a cache switch.
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/effects/table.mjs"), "utf8"));
-      assert.match(composition, /import\("\.\.\/work\.mjs"\)/u);
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/effects/table.mjs"), "utf8"));
+      assert.match(composition, /provideWork\(\)/u);
       for (const symbol of symbols) {
         assert.match(source, new RegExp(`const\\s*\\{[^}]*\\b${symbol}\\b[^}]*\\}\\s*=\\s*await getServices\\(\\)`, "u"));
         assert.match(composition, new RegExp(`\\b${symbol}:\\s*items\\.${symbol}\\b`, "u"));
@@ -249,12 +252,12 @@ export const archTests = [
     run: async () => {
       assert.ok(existsSync(READ_SEAM), `the read seam must be readable at ${READ_SEAM} — a subject a control cannot find is a FAILURE, never a skip (119/01, ADR-003 §4): this gate returned green having asserted nothing, so a move of its subject was undetectable at review`);
 
-      const seamSpecs = importSpecifiers(stripComments(await readFile(READ_SEAM, "utf8"))).map((entry) => entry.specifier);
+      const seamSpecs = dependencySpecifiers(stripComments(await readFile(READ_SEAM, "utf8"))).map((entry) => entry.specifier);
       assert.ok(
         ["./discovery.mjs", "./readiness.mjs"].every(specifier => seamSpecs.includes(specifier)),
         `packages/work/src/read.mjs must import disk discovery and readiness (the seam consumes the readers, never the reverse) — imports: ${seamSpecs.join(", ")}`,
       );
-      const workSpecs = importSpecifiers(stripComments(await readFile(WORK, "utf8"))).map((entry) => entry.specifier);
+      const workSpecs = dependencySpecifiers(stripComments(await readFile(WORK, "utf8"))).map((entry) => entry.specifier);
       assert.deepEqual(
         workSpecs.filter((s) => /(^|\/)(?:work-read|work\/read)\.mjs$/.test(s) || s === "@aof/work/read"),
         [],
@@ -262,7 +265,7 @@ export const archTests = [
       );
       for (const leaf of ["discovery", "readiness"]) {
         const source = await readFile(path.join(repoRoot, "packages/work/src", leaf + ".mjs"), "utf8");
-        assert.deepEqual(importSpecifiers(stripComments(source)).filter(({specifier}) => specifier === "@aof/work/read" || /(?:^|\/)read\.mjs$/u.test(specifier)), [], leaf + ': disk readers never import the cache-first seam');
+        assert.deepEqual(dependencySpecifiers(stripComments(source)).filter(({specifier}) => specifier === "@aof/work/read" || /(?:^|\/)read\.mjs$/u.test(specifier)), [], leaf + ': disk readers never import the cache-first seam');
       }
 
       const stragglers = [];
@@ -288,7 +291,7 @@ export const archTests = [
           const composition = stripComments(await readFile(path.join(repoRoot, adapter), "utf8"));
           for (const symbol of cacheSymbols) {
             assert.match(source, new RegExp('\\b' + symbol + '\\s*\\(', 'u'), file + ': uses the cache-first service');
-            assert.match(composition, new RegExp('import\\s*\\{[^}]*\\b' + symbol + '\\b[^}]*\\}\\s*from\\s*["\'](?:\\.\\.\\/)+work\\/read\\.mjs["\']', 'u'));
+            assert.match(composition, new RegExp('const\\s*\\{[^}]*\\b' + symbol + '\\b[^}]*\\}\\s*= workReadServices', 'u'));
             assert.match(composition, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), adapter + ': injects the shared cache-first reader');
             assert.match(source, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), file + ': accepts the cache-first port');
           }

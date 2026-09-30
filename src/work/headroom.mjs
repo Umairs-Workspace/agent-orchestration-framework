@@ -28,7 +28,7 @@
 // INDEPENDENT of the lookup (the lookup only drives whether the install hint prints),
 // so the acd-headroom-config-isolation guard stays green.
 import { existsSync } from "node:fs";
-import { readJson, writeText } from "../fs.mjs";
+import { readJson, writeText } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 import { resolveHeadroomBinary } from "../headroom.mjs";
 

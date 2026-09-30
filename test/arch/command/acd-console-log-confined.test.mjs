@@ -32,7 +32,7 @@ const SRC = path.join(repoRoot, "src");
 // Adding a row is a DESIGN decision, not a fix — the ratchet below fails on growth.
 const PRINTERS = {
   // (1) The faces themselves — the one door output is supposed to leave by.
-  "spine/face.mjs": "THE generic CLI face: the one place a command's render/--json document reaches stdout",
+  "application/bindings/spine/face.mjs": "THE generic CLI face: the one place a command's render/--json document reaches stdout",
   "cli.mjs": "the top-level face — helpText, --version, and the ladder shims the route table cannot express",
 
   // (2) `cli.launch` bodies — a long-lived foreground process owns its own announce
@@ -43,7 +43,7 @@ const PRINTERS = {
   "../packages/mesh/src/commands/serve.mjs": "cli.launch body — the control/serve daemon's announce + shutdown lines",
   "../packages/mesh/src/commands/ui.mjs": "cli.launch body — the fleet server's announce lines",
   "../packages/server/src/commands/work-ui.mjs": "cli.launch body — the board server's announce lines",
-  "commands/assets/ui.mjs": "cli.launch body — the setup UI's announce + not-started print",
+  "application/bindings/commands/assets/ui.mjs": "cli.launch body — the setup UI's announce + not-started print",
   // m53 — `aof work loop` is the same seam: a long-lived FOREGROUND body that owns
   // its own per-act report lines while it drives. It qualifies on category (2)'s own
   // terms, including the clause that matters most: its MACHINE face is the registered

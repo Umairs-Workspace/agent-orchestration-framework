@@ -38,7 +38,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { declaredFunctions, ownerOf } from "./acd-lane-records-and-the-declaration.test.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../../support/mesh-worker-terminal-fixture.mjs";
 import {
@@ -73,7 +73,7 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 const ASK_HOME = "packages/work-loop/src/ask-request.mjs";
 const ASK = "packages/work-loop/src/ask.mjs";
 const DRIVER = "packages/execution/src/session-driver.mjs";
-const RESUME = "src/commands/resume.mjs";
+const RESUME = "src/application/bindings/commands/resume.mjs";
 const TERMINAL_FACES = Object.freeze(["packages/mesh/src/terminal-input.mjs", "packages/server/src/terminal-ws.mjs", DRIVER]);
 const TERMINAL_INPUT_RE = /(?:^|\/)terminal-input(?:[-.][^/]*)?\.mjs$/u;
 const TRANSCRIPT_MAPPING = "async function readTranscriptTerminalOutcome(";
@@ -122,7 +122,7 @@ const unitOf = (units, rel) => {
   return unit;
 };
 
-const resolvedImports = (unit) => importSpecifiers(unit.code).map(({ specifier }) => resolved(unit.rel, specifier));
+const resolvedImports = (unit) => dependencySpecifiers(unit.code).map(({ specifier }) => resolved(unit.rel, specifier));
 
 // The top-level function each index sits in (the last top-level declaration before it).
 function enclosingTopLevel(code, index) {

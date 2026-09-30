@@ -1,7 +1,5 @@
-// Transitional core composition for work-owned tuning services.
-import { createTuneProposals } from "@aof/work/tune/proposal";
-import { AGENT_MODEL_MAP_PATH, agentModelMap } from "../work/bundle.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workTuneProposal } from "../application/default.mjs";
 export const {
   ABSENT,
   ABSENT_READING,
@@ -14,4 +12,4 @@ export const {
   laneProposals,
   proposalClassForTarget,
   proposalLane,
-} = createTuneProposals({ AGENT_MODEL_MAP_PATH, agentModelMap });
+} = workTuneProposal;

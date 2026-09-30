@@ -1,5 +1,6 @@
-// Compatibility composition; the work-graph package owns the command.
-import { createLoopsGraphCommand } from "@aof/work-graph/commands/loops-graph";
+// Compatibility entry; construction belongs to core application assembly.
+import { commandsLoopsGraph } from "../application/default.mjs";
 export * from "@aof/work-graph/commands/loops-graph";
-import { loadLoops } from "../work/loops.mjs";
-export const loopsGraphCommand = createLoopsGraphCommand({ loadLoops });
+export const {
+  loopsGraphCommand,
+} = commandsLoopsGraph;

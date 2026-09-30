@@ -369,9 +369,9 @@ export const meshEffectsOutboxTests = [
       const path = await import("node:path");
       const src = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..", "..", "src");
       for (const file of ["worker-stream-client.mjs", "control-stream-server.mjs"]) {
-        const source = await readFile(path.join(src, file), "utf8");
+        const source = await readFile(path.join(src, "application/bindings", file), "utf8");
         assert.ok(
-          /from\s+["']\.\/effects\/outbox\.mjs["']/.test(source),
+          /from\s+["']@aof\/mesh\/effect-frames["']/.test(source),
           `${file} imports the frame kinds from their one home`,
         );
       }

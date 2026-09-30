@@ -1,5 +1,5 @@
 import path from "node:path";
-import { writeText } from "./fs.mjs";
+import { writeText } from "@aof/foundation/fs";
 import { hashContent } from "./lock.mjs";
 import { hasUnsupportedCommonHookFields } from "./adapter-warnings.mjs";
 import { createAssetReferenceIndex, expandAssetReferences } from "./asset-references.mjs";

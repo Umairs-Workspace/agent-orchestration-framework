@@ -59,15 +59,17 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const REGISTRY_FILE = "src/command-core.mjs";
-const COMMANDS_DIR = "src/commands";
+const REGISTRY_FILE = "src/application/bindings/command-core.mjs";
+const COMMANDS_DIR = "src/application/bindings/commands";
 
 // The three modules TECH_DEBT item 26 names, measured 2026-09-06. They are a claim about WHICH
 // modules explain their ring — asserted against the derived set, never used as the set.
-const NAMED_RING_MODULES = Object.freeze(["trigger.mjs", "tune.mjs", "work-ui.mjs"]);
+// Plan 02 removes work-ui's initialization cycle; trigger and tune retain explicit
+// runtime registry callbacks whose ready-before-use contract still needs explaining.
+const NAMED_RING_MODULES = Object.freeze(["trigger.mjs", "tune.mjs"]);
 
 // NON-VACUITY, and the one stored number in this file. It is a FLOOR on the derived exempt set — a
 // bound nobody can compute from the tree (ADR-003 §3) — and it is NOT a comment count, a ratio or a
@@ -117,7 +119,7 @@ export function registryBlocks(source) {
     blocks.push(current);
   }
 
-  const arrayStart = lines.findIndex((line) => /^const COMMANDS\s*=/.test(line));
+  const arrayStart = lines.findIndex((line) => /^\s*const COMMANDS\s*=/.test(line));
   const importAt = (index) => {
     if (!/^import\b/.test(lines[index] ?? "")) return null;
     let text = lines[index];
@@ -126,7 +128,7 @@ export function registryBlocks(source) {
       cursor += 1;
       text += `\n${lines[cursor]}`;
     }
-    return { specifier: importSpecifiers(text)[0]?.specifier ?? null, text };
+    return { specifier: dependencySpecifiers(text)[0]?.specifier ?? null, text };
   };
 
   for (const block of blocks) {
@@ -134,7 +136,7 @@ export function registryBlocks(source) {
     const statement = importAt(block.nextIndex);
     const arrayEntry = arrayStart >= 0 && block.start > arrayStart && /^\s*[A-Za-z]\w*Command,?\s*$/.test(next);
     if (block.start === 0) block.kind = "header";
-    else if (statement?.specifier?.startsWith("./commands/")) block.kind = "entry";
+    else if (statement?.specifier?.includes("/commands/") || /^\s*const\s*\{[^}]*Command[^}]*\}\s*=/.test(next)) block.kind = "entry";
     else if (arrayEntry) block.kind = "entry";
     else block.kind = "api";
     block.subject = statement?.specifier ?? next.trim().replace(/,$/, "");
@@ -223,7 +225,8 @@ export function registryShapeViolations(source) {
 // floor from being satisfiable by prose.
 const RING_VOCABULARY = /\b(?:defer(?:red|s|ring)?|TDZ|lazy[- ]load(?:ed|s)?|before initialization)\b/iu;
 const NAMES_THE_TDZ = /\bTDZ\b|before initialization/iu;
-const DYNAMIC_IMPORT = /\bimport\s*\(/u;
+// Plan 02 replaces module deferrals with explicit ready callbacks.
+const DYNAMIC_IMPORT = /\b(?:import|provide\w+)\s*\(/u;
 // How far below a block the deferred import may sit and still be the thing it explains. A comment
 // documenting a deferral sits directly above the function that performs it; the window is the
 // function's own signature line plus a short body, not a licence to reach across the module.

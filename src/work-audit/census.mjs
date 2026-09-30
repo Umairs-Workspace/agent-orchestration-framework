@@ -1,8 +1,5 @@
-// Transitional core composition for work-owned audit services.
-import { createAuditCensus } from "@aof/work/audit/census";
-import { runBounded, DEFAULT_DEADLINE_MS } from "@aof/execution/bounded-process";
-import { isToolkitRoot, toolkitProgram } from "./toolkit.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workAuditCensus } from "../application/default.mjs";
 export const {
   AUDIT_FINDING_CODES,
   CENSUS_SWEEPS,
@@ -31,4 +28,4 @@ export const {
   sweepDeclarationProblems,
   sweepLimits,
   walkSuiteFiles,
-} = createAuditCensus({ runBounded, DEFAULT_DEADLINE_MS, isToolkitRoot, toolkitProgram });
+} = workAuditCensus;

@@ -41,16 +41,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers, configuredPortSources } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORKER_EXECUTION = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
+const WORKER_EXECUTION = path.join(repoRoot, "src/application/bindings/mesh/worker-execution.mjs");
 const LAUNCHER = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
-const STREAM_CLIENT = path.join(repoRoot, "packages", "mesh", "src", "worker-stream-client.mjs");
+const STREAM_CLIENT = path.join(repoRoot, "packages", "mesh", "src/worker-stream-client.mjs");
 const MIRROR = path.join(repoRoot, "packages", "mesh", "src", "terminal-mirror.mjs");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
-const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
+const CONTROL = path.join(repoRoot, "packages", "mesh", "src/control-stream-server.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -72,19 +72,9 @@ async function realSource(file) {
 // followed too. The anchors are distinctive declarations, so reading the pair together
 // cannot make one clause pass on the other's evidence.
 async function workerDriverSource() {
-  const sink = await realSource(WORKER_EXECUTION);
-  // 119/01 — resolved against the SINK's own directory (see the sibling gate's note).
-  const reExported = [...sink.matchAll(/export\s*\{[\s\S]*?\}\s*from\s*["'](\.\.?\/[^"']+)["']/g)].map((m) => m[1]);
-  const parts = await Promise.all(reExported.map((spec) => realSource(path.join(path.dirname(WORKER_EXECUTION), spec))));
-  // The compatibility driver now composes execution-owned services. Follow its
-  // public execution imports as well, so the finish/watch anchors remain visible.
-  for (const part of [sink, ...parts]) {
-    for (const { specifier } of importSpecifiers(part).filter(entry => entry.specifier.startsWith("@aof/execution/") || entry.specifier === "@aof/mesh/worker-execution")) {
-      parts.push(await realSource(new URL(import.meta.resolve(specifier))));
-    }
-  }
-  assert.ok(parts.some(text => text.includes("function createMeshWorkerExecutionHandler(")), "the configured worker reaches its implementation");
-  return [sink, ...parts].join("\n");
+  const source = await configuredPortSources(repoRoot, WORKER_EXECUTION, "agentSessionDriverServices");
+  assert.ok(source.includes("function driveInteractiveClaudeSession("), "the configured worker reaches the driver implementation");
+  return source;
 }
 function sliceBalanced(source, openIndex) {
   let depth = 0;

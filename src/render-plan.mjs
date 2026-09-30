@@ -1,6 +1,6 @@
 import path from "node:path";
 import { rm } from "node:fs/promises";
-import { writeText } from "./fs.mjs";
+import { writeText } from "@aof/foundation/fs";
 import { hashContent, hashFileIfExists, LOCK_VERSION } from "./lock.mjs";
 import { renderConfigOutputs } from "./adapters.mjs";
 import { resolvedPackageEntry } from "./packages.mjs";

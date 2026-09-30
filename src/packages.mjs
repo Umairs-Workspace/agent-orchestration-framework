@@ -1,4 +1,4 @@
-import { normalizeId } from "./fs.mjs";
+import { normalizeId } from "@aof/foundation/fs";
 import { supportedResourceKinds, supportedRuntimes } from "./model.mjs";
 
 const VALID_RUNTIMES = new Set(supportedRuntimes());

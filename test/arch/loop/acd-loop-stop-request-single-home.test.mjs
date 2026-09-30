@@ -44,7 +44,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getCommand } from "../../../src/command-core.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import {
   completingDriver,
@@ -66,11 +66,11 @@ const SEGMENT = "loop-stops";
 // 131/11 — the second segment the home owns: the resume request lives beside the stop it undoes
 // (131/ADR-009 §6).
 const RESUME_SEGMENT = "loop-resumes";
-const READERS = Object.freeze(["src/loop/stop.mjs", "src/commands/loop.mjs", "src/mesh/declarations.mjs", "src/mesh/presence.mjs"]);
+const READERS = Object.freeze(["src/application/bindings/loop/stop.mjs", "src/application/bindings/commands/loop.mjs", "src/application/bindings/mesh/declarations.mjs", "src/application/bindings/mesh/presence.mjs"]);
 const CONFIGURED_READERS = Object.freeze(["packages/mesh/src/declarations.mjs", "packages/mesh/src/presence.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
-const CORE = "src/loop/stop.mjs";
-const CORE_IMPORTERS = Object.freeze(["src/commands/loop.mjs", "src/mesh/ui-serve.mjs"]);
+const CORE = "src/application/bindings/loop/stop.mjs";
+const CORE_IMPORTERS = Object.freeze(["src/application/bindings/commands/loop.mjs", "src/application/bindings/mesh/ui-serve.mjs"]);
 const STATE_WORDS = Object.freeze(['"requested"', '"honoured"', "'requested'", "'honoured'"]);
 // The seven keys of the verb's document (ADR-002 §4) and the ten of the probe (FF-5304).
 const DOCUMENT_KEYS = Object.freeze(["ok", "loopRunId", "scope", "live", "request", "state", "path"]);
@@ -91,7 +91,7 @@ function resolved(fromRel, specifier) {
   if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
   let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
-  if (/^src\/loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace("src/loop/", "packages/work-loop/src/");
+  if (/^src\/(?:application\/bindings\/)?loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace(/^src\/(?:application\/bindings\/)?loop\//, "packages/work-loop/src/");
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
@@ -110,7 +110,7 @@ async function srcUnits() {
 // needle and watch the answer go to zero.
 export function importersOf(units, target) {
   return units
-    .filter(({ rel, code }) => importSpecifiers(code).some(({ specifier }) => resolved(rel, specifier) === target))
+    .filter(({ rel, code }) => dependencySpecifiers(code).some(({ specifier }) => resolved(rel, specifier) === target))
     .map(({ rel }) => rel);
 }
 
@@ -320,7 +320,7 @@ export const archTests = [
       assertRead("the src/** sweep", units.length, 150);
       const core = units.find(({ rel }) => rel === CORE);
       assert.ok(core != null, `NOT FOUND: ${CORE}`);
-      assert.match(core.code, /\bexport\s+const\s+stopLoop\s*=\s*implementation\.stopLoop/u, "stopLoop is defined in src/loop/stop.mjs — the one core below the command layer (ADR-002 §3)");
+      assert.match(core.code, /\bconst\s+stopLoop\s*=\s*implementation\.stopLoop/u, "core returns the stop implementation from its one factory");
       // THE IMPORTERS, by resolved specifier, each naming the binding: the command and the route.
       const importers = importersOf(units, CORE).filter((rel) => /\bstopLoop\b/u.test(units.find((unit) => unit.rel === rel).code)).sort();
       assert.deepEqual(
@@ -329,7 +329,7 @@ export const archTests = [
         `stopLoop is defined in src/loop/stop.mjs and imported by exactly src/commands/loop.mjs and src/mesh/ui-serve.mjs — importers found: ${importers.join(", ") || "none"}. A face that re-implements the declaration read is a second home for the stop's resolution (38/ADR-012: a second CALLER of the SAME core, never a re-implementation)`,
       );
       // Neither face reaches the request's writer directly: the route composes no request.
-      const route = units.find(({ rel }) => rel === "src/mesh/ui-serve.mjs");
+      const route = units.find(({ rel }) => rel === "src/application/bindings/mesh/ui-serve.mjs");
       assert.doesNotMatch(route.code, /\b(?:requestLoopStop|readLoopDeclaration)\s*\(/u, "the fleet route calls stopLoop and never requestLoopStop( or readLoopDeclaration( itself");
     },
   },

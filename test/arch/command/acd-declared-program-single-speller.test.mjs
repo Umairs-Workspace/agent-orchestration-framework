@@ -308,7 +308,7 @@ export const archTests = [
 
       // …and the import that reaches the seam is present, so the claim is "one seam", not "none".
       const owner = modules.find((module) => module.rel === KEY_OWNER);
-      const composition = stripComments(await readFile(path.join(repoRoot, "src/work/toolchain.mjs"), "utf8"));
+      const composition = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/work/toolchain.mjs"), "utf8"));
       assert.match(owner.code, /createWorkToolchain\(\{\s*runBounded\s*\}\)/u);
       assert.match(composition, /createWorkToolchain\(\{\s*runBounded\s*\}\)/u);
       assert.match(composition, /from\s+"@aof\/execution\/bounded-process"/u, `${KEY_OWNER} reaches the shared bounded seam by import`);

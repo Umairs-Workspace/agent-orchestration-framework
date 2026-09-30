@@ -1,10 +1,13 @@
-// Transitional composition for mesh-owned domain transitions.
-import { createAssignmentTransitions } from "@aof/mesh/assignment-transitions";
-import { applicableReactors } from "./table.mjs";
-import { openEffectsJournal, appendEvent, hasEventId } from "./journal.mjs";
-import { latestAppliedAssignmentParkEventId } from "@aof/mesh/journal-queries";
-import { drainEffects, runEffectsEphemeral, CONTROL_LOCI, LOCAL_LOCI } from "./dispatch.mjs";
-import { drainOutbox } from "./outbox.mjs";
-import { reportDegrade } from "../degrade.mjs";
-
-export const { ASSIGNMENT_UNKNOWN, ASSIGNMENT_NOT_HOLDER, ASSIGNMENT_ALREADY_TERMINAL, guardAssignmentTransition, reportAssignmentSettled, reportTerminalResumeRefused, claimAssignmentParkResume, completeAssignmentParkResume, transitionAssignmentState } = createAssignmentTransitions({ applicableReactors, openEffectsJournal, appendEvent, hasEventId, latestAppliedAssignmentParkEventId, drainEffects, runEffectsEphemeral, CONTROL_LOCI, LOCAL_LOCI, drainOutbox, reportDegrade });
+// Compatibility entry; construction belongs to core application assembly.
+import { effectsAssignmentTransitions } from "../application/default.mjs";
+export const {
+  ASSIGNMENT_UNKNOWN,
+  ASSIGNMENT_NOT_HOLDER,
+  ASSIGNMENT_ALREADY_TERMINAL,
+  guardAssignmentTransition,
+  reportAssignmentSettled,
+  reportTerminalResumeRefused,
+  claimAssignmentParkResume,
+  completeAssignmentParkResume,
+  transitionAssignmentState,
+} = effectsAssignmentTransitions;

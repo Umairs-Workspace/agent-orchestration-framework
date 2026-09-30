@@ -1,3 +1,4 @@
+import { applicationConstructionGraph } from "../../support/workspace/assembly-graph.mjs";
 // Fitness function: acd-hook-rule-detects-never-writes (milestone 77 / story 01, FF-7703;
 // ADR-005 §1, §2, §3).
 //
@@ -46,10 +47,10 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import { resolvedInvocation, runHookWiring } from "../../../src/work-audit/hook-wiring.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_ROOT = "src/work-audit";
+const FAMILY_ROOT = "src/application/bindings/work-audit";
 const FAMILY_FLOOR = 6;
 
 // The one child-process seam the family is allowed, named by PATH rather than by basename so a
@@ -100,7 +101,7 @@ async function familyModules() {
   const { closure, unresolved } = await importClosure(out.map(module => module.rel), async rel => {
     try { return stripComments(await readFile(path.join(repoRoot, rel), "utf8")); }
     catch { return null; }
-  });
+  }, await applicationConstructionGraph(repoRoot));
   assert.deepEqual(unresolved, [], "the audit implementation closure resolves in full");
   return [...closure].map(([rel, code]) => ({ rel, code }));
 }
@@ -138,7 +139,7 @@ export const archTests = [
 
       // BY IMPORT SHAPE: no static import in the family resolves to either module.
       for (const module of modules) {
-        for (const { specifier } of importSpecifiers(module.code)) {
+        for (const { specifier } of dependencySpecifiers(module.code)) {
           assert.equal(/claude-settings|frozen-set/u.test(specifier), false, `${module.rel} imports \`${specifier}\` — the family reaches neither the merge nor the module that declares the marker`);
         }
       }

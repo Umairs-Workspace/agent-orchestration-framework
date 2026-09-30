@@ -1,8 +1,5 @@
-// Transitional application composition for the work-owned acceptor service.
-import { createAcceptorObservations } from "@aof/work/acceptor/observations";
-import { dispatchWorktreeSlug, isUnderMeshDispatchWorktreesRoot, meshDispatchWorktreesRoot } from "../mesh/worktree.mjs";
-import { readEvents } from "../effects/journal.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workAcceptorObservations } from "../application/default.mjs";
 export const {
   CENSUS_EVENT_LIMIT,
   FLOOR_DIVISOR,
@@ -24,4 +21,4 @@ export const {
   readObservationCensus,
   unfilteredFinding,
   workspaceKey,
-} = createAcceptorObservations({ dispatchWorktreeSlug, isUnderMeshDispatchWorktreesRoot, meshDispatchWorktreesRoot, readEvents });
+} = workAcceptorObservations;

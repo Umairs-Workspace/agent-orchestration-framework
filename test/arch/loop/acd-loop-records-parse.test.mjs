@@ -106,7 +106,7 @@ export const archTests = [
       }
       assert.ok(pointers > 10, "real pointer sweep is non-vacuous");
       assert.equal(declaredHere(await readFile(path.join(root, "src/terminal-providers.mjs"), "utf8"), "CliProvider"), true);
-      assert.equal(declaredHere(await readFile(path.join(root, "src/command-core.mjs"), "utf8"), "loadWorkspace"), false);
+      assert.equal(declaredHere(await readFile(path.join(root, "src/application/bindings/command-core.mjs"), "utf8"), "loadWorkspace"), false);
       assert.equal(declaredHere(await readFile(path.join(root, "packages/knowledge/src/graphify.mjs"), "utf8"), "readGraph"), false);
     },
   },

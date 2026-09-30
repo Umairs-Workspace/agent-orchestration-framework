@@ -25,7 +25,7 @@
 // from becoming a keeper silently.
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -94,11 +94,14 @@ async function sweepSrc() {
 // that, and it answers specifiers, not the bindings a clause names).
 function importsFromWork(rel, stripped, name) {
   const resolve = createRequire(path.join(repoRoot, rel));
-  for (const { specifier, dynamic } of importSpecifiers(stripped)) {
+  for (const { specifier, dynamic, parameter } of dependencySpecifiers(stripped)) {
     if (dynamic || (!specifier.startsWith('.') && !specifier.startsWith('@aof/'))) continue;
     const target = path.relative(repoRoot, resolve.resolve(specifier)).split(path.sep).join('/');
-    if (!['src/work.mjs', IDENTITY, ENUMERATOR].includes(target)) continue;
+    if (!["src/application/bindings/work.mjs", IDENTITY, ENUMERATOR].includes(target)) continue;
     const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (parameter && new RegExp('const\\s*\\{[^}]*\\b' + name + '\\b[^}]*\\}\\s*= ' + parameter).test(stripped)) return true;
+    const namespace = new RegExp('import\\s*\\*\\s*as\\s+(\\w+)\\s*from\\s*["\']' + escaped + '["\']').exec(stripped)?.[1];
+    if (namespace && new RegExp('\\b' + namespace + '\\.' + name + '\\b').test(stripped)) return true;
     const pattern = new RegExp('(?:import|export)\\s*\\{([^}]*)\\}\\s*from\\s*["\']' + escaped + '["\']', 'g');
     for (const match of stripped.matchAll(pattern)) {
       if (match[1].split(',').some(entry => entry.trim().split(/\s+as\s+/)[0] === name)) return true;

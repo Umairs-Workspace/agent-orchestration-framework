@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src");
-const initSourcePath = path.join(srcDir, "work/init.mjs");
+const initSourcePath = path.join(srcDir, "application/bindings/work/init.mjs");
 const updateSourcePath = path.join(srcDir, "work/update.mjs");
 
 function stripComments(source) {

@@ -723,11 +723,11 @@ export const agentSessionDriverDoorTests = [
       // `driveInteractiveClaudeSession` through the sink for task 01's driver-level `signal` cases;
       // FF-11902's no-headroom probe (`acd-control-derives-its-census`) ratchets these floors to the
       // live census, so the pair moves together (49 + 2 + 4 = 55).
-      const SUITE_FLOOR = 49;
+      const SUITE_FLOOR = 50;
       const FIXTURE_FLOOR = 2;
       // Two URL-only consumers now import the pure repo-admission API directly.
       const SOURCE_SIDE_FLOOR = 2;
-      const CENSUS_FLOOR = 53;
+      const CENSUS_FLOOR = 54;
       const importsTheSink = async (rel) =>
         staticImports(await readFile(path.join(repoRoot, rel), "utf8")).some((entry) => resolvesToSink(rel, entry.specifier));
 

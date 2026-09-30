@@ -416,3 +416,23 @@ export async function healIdentitySidecar({ sidecar = {}, hostname, sidecarPath,
 // caller that cares — `work:doctor`, the health lane — turns it into a finding that names
 // the file and the parse error. Absent is NOT a fault: an unconfigured project is a
 // legitimate state, and warning about it would fire on every repo that never opted in.
+
+// Resolve a STABLE per-install salt for the id-hash (the empty-stem fallback +
+// collision suffix). Read config.mesh.salt (post milestone-33/ADR-004, this is the
+// HYDRATED value — the sidecar's, when one exists, via loadWorkspace's overlay); mint
+// + persist one to the git-ignored SIDECAR (never the committed config — the
+// re-point, ADR-004.2) when absent, so the install-hash is stable across publishes,
+// via the ONE sidecar read-merge-write (writeSidecarPatch, 22/R2 — one writer per
+// subtree, shared with persistNodeId/migrateIdentity). Returns the salt string.
+// EXPORTED so mesh:heartbeat (milestone 23 / story 00) resolves the SAME stable id the
+// node record carries via the SAME salt → deriveNodeId path — read the id ONE way.
+// Shared by identity commands and lightweight session hooks.
+export async function resolveInstallSalt(sidecarPath, config) {
+  const existing = config?.mesh?.salt;
+  if (typeof existing === "string" && existing.length > 0) return existing;
+  const salt = crypto.randomUUID();
+  if (sidecarPath) {
+    await writeSidecarPatch(sidecarPath, { salt });
+  }
+  return salt;
+}

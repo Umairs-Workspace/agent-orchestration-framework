@@ -41,10 +41,10 @@ const TOKEN = /intake/iu;
 
 // The WRITE side, by path. `src/bundle/commands/*.md` is a glob because the prompts are the scaffold
 // path as a class — a new `aof:add-*` prompt reads the key the day it ships.
-const ALLOWED_FILES = Object.freeze(["src/work/init.mjs", "src/commands/init-update.mjs", "packages/work/src/commands/promote.mjs"]);
+const ALLOWED_FILES = Object.freeze(["src/work/init.mjs", /* compatibility export of intake policy */ "src/application/bindings/work/init.mjs", "src/application/bindings/commands/init-update.mjs", "packages/work/src/commands/promote.mjs"]);
 const ALLOWED_GLOB = /^src\/bundle\/commands\/[^/]+\.md$/u;
 // The two that must carry it — the writer and the reader (ADR-005 §1).
-const MUST_CARRY = Object.freeze(["src/work/init.mjs", "packages/work/src/commands/promote.mjs"]);
+const MUST_CARRY = Object.freeze(["src/application/bindings/work/init.mjs", "packages/work/src/commands/promote.mjs"]);
 // The readers the register names one by one, RESOLVED TO THE MODULES THAT EXIST. Two of the names in
 // the register row are spellings of verbs that do not have a module of that path, and both are
 // recorded here rather than silently dropped — a named reader that cannot be read must fail as NOT
@@ -56,20 +56,20 @@ const MUST_CARRY = Object.freeze(["src/work/init.mjs", "packages/work/src/comman
 // The doctor family is DERIVED by glob rather than listed: the register says `doctor-*.mjs`, there
 // are nine of them, and a tenth must be covered the day it lands.
 const NAMED_READERS = Object.freeze([
-  "src/work.mjs",
+  "src/application/bindings/work.mjs",
   "packages/work/src/validation.mjs",
   "packages/work/src/discovery.mjs",
   "packages/work/src/dependencies.mjs",
   "packages/work/src/readiness.mjs",
   "packages/work/src/identity.mjs",
-  "src/work/loops.mjs",
+  "src/application/bindings/work/loops.mjs",
   "packages/work/src/read.mjs",
-  "src/commands/list.mjs",
-  "src/commands/next.mjs",
-  "src/commands/find.mjs",
-  "src/commands/doc.mjs",
+  "src/application/bindings/commands/list.mjs",
+  "src/application/bindings/commands/next.mjs",
+  "src/application/bindings/commands/find.mjs",
+  "src/application/bindings/commands/doc.mjs",
   "packages/server/src/board-ui.mjs",
-  "src/global-work-store.mjs",
+  "src/application/bindings/global-work-store.mjs",
   // The aliases pass THROUGH the backlog under either setting and read nothing (task 04).
   "packages/work/src/insertion/scaffold.mjs",
 ]);

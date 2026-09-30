@@ -5,14 +5,14 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcRoot = path.join(root, "src");
-const driver = path.join(root, "src", "agent-session-driver.mjs");
-const sink = path.join(root, "src", "mesh", "worker-execution.mjs");
+const driver = path.join(root, "src/application/bindings/agent-session-driver.mjs");
+const sink = path.join(root, "src/application/bindings/mesh/worker-execution.mjs");
 const EXPECTED_DIRECT = Object.freeze([
-  "asset-base.mjs", "claude-trust.mjs", "degrade.mjs", "terminal-providers.mjs", "work/observe.mjs",
+  "asset-base.mjs", "application/bindings/claude-trust.mjs", "application/bindings/degrade.mjs", "application/bindings/terminal-providers.mjs", "application/bindings/work/observe.mjs",
   // milestone 68/01 added the pure OTel builder (ADR-005 §2); milestone 70/00 adds the pure
   // phase-brief compiler (ADR-002). Both are pure leaves imported WITHOUT re-export — the
   // driver's frozen EXPORT set (FF-5302) is untouched. `otel-attribution.mjs` was landed by
@@ -27,7 +27,7 @@ const EXPECTED_DIRECT = Object.freeze([
   // live since 69/01–02 merged with this census unmoved.
   // milestone 138/00 (138/ADR-001 §5 and §7) — THE DOOR: the driver's one way to know what is on
   // claude's screen. Imported WITHOUT re-export, so FF-5302's frozen seventeen are untouched.
-  "terminal/session-screen.mjs",
+  "application/bindings/terminal/session-screen.mjs",
 ]);
 const DENIED_TRANSITIVE = Object.freeze([
   "run-store.mjs", "global-work-store.mjs", "workspace-identity.mjs", "item-lock.mjs",
@@ -41,7 +41,7 @@ const TOKENS = Object.freeze(["assignmentId", "workspaceId", "leaseId", "assignm
 // The STATIC closure — the reach ceilings below are counts of what module init loads, so a deferred
 // `import()` is a door this walk deliberately does not open.
 function specifiers(source) {
-  return importSpecifiers(source).filter((entry) => !entry.dynamic).map((entry) => entry.specifier);
+  return dependencySpecifiers(source).filter((entry) => !entry.dynamic).map((entry) => entry.specifier);
 }
 
 async function walkImports(entry) {
@@ -73,6 +73,7 @@ function directSourceImports(source) {
 }
 
 function isDeniedTransitive(rel) {
+  rel = rel.replace(/^application\/bindings\//, "");
   if (DENIED_TRANSITIVE.includes(rel) || rel.startsWith("mesh/")) return true;
   if (/^\.\.\/packages\/(?:mesh|effects|integration-notion)\//u.test(rel)) return true;
   if (/^\.\.\/packages\/execution\/src\/(?:runs|spend|heartbeats|session-capture)\.mjs$/u.test(rel)) return true;
@@ -127,16 +128,17 @@ export const archTests = [
       // the old screen-registry and bounds forwards, a net increase of two (35 -> 37).
       // Observation now imports discovery directly: one implementation home replaces
       // nine nodes previously reached through the core work facade (37 -> 29).
-      assert.ok(graph.seen.size <= 29, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 observation census of 29`);
+      // Plan 02 adds the explicit per-application path policy, which imports the existing workspace paths.
+      assert.ok(graph.seen.size <= 30, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 assembly census of 30`);
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
       assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/session-driver.mjs"], "the driver package has no transport, work, mesh or core import");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
-      const work = path.join(srcRoot, "work.mjs");
-      const degrade = path.join(srcRoot, "degrade.mjs");
-      const applicationLog = path.join(srcRoot, "diagnostics/log.mjs");
+      const work = path.join(srcRoot, "application/bindings/work.mjs");
+      const degrade = path.join(srcRoot, "application/bindings/degrade.mjs");
+      const applicationLog = path.join(srcRoot, "application/bindings/diagnostics/log.mjs");
       const workspace = path.join(srcRoot, "workspace.mjs");
       // milestone 127/01 (127/ADR-001 §5) adds a SECOND route into work.mjs: `work/observe.mjs`
       // was an eighth work-root scanner (three functions `readdir`-ing `<cwd>/wiki/work` with a
@@ -149,8 +151,8 @@ export const archTests = [
       assert.deepEqual(incoming(graph, work), [], "the transcript service no longer reaches the core work facade");
       assert.ok(!graph.seen.has(work), "core work composition is absent from the driver closure");
       assert.deepEqual(incoming(graph, path.join(root, "packages/work/src/discovery.mjs")), ["../packages/work/src/observe.mjs"], "only the work observer reaches disk discovery");
-      assert.deepEqual(incoming(graph, applicationLog), ["degrade.mjs"], "diagnostic path policy is reached only through the reporter adapter");
-      assert.deepEqual(incoming(graph, workspace), ["diagnostics/log.mjs"], "workspace.mjs is reached only through diagnostic path policy");
+      assert.deepEqual(incoming(graph, applicationLog), ["application/bindings/degrade.mjs"], "diagnostic path policy is reached only through the reporter adapter");
+      assert.deepEqual(incoming(graph, workspace), ["application/paths.mjs"], "workspace.mjs is reached only through diagnostic path policy");
       assert.ok(!graph.seen.has(terminalWs), "local session execution never imports the WebSocket transport");
       assert.ok(graph.edges.some(([from, to]) => from === degrade && to === applicationLog), "the degrade admission still has a subject");
 
@@ -276,7 +278,7 @@ export const archTests = [
       for (const file of ["packages/execution/src/run-transitions.mjs", "packages/mesh/src/assignment-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)));
       // Plan 01 splits cache/brief/journal services and domain store declarations; direct public imports remove forwards.
       // The static closure grows 108 -> 117; the driver isolation and denylist above remain unchanged.
-      assert.equal(sinkGraph.seen.size, 117, "the Plan 01 ownership census is unchanged");
+      assert.equal(sinkGraph.seen.size, 118, "Plan 02 adds only the explicit application path policy to the 117-module worker closure");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

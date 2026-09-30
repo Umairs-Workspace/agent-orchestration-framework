@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { readJson } from "./fs.mjs";
+import { readJson } from "@aof/foundation/fs";
 
 export const LOCK_VERSION = 2;
 

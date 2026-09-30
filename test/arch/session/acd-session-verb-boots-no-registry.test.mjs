@@ -54,9 +54,9 @@ const selfPath = fileURLToPath(import.meta.url);
 const CLI_ENTRY = "src/cli.mjs";
 const SESSION_MODULE = "src/commands/mesh/session.mjs";
 const SESSION_IMPLEMENTATION = "packages/mesh/src/commands/session.mjs";
-const REGISTRY = "src/command-core.mjs";
-const FACE = "src/spine/face.mjs";
-const WORKSPACE = "src/work.mjs";
+const REGISTRY = "src/application/bindings/command-core.mjs";
+const FACE = "src/application/bindings/spine/face.mjs";
+const WORKSPACE = "src/application/default-workspace.mjs";
 
 // Floors, not equalities. The CLI entry's closure measured 25 modules after this story (277 before)
 // and the session module's 20; a ceiling would red on any story that adds a leaf, and a floor is

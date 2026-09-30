@@ -1,8 +1,5 @@
-// Transitional core composition for work-owned audit services.
-import { createAuditEvidence } from "@aof/work/audit/evidence";
-import { runBounded, DEFAULT_DEADLINE_MS, attemptedCommand } from "@aof/execution/bounded-process";
-import { toolkitProgram } from "./toolkit.mjs";
-
+// Compatibility entry; construction belongs to core application assembly.
+import { workAuditEvidence } from "../application/default.mjs";
 export const {
   DRIVE_PROGRAM,
   DRIVE_RESULT_SENTINEL,
@@ -29,4 +26,4 @@ export const {
   runEvidence,
   sizeFor,
   verdictFor,
-} = createAuditEvidence({ runBounded, DEFAULT_DEADLINE_MS, attemptedCommand, toolkitProgram });
+} = workAuditEvidence;

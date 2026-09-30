@@ -1,10 +1,15 @@
-// Transitional core composition for work-owned grading.
-import { createGradeCommand } from "@aof/work/commands/grade";
-import { spawnRubricAsync } from "@aof/execution/rubric-process";
-import { resolveItem, requireLocalCheckout } from "./resolve.mjs";
-import { readRuns } from "../run-store.mjs";
-import { deriveNodeId } from "@aof/mesh/node-identity";
-import { headCommit } from "../mesh/worktree.mjs";
-
-export { spawnRubricAsync };
-export const { GRADE_REENTRANCY_ENV, RUBRIC_CONFIG_KEY, declaredRubric, gatherClaimProvenance, gradeCommand, planRubric, reportObservation, rubricChildEnv, rubricSpawnOptions, usableCommand } = createGradeCommand({ spawnRubricAsync, resolveItem, requireLocalCheckout, readRuns, deriveNodeId, headCommit });
+// Compatibility entry; construction belongs to core application assembly.
+import { commandsGrade } from "../application/default.mjs";
+export const {
+  spawnRubricAsync,
+  GRADE_REENTRANCY_ENV,
+  RUBRIC_CONFIG_KEY,
+  declaredRubric,
+  gatherClaimProvenance,
+  gradeCommand,
+  planRubric,
+  reportObservation,
+  rubricChildEnv,
+  rubricSpawnOptions,
+  usableCommand,
+} = commandsGrade;

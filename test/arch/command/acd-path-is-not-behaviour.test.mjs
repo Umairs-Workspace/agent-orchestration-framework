@@ -44,8 +44,8 @@ import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-export const REGISTRY = "src/command-core.mjs";
-export const FACE = "src/spine/face.mjs";
+export const REGISTRY = "src/application/bindings/command-core.mjs";
+export const FACE = "src/application/bindings/spine/face.mjs";
 
 // THE SWEEP IS EVERY MODULE UNDER `src/`, and that is a correction (119/01 review). It swept the
 // two directories this story moved — a STORED fact about which families had moved, which goes
@@ -217,7 +217,7 @@ export const archTests = [
   {
     name: "arch/119 FF-11905: the registered set, its routes and its declared flags are read from the REGISTRY rather than from any path",
     run: async () => {
-      const core = await import(new URL(`../../../${REGISTRY}`, import.meta.url).href);
+      const core = await import("../../../src/command-core.mjs");
       const listed = core.listCommands();
       assert.ok(Array.isArray(listed) && listed.length >= 40, `non-vacuity: the registry lists ${listed.length} commands`);
 
@@ -284,11 +284,11 @@ export const archTests = [
       // (b) a module deriving its root by hops from its own location — the live shape this story
       //     found at `src/work-loops.mjs:318`, reproduced verbatim.
       const plantedRoot = "const PACKAGE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));";
-      const rootFindings = selfLocatedRoots("src/work/loops.mjs", plantedRoot);
+      const rootFindings = selfLocatedRoots("src/application/bindings/work/loops.mjs", plantedRoot);
       assert.equal(rootFindings.length, 1, `a planted self-located root fires the shipped detector: ${JSON.stringify(rootFindings)}`);
       assert.equal(rootFindings[0].constant, "PACKAGE_ROOT", "…and the refusal names the constant");
       assert.match(rootFindings[0].message, /function of the file's DEPTH/u, "…and says why a green suite would never have caught it");
-      assert.deepEqual(selfLocatedRoots("src/work/loops.mjs", await read("src/work/loops.mjs")), [], "…and the real module, now asking a seam for the root, reports none in this same lane");
+      assert.deepEqual(selfLocatedRoots("src/application/bindings/work/loops.mjs", await read("src/application/bindings/work/loops.mjs")), [], "…and the real module, now asking a seam for the root, reports none in this same lane");
 
       // (c) the `path.resolve(dirname, "..", "..")` spelling of the same defect is caught too —
       //     one derivation, two idioms, and a control that knew only one would meter half of it.
