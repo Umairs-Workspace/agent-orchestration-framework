@@ -16,6 +16,7 @@ import { writeFile, mkdir, mkdtemp, readFile, realpath, rm, unlink } from "node:
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { loadWorkspace } from "../../../src/work.mjs";
 import { createMeshWorkerExecutionHandler, commitWorktreeChanges, resolveRefInWorktree } from "../../../src/mesh/worker-execution.mjs";
 import { meshWorktreePath, meshItemBranchName, addDispatchWorktree, commitWorktreeChanges as commitWorktreeChangesFromHome } from "../../../src/mesh/worktree.mjs";
@@ -286,10 +287,11 @@ export const meshWorkerCommitDiffTests = [
     run: async () => {
       assert.strictEqual(commitWorktreeChanges, commitWorktreeChangesFromHome, "both bindings are the same function");
       const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
       const sink = adapter + "\n" + implementation;
       assert.doesNotMatch(sink, /function\s+commitWorktreeChanges\b/u, "worker-execution.mjs contains no `function commitWorktreeChanges` definition");
-      assert.match(sink, /export\s*\{[^}]*\bcommitWorktreeChanges\b[^}]*\}\s*from\s*["']\.\/worktree\.mjs["']/u, "worker-execution.mjs carries commitWorktreeChanges in an `export { … } from \"./worktree.mjs\"` clause");
+      assert.match(adapter, /"commitWorktreeChanges":\s*meshWorktreeServices\.commitWorktreeChanges/u, "the compatibility API returns the supplied worktree operation");
+      assert.ok(dependencySpecifiers(adapter).some(edge => edge.parameter === "meshWorktreeServices" && edge.specifier === "./worktree.mjs"), "the operation comes from the worktree constructor");
     },
   },
   ...DIRT_ROWS.map((row) => ({
@@ -392,7 +394,7 @@ export const meshWorkerCommitDiffTests = [
     name: "129/03 task 00 — the worker's two call sites are unchanged lines",
     run: async () => {
       const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
       const sink = adapter + "\n" + implementation;
       const sites = [...sink.matchAll(/\bcommitWorktreeChanges\s*\(/gu)];
       assert.equal(sites.length, 2, "exactly two commitWorktreeChanges( call sites");
@@ -459,18 +461,20 @@ export const meshWorkerCommitDiffTests = [
     run: async () => {
       assert.strictEqual(resolveRefInWorktree, resolveRefInWorktreeFromHome, "both bindings are the same function");
       const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
       const sink = adapter + "\n" + implementation;
       assert.doesNotMatch(sink, /function\s+resolveRefInWorktree\b/u, "worker-execution.mjs contains no `function resolveRefInWorktree` definition");
       assert.doesNotMatch(sink, /function\s+worktreeWorkDir\b/u, "…and no `function worktreeWorkDir` definition");
-      assert.match(sink, /export\s*\{[^}]*\bresolveRefInWorktree\b[^}]*\}\s*from\s*["']\.\.\/work\/dispatch\.mjs["']/u, "…and re-exports resolveRefInWorktree from ../work/dispatch.mjs");
+      assert.match(adapter, /"resolveRefInWorktree":\s*workDispatchServices\.resolveRefInWorktree/u, "the compatibility API returns the supplied dispatch resolver");
+      assert.ok(dependencySpecifiers(adapter).some(edge => edge.parameter === "workDispatchServices" && edge.specifier === "../work/dispatch.mjs"), "the resolver comes from the dispatch constructor");
       const home = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "dispatch.mjs"), "utf8"));
       assert.match(home, /async\s+function\s+resolveRefInWorktree\b/u, "dispatch.mjs defines resolveRefInWorktree");
       assert.match(home, /function\s+worktreeWorkDir\b/u, "…and worktreeWorkDir");
       // worktree.mjs GAINS no import of ../work.mjs: its one pre-existing `loadWorkspace` import
       // line is the only one, and it takes no `findWork` — the resolver's edge is dispatch.mjs's.
-      const worktreeSource = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worktree.mjs"), "utf8"));
-      const workImports = [...worktreeSource.matchAll(/^\s*import\s*\{([^}]*)\}\s*from\s*["']\.\.\/work\.mjs["']/gmu)];
+      const worktreeSource = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/worktree.mjs"), "utf8"));
+      assert.ok(dependencySpecifiers(worktreeSource).some(edge => edge.parameter === "workServices" && edge.specifier === "../work.mjs"), "the worktree constructor receives the work service");
+      const workImports = [...worktreeSource.matchAll(/const\s*\{([^}]*)\}\s*=\s*workServices/gmu)];
       assert.equal(workImports.length, 1, "worktree.mjs carries exactly its one pre-existing ../work.mjs import line");
       assert.deepEqual(workImports[0][1].split(",").map((name) => name.trim()).filter(Boolean), ["loadWorkspace"], "…binding loadWorkspace alone, as before this story");
       assert.doesNotMatch(worktreeSource, /\bfindWork\b/u, "worktree.mjs never reaches findWork");

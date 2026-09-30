@@ -536,9 +536,9 @@ function runAskTests() {
         const notARecord = {
           "packages/work/src/commands/list.mjs": "{ asks: await readWorkspaceAsks(ctx),",
           // Exact service objects in the 142 composition adapters, never persisted records.
-          "src/commands/loop.mjs": "asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },",
-          "src/loop/cycle.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks },",
-          "src/loop/wave.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, standingAsk },",
+          "src/application/bindings/commands/loop.mjs": "asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },",
+          "src/application/bindings/loop/cycle.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks },",
+          "src/application/bindings/loop/wave.mjs": "asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, standingAsk },",
         };
         for (const { rel, path: file } of files) {
           if (rel === "packages/execution/src/runs.mjs") continue;

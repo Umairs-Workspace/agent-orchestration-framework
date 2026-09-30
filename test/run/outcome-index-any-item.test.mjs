@@ -21,6 +21,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildRecords, INDEX_VERSION } from "../../src/memory/local-indexing.mjs";
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 import { applyScope, MEMORY_RECORD_FIELDS, recall } from "../../src/memory/local-retrieval.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -311,18 +312,19 @@ export const outcomeIndexAnyItemTests = [
     name: "80/02 seam: no source parser lives in a backend, graphify's record source is the imported buildRecords, and INDEX_VERSION === GRAPHIFY_INDEX_VERSION, unchanged at 1",
     run: async () => {
       const parserDef = /(?:function|const)\s+(parse(?:Outcome|Architecture|Retrospective|Aof)\b)/g;
-      for (const rel of ["src/memory/local-backend.mjs", "src/memory/graphify-backend.mjs"]) {
+      for (const rel of ["src/application/bindings/memory/local-backend.mjs", "src/application/bindings/memory/graphify-backend.mjs", "packages/knowledge/src/memory/local-backend.mjs", "packages/knowledge/src/memory/graphify-backend.mjs"]) {
         const src = await readFile(path.join(repoRoot, rel), "utf8");
         const defs = [...src.matchAll(parserDef)].map((m) => m[1]);
         assert.deepEqual(defs, [], `${rel} defines no source parser (found: ${defs.join(", ") || "none"})`);
       }
 
-      const graphify = await readFile(path.join(repoRoot, "src", "memory", "graphify-backend.mjs"), "utf8");
+      const graphify = await readFile(path.join(repoRoot, "src/application/bindings/memory/graphify-backend.mjs"), "utf8");
       assert.match(
         graphify,
-        /import\s*\{[^}]*\bbuildRecords\b[^}]*\}\s*from\s*["']\.\/local-indexing\.mjs["']/,
-        "the graphify backend's record source is the imported buildRecords",
+        /const\s*\{[^}]*\bbuildRecords\b[^}]*\}\s*=\s*memoryLocalIndexingServices/,
+        "the graphify backend's record source is the supplied buildRecords",
       );
+      assert.ok(dependencySpecifiers(graphify).some(edge => edge.parameter === "memoryLocalIndexingServices" && edge.specifier === "./local-indexing.mjs"), "the supplied builder comes from the shared indexing constructor");
 
       const { GRAPHIFY_INDEX_VERSION } = await import("../../src/memory/graphify-backend.mjs");
       assert.equal(INDEX_VERSION, GRAPHIFY_INDEX_VERSION, "INDEX_VERSION and GRAPHIFY_INDEX_VERSION are equal");

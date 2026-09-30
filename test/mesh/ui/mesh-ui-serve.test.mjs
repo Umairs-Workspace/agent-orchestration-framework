@@ -39,6 +39,7 @@ import { globalMeshPaths } from "../../../src/workspace.mjs";
 import { loopStopsDir, readStopRequest } from "../../../src/loop/stop-request.mjs";
 import { publishRepoInto, withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -775,9 +776,9 @@ export const meshUiServeTests = [
     name: "loop-stop-route/02 the face imports the core and nothing from commands — ../loop/stop.mjs is among ui-serve.mjs's specifiers, none is under ../commands/, and acd-mesh-ui-no-core-import's allow-list names it as the second sanctioned write door",
     async run() {
       const source = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs"), "utf8"));
-      const adapter = stripComments(await readFile(path.join(repoRoot, "src/mesh/ui-serve.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
       for (const text of [source, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*stopLoop/su);
-      const specifiers = importSpecifiers(source + "\n" + adapter).map((entry) => entry.specifier);
+      const specifiers = dependencySpecifiers(source + "\n" + adapter).map((entry) => entry.specifier);
       assert.ok(specifiers.includes("../loop/stop.mjs"), `imports ../loop/stop.mjs — got ${JSON.stringify(specifiers)}`);
       assert.deepEqual(specifiers.filter((spec) => spec.startsWith("../commands/") || spec.startsWith("./commands/")), [], "nothing under commands/");
       const gate = await readFile(path.join(repoRoot, "test", "arch", "mesh", "acd-mesh-ui-no-core-import.test.mjs"), "utf8");

@@ -30,6 +30,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 import {
   createMeshWorkerSessionSpawnHandler,
@@ -449,12 +450,13 @@ export const meshSessionSpawnHandlerTests = [
       // (a) the structural half — the registration exists, on the real lane, with the
       //     handler built by the real factory from the real sibling module.
       const implementation = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
-      const adapter = await readFile(path.join(repoRoot, "src/mesh/launcher.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, "src/application/bindings/mesh/launcher.mjs"), "utf8");
       for (const text of [implementation, adapter]) assert.match(text, /createMeshLauncher\(\{[^}]*createMeshWorkerSessionSpawnHandler/su);
       const launcherSource = adapter + "\n" + implementation;
       assert.ok(
-        /import\s*\{[^}]*createMeshWorkerSessionSpawnHandler[^}]*\}\s*from\s*["'](?:\.\.?\/)+session-spawn-handler\.mjs["']/.test(launcherSource),
-        "mesh-launcher.mjs imports createMeshWorkerSessionSpawnHandler from ./mesh/session-spawn-handler.mjs",
+        /const\s*\{[^}]*createMeshWorkerSessionSpawnHandler[^}]*\}\s*=\s*meshSessionSpawnHandlerServices/.test(adapter)
+          && dependencySpecifiers(adapter).some(edge => edge.parameter === "meshSessionSpawnHandlerServices" && edge.specifier === "./session-spawn-handler.mjs"),
+        "mesh-launcher.mjs receives createMeshWorkerSessionSpawnHandler from its configured sibling",
       );
       assert.ok(/client\.onSessionSpawn\s*\??\.?\(/.test(launcherSource), "mesh-launcher.mjs calls client.onSessionSpawn(...)");
       assert.ok(

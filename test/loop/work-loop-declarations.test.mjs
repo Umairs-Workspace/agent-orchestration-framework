@@ -34,6 +34,7 @@ import {
 } from "../../src/loop/stop-request.mjs";
 import { setDegradeSinkForTest } from "../../src/degrade.mjs";
 import { stripComments } from "../support/source-slice.mjs";
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 const NOW = "2026-09-08T12:00:00.000Z";
 const CEILING = 7_200_000;
@@ -588,10 +589,11 @@ export const workLoopDeclarationsTests = [
     name: "130/04 task03 — the producer spells no path: readStopRequest and loopStopsDir come from the one module",
     async run() {
       const here = path.dirname(fileURLToPath(import.meta.url));
-      const source = await readFile(path.join(here, "..", "..", "src", "mesh", "declarations.mjs"), "utf8");
+      const source = await readFile(path.join(here, "..", "..", "src/application/bindings/mesh/declarations.mjs"), "utf8");
       const stripped = stripComments(source);
-      assert.match(stripped, /import \{[^}]*\breadStopRequest\b[^}]*\} from "\.\.\/loop\/stop-request\.mjs"/, "imports readStopRequest from the one module");
-      assert.match(stripped, /import \{[^}]*\bloopStopsDir\b[^}]*\} from "\.\.\/loop\/stop-request\.mjs"/, "imports loopStopsDir from the one module");
+      assert.ok(dependencySpecifiers(source).some(edge => edge.parameter === "loopStopRequestServices" && edge.specifier === "../loop/stop-request.mjs"), "the supplied request service has one configured home");
+      assert.match(stripped, /const \{[^}]*\breadStopRequest\b[^}]*\} = loopStopRequestServices/, "receives readStopRequest from the one module");
+      assert.match(stripped, /const \{[^}]*\bloopStopsDir\b[^}]*\} = loopStopRequestServices/, "receives loopStopsDir from the one module");
       const implementation = stripComments(await readFile(path.join(here, "..", "..", "packages/mesh/src/declarations.mjs"), "utf8"));
       for (const symbol of ["readStopRequest", "loopStopsDir"]) {
         assert.match(stripped, new RegExp('createSupervisedDeclarations\\(\\{[^}]*\\b' + symbol + '\\b'), "core supplies the shared reader");

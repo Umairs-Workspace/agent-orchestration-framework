@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 import os from "node:os";
 import path from "node:path";
 import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
@@ -703,9 +704,9 @@ function askOverlayTests() {
     {
       name: "131/05 task00 — the list reads the ask through its one home",
       async run() {
-        const source = stripComments(await readFile(path.join(REPO_ROOT, "src", "commands", "list.mjs"), "utf8"));
-        assert.match(source, /import \{[^}]*\bASK_STATES\b[^}]*\} from "\.\.\/loop\/ask-request\.mjs"/u);
-        for (const name of ["readAsks", "loopAsksDir"]) assert.match(source, new RegExp(`import \\{[^}]*\\b${name}\\b[^}]*\\} from "\\.\\./loop/ask-request\\.mjs"`, "u"), name);
+        const source = stripComments(await readFile(path.join(REPO_ROOT, "src/application/bindings/commands/list.mjs"), "utf8"));
+        assert.ok(dependencySpecifiers(source).some(edge => edge.parameter === "loopAskRequestServices" && edge.specifier === "../loop/ask-request.mjs"), "the request service is supplied from its one configured home");
+        for (const name of ["ASK_STATES", "readAsks", "loopAsksDir"]) assert.match(source, new RegExp(`const \\{[^}]*\\b${name}\\b[^}]*\\} = loopAskRequestServices`, "u"), name);
         for (const word of ['"waiting"', '"parked"', '"answered"', "loop-asks"]) assert.ok(!source.includes(word), `list.mjs spells no ${word}`);
         const implementation = stripComments(await readFile(path.join(REPO_ROOT, "packages/work/src/commands/list.mjs"), "utf8"));
         assert.match(implementation, /function applyAskOverlay\(/u);

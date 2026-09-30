@@ -27,6 +27,7 @@
 // "should" do.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { WebSocket } from "ws";
 import { serveRelay } from "../../../src/mesh/relay.mjs";
 import * as bridge from "../../../src/mesh/terminal-relay-bridge.mjs";
@@ -202,14 +203,14 @@ const BUILDER_ROWS = [
 // measurement (the direct-import set under src/), not by belief — and not one of them
 // takes the deleted export.
 const DEPENDENT_ROWS = [
-  { module: "packages/mesh/src/worker-stream-client.mjs", bindings: ["buildTerminalFrameEnvelope", "buildTerminalEndEnvelope", "TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
-  { module: "packages/mesh/src/ui-serve.mjs", bindings: ["buildTerminalInputEnvelope"] },
-  { module: "packages/mesh/src/terminal-mirror.mjs", adapter: "src/mesh/terminal-mirror.mjs", factory: "createTerminalMirroring", bindings: ["TERMINAL_FRAME_KIND", "loopbackRelayUrl"] },
-  { module: "packages/mesh/src/terminal-input.mjs", adapter: "src/mesh/terminal-input.mjs", factory: "createTerminalInput", bindings: ["TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
-  { module: "packages/mesh/src/control-stream-server.mjs", bindings: ["TERMINAL_FRAME_KIND"] },
-  { module: "packages/mesh/src/launcher.mjs", bindings: ["createTerminalRelayPushTransport"] },
-  { module: "packages/mesh/src/commands/terminal-resume.mjs", adapter: "src/commands/mesh/terminal-resume.mjs", factory: "createMeshTerminalResumeCommands", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
-  { module: "packages/mesh/src/commands/ui.mjs", adapter: "src/commands/mesh/ui.mjs", factory: "createMeshUiCommands", bindings: ["createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/worker-stream-client.mjs", adapter: "src/application/bindings/worker-stream-client.mjs", factory: "createWorkerStreamServices", bindings: ["buildTerminalFrameEnvelope", "buildTerminalEndEnvelope", "TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
+  { module: "packages/mesh/src/ui-serve.mjs", adapter: "src/application/bindings/mesh/ui-serve.mjs", factory: "createMeshUiServer", bindings: ["buildTerminalInputEnvelope"] },
+  { module: "packages/mesh/src/terminal-mirror.mjs", adapter: "src/application/bindings/mesh/terminal-mirror.mjs", factory: "createTerminalMirroring", bindings: ["TERMINAL_FRAME_KIND", "loopbackRelayUrl"] },
+  { module: "packages/mesh/src/terminal-input.mjs", adapter: "src/application/bindings/mesh/terminal-input.mjs", factory: "createTerminalInput", bindings: ["TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
+  { module: "packages/mesh/src/control-stream-server.mjs", adapter: "src/application/bindings/control-stream-server.mjs", factory: "createControlStreamServices", bindings: ["TERMINAL_FRAME_KIND"] },
+  { module: "packages/mesh/src/launcher.mjs", adapter: "src/application/bindings/mesh/launcher.mjs", factory: "createMeshLauncher", bindings: ["createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/commands/terminal-resume.mjs", adapter: "src/application/bindings/commands/mesh/terminal-resume.mjs", factory: "createMeshTerminalResumeCommands", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/commands/ui.mjs", adapter: "src/application/bindings/commands/mesh/ui.mjs", factory: "createMeshUiCommands", bindings: ["createTerminalRelayPushTransport"] },
 ];
 
 // A dependent's own URL, DERIVED from the repo-relative `module` each row already carries. The row
@@ -218,14 +219,10 @@ const DEPENDENT_ROWS = [
 // eight rows failed at import for a reason none of them was about. One name, resolved once.
 const dependentUrl = (row) => new URL(`../../../${row.module}`, import.meta.url);
 
-// bridgeImportClause(source) → the named specifiers a module takes FROM the bridge.
-function bridgeImportClause(source) {
-  const match = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*terminal-relay-bridge\.mjs["']/.exec(source);
-  if (match == null) return null;
-  return match[1]
-    .split(",")
-    .map((name) => name.trim())
-    .filter((name) => name.length > 0);
+// The named members the constructor takes from its supplied bridge instance.
+function bridgeBindings(source) {
+  return [...source.matchAll(/const\s*\{([^}]*)\}\s*=\s*meshTerminalRelayBridgeServices/gu)]
+    .flatMap(match => match[1].split(",").map(name => name.trim()).filter(Boolean));
 }
 
 export const meshTerminalRelayBridgeTests = [
@@ -309,9 +306,15 @@ export const meshTerminalRelayBridgeTests = [
 
       // And the binding it takes from the bridge is defined.
       const source = await readFile(dependentUrl(row), "utf8");
-      const composition = row.adapter ? await readFile(dependentUrl({ module: row.adapter }), "utf8") : source;
-      const taken = bridgeImportClause(composition);
-      if (row.adapter) {
+      const compositionUrl = dependentUrl({ module: row.adapter });
+      const composition = await readFile(compositionUrl, "utf8");
+      const taken = bridgeBindings(composition);
+      const supplied = dependencySpecifiers(composition).find(edge => edge.parameter === "meshTerminalRelayBridgeServices");
+      assert.ok(supplied, "core supplies the bridge instance");
+      assert.equal(new URL(supplied.specifier, compositionUrl).href,
+        dependentUrl({ module: "src/application/bindings/mesh/terminal-relay-bridge.mjs" }).href,
+        "the supplied instance comes from the bridge's one constructor");
+      {
         assert.equal(typeof loaded[row.factory], "function", "the public package factory links");
         for (const binding of row.bindings) {
           const port = new RegExp(row.factory + "\\(\\{[^}]*\\b" + binding + "\\b");
@@ -319,7 +322,7 @@ export const meshTerminalRelayBridgeTests = [
           assert.match(composition, port, "core binds the imported bridge service");
         }
       }
-      assert.notEqual(taken, null, `${row.module} still imports from the bridge`);
+      assert.ok(taken.length > 0, `${row.module} still receives members from the bridge`);
       assert.deepEqual([...taken].sort(), [...row.bindings].sort(), `${row.module} takes exactly the bindings the deletion checklist enumerated`);
       for (const binding of taken) {
         assert.notEqual(bridge[binding], undefined, `${row.module} takes ${binding}, which the bridge still exports`);

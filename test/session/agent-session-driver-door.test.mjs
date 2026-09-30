@@ -46,6 +46,7 @@ import { execFile } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 // ── DOOR 1: the driver's own ────────────────────────────────────────────────────────
 // Seventeen static named imports. A name this module does not export makes the line
@@ -105,27 +106,13 @@ import { registeredSuitePaths, registrationSurface } from "../support/registrati
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DRIVER_MODULE = "src/agent-session-driver.mjs";
 const SINK_MODULE = "src/mesh/worker-execution.mjs";
-// 119/01 — the specifier the sink uses for the driver, DERIVED from the two module paths this file
-// already declares rather than spelled as a literal. It was `./agent-session-driver.mjs`, which was
-// true only while the sink sat beside the driver at `src/`; the sink now sits in `src/mesh/`, and a
-// pinned spelling would have made this gate a statement about depth instead of about the edge.
-// 119/01 — the tail of the sink's path, DERIVED from SINK_MODULE. Every census below recognises
-// an importer by this suffix; it was the bare filename `mesh-worker-execution.mjs`, which stopped
-// matching every importer at once the day the module moved into `src/mesh/`.
-// 119/01 — the launcher moved into `src/mesh/` with the sink, so the specifier it uses is now
-// intra-family. Its path is declared here so the resolution below has a `from`.
-const LAUNCHER_MODULE = "src/mesh/launcher.mjs";
+const SINK_CONSTRUCTOR = "src/application/bindings/mesh/worker-execution.mjs";
+const DRIVER_CONSTRUCTOR = "src/application/bindings/agent-session-driver.mjs";
+// Compatibility imports retain their old doors. Configured consumers receive the
+// same API through the explicit worker constructor; constructor imports themselves
+// are not API consumers and cannot inflate the census.
+const LAUNCHER_MODULE = "src/application/bindings/mesh/launcher.mjs";
 const SINK_SUFFIX = SINK_MODULE.split("/").slice(1).join("/");
-const DRIVER_SPECIFIER = (() => {
-  const from = SINK_MODULE.split("/").slice(0, -1);
-  const to = DRIVER_MODULE.split("/");
-  let shared = 0;
-  while (shared < from.length && from[shared] === to[shared]) shared += 1;
-  const up = from.length - shared;
-  const rel = [...Array.from({ length: up }, () => ".."), ...to.slice(shared)].join("/");
-  return up === 0 ? `./${rel}` : rel;
-})();
-const DRIVER_SPECIFIER_PATTERN = DRIVER_SPECIFIER.replaceAll(".", "\\.").replaceAll("/", "\\/");
 
 const NODE_ID = "worker-a";
 
@@ -233,12 +220,6 @@ const NAMES_THE_NEW_MODULE = [
   // fires. It imports neither the driver nor the sink — a naming consumer, and the census split
   // below is untouched. Named here at aof:verify 127 (129/06 in review; the entry is 129's to ratify).
   "test/arch/loop/acd-loop-family-boundary.test.mjs",
-  // milestone 134 / story 03 (FF-13401 `acd-example-answer-one-reader`) — the one-reader control
-  // NAMES the driver because that is its leg: `packages/work/src/examples/answers.mjs` must import
-  // `HUMAN_INPUT_TOOL_NAMES` from `../agent-session-driver.mjs`, its one home, and the assertion
-  // spells that import. It imports neither the driver nor the sink — a naming consumer, and the
-  // census split below is untouched. Named here 2026-09-24, after 134/03 merged home without it.
-  "test/arch/examples/acd-example-answer-one-reader.test.mjs",
   // milestone 131 / story 06 (FF-13102, FF-13104/05) — the ask's single-home control reads the
   // driver's export set and `NEEDS_INPUT_INSTRUCTION` (a dynamic import of its module object, never
   // a drive), and the wait-in-place control names the driver as one of the terminal faces its sweep
@@ -321,6 +302,21 @@ function importedNames(clause) {
     .map((part) => part.split(/\s+as\s+/)[0].trim());
 }
 
+// Literal compatibility imports and supplied API ports are both consumers. Factory
+// imports construct an instance; they are not consumers of its exported operations.
+function sinkDependencies(rel, source) {
+  const direct = staticImports(source).filter(entry => resolvesToSink(rel, entry.specifier))
+    .map(entry => ({ ...entry, names: importedNames(entry.clause) }));
+  const supplied = dependencySpecifiers(source).filter(entry => entry.injected && entry.parameter === 'meshWorkerExecutionServices');
+  for (const entry of supplied) {
+    assert.equal(path.posix.normalize(path.posix.join(path.posix.dirname(rel), entry.specifier)), SINK_CONSTRUCTOR);
+    const names = [...stripComments(source).matchAll(/const\s*\{([^}]*)\}\s*=\s*meshWorkerExecutionServices/gu)]
+      .flatMap(match => importedNames(`{${match[1]}}`));
+    direct.push({ ...entry, names });
+  }
+  return direct;
+}
+
 // 119/01 — SINK RECOGNITION IS A RESOLUTION, NOT A SUFFIX. `src/mesh/launcher.mjs` reaches the
 // sink as `./worker-execution.mjs` now that both live in `src/mesh/`, so a tail test on the
 // specifier misses every intra-family importer while quietly still matching the others — half a
@@ -357,9 +353,9 @@ export async function census() {
   const members = [];
   for (const rel of files) {
     const source = await readFile(path.join(repoRoot, rel), "utf8");
-    const sinkImports = staticImports(source).filter((entry) => resolvesToSink(rel, entry.specifier));
+    const sinkImports = sinkDependencies(rel, source);
     if (sinkImports.length === 0) continue;
-    members.push({ rel, names: sinkImports.flatMap((entry) => importedNames(entry.clause)) });
+    members.push({ rel, names: sinkImports.flatMap(entry => entry.names) });
   }
   // THE CENSUS'S SUBJECT IS THE RECORDED DEPENDENTS — the 49 the graph measured on
   // 2026-08-15, whose property is that they keep the import line they already had. This
@@ -544,9 +540,9 @@ export const agentSessionDriverDoorTests = [
       const launcher = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
       const adapter = await readFile(path.join(repoRoot, LAUNCHER_MODULE), "utf8");
       assert.match(launcher, /createMeshLauncher\(\{[^}]*INTERACTIVE_COMMAND_READY_DELAY_MS/su, "the package receives the configured driver delay");
-      const sinkImport = staticImports(adapter).find((entry) => resolvesToSink(LAUNCHER_MODULE, entry.specifier));
+      const sinkImport = sinkDependencies(LAUNCHER_MODULE, adapter)[0];
       assert.ok(sinkImport != null, "the launcher still imports from mesh-worker-execution.mjs");
-      const names = importedNames(sinkImport.clause);
+      const names = sinkImport.names;
       assert.equal(names.length, 14, `the launcher's import still names fourteen bindings: ${names.join(", ")}`);
       assert.ok(names.includes("INTERACTIVE_COMMAND_READY_DELAY_MS"), "including INTERACTIVE_COMMAND_READY_DELAY_MS");
       assert.ok(names.includes("ensureWorktreeTrusted"), "and ensureWorktreeTrusted");
@@ -596,27 +592,18 @@ export const agentSessionDriverDoorTests = [
     // remember to add its name to a list.
     name: "53/00 task00 — the sink's INWARD set is DERIVED from its own body, not hand-counted: every re-exported name the sink still uses is also imported back (ADR-010 §17a, VERIFICATION F-02)",
     run: async () => {
-      const raw = await readFile(path.join(repoRoot, SINK_MODULE), "utf8");
+      const raw = await readFile(path.join(repoRoot, SINK_CONSTRUCTOR), "utf8");
       const sinkSource = stripComments(raw);
 
-      // The re-export block: the seventeen names that now live in the driver.
-      // `[^}]*` rather than a lazy `[\s\S]*?`: a lazy span would start at some EARLIER
-      // `import {` and run through to this module's specifier, handing `importedNames`
-      // the wrong statement's braces.
-      const reExport = new RegExp(`export\\s*\\{([^}]*)\\}\\s*from\\s*["']${DRIVER_SPECIFIER_PATTERN}["']`, "u").exec(sinkSource);
-      assert.ok(reExport, `the sink re-exports from the driver at ${DRIVER_SPECIFIER}`);
-      const reExported = importedNames(reExport[0]);
-      assert.equal(reExported.length, 17, `the re-export block carries the frozen seventeen: ${reExported.join(", ")}`);
-
-      // The inward import clause: the names the sink binds LOCALLY.
-      const inwardImport = new RegExp(`import\\s*\\{([^}]*)\\}\\s*from\\s*["']${DRIVER_SPECIFIER_PATTERN}["']`, "u").exec(sinkSource);
-      assert.ok(inwardImport, `the sink also imports from the driver at ${DRIVER_SPECIFIER} — a re-export binds no local name`);
-      const imported = importedNames(inwardImport[0]);
-
-      // The body: everything that is neither of those two blocks. Any re-exported name
-      // appearing here as an identifier is consumed inward and MUST be bound locally.
-      const body = sinkSource.replace(reExport[0], "").replace(inwardImport[0], "");
-      const consumedInward = reExported.filter((name) => new RegExp(`(?<![\\w$.])${name}(?![\\w$])`).test(body));
+      const forwarded = [...sinkSource.matchAll(/"(\w+)":\s*agentSessionDriverServices\.\1/gu)];
+      const reExported = forwarded.map(match => match[1]);
+      assert.deepEqual(reExported.sort(), FROZEN.map(member => member.name).sort(), "the constructor forwards all seventeen driver members");
+      assert.ok(dependencySpecifiers(raw).some(edge => edge.parameter === "agentSessionDriverServices" && edge.specifier === "../agent-session-driver.mjs"), "the driver port comes from its one constructor");
+      const inward = [...sinkSource.matchAll(/const\s*\{([^}]*)\}\s*=\s*agentSessionDriverServices\s*;/gu)];
+      const imported = inward.flatMap(match => importedNames(`{${match[1]}}`));
+      let body = sinkSource;
+      for (const match of [...forwarded, ...inward]) body = body.replace(match[0], "");
+      const consumedInward = reExported.filter(name => new RegExp(`(?<![\\w$.])${name}(?![\\w$])`).test(body));
 
       assert.deepEqual(
         consumedInward.sort(),
@@ -664,8 +651,8 @@ export const agentSessionDriverDoorTests = [
       const launcher = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
       const adapter = await readFile(path.join(repoRoot, LAUNCHER_MODULE), "utf8");
       assert.match(launcher, /createMeshLauncher\(\{[^}]*INTERACTIVE_COMMAND_READY_DELAY_MS/su, "the package receives the configured driver delay");
-      const sinkImport = staticImports(adapter).find((entry) => resolvesToSink(LAUNCHER_MODULE, entry.specifier));
-      assert.ok(importedNames(sinkImport.clause).includes("ensureWorktreeTrusted"), "the launcher's existing named import of it from the sink is unaffected");
+      const sinkImport = sinkDependencies(LAUNCHER_MODULE, adapter)[0];
+      assert.ok(sinkImport.names.includes("ensureWorktreeTrusted"), "the launcher's supplied worker API retains the trust operation");
     },
   },
   {
@@ -729,7 +716,7 @@ export const agentSessionDriverDoorTests = [
       const SOURCE_SIDE_FLOOR = 2;
       const CENSUS_FLOOR = 54;
       const importsTheSink = async (rel) =>
-        staticImports(await readFile(path.join(repoRoot, rel), "utf8")).some((entry) => resolvesToSink(rel, entry.specifier));
+        sinkDependencies(rel, await readFile(path.join(repoRoot, rel), "utf8")).length > 0;
 
       for (const member of suites) {
         assert.match(member.rel, /^test\/(?!support\/).*\.test\.mjs$/u, `${member.rel} is a *.test.mjs suite, and not a support fixture`);
@@ -938,16 +925,16 @@ export const agentSessionDriverDoorTests = [
   {
     name: "53/00 task01 — the other three source-side importers are untouched, and src/work.mjs is not among this story's edits at any distance",
     run: async () => {
-      for (const rel of ["src/mesh/launcher.mjs", "scripts/pin-checkout-id.mjs"]) {
+      for (const rel of [LAUNCHER_MODULE, "scripts/pin-checkout-id.mjs"]) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
         assert.ok(
-          staticImports(source).some((entry) => resolvesToSink(rel, entry.specifier)),
+          sinkDependencies(rel, source).length > 0,
           `${rel} still imports the sink at ${SINK_MODULE}`,
         );
         assert.equal(source.includes("agent-session-driver"), false, `${rel} does not name the new module`);
       }
       for (const [rel, symbol, specifier] of [
-        ["src/global-node-registry.mjs", "resolveCloneUrl", "@aof/mesh/worker-repo-admission"],
+        ["src/application/bindings/global-node-registry.mjs", "resolveCloneUrl", "@aof/mesh/worker-repo-admission"],
         ["packages/mesh/src/clone-credential-provider.mjs", "parseRepoFromCloneUrl", "./worker-repo-admission.mjs"],
       ]) {
         const source = await readFile(path.join(repoRoot, rel), "utf8");
@@ -957,7 +944,7 @@ export const agentSessionDriverDoorTests = [
       // The milestone's zero-edits-to-the-god-node property: `work.mjs` is neither a
       // subject nor a consequence of the extraction. The new module does not import it
       // either — the one admitted edge is terminal-ws.mjs -> work.mjs (ADR-001 §3).
-      const driverSource = await readFile(path.join(repoRoot, DRIVER_MODULE), "utf8");
+      const driverSource = await readFile(path.join(repoRoot, DRIVER_CONSTRUCTOR), "utf8");
       assert.equal(
         staticImports(driverSource).some((entry) => entry.specifier.endsWith("work.mjs")),
         false,

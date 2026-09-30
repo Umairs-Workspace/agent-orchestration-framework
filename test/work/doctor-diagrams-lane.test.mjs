@@ -14,6 +14,7 @@ import { invoke, loadWorkspace } from "../../src/command-core.mjs";
 import { renderDiagramBlock } from "../../src/diagrams/layout.mjs";
 import { CHECK_GROUPS } from "../../src/work/doctor.mjs";
 import { DIAGRAM_LANE_CODES, diagramsGroup } from "../../src/work/doctor-diagrams.mjs";
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "bin", "aof.mjs");
@@ -182,8 +183,8 @@ export const doctorDiagramsLaneTests = [
     name: "133/03 task 01: the lane is registered where the roster says lanes are registered, and its codes are its own",
     run: async () => {
       assert.equal(CHECK_GROUPS.at(-1), diagramsGroup, "diagramsGroup is the registry's last entry");
-      const spine = await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8");
-      assert.match(spine, /from\s*["']\.\/doctor-diagrams\.mjs["']/);
+      const spine = await readFile(path.join(repoRoot, "src/application/bindings/work/doctor.mjs"), "utf8");
+      assert.ok(dependencySpecifiers(spine).some(edge => edge.parameter === "workDoctorDiagramsServices" && edge.specifier === "./doctor-diagrams.mjs"), "the doctor receives its configured diagrams lane");
       const roster = await readFile(path.join(repoRoot, "test", "arch", "audit", "acd-controls-never-execute.test.mjs"), "utf8");
       assert.match(roster, /"\.\/diagrams\.mjs"/, "DOCTOR_LANE_MODULES names the lane implementation");
       const others = (await readdir(path.join(repoRoot, "packages", "work", "src", "doctor"))).filter((name) => name.endsWith(".mjs") && name !== "diagrams.mjs");
