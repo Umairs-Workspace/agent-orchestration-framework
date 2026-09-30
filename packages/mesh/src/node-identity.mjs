@@ -427,12 +427,12 @@ export async function healIdentitySidecar({ sidecar = {}, hostname, sidecarPath,
 // EXPORTED so mesh:heartbeat (milestone 23 / story 00) resolves the SAME stable id the
 // node record carries via the SAME salt → deriveNodeId path — read the id ONE way.
 // Shared by identity commands and lightweight session hooks.
-export async function resolveInstallSalt(sidecarPath, config) {
+export async function resolveInstallSalt(sidecarPath, config, { writePatch = writeSidecarPatch } = {}) {
   const existing = config?.mesh?.salt;
   if (typeof existing === "string" && existing.length > 0) return existing;
   const salt = crypto.randomUUID();
   if (sidecarPath) {
-    await writeSidecarPatch(sidecarPath, { salt });
+    await writePatch(sidecarPath, { salt });
   }
   return salt;
 }

@@ -4,6 +4,7 @@ import { createMeshContribution } from '@aof/mesh/commands';
 import { createMeshAssignCommands } from '@aof/mesh/commands/assign';
 import { createMeshRelayCommands } from '@aof/mesh/commands/relay';
 import { createMeshSessionCommands } from '@aof/mesh/commands/session';
+import { createMeshIdentityCommands } from '@aof/mesh/commands/identity';
 import { guardMeshPositionals, refuseReadMiss } from '@aof/mesh/commands/face-shared';
 
 test('mesh assembles its seventeen real command definitions without invoking configured services', async () => {
@@ -59,4 +60,21 @@ test('shared mesh presentation distinguishes absent queries from supplied missin
   assert.throws(() => refuseReadMiss(null, { positionals: ['missing'] }), error => error.code === 'node-not-found' && error.status === 404);
   assert.throws(() => guardMeshPositionals('status', ['a', 'b'], { max: 1 }), error => error.code === 'invalid-input');
   assert.throws(() => guardMeshPositionals('status', [''], { max: 1 }), error => error.code === 'invalid-input');
+});
+
+test('identity salt resolution preserves the configured sidecar writer and existing salts', async () => {
+  const writes = [];
+  const { resolveInstallSalt } = createMeshIdentityCommands({
+    writeSidecarPatch: async (file, patch) => { writes.push({ file, patch }); },
+  });
+  assert.equal(await resolveInstallSalt('fixture-sidecar.json', { mesh: { salt: 'existing' } }), 'existing');
+  assert.deepEqual(writes, []);
+  const salt = await resolveInstallSalt('fixture-sidecar.json', {});
+  assert.match(salt, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(writes, [{ file: 'fixture-sidecar.json', patch: { salt } }]);
+  assert.match(await resolveInstallSalt(null, {}), /^[0-9a-f-]{36}$/);
+  assert.equal(writes.length, 1, 'no sidecar path means no persistence');
+  const failure = Error('fixture write refusal');
+  const refusing = createMeshIdentityCommands({ writeSidecarPatch: async () => { throw failure; } });
+  await assert.rejects(refusing.resolveInstallSalt('fixture-sidecar.json', {}), error => error === failure);
 });

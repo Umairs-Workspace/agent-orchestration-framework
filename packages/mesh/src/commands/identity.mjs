@@ -1,4 +1,4 @@
-import { resolveInstallSalt } from "../node-identity.mjs";
+import { resolveInstallSalt as resolveNodeInstallSalt } from "../node-identity.mjs";
 import os from "node:os";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals, refuseReadMiss } from "./face-shared.mjs";
 import { resolvePeers } from "../fabric.mjs";
@@ -6,6 +6,9 @@ import { resolvePeers } from "../fabric.mjs";
 
 // Core supplies configured services; constructing command definitions performs no I/O.
 export function createMeshIdentityCommands({ publishNodeRecord, readNodeRecord, readNodeRecords, nodeRecordPath, deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, readSidecar, sanitizeHostname, packageVersionString, readPresenceRecord, resolveStalenessSeconds, isNodeStale, mergePresence, readRegistry, isControlNode, loadDeclarations }) {
+async function resolveInstallSalt(sidecarPath, config) {
+  return resolveNodeInstallSalt(sidecarPath, config, { writePatch: writeSidecarPatch });
+}
 // mesh:identity + mesh:status — the two registered node-identity commands
 // (milestone 22 / story 01 / ADR-001/003). Thin over story 00's src/mesh/store.mjs
 // (the partition seam + opaque per-node persist/read) and story 01's
