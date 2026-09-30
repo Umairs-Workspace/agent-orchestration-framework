@@ -36,7 +36,7 @@ export function git(args, cwd) {
   });
 }
 
-// The `exec(args, { cwd })` seam `packages/core/src/mesh/worktree.mjs` reads — real git, with the fixture's
+// The `exec(args, { cwd })` seam `src/mesh/worktree.mjs` reads — real git, with the fixture's
 // own identity so a commit under the mesh identity and one under the fixture's both land.
 export const realExec = (args, { cwd }) => git(args, cwd);
 
@@ -92,7 +92,7 @@ export async function withLaneRepo(body, { stories = ["01", "03"], rubric = true
         type: "story", number, slug: `s${number}`, parent: milestone, status: spec.status ?? "not-started",
         title: `"Story ${number}"`, created: "2026-09-01", updated: "2026-09-01", schema: 1,
         ...(spec.depends ? { depends: spec.depends } : {}),
-        files: spec.files ?? [`packages/core/src/s${number}.mjs`],
+        files: spec.files ?? [`src/s${number}.mjs`],
       })}# Story ${number}\n`, "utf8");
       if (spec.tasks !== false) await writeFile(path.join(dir, "tasks", "00_ready.feature"), FEATURE, "utf8");
     }

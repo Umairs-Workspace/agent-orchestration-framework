@@ -37,7 +37,7 @@ export const archTests = [
       // The pin mirrors the existing packages/core/assets/** eol pin (the reference precedent in
       // the same file) — confirm that precedent is still present (a non-vacuous anchor).
       assert.ok(
-        /^\s*src\/bundle\/\*\*\s+text\s+eol=lf\b/m.test(attrs),
+        /^\s*packages\/core\/assets\/\*\*\s+text\s+eol=lf\b/m.test(attrs),
         "the reference packages/core/assets/** text eol=lf pin is present (the precedent this rule mirrors)"
       );
     },

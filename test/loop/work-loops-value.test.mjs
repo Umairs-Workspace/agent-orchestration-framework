@@ -81,7 +81,7 @@ const GAP_KINDS = Object.freeze(["unknown", "uncapped", "none", "prose"]);
 const LIST_SHAPED_KEYS = Object.freeze(["reference", "measurement", "actuator", "ceiling"]);
 const SCALAR_SHAPED_KEYS = Object.freeze(["controlled", "cadence", "owner", "optimizing", "ground"]);
 
-const PROSE_DOC = "packages/core/assets/commands/continue.md";
+const PROSE_DOC = "src/bundle/commands/continue.md";
 const DANGLING = "loop-graph-dangling-endpoint";
 
 /** Materialise, drive the exported loader, tear down. The subject stays in this file. */
@@ -261,7 +261,7 @@ const EMPTY_VALUE = "(empty)";
 const RESOLVES_COUNTER_58_CASES = [
   { value: "which loop wins the shared agent", outcome: "clean" },
   { value: "speed vs thoroughness: whose demand wins", outcome: "clean" },
-  { value: "prose:packages/core/assets/agents/aof-developer.md", outcome: "bad-value" },
+  { value: "prose:src/bundle/agents/aof-developer.md", outcome: "bad-value" },
   { value: "config:work.loop.reviewRounds", outcome: "bad-value" },
   { value: "module:src/work/loops.mjs#loadLoops", outcome: "bad-value" },
   { value: "command:aof work loops validate", outcome: "bad-value" },
@@ -395,7 +395,7 @@ const listField = (key, kinds, payload = null) => (node) => {
 const FIELD_VALUE_ROWS = [
   { field: "title", authored: "Run resilience — runs driven to a terminal state", kind: "(no Field — bare string)", codes: [], severity: "—", spec: loopRecord({ title: "Run resilience — runs driven to a terminal state" }), check: (node) => { assert.equal(node.title, "Run resilience — runs driven to a terminal state"); assert.equal("title" in node.fields, false, "a title is a bare node-level string carrying no kind at all"); } },
   { field: "controlled", authored: "run state reaching a terminal value", kind: "phrase", codes: [], severity: "—", spec: loopWith({ controlled: "run state reaching a terminal value" }), check: scalarField("controlled", "phrase") },
-  { field: "controlled", authored: "module:src/run-store.mjs#LEGAL_TRANSITIONS", kind: "pointer", codes: [], severity: "—", spec: loopWith({ controlled: "module:src/run-store.mjs#LEGAL_TRANSITIONS" }), check: scalarField("controlled", "pointer", (field) => assert.deepEqual(field.pointer, { scheme: "module", operand: "packages/core/src/run-store.mjs", symbol: "LEGAL_TRANSITIONS" })) },
+  { field: "controlled", authored: "module:src/run-store.mjs#LEGAL_TRANSITIONS", kind: "pointer", codes: [], severity: "—", spec: loopWith({ controlled: "module:src/run-store.mjs#LEGAL_TRANSITIONS" }), check: scalarField("controlled", "pointer", (field) => assert.deepEqual(field.pointer, { scheme: "module", operand: "src/run-store.mjs", symbol: "LEGAL_TRANSITIONS" })) },
   { field: "controlled", authored: `prose:${PROSE_DOC}`, kind: "prose", codes: ["loop-field-prose-only"], severity: "warn", spec: loopWith({ controlled: `prose:${PROSE_DOC}` }), check: scalarField("controlled", "prose", (field) => assert.equal(field.path, PROSE_DOC)) },
   { field: "controlled", authored: "unknown", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ controlled: "unknown" }), check: noField("controlled") },
   { field: "controlled", authored: "uncapped", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ controlled: "uncapped" }), check: noField("controlled") },
@@ -450,7 +450,7 @@ const FIELD_VALUE_ROWS = [
   { field: "cadence", authored: "periodic:15", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ cadence: "periodic:15" }), check: noField("cadence") },
   { field: "cadence", authored: "periodic:2w", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ cadence: "periodic:2w" }), check: noField("cadence") },
   { field: "cadence", authored: "hourly", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ cadence: "hourly" }), check: noField("cadence") },
-  { field: "cadence", authored: "prose:packages/core/src/mesh/sync-cadence.mjs", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ cadence: "prose:packages/core/src/mesh/sync-cadence.mjs" }), check: noField("cadence") },
+  { field: "cadence", authored: "prose:src/mesh/sync-cadence.mjs", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ cadence: "prose:src/mesh/sync-cadence.mjs" }), check: noField("cadence") },
   { field: "cadence", authored: "(empty after the colon)", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ cadence: "" }), check: noField("cadence") },
   { field: "cadence", authored: "[periodic:15s]", kind: "n/a", codes: ["loop-expected-scalar"], severity: "error", spec: loopWith({ cadence: "[periodic:15s]" }), check: noField("cadence") },
   { field: "cadence", authored: "[]", kind: "n/a", codes: ["loop-expected-scalar"], severity: "error", spec: loopWith({ cadence: "[]" }), check: noField("cadence") },
@@ -468,7 +468,7 @@ const FIELD_VALUE_ROWS = [
   { field: "owner", authored: "actor:product-owner", kind: "ref (actor / product-owner)", codes: [], severity: "—", spec: loopRecord(), check: scalarField("owner", "ref", (field) => { assert.equal(field.scheme, "actor"); assert.equal(field.operand, "product-owner"); }) },
   { field: "owner", authored: "unknown", kind: "unknown", codes: ["loop-owner-unknown"], severity: "warn", spec: loopWith({ owner: "unknown" }), check: scalarField("owner", "unknown") },
   { field: "owner", authored: "loop:autonomous-cascade", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ owner: "loop:autonomous-cascade" }), check: noField("owner") },
-  { field: "owner", authored: "prose:packages/core/assets/commands/verify.md", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ owner: "prose:packages/core/assets/commands/verify.md" }), check: noField("owner") },
+  { field: "owner", authored: "prose:src/bundle/commands/verify.md", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ owner: "prose:src/bundle/commands/verify.md" }), check: noField("owner") },
   { field: "owner", authored: "uncapped", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ owner: "uncapped" }), check: noField("owner") },
   { field: "owner", authored: "the product owner", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ owner: "the product owner" }), check: noField("owner") },
   { field: "owner", authored: "(empty after the colon)", kind: "n/a", codes: ["loop-bad-value"], severity: "error", spec: loopWith({ owner: "" }), check: noField("owner") },
@@ -503,11 +503,11 @@ const fieldEntry = (authored, parses, codes) => ({ position: "field entry", auth
 const edgeEndpoint = (authored, parses, resolved, codes, note = "") => ({ position: "edge endpoint", authored, note, parses, resolved, codes, spec: loopWith({ monitoring: `[${authored}]` }) });
 
 const POINTER_ROWS = [
-  fieldEntry("module:src/run-store.mjs#isRetryable", { scheme: "module", operand: "packages/core/src/run-store.mjs", symbol: "isRetryable" }, []),
+  fieldEntry("module:src/run-store.mjs#isRetryable", { scheme: "module", operand: "src/run-store.mjs", symbol: "isRetryable" }, []),
   fieldEntry("command:work:next", { scheme: "command", operand: "work:next" }, []),
   fieldEntry("config:work.autonomous.maxAttempts", { scheme: "config", operand: "work.autonomous.maxAttempts" }, []),
-  fieldEntry("module:src/does-not-exist.mjs#nope", { scheme: "module", operand: "packages/core/src/does-not-exist.mjs", symbol: "nope" }, []),
-  fieldEntry("module:src/work.mjs#notExported", { scheme: "module", operand: "packages/core/src/work.mjs", symbol: "notExported" }, []),
+  fieldEntry("module:src/does-not-exist.mjs#nope", { scheme: "module", operand: "src/does-not-exist.mjs", symbol: "nope" }, []),
+  fieldEntry("module:src/work.mjs#notExported", { scheme: "module", operand: "src/work.mjs", symbol: "notExported" }, []),
   fieldEntry("command:work:no-such-verb", { scheme: "command", operand: "work:no-such-verb" }, []),
   fieldEntry("config:no.such.key", { scheme: "config", operand: "no.such.key" }, []),
   fieldEntry("module:src/run-store.mjs", null, ["loop-bad-value"]),
@@ -532,7 +532,7 @@ const POINTER_ROWS = [
   edgeEndpoint("item:99/99", { scheme: "item", operand: "99/99" }, null, [], "no such item"),
   edgeEndpoint("command:work:doctor", { scheme: "command", operand: "work:doctor" }, null, []),
   edgeEndpoint("config:work.autonomous.maxAttempts", { scheme: "config", operand: "work.autonomous.maxAttempts" }, null, []),
-  edgeEndpoint("module:src/run-store.mjs#isStale", { scheme: "module", operand: "packages/core/src/run-store.mjs", symbol: "isStale" }, null, []),
+  edgeEndpoint("module:src/run-store.mjs#isStale", { scheme: "module", operand: "src/run-store.mjs", symbol: "isStale" }, null, []),
   edgeEndpoint("module:src/run-store.mjs", null, NO_RESOLUTION, ["loop-bad-value"]),
   edgeEndpoint("node:autonomous-cascade", null, NO_RESOLUTION, ["loop-bad-value"]),
   edgeEndpoint("autonomous-cascade", null, NO_RESOLUTION, ["loop-bad-value"]),
@@ -687,7 +687,7 @@ export const workLoopsValueTests = [
         // NEVER REPLACED BY A RESOLVED FORM: the pointer's raw survives whole beside its split.
         const pointer = node.fields.reference[0];
         assert.equal(pointer.raw, "module:src/run-store.mjs#isRetryable");
-        assert.equal(pointer.pointer.operand, "packages/core/src/run-store.mjs");
+        assert.equal(pointer.pointer.operand, "src/run-store.mjs");
         assert.equal(pointer.raw.includes(pointer.pointer.operand), true, "the split is ADDED beside raw, never substituted for it");
         // ...and a sentinel's raw keeps the whole authored token, anchor and prefix included.
         assert.equal(node.fields.measurement[0].raw, `prose:${PROSE_DOC}#retry-loop`);
@@ -1065,7 +1065,7 @@ export const workLoopsValueTests = [
       }, (model, fixture) => {
         const entries = nodeFor(model, fixture.pathOf("three.md")).fields.reference;
         assert.deepEqual(entries.map((entry) => entry.pointer), [
-          { scheme: "module", operand: "packages/core/src/run-store.mjs", symbol: "isRetryable" },
+          { scheme: "module", operand: "src/run-store.mjs", symbol: "isRetryable" },
           { scheme: "command", operand: "work:next" },
           { scheme: "config", operand: "work.autonomous.maxAttempts" },
         ], "scheme, operand and an optional symbol");
@@ -1105,7 +1105,7 @@ export const workLoopsValueTests = [
         // THE PATH IS NOT SILENTLY NORMALISED TO FORWARD SLASHES: the rejected value appears nowhere
         // on the node in either spelling, and the finding quotes it exactly as authored.
         const osSep = nodeFor(model, fixture.pathOf("os-sep.md"));
-        assert.equal(JSON.stringify(osSep).includes("packages/core/src/run-store.mjs#isRetryable"), false, "no forward-slashed rewrite reached the model");
+        assert.equal(JSON.stringify(osSep).includes("src/run-store.mjs#isRetryable"), false, "no forward-slashed rewrite reached the model");
         assert.equal(JSON.stringify(osSep).includes("run-store.mjs#isRetryable"), false, "and neither did the authored form");
         assert.ok(rejected.get("os-sep.md")[0].message.includes("src\\run-store.mjs#isRetryable"), "the finding quotes the value as authored");
         // AN UNKNOWN SCHEME IS NOT ADMITTED AS A PROSE SENTINEL BY ANOTHER NAME.
@@ -1135,7 +1135,7 @@ export const workLoopsValueTests = [
         { raw: "item:52/00", scheme: "item", operand: "52/00", resolved: null },
         { raw: "command:work:doctor", scheme: "command", operand: "work:doctor", resolved: null },
         { raw: "config:work.autonomous.maxAttempts", scheme: "config", operand: "work.autonomous.maxAttempts", resolved: null },
-        { raw: "module:src/run-store.mjs#shouldRetry", scheme: "module", operand: "packages/core/src/run-store.mjs", symbol: "shouldRetry", resolved: null },
+        { raw: "module:src/run-store.mjs#shouldRetry", scheme: "module", operand: "src/run-store.mjs", symbol: "shouldRetry", resolved: null },
       ];
       const keys = [...EDGE_KEYS];
       assert.equal(keys.length, 6, "six edge keys, from the loader's own vocabulary");
@@ -1450,8 +1450,8 @@ export const workLoopsValueTests = [
         // name a registered resolver, but it still never consults ambient config.
         const node = nodeFor(model, fixture.pathOf("citations.md"));
         assert.deepEqual(node.fields.reference.map((entry) => entry.pointer), [
-          { scheme: "module", operand: "packages/core/src/does-not-exist.mjs", symbol: "nope" },
-          { scheme: "module", operand: "packages/core/src/work.mjs", symbol: "notExportedAnywhere" },
+          { scheme: "module", operand: "src/does-not-exist.mjs", symbol: "nope" },
+          { scheme: "module", operand: "src/work.mjs", symbol: "notExportedAnywhere" },
         ], "a file that does not exist and a symbol that is not exported both parse");
         assert.deepEqual(node.fields.actuator[0].pointer, { scheme: "command", operand: "work:no-such-verb" });
         assert.deepEqual(node.fields.ceiling[0].pointer, { scheme: "config", operand: "no.such.key" });
@@ -1462,12 +1462,12 @@ export const workLoopsValueTests = [
 
         // NOW CREATE THE CITED REFERENTS — at every root the load could conceivably resolve them
         // against: the temp root, the work directory, and the loops directory itself. (`command:` is
-        // the one referent with nothing to create: the command registry is compiled into `packages/core/src/`, so
+        // the one referent with nothing to create: the command registry is compiled into `src/`, so
         // that leg rests on the byte identity below and on the table row that drives it.)
         for (const root of [fixture.temp, fixture.workDir, fixture.loopsDir]) {
-          await mkdir(path.join(root, "packages", "core", "src"), { recursive: true });
-          await writeFile(path.join(root, "packages", "core", "src", "does-not-exist.mjs"), "export const nope = 1;\n", "utf8");
-          await writeFile(path.join(root, "packages", "core", "src", "work.mjs"), "export const notExportedAnywhere = 1;\n", "utf8");
+          await mkdir(path.join(root, "src"), { recursive: true });
+          await writeFile(path.join(root, "src", "does-not-exist.mjs"), "export const nope = 1;\n", "utf8");
+          await writeFile(path.join(root, "src", "work.mjs"), "export const notExportedAnywhere = 1;\n", "utf8");
           await mkdir(path.join(root, "99_milestone_ghost", "stories", "99_story_ghost"), { recursive: true });
           await writeFile(path.join(root, "99_milestone_ghost", "SPEC.md"), "---\ntype: milestone\nnumber: 99\n---\n", "utf8");
           await writeFile(path.join(root, "99_milestone_ghost", "stories", "99_story_ghost", "STORY.md"), "---\ntype: story\nnumber: 99\nparent: 99\n---\n", "utf8");
@@ -1584,15 +1584,15 @@ export const workLoopsValueTests = [
       assert.equal(loadLoops, loaderModule.loadLoops);
       const source = await readFile(fileURLToPath(import.meta.url), "utf8");
       // 119/03 — the specifier is REPO-RELATIVE-resolved, not matched at a pinned depth. The
-      // regex was `../packages/core/src/`, true only while this suite sat flat in `test/`; the suite now sits
+      // regex was `../src/`, true only while this suite sat flat in `test/`; the suite now sits
       // in `test/loop/` and the pinned spelling matched nothing, which reported "no subject
       // module" as an empty set rather than as a red. What the leg means is the MODULE, so it
       // is the module that is named.
       const suiteDir = path.dirname(fileURLToPath(import.meta.url));
-      const srcImports = [...source.matchAll(/from "((?:\.\.\/)+src\/[^"]+)"/g)]
+      const srcImports = [...source.matchAll(/from "((?:\.\.\/)+packages\/core\/src\/[^"]+)"/g)]
         .map((match) => path.relative(path.resolve(suiteDir, "..", ".."), path.resolve(suiteDir, match[1])).split(path.sep).join("/"));
       assert.deepEqual([...new Set(srcImports)], ["packages/core/src/work/loops.mjs"], "one subject module, imported by its public path");
-      const named = source.match(/import \{([^}]*)\} from "(?:\.\.\/)+src\/work\/loops\.mjs";/);
+      const named = source.match(/import \{([^}]*)\} from "(?:\.\.\/)+packages\/core\/src\/work\/loops\.mjs";/);
       assert.ok(named, "the named import list is readable");
       for (const binding of named[1].split(",").map((entry) => entry.trim()).filter(Boolean)) {
         assert.ok(Object.hasOwn(loaderModule, binding), `${binding} is an exported name, never a module-private one`);
@@ -2172,7 +2172,7 @@ export const workLoopsValueTests = [
  * suite could have excluded is decided instead — including the two members that sit closest to a
  * gate. `03_pointer-endpoint-syntax`'s "the dangling finding is the load's own" is DECIDED rather
  * than excluded as `not-black-box`: its "with no structural check having been invoked" clause is
- * driven by the proxy this whole suite is built on — the only `packages/core/src/` module it imports is
+ * driven by the proxy this whole suite is built on — the only `src/` module it imports is
  * `work-loops.mjs`, asserted by source scan in the meta test, so there is no check here to invoke.
  * And the four differential scenarios are decided by byte identity across two worlds rather than by
  * the finding count that could never have separated a resolver from a non-resolver.

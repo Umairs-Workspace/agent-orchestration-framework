@@ -373,7 +373,7 @@ export const archTests = [
       ]);
       const respeltProblems = wireKindProblems(respelt);
       assert.equal(respeltProblems.length, 1, `self-check: an unenumerated re-spelled end trips. Got: ${JSON.stringify(respeltProblems)}`);
-      assert.match(respeltProblems[0], /RE-SPELLED as the bare literal "lane" in src\/lane-reader\.mjs/, "…naming BOTH the re-spelling and the file it is in");
+      assert.match(respeltProblems[0], /RE-SPELLED as the bare literal "lane" in packages\/core\/src\/lane-reader\.mjs/, "…naming BOTH the re-spelling and the file it is in");
       assert.match(respeltProblems[0], /RESPELT_END_EXEMPTIONS/, "…and the enumeration it must be added to, if it is not simply fixed");
       assert.ok(
         !/NO reading end anywhere/.test(respeltProblems[0]),

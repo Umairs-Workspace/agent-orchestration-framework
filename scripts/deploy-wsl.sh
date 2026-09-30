@@ -42,7 +42,7 @@ STAMP="$DST/$3"
 [ -d "$SRC/packages/core/src" ] || { echo "no core source at $SRC (path translation failed?)" >&2; exit 1; }
 [ -d "$DST/.git" ] || { echo "no aof clone at $DST — provision the distro first" >&2; exit 1; }
 
-# 1. the source tree. src/bundle rides inside src/, so this covers the asset sidecars.
+# 1. the source tree. Core's source and assets travel together in packages/core/.
 #    node_modules is NEVER copied — it is the Windows tree.
 mkdir -p "$DST/bin"
 cp "$SRC/bin/aof.mjs" "$DST/bin/aof.mjs"
@@ -86,7 +86,7 @@ PTY="$DST/node_modules/node-pty/build/Release/pty.node"
 if [ "$HASH" != "$PREV" ] || [ ! -f "$PTY" ]; then
   echo "  lockfile changed (or node-pty absent) — reinstalling natively"
   cd "$DST" || exit 1
-  # Install only the root runtime closure; the worker does not need UI build tools.
+  # Install only core's runtime closure; the worker does not need UI build tools.
   # A failed install writes NO stamp: stamping it would report "lockfile unchanged" on every
   # later deploy, over a tree that never received the new dependency.
   if ! YARN_ENABLE_IMMUTABLE_INSTALLS=true node .yarn/releases/yarn-4.18.1.cjs workspaces focus aof --production 2>&1 | tail -3; then
@@ -106,7 +106,7 @@ fi
 # 3. report what the distro ACTUALLY runs now, read from the distro itself.
 cd "$DST" || exit 1
 echo "  node-pty : $(node -e "require('node-pty'); process.stdout.write('loads OK')" 2>&1 | tail -1)"
-echo "  aof      : $(command -v aof || echo "NOT LINKED — run 'npm link' in $DST")"
+echo "  aof      : $(command -v aof || echo "NOT LINKED — link the aof package in $DST/packages/core")"
 echo "  version  : $(aof --version 2>&1 | head -1)"
 echo
 echo "  NOTE: a running worker daemon keeps its in-memory module graph — restart it to pick this up."

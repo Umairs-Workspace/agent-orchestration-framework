@@ -154,7 +154,7 @@ export const archTests = [
     //        what this now catches.
     name: "arch/m42-d5 (+m43 ADR-004): wholesale deletes are class-gated — work_items is a FACT the guard refuses, projection_errors is still swept through it, and the only raw cache-table DELETEs are the named retraction and the named removal path",
     run: async () => {
-      const source = await readFile(path.join(SRC_DIR, "..", "packages/mesh/src/projection-store.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8");
       const code = stripComments(source);
       assert.ok(/function wholesaleDelete\s*\(/.test(code), "the one guard exists");
       assert.ok(/tableClass\(table\)/.test(code), "…and consults the classification");

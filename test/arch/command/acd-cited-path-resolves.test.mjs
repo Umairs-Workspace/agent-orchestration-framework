@@ -215,8 +215,8 @@ export const archTests = [
         [true, "packages/core/src/command-error.mjs"],
         "a path renamed once in history resolves at its new path — real, committed, immutable",
       );
-      const chained = buildRenameMap([{ from: "src/b.mjs", to: "src/command-error.mjs" }, { from: "src/a.mjs", to: "src/b.mjs" }]);
-      assert.equal(answer("src/a.mjs", chained).at, "src/command-error.mjs", "a path renamed twice resolves at its final path");
+      const chained = buildRenameMap([{ from: "src/b.mjs", to: "packages/core/src/command-error.mjs" }, { from: "src/a.mjs", to: "src/b.mjs" }]);
+      assert.equal(answer("src/a.mjs", chained).at, "packages/core/src/command-error.mjs", "a path renamed twice resolves at its final path");
       assert.equal(answer("src/a.mjs", buildRenameMap([{ from: "src/a.mjs", to: "src/vanished.mjs" }])).resolved, false, "a path renamed to somewhere that no longer exists is unresolved");
       assert.equal(answer("src/mesh-sync.mjs").resolved, false, "a path deleted with no rename record is unresolved");
       assert.equal(answer("src/never-was.mjs").resolved, false, "a src/ path that never existed is unresolved");

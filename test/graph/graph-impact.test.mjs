@@ -13,11 +13,11 @@ import { computeImpact, graphImpactCommand } from "../../packages/core/src/comma
 // So b.mjs depends on c.mjs and is depended on by a.mjs + d.mjs.
 const GRAPH = {
   nodes: [
-    { id: "A", sourceFile: "packages/core/src/a.mjs" },
-    { id: "B", sourceFile: "packages/core/src/b.mjs" },
-    { id: "C", sourceFile: "packages/core/src/c.mjs" },
-    { id: "D", sourceFile: "packages/core/src/d.mjs" },
-    { id: "B2", sourceFile: "packages/core/src/b.mjs" }, // a 2nd symbol node in b.mjs
+    { id: "A", sourceFile: "src/a.mjs" },
+    { id: "B", sourceFile: "src/b.mjs" },
+    { id: "C", sourceFile: "src/c.mjs" },
+    { id: "D", sourceFile: "src/d.mjs" },
+    { id: "B2", sourceFile: "src/b.mjs" }, // a 2nd symbol node in b.mjs
   ],
   edges: [
     { source: "A", target: "B", relation: "imports" },
@@ -32,31 +32,31 @@ export const tests = [
   {
     name: "graph:impact computeImpact: returns EXACT dependents + dependencies from the edges",
     run: () => {
-      const [b] = computeImpact(GRAPH, ["packages/core/src/b.mjs"]);
-      assert.equal(b.file, "packages/core/src/b.mjs");
+      const [b] = computeImpact(GRAPH, ["src/b.mjs"]);
+      assert.equal(b.file, "src/b.mjs");
       assert.equal(b.present, true);
       // b.mjs imports c.mjs.
-      assert.deepEqual(b.dependencies, ["packages/core/src/c.mjs"]);
+      assert.deepEqual(b.dependencies, ["src/c.mjs"]);
       // b.mjs is imported by a.mjs and d.mjs (sorted, deduped, self-loop dropped).
-      assert.deepEqual(b.dependents, ["packages/core/src/a.mjs", "packages/core/src/d.mjs"]);
+      assert.deepEqual(b.dependents, ["src/a.mjs", "src/d.mjs"]);
     },
   },
   {
     name: "graph:impact computeImpact: a leaf (only imported) has dependents, no deps; an entry (only importing) has deps, no dependents",
     run: () => {
-      const [c] = computeImpact(GRAPH, ["packages/core/src/c.mjs"]);
+      const [c] = computeImpact(GRAPH, ["src/c.mjs"]);
       assert.deepEqual(c.dependencies, []);
-      assert.deepEqual(c.dependents, ["packages/core/src/b.mjs"]);
+      assert.deepEqual(c.dependents, ["src/b.mjs"]);
 
-      const [a] = computeImpact(GRAPH, ["packages/core/src/a.mjs"]);
-      assert.deepEqual(a.dependencies, ["packages/core/src/b.mjs"]);
+      const [a] = computeImpact(GRAPH, ["src/a.mjs"]);
+      assert.deepEqual(a.dependencies, ["src/b.mjs"]);
       assert.deepEqual(a.dependents, []);
     },
   },
   {
     name: "graph:impact computeImpact: a path absent from the graph is reported present:false, not an error",
     run: () => {
-      const [x] = computeImpact(GRAPH, ["packages/core/src/nope.mjs"]);
+      const [x] = computeImpact(GRAPH, ["src/nope.mjs"]);
       assert.equal(x.present, false);
       assert.deepEqual(x.dependencies, []);
       assert.deepEqual(x.dependents, []);
@@ -68,7 +68,7 @@ export const tests = [
       // An agent may pass just the file name or a deeper path; suffix match resolves it.
       const [b] = computeImpact(GRAPH, ["b.mjs"]);
       assert.equal(b.present, true);
-      assert.deepEqual(b.dependents, ["packages/core/src/a.mjs", "packages/core/src/d.mjs"]);
+      assert.deepEqual(b.dependents, ["src/a.mjs", "src/d.mjs"]);
     },
   },
   {
@@ -77,7 +77,7 @@ export const tests = [
       // Point projectRoot at a dir with no graphify-out/graph.json.
       const ctx = { workspace: { projectRoot: "/nonexistent-aof-graph-root-xyz" } };
       await assert.rejects(
-        () => graphImpactCommand.run({ paths: ["packages/core/src/a.mjs"] }, ctx),
+        () => graphImpactCommand.run({ paths: ["src/a.mjs"] }, ctx),
         (err) => err.code === "no-graph",
         "absent graph → structured no-graph error before any read"
       );
@@ -96,8 +96,8 @@ export const tests = [
         graphPath: "graphify-out/graph.json",
         builtAt: "2026-07-30T11:22:33.000Z",
         files: [
-          { file: "packages/core/src/lonely.mjs", present: true, dependencies: [], dependents: [] },
-          { file: "packages/core/src/nope.mjs", present: false, dependencies: [], dependents: [] },
+          { file: "src/lonely.mjs", present: true, dependencies: [], dependents: [] },
+          { file: "src/nope.mjs", present: false, dependencies: [], dependents: [] },
         ],
       };
       const text = graphImpactCommand.cli.render(result);
@@ -137,13 +137,13 @@ export const tests = [
         await mkdir(path.dirname(graphPath), { recursive: true });
         await writeFile(
           graphPath,
-          `${JSON.stringify({ nodes: [{ id: "A", source_file: "packages/core/src/a.mjs" }], links: [] })}\n`,
+          `${JSON.stringify({ nodes: [{ id: "A", source_file: "src/a.mjs" }], links: [] })}\n`,
           "utf8"
         );
         utimesSync(graphPath, artifactTime, artifactTime);
 
         const result = await graphImpactCommand.run(
-          { paths: ["packages/core/src/a.mjs"] },
+          { paths: ["src/a.mjs"] },
           { workspace: { projectRoot: repo } }
         );
 
@@ -171,8 +171,8 @@ export const tests = [
       assert.equal(typeof graphImpactCommand.cli.argv, "function");
       assert.equal(typeof graphImpactCommand.cli.render, "function");
       // argv maps positionals → { paths }.
-      assert.deepEqual(graphImpactCommand.cli.argv(["packages/core/src/a.mjs", "packages/core/src/b.mjs"]), {
-        paths: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"],
+      assert.deepEqual(graphImpactCommand.cli.argv(["src/a.mjs", "src/b.mjs"]), {
+        paths: ["src/a.mjs", "src/b.mjs"],
       });
     },
   },

@@ -100,7 +100,8 @@ export const archTests = [
         pointers += 1;
         if (entry.pointer.scheme === "command") assert.ok(commands.has(entry.pointer.operand), entry.raw);
         if (entry.pointer.scheme === "module") {
-          const source = await readFile(path.join(root, "packages", "core", entry.pointer.operand), "utf8");
+          const pointerRoot = entry.pointer.operand.startsWith("src/") ? path.join(root, "packages", "core") : root;
+          const source = await readFile(path.join(pointerRoot, entry.pointer.operand), "utf8");
           assert.ok(await declaresPublicSymbol(source, entry.pointer.symbol), `${entry.raw}: target declares symbol`);
         }
       }

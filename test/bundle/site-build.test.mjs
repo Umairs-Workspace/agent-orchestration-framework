@@ -355,7 +355,7 @@ async function staticImportClosure(entry) {
         const manifest = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
         assert.equal(manifest.name, `${scope}/${name}`, "workspace identity matches its import");
         const target = manifest.exports[subpath.length ? `./${subpath.join("/")}` : "."];
-        assert.ok(typeof target === "string" && target.startsWith("./packages/core/src/") && !target.includes("..", 2), `${specifier}: public workspace source export`);
+        assert.ok(typeof target === "string" && target.startsWith("./src/") && !target.includes("..", 2), `${specifier}: public workspace source export`);
         workspaces.add(manifest.name);
         await walk(path.resolve(root, target));
         continue;

@@ -132,8 +132,9 @@ export const archTests = [
         assert.equal(raw.startsWith("prose:"), false, `${raw}: a paragraph is not an instrument`);
         if (raw.startsWith("module:")) {
           const { file, symbol } = moduleParts(raw);
-          await access(path.join(root, "packages", "core", file));
-          const source = await readFile(path.join(root, "packages", "core", file), "utf8");
+          const pointerRoot = file.startsWith("src/") ? path.join(root, "packages", "core") : root;
+          await access(path.join(pointerRoot, file));
+          const source = await readFile(path.join(pointerRoot, file), "utf8");
           assert.equal(exportsSymbol(source, symbol), true, `${raw}: ${file} really exports ${symbol}`);
           files += 1;
         } else if (raw.startsWith("command:")) {

@@ -78,13 +78,13 @@ function plantDirt(worktreePath, mode, box) {
 // `wiki/work/129_milestone_loop-concurrency/stories/03_story_the-lane-commits-and-merges-home/
 //   tasks/01_advance-branch-gains-a-dirty-policy.feature`
 //
-// Over a REAL dispatch fixture: a repo at B0 (`README.md`, `packages/core/src/x.mjs`, `packages/core/src/n.mjs`), a
+// Over a REAL dispatch fixture: a repo at B0 (`README.md`, `src/x.mjs`, `src/n.mjs`), a
 // dispatch worktree for `127/02` on `aof/mesh/127-02` cut from B0, and the primary moved to B1,
-// which modifies `packages/core/src/x.mjs` and adds `packages/core/src/new.mjs`. Every Then is read back from git.
+// which modifies `src/x.mjs` and adds `src/new.mjs`. Every Then is read back from git.
 
 const BAD_OPTION = "gate-propagation-bad-option";
 
-// `b1Adds` — extra paths B1 adds beyond `packages/core/src/new.mjs` (the I1 row needs B1 to add a file in a
+// `b1Adds` — extra paths B1 adds beyond `src/new.mjs` (the I1 row needs B1 to add a file in a
 // directory the worktree holds wholly untracked).
 async function withDirtyPolicyFixture(body, { b1Adds = [] } = {}) {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-dirty-policy-")));
@@ -93,16 +93,16 @@ async function withDirtyPolicyFixture(body, { b1Adds = [] } = {}) {
     gitOk(root, ["config", "user.email", "fixture@aof.test"]);
     gitOk(root, ["config", "user.name", "aof fixture"]);
     await writeRel(root, "README.md", "# fixture\n");
-    await writeRel(root, "packages/core/src/x.mjs", "export const x = 0;\n");
-    await writeRel(root, "packages/core/src/n.mjs", "export const n = 0;\n");
+    await writeRel(root, "src/x.mjs", "export const x = 0;\n");
+    await writeRel(root, "src/n.mjs", "export const n = 0;\n");
     await writeRel(root, ".aof/aof.config.json", `${JSON.stringify({ name: "dirty-policy-fixture", work: { dir: "./wiki/work" } }, null, 2)}\n`);
     await writeRel(root, ".gitignore", ".aof/mesh/\n");
     gitOk(root, ["add", "-A"]);
     gitOk(root, ["commit", "-m", "B0"]);
     const b0 = revParse(root, "HEAD");
     const worktree = await addDispatchWorktree(root, "127/02", "HEAD");
-    await writeRel(root, "packages/core/src/x.mjs", "export const x = 1; // B1\n");
-    await writeRel(root, "packages/core/src/new.mjs", "export const added = true;\n");
+    await writeRel(root, "src/x.mjs", "export const x = 1; // B1\n");
+    await writeRel(root, "src/new.mjs", "export const added = true;\n");
     for (const rel of b1Adds) await writeRel(root, rel, `// B1 adds ${rel}\n`);
     gitOk(root, ["add", "-A"]);
     gitOk(root, ["commit", "-m", "B1"]);
@@ -120,7 +120,7 @@ const porcelainLinesOf = (cwd) => porcelainOf(cwd).split(/\r?\n/).filter((line) 
 const DIRT = {
   "an unstaged edit to `README.md`": async (wt) => writeRel(wt, "README.md", "# edited\n"),
   "a staged edit to `README.md`": async (wt) => { await writeRel(wt, "README.md", "# edited\n"); gitOk(wt, ["add", "--", "README.md"]); },
-  "a staged new file `packages/core/src/added.mjs`": async (wt) => { await writeRel(wt, "packages/core/src/added.mjs", "export const added = 1;\n"); gitOk(wt, ["add", "--", "packages/core/src/added.mjs"]); },
+  "a staged new file `src/added.mjs`": async (wt) => { await writeRel(wt, "src/added.mjs", "export const added = 1;\n"); gitOk(wt, ["add", "--", "src/added.mjs"]); },
   "an unstaged deletion of `README.md`": async (wt) => unlink(path.join(wt, "README.md")),
   "a staged deletion of `README.md`": async (wt) => { gitOk(wt, ["rm", "-q", "--", "README.md"]); },
   "a staged rename of `README.md` to `README2.md`": async (wt) => { gitOk(wt, ["mv", "README.md", "README2.md"]); },
@@ -128,12 +128,12 @@ const DIRT = {
   // `notes.txt` is not tracked at B0, so an "edit" to it is an untracked file — a path B1 does
   // not touch either way, which is all the row that names it needs.
   "an unstaged edit to `notes.txt`": async (wt) => writeRel(wt, "notes.txt", "scratch\n"),
-  "an unstaged edit to `packages/core/src/x.mjs`": async (wt) => writeRel(wt, "packages/core/src/x.mjs", "export const x = 42; // operator\n"),
-  "a staged edit to `packages/core/src/x.mjs`": async (wt) => { await writeRel(wt, "packages/core/src/x.mjs", "export const x = 42; // operator\n"); gitOk(wt, ["add", "--", "packages/core/src/x.mjs"]); },
-  "an unstaged deletion of `packages/core/src/x.mjs`": async (wt) => unlink(path.join(wt, "src", "x.mjs")),
-  "a staged deletion of `packages/core/src/x.mjs`": async (wt) => { gitOk(wt, ["rm", "-q", "--", "packages/core/src/x.mjs"]); },
-  "an untracked `packages/core/src/new.mjs`": async (wt) => writeRel(wt, "packages/core/src/new.mjs", "export const mine = true;\n"),
-  "a staged rename of `packages/core/src/x.mjs` to `packages/core/src/y.mjs`": async (wt) => { gitOk(wt, ["mv", "packages/core/src/x.mjs", "packages/core/src/y.mjs"]); },
+  "an unstaged edit to `src/x.mjs`": async (wt) => writeRel(wt, "src/x.mjs", "export const x = 42; // operator\n"),
+  "a staged edit to `src/x.mjs`": async (wt) => { await writeRel(wt, "src/x.mjs", "export const x = 42; // operator\n"); gitOk(wt, ["add", "--", "src/x.mjs"]); },
+  "an unstaged deletion of `src/x.mjs`": async (wt) => unlink(path.join(wt, "src", "x.mjs")),
+  "a staged deletion of `src/x.mjs`": async (wt) => { gitOk(wt, ["rm", "-q", "--", "src/x.mjs"]); },
+  "an untracked `src/new.mjs`": async (wt) => writeRel(wt, "src/new.mjs", "export const mine = true;\n"),
+  "a staged rename of `src/x.mjs` to `src/y.mjs`": async (wt) => { gitOk(wt, ["mv", "src/x.mjs", "src/y.mjs"]); },
   "nothing": async () => {},
 };
 const applyDirt = async (wt, phrase) => {
@@ -330,11 +330,11 @@ export const gatePropagationRefusalsTests = [
   ...[
     "an unstaged edit to `README.md`",
     "a staged edit to `README.md`",
-    "a staged new file `packages/core/src/added.mjs`",
+    "a staged new file `src/added.mjs`",
     "an unstaged deletion of `README.md`",
     "a staged rename of `README.md` to `README2.md`",
     "an untracked `notes.txt`",
-    "an unstaged edit to `packages/core/src/x.mjs`",
+    "an unstaged edit to `src/x.mjs`",
   ].map((dirt) => ({
     name: `129/03 task 01 — strict is the default and refuses every kind of dirt on any path [${dirt}]`,
     run: () => withDirtyPolicyFixture(async ({ worktree, b0, b1 }) => {
@@ -370,7 +370,7 @@ export const gatePropagationRefusalsTests = [
   })),
   ...[
     { dirt: "a staged edit to `README.md`", files: ["README.md"] },
-    { dirt: "a staged new file `packages/core/src/added.mjs`", files: ["packages/core/src/added.mjs"] },
+    { dirt: "a staged new file `src/added.mjs`", files: ["src/added.mjs"] },
     { dirt: "a staged deletion of `README.md`", files: ["README.md"] },
     { dirt: "a staged rename of `README.md` to `README2.md`", files: ["README.md", "README2.md"] },
     { dirt: "a staged edit to `README.md` and an unstaged edit to `notes.txt`", files: ["README.md"] },
@@ -390,13 +390,13 @@ export const gatePropagationRefusalsTests = [
     }),
   })),
   ...[
-    { dirt: "an unstaged edit to `packages/core/src/x.mjs`", files: ["packages/core/src/x.mjs"] },
-    { dirt: "a staged edit to `packages/core/src/x.mjs`", files: ["packages/core/src/x.mjs"] },
-    { dirt: "an unstaged deletion of `packages/core/src/x.mjs`", files: ["packages/core/src/x.mjs"] },
-    { dirt: "a staged deletion of `packages/core/src/x.mjs`", files: ["packages/core/src/x.mjs"] },
-    { dirt: "an untracked `packages/core/src/new.mjs`", files: ["packages/core/src/new.mjs"] },
-    { dirt: "an unstaged edit to `packages/core/src/x.mjs` and an unstaged edit to `README.md`", files: ["packages/core/src/x.mjs"] },
-    { dirt: "an unstaged edit to `packages/core/src/x.mjs` and an untracked `packages/core/src/new.mjs`", files: ["packages/core/src/new.mjs", "packages/core/src/x.mjs"] },
+    { dirt: "an unstaged edit to `src/x.mjs`", files: ["src/x.mjs"] },
+    { dirt: "a staged edit to `src/x.mjs`", files: ["src/x.mjs"] },
+    { dirt: "an unstaged deletion of `src/x.mjs`", files: ["src/x.mjs"] },
+    { dirt: "a staged deletion of `src/x.mjs`", files: ["src/x.mjs"] },
+    { dirt: "an untracked `src/new.mjs`", files: ["src/new.mjs"] },
+    { dirt: "an unstaged edit to `src/x.mjs` and an unstaged edit to `README.md`", files: ["src/x.mjs"] },
+    { dirt: "an unstaged edit to `src/x.mjs` and an untracked `src/new.mjs`", files: ["src/new.mjs", "src/x.mjs"] },
   ].map(({ dirt, files }) => ({
     name: `129/03 task 01 — touched-paths refuses dirt on a path the advance touches and names only the intersection [${dirt}]`,
     run: () => withDirtyPolicyFixture(async ({ worktree, b0, b1 }) => {
@@ -416,16 +416,16 @@ export const gatePropagationRefusalsTests = [
   {
     name: "129/03 task 01 — a rename contributes both its paths",
     run: () => withDirtyPolicyFixture(async ({ worktree, b1 }) => {
-      await applyDirt(worktree, "a staged rename of `packages/core/src/x.mjs` to `packages/core/src/y.mjs`");
+      await applyDirt(worktree, "a staged rename of `src/x.mjs` to `src/y.mjs`");
       const answer = await advanceBranchToBase(worktree, b1, { dirtyPolicy: "touched-paths" });
       assert.equal(answer.outcome, "refused");
-      assert.deepEqual(answer.files, ["packages/core/src/x.mjs", "packages/core/src/y.mjs"], "the refusal's files is both halves of the rename");
+      assert.deepEqual(answer.files, ["src/x.mjs", "src/y.mjs"], "the refusal's files is both halves of the rename");
     }),
   },
   {
     name: "129/03 task 01 — touched-paths carries worktree-only dirt across a real merge",
     run: () => withDirtyPolicyFixture(async ({ worktree, b1 }) => {
-      const l1 = await laneCommit(worktree, "packages/core/src/n.mjs", "export const n = 1; // L1\n", "L1");
+      const l1 = await laneCommit(worktree, "src/n.mjs", "export const n = 1; // L1\n", "L1");
       await applyDirt(worktree, "an unstaged edit to `README.md` and an untracked `notes.txt`");
       const answer = await advanceBranchToBase(worktree, b1, { dirtyPolicy: "touched-paths", message: "m", node: "n" });
       assert.equal(answer.outcome, "merged", `the answer is merged: ${JSON.stringify(answer)}`);
@@ -442,7 +442,7 @@ export const gatePropagationRefusalsTests = [
     run: () => withDirtyPolicyFixture(async ({ worktree, b1 }) => {
       gitOk(worktree, ["merge", "--ff-only", b1]);
       assert.equal(revParse(worktree, "HEAD"), b1, "B1 is already an ancestor of the worktree's HEAD");
-      await applyDirt(worktree, "an unstaged edit to `packages/core/src/x.mjs`");
+      await applyDirt(worktree, "an unstaged edit to `src/x.mjs`");
       const before = porcelainOf(worktree);
       const answer = await advanceBranchToBase(worktree, b1, { dirtyPolicy: policy });
       assert.equal(answer.outcome, "already-current", `the answer is already-current: ${JSON.stringify(answer)}`);
@@ -458,7 +458,7 @@ export const gatePropagationRefusalsTests = [
   ].map(({ dirt, after }) => ({
     name: `129/03 task 01 — a conflict under touched-paths is still aborted and refused with the rest of the tree kept [${dirt}]`,
     run: () => withDirtyPolicyFixture(async ({ worktree, b1 }) => {
-      const l1 = await laneCommit(worktree, "packages/core/src/x.mjs", "export const x = 7; // L1 conflicts with B1\n", "L1");
+      const l1 = await laneCommit(worktree, "src/x.mjs", "export const x = 7; // L1 conflicts with B1\n", "L1");
       await applyDirt(worktree, dirt);
       const answer = await advanceBranchToBase(worktree, b1, { dirtyPolicy: "touched-paths" });
       assert.deepEqual(
@@ -506,7 +506,7 @@ export const gatePropagationRefusalsTests = [
         "XY",
       ].join("\n"));
       assert.deepEqual(parsed, [
-        { index: " ", worktree: "M", paths: ["packages/core/src/x.mjs"] },
+        { index: " ", worktree: "M", paths: ["src/x.mjs"] },
         { index: "M", worktree: " ", paths: ["README.md"] },
         { index: "R", worktree: " ", paths: ["old.md", "new.md"] },
         { index: "?", worktree: "?", paths: ["notes.txt"] },
