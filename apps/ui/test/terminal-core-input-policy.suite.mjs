@@ -40,15 +40,15 @@ import {
   mountPosture,
   inputPolicyFor,
   mountModelFor,
-} from "../../apps/ui/src/terminal/input-policy.mjs";
+} from "../src/terminal/input-policy.mjs";
 import {
   PROVIDER_IDS,
   initialPicker,
   selectProvider,
   isSelected,
   selectedCount,
-} from "../../apps/ui/src/terminal/provider-picker.mjs";
-import { SESSION_SOURCES, sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+} from "../src/terminal/provider-picker.mjs";
+import { SESSION_SOURCES, sessionSourceFor } from "../src/terminal/source-table.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

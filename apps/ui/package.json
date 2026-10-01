@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 4177",
     "build": "tsc -b && vite build",
-    "preview": "vite preview --host 127.0.0.1 --port 4177"
+    "preview": "vite preview --host 127.0.0.1 --port 4177",
+    "test": "node ../../scripts/test-workspace.mjs @aof/ui"
   },
   "dependencies": {
     "@aof/messaging": "workspace:*",

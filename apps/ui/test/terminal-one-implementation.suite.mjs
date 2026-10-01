@@ -17,15 +17,15 @@
 // ISOLATION: run focused, with `AOF_GLOBAL_HOME=$(mktemp -d)`. Never the full suite.
 import assert from "node:assert/strict";
 
-import { SESSION_SOURCES, sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { SESSION_SOURCES, sessionSourceFor } from "../src/terminal/source-table.mjs";
 import {
   inputPolicyFor,
   mountModelFor,
   POSTURE_INTERACTIVE,
   POSTURE_READ_ONLY,
-} from "../../apps/ui/src/terminal/input-policy.mjs";
-import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount, terminalAssignmentReason } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+} from "../src/terminal/input-policy.mjs";
+import { boardDockMount } from "../src/board/dock-mount.mjs";
+import { fleetTerminalMount, terminalAssignmentReason } from "../src/fleet/terminal-mount.mjs";
 import {
   applyControlFrame,
   applyTerminalEvent,
@@ -37,7 +37,7 @@ import {
   TRANSPORT_CAUSE_LINE,
   UNKNOWN_STATE,
   WAITING_PANE_LINE,
-} from "../../apps/ui/src/terminal/state-ramp.mjs";
+} from "../src/terminal/state-ramp.mjs";
 import {
   declaresAffordance,
   hostAffordances,
@@ -50,7 +50,7 @@ import {
   AFFORDANCE_WATCH_HIDE,
   HOST_BOARD_DOCK,
   HOST_FLEET_CARD,
-} from "../../apps/ui/src/terminal/host-model.mjs";
+} from "../src/terminal/host-model.mjs";
 
 const MIRROR = sessionSourceFor("mirror").source;
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
@@ -461,7 +461,7 @@ export const terminalOneImplementationTests = [
 //   · the committed mock — S1's `error` fixture (a `local-pty` dock) carries the bar
 //     `disconnected — the stream dropped`;
 //   · 46/03's SHIPPED AND ACCEPTED core — `TRANSPORT_CAUSE_LINE` is one constant, and
-//     `test/session/terminal-core-state-ramp.test.mjs` asserts it for a transport failure from EVERY
+//     `apps/ui/test/terminal-core-state-ramp.suite.mjs` asserts it for a transport failure from EVERY
 //     socket-bearing state, `connecting` included.
 //
 // Making row 4 green means changing a ruled vocabulary in a story that has already accepted, and
@@ -484,7 +484,7 @@ export const terminalOneImplementationTests = [
 //     | an unrecognised source kind              | … | interactive | false | true | NOT registered | underline, not blinking | present |
 //
 // 46/03's SHIPPED AND ACCEPTED core rules the opposite, explicitly and with its own rationale:
-// `test/session/terminal-core-input-policy.test.mjs` asserts `canInput:false x interactive → readOnlyLabel
+// `apps/ui/test/terminal-core-input-policy.suite.mjs` asserts `canInput:false x interactive → readOnlyLabel
 // null` and says why — *"an interactive mount never wears the mark that says it cannot be typed
 // into"*, and *"no picker AND no label — so the picker's absence cannot be the posture's signal"*.
 // The label names the MOUNT's POSTURE; an incapable lane is a different fact.

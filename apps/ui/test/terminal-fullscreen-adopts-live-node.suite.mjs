@@ -30,16 +30,16 @@ import {
   fullscreenState,
   presentedStateModel,
   rungFor,
-} from "../../apps/ui/src/app/shell-layout.mjs";
-import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
-import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY, mountModelFor } from "../../apps/ui/src/terminal/input-policy.mjs";
+} from "../src/app/shell-layout.mjs";
+import { sessionSourceFor } from "../src/terminal/source-table.mjs";
+import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY, mountModelFor } from "../src/terminal/input-policy.mjs";
 import {
   FULLSCREEN_EXIT_ANCHOR,
   terminalFullscreenExits,
   terminalFullscreenId,
   terminalFullscreenRequest,
-} from "../../apps/ui/src/terminal/fullscreen-request.mjs";
-import { GEOMETRY_FIT, GEOMETRY_SCALE, emitFit, geometryPlanFor } from "../../apps/ui/src/terminal/geometry.mjs";
+} from "../src/terminal/fullscreen-request.mjs";
+import { GEOMETRY_FIT, GEOMETRY_SCALE, emitFit, geometryPlanFor } from "../src/terminal/geometry.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

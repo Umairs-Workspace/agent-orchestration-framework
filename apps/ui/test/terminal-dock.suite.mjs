@@ -32,15 +32,15 @@ import {
   TERMINAL_EVENTS,
   TERMINAL_STATES,
   applyTerminalEvent,
-} from "../../apps/ui/src/terminal/state-ramp.mjs";
+} from "../src/terminal/state-ramp.mjs";
 import {
   initialPicker,
   selectProvider,
   isSelected,
   selectedCount,
   PROVIDER_IDS,
-} from "../../apps/ui/src/terminal/provider-picker.mjs";
-import { emitFit } from "../../apps/ui/src/terminal/geometry.mjs";
+} from "../src/terminal/provider-picker.mjs";
+import { emitFit } from "../src/terminal/geometry.mjs";
 
 // The dock's old `RUNNING` state, in the merged vocabulary: a BOUND source whose socket has
 // delivered bytes. `idle` holds no socket, so a byte cannot reach it — binding is what leaves it.

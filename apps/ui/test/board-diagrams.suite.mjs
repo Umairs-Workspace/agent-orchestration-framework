@@ -6,7 +6,7 @@
 // is exactly what `Markdown.tsx` does.
 import assert from "node:assert/strict";
 import { Marked, marked } from "marked";
-import { diagramFileUrl, diagramMembers, diagramRenderer, figureHtml, figureState, svgDataUri } from "../../apps/ui/src/board/diagrams.mjs";
+import { diagramFileUrl, diagramMembers, diagramRenderer, figureHtml, figureState, svgDataUri } from "../src/board/diagrams.mjs";
 
 const render = (text, images) => {
   const instance = new Marked({ gfm: true, breaks: false });

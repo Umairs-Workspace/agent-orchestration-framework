@@ -23,7 +23,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // read the REAL `/api/mesh/status` shaping (`queryGlobalMeshStatus`) — never a
 // hand-built assignment row asserted against itself. The render lanes drive the
 // framework-free `.mjs` helpers `FleetTerminalView.tsx` ITSELF imports (the
-// apps/ui/src/board/terminal/*.mjs + test/session/terminal-dock.test.mjs house precedent) —
+// apps/ui/src/board/terminal/*.mjs + apps/ui/test/terminal-dock.suite.mjs house precedent) —
 // headless, no browser — and the multiplex lane drives BOTH resolved URLs into the
 // REAL serveMeshUi `/ws/terminal-view` route over the REAL in-memory mirror.
 //

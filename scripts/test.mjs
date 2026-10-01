@@ -2,6 +2,7 @@ import { tests as ownedExecutionTests } from "../packages/execution/test/index.m
 import { tests as ownedIntegrationNotionTests } from "../packages/integration-notion/test/index.mjs";
 import { tests as ownedMeshTests } from "../packages/mesh/test/index.mjs";
 import { tests as ownedWorkGraphTests } from "../packages/work-graph/test/index.mjs";
+import { tests as ownedUiTests } from "../apps/ui/test/index.mjs";
 import { tests as ownedWorkTests } from "../packages/work/test/index.mjs";
 import { tests as ownedKnowledgeTests } from "../packages/knowledge/test/index.mjs";
 import { runCases } from "./test-harness.mjs";
@@ -91,6 +92,7 @@ export const tests = [
   ...ownedIntegrationNotionTests,
   ...ownedMeshTests,
   ...ownedWorkGraphTests,
+  ...ownedUiTests,
   ...ownedWorkTests,
   ...ownedKnowledgeTests,
   ...archAssignmentTests,

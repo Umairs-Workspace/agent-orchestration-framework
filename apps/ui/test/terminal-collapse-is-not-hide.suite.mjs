@@ -22,7 +22,7 @@
 // ISOLATION: run focused, with `AOF_GLOBAL_HOME=$(mktemp -d)`. Never the full suite.
 import assert from "node:assert/strict";
 
-import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { sessionSourceFor } from "../src/terminal/source-table.mjs";
 import {
   AFFORDANCES,
   AFFORDANCE_CHANGE,
@@ -61,9 +61,9 @@ import {
   SESSION_TEARS_DOWN,
   TERMINAL_HOSTS,
   WATCH_LABEL,
-} from "../../apps/ui/src/terminal/host-model.mjs";
-import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../apps/ui/src/terminal/input-policy.mjs";
-import { TERMINAL_STATE_LIST, applyTerminalEvent, bindSource, describeTerminalState, TERMINAL_EVENTS, TERMINAL_STATES } from "../../apps/ui/src/terminal/state-ramp.mjs";
+} from "../src/terminal/host-model.mjs";
+import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../src/terminal/input-policy.mjs";
+import { TERMINAL_STATE_LIST, applyTerminalEvent, bindSource, describeTerminalState, TERMINAL_EVENTS, TERMINAL_STATES } from "../src/terminal/state-ramp.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

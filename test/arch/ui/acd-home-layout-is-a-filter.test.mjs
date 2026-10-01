@@ -19,7 +19,7 @@
 // rather than on write — so `typeof localStorage` is not a safe probe either. The textual
 // clause below is the cheap half; the behavioural half (two storages in one process, and
 // poisoned globals that throw on ANY property access) lives in
-// `test/ui/home-layout-filter.test.mjs`, and it catches what a text sweep cannot: a global reached
+// `apps/ui/test/home-layout-filter.suite.mjs`, and it catches what a text sweep cannot: a global reached
 // through a computed property, an aliased binding, or a helper imported from elsewhere.
 //
 // Every plant is fed to the SHIPPED detectors below and asserts it LANDED first.

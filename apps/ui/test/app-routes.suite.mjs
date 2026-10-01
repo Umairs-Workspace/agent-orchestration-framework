@@ -44,7 +44,7 @@
 // is asserted through behaviour (the asset-directory scenario) rather than by reading a
 // build artefact that a clean checkout has not produced yet.
 import assert from "node:assert/strict";
-import { ROUTES, NOT_FOUND_ROUTE, routeFor, legacyRedirectFor } from "../../apps/ui/src/app/routes.mjs";
+import { ROUTES, NOT_FOUND_ROUTE, routeFor, legacyRedirectFor } from "../src/app/routes.mjs";
 
 // A surviving query string is read back the way every consumer in this codebase reads it —
 // with URLSearchParams, IN ORDER. Tolerant of the leading "?" and order-SENSITIVE, because

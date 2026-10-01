@@ -6,7 +6,7 @@
 // so every scenario/example row runs HEADLESSLY, mirroring the run-chip /
 // relative-time / in-flight helper convention (node:test, no browser).
 import assert from "node:assert/strict";
-import { assignmentChip, assignmentSummary } from "../../apps/ui/src/fleet/assignments.mjs";
+import { assignmentChip, assignmentSummary } from "../src/fleet/assignments.mjs";
 
 export const fleetAssignmentChipTests = [
   // Scenario Outline: each lifecycle state maps to its fixed chip — label,

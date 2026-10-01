@@ -9,7 +9,7 @@
 // `TERMINAL_VIEW_STATES`, two sets of words for one fact — and a second vocabulary grows ONE
 // WORD AT A TIME, which is exactly what review attention is worst at catching. `unfed`,
 // `silent`, `orphaned` each read cleanly at a render site. The behavioural half is in
-// `test/ui/home-feed-axis.test.mjs` (the union of every word the composition can return, computed
+// `apps/ui/test/home-feed-axis.suite.mjs` (the union of every word the composition can return, computed
 // from the compositions that file actually drives, is a subset of the eight strings m46 froze);
 // this is the structural half, and NEITHER IS SUFFICIENT ALONE — a behavioural union only
 // constrains the paths a test drives, and a text sweep only constrains the spellings it knows.

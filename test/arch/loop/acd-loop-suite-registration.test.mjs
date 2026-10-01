@@ -299,8 +299,12 @@ const RUNNER_REGIONS = Object.freeze([
 // Pin both real files together, including the awaited bridge and executed count.
 // RE-PINNED by 142 Plan 04: the cargo lane's Rust-core path moved `app/desktop` -> `apps/desktop` (a path literal, a
 // comment and three console labels). The mask set and every runner-logic line are unchanged.
-const RUNNER_RESIDUE = "f7d0aba13aa14c89486896e8c24981e8ee5aadc52ddf069a5748fd4e90996641";
-const REGISTRATION_IMPORT = /^import\s+\{[^}]*\}\s+from\s+"\.\.\/test\/[^"]+";$/u;
+const RUNNER_RESIDUE = "2db82135f1ffa7ac0718dbdc00614865376e276b064c4e2d235756a880ef20da";
+// RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
+// `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
+// loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below
+// is the first and last re-pin an owned-suite move needs.
+const REGISTRATION_IMPORT = /^import\s+\{[^}]*\}\s+from\s+"\.\.\/(?:test|packages\/[a-z-]+\/test|apps\/[a-z-]+\/test)\/[^"]+";$/u;
 const REGISTRATION_SPREAD = /^\s*\.\.\.[A-Za-z_$][\w$]*,?$/u;
 const COMMENT_OR_BLANK = /^\s*(?:\/\/.*)?$/u;
 

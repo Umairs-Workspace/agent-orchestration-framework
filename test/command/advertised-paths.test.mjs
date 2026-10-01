@@ -26,7 +26,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 //     right path from a hand-rolled second copy would pass every lane below and fail that
 //     gate; that division is the design, not a gap.
 //   · WHAT each legacy URL translates INTO is 45/01's `legacyRedirectFor`
-//     (`test/ui/app-routes.test.mjs`), and a fragment never reaches a server at all — so no
+//     (`apps/ui/test/app-routes.suite.mjs`), and a fragment never reaches a server at all — so no
 //     lane below claims a redirect. What IS claimed is narrower and is this story's own:
 //     every legacy address these producers USED to hand out still gets a 200 and the app
 //     shell from the very server that used to hand it out.

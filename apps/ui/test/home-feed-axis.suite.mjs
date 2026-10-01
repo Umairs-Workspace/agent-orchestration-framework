@@ -26,16 +26,16 @@ import {
   composeHomePane,
   feedAxisFor,
   feedAxisForPoll,
-} from "../../apps/ui/src/home/feed-axis.mjs";
+} from "../src/home/feed-axis.mjs";
 import {
   TERMINAL_STATES,
   TERMINAL_STATE_LIST,
   UNAVAILABLE_CAUSES,
   UNKNOWN_STATE,
   describeTerminalState,
-} from "../../apps/ui/src/terminal/state-ramp.mjs";
-import { COST_SUBSCRIPTION } from "../../apps/ui/src/terminal/host-model.mjs";
-import { HELD_AT_CAP, HELD_HIDDEN, RECOVERY_HIDE_ONE, RELEASED_LEFT_INDEX, subscribedPaneSet } from "../../apps/ui/src/home/socket-cap.mjs";
+} from "../src/terminal/state-ramp.mjs";
+import { COST_SUBSCRIPTION } from "../src/terminal/host-model.mjs";
+import { HELD_AT_CAP, HELD_HIDDEN, RECOVERY_HIDE_ONE, RELEASED_LEFT_INDEX, subscribedPaneSet } from "../src/home/socket-cap.mjs";
 
 const AXIS_VALUES = [FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER, FEED_ROSTER_GONE];
 const RAMP_WORDS = [...TERMINAL_STATE_LIST, UNKNOWN_STATE];

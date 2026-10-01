@@ -24,8 +24,8 @@
 //   Scenario Outline: the scheme follows the origin being dialled (4 rows)
 //   Scenario Outline: each source dials its own route, compared as a WHOLE path (2 rows)
 import assert from "node:assert/strict";
-import { terminalSocketUrl } from "../../apps/ui/src/terminal/socket-url.mjs";
-import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { terminalSocketUrl } from "../src/terminal/socket-url.mjs";
+import { sessionSourceFor } from "../src/terminal/source-table.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

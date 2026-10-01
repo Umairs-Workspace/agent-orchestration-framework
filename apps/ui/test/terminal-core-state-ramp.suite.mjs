@@ -55,8 +55,8 @@ import {
   applyTerminalEvent,
   applyControlFrame,
   describeTerminalState,
-} from "../../apps/ui/src/terminal/state-ramp.mjs";
-import { TERMINAL_MOTION_CLASS } from "../../apps/ui/src/terminal/palette.mjs";
+} from "../src/terminal/state-ramp.mjs";
+import { TERMINAL_MOTION_CLASS } from "../src/terminal/palette.mjs";
 
 const SERVER_MESSAGE = "claude: command not found";
 

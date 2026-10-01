@@ -13,9 +13,9 @@
 //
 // ISOLATION. No `~/.aof`, no store, no server, no port.
 import assert from "node:assert/strict";
-import { LAYOUT_SCHEMA_VERSION, LAYOUT_STORAGE_KEY, composeHomeLayout, saveHomeLayout } from "../../apps/ui/src/home/layout.mjs";
-import { paneKeyOf, paneTuple } from "../../apps/ui/src/home/socket-cap.mjs";
-import { TERMINAL_STATE_LIST, UNKNOWN_STATE } from "../../apps/ui/src/terminal/state-ramp.mjs";
+import { LAYOUT_SCHEMA_VERSION, LAYOUT_STORAGE_KEY, composeHomeLayout, saveHomeLayout } from "../src/home/layout.mjs";
+import { paneKeyOf, paneTuple } from "../src/home/socket-cap.mjs";
+import { TERMINAL_STATE_LIST, UNKNOWN_STATE } from "../src/terminal/state-ramp.mjs";
 
 const row = (nodeId, sessionId, extra = {}) => ({ nodeId, sessionId, repo: "demo", ...extra });
 const stored = (panes, focus = null, version = LAYOUT_SCHEMA_VERSION) => JSON.stringify({ version, panes, focus });

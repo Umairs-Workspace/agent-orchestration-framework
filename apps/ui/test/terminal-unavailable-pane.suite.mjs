@@ -30,11 +30,11 @@
 // ISOLATION: run focused, with `AOF_GLOBAL_HOME=$(mktemp -d)`. Never the full suite.
 import assert from "node:assert/strict";
 
-import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
-import { terminalSocketUrl } from "../../apps/ui/src/terminal/socket-url.mjs";
-import { terminalPaneIdentity } from "../../apps/ui/src/terminal/pane-identity.mjs";
-import { fleetTerminalMount, NO_STREAM, resolveTerminalStream } from "../../apps/ui/src/fleet/terminal-mount.mjs";
-import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { sessionSourceFor } from "../src/terminal/source-table.mjs";
+import { terminalSocketUrl } from "../src/terminal/socket-url.mjs";
+import { terminalPaneIdentity } from "../src/terminal/pane-identity.mjs";
+import { fleetTerminalMount, NO_STREAM, resolveTerminalStream } from "../src/fleet/terminal-mount.mjs";
+import { boardDockMount } from "../src/board/dock-mount.mjs";
 import {
   applyControlFrame,
   applyTerminalEvent,
@@ -49,7 +49,7 @@ import {
   TERMINAL_STATE_LIST,
   TRANSPORT_CAUSE_LINE,
   UNAVAILABLE_CAUSES,
-} from "../../apps/ui/src/terminal/state-ramp.mjs";
+} from "../src/terminal/state-ramp.mjs";
 
 const MIRROR = sessionSourceFor("mirror").source;
 const WORKSPACE_PATH = "~/source/lark-guard";

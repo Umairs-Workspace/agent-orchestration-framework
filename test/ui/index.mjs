@@ -74,7 +74,6 @@ import { boardRunStatusRouteTests } from "./board-run-status-route.test.mjs";
 // (doc bodies + run records) when the local checkout cannot answer — closing the
 // "board lists seven streamed stories, then dead-ends every click" gap.
 import { boardWorkerContentTests } from "./board-worker-content.test.mjs";
-import { boardRunsPureTests } from "./board-runs-pure.test.mjs";
 import { fleetScopeTests } from "./fleet-scope.test.mjs";
 import { renderPlanTests } from "./render-plan.test.mjs";
 import { setupUiTests } from "./setup-ui.test.mjs";
@@ -115,7 +114,6 @@ import { fleetAssignAcknowledgmentTests } from "./fleet-assign-acknowledgment.te
 // in FULL. A separate file from task 06 because it is not the affordance's state
 // axis: it binds every state at once and reaches into region 5's footer.
 import { fleetAssignRowGeometryTests } from "./fleet-assign-row-geometry.test.mjs";
-import { fleetAssignmentChipTests } from "./fleet-assignment-chip.test.mjs";
 import { catalogTests } from "./catalog.test.mjs";
 // ── milestone 47 / story 01 — THE BOARD DRILL-IN THAT OPENS A BOARD (ADR-006), and the
 // unreachable branch it was hiding behind. Two @executable task features, each with its own
@@ -170,9 +168,7 @@ import { fleetSlotAndPickerTests } from "./fleet-slot-and-picker.test.mjs";
 //   shipped detectors — never against a re-implemented copy (m46's mutation review found a plant
 //   fed to a local copy of `affordanceFormViolations`, so the shipped detector was never once
 //   driven to a violation).
-import { homeFeedAxisTests } from "./home-feed-axis.test.mjs";
 import { homeSocketCapArbiterTests } from "./home-socket-cap-arbiter.test.mjs";
-import { homeLayoutFilterTests } from "./home-layout-filter.test.mjs";
 import { uiDirectoryBudgetTests } from "./ui-directory-budget.test.mjs";
 // ── milestone 49 / story 04 — `/` BECOMES THE TERMINALS HOME (ADR-001; DESIGN §S1, DG-49-1).
 // FOUR EDITS IN ONE DIFF, and the whole risk is that they land separately: `main.tsx`'s `SURFACES`
@@ -200,7 +196,6 @@ import { terminalsHomePageStatesTests } from "./terminals-home-page-states.test.
 //   nowhere else), NARROWED by the feed axis to a LABELLED read-only whenever a keystroke would
 //   not arrive — which is what makes SPEC's read-only fallback reachable rather than decorative,
 //   because research measured a keystroke into a free session swallowed at one of two hops.
-import { homeSessionMountTests } from "./home-session-mount.test.mjs";
 // ── milestone 49 / story 05 — THE GRID OF LIVE PANES, the milestone's heart and the whole arc's.
 // Mounted through story 08's harness against the PRODUCT — `apps/ui/src/home/SessionGrid.tsx` →
 // `SessionPane.tsx` → the REAL, UNMODIFIED `apps/ui/src/terminal/TerminalControl.tsx` — so "sixteen
@@ -231,7 +226,6 @@ import { terminalsHomeGridTests } from "./terminals-home-grid.test.mjs";
 // 01_legacy-mode-redirect (every advertised ?mode= URL onto its path, `mode` the only thing
 // removed, idempotent), 02_query-and-fragment-passthrough (`?scope=`, unknown parameters and
 // the `#ref` fragment survive, in order).
-import { appRoutesTests } from "./app-routes.test.mjs";
 // ── milestone 45 / story 03 — THE APP SHELL & THE ENTRY (ADR-002 + ADR-005 with its five
 // [Build-N] amendments). `apps/ui/src/main.tsx` stops being a surface (its 1,260-line config editor
 // moved to `apps/ui/src/config/App.tsx`) and becomes three acts: mount, apply the legacy `?mode=`
@@ -318,11 +312,9 @@ import { boardStalenessA11yTests } from "./board-staleness-a11y.test.mjs";
 //   the outcome window (3 × HOME_POLL_MS) as two numbers waiting on two facts, the GRID as the
 //   success authority and the lane as the failure one, a late arrival clearing `no answer`, a
 //   NEW sessionId on every retry, and one lane per coded refusal.
-import { homeSessionLauncherPickerTests } from "./home-session-launcher.test.mjs";
 import { homeSessionLauncherStateTests } from "./home-session-launcher-states.test.mjs";
 
 // milestone 133 / story 04 — the diagram figure module, headless (ADR-007 §4).
-import { boardDiagramsTests } from "./board-diagrams.test.mjs";
 export const tests = [
   ...boardApiTests,
   ...boardServeTests,
@@ -340,7 +332,6 @@ export const tests = [
   // pure helpers; story 01: rerun verb + in-flight predicate)
   ...boardRunStatusRouteTests,
   ...boardWorkerContentTests,
-  ...boardRunsPureTests,
   ...fleetScopeTests,
   ...renderPlanTests,
   ...setupUiTests,
@@ -357,7 +348,6 @@ export const tests = [
   ...fleetAssignAffordanceTests,
   ...fleetAssignAcknowledgmentTests,
   ...fleetAssignRowGeometryTests,
-  ...fleetAssignmentChipTests,
   ...catalogTests,
   // milestone 47 / story 01 — the board drill-in + the deletion of the branch it hid behind
   // (tasks 00–01, both @executable; 00's @uat design lane is a person's render verdict)
@@ -370,9 +360,7 @@ export const tests = [
   ...fleetEmptyStatesTests,
   ...fleetFilterAddressTests,
   ...fleetSlotAndPickerTests,
-  ...homeFeedAxisTests,
   ...homeSocketCapArbiterTests,
-  ...homeLayoutFilterTests,
   ...uiDirectoryBudgetTests,
   // milestone 49 / story 04 — `/` becomes the terminals home. Task 00 is the route switch (the
   // four edits as one diff, the half-landed truth table, the containment, `content:fixed`, the
@@ -381,14 +369,12 @@ export const tests = [
   // `aof:verify 49`, not here.
   ...terminalsHomeRouteTests,
   ...terminalsHomePageStatesTests,
-  ...homeSessionMountTests,
   // milestone 49 / story 05 — the grid of live panes: the row set and its ONE sort site, the
   // socket every subscribed tile really constructs (mounted through the PRODUCT's own grid, never
   // a stub), the honest feed states, the cap that lists rather than evicts, the roving stop and
   // the expand door, and the one live region that replaced twelve.
   ...terminalsHomeGridTests,
   // milestone 45 / story 01 — the route model (tasks 00–02, all @executable)
-  ...appRoutesTests,
   // milestone 45 / story 03 — the app shell & the entry (tasks 00–03; 04 is @uat)
   ...shellEntryPlanTests,
   ...shellRegionsTests,
@@ -411,8 +397,6 @@ export const tests = [
   ...boardStalenessA11yTests,
   // milestone 50 / story 04 lane C — the new-session picker (task 01) and the
   // operator-visible state machine (task 02), both over the pure launcher module
-  ...homeSessionLauncherPickerTests,
   ...homeSessionLauncherStateTests,
   // milestone 133 / story 04 — the ARCHITECTURE tab's diagram figures (task 01).
-  ...boardDiagramsTests,
 ];

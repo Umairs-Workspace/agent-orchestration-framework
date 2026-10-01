@@ -31,7 +31,7 @@ import {
   launcherResolveSelection,
   launcherRest,
   sessionLauncherView,
-} from "../../apps/ui/src/home/session-launcher.mjs";
+} from "../src/home/session-launcher.mjs";
 
 // ── the payload, spelled the way the fleet face serves it ────────────────────────────────
 const node = (nodeId, freshness = "live", workspaceIds = []) => ({

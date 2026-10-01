@@ -49,10 +49,10 @@ import {
   declaresAffordance,
   hostAffordances,
   hostRestPane,
-} from "../../apps/ui/src/terminal/host-model.mjs";
-import { PANE_EMPTY_HOST } from "../../apps/ui/src/terminal/state-ramp.mjs";
-import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
-import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../apps/ui/src/terminal/input-policy.mjs";
+} from "../src/terminal/host-model.mjs";
+import { PANE_EMPTY_HOST } from "../src/terminal/state-ramp.mjs";
+import { sessionSourceFor } from "../src/terminal/source-table.mjs";
+import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../src/terminal/input-policy.mjs";
 
 const GRID = () => hostAffordances(HOST_GRID_PANE);
 const CARD = () => hostAffordances(HOST_FLEET_CARD);

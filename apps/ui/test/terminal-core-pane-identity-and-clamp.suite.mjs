@@ -21,16 +21,16 @@ import {
   NOT_RENDERED,
   terminalPaneKey,
   terminalPaneIdentity,
-} from "../../apps/ui/src/terminal/pane-identity.mjs";
+} from "../src/terminal/pane-identity.mjs";
 import {
   DOCK_MIN_HEIGHT,
   DOCK_DEFAULT_HEIGHT,
   dockHeightBounds,
   clampDockHeight,
   dockDefaultHeight,
-} from "../../apps/ui/src/terminal/clamp.mjs";
-import { describeTerminalState, TERMINAL_STATES, terminalStateUnavailable, UNAVAILABLE_CAUSES } from "../../apps/ui/src/terminal/state-ramp.mjs";
-import { sessionSourceFor, SESSION_SOURCES } from "../../apps/ui/src/terminal/source-table.mjs";
+} from "../src/terminal/clamp.mjs";
+import { describeTerminalState, TERMINAL_STATES, terminalStateUnavailable, UNAVAILABLE_CAUSES } from "../src/terminal/state-ramp.mjs";
+import { sessionSourceFor, SESSION_SOURCES } from "../src/terminal/source-table.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

@@ -19,7 +19,7 @@ import {
   runStateChip,
   rerunVerb,
   isInFlight,
-} from "../../apps/ui/src/board/runs.mjs";
+} from "../src/board/runs.mjs";
 
 const NOW = "2026-06-30T12:00:00.000Z";
 const nowMs = Date.parse(NOW);

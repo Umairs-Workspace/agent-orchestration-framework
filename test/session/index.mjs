@@ -23,7 +23,6 @@ import { agentSessionDriverGateAimTests } from "./agent-session-driver-gate-aim.
 // milestone 55 / story 03 — append-only raw feedback, later referenced triage,
 // and the structural no-classification capture boundary (FF-5507).
 import { rawCaptureBeforeClassificationTests } from "./raw-capture-before-classification.test.mjs";
-import { terminalDockTests } from "./terminal-dock.test.mjs";
 import { terminalWsTests } from "./terminal-ws.test.mjs";
 // milestone 46 / story 00 (ADR-008) — the pre-session frame queue: frames the route
 // accepted before the PTY existed are drained in arrival order (task 00), and that
@@ -59,11 +58,6 @@ import { terminalSessionsTests } from "./terminal-sessions.test.mjs";
 //     invariant 4's POLICY half, and it is load-bearing: once the control leaves
 //     `apps/ui/src/fleet/`, that gate's directory sweep reads green and VACUOUS, which is worse
 //     than deleting it.
-import { terminalCoreSourceTableTests } from "./terminal-core-source-table.test.mjs";
-import { terminalCoreStateRampTests } from "./terminal-core-state-ramp.test.mjs";
-import { terminalCoreGeometryTests } from "./terminal-core-geometry.test.mjs";
-import { terminalCoreSocketUrlTests } from "./terminal-core-socket-url.test.mjs";
-import { terminalCoreInputPolicyTests } from "./terminal-core-input-policy.test.mjs";
 // …plus the two capabilities the shared core was missing, both ruled to belong in this leaf at
 // the architect's review: the PER-PANE IDENTITY (the multiplex key, keyed on the descriptor's
 // own declared params rather than on one surface's tuple, and m38/ADR-014 invariant 4's V1 —
@@ -72,7 +66,6 @@ import { terminalCoreInputPolicyTests } from "./terminal-core-input-policy.test.
 // published chrome height, with the DEFAULT clamped too — the desktop app's 760x520 window
 // gives a 432px content box, so an unclamped 280 opens the dock at a height the operator is
 // not allowed to drag it to).
-import { terminalCorePaneIdentityAndClampTests } from "./terminal-core-pane-identity-and-clamp.test.mjs";
 // milestone 46 / story 04 (ADR-001..006; DESIGN §Surfaces) — ONE CONTROL, BOTH CALL SITES, AND THE
 // DUPLICATE DELETED IN THE SAME DIFF. `apps/ui/src/board/TerminalDock.tsx`, `apps/ui/src/board/terminal/` and
 // `apps/ui/src/fleet/terminal-view/` are gone; `apps/ui/src/terminal/TerminalControl.tsx` is the one
@@ -95,11 +88,6 @@ import { terminalCorePaneIdentityAndClampTests } from "./terminal-core-pane-iden
 //   03_the-unavailable-pane-names-its-cause — the labelled state that names its cause and opens no
 //     socket, and the boundary it must never blur with "no panel at all" (ADR-014 inv.4 / V1).
 //     DG-46-3: the state has NO production producer in m46 and is driven from a fixture.
-import { terminalControlBothSourcesTests } from "./terminal-control-both-sources.test.mjs";
-import { terminalCollapseIsNotHideTests } from "./terminal-collapse-is-not-hide.test.mjs";
-import { terminalOneImplementationTests } from "./terminal-one-implementation.test.mjs";
-import { terminalUnavailablePaneTests } from "./terminal-unavailable-pane.test.mjs";
-import { terminalFullscreenAdoptsLiveNodeTests } from "./terminal-fullscreen-adopts-live-node.test.mjs";
 // ── milestone 46 — THE REGRESSION SUITE FOR THE BLOCKER OF 2026-08-09, and the answer to the
 // test gap that let it ship. The one control rendered correctly and NEVER OPENED A SOCKET, at
 // both call sites, for both sources: `idle`'s pane treatment withheld the very host element whose
@@ -160,7 +148,6 @@ import { modelTests } from "./model.test.mjs";
 //   `affordanceFormViolations` (never a copy — m46's mutation review), plus the two declarations
 //   ADR-007's amendment adds: the byte area's PRESENCE as a host fact (replacing the control's
 //   `{subscribed ? … : null}` guard) and the pane-activation FORM beside the icon control.
-import { terminalGridPaneHostTests } from "./terminal-grid-pane-host.test.mjs";
 //   …and task 00's two source-lane @executable scenarios (1 and 5): the class the ramp emits is
 //   one a preference silences by ONE of DESIGN's two sanctioned mechanisms and is spelled ONCE,
 //   motion is on exactly `connecting…` and `streaming` and on no other row (the `unknown`
@@ -190,7 +177,6 @@ export const tests = [
   ...agentSessionDriverGateAimTests,
   // milestone 55 / story 03 — raw-first capture, separate triage, and no menu
   ...rawCaptureBeforeClassificationTests,
-  ...terminalDockTests,
   ...terminalWsTests,
   ...terminalWsPreSessionQueueTests,
   ...terminalWsPreSessionBoundTests,
@@ -199,21 +185,10 @@ export const tests = [
   // capabilities the architect's review added to the leaf, and every gate clause this story
   // turns green. The remaining whole-tree clauses are parked for 46/04; see the import block
   // above for why they are not named here.
-  ...terminalCoreSourceTableTests,
-  ...terminalCoreStateRampTests,
-  ...terminalCoreGeometryTests,
-  ...terminalCoreSocketUrlTests,
-  ...terminalCoreInputPolicyTests,
-  ...terminalCorePaneIdentityAndClampTests,
   // milestone 46 / story 04 — the headline story's four @executable suites, and the gate split out
   // of the fleet's input gate. The two parked WHOLE-TREE gate halves 46/03 could not turn green
   // are NOT separate imports: 46/04 merged them back into their registered siblings above, in the
   // same diff that deleted the duplicate, so each invariant has one file again.
-  ...terminalControlBothSourcesTests,
-  ...terminalCollapseIsNotHideTests,
-  ...terminalOneImplementationTests,
-  ...terminalUnavailablePaneTests,
-  ...terminalFullscreenAdoptsLiveNodeTests,
   // milestone 46 — the mounted-for-real control: it opens its socket, or this suite is red.
   ...terminalControlOpensItsSocketTests,
   // …and its header yields in DESIGN's order, keyed to its own width, with a door that stays 28px.
@@ -242,7 +217,6 @@ export const tests = [
   // per-surface floor plant that deletes the home's mount site while the other two remain). The
   // AMENDED gate itself is registered at the top of this file and is unchanged in registration —
   // one part changed, two did not, and nothing was exempted.
-  ...terminalGridPaneHostTests,
   ...terminalMotionReducedEscapeTests,
   // milestone 50 / story 04 — task 00: the spawn-outcome lane (A) and the producer fact
   // (B), plus the three gates ADR-008 decision 11 owes

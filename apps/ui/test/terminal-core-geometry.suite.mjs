@@ -44,8 +44,8 @@ import {
   emitFit,
   resizeMessage,
   terminalFitScale,
-} from "../../apps/ui/src/terminal/geometry.mjs";
-import { sessionSourceFor, RESIZE_CONTROL_FRAME, ORIGIN_ROLE_SELF, ORIGIN_ROLE_FLEET } from "../../apps/ui/src/terminal/source-table.mjs";
+} from "../src/terminal/geometry.mjs";
+import { sessionSourceFor, RESIZE_CONTROL_FRAME, ORIGIN_ROLE_SELF, ORIGIN_ROLE_FLEET } from "../src/terminal/source-table.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

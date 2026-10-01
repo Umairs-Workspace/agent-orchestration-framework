@@ -95,7 +95,7 @@ import { workListTests } from "../test/work/lifecycle/work-list.test.mjs";
 import { archTests as acdWorkListContractTests } from "../test/arch/work/acd-work-list-contract.test.mjs";
 import { boardApiTests } from "../test/ui/board-api.test.mjs";
 import { archTests as acdBoardWriteIsolationTests } from "../test/arch/ui/acd-board-write-isolation.test.mjs";
-import { terminalDockTests } from "../test/session/terminal-dock.test.mjs";
+import { terminalDockTests } from "../apps/ui/test/terminal-dock.suite.mjs";
 import { terminalWsTests } from "../test/session/terminal-ws.test.mjs";
 import { archTests as acdTerminalServerOnlyTests } from "../test/arch/session/acd-terminal-server-only.test.mjs";
 import { archTests as acdVibeyardAttributionTests } from "../test/arch/ui/acd-vibeyard-attribution.test.mjs";

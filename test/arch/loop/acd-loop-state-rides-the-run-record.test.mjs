@@ -60,7 +60,12 @@ async function uiTreePairs() {
   const manifest = JSON.parse(await readFile(path.join(root, "apps/ui/package.json"), "utf8"));
   // Include the new public development helper before it enters the Git index too.
   const publicFiles = Object.values(manifest.exports ?? {}).map(target => path.resolve(root, "apps", "ui", target));
-  const files = [...new Set([...trackedFilesUnder(path.join(root, "apps", "ui")), ...publicFiles])].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+  // 142 Plan 09: `apps/ui/test/` holds the UI-only suites, which verify the frozen tree rather than being part of it.
+  // They are excluded, not re-pinned: the digest below is the one pinned before the tests moved in, and every file
+  // under `apps/ui/src/` plus the manifest is still hashed.
+  const uiTests = path.join(root, "apps", "ui", "test") + path.sep;
+  const frozen = trackedFilesUnder(path.join(root, "apps", "ui")).filter((file) => !file.startsWith(uiTests));
+  const files = [...new Set([...frozen, ...publicFiles])].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
   return Promise.all(files.map(async (file) => [path.relative(root, file).replaceAll("\\", "/"), await readFile(file, "utf8")]));
 }
 
@@ -74,6 +79,8 @@ function assertUiFrozen(pairs) {
     let normalized = content.replace(/\r\n/gu, "\n");
     if (rel === "apps/ui/src/board/action.mjs") normalized = normalized.replace('"@aof/messaging/form"', '"../../../src/notify/form.mjs"');
     if (rel === "apps/ui/package.json") normalized = normalized.replace('    "@aof/messaging": "workspace:*",\n', '');
+    // 142 Plan 09: the UI-only suites run through the workspace's own `test` script; that one added line is the whole manifest change.
+    if (rel === "apps/ui/package.json") normalized = normalized.replace(',\n    "test": "node ../../scripts/test-workspace.mjs @aof/ui"', '');
     hash.update(normalized);
     hash.update("\0");
   }
