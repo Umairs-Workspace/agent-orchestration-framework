@@ -53,7 +53,6 @@
 // dangerous rung on no evidence, and missing-means-failing sends the operator to fix a score that
 // was never read.
 import { resolveLoopLevel, resolveLoopLevelGate } from "../engine.mjs";
-import { deepFreeze } from "./sources.mjs";
 
 // 63's own refusal, and the only code this module authors. The other codes a resolution can carry
 // (`loop-level-unknown`, `loop-level-locked`, `loop-level-gate`) are the gate's own and arrive on
@@ -68,6 +67,11 @@ export const TRIGGER_LEVEL_FACTS_NOT_SUPPLIED = "trigger-level-facts-not-supplie
 // cannot drift into a private copy.
 export const TRIGGER_GATE_FACTS = Object.freeze(["loopReady", "groundedness"]);
 
+function deepFreeze(value) {
+  if (value === null || typeof value !== "object" || Object.isFrozen(value)) return value;
+  for (const key of Object.keys(value)) deepFreeze(value[key]);
+  return Object.freeze(value);
+}
 
 // An answer says which moment it belongs to, because a resolution that did not would be
 // indistinguishable from a stored admission — which is the thing §2 above forbids existing.

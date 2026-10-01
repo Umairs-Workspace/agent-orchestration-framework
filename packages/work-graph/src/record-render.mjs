@@ -55,9 +55,9 @@ export function regenerateCommand(ref) {
   return `aof work loop-record ${named} --write`;
 }
 
-export const compareCodeUnits = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
+const compareCodeUnits = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
-export function compareEdges(left, right) {
+function compareEdges(left, right) {
   return compareCodeUnits(left.source, right.source)
     || compareCodeUnits(left.type, right.type)
     || compareCodeUnits(left.target, right.target);
@@ -70,7 +70,7 @@ function baseNodeKey(id) {
   return id.replace(/[^A-Za-z0-9_]/g, "_");
 }
 
-export function nodeKeys(ids) {
+function nodeKeys(ids) {
   const keys = new Map();
   const used = new Set();
   for (const id of ids) {

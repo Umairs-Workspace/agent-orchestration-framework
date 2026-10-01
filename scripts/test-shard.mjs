@@ -7,14 +7,21 @@
 //
 // With no positions it runs every case the file exports. A position the file does not have is an error, never a
 // silent skip: the parent compares the executed count with what it assigned.
+import { readFileSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { runCases, runnerShapedExports } from "./test-harness.mjs";
 
 const [file, positions] = process.argv.slice(2);
 if (!file) {
   console.error("not ok - test-shard needs a suite file");
   process.exit(2);
+}
+// A suite that imports the runner itself (to test it) sits on an import ring: the runner imports that suite's
+// directory index, which imports the suite. The whole-tree run always enters the ring at the runner; a unit
+// entering at the suite would read the index's array before it is initialised. Such a suite enters the same way.
+if (/(?:from\s*|import\s*\(\s*)["'][^"']*scripts\/test\.mjs["']/u.test(readFileSync(path.resolve(file), "utf8"))) {
+  await import(pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "test.mjs")).href);
 }
 const module = await import(pathToFileURL(path.resolve(file)).href);
 const cases = runnerShapedExports(module).flat();

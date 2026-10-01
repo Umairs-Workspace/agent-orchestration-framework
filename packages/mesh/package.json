@@ -9,6 +9,7 @@
     "./assignment-directive": "./src/assignment-directive.mjs",
     "./session-spawn-directive": "./src/session-spawn-directive.mjs",
     "./session-spawn-outcome": "./src/session-spawn-outcome.mjs",
+    "./terminal-resume-refusal": "./src/terminal-resume-refusal.mjs",
     "./sync-cadence": "./src/sync-cadence.mjs",
     "./presence-loop": "./src/presence-loop.mjs",
     "./relay": "./src/relay.mjs",

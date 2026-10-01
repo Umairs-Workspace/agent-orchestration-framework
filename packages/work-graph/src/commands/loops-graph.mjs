@@ -2,10 +2,19 @@ import path from "node:path";
 
 import { commandError } from "@aof/contracts/error";
 import { KIND_SHAPES } from "../shapes.mjs";
-import { compareCodeUnits, compareEdges, nodeKeys } from "../record-render.mjs";
 
 function displayPath(value) {
   return path.relative(process.cwd(), value) || ".";
+}
+
+function compareCodeUnits(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function compareEdges(left, right) {
+  return compareCodeUnits(left.source, right.source) ||
+    compareCodeUnits(left.type, right.type) ||
+    compareCodeUnits(left.target, right.target);
 }
 
 // The glyph table moved BELOW commands/ at chore 116 (src/loop-graph-shapes.mjs carries why both
@@ -19,8 +28,27 @@ export { KIND_SHAPES };
 // to: it borrows no declared kind's glyph.
 const UNDECLARED_SHAPE = ['[/"', '"/]'];
 
-// Edge order and Mermaid node keys come from `record-render.mjs`, the one home for both, so the
-// record's diagram and this command's diagram can never key or order the same graph differently.
+function baseNodeKey(id) {
+  return id.replace(/[^A-Za-z0-9_]/g, "_");
+}
+
+function nodeKeys(ids) {
+  const keys = new Map();
+  const used = new Set();
+  for (const id of ids) {
+    const base = baseNodeKey(id);
+    let key = base;
+    let suffix = 2;
+    while (used.has(key)) {
+      key = `${base}_${suffix}`;
+      suffix += 1;
+    }
+    used.add(key);
+    keys.set(id, key);
+  }
+  return keys;
+}
+
 export function renderLoopGraph(model) {
   const declared = new Map();
   for (const node of model.nodes) {

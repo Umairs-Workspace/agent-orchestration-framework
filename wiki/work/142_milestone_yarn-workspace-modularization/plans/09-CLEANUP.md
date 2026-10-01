@@ -73,10 +73,10 @@ targets `packages/core`. Two TECH_DEBT entries gained a path note (item 83, item
 **Per-package hygiene** (static scan of every workspace's manifest against every tracked importer): no feature package declares a
 dependency it does not import. `@aof/ui` declared four nothing imports (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`,
 `tunnel-rat`); they are removed, Yarn's lockfile-only update drops them and four transitive packages, and the supply-chain audit
-passes. Six export subpaths had no consumer anywhere and nothing builds specifiers dynamically (`@aof/knowledge/commands/shared`,
-`@aof/mesh/terminal-resume-refusal`, `@aof/work/doctor/freshness`, `@aof/work/doctor/identity`, `@aof/work/promote/chore-seed`,
-`@aof/work-graph/shapes`); they are removed from the manifests, their modules stay (each is imported inside its own package).
-`aof/asset-base` stays (a documented public seam). One empty, untracked leftover directory (`packages/core/src/notify/`) was removed.
+passes. Six export subpaths have no code consumer (`@aof/knowledge/commands/shared`, `@aof/mesh/terminal-resume-refusal`,
+`@aof/work/doctor/freshness`, `@aof/work/doctor/identity`, `@aof/work/promote/chore-seed`, `@aof/work-graph/shapes`), but they are
+**kept**: removing them was tried and FF-11903 went 55 → 61, because the citation sweep resolves historical `src/…` citations
+through those exports. They are load-bearing for the record, not dead. `aof/asset-base` stays (a documented public seam). One empty, untracked leftover directory (`packages/core/src/notify/`) was removed.
 The `apps/ui` freeze was re-pinned once for the manifest change, with the previous digest reproduced from the previous manifest.
 
 **Duplicated helpers.** A scan for function bodies identical after comment/whitespace normalisation (≥120 characters) finds 17
