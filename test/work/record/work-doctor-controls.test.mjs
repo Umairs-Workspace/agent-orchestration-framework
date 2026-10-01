@@ -355,16 +355,14 @@ export const workDoctorControlsTests = [
         [
           "target)).mtimeMs;",
           "path.join(projectRoot, control))).isFile();",
-          // 119/ADR-004 — THE FALL-THROUGH, named rather than admitted by loosening this list.
-          // Leg A above is still the first branch and still answers for every control that exists
-          // at HEAD; only on a MISS is the rename map asked where the file went, and the candidate
-          // it names is probed the same way. That keeps `control-unresolved` meaning "this register
-          // declares a control that does not exist" instead of "somebody moved a file" — which is
-          // the difference between a gate and a permanent finding on twenty immutable registers.
-          "path.join(projectRoot, answer.at))).isFile();",
         ],
-        "one existence probe per cited control path plus one for the rename candidate on a miss, beside the pre-existing mtime stat — and nothing else",
+        "the direct control existence probe and the pre-existing mtime stat",
       );
+      // A deleted mixed forward can name several implementations. Its fall-through
+      // site probes every destination, and a citation resolves only when all exist.
+      assert.equal([...spine.matchAll(/\bstat\(/g)].length, 3, "exactly three stat call sites, including the batched history probe");
+      assert.match(spine, /const destinations = answer\.destinations \?\? \[answer\.at\];/);
+      assert.ok(spine.includes("controlProbes[control] = (await Promise.all(destinations.map(file => stat(path.join(projectRoot, file))))).every(info => info.isFile());"), "the batched probe requires every destination to be a file");
       // One probe per DISTINCT path: a path cited by two declarations is stat'ed once.
       assert.match(spine, /const cited = new Set\(\);/, "the cited paths are unioned before probing");
     },

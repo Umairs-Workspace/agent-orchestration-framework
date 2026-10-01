@@ -732,7 +732,7 @@ export const workInsertAliasTests = [
       );
       const anyImporters = [...sources].filter(([, code]) => /\brunInsertTopLevel\b/u.test(code) && !/function\s+runInsertTopLevel\b/u.test(code)).map(([relPath]) => relPath).sort();
       const packageFaces = importers.map(file => file.replace("packages/core/src/application/bindings/commands/", "packages/work/src/commands/"));
-      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "packages/core/src/application/bindings/commands/promote.mjs", "packages/core/src/application/bindings/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
+      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "packages/core/src/application/bindings/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
       for (const face of packageFaces) {
         assert.match(sources.get(face), /\brunInsertTopLevel\s*\(/u, `${face}: the injected insertion service is called`);
         const adapter = sources.get(face.replace("packages/work/src/", "packages/core/src/application/bindings/"));
