@@ -122,6 +122,8 @@ for it with the measured diff.
 | --- | --- | --- | --- |
 | Sharded #1 at `8478cc07` | 11,525 of 11,537 (12 lost to an import ring, now fixed) | 23.6 min | 5 real failures — all fixed in `681567f2`: the shard's import ring, two helper consolidations that broke FF-6304/2 and FF-7805, six exports FF-11903 needs, 12 archive links (54 > 52 in a clean tree) — plus the known ratchets; 4 load flakes |
 | Sharded #2 at `681567f2` | **11,537 of 11,537** | 23.8 min | Only the three operator ratchets and one unaudited import (fixed in `36988e87`, re-run green); 4 load flakes green alone, two of them a Windows `EBUSY` temp cleanup now retried in every fixture (`36988e87`) |
+| Sharded #3 at `fb9e8f4b` (after the `test/surfaces` rename) | 11,537 (the report then miscounted retried units) | 38.0 min | Only the ratchets — but it ran without timings (fresh worktree) and two units burned 20-min kills: the slow file ran unsplit, and a transcript case hung on a real-time race outside its own 30 s ceiling. Both fixed in `d48bf751` |
+| **Sharded #4 at `d48bf751` — the confirming run** | **11,537 of 11,537** | **23.1 min** | **Only the three operator ratchets.** Four timing-sensitive cases red under 16-way load, green alone (named in the run's SUMMARY.txt) |
 | Workspace suites | 14 workspaces, 1,344 registered + 248 native | — | all green in isolation |
 | Integration + cargo lanes | inside the sharded runs | — | green |
 | UI build / supply-chain audit | — | — | pass / 0 warnings |
