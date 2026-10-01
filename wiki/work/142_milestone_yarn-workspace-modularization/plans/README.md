@@ -2,7 +2,7 @@
 
 Planning baseline: `e343d50` (`refactor: move domain transitions into owning workspaces`),
 2026-09-29. These are ordinary engineering plans, outside the AOF workflow. They do not
-create managed stories, runs, or acceptance state. Plans 01–08 are complete on the available host; Plan 09 (cleanup and verify) is pending (Windows x64, 2026-10-01); the open platform/desktop
+create managed stories, runs, or acceptance state. Plans 01–08 are complete on the available host (Windows x64, 2026-10-01); Plan 09 (cleanup and verify) is pending. The open platform/desktop
 legs are listed in [08-VERIFICATION.md](08-VERIFICATION.md) and the [completion audit](../COMPLETION.md).
 
 The agreed boundaries remain in [SPEC](../SPEC.md) and [MIGRATION](../MIGRATION.md).
