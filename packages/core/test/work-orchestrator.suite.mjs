@@ -16,12 +16,12 @@ import {
   readOrchestratorModel,
   selectOrchestratorModel,
   showOrchestratorModel
-} from "../../../packages/core/src/work/orchestrator.mjs";
+} from "../src/work/orchestrator.mjs";
 // m43 / ADR-002 AC11: the whole-file `claudeSettingsJson` renderer is GONE (a
 // co-authored file gets a surgical merge, never a whole-file render). The orchestrator
 // model still lands in `.claude/settings.json` — through the merge PATCH, which is what
 // this test now proves is functional.
-import { claudeSettingsPatch } from "../../../packages/core/src/claude-settings.mjs";
+import { claudeSettingsPatch } from "../src/claude-settings.mjs";
 
 async function fixture(config) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-orchestrator-"));

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createCleanPlan, executeCleanPlan } from "../../packages/core/src/clean.mjs";
-import { hashContent, writeLock } from "../../packages/core/src/lock.mjs";
+import { createCleanPlan, executeCleanPlan } from "../src/clean.mjs";
+import { hashContent, writeLock } from "../src/lock.mjs";
 
 export const cleanTests = [
   {

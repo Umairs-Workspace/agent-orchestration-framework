@@ -12,7 +12,6 @@
 // milestone 12 — managed tool provisioning (story 00: the spine — the store
 // geometry + store-first resolver, ADR-001; the provider registry + uv lane +
 // frozen tool descriptors, ADR-002; @executable traceability)
-import { toolStorePathResolutionTests } from "./tool-store-path-resolution.test.mjs";
 import { cacheStableLaunchTests } from "./cache-stable-launch.test.mjs";
 import { globalWorkStoreTests } from "./global-work-store.test.mjs";
 import { globalWorkPropagationTests } from "./global-work-propagation.test.mjs";
@@ -73,7 +72,6 @@ import { cacheReadDoctorOverlayTests } from "./cache-read-doctor-overlay.test.mj
 import { sqliteRuntimeTests } from "./sqlite-runtime.test.mjs";
 
 export const tests = [
-  ...toolStorePathResolutionTests,
   ...cacheStableLaunchTests,
   ...globalWorkStoreTests,
   ...globalWorkPropagationTests,

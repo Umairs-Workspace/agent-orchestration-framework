@@ -114,7 +114,6 @@ import { fleetAssignAcknowledgmentTests } from "./fleet-assign-acknowledgment.te
 // in FULL. A separate file from task 06 because it is not the affordance's state
 // axis: it binds every state at once and reaches into region 5's footer.
 import { fleetAssignRowGeometryTests } from "./fleet-assign-row-geometry.test.mjs";
-import { catalogTests } from "./catalog.test.mjs";
 // ── milestone 47 / story 01 — THE BOARD DRILL-IN THAT OPENS A BOARD (ADR-006), and the
 // unreachable branch it was hiding behind. Two @executable task features, each with its own
 // suite, and they LOCK EACH OTHER: (a)'s door must demonstrably work before (b) removes the
@@ -348,7 +347,6 @@ export const tests = [
   ...fleetAssignAffordanceTests,
   ...fleetAssignAcknowledgmentTests,
   ...fleetAssignRowGeometryTests,
-  ...catalogTests,
   // milestone 47 / story 01 — the board drill-in + the deletion of the branch it hid behind
   // (tasks 00–01, both @executable; 00's @uat design lane is a person's render verdict)
   ...fleetBoardDrillInTests,

@@ -157,7 +157,7 @@ const THE_FAST_LANE_SIX = Object.freeze([
   "test/work/lifecycle/work-resolve.test.mjs",
   "test/work/gate/work-validate.test.mjs",
   "test/work/lifecycle/work-next.test.mjs",
-  "test/bundle/opencode-hooks.test.mjs",
+  "packages/core/test/opencode-hooks.suite.mjs",
   "test/arch/work/work-content-free-discovery.test.mjs",
 ]);
 

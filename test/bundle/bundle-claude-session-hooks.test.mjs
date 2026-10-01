@@ -9,7 +9,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // WHY A SUITE OF ITS OWN. The feature's own "WHERE IT LANDS" note sanctions one
 // ("If a NEW suite is created it MUST be registered in scripts/test.mjs"), and it is
 // registered there. `test/mesh/mesh-assistant-hook-wiring.test.mjs` is m38/story-00 task
-// 05's traceability file and stays that; `test/bundle/bundle.test.mjs` keeps the membership
+// 05's traceability file and stays that; `packages/core/test/bundle.suite.mjs` keeps the membership
 // COUNTS. This file owns the eight scenarios of THIS task and nothing else.
 //
 // WHAT IS DRIVEN, NOT ASSERTED AS A STRING. A wiring story whose invocation was never
@@ -498,7 +498,7 @@ export const bundleClaudeSessionHookTests = [
         //
         // THE AOF-OWNED TAIL IS DERIVED, NOT TYPED. This scenario is about the OPERATOR's
         // rule surviving in its own position; which rules the frozen-set declaration owns
-        // is the declaration's business and `test/bundle/frozen-set-compiled.test.mjs`'s census.
+        // is the declaration's business and `packages/core/test/frozen-set-compiled.suite.mjs`'s census.
         // Typing them here made this suite go red on 61/ADR-005 §3's sixth member for a
         // reason that has nothing to do with what it tests.
         for (const key of ["sandbox", "enabledPlugins"]) {

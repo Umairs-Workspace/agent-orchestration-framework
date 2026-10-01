@@ -51,7 +51,6 @@ import { workObserveAttributionTests } from "./work-observe-attribution.test.mjs
 // features trace to test/work/lifecycle/work-observe-cache-economics.test.mjs; this story declares no
 // fitness function of its own.
 import { workObserveCacheEconomicsTests } from "./work-observe-cache-economics.test.mjs";
-import { workOrchestratorTests } from "./work-orchestrator.test.mjs";
 import { workNextReadySetTests } from "./work-next-ready-set.test.mjs";
 import { workDispatchLaneTests } from "./work-dispatch-lanes.test.mjs";
 // milestone 96 / story 03 — the test run matches the story. One behavioural suite over all three
@@ -80,7 +79,6 @@ export const tests = [
   // milestone 70 / story 02 — cache-economics (the two @executable task features;
   // no fitness function of its own).
   ...workObserveCacheEconomicsTests,
-  ...workOrchestratorTests,
   ...workNextReadySetTests,
   ...workDispatchLaneTests,
   // milestone 96 / story 03 — the story-scoped test run and its one control (see the import note).

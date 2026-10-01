@@ -160,7 +160,7 @@ export function inspectBoundaries(root, { owners = workspaceOwners(root), files 
           && (file.rel === 'scripts/test.mjs' && target === path.join(targetOwner.directory, 'test', 'index.mjs')
             || file.rel === 'scripts/test-unit.mjs' && within(path.join(targetOwner.directory, 'test'), target) && target.endsWith('.suite.mjs'));
         if (ownedTest) {
-          if (!Object.hasOwn(owner.manifest.devDependencies ?? {}, targetOwner.manifest.name)) problem(`undeclared test owner ${targetOwner.manifest.name}`);
+          if (!Object.hasOwn({ ...owner.manifest.dependencies, ...owner.manifest.devDependencies }, targetOwner.manifest.name)) problem(`undeclared test owner ${targetOwner.manifest.name}`);
           if (!existsSync(target)) problem(`missing owned test registration ${specifier}`);
           continue;
         }

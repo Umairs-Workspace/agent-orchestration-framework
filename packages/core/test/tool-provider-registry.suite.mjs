@@ -13,8 +13,8 @@
 // planFrameworkInstall (a pure plan emitter too) — so no binary is spawned. The
 // version dir in the expected plan is DERIVED via toolVersionDir, never hardcoded.
 import assert from "node:assert/strict";
-import { planProvision, PROVIDERS } from "../../packages/core/src/tool-store.mjs";
-import { toolVersionDir } from "../../packages/core/src/paths.mjs";
+import { planProvision, PROVIDERS } from "../src/tool-store.mjs";
+import { toolVersionDir } from "../src/paths.mjs";
 
 export const toolProviderRegistryTests = [
   // ═══════════ 01_provider-registry-and-uv-lane.feature ═══════════════════════

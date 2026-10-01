@@ -25,10 +25,10 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { toolVersionDir } from "../../packages/core/src/paths.mjs";
-import { exeDirFor, exeNameFor, HEADROOM_DESCRIPTOR } from "../../packages/core/src/tool-store.mjs";
-import { resolveHeadroomBinary } from "../../packages/core/src/headroom.mjs";
-import { useHeadroom } from "../../packages/core/src/work/headroom.mjs";
+import { toolVersionDir } from "../src/paths.mjs";
+import { exeDirFor, exeNameFor, HEADROOM_DESCRIPTOR } from "../src/tool-store.mjs";
+import { resolveHeadroomBinary } from "../src/headroom.mjs";
+import { useHeadroom } from "../src/work/headroom.mjs";
 
 const HEADROOM_BINARY = "headroom";
 const HEADROOM_VERSION = HEADROOM_DESCRIPTOR.version;

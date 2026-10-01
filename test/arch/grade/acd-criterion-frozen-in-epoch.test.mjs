@@ -295,7 +295,7 @@ export const archTests = [
       // remains is frozen-set/00's member FLOOR, which a withdrawal ceremony lowers.
       const declaration = bundledFrozenSet();
       const compiled = compileFrozenSet(declaration);
-      const compiledSource = await readFile(path.join(repoRoot, "test", "bundle", "frozen-set-compiled.test.mjs"), "utf8");
+      const compiledSource = await readFile(path.join(repoRoot, "packages", "core", "test", "frozen-set-compiled.suite.mjs"), "utf8");
       const withdrawalSource = await readFile(path.join(repoRoot, "test", "work", "framework-stops-shipping-guard.test.mjs"), "utf8");
 
       assert.ok(declaration.members.length > 0, "the declaration was read: it carries members");

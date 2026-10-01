@@ -66,7 +66,7 @@ function tempRepo(prefix = "aof-verification-template-") {
 
 // A base install built through the ENGINE init uses — synthesize → plan against an empty
 // previousLock → execute → write the `work` section of the unified lock. Lifted from
-// `test/work/work-update.test.mjs`'s `installBase`, deliberately: a second install engine in a test is
+// `packages/core/test/work-update.suite.mjs`'s `installBase`, deliberately: a second install engine in a test is
 // exactly the second home this milestone exists to refuse.
 async function installBase(repo, bundle, runtimes = ["claude"], version = "1.0.0") {
   const { desiredOutputs } = await synthesizeBundleConfig(bundle, { runtimes, targetDir: repo });

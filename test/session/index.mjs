@@ -131,11 +131,9 @@ import { attributionAtSpawnTests } from "./attribution-at-spawn.test.mjs";
 // 02_backcompat-migrate-doctor / 03_self-heal-hostname-mismatch). Task 04
 // (cross-os-distinct-identity) is @manual real-hardware — no test, verified at
 // aof:verify.
-import { identitySidecarPersistTests } from "./identity-sidecar-persist.test.mjs";
 import { selfHealHostnameMismatchTests } from "./self-heal-hostname-mismatch.test.mjs";
 import { agentModelOverrideTests } from "./agent-model-override.test.mjs";
 import { agentModelSoloInertTests } from "./agent-model-solo-inert.test.mjs";
-import { modelTests } from "./model.test.mjs";
 // ── milestone 49 / story 03 — THE PANE DECLARES ITSELF, AND THE GATE SAYS SO (ADR-007 the fourth
 // host + the posture; ADR-008 the amendment). THE MILESTONE'S ONE DELIBERATE REVERSAL, and the
 // three task features below are one story for one reason: part 1's new surface → posture-home
@@ -205,11 +203,9 @@ export const tests = [
   // flag, the chosen session model/effort and the held 1-hour cache window, at the
   // launch seam and the drive path, plus the pure session-model resolver.
   // milestone 33 (story 00) — per-install-node-identity: tasks 00–03
-  ...identitySidecarPersistTests,
   ...selfHealHostnameMismatchTests,
   ...agentModelOverrideTests,
   ...agentModelSoloInertTests,
-  ...modelTests,
   // milestone 49 / story 03 — the pane declares itself, and the gate says so. Task 00's fourth
   // host (34 cases over the SHIPPED affordance tables and the SHIPPED form/cost detector), task
   // 01's mount declaration (37 cases over the SHIPPED posture, read through the SHIPPED policy),

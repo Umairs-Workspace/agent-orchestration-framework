@@ -33,7 +33,6 @@ import { notionDryRunTests } from "./notion-dry-run.test.mjs";
 // (03_doctor-surfaces-notion); ADR-004. @executable traceability — the live `ntn`
 // install / auth round-trip rows are @manual, deferred to verify.)
 import { notionConfigSchemaTests } from "./notion-config-schema.test.mjs";
-import { notionDescriptorTests } from "./notion-descriptor.test.mjs";
 import { notionAuthEnvTests } from "./notion-auth-env.test.mjs";
 import { notionDoctorTests } from "./notion-doctor.test.mjs";
 // milestone 18 — per-folder integration descriptor (story 00: the AUTHORING SPINE —
@@ -80,7 +79,6 @@ export const tests = [
   ...notionApplyIdempotentTests,
   ...notionDryRunTests,
   ...notionConfigSchemaTests,
-  ...notionDescriptorTests,
   ...notionAuthEnvTests,
   ...notionDoctorTests,
   ...integrationsRoutingReaderTests,

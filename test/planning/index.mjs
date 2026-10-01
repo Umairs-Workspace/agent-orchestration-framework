@@ -26,7 +26,6 @@ import { tuneCorpusTests } from "./tune-corpus.test.mjs";
 // milestone 62 / story 04 — the registered read face, acceptor-only verdict seam,
 // byte-level read-only proof and the integrated real-corpus acceptance condition.
 import { tuneCommandTests } from "./tune-command.test.mjs";
-import { planningInitTests } from "./planning-init.test.mjs";
 import { planningPrdTests } from "./planning-prd.test.mjs";
 // milestone 06 — headroom plugin (story 00: config-contract @executable traceability)
 import { headroomConfigContractTests } from "./headroom-config-contract.test.mjs";
@@ -37,7 +36,6 @@ import { headroomWrapRoutingTests } from "./headroom-wrap-routing.test.mjs";
 // store-first re-point of headroom's defaultWhich onto resolveManagedBinary, ADR-004
 // task 00; the headroom descriptor's uv-lane plan + the tool-platform platform-matrix
 // warning, ADR-004 task 01 @executable; @executable traceability)
-import { headroomStoreFirstTests } from "./headroom-store-first.test.mjs";
 import { headroomProvisionPlatformTests } from "./headroom-provision-platform.test.mjs";
 // milestone 71 / story 01 — findings become work items (ADR-003/ADR-004): the triage
 // rule as a pure decider + the second face on the one promotion engine, plus FF-7103
@@ -58,12 +56,10 @@ export const tests = [
   // milestone 62 / story 05 — candidate formation tasks 00–04 and FF-6209.
   // milestone 62 / story 04 — tasks 00–04 plus FF-6201, FF-6207 and FF-6208.
   ...tuneCommandTests,
-  ...planningInitTests,
-  ...planningPrdTests,
   ...headroomConfigContractTests,
+  ...planningPrdTests,
   ...headroomToggleCliTests,
   ...headroomWrapRoutingTests,
-  ...headroomStoreFirstTests,
   ...headroomProvisionPlatformTests,
   // milestone 71 / story 01 — all three @executable tasks (the triage rule, the
   // promotion, and the one-type bound) + FF-7103 + FF-7104. 39/03's own untouched

@@ -45,7 +45,6 @@ import { workInitConfigTests } from "./work-init-config.test.mjs";
 // answering the same under either setting and when the key is absent (ADR-005 §2). The WRITE half
 // rides chore 51's suite directly above.
 import { workIntakeWriteSideTests } from "./work-intake-write-side.test.mjs";
-import { workUpdateTests } from "./work-update.test.mjs";
 // milestone 04 — round-trip proof (story 00: the frozen harness)
 import { roundtripHarnessTests } from "./roundtrip-harness.test.mjs";
 // milestone 04 — round-trip proof (story 01: install-proof, story 02: loop-proof)
@@ -121,8 +120,6 @@ import { migrateClaudeCommandTests } from "./migrate-claude-command.test.mjs";
 // discovery walks UP to the enclosing project (so work.dir is cwd-independent), and a
 // scan that finds ZERO items refuses instead of printing a clean line.
 import { doctorCwdIndependenceTests } from "./doctor-cwd-independence.test.mjs";
-import { frameworkTests } from "./frameworks.test.mjs";
-import { workspaceTests } from "./workspace.test.mjs";
 // milestone 34 / story 04 — worker live-state stream to control node (ADR-007): the
 // worker-role/control-address resolution, the persistent worker stream client
 // (snapshot-first-then-deltas, reconnect+backoff, failure isolation), the always-on
@@ -132,7 +129,6 @@ import { workspaceTests } from "./workspace.test.mjs";
 // and deliberately has no test file here.
 
 import { workerStreamClientTests } from "./worker-stream-client.test.mjs";
-import { pathTests } from "./paths.test.mjs";
 import { singleEntryTwoModeTests } from "./single-entry-two-mode.test.mjs";
 import { verifyAuthorsOutcomeTests } from "./verify-authors-outcome.test.mjs";
 import { danglingDeclarationFfTests } from "./dangling-declaration-ff.test.mjs";
@@ -159,7 +155,6 @@ import { workItemStatusLifecycleTests } from "./work-item-status-lifecycle.test.
 // finding F-73-G).
 import { workItemStatusIfApplicableTests } from "./work-item-status-if-applicable.test.mjs";
 import { verifyOutcomePerTypeTests } from "./verify-outcome-per-type.test.mjs";
-import { recordsFollowTheStoryTests } from "./records-follow-the-story.test.mjs";
 import { deliveredStoryRecordsTests } from "./delivered-story-records-reported.test.mjs";
 // milestone 43 / story 01 — THE EXCLUSIVE ITEM LOCK (ADR-003 + ADR-010's R1.1/R1.3/
 // R1.4/R1.5). Task 00: the scope rule moves down into the leaf and every face answers
@@ -244,7 +239,6 @@ export const tests = [
   ...workInitConfigTests,
   // milestone 127 / story 02 task 04 — the phase door and the mode-less read side
   ...workIntakeWriteSideTests,
-  ...workUpdateTests,
   ...roundtripHarnessTests,
   ...installProofTests,
   ...loopProofTests,
@@ -274,12 +268,9 @@ export const tests = [
   // story 31 — migrate-claude-command (the /aof:migrate bundle body + distribution)
   ...migrateClaudeCommandTests,
   ...doctorCwdIndependenceTests,
-  ...frameworkTests,
-  ...workspaceTests,
   // milestone 34 — global mesh work store (story 04: worker live-state stream to
   // control node, ADR-007)
   ...workerStreamClientTests,
-  ...pathTests,
   ...singleEntryTwoModeTests,
   ...verifyAuthorsOutcomeTests,
   ...danglingDeclarationFfTests,
@@ -292,7 +283,6 @@ export const tests = [
   // story 74 — the expected refusal as data (--if-applicable) + record-doc-unusable
   ...workItemStatusIfApplicableTests,
   ...verifyOutcomePerTypeTests,
-  ...recordsFollowTheStoryTests,
   ...deliveredStoryRecordsTests,
   // milestone 43 / story 01 — the exclusive item lock (tasks 00–05; 06 is @manual)
   ...itemLockScopeOneHomeTests,

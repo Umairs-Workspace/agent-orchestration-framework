@@ -2,16 +2,16 @@
 // tasks/02_bundle-membership.feature — "the spike & chore commands and templates
 // are members of the ACD asset bundle".
 //
-// Asserted the way the milestone-01 bundle tests do it (test/bundle/bundle.test.mjs,
+// Asserted the way the milestone-01 bundle tests do it (packages/core/test/bundle.suite.mjs,
 // test/arch/bundle/acd-bundle-membership.test.mjs, test/arch/bundle/acd-bundle-manifest-hashes.test.mjs):
 // load the REAL descriptor, resolve REAL on-disk files, and hash the REAL
 // re-rendered content against the shipped manifest — no engine code authored here.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { loadBundle, readDescriptor, renderBundleOutputs, bundleRoot } from "../../packages/core/src/work/bundle.mjs";
-import { readShippedManifest } from "../../packages/core/src/work/bundle-manifest.mjs";
-import { hashContent } from "../../packages/core/src/lock.mjs";
+import { loadBundle, readDescriptor, renderBundleOutputs, bundleRoot } from "../src/work/bundle.mjs";
+import { readShippedManifest } from "../src/work/bundle-manifest.mjs";
+import { hashContent } from "../src/lock.mjs";
 
 function descriptorMembers() {
   return readDescriptor().members;

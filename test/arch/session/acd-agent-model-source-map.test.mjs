@@ -8,7 +8,7 @@
 //
 // These check the bundle SOURCE frontmatter — a DISTINCT surface from the
 // rendered `.claude/agents/<role>.md` file the behavioural test in
-// test/bundle/bundle-model-map.test.mjs asserts. Do not collapse the two: the render
+// packages/core/test/bundle-model-map.suite.mjs asserts. Do not collapse the two: the render
 // pass could in principle drop or reshape the value, so the source is pinned
 // here on its own. The frozen 8-role set is fixed by the descriptor
 // (readDescriptor), so this test derives the role set live rather than

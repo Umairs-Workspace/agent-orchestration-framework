@@ -11,7 +11,7 @@ import {
   WORKFLOW_KIND,
   defaultWorkflowBodyFile,
   mergeRuntimeOverride
-} from "../../packages/core/src/model.mjs";
+} from "../src/model.mjs";
 
 export const modelTests = [
   {

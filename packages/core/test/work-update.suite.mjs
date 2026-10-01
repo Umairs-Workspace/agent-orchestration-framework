@@ -32,11 +32,11 @@ import { mkdtemp, rm, readFile, writeFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { writeLock } from "../../packages/core/src/lock.mjs";
-import { createLockManifest, executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
-import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
-import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
-import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
+import { writeLock } from "../src/lock.mjs";
+import { createLockManifest, executeApplyActions, planApplyActions } from "../src/render-plan.mjs";
+import { loadBundle } from "../src/work/bundle.mjs";
+import { synthesizeBundleConfig } from "../src/work/bundle-synthesis.mjs";
+import { updateWork, workLockPath } from "../src/work/update.mjs";
 
 async function tempRepo(prefix = "aof-update-test-") {
   return mkdtemp(path.join(os.tmpdir(), prefix));
@@ -515,7 +515,7 @@ export const workUpdateTests = [
         assert.equal(work.bundle.version, "2.5.0", "work.bundle.version records the new release");
 
         // Each updated/created member's files[] hash matches the file freshly written.
-        const { hashFileIfExists } = await import("../../packages/core/src/lock.mjs");
+        const { hashFileIfExists } = await import("../src/lock.mjs");
         for (const item of result.actions.filter((a) => a.action === "update" || a.action === "create")) {
           const rel = fwd(item.path);
           const entry = work.files.find((f) => f.path === rel);

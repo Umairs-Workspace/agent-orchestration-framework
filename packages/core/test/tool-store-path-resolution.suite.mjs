@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { defaultGlobalWorkspaceDir, toolStoreRoot, toolVersionDir } from "../../packages/core/src/paths.mjs";
+import { defaultGlobalWorkspaceDir, toolStoreRoot, toolVersionDir } from "../src/paths.mjs";
 import {
   resolveManagedBinary,
   exeDirFor,
@@ -30,7 +30,7 @@ import {
   toolSpawnOptions,
   TOOL_PROBE_TIMEOUT_ENV,
   DEFAULT_TOOL_PROBE_TIMEOUT_MS,
-} from "../../packages/core/src/tool-store.mjs";
+} from "../src/tool-store.mjs";
 
 // --- helpers -----------------------------------------------------------------
 

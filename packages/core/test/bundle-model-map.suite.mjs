@@ -7,7 +7,7 @@
 // agent file's `model` frontmatter (the copy the runtime honours), NOT the
 // bundle source, matching the feature's "distinct surfaces" note.
 import assert from "node:assert/strict";
-import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
+import { loadBundle, renderBundleOutputs } from "../src/work/bundle.mjs";
 
 // The default model map (STORY.md "Locked intent", REVISED): opus for every role
 // that decides "what's correct" (author / gate / review) AND for the developer —

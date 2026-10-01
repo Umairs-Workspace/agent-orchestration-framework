@@ -220,7 +220,7 @@ export const outcomeTemplateSharedHomeTests = [
         // member renders to `.aof/templates/work/<member-id>/<file>`, so the SAME source
         // file under member id "milestone" IS the old install and under "shared" IS the
         // new one. Nothing here hand-rolls a lock or a drift decision: the base install
-        // and the update both run the engine (`test/work/work-update.test.mjs`'s own rule — a
+        // and the update both run the engine (`packages/core/test/work-update.suite.mjs`'s own rule — a
         // second install engine in a test is the second home the bundle exists to refuse).
         const outcomeMember = (id) => ({
           resources: [],

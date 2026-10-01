@@ -37,9 +37,9 @@ import {
   CORE_PLUGINS,
   MARKETPLACE_GIT_URL,
   MARKETPLACE_REF
-} from "../../packages/core/src/planning-init.mjs";
-import { createRenderPlan, createLockManifest, planApplyActions, executeApplyActions } from "../../packages/core/src/render-plan.mjs";
-import { readLock, writeLock } from "../../packages/core/src/lock.mjs";
+} from "../src/planning-init.mjs";
+import { createRenderPlan, createLockManifest, planApplyActions, executeApplyActions } from "../src/render-plan.mjs";
+import { readLock, writeLock } from "../src/lock.mjs";
 
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
 // v2.0.0 → this commit (architect-established fact; the lightweight tag → commit).
