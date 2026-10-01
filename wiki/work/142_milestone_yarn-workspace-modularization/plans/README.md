@@ -2,7 +2,7 @@
 
 Planning baseline: `e343d50` (`refactor: move domain transitions into owning workspaces`),
 2026-09-29. These are ordinary engineering plans, outside the AOF workflow. They do not
-create managed stories, runs, or acceptance state. Plans 01–08 are complete on the available host (Windows x64, 2026-10-01); the open platform/desktop
+create managed stories, runs, or acceptance state. Plans 01–08 are complete on the available host; Plan 09 (cleanup and verify) is pending (Windows x64, 2026-10-01); the open platform/desktop
 legs are listed in [08-VERIFICATION.md](08-VERIFICATION.md) and the [completion audit](../COMPLETION.md).
 
 The agreed boundaries remain in [SPEC](../SPEC.md) and [MIGRATION](../MIGRATION.md).
@@ -34,6 +34,7 @@ and forwards remain private pending Plan 06. UI is at `ui/`, and desktop is at `
 | [06 — Test ownership and adapter removal](06-tests-and-boundaries-PLAN.md) | Public APIs replace compatibility paths; whole-tree boundary checks enforce the architecture. | Prepare guards during 01; remove adapters after 02–05 |
 | [07 — Assets, citations and skill compatibility](07-assets-and-skills-PLAN.md) | Complete: shipped assets and required CLI operations agree with final source locations; [evidence](07-ASSETS.md). | Update per move; final sweep after 06 |
 | [08 — Final verification and handover](08-final-verification-PLAN.md) | Complete on this host: [verification and handover](08-VERIFICATION.md); platform limits explicit. | 01–07 |
+| [09 — Cleanup and verify](09-cleanup-and-verify-PLAN.md) | Pending: every test lives with the workspace it proves (root `test/` = cross-package integration and repository-wide guards); a final double-check and cleanup of the refactor. | 01–08 |
 
 Numbers describe the main sequence, not permission to leave intermediate builds broken. Bring
 distribution changes, architecture-reader updates and canonical citation fixes into the batch
