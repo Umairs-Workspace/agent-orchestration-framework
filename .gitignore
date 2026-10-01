@@ -45,7 +45,7 @@ apps/desktop/target/
 apps/desktop/crates/app/target/
 apps/desktop/crates/app/gen/
 
-MicrosoftEdgeWebview2Setup.exe 
+apps/desktop/MicrosoftEdgeWebview2Setup.exe
 
 # aof mesh runtime: per-run git worktrees the worker daemon checks out to execute
 # assigned items — a full embedded checkout of this repo, never a record to commit.

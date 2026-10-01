@@ -24,11 +24,11 @@
     "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed."
   },
   {
-    "file": "packages/core/src/framework-module.mjs",
+    "file": "packages/core/src/application/bindings/work/loops.mjs",
     "kind": "computed-require",
     "expression": "createRequire(path.join(root, \"package.json\")).resolve(factories[0][2])",
     "digest": "b8763e1936851f2e5f31aac6ac233bb8991533fd93f61bddc2a3c6c9162aca8f",
-    "sourceDigest": "1c0c47da94bf8a1e95e890f948edb6ab4966a9b061b3adbbd7901067c2ead378",
+    "sourceDigest": "416d45a5601f01cd847b984bd077ed8539eafbbbff6edf19fb7242055905db1c",
     "reason": "Installed framework records retain their src/... module identifiers. Reads the actual same-name composition binding, verifies its single imported factory is called, and resolves only its explicit @aof public export without executing inspected source. Registry still verifies the named policy export; project records cannot use this resolver."
   },
   {

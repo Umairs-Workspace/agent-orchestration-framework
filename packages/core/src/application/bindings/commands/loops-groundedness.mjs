@@ -1,12 +1,11 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createLoopsGroundednessCommand as create, resolveAnchorAuthorities as resolve } from "@aof/work-graph/commands/loops-groundedness";
 import { assetBase } from "../../../asset-base.mjs";
-import { resolveFrameworkModule } from "../../../framework-module.mjs";
 
 export function assembleCommandsLoopsGroundedness({ workLoopsServices }) {
   // Core composition for core asset policy and the graph loader.
 
-  const { loadLoops } = workLoopsServices;
+  const { loadLoops, resolveFrameworkModule } = workLoopsServices;
 
   const getFrameworkRoot = () => assetBase("version");
   function createLoopsGroundednessCommand(options = {}) {

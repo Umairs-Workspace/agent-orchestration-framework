@@ -24,7 +24,7 @@ registry; this package is the only one that depends on all of them.
 `aof work update` (this repository's own `.claude/`, `.codex/`, `.opencode/` and `.aof/loops/`
 copies are generated output, never a template source). Citations inside assets name the final owning
 source files; `module:src/...` pointers in loop records are package-relative to this root and are
-resolved through the composition binding in `src/framework-module.mjs`.
+resolved through the composition binding (`src/application/bindings/work/loops.mjs`).
 
 ## Build and test
 

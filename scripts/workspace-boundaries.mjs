@@ -81,7 +81,7 @@ export function moduleReferences(source, file = 'source.mjs') {
     ts.forEachChild(node, inspect);
   };
   inspect(ast);
-  const sourceDigest = createHash('sha256').update(ts.createPrinter({ removeComments: true, newLine: ts.NewLineKind.LineFeed }).printFile(ast)).digest('hex');
+  const sourceDigest = createHash('sha256').update(ts.createPrinter({ removeComments: true, newLine: ts.NewLineKind.LineFeed }).printFile(ast).replaceAll('\r\n', '\n')).digest('hex');
   return { references, sourceDigest, runtime: runtime.map(entry => ({ ...entry, expression: entry.expression.replaceAll('\r\n', '\n') })) };
 }
 
