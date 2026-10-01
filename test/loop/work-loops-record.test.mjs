@@ -1521,7 +1521,7 @@ export const workLoopsRecordTests = [
       // module" as an empty set rather than as a red. What the leg means is the MODULE, so it
       // is the module that is named.
       const srcImports = moduleReferences(source).references.filter(entry => entry.specifier.startsWith("aof/")).map(entry => entry.specifier);
-      assert.deepEqual([...new Set(srcImports)], ["aof/default-application"], "one public core entry supplies the subject");
+      assert.ok(srcImports.length > 0 && srcImports.every((specifier) => specifier === "aof/default-application"), "one public core entry supplies the subject");
       const named = [...source.matchAll(/^const (\w+) = _aofApplication\.graph\.work\.loops\.\1;/gmu)].map(match => match[1]);
       assert.ok(named.length >= 13 && named.includes("loadLoops"), "the thirteen scoped public loader bindings are readable");
       for (const binding of named) {

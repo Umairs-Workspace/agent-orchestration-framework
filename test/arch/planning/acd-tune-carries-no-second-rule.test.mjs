@@ -41,7 +41,7 @@ export const archTests = [
       assert.match(face, /return await getRegistry\(\)/u);
       const composition = readFileSync(path.join(root, "packages/core/src/application/bindings/commands/tune.mjs"), "utf8");
       assert.match(composition, /const getRegistry = \(\) => provideCommandCore\(\)/u);
-      assert.match(composition, /createTuneCommand\(\{[^}]*getRegistry \}\)/u);
+      assert.match(composition, /createTuneCommand\(\{[^}]*getRegistry(?:, readRenameMap)? \}\)/u);
       assert.doesNotMatch(face, /^import .*command-core\.mjs/mu);
       assert.match(face, /resolveCommand/u);
       assert.match(face, /invokeCommand/u);

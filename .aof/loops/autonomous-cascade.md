@@ -6,7 +6,7 @@ title: Advance a work range to done
 controlled: items reaching done over a work range
 reference: [command:work:next]
 measurement: [command:work:next]
-actuator: [prose:src/bundle/agents/aof-product-owner.md, prose:src/bundle/agents/aof-developer.md, prose:src/bundle/agents/aof-qa.md]
+actuator: [prose:packages/core/assets/agents/aof-product-owner.md, prose:packages/core/assets/agents/aof-developer.md, prose:packages/core/assets/agents/aof-qa.md]
 cadence: event:per-item
 ceiling: [config:work.autonomous.maxAttempts]
 owner: unknown
@@ -16,9 +16,9 @@ target-setting: [loop:build-to-green, loop:review-fix-rereview]
 ---
 # Autonomous cascade
 
-Framework record source: `src/bundle/loops/autonomous-cascade.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/core/assets/loops/autonomous-cascade.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
-The loop controls items reaching done over an operator-selected range (`src/bundle/commands/autonomous.md:3-10`).
+The loop controls items reaching done over an operator-selected range (`packages/core/assets/commands/autonomous.md:3-10`).
 Both reference and measurement are the dependency-aware result of `work:next`, invoked repeatedly by
 the loop shell at `packages/work-loop/src/commands/loop.mjs:970`. The per-ready-item phase dispatch at
 `packages/work-loop/src/engine.mjs:596-611` establishes `event:per-item`, not a clock.
@@ -26,7 +26,7 @@ the loop shell at `packages/work-loop/src/commands/loop.mjs:970`. The per-ready-
 Those same lines dispatch refine, continue, and verify. Their narrowest acting artifacts are the
 product-owner, developer, and QA agent definitions listed in `actuator`, rather than the autonomous
 orchestration prompt itself. The retry bound is owned by `work.autonomous.maxAttempts`, read at
-`src/bundle/commands/autonomous.md:14`; the record points at the config authority and deliberately does
+`packages/core/assets/commands/autonomous.md:14`; the record points at the config authority and deliberately does
 not duplicate its numeric value. RESEARCH §Q1.4 found no declared loop owner, so `owner` is `unknown`.
 That gap is unchanged and is not silenced by this record's edges: `owner:` names the role accountable
 for the loop, and it is still nobody. What is now declared is the separate fact of who sets this
@@ -48,12 +48,12 @@ this dispatch **is** target-setting — that the cascade's output, the selected 
 the two inner loops' setpoints:
 
 - `loop:build-to-green` — the selected item's task `.feature` is what the build drives to green
-  (`src/bundle/commands/continue.md:186-189`). The `.feature` itself is co-authored by three roles in
+  (`packages/core/assets/commands/continue.md:186-189`). The `.feature` itself is co-authored by three roles in
   one refine session, two of which have no `actor:` node at all, so no single existing node is a
   complete citable owner of it; naming a partial author would look discovered and be worse than an
   authored cascade edge.
 - `loop:review-fix-rereview` — the selected item's contract and ADRs are what the review judges
-  (`src/bundle/commands/continue.md:196-201`).
+  (`packages/core/assets/commands/continue.md:196-201`).
 
 That is a faithful cascade relation — the outer loop's output is the inner loop's setpoint — and it is
 milestone 58's judgment (ADR-001 §3), not something this repository states anywhere. Both edges cross

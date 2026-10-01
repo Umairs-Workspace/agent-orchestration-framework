@@ -5,7 +5,7 @@ import { tunableSet } from "../acceptor/admissibility.mjs";
 import { commandError } from "@aof/contracts/error";
 
 // Core supplies application assets and cross-domain readers.
-export function createTuneCommand({ assembleCorpus, PROPOSAL_LANES, computeProposalLane, emitProposal, proposalClassForTarget, loadLoops, getRegistry }) {
+export function createTuneCommand({ assembleCorpus, PROPOSAL_LANES, computeProposalLane, emitProposal, proposalClassForTarget, loadLoops, getRegistry, readRenameMap = null }) {
 // work:tune — milestone 62's read-only convergence face.
 //
 // The leaves below own corpus assembly, candidate formation, proposal shaping,
@@ -344,8 +344,11 @@ async function buildTuneReport(input = {}, ctx = {}) {
     ...candidate,
     provenance: candidate.citations,
   }));
+  // Read ONCE per report and handed down as data, exactly as validate does: the map is derived from git history.
+  const renameMap = deps.renameMap ?? (readRenameMap == null ? null : await readRenameMap(workspace.projectRoot ?? null));
   const resolved = (deps.resolveProvenance ?? resolveProvenance)(provenanceInput, {
     rootDir: workspace.projectRoot,
+    renameMap,
   });
   const candidateFindings = [];
   const candidates = [];

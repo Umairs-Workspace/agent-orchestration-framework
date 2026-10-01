@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { buildGroundednessReport } from "../checks.mjs";
+import { moduleDeclares } from "../module-declares.mjs";
 
 
 function compareCodeUnits(left, right) {
@@ -10,14 +11,6 @@ function compareCodeUnits(left, right) {
 
 function displayPath(value) {
   return path.relative(process.cwd(), value) || ".";
-}
-
-function declaredHere(source, symbol) {
-  if (typeof symbol !== "string" || symbol.length === 0) return false;
-  const escaped = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  if (new RegExp(`\\bexport\\s+(?:default\\s+)?(?:async\\s+)?(?:function|class|const|let|var)\\s+${escaped}\\b`).test(source)) return true;
-  return [...source.matchAll(/export\s*\{([^}]*)\}\s*;?/g)].some((match) =>
-    match[1].split(",").some((part) => part.trim().split(/\s+as\s+/).at(-1) === symbol));
 }
 
 function configDeclares(config, dottedPath) {
@@ -36,17 +29,20 @@ function within(root, relative) {
   return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel) ? target : null;
 }
 
-async function moduleResolves(pointer, root, readText) {
-  const target = within(root, pointer.operand);
+async function moduleResolves(pointer, root, readText, resolveFrameworkModule) {
+  // A framework record's pointer is resolved exactly as the loader resolves it: through the
+  // composition binding the installed core derives from current source, when one is supplied.
+  const target = resolveFrameworkModule ? await resolveFrameworkModule(pointer.operand, root) : within(root, pointer.operand);
   if (target == null) return false;
   const source = await readText(target, "utf8").catch(() => null);
-  return typeof source === "string" && declaredHere(source, pointer.symbol);
+  return moduleDeclares(source, pointer.symbol);
 }
 
 export async function resolveAnchorAuthorities(model, workspace, {
   hasCommand = () => false,
   readText = readFile,
   getFrameworkRoot,
+  resolveFrameworkModule,
 } = {}) {
   const resolutions = {};
   const anchors = model.nodes.filter((node) => node.kind === "anchor").sort((left, right) => compareCodeUnits(left.id, right.id));
@@ -59,8 +55,9 @@ export async function resolveAnchorAuthorities(model, workspace, {
       if (pointer.scheme === "config") resolved = configDeclares(workspace?.config, pointer.operand);
       if (pointer.scheme === "module") {
         const record = await readText(node.path, "utf8").catch(() => "");
-        const root = /^# aof-generated: true\b/mu.test(record) ? getFrameworkRoot() : workspace?.projectRoot;
-        resolved = typeof root === "string" && await moduleResolves(pointer, root, readText);
+        const framework = /^# aof-generated: true\b/mu.test(record);
+        const root = framework ? getFrameworkRoot() : workspace?.projectRoot;
+        resolved = typeof root === "string" && await moduleResolves(pointer, root, readText, framework ? resolveFrameworkModule : undefined);
       }
     }
     resolutions[node.id] = Object.freeze({ pointer: entry?.raw ?? null, resolved });
@@ -105,6 +102,7 @@ export function createLoopsGroundednessCommand({
   loadModel,
   readText = readFile,
   getFrameworkRoot,
+  resolveFrameworkModule,
 } = {}) {
   return {
     id: "work:loops-groundedness",
@@ -123,7 +121,7 @@ export function createLoopsGroundednessCommand({
       }
       if (!model.present) return emptyResult(model.source, "absent");
 
-      const resolutions = await resolveAnchorAuthorities(model, ctx.workspace, { hasCommand, readText, getFrameworkRoot });
+      const resolutions = await resolveAnchorAuthorities(model, ctx.workspace, { hasCommand, readText, getFrameworkRoot, resolveFrameworkModule });
       const report = buildGroundednessReport(model, resolutions);
       const authorities = Object.entries(resolutions)
         .map(([anchor, value]) => ({ anchor, ...value }))

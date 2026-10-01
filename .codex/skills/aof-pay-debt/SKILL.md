@@ -72,7 +72,7 @@ evidence table was 100% wrong when checked on 2026-09-05 (43 empty catches had b
   `file:line` from source comments, and renumbering breaks every citation silently.
 
 **6. Re-stamp the budget.** After any deletion, `aof work debt --json` reports the new totals; set
-`DEBT_BUDGET.maxTotalLines` / `maxOversizeEntries` in `src/work/debt.mjs` DOWN to match. The ratchet
+`DEBT_BUDGET.maxTotalLines` / `maxOversizeEntries` in `packages/work/src/debt.mjs` DOWN to match. The ratchet
 is shrink-only: leaving the ceiling above the measured state silently grants back what you just
 bought, and `test/arch/testing/acd-debt-ledger-budget.test.mjs` fails if the slack exceeds 10%.
 

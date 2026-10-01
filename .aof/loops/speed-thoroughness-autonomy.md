@@ -11,15 +11,15 @@ parameter-tuning: [config:work.loop.reviewRounds, config:work.loop.buildNoProgre
 ---
 # Speed versus thoroughness versus autonomy
 
-Framework record source: `src/bundle/loops/speed-thoroughness-autonomy.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/core/assets/loops/speed-thoroughness-autonomy.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 **The conflict this node resolves.** Four loops reach for the same three agent definitions —
-`src/bundle/agents/aof-developer.md`, `src/bundle/agents/aof-product-owner.md` and
-`src/bundle/agents/aof-qa.md` — and each wants a different amount of the same agent's effort:
+`packages/core/assets/agents/aof-developer.md`, `packages/core/assets/agents/aof-product-owner.md` and
+`packages/core/assets/agents/aof-qa.md` — and each wants a different amount of the same agent's effort:
 `loop:build-to-green` wants the developer to keep iterating on one task until it is green,
 `loop:review-fix-rereview` wants that same developer to apply confirmed findings and be re-reviewed,
 `loop:verify-triage-accept` wants deliberated triage and a genuine human stop for `@uat`
-(`src/bundle/commands/verify.md:106-107`), and `loop:autonomous-cascade` wants all three folded into
+(`packages/core/assets/commands/verify.md:106-107`), and `loop:autonomous-cascade` wants all three folded into
 an unattended pass over a whole range. That is the standing speed-versus-thoroughness-versus-autonomy
 trade-off, and until this record existed the way it got decided was whichever of the three the
 operator had front of mind that evening. `resolves:` states it in one phrase a reader can disagree
@@ -28,7 +28,7 @@ with without opening another file.
 **The order, and why it is this order (ADR-003 §8).** Most important first:
 
 1. `loop:verify-triage-accept` — the acceptance gate wins. Its human-acceptance lane structurally
-   cannot be waived: `src/bundle/commands/verify.md:106-107` requires it to *stop and prompt the
+   cannot be waived: `packages/core/assets/commands/verify.md:106-107` requires it to *stop and prompt the
    user*, so no amount of autonomy reach can convert it into a pass that nobody attended.
 2. `loop:review-fix-rereview` — confirmed findings are applied before anything reclaims the agent.
    A finding that is known and unapplied is thoroughness already spent and then thrown away.
@@ -57,7 +57,7 @@ runs within (ADR-003 §7). Three qualify:
 Speed is not a knob; speed is what every one of those three is spent against. `loop:verify-triage-accept`
 wins first and owns none of them: it declares `ceiling: none`, because the thoroughness of an
 acceptance gate is not a number. `config:work.loop.progressMaxResets` is deliberately **not** claimed
-— it is a real bound in `src/loop-progress.mjs`, but no loop record cites it as a `ceiling:` pointer,
+— it is a real bound, resolved by `progressMaxResetsFromConfig` at `packages/contracts/src/loop-bounds.mjs:116`, but no loop record cites it as a `ceiling:` pointer,
 so on this record's own criterion it is not a knob any vetoed loop is declared to run within, and the
 criterion is not widened to rescue it. `work.rubric.report.floor` and `mesh.presence.stalenessSeconds`
 are not claimed for the same reason.

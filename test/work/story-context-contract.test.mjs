@@ -1204,7 +1204,7 @@ export const storyContextContractTests = [
       assert.match(next, /partitionReadySetByDeclaredFiles\(/u, "`aof work next --json` partitions the ready set through this function");
       assert.match(next, /wave: wave\.map|wave,/u, "…and returns its wave");
       const composition = stripComments(await readFile(path.join(root, "packages/core/src/application/bindings/commands/next.mjs"), "utf8"));
-      assert.match(composition, /import \{ partitionReadySetByDeclaredFiles \} from "\.\.\/ready-wave\.mjs"/u);
+      assert.match(composition, /import \{ partitionReadySetByDeclaredFiles \} from "@aof\/work\/ready-wave"/u, "the partition is imported from its one public home in the work package");
       assert.match(composition, /createNextCommand\(\{[^}]*\bpartitionReadySetByDeclaredFiles\b/u, "core supplies the shared partition service");
     },
   },

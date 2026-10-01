@@ -24,11 +24,11 @@
     "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed."
   },
   {
-    "file": "packages/core/src/application/bindings/work/loops.mjs",
+    "file": "packages/core/src/framework-module.mjs",
     "kind": "computed-require",
     "expression": "createRequire(path.join(root, \"package.json\")).resolve(factories[0][2])",
     "digest": "b8763e1936851f2e5f31aac6ac233bb8991533fd93f61bddc2a3c6c9162aca8f",
-    "sourceDigest": "7b25dd6191204766095b95aa3b6cf9407e4853a84bf1af2fe0f14e5cc2b0ed93",
+    "sourceDigest": "1c0c47da94bf8a1e95e890f948edb6ab4966a9b061b3adbbd7901067c2ead378",
     "reason": "Installed framework records retain their src/... module identifiers. Reads the actual same-name composition binding, verifies its single imported factory is called, and resolves only its explicit @aof public export without executing inspected source. Registry still verifies the named policy export; project records cannot use this resolver."
   },
   {
@@ -564,7 +564,7 @@
     "kind": "child-process",
     "expression": "execFileSync(cmd, args, { cwd: repoRoot, stdio: \"inherit\", ...(env ? { env } : {}) })",
     "digest": "6c0e065f874be5002eac80843f45791322d0432d5a88f5e898f1eaa7a2070255",
-    "sourceDigest": "a8bb19c5fe365e584e38eefaed1f3f59435ca387d7f0552e815eaaa26daf1656",
+    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -572,7 +572,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "a8bb19c5fe365e584e38eefaed1f3f59435ca387d7f0552e815eaaa26daf1656",
+    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -580,7 +580,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "a8bb19c5fe365e584e38eefaed1f3f59435ca387d7f0552e815eaaa26daf1656",
+    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -588,7 +588,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"wsl.exe\", args, { stdio: \"inherit\" })",
     "digest": "c677935b9ede259885b57613afb2c5e042050ce0246fa6020ececd1a38ecb1db",
-    "sourceDigest": "a8bb19c5fe365e584e38eefaed1f3f59435ca387d7f0552e815eaaa26daf1656",
+    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -804,7 +804,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "1224924dccb592622794db8feac7cc8841842cdbd3d60a2babfc9f4899075aad",
+    "sourceDigest": "ca0e8083e04eb60a5c83ca21e97b0fd38d21788f84780c21eb112008fcc27bda",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -812,7 +812,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "1224924dccb592622794db8feac7cc8841842cdbd3d60a2babfc9f4899075aad",
+    "sourceDigest": "ca0e8083e04eb60a5c83ca21e97b0fd38d21788f84780c21eb112008fcc27bda",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -820,7 +820,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "1224924dccb592622794db8feac7cc8841842cdbd3d60a2babfc9f4899075aad",
+    "sourceDigest": "ca0e8083e04eb60a5c83ca21e97b0fd38d21788f84780c21eb112008fcc27bda",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -828,7 +828,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.resolve(file)).href)",
     "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
-    "sourceDigest": "1224924dccb592622794db8feac7cc8841842cdbd3d60a2babfc9f4899075aad",
+    "sourceDigest": "ca0e8083e04eb60a5c83ca21e97b0fd38d21788f84780c21eb112008fcc27bda",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {

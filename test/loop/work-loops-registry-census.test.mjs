@@ -823,13 +823,13 @@ export const workLoopsRegistryCensusTests = [
         findings.some((finding) => finding.message.includes(widest[0])),
         `the widest shared lever is reported: ${widest[0]}`,
       );
-      assert.ok(widest[0].includes("src/bundle/agents/"), `the shared lever is an agent definition: ${widest[0]}`);
+      assert.ok(widest[0].includes("packages/core/assets/agents/"), `the shared lever is an agent definition: ${widest[0]}`);
 
       // THE CITATION-ARTIFACT GUARD: no loop declares an orchestrating phase prompt as its actuator. If
       // one did, the finding above would be an artefact of coarse citation rather than a real collision.
       for (const actuator of actuatorUsers.keys()) {
         assert.equal(
-          actuator.includes("src/bundle/commands/"),
+          actuator.includes("packages/core/assets/commands/"),
           false,
           `${actuator}: an actuator names the artifact that acts, never the prompt that orchestrates it`,
         );
@@ -1096,7 +1096,10 @@ export const workLoopsRegistryCensusTests = [
           `${row.loop}: ceiling (day-one value is superseded only where milestone 69 declares an authority)`,
         );
         const measurement = fieldEntries(node, "measurement").map((entry) => entry.raw);
-        assert.ok(measurement.includes(row.measurement), `${row.loop}: measurement names ${row.measurement}`);
+        // The delivered feature table keeps the spelling it was accepted with; the shipped record names the
+        // same document at its relocated home (142: src/bundle -> packages/core/assets).
+        const relocated = row.measurement.replace("prose:src/bundle/", "prose:packages/core/assets/");
+        assert.ok(measurement.includes(relocated), `${row.loop}: measurement names ${relocated}`);
         const scheme = row.measurement.slice(0, row.measurement.indexOf(":") + 1);
         for (const raw of measurement) assert.ok(raw.startsWith(scheme), `${row.loop}: measurement kind ${scheme}`);
         assert.equal(node.fields.optimizing.raw, row.optimizing, `${row.loop}: optimizing`);

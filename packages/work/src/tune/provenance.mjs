@@ -10,6 +10,7 @@ import {
 import { ITEM_RE } from "../identity.mjs";
 import { ARCHIVE_ROOT } from "../identity.mjs";
 import { pathCitationsIn, splitPathLocator } from "../audit/controls.mjs";
+import { resolveCitedPath } from "../cited-path-resolve.mjs";
 
 // milestone 127 / ADR-001 §5 — a SECOND import statement from the same module, deliberately:
 // `acd-proposal-provenance-resolves` pins the line above textually, and the archive root's
@@ -191,14 +192,32 @@ export function resolveCitationAtEmit(citation, options = {}) {
   const parsed = entry.citations[0];
   if (parsed.kind === "document") {
     const { split, candidates } = documentPathCandidates(parsed.citation, rootDir, options.sourceDocument, options.platform);
-    const absolute = candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+    let absolute = candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+    // A cited path that moved is followed by the ONE resolver (119/ADR-004) — recorded renames, then declarative
+    // forwards — so a lesson written against a retired location still names the file that carries it today.
+    let relocatedByForward = false;
+    if (absolute == null && options.renameMap != null) {
+      const moved = resolveCitedPath(split.path, {
+        renameMap: options.renameMap,
+        existsAtHead: (candidate) => {
+          const file = path.resolve(rootDir, candidate);
+          return pathIsWithinRoot(rootDir, file, options.platform) && fs.existsSync(file) && fs.statSync(file).isFile();
+        },
+      });
+      if (moved.resolved) {
+        absolute = path.resolve(rootDir, moved.at);
+        relocatedByForward = moved.via === "module";
+      }
+    }
     if (absolute == null) {
       return {
         ok: false,
         failure: failure(parsed.citation, "file-absent", "file", `${parsed.citation}: there is no such file on disk`),
       };
     }
-    if (split.line != null) {
+    // A forward's destination is a different file, so the old line number names nothing in it: the claim resolves to
+    // the file, not to the line.
+    if (split.line != null && !relocatedByForward) {
       const count = lineCountOnDisk(absolute);
       if (split.line < 1 || split.line > count) {
         return {
@@ -219,7 +238,7 @@ export function resolveCitationAtEmit(citation, options = {}) {
         citation: parsed.citation,
         document: toPosix(path.relative(rootDir, absolute)),
         absoluteDocument: absolute,
-        line: split.line,
+        line: relocatedByForward ? null : split.line,
       },
     };
   }
@@ -294,6 +313,7 @@ export function emitProposals(candidates, options = {}) {
       workDir: options.workDir,
       platform: options.platform,
       sourceDocument: candidate?.sourceDocument ?? options.sourceDocument,
+      renameMap: options.renameMap,
     });
     const record = { ...candidate, candidate: name, provenanceResolution: resolution };
 

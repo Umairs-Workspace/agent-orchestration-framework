@@ -58,3 +58,19 @@ test('shared bound and error contracts remain usable without graph or execution 
   assert.equal(error.code, 'fixture-code');
   assert.equal(error.status, 409);
 });
+
+test('a module pointer resolves for exports and for members of the factory surface a module returns', async () => {
+  const { moduleDeclares } = await import('../src/module-declares.mjs');
+  const source = [
+    'export function topLevel() {}',
+    'export { aliased as renamed };',
+    'export function createThing() {',
+    '  function inner() {}',
+    '  return Object.freeze({ inner, other: 1 });',
+    '}',
+    'function hidden() {}',
+  ].join('\n');
+  for (const symbol of ['topLevel', 'renamed', 'createThing', 'inner', 'other']) assert.equal(moduleDeclares(source, symbol), true, symbol);
+  for (const symbol of ['hidden', 'aliased', 'missing', '', undefined]) assert.equal(moduleDeclares(source, symbol), false, String(symbol));
+  assert.equal(moduleDeclares(undefined, 'topLevel'), false);
+});

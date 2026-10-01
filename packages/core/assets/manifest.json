@@ -66,7 +66,7 @@
         "id": "loop-mesh-assignment-reclaim",
         "kind": "asset"
       },
-      "hash": "sha256:10849fe372e871a65f8c50c5163aaaca0be4aeb5f2774bd324995f4511ae7c13"
+      "hash": "sha256:4755ca418d7dad4329dfc591ce3253862fc0cfc4ca554b2b6dc0bc866420ef93"
     },
     {
       "path": ".aof/loops/operator.md",
@@ -93,7 +93,7 @@
         "id": "loop-retrospective-memory-ingest",
         "kind": "asset"
       },
-      "hash": "sha256:0e659906ad0fbbf23c9574fcc75feec088c63b64cd1cc5ac8985ddd40acd5da6"
+      "hash": "sha256:f976bb5e32f45a4acf6788ac8f65a86cc4eb037159a33172a4a29aabadd2ca8a"
     },
     {
       "path": ".aof/loops/review-fix-rereview-watcher.md",
@@ -129,7 +129,7 @@
         "id": "anchor-run-lifecycle-policy",
         "kind": "asset"
       },
-      "hash": "sha256:a94a7fa82a853c19ace402aab8044be214ab3862b206722d331bedd21f4a07a5"
+      "hash": "sha256:4523144a3c7467b6f92db024787c282c8c8d32081f2be40f345bfea2a41e4b06"
     },
     {
       "path": ".aof/loops/run-liveness.md",
@@ -138,7 +138,7 @@
         "id": "anchor-run-liveness",
         "kind": "asset"
       },
-      "hash": "sha256:3a5b3d8cd2b8c41d427c468f92ca8ccac018f79e3e68a099994251802c977e08"
+      "hash": "sha256:1fb6c6f0aabc94a003db22a87be2816c22a121388e40b2ffe3a17381a7f0482f"
     },
     {
       "path": ".aof/loops/run-resilience.md",
@@ -147,7 +147,7 @@
         "id": "loop-run-resilience",
         "kind": "asset"
       },
-      "hash": "sha256:7af7a8d04eccf9eee9839fdd989a449581c8f22861130bef8d03f373c626dd94"
+      "hash": "sha256:b3ffc3886c72a033b892e7d15ffca5d3c5e66b055e23f380a8fed6463f13f4b3"
     },
     {
       "path": ".aof/loops/speed-thoroughness-autonomy.md",
@@ -156,7 +156,7 @@
         "id": "arbiter-speed-thoroughness-autonomy",
         "kind": "asset"
       },
-      "hash": "sha256:a8bc49eb807eb2e91cd66c2c38d88e584f2d4994866407996cf600cfc6e25d63"
+      "hash": "sha256:f37839fbd4fe51d595efb4791ca28a374209225dd6c1590c93aa19a0c6c7fcec"
     },
     {
       "path": ".aof/loops/verify-triage-accept.md",
@@ -489,7 +489,7 @@
         "id": "autonomous",
         "kind": "command"
       },
-      "hash": "sha256:111915b8a0f61a2ededd0c146aa79c37a5ad3eb34bfc81616fdae063a319efa7"
+      "hash": "sha256:a7de14fb0a256343d0674fa54e493af168ef0cfcdef4c6ea3126c8789fab5180"
     },
     {
       "path": ".claude/commands/aof/code-review.md",
@@ -498,7 +498,7 @@
         "id": "code-review",
         "kind": "command"
       },
-      "hash": "sha256:a6b97b849173e3dc4dc11e3735fbc1554b23c4d38dc3ad08a1f9fc1870332afc"
+      "hash": "sha256:d965f9b4c6241c07542b87ff6d9e0152c3a3f2e3a47579c9ec01903795023b17"
     },
     {
       "path": ".claude/commands/aof/continue.md",
@@ -507,7 +507,7 @@
         "id": "continue",
         "kind": "command"
       },
-      "hash": "sha256:3e269b85ef0b6d09c31a4290b6b84aa86c2157690324b518e956028467f2a3f5"
+      "hash": "sha256:df5ef8016b185ba4b3c3b4775a68d0b1208068ae3dfa678a2658576814963375"
     },
     {
       "path": ".claude/commands/aof/delegate.md",
@@ -624,7 +624,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:d9fc24adedc06d19406b0482bddc1ac096831c3c7bb2d44f969e6205d5b507ea"
+      "hash": "sha256:8677fbc7ca3840c54f3022379db63f7decad5d7ea9ae365ed623161bd6bc9509"
     },
     {
       "path": ".claude/commands/aof/retrospective.md",
@@ -867,7 +867,7 @@
         "id": "aof-autonomous",
         "kind": "skill"
       },
-      "hash": "sha256:efc42b08dc6779d9342e1f18045813d6499c26b02793a141912feef01316bb8d"
+      "hash": "sha256:bce441c42eea7092e85b7fdfb69f4a2542c1f535e033a033ff5403e07da6905b"
     },
     {
       "path": ".codex/skills/aof-code-review/SKILL.md",
@@ -876,7 +876,7 @@
         "id": "aof-code-review",
         "kind": "skill"
       },
-      "hash": "sha256:b74a1dd79e9d065f4f3e448f8499627b58b0056462cac7e144aaeac33763884d"
+      "hash": "sha256:89973c65f16c9c1d0647243fd1d297902b607da88b826cb1e7bad8fa170032fc"
     },
     {
       "path": ".codex/skills/aof-continue/SKILL.md",
@@ -885,7 +885,7 @@
         "id": "aof-continue",
         "kind": "skill"
       },
-      "hash": "sha256:a736227685ef2d4c796a9acd15de67a84f359dcdf093e327cd5a333d46330e59"
+      "hash": "sha256:18bd4c43168c0e77d4a3642af92b22c33e2c0b2a77222bc411f1c521a00d39d7"
     },
     {
       "path": ".codex/skills/aof-delegate/SKILL.md",
@@ -1002,7 +1002,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:d38b627197df61084cc5c7498ad437e494cd8617afe4965950b2b7a419f10389"
+      "hash": "sha256:e59981fadce09e3edc90cec9e5614a97e585569bef2a309b86737e6922d752d7"
     },
     {
       "path": ".codex/skills/aof-retrospective/SKILL.md",

@@ -35,7 +35,7 @@ keeps sibling tasks consistent. **`--solo` OVERRIDES an orchestrated config to s
 OVERRIDES a solo config to orchestrated for this run**, its twin in the other direction. The two
 together are contradictory: STOP before any role runs and report it. The loop composes a flag on
 every refine it drives: `work.loop.agents.refine.mode` when set, `--solo` when unset — the loop's
-own default, whose home is `packages/core/src/loop-bounds.mjs`. A loop-driven refine therefore never reads
+own default, whose home is `packages/contracts/src/loop-bounds.mjs`. A loop-driven refine therefore never reads
 `work.agents.mode`. Either flag changes only WHO does the work, never WHAT is produced: the same
 documents, the same contracts, the same gates.
 
@@ -74,7 +74,7 @@ index this mint exists to fill: it joins a transcript to an item on `sessionId` 
 so a phase that mints nothing costs the milestone every number it could have reported about itself.
 
 The mint also REPLACES the starting status move rather than sitting beside one: `run.started`'s
-reactor (`packages/core/src/effects/table.mjs`) makes the `not-started → in-progress` move. Read the envelope's
+reactor (`packages/work/src/effects.mjs`) makes the `not-started → in-progress` move. Read the envelope's
 `sessionSource` for which rung answered — `flag`, `live-store`, or absent, which is an honestly
 unattributable run rather than a guessed one. A `duplicate-run` refusal means a run on this item is
 still open from a phase that died; the mint reclaims a stale run before it writes, so the next attempt
@@ -328,7 +328,7 @@ Still **doc-producing only**: stop before any build.
 - Created tasks are unchecked boxes in `STORY.md` `## Tasks`.
 - The refined item reaches `in-progress` through the run this phase minted at its top — the
   `run.started` reactor makes that move, so **write no starting status move here** and never
-  hand-edit a `status:` line. The phase door (`STARTING_PHASES`, `packages/core/src/commands/continue.mjs`) has
+  hand-edit a `status:` line. The phase door (`STARTING_PHASES`, `packages/work/src/commands/continue.mjs`) has
   usually made it already; both are bounded to the same starting edge, so a repeat is reported as not
   applicable and changes nothing. `aof work status <ref>` with no target reports the legal moves, and
   any other refusal still fails and still means stop and look.

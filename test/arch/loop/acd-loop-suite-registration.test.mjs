@@ -297,7 +297,9 @@ const RUNNER_REGIONS = Object.freeze([
 ]);
 // Plan 06 extracts the unchanged per-case isolation/loop into test-harness.mjs.
 // Pin both real files together, including the awaited bridge and executed count.
-const RUNNER_RESIDUE = "ea395d23e716cf51d6b57cf2d2e1ed6b0299f81be8d02f8f1d3313f2ad2d14e2";
+// RE-PINNED by 142 Plan 04: the cargo lane's Rust-core path moved `app/desktop` -> `apps/desktop` (a path literal, a
+// comment and three console labels). The mask set and every runner-logic line are unchanged.
+const RUNNER_RESIDUE = "f7d0aba13aa14c89486896e8c24981e8ee5aadc52ddf069a5748fd4e90996641";
 const REGISTRATION_IMPORT = /^import\s+\{[^}]*\}\s+from\s+"\.\.\/test\/[^"]+";$/u;
 const REGISTRATION_SPREAD = /^\s*\.\.\.[A-Za-z_$][\w$]*,?$/u;
 const COMMENT_OR_BLANK = /^\s*(?:\/\/.*)?$/u;
@@ -683,7 +685,10 @@ const ACCEPTED_CEILINGS = Object.freeze([
     // byte 119/03 re-pinned for when the suite itself moved. The mask set is unchanged; every other
     // byte is frozen at its value, and an archived folder never moves again.
     // Plan 06: the owned work-graph suite moves; its imported coverage and cases stay pinned.
-    residue: "93f070ce876af4f0992b342a373c82c0128be1abd709abd2cc4b74466ac88b7c",
+    // RE-STAMPED by 142 Plan 06/08: the work-graph checks suite moved to its owning package, so the ledger row
+    // names `packages/work-graph/test/work-loops-checks.suite.mjs` and the STATE-box check strips `.suite.mjs` too.
+    // Two lines, both specifier/path spellings; the mask set is unchanged and every other byte stays frozen.
+    residue: "cc109cc659cffed86dc6574f79f882e800c1f2f5d35b42bfc2d3da55c9f2dfda",
     regions: [
       {
         id: "leg 5 exclusion-pointer roster (beyond §8's enumeration — see above)",

@@ -8,7 +8,7 @@ target-setting: [loop:autonomous-cascade, loop:mesh-assignment-reclaim, loop:ret
 ---
 # Operator
 
-Framework record source: `src/bundle/loops/operator.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/core/assets/loops/operator.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 This actor is the human operator and therefore the registry's sole exogenous contact with reality;
 ADR-005 §1 defines that role and `ground: exogenous`. The `actor:` id and title distinguish this node
@@ -19,7 +19,7 @@ discovered and three were authored**, and each is labelled below so a reader mee
 it is declared rather than having to open another file to find out which kind it is.
 
 **`loop:autonomous-cascade` — DISCOVERED.** The operator sets the cascade's range through the command
-argument at `src/bundle/commands/autonomous.md:15` (*"a range — an inclusive `NN-MM` range or a single
+argument at `packages/core/assets/commands/autonomous.md:15` (*"a range — an inclusive `NN-MM` range or a single
 `NN`; pass it to the shell verbatim"*), which is threaded into the shell's `scope`; the cascade then
 drives that range until `work:next` reports done. That artifact states the relation, so this edge is
 read off the repository and cites it.

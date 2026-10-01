@@ -22,12 +22,13 @@ observability form the reference at `packages/core/assets/commands/retrospective
 measurement at `packages/core/assets/commands/retrospective.md:38-40`. Those two authorities are prose because no
 deterministic grader exists (RESEARCH §Q1.6).
 
-The ingest act is reached through the defining export `runMemory` at `packages/core/src/work/memory.mjs:496` — the
+The ingest act is reached through `runMemory` at `packages/knowledge/src/memory.mjs:499`, composed by `createMemory` at
+`packages/knowledge/src/memory.mjs:5` — the
 seam's in-process entry, a thin composition over the one core path (`runMemoryVerb`,
-`packages/core/src/work/memory.mjs:482`) that the registered command also runs. `ingest` is a member of `MEMORY_VERBS`
-at `packages/core/src/work/memory.mjs:58` and aliases the reindex path at `packages/core/src/work/memory.mjs:470`; no finer
+`packages/knowledge/src/memory.mjs:485`) that the registered command also runs. `ingest` is a member of `MEMORY_VERBS`
+at `packages/knowledge/src/memory.mjs:61` and aliases the reindex path at `packages/knowledge/src/memory.mjs:473`; no finer
 ingest-specific export exists. Since story 128 the memory surface IS a registered command id —
-`work:memory` (`packages/core/src/commands/work/memory.mjs`, route `aof work memory`) — but that id names the whole
+`work:memory` (`packages/knowledge/src/commands/memory.mjs`, route `aof work memory`) — but that id names the whole
 verb surface (recall, brief, ingest, reindex, status), and the act this record actuates is the ingest verb
 alone, which `runMemory` reaches with `["ingest"]` and nothing wider. `module:src/work/memory.mjs#runMemory`
 is therefore still the narrowest real export; `command:work:memory` would be broader than the act.

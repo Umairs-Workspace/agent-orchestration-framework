@@ -4,9 +4,9 @@ id: loop:verify-triage-accept
 kind: loop
 title: Verify, triage, and accept an item
 controlled: findings triaged and item accepted
-reference: [prose:src/bundle/commands/verify.md]
-measurement: [prose:src/bundle/commands/verify.md]
-actuator: [prose:src/bundle/agents/aof-developer.md, prose:src/bundle/agents/aof-qa.md, prose:src/bundle/agents/aof-product-owner.md]
+reference: [prose:packages/core/assets/commands/verify.md]
+measurement: [prose:packages/core/assets/commands/verify.md]
+actuator: [prose:packages/core/assets/agents/aof-developer.md, prose:packages/core/assets/agents/aof-qa.md, prose:packages/core/assets/agents/aof-product-owner.md]
 cadence: event:per-item
 ceiling: none
 owner: actor:product-owner
@@ -15,21 +15,21 @@ layer: management
 ---
 # Verify, triage, and accept
 
-Framework record source: `src/bundle/loops/verify-triage-accept.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/core/assets/loops/verify-triage-accept.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 The controlled state, acceptance reference, and automated/manual/human measurement lanes are defined
-at `src/bundle/commands/verify.md:64-93` and summarized in RESEARCH §Q1.3. The authorities are prompt
+at `packages/core/assets/commands/verify.md:64-93` and summarized in RESEARCH §Q1.3. The authorities are prompt
 judgments rather than deterministic exported graders, so the reference and measurement remain `prose:`.
 
 The narrowest acting artifacts are the developer, QA, and product-owner agent definitions: verify sends
-executable/manual work to the developer at `src/bundle/commands/verify.md:69-71`, QA and human acceptance
-through QA at `src/bundle/commands/verify.md:84-86`, and finding triage to the product owner at
-`src/bundle/commands/verify.md:92`. Those acts are represented by the corresponding files under
-`src/bundle/agents/`, not by the orchestration prompt.
+executable/manual work to the developer at `packages/core/assets/commands/verify.md:69-71`, QA and human acceptance
+through QA at `packages/core/assets/commands/verify.md:84-86`, and finding triage to the product owner at
+`packages/core/assets/commands/verify.md:92`. Those acts are represented by the corresponding files under
+`packages/core/assets/agents/`, not by the orchestration prompt.
 
-The item argument at `src/bundle/commands/verify.md:3` establishes `event:per-item`. A triggered pass is
+The item argument at `packages/core/assets/commands/verify.md:3` establishes `event:per-item`. A triggered pass is
 a terminal gate and terminates by construction, so its ceiling is `none`. The product owner is the one
-explicit owner RESEARCH found (`src/bundle/commands/verify.md:92`). `optimizing: false` records a
+explicit owner RESEARCH found (`packages/core/assets/commands/verify.md:92`). `optimizing: false` records a
 regulator: this gate holds acceptance evidence at its reference rather than iteratively changing work to
 minimize findings. That is the boundary from review-fix-rereview even though both inspect findings.
 

@@ -52,7 +52,7 @@ orchestrated config to solo for this run**, and **`--orchestrated` OVERRIDES a s
 orchestrated for this run** — its twin in the other direction. The two together are contradictory:
 STOP before any role runs and report it. The loop composes a flag on every continue it drives:
 `work.loop.agents.continue.mode` when set, `--solo` when unset — the loop's own default, whose home
-is `src/loop-bounds.mjs`. A loop-driven continue therefore never reads `work.agents.mode`. This
+is `packages/contracts/src/loop-bounds.mjs`. A loop-driven continue therefore never reads `work.agents.mode`. This
 command delegates to no other command, so the flag governs exactly one thing: which roles this
 session plays inline and which it spawns. It changes only WHO does the work, never WHAT is
 produced — the same build, the same review lanes, the same gates.
@@ -134,12 +134,12 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
   **Mint the MILESTONE's run once — here, in THIS checkout, before the fan-out.** `aof work
   run-start <NN> --json` is the orchestrator's mint and nobody else's, taken before the first
   dispatch below; `aof work run-complete <NN> --outcome done` closes it at the walk's end. The mint
-  is what STARTS the milestone — `run.started`'s reactor (`src/effects/table.mjs`) makes the
+  is what STARTS the milestone — `run.started`'s reactor (`packages/work/src/effects.mjs`) makes the
   `not-started → in-progress` move — so no status move is written here by hand.
   The milestone's `SPEC.md` is the one record every lane shares, so a per-lane start would put N
   branches into the same two-line `status:`/`updated:` hunk of one file — a hazard a `STORY.md`
   never has, because exactly one lane writes it. (`work:status` is deliberately not item-locked, and
-  `src/commands/item-status.mjs` is right about why: a status write is record-keeping on your own
+  `packages/work/src/commands/item-status.mjs` is right about why: a status write is record-keeping on your own
   checkout. That reasoning holds for the record ONE lane owns; the shared one is started before the
   lanes exist.) A repeat mint on a resumed run is the ordinary case and needs no flag: the reactor's
   edge is bounded, so an item already past `not-started` is reported as not applicable and the walk
@@ -238,7 +238,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      Run it inside the lane's worktree, when this member was dispatched into one — that is the tree
      its commits travel in, and the tree its run record is written under.
      This is a STEP of the build, not bookkeeping done on the way out, and it does two jobs at once.
-     It STARTS the item: the **`run.started` reactor** (`src/effects/table.mjs`) makes the move, so
+     It STARTS the item: the **`run.started` reactor** (`packages/work/src/effects.mjs`) makes the move, so
      an item is never read as `not-started` while it is being built — which lies to the board, to
      the fleet and to `aof work next`, and leaves the failure rollback nothing to roll back (the
      rollback fires only FROM `in-progress`). And it CAPTURES the session this build runs as, which
@@ -275,7 +275,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      scenarios at the end of every round. A round that reduces the count clears the no-progress
      record; a round that leaves the count the same or higher records one more no-progress round.
      Reaching **2 consecutive no-progress rounds** — `work.loop.buildNoProgressRounds`, the bound's
-     one home in `src/loop-bounds.mjs` — stops the build. The first round has no predecessor and so
+     one home in `packages/contracts/src/loop-bounds.mjs` — stops the build. The first round has no predecessor and so
      is never a no-progress round. This is a failure-to-progress bound rather than an iteration
      count, which is the stronger condition and needs no arbitrary N: a build that is still reducing
      the count is never stopped, and a build that has stopped reducing it is never ground at.
@@ -296,7 +296,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.
 
      <gate_ladder>
-     Walk the rungs the loop shell's `invokeGateLadder` (`src/commands/loop.mjs`) walks, in its
+     Walk the rungs the loop shell's `invokeGateLadder` (`packages/work-loop/src/commands/loop.mjs`) walks, in its
      order, each scoped to **the driven item's own ref — never to its parent**:
 
      1. `aof work validate <ref>` — if it answers with findings, **stop here**: the second rung is
@@ -371,7 +371,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
 
      <review_rounds>
      Review runs one round by default — `work.loop.reviewRounds`, whose one home is
-     `src/loop-bounds.mjs`. Apply confirmed Blocker fixes from that round, then proceed to the
+     `packages/contracts/src/loop-bounds.mjs`. Apply confirmed Blocker fixes from that round, then proceed to the
      Review gate. A second round runs only when round one leaves at least one **Blocker** (breaks
      correctness or violates the locked contract). Important findings and Nits do not earn another
      round: record them in the milestone feedback/findings path or hand them back as a story shape,
@@ -519,7 +519,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
 
 <progress_tracking>
 Status is the source of truth, and **`aof work status` is its one writer** — never hand-edit a
-`status:` line. The verb checks the move against `ITEM_STATUS_EDGES` (`src/acceptance-horizon.mjs`),
+`status:` line. The verb checks the move against `ITEM_STATUS_EDGES` (`packages/work/src/lifecycle.mjs`),
 which is the one copy of the lifecycle — do not redraw it here. A story's usual walk is
 `not-started → in-progress → in-review → done`, but **`in-progress → done` is equally legal**, and
 it is the path a milestone, `uat` session, `spike` and `chore` actually take: none of them is ever
@@ -547,9 +547,9 @@ republish. (The PO remains the single writer of milestone SPEC/STATE **prose**.)
   legal next moves. Ask it rather than guessing — a wrong move is refused and writes nothing.
 - Finding the item already started is the COMMON case, not the exception, and no prompt here writes
   that move. **Two** mechanisms make it: the **phase door** (`STARTING_PHASES`,
-  `src/commands/continue.mjs`) on any local `continue`/`refine` act — which is why
+  `packages/work/src/commands/continue.mjs`) on any local `continue`/`refine` act — which is why
   `aof:refine <story-ref>` starts the story it refines — and the **`run.started` reactor**
-  (`src/effects/table.mjs`) on every run mint, which is how the mints above, `aof work resume` and a
+  (`packages/work/src/effects.mjs`) on every run mint, which is how the mints above, `aof work resume` and a
   worker's dispatch all start theirs. A re-entered lane arrives the same way. Both are bounded to the
   same starting edge, so a repeat is reported as not applicable and changes nothing — which is what
   makes the mint safe to run unconditionally at the top of a lane.

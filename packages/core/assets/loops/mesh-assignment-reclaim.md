@@ -21,12 +21,13 @@ The defining `reclaimStaleAssignments` scan at `packages/mesh/src/assignment-rec
 assignment state. Its reference and measurement are the same complete gate: the defining exported AND
 `dualStalenessDecision` at `packages/mesh/src/assignment-reclaim.mjs:129`, plus its two separately visible halves,
 `isNodeStale` at its defining site `packages/mesh/src/presence.mjs:548` and `isStale` at its defining site
-`packages/core/src/run-store.mjs:27`. Both predicates are imported and shared rather than re-derived
-through the core adapter (`packages/core/src/mesh/assignment-reclaim.mjs:3-4`) into `createAssignmentReclaim`.
+`packages/contracts/src/freshness.mjs:2`. Both predicates are imported and shared rather than re-derived
+through the core adapter (`packages/core/src/application/bindings/mesh/assignment-reclaim.mjs:2`) into `createAssignmentReclaim`,
+defined at `packages/mesh/src/assignment-reclaim.mjs:15`.
 
 The narrowest actuator exports are `transitionAssignmentState` at
 `packages/mesh/src/assignment-transitions.mjs:270` and `transitionRunReclaimed` at
-`packages/execution/src/run-transitions.mjs:174`; `packages/core/src/mesh/assignment-reclaim.mjs:7-8` imports and supplies them rather than
+`packages/execution/src/run-transitions.mjs:174`; `packages/core/src/application/bindings/mesh/assignment-reclaim.mjs:14-15` imports and supplies them rather than
 defining them. The 15-second default rate is defined at `packages/mesh/src/sync-cadence.mjs:26` and wired only for
 the control role at `packages/mesh/src/launcher.mjs:1519-1539`, making this the registry's sole periodic loop.
 

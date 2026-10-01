@@ -4,9 +4,9 @@ id: loop:review-fix-rereview
 kind: loop
 title: Review, fix, and re-review
 controlled: open review findings
-reference: [prose:src/bundle/commands/continue.md]
-measurement: [prose:src/bundle/commands/continue.md]
-actuator: [prose:src/bundle/agents/aof-developer.md]
+reference: [prose:packages/core/assets/commands/continue.md]
+measurement: [prose:packages/core/assets/commands/continue.md]
+actuator: [prose:packages/core/assets/agents/aof-developer.md]
 cadence: event:per-phase
 ceiling: [config:work.loop.reviewRounds]
 owner: unknown
@@ -15,15 +15,15 @@ layer: operational
 ---
 # Review, fix, and re-review
 
-Framework record source: `src/bundle/loops/review-fix-rereview.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/core/assets/loops/review-fix-rereview.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 The controlled variable is open structural, behavioural, and design-conformance findings, judged
 against the contract and ADRs; the reference, agent-judged measurement, and phase trigger are described
-at `src/bundle/commands/continue.md:65-70` and RESEARCH §Q1.2. Because no deterministic grader is named,
+at `packages/core/assets/commands/continue.md:65-70` and RESEARCH §Q1.2. Because no deterministic grader is named,
 both evidence axes correctly point to that prose.
 
-Confirmed fixes are applied through the developer (`src/bundle/commands/continue.md:65-66`), so the
-narrowest actuator is `src/bundle/agents/aof-developer.md:1`, byte-identical to build-to-green's real
+Confirmed fixes are applied through the developer (`packages/core/assets/commands/continue.md:65-66`), so the
+narrowest actuator is `packages/core/assets/agents/aof-developer.md:1`, byte-identical to build-to-green's real
 shared lever. The ceiling points to `config:work.loop.reviewRounds`, whose resolver owns the number;
 RESEARCH found no loop owner, hence the uncited and honest `owner: unknown`.
 

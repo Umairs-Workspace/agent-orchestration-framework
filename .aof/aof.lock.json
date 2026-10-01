@@ -177,7 +177,7 @@
           "id": "autonomous",
           "kind": "command"
         },
-        "hash": "sha256:c8704c8ddd5a7f648b1079030682add075dd45230ba09ed5dd6118be76db9c89",
+        "hash": "sha256:a7de14fb0a256343d0674fa54e493af168ef0cfcdef4c6ea3126c8789fab5180",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -187,7 +187,7 @@
           "id": "code-review",
           "kind": "command"
         },
-        "hash": "sha256:21b5acf134229ccd5eb30a01427d03a56e0e276e8b0f7df733be218fd381de30",
+        "hash": "sha256:d965f9b4c6241c07542b87ff6d9e0152c3a3f2e3a47579c9ec01903795023b17",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -197,7 +197,7 @@
           "id": "continue",
           "kind": "command"
         },
-        "hash": "sha256:99fef738781345569759feb6adc754090d4bb997b1786008facd731a79103a72",
+        "hash": "sha256:df5ef8016b185ba4b3c3b4775a68d0b1208068ae3dfa678a2658576814963375",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -297,7 +297,7 @@
           "id": "pay-debt",
           "kind": "command"
         },
-        "hash": "sha256:387c6c626943dc95eb65a4c698ef0f02f79fe15c7bfee5c9616609da768bc00b",
+        "hash": "sha256:65d5032084f2e36e045f0bf0a97097dab557c2acfd72b2507e3f3e31dc9220bb",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -337,7 +337,7 @@
           "id": "refine",
           "kind": "command"
         },
-        "hash": "sha256:2eca5a425833d9ef60e9dc021849bb2f821a04e17d915890c2de62c98f74b4fc",
+        "hash": "sha256:8677fbc7ca3840c54f3022379db63f7decad5d7ea9ae365ed623161bd6bc9509",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -357,7 +357,7 @@
           "id": "shatter",
           "kind": "command"
         },
-        "hash": "sha256:7081ce9510f9ca1a06722926cad2d379c7e48e82593ea058318a5ace7e159b48",
+        "hash": "sha256:093c32f721d11e468dd7dfc34fdce8c354a9ad3b5c9ad3f00d657d6aa3299dd9",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -567,7 +567,7 @@
           "id": "aof-autonomous",
           "kind": "skill"
         },
-        "hash": "sha256:e72b6c1622c8e2630bc33138a72a8e5f179c156fc891f432c2bbe98a34a9c1f7",
+        "hash": "sha256:bce441c42eea7092e85b7fdfb69f4a2542c1f535e033a033ff5403e07da6905b",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -577,7 +577,7 @@
           "id": "aof-code-review",
           "kind": "skill"
         },
-        "hash": "sha256:0cafa0d263f01544bd6afc2eafd437e7cfdc511e1a085eaac62c3f71c4f035f8",
+        "hash": "sha256:89973c65f16c9c1d0647243fd1d297902b607da88b826cb1e7bad8fa170032fc",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -587,7 +587,7 @@
           "id": "aof-continue",
           "kind": "skill"
         },
-        "hash": "sha256:8263c300870cedaa88e2697bc0b93085ce0ebf9b0c8da808ad3a770c580fdba4",
+        "hash": "sha256:18bd4c43168c0e77d4a3642af92b22c33e2c0b2a77222bc411f1c521a00d39d7",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -687,7 +687,7 @@
           "id": "aof-pay-debt",
           "kind": "skill"
         },
-        "hash": "sha256:0ed9695b63ba0fc9fec257421ec14c01c71f80a24b46e296a78d4f4ed5573e27",
+        "hash": "sha256:bc764c7bb0b251216e2dc5d70493c88b0e0d11d8834f915fae5b654d3d0fffb8",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -727,7 +727,7 @@
           "id": "aof-refine",
           "kind": "skill"
         },
-        "hash": "sha256:96cdbc530e756473dc8844b4a0e998718c174df15baa9a34dd315299df5cbfcf",
+        "hash": "sha256:e59981fadce09e3edc90cec9e5614a97e585569bef2a309b86737e6922d752d7",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -747,7 +747,7 @@
           "id": "aof-shatter",
           "kind": "skill"
         },
-        "hash": "sha256:6b0e2dee57f6f5edf29b36150952c9ff0ad69418960115c08cfaac5e02442abe",
+        "hash": "sha256:bcbf00d296cf0e32e4e71c17700f1176ff65f8b1cf77bff41905e3c8d0e8655d",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -927,7 +927,7 @@
           "id": "autonomous",
           "kind": "command"
         },
-        "hash": "sha256:f6c422ee801b9e5c6d7899da3e16eebd8593b2e7de6cf54e5d8bc1ac75e176b0",
+        "hash": "sha256:587039a564209c407b4c44d4525f2cfadab6a78e19490f3857b21426bca412c9",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -937,7 +937,7 @@
           "id": "code-review",
           "kind": "command"
         },
-        "hash": "sha256:f704053de8f951692475f5faaf8cf11e993b3c4d262abdf9ccd48c0f89eeeecd",
+        "hash": "sha256:56160ff7b3bdb013c6b048f148a79499515d4050f3e46803fdfb14bd0a41a98e",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -947,7 +947,7 @@
           "id": "continue",
           "kind": "command"
         },
-        "hash": "sha256:9106b9b44068ec7341c2afb8aca5ee8c0c51b031e0b6c9356c9668139f7b3358",
+        "hash": "sha256:2ba8956e1ad02143abad0700248480ea9a032a1a82747a080e296c564cf1ce3a",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1047,7 +1047,7 @@
           "id": "pay-debt",
           "kind": "command"
         },
-        "hash": "sha256:2e8c624ec638c151032fc7c45971abcd3e5463e0cd5ecb854e32df3b7739ff46",
+        "hash": "sha256:8077a2251692673025ecae1c71a04b44f96c09e24448aef2ae242e1c102cec8b",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1087,7 +1087,7 @@
           "id": "refine",
           "kind": "command"
         },
-        "hash": "sha256:b77d5fece3cc7f403c625be44f669d714765bca5d1e1bbc287d3e8bd68938e58",
+        "hash": "sha256:aafec8b9be816e8fffc7c7b500f0a7d126295da3ef3bd71228ea72d5765f398d",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1107,7 +1107,7 @@
           "id": "shatter",
           "kind": "command"
         },
-        "hash": "sha256:40b308d24153b2c1a943f9cfed1382394214d9cf5b4a1dc42d4297d54d0bcca1",
+        "hash": "sha256:6ac44d56368bdfa0321b3bf2fa46c0e82a23e11738af83f13d91b76374a74ebc",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1415,7 +1415,7 @@
           "id": "loop-autonomous-cascade",
           "kind": "asset"
         },
-        "hash": "sha256:9e056ae07c1fd6a2b8874ab1ccd40ba65fa564108811e25463e79f7c46f99d28",
+        "hash": "sha256:02bb0a3a949e82f2721c22cedab35a060e1b10d25a51b62c6fae57a8afdc3967",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1425,7 +1425,7 @@
           "id": "loop-build-to-green",
           "kind": "asset"
         },
-        "hash": "sha256:2592c9219b0f85735e14c76fac8718ab4acc5538537592e866347634e8a7d9ca",
+        "hash": "sha256:91f011d7e3d10474746b591151a4086ba50b56ce123fd0813ae9ecba98e4fb82",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1435,7 +1435,7 @@
           "id": "loop-mesh-assignment-reclaim",
           "kind": "asset"
         },
-        "hash": "sha256:b7d16585478de7b8e8b287ed34c5412c191109a573e21b2d31cad76528320916",
+        "hash": "sha256:4755ca418d7dad4329dfc591ce3253862fc0cfc4ca554b2b6dc0bc866420ef93",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1445,7 +1445,7 @@
           "id": "loop-retrospective-memory-ingest",
           "kind": "asset"
         },
-        "hash": "sha256:00201de952d9090c95b6c31e3a8fd9ad07d5edcaddea88c142e062c3a2fdffdb",
+        "hash": "sha256:f976bb5e32f45a4acf6788ac8f65a86cc4eb037159a33172a4a29aabadd2ca8a",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1455,7 +1455,7 @@
           "id": "loop-review-fix-rereview",
           "kind": "asset"
         },
-        "hash": "sha256:77fb4ea910dd28eae2c6e51ba073d05d46f13c29bad1d945fe9b1b93ad7d7cc6",
+        "hash": "sha256:8f3723460d50c93bbe90becf0caf887761413e7e0265c7fa61dc23fe6d5399c5",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1465,7 +1465,7 @@
           "id": "loop-run-resilience",
           "kind": "asset"
         },
-        "hash": "sha256:26115147c48f7ab840d391e023881a1eff4a3371a55b5836d1eaa7c4d66a1849",
+        "hash": "sha256:b3ffc3886c72a033b892e7d15ffca5d3c5e66b055e23f380a8fed6463f13f4b3",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1475,7 +1475,7 @@
           "id": "loop-verify-triage-accept",
           "kind": "asset"
         },
-        "hash": "sha256:063ecccdc0a87a6a0d3beb984b1efae3c93529d81558a88a2bb206723d288850",
+        "hash": "sha256:975559a3dff9d245eed6737dcc7170a251efc92dedcb4d1022fe53f96d798fac",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1485,7 +1485,7 @@
           "id": "actor-operator",
           "kind": "asset"
         },
-        "hash": "sha256:fe339360c9ba5d85b347e1dba651df382cf90df989aff7f070c52f31c1aaedf2",
+        "hash": "sha256:d91c3dbacc95b067e55fb641ef9dafdbcdc4b729207a6d91f58bf5869048b562",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1495,7 +1495,7 @@
           "id": "actor-product-owner",
           "kind": "asset"
         },
-        "hash": "sha256:a316ba7ecd1f3a36ecc2cbe9af5445b1b17fbd417f8be7d633152435f2468feb",
+        "hash": "sha256:352d32232b646574c1faa7ab7b6cdf74905297e1a40045ad411303f115a70672",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1505,7 +1505,7 @@
           "id": "anchor-rubric-process-exit",
           "kind": "asset"
         },
-        "hash": "sha256:946689bb4caefda03eaa31e6cbc3a9e181994701d366e52162061ad43f81cdd3",
+        "hash": "sha256:af1112bb9b2b7de0b782dbf040b9abb93e5004a460f116d29020c2f71007472e",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1515,7 +1515,7 @@
           "id": "anchor-run-liveness",
           "kind": "asset"
         },
-        "hash": "sha256:380f9da73850a0a3e33269cdb37f4e1dc2a083c9625c9d44521bf9817f7ec0c2",
+        "hash": "sha256:1fb6c6f0aabc94a003db22a87be2816c22a121388e40b2ffe3a17381a7f0482f",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1525,7 +1525,7 @@
           "id": "anchor-run-lifecycle-policy",
           "kind": "asset"
         },
-        "hash": "sha256:d5ea351dcfe0bd4881e4d259c340277be2e3b1fc9b259856e6bcf13c77e6bef4",
+        "hash": "sha256:4523144a3c7467b6f92db024787c282c8c8d32081f2be40f345bfea2a41e4b06",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1535,7 +1535,7 @@
           "id": "watcher-build-to-green",
           "kind": "asset"
         },
-        "hash": "sha256:414ca321ad8328853750b5ecaa103b9883269160d7176a6532cdb27dd6d0e4bf",
+        "hash": "sha256:60f51f767635618164b61dbccf6698ae40e0231619f3f007f2fa958065b938a9",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1545,7 +1545,7 @@
           "id": "watcher-review-fix-rereview",
           "kind": "asset"
         },
-        "hash": "sha256:b0c644879458ae8640d1fb614813c57bbaa799d12e4e0f32059775f2b8186199",
+        "hash": "sha256:1db178353dbb1b033896debe2d8498ae763b93dae0803757da755d6bba3349d1",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1555,7 +1555,7 @@
           "id": "watcher-autonomous-cascade",
           "kind": "asset"
         },
-        "hash": "sha256:f8587c64b80e3ea132e1220ee1e6a98bb1e779416154bb4c995aed0f7c736aad",
+        "hash": "sha256:966af3956f271c2eedd003874caf6784b025c414e18f14a5fdb41c355542cf15",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1565,7 +1565,7 @@
           "id": "arbiter-speed-thoroughness-autonomy",
           "kind": "asset"
         },
-        "hash": "sha256:690c9df34c5ccca0de7fd51077fe206bf591fdfe9f5af44986b96c0aaaa1c921",
+        "hash": "sha256:f37839fbd4fe51d595efb4791ca28a374209225dd6c1590c93aa19a0c6c7fcec",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       },
       {
@@ -1575,7 +1575,7 @@
           "id": "auditor-instrument-audit",
           "kind": "asset"
         },
-        "hash": "sha256:0d2247aff702df5def9aeb8162470f5117d4523db477a9b92241706b697a7616",
+        "hash": "sha256:e941eac96456814e2935b00c40e99018a34284f1366846fc3d53cab4fe92f27f",
         "generatedAt": "2026-09-27T23:42:03.843Z"
       }
     ],

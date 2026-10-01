@@ -327,4 +327,30 @@ export const tuneProvenanceTests = [
       }
     },
   },
+  {
+    name: "142/07 provenance: a cited path that moved resolves through the one rename resolver, and a forward resolves to the file, not the old line",
+    run: () => {
+      const { rootDir } = fixture();
+      try {
+        fs.mkdirSync(path.join(rootDir, "packages", "owner", "src"), { recursive: true });
+        fs.writeFileSync(path.join(rootDir, "packages", "owner", "src", "moved.md"), "a\nb\n");
+        fs.writeFileSync(path.join(rootDir, "packages", "owner", "src", "impl.mjs"), "x\n");
+        const renameMap = new Map([["src/moved.md", "packages/owner/src/moved.md"]]);
+        renameMap.moduleLinks = new Map([["src/retired.mjs", ["packages/owner/src/impl.mjs"]]]);
+        assert.equal(resolveCitationAtEmit("src/moved.md", { rootDir }).failure.code, "file-absent", "without the map a retired path is refused");
+        const renamed = resolveCitationAtEmit("src/moved.md:2", { rootDir, renameMap });
+        assert.equal(renamed.ok, true);
+        assert.equal(renamed.resolved.document, "packages/owner/src/moved.md");
+        assert.equal(renamed.resolved.line, 2, "a pure rename keeps its line claim");
+        assert.equal(resolveCitationAtEmit("src/moved.md:3", { rootDir, renameMap }).failure.code, "line-absent", "…and the line claim is still checked");
+        const forwarded = resolveCitationAtEmit("src/retired.mjs:900", { rootDir, renameMap });
+        assert.equal(forwarded.ok, true);
+        assert.equal(forwarded.resolved.document, "packages/owner/src/impl.mjs");
+        assert.equal(forwarded.resolved.line, null, "a forward's old line names nothing in the new file");
+        assert.equal(resolveCitationAtEmit("src/never-existed.mjs", { rootDir, renameMap }).failure.code, "file-absent");
+      } finally {
+        removeFixture(rootDir);
+      }
+    },
+  },
 ];

@@ -57,7 +57,7 @@ runs within (ADR-003 §7). Three qualify:
 Speed is not a knob; speed is what every one of those three is spent against. `loop:verify-triage-accept`
 wins first and owns none of them: it declares `ceiling: none`, because the thoroughness of an
 acceptance gate is not a number. `config:work.loop.progressMaxResets` is deliberately **not** claimed
-— it is a real bound in `packages/core/src/loop-progress.mjs`, but no loop record cites it as a `ceiling:` pointer,
+— it is a real bound, resolved by `progressMaxResetsFromConfig` at `packages/contracts/src/loop-bounds.mjs:116`, but no loop record cites it as a `ceiling:` pointer,
 so on this record's own criterion it is not a knob any vetoed loop is declared to run within, and the
 criterion is not widened to rescue it. `work.rubric.report.floor` and `mesh.presence.stalenessSeconds`
 are not claimed for the same reason.

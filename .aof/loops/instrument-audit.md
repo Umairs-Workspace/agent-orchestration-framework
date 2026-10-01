@@ -11,7 +11,7 @@ reporting: [actor:operator, actor:product-owner]
 ---
 # Instrument audit
 
-Framework record source: `src/bundle/loops/instrument-audit.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/core/assets/loops/instrument-audit.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 This is the framework's own auditor, and the first record written in the grammar 59/00 added
 (ADR-001 §1). Every previous widening of this registry shipped the records that use it in the same
@@ -42,7 +42,7 @@ operator or by a loop, with `aof work audit [scope] [--json] [--strict]`, and th
 rather than implying a scheduler that does not exist.
 
 **Where it can go directly.** `escalation: actor:operator` names an actor whose `ground:` is
-`exogenous` — the registry's sole exogenous contact with reality (`src/bundle/loops/operator.md`).
+`exogenous` — the registry's sole exogenous contact with reality (`packages/core/assets/loops/operator.md`).
 It is an actor and not a loop on purpose: a bypass that terminated at another loop would be one more
 hop through the machinery it exists to route around (ADR-006 §3). A finding whose code is in the
 escalating set reaches this actor **in addition** to its reference-owner, never instead of one.

@@ -12,7 +12,7 @@ target-setting: [loop:run-resilience]
 Framework record source: `packages/core/assets/loops/run-lifecycle-policy.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 **This edge is AUTHORED, not discovered — it is milestone 58's judgment and no citation is offered
-for it.** RESEARCH §Q1.5 opened `packages/core/src/run-store.mjs` and found that `loop:run-resilience`'s reference
+for it.** RESEARCH §Q1.5 opened `packages/execution/src/runs.mjs` and found that `loop:run-resilience`'s reference
 is the closed transition and retry rules the code fixes, and that *nobody sets it at runtime*: no
 actor, no command and no configuration key determines which state may follow which. There is no
 artifact in this repository that declares who sets that loop's reference, so no artifact is cited
@@ -23,9 +23,10 @@ Inventing a supervising loop or a "code maintainer" actor for this reference wou
 fabrication the registry has refused since it shipped.
 
 **The rule itself is a fact, and it is the one thing here that is cited.** The authority this anchor
-observes is the defining export `isLegalTransition` at `packages/core/src/run-store.mjs:24`, whose sibling
-`isRetryable` at `packages/core/src/run-store.mjs:25` closes the retry half of the same policy; `shouldRetry` at
-`packages/core/src/run-store.mjs:48` combines that classification with the attempt ceiling. Those sets are
+observes is `isLegalTransition` at `packages/execution/src/runs.mjs:326` (composed by `createRunStore` at
+`packages/execution/src/runs.mjs:79`), whose sibling
+`isRetryable` at `packages/execution/src/runs.mjs:61` closes the retry half of the same policy; `shouldRetry` at
+`packages/execution/src/runs.mjs:74` combines that classification with the attempt ceiling. Those sets are
 literals in source. The record points at the authority and restates none of its members, exactly as
 `loop:run-resilience` does on its own reference axis. The distinction this record turns on is
 therefore narrow and deliberate: *what the reference is* is discovered and cited; *that this anchor

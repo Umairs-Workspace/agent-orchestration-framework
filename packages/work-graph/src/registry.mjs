@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { parseFrontmatter } from "@aof/work/records";
 import { resolvesLoopBoundConfigKey } from "@aof/contracts/loop-bounds";
+import { moduleDeclares } from "./module-declares.mjs";
 
 class FrozenSet {
   #values;
@@ -645,22 +646,7 @@ function authorityRoot(workspace, source) {
   return registryHome;
 }
 
-function sourceExports(source, symbol) {
-  const escaped = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const declaration = new RegExp(
-    `^[\\t ]*export[\\t ]+(?:async[\\t ]+)?(?:function|class|const|let|var)[\\t ]+${escaped}\\b`,
-    "mu",
-  );
-  if (declaration.test(source)) return true;
-
-  for (const match of source.matchAll(/^[\t ]*export[\t ]*\{([^}]*)\}/gmu)) {
-    for (const entry of match[1].split(",")) {
-      const parts = entry.trim().split(/\s+as\s+/u);
-      if ((parts[1] ?? parts[0]) === symbol) return true;
-    }
-  }
-  return false;
-}
+const sourceExports = moduleDeclares;
 
 async function moduleCeilingPointerResolves(value, root, resolveModule) {
   const pointer = value?.pointer;
